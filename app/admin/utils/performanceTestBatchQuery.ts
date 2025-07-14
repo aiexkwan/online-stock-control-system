@@ -1,9 +1,9 @@
 /**
- * 批量查詢性能測試工具
- * 用於測量同比較批量查詢系統同原有獨立查詢嘅性能差異
+ * 並發查詢性能測試工具
+ * 用於測量同比較並發查詢系統同原有獨立查詢嘅性能差異
  */
 
-import { performanceMonitor } from '@/lib/widgets/performance-monitor';
+import { simplePerformanceMonitor } from '@/lib/performance/SimplePerformanceMonitor';
 
 interface PerformanceTestResult {
   testName: string;
@@ -18,7 +18,7 @@ interface PerformanceTestResult {
 }
 
 interface ComparisonResult {
-  batchQuery: PerformanceTestResult;
+  concurrentQuery: PerformanceTestResult;
   individualQueries: PerformanceTestResult;
   improvement: {
     timeSaved: number;
@@ -28,20 +28,20 @@ interface ComparisonResult {
   };
 }
 
-class BatchQueryPerformanceTester {
+class ConcurrentQueryPerformanceTester {
   private results: PerformanceTestResult[] = [];
 
   /**
-   * 測試批量查詢性能
+   * 測試並發查詢性能
    */
-  async testBatchQuery(
+  async testConcurrentQuery(
     widgetIds: string[],
     dateRange: { startDate: Date; endDate: Date }
   ): Promise<PerformanceTestResult> {
     const startTime = performance.now();
     const startResourceEntries = performance.getEntriesByType('resource').length;
 
-    // 執行批量查詢
+    // 執行並發查詢
     const params = new URLSearchParams({
       startDate: dateRange.startDate.toISOString(),
       endDate: dateRange.endDate.toISOString(),
@@ -49,7 +49,7 @@ class BatchQueryPerformanceTester {
     });
 
     try {
-      const response = await fetch(`/api/admin/dashboard/batch?${params.toString()}`);
+      const response = await fetch(`/api/admin/dashboard?${params.toString()}`);
       const data = await response.json();
 
       const endTime = performance.now();
@@ -62,7 +62,7 @@ class BatchQueryPerformanceTester {
       }, 0);
 
       const result: PerformanceTestResult = {
-        testName: 'Batch Query',
+        testName: 'Concurrent Query',
         duration: endTime - startTime,
         requestCount: 1,
         avgRequestTime: endTime - startTime,
@@ -72,21 +72,14 @@ class BatchQueryPerformanceTester {
         timestamp: new Date(),
       };
 
-      // 記錄到性能監控
-      performanceMonitor.recordMetrics({
-        widgetId: 'batch-query-test',
-        timestamp: Date.now(),
-        loadTime: result.duration,
-        renderTime: 0,
-        dataFetchTime: result.duration,
-        route: '/admin/dashboard',
-        variant: 'v2',
-        sessionId: 'performance-test-session',
-      });
+      // 記錄到性能監控（使用簡化系統）
+      simplePerformanceMonitor.recordMetric('concurrent_query_test_duration', result.duration, 'performance');
+      simplePerformanceMonitor.recordMetric('concurrent_query_test_requests', result.requestCount, 'performance');
+      simplePerformanceMonitor.recordMetric('concurrent_query_test_network_bytes', result.networkBytes || 0, 'performance');
 
       return result;
     } catch (error) {
-      console.error('Batch query test failed:', error);
+      console.error('Concurrent query test failed:', error);
       throw error;
     }
   }
@@ -144,23 +137,16 @@ class BatchQueryPerformanceTester {
       timestamp: new Date(),
     };
 
-    // 記錄到性能監控
-    performanceMonitor.recordMetrics({
-      widgetId: 'individual-queries-test',
-      timestamp: Date.now(),
-      loadTime: result.duration,
-      renderTime: 0,
-      dataFetchTime: result.duration,
-      route: '/admin/dashboard',
-      variant: 'v2',
-      sessionId: 'performance-test-session',
-    });
+    // 記錄到性能監控（使用簡化系統）
+    simplePerformanceMonitor.recordMetric('individual_queries_test_duration', result.duration, 'performance');
+    simplePerformanceMonitor.recordMetric('individual_queries_test_requests', result.requestCount, 'performance');
+    simplePerformanceMonitor.recordMetric('individual_queries_test_network_bytes', result.networkBytes || 0, 'performance');
 
     return result;
   }
 
   /**
-   * 比較批量查詢同個別查詢嘅性能
+   * 比較並發查詢同個別查詢嘅性能
    */
   async comparePerformance(
     widgetIds: string[],
@@ -178,18 +164,18 @@ class BatchQueryPerformanceTester {
     // 等待一段時間避免緩存影響
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // 測試批量查詢
-    console.log('測試批量查詢性能...');
-    const batchResult = await this.testBatchQuery(widgetIds, dateRange);
+    // 測試並發查詢
+    console.log('測試並發查詢性能...');
+    const concurrentResult = await this.testConcurrentQuery(widgetIds, dateRange);
 
     // 計算改善
-    const timeSaved = individualResult.duration - batchResult.duration;
+    const timeSaved = individualResult.duration - concurrentResult.duration;
     const timeSavedPercentage = (timeSaved / individualResult.duration) * 100;
-    const requestsReduced = individualResult.requestCount - batchResult.requestCount;
+    const requestsReduced = individualResult.requestCount - concurrentResult.requestCount;
     const requestsReducedPercentage = (requestsReduced / individualResult.requestCount) * 100;
 
     const comparison: ComparisonResult = {
-      batchQuery: batchResult,
+      concurrentQuery: concurrentResult,
       individualQueries: individualResult,
       improvement: {
         timeSaved,
@@ -199,19 +185,11 @@ class BatchQueryPerformanceTester {
       },
     };
 
-    // 記錄比較結果
-    performanceMonitor.recordMetrics({
-      widgetId: 'performance-comparison',
-      timestamp: Date.now(),
-      loadTime: timeSavedPercentage,
-      renderTime: 0,
-      dataFetchTime: 0,
-      route: '/admin/dashboard',
-      variant: 'v2',
-      sessionId: 'performance-test-session',
-    });
+    // 記錄比較結果（使用簡化系統）
+    simplePerformanceMonitor.recordMetric('performance_comparison_time_saved', timeSavedPercentage, 'performance');
+    simplePerformanceMonitor.recordMetric('performance_comparison_requests_reduced', requestsReducedPercentage, 'performance');
 
-    this.results.push(batchResult, individualResult);
+    this.results.push(concurrentResult, individualResult);
 
     return comparison;
   }
@@ -269,28 +247,24 @@ class BatchQueryPerformanceTester {
   }
 
   /**
-   * 獲取性能指標統計
+   * 獲取性能指標統計（使用簡化系統）
    */
   getPerformanceStats() {
-    const metrics = performanceMonitor.getMetrics();
-    const batchMetrics = metrics.filter(m => m.widgetId === 'dashboard-batch');
+    const summary = simplePerformanceMonitor.getSummary();
+    const batchStats = simplePerformanceMonitor.getBasicStats('batch_query_test_duration');
+    const individualStats = simplePerformanceMonitor.getBasicStats('individual_queries_test_duration');
     
-    if (batchMetrics.length === 0) {
-      return null;
-    }
-
-    const stats = performanceMonitor.getStats();
     return {
-      batchQueryStats: stats['dashboard-batch'],
-      individualWidgetStats: Object.entries(stats).filter(([key]) => 
-        key !== 'dashboard-batch' && key !== 'batch-query-test' && key !== 'individual-queries-test'
-      ),
+      summary,
+      batchQueryStats: batchStats,
+      individualQueryStats: individualStats,
+      recentAlerts: simplePerformanceMonitor.getAlerts().slice(0, 5), // 最近5個警報
     };
   }
 }
 
 // 導出測試實例
-export const batchQueryTester = new BatchQueryPerformanceTester();
+export const concurrentQueryTester = new ConcurrentQueryPerformanceTester();
 
 // 導出便利函數
 export async function runPerformanceTest(
@@ -312,14 +286,17 @@ export async function runPerformanceTest(
     endDate: new Date(),
   };
 
-  const comparison = await batchQueryTester.comparePerformance(testWidgets, testDateRange);
-  const report = batchQueryTester.generateReport(comparison);
+  const comparison = await concurrentQueryTester.comparePerformance(testWidgets, testDateRange);
+  const report = concurrentQueryTester.generateReport(comparison);
   
   console.log(report);
   
   return {
     comparison,
     report,
-    stats: batchQueryTester.getPerformanceStats(),
+    stats: concurrentQueryTester.getPerformanceStats(),
   };
 }
+
+// 保持向後兼容
+export const batchQueryTester = concurrentQueryTester;

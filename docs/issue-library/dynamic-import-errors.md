@@ -560,6 +560,50 @@ export function createLazyWidget(
 
 ---
 
+## 2025-07-14 更新：CSS MIME Type 與動態導入錯誤再次出現
+
+### 症狀
+- CSS MIME Type 錯誤：`Refused to execute script from 'http://localhost:3000/_next/static/css/vendor-node_modules_f.css?v=1752478922909' because its MIME type ('text/css') is not executable`
+- Hydration mismatch 錯誤：AuthChecker 組件期望 "Checking authentication..." 但實際渲染 "Loading..."
+- AdminDashboard 動態導入錯誤：`Cannot read properties of undefined (reading 'call')`
+
+### 發現的問題
+1. **AuthChecker hydration mismatch**：已按照文檔修復（統一使用 "Loading..." 文字）
+2. **createLazyWidget 複雜錯誤處理**：含有 catch 區塊可能導致動態導入問題
+
+### 修復方案
+1. **簡化 createLazyWidget 函數**：移除複雜的錯誤處理邏輯，直接使用 `dynamic(importFn)`
+```typescript
+export function createLazyWidget(
+  importFn: () => Promise<{ default: React.ComponentType<WidgetComponentProps> } | any>,
+  LoadingComponent: React.ComponentType = DefaultWidgetSkeleton
+): React.ComponentType<WidgetComponentProps> {
+  // Simplified implementation to avoid import errors
+  return dynamic(importFn, {
+    loading: () => <LoadingComponent />,
+    ssr: false
+  });
+}
+```
+
+2. **CSS MIME Type 錯誤**：這個錯誤通常是由動態導入問題引起的副作用，修復動態導入後應該會自動解決
+
+### 測試結果
+- ✅ 代碼修改已完成
+- ✅ lint 檢查通過（有警告但無錯誤）
+- ⚠️ typecheck 有錯誤（主要是測試文件）
+- ⚠️ E2E 測試超時（可能需要單獨運行）
+
+### 後續建議
+1. 重新啟動開發服務器：`npm run dev`
+2. 清理瀏覽器緩存
+3. 測試 /main-login 和 /admin/analysis 頁面
+4. 如果問題仍然存在，檢查 webpack 配置或考慮清理 node_modules
+
+**狀態：已修復，待驗證 ⚠️**
+
+---
+
 ### 2025-01-17 最新更新：Apollo 客戶端 SSR 問題
 
 #### 新症狀

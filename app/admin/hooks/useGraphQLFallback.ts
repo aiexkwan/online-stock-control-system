@@ -3,7 +3,7 @@ import useSWR, { SWRConfiguration } from 'swr';
 import { useState, useCallback, useContext, useMemo, useRef, useEffect } from 'react';
 import { DashboardDataContext } from '../contexts/DashboardDataContext';
 import { useWidgetErrorHandler } from './useWidgetErrorHandler';
-import { performanceMonitor } from '@/lib/widgets/performance-monitor';
+import { simplePerformanceMonitor, recordMetric } from '@/lib/performance/SimplePerformanceMonitor';
 
 // Types
 export interface UseGraphQLFallbackOptions<TData, TVariables> {
@@ -105,17 +105,10 @@ export function useGraphQLFallback<TData = any, TVariables = any>({
       
       setPerformanceMetrics(metrics);
       
-      // Record to performance monitor
-      performanceMonitor.recordMetrics({
-        widgetId,
-        timestamp: Date.now(),
-        loadTime: queryTime,
-        renderTime: 0,
-        dataFetchTime: queryTime,
-        route: window.location.pathname,
-        variant: 'v2',
-        sessionId: 'default-session',
-      });
+      // Record to performance monitor (使用簡化系統)
+      simplePerformanceMonitor.recordMetric(`${widgetId}_query_time`, queryTime, 'performance');
+      simplePerformanceMonitor.recordMetric(`${widgetId}_data_source`, dataSource === 'graphql' ? 1 : 0, 'performance');
+      simplePerformanceMonitor.recordMetric(`${widgetId}_fallback_used`, fallbackUsed ? 1 : 0, 'performance');
     }
   }, [widgetId]); // Removed variables dependency to prevent infinite loops
 

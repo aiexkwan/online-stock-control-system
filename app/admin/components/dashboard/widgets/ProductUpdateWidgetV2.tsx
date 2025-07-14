@@ -33,6 +33,15 @@ import {
   updateProduct,
   ProductData,
 } from '@/app/actions/productActions';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
+import { cn } from '@/lib/utils';
 
 // GraphQL Queries 同 Mutations
 const GET_PRODUCT_BY_CODE = gql`
@@ -470,17 +479,17 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className='h-full'>
       <WidgetCard widgetType='custom' isEditMode={isEditMode}>
         <CardHeader className='pb-2'>
-          <CardTitle className='widget-title flex items-center gap-2'>
+          <CardTitle className='flex items-center gap-2'>
             <CubeIcon className='h-5 w-5' />
-            Product Update V2
-            <span className='text-xs font-normal text-slate-400'>(GraphQL + Fallback)</span>
+            <span className={textClasses['widget-title']}>Product Update V2</span>
+            <span className={cn(textClasses['label-small'], 'text-muted-foreground')}>(GraphQL + Fallback)</span>
           </CardTitle>
         </CardHeader>
         <CardContent className='max-h-[calc(100%-60px)] space-y-3 overflow-y-auto'>
           {/* Search Section */}
           {!showForm && !showCreateDialog && (
             <div className='space-y-2'>
-              <Label htmlFor='search' className='text-xs text-slate-300'>
+              <Label htmlFor='search' className={cn(textClasses['label-base'], 'text-muted-foreground')}>
                 Product Code
               </Label>
               <div className='flex gap-2'>
@@ -488,7 +497,10 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
                   id='search'
                   type='text'
                   placeholder='Enter code...'
-                  className='h-8 flex-1 border-slate-600/50 bg-slate-700/50 text-sm'
+                  className={cn(
+                    'h-8 flex-1 border-input bg-background',
+                    textClasses['body-small']
+                  )}
                   disabled={searchLoading || isLoading || isEditMode}
                 />
                 <Button
@@ -498,7 +510,11 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
                   }}
                   disabled={searchLoading || isLoading || isEditMode}
                   size='sm'
-                  className='h-8 bg-gradient-to-r from-orange-600 to-amber-600 px-3 hover:from-orange-500 hover:to-amber-500'
+                  className={cn(
+                    'h-8 px-3 bg-gradient-to-br',
+                    getWidgetCategoryColor('operations', 'gradient'),
+                    'hover:opacity-90'
+                  )}
                 >
                   {searchLoading ? (
                     <div className='h-3 w-3 animate-spin rounded-full border-b-2 border-white' />
@@ -513,15 +529,17 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
           {/* Status Message */}
           {statusMessage && (
             <div
-              className={`rounded-lg p-2 text-xs ${
+              className={cn(
+                'rounded-lg p-2',
+                textClasses['label-base'],
                 statusMessage.type === 'success'
-                  ? 'bg-green-500/20 text-green-400'
+                  ? 'bg-success/20 text-success'
                   : statusMessage.type === 'error'
-                    ? 'bg-red-500/20 text-red-400'
+                    ? 'bg-destructive/20 text-destructive'
                     : statusMessage.type === 'warning'
-                      ? 'bg-yellow-500/20 text-yellow-400'
-                      : 'bg-blue-500/20 text-blue-400'
-              }`}
+                      ? 'bg-warning/20 text-warning'
+                      : 'bg-info/20 text-info'
+              )}
             >
               {statusMessage.message}
             </div>
@@ -529,19 +547,19 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
 
           {/* Create Confirmation */}
           {showCreateDialog && (
-            <div className='rounded-lg border border-yellow-500/30 bg-slate-800/50 p-3'>
-              <div className='flex items-start space-x-2'>
-                <ExclamationTriangleIcon className='mt-0.5 h-5 w-5 text-yellow-400' />
+            <div className='rounded-lg border border-warning/30 bg-warning/10 p-3'>
+              <div className='flex items-start gap-2'>
+                <ExclamationTriangleIcon className='mt-0.5 h-5 w-5 text-warning' />
                 <div className='flex-1'>
-                  <p className='text-sm font-medium text-yellow-400'>Product Not Found</p>
-                  <p className='mt-1 text-xs text-slate-300'>
+                  <p className={cn(textClasses['body-small'], 'font-medium text-warning')}>Product Not Found</p>
+                  <p className={cn('mt-1', textClasses['label-small'], 'text-muted-foreground')}>
                     Create new product &quot;{searchedCode}&quot;?
                   </p>
                   <div className='mt-2 flex gap-2'>
                     <Button
                       onClick={handleConfirmCreate}
                       size='sm'
-                      className='h-7 bg-green-600 text-xs hover:bg-green-700'
+                      className={cn('h-7 bg-success hover:bg-success/90', textClasses['label-small'])}
                       disabled={isEditMode}
                     >
                       <CheckCircleIcon className='mr-1 h-3 w-3' />
@@ -551,7 +569,7 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
                       onClick={handleCancel}
                       size='sm'
                       variant='outline'
-                      className='h-7 border-slate-600 text-xs'
+                      className={cn('h-7 border-border', textClasses['label-small'])}
                       disabled={isEditMode}
                     >
                       Cancel
@@ -564,13 +582,13 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
 
           {/* Product Info Display */}
           {productData && !showForm && (
-            <div className='rounded-lg border border-slate-700/50 bg-slate-800/50 p-3'>
+            <div className='rounded-lg border border-border bg-card p-3'>
               <div className='mb-2 flex items-center justify-between'>
-                <h4 className='text-sm font-medium text-orange-400'>Product Info</h4>
+                <h4 className={cn(textClasses['label-large'], 'text-primary')}>Product Info</h4>
                 <Button
                   onClick={handleEdit}
                   size='sm'
-                  className='h-6 bg-blue-600 px-2 text-xs hover:bg-blue-700'
+                  className={cn('h-6 bg-primary hover:bg-primary/90 px-2', textClasses['label-small'])}
                   disabled={isEditMode}
                 >
                   <PencilIcon className='mr-1 h-3 w-3' />
@@ -591,7 +609,7 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
           {showForm && (
             <form onSubmit={handleSubmit} className='space-y-3'>
               <div className='mb-2 flex items-center justify-between'>
-                <h4 className='text-sm font-medium text-orange-400'>
+                <h4 className={cn(textClasses['label-large'], 'text-primary')}>
                   {isEditing ? 'Edit Product' : 'New Product'}
                 </h4>
                 <Button

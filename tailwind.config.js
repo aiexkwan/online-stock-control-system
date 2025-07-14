@@ -21,11 +21,37 @@ module.exports = {
     'bg-green-100',
     'bg-red-100',
     'bg-yellow-100',
-    // 保留圖表相關類名
-    /^text-(chart|primary|secondary|muted)/,
-    /^bg-(chart|primary|secondary|muted)/,
-    // 保留響應式類名
-    /^(sm|md|lg|xl|2xl):/,
+    // 保留圖表相關類名 - 使用 pattern 物件格式
+    {
+      pattern: /^text-(chart-[1-5]|primary|secondary|muted)/,
+      variants: ['hover', 'focus']
+    },
+    {
+      pattern: /^bg-(chart-[1-5]|primary|secondary|muted)/,
+      variants: ['hover', 'focus']
+    },
+    // 保留響應式類名 - 明確列出需要的 classes
+    'sm:block',
+    'sm:hidden',
+    'md:block',
+    'md:hidden',
+    'lg:block',
+    'lg:hidden',
+    'xl:block',
+    'xl:hidden',
+    '2xl:block',
+    '2xl:hidden',
+    // 額外添加常用的圖表顏色類
+    'text-chart-1',
+    'text-chart-2',
+    'text-chart-3',
+    'text-chart-4',
+    'text-chart-5',
+    'bg-chart-1',
+    'bg-chart-2',
+    'bg-chart-3',
+    'bg-chart-4',
+    'bg-chart-5',
   ],
   theme: {
     extend: {

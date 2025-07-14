@@ -21,6 +21,15 @@ import { WidgetStyles } from '@/app/utils/widgetStyles';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { useGetWarehouseWorkLevelQuery } from '@/lib/graphql/generated/apollo-hooks';
 import { WidgetSkeleton } from './common/WidgetStates';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
+import { cn } from '@/lib/utils';
 
 interface WorkLevelData {
   date: string;
@@ -233,7 +242,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
           <ChartBarIcon className='h-5 w-5' />
           Warehouse Work Level
         </CardTitle>
-        <p className='mt-1 text-xs text-slate-400'>
+        <p className={cn('mt-1', textClasses['label-small'], 'text-muted-foreground')}>
           From {format(dateRange.start, 'MMM d')} to {format(dateRange.end, 'MMM d')}
         </p>
       </CardHeader>
@@ -241,12 +250,12 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
         {loading ? (
           <WidgetSkeleton type="chart-area" height={200} />
         ) : error ? (
-          <div className='text-center text-sm text-red-400'>
+          <div className={cn('text-center', textClasses['body-small'])} style={{ color: semanticColors.destructive.DEFAULT }}>
             <p>Error loading data</p>
-            <p className='mt-1 text-xs'>{error.message}</p>
+            <p className={cn('mt-1', textClasses['label-small'])}>{error.message}</p>
           </div>
         ) : data.dailyStats.length === 0 ? (
-          <div className='py-8 text-center font-medium text-slate-400'>
+          <div className={cn('py-8 text-center font-medium', textClasses['body-base'], 'text-muted-foreground')}>
             <ChartBarIcon className='mx-auto mb-2 h-12 w-12 opacity-50' />
             <p>No work level data found</p>
           </div>
@@ -260,15 +269,16 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
             <div className='relative h-full'>
               <ResponsiveContainer width='100%' height='100%'>
                 <AreaChart data={data.dailyStats} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray='3 3' stroke='#334155' />
-                  <XAxis dataKey='date' stroke='#94a3b8' fontSize={11} />
-                  <YAxis stroke='#94a3b8' fontSize={11} width={30} />
+                  <CartesianGrid strokeDasharray='3 3' stroke={widgetColors.charts.grid} />
+                  <XAxis dataKey='date' stroke={widgetColors.charts.axis} fontSize={11} />
+                  <YAxis stroke={widgetColors.charts.axis} fontSize={11} width={30} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#1e293b',
-                      border: '1px solid #334155',
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
                       borderRadius: '8px',
                       fontSize: '12px',
+                      color: 'hsl(var(--foreground))',
                     }}
                     labelFormatter={label => `Date: ${label}`}
                     formatter={(value: any, name: any, props: any) => [
@@ -279,8 +289,8 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
                   <Area
                     type='monotone'
                     dataKey='value'
-                    stroke='#3b82f6'
-                    fill='#3b82f6'
+                    stroke={widgetColors.charts.primary}
+                    fill={widgetColors.charts.primary}
                     fillOpacity={0.3}
                     strokeWidth={2}
                   />
@@ -289,7 +299,11 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
 
               {/* Performance and metadata indicators */}
               {data.optimized && (
-                <div className='absolute right-2 top-2 flex items-center gap-1 text-xs text-blue-400'>
+                <div className={cn(
+                  'absolute right-2 top-2 flex items-center',
+                  spacingUtilities.gap.small,
+                  textClasses['label-small']
+                )} style={{ color: semanticColors.info.DEFAULT }}>
                   <span>⚡</span>
                   <span>{useGraphQL ? 'GraphQL' : 'Optimized'}</span>
                   {performanceMetrics && !useGraphQL && (
@@ -299,14 +313,22 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
               )}
 
               {/* Summary stats */}
-              <div className='absolute bottom-2 left-2 space-y-0.5 text-xs text-slate-400'>
+              <div className={cn(
+                'absolute bottom-2 left-2 space-y-0.5',
+                textClasses['label-small'],
+                'text-muted-foreground'
+              )}>
                 <div>Total: {data.totalMoves.toLocaleString()} moves</div>
                 <div>{data.uniqueOperators} operators</div>
                 {data.peakDay && <div>Peak: {data.peakDay}</div>}
               </div>
 
               {data.avgMovesPerDay > 0 && (
-                <div className='absolute bottom-2 right-2 text-xs text-slate-400'>
+                <div className={cn(
+                  'absolute bottom-2 right-2',
+                  textClasses['label-small'],
+                  'text-muted-foreground'
+                )}>
                   Avg: {data.avgMovesPerDay.toFixed(0)} moves/day
                 </div>
               )}

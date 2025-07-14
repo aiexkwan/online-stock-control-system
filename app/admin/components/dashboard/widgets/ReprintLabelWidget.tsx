@@ -13,6 +13,15 @@ import {
   TransactionOperation,
 } from '@/app/services/transactionLog.service';
 import { ErrorHandler } from '@/app/components/qc-label-form/services/ErrorHandler';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
+import { cn } from '@/lib/utils';
 
 interface ReprintLabelWidgetProps {
   title?: string;
@@ -158,19 +167,29 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
   };
 
   return (
-    <div className='flex h-full w-full flex-col overflow-hidden rounded-lg border border-gray-700/50 bg-gray-900/40 backdrop-blur-sm'>
-      <div className='flex-shrink-0 border-b border-gray-700/50 px-3 py-2'>
-        <h3 className='text-sm font-semibold text-white'>{title}</h3>
+    <div className={cn(
+      'flex h-full w-full flex-col overflow-hidden rounded-lg border backdrop-blur-sm',
+      'border-border bg-card/40'
+    )}>
+      <div className={cn(
+        'flex-shrink-0 border-b px-3 py-2',
+        'border-border'
+      )}>
+        <h3 className={cn(textClasses['body-small'], 'font-semibold text-foreground')}>{title}</h3>
       </div>
-      <div className='min-h-0 flex-1 overflow-auto p-3'>
-        <div className='flex h-full items-center space-x-2'>
+      <div className={cn('min-h-0 flex-1 overflow-auto', widgetSpacing.container)}>
+        <div className={cn('flex h-full items-center', spacingUtilities.gap.small)}>
           <div className='flex-1'>
             <Input
               type='text'
               placeholder='Enter pallet number'
               value={palletNumber}
               onChange={e => setPalletNumber(e.target.value)}
-              className='h-9 border-gray-700 bg-gray-800/50 text-sm text-white placeholder:text-gray-500'
+              className={cn(
+                'h-9 border-input bg-background/50',
+                textClasses['body-small'],
+                'placeholder:text-muted-foreground'
+              )}
               disabled={isLoading}
             />
           </div>
@@ -178,7 +197,12 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
           <Button
             onClick={handleReprint}
             disabled={isLoading || !palletNumber.trim()}
-            className='h-9 bg-blue-600 px-3 text-white hover:bg-blue-700'
+            className={cn(
+              'h-9 px-3',
+              getWidgetCategoryColor('operations', 'gradient'),
+              'hover:opacity-90',
+              textClasses['body-small']
+            )}
             size='sm'
           >
             {isLoading ? (

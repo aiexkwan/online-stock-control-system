@@ -11,8 +11,7 @@ import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { adminDashboardLayouts } from './adminDashboardLayouts';
 import { AdminWidgetRenderer } from './AdminWidgetRenderer';
 import { Skeleton } from '@/components/ui/skeleton';
-import { optimizedWidgetLoader, preloadRouteWidgets } from './LazyWidgetRegistry';
-import { smartPreloader } from '@/lib/widgets/enhanced-registry';
+import { smartPreloader } from '@/lib/widgets/simple-registry';
 import { useWidgetRegistry } from '@/app/hooks/useWidgetRegistry';
 
 // 動態導入 theme layouts - 使用 webpack magic comments
@@ -120,13 +119,13 @@ export const AdminDashboardContent: React.FC<AdminDashboardContentProps> = ({
     const currentRoute = `/admin/${theme}`;
 
     // 使用 OptimizedWidgetLoader 預加載
-    optimizedWidgetLoader.preloadForRoute(currentRoute);
+    preloader.preloadForRoute(currentRoute);
 
     // 使用 SmartPreloader 進行智能預測預加載
     smartPreloader.preloadForRoute(currentRoute);
 
     // 預加載當前主題的 widgets
-    preloadRouteWidgets(currentRoute).catch(console.error);
+    preloader.preloadForRoute(currentRoute).catch(console.error);
   }, [theme, isInitialized]);
 
   // 獲取對應的 Layout 組件

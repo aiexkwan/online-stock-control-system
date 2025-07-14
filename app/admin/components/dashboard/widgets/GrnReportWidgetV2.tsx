@@ -23,6 +23,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select-radix';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
 
 interface GrnReportWidgetProps {
   title: string;
@@ -545,13 +553,19 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
   };
 
   return (
-    <div className='flex h-full w-full flex-col overflow-hidden rounded-lg border border-gray-700/50 bg-gray-900/40 backdrop-blur-sm'>
-      <div className='flex-shrink-0 border-b border-gray-700/50 px-3 py-2'>
-        <h3 className='text-sm font-semibold text-white'>{title}</h3>
-        <p className='mt-0.5 text-xs text-gray-400'>{description || 'GRN Report'}</p>
+    <div className={cn(
+      'flex h-full w-full flex-col overflow-hidden rounded-lg border backdrop-blur-sm',
+      'border-border bg-card/40'
+    )}>
+      <div className={cn(
+        'flex-shrink-0 border-b px-3 py-2',
+        'border-border'
+      )}>
+        <h3 className={cn(textClasses['body-small'], 'font-semibold text-foreground')}>{title}</h3>
+        <p className={cn('mt-0.5', textClasses['label-small'], 'text-muted-foreground')}>{description || 'GRN Report'}</p>
       </div>
-      <div className='min-h-0 flex-1 overflow-visible p-3'>
-        <div className='flex h-full items-center space-x-2'>
+      <div className={cn('min-h-0 flex-1 overflow-visible', widgetSpacing.container)}>
+        <div className={cn('flex h-full items-center', spacingUtilities.gap.small)}>
           <div className='flex-1'>
             <Select
               value={selectedGrnRef}
@@ -561,25 +575,29 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
               <SelectTrigger
                 className={cn(
                   'h-9 w-full',
-                  'bg-gray-800/50 hover:bg-gray-700/50',
-                  'border border-gray-700 hover:border-gray-600',
-                  'text-white'
+                  'bg-background/50 hover:bg-background/70',
+                  'border border-input hover:border-input/80',
+                  'text-foreground',
+                  textClasses['body-small']
                 )}
               >
                 <SelectValue
                   placeholder={grnRefs.length === 0 ? 'Loading...' : 'Select GRN reference'}
                 />
               </SelectTrigger>
-              <SelectContent className='border-slate-700 bg-slate-900'>
+              <SelectContent className={cn('border-border bg-card')}>
                 {grnRefs.map(ref => (
-                  <SelectItem key={ref} value={ref} className='text-white hover:bg-slate-800'>
+                  <SelectItem key={ref} value={ref} className={cn(
+                    'text-foreground hover:bg-accent',
+                    textClasses['body-small']
+                  )}>
                     {ref}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             {grnRefs.length === 0 && (
-              <p className='mt-1 text-xs text-gray-500'>No GRN references found</p>
+              <p className={cn('mt-1', textClasses['label-small'], 'text-muted-foreground')}>No GRN references found</p>
             )}
           </div>
 
@@ -593,10 +611,11 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
                 disabled={!selectedGrnRef || isPrinting}
                 className={cn(
                   'h-9 gap-2 px-3',
-                  'bg-gray-800/50 hover:bg-gray-700/50',
-                  'border-gray-700 hover:border-gray-600',
-                  'text-gray-300 hover:text-white',
-                  'transition-all duration-200'
+                  'bg-background/50 hover:bg-background/70',
+                  'border-border hover:border-border/80',
+                  'text-muted-foreground hover:text-foreground',
+                  'transition-all duration-200',
+                  textClasses['body-small']
                 )}
               >
                 {isPrinting ? (
@@ -617,16 +636,17 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
                 'h-9 gap-2 px-4',
                 'bg-gradient-to-r',
                 downloadStatus === 'idle'
-                  ? 'from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500'
+                  ? getWidgetCategoryColor('reports', 'gradient')
                   : downloadStatus === 'downloading'
                     ? 'from-blue-600 to-cyan-600'
                     : downloadStatus === 'downloaded'
                       ? 'from-green-600 to-emerald-600'
                       : 'from-gray-600 to-gray-700',
-                'font-medium text-white',
+                'font-medium text-primary-foreground',
                 'transform transition-all duration-300',
                 downloadStatus === 'downloaded' && 'scale-95',
-                downloadStatus === 'complete' && 'scale-100'
+                downloadStatus === 'complete' && 'scale-100',
+                textClasses['body-small']
               )}
             >
               {downloadStatus === 'idle' ? (
@@ -656,7 +676,10 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
 
         {/* Performance indicator */}
         {performanceMetrics.optimized && performanceMetrics.lastFetchTime && (
-          <div className='mt-2 text-right text-[10px] text-green-400'>
+          <div className={cn(
+            'mt-2 text-right',
+            textClasses['label-small']
+          )} style={{ color: semanticColors.success.DEFAULT }}>
             ✓ Server-optimized ({performanceMetrics.lastFetchTime}ms)
           </div>
         )}

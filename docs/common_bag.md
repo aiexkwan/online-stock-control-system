@@ -20,6 +20,8 @@ Task 工具－同步平行執行任務
 headless：puppeteer MCP
 DATABASE 查詢：Supabase MCP
 Web 前端測試 : Playwright
+2025-07-14新增: Vitest
+2025-07-14新增: Storybook
 
 ## 系統登入
 系統登入email：.env.local.SYS_LOGIN
@@ -37,3 +39,8 @@ issue fixing記錄庫：docs\issue-library
 評核紀錄：docs\audit\{相關審查工作}.md
 issue fixing記錄：docs\issue-library\{問題類型}.md
 計劃文檔：docs\planning\{相關計劃}.md
+
+## 用戶
+預計：10-15人
+同時在線：4-5人
+運作時間：24/7

@@ -11,16 +11,7 @@ import { motion } from 'framer-motion';
 import { UniversalContainer } from '@/components/layout/universal';
 
 // Dynamic imports for widgets
-const ProductUpdateWidget = dynamic(
-  () => import('@/app/admin/components/dashboard/widgets/ProductUpdateWidget'),
-  {
-    loading: () => (
-      <div className='flex h-64 items-center justify-center'>
-        <div className='h-8 w-8 animate-spin rounded-full border-b-2 border-orange-500' />
-      </div>
-    ),
-  }
-);
+// V1 widget has been removed, now only V2 exists
 
 const ProductUpdateWidgetV2 = dynamic(
   () => import('@/app/admin/components/dashboard/widgets/ProductUpdateWidgetV2'),
@@ -42,41 +33,25 @@ export default function ProductUpdateDemoPage() {
           animate={{ opacity: 1, y: 0 }}
           className='mb-8'
         >
-          <h1 className='text-3xl font-bold text-white'>Product Update Widget Demo</h1>
+          <h1 className='text-3xl font-bold text-white'>Product Update Widget V2 Demo</h1>
           <p className='mt-2 text-gray-400'>
-            Comparing Server Actions vs GraphQL with fallback implementations
+            Showcasing GraphQL with Server Actions fallback implementation
           </p>
         </motion.div>
 
-        <div className='grid gap-8 lg:grid-cols-2'>
-          {/* Original Widget */}
+        <div className='grid gap-8'>
+          {/* Version Migration Notice */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className='rounded-lg bg-slate-800/50 p-6'
+            className='rounded-lg bg-blue-900/20 border border-blue-500/30 p-6'
           >
-            <h2 className='mb-4 text-xl font-semibold text-orange-400'>
-              Original - Server Actions Only
-            </h2>
-            <div className='rounded-lg bg-slate-900/50 p-4'>
-              <ProductUpdateWidget
-                widget={{
-                  id: 'demo-product-update-v1',
-                  gridX: 0,
-                  gridY: 0,
-                  gridWidth: 12,
-                  gridHeight: 8,
-                }}
-                isEditMode={false}
-              />
-            </div>
-            <div className='mt-4 space-y-2 text-sm text-gray-400'>
-              <p>✓ Direct Server Actions calls</p>
-              <p>✓ Simple implementation</p>
-              <p>✗ No GraphQL support</p>
-              <p>✗ No caching optimization</p>
-            </div>
+            <h3 className='text-lg font-semibold text-blue-400 mb-2'>Version Migration Complete</h3>
+            <p className='text-gray-400'>
+              The original V1 widget has been deprecated and removed as part of the Admin Widget Simplification Plan.
+              All functionality has been migrated to V2 with improved performance and features.
+            </p>
           </motion.div>
 
           {/* V2 Widget */}
@@ -84,7 +59,7 @@ export default function ProductUpdateDemoPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
-            className='rounded-lg bg-slate-800/50 p-6'
+            className='rounded-lg bg-slate-800/50 p-6 max-w-3xl mx-auto'
           >
             <h2 className='mb-4 text-xl font-semibold text-green-400'>
               V2 - GraphQL + Server Actions Fallback

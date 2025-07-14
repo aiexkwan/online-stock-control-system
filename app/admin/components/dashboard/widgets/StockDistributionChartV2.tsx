@@ -14,6 +14,15 @@ import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { useGraphQLFallback } from '@/app/admin/hooks/useGraphQLFallback';
 import { gql } from '@apollo/client';
 import { WidgetSkeleton, WidgetError } from './common/WidgetStates';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
+import { cn } from '@/lib/utils';
 
 // GraphQL query for stock distribution
 const GET_STOCK_DISTRIBUTION = gql`
@@ -137,11 +146,22 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
       .filter((item: any) => item.stock_level > 0)
       .sort((a: any, b: any) => b.stock_level - a.stock_level);
     
+    // Use design system colors for chart data
     const CHART_COLORS = [
+      widgetColors.charts.primary,
+      widgetColors.charts.secondary,
+      widgetColors.charts.accent,
+      semanticColors.success.DEFAULT,
+      semanticColors.warning.DEFAULT,
+      semanticColors.info.DEFAULT,
+      brandColors.primary,
+      brandColors.secondary,
+      brandColors.accent,
+      widgetColors.charts.grid,
+      // Fallback to additional colors if needed
       '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b',
       '#06b6d4', '#f97316', '#6366f1', '#84cc16', '#14b8a6',
       '#a855f7', '#eab308', '#059669', '#2563eb', '#7c3aed',
-      '#db2777', '#d97706', '#0891b2', '#ea580c', '#4f46e5',
     ];
     
     return sortedData.map((item: any, index: number) => ({
@@ -204,12 +224,21 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
             .filter(item => item.stock_level > 0)
             .sort((a, b) => b.stock_level - a.stock_level);
 
-          // 使用 RPC 返回的顏色方案
+          // Use design system colors for consistent styling
           const CHART_COLORS = [
+            widgetColors.charts.primary,
+            widgetColors.charts.secondary,
+            widgetColors.charts.accent,
+            semanticColors.success.DEFAULT,
+            semanticColors.warning.DEFAULT,
+            semanticColors.info.DEFAULT,
+            brandColors.primary,
+            brandColors.secondary,
+            brandColors.accent,
+            widgetColors.charts.grid,
+            // Fallback to additional colors if needed
             '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b',
             '#06b6d4', '#f97316', '#6366f1', '#84cc16', '#14b8a6',
-            '#a855f7', '#eab308', '#059669', '#2563eb', '#7c3aed',
-            '#db2777', '#d97706', '#0891b2', '#ea580c', '#4f46e5',
           ];
 
           // 生成 Treemap 數據
@@ -260,24 +289,27 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
     if (active && payload && payload[0]) {
       const data = payload[0].payload;
       return (
-        <div className='rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-lg'>
-          <p className='text-sm font-medium text-white'>{data.name}</p>
-          <p className='mt-1 text-xs text-gray-300'>
+        <div className={cn(
+          'rounded-lg border bg-card p-3 shadow-lg',
+          'border-border'
+        )}>
+          <p className={cn(textClasses['body-small'], 'font-medium text-foreground')}>{data.name}</p>
+          <p className={cn('mt-1', textClasses['label-small'], 'text-muted-foreground')}>
             Stock:{' '}
-            <span className='font-medium text-white'>{(data.value || 0).toLocaleString()}</span>
+            <span className='font-medium text-foreground'>{(data.value || 0).toLocaleString()}</span>
           </p>
-          <p className='text-xs text-gray-300'>
+          <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>
             Share:{' '}
-            <span className='font-medium text-white'>{(data.percentage || 0).toFixed(1)}%</span>
+            <span className='font-medium text-foreground'>{(data.percentage || 0).toFixed(1)}%</span>
           </p>
           {data.description && (
-            <p className='mt-1 text-xs text-gray-300'>
-              Description: <span className='text-white'>{data.description}</span>
+            <p className={cn('mt-1', textClasses['label-small'], 'text-muted-foreground')}>
+              Description: <span className='text-foreground'>{data.description}</span>
             </p>
           )}
           {data.type && (
-            <p className='text-xs text-gray-300'>
-              Type: <span className='text-white'>{data.type}</span>
+            <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>
+              Type: <span className='text-foreground'>{data.type}</span>
             </p>
           )}
         </div>
@@ -305,11 +337,11 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
       // 計算亮度
       const brightness = (r * 299 + g * 587 + b * 114) / 1000;
 
-      // 如果背景較暗，使用白色文字
-      return brightness < 128 ? '#ffffff' : '#1f2937';
+      // 如果背景較暗，使用設計系統的前景色；否則使用深色
+      return brightness < 128 ? 'hsl(var(--foreground))' : 'hsl(var(--foreground) / 0.8)';
     };
 
-    const textColor = props.fill ? getTextColor(props.fill) : '#1f2937';
+    const textColor = props.fill ? getTextColor(props.fill) : 'hsl(var(--foreground) / 0.8)';
 
     return (
       <g>
@@ -393,7 +425,7 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
     <div className='relative h-full w-full p-2'>
       {chartData.length === 0 ? (
         <div className='flex h-full items-center justify-center'>
-          <p className='text-gray-400'>No stock data available</p>
+          <p className={cn(textClasses['body-base'], 'text-muted-foreground')}>No stock data available</p>
         </div>
       ) : (
         <>
@@ -411,23 +443,26 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
 
           {/* Performance indicator */}
           {performanceMetrics.optimized && (
-            <div className='absolute bottom-2 right-2 rounded bg-slate-900/80 px-2 py-1 text-[10px]'>
+            <div className={cn(
+              'absolute bottom-2 right-2 rounded bg-card/80 border border-border px-2 py-1',
+              textClasses['label-small']
+            )}>
               {mode === 'context' && (
-                <span className='text-purple-400'>⚡ Context optimized</span>
+                <span className='text-primary'>⚡ Context optimized</span>
               )}
               {mode === 'graphql' && (
-                <span className='text-blue-400'>⚡ GraphQL optimized</span>
+                <span className='text-info'>⚡ GraphQL optimized</span>
               )}
               {mode === 'server-action' && (
-                <span className='text-green-400'>
+                <span className='text-success'>
                   ✓ Server-optimized ({performanceMetrics.lastFetchTime}ms)
                 </span>
               )}
               {mode === 'fallback' && (
-                <span className='text-yellow-400'>⚠ Fallback mode</span>
+                <span className='text-warning'>⚠ Fallback mode</span>
               )}
               {performanceMetrics.totalStock && (
-                <span className='ml-2 text-gray-400'>
+                <span className='ml-2 text-muted-foreground'>
                   Total: {performanceMetrics.totalStock.toLocaleString()}
                 </span>
               )}

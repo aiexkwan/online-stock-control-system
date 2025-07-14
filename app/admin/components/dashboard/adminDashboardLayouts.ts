@@ -384,7 +384,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         title: 'Product Update',
         gridArea: 'widget2',
         dataSource: 'products',
-        component: 'ProductUpdateWidget',
+        component: 'ProductUpdateWidgetV2',
       },
       {
         type: 'supplier-update',
@@ -557,30 +557,28 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
   analysis: {
     theme: 'analysis',
     gridTemplate: `
-      "widget1 widget1 widget1 widget2 widget2 widget2 widget3 widget3 widget3"
-      "widget1 widget1 widget1 widget2 widget2 widget2 widget3 widget3 widget3"
+      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
+      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
+      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
+      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
+      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
+      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
+      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
+      "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
     `,
     widgets: [
       {
-        type: 'stats',
-        title: 'Total Products',
+        type: 'history-tree',
+        title: '',
         gridArea: 'widget1',
-        dataSource: 'combined_stats', // 使用合併數據源
-        metrics: ['total_products'],
+        component: 'HistoryTree',
       },
       {
-        type: 'stats', 
-        title: 'Today Production',
+        type: 'analysis',
+        title: 'Analysis Dashboard',
         gridArea: 'widget2',
-        dataSource: 'combined_stats', // 使用合併數據源
-        metrics: ['today_production'],
-      },
-      {
-        type: 'stats',
-        title: 'Total Quantity',
-        gridArea: 'widget3', 
-        dataSource: 'combined_stats', // 使用合併數據源
-        metrics: ['total_quantity'],
+        component: 'AnalysisExpandableCards',
+        description: 'Comprehensive analysis charts and metrics',
       },
     ],
   },

@@ -32,6 +32,7 @@ A comprehensive stock control and management system built with Next.js 14, TypeS
 - **Quick Inventory Search**: Instant stock level queries
 - **Report Generation**: ACO, GRN, Transaction, Slate reports
 - **Data Export**: Comprehensive database export tools
+- **Universal Upload Widget**: Configurable upload system with plugins for folder selection, preview, and AI analysis
 
 #### **AI-Powered Features**
 - **PDF Order Analysis**: Automatic order data extraction
@@ -60,27 +61,23 @@ A comprehensive stock control and management system built with Next.js 14, TypeS
 ### Project Structure
 
 ```
-NewPennine/
+online-stock-control-system/
 ├── app/
+│   ├── admin/                  # Comprehensive admin panel with dashboard widgets
+│   │   └── components/dashboard/widgets/common/UniversalUploadWidget/ # New universal upload component
+│   ├── api/                    # API endpoints including AI analysis and reports
 │   ├── print-label/            # QC label printing system
 │   ├── print-grnlabel/         # GRN label printing
 │   ├── stock-transfer/         # Automated stock movement
-│   ├── admin/                  # Comprehensive admin panel
-│   ├── components/             # Shared components
-│   │   ├── qc-label-form/      # QC label components
-│   │   ├── admin-panel-menu/   # Admin dialog components
-│   │   └── print-label-pdf/    # PDF generation components
-│   ├── api/                    # API endpoints
-│   │   ├── analyze-order-pdf/  # AI PDF analysis
-│   │   ├── export-report/      # Report generation
-│   │   └── print-label-pdf/    # Label PDF generation
-│   └── hooks/                  # Business logic hooks
+│   └── ... (other routes)
 ├── components/
 │   ├── ui/                     # UI component library
-│   ├── qr-scanner/            # QR code scanning
-│   └── products/              # Product management
+│   ├── qr-scanner/             # QR code scanning
+│   └── ... 
 ├── docs/                      # Comprehensive documentation
-├── lib/                       # Utility libraries
+├── lib/                       # Utility libraries including widgets config
+├── supabase/                  # Supabase configurations and migrations
+├── tests/                     # Unit and integration tests
 └── public/                    # Static assets
 ```
 
@@ -184,6 +181,14 @@ The system uses PostgreSQL through Supabase with the following main tables:
 - Improved session management
 - Enhanced data validation
 - Better error logging and monitoring
+
+#### **Recent Updates**
+
+##### **Phase V1.2 Enhancements**
+- Implemented UniversalUploadWidget with plugin system for modular upload features
+- Added plugins: FolderSelector, Preview, AIAnalysis
+- Updated widget configurations for better modularity
+- Enhanced design system unification
 
 ### 📖 Documentation
 

@@ -21,6 +21,15 @@ import { useInViewport } from '@/app/admin/hooks/useInViewport';
 import { ChartContainer } from './common/charts/ChartContainer';
 import { LineChartSkeleton } from './common/charts/ChartSkeleton';
 import gql from 'graphql-tag';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
+import { cn } from '@/lib/utils';
 
 // GraphQL query for stock level snapshots from inventory table
 // 注意：這個查詢假設我們有一個方式追蹤庫存歷史快照
@@ -72,16 +81,16 @@ interface StockLevelHistoryChartProps extends WidgetComponentProps {
   useGraphQL?: boolean;
 }
 
-// 顏色調色板
+// 顏色調色板 - 使用設計系統顏色
 const LINE_COLORS = [
-  '#10b981', // emerald-500
-  '#3b82f6', // blue-500
-  '#f59e0b', // amber-500
-  '#8b5cf6', // violet-500
-  '#ef4444', // red-500
-  '#ec4899', // pink-500
-  '#06b6d4', // cyan-500
-  '#f97316', // orange-500
+  semanticColors.success.DEFAULT,
+  widgetColors.charts.primary,
+  semanticColors.warning.DEFAULT,
+  brandColors.primary,
+  semanticColors.destructive.DEFAULT,
+  widgetColors.charts.accent,
+  semanticColors.info.DEFAULT,
+  brandColors.secondary,
 ];
 
 export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
@@ -311,12 +320,15 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length > 0) {
       return (
-        <div className='rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-lg'>
-          <p className='mb-2 text-sm font-medium text-white'>{label}</p>
+        <div className={cn(
+          'rounded-lg border bg-card p-3 shadow-lg',
+          'border-border'
+        )}>
+          <p className={cn('mb-2', textClasses['body-small'], 'font-medium text-foreground')}>{label}</p>
           {payload.map((entry: any, index: number) => (
-            <p key={index} className='text-xs'>
+            <p key={index} className={cn(textClasses['label-small'], 'text-foreground')}>
               <span style={{ color: entry.color }}>{entry.name}:</span>
-              <span className='ml-2 font-medium text-white'>
+              <span className='ml-2 font-medium'>
                 {(entry.value || 0).toLocaleString()}
               </span>
             </p>
@@ -331,11 +343,14 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
   const renderLegend = (props: any) => {
     const { payload } = props;
     return (
-      <div className='mt-1 flex flex-wrap justify-center gap-2'>
+      <div className={cn(
+        'mt-1 flex flex-wrap justify-center',
+        spacingUtilities.gap.small
+      )}>
         {payload.map((entry: any, index: number) => (
-          <div key={`legend-${index}`} className='flex items-center gap-1'>
+          <div key={`legend-${index}`} className={cn('flex items-center', spacingUtilities.gap.small)}>
             <div className='h-2 w-2 rounded-full' style={{ backgroundColor: entry.color }} />
-            <span className='text-[10px] text-gray-400'>{entry.value}</span>
+            <span className={cn(textClasses['label-small'], 'text-muted-foreground')}>{entry.value}</span>
           </div>
         ))}
       </div>
@@ -373,12 +388,12 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
       >
       {chartData.length === 0 || productCodes.length === 0 ? (
         <div className='flex h-full items-center justify-center'>
-          <p className='text-center text-sm text-gray-400'>
+          <p className={cn('text-center', textClasses['body-small'], 'text-muted-foreground')}>
             Select a product type from the dropdown
             <br />
             to view stock level history
             <br />
-            <span className='text-xs'>(最多顯示10款產品)</span>
+            <span className={cn(textClasses['label-small'], 'text-muted-foreground')}>(最多顯示10款產品)</span>
           </p>
         </div>
       ) : (
@@ -386,12 +401,12 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
           <LineChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 35 }}>
             <CartesianGrid
               strokeDasharray='3 3'
-              stroke='rgba(100, 116, 139, 0.1)'
+              stroke={widgetColors.charts.grid}
               vertical={false}
             />
             <XAxis
               dataKey='time'
-              stroke='#64748b'
+              stroke={widgetColors.charts.axis}
               fontSize={9}
               tickLine={false}
               axisLine={false}
@@ -401,7 +416,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
               interval={Math.floor(chartData.length / 8)}
             />
             <YAxis
-              stroke='#64748b'
+              stroke={widgetColors.charts.axis}
               fontSize={10}
               tickLine={false}
               axisLine={false}

@@ -23,6 +23,14 @@ import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/
 import { exportAcoReport } from '@/lib/exportReport';
 import { cn } from '@/lib/utils';
 import { WidgetComponentProps } from '@/app/types/dashboard';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
 
 interface AcoProductData {
   product_code: string;
@@ -166,8 +174,8 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
   return (
     <Card
       className={cn(
-        'h-full bg-slate-900/50 backdrop-blur-xl',
-        'border border-slate-700/50',
+        'h-full bg-card/50 backdrop-blur-xl',
+        'border border-border',
         'shadow-[0_0_30px_rgba(0,0,0,0.3)]',
         'transition-all duration-300',
         'hover:shadow-[0_0_40px_rgba(0,0,0,0.4)]',
@@ -178,12 +186,12 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
         <div className='flex h-full flex-col'>
           {/* Title */}
           <div className='mb-3 flex items-center justify-between'>
-            <div className='flex items-center gap-2'>
-              <DocumentArrowDownIcon className='h-5 w-5 text-cyan-500' />
-              <h3 className='text-sm font-semibold text-white'>ACO Order Report</h3>
+            <div className={cn('flex items-center', spacingUtilities.gap.small)}>
+              <DocumentArrowDownIcon className='h-5 w-5' style={{ color: semanticColors.info.DEFAULT }} />
+              <h3 className={cn(textClasses['body-small'], 'font-semibold text-foreground')}>ACO Order Report</h3>
             </div>
             {performanceMetrics.apiResponseTime && (
-              <span className='text-xs text-slate-400'>
+              <span className={cn(textClasses['label-small'], 'text-muted-foreground')}>
                 {performanceMetrics.apiResponseTime}ms
                 {performanceMetrics.optimized && ' (optimized)'}
               </span>
@@ -205,7 +213,11 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
                 >
                   <SelectTrigger
                     id='aco-order'
-                    className='h-9 w-full border-slate-600 bg-slate-800 text-sm text-white'
+                    className={cn(
+                      'h-9 w-full border-input bg-background',
+                      textClasses['body-small'],
+                      'text-foreground'
+                    )}
                   >
                     <SelectValue
                       placeholder={
@@ -217,12 +229,15 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
                       }
                     />
                   </SelectTrigger>
-                  <SelectContent className='border-slate-600 bg-slate-800'>
+                  <SelectContent className={cn('border-border bg-card')}>
                     {acoOrders.map(order => (
                       <SelectItem
                         key={order}
                         value={order}
-                        className='text-sm text-white hover:bg-slate-700'
+                        className={cn(
+                          textClasses['body-small'],
+                          'text-foreground hover:bg-accent'
+                        )}
                       >
                         {order}
                       </SelectItem>
@@ -243,11 +258,12 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
                 }
                 className={cn(
                   'h-9 px-3',
-                  'bg-cyan-600 hover:bg-cyan-700',
-                  'text-sm font-medium text-white',
+                  getWidgetCategoryColor('reports', 'gradient'),
+                  textClasses['body-small'],
+                  'font-medium text-primary-foreground',
                   'border-0',
                   'transition-all duration-200',
-                  'disabled:bg-slate-700 disabled:text-slate-400'
+                  'disabled:bg-muted disabled:text-muted-foreground'
                 )}
               >
                 {isGenerating ? (
@@ -264,12 +280,15 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
 
           {/* Helper Text */}
           {acoOrders.length === 0 && !loading && (
-            <p className='mt-2 text-xs text-slate-500'>No ACO order data available</p>
+            <p className={cn('mt-2', textClasses['label-small'], 'text-muted-foreground')}>No ACO order data available</p>
           )}
 
           {/* Performance indicator */}
           {performanceMetrics.optimized && (
-            <div className='mt-2 text-center text-[10px] text-green-400'>
+            <div className={cn(
+              'mt-2 text-center',
+              textClasses['label-small']
+            )} style={{ color: semanticColors.success.DEFAULT }}>
               ✓ Server-side optimized
             </div>
           )}

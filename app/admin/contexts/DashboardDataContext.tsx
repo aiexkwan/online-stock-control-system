@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useMemo, useCallback, useState, useEffect, useRef } from 'react';
-import { useDashboardBatchQuery } from '@/app/admin/hooks/useDashboardBatchQuery';
+import { useDashboardConcurrentQuery } from '@/app/admin/hooks/useDashboardConcurrentQuery';
 import type { 
   DashboardBatchQueryData, 
   DashboardBatchQueryError,
@@ -57,11 +57,10 @@ export function DashboardDataProvider({
   const [isRefetching, setIsRefetching] = useState(false);
   const [hybridData, setHybridData] = useState<DashboardBatchQueryData | null>(prefetchedData);
   
-  // 穩定化 options 對象以避免不必要嘅重新渲染
+  // 簡化 options 對象
   const stableOptions = useMemo(() => ({
     dateRange,
-    // 在 SSR 模式下，如果有預取數據，則禁用初始查詢
-    enabled: ssrMode ? !prefetchedData : true
+    enabled: !ssrMode || !prefetchedData
   }), [dateRange, ssrMode, prefetchedData]);
 
   const {
@@ -70,19 +69,11 @@ export function DashboardDataProvider({
     error,
     refetch: queryRefetch,
     refetchWidget: queryRefetchWidget
-  } = useDashboardBatchQuery(stableOptions);
+  } = useDashboardConcurrentQuery(stableOptions);
 
-  // 合併數據：優先使用客戶端數據，fallback 到預取數據
+  // 簡化數據合併邏輯
   const data = useMemo(() => {
-    if (queryData) {
-      // 客戶端查詢成功，合併預取數據和查詢數據
-      return {
-        ...hybridData,
-        ...queryData,
-      };
-    }
-    // 如果客戶端查詢還沒完成，使用預取數據
-    return hybridData;
+    return queryData || hybridData;
   }, [queryData, hybridData]);
 
   // 更新 hybridData 當預取數據改變
@@ -92,11 +83,10 @@ export function DashboardDataProvider({
     }
   }, [prefetchedData, queryData]);
 
-  // 合併 loading 狀態：SSR 模式下，如果有預取數據，則不顯示 loading
+  // 簡化 loading 狀態
   const loading = useMemo(() => {
-    if (ssrMode && prefetchedData) {
-      // SSR 模式且有預取數據，只在 refetching 時顯示 loading
-      return isRefetching;
+    if (ssrMode && prefetchedData && !isRefetching) {
+      return false;
     }
     return queryLoading || isRefetching;
   }, [ssrMode, prefetchedData, queryLoading, isRefetching]);
@@ -121,35 +111,7 @@ export function DashboardDataProvider({
     }
   }, [queryRefetchWidget]);
 
-  // 檢查是否為測試環境
-  const isTestMode = useMemo(() => {
-    return (
-      (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') ||
-      (typeof window !== 'undefined' && window.location.search.includes('testMode=true')) ||
-      (typeof window !== 'undefined' && window.localStorage?.getItem('testMode') === 'true') ||
-      (typeof navigator !== 'undefined' && navigator.userAgent.includes('HeadlessChrome'))
-    );
-  }, []);
-
-  // 自動刷新 - DISABLED for API call optimization
-  useEffect(() => {
-    if (isTestMode) {
-      console.log('[DEBUG] Auto-refresh disabled in test mode');
-      return;
-    }
-    
-    // DISABLED: Preventing excessive API calls
-    console.log('[DEBUG] Auto-refresh disabled to prevent excessive API calls');
-    return;
-    
-    if (!autoRefreshInterval || autoRefreshInterval <= 0) return;
-
-    const interval = setInterval(() => {
-      refetch();
-    }, autoRefreshInterval);
-
-    return () => clearInterval(interval);
-  }, [autoRefreshInterval, refetch, isTestMode]);
+  // 移除自動刷新功能以簡化系統和減少 API 調用
 
   // 工具方法：獲取特定 widget 數據
   const getWidgetData = useCallback(<T = any>(widgetId: string): T | null => {
@@ -181,39 +143,29 @@ export function DashboardDataProvider({
     return null;
   }, [error]);
 
-  // 當日期範圍改變時自動重新獲取數據 - 修復循環依賴問題
-  const hasValidDateRange = useMemo(() => 
-    Boolean(dateRange.startDate || dateRange.endDate), 
-    [dateRange.startDate?.getTime(), dateRange.endDate?.getTime()]
-  );
-
-  const shouldSkipAutoRefetch = useMemo(() => 
-    ssrMode && prefetchedData && !queryData, 
-    [ssrMode, !!prefetchedData, !!queryData]
-  );
-
+  // 簡化日期範圍改變處理
   useEffect(() => {
-    // 添加初始加載狀態檢查，防止無限循環
-    if (shouldSkipAutoRefetch || !hasValidDateRange) {
+    if (ssrMode && prefetchedData && !queryData) {
       return;
     }
     
-    // 添加防抖機制，避免快速連續的 refetch
+    if (!dateRange.startDate && !dateRange.endDate) {
+      return;
+    }
+    
     const timeoutId = setTimeout(() => {
-      console.log('[DEBUG] Date range changed, triggering refetch:', {
-        startDate: dateRange.startDate?.toISOString(),
-        endDate: dateRange.endDate?.toISOString()
-      });
+      console.log('[DEBUG] Date range changed, triggering refetch');
       refetch();
-    }, 100); // 100ms 防抖
+    }, 300); // 300ms 防抖
     
     return () => clearTimeout(timeoutId);
   }, [
     dateRange.startDate?.getTime(), 
     dateRange.endDate?.getTime(), 
-    shouldSkipAutoRefetch,
-    hasValidDateRange
-  ]); // 移除直接的 queryData 依賴，使用派生狀態
+    ssrMode,
+    prefetchedData,
+    queryData
+  ]);
 
   const contextValue = useMemo<DashboardDataContextValue>(() => ({
     data,

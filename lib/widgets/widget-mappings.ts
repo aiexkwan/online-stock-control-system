@@ -36,7 +36,6 @@ const categoryMap: WidgetMapping['categoryMap'] = {
 
   // Operations widgets
   VoidPalletWidget: 'operations',
-  ProductUpdateWidget: 'operations',
   ProductUpdateWidgetV2: 'operations',
   SupplierUpdateWidgetV2: 'operations',
   ReprintLabelWidget: 'operations',
@@ -106,7 +105,6 @@ const preloadPriorityMap: WidgetMapping['preloadPriorityMap'] = {
   TopProductsDistributionWidget: 7,
 
   // 操作類組件 - 中優先級
-  ProductUpdateWidget: 6,
   ProductUpdateWidgetV2: 6,
   SupplierUpdateWidgetV2: 6,
   VoidPalletWidget: 6,
@@ -155,7 +153,7 @@ export const routePreloadMap: Record<string, string[]> = {
     'OrdersListWidgetV2',
     'OtherFilesListWidgetV2',
   ],
-  '/admin/update': ['ProductUpdateWidget', 'SupplierUpdateWidgetV2', 'VoidPalletWidget'],
+  '/admin/update': ['ProductUpdateWidgetV2', 'SupplierUpdateWidgetV2', 'VoidPalletWidget'],
   '/admin/stock-management': [
     'StockDistributionChartV2',
     'StockLevelHistoryChart',

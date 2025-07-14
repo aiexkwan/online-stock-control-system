@@ -1,3 +1,6 @@
 - Ultrathink, Sequential-thinking, Task 工具(同步平行執行任務)
 - Read docs/common_bag.md
 - 執行 已建立的todolist下一步（如todolist 為空，先詢問）
+- 每次更新後都必須使用playwright等可使用的測試工具驗證有效
+- 系統登入方或可查看 docs/common_bag.md 內的 登入email及password
+- 完成後更新相關進度文檔

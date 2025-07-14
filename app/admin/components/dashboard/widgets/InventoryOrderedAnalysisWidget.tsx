@@ -32,6 +32,15 @@ import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/us
 import { useInViewport, InViewportPresets } from '@/app/admin/hooks/useInViewport';
 import { GET_INVENTORY_ORDERED_ANALYSIS_WIDGET } from '@/lib/graphql/queries/stock/inventoryOrderedAnalysis';
 import { Skeleton } from '@/components/ui/skeleton';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
+import { cn } from '@/lib/utils';
 
 interface ProductAnalysis {
   productCode: string;
@@ -65,11 +74,11 @@ interface InventoryOrderedAnalysisWidgetProps extends WidgetComponentProps {
   useGraphQL?: boolean;
 }
 
-// 顏色配置
+// 顏色配置 - 使用設計系統顏色
 const STATUS_COLORS = {
-  sufficient: '#10b981', // emerald-500 - 庫存充足
-  warning: '#f59e0b', // amber-500 - 庫存警告
-  insufficient: '#ef4444', // red-500 - 庫存不足
+  sufficient: semanticColors.success.DEFAULT,
+  warning: semanticColors.warning.DEFAULT,
+  insufficient: semanticColors.destructive.DEFAULT,
 };
 
 export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWidgetProps> = ({
@@ -313,11 +322,11 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
   // Render skeleton while loading or not in viewport
   if (finalLoading || !hasBeenInViewport) {
     return (
-      <Card ref={containerRef} className='h-full bg-slate-800/50 border-slate-700'>
+      <Card ref={containerRef} className={cn('h-full bg-card/50 border-border')}>
         <CardHeader className='pb-3'>
           <div className='flex items-center justify-between'>
-            <div className='flex items-center gap-2'>
-              <Package className='h-5 w-5 text-gray-400' />
+            <div className={cn('flex items-center', spacingUtilities.gap.small)}>
+              <Package className='h-5 w-5 text-muted-foreground' />
               <Skeleton className='h-6 w-48' />
             </div>
           </div>
@@ -341,7 +350,7 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
 
   if (!finalAnalysisData || !finalAnalysisData.products) {
     return (
-      <Card ref={containerRef} className='h-full bg-slate-800/50 border-slate-700'>
+      <Card ref={containerRef} className={cn('h-full bg-card/50 border-border')}>
         <CardHeader className='pb-3'>
           <div className='flex items-center justify-between'>
             <CardTitle className='flex items-center gap-2 text-lg'>
@@ -362,7 +371,7 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
         </CardHeader>
         <CardContent>
           <div className='flex h-32 items-center justify-center'>
-            <p className='text-gray-400'>No inventory data available</p>
+            <p className={cn(textClasses['body-base'], 'text-muted-foreground')}>No inventory data available</p>
           </div>
         </CardContent>
       </Card>
@@ -372,26 +381,26 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
   const { products, summary } = finalAnalysisData;
 
   return (
-    <Card ref={containerRef} className='h-full bg-slate-800/50 border-slate-700'>
+    <Card ref={containerRef} className={cn('h-full bg-card/50 border-border')}>
       <CardHeader className='pb-3'>
         <div className='flex items-center justify-between'>
-          <CardTitle className='flex items-center gap-2 text-lg'>
-            <Package className='h-5 w-5' />
+          <CardTitle className={cn('flex items-center text-lg', spacingUtilities.gap.small, textClasses['heading-base'])}>
+            <Package className='h-5 w-5 text-foreground' />
             Inventory Ordered Analysis
           </CardTitle>
           <div className='flex items-center gap-2'>
             {mode === 'graphql' && (
-              <span className='text-xs text-blue-400'>
+              <span className={cn(textClasses['label-small'])} style={{ color: semanticColors.info.DEFAULT }}>
                 ⚡ GraphQL
               </span>
             )}
             {mode === 'server-action' && (
-              <span className='text-xs text-amber-400'>
+              <span className={cn(textClasses['label-small'])} style={{ color: semanticColors.warning.DEFAULT }}>
                 🔄 Fallback
               </span>
             )}
             {performanceMetrics && (
-              <span className='text-xs text-gray-400'>
+              <span className={cn(textClasses['label-small'], 'text-muted-foreground')}>
                 {performanceMetrics.queryTime}ms
               </span>
             )}
@@ -405,38 +414,40 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`rounded-lg border p-4 ${
+          className={cn(
+            'rounded-lg border p-4',
             summary.overallSufficient
-              ? 'border-emerald-700 bg-emerald-900/20'
-              : 'border-red-700 bg-red-900/20'
-          }`}
+              ? 'border-success/30 bg-success/10'
+              : 'border-destructive/30 bg-destructive/10'
+          )}
         >
           <div className='flex items-center gap-2'>
             {summary.overallSufficient ? (
-              <CheckCircle className='h-5 w-5 text-emerald-500' />
+              <CheckCircle className='h-5 w-5' style={{ color: semanticColors.success.DEFAULT }} />
             ) : (
-              <AlertCircle className='h-5 w-5 text-red-500' />
+              <AlertCircle className='h-5 w-5' style={{ color: semanticColors.destructive.DEFAULT }} />
             )}
-            <span className='text-sm font-medium text-white'>
+            <span className={cn(textClasses['body-small'], 'font-medium text-foreground')}>
               {summary.overallSufficient ? 'Stock Sufficient' : 'Stock Insufficient'}
             </span>
           </div>
 
           <div className='mt-3 grid grid-cols-3 gap-3'>
             <div className='text-center'>
-              <p className='text-xs text-gray-400'>Total Stock</p>
-              <p className='text-lg font-bold text-white'>{summary.totalStock.toLocaleString()}</p>
+              <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Total Stock</p>
+              <p className={cn(textClasses['heading-base'], 'font-bold text-foreground')}>{summary.totalStock.toLocaleString()}</p>
             </div>
             <div className='text-center'>
-              <p className='text-xs text-gray-400'>Order Demand</p>
-              <p className='text-lg font-bold text-amber-400'>
+              <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Order Demand</p>
+              <p className={cn(textClasses['heading-base'], 'font-bold')} style={{ color: semanticColors.warning.DEFAULT }}>
                 {summary.totalDemand.toLocaleString()}
               </p>
             </div>
             <div className='text-center'>
-              <p className='text-xs text-gray-400'>Remaining Stock</p>
+              <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Remaining Stock</p>
               <p
-                className={`text-lg font-bold ${summary.totalRemaining >= 0 ? 'text-emerald-400' : 'text-red-400'}`}
+                className={cn(textClasses['heading-base'], 'font-bold')}
+                style={{ color: summary.totalRemaining >= 0 ? semanticColors.success.DEFAULT : semanticColors.destructive.DEFAULT }}
               >
                 {summary.totalRemaining.toLocaleString()}
               </p>
@@ -445,7 +456,7 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
 
           {/* 總體滿足率進度條 */}
           <div className='mt-3'>
-            <div className='mb-1 flex justify-between text-xs text-gray-400'>
+            <div className={cn('mb-1 flex justify-between', textClasses['label-small'], 'text-muted-foreground')}>
               <span>Order Fulfillment Rate</span>
               <span>
                 {summary.totalDemand > 0
@@ -466,12 +477,12 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
           {/* Products summary */}
           <div className='mt-3 grid grid-cols-2 gap-3'>
             <div className='text-center'>
-              <p className='text-xs text-gray-400'>Sufficient Products</p>
-              <p className='text-sm font-bold text-emerald-400'>{summary.sufficientCount}</p>
+              <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Sufficient Products</p>
+              <p className={cn(textClasses['body-small'], 'font-bold')} style={{ color: semanticColors.success.DEFAULT }}>{summary.sufficientCount}</p>
             </div>
             <div className='text-center'>
-              <p className='text-xs text-gray-400'>Insufficient Products</p>
-              <p className='text-sm font-bold text-red-400'>{summary.insufficientCount}</p>
+              <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Insufficient Products</p>
+              <p className={cn(textClasses['body-small'], 'font-bold')} style={{ color: semanticColors.destructive.DEFAULT }}>{summary.insufficientCount}</p>
             </div>
           </div>
         </motion.div>
@@ -487,31 +498,35 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className='rounded-lg border border-slate-700 bg-slate-800/50 p-3 transition-colors hover:border-slate-600'
+                className={cn(
+                  'rounded-lg border bg-card/50 p-3 transition-colors',
+                  'border-border hover:border-border/80'
+                )}
               >
                 <div className='mb-2 flex items-center justify-between'>
                   <div className='flex-1'>
-                    <p className='text-sm font-medium text-white'>{product.productCode}</p>
-                    <p className='truncate text-xs text-gray-400'>{product.description}</p>
+                    <p className={cn(textClasses['body-small'], 'font-medium text-foreground')}>{product.productCode}</p>
+                    <p className={cn('truncate', textClasses['label-small'], 'text-muted-foreground')}>{product.description}</p>
                   </div>
                   {!product.isSufficient && (
-                    <AlertTriangle className='ml-2 h-4 w-4 text-amber-500' />
+                    <AlertTriangle className='ml-2 h-4 w-4' style={{ color: semanticColors.warning.DEFAULT }} />
                   )}
                 </div>
 
-                <div className='grid grid-cols-3 gap-2 text-xs'>
+                <div className={cn('grid grid-cols-3 gap-2', textClasses['label-small'])}>
                   <div>
-                    <span className='text-gray-400'>Stock:</span>
-                    <span className='ml-1 text-white'>{product.currentStock}</span>
+                    <span className='text-muted-foreground'>Stock:</span>
+                    <span className='ml-1 text-foreground'>{product.currentStock}</span>
                   </div>
                   <div>
-                    <span className='text-gray-400'>Demand:</span>
-                    <span className='ml-1 text-amber-400'>{product.orderDemand}</span>
+                    <span className='text-muted-foreground'>Demand:</span>
+                    <span className='ml-1' style={{ color: semanticColors.warning.DEFAULT }}>{product.orderDemand}</span>
                   </div>
                   <div>
-                    <span className='text-gray-400'>Remain:</span>
+                    <span className='text-muted-foreground'>Remain:</span>
                     <span
-                      className={`ml-1 ${product.remainingStock >= 0 ? 'text-emerald-400' : 'text-red-400'}`}
+                      className='ml-1'
+                      style={{ color: product.remainingStock >= 0 ? semanticColors.success.DEFAULT : semanticColors.destructive.DEFAULT }}
                     >
                       {product.remainingStock}
                     </span>
@@ -521,8 +536,8 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
                 {/* 滿足率進度條 */}
                 <div className='mt-2'>
                   <div className='mb-1 flex items-center justify-between'>
-                    <span className='text-[10px] text-gray-400'>Fulfillment</span>
-                    <span className='text-[10px] text-gray-400'>
+                    <span className={cn(textClasses['label-small'], 'text-muted-foreground')}>Fulfillment</span>
+                    <span className={cn(textClasses['label-small'], 'text-muted-foreground')}>
                       {product.fulfillmentRate.toFixed(1)}%
                     </span>
                   </div>
@@ -532,18 +547,18 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
             ))
           ) : (
             <div className='flex h-full items-center justify-center'>
-              <p className='text-gray-400'>No products with active orders</p>
+              <p className={cn(textClasses['body-base'], 'text-muted-foreground')}>No products with active orders</p>
             </div>
           )}
         </div>
 
         {products.length > 0 && (
-          <div className='mt-3 border-t border-slate-700 pt-3'>
-            <p className='text-center text-xs text-gray-400'>
+          <div className={cn('mt-3 border-t pt-3', 'border-border')}>
+            <p className={cn('text-center', textClasses['label-small'], 'text-muted-foreground')}>
               Total: {products.length} products analyzed
             </p>
             {queryTime && (
-              <p className='mt-1 text-center text-xs text-gray-500'>Query time: {queryTime}</p>
+              <p className={cn('mt-1 text-center', textClasses['label-small'], 'text-muted-foreground')}>Query time: {queryTime}</p>
             )}
           </div>
         )}

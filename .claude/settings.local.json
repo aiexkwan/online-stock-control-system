@@ -152,7 +152,9 @@
       "Bash(timeout 30s npm run test:e2e:debug -- --grep \"simple login\")",
       "Bash(timeout:*)",
       "Bash(./test-api-simple.sh:*)",
-      "Bash(PLAYWRIGHT_TEST=true npm run test:e2e)"
+      "Bash(PLAYWRIGHT_TEST=true npm run test:e2e)",
+      "Bash(claude --version)",
+      "Bash(claude config get installation-method)"
     ],
     "deny": []
   }

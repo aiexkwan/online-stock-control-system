@@ -72,10 +72,14 @@ jest.mock('../../hooks/useWidgetErrorHandler', () => ({
   })),
 }));
 
-jest.mock('@/lib/widgets/performance-monitor', () => ({
-  performanceMonitor: {
-    recordMetrics: jest.fn(),
+jest.mock('@/lib/performance/SimplePerformanceMonitor', () => ({
+  simplePerformanceMonitor: {
+    recordMetric: jest.fn(),
+    getBasicStats: jest.fn(() => null),
+    getSummary: jest.fn(() => ({ totalMetrics: 0, activeCategories: [], recentAlerts: 0, memoryUsage: 0 })),
+    getAlerts: jest.fn(() => []),
   },
+  recordMetric: jest.fn(),
 }));
 
 jest.mock('../../contexts/DashboardDataContext', () => {
@@ -90,7 +94,7 @@ import { useQuery, gql } from '@apollo/client';
 import { useGraphQLFallback, GraphQLFallbackPresets } from '../useGraphQLFallback';
 import { DashboardDataContext } from '../../contexts/DashboardDataContext';
 import { useWidgetErrorHandler } from '../../hooks/useWidgetErrorHandler';
-import { performanceMonitor } from '@/lib/widgets/performance-monitor';
+import { simplePerformanceMonitor } from '@/lib/performance/SimplePerformanceMonitor';
 
 const ApolloError = jest.requireMock('@apollo/client').ApolloError;
 
@@ -126,7 +130,7 @@ describe('useGraphQLFallback', () => {
       handleFetchError: mockHandleFetchError,
     });
     
-    (performanceMonitor.recordMetrics as jest.Mock) = mockRecordMetric;
+    (simplePerformanceMonitor.recordMetric as jest.Mock) = mockRecordMetric;
     
     (useQuery as jest.Mock).mockReturnValue({
       data: undefined,
@@ -390,16 +394,11 @@ describe('useGraphQLFallback', () => {
         expect(result.current.performanceMetrics?.fallbackUsed).toBe(false);
       });
 
-      expect(mockRecordMetric).toHaveBeenCalledWith({
-        widgetId: 'test-widget',
-        timestamp: expect.any(Number),
-        loadTime: expect.any(Number),
-        renderTime: 0,
-        dataFetchTime: expect.any(Number),
-        route: expect.any(String),
-        variant: 'v2',
-        sessionId: expect.any(String),
-      });
+      expect(mockRecordMetric).toHaveBeenCalledWith(
+        expect.stringContaining('test-widget'),
+        expect.any(Number),
+        'performance'
+      );
     });
   });
 
@@ -629,11 +628,9 @@ describe('useGraphQLFallback', () => {
 
       await waitFor(() => {
         expect(mockRecordMetric).toHaveBeenCalledWith(
-          expect.objectContaining({
-            metadata: expect.objectContaining({
-              variables: JSON.stringify(variables),
-            }),
-          })
+          expect.stringContaining('test-widget'),
+          expect.any(Number),
+          'performance'
         );
       });
     });

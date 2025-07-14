@@ -99,7 +99,7 @@ export default function AuthChecker({ children }: AuthCheckerProps) {
     return (
       <div className='flex min-h-screen items-center justify-center bg-[#181c2f]'>
         <div className='animate-pulse text-lg text-white'>
-          {loading ? 'Loading...' : 'Checking authentication...'}
+          Loading...
         </div>
       </div>
     );

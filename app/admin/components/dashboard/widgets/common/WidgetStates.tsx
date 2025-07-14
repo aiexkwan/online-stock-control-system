@@ -704,6 +704,102 @@ export const WidgetStateWrapper = React.memo(function WidgetStateWrapper({
 });
 
 // ================================
+// Unified Suspense Fallback Component
+// ================================
+
+export interface WidgetSuspenseFallbackProps {
+  /** Type of widget being loaded */
+  type?: 'default' | 'stats' | 'chart' | 'table' | 'list';
+  /** Additional CSS classes */
+  className?: string;
+  /** Height for the fallback */
+  height?: string;
+}
+
+/**
+ * WidgetSuspenseFallback - 統一的 Suspense fallback 組件
+ * 提供一致的 loading 狀態，減少重複代碼
+ */
+export const WidgetSuspenseFallback = React.memo(function WidgetSuspenseFallback({
+  type = 'default',
+  className,
+  height = 'h-full'
+}: WidgetSuspenseFallbackProps) {
+  const baseClasses = `${height} w-full animate-pulse bg-slate-800/50 rounded-lg flex items-center justify-center`;
+  
+  // Stats widget fallback
+  if (type === 'stats') {
+    return (
+      <div className={`${baseClasses} ${className || ''}`}>
+        <div className="p-4 space-y-3 w-full">
+          <div className="h-4 w-24 bg-slate-700/60 rounded"></div>
+          <div className="h-8 w-32 bg-slate-700/60 rounded"></div>
+          <div className="h-3 w-20 bg-slate-700/40 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Chart widget fallback
+  if (type === 'chart') {
+    return (
+      <div className={`${baseClasses} ${className || ''}`}>
+        <div className="p-4 space-y-3 w-full">
+          <div className="h-4 w-32 bg-slate-700/60 rounded mb-4"></div>
+          <div className="h-32 w-full bg-slate-700/40 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Table widget fallback
+  if (type === 'table') {
+    return (
+      <div className={`${baseClasses} ${className || ''}`}>
+        <div className="p-4 space-y-2 w-full">
+          <div className="h-4 w-32 bg-slate-700/60 rounded mb-3"></div>
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-6 w-full bg-slate-700/40 rounded"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  
+  // List widget fallback
+  if (type === 'list') {
+    return (
+      <div className={`${baseClasses} ${className || ''}`}>
+        <div className="p-4 space-y-3 w-full">
+          <div className="h-4 w-32 bg-slate-700/60 rounded mb-3"></div>
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="h-8 w-8 bg-slate-700/60 rounded"></div>
+              <div className="flex-1 space-y-1">
+                <div className="h-4 w-3/4 bg-slate-700/40 rounded"></div>
+                <div className="h-3 w-1/2 bg-slate-700/30 rounded"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  
+  // Default fallback
+  return (
+    <div className={`${baseClasses} ${className || ''}`}>
+      <div className="flex items-center justify-center">
+        <div className="relative">
+          <div className="h-8 w-8 rounded-full border-2 border-slate-700" />
+          <div className="absolute inset-0 h-8 w-8 animate-spin rounded-full border-2 border-transparent border-t-slate-400" />
+        </div>
+      </div>
+    </div>
+  );
+});
+
+// ================================
 // Export all components
 // ================================
 
@@ -713,6 +809,7 @@ const WidgetStates = {
   Empty: WidgetEmpty,
   LoadingOverlay: WidgetLoadingOverlay,
   StateWrapper: WidgetStateWrapper,
+  SuspenseFallback: WidgetSuspenseFallback,
 };
 
 export default WidgetStates;

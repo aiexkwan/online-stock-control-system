@@ -528,20 +528,6 @@ export const widgetConfig: WidgetConfigMap = {
     refreshInterval: 300000,
   },
   
-  ProductUpdate: {
-    id: 'ProductUpdate',
-    name: 'Product Update (Legacy)',
-    category: 'operations',
-    description: 'Legacy product update interface',
-    loader: () => import('@/app/admin/components/dashboard/widgets/ProductUpdateWidget'),
-    dataSource: 'server-action',
-    priority: 'low',
-    metadata: {
-      deprecated: true,
-      preferredVersion: 'ProductUpdateV2',
-    },
-  },
-  
   UploadOrders: {
     id: 'UploadOrders',
     name: 'Upload Orders (Legacy)',

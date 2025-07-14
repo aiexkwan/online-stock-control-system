@@ -16,6 +16,13 @@ import { MetricCard } from '@/app/admin/components/dashboard/widgets/common/data
 import { TrendingUp, TrendingDown, Package, AlertCircle, LucideIcon } from 'lucide-react';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useWidgetData } from '@/app/admin/contexts/DashboardDataContext';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { cn } from '@/lib/utils';
 
 interface StatsData {
   value: number | string;
@@ -71,13 +78,13 @@ const StatsCardWidget = React.memo(function StatsCardWidget({
   const getIconColor = (): string => {
     switch (widget.config.icon) {
       case 'trending-up':
-        return 'from-green-500 to-emerald-500';
+        return getWidgetCategoryColor('stats', 'success');
       case 'trending-down':
-        return 'from-red-500 to-rose-500';
+        return getWidgetCategoryColor('stats', 'destructive');
       case 'alert':
-        return 'from-yellow-500 to-amber-500';
+        return getWidgetCategoryColor('stats', 'warning');
       default:
-        return 'from-blue-500 to-cyan-500';
+        return getWidgetCategoryColor('stats', 'primary');
     }
   };
 
@@ -97,9 +104,12 @@ const StatsCardWidget = React.memo(function StatsCardWidget({
       label={data.label}
       icon={getIcon()}
       iconColor={getIconColor()}
-      gradientFrom="from-blue-300"
-      gradientTo="to-cyan-300"
-      className={`h-full ${isEditMode ? 'border-2 border-dashed border-blue-500/50' : ''}`}
+      gradientFrom={getWidgetCategoryColor('stats', 'gradient')}
+      gradientTo={getWidgetCategoryColor('stats', 'accent')}
+      className={cn(
+        'h-full',
+        isEditMode && 'border-2 border-dashed border-primary/50'
+      )}
       trend={getTrend()}
       trendValue={data.trend !== undefined ? `${data.trend > 0 ? '+' : ''}${data.trend}%` : undefined}
       trendLabel={data.trend !== undefined ? 'from last period' : undefined}

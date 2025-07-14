@@ -17,6 +17,14 @@ import { getTransactionReportData } from '@/app/actions/reportActions';
 import { type DateRange } from 'react-day-picker';
 import { Calendar } from '@/components/ui/calendar';
 import { useReportPrinting } from '@/app/admin/hooks/useReportPrinting';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
 
 interface TransactionReportWidgetProps {
   title: string;
@@ -48,17 +56,10 @@ export const TransactionReportWidget = function TransactionReportWidget({
   const { printReport, downloadReport, isPrinting, isServiceAvailable } = useReportPrinting({
     reportType: 'transaction',
     onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'Report processed successfully',
-      });
+      showSuccess('Report processed successfully');
     },
     onError: error => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
+      showError(error.message);
     },
   });
 
@@ -78,11 +79,7 @@ export const TransactionReportWidget = function TransactionReportWidget({
 
     // Validate dates
     if (!dateRange?.from) {
-      toast({
-        title: 'Invalid Date Range',
-        description: 'Please select a date range',
-        variant: 'destructive',
-      });
+      showError('Please select a date range');
       return;
     }
 
@@ -143,11 +140,7 @@ export const TransactionReportWidget = function TransactionReportWidget({
       setDownloadStatus('idle');
       setProgress(0);
 
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to generate report',
-        variant: 'destructive',
-      });
+      showError(error instanceof Error ? error.message : 'Failed to generate report');
     }
   };
 
@@ -166,10 +159,18 @@ export const TransactionReportWidget = function TransactionReportWidget({
   };
 
   return (
-    <div className='flex h-full w-full flex-col overflow-hidden rounded-lg border border-gray-700/50 bg-gray-900/40 backdrop-blur-sm'>
-      <div className='flex-shrink-0 border-b border-gray-700/50 px-3 py-2'>
-        <h3 className='text-sm font-semibold text-white'>{title}</h3>
-        <p className='mt-0.5 text-xs text-gray-400'>{description || 'Stock Transfer Report'}</p>
+    <div className={cn(
+      'flex h-full w-full flex-col overflow-hidden rounded-lg border backdrop-blur-sm',
+      'border-border bg-card/40'
+    )}>
+      <div className={cn(
+        'flex-shrink-0 border-b px-3 py-2',
+        'border-border'
+      )}>
+        <h3 className={cn(textClasses['body-small'], 'font-semibold text-foreground')}>{title}</h3>
+        <p className={cn('mt-0.5', textClasses['label-small'], 'text-muted-foreground')}>
+          {description || 'Stock Transfer Report'}
+        </p>
       </div>
       <div className='min-h-0 flex-1 overflow-visible p-3'>
         <div className='flex h-full items-center space-x-2'>
@@ -179,14 +180,15 @@ export const TransactionReportWidget = function TransactionReportWidget({
               onClick={() => setIsCalendarOpen(!isCalendarOpen)}
               className={cn(
                 'flex h-9 w-full items-center gap-2 px-3 py-2',
-                'bg-gray-800/50 hover:bg-gray-700/50',
-                'border border-gray-700 hover:border-gray-600',
-                'rounded text-sm transition-all',
-                'text-left'
+                'bg-background/50 hover:bg-background/70',
+                'border border-border hover:border-border/80',
+                'rounded transition-all',
+                'text-left',
+                textClasses['body-small']
               )}
             >
-              <CalendarIcon className='h-4 w-4 text-gray-400' />
-              <span className='flex-1 text-white'>{getDateRangeLabel()}</span>
+              <CalendarIcon className='h-4 w-4 text-muted-foreground' />
+              <span className='flex-1 text-foreground'>{getDateRangeLabel()}</span>
             </button>
 
             {isCalendarOpen &&
@@ -202,11 +204,9 @@ export const TransactionReportWidget = function TransactionReportWidget({
                   {/* Calendar dropdown */}
                   <div
                     className={cn(
-                      'fixed bg-slate-900',
-                      'backdrop-blur-xl',
-                      'z-[9999] rounded-lg border border-gray-600 shadow-2xl',
-                      'p-3',
-                      'min-w-[280px]'
+                      'fixed bg-card backdrop-blur-xl',
+                      'z-[9999] rounded-lg border shadow-2xl',
+                      'border-border p-3 min-w-[280px]'
                     )}
                     style={{
                       top: `${calendarPosition.top}px`,
@@ -223,26 +223,27 @@ export const TransactionReportWidget = function TransactionReportWidget({
                       classNames={{
                         months: 'flex flex-col',
                         month: 'space-y-2',
-                        caption_label: 'text-white text-sm',
-                        nav: 'text-white',
+                        caption_label: cn('text-foreground', textClasses['body-small']),
+                        nav: 'text-foreground',
                         nav_button: cn('h-6 w-6 bg-transparent p-0 opacity-50 hover:opacity-100'),
                         nav_button_previous: 'absolute left-1',
                         nav_button_next: 'absolute right-1',
                         table: 'w-full border-collapse space-y-1',
                         head_row: 'flex',
-                        head_cell: 'text-gray-500 rounded-md w-7 font-normal text-xs',
+                        head_cell: cn('text-muted-foreground rounded-md w-7 font-normal', textClasses['label-small']),
                         row: 'flex w-full mt-1',
-                        cell: 'text-center text-xs p-0 relative [&:has([aria-selected])]:bg-transparent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20',
+                        cell: 'text-center p-0 relative [&:has([aria-selected])]:bg-transparent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20',
                         day: cn(
-                          'h-7 w-7 p-0 font-normal aria-selected:opacity-100 text-gray-300',
-                          'hover:bg-gray-800 hover:text-white rounded-md'
+                          'h-7 w-7 p-0 font-normal aria-selected:opacity-100 text-muted-foreground',
+                          'hover:bg-accent hover:text-accent-foreground rounded-md',
+                          textClasses['label-small']
                         ),
                         day_selected:
-                          'bg-gray-700 text-white hover:bg-gray-600 hover:text-white focus:bg-gray-700 focus:text-white',
-                        day_today: 'bg-gray-800 text-white',
-                        day_outside: 'text-gray-600 opacity-50',
-                        day_disabled: 'text-gray-600 opacity-50',
-                        day_range_middle: 'aria-selected:bg-gray-800 aria-selected:text-white',
+                          'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
+                        day_today: 'bg-accent text-accent-foreground',
+                        day_outside: 'text-muted-foreground/50 opacity-50',
+                        day_disabled: 'text-muted-foreground/50 opacity-50',
+                        day_range_middle: 'aria-selected:bg-accent aria-selected:text-accent-foreground',
                         day_hidden: 'invisible',
                       }}
                       disabled={{
@@ -251,10 +252,14 @@ export const TransactionReportWidget = function TransactionReportWidget({
                     />
 
                     {/* Action buttons */}
-                    <div className='mt-3 flex justify-end gap-2 border-t border-gray-700 pt-3'>
+                    <div className='mt-3 flex justify-end gap-2 border-t border-border pt-3'>
                       <button
                         onClick={() => setIsCalendarOpen(false)}
-                        className='rounded bg-gray-800 px-3 py-1.5 text-xs text-gray-300 transition-colors hover:bg-gray-700 hover:text-white'
+                        className={cn(
+                          'rounded bg-secondary px-3 py-1.5 transition-colors',
+                          'hover:bg-secondary/80 text-secondary-foreground hover:text-secondary-foreground',
+                          textClasses['label-small']
+                        )}
                       >
                         Done
                       </button>
@@ -271,11 +276,7 @@ export const TransactionReportWidget = function TransactionReportWidget({
               <Button
                 onClick={async () => {
                   if (!dateRange?.from) {
-                    toast({
-                      title: 'Invalid Date Range',
-                      description: 'Please select a date range',
-                      variant: 'destructive',
-                    });
+                    showError('Please select a date range');
                     return;
                   }
 
@@ -302,7 +303,7 @@ export const TransactionReportWidget = function TransactionReportWidget({
                 disabled={isPrinting || downloadStatus !== 'idle'}
                 className={cn(
                   'h-9 px-3',
-                  'bg-gray-600 text-white hover:bg-gray-700',
+                  'bg-secondary text-secondary-foreground hover:bg-secondary/80',
                   isPrinting && 'opacity-50'
                 )}
                 size='sm'
@@ -321,8 +322,8 @@ export const TransactionReportWidget = function TransactionReportWidget({
               disabled={downloadStatus !== 'idle'}
               className={cn(
                 'relative h-9 select-none overflow-hidden px-3',
-                'bg-blue-600 text-white hover:bg-blue-700',
-                downloadStatus === 'downloading' && 'bg-blue-600/50',
+                'bg-primary text-primary-foreground hover:bg-primary/90',
+                downloadStatus === 'downloading' && 'bg-primary/50',
                 downloadStatus !== 'idle' && 'pointer-events-none'
               )}
               size='sm'
@@ -333,7 +334,7 @@ export const TransactionReportWidget = function TransactionReportWidget({
               {downloadStatus === 'complete' && <Download className='h-4 w-4' />}
               {downloadStatus === 'downloading' && (
                 <div
-                  className='absolute inset-0 bottom-0 left-0 z-[3] h-full bg-blue-500 transition-all duration-200 ease-in-out'
+                  className='absolute inset-0 bottom-0 left-0 z-[3] h-full bg-primary/80 transition-all duration-200 ease-in-out'
                   style={{ width: `${progress}%` }}
                 />
               )}

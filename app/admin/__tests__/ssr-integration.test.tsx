@@ -8,7 +8,7 @@ import { render, screen, waitFor, renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act } from 'react';
 import AdminThemePage from '@/app/admin/[theme]/page';
-import { prefetchCriticalWidgetsData } from '@/app/admin/hooks/useDashboardBatchQuery';
+import { prefetchCriticalWidgetsData } from '@/app/admin/hooks/useDashboardConcurrentQuery';
 import { DashboardDataProvider, useDashboardData, useWidgetData } from '@/app/admin/contexts/DashboardDataContext';
 import StatsCardWidget from '@/app/admin/components/dashboard/widgets/StatsCardWidget';
 import type { DashboardBatchQueryData } from '@/app/admin/types/dashboard';

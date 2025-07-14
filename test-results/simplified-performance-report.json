@@ -1,0 +1,29 @@
+{
+  "timestamp": "2025-07-14T14:36:33.265Z",
+  "config": {
+    "iterations": 1,
+    "timeout": 10000,
+    "baseURL": "http://localhost:3000",
+    "reportPath": "test-results/simplified-performance-report.json"
+  },
+  "results": [
+    {
+      "bundleSize": 267,
+      "apiResponseTime": 1307.8954429999994,
+      "pageLoadTime": 1566.267316999998,
+      "timestamp": "2025-07-14T14:36:33.245Z"
+    }
+  ],
+  "averages": {
+    "bundleSize": 267,
+    "apiResponseTime": 1307.8954429999994,
+    "pageLoadTime": 1566.267316999998,
+    "timestamp": "2025-07-14T14:36:33.265Z"
+  },
+  "summary": {
+    "totalTests": 1,
+    "bundleSizeKB": 267,
+    "avgApiResponseTime": 1307.8954429999994,
+    "avgPageLoadTime": 1566.267316999998
+  }
+}

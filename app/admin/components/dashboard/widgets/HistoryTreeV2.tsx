@@ -38,6 +38,14 @@ import {
   GlowStyles,
 } from '../WidgetTypography';
 import { cn } from '@/lib/utils';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing } from '@/lib/design-system/spacing';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { gql } from '@apollo/client';
 import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
@@ -98,7 +106,7 @@ interface HistoryTreeV2Props extends WidgetComponentProps {
 
 // 根據 action 類型返回對應的圖標
 const getActionIcon = (action: string) => {
-  const iconClass = 'h-3 w-3 text-white';
+  const iconClass = 'h-3 w-3 text-foreground';
 
   if (action.includes('Print') || action.includes('Label')) {
     return <PrinterIcon className={iconClass} />;
@@ -378,27 +386,27 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
   return (
     <motion.div ref={widgetRef} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className='h-full'>
       <WidgetCard widgetType='custom' isEditMode={isEditMode}>
-        <CardHeader className='pb-3'>
+        <CardHeader className='pb-4'>
           <CardTitle className='flex items-center justify-between'>
             <span>History Tree</span>
             <div className='flex items-center gap-2'>
               {mode === 'graphql' && (
-                <span className='text-xs text-blue-400'>
+                <span className={cn(textClasses['label-small'], 'text-primary')}>
                   ⚡ GraphQL
                 </span>
               )}
               {mode === 'server-action' && (
-                <span className='text-xs text-orange-400'>
+                <span className={cn(textClasses['label-small'], 'text-secondary')}>
                   🔄 Server Action
                 </span>
               )}
               {mode === 'context' && (
-                <span className='text-xs text-green-400'>
+                <span className={cn(textClasses['label-small'], 'text-success')}>
                   💾 Cached
                 </span>
               )}
               {!isEditMode && performanceMetrics?.queryTime && (
-                <span className='text-xs text-slate-400'>
+                <span className={cn(textClasses['label-small'], 'text-muted-foreground')}>
                   {performanceMetrics.queryTime}ms
                   {performanceMetrics.dataSource === 'cache' && ' (cached)'}
                 </span>
@@ -415,7 +423,7 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
                 {error.message || 'Failed to load history data'}
               </WidgetText>
               {mode === 'graphql' && (
-                <WidgetText size='xs' className='text-center text-slate-500'>
+                <WidgetText size='xs' className={cn('text-center', textClasses['body-small'], 'text-muted-foreground')}>
                   Attempting fallback to server action...
                 </WidgetText>
               )}
@@ -432,11 +440,15 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
                 className='h-full'
                 showMoreText='Show More'
                 showLessText='Show Less'
-                dotClassName='bg-gradient-to-r from-indigo-500 to-purple-500 border-2 border-slate-800'
-                lineClassName='border-slate-600'
-                titleClassName='text-slate-200 text-xs font-medium'
-                descriptionClassName='text-slate-400 text-[10px] font-medium'
-                dateClassName='text-slate-400 text-[10px] font-medium'
+                dotClassName={cn(
+                  'bg-gradient-to-br',
+                  getWidgetCategoryColor('special', 'gradient'),
+                  'border-2 border-border'
+                )}
+                lineClassName='border-border'
+                titleClassName={textClasses['body-small']}
+                descriptionClassName={cn(textClasses['label-small'], 'text-muted-foreground')}
+                dateClassName={cn(textClasses['label-small'], 'text-muted-foreground')}
                 buttonVariant='ghost'
                 buttonSize='sm'
                 showAnimation={!isEditMode}
@@ -445,7 +457,10 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
                 <div className='mt-4 text-center'>
                   <button
                     onClick={() => refetch()}
-                    className='text-xs text-blue-400 hover:text-blue-300 transition-colors'
+                    className={cn(
+                      textClasses['label-base'],
+                      'text-primary hover:text-primary/80 transition-colors'
+                    )}
                   >
                     Load more events
                   </button>

@@ -14,6 +14,14 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart, Activity, TrendingUp, CheckCircle, AlertTriangle, Map } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
 
 // Import chart components using dynamic imports to prevent webpack issues
 import { WidgetSkeleton } from './common/WidgetStates';
@@ -21,10 +29,13 @@ import dynamic from 'next/dynamic';
 
 // Error fallback component for failed dynamic imports
 const ChartErrorFallback = ({ chartName }: { chartName: string }) => (
-  <div className="flex flex-col items-center justify-center h-48 text-gray-400">
+  <div className={cn(
+    'flex flex-col items-center justify-center h-48',
+    'text-muted-foreground'
+  )}>
     <AlertTriangle className="w-8 h-8 mb-2" />
-    <p className="text-sm">Failed to load {chartName}</p>
-    <p className="text-xs mt-1">Please refresh the page</p>
+    <p className={cn(textClasses['body-small'])}>Failed to load {chartName}</p>
+    <p className={cn(textClasses['label-small'], 'mt-1')}>Please refresh the page</p>
   </div>
 );
 
@@ -122,8 +133,8 @@ const chartOptions: ChartOption[] = [
     subtitle: 'Track order completion status',
     icon: BarChart,
     component: AcoOrderProgressCards,
-    backgroundGradient: 'from-blue-900/90 via-blue-800/70 to-cyan-900/60',
-    iconColor: 'from-blue-400 to-cyan-400',
+    backgroundGradient: getWidgetCategoryColor('analysis', 'gradient'),
+    iconColor: getWidgetCategoryColor('analysis', 'accent'),
   },
   {
     id: 2,
@@ -131,8 +142,8 @@ const chartOptions: ChartOption[] = [
     subtitle: 'Major inventory products',
     icon: BarChart,
     component: TopProductsInventoryChart,
-    backgroundGradient: 'from-purple-900/90 via-purple-800/70 to-pink-900/60',
-    iconColor: 'from-purple-400 to-pink-400',
+    backgroundGradient: getWidgetCategoryColor('charts', 'gradient'),
+    iconColor: getWidgetCategoryColor('charts', 'accent'),
   },
   {
     id: 3,
@@ -140,8 +151,8 @@ const chartOptions: ChartOption[] = [
     subtitle: 'Employee work patterns',
     icon: Activity,
     component: UserActivityHeatmap,
-    backgroundGradient: 'from-orange-900/90 via-orange-800/70 to-red-900/60',
-    iconColor: 'from-orange-400 to-red-400',
+    backgroundGradient: getWidgetCategoryColor('analysis', 'gradient'),
+    iconColor: getWidgetCategoryColor('analysis', 'accent'),
   },
   {
     id: 4,
@@ -149,8 +160,8 @@ const chartOptions: ChartOption[] = [
     subtitle: 'Inventory vs demand',
     icon: TrendingUp,
     component: InventoryTurnoverAnalysis,
-    backgroundGradient: 'from-green-900/90 via-green-800/70 to-emerald-900/60',
-    iconColor: 'from-green-400 to-emerald-400',
+    backgroundGradient: getWidgetCategoryColor('analysis', 'gradient'),
+    iconColor: getWidgetCategoryColor('analysis', 'accent'),
   },
   {
     id: 5,
@@ -158,8 +169,8 @@ const chartOptions: ChartOption[] = [
     subtitle: 'Quality monitoring',
     icon: CheckCircle,
     component: StocktakeAccuracyTrend,
-    backgroundGradient: 'from-indigo-900/90 via-indigo-800/70 to-blue-900/60',
-    iconColor: 'from-indigo-400 to-blue-400',
+    backgroundGradient: getWidgetCategoryColor('analysis', 'gradient'),
+    iconColor: getWidgetCategoryColor('analysis', 'accent'),
   },
   {
     id: 6,
@@ -167,8 +178,8 @@ const chartOptions: ChartOption[] = [
     subtitle: 'Waste reduction insights',
     icon: AlertTriangle,
     component: VoidRecordsAnalysis,
-    backgroundGradient: 'from-yellow-900/90 via-yellow-800/70 to-orange-900/60',
-    iconColor: 'from-yellow-400 to-orange-400',
+    backgroundGradient: getWidgetCategoryColor('analysis', 'gradient'),
+    iconColor: getWidgetCategoryColor('analysis', 'accent'),
   },
   {
     id: 7,
@@ -176,8 +187,8 @@ const chartOptions: ChartOption[] = [
     subtitle: 'Warehouse utilization',
     icon: Map,
     component: RealTimeInventoryMap,
-    backgroundGradient: 'from-teal-900/90 via-teal-800/70 to-cyan-900/60',
-    iconColor: 'from-teal-400 to-cyan-400',
+    backgroundGradient: getWidgetCategoryColor('analysis', 'gradient'),
+    iconColor: getWidgetCategoryColor('analysis', 'accent'),
   },
 ];
 
@@ -215,13 +226,13 @@ export const AnalysisExpandableCards = function AnalysisExpandableCards({
               key={option.id}
               className={cn(
                 'option relative cursor-pointer',
-                'border-2 border-white/10',
+                'border-2 border-border/10',
                 'duration-800 transition-all ease-out',
                 'flex flex-col justify-end',
                 'bg-gradient-to-br backdrop-blur-md',
                 option.backgroundGradient,
                 'overflow-hidden',
-                activeIndex === index ? 'z-10 flex-[7] border-white/30' : 'flex-1 opacity-80',
+                activeIndex === index ? 'z-10 flex-[7] border-border/30' : 'flex-1 opacity-80',
                 activeIndex === index && 'shadow-2xl'
               )}
               initial={{ opacity: 0, x: -60 }}
@@ -238,7 +249,7 @@ export const AnalysisExpandableCards = function AnalysisExpandableCards({
               {/* Background gradient overlay */}
               <div
                 className={cn(
-                  'absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent',
+                  'absolute inset-0 bg-gradient-to-t from-background/80 via-background/40 to-transparent',
                   'duration-800 transition-opacity',
                   activeIndex === index ? 'opacity-100' : 'opacity-60'
                 )}
@@ -269,8 +280,8 @@ export const AnalysisExpandableCards = function AnalysisExpandableCards({
                   <motion.div
                     className={cn(
                       'flex h-[42px] w-[42px] items-center justify-center rounded-full',
-                      'border-2 bg-black/50 backdrop-blur-md',
-                      activeIndex === index ? 'border-white' : 'border-white/30',
+                      'border-2 bg-background/50 backdrop-blur-md',
+                      activeIndex === index ? 'border-primary-foreground' : 'border-border/30',
                       'duration-800 transition-all'
                     )}
                     animate={{
@@ -296,8 +307,8 @@ export const AnalysisExpandableCards = function AnalysisExpandableCards({
                         : 'translate-x-6 opacity-0'
                     )}
                   >
-                    <h3 className='text-base font-bold text-white'>{option.title}</h3>
-                    <p className='text-sm text-white/70'>{option.subtitle}</p>
+                    <h3 className={cn(textClasses['body-base'], 'font-bold text-primary-foreground')}>{option.title}</h3>
+                    <p className={cn(textClasses['body-small'], 'text-primary-foreground/70')}>{option.subtitle}</p>
                   </div>
                 </div>
               </div>

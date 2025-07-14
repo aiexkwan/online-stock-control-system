@@ -2,4 +2,6 @@
 - Read docs/common_bag.md
 - 閱讀issue fixing記錄庫有否類似紀錄及解決方法
 - 專注解決用戶當下問題，無需修改不相關事項
+- 每次更新後都必須使用playwright等可使用的測試工具驗證有效
+- 系統登入方或可查看 docs/common_bag.md 內的 登入email及password
 - 將是次issue fixing更新到 issue fixing記錄庫

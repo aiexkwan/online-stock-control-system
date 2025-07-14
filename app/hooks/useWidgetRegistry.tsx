@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { widgetRegistry } from '@/lib/widgets/enhanced-registry';
-import { initializeEnhancedRegistry } from '@/app/admin/components/dashboard/LazyWidgetRegistry';
+import { simpleWidgetRegistry } from '@/lib/widgets/simple-registry';
 
 /**
  * Hook to ensure widget registry is initialized before rendering
@@ -18,10 +17,10 @@ export function useWidgetRegistry() {
       try {
         // Initialize the registry
         console.log('[useWidgetRegistry] Initializing widget registry...');
-        await initializeEnhancedRegistry();
+        await simpleWidgetRegistry.autoRegisterWidgets();
 
         // Check if registry has widgets registered
-        const definitions = widgetRegistry.getAllDefinitions();
+        const definitions = simpleWidgetRegistry.getAllDefinitions();
         console.log(`[useWidgetRegistry] Registry has ${definitions.size} widgets registered`);
 
         if (mounted) {

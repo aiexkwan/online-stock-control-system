@@ -1,0 +1,19 @@
+{
+  "timestamp": "2025-07-14T14:35:55.683Z",
+  "results": [
+    {
+      "bundleExists": true,
+      "bundleSize": 1509,
+      "packageJsonSize": 9,
+      "nodeModulesSize": 1,
+      "timestamp": "2025-07-14T14:35:55.627Z"
+    }
+  ],
+  "summary": {
+    "totalTests": 1,
+    "bundleExists": true,
+    "avgBundleSize": 1509,
+    "avgPackageJsonSize": 9,
+    "avgNodeModulesSize": 1
+  }
+}

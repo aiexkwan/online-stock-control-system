@@ -19,6 +19,15 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
+import { cn } from '@/lib/utils';
 
 interface InventoryTurnoverAnalysisProps {
   timeFrame?: any;
@@ -136,8 +145,8 @@ export default function InventoryTurnoverAnalysis({ timeFrame }: InventoryTurnov
 
   return (
     <div className='flex h-full w-full flex-col'>
-      <div className='mb-4'>
-        <p className='text-sm text-white/60'>
+      <div className={spacingUtilities.margin.bottom.medium}>
+        <p className={cn(textClasses['body-small'], 'text-muted-foreground')}>
           Inventory Turnover = Order Demand ÷ Current Inventory (higher ratio indicates higher
           demand)
         </p>
@@ -172,13 +181,16 @@ export default function InventoryTurnoverAnalysis({ timeFrame }: InventoryTurnov
                 if (active && payload && payload[0]) {
                   const data = payload[0].payload;
                   return (
-                    <div className='rounded-lg border bg-background/95 p-3 shadow-lg backdrop-blur-sm'>
-                      <p className='font-medium'>{data.code}</p>
-                      <div className='mt-2 space-y-1'>
-                        <p className='text-sm text-blue-600'>Inventory: {data.inventory}</p>
-                        <p className='text-sm text-orange-600'>Demand: {data.demand}</p>
-                        <p className='text-sm font-medium'>Turnover Rate: {data.turnoverRatio}</p>
-                        <p className='text-xs text-white/60'>
+                    <div className={cn(
+                      'rounded-lg border bg-card/95 p-3 shadow-lg backdrop-blur-sm',
+                      'border-border'
+                    )}>
+                      <p className={cn(textClasses['body-small'], 'font-medium text-foreground')}>{data.code}</p>
+                      <div className={cn('mt-2', spacingUtilities.gap.small, 'space-y-1')}>
+                        <p className={cn(textClasses['label-small'])} style={{ color: widgetColors.charts.primary }}>Inventory: {data.inventory}</p>
+                        <p className={cn(textClasses['label-small'])} style={{ color: semanticColors.warning.DEFAULT }}>Demand: {data.demand}</p>
+                        <p className={cn(textClasses['label-small'], 'font-medium text-foreground')}>Turnover Rate: {data.turnoverRatio}</p>
+                        <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>
                           Status:{' '}
                           {data.status === 'high-demand'
                             ? 'High Demand'
@@ -198,7 +210,7 @@ export default function InventoryTurnoverAnalysis({ timeFrame }: InventoryTurnov
               yAxisId='left'
               type='monotone'
               dataKey='inventory'
-              stroke='#3b82f6'
+              stroke={widgetColors.charts.primary}
               strokeWidth={2}
               name='Inventory'
               dot={{ r: 4 }}
@@ -207,7 +219,7 @@ export default function InventoryTurnoverAnalysis({ timeFrame }: InventoryTurnov
               yAxisId='left'
               type='monotone'
               dataKey='demand'
-              stroke='#f97316'
+              stroke={semanticColors.warning.DEFAULT}
               strokeWidth={2}
               name='Demand'
               dot={{ r: 4 }}
@@ -216,7 +228,7 @@ export default function InventoryTurnoverAnalysis({ timeFrame }: InventoryTurnov
               yAxisId='right'
               type='monotone'
               dataKey='turnoverRatio'
-              stroke='#10b981'
+              stroke={semanticColors.success.DEFAULT}
               strokeWidth={2}
               strokeDasharray='5 5'
               name='Turnover Rate'
@@ -226,18 +238,21 @@ export default function InventoryTurnoverAnalysis({ timeFrame }: InventoryTurnov
         </ResponsiveContainer>
       </div>
 
-      <div className='mt-4 grid grid-cols-3 gap-4 text-xs'>
+      <div className={cn(
+        'mt-4 grid grid-cols-3',
+        spacingUtilities.gap.medium
+      )}>
         <div className='text-center'>
-          <div className='font-medium text-red-600'>High Demand Products</div>
-          <div>{chartData.filter(d => d.status === 'high-demand').length} items</div>
+          <div className={cn(textClasses['label-small'], 'font-medium')} style={{ color: semanticColors.destructive.DEFAULT }}>High Demand Products</div>
+          <div className={cn(textClasses['label-small'], 'text-foreground')}>{chartData.filter(d => d.status === 'high-demand').length} items</div>
         </div>
         <div className='text-center'>
-          <div className='font-medium text-green-600'>Balanced Supply</div>
-          <div>{chartData.filter(d => d.status === 'balanced').length} items</div>
+          <div className={cn(textClasses['label-small'], 'font-medium')} style={{ color: semanticColors.success.DEFAULT }}>Balanced Supply</div>
+          <div className={cn(textClasses['label-small'], 'text-foreground')}>{chartData.filter(d => d.status === 'balanced').length} items</div>
         </div>
         <div className='text-center'>
-          <div className='font-medium text-amber-600'>Overstocked</div>
-          <div>{chartData.filter(d => d.status === 'overstocked').length} items</div>
+          <div className={cn(textClasses['label-small'], 'font-medium')} style={{ color: semanticColors.warning.DEFAULT }}>Overstocked</div>
+          <div className={cn(textClasses['label-small'], 'text-foreground')}>{chartData.filter(d => d.status === 'overstocked').length} items</div>
         </div>
       </div>
     </div>

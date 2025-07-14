@@ -21,6 +21,15 @@ import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { getProductByCode } from '@/app/actions/productActions';
 import { WidgetError } from './common/WidgetStates';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
+import { cn } from '@/lib/utils';
 
 type VoidStep = 'search' | 'confirm' | 'result';
 
@@ -280,11 +289,13 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
             resetToSearch();
           }}
           disabled={isEditMode || batchState.isProcessing}
-          className={`flex flex-1 items-center justify-center space-x-2 rounded-lg px-4 py-2 font-medium transition-colors ${
+          className={cn(
+            'flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 font-medium transition-colors',
             batchState.mode === 'single'
-              ? 'bg-blue-600 text-white'
-              : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
-          } disabled:cursor-not-allowed disabled:opacity-50`}
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary/70',
+            'disabled:cursor-not-allowed disabled:opacity-50'
+          )}
         >
           <Package2 className='h-4 w-4' />
           <span>Single Mode</span>
@@ -296,19 +307,21 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
             resetToSearch();
           }}
           disabled={isEditMode || batchState.isProcessing}
-          className={`flex flex-1 items-center justify-center space-x-2 rounded-lg px-4 py-2 font-medium transition-colors ${
+          className={cn(
+            'flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 font-medium transition-colors',
             batchState.mode === 'batch'
-              ? 'bg-blue-600 text-white'
-              : 'bg-slate-700 text-gray-300 hover:bg-slate-600'
-          } disabled:cursor-not-allowed disabled:opacity-50`}
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary/70',
+            'disabled:cursor-not-allowed disabled:opacity-50'
+          )}
         >
           <List className='h-4 w-4' />
           <span>Batch Mode</span>
         </button>
       </div>
 
-      <div className='flex flex-col space-y-3'>
-        <div className='flex space-x-2'>
+      <div className={cn('flex flex-col', spacingUtilities.list.container)}>
+        <div className='flex gap-2'>
           <div className='relative flex-1'>
             <input
               ref={searchInputRef}
@@ -316,19 +329,29 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
               value={searchValue}
               onChange={e => setSearchValue(e.target.value)}
               placeholder='Enter Pallet number...'
-              className='w-full rounded-lg border border-slate-700/50 bg-slate-800/50 px-3 py-2 text-white placeholder-gray-400 focus:border-blue-500/50 focus:outline-none'
+              className={cn(
+                'w-full rounded-lg border bg-background px-3 py-2',
+                'border-input placeholder:text-muted-foreground',
+                'focus:border-primary/50 focus:outline-none',
+                textClasses['body-base']
+              )}
               disabled={state.isSearching || isEditMode}
             />
             {state.isSearching && (
               <div className='absolute right-3 top-1/2 -translate-y-1/2 transform'>
-                <Loader2 className='h-4 w-4 animate-spin text-blue-500' />
+                <Loader2 className='h-4 w-4 animate-spin text-primary' />
               </div>
             )}
           </div>
           <button
             onClick={handleSearch}
             disabled={state.isSearching || !searchValue.trim() || isEditMode}
-            className='flex items-center space-x-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50'
+            className={cn(
+              'flex items-center gap-2 rounded-lg px-4 py-2',
+              'bg-primary text-primary-foreground hover:bg-primary/90',
+              'disabled:cursor-not-allowed disabled:opacity-50',
+              textClasses['label-base']
+            )}
           >
             <Search className='h-4 w-4' />
             <span>Search</span>
@@ -338,7 +361,12 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
         <button
           onClick={() => setShowQrScanner(true)}
           disabled={isEditMode}
-          className='flex w-full items-center justify-center space-x-2 rounded-lg bg-slate-700 px-4 py-2 text-white hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-50'
+          className={cn(
+            'flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2',
+            'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+            'disabled:cursor-not-allowed disabled:opacity-50',
+            textClasses['label-base']
+          )}
         >
           <QrCode className='h-4 w-4' />
           <span>QR Scan</span>
@@ -364,13 +392,18 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
       {batchState.mode === 'batch' && batchState.items.length > 0 && (
         <div className='mt-4'>
           <div className='mb-2 flex items-center justify-between'>
-            <h4 className='text-sm font-medium text-gray-400'>
+            <h4 className={cn(textClasses['label-large'], 'text-muted-foreground')}>
               Batch List ({batchState.items.length} items, {batchState.selectedCount} selected)
             </h4>
             <button
               onClick={() => setCurrentStep('confirm')}
               disabled={batchState.selectedCount === 0 || isEditMode}
-              className='rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50'
+              className={cn(
+                'rounded-lg px-4 py-2',
+                'bg-primary text-primary-foreground hover:bg-primary/90',
+                'disabled:cursor-not-allowed disabled:opacity-50',
+                textClasses['label-base']
+              )}
             >
               Proceed to Confirm
             </button>
@@ -400,26 +433,26 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
     <div className='space-y-4'>
       {/* Single mode - show pallet information */}
       {batchState.mode === 'single' && state.foundPallet && (
-        <div className='rounded-lg border border-slate-700/30 bg-slate-800/30 p-4'>
-          <h4 className='mb-3 text-sm font-medium text-gray-400'>Pallet Information</h4>
+        <div className='rounded-lg border border-border bg-card p-4'>
+          <h4 className={cn('mb-3', textClasses['label-large'], 'text-muted-foreground')}>Pallet Information</h4>
           <div className='grid grid-cols-2 gap-4'>
             {/* Row 1 */}
             <div>
-              <p className='font-medium text-white'>{state.foundPallet.plt_num}</p>
-              <p className='text-xs text-gray-400'>Pallet Number</p>
+              <p className={cn(textClasses['body-base'], 'font-medium')}>{state.foundPallet.plt_num}</p>
+              <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Pallet Number</p>
             </div>
             <div>
-              <p className='text-gray-300'>{state.foundPallet.product_code}</p>
-              <p className='text-xs text-gray-400'>Product Code</p>
+              <p className={textClasses['body-base']}>{state.foundPallet.product_code}</p>
+              <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Product Code</p>
             </div>
             {/* Row 2 */}
             <div>
-              <p className='text-gray-300'>{productDescription || 'N/A'}</p>
-              <p className='text-xs text-gray-400'>Product Description</p>
+              <p className={textClasses['body-base']}>{productDescription || 'N/A'}</p>
+              <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Product Description</p>
             </div>
             <div>
-              <p className='text-gray-300'>{state.foundPallet.product_qty} units</p>
-              <p className='text-xs text-gray-400'>Quantity on Pallet</p>
+              <p className={textClasses['body-base']}>{state.foundPallet.product_qty} units</p>
+              <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Quantity on Pallet</p>
             </div>
           </div>
         </div>

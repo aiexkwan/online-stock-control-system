@@ -3,7 +3,7 @@
  * 測試 prefetchCriticalWidgetsData 的客戶端行為
  */
 
-import { prefetchCriticalWidgetsData } from '@/app/admin/hooks/useDashboardBatchQuery';
+import { prefetchCriticalWidgetsData } from '@/app/admin/hooks/useDashboardConcurrentQuery';
 
 describe('prefetchCriticalWidgetsData - Client Side Behavior', () => {
   let originalNodeEnv: string | undefined;

@@ -11,8 +11,7 @@ import { AdminWidgetConfig } from './adminDashboardLayouts';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { createClient } from '@/lib/supabase';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
-import { LazyComponents } from './LazyWidgetRegistry';
-import { widgetRegistry } from '@/lib/widgets/enhanced-registry';
+import { simpleWidgetRegistry } from '@/lib/widgets/simple-registry';
 import { 
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
@@ -41,6 +40,7 @@ import {
 } from '@/app/actions/productActions';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { WidgetSuspenseFallback } from './widgets/common/WidgetStates';
 
 // Recharts components - dynamically imported to avoid SSR issues
 import dynamic from 'next/dynamic';
@@ -89,6 +89,11 @@ const getThemeGlowColor = (theme?: string): ThemeKey => {
 };
 
 // GlowCard 顏色配置已移至 GlowCard 組件內部
+
+// 統一的 Suspense Fallback 生成器
+const createSuspenseFallback = (type: 'default' | 'stats' | 'chart' | 'table' | 'list' = 'default') => {
+  return <WidgetSuspenseFallback type={type} />;
+};
 
 // 統一的 Widget Wrapper Component - 使用 SpotlightCard 提供真正的 spotlight effect
 const UnifiedWidgetWrapper = React.memo<{
@@ -169,13 +174,13 @@ const CHART_COLORS = [
 ];
 
 // 導入特殊組件 - 已移除舊 Dashboard 依賴
-// HistoryTree 已移至 LazyComponents 以統一管理懶加載
-import { getEnhancedWidgetComponent } from './LazyWidgetRegistry';
+// HistoryTree 已移至 unifiedWidgetRegistry.getWidgetComponent 以統一管理懶加載
+// Enhanced widget component is now handled by unified registry
 import { SpotlightCard } from '../ui/SpotlightCard';
 
-// 所有 widgets 已移至 LazyComponents 以統一管理懶加載
+// 所有 widgets 已移至 unifiedWidgetRegistry.getWidgetComponent 以統一管理懶加載
 // 避免雙重包裝問題和減少冗餘代碼
-// GrnReportWidget 和 AcoOrderReportWidget 已在 LazyComponents 註冊
+// GrnReportWidget 和 AcoOrderReportWidget 已在 unifiedWidgetRegistry.getWidgetComponent 註冊
 // 使用 renderLazyComponent('GrnReportWidget', props) 調用
 
 // GraphQL removed - all widgets migrated to Server Actions
@@ -384,11 +389,11 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
   const [isDelayed, setIsDelayed] = useState(delay > 0);
   const { refreshTrigger } = useAdminRefresh();
   
-  // Helper function to render lazy component from LazyComponents - 定義在最前面以避免初始化順序問題
+  // Helper function to render lazy component from simpleWidgetRegistry.getWidgetComponent - 定義在最前面以避免初始化順序問題
   const renderLazyComponent = useCallback((componentName: string, props: any) => {
-    const Component = LazyComponents[componentName];
+    const Component = simpleWidgetRegistry.getWidgetComponent(componentName);
     if (!Component) {
-      console.error(`Component ${componentName} not found in LazyComponents`);
+      console.error(`Component ${componentName} not found in simpleWidgetRegistry.getWidgetComponent`);
       return <div>Component {componentName} not found</div>;
     }
     return <Component {...props} />;
@@ -986,13 +991,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
     if (config.dataSource === 'record_palletinfo' && 
         (config.metrics?.[0] === 'pallet_count' || config.metrics?.[0] === 'quantity_sum')) {
       return (
-        <Suspense fallback={
-          <div className="animate-pulse">
-            <div className="h-12 w-12 bg-slate-700/50 rounded-xl mb-4"></div>
-            <div className="h-8 w-24 bg-slate-700/50 rounded mb-2"></div>
-            <div className="h-4 w-32 bg-slate-700/50 rounded"></div>
-          </div>
-        }>
+        <Suspense fallback={createSuspenseFallback('stats')}>
           {renderLazyComponent('ProductionStatsWidget', {
             widget: {
               id: `production-stats-${config.gridArea}`,
@@ -1071,9 +1070,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
     // Top 10 Products by Quantity
     if (config.title === 'Top 10 Products by Quantity' && config.chartType === 'bar') {
       return (
-        <Suspense fallback={
-          <div className="animate-pulse h-full bg-slate-700 rounded"></div>
-        }>
+        <Suspense fallback={createSuspenseFallback('chart')}>
           {renderLazyComponent('TopProductsByQuantityWidget', {
             widget: {
               id: `top-products-${config.gridArea}`,
@@ -1096,9 +1093,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
     // Top 10 Products Distribution
     if (config.title === 'Top 10 Products Distribution' && config.chartType === 'donut') {
       return (
-        <Suspense fallback={
-          <div className="animate-pulse h-full bg-slate-700 rounded"></div>
-        }>
+        <Suspense fallback={createSuspenseFallback('chart')}>
           {renderLazyComponent('ProductDistributionChartWidget', {
             widget: {
               id: `product-distribution-${config.gridArea}`,
@@ -1121,9 +1116,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
     // Staff Workload - 使用 Server Actions 版本
     if (config.title === 'Staff Workload' && config.chartType === 'line') {
       return (
-        <Suspense fallback={
-          <div className="animate-pulse h-full bg-slate-700 rounded"></div>
-        }>
+        <Suspense fallback={createSuspenseFallback('chart')}>
           {renderLazyComponent('StaffWorkloadWidget', {
             title: config.title,
             timeFrame: timeFrame,
@@ -1146,7 +1139,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
     
     if (loading) {
       return (
-        <div className="animate-pulse h-full bg-slate-700 rounded"></div>
+        <WidgetSuspenseFallback type="chart" />
       );
     }
 
@@ -1361,11 +1354,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
   const renderList = useCallback(() => {
     if (loading) {
       return (
-        <div className="space-y-2">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-16 bg-slate-700 rounded animate-pulse"></div>
-          ))}
-        </div>
+        <WidgetSuspenseFallback type="list" />
       );
     }
 
@@ -1399,16 +1388,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
     // 如果是 Production Details，使用 Server Actions 組件
     if (config.title === 'Production Details') {
       return (
-        <Suspense fallback={
-          <div className="animate-pulse">
-            <div className="h-10 bg-slate-700 rounded mb-2"></div>
-            <div className="space-y-1">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-8 bg-slate-700 rounded"></div>
-              ))}
-            </div>
-          </div>
-        }>
+        <Suspense fallback={createSuspenseFallback('table')}>
           {renderLazyComponent('ProductionDetailsWidget', {
             title: config.title,
             timeFrame: timeFrame,
@@ -1429,14 +1409,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
     
     if (loading) {
       return (
-        <div className="animate-pulse">
-          <div className="h-10 bg-slate-700 rounded mb-2"></div>
-          <div className="space-y-1">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-8 bg-slate-700 rounded"></div>
-            ))}
-          </div>
-        </div>
+        <WidgetSuspenseFallback type="table" />
       );
     }
 
@@ -1475,7 +1448,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
     const componentName = config.component || '';
     
     // 優先從增強的 widget registry 獲取組件
-    const EnhancedComponent = getEnhancedWidgetComponent(componentName, false);
+    const EnhancedComponent = unifiedWidgetRegistry.getWidgetComponent(componentName, false);
     if (EnhancedComponent) {
       // 使用預先定義的 props 查找對象
       const propsMap = getComponentPropsFactory(config, timeFrame, theme);
@@ -1485,8 +1458,8 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       return <EnhancedComponent {...componentProps} />;
     }
     
-    // 回退到 LazyComponents
-    const LazyComponent = LazyComponents[componentName];
+    // 回退到 unifiedWidgetRegistry.getWidgetComponent
+    const LazyComponent = unifiedWidgetRegistry.getWidgetComponent[componentName];
     if (LazyComponent) {
       // 使用預先定義的 props 查找對象
       const propsMap = getComponentPropsFactory(config, timeFrame, theme);
@@ -1525,10 +1498,11 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
           </div>
         );
       case 'ProductUpdateWidget':
-        const ProductUpdateWidget = LazyComponents['ProductUpdateWidget'];
-        if (ProductUpdateWidget) {
+      case 'ProductUpdateWidgetV2':
+        const ProductUpdateWidgetV2 = unifiedWidgetRegistry.getWidgetComponent['ProductUpdateWidgetV2'];
+        if (ProductUpdateWidgetV2) {
           return (
-            <ProductUpdateWidget 
+            <ProductUpdateWidgetV2 
               widget={{
                 id: 'product-update',
                 type: 'CUSTOM' as any,
@@ -1541,7 +1515,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         }
         return null;
       case 'SupplierUpdateWidget':
-        const SupplierUpdateWidget = LazyComponents['SupplierUpdateWidget'];
+        const SupplierUpdateWidget = unifiedWidgetRegistry.getWidgetComponent['SupplierUpdateWidget'];
         if (SupplierUpdateWidget) {
           return (
             <SupplierUpdateWidget 
@@ -1557,7 +1531,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         }
         return null;
       case 'VoidPalletWidget':
-        const VoidPalletWidget = LazyComponents['VoidPalletWidget'];
+        const VoidPalletWidget = unifiedWidgetRegistry.getWidgetComponent['VoidPalletWidget'];
         if (VoidPalletWidget) {
           return (
             <VoidPalletWidget 
@@ -1572,10 +1546,10 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
           );
         }
         return null;
-      // ReportGeneratorWidget 和 ReportGeneratorWithDialogWidget 已經在 LazyComponents 中處理
+      // ReportGeneratorWidget 和 ReportGeneratorWithDialogWidget 已經在 unifiedWidgetRegistry.getWidgetComponent 中處理
       case 'AvailableSoonWidget':
         return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+          <Suspense fallback={createSuspenseFallback()}>
             {renderLazyComponent('AvailableSoonWidget', {
               widget: {
                 id: `available-soon-${config.gridArea}`,
@@ -1647,11 +1621,11 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             </div>
           </div>
         );
-      // Upload page widgets - all handled by LazyComponents now
+      // Upload page widgets - all handled by unifiedWidgetRegistry.getWidgetComponent now
       // Warehouse Dashboard Widgets
       case 'AwaitLocationQtyWidget':
         return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+          <Suspense fallback={createSuspenseFallback()}>
             {renderLazyComponent('AwaitLocationQtyWidget', {
               widget: {
                 id: 'await-location-qty',
@@ -1666,7 +1640,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         );
       case 'YesterdayTransferCountWidget':
         return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+          <Suspense fallback={createSuspenseFallback()}>
             {renderLazyComponent('YesterdayTransferCountWidget', {
               widget: {
                 id: 'yesterday-transfer-count',
@@ -1681,7 +1655,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         );
       case 'StillInAwaitWidget':
         return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+          <Suspense fallback={createSuspenseFallback()}>
             {renderLazyComponent('StillInAwaitWidget', {
               widget: {
                 id: 'still-in-await',
@@ -1696,7 +1670,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         );
       case 'StillInAwaitPercentageWidget':
         return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+          <Suspense fallback={createSuspenseFallback()}>
             {renderLazyComponent('StillInAwaitPercentageWidget', {
               widget: {
                 id: 'still-in-await-percentage',
@@ -1711,7 +1685,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         );
       case 'OrderStateListWidget':
         return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+          <Suspense fallback={createSuspenseFallback()}>
             {renderLazyComponent('OrderStateListWidgetV2', {
               widget: {
                 id: 'order-state-list',
@@ -1726,7 +1700,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         );
       case 'TransferTimeDistributionWidget':
         return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+          <Suspense fallback={createSuspenseFallback()}>
             {renderLazyComponent('TransferTimeDistributionWidget', {
               widget: {
                 id: 'transfer-time-distribution',
@@ -1741,7 +1715,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         );
       case 'WarehouseTransferListWidget':
         return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+          <Suspense fallback={createSuspenseFallback()}>
             {renderLazyComponent('WarehouseTransferListWidget', {
               widget: {
                 id: 'warehouse-transfer-list',
@@ -1756,7 +1730,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         );
       case 'WarehouseWorkLevelAreaChart':
         return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+          <Suspense fallback={createSuspenseFallback()}>
             {renderLazyComponent('WarehouseWorkLevelAreaChart', {
               widget: {
                 id: 'warehouse-work-level',
@@ -1771,7 +1745,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         );
       case 'StockTypeSelector':
         return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+          <Suspense fallback={createSuspenseFallback()}>
             {renderLazyComponent('StockTypeSelector', {
               widget: {
                 id: 'stock-type-selector',
@@ -1789,7 +1763,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       case 'StockDistributionChart':
       case 'StockDistributionChartV2':
         return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+          <Suspense fallback={createSuspenseFallback()}>
             {renderLazyComponent('StockDistributionChartV2', {
               widget: config as any,
               useGraphQL: config.useGraphQL
@@ -1798,7 +1772,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         );
       case 'StockLevelHistoryChart':
         return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+          <Suspense fallback={createSuspenseFallback()}>
             {renderLazyComponent('StockLevelHistoryChart', {
               widget: {
                 id: `stock-level-history-${config.gridArea}`,
@@ -1814,7 +1788,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         );
       case 'InventoryOrderedAnalysisWidget':
         return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+          <Suspense fallback={createSuspenseFallback()}>
             {renderLazyComponent('InventoryOrderedAnalysisWidget', {
               widget: config as any,
               isEditMode: false
@@ -1854,7 +1828,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         return <SupplierUpdateComponent />;
       case 'report-generator':
         return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+          <Suspense fallback={createSuspenseFallback()}>
             {renderLazyComponent('ReportGeneratorWidget', {
               title: config.title,
               reportType: config.reportType || '',
@@ -1870,7 +1844,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         );
       case 'transaction-report':
         return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+          <Suspense fallback={createSuspenseFallback()}>
             {renderLazyComponent('TransactionReportWidget', {
               title: config.title,
               reportType: config.reportType || '',
@@ -1881,7 +1855,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         );
       case 'grn-report':
         return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+          <Suspense fallback={createSuspenseFallback()}>
             {renderLazyComponent('GrnReportWidgetV2', {
               title: config.title,
               reportType: config.reportType || '',
@@ -1892,7 +1866,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         );
       case 'aco-order-report':
         return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+          <Suspense fallback={createSuspenseFallback()}>
             {renderLazyComponent('AcoOrderReportWidgetV2', {
               widget: {
                 id: `aco-order-report-${config.gridArea}`,
@@ -1908,7 +1882,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         );
       case 'report-generator-dialog':
         return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+          <Suspense fallback={createSuspenseFallback()}>
             {renderLazyComponent('ReportGeneratorWithDialogWidgetV2', {
               title: config.title,
               reportType: config.reportType || '',
@@ -1924,7 +1898,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         );
       case 'available-soon':
         return (
-          <Suspense fallback={<div className="h-full w-full animate-pulse bg-slate-800/50" />}>
+          <Suspense fallback={createSuspenseFallback()}>
             {renderLazyComponent('AvailableSoonWidget', {
               widget: {
                 id: `available-soon-${config.gridArea}`,

@@ -17,6 +17,15 @@ import { GetTopProductsInventoryQuery } from '@/lib/graphql/generated/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
+import { cn } from '@/lib/utils';
 
 interface TopProductsInventoryChartProps {
   timeFrame?: any;
@@ -130,24 +139,24 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
     );
   }
 
-  // Generate colors for bars
+  // Generate colors for bars using design system
   const colors = [
-    '#3b82f6',
-    '#8b5cf6',
-    '#ec4899',
-    '#f59e0b',
-    '#10b981',
-    '#06b6d4',
-    '#f43f5e',
-    '#6366f1',
-    '#84cc16',
-    '#a855f7',
+    widgetColors.charts.primary,
+    widgetColors.charts.secondary,
+    widgetColors.charts.accent,
+    semanticColors.warning.DEFAULT,
+    semanticColors.success.DEFAULT,
+    semanticColors.info.DEFAULT,
+    semanticColors.destructive.DEFAULT,
+    brandColors.primary,
+    brandColors.secondary,
+    brandColors.accent,
   ];
 
   return (
     <div className='flex h-full w-full flex-col'>
-      <div className='mb-4'>
-        <p className='text-sm text-white/60'>Showing top 10 products by inventory quantity</p>
+      <div className={spacingUtilities.margin.bottom.medium}>
+        <p className={cn(textClasses['body-small'], 'text-muted-foreground')}>Showing top 10 products by inventory quantity</p>
       </div>
 
       <div className='flex-1'>
@@ -173,17 +182,20 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
                 if (active && payload && payload[0]) {
                   const data = payload[0].payload;
                   return (
-                    <div className='rounded-lg border bg-background/95 p-3 shadow-lg backdrop-blur-sm'>
-                      <p className='font-medium'>{data.code}</p>
-                      <p className='text-sm text-white/60'>{data.description}</p>
-                      <p className='text-sm'>Color: {data.colour}</p>
-                      <div className='mt-2 space-y-1'>
-                        <p className='text-sm font-medium'>Total Stock: {data.total}</p>
-                        <p className='text-xs'>Await: {data.await}</p>
-                        <p className='text-xs'>Bulk: {data.bulk}</p>
-                        <p className='text-xs'>Fold: {data.fold}</p>
-                        <p className='text-xs'>Damage: {data.damage}</p>
-                        <p className='text-xs'>Other: {data.other}</p>
+                    <div className={cn(
+                      'rounded-lg border bg-card/95 p-3 shadow-lg backdrop-blur-sm',
+                      'border-border'
+                    )}>
+                      <p className={cn(textClasses['body-small'], 'font-medium text-foreground')}>{data.code}</p>
+                      <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>{data.description}</p>
+                      <p className={cn(textClasses['label-small'], 'text-foreground')}>Color: {data.colour}</p>
+                      <div className={cn('mt-2', spacingUtilities.gap.small, 'space-y-1')}>
+                        <p className={cn(textClasses['label-small'], 'font-medium text-foreground')}>Total Stock: {data.total}</p>
+                        <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Await: {data.await}</p>
+                        <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Bulk: {data.bulk}</p>
+                        <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Fold: {data.fold}</p>
+                        <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Damage: {data.damage}</p>
+                        <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Other: {data.other}</p>
                       </div>
                     </div>
                   );
@@ -200,14 +212,17 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
         </ResponsiveContainer>
       </div>
 
-      <div className='mt-4 grid grid-cols-2 gap-2 text-xs'>
+      <div className={cn(
+        'mt-4 grid grid-cols-2',
+        spacingUtilities.gap.small
+      )}>
         {chartData.slice(0, 4).map((item, index) => (
-          <div key={`legend-${item.code}-${index}`} className='flex items-center gap-2'>
+          <div key={`legend-${item.code}-${index}`} className={cn('flex items-center', spacingUtilities.gap.small)}>
             <div
               className='h-3 w-3 rounded'
               style={{ backgroundColor: colors[index % colors.length] }}
             />
-            <span className='truncate'>
+            <span className={cn(textClasses['label-small'], 'truncate text-foreground')}>
               {item.code}: {item.total}
             </span>
           </div>

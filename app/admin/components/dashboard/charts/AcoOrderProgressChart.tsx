@@ -17,6 +17,15 @@ import { useGetAcoOrdersForChartQuery } from '@/lib/graphql/generated/apollo-hoo
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
+import { cn } from '@/lib/utils';
 
 interface AcoOrderProgressChartProps {
   timeFrame?: any;
@@ -81,15 +90,15 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
   }
 
   const getBarColor = (completionRate: number) => {
-    if (completionRate >= 80) return '#10b981'; // green
-    if (completionRate >= 50) return '#f59e0b'; // amber
-    return '#ef4444'; // red
+    if (completionRate >= 80) return semanticColors.success.DEFAULT;
+    if (completionRate >= 50) return semanticColors.warning.DEFAULT;
+    return semanticColors.destructive.DEFAULT;
   };
 
   return (
     <div className='flex h-full w-full flex-col'>
-      <div className='mb-4'>
-        <p className='text-sm text-white/60'>
+      <div className={spacingUtilities.margin.bottom.medium}>
+        <p className={cn(textClasses['body-small'], 'text-muted-foreground')}>
           Showing completion progress for the latest 10 ACO orders
         </p>
       </div>
@@ -119,13 +128,16 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
                 if (active && payload && payload[0]) {
                   const data = payload[0].payload;
                   return (
-                    <div className='rounded-lg border bg-background/95 p-3 shadow-lg backdrop-blur-sm'>
-                      <p className='font-medium'>{data.orderRef}</p>
-                      <p className='text-sm text-white/60'>Product: {data.code}</p>
-                      <p className='text-sm'>
+                    <div className={cn(
+                      'rounded-lg border bg-card/95 p-3 shadow-lg backdrop-blur-sm',
+                      'border-border'
+                    )}>
+                      <p className={cn(textClasses['body-small'], 'font-medium text-foreground')}>{data.orderRef}</p>
+                      <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Product: {data.code}</p>
+                      <p className={cn(textClasses['label-small'], 'text-foreground')}>
                         Completed: {data.completed}/{data.total}
                       </p>
-                      <p className='text-sm font-medium text-primary'>
+                      <p className={cn(textClasses['label-small'], 'font-medium text-primary')}>
                         Completion Rate: {data.completionRate}%
                       </p>
                     </div>
@@ -136,18 +148,21 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
             />
             <Legend
               content={() => (
-                <div className='mt-4 flex justify-center gap-4'>
-                  <div className='flex items-center gap-2'>
-                    <div className='h-3 w-3 rounded bg-green-500' />
-                    <span className='text-xs'>≥80%</span>
+                <div className={cn(
+                  'mt-4 flex justify-center',
+                  spacingUtilities.gap.medium
+                )}>
+                  <div className={cn('flex items-center', spacingUtilities.gap.small)}>
+                    <div className={cn('h-3 w-3 rounded')} style={{ backgroundColor: semanticColors.success.DEFAULT }} />
+                    <span className={cn(textClasses['label-small'], 'text-foreground')}>≥80%</span>
                   </div>
-                  <div className='flex items-center gap-2'>
-                    <div className='h-3 w-3 rounded bg-amber-500' />
-                    <span className='text-xs'>50-79%</span>
+                  <div className={cn('flex items-center', spacingUtilities.gap.small)}>
+                    <div className={cn('h-3 w-3 rounded')} style={{ backgroundColor: semanticColors.warning.DEFAULT }} />
+                    <span className={cn(textClasses['label-small'], 'text-foreground')}>50-79%</span>
                   </div>
-                  <div className='flex items-center gap-2'>
-                    <div className='h-3 w-3 rounded bg-red-500' />
-                    <span className='text-xs'>&lt;50%</span>
+                  <div className={cn('flex items-center', spacingUtilities.gap.small)}>
+                    <div className={cn('h-3 w-3 rounded')} style={{ backgroundColor: semanticColors.destructive.DEFAULT }} />
+                    <span className={cn(textClasses['label-small'], 'text-foreground')}>&lt;50%</span>
                   </div>
                 </div>
               )}

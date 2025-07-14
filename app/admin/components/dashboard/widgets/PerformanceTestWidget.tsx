@@ -9,6 +9,15 @@ import { Play, BarChart3, TrendingUp } from 'lucide-react';
 import { runPerformanceTest } from '@/app/admin/utils/performanceTestBatchQuery';
 import { WidgetSkeleton } from './common/WidgetStates';
 import type { WidgetProps } from '@/app/admin/types/widget-types';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
+import { cn } from '@/lib/utils';
 
 interface TestResult {
   comparison: any;
@@ -53,7 +62,7 @@ const PerformanceTestWidget: React.FC<WidgetProps> = ({ className }) => {
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className={cn('flex items-center gap-2', textClasses['heading-base'])}>
           <BarChart3 className="h-5 w-5" />
           批量查詢性能測試
         </CardTitle>
@@ -61,7 +70,7 @@ const PerformanceTestWidget: React.FC<WidgetProps> = ({ className }) => {
       <CardContent className="space-y-4">
         {!result && !isRunning && (
           <div className="text-center py-8">
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className={cn(textClasses['body-small'], 'text-muted-foreground mb-4')}>
               測試批量查詢系統相比個別查詢嘅性能提升
             </p>
             <Button onClick={runTest} size="lg" className="gap-2">
@@ -75,7 +84,7 @@ const PerformanceTestWidget: React.FC<WidgetProps> = ({ className }) => {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <WidgetSkeleton type="spinner" className="h-4 w-4" />
-              <span className="text-sm">正在運行性能測試...</span>
+              <span className={textClasses['body-small']}>正在運行性能測試...</span>
             </div>
             <Progress value={progress} className="h-2" />
           </div>
@@ -85,28 +94,34 @@ const PerformanceTestWidget: React.FC<WidgetProps> = ({ className }) => {
           <div className="space-y-4">
             {/* 性能改善摘要 */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-green-50 dark:bg-green-950 rounded-lg p-4">
+              <div className={cn(
+                'rounded-lg p-4',
+                'bg-success/10 border border-success/20'
+              )}>
                 <div className="flex items-center gap-2 mb-1">
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-medium">加載速度提升</span>
+                  <TrendingUp className="h-4 w-4" style={{ color: semanticColors.success.DEFAULT }} />
+                  <span className={cn(textClasses['body-small'], 'font-medium')}>加載速度提升</span>
                 </div>
-                <p className="text-2xl font-bold text-green-600">
+                <p className={cn(textClasses['heading-large'], 'font-bold')} style={{ color: semanticColors.success.DEFAULT }}>
                   {formatPercentage(result.comparison.improvement.timeSavedPercentage)}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className={cn(textClasses['label-small'], 'text-muted-foreground mt-1')}>
                   節省 {result.comparison.improvement.timeSaved.toFixed(0)}ms
                 </p>
               </div>
 
-              <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-4">
+              <div className={cn(
+                'rounded-lg p-4',
+                'bg-info/10 border border-info/20'
+              )}>
                 <div className="flex items-center gap-2 mb-1">
-                  <BarChart3 className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium">請求減少</span>
+                  <BarChart3 className="h-4 w-4" style={{ color: semanticColors.info.DEFAULT }} />
+                  <span className={cn(textClasses['body-small'], 'font-medium')}>請求減少</span>
                 </div>
-                <p className="text-2xl font-bold text-blue-600">
+                <p className={cn(textClasses['heading-large'], 'font-bold')} style={{ color: semanticColors.info.DEFAULT }}>
                   {formatPercentage(result.comparison.improvement.requestsReducedPercentage)}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className={cn(textClasses['label-small'], 'text-muted-foreground mt-1')}>
                   減少 {result.comparison.improvement.requestsReduced} 個請求
                 </p>
               </div>
@@ -114,30 +129,30 @@ const PerformanceTestWidget: React.FC<WidgetProps> = ({ className }) => {
 
             {/* 詳細對比 */}
             <div className="border rounded-lg p-4 space-y-3">
-              <h4 className="font-medium text-sm">詳細性能對比</h4>
+              <h4 className={cn(textClasses['body-small'], 'font-medium')}>詳細性能對比</h4>
               
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">批量查詢時間</span>
-                  <span className="text-sm font-medium">
+                  <span className={cn(textClasses['body-small'], 'text-muted-foreground')}>批量查詢時間</span>
+                  <span className={cn(textClasses['body-small'], 'font-medium')}>
                     {result.comparison.batchQuery.duration.toFixed(0)}ms
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">個別查詢時間</span>
-                  <span className="text-sm font-medium">
+                  <span className={cn(textClasses['body-small'], 'text-muted-foreground')}>個別查詢時間</span>
+                  <span className={cn(textClasses['body-small'], 'font-medium')}>
                     {result.comparison.individualQueries.duration.toFixed(0)}ms
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">批量查詢請求數</span>
-                  <span className="text-sm font-medium">
+                  <span className={cn(textClasses['body-small'], 'text-muted-foreground')}>批量查詢請求數</span>
+                  <span className={cn(textClasses['body-small'], 'font-medium')}>
                     {result.comparison.batchQuery.requestCount}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">個別查詢請求數</span>
-                  <span className="text-sm font-medium">
+                  <span className={cn(textClasses['body-small'], 'text-muted-foreground')}>個別查詢請求數</span>
+                  <span className={cn(textClasses['body-small'], 'font-medium')}>
                     {result.comparison.individualQueries.requestCount}
                   </span>
                 </div>
@@ -146,10 +161,10 @@ const PerformanceTestWidget: React.FC<WidgetProps> = ({ className }) => {
 
             {/* 測試報告 */}
             <details className="group">
-              <summary className="cursor-pointer text-sm font-medium hover:text-primary">
+              <summary className={cn('cursor-pointer font-medium hover:text-primary', textClasses['body-small'])}>
                 查看完整測試報告
               </summary>
-              <pre className="mt-2 p-4 bg-muted rounded-lg text-xs overflow-auto max-h-96">
+              <pre className={cn('mt-2 p-4 bg-muted rounded-lg overflow-auto max-h-96', textClasses['label-small'])}>
                 {result.report}
               </pre>
             </details>

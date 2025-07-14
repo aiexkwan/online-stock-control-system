@@ -36,6 +36,7 @@ A comprehensive stock control and management system built with Next.js 14, TypeS
 - **Quick Inventory Search**: Instant stock level queries
 - **Report Generation**: ACO, GRN, Transaction, Slate reports
 - **Data Export**: Comprehensive database export tools
+- **Universal Upload Widget**: Configurable upload system with plugins for folder selection, preview, and AI analysis
 
 #### **AI-Powered Features**
 - **PDF Order Analysis**: Automatic order data extraction
@@ -64,27 +65,23 @@ A comprehensive stock control and management system built with Next.js 14, TypeS
 ### 📁 Project Structure
 
 ```
-NewPennine/
+online-stock-control-system/
 ├── app/
+│   ├── admin/                  # Comprehensive admin panel with dashboard widgets
+│   │   └── components/dashboard/widgets/common/UniversalUploadWidget/ # New universal upload component
+│   ├── api/                    # API endpoints including AI analysis and reports
 │   ├── print-label/            # QC label printing system
 │   ├── print-grnlabel/         # GRN label printing
 │   ├── stock-transfer/         # Automated stock movement
-│   ├── admin/                  # Comprehensive admin panel
-│   ├── components/             # Shared components
-│   │   ├── qc-label-form/      # QC label components
-│   │   ├── admin-panel-menu/   # Admin dialog components
-│   │   └── print-label-pdf/    # PDF generation components
-│   ├── api/                    # API endpoints
-│   │   ├── analyze-order-pdf/  # AI PDF analysis
-│   │   ├── export-report/      # Report generation
-│   │   └── print-label-pdf/    # Label PDF generation
-│   └── hooks/                  # Business logic hooks
+│   └── ... (other routes)
 ├── components/
 │   ├── ui/                     # UI component library
-│   ├── qr-scanner/            # QR code scanning
-│   └── products/              # Product management
+│   ├── qr-scanner/             # QR code scanning
+│   └── ... 
 ├── docs/                      # Comprehensive documentation
-├── lib/                       # Utility libraries
+├── lib/                       # Utility libraries including widgets config
+├── supabase/                  # Supabase configurations and migrations
+├── tests/                     # Unit and integration tests
 └── public/                    # Static assets
 ```
 
@@ -186,6 +183,14 @@ The system uses PostgreSQL through Supabase with the following main tables:
 - Enhanced data validation
 - Better error logging and monitoring
 
+#### **Recent Updates**
+
+##### **Phase V1.2 Enhancements**
+- Implemented UniversalUploadWidget with plugin system for modular upload features
+- Added plugins: FolderSelector, Preview, AIAnalysis
+- Updated widget configurations for better modularity
+- Enhanced design system unification
+
 ### 📖 Documentation
 
 Comprehensive documentation is available in the `/docs` folder:
@@ -245,6 +250,7 @@ This project is proprietary software developed for Pennine Manufacturing Industr
 - **快速庫存搜尋**：即時庫存水平查詢
 - **報表生成**：ACO、GRN、交易、Slate 報表
 - **資料匯出**：全面的資料庫匯出工具
+- **通用上傳小部件**：可配置的上傳系統，包含文件夾選擇、預覽和AI分析插件
 
 #### **AI 驅動功能**
 - **PDF 訂單分析**：自動訂單資料提取
@@ -273,27 +279,23 @@ This project is proprietary software developed for Pennine Manufacturing Industr
 ### 專案結構
 
 ```
-NewPennine/
+online-stock-control-system/
 ├── app/
-│   ├── print-label/            # QC 標籤列印系統
-│   ├── print-grnlabel/         # GRN 標籤列印
+│   ├── admin/                  # 綜合管理面板與儀表板小部件
+│   │   └── components/dashboard/widgets/common/UniversalUploadWidget/ # 新的通用上傳組件
+│   ├── api/                    # API端點包括AI分析和報表
+│   ├── print-label/            # QC標籤列印系統
+│   ├── print-grnlabel/         # GRN標籤列印
 │   ├── stock-transfer/         # 自動化庫存移動
-│   ├── admin/                  # 綜合管理面板
-│   ├── components/             # 共享組件
-│   │   ├── qc-label-form/      # QC 標籤組件
-│   │   ├── admin-panel-menu/   # 管理對話框組件
-│   │   └── print-label-pdf/    # PDF 生成組件
-│   ├── api/                    # API 端點
-│   │   ├── analyze-order-pdf/  # AI PDF 分析
-│   │   ├── export-report/      # 報表生成
-│   │   └── print-label-pdf/    # 標籤 PDF 生成
-│   └── hooks/                  # 業務邏輯 hooks
+│   └── ... (其他路由)
 ├── components/
-│   ├── ui/                     # UI 組件庫
-│   ├── qr-scanner/            # QR 碼掃描
-│   └── products/              # 產品管理
+│   ├── ui/                     # UI組件庫
+│   ├── qr-scanner/             # QR碼掃描
+│   └── ... 
 ├── docs/                      # 綜合文檔
-├── lib/                       # 工具庫
+├── lib/                       # 工具庫包括小部件配置
+├── supabase/                  # Supabase配置和遷移
+├── tests/                     # 單元和整合測試
 └── public/                    # 靜態資源
 ```
 
@@ -397,6 +399,12 @@ NewPennine/
 - 改進會話管理
 - 增強資料驗證
 - 更好的錯誤日誌和監控
+
+#### **Phase V1.2 增強**
+- 實施UniversalUploadWidget與插件系統用於模塊化上傳功能
+- 新增插件：FolderSelector、Preview、AIAnalysis
+- 更新小部件配置以提高模塊性
+- 增強設計系統統一
 
 ### 文檔
 

@@ -1,6 +1,6 @@
 import 'server-only';
 import { createClient } from '@/app/utils/supabase/server';
-import { DashboardBatchQueryData } from '../useDashboardBatchQuery';
+import { DashboardBatchQueryData } from '../useDashboardConcurrentQuery';
 
 /**
  * Server-side critical widgets data prefetching

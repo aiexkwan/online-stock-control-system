@@ -24,8 +24,7 @@ const nextConfig = {
     },
     // 減少開發環境的錯誤輸出
     devIndicators: {
-      buildActivity: false, // 禁用構建指示器
-      buildActivityPosition: 'bottom-right',
+      position: 'bottom-right',
     },
     // 開發環境性能優化
     webpack: (config, { dev, isServer }) => {
@@ -114,6 +113,23 @@ const nextConfig = {
       net: false,
       tls: false,
     };
+    
+    // 添加 webpack 插件來處理 originalFactory.call 錯誤
+    if (!isServer && dev) {
+      const { IgnorePlugin } = require('webpack');
+      // 忽略可能導致問題的模塊
+      config.plugins.push(
+        new IgnorePlugin({
+          checkResource(resource, context) {
+            // 忽略可能導致問題的 CSS imports
+            if (resource.endsWith('.css') && context.includes('_next/static')) {
+              return true;
+            }
+            return false;
+          },
+        })
+      );
+    }
 
     // 優化 chunk 分割以減少 originalFactory.call 錯誤
     if (!isServer) {

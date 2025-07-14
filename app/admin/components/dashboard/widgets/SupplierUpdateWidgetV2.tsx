@@ -28,6 +28,15 @@ import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/us
 import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client';
 import { useWidgetErrorHandler } from '@/app/admin/hooks/useWidgetErrorHandler';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
+import { cn } from '@/lib/utils';
 
 // GraphQL Queries and Mutations
 const GET_SUPPLIER_BY_CODE = gql`
@@ -426,7 +435,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
               Supplier Update
             </div>
             {performanceMetrics.lastOperationTime && (
-              <span className='text-xs text-slate-400'>
+              <span className={cn(textClasses['label-small'], 'text-muted-foreground')}>
                 {performanceMetrics.lastOperationTime}ms
                 {performanceMetrics.optimized && ' (optimized)'}
               </span>
@@ -437,7 +446,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
           {/* Search Section */}
           {!showForm && !showCreateDialog && (
             <div className='space-y-3'>
-              <Label htmlFor='search' className='text-sm text-slate-300'>
+              <Label htmlFor='search' className={cn(textClasses['body-small'], 'text-muted-foreground')}>
                 Supplier Code
               </Label>
               <div className='flex gap-2'>
@@ -447,14 +456,21 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
                   value={searchInput}
                   onChange={e => setSearchInput(e.target.value)}
                   placeholder='Enter supplier code...'
-                  className='h-9 flex-1 border-slate-600/50 bg-slate-700/50 text-sm'
+                  className={cn(
+                    'h-9 flex-1 border-input bg-background',
+                    textClasses['body-small']
+                  )}
                   disabled={searchLoading || isEditMode}
                 />
                 <Button
                   onClick={() => handleSearch(searchInput)}
                   disabled={searchLoading || isEditMode}
                   size='sm'
-                  className='h-9 bg-gradient-to-r from-blue-600 to-cyan-600 px-4 hover:from-blue-500 hover:to-cyan-500'
+                  className={cn(
+                    'h-9 px-4 bg-gradient-to-r',
+                    getWidgetCategoryColor('operations', 'gradient'),
+                    'hover:opacity-90'
+                  )}
                 >
                   {isLoading ? (
                     <div className='h-4 w-4 animate-spin rounded-full border-b-2 border-white' />
@@ -472,15 +488,17 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
           {/* Status Message */}
           {statusMessage && (
             <div
-              className={`rounded-lg p-3 text-sm ${
+              className={cn(
+                'rounded-lg p-3',
+                textClasses['body-small'],
                 statusMessage.type === 'success'
-                  ? 'bg-green-500/20 text-green-400'
+                  ? 'bg-success/20 text-success'
                   : statusMessage.type === 'error'
-                    ? 'bg-red-500/20 text-red-400'
+                    ? 'bg-destructive/20 text-destructive'
                     : statusMessage.type === 'warning'
-                      ? 'bg-yellow-500/20 text-yellow-400'
-                      : 'bg-blue-500/20 text-blue-400'
-              }`}
+                      ? 'bg-warning/20 text-warning'
+                      : 'bg-info/20 text-info'
+              )}
             >
               {statusMessage.message}
             </div>
@@ -488,19 +506,24 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
 
           {/* Create Confirmation */}
           {showCreateDialog && (
-            <div className='rounded-lg border border-yellow-500/30 bg-slate-800/50 p-4'>
+            <div className={cn(
+              'rounded-lg border border-warning/30 bg-card/50 p-4'
+            )}>
               <div className='flex items-start space-x-3'>
-                <ExclamationTriangleIcon className='mt-0.5 h-5 w-5 text-yellow-400' />
+                <ExclamationTriangleIcon className='mt-0.5 h-5 w-5 text-warning' />
                 <div className='flex-1'>
-                  <p className='text-sm font-medium text-yellow-400'>Supplier Not Found</p>
-                  <p className='mt-1 text-sm text-slate-300'>
+                  <p className={cn(textClasses['body-small'], 'font-medium text-warning')}>Supplier Not Found</p>
+                  <p className={cn('mt-1', textClasses['body-small'], 'text-muted-foreground')}>
                     Create new supplier &quot;{searchedCode}&quot;?
                   </p>
                   <div className='mt-3 flex gap-2'>
                     <Button
                       onClick={handleConfirmCreate}
                       size='sm'
-                      className='h-8 bg-green-600 text-sm hover:bg-green-700'
+                      className={cn(
+                        'h-8 bg-success hover:bg-success/90 text-success-foreground',
+                        textClasses['body-small']
+                      )}
                       disabled={isEditMode}
                     >
                       <CheckCircleIcon className='mr-1 h-4 w-4' />
@@ -510,7 +533,10 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
                       onClick={handleCancel}
                       size='sm'
                       variant='outline'
-                      className='h-8 border-slate-600 text-sm'
+                      className={cn(
+                        'h-8 border-border',
+                        textClasses['body-small']
+                      )}
                       disabled={isEditMode}
                     >
                       Cancel
@@ -523,13 +549,18 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
 
           {/* Supplier Info Display */}
           {supplierData && !showForm && (
-            <div className='rounded-lg border border-slate-700/50 bg-slate-800/50 p-4'>
+            <div className={cn(
+              'rounded-lg border border-border bg-card/50 p-4'
+            )}>
               <div className='mb-3 flex items-center justify-between'>
-                <h4 className='text-sm font-medium text-blue-400'>Supplier Info</h4>
+                <h4 className={cn(textClasses['body-small'], 'font-medium text-primary')}>Supplier Info</h4>
                 <Button
                   onClick={handleEdit}
                   size='sm'
-                  className='h-7 bg-blue-600 px-3 text-xs hover:bg-blue-700'
+                  className={cn(
+                    'h-7 bg-primary hover:bg-primary/90 text-primary-foreground px-3',
+                    textClasses['label-small']
+                  )}
                   disabled={isEditMode}
                 >
                   <PencilIcon className='mr-1 h-3 w-3' />
@@ -547,7 +578,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
           {showForm && (
             <form onSubmit={handleSubmit} className='space-y-4'>
               <div className='mb-3 flex items-center justify-between'>
-                <h4 className='text-sm font-medium text-blue-400'>
+                <h4 className={cn(textClasses['body-small'], 'font-medium text-primary')}>
                   {isEditing ? 'Edit Supplier' : 'New Supplier'}
                 </h4>
                 <Button
@@ -555,7 +586,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
                   onClick={resetState}
                   size='sm'
                   variant='ghost'
-                  className='h-7 px-3 text-xs'
+                  className={cn('h-7 px-3', textClasses['label-small'])}
                   disabled={searchLoading || isEditMode}
                 >
                   <ArrowPathIcon className='h-4 w-4' />
@@ -564,7 +595,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
 
               <div className='space-y-3'>
                 <div>
-                  <Label htmlFor='supplier_code' className='text-sm'>
+                  <Label htmlFor='supplier_code' className={textClasses['body-small']}>
                     Code *
                   </Label>
                   <Input
@@ -573,13 +604,16 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
                     value={formData.supplier_code}
                     onChange={e => handleInputChange('supplier_code', e.target.value.toUpperCase())}
                     disabled={isEditing || isEditMode}
-                    className='mt-1 h-9 bg-slate-700/50 text-sm'
+                    className={cn(
+                      'mt-1 h-9 border-input bg-background',
+                      textClasses['body-small']
+                    )}
                     required
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor='supplier_name' className='text-sm'>
+                  <Label htmlFor='supplier_name' className={textClasses['body-small']}>
                     Name *
                   </Label>
                   <Input
@@ -587,7 +621,10 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
                     type='text'
                     value={formData.supplier_name}
                     onChange={e => handleInputChange('supplier_name', e.target.value)}
-                    className='mt-1 h-9 bg-slate-700/50 text-sm'
+                    className={cn(
+                      'mt-1 h-9 border-input bg-background',
+                      textClasses['body-small']
+                    )}
                     disabled={isEditMode}
                     required
                   />
@@ -600,7 +637,10 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
                   onClick={handleCancel}
                   size='sm'
                   variant='outline'
-                  className='h-8 flex-1 border-slate-600 text-sm'
+                  className={cn(
+                    'h-8 flex-1 border-border',
+                    textClasses['body-small']
+                  )}
                   disabled={searchLoading || isEditMode}
                 >
                   Cancel
@@ -609,7 +649,10 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
                   type='submit'
                   size='sm'
                   disabled={searchLoading || isEditMode}
-                  className='h-8 flex-1 bg-blue-600 text-sm hover:bg-blue-700'
+                  className={cn(
+                    'h-8 flex-1 bg-primary hover:bg-primary/90 text-primary-foreground',
+                    textClasses['body-small']
+                  )}
                 >
                   {isLoading ? (
                     <div className='h-3 w-3 animate-spin rounded-full border-b-2 border-white' />
@@ -626,7 +669,10 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
 
           {/* Performance indicator */}
           {performanceMetrics.optimized && (
-            <div className='mt-2 text-center text-[10px] text-green-400'>
+            <div className={cn(
+              'mt-2 text-center text-success',
+              textClasses['label-small']
+            )}>
               ✓ Server-side optimized (atomic operations)
             </div>
           )}
@@ -646,9 +692,12 @@ interface InfoRowProps {
 
 function InfoRow({ label, value }: InfoRowProps) {
   return (
-    <div className='flex items-center justify-between rounded bg-slate-700/30 px-3 py-2 text-sm'>
-      <span className='text-slate-400'>{label}:</span>
-      <span className='font-medium text-slate-200'>{value || '-'}</span>
+    <div className={cn(
+      'flex items-center justify-between rounded bg-background/30 px-3 py-2',
+      textClasses['body-small']
+    )}>
+      <span className='text-muted-foreground'>{label}:</span>
+      <span className='font-medium text-foreground'>{value || '-'}</span>
     </div>
   );
 }

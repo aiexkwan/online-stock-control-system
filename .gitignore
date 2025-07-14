@@ -69,3 +69,6 @@ bundle-analyzer/
 
 # Virtual environment directory
 mcp-servers/mem0/python/venv/
+
+*storybook.log
+storybook-static

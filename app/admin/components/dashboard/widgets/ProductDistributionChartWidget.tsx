@@ -15,24 +15,33 @@ import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { ChartContainer } from './common/charts/ChartContainer';
 import { useInViewport } from '@/app/admin/hooks/useInViewport';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
+import { cn } from '@/lib/utils';
 
 interface ProductDistributionChartWidgetProps extends WidgetComponentProps {
   title: string;
   limit?: number;
 }
 
-// 顏色配置
+// 顏色配置 - 使用設計系統顏色
 const COLORS = [
-  '#3B82F6', // blue
-  '#10B981', // green  
-  '#F59E0B', // yellow
-  '#EF4444', // red
-  '#8B5CF6', // purple
-  '#06B6D4', // cyan
-  '#F97316', // orange
-  '#64748B', // gray
-  '#EC4899', // pink
-  '#6366F1'  // indigo
+  widgetColors.charts.primary,
+  semanticColors.success.DEFAULT,
+  semanticColors.warning.DEFAULT,
+  semanticColors.destructive.DEFAULT,
+  brandColors.primary,
+  semanticColors.info.DEFAULT,
+  brandColors.secondary,
+  widgetColors.charts.grid,
+  widgetColors.charts.accent,
+  brandColors.accent
 ];
 
 export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWidgetProps> = ({ 
@@ -148,12 +157,14 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
       const data = payload[0];
       const percentage = total > 0 ? ((data.value / total) * 100).toFixed(1) : '0';
       return (
-        <div className="bg-slate-800 border border-slate-600 rounded-lg p-3 shadow-lg">
-          <p className="text-white font-medium">{data.payload.name}</p>
-          <p className="text-blue-400">
+        <div className={cn(
+          'bg-card border border-border rounded-lg p-3 shadow-lg'
+        )}>
+          <p className={cn(textClasses['body-small'], 'font-medium text-foreground')}>{data.payload.name}</p>
+          <p className={cn(textClasses['label-small'])} style={{ color: widgetColors.charts.primary }}>
             Quantity: <span className="font-semibold">{data.value.toLocaleString()}</span>
           </p>
-          <p className="text-green-400">
+          <p className={cn(textClasses['label-small'])} style={{ color: semanticColors.success.DEFAULT }}>
             Percentage: <span className="font-semibold">{percentage}%</span>
           </p>
         </div>
@@ -203,7 +214,11 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
         widgetType={widget?.type?.toUpperCase()}
       >
         {chartData.length === 0 ? (
-          <div className="text-slate-400 text-sm text-center h-full flex items-center justify-center">
+          <div className={cn(
+            'text-center h-full flex items-center justify-center',
+            textClasses['body-small'],
+            'text-muted-foreground'
+          )}>
             No data available for the selected period
           </div>
         ) : (
@@ -230,7 +245,7 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
                 verticalAlign="bottom" 
                 height={36}
                 formatter={(value, entry) => (
-                  <span className="text-xs text-slate-300">
+                  <span className={cn(textClasses['label-small'], 'text-muted-foreground')}>
                     {value} ({entry?.payload ? ((entry.payload.value / total) * 100).toFixed(1) : '0'}%)
                   </span>
                 )}

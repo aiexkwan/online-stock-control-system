@@ -45,7 +45,6 @@ export const listsWidgetImports = {
 // Operations Widgets
 export const operationsWidgetImports = {
   'VoidPalletWidget': () => import('@/app/admin/components/dashboard/widgets/VoidPalletWidget'),
-  'ProductUpdateWidget': () => import('@/app/admin/components/dashboard/widgets/ProductUpdateWidget'),
   'ProductUpdateWidgetV2': () => import('@/app/admin/components/dashboard/widgets/ProductUpdateWidgetV2'),
   'SupplierUpdateWidget': () => import('@/app/admin/components/dashboard/widgets/SupplierUpdateWidgetV2'),
   'SupplierUpdateWidgetV2': () => import('@/app/admin/components/dashboard/widgets/SupplierUpdateWidgetV2'),
@@ -54,10 +53,11 @@ export const operationsWidgetImports = {
 
 // Uploads Widgets
 export const uploadsWidgetImports = {
-  'UploadOrdersWidget': () => import('@/app/admin/components/dashboard/widgets/UploadOrdersWidgetV2'),
-  'UploadFilesWidget': () => import('@/app/admin/components/dashboard/widgets/UploadFilesWidget'),
-  'UploadProductSpecWidget': () => import('@/app/admin/components/dashboard/widgets/UploadProductSpecWidget'),
-  'UploadPhotoWidget': () => import('@/app/admin/components/dashboard/widgets/UploadPhotoWidget'),
+  'UploadOrdersWidget': () => import('@/app/admin/components/dashboard/widgets/common/UniversalUploadWidget').then(m => m.UniversalUploadWidget),
+  'UploadOrdersWidgetV2': () => import('@/app/admin/components/dashboard/widgets/common/UniversalUploadWidget').then(m => m.UniversalUploadWidget),
+  'UploadFilesWidget': () => import('@/app/admin/components/dashboard/widgets/common/UniversalUploadWidget').then(m => m.UniversalUploadWidget),
+  'UploadProductSpecWidget': () => import('@/app/admin/components/dashboard/widgets/common/UniversalUploadWidget').then(m => m.UniversalUploadWidget),
+  'UploadPhotoWidget': () => import('@/app/admin/components/dashboard/widgets/common/UniversalUploadWidget').then(m => m.UniversalUploadWidget),
   'AvailableSoonWidget': () => import('@/app/admin/components/dashboard/widgets/AvailableSoonWidget'),
   'GoogleDriveUploadToast': () => import('@/app/admin/components/dashboard/widgets/GoogleDriveUploadToast'),
 };

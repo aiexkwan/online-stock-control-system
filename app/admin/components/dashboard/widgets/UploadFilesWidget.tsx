@@ -14,6 +14,15 @@ import { GoogleDriveUploadToast } from './GoogleDriveUploadToast';
 import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';
 import { uploadFile } from '@/app/actions/fileActions';
 import { useWidgetToast } from '@/app/admin/hooks/useWidgetToast';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
+import { cn } from '@/lib/utils';
 
 interface UploadingFile {
   id: string;
@@ -218,9 +227,9 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
         >
           <CloudArrowUpIcon
             className='mx-auto mb-4 h-20 w-20 transition-colors'
-            style={{ color: selectedFolder === 'stockPic' ? '#10b981' : '#8b5cf6' }}
+            style={{ color: selectedFolder === 'stockPic' ? semanticColors.success.DEFAULT : semanticColors.info.DEFAULT }}
           />
-          <p className='text-center text-gray-400'>Upload Files</p>
+          <p className={cn('text-center', textClasses['body-base'], 'text-muted-foreground')}>Upload Files</p>
         </div>
         <div className='mt-2 flex gap-2'>
           <button
@@ -229,11 +238,13 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
               setSelectedFolder('stockPic');
             }}
             disabled={isEditMode}
-            className={`rounded-md px-3 py-1 text-xs font-medium transition-all ${
+            className={cn(
+              'rounded-md px-3 py-1 font-medium transition-all',
+              textClasses['label-small'],
               selectedFolder === 'stockPic'
-                ? 'bg-green-500 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-            }`}
+                ? 'bg-success text-success-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            )}
           >
             Pictures
           </button>
@@ -243,16 +254,18 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
               setSelectedFolder('productSpec');
             }}
             disabled={isEditMode}
-            className={`rounded-md px-3 py-1 text-xs font-medium transition-all ${
+            className={cn(
+              'rounded-md px-3 py-1 font-medium transition-all',
+              textClasses['label-small'],
               selectedFolder === 'productSpec'
-                ? 'bg-purple-500 text-white'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-            }`}
+                ? 'bg-info text-info-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            )}
           >
             Specs
           </button>
         </div>
-        <p className='mt-2 text-xs text-slate-500'>
+        <p className={cn('mt-2', textClasses['label-small'], 'text-muted-foreground/70')}>
           {selectedFolder === 'stockPic' ? 'PNG, JPEG, JPG' : 'PDF, DOC, DOCX'}
         </p>
 

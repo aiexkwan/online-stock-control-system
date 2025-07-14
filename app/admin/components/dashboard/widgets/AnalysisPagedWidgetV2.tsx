@@ -16,6 +16,14 @@ import {
 import { cn } from '@/lib/utils';
 import { useChartInViewport } from '@/app/admin/hooks/useInViewport';
 import { ChartSkeleton } from '../widgets/common/charts/ChartSkeleton';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
 
 // Lazy load chart components for better performance
 // Week 2 Day 3: Progressive Loading for Charts
@@ -43,7 +51,7 @@ const pages: PageContent[] = [
     subtitle: 'Track order completion status',
     icon: BarChart,
     component: AcoOrderProgressChart,
-    color: 'from-blue-500 to-cyan-500',
+    color: getWidgetCategoryColor('analysis', 'gradient'),
   },
   {
     id: 2,
@@ -51,7 +59,7 @@ const pages: PageContent[] = [
     subtitle: 'Identify major inventory products',
     icon: BarChart,
     component: TopProductsInventoryChart,
-    color: 'from-purple-500 to-pink-500',
+    color: getWidgetCategoryColor('charts', 'gradient'),
   },
   {
     id: 3,
@@ -59,7 +67,7 @@ const pages: PageContent[] = [
     subtitle: 'Understand employee work patterns',
     icon: Activity,
     component: UserActivityHeatmap,
-    color: 'from-orange-500 to-red-500',
+    color: getWidgetCategoryColor('analysis', 'gradient'),
   },
   {
     id: 4,
@@ -67,7 +75,7 @@ const pages: PageContent[] = [
     subtitle: 'Compare inventory vs order demand',
     icon: TrendingUp,
     component: InventoryTurnoverAnalysis,
-    color: 'from-green-500 to-emerald-500',
+    color: getWidgetCategoryColor('analysis', 'gradient'),
   },
   {
     id: 5,
@@ -75,7 +83,7 @@ const pages: PageContent[] = [
     subtitle: 'Monitor inventory management quality',
     icon: CheckCircle,
     component: StocktakeAccuracyTrend,
-    color: 'from-indigo-500 to-blue-500',
+    color: getWidgetCategoryColor('analysis', 'gradient'),
   },
   {
     id: 6,
@@ -83,7 +91,7 @@ const pages: PageContent[] = [
     subtitle: 'Reduce waste, improve processes',
     icon: AlertTriangle,
     component: VoidRecordsAnalysis,
-    color: 'from-yellow-500 to-orange-500',
+    color: getWidgetCategoryColor('analysis', 'gradient'),
   },
   {
     id: 7,
@@ -91,7 +99,7 @@ const pages: PageContent[] = [
     subtitle: 'Optimize warehouse space utilization',
     icon: Map,
     component: RealTimeInventoryMap,
-    color: 'from-teal-500 to-cyan-500',
+    color: getWidgetCategoryColor('analysis', 'gradient'),
   },
 ];
 
@@ -156,9 +164,9 @@ export const AnalysisPagedWidgetV2 = function AnalysisPagedWidgetV2({
               <div
                 className={cn(
                   'relative rounded-lg p-4 transition-all duration-300',
-                  'border border-white/10 backdrop-blur-md',
-                  'hover:border-white/20',
-                  isActive ? 'bg-white/10 shadow-2xl' : 'bg-white/5',
+                  'border border-border/30 backdrop-blur-md',
+                  'hover:border-border/50',
+                  isActive ? 'bg-card/20 shadow-2xl' : 'bg-card/10',
                   isPast && 'opacity-70'
                 )}
               >
@@ -166,10 +174,11 @@ export const AnalysisPagedWidgetV2 = function AnalysisPagedWidgetV2({
                 <div
                   className={cn(
                     'absolute -left-3 top-4 h-6 w-6 rounded-full',
-                    'flex items-center justify-center text-xs font-bold',
-                    'border border-white/20 bg-gradient-to-br',
-                    isActive ? page.color : 'from-gray-600 to-gray-700',
-                    'text-white shadow-lg'
+                    'flex items-center justify-center font-bold',
+                    'border border-border/40 bg-gradient-to-br',
+                    isActive ? page.color : 'from-muted to-muted-foreground',
+                    'text-primary-foreground shadow-lg',
+                    textClasses['label-small']
                   )}
                 >
                   {index + 1}
@@ -181,22 +190,23 @@ export const AnalysisPagedWidgetV2 = function AnalysisPagedWidgetV2({
                     className={cn(
                       'rounded-lg p-2',
                       'bg-gradient-to-br',
-                      isActive ? page.color : 'from-gray-600 to-gray-700',
+                      isActive ? page.color : getWidgetCategoryColor('analysis', 'muted'),
                       'shadow-lg'
                     )}
                   >
-                    <page.icon className='h-5 w-5 text-white' />
+                    <page.icon className='h-5 w-5 text-primary-foreground' />
                   </div>
                   <div className='flex-1'>
                     <h3
                       className={cn(
-                        'text-sm font-semibold',
-                        isActive ? 'text-white' : 'text-white/70'
+                        textClasses['body-small'],
+                        'font-semibold',
+                        isActive ? 'text-foreground' : 'text-muted-foreground'
                       )}
                     >
                       {page.title}
                     </h3>
-                    <p className='mt-0.5 text-xs text-white/50'>{page.subtitle}</p>
+                    <p className={cn('mt-0.5', textClasses['label-small'], 'text-muted-foreground/70')}>{page.subtitle}</p>
                   </div>
                 </div>
 
@@ -267,9 +277,12 @@ export const AnalysisPagedWidgetV2 = function AnalysisPagedWidgetV2({
               damping: 20,
             }}
           >
-            <div className='bg-white/3 h-full rounded-2xl border border-white/10 p-6 shadow-2xl backdrop-blur-md'>
+            <div className={cn(
+              'h-full rounded-2xl border p-6 shadow-2xl backdrop-blur-md',
+              'bg-card/30 border-border/10'
+            )}>
               {/* Header */}
-              <div className='mb-6 border-b border-white/10 pb-4'>
+              <div className={cn('mb-6 border-b pb-4', 'border-border/10')}>
                 <div className='flex items-center gap-4'>
                   <div
                     className={cn(
@@ -303,7 +316,7 @@ export const AnalysisPagedWidgetV2 = function AnalysisPagedWidgetV2({
                         {currentPageData.title}
                       </span>
                     </h2>
-                    <p className='text-sm font-medium text-white/70'>{currentPageData.subtitle}</p>
+                    <p className={cn(textClasses['body-small'], 'font-medium text-muted-foreground')}>{currentPageData.subtitle}</p>
                   </div>
                 </div>
               </div>

@@ -5,7 +5,7 @@
  */
 
 import { widgetRegistry } from '../lib/widgets/enhanced-registry';
-import { getStatsWidgetRefreshConfig, supportsTimeFrame } from '../lib/widgets/stats-widget-adapter';
+import { UNIFIED_WIDGET_CONFIG } from '../lib/widgets/widget-config';
 
 async function testStatsWidgetMigration() {
   console.log('\n🔍 Testing Stats Widget Migration...\n');
@@ -61,18 +61,16 @@ async function testStatsWidgetMigration() {
       }
       
       // 檢查特殊配置
-      const refreshInterval = getStatsWidgetRefreshConfig(widgetId);
-      if (refreshInterval) {
-        console.log(`   Refresh Interval: ${refreshInterval}ms`);
+      const config = UNIFIED_WIDGET_CONFIG[widgetId];
+      if (config?.metadata?.refreshInterval) {
+        console.log(`   Refresh Interval: ${config.metadata.refreshInterval}ms`);
       }
       
-      const hasTimeFrame = supportsTimeFrame(widgetId);
+      const hasTimeFrame = config?.metadata?.timeFrameSupport || false;
       console.log(`   Supports TimeFrame: ${hasTimeFrame ? 'Yes' : 'No'}`);
       
       // 檢查 GraphQL 支援
-      if (definition.graphqlVersion) {
-        console.log(`   GraphQL Version: ${definition.graphqlVersion}`);
-      } else if (definition.useGraphQL) {
+      if (config?.metadata?.supportsGraphQL) {
         console.log(`   Uses GraphQL: Yes`);
       }
       

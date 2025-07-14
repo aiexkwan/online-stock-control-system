@@ -27,6 +27,14 @@ import {
 } from '@/components/ui/select-radix';
 import { cn } from '@/lib/utils';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
+import { 
+  brandColors, 
+  widgetColors, 
+  semanticColors,
+  getWidgetCategoryColor 
+} from '@/lib/design-system/colors';
+import { textClasses, getTextClass } from '@/lib/design-system/typography';
+import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
 
 interface ReportGeneratorWithDialogWidgetV2Props {
   title: string;
@@ -199,11 +207,11 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
         className='flex h-full items-center justify-between px-6'
       >
         <div className='flex-1'>
-          <p className='text-2xl text-muted-foreground'>
+          <p className={cn(textClasses['heading-large'], 'text-muted-foreground')}>
             {description || `Generate ${title?.toLowerCase() || 'Report'}`}
           </p>
           {performanceMetrics.apiResponseTime && (
-            <p className='mt-1 text-xs text-slate-500'>
+            <p className={cn('mt-1', textClasses['label-small'], 'text-muted-foreground')}>
               Last loaded in {performanceMetrics.apiResponseTime}ms
               {performanceMetrics.optimized && ' (server-optimized)'}
             </p>
@@ -229,19 +237,29 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
 
           <div className='grid gap-4 py-4'>
             {error && (
-              <div className='rounded-md border border-red-500/20 bg-red-500/10 p-3'>
-                <p className='text-sm text-red-400'>{error}</p>
+              <div className={cn(
+                'rounded-md border p-3',
+                'border-destructive/20 bg-destructive/10'
+              )}>
+                <p className={cn(textClasses['body-small'])} style={{ color: semanticColors.destructive.DEFAULT }}>{error}</p>
               </div>
             )}
 
             <div className='grid gap-2'>
-              <label htmlFor='reference' className='text-sm font-medium text-slate-200'>
+              <label htmlFor='reference' className={cn(
+                textClasses['body-small'],
+                'font-medium text-foreground'
+              )}>
                 {selectLabel}
               </label>
               <Select value={selectedRef} onValueChange={setSelectedRef}>
                 <SelectTrigger
                   id='reference'
-                  className='border-slate-600 bg-slate-700/50 text-white hover:bg-slate-700/70 focus:border-blue-500 focus:ring-blue-500/50'
+                  className={cn(
+                    'border-input bg-background/50 text-foreground',
+                    'hover:bg-background/70 focus:border-primary focus:ring-primary/50',
+                    textClasses['body-small']
+                  )}
                 >
                   <SelectValue
                     placeholder={
@@ -249,12 +267,15 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
                     }
                   />
                 </SelectTrigger>
-                <SelectContent className='max-h-[300px] border-slate-700 bg-slate-800'>
+                <SelectContent className={cn('max-h-[300px] border-border bg-card')}>
                   {sortedReferences.map(ref => (
                     <SelectItem
                       key={ref}
                       value={ref}
-                      className='text-white hover:bg-slate-700 focus:bg-slate-700 focus:text-white'
+                      className={cn(
+                        'text-foreground hover:bg-accent focus:bg-accent focus:text-accent-foreground',
+                        textClasses['body-small']
+                      )}
                     >
                       {ref}
                     </SelectItem>
@@ -263,13 +284,15 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
               </Select>
 
               {metadata.totalCount && metadata.totalCount > references.length && (
-                <p className='text-xs text-slate-400'>
+                <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>
                   Showing first {references.length} of {metadata.totalCount} total references
                 </p>
               )}
 
               {metadata.queryTime && (
-                <p className='text-[10px] text-green-400'>
+                <p className={cn(
+                  textClasses['label-small']
+                )} style={{ color: semanticColors.success.DEFAULT }}>
                   ✓ Server-side query completed in {metadata.queryTime}
                 </p>
               )}
@@ -280,7 +303,11 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
             <Button
               variant='outline'
               onClick={() => setIsDialogOpen(false)}
-              className='border-slate-600 text-slate-300 hover:border-slate-500 hover:bg-slate-700/50 hover:text-white'
+              className={cn(
+                'border-border text-muted-foreground',
+                'hover:border-border/80 hover:bg-background/50 hover:text-foreground',
+                textClasses['body-small']
+              )}
             >
               Cancel
             </Button>
@@ -288,11 +315,13 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
               onClick={handleDownload}
               disabled={!selectedRef || downloadStatus !== 'idle'}
               className={cn(
-                'relative overflow-hidden bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg hover:from-blue-500 hover:to-cyan-500 hover:shadow-blue-500/25',
-                downloadStatus === 'downloading' && 'from-blue-600/50 to-cyan-600/50',
+                'relative overflow-hidden text-primary-foreground shadow-lg',
+                getWidgetCategoryColor('reports', 'gradient'),
+                'hover:opacity-90',
+                downloadStatus === 'downloading' && 'opacity-50',
                 downloadStatus !== 'idle' && 'pointer-events-none',
-                !selectedRef &&
-                  'from-slate-600 to-slate-600 hover:from-slate-600 hover:to-slate-600'
+                !selectedRef && 'bg-muted hover:bg-muted',
+                textClasses['body-small']
               )}
             >
               {downloadStatus === 'idle' && (

@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import { performanceMonitor, PerformanceTimer } from '@/lib/widgets/performance-monitor';
+import { simplePerformanceMonitor, recordMetric } from '@/lib/performance/SimplePerformanceMonitor';
 import { 
   enhancedPerformanceMonitor,
   type ErrorMetrics,
@@ -75,7 +75,7 @@ export function useWidgetPerformanceTracking({
   // Start performance tracking
   const startTracking = useCallback(() => {
     if (!timerRef.current) {
-      timerRef.current = performanceMonitor.startMonitoring(widgetId, variant);
+      timerRef.current = simplePerformanceMonitor.startMonitoring(widgetId, variant);
       console.log(`[PerformanceTracking] Started tracking for ${widgetId}`);
     }
   }, [widgetId, variant]);
@@ -276,10 +276,10 @@ export function useRealtimePerformanceMonitor(widgetId?: string) {
     if (!isMonitoring) return;
     
     const updateMetrics = () => {
-      const realtimeData = performanceMonitor.getRealtimeMetrics();
+      const realtimeData = simplePerformanceMonitor.getRealtimeMetrics();
       
       if (widgetId) {
-        const widgetReport = performanceMonitor.getWidgetReport(widgetId);
+        const widgetReport = simplePerformanceMonitor.getWidgetReport(widgetId);
         const errorRate = enhancedPerformanceMonitor.getErrorRate(widgetId);
         
         setMetrics({
