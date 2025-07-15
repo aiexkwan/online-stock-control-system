@@ -9,6 +9,7 @@
 減少冗碼：優先編輯現有文件而非創建新文件
 更新後測試：更新後必須使用工具進行測試，不可跳過
 不另建文檔：所有結果統一寫回相關文檔，不可另建文檔（評核紀錄及計劃書除外）
+每天建立當天的todolist到todolist記憶庫
 
 ## 使用模式
 Ultrathink
@@ -34,11 +35,13 @@ UTF-8
 issue fixing記錄庫：docs\issue-library
 評核紀錄庫：docs\audit
 計劃文檔庫：docs\planning
+todolist記憶庫：docs\task
 
 ## 文檔儲存命名格式
 評核紀錄：docs\audit\{相關審查工作}.md
 issue fixing記錄：docs\issue-library\{問題類型}.md
 計劃文檔：docs\planning\{相關計劃}.md
+todolist記憶庫：docs\task\{當天日期}.md
 
 ## 用戶
 預計：10-15人
