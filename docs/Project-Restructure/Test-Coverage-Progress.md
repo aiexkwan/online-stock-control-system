@@ -84,7 +84,7 @@
 2. **更多 Hooks 測試**
    - [ ] usePalletSearch
    - [ ] useSupplierValidation
-   - [ ] useMemory
+   - [x] useMemory (已移除，不再使用 mem0ai)
 
 ### 技術債務
 - [ ] 修復 Next.js API route 測試環境問題

@@ -10,7 +10,7 @@ import { forceCleanupAllAuth } from './utils/cleanup-legacy-auth';
 export default function MainLoginPage() {
   const [showConfirmation, setShowConfirmation] = useState(false);
 
-  // 在開發環境中，可以通過 URL 參數強制清理
+  // 處理 URL 參數和頁面初始化
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
 
@@ -21,10 +21,9 @@ export default function MainLoginPage() {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
 
+    // 開發環境中的強制清理功能
     if (urlParams.get('cleanup') === 'force') {
-      (process.env.NODE_ENV as string) !== 'production' &&
-        (process.env.NODE_ENV as string) !== 'production' &&
-        console.log('[MainLoginPage] Force cleanup requested via URL parameter');
+      console.log('[MainLoginPage] Force cleanup requested via URL parameter');
       forceCleanupAllAuth();
       // 移除 URL 參數
       window.history.replaceState({}, document.title, window.location.pathname);

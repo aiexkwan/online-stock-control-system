@@ -22,7 +22,7 @@ export const statsWidgetImports = {
 
 // Charts Widgets
 export const chartsWidgetImports = {
-  'StockDistributionChart': () => import('@/app/admin/components/dashboard/widgets/StockDistributionChartV2'),
+  'StockDistributionChart': () => import('@/app/admin/components/dashboard/widgets/StockDistributionChart'),
   'StockDistributionChartV2': () => import('@/app/admin/components/dashboard/widgets/StockDistributionChartV2'),
   'StockLevelHistoryChart': () => import('@/app/admin/components/dashboard/widgets/StockLevelHistoryChart'),
   'TransferTimeDistributionWidget': () => import('@/app/admin/components/dashboard/widgets/TransferTimeDistributionWidget'),
@@ -65,9 +65,9 @@ export const uploadsWidgetImports = {
 // Reports Widgets
 export const reportsWidgetImports = {
   'TransactionReportWidget': () => import('@/app/admin/components/dashboard/widgets/TransactionReportWidget'),
-  'GrnReportWidget': () => import('@/app/admin/components/dashboard/widgets/GrnReportWidgetV2'),
+  'GrnReportWidget': () => import('@/app/admin/components/dashboard/widgets/GrnReportWidget'),
   'GrnReportWidgetV2': () => import('@/app/admin/components/dashboard/widgets/GrnReportWidgetV2'),
-  'AcoOrderReportWidget': () => import('@/app/admin/components/dashboard/widgets/AcoOrderReportWidgetV2'),
+  'AcoOrderReportWidget': () => import('@/app/admin/components/dashboard/widgets/AcoOrderReportWidget'),
   'AcoOrderReportWidgetV2': () => import('@/app/admin/components/dashboard/widgets/AcoOrderReportWidgetV2'),
   'ReprintLabelWidget': () => import('@/app/admin/components/dashboard/widgets/ReprintLabelWidget'),
   'ReportGeneratorWidget': () => import('@/app/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2'),

@@ -21,6 +21,141 @@
    - 支援 PDF、Excel、圖片上載
    - 檔案處理同存儲機制
 
+#### 強化安全性計劃
+
+1. 加密令牌存儲與管理
+加密存儲訪問令牌和刷新令牌：所有的 OAuth 令牌，無論是訪問令牌（Access Token）還是刷新令牌（Refresh Token），都應該進行加密存儲。
+
+應使用強加密算法（如 AES-256）來保護這些令牌，以防止它們在數據庫中被未經授權的用戶讀取。
+
+加密處理邏輯：
+
+使用 Vercel 環境變數 存儲 加密密鑰，並且將密鑰管理委託給專業的服務（如 AWS KMS 或 Azure Key Vault）。
+
+確保加密密鑰與其他資料（如令牌）分開存儲，以增強安全性。
+
+2. 在 Supabase 中設計安全的資料表
+資料表結構：
+
+為了保持整體架構的清晰與安全，使用以下資料表結構來管理令牌：
+
+CREATE TABLE user_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  access_token TEXT,  -- 儲存加密後的訪問令牌
+  refresh_token TEXT, -- 儲存加密後的刷新令牌
+  access_token_expiry TIMESTAMP,
+  refresh_token_expiry TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+加密令牌存儲：
+- 當令牌被創建或更新時，通過加密函數將 訪問令牌 和 刷新令牌 進行加密，再存儲到 user_tokens 資料表中。
+- 使用 process.env.ENCRYPTION_KEY 來加密令牌（加密密鑰可以存儲在 Vercel 環境變數中）。
+
+3. 使用強加密算法（AES-256）加密令牌
+令牌存儲時，必須進行加密處理。以下是如何使用 Node.js 進行令牌加密和解密的示例。
+
+const crypto = require('crypto');
+
+// 用於加密令牌的密鑰（存儲於 Vercel 環境變數中）
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
+
+// 加密訪問令牌
+function encryptToken(token) {
+  const iv = crypto.randomBytes(16);  // 生成初始化向量
+  const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
+  let encrypted = cipher.update(token, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  return `${iv.toString('hex')}:${encrypted}`;
+}
+
+// 解密訪問令牌
+function decryptToken(encryptedData) {
+  const [ivHex, encryptedText] = encryptedData.split(':');
+  const iv = Buffer.from(ivHex, 'hex');
+  const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
+  let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
+這樣存儲的令牌即使在數據庫中，也無法被未經授權的用戶直接訪問。
+
+4. 令牌過期處理與自動更新
+過期時間設置：為了避免訪問令牌過期後無法繼續使用，應該為每個令牌設置過期時間。
+- 訪問令牌有效期(兩小時)
+- 刷新令牌有效期(一個月)。
+
+自動更新過期令牌：當訪問令牌過期時，應該自動使用刷新令牌來獲取新的訪問令牌。此過程應該無縫進行，並且需要根據用戶的令牌過期時間來計劃自動刷新。
+
+例如，設置過期時間並定期檢查令牌是否過期。
+
+如果過期，使用刷新令牌重新獲取新的訪問令牌並更新資料庫中的記錄。
+
+// 自動刷新訪問令牌的邏輯範例
+async function refreshAccessToken(userId: string, refreshToken: string) {
+  const response = await fetch('https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      client_id: '{client-id}',
+      client_secret: '{client-secret}',
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+      scope: 'https://graph.microsoft.com/.default',
+    }),
+  });
+
+  if (response.ok) {
+    const data = await response.json();
+    const newAccessToken = data.access_token;
+    const newExpiry = new Date(Date.now() + 3600 * 1000); // 假設過期時間為 1 小時後
+
+    // 更新資料庫中的訪問令牌
+    await supabase
+      .from('user_tokens')
+      .update({
+        access_token: encryptToken(newAccessToken),
+        access_token_expiry: newExpiry,
+        updated_at: new Date(),
+      })
+      .eq('user_id', userId);
+  } else {
+    console.error('Failed to refresh access token');
+  }
+}
+
+5. 撤銷與失效機制
+登出與令牌撤銷：當用戶登出或更新密碼時，應立即撤銷其所有有效的令牌。
+通過從資料庫中刪除用戶的令牌記錄或將其標記為無效來實現。
+
+刷新令牌失效：如果刷新令牌過期或無效，則需要要求用戶重新授權，並創建新的令牌。
+
+
+// 範例：撤銷用戶令牌
+async function revokeToken(userId: string) {
+  await supabase
+    .from('user_tokens')
+    .delete()
+    .eq('user_id', userId);
+}
+
+6. 密鑰管理與密鑰輪換
+- 使用 Vercel 環境變數管理密鑰
+- 在 Vercel 上設置加密密鑰（如 AES-256）時，確保它們存儲在環境變數中
+- 不要在代碼中直接顯示或硬編碼密鑰。
+
+密鑰輪換策略：定期更換加密密鑰並更新資料庫中存儲的密鑰，以確保系統的安全性。每次密鑰輪換後，都要確保用戶的令牌能夠繼續被安全地加密和解密。
+
+7. API 請求與密碼安全性
+- HTTPS：確保所有的 API 請求都使用 HTTPS 來加密傳輸，避免數據在傳輸過程中被竊取。
+- 最小權限原則：限制每個令牌可以執行的操作，避免過多權限造成風險
+- 例如，只請求必要的 Mail.Read 或 Calendars.Read 權限，而不是 Mail.ReadWrite。
+
+
 ## Microsoft Graph API 整合架構
 
 ### 1. Outlook 郵件整合

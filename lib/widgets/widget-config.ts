@@ -246,9 +246,9 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
   },
 
   // === CHARTS WIDGETS ===
-  StockDistributionChartV2: {
-    id: 'StockDistributionChartV2',
-    name: 'Stock Distribution Chart V2',
+  StockDistributionChart: {
+    id: 'StockDistributionChart',
+    name: 'Stock Distribution Chart',
     category: 'charts',
     description: 'Display stock distribution chart',
     lazyLoad: true,
@@ -443,9 +443,9 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     },
   },
 
-  GrnReportWidgetV2: {
-    id: 'GrnReportWidgetV2',
-    name: 'GRN Report V2',
+  GrnReportWidget: {
+    id: 'GrnReportWidget',
+    name: 'GRN Report',
     category: 'reports',
     description: 'Generate GRN reports',
     lazyLoad: true,
@@ -459,9 +459,9 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     },
   },
 
-  AcoOrderReportWidgetV2: {
-    id: 'AcoOrderReportWidgetV2',
-    name: 'ACO Order Report V2',
+  AcoOrderReportWidget: {
+    id: 'AcoOrderReportWidget',
+    name: 'ACO Order Report',
     category: 'reports',
     description: 'Generate ACO order reports',
     lazyLoad: true,

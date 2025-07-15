@@ -1,12 +1,12 @@
 - Ultrathink, Sequential-thinking, Task 工具(同步平行執行任務)
-- Read docs/common_bag.md
+- 先閱讀守則手冊 docs\general_rules.md
 - 你身份係一個code auditor，根據用戶提示的對象／方向，閱讀文檔及相關檔案，建立todolist
 - 根據todolist，開始評核及審查工作
 - 評核一：有否重覆或不合理的寫入或讀取
 - 評核二：有否重覆或不合理的互相或循環引用
 - 評核三：有否設定A/B機制，以防edge case或error
 - 評核四：有否重覆代碼丶冗碼或關於舊版本的不必要註釋
-- 評核五：有否遵從"KISS"原則，過多過於複雜丶無必要的代碼或運作邏輯，思考有否其他更簡單方案但同樣效果
+- 評核五：有否遵從 docs\general_rules.md 內的編碼原則
 - 評核六：如牽涉用戶操作，評估操作流程是否順暢，有否改善空間
 - 上述評刻必須經過使用工具(Playwright) 測試，不可跳過
 - 完成後，將評核結果寫入評核紀錄庫

@@ -1,0 +1,400 @@
+import { Injectable } from '@nestjs/common';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseService } from '../supabase/supabase.service';
+import {
+  InventoryResponseDto,
+  InventoryDetailResponseDto,
+  InventoryDto,
+  InventorySummaryResponseDto,
+  InventorySummaryDto,
+} from './dto/inventory-response.dto';
+import { StockType } from './dto/inventory-query.dto';
+import { StockDistributionQueryDto } from './dto/stock-distribution-query.dto';
+import { StockDistributionResponseDto } from './dto/stock-distribution-response.dto';
+
+@Injectable()
+export class InventoryService {
+  private supabase: SupabaseClient;
+
+  constructor(private readonly supabaseService: SupabaseService) {
+    this.supabase = this.supabaseService.getClient();
+  }
+
+  async getInventory(
+    warehouse?: string,
+    location?: string,
+    productCode?: string,
+    pltNum?: string,
+    stockType?: StockType,
+    minQty?: number,
+    limit: number = 50,
+    offset: number = 0,
+  ): Promise<InventoryResponseDto> {
+    try {
+      if (!this.supabase) {
+        return {
+          data: [],
+          total: 0,
+          limit,
+          offset,
+          error: 'Database connection not available',
+        };
+      }
+
+      // Build the query
+      let query = this.supabase.from('record_inventory').select(
+        `
+          id,
+          plt_num,
+          product_code,
+          loc,
+          warehouse,
+          qty,
+          damage,
+          last_update,
+          data_code!inner(
+            description,
+            colour,
+            unit
+          ),
+          record_palletinfo!inner(
+            series,
+            generate_time
+          )
+        `,
+        { count: 'exact' },
+      );
+
+      // Apply filters
+      if (warehouse) {
+        query = query.eq('warehouse', warehouse);
+      }
+      if (location) {
+        query = query.eq('loc', location);
+      }
+      if (productCode) {
+        query = query.eq('product_code', productCode);
+      }
+      if (pltNum) {
+        query = query.eq('plt_num', pltNum);
+      }
+
+      // Stock type filter
+      if (stockType && stockType !== StockType.ALL) {
+        if (stockType === StockType.GOOD) {
+          query = query.gt('qty', 0);
+        } else if (stockType === StockType.DAMAGE) {
+          query = query.gt('damage', 0);
+        }
+      }
+
+      // Minimum quantity filter
+      if (minQty !== undefined && minQty > 0) {
+        query = query.gte('qty', minQty);
+      }
+
+      // Apply pagination
+      query = query
+        .range(offset, offset + limit - 1)
+        .order('warehouse', { ascending: true })
+        .order('loc', { ascending: true });
+
+      const { data, count, error } = await query;
+
+      if (error) {
+        console.error('Error fetching inventory:', error);
+        throw error;
+      }
+
+      // Transform the data
+      const transformedData: InventoryDto[] = (data || []).map((item: any) => ({
+        id: item.id,
+        plt_num: item.plt_num,
+        product_code: item.product_code,
+        loc: item.loc,
+        warehouse: item.warehouse,
+        qty: item.qty || 0,
+        damage: item.damage || 0,
+        total_qty: (item.qty || 0) + (item.damage || 0),
+        last_update: item.last_update,
+        product_description: item.data_code?.description,
+        product_colour: item.data_code?.colour,
+        product_unit: item.data_code?.unit,
+        pallet_series: item.record_palletinfo?.series,
+        pallet_generate_time: item.record_palletinfo?.generate_time,
+      }));
+
+      return {
+        data: transformedData,
+        total: count || 0,
+        limit,
+        offset,
+      };
+    } catch (error) {
+      console.error('Error in getInventory:', error);
+      throw error;
+    }
+  }
+
+  async getInventoryById(id: number): Promise<InventoryDetailResponseDto> {
+    try {
+      if (!this.supabase) {
+        throw new Error('Database connection not available');
+      }
+
+      // Get inventory record with related data
+      const { data: inventoryData, error: inventoryError } = await this.supabase
+        .from('record_inventory')
+        .select(
+          `
+          *,
+          data_code!inner(
+            description,
+            colour,
+            standard_qty,
+            unit,
+            status
+          ),
+          record_palletinfo!inner(
+            *
+          )
+        `,
+        )
+        .eq('id', id)
+        .single();
+
+      if (inventoryError) {
+        console.error('Error fetching inventory:', inventoryError);
+        throw inventoryError;
+      }
+
+      if (!inventoryData) {
+        throw new Error('Inventory record not found');
+      }
+
+      // Get recent transfers for this pallet
+      const { data: transfers, error: transferError } = await this.supabase
+        .from('record_transfer')
+        .select('*')
+        .eq('plt_num', inventoryData.plt_num)
+        .order('transfer_time', { ascending: false })
+        .limit(10);
+
+      if (transferError) {
+        console.error('Error fetching transfers:', transferError);
+      }
+
+      // Get recent history for this pallet
+      const { data: history, error: historyError } = await this.supabase
+        .from('record_history')
+        .select('*')
+        .eq('plt_num', inventoryData.plt_num)
+        .order('time', { ascending: false })
+        .limit(10);
+
+      if (historyError) {
+        console.error('Error fetching history:', historyError);
+      }
+
+      // Transform and return the data
+      return {
+        id: inventoryData.id,
+        plt_num: inventoryData.plt_num,
+        product_code: inventoryData.product_code,
+        loc: inventoryData.loc,
+        warehouse: inventoryData.warehouse,
+        qty: inventoryData.qty || 0,
+        damage: inventoryData.damage || 0,
+        total_qty: (inventoryData.qty || 0) + (inventoryData.damage || 0),
+        last_update: inventoryData.last_update,
+        product_description: inventoryData.data_code?.description,
+        product_colour: inventoryData.data_code?.colour,
+        product_unit: inventoryData.data_code?.unit,
+        pallet_series: inventoryData.record_palletinfo?.series,
+        pallet_generate_time: inventoryData.record_palletinfo?.generate_time,
+        transfers: transfers || [],
+        history: history || [],
+        pallet_info: inventoryData.record_palletinfo || null,
+      };
+    } catch (error) {
+      console.error('Error in getInventoryById:', error);
+      throw error;
+    }
+  }
+
+  async getInventorySummary(): Promise<InventorySummaryResponseDto> {
+    try {
+      if (!this.supabase) {
+        return {
+          data: [],
+          error: 'Database connection not available',
+        };
+      }
+
+      // Get inventory summary grouped by warehouse
+      const { data, error } = await this.supabase.rpc(
+        'get_inventory_summary_by_warehouse',
+      );
+
+      if (error) {
+        console.error('Error fetching inventory summary:', error);
+        throw error;
+      }
+
+      // If RPC doesn't exist, fall back to manual aggregation
+      if (!data) {
+        const { data: inventoryData, error: fallbackError } =
+          await this.supabase
+            .from('record_inventory')
+            .select('warehouse, loc, plt_num, product_code, qty, damage');
+
+        if (fallbackError) {
+          console.error('Error fetching inventory data:', fallbackError);
+          throw fallbackError;
+        }
+
+        // Manual aggregation
+        const summaryMap = new Map<string, InventorySummaryDto>();
+
+        inventoryData?.forEach((item: any) => {
+          const key = item.warehouse;
+          if (!summaryMap.has(key)) {
+            summaryMap.set(key, {
+              warehouse: key,
+              total_locations: new Set(),
+              total_pallets: new Set(),
+              total_good_qty: 0,
+              total_damage_qty: 0,
+              total_qty: 0,
+              products_count: new Set(),
+            } as any);
+          }
+
+          const summary = summaryMap.get(key)!;
+          (summary as any).total_locations.add(item.loc);
+          (summary as any).total_pallets.add(item.plt_num);
+          (summary as any).products_count.add(item.product_code);
+          summary.total_good_qty += item.qty || 0;
+          summary.total_damage_qty += item.damage || 0;
+          summary.total_qty += (item.qty || 0) + (item.damage || 0);
+        });
+
+        const summaryData: InventorySummaryDto[] = Array.from(
+          summaryMap.values(),
+        ).map((summary) => ({
+          warehouse: summary.warehouse,
+          total_locations: (summary as any).total_locations.size,
+          total_pallets: (summary as any).total_pallets.size,
+          total_good_qty: summary.total_good_qty,
+          total_damage_qty: summary.total_damage_qty,
+          total_qty: summary.total_qty,
+          products_count: (summary as any).products_count.size,
+        }));
+
+        return {
+          data: summaryData,
+        };
+      }
+
+      return {
+        data: data as InventorySummaryDto[],
+      };
+    } catch (error) {
+      console.error('Error in getInventorySummary:', error);
+      throw error;
+    }
+  }
+
+  async getStockDistribution(
+    query: StockDistributionQueryDto,
+  ): Promise<StockDistributionResponseDto> {
+    try {
+      if (!this.supabase) {
+        return {
+          data: [],
+          total: 0,
+          offset: query.offset || 0,
+          limit: query.limit || 50,
+        };
+      }
+
+      // 首先嘗試使用 RPC 函數（如果存在）
+      const { data: rpcData, error: rpcError } = await this.supabase.rpc(
+        'get_stock_distribution',
+        {
+          limit_count: query.limit,
+          offset_count: query.offset,
+        },
+      );
+
+      if (!rpcError && rpcData) {
+        console.log('Using RPC function for stock distribution');
+        return {
+          data: rpcData,
+          total: rpcData.length,
+          offset: query.offset || 0,
+          limit: query.limit || 50,
+        };
+      }
+
+      // Fallback to direct query
+      console.log('Using direct query for stock distribution');
+      const { data, error, count } = await this.supabase
+        .from('record_inventory')
+        .select(
+          `
+          product_code,
+          injection,
+          pipeline,
+          prebook,
+          await,
+          fold,
+          bulk,
+          await_grn,
+          backcarpark,
+          data_code!inner(
+            description,
+            colour,
+            type
+          )
+        `,
+          { count: 'exact' },
+        )
+        .order('product_code')
+        .range(query.offset || 0, (query.offset || 0) + (query.limit || 50) - 1);
+
+      if (error) {
+        console.error('Error fetching stock distribution:', error);
+        throw error;
+      }
+
+      // Transform the data
+      const transformedData = (data || []).map((item: any) => ({
+        product_code: item.product_code,
+        injection: item.injection || 0,
+        pipeline: item.pipeline || 0,
+        prebook: item.prebook || 0,
+        await: item.await || 0,
+        fold: item.fold || 0,
+        bulk: item.bulk || 0,
+        await_grn: item.await_grn || 0,
+        backcarpark: item.backcarpark || 0,
+        data_code: {
+          description: item.data_code?.description,
+          colour: item.data_code?.colour,
+          type: item.data_code?.type,
+        },
+      }));
+
+      return {
+        data: transformedData,
+        total: count || 0,
+        offset: query.offset || 0,
+        limit: query.limit || 50,
+      };
+    } catch (error) {
+      console.error('Error in getStockDistribution:', error);
+      throw error;
+    }
+  }
+}

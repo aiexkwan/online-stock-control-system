@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+**/node_modules
 /.pnp
 .pnp.js
 
@@ -68,7 +69,14 @@ bundle-analyzer/
 *.stats.json
 
 # Virtual environment directory
-mcp-servers/mem0/python/venv/
+
 
 *storybook.log
 storybook-static
+
+# Backend specific ignores
+backend/**/dist/
+backend/**/node_modules/
+
+# MCP Server node_modules
+mcp-servers/**/node_modules/

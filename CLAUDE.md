@@ -28,21 +28,22 @@ npm run format:check # 檢查格式化狀態
 
 ### 測試
 ```bash
+# 單元測試
 npm test             # Jest 單元測試
 npm run test:watch   # 監視模式運行測試
 npm run test:coverage # 生成覆蓋率報告
+npm run test:ci      # CI 模式運行測試
+
+# E2E 測試
 npm run test:e2e     # Playwright E2E 測試
 npm run test:e2e:ui  # E2E 測試 UI 模式
 npm run test:e2e:debug # E2E 測試除錯模式
 npm run test:e2e:report # 查看 E2E 測試報告
 npm run test:e2e:pdf # 運行 PDF 生成測試
-```
 
-### GraphQL 開發
-```bash
-npm run codegen      # 生成 GraphQL 類型同 hooks
-npm run codegen:watch # 監視模式生成 GraphQL 代碼
-npm run codegen:check # 檢查 GraphQL schema 有效性
+# 性能測試
+npm run test:perf    # 性能測試
+npm run test:perf:report # 性能測試報告
 ```
 
 ### 分析同優化
@@ -69,6 +70,7 @@ npm run mcpIOS       # 啟動 Supabase MCP 服務器 (用於 Claude Code 數據�
 - **認證**: Supabase Auth
 - **實時功能**: Supabase Realtime
 - **AI 整合**: OpenAI GPT-4o
+- **Widget Dashboard API**: NestJS API
 
 ### 關鍵架構模式
 
@@ -101,8 +103,8 @@ npm run mcpIOS       # 啟動 Supabase MCP 服務器 (用於 Claude Code 數據�
 ## 開發規範
 
 ### 必須遵守事項
-- **遵從"KISS"原則，系統、設計、程式碼、流程——只要可以簡單實現，無需複雜化，進一彥降低維護成本
-- **長駐開啟ultrathink模式**
+- **遵從"KISS"原則**: 系統、設計、程式碼、流程——只要可以簡單實現，無需複雜化，進一步降低維護成本
+- **長駐開啟 ultrathink 模式**
 - **優先編輯現有文件而非創建新文件，減少冗碼**
 - **只在用戶明確要求時創建文檔文件**
 - **運行 `npm run lint` 同 `npm run typecheck` 確保代碼質量**
@@ -225,3 +227,16 @@ const { data, loading, error } = useGraphQLFallback({
 - **CSR to SSR 遷移**: `docs/migration-guide-csr-to-ssr.md`
 - **內部知識庫**: 使用 Ask Database 功能查詢
 - **測試報告**: E2E 測試結果同覆蓋率報告
+
+## 單獨測試運行
+```bash
+# 運行特定測試文件
+npm test -- --testPathPattern="specific-test"
+npm run test:e2e -- --grep "特定測試名稱"
+
+# 運行特定組件的測試
+npm test -- app/components/specific-component
+
+# 清除測試緩存
+npm test -- --clearCache
+```

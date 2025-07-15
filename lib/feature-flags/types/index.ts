@@ -194,4 +194,10 @@ export enum KnownFeatureFlags {
   MAINTENANCE_MODE = 'maintenance_mode',
   READ_ONLY_MODE = 'read_only_mode',
   DEBUG_MODE = 'debug_mode',
+
+  // API 遷移功能 (v1.2.3)
+  ENABLE_REST_API = 'enable_rest_api',
+  REST_API_PERCENTAGE = 'rest_api_percentage',
+  FALLBACK_TO_GRAPHQL = 'fallback_to_graphql',
+  API_MONITORING = 'api_monitoring',
 }

@@ -1,5 +1,5 @@
 - Ultrathink，Sequential-thinking，Task 工具(同步平行執行任務)
-- Read docs/common_bag.md
+- 先閱讀守則手冊 docs\general_rules.md
 - 根據用戶提供的提示思考，或網上尋找資訊
-- 思考方向 : 按照docs/common_bag.md的用戶資訊，現有的系統結構是否有必要，會否過於複雜，過度優化
+- 思考方向 : 按照 docs\general_rules.md 的用戶資訊，現有的系統結構是否有必要，會否過於複雜，過度優化
 - 思考前題 : 以最簡單直接方法達成目的，可接受優化，但不可過度

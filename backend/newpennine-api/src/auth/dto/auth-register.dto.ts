@@ -1,0 +1,61 @@
+import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsEmail,
+  IsString,
+  MinLength,
+  IsNotEmpty,
+  IsOptional,
+  Matches,
+} from 'class-validator';
+
+export class AuthRegisterDto {
+  @ApiProperty({
+    description: 'User email address',
+    example: 'user@example.com',
+  })
+  @IsEmail({}, { message: 'Please provide a valid email address' })
+  @IsNotEmpty({ message: 'Email is required' })
+  email: string;
+
+  @ApiProperty({
+    description: 'User password',
+    example: 'Password123!',
+    minLength: 8,
+  })
+  @IsString({ message: 'Password must be a string' })
+  @MinLength(8, { message: 'Password must be at least 8 characters long' })
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, {
+    message:
+      'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+  })
+  @IsNotEmpty({ message: 'Password is required' })
+  password: string;
+
+  @ApiProperty({
+    description: 'User full name',
+    example: 'John Doe',
+    required: false,
+  })
+  @IsString({ message: 'Name must be a string' })
+  @IsOptional()
+  name?: string;
+
+  @ApiProperty({
+    description: 'User phone number',
+    example: '+1234567890',
+    required: false,
+  })
+  @IsString({ message: 'Phone must be a string' })
+  @IsOptional()
+  phone?: string;
+
+  @ApiProperty({
+    description: 'User role',
+    example: 'user',
+    default: 'user',
+    required: false,
+  })
+  @IsString({ message: 'Role must be a string' })
+  @IsOptional()
+  role?: string;
+}

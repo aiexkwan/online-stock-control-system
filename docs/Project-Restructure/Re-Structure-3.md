@@ -348,8 +348,8 @@ export function useWidgetState<T>(
   - [x] 建立 Intersection Observer 管理器
 - [x] 建立狀態管理基礎
   - [x] 實現 `WidgetStateManager` 類（在 enhanced-registry.ts）
-  - [x] 建立 Context Provider（在 useMemory.tsx）
-  - [x] 實現 `useWidgetState` Hook（在 useMemory.tsx）
+  - [x] 建立 Context Provider（已移除 useMemory.tsx）
+- [x] 實現 `useWidgetState` Hook（已移除 useMemory.tsx）
 - [x] 建立性能監控工具
   - [x] Widget 載入時間追蹤（整合 performance-monitor.ts）
   - [x] 內存使用監控（整合 performance-monitor.ts）

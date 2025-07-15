@@ -9,26 +9,13 @@ interface AuthCheckerProps {
   children: React.ReactNode;
 }
 
-// 定義公開路由列表 - 只有主登入頁面和密碼重設頁面是公開的
+// 定義公開路由列表 - 這些路由不需要身份驗證
 const publicPaths = [
-  '/main-login',
+  '/main-login', // 登入頁面需要公開
+  '/change-password', // 密碼更新頁面需要公開，用戶通過電郵連結訪問
   '/new-password', // 密碼重設頁面需要公開，用戶通過電郵連結訪問
   '/print-label/html-preview', // HTML 標籤預覽頁面（用於測試和預覽）
 ];
-
-// 測試模式：當 NEXT_PUBLIC_TEST_MODE=true 時，添加測試路由到公開路由列表
-if (process.env.NEXT_PUBLIC_TEST_MODE === 'true') {
-  publicPaths.push(
-    '/', // 首頁
-    '/admin/injection', // Admin dashboard
-    '/admin/pipeline',
-    '/admin/warehouse',
-    '/access', // Access page
-    '/test-performance', // 專門的性能測試頁面
-  );
-  
-  console.log('[AuthChecker] Test mode enabled - additional routes added to public list');
-}
 
 // 定義受保護路由列表 - 除了公開路由外的所有頁面都需要認證
 const protectedPaths = [

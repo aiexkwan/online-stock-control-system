@@ -75,17 +75,14 @@ const nextConfig = {
   //   },
   // },
   async redirects() {
-    // 測試模式下不重定向首頁，允許直接訪問進行性能測試
     const redirects = [];
     
-    // 只在非測試模式下添加首頁重定向
-    if (process.env.NEXT_PUBLIC_TEST_MODE !== 'true') {
-      redirects.push({
-        source: '/',
-        destination: '/main-login',
-        permanent: true,
-      });
-    }
+    // 首頁重定向到登入頁面
+    redirects.push({
+      source: '/',
+      destination: '/main-login',
+      permanent: true,
+    });
     
     // 舊登入頁面始終重定向到新登入頁面
     redirects.push({

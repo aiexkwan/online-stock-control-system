@@ -1,5 +1,5 @@
 - Ultrathink, Sequential-thinking, Task 工具(同步平行執行任務)
-- Read docs/common_bag.md
+- 先閱讀守則手冊 docs\general_rules.md
 - 建立完整計劃
-- 以版本號（1.1, 1.2.4），不使用日期(week 1, week 4 day 2)作規劃
+- 一律使用版本號（1.1, 1.2.4）作規劃單位，不使用日期或時間
 - 將計劃寫入計劃文檔庫

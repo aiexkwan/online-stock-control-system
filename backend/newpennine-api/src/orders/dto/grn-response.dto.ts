@@ -1,0 +1,199 @@
+import { ApiProperty } from '@nestjs/swagger';
+import { GrnStatus } from './grn-query.dto';
+
+export class GrnRecordDto {
+  @ApiProperty({
+    description: 'GRN record ID',
+    example: 'GRN-2024-001',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: 'GRN ID',
+    example: 'GRN-2024-001',
+  })
+  grn_id: string;
+
+  @ApiProperty({
+    description: 'Product code',
+    example: 'PRD-001',
+  })
+  product_code: string;
+
+  @ApiProperty({
+    description: 'Product description',
+    example: 'Sample Product',
+  })
+  product_description?: string;
+
+  @ApiProperty({
+    description: 'Supplier name',
+    example: 'Supplier ABC',
+  })
+  supplier: string;
+
+  @ApiProperty({
+    description: 'Purchase order number',
+    example: 'PO-2024-001',
+  })
+  po_number?: string;
+
+  @ApiProperty({
+    description: 'Quantity received',
+    example: 100,
+  })
+  quantity_received: number;
+
+  @ApiProperty({
+    description: 'Quantity ordered',
+    example: 100,
+  })
+  quantity_ordered?: number;
+
+  @ApiProperty({
+    description: 'Unit price',
+    example: 25.5,
+  })
+  unit_price?: number;
+
+  @ApiProperty({
+    description: 'Total value',
+    example: 2550.0,
+  })
+  total_value?: number;
+
+  @ApiProperty({
+    description: 'GRN status',
+    enum: GrnStatus,
+    example: GrnStatus.PENDING,
+  })
+  status: GrnStatus;
+
+  @ApiProperty({
+    description: 'Received date',
+    example: '2024-07-15T10:00:00Z',
+  })
+  received_date?: string;
+
+  @ApiProperty({
+    description: 'Quality check date',
+    example: '2024-07-15T14:00:00Z',
+  })
+  quality_check_date?: string;
+
+  @ApiProperty({
+    description: 'Approved date',
+    example: '2024-07-15T16:00:00Z',
+  })
+  approved_date?: string;
+
+  @ApiProperty({
+    description: 'Batch number',
+    example: 'BATCH-001',
+  })
+  batch_number?: string;
+
+  @ApiProperty({
+    description: 'Expiry date',
+    example: '2025-07-15T00:00:00Z',
+  })
+  expiry_date?: string;
+
+  @ApiProperty({
+    description: 'Location code',
+    example: 'A1-B2-C3',
+  })
+  location_code?: string;
+
+  @ApiProperty({
+    description: 'Quality check notes',
+    example: 'Quality check passed',
+  })
+  quality_notes?: string;
+
+  @ApiProperty({
+    description: 'Rejection reason',
+    example: 'Damaged packaging',
+  })
+  rejection_reason?: string;
+
+  @ApiProperty({
+    description: 'Notes or comments',
+    example: 'Urgent processing required',
+  })
+  notes?: string;
+
+  @ApiProperty({
+    description: 'Created timestamp',
+    example: '2024-07-15T09:00:00Z',
+  })
+  created_at: string;
+
+  @ApiProperty({
+    description: 'Updated timestamp',
+    example: '2024-07-15T09:30:00Z',
+  })
+  updated_at: string;
+
+  @ApiProperty({
+    description: 'Created by user ID',
+    example: 'user123',
+  })
+  created_by?: string;
+
+  @ApiProperty({
+    description: 'Updated by user ID',
+    example: 'user456',
+  })
+  updated_by?: string;
+
+  @ApiProperty({
+    description: 'Approved by user ID',
+    example: 'user789',
+  })
+  approved_by?: string;
+}
+
+export class GrnResponseDto {
+  @ApiProperty({
+    description: 'Array of GRN records',
+    type: [GrnRecordDto],
+  })
+  data: GrnRecordDto[];
+
+  @ApiProperty({
+    description: 'Total count of records',
+    example: 150,
+  })
+  total: number;
+
+  @ApiProperty({
+    description: 'Current page number',
+    example: 1,
+  })
+  page: number;
+
+  @ApiProperty({
+    description: 'Number of items per page',
+    example: 10,
+  })
+  limit: number;
+
+  @ApiProperty({
+    description: 'Total number of pages',
+    example: 15,
+  })
+  total_pages: number;
+
+  @ApiProperty({
+    description: 'Has next page',
+    example: true,
+  })
+  has_next: boolean;
+
+  @ApiProperty({
+    description: 'Has previous page',
+    example: false,
+  })
+  has_previous: boolean;
+}

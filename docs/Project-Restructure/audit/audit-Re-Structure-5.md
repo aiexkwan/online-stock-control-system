@@ -263,7 +263,7 @@ Re-Structure-5.md 嘅實施工作已經取得重大進展，核心目標基本�
 2. **Business Logic Hooks 最終評估**
    - ✅ useWidgetRegistry.tsx - 純客戶端 widget 初始化，合理保留
    - ✅ useActivityLog.tsx - 純客戶端活動日誌，localStorage 管理，保留
-   - ✅ useMemory.tsx - 使用 mem0ai API，無 Supabase 依賴，保留
+   - ❌ useMemory.tsx - 使用 mem0ai API，已移除（不再使用 mem0ai）
    - ✅ useSoundFeedback.tsx - 純客戶端音頻功能，保留
    - ✅ useLayoutVirtualization.tsx - 純客戶端虛擬化，保留
 

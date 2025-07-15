@@ -27,36 +27,17 @@ export async function middleware(request: NextRequest) {
   // 公開路由 - 只有主登入頁面、密碼重設頁面和特定的 API 路由不需要認證
   // 注意：/_next/static, /_next/image, /favicon.ico 通常由 matcher 排除
   const publicRoutes = [
-    '/main-login',
+    '/main-login', // 登入頁面
+    '/change-password', // 密碼更新頁面需要公開，用戶通過電郵連結訪問
     '/new-password', // 密碼重設頁面需要公開，用戶通過電郵連結訪問
     '/print-label/html-preview', // HTML 標籤預覽頁面（用於測試和預覽）
-    '/camera-debug', // 相機調試頁面 - 用於排除身份驗證干擾
-    // 只有特定的 API 路由需要公開訪問
+    '/api/health', // Health check API
     '/api/auth', // 認證相關 API
     '/api/health', // 健康檢查 API（如果有的話）
     '/api/print-label-pdf', // PDF 生成 API（用於內部調用）
     '/api/print-label-html', // HTML 標籤預覽 API（用於測試和預覽）
     '/api/send-order-email', // 訂單郵件發送 API（用於內部調用）
   ];
-
-  // 測試模式：當 NEXT_PUBLIC_TEST_MODE=true 時，添加測試路由到公開路由列表
-  if (process.env.NEXT_PUBLIC_TEST_MODE === 'true') {
-    publicRoutes.push(
-      '/', // 首頁
-      '/admin/injection', // Admin dashboard
-      '/admin/pipeline',
-      '/admin/warehouse',
-      '/access', // Access page
-      '/api/graphql', // GraphQL endpoint
-      '/test-performance', // 專門的性能測試頁面
-    );
-    
-    middlewareLogger.info({
-      correlationId,
-      testMode: true,
-      additionalRoutes: 7,
-    }, 'Test mode enabled - additional routes added to public list');
-  }
 
   // 檢查是否為公開路由
   const isPublicRoute = publicRoutes.some(route => {

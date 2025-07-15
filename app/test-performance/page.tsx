@@ -104,7 +104,6 @@ export default function TestPerformancePage() {
 
       {/* Environment Info */}
       <div className="mt-8 text-sm text-gray-500">
-        <p>Test Mode: {process.env.NEXT_PUBLIC_TEST_MODE === 'true' ? 'Enabled' : 'Disabled'}</p>
         <p>Environment: {process.env.NODE_ENV}</p>
       </div>
     </div>

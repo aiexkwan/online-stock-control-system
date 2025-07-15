@@ -81,6 +81,12 @@ export const testConfig = {
   },
 };
 
+// 添加測試用戶常量供其他測試使用
+export const TEST_USER = {
+  email: 'akwan@pennineindustries.com',
+  password: 'X315Y316',
+};
+
 /**
  * 等待條件輔助函數
  */

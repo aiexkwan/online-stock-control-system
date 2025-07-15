@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/app/utils/supabase/client';
 import { unifiedAuth } from '@/app/main-login/utils/unified-auth';
-import { domainVerificationHelper } from '@/app/main-login/utils/domain-verification-helper';
 import type { User } from '@supabase/supabase-js';
 
 export interface AuthState {
@@ -151,42 +150,6 @@ export const getUserRoleFromDatabase = async (email: string): Promise<UserRole |
     
     return getUserRoleByDepartmentAndPosition(data.department, data.position);
   } catch (error: any) {
-    // 檢查是否是域名驗證錯誤
-    if (error.message?.includes('Domain verification failed')) {
-      console.log(`[getUserRoleFromDatabase] Domain verification error for ${email}, attempting recovery...`);
-      
-      // 檢查重試次數
-      const currentRetries = retryCounters.get(email) || 0;
-      if (currentRetries >= MAX_RETRIES) {
-        console.warn(`[getUserRoleFromDatabase] Max retries (${MAX_RETRIES}) reached for ${email}, giving up`);
-        retryCounters.delete(email);
-        return null;
-      }
-      
-      try {
-        const recovery = await domainVerificationHelper.recover();
-        if (recovery.success) {
-          console.log(`[getUserRoleFromDatabase] Domain verification recovered for ${email}, retrying... (attempt ${currentRetries + 1})`);
-          
-          // 增加重試計數器
-          retryCounters.set(email, currentRetries + 1);
-          
-          // 添加短暫延遲以避免立即重試
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-          // 重試查詢
-          return getUserRoleFromDatabase(email);
-        } else {
-          console.log(`[getUserRoleFromDatabase] Domain verification recovery failed for ${email}: ${recovery.message}`);
-          retryCounters.delete(email);
-          return null;
-        }
-      } catch (recoveryError) {
-        console.error(`[getUserRoleFromDatabase] Domain verification recovery failed for ${email}:`, recoveryError);
-        retryCounters.delete(email);
-        return null;
-      }
-    }
     
     if (error.message === 'Database query timeout') {
       console.warn(
@@ -336,28 +299,6 @@ export function useAuth(): AuthState {
         }
       } catch (error) {
         console.error('[useAuth] Error checking authentication:', error);
-        
-        // 檢查是否是域名驗證錯誤
-        if (error instanceof Error && error.message.includes('Domain verification failed')) {
-          console.log('[useAuth] Domain verification error detected, attempting recovery...');
-          
-          // 嘗試恢復域名驗證（只嘗試一次）
-          try {
-            const recovery = await domainVerificationHelper.recover();
-            if (recovery.success) {
-              console.log('[useAuth] Domain verification recovered, retrying auth check...');
-              // 重試認證檢查
-              const user = await unifiedAuth.getCurrentUser();
-              if (user) {
-                setAuthenticatedUser(user);
-                return;
-              }
-            }
-          } catch (recoveryError) {
-            console.error('[useAuth] Domain verification recovery failed:', recoveryError);
-          }
-        }
-        
         clearAuthState();
       } finally {
         setIsCheckingAuth(false);

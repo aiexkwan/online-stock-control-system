@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { createClient } from '@/app/utils/supabase/client';
 import { unifiedAuth } from '@/app/main-login/utils/unified-auth';
-import { domainVerificationHelper } from '@/app/main-login/utils/domain-verification-helper';
 import { getUserRoleFromDatabase } from '../hooks/useAuth';
 import { LoadingScreen } from '@/components/ui/loading';
 // Starfield background is now handled globally
@@ -22,91 +21,53 @@ export default function AccessPage() {
   const [redirectPath, setRedirectPath] = useState('/admin/analysis');
 
   useEffect(() => {
-    const checkAuthentication = async () => {
+    const initializeAccess = async () => {
       try {
-        // 使用統一認證系統進行檢查
-        const user = await unifiedAuth.getCurrentUser();
+        // 由於中間件已經驗證了用戶認證，這裡只需要獲取用戶信息用於顯示
+        const supabase = createClient();
+        const { data: { user }, error } = await supabase.auth.getUser();
 
-        if (!user || !user.email) {
-          // 沒有認證用戶，重定向到 main-login
-          console.log('[AccessPage] No authenticated user, redirecting to login');
-          router.push('/main-login?error=access_denied');
+        if (error || !user?.email) {
+          // 如果無法獲取用戶信息，說明認證狀態不一致，重新登入
+          console.log('[AccessPage] Cannot get user info, redirecting to login', error);
+          router.push('/main-login?error=session_error');
           return;
         }
 
-        // 驗證 email 域名
-        if (!user.email.endsWith('@pennineindustries.com')) {
-          // 不是授權域名，重定向到 main-login
-          console.log('[AccessPage] Unauthorized domain, redirecting to login');
-          router.push('/main-login?error=unauthorized_domain');
-          return;
-        }
-
-        // 根據用戶角色設置重定向路徑
-        const userRole = await getUserRoleFromDatabase(user.email);
-        if (userRole) {
-          setRedirectPath(userRole.defaultPath);
-        } else {
-          // 降級處理：預設為數據分析頁面
-          console.warn('[AccessPage] Could not determine user role, using default path');
-          setRedirectPath('/admin/analysis');
-        }
-
-        // 認證成功
-        console.log('[AccessPage] Authentication successful for:', user.email);
+        // 設置用戶信息和重定向路徑
         setUserEmail(user.email);
         setSecurityInfo({ 
           useLocalStorage: true, 
           sessionTimeout: 24 * 60 * 60 * 1000 // 24 hours
         });
+
+        // 根據用戶角色設置重定向路徑
+        try {
+          const userRole = await getUserRoleFromDatabase(user.email);
+          if (userRole) {
+            setRedirectPath(userRole.defaultPath);
+          } else {
+            // 降級處理：預設為管理儀表板
+            console.warn('[AccessPage] Could not determine user role, using default path');
+            setRedirectPath('/admin');
+          }
+        } catch (roleError) {
+          console.error('[AccessPage] Error getting user role:', roleError);
+          setRedirectPath('/admin'); // 使用預設路徑
+        }
+
+        // 認證成功
+        console.log('[AccessPage] Access granted for:', user.email);
         setIsAuthenticated(true);
       } catch (error) {
-        console.error('[AccessPage] Authentication check failed:', error);
-        
-        // 檢查是否是域名驗證錯誤
-        if (error instanceof Error && error.message.includes('Domain verification failed')) {
-          console.log('[AccessPage] Domain verification error detected, attempting recovery...');
-          
-          // 嘗試恢復域名驗證
-          try {
-            const recovery = await domainVerificationHelper.recover();
-            if (recovery.success) {
-              console.log('[AccessPage] Domain verification recovered, retrying auth check...');
-              // 重試認證檢查
-              const user = await unifiedAuth.getCurrentUser();
-              if (user && user.email) {
-                // 重複認證邏輯
-                if (user.email.endsWith('@pennineindustries.com')) {
-                  const userRole = await getUserRoleFromDatabase(user.email);
-                  if (userRole) {
-                    setRedirectPath(userRole.defaultPath);
-                  } else {
-                    setRedirectPath('/admin/analysis');
-                  }
-                  
-                  console.log('[AccessPage] Authentication successful after recovery for:', user.email);
-                  setUserEmail(user.email);
-                  setSecurityInfo({ 
-                    useLocalStorage: true, 
-                    sessionTimeout: 24 * 60 * 60 * 1000 
-                  });
-                  setIsAuthenticated(true);
-                  return;
-                }
-              }
-            }
-          } catch (recoveryError) {
-            console.error('[AccessPage] Domain verification recovery failed:', recoveryError);
-          }
-        }
-        
-        router.push('/main-login?error=auth_check_failed');
+        console.error('[AccessPage] Access initialization failed:', error);
+        router.push('/main-login?error=init_failed');
       } finally {
         setIsLoading(false);
       }
     };
 
-    checkAuthentication();
+    initializeAccess();
   }, [router]);
 
   // 倒計時和自動重定向

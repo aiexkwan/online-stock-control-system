@@ -1,0 +1,24 @@
+export enum ChartTimeframe {
+  DAILY = 'daily',
+  WEEKLY = 'weekly',
+  MONTHLY = 'monthly',
+  QUARTERLY = 'quarterly',
+}
+
+export enum ChartMetric {
+  ORDER_COUNT = 'order_count',
+  COMPLETION_RATE = 'completion_rate',
+  PROCESSING_TIME = 'processing_time',
+  ORDER_VALUE = 'order_value',
+}
+
+export class AcoOrderProgressChartQueryDto {
+  startDate?: string;
+  endDate?: string;
+  timeframe?: ChartTimeframe;
+  metric?: ChartMetric;
+  warehouse?: string;
+  status?: string;
+  customerRef?: string;
+  limit?: string;
+}

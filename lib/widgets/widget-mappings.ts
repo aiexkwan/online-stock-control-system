@@ -20,7 +20,7 @@ const categoryMap: WidgetMapping['categoryMap'] = {
   StatsCardWidget: 'stats',
 
   // Charts widgets
-  StockDistributionChartV2: 'charts',
+  StockDistributionChart: 'charts',
   StockLevelHistoryChart: 'charts',
   WarehouseWorkLevelAreaChart: 'charts',
   TransferTimeDistributionWidget: 'charts',
@@ -49,8 +49,8 @@ const categoryMap: WidgetMapping['categoryMap'] = {
 
   // Reports widgets
   TransactionReportWidget: 'reports',
-  GrnReportWidgetV2: 'reports',
-  AcoOrderReportWidgetV2: 'reports',
+  GrnReportWidget: 'reports',
+  AcoOrderReportWidget: 'reports',
   ReportGeneratorWithDialogWidgetV2: 'reports',
 
   // Analysis widgets
@@ -77,10 +77,10 @@ const graphqlVersionMap: WidgetMapping['graphqlVersionMap'] = {
   OtherFilesListWidget: 'OtherFilesListWidgetV2',
   OrderStateListWidget: 'OrderStateListWidgetV2',
   SupplierUpdateWidget: 'SupplierUpdateWidgetV2',
-  GrnReportWidget: 'GrnReportWidgetV2',
-  AcoOrderReportWidget: 'AcoOrderReportWidgetV2',
+  GrnReportWidget: 'GrnReportWidget',
+  AcoOrderReportWidget: 'AcoOrderReportWidget',
   ReportGeneratorWithDialogWidget: 'ReportGeneratorWithDialogWidgetV2',
-  StockDistributionChart: 'StockDistributionChartV2',
+  StockDistributionChart: 'StockDistributionChart',
 };
 
 // 預加載優先級映射（基於使用頻率和重要性）
@@ -98,7 +98,7 @@ const preloadPriorityMap: WidgetMapping['preloadPriorityMap'] = {
   WarehouseTransferListWidget: 8,
 
   // 重要圖表 - 中高優先級
-  StockDistributionChartV2: 7,
+  StockDistributionChart: 7,
   WarehouseWorkLevelAreaChart: 7,
   ProductDistributionChartWidget: 7,
   TopProductsByQuantityWidget: 7,
@@ -116,8 +116,8 @@ const preloadPriorityMap: WidgetMapping['preloadPriorityMap'] = {
 
   // 報表類組件 - 低優先級（按需加載）
   TransactionReportWidget: 3,
-  GrnReportWidgetV2: 3,
-  AcoOrderReportWidgetV2: 3,
+  GrnReportWidget: 3,
+  AcoOrderReportWidget: 3,
   ReportGeneratorWithDialogWidgetV2: 3,
 
   // 分析類組件 - 低優先級（通常在特定頁面才需要）

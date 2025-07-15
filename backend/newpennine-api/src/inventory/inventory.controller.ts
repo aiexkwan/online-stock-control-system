@@ -1,0 +1,138 @@
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  ValidationPipe,
+  HttpException,
+  HttpStatus,
+  ParseIntPipe,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { InventoryService } from './inventory.service';
+import { InventoryQueryDto } from './dto/inventory-query.dto';
+import {
+  InventoryResponseDto,
+  InventoryDetailResponseDto,
+  InventorySummaryResponseDto,
+} from './dto/inventory-response.dto';
+import { StockDistributionQueryDto } from './dto/stock-distribution-query.dto';
+import { StockDistributionResponseDto } from './dto/stock-distribution-response.dto';
+
+@ApiTags('inventory')
+@Controller('inventory')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
+export class InventoryController {
+  constructor(private readonly inventoryService: InventoryService) {}
+
+  @Get()
+  async getInventory(
+    @Query(ValidationPipe) query: InventoryQueryDto,
+  ): Promise<InventoryResponseDto> {
+    try {
+      const limit = query.limit ? parseInt(query.limit, 10) : 50;
+      const offset = query.offset ? parseInt(query.offset, 10) : 0;
+      const minQty = query.minQty ? parseInt(query.minQty, 10) : undefined;
+
+      return await this.inventoryService.getInventory(
+        query.warehouse,
+        query.location,
+        query.productCode,
+        query.pltNum,
+        query.stockType,
+        minQty,
+        limit,
+        offset,
+      );
+    } catch (error) {
+      throw new HttpException(
+        {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          error: 'Failed to fetch inventory',
+          message: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('summary')
+  async getInventorySummary(): Promise<InventorySummaryResponseDto> {
+    try {
+      return await this.inventoryService.getInventorySummary();
+    } catch (error) {
+      throw new HttpException(
+        {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          error: 'Failed to fetch inventory summary',
+          message: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('stock-distribution')
+  @ApiOperation({
+    summary: 'Get stock distribution data',
+    description: 'Retrieve stock distribution across different locations for charting',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Stock distribution data retrieved successfully',
+    type: StockDistributionResponseDto,
+  })
+  async getStockDistribution(
+    @Query(ValidationPipe) query: StockDistributionQueryDto,
+  ): Promise<StockDistributionResponseDto> {
+    try {
+      return await this.inventoryService.getStockDistribution(query);
+    } catch (error) {
+      throw new HttpException(
+        {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          error: 'Failed to fetch stock distribution',
+          message: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get(':id')
+  async getInventoryById(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<InventoryDetailResponseDto> {
+    try {
+      return await this.inventoryService.getInventoryById(id);
+    } catch (error) {
+      if (error.message === 'Inventory record not found') {
+        throw new HttpException(
+          {
+            status: HttpStatus.NOT_FOUND,
+            error: 'Inventory record not found',
+            message: `Inventory record with ID ${id} not found`,
+          },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      throw new HttpException(
+        {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          error: 'Failed to fetch inventory record',
+          message: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+}

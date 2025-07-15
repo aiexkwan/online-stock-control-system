@@ -41,8 +41,6 @@
       "Bash(env)",
       "Bash(npm search supabase mcp)",
       "Bash(sudo npm install:*)",
-      "Bash(npx @openmemory/install:*)",
-      "Bash(CI=true npx @openmemory/install --client claude --env OPENMEMORY_API_KEY=om-lrj6iziznpqzdxruq78px2tjylo9ks4w)",
       "Bash(pip install:*)",
       "Bash(pip uninstall:*)",
       "mcp__ide__getDiagnostics",
@@ -154,8 +152,16 @@
       "Bash(./test-api-simple.sh:*)",
       "Bash(PLAYWRIGHT_TEST=true npm run test:e2e)",
       "Bash(claude --version)",
-      "Bash(claude config get installation-method)"
+      "Bash(claude config get installation-method)",
+      "Bash(./start-nestjs.sh:*)",
+      "Bash(tree:*)",
+      "Bash(npm start)",
+      "Bash(echo $NODE_ENV)",
+      "Bash(ss:*)"
     ],
     "deny": []
-  }
+  },
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
 }
