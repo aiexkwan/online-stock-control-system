@@ -1,0 +1,372 @@
+{
+  "config": {
+    "configFile": "/Users/kwanchuncheong/NewPennine/playwright.config.ts",
+    "rootDir": "/Users/kwanchuncheong/NewPennine/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": "/Users/kwanchuncheong/NewPennine/e2e/global-setup.ts",
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 4
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "open": "never",
+          "outputFolder": "playwright-report"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/e2e-results.json"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "test-results/e2e-junit.xml"
+        }
+      ],
+      [
+        "list",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/kwanchuncheong/NewPennine/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/kwanchuncheong/NewPennine/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/kwanchuncheong/NewPennine/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/Users/kwanchuncheong/NewPennine/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/kwanchuncheong/NewPennine/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "/Users/kwanchuncheong/NewPennine/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/kwanchuncheong/NewPennine/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "Mobile Chrome",
+        "name": "Mobile Chrome",
+        "testDir": "/Users/kwanchuncheong/NewPennine/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/kwanchuncheong/NewPennine/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 4
+        },
+        "id": "Mobile Safari",
+        "name": "Mobile Safari",
+        "testDir": "/Users/kwanchuncheong/NewPennine/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.54.1",
+    "workers": 5,
+    "webServer": {
+      "command": "npm run dev",
+      "port": 3000,
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "basic-performance.spec.ts",
+      "file": "basic-performance.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Basic Performance Tests",
+          "file": "basic-performance.spec.ts",
+          "line": 207,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Bundle Size Check",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Initializing basic performance tests...\n"
+                        },
+                        {
+                          "text": "Checking bundle size...\n"
+                        },
+                        {
+                          "text": "Bundle size: 20351 KB\n"
+                        },
+                        {
+                          "text": "Basic performance report saved to: test-results/basic-performance-report.json\n"
+                        },
+                        {
+                          "text": "Basic performance test completed!\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-15T23:31:48.660Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9581af01ee1518dcd3d0-bd5c8d6b8be72e5193b7",
+              "file": "basic-performance.spec.ts",
+              "line": 223,
+              "column": 7
+            },
+            {
+              "title": "Package.json Size Check",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 2,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Initializing basic performance tests...\n"
+                        },
+                        {
+                          "text": "Package.json size: 8 KB\n"
+                        },
+                        {
+                          "text": "Basic performance report saved to: test-results/basic-performance-report.json\n"
+                        },
+                        {
+                          "text": "Basic performance test completed!\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-15T23:31:48.651Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9581af01ee1518dcd3d0-b659c2395bb74acad3ea",
+              "file": "basic-performance.spec.ts",
+              "line": 231,
+              "column": 7
+            },
+            {
+              "title": "Node Modules Size Check",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 2,
+                      "status": "passed",
+                      "duration": 7,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Initializing basic performance tests...\n"
+                        },
+                        {
+                          "text": "Checking node_modules size (limited depth)...\n"
+                        },
+                        {
+                          "text": "Node modules size: 1 MB\n"
+                        },
+                        {
+                          "text": "Basic performance report saved to: test-results/basic-performance-report.json\n"
+                        },
+                        {
+                          "text": "Basic performance test completed!\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-15T23:31:48.660Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9581af01ee1518dcd3d0-d82e26b827fec5526f1c",
+              "file": "basic-performance.spec.ts",
+              "line": 239,
+              "column": 7
+            },
+            {
+              "title": "Complete Basic Performance Test",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 3,
+                      "status": "passed",
+                      "duration": 10,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Initializing basic performance tests...\n"
+                        },
+                        {
+                          "text": "Running basic performance test...\n"
+                        },
+                        {
+                          "text": "Checking bundle size...\n"
+                        },
+                        {
+                          "text": "Checking node_modules size (limited depth)...\n"
+                        },
+                        {
+                          "text": "Basic performance metrics: {\n  bundleExists: \u001b[33mtrue\u001b[39m,\n  bundleSize: \u001b[33m20351\u001b[39m,\n  packageJsonSize: \u001b[33m8\u001b[39m,\n  nodeModulesSize: \u001b[33m1\u001b[39m,\n  timestamp: \u001b[32m'2025-07-15T23:31:48.671Z'\u001b[39m\n}\n"
+                        },
+                        {
+                          "text": "Basic performance report saved to: test-results/basic-performance-report.json\n"
+                        },
+                        {
+                          "text": "Basic performance test completed!\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-07-15T23:31:48.659Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "9581af01ee1518dcd3d0-4e57ee0697797211b767",
+              "file": "basic-performance.spec.ts",
+              "line": 247,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-07-15T23:31:47.440Z",
+    "duration": 1249.076,
+    "expected": 4,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

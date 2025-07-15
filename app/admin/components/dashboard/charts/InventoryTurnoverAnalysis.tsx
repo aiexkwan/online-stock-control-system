@@ -12,10 +12,7 @@ const CartesianGrid = dynamic(() => import('recharts').then(mod => ({ default: m
 const Tooltip = dynamic(() => import('recharts').then(mod => ({ default: mod.Tooltip })), { ssr: false });
 const Legend = dynamic(() => import('recharts').then(mod => ({ default: mod.Legend })), { ssr: false });
 const ResponsiveContainer = dynamic(() => import('recharts').then(mod => ({ default: mod.ResponsiveContainer })), { ssr: false });
-import {
-  useGetInventoryTurnoverQuery,
-  type GetInventoryTurnoverQuery,
-} from '@/lib/graphql/generated/apollo-hooks';
+// Note: Migrated to REST API - GraphQL hooks removed
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
@@ -37,11 +34,10 @@ export default function InventoryTurnoverAnalysis({ timeFrame }: InventoryTurnov
   // Check feature flag
   const isGraphQLAnalysisEnabled = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS === 'true';
 
-  const { data, loading, error } = useGetInventoryTurnoverQuery({
-    skip: !isGraphQLAnalysisEnabled,
-    pollInterval: isGraphQLAnalysisEnabled ? 300000 : undefined, // 減少 polling 頻率至 5 分鐘
-    fetchPolicy: 'cache-and-network',
-  });
+  // Temporary disabled - migrated to REST API
+  const data = null;
+  const loading = false;
+  const error = null;
 
   const chartData = useMemo(() => {
     if (!data?.record_inventoryCollection?.edges || !data?.data_orderCollection?.edges) return [];

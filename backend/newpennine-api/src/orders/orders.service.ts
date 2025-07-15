@@ -88,7 +88,10 @@ export class OrdersService {
         has_previous: page > 1,
       };
     } catch (error) {
-      this.logger.error(`Error in getAcoOrders: ${error.message}`, error);
+      this.logger.error(
+        `Error in getAcoOrders: ${(error as Error).message}`,
+        error,
+      );
       if (
         error instanceof NotFoundException ||
         error instanceof InternalServerErrorException
@@ -183,7 +186,10 @@ export class OrdersService {
         has_previous: page > 1,
       };
     } catch (error) {
-      this.logger.error(`Error in getGrnOrders: ${error.message}`, error);
+      this.logger.error(
+        `Error in getGrnOrders: ${(error as Error).message}`,
+        error,
+      );
       if (
         error instanceof NotFoundException ||
         error instanceof InternalServerErrorException
@@ -213,7 +219,10 @@ export class OrdersService {
 
       return data as AcoRecordDto;
     } catch (error) {
-      this.logger.error(`Error in getAcoOrderById: ${error.message}`, error);
+      this.logger.error(
+        `Error in getAcoOrderById: ${(error as Error).message}`,
+        error,
+      );
       if (error instanceof NotFoundException) {
         throw error;
       }
@@ -240,7 +249,10 @@ export class OrdersService {
 
       return data as GrnRecordDto;
     } catch (error) {
-      this.logger.error(`Error in getGrnOrderById: ${error.message}`, error);
+      this.logger.error(
+        `Error in getGrnOrderById: ${(error as Error).message}`,
+        error,
+      );
       if (error instanceof NotFoundException) {
         throw error;
       }
@@ -263,17 +275,23 @@ export class OrdersService {
         );
       }
 
-      const stats = data.reduce((acc, record) => {
-        acc[record.status] = (acc[record.status] || 0) + 1;
-        return acc;
-      }, {});
+      const stats = data.reduce(
+        (acc: Record<string, number>, record: any) => {
+          acc[record.status] = (acc[record.status] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
 
       return {
         total: data.length,
         by_status: stats,
       };
     } catch (error) {
-      this.logger.error(`Error in getAcoOrderStats: ${error.message}`, error);
+      this.logger.error(
+        `Error in getAcoOrderStats: ${(error as Error).message}`,
+        error,
+      );
       throw new InternalServerErrorException('Failed to fetch ACO statistics');
     }
   }
@@ -293,17 +311,23 @@ export class OrdersService {
         );
       }
 
-      const stats = data.reduce((acc, record) => {
-        acc[record.status] = (acc[record.status] || 0) + 1;
-        return acc;
-      }, {});
+      const stats = data.reduce(
+        (acc: Record<string, number>, record: any) => {
+          acc[record.status] = (acc[record.status] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
 
       return {
         total: data.length,
         by_status: stats,
       };
     } catch (error) {
-      this.logger.error(`Error in getGrnOrderStats: ${error.message}`, error);
+      this.logger.error(
+        `Error in getGrnOrderStats: ${(error as Error).message}`,
+        error,
+      );
       throw new InternalServerErrorException('Failed to fetch GRN statistics');
     }
   }

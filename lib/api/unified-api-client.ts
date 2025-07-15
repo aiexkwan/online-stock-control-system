@@ -206,7 +206,8 @@ export class UnifiedAPIClient {
     const graphqlClient = await import('@/lib/graphql-client-stable');
     
     try {
-      const result = await graphqlClient.request(request.query, request.variables);
+      // GraphQL disabled - temporary fallback
+    throw new Error('GraphQL support has been removed');
       const responseTime = Date.now() - startTime;
       
       if (result.errors && result.errors.length > 0) {

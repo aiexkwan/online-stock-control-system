@@ -1,10 +1,10 @@
 export class PalletDto {
-  plt_num: string;
-  product_code: string;
-  generate_time: string;
-  series: string;
+  plt_num!: string;
+  product_code!: string;
+  generate_time!: string;
+  series!: string;
   plt_remark?: string;
-  product_qty: number;
+  product_qty!: number;
   pdf_url?: string;
   // Additional fields from joins
   product_description?: string;
@@ -13,10 +13,10 @@ export class PalletDto {
 }
 
 export class PalletsResponseDto {
-  data: PalletDto[];
-  total: number;
-  limit: number;
-  offset: number;
+  data!: PalletDto[];
+  total!: number;
+  limit!: number;
+  offset!: number;
   error?: string;
 }
 

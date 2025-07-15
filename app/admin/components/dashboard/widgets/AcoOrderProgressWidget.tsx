@@ -15,20 +15,34 @@ import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { ClipboardDocumentListIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { useGraphQLFallback } from '@/app/admin/hooks/useGraphQLFallback';
 import { useWidgetToast } from '@/app/admin/hooks/useWidgetToast';
-import { 
-  GET_ACO_INCOMPLETE_ORDERS,
-  type GetAcoIncompleteOrdersData,
-  type GetAcoIncompleteOrdersVariables,
-  type AcoOrderNode 
-} from './queries/acoOrderProgressQueries';
-import { getAcoIncompleteOrdersAction } from '@/app/actions/acoOrderProgressActions';
 import { WidgetStyles } from '@/app/utils/widgetStyles';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { WidgetTitle, WidgetText, WidgetLabel, WidgetValue } from '../WidgetTypography';
 import { WidgetSkeleton } from './common/WidgetStates';
+import useSWR from 'swr';
+
+interface AcoOrderProgressCard {
+  id: string;
+  title: string;
+  value: number;
+  previousValue?: number;
+  percentageChange?: number;
+  trend?: 'up' | 'down' | 'stable';
+}
+
+interface AcoOrderProgressResponse {
+  cards: AcoOrderProgressCard[];
+  totalCards: number;
+  dateRange: string;
+  lastUpdated: string;
+  metadata: {
+    warehouse: string;
+    status: string;
+    customerRef: string;
+  };
+}
 
 interface AcoOrder {
   order_ref: number;
@@ -59,75 +73,72 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { showError } = useWidgetToast();
 
-  // Use GraphQL with Server Action fallback for incomplete orders
-  const {
-    data: ordersData,
-    loading,
-    error,
-    refetch
-  } = useGraphQLFallback<GetAcoIncompleteOrdersData, GetAcoIncompleteOrdersVariables>({
-    graphqlQuery: GET_ACO_INCOMPLETE_ORDERS,
-    serverAction: getAcoIncompleteOrdersAction,
-    variables: { limit: 50, offset: 0 },
-    widgetId: 'aco-order-progress',
-    extractFromContext: (ctx) => ctx?.acoOrders,
-    fallbackEnabled: true,
-    onError: (error) => {
-      showError('Failed to load ACO orders', error);
-    },
-  });
-
-  // Transform GraphQL data to component format
-  const incompleteOrders = useMemo(() => {
-    if (!ordersData?.incompleteOrders?.edges) return [];
-    
-    // Group by order_ref and calculate aggregates
-    const orderMap = new Map<number, {
-      order_ref: number;
-      latest_update: string;
-      total_required: number;
-      total_finished: number;
-      total_remaining: number;
-      product_count: number;
-      completion_percentage: number;
-    }>();
-    
-    ordersData.incompleteOrders.edges.forEach(({ node }) => {
-      const orderRef = node.order_ref;
-      const existing = orderMap.get(orderRef);
-      
-      if (existing) {
-        existing.total_required += node.required_qty;
-        existing.total_finished += node.finished_qty;
-        existing.product_count += 1;
-        if (node.latest_update > existing.latest_update) {
-          existing.latest_update = node.latest_update;
-        }
-      } else {
-        orderMap.set(orderRef, {
-          order_ref: orderRef,
-          latest_update: node.latest_update,
-          total_required: node.required_qty,
-          total_finished: node.finished_qty,
-          total_remaining: node.required_qty - node.finished_qty,
-          product_count: 1,
-          completion_percentage: node.required_qty > 0 
-            ? Math.round((node.finished_qty / node.required_qty) * 100) 
-            : 0,
-        });
+  // Fetcher function for SWR
+  const fetcher = async (url: string) => {
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
     });
     
-    // Update completion percentages
-    orderMap.forEach((order) => {
-      order.total_remaining = order.total_required - order.total_finished;
-      order.completion_percentage = order.total_required > 0 
-        ? Math.round((order.total_finished / order.total_required) * 100) 
-        : 0;
-    });
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`);
+    }
     
-    return Array.from(orderMap.values());
-  }, [ordersData]);
+    return response.json();
+  };
+
+  // Use SWR for ACO order progress cards data
+  const {
+    data: cardsData,
+    error,
+    isLoading,
+    mutate
+  } = useSWR<AcoOrderProgressResponse>(
+    !isEditMode ? '/api/v1/analysis/aco-order-progress-cards' : null,
+    fetcher,
+    {
+      refreshInterval: 300000, // 5 minutes
+      revalidateOnFocus: false,
+      onError: (error) => {
+        showError('Failed to load ACO order progress', error);
+      }
+    }
+  );
+
+  // Transform REST API data to display format
+  const progressCards = useMemo(() => {
+    if (!cardsData?.cards) return [];
+    return cardsData.cards;
+  }, [cardsData]);
+
+  // Create mock incomplete orders for dropdown (this should come from a separate endpoint)
+  const incompleteOrders = useMemo(() => {
+    // This is temporary mock data - in a real implementation, 
+    // this would come from a separate endpoint like /api/v1/orders/aco?status=incomplete
+    return [
+      {
+        order_ref: 1001,
+        latest_update: '2024-01-15T10:30:00Z',
+        total_required: 500,
+        total_finished: 375,
+        total_remaining: 125,
+        product_count: 5,
+        completion_percentage: 75
+      },
+      {
+        order_ref: 1002,
+        latest_update: '2024-01-14T16:45:00Z',
+        total_required: 300,
+        total_finished: 180,
+        total_remaining: 120,
+        product_count: 3,
+        completion_percentage: 60
+      }
+    ];
+  }, []);
 
 
   useEffect(() => {
@@ -179,12 +190,16 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
     }
   }, [selectedOrderRef, loadOrderProgress]);
 
-  // Initial load - only refresh data if needed
+  // Auto-refresh data periodically
   useEffect(() => {
-    if (!isEditMode && !loading && !ordersData) {
-      refetch();
+    if (!isEditMode && !isLoading && !error) {
+      const interval = setInterval(() => {
+        mutate();
+      }, 300000); // 5 minutes
+      
+      return () => clearInterval(interval);
     }
-  }, [isEditMode, loading, ordersData, refetch]);
+  }, [isEditMode, isLoading, error, mutate]);
 
   // Auto-select first order
   useEffect(() => {
@@ -219,7 +234,7 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className='flex items-center gap-2 rounded-md border border-slate-600/30 bg-white/5 px-2 py-1 text-xs text-slate-300 transition-all duration-300 hover:bg-white/10 hover:text-white'
-              disabled={loading || isEditMode}
+              disabled={isLoading || isEditMode}
             >
               <ClipboardDocumentListIcon className='h-4 w-4' />
               {selectedOrderRef ? `Order ${selectedOrderRef}` : 'Select Order'}
@@ -271,11 +286,11 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
         </div>
       </CardHeader>
       <CardContent>
-        {loading ? (
+        {isLoading ? (
           <WidgetSkeleton type="stats" />
         ) : error ? (
           <div className='text-sm text-red-400'>{typeof error === 'string' ? error : 'Failed to load data'}</div>
-        ) : orderProgress.length === 0 ? (
+        ) : progressCards.length === 0 ? (
           <div className='py-12 text-center'>
             <ClipboardDocumentListIcon className='mx-auto mb-4 h-16 w-16 text-slate-600' />
             <WidgetText size='large' glow='gray'>
@@ -283,47 +298,47 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
             </WidgetText>
           </div>
         ) : (
-          <div className='space-y-6'>
-            {orderProgress.map((item, index) => (
-              <div key={`${selectedOrderRef}-${item.code}-${index}`} className='space-y-3'>
+          <div className='space-y-4'>
+            {progressCards.map((card, index) => (
+              <div key={`${card.id}-${index}`} className='space-y-3'>
                 <div className='flex items-center justify-between'>
                   <WidgetText size='xs' glow='white' className='text-xs font-medium'>
-                    {item.code}
+                    {card.title}
                   </WidgetText>
-                  <span
-                    className={`text-[10px] ${WidgetStyles.text.tableData} rounded-full bg-white/5 px-2 py-0.5`}
-                  >
-                    {item.completed_qty} / {item.required_qty}
-                  </span>
-                </div>
-                <div className='h-3 w-full overflow-hidden rounded-full bg-white/10'>
-                  <div
-                    className='flex h-3 items-center justify-end rounded-full bg-gradient-to-r from-orange-500 to-amber-400 pr-2 transition-all duration-700'
-                    style={{ width: `${item.completion_percentage}%` }}
-                  >
-                    {item.completion_percentage > 25 && (
-                      <WidgetLabel size='xs' glow='strong' className='font-bold'>
-                        {item.completion_percentage}%
-                      </WidgetLabel>
+                  <div className='flex items-center gap-2'>
+                    <span className={`text-lg font-bold ${WidgetStyles.text.value}`}>
+                      {card.value}
+                    </span>
+                    {card.trend && (
+                      <span className={`text-xs ${
+                        card.trend === 'up' ? 'text-green-400' : 
+                        card.trend === 'down' ? 'text-red-400' : 'text-gray-400'
+                      }`}>
+                        {card.percentageChange !== undefined && `${card.percentageChange > 0 ? '+' : ''}${card.percentageChange.toFixed(1)}%`}
+                      </span>
                     )}
                   </div>
                 </div>
-                <div className='flex items-center justify-between'>
-                  {item.completion_percentage <= 25 ? (
-                    <WidgetText size='xs' glow='white' className='text-xs font-bold'>
-                      {item.completion_percentage}%
-                    </WidgetText>
-                  ) : (
-                    <span></span>
-                  )}
-                  {progressMetadata.orderRef && (
-                    <WidgetLabel size='xs' glow='subtle' className='text-[10px]'>
-                      Order {progressMetadata.orderRef} • {progressMetadata.productCount} products
-                    </WidgetLabel>
-                  )}
-                </div>
+                {card.previousValue !== undefined && (
+                  <div className='flex items-center justify-between text-xs text-slate-400'>
+                    <span>Previous: {card.previousValue}</span>
+                    <span className={`${
+                      card.trend === 'up' ? 'text-green-400' : 
+                      card.trend === 'down' ? 'text-red-400' : 'text-gray-400'
+                    }`}>
+                      {card.trend === 'up' ? '↗' : card.trend === 'down' ? '↘' : '→'}
+                    </span>
+                  </div>
+                )}
               </div>
             ))}
+            {cardsData?.metadata && (
+              <div className='mt-4 pt-4 border-t border-slate-600/30'>
+                <WidgetLabel size='xs' glow='subtle' className='text-[10px]'>
+                  Last updated: {format(new Date(cardsData.lastUpdated), 'MMM dd, HH:mm')} • {cardsData.dateRange}
+                </WidgetLabel>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

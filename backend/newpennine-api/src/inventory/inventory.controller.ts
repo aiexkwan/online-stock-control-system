@@ -57,7 +57,7 @@ export class InventoryController {
         {
           status: HttpStatus.INTERNAL_SERVER_ERROR,
           error: 'Failed to fetch inventory',
-          message: error.message,
+          message: (error as Error).message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -73,7 +73,7 @@ export class InventoryController {
         {
           status: HttpStatus.INTERNAL_SERVER_ERROR,
           error: 'Failed to fetch inventory summary',
-          message: error.message,
+          message: (error as Error).message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -83,7 +83,8 @@ export class InventoryController {
   @Get('stock-distribution')
   @ApiOperation({
     summary: 'Get stock distribution data',
-    description: 'Retrieve stock distribution across different locations for charting',
+    description:
+      'Retrieve stock distribution across different locations for charting',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -100,7 +101,7 @@ export class InventoryController {
         {
           status: HttpStatus.INTERNAL_SERVER_ERROR,
           error: 'Failed to fetch stock distribution',
-          message: error.message,
+          message: (error as Error).message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -114,7 +115,7 @@ export class InventoryController {
     try {
       return await this.inventoryService.getInventoryById(id);
     } catch (error) {
-      if (error.message === 'Inventory record not found') {
+      if ((error as Error).message === 'Inventory record not found') {
         throw new HttpException(
           {
             status: HttpStatus.NOT_FOUND,
@@ -129,7 +130,7 @@ export class InventoryController {
         {
           status: HttpStatus.INTERNAL_SERVER_ERROR,
           error: 'Failed to fetch inventory record',
-          message: error.message,
+          message: (error as Error).message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );

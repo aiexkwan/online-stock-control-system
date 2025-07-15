@@ -34,14 +34,14 @@ export class WarehouseTransfersService {
         return {
           transfers: rpcData,
           total_records: rpcData.length,
-          offset: query.offset,
-          limit: query.limit,
+          offset: query.offset || 0,
+          limit: query.limit || 50,
           filters: {
-            startDate: query.startDate,
-            endDate: query.endDate,
-            fromLocation: query.fromLocation,
-            toLocation: query.toLocation,
-            status: query.status,
+            ...(query.startDate && { startDate: query.startDate }),
+            ...(query.endDate && { endDate: query.endDate }),
+            ...(query.fromLocation && { fromLocation: query.fromLocation }),
+            ...(query.toLocation && { toLocation: query.toLocation }),
+            ...(query.status && { status: query.status }),
           },
         };
       }
@@ -51,7 +51,8 @@ export class WarehouseTransfersService {
       let transferQuery = this.supabaseService
         .getClient()
         .from('record_transfer')
-        .select(`
+        .select(
+          `
           transfer_id,
           pallet_ref,
           product_code,
@@ -65,7 +66,9 @@ export class WarehouseTransfersService {
           notes,
           created_at,
           updated_at
-        `, { count: 'exact' })
+        `,
+          { count: 'exact' },
+        )
         .order('transfer_date', { ascending: false });
 
       // 應用篩選條件
@@ -91,31 +94,36 @@ export class WarehouseTransfersService {
 
       // 應用分頁
       transferQuery = transferQuery.range(
-        query.offset,
-        query.offset + query.limit - 1,
+        query.offset || 0,
+        (query.offset || 0) + (query.limit || 50) - 1,
       );
 
       const { data, error, count } = await transferQuery;
 
       if (error) {
-        throw new Error(`Failed to fetch warehouse transfers: ${error.message}`);
+        throw new Error(
+          `Failed to fetch warehouse transfers: ${error.message}`,
+        );
       }
 
       return {
         transfers: data || [],
         total_records: count || 0,
-        offset: query.offset,
-        limit: query.limit,
+        offset: query.offset || 0,
+        limit: query.limit || 50,
         filters: {
-          startDate: query.startDate,
-          endDate: query.endDate,
-          fromLocation: query.fromLocation,
-          toLocation: query.toLocation,
-          status: query.status,
+          ...(query.startDate && { startDate: query.startDate }),
+          ...(query.endDate && { endDate: query.endDate }),
+          ...(query.fromLocation && { fromLocation: query.fromLocation }),
+          ...(query.toLocation && { toLocation: query.toLocation }),
+          ...(query.status && { status: query.status }),
         },
       };
     } catch (error) {
-      this.logger.error('Error fetching warehouse transfers:', error.message);
+      this.logger.error(
+        'Error fetching warehouse transfers:',
+        (error as Error).message,
+      );
       throw error;
     }
   }

@@ -12,8 +12,8 @@ const CartesianGrid = dynamic(() => import('recharts').then(mod => ({ default: m
 const Tooltip = dynamic(() => import('recharts').then(mod => ({ default: mod.Tooltip })), { ssr: false });
 const ResponsiveContainer = dynamic(() => import('recharts').then(mod => ({ default: mod.ResponsiveContainer })), { ssr: false });
 const Cell = dynamic(() => import('recharts').then(mod => ({ default: mod.Cell })), { ssr: false });
-import { useGetTopProductsInventoryQuery } from '@/lib/graphql/generated/apollo-hooks';
-import { GetTopProductsInventoryQuery } from '@/lib/graphql/generated/types';
+// Note: Migrated to REST API - GraphQL hooks removed
+// Type removed with GraphQL migration
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';

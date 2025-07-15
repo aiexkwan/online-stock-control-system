@@ -1,0 +1,51 @@
+<testsuites id="" name="" tests="4" failures="0" skipped="0" errors="0" time="1.249076">
+<testsuite name="basic-performance.spec.ts" timestamp="2025-07-15T23:31:48.326Z" hostname="chromium" tests="4" failures="0" skipped="0" time="0.024" errors="0">
+<testcase name="Basic Performance Tests › Bundle Size Check" classname="basic-performance.spec.ts" time="0.005">
+<system-out>
+<![CDATA[Initializing basic performance tests...
+Checking bundle size...
+Bundle size: 20351 KB
+Basic performance report saved to: test-results/basic-performance-report.json
+Basic performance test completed!
+]]>
+</system-out>
+</testcase>
+<testcase name="Basic Performance Tests › Package.json Size Check" classname="basic-performance.spec.ts" time="0.002">
+<system-out>
+<![CDATA[Initializing basic performance tests...
+Package.json size: 8 KB
+Basic performance report saved to: test-results/basic-performance-report.json
+Basic performance test completed!
+]]>
+</system-out>
+</testcase>
+<testcase name="Basic Performance Tests › Node Modules Size Check" classname="basic-performance.spec.ts" time="0.007">
+<system-out>
+<![CDATA[Initializing basic performance tests...
+Checking node_modules size (limited depth)...
+Node modules size: 1 MB
+Basic performance report saved to: test-results/basic-performance-report.json
+Basic performance test completed!
+]]>
+</system-out>
+</testcase>
+<testcase name="Basic Performance Tests › Complete Basic Performance Test" classname="basic-performance.spec.ts" time="0.01">
+<system-out>
+<![CDATA[Initializing basic performance tests...
+Running basic performance test...
+Checking bundle size...
+Checking node_modules size (limited depth)...
+Basic performance metrics: {
+  bundleExists: [33mtrue[39m,
+  bundleSize: [33m20351[39m,
+  packageJsonSize: [33m8[39m,
+  nodeModulesSize: [33m1[39m,
+  timestamp: [32m'2025-07-15T23:31:48.671Z'[39m
+}
+Basic performance report saved to: test-results/basic-performance-report.json
+Basic performance test completed!
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

@@ -1,18 +1,18 @@
 export class HealthResponseDto {
-  status: string;
-  timestamp: string;
-  service: string;
-  version: string;
+  status!: string;
+  timestamp!: string;
+  service!: string;
+  version!: string;
 }
 
 export class DetailedHealthResponseDto extends HealthResponseDto {
-  database: {
+  database!: {
     status: string;
     latency: string | null;
   };
-  environment: string;
-  uptime: number;
-  memory: {
+  environment!: string;
+  uptime!: number;
+  memory!: {
     used: string;
     total: string;
   };

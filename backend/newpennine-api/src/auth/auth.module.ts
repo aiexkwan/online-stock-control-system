@@ -15,10 +15,12 @@ import { SupabaseModule } from '../supabase/supabase.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'default-secret-key',
+        // Remove secret - will be handled by JwtStrategy with JWKS
         signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRATION') || '1h',
+          expiresIn: configService.get<string>('JWT_EXPIRES_IN') || '1h',
         },
+        // Keep secret only for signing custom tokens
+        secret: configService.get<string>('JWT_SECRET') || 'default-secret-key',
       }),
     }),
     SupabaseModule,

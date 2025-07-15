@@ -3,7 +3,7 @@ import { IsString, IsNotEmpty, IsOptional, IsArray } from 'class-validator';
 export class GrnReportDataQueryDto {
   @IsString()
   @IsNotEmpty()
-  grnRef: string;
+  grnRef!: string;
 
   @IsOptional()
   @IsArray()

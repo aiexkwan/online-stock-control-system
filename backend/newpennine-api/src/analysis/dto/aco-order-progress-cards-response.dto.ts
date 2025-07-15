@@ -1,7 +1,7 @@
 export class AcoOrderProgressCardDto {
-  id: string;
-  title: string;
-  value: number;
+  id!: string;
+  title!: string;
+  value!: number;
   previousValue?: number;
   percentageChange?: number;
   trend?: 'up' | 'down' | 'stable';
@@ -12,9 +12,9 @@ export class AcoOrderProgressCardDto {
 }
 
 export class AcoOrderProgressCardsResponseDto {
-  cards: AcoOrderProgressCardDto[];
-  totalCards: number;
+  cards!: AcoOrderProgressCardDto[];
+  totalCards!: number;
   dateRange?: string;
-  lastUpdated: string;
+  lastUpdated!: string;
   metadata?: Record<string, any>;
 }

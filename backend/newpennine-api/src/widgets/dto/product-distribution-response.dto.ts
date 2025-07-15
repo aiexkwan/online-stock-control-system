@@ -2,10 +2,10 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class ProductDistributionItemDto {
   @ApiProperty({ example: 'PROD001', description: 'Product code' })
-  name: string;
+  name!: string;
 
   @ApiProperty({ example: 1500, description: 'Total quantity' })
-  value: number;
+  value!: number;
 
   @ApiProperty({ example: 'Widget A', description: 'Product description' })
   description?: string;
@@ -29,17 +29,17 @@ export class ProductDistributionMetadataDto {
 }
 
 export class ProductDistributionResponseDto {
-  @ApiProperty({ 
+  @ApiProperty({
     type: [ProductDistributionItemDto],
-    description: 'Array of product distribution data for pie chart'
+    description: 'Array of product distribution data for pie chart',
   })
-  value: ProductDistributionItemDto[];
+  value!: ProductDistributionItemDto[];
 
   @ApiProperty({ type: ProductDistributionMetadataDto, required: false })
   metadata?: ProductDistributionMetadataDto;
 
   @ApiProperty({ example: '2025-01-15T10:30:00Z' })
-  timestamp: string;
+  timestamp!: string;
 
   @ApiProperty({ required: false })
   error?: string;

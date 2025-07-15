@@ -1,0 +1,406 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
+import request from 'supertest';
+import { AppModule } from '../src/app.module';
+import { TestHelpers } from './test-helpers';
+
+/**
+ * v1.3.2 功能驗證測試套件
+ * 
+ * 專門針對 v1.3.2 版本新增的功能和修復進行測試
+ * 包括：
+ * - JWT 認證流程
+ * - 分析模組 API 端點
+ * - 前端 widgets 功能
+ * - 系統整合性驗證
+ */
+describe('v1.3.2 Feature Validation (e2e)', () => {
+  let app: INestApplication;
+  let authToken: string;
+  
+  // 系統登入憑據
+  const systemCredentials = {
+    email: 'akwan@pennineindustries.com',
+    password: 'X315Y316'
+  };
+
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+
+    // 應用與 main.ts 相同的配置
+    app.setGlobalPrefix('api/v1');
+    app.enableCors({
+      origin: '*',
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+    });
+
+    await app.init();
+
+    console.log('🚀 v1.3.2 測試環境已初始化');
+  });
+
+  afterAll(async () => {
+    await app.close();
+    console.log('✅ v1.3.2 測試環境已關閉');
+  });
+
+  describe('1. 系統健康檢查', () => {
+    it('應該返回基本健康狀態', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/health')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('status', 'ok');
+      expect(response.body).toHaveProperty('service', 'newpennine-api');
+      expect(response.body).toHaveProperty('timestamp');
+      
+      console.log('✅ 基本健康檢查通過');
+    });
+
+    it('應該返回詳細健康狀態', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/health/detailed')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('status', 'ok');
+      expect(response.body).toHaveProperty('database');
+      expect(response.body).toHaveProperty('memory');
+      expect(response.body).toHaveProperty('uptime');
+      
+      console.log('✅ 詳細健康檢查通過');
+    });
+  });
+
+  describe('2. JWT 認證流程驗證', () => {
+    it('應該能使用系統憑據登入', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send(systemCredentials)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('access_token');
+      expect(response.body).toHaveProperty('user');
+      expect(response.body.user.email).toBe(systemCredentials.email);
+
+      authToken = response.body.access_token;
+      console.log('✅ 系統憑據登入成功');
+    });
+
+    it('應該能驗證 JWT token', async () => {
+      if (!authToken) {
+        // 如果直接登入失敗，使用測試助手
+        authToken = await TestHelpers.loginAndGetToken(app);
+      }
+
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/auth/verify')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('valid', true);
+      expect(response.body).toHaveProperty('user');
+      
+      console.log('✅ JWT token 驗證成功');
+    });
+
+    it('應該能獲取用戶資料', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/auth/profile')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('email');
+      
+      console.log('✅ 用戶資料獲取成功');
+    });
+  });
+
+  describe('3. 分析模組 API 端點驗證', () => {
+    it('應該返回 ACO 訂單進度卡片數據', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/analysis/aco-order-progress-cards')
+        .query({
+          startDate: '2025-01-01',
+          endDate: '2025-01-15'
+        })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('cards');
+      expect(Array.isArray(response.body.cards)).toBe(true);
+      expect(response.body).toHaveProperty('metadata');
+      
+      console.log('✅ ACO 訂單進度卡片 API 正常');
+    });
+
+    it('應該返回 ACO 訂單進度圖表數據', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/analysis/aco-order-progress-chart')
+        .query({
+          startDate: '2025-01-01',
+          endDate: '2025-01-15',
+          granularity: 'daily'
+        })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('chartData');
+      expect(response.body).toHaveProperty('summary');
+      expect(Array.isArray(response.body.chartData)).toBe(true);
+      
+      console.log('✅ ACO 訂單進度圖表 API 正常');
+    });
+  });
+
+  describe('4. Widget API 端點驗證', () => {
+    const validDataSources = ['totalPallets', 'activeTransfers', 'todayGRN', 'pendingOrders'];
+
+    validDataSources.forEach(dataSource => {
+      it(`應該返回 ${dataSource} 統計卡片數據`, async () => {
+        const response = await request(app.getHttpServer())
+          .get('/api/v1/widgets/stats-card')
+          .query({ dataSource })
+          .set('Authorization', `Bearer ${authToken}`)
+          .expect(200);
+
+        expect(response.body).toHaveProperty('value');
+        expect(response.body).toHaveProperty('label');
+        expect(response.body).toHaveProperty('dataSource', dataSource);
+        expect(typeof response.body.value).toBe('number');
+        
+        console.log(`✅ ${dataSource} 統計卡片 API 正常`);
+      });
+    });
+
+    it('應該返回庫存分析數據', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/widgets/inventory-analysis')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('warehouses');
+      expect(response.body).toHaveProperty('totalItems');
+      expect(response.body).toHaveProperty('totalQuantity');
+      expect(Array.isArray(response.body.warehouses)).toBe(true);
+      
+      console.log('✅ 庫存分析 API 正常');
+    });
+
+    it('應該返回產品分佈數據', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/widgets/product-distribution')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('distribution');
+      expect(response.body).toHaveProperty('total');
+      expect(Array.isArray(response.body.distribution)).toBe(true);
+      
+      console.log('✅ 產品分佈 API 正常');
+    });
+
+    it('應該返回庫存與訂單需求分析', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/widgets/inventory-ordered-analysis')
+        .query({
+          startDate: '2025-01-01',
+          endDate: '2025-01-15'
+        })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('products');
+      expect(response.body).toHaveProperty('summary');
+      expect(Array.isArray(response.body.products)).toBe(true);
+      
+      console.log('✅ 庫存與訂單需求分析 API 正常');
+    });
+  });
+
+  describe('5. 核心業務端點驗證', () => {
+    it('應該返回棧板信息', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/pallets')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('data');
+      expect(Array.isArray(response.body.data)).toBe(true);
+      
+      console.log('✅ 棧板信息 API 正常');
+    });
+
+    it('應該返回庫存數據', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/inventory')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('data');
+      expect(Array.isArray(response.body.data)).toBe(true);
+      
+      console.log('✅ 庫存數據 API 正常');
+    });
+
+    it('應該返回轉移記錄', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/transfers')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('data');
+      expect(Array.isArray(response.body.data)).toBe(true);
+      
+      console.log('✅ 轉移記錄 API 正常');
+    });
+
+    it('應該返回歷史記錄', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/history')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('data');
+      expect(Array.isArray(response.body.data)).toBe(true);
+      
+      console.log('✅ 歷史記錄 API 正常');
+    });
+  });
+
+  describe('6. RPC 函數端點驗證', () => {
+    it('應該返回等待位置計數', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/rpc/await-location-count')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('data');
+      
+      console.log('✅ RPC 等待位置計數正常');
+    });
+  });
+
+  describe('7. 認證保護驗證', () => {
+    const protectedEndpoints = [
+      '/api/v1/widgets/stats',
+      '/api/v1/widgets/inventory',
+      '/api/v1/widgets/inventory-analysis',
+      '/api/v1/pallets',
+      '/api/v1/inventory',
+      '/api/v1/transfers',
+      '/api/v1/history'
+    ];
+
+    protectedEndpoints.forEach(endpoint => {
+      it(`${endpoint} 應該要求認證`, async () => {
+        await request(app.getHttpServer())
+          .get(endpoint)
+          .expect(401);
+      });
+    });
+
+    console.log('✅ 所有保護端點認證檢查完成');
+  });
+
+  describe('8. 錯誤處理驗證', () => {
+    it('應該正確處理無效的數據源請求', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/widgets/stats-card')
+        .query({ dataSource: 'invalidSource' })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400);
+        
+      console.log('✅ 無效數據源錯誤處理正常');
+    });
+
+    it('應該正確處理無效的日期格式', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/widgets/inventory-ordered-analysis')
+        .query({
+          startDate: 'invalid-date',
+          endDate: '2025-01-15'
+        })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400);
+        
+      console.log('✅ 無效日期格式錯誤處理正常');
+    });
+
+    it('應該正確處理不存在的路由', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/nonexistent-endpoint')
+        .expect(404);
+        
+      console.log('✅ 不存在路由錯誤處理正常');
+    });
+  });
+
+  describe('9. 性能驗證', () => {
+    it('API 響應時間應該在合理範圍內', async () => {
+      const endpoints = [
+        '/api/v1/health',
+        '/api/v1/widgets/stats-card?dataSource=totalPallets',
+        '/api/v1/widgets/inventory-analysis'
+      ];
+
+      for (const endpoint of endpoints) {
+        const startTime = Date.now();
+        
+        await request(app.getHttpServer())
+          .get(endpoint)
+          .set('Authorization', `Bearer ${authToken}`)
+          .expect(res => {
+            expect([200, 401]).toContain(res.status);
+          });
+
+        const responseTime = Date.now() - startTime;
+        expect(responseTime).toBeLessThan(10000); // 10秒內
+        
+        console.log(`✅ ${endpoint} 響應時間: ${responseTime}ms`);
+      }
+    }, 30000);
+  });
+
+  describe('10. 整合測試', () => {
+    it('應該支持完整的用戶工作流程', async () => {
+      // 1. 登入
+      const loginResponse = await request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send(systemCredentials);
+
+      const token = loginResponse.body?.access_token || authToken;
+
+      // 2. 獲取儀表板統計
+      const statsResponse = await request(app.getHttpServer())
+        .get('/api/v1/widgets/stats-card')
+        .query({ dataSource: 'totalPallets' })
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      // 3. 獲取庫存分析
+      const inventoryResponse = await request(app.getHttpServer())
+        .get('/api/v1/widgets/inventory-analysis')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      // 4. 獲取產品分佈
+      const distributionResponse = await request(app.getHttpServer())
+        .get('/api/v1/widgets/product-distribution')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      // 驗證所有響應都有必要的數據結構
+      expect(statsResponse.body).toHaveProperty('value');
+      expect(inventoryResponse.body).toHaveProperty('warehouses');
+      expect(distributionResponse.body).toHaveProperty('distribution');
+
+      console.log('✅ 完整用戶工作流程測試通過');
+    });
+  });
+});

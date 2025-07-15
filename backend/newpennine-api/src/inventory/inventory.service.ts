@@ -361,7 +361,10 @@ export class InventoryService {
           { count: 'exact' },
         )
         .order('product_code')
-        .range(query.offset || 0, (query.offset || 0) + (query.limit || 50) - 1);
+        .range(
+          query.offset || 0,
+          (query.offset || 0) + (query.limit || 50) - 1,
+        );
 
       if (error) {
         console.error('Error fetching stock distribution:', error);

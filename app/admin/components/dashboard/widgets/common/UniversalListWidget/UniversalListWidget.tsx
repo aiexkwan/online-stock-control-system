@@ -29,11 +29,11 @@ function ConnectionStatusBadge({
 }) {
   const getStatusColor = () => {
     switch (status.type) {
-      case 'graphql':
+      case 'realtime':
         return 'bg-green-500/20 text-green-400 border-green-500/30';
-      case 'batch':
+      case 'polling':
         return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'server':
+      case 'offline':
         return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
       case 'error':
         return 'bg-red-500/20 text-red-400 border-red-500/30';
@@ -238,7 +238,7 @@ function EditModeDisplay({
           optimized: false,
         }}
         connectionStatus={{
-          type: 'server',
+          type: 'offline',
           label: '✏️ Edit Mode',
         }}
       />
@@ -278,13 +278,12 @@ export const UniversalListWidget = React.memo(function UniversalListWidget<T = a
 
   // 連接狀態
   const connectionStatus: ConnectionStatus = useMemo(() => {
-    switch (mode) {
-      case 'graphql':
-        return { type: 'graphql', label: '⚡ GraphQL', optimized: true };
-      case 'context':
-        return { type: 'batch', label: '🚀 Batch Query', optimized: true };
-      default:
-        return { type: 'server', label: '🔄 Server Action', optimized: false };
+    if (mode === 'context') {
+      return { type: 'realtime', label: '🚀 Batch Query', optimized: true };
+    } else if (mode === 'server-action') {
+      return { type: 'polling', label: '🔄 Server Action', optimized: false };
+    } else {
+      return { type: 'offline', label: '⚠️ Offline', optimized: false };
     }
   }, [mode]);
 

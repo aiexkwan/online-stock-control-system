@@ -15,7 +15,7 @@ const Bar = dynamic(() => import('recharts').then(mod => ({ default: mod.Bar }))
 const XAxis = dynamic(() => import('recharts').then(mod => ({ default: mod.XAxis })), { ssr: false });
 const YAxis = dynamic(() => import('recharts').then(mod => ({ default: mod.YAxis })), { ssr: false });
 const CartesianGrid = dynamic(() => import('recharts').then(mod => ({ default: mod.CartesianGrid })), { ssr: false });
-import { useGetVoidRecordsQuery } from '@/lib/graphql/generated/apollo-hooks';
+// Note: Migrated to REST API - GraphQL hooks removed
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';

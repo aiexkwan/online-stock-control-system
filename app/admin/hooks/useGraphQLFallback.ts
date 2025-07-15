@@ -28,10 +28,10 @@ export interface UseGraphQLFallbackResult<TData> {
   loading: boolean;
   error: Error | ApolloError | undefined;
   refetch: () => Promise<void>;
-  mode: 'context' | 'graphql' | 'server-action' | 'fallback';
+  mode: 'context' | 'server-action' | 'fallback';
   performanceMetrics?: {
     queryTime: number;
-    dataSource: 'context' | 'graphql' | 'server-action' | 'cache';
+    dataSource: 'context' | 'server-action' | 'cache';
     fallbackUsed: boolean;
   };
 }
@@ -107,7 +107,7 @@ export function useGraphQLFallback<TData = any, TVariables = any>({
       
       // Record to performance monitor (使用簡化系統)
       simplePerformanceMonitor.recordMetric(`${widgetId}_query_time`, queryTime, 'performance');
-      simplePerformanceMonitor.recordMetric(`${widgetId}_data_source`, dataSource === 'graphql' ? 1 : 0, 'performance');
+      simplePerformanceMonitor.recordMetric(`${widgetId}_data_source`, dataSource === 'context' ? 1 : 0, 'performance');
       simplePerformanceMonitor.recordMetric(`${widgetId}_fallback_used`, fallbackUsed ? 1 : 0, 'performance');
     }
   }, [widgetId]); // Removed variables dependency to prevent infinite loops
@@ -154,12 +154,12 @@ export function useGraphQLFallback<TData = any, TVariables = any>({
     graphqlQuery || gql`query EmptyQuery { __typename }`, 
     {
       variables,
-      skip: skip || !graphqlQuery || !isApolloAvailable || contextData !== null || mode !== 'graphql',
+      skip: true, // GraphQL disabled - always skip
       pollInterval,
       fetchPolicy,
       errorPolicy: 'all', // Handle errors gracefully
       onCompleted: (data) => {
-        recordPerformance('graphql', false);
+        recordPerformance('context', false);
         onCompleted?.(data);
       },
       onError: (error) => {
@@ -220,9 +220,7 @@ export function useGraphQLFallback<TData = any, TVariables = any>({
           }
           return currentMode;
         });
-      } else if (graphqlQuery && isApolloAvailable && !graphqlError) {
-        setMode(currentMode => currentMode !== 'graphql' ? 'graphql' : currentMode);
-      } else if (serverAction && (graphqlError || !graphqlQuery || !isApolloAvailable)) {
+      } else if (serverAction) {
         setMode(currentMode => currentMode !== 'server-action' ? 'server-action' : currentMode);
       }
     }
@@ -235,8 +233,6 @@ export function useGraphQLFallback<TData = any, TVariables = any>({
     try {
       if (mode === 'context' && dashboardData?.refetch) {
         await dashboardData.refetch();
-      } else if (mode === 'graphql' && graphqlRefetch) {
-        await graphqlRefetch();
       } else if (mode === 'server-action' && serverMutate) {
         await serverMutate();
       }
@@ -247,9 +243,9 @@ export function useGraphQLFallback<TData = any, TVariables = any>({
   }, [mode, dashboardData, graphqlRefetch, serverMutate, handleFetchError]);
 
   // Return unified result
-  const data = contextData ?? graphqlData ?? serverData;
-  const loading = mode === 'graphql' ? graphqlLoading : mode === 'server-action' ? serverLoading : false;
-  const error = mode === 'graphql' ? graphqlError : mode === 'server-action' ? serverError : undefined;
+  const data = contextData ?? serverData;
+  const loading = mode === 'server-action' ? serverLoading : false;
+  const error = mode === 'server-action' ? serverError : undefined;
 
   return {
     data,

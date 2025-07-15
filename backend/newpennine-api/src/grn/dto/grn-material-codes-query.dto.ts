@@ -3,5 +3,5 @@ import { IsString, IsNotEmpty } from 'class-validator';
 export class GrnMaterialCodesQueryDto {
   @IsString()
   @IsNotEmpty()
-  grnRef: string;
+  grnRef!: string;
 }

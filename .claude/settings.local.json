@@ -157,7 +157,9 @@
       "Bash(tree:*)",
       "Bash(npm start)",
       "Bash(echo $NODE_ENV)",
-      "Bash(ss:*)"
+      "Bash(ss:*)",
+      "mcp__supabase__get_project",
+      "Bash(./fix_dto_properties.sh:*)"
     ],
     "deny": []
   },

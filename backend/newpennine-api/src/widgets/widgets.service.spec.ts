@@ -75,7 +75,8 @@ describe('WidgetsService', () => {
     it('should handle database connection unavailable', async () => {
       mockCacheService.generateKey.mockReturnValue('stats-key');
       mockCacheService.get.mockReturnValue(undefined);
-      mockSupabaseService.getClient.mockReturnValue(undefined);
+      // Mock the supabase property to null
+      (service as any).supabase = null;
 
       const result = await service.getStats();
 
@@ -92,7 +93,8 @@ describe('WidgetsService', () => {
 
   describe('getInventory', () => {
     it('should return empty data when no supabase client', async () => {
-      mockSupabaseService.getClient.mockReturnValue(undefined);
+      // Mock the supabase property to null
+      (service as any).supabase = null;
 
       const result = await service.getInventory();
 
@@ -155,7 +157,8 @@ describe('WidgetsService', () => {
     it('should handle database connection unavailable', async () => {
       mockCacheService.generateKey.mockReturnValue('analysis-key');
       mockCacheService.get.mockReturnValue(undefined);
-      mockSupabaseService.getClient.mockReturnValue(undefined);
+      // Mock the supabase property to null
+      (service as any).supabase = null;
 
       const result = await service.getInventoryAnalysis();
 

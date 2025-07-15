@@ -135,24 +135,33 @@ export class TransfersService {
       const hasPrevious = page > 1;
 
       // Map to response DTOs
-      const items: TransferResponseDto[] = (transfers || []).map(
-        (transfer) => ({
+      const items: TransferResponseDto[] = (transfers || []).map((transfer) => {
+        const result: any = {
           id: transfer.id,
           palletId: transfer.pallet_id,
           productCode: transfer.product_code,
-          productName: undefined, // Will be populated later if needed
           quantity: transfer.quantity,
           fromLocation: transfer.from_location,
           toLocation: transfer.to_location,
           status: transfer.status || 'completed',
           userId: transfer.user_id,
-          userName: undefined, // Will be populated later if needed
           transferDate: new Date(transfer.transfer_date),
           notes: transfer.notes,
           createdAt: new Date(transfer.created_at),
           updatedAt: new Date(transfer.updated_at),
-        }),
-      );
+        };
+
+        // Only add optional properties if they have values
+        if ((transfer as any).product_name) {
+          result.productName = (transfer as any).product_name;
+        }
+
+        if ((transfer as any).user_name) {
+          result.userName = (transfer as any).user_name;
+        }
+
+        return result as TransferResponseDto;
+      });
 
       return {
         items,
@@ -170,7 +179,7 @@ export class TransfersService {
   }
 
   private mapSortField(sortBy: string): string {
-    const fieldMap = {
+    const fieldMap: Record<string, string> = {
       created_at: 'created_at',
       updated_at: 'updated_at',
       transfer_date: 'transfer_date',

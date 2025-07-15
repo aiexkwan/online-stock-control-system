@@ -65,15 +65,13 @@ export function useUniversalList<T = any>(
     performanceMetrics: queryMetrics,
     mode,
   } = useGraphQLFallback({
-    graphqlQuery: config.dataSource.graphqlQuery,
     serverAction: config.dataSource.serverAction,
     extractFromContext: config.dataSource.extractFromContext,
     variables,
     skip: isEditMode || (config.performance?.progressiveLoading && !hasBeenInViewport),
     pollInterval: config.realtime?.pollInterval,
     fetchPolicy: 'cache-and-network',
-    errorPolicy: 'all',
-    notifyOnNetworkStatusChange: true,
+    fallbackEnabled: true,
   });
 
   // 數據處理 (轉換、過濾、排序)
@@ -118,10 +116,9 @@ export function useUniversalList<T = any>(
   // 性能指標
   const performanceMetrics: PerformanceMetrics = useMemo(() => {
     const metrics = {
-      source: mode === 'graphql' ? 'GraphQL' : mode === 'context' ? 'Batch Query' : 'Server Action',
-      optimized: mode === 'graphql' || mode === 'context',
+      source: mode === 'context' ? 'Batch Query' : 'Server Action',
+      optimized: mode === 'context',
       queryTime: queryMetrics?.queryTime,
-      fetchTime: queryMetrics?.fetchTime,
     };
     
     // 記錄性能指標
@@ -189,8 +186,6 @@ export function useUniversalList<T = any>(
   // 數據源標識
   const source = useMemo(() => {
     switch (mode) {
-      case 'graphql':
-        return '⚡ GraphQL';
       case 'context':
         return '🚀 Batch Query';
       default:

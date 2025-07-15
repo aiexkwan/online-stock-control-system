@@ -5,13 +5,13 @@ export class HistoryRecordDto {
     description: 'Unique identifier for the history record',
     example: 'hist_123456',
   })
-  id: string;
+  id!: string;
 
   @ApiProperty({
     description: 'User ID who performed the action',
     example: 'user123',
   })
-  userId: string;
+  userId!: string;
 
   @ApiProperty({
     description: 'Username of the user',
@@ -45,7 +45,7 @@ export class HistoryRecordDto {
     description: 'Action performed',
     example: 'create',
   })
-  action: string;
+  action!: string;
 
   @ApiProperty({
     description: 'Location where action was performed',
@@ -100,19 +100,19 @@ export class HistoryRecordDto {
     description: 'Timestamp when the action was performed',
     example: '2024-07-15T10:30:00Z',
   })
-  timestamp: string;
+  timestamp!: string;
 
   @ApiProperty({
     description: 'Created timestamp',
     example: '2024-07-15T10:30:00Z',
   })
-  createdAt: string;
+  createdAt!: string;
 
   @ApiProperty({
     description: 'Updated timestamp',
     example: '2024-07-15T10:30:00Z',
   })
-  updatedAt: string;
+  updatedAt!: string;
 }
 
 export class HistoryResponseDto {
@@ -120,41 +120,41 @@ export class HistoryResponseDto {
     description: 'Array of history records',
     type: [HistoryRecordDto],
   })
-  data: HistoryRecordDto[];
+  data!: HistoryRecordDto[];
 
   @ApiProperty({
     description: 'Total number of records',
     example: 150,
   })
-  total: number;
+  total!: number;
 
   @ApiProperty({
     description: 'Current page number',
     example: 1,
   })
-  page: number;
+  page!: number;
 
   @ApiProperty({
     description: 'Number of records per page',
     example: 20,
   })
-  limit: number;
+  limit!: number;
 
   @ApiProperty({
     description: 'Total number of pages',
     example: 8,
   })
-  totalPages: number;
+  totalPages!: number;
 
   @ApiProperty({
     description: 'Whether there is a next page',
     example: true,
   })
-  hasNext: boolean;
+  hasNext!: boolean;
 
   @ApiProperty({
     description: 'Whether there is a previous page',
     example: false,
   })
-  hasPrevious: boolean;
+  hasPrevious!: boolean;
 }

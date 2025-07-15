@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from './../src/app.module';
 
 describe('Authentication System (e2e)', () => {
@@ -85,9 +85,7 @@ describe('Authentication System (e2e)', () => {
     });
 
     it('should fail to access protected route without token', () => {
-      return request(app.getHttpServer())
-        .get('/auth/profile')
-        .expect(401);
+      return request(app.getHttpServer()).get('/auth/profile').expect(401);
     });
 
     it('should fail to access protected route with invalid token', () => {
@@ -146,9 +144,7 @@ describe('Authentication System (e2e)', () => {
     });
 
     it('should fail to access protected endpoints without auth', () => {
-      return request(app.getHttpServer())
-        .get('/pallets')
-        .expect(401);
+      return request(app.getHttpServer()).get('/pallets').expect(401);
     });
   });
 

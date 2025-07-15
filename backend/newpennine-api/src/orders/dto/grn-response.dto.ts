@@ -6,19 +6,19 @@ export class GrnRecordDto {
     description: 'GRN record ID',
     example: 'GRN-2024-001',
   })
-  id: string;
+  id!: string;
 
   @ApiProperty({
     description: 'GRN ID',
     example: 'GRN-2024-001',
   })
-  grn_id: string;
+  grn_id!: string;
 
   @ApiProperty({
     description: 'Product code',
     example: 'PRD-001',
   })
-  product_code: string;
+  product_code!: string;
 
   @ApiProperty({
     description: 'Product description',
@@ -30,7 +30,7 @@ export class GrnRecordDto {
     description: 'Supplier name',
     example: 'Supplier ABC',
   })
-  supplier: string;
+  supplier!: string;
 
   @ApiProperty({
     description: 'Purchase order number',
@@ -42,7 +42,7 @@ export class GrnRecordDto {
     description: 'Quantity received',
     example: 100,
   })
-  quantity_received: number;
+  quantity_received!: number;
 
   @ApiProperty({
     description: 'Quantity ordered',
@@ -67,7 +67,7 @@ export class GrnRecordDto {
     enum: GrnStatus,
     example: GrnStatus.PENDING,
   })
-  status: GrnStatus;
+  status!: GrnStatus;
 
   @ApiProperty({
     description: 'Received date',
@@ -127,13 +127,13 @@ export class GrnRecordDto {
     description: 'Created timestamp',
     example: '2024-07-15T09:00:00Z',
   })
-  created_at: string;
+  created_at!: string;
 
   @ApiProperty({
     description: 'Updated timestamp',
     example: '2024-07-15T09:30:00Z',
   })
-  updated_at: string;
+  updated_at!: string;
 
   @ApiProperty({
     description: 'Created by user ID',
@@ -159,41 +159,41 @@ export class GrnResponseDto {
     description: 'Array of GRN records',
     type: [GrnRecordDto],
   })
-  data: GrnRecordDto[];
+  data!: GrnRecordDto[];
 
   @ApiProperty({
     description: 'Total count of records',
     example: 150,
   })
-  total: number;
+  total!: number;
 
   @ApiProperty({
     description: 'Current page number',
     example: 1,
   })
-  page: number;
+  page!: number;
 
   @ApiProperty({
     description: 'Number of items per page',
     example: 10,
   })
-  limit: number;
+  limit!: number;
 
   @ApiProperty({
     description: 'Total number of pages',
     example: 15,
   })
-  total_pages: number;
+  total_pages!: number;
 
   @ApiProperty({
     description: 'Has next page',
     example: true,
   })
-  has_next: boolean;
+  has_next!: boolean;
 
   @ApiProperty({
     description: 'Has previous page',
     example: false,
   })
-  has_previous: boolean;
+  has_previous!: boolean;
 }

@@ -3,20 +3,35 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { StatsResponseDto } from './dto/stats-response.dto';
 import { InventoryResponseDto } from './dto/inventory-response.dto';
-import { InventoryAnalysisResponseDto, InventoryAnalysisItemDto, WarehouseAnalysisDto, InventoryTurnoverDto } from './dto/inventory-analysis-response.dto';
-import { StatsCardQueryDto, StatsCardDataSource } from './dto/stats-card-query.dto';
+import {
+  InventoryAnalysisResponseDto,
+  InventoryAnalysisItemDto,
+  WarehouseAnalysisDto,
+  InventoryTurnoverDto,
+} from './dto/inventory-analysis-response.dto';
+import {
+  StatsCardQueryDto,
+  StatsCardDataSource,
+} from './dto/stats-card-query.dto';
 import { StatsCardResponseDto } from './dto/stats-card-response.dto';
 import { WidgetCacheService } from './cache/widget-cache.service';
 import { InventoryOrderedAnalysisQueryDto } from './dto/inventory-ordered-analysis-query.dto';
-import { 
-  InventoryOrderedAnalysisResponseDto, 
-  ProductAnalysisDto, 
-  AnalysisSummaryDto 
+import {
+  InventoryOrderedAnalysisResponseDto,
+  ProductAnalysisDto,
+  AnalysisSummaryDto,
 } from './dto/inventory-ordered-analysis-response.dto';
 import { ProductDistributionQueryDto } from './dto/product-distribution-query.dto';
-import { ProductDistributionResponseDto, ProductDistributionItemDto } from './dto/product-distribution-response.dto';
+import {
+  ProductDistributionResponseDto,
+  ProductDistributionItemDto,
+} from './dto/product-distribution-response.dto';
 import { TransactionReportQueryDto } from './dto/transaction-report-query.dto';
-import { TransactionReportResponseDto, TransactionReportItemDto, TransactionReportSummaryDto } from './dto/transaction-report-response.dto';
+import {
+  TransactionReportResponseDto,
+  TransactionReportItemDto,
+  TransactionReportSummaryDto,
+} from './dto/transaction-report-response.dto';
 
 @Injectable()
 export class WidgetsService {
@@ -34,9 +49,12 @@ export class WidgetsService {
     endDate?: string,
   ): Promise<StatsResponseDto> {
     // Check cache first
-    const cacheKey = this.cacheService.generateKey('stats', { startDate, endDate });
+    const cacheKey = this.cacheService.generateKey('stats', {
+      startDate,
+      endDate,
+    });
     const cachedData = this.cacheService.get<StatsResponseDto>(cacheKey);
-    
+
     if (cachedData) {
       return cachedData;
     }
@@ -89,7 +107,7 @@ export class WidgetsService {
 
       // Cache the result for 2 minutes
       this.cacheService.set(cacheKey, result, 2 * 60 * 1000);
-      
+
       return result;
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -173,9 +191,12 @@ export class WidgetsService {
     warehouse?: string,
   ): Promise<InventoryAnalysisResponseDto> {
     // Check cache first
-    const cacheKey = this.cacheService.generateKey('inventory-analysis', { warehouse });
-    const cachedData = this.cacheService.get<InventoryAnalysisResponseDto>(cacheKey);
-    
+    const cacheKey = this.cacheService.generateKey('inventory-analysis', {
+      warehouse,
+    });
+    const cachedData =
+      this.cacheService.get<InventoryAnalysisResponseDto>(cacheKey);
+
     if (cachedData) {
       return cachedData;
     }
@@ -204,15 +225,13 @@ export class WidgetsService {
 
     try {
       // Build base query
-      let baseQuery = this.supabase
-        .from('record_inventory')
-        .select(
-          `
+      let baseQuery = this.supabase.from('record_inventory').select(
+        `
           *,
           data_code:code(code, descr, unit, material),
           record_palletinfo:palletid(location)
         `,
-        );
+      );
 
       if (warehouse) {
         baseQuery = baseQuery.eq('whouse', warehouse);
@@ -225,7 +244,7 @@ export class WidgetsService {
       // Process inventory data for analysis
       const productMap = new Map<string, InventoryAnalysisItemDto>();
       const warehouseMap = new Map<string, WarehouseAnalysisDto>();
-      
+
       let totalQuantity = 0;
       let totalPallets = 0;
       const uniqueWarehouses = new Set<string>();
@@ -262,11 +281,11 @@ export class WidgetsService {
         const productAnalysis = productMap.get(productCode)!;
         productAnalysis.totalQuantity += quantity;
         productAnalysis.totalPallets += 1;
-        
+
         if (!productAnalysis.locations.includes(location)) {
           productAnalysis.locations.push(location);
         }
-        
+
         if (!productAnalysis.warehouses.includes(itemWarehouse)) {
           productAnalysis.warehouses.push(itemWarehouse);
         }
@@ -289,31 +308,37 @@ export class WidgetsService {
       });
 
       // Calculate averages and final metrics
-      const productAnalysis = Array.from(productMap.values()).map(product => {
-        product.averageQuantityPerPallet = product.totalQuantity / product.totalPallets;
+      const productAnalysis = Array.from(productMap.values()).map((product) => {
+        product.averageQuantityPerPallet =
+          product.totalQuantity / product.totalPallets;
         return product;
       });
 
-      const warehouseAnalysis = Array.from(warehouseMap.values()).map(warehouse => {
-        warehouse.totalProducts = productAnalysis.filter(p => 
-          p.warehouses.includes(warehouse.warehouse)
-        ).length;
-        warehouse.utilizationRate = warehouse.totalQuantity / (warehouse.totalPallets * 1000); // Assuming 1000 as max capacity per pallet
-        warehouse.topProducts = productAnalysis
-          .filter(p => p.warehouses.includes(warehouse.warehouse))
-          .sort((a, b) => b.totalQuantity - a.totalQuantity)
-          .slice(0, 5);
-        return warehouse;
-      });
+      const warehouseAnalysis = Array.from(warehouseMap.values()).map(
+        (warehouse) => {
+          warehouse.totalProducts = productAnalysis.filter((p) =>
+            p.warehouses.includes(warehouse.warehouse),
+          ).length;
+          warehouse.utilizationRate =
+            warehouse.totalQuantity / (warehouse.totalPallets * 1000); // Assuming 1000 as max capacity per pallet
+          warehouse.topProducts = productAnalysis
+            .filter((p) => p.warehouses.includes(warehouse.warehouse))
+            .sort((a, b) => b.totalQuantity - a.totalQuantity)
+            .slice(0, 5);
+          return warehouse;
+        },
+      );
 
       // Simple turnover analysis (mock data for now)
-      const turnoverAnalysis: InventoryTurnoverDto[] = productAnalysis.map(product => ({
-        productCode: product.productCode,
-        averageTurnover: Math.random() * 30, // Mock turnover rate
-        fastMoving: product.totalQuantity > 1000,
-        slowMoving: product.totalQuantity < 100,
-        daysInStock: Math.floor(Math.random() * 365),
-      }));
+      const turnoverAnalysis: InventoryTurnoverDto[] = productAnalysis.map(
+        (product) => ({
+          productCode: product.productCode,
+          averageTurnover: Math.random() * 30, // Mock turnover rate
+          fastMoving: product.totalQuantity > 1000,
+          slowMoving: product.totalQuantity < 100,
+          daysInStock: Math.floor(Math.random() * 365),
+        }),
+      );
 
       // Generate alerts
       const lowStockThreshold = 50;
@@ -321,11 +346,18 @@ export class WidgetsService {
       const slowMovingThreshold = 30;
 
       const alerts = {
-        lowStock: productAnalysis.filter(p => p.totalQuantity < lowStockThreshold),
-        overstock: productAnalysis.filter(p => p.totalQuantity > overstockThreshold),
+        lowStock: productAnalysis.filter(
+          (p) => p.totalQuantity < lowStockThreshold,
+        ),
+        overstock: productAnalysis.filter(
+          (p) => p.totalQuantity > overstockThreshold,
+        ),
         slowMoving: turnoverAnalysis
-          .filter(t => t.daysInStock > slowMovingThreshold)
-          .map(t => productAnalysis.find(p => p.productCode === t.productCode)!)
+          .filter((t) => t.daysInStock > slowMovingThreshold)
+          .map(
+            (t) =>
+              productAnalysis.find((p) => p.productCode === t.productCode)!,
+          )
           .filter(Boolean),
       };
 
@@ -337,7 +369,9 @@ export class WidgetsService {
           totalWarehouses: uniqueWarehouses.size,
           lastUpdate: new Date().toISOString(),
         },
-        productAnalysis: productAnalysis.sort((a, b) => b.totalQuantity - a.totalQuantity),
+        productAnalysis: productAnalysis.sort(
+          (a, b) => b.totalQuantity - a.totalQuantity,
+        ),
         warehouseAnalysis,
         turnoverAnalysis,
         alerts,
@@ -346,7 +380,7 @@ export class WidgetsService {
 
       // Cache the result for 10 minutes
       this.cacheService.set(cacheKey, result, 10 * 60 * 1000);
-      
+
       return result;
     } catch (error) {
       console.error('Error fetching inventory analysis:', error);
@@ -356,11 +390,11 @@ export class WidgetsService {
 
   async getStatsCard(query: StatsCardQueryDto): Promise<StatsCardResponseDto> {
     const startTime = Date.now();
-    
+
     // Check cache first
     const cacheKey = this.cacheService.generateKey('stats-card', query);
     const cachedData = this.cacheService.get<StatsCardResponseDto>(cacheKey);
-    
+
     if (cachedData) {
       return cachedData;
     }
@@ -377,10 +411,13 @@ export class WidgetsService {
     try {
       let value: number | string = 0;
       let trend: number | undefined;
-      let label = query.label || this.getDefaultLabel(query.dataSource);
+      const label = query.label || this.getDefaultLabel(query.dataSource);
 
       // Get current value based on data source
-      const currentValue = await this.getStatsCardValue(query.dataSource, query);
+      const currentValue = await this.getStatsCardValue(
+        query.dataSource,
+        query,
+      );
       value = currentValue;
 
       // Calculate trend if date range is provided
@@ -390,10 +427,9 @@ export class WidgetsService {
 
       const calculationTime = Date.now() - startTime;
 
-      const result: StatsCardResponseDto = {
+      const result: any = {
         value,
         label,
-        trend,
         metadata: {
           optimized: true,
           calculationTime: `${calculationTime}ms`,
@@ -404,50 +440,57 @@ export class WidgetsService {
         timestamp: new Date().toISOString(),
       };
 
+      if (trend !== undefined) {
+        result.trend = trend;
+      }
+
       // Cache the result for 5 minutes
       this.cacheService.set(cacheKey, result, 5 * 60 * 1000);
-      
-      return result;
+
+      return result as StatsCardResponseDto;
     } catch (error) {
       console.error('Error fetching stats card data:', error);
       return {
         value: 0,
         label: query.label || 'Error',
         timestamp: new Date().toISOString(),
-        error: error.message,
+        error: (error as Error).message,
       };
     }
   }
 
-  private async getStatsCardValue(dataSource: StatsCardDataSource, query: StatsCardQueryDto): Promise<number> {
+  private async getStatsCardValue(
+    dataSource: StatsCardDataSource,
+    query: StatsCardQueryDto,
+  ): Promise<number> {
     switch (dataSource) {
       case StatsCardDataSource.TOTAL_PALLETS:
         return await this.getTotalPallets(query);
-      
+
       case StatsCardDataSource.TODAY_TRANSFERS:
         return await this.getTodayTransfers(query);
-      
+
       case StatsCardDataSource.ACTIVE_PRODUCTS:
         return await this.getActiveProducts(query);
-      
+
       case StatsCardDataSource.PENDING_ORDERS:
         return await this.getPendingOrders(query);
-      
+
       case StatsCardDataSource.AWAIT_PERCENTAGE_STATS:
         return await this.getAwaitPercentageStats(query);
-      
+
       case StatsCardDataSource.AWAIT_LOCATION_COUNT:
         return await this.getAwaitLocationCount(query);
-      
+
       case StatsCardDataSource.TRANSFER_COUNT:
         return await this.getTransferCount(query);
-      
+
       case StatsCardDataSource.PRODUCTION_STATS:
         return await this.getProductionStats(query);
-      
+
       case StatsCardDataSource.UPDATE_STATS:
         return await this.getUpdateStats(query);
-      
+
       default:
         return 0;
     }
@@ -511,16 +554,20 @@ export class WidgetsService {
     return count || 0;
   }
 
-  private async getAwaitPercentageStats(query: StatsCardQueryDto): Promise<number> {
+  private async getAwaitPercentageStats(
+    query: StatsCardQueryDto,
+  ): Promise<number> {
     // Calculate percentage of items awaiting location
     const totalCount = await this.getTotalPallets(query);
     const awaitCount = await this.getAwaitLocationCount(query);
-    
+
     if (totalCount === 0) return 0;
     return Math.round((awaitCount / totalCount) * 100);
   }
 
-  private async getAwaitLocationCount(query: StatsCardQueryDto): Promise<number> {
+  private async getAwaitLocationCount(
+    query: StatsCardQueryDto,
+  ): Promise<number> {
     let queryBuilder = this.supabase
       .from('record_palletinfo')
       .select('*', { count: 'exact', head: true })
@@ -573,7 +620,9 @@ export class WidgetsService {
 
   private async getUpdateStats(query: StatsCardQueryDto): Promise<number> {
     // Count items that need updates (example: items without recent inventory updates)
-    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const oneWeekAgo = new Date(
+      Date.now() - 7 * 24 * 60 * 60 * 1000,
+    ).toISOString();
     let queryBuilder = this.supabase
       .from('record_inventory')
       .select('*', { count: 'exact', head: true })
@@ -587,29 +636,42 @@ export class WidgetsService {
     return count || 0;
   }
 
-  private async calculateTrend(dataSource: StatsCardDataSource, query: StatsCardQueryDto): Promise<number> {
+  private async calculateTrend(
+    dataSource: StatsCardDataSource,
+    query: StatsCardQueryDto,
+  ): Promise<number> {
     // Calculate trend by comparing current period with previous period
     const currentValue = await this.getStatsCardValue(dataSource, query);
-    
+
     // Calculate previous period dates
     const startDate = new Date(query.startDate!);
     const endDate = new Date(query.endDate!);
-    const periodDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-    
+    const periodDays = Math.ceil(
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
     const previousEndDate = new Date(startDate.getTime() - 24 * 60 * 60 * 1000);
-    const previousStartDate = new Date(previousEndDate.getTime() - (periodDays - 1) * 24 * 60 * 60 * 1000);
-    
-    const previousQuery = {
-      ...query,
-      startDate: previousStartDate.toISOString().split('T')[0],
-      endDate: previousEndDate.toISOString().split('T')[0],
+    const previousStartDate = new Date(
+      previousEndDate.getTime() - (periodDays - 1) * 24 * 60 * 60 * 1000,
+    );
+
+    const previousQuery: StatsCardQueryDto = {
+      dataSource: query.dataSource,
+      startDate: previousStartDate.toISOString().split('T')[0] || '',
+      endDate: previousEndDate.toISOString().split('T')[0] || '',
+      ...(query.warehouse && { warehouse: query.warehouse }),
+      ...(query.label && { label: query.label }),
     };
-    
-    const previousValue = await this.getStatsCardValue(dataSource, previousQuery);
-    
+
+    const previousValue = await this.getStatsCardValue(
+      dataSource,
+      previousQuery,
+    );
+
     if (previousValue === 0) return 0;
-    
-    const trendPercentage = ((currentValue - previousValue) / previousValue) * 100;
+
+    const trendPercentage =
+      ((currentValue - previousValue) / previousValue) * 100;
     return Math.round(trendPercentage * 100) / 100; // Round to 2 decimal places
   }
 
@@ -617,11 +679,15 @@ export class WidgetsService {
     query: InventoryOrderedAnalysisQueryDto,
   ): Promise<InventoryOrderedAnalysisResponseDto> {
     const startTime = Date.now();
-    
+
     // Check cache first
-    const cacheKey = this.cacheService.generateKey('inventory-ordered-analysis', query);
-    const cachedData = this.cacheService.get<InventoryOrderedAnalysisResponseDto>(cacheKey);
-    
+    const cacheKey = this.cacheService.generateKey(
+      'inventory-ordered-analysis',
+      query,
+    );
+    const cachedData =
+      this.cacheService.get<InventoryOrderedAnalysisResponseDto>(cacheKey);
+
     if (cachedData) {
       return cachedData;
     }
@@ -644,22 +710,19 @@ export class WidgetsService {
 
     try {
       // Fetch inventory data
-      let inventoryQuery = this.supabase
-        .from('record_inventory')
-        .select('*');
-      
+      let inventoryQuery = this.supabase.from('record_inventory').select('*');
+
       if (query.productCodes && query.productCodes.length > 0) {
         inventoryQuery = inventoryQuery.in('product_code', query.productCodes);
       }
 
-      const { data: inventoryData, error: inventoryError } = await inventoryQuery;
+      const { data: inventoryData, error: inventoryError } =
+        await inventoryQuery;
       if (inventoryError) throw inventoryError;
 
       // Fetch order data
-      let orderQuery = this.supabase
-        .from('data_order')
-        .select('*');
-      
+      let orderQuery = this.supabase.from('data_order').select('*');
+
       if (query.productCodes && query.productCodes.length > 0) {
         orderQuery = orderQuery.in('product_code', query.productCodes);
       }
@@ -671,11 +734,11 @@ export class WidgetsService {
       let productQuery = this.supabase
         .from('data_code')
         .select('code, description, type');
-      
+
       if (query.productType) {
         productQuery = productQuery.eq('type', query.productType);
       }
-      
+
       if (query.productCodes && query.productCodes.length > 0) {
         productQuery = productQuery.in('code', query.productCodes);
       }
@@ -686,15 +749,21 @@ export class WidgetsService {
       // Process inventory data
       const inventoryMap = new Map<string, any>();
       inventoryData?.forEach((item) => {
-        const totalInventory = 
-          (item.injection || 0) + (item.pipeline || 0) + (item.prebook || 0) +
-          (item.await || 0) + (item.fold || 0) + (item.bulk || 0) +
-          (item.backcarpark || 0) + (item.damage || 0) + (item.await_grn || 0);
-        
+        const totalInventory =
+          (item.injection || 0) +
+          (item.pipeline || 0) +
+          (item.prebook || 0) +
+          (item.await || 0) +
+          (item.fold || 0) +
+          (item.bulk || 0) +
+          (item.backcarpark || 0) +
+          (item.damage || 0) +
+          (item.await_grn || 0);
+
         if (!inventoryMap.has(item.product_code)) {
           inventoryMap.set(item.product_code, { total: 0 });
         }
-        
+
         const existing = inventoryMap.get(item.product_code);
         existing.total += totalInventory;
       });
@@ -704,13 +773,13 @@ export class WidgetsService {
       orderData?.forEach((order) => {
         const loadedQty = parseInt(order.loaded_qty || '0', 10);
         const outstandingQty = order.product_qty - loadedQty;
-        
+
         if (!orderMap.has(order.product_code)) {
           orderMap.set(order.product_code, {
             totalOutstanding: 0,
           });
         }
-        
+
         const existing = orderMap.get(order.product_code);
         existing.totalOutstanding += Math.max(0, outstandingQty);
       });
@@ -723,28 +792,32 @@ export class WidgetsService {
 
       // Combine all data
       const products: ProductAnalysisDto[] = [];
-      const allProductCodes = new Set([...inventoryMap.keys(), ...orderMap.keys()]);
-      
+      const allProductCodes = new Set([
+        ...inventoryMap.keys(),
+        ...orderMap.keys(),
+      ]);
+
       let totalStock = 0;
       let totalDemand = 0;
       let sufficientCount = 0;
       let insufficientCount = 0;
 
-      allProductCodes.forEach(productCode => {
+      allProductCodes.forEach((productCode) => {
         const inventory = inventoryMap.get(productCode);
         const order = orderMap.get(productCode);
         const product = productMap.get(productCode);
-        
+
         const currentStock = inventory?.total || 0;
         const orderDemand = order?.totalOutstanding || 0;
-        
+
         // Skip products with no stock and no demand
         if (currentStock === 0 && orderDemand === 0) return;
-        
+
         const remainingStock = currentStock - orderDemand;
-        const fulfillmentRate = orderDemand > 0 ? (currentStock / orderDemand) * 100 : 100;
+        const fulfillmentRate =
+          orderDemand > 0 ? (currentStock / orderDemand) * 100 : 100;
         const isSufficient = currentStock >= orderDemand;
-        
+
         products.push({
           productCode,
           description: product?.description || '',
@@ -752,9 +825,9 @@ export class WidgetsService {
           orderDemand,
           remainingStock,
           fulfillmentRate: Math.min(fulfillmentRate, 100),
-          isSufficient
+          isSufficient,
         });
-        
+
         totalStock += currentStock;
         totalDemand += orderDemand;
         if (isSufficient) {
@@ -781,7 +854,7 @@ export class WidgetsService {
           totalRemaining: totalStock - totalDemand,
           overallSufficient: totalStock >= totalDemand,
           insufficientCount,
-          sufficientCount
+          sufficientCount,
         },
         metadata: {
           executed_at: new Date().toISOString(),
@@ -792,7 +865,7 @@ export class WidgetsService {
 
       // Cache the result for 3 minutes
       this.cacheService.set(cacheKey, result, 3 * 60 * 1000);
-      
+
       return result;
     } catch (error) {
       console.error('Error fetching inventory ordered analysis:', error);
@@ -807,7 +880,7 @@ export class WidgetsService {
           sufficientCount: 0,
         },
         timestamp: new Date().toISOString(),
-        error: error.message,
+        error: (error as Error).message,
       };
     }
   }
@@ -816,11 +889,15 @@ export class WidgetsService {
     query: ProductDistributionQueryDto,
   ): Promise<ProductDistributionResponseDto> {
     const startTime = Date.now();
-    
+
     // Check cache first
-    const cacheKey = this.cacheService.generateKey('product-distribution', query);
-    const cachedData = this.cacheService.get<ProductDistributionResponseDto>(cacheKey);
-    
+    const cacheKey = this.cacheService.generateKey(
+      'product-distribution',
+      query,
+    );
+    const cachedData =
+      this.cacheService.get<ProductDistributionResponseDto>(cacheKey);
+
     if (cachedData) {
       return cachedData;
     }
@@ -835,36 +912,41 @@ export class WidgetsService {
 
     try {
       // Call RPC function for optimized product distribution calculation
-      const { data, error } = await this.supabase
-        .rpc('get_product_distribution', {
+      const { data, error } = await this.supabase.rpc(
+        'get_product_distribution',
+        {
           p_limit: query.limit || 10,
-        });
+        },
+      );
 
       if (error) {
         console.error('RPC error in getProductDistribution:', error);
-        
+
         // Fallback to direct query if RPC fails
-        const { data: inventoryData, error: inventoryError } = await this.supabase
-          .from('record_inventory')
-          .select('product_code, injection, pipeline, await, fold, bulk, prebook, backcarpark, damage, await_grn');
+        const { data: inventoryData, error: inventoryError } =
+          await this.supabase
+            .from('record_inventory')
+            .select(
+              'product_code, injection, pipeline, await, fold, bulk, prebook, backcarpark, damage, await_grn',
+            );
 
         if (inventoryError) throw inventoryError;
 
         // Group by product and calculate totals
         const productMap = new Map<string, number>();
-        
+
         inventoryData?.forEach((item) => {
-          const totalQty = 
-            (item.injection || 0) + 
-            (item.pipeline || 0) + 
+          const totalQty =
+            (item.injection || 0) +
+            (item.pipeline || 0) +
             (item.await || 0) +
-            (item.fold || 0) + 
-            (item.bulk || 0) + 
+            (item.fold || 0) +
+            (item.bulk || 0) +
             (item.prebook || 0) +
-            (item.backcarpark || 0) + 
-            (item.damage || 0) + 
+            (item.backcarpark || 0) +
+            (item.damage || 0) +
             (item.await_grn || 0);
-          
+
           const currentTotal = productMap.get(item.product_code) || 0;
           productMap.set(item.product_code, currentTotal + totalQty);
         });
@@ -875,21 +957,23 @@ export class WidgetsService {
             name: productCode,
             value: totalQty,
           }))
-          .filter(item => item.value > 0)
+          .filter((item) => item.value > 0)
           .sort((a, b) => b.value - a.value)
           .slice(0, query.limit || 10);
 
         // Get product descriptions
         if (distributionData.length > 0) {
-          const productCodes = distributionData.map(item => item.name);
+          const productCodes = distributionData.map((item) => item.name);
           const { data: productData, error: productError } = await this.supabase
             .from('data_code')
             .select('code, description')
             .in('code', productCodes);
 
           if (!productError && productData) {
-            const productDescMap = new Map(productData.map(p => [p.code, p.description]));
-            distributionData = distributionData.map(item => ({
+            const productDescMap = new Map(
+              productData.map((p) => [p.code, p.description]),
+            );
+            distributionData = distributionData.map((item) => ({
               ...item,
               description: productDescMap.get(item.name) || item.name,
             }));
@@ -897,11 +981,17 @@ export class WidgetsService {
         }
 
         // Calculate percentages
-        const total = distributionData.reduce((sum, item) => sum + item.value, 0);
-        const resultData: ProductDistributionItemDto[] = distributionData.map(item => ({
-          ...item,
-          percentage: total > 0 ? Math.round((item.value / total) * 1000) / 10 : 0,
-        }));
+        const total = distributionData.reduce(
+          (sum, item) => sum + item.value,
+          0,
+        );
+        const resultData: ProductDistributionItemDto[] = distributionData.map(
+          (item) => ({
+            ...item,
+            percentage:
+              total > 0 ? Math.round((item.value / total) * 1000) / 10 : 0,
+          }),
+        );
 
         const calculationTime = Date.now() - startTime;
 
@@ -917,17 +1007,19 @@ export class WidgetsService {
 
         // Cache for 5 minutes
         this.cacheService.set(cacheKey, result, 5 * 60 * 1000);
-        
+
         return result;
       }
 
       // Process RPC result
-      const distributionData: ProductDistributionItemDto[] = (data || []).map((item: any) => ({
-        name: item.product_code,
-        value: item.total_quantity,
-        description: item.product_description || item.product_code,
-        percentage: item.percentage || 0,
-      }));
+      const distributionData: ProductDistributionItemDto[] = (data || []).map(
+        (item: any) => ({
+          name: item.product_code,
+          value: item.total_quantity,
+          description: item.product_description || item.product_code,
+          percentage: item.percentage || 0,
+        }),
+      );
 
       const calculationTime = Date.now() - startTime;
 
@@ -944,14 +1036,14 @@ export class WidgetsService {
 
       // Cache for 5 minutes
       this.cacheService.set(cacheKey, result, 5 * 60 * 1000);
-      
+
       return result;
     } catch (error) {
       console.error('Error fetching product distribution:', error);
       return {
         value: [],
         timestamp: new Date().toISOString(),
-        error: error.message,
+        error: (error as Error).message,
       };
     }
   }
@@ -960,11 +1052,12 @@ export class WidgetsService {
     query: TransactionReportQueryDto,
   ): Promise<TransactionReportResponseDto> {
     const startTime = Date.now();
-    
+
     // Check cache first
     const cacheKey = this.cacheService.generateKey('transaction-report', query);
-    const cachedData = this.cacheService.get<TransactionReportResponseDto>(cacheKey);
-    
+    const cachedData =
+      this.cacheService.get<TransactionReportResponseDto>(cacheKey);
+
     if (cachedData) {
       return cachedData;
     }
@@ -982,7 +1075,7 @@ export class WidgetsService {
         metadata: {
           startDate: query.startDate,
           endDate: query.endDate,
-          warehouse: query.warehouse,
+          ...(query.warehouse && { warehouse: query.warehouse }),
         },
         timestamp: new Date().toISOString(),
         error: 'Database connection not available',
@@ -993,17 +1086,21 @@ export class WidgetsService {
       // Query transactions (transfers and history)
       let transferQuery = this.supabase
         .from('record_transfer')
-        .select(`
+        .select(
+          `
           *,
           user:data_id!record_transfer_userid_fkey(user_id, user_fullname),
           product:data_code!record_transfer_product_code_fkey(code, description)
-        `)
+        `,
+        )
         .gte('timestamp', query.startDate)
         .lte('timestamp', query.endDate)
         .order('timestamp', { ascending: false });
 
       if (query.warehouse) {
-        transferQuery = transferQuery.or(`from_location.eq.${query.warehouse},to_location.eq.${query.warehouse}`);
+        transferQuery = transferQuery.or(
+          `from_location.eq.${query.warehouse},to_location.eq.${query.warehouse}`,
+        );
       }
 
       const { data: transferData, error: transferError } = await transferQuery;
@@ -1012,16 +1109,20 @@ export class WidgetsService {
       // Query history records for other transaction types
       let historyQuery = this.supabase
         .from('record_history')
-        .select(`
+        .select(
+          `
           *,
           user:data_id!record_history_userid_fkey(user_id, user_fullname)
-        `)
+        `,
+        )
         .gte('timestamp', query.startDate)
         .lte('timestamp', query.endDate)
         .order('timestamp', { ascending: false });
 
       if (query.warehouse) {
-        historyQuery = historyQuery.or(`field1.eq.${query.warehouse},field2.eq.${query.warehouse}`);
+        historyQuery = historyQuery.or(
+          `field1.eq.${query.warehouse},field2.eq.${query.warehouse}`,
+        );
       }
 
       const { data: historyData, error: historyError } = await historyQuery;
@@ -1051,13 +1152,18 @@ export class WidgetsService {
 
         uniqueProductsSet.add(transfer.product_code);
         if (transfer.userid) uniqueUsersSet.add(transfer.userid);
-        transactionsByType['Transfer'] = (transactionsByType['Transfer'] || 0) + 1;
+        transactionsByType['Transfer'] =
+          (transactionsByType['Transfer'] || 0) + 1;
       });
 
       // Process history records (receipts, adjustments, etc.)
       historyData?.forEach((history) => {
         // Only include relevant history types
-        if (['Receipt', 'Adjustment', 'Void', 'Update'].includes(history.action_type)) {
+        if (
+          ['Receipt', 'Adjustment', 'Void', 'Update'].includes(
+            history.action_type,
+          )
+        ) {
           transactions.push({
             timestamp: history.timestamp,
             transactionType: history.action_type,
@@ -1074,12 +1180,16 @@ export class WidgetsService {
 
           if (history.product_code) uniqueProductsSet.add(history.product_code);
           if (history.userid) uniqueUsersSet.add(history.userid);
-          transactionsByType[history.action_type] = (transactionsByType[history.action_type] || 0) + 1;
+          transactionsByType[history.action_type] =
+            (transactionsByType[history.action_type] || 0) + 1;
         }
       });
 
       // Calculate summary
-      const totalQuantity = transactions.reduce((sum, t) => sum + t.quantity, 0);
+      const totalQuantity = transactions.reduce(
+        (sum, t) => sum + t.quantity,
+        0,
+      );
 
       const calculationTime = Date.now() - startTime;
 
@@ -1097,14 +1207,14 @@ export class WidgetsService {
           calculation_time: `${calculationTime}ms`,
           startDate: query.startDate,
           endDate: query.endDate,
-          warehouse: query.warehouse,
+          ...(query.warehouse && { warehouse: query.warehouse }),
         },
         timestamp: new Date().toISOString(),
       };
 
       // Cache for 5 minutes
       this.cacheService.set(cacheKey, result, 5 * 60 * 1000);
-      
+
       return result;
     } catch (error) {
       console.error('Error fetching transaction report:', error);
@@ -1120,10 +1230,10 @@ export class WidgetsService {
         metadata: {
           startDate: query.startDate,
           endDate: query.endDate,
-          warehouse: query.warehouse,
+          ...(query.warehouse && { warehouse: query.warehouse }),
         },
         timestamp: new Date().toISOString(),
-        error: error.message,
+        error: (error as Error).message,
       };
     }
   }
@@ -1131,7 +1241,7 @@ export class WidgetsService {
   private getDefaultLabel(dataSource: StatsCardDataSource): string {
     const labels = {
       [StatsCardDataSource.TOTAL_PALLETS]: 'Total Pallets',
-      [StatsCardDataSource.TODAY_TRANSFERS]: 'Today\'s Transfers',
+      [StatsCardDataSource.TODAY_TRANSFERS]: "Today's Transfers",
       [StatsCardDataSource.ACTIVE_PRODUCTS]: 'Active Products',
       [StatsCardDataSource.PENDING_ORDERS]: 'Pending Orders',
       [StatsCardDataSource.AWAIT_PERCENTAGE_STATS]: 'Await Location %',
@@ -1140,7 +1250,7 @@ export class WidgetsService {
       [StatsCardDataSource.PRODUCTION_STATS]: 'Production Stats',
       [StatsCardDataSource.UPDATE_STATS]: 'Update Required',
     };
-    
+
     return labels[dataSource] || 'Unknown';
   }
 }

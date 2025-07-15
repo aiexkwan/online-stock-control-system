@@ -16,7 +16,7 @@ export class WidgetCacheService {
    */
   get<T>(key: string): T | null {
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
       return null;
     }
@@ -106,12 +106,12 @@ export class WidgetCacheService {
     if (!params) {
       return `widget:${endpoint}`;
     }
-    
+
     const paramString = Object.keys(params)
       .sort()
-      .map(key => `${key}=${params[key]}`)
+      .map((key) => `${key}=${params[key]}`)
       .join('&');
-    
+
     return `widget:${endpoint}:${paramString}`;
   }
 }

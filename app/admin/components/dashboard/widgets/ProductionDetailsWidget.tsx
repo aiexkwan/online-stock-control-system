@@ -18,7 +18,7 @@ import { CardHeader, CardTitle } from '@/components/ui/card';
 import { TableCellsIcon } from '@heroicons/react/24/outline';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { useGetProductionDetailsQuery } from '@/lib/graphql/generated/apollo-hooks';
+// Note: Migrated to REST API - GraphQL hooks removed
 import { DataTable } from './common/data-display/DataTable';
 import type { Column, TableData } from './common/data-display/DataTable';
 

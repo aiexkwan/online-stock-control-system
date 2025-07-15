@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
 
 describe('Widgets v1.2.1 E2E Tests', () => {
@@ -12,7 +12,7 @@ describe('Widgets v1.2.1 E2E Tests', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    
+
     // Apply same configuration as main.ts
     app.setGlobalPrefix('api/v1');
     app.enableCors({
@@ -21,7 +21,7 @@ describe('Widgets v1.2.1 E2E Tests', () => {
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
     });
-    
+
     await app.init();
   });
 
@@ -93,7 +93,7 @@ describe('Widgets v1.2.1 E2E Tests', () => {
         '/api/v1/widgets/stats',
         '/api/v1/widgets/inventory',
         '/api/v1/widgets/dashboard-stats',
-        '/api/v1/widgets/inventory-analysis'
+        '/api/v1/widgets/inventory-analysis',
       ];
 
       for (const endpoint of expectedEndpoints) {

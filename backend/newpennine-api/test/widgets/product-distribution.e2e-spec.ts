@@ -1,13 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../../src/app.module';
-import { SupabaseService } from '../../src/supabase/supabase.service';
+import { TestHelpers } from '../test-helpers';
 
 describe('Product Distribution Widget Endpoint (e2e)', () => {
   let app: INestApplication;
   let authToken: string;
-  let supabaseService: SupabaseService;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -17,20 +16,8 @@ describe('Product Distribution Widget Endpoint (e2e)', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
 
-    supabaseService = moduleFixture.get(SupabaseService);
-
-    // Get test authentication token
-    const { data } = await supabaseService.getClient().auth.signInWithPassword({
-      email: process.env.TEST_USER_EMAIL || 'test@example.com',
-      password: process.env.TEST_USER_PASSWORD || 'testpassword123',
-    });
-
-    if (data?.session?.access_token) {
-      authToken = data.session.access_token;
-    } else {
-      // Create mock token for testing
-      authToken = 'test-token';
-    }
+    // Get valid JWT token for testing using real login
+    authToken = await TestHelpers.loginAndGetToken(app);
   });
 
   afterAll(async () => {
@@ -47,13 +34,13 @@ describe('Product Distribution Widget Endpoint (e2e)', () => {
       expect(response.body).toHaveProperty('value');
       expect(response.body).toHaveProperty('timestamp');
       expect(Array.isArray(response.body.value)).toBe(true);
-      
+
       if (response.body.value.length > 0) {
         const firstItem = response.body.value[0];
         expect(firstItem).toHaveProperty('name');
         expect(firstItem).toHaveProperty('value');
         expect(typeof firstItem.value).toBe('number');
-        
+
         // Check if percentage is calculated
         if (firstItem.percentage !== undefined) {
           expect(typeof firstItem.percentage).toBe('number');
@@ -95,14 +82,16 @@ describe('Product Distribution Widget Endpoint (e2e)', () => {
       if (response.body.metadata) {
         expect(response.body.metadata).toHaveProperty('executed_at');
         expect(response.body.metadata).toHaveProperty('calculation_time');
-        
+
         // Check if RPC function was used
         if (response.body.metadata.rpcFunction !== undefined) {
           expect(typeof response.body.metadata.rpcFunction).toBe('boolean');
-          
+
           if (response.body.metadata.rpcFunction) {
             expect(response.body.metadata).toHaveProperty('rpcName');
-            expect(response.body.metadata.rpcName).toBe('get_product_distribution');
+            expect(response.body.metadata.rpcName).toBe(
+              'get_product_distribution',
+            );
           }
         }
       }

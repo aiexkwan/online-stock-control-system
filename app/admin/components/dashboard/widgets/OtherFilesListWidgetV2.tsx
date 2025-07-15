@@ -19,7 +19,7 @@ import { format } from 'date-fns';
 import { fromDbTime } from '@/app/utils/timezone';
 import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
-import { GetOtherFilesListDocument } from '@/lib/graphql/generated/apollo-hooks';
+// Note: Migrated to REST API - GraphQL hooks removed
 import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
 import { useInViewport, InViewportPresets } from '@/app/admin/hooks/useInViewport';
 import { DataTable, DataTableColumn } from './common/data-display/DataTable';
@@ -237,8 +237,8 @@ export const OtherFilesListWidgetV2 = React.memo(function OtherFilesListWidgetV2
           optimized: true,
         }}
         connectionStatus={
-          mode === 'graphql' 
-            ? { type: 'graphql', label: '⚡ GraphQL' }
+          mode === 'context' 
+            ? { type: 'context', label: '⚡ GraphQL' }
             : mode === 'context'
             ? { type: 'polling', label: '🚀 Batch Query' }
             : undefined

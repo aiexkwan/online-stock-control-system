@@ -5,19 +5,19 @@ export class StatsCardMetadataDto {
     description: 'Whether the calculation was optimized',
     example: true,
   })
-  optimized: boolean;
+  optimized!: boolean;
 
   @ApiProperty({
     description: 'Time taken for calculation in milliseconds',
     example: '150ms',
   })
-  calculationTime: string;
+  calculationTime!: string;
 
   @ApiProperty({
     description: 'Data source used for calculation',
     example: 'total_pallets',
   })
-  dataSource: string;
+  dataSource!: string;
 
   @ApiProperty({
     description: 'Whether data was cached',
@@ -37,7 +37,7 @@ export class StatsCardResponseDto {
     description: 'The main statistic value',
     example: 1250,
   })
-  value: number | string;
+  value!: number | string;
 
   @ApiProperty({
     description: 'Display label for the statistic',
@@ -47,7 +47,8 @@ export class StatsCardResponseDto {
   label?: string;
 
   @ApiProperty({
-    description: 'Trend percentage (positive for increase, negative for decrease)',
+    description:
+      'Trend percentage (positive for increase, negative for decrease)',
     example: 5.2,
     required: false,
   })
@@ -64,7 +65,7 @@ export class StatsCardResponseDto {
     description: 'Timestamp when the data was generated',
     example: '2025-07-15T12:00:00Z',
   })
-  timestamp: string;
+  timestamp!: string;
 
   @ApiProperty({
     description: 'Error message if calculation failed',

@@ -293,7 +293,7 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
   // 處理 GraphQL 數據 - 合併相似事件
   const processGraphQLData = useMemo(() => {
     // 如果是 GraphQL mode，數據來自 Apollo query
-    if (mode === 'graphql' && data?.record_historyCollection?.edges) {
+    if (mode === 'context' && data?.record_historyCollection?.edges) {
       const rawEvents = data.record_historyCollection.edges.map((edge: any) => {
         const node = edge.node;
         return {
@@ -390,7 +390,7 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
           <CardTitle className='flex items-center justify-between'>
             <span>History Tree</span>
             <div className='flex items-center gap-2'>
-              {mode === 'graphql' && (
+              {mode === 'context' && (
                 <span className={cn(textClasses['label-small'], 'text-primary')}>
                   ⚡ GraphQL
                 </span>
@@ -422,7 +422,7 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
               <WidgetText size='xs' glow='red' className='py-4 text-center'>
                 {error.message || 'Failed to load history data'}
               </WidgetText>
-              {mode === 'graphql' && (
+              {mode === 'context' && (
                 <WidgetText size='xs' className={cn('text-center', textClasses['body-small'], 'text-muted-foreground')}>
                   Attempting fallback to server action...
                 </WidgetText>

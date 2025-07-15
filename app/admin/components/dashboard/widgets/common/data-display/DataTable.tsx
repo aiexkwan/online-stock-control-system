@@ -74,7 +74,7 @@ export interface DataTableProps<T = any> {
   
   // Connection status
   connectionStatus?: {
-    type: 'graphql' | 'realtime' | 'polling' | 'offline';
+    type: 'realtime' | 'polling' | 'offline';
     label?: string;
   };
 }

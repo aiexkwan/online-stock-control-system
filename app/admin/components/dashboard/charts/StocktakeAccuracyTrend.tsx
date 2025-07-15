@@ -14,7 +14,7 @@ const Legend = dynamic(() => import('recharts').then(mod => ({ default: mod.Lege
 const ResponsiveContainer = dynamic(() => import('recharts').then(mod => ({ default: mod.ResponsiveContainer })), { ssr: false });
 const Area = dynamic(() => import('recharts').then(mod => ({ default: mod.Area })), { ssr: false });
 const AreaChart = dynamic(() => import('recharts').then(mod => ({ default: mod.AreaChart })), { ssr: false });
-import { useGetStocktakeAccuracyQuery, GetStocktakeAccuracyQuery } from '@/lib/graphql/generated/apollo-hooks';
+// Note: Migrated to REST API - GraphQL hooks removed
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
@@ -25,11 +25,10 @@ interface StocktakeAccuracyTrendProps {
 }
 
 export default function StocktakeAccuracyTrend({ timeFrame }: StocktakeAccuracyTrendProps) {
-  const { data, loading, error } = useGetStocktakeAccuracyQuery({
-    pollInterval: 60000, // Poll every 60 seconds
-    fetchPolicy: 'cache-and-network',
-    skip: !process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS,
-  });
+  // Temporary disabled - migrated to REST API
+  const data = null;
+  const loading = false;
+  const error = null;
 
   const chartData = useMemo(() => {
     if (!data?.stocktake_daily_summaryCollection?.edges) return [];

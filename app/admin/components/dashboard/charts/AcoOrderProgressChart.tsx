@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import dynamic from 'next/dynamic';
+import useSWR from 'swr';
 
 // Recharts components - dynamically imported to avoid SSR issues
 const BarChart = dynamic(() => import('recharts').then(mod => ({ default: mod.BarChart })), { ssr: false });
@@ -13,7 +14,6 @@ const Tooltip = dynamic(() => import('recharts').then(mod => ({ default: mod.Too
 const Legend = dynamic(() => import('recharts').then(mod => ({ default: mod.Legend })), { ssr: false });
 const ResponsiveContainer = dynamic(() => import('recharts').then(mod => ({ default: mod.ResponsiveContainer })), { ssr: false });
 const Cell = dynamic(() => import('recharts').then(mod => ({ default: mod.Cell })), { ssr: false });
-import { useGetAcoOrdersForChartQuery } from '@/lib/graphql/generated/apollo-hooks';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
@@ -31,47 +31,92 @@ interface AcoOrderProgressChartProps {
   timeFrame?: any;
 }
 
-export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressChartProps) {
-  // Check feature flag
-  const isGraphQLAnalysisEnabled = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS === 'true';
+interface ChartDataPoint {
+  date: string;
+  value: number;
+  previousValue?: number;
+  metadata?: {
+    orderCount: number;
+    completedCount: number;
+  };
+}
 
-  const { data, loading, error } = useGetAcoOrdersForChartQuery({
-    skip: !isGraphQLAnalysisEnabled,
-    pollInterval: 300000, // 5 minutes
-    fetchPolicy: 'cache-and-network',
-  });
+interface ChartConfig {
+  type: string;
+  title: string;
+  xAxisLabel: string;
+  yAxisLabel: string;
+  colors: string[];
+  height: number;
+}
+
+interface AcoOrderProgressChartResponse {
+  data: ChartDataPoint[];
+  config: ChartConfig;
+  totalDataPoints: number;
+  dateRange: string;
+  summary: {
+    average: number;
+    minimum: number;
+    maximum: number;
+    trend: 'increasing' | 'decreasing' | 'stable';
+  };
+  lastUpdated: string;
+  queryParams: {
+    timeframe: string;
+    metric: string;
+    warehouse: string;
+    status: string;
+    customerRef: string;
+  };
+}
+
+export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressChartProps) {
+  // Fetcher function for SWR
+  const fetcher = async (url: string) => {
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`);
+    }
+    
+    return response.json();
+  };
+
+  // Use SWR for ACO order progress chart data
+  const {
+    data: chartApiData,
+    error,
+    isLoading
+  } = useSWR<AcoOrderProgressChartResponse>(
+    '/api/v1/analysis/aco-order-progress-chart?timeframe=daily&metric=completion_rate&limit=10',
+    fetcher,
+    {
+      refreshInterval: 300000, // 5 minutes
+      revalidateOnFocus: false
+    }
+  );
 
   const chartData = useMemo(() => {
-    if (!data?.record_acoCollection?.edges) return [];
+    if (!chartApiData?.data) return [];
 
-    return data.record_acoCollection.edges
-      .map(({ node }) => {
-        const completedQty = node.finished_qty || 0;
-        const remainingQty = Math.max(0, node.required_qty - completedQty);
-        const completionRate = node.required_qty > 0 ? (completedQty / node.required_qty) * 100 : 0;
+    return chartApiData.data.map((point, index) => ({
+      orderRef: `Day ${index + 1}`,
+      date: point.date,
+      completed: point.metadata?.completedCount || 0,
+      remaining: (point.metadata?.orderCount || 0) - (point.metadata?.completedCount || 0),
+      total: point.metadata?.orderCount || 0,
+      completionRate: Math.round(point.value),
+    }));
+  }, [chartApiData]);
 
-        return {
-          orderRef: `#${node.order_ref}`,
-          code: node.code,
-          completed: completedQty,
-          remaining: remainingQty,
-          total: node.required_qty,
-          completionRate: Math.round(completionRate),
-        };
-      })
-      .slice(0, 10); // Show top 10 orders
-  }, [data]);
-
-  if (!isGraphQLAnalysisEnabled) {
-    return (
-      <Alert>
-        <AlertCircle className='h-4 w-4' />
-        <AlertDescription>GraphQL analysis is disabled. Enable NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS to view this chart.</AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className='flex h-full w-full flex-col gap-4'>
         <Skeleton className='h-8 w-48' />
@@ -99,8 +144,13 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
     <div className='flex h-full w-full flex-col'>
       <div className={spacingUtilities.margin.bottom.medium}>
         <p className={cn(textClasses['body-small'], 'text-muted-foreground')}>
-          Showing completion progress for the latest 10 ACO orders
+          {chartApiData?.config?.title || 'ACO Order Completion Progress'}
         </p>
+        {chartApiData?.summary && (
+          <p className={cn(textClasses['label-small'], 'text-muted-foreground mt-1')}>
+            Average: {chartApiData.summary.average.toFixed(1)}% • Trend: {chartApiData.summary.trend} • {chartApiData.dateRange}
+          </p>
+        )}
       </div>
 
       <div className='flex-1'>
@@ -116,7 +166,7 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
             />
             <YAxis
               label={{
-                value: 'Completion Rate (%)',
+                value: chartApiData?.config?.yAxisLabel || 'Completion Rate (%)',
                 angle: -90,
                 position: 'insideLeft',
                 className: 'text-xs',

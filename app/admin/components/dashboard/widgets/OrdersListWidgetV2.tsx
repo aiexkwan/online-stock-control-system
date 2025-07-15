@@ -26,7 +26,7 @@ import { ordersAPI, OrdersListResponse, OrderRecord } from '@/lib/api/modules/Or
 import { getPdfUrl } from '@/lib/api/modules/ordersActions';
 import { cn } from '@/lib/utils';
 import { errorHandler } from '@/app/components/qc-label-form/services/ErrorHandler';
-import { GetOrdersListQuery, GetOrdersListDocument } from '@/lib/graphql/generated/apollo-hooks';
+// Note: Migrated to REST API - GraphQL hooks removed
 import { DataTable, DataTableColumn } from './common/data-display';
 import { useGraphQLFallback } from '@/app/admin/hooks/useGraphQLFallback';
 import { useInViewport } from '@/app/admin/hooks/useInViewport';
@@ -271,9 +271,9 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
   // Connection status configuration based on data mode
   const connectionStatus = (() => {
     if (mode === 'context') {
-      return { type: 'graphql' as const, label: 'Cached' };
-    } else if (mode === 'graphql') {
-      return { type: 'graphql' as const, label: 'GraphQL' };
+      return { type: 'context' as const, label: 'Cached' };
+    } else if (mode === 'context') {
+      return { type: 'context' as const, label: 'GraphQL' };
     } else if (mode === 'server-action' || mode === 'fallback') {
       return { type: 'polling' as const, label: 'Server Action' };
     } else {

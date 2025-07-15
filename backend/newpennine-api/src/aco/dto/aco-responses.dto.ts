@@ -11,16 +11,16 @@ export class AcoOrderRecordDto {
 }
 
 export class AcoByDateResponseDto {
-  orderDate: string;
-  records: AcoOrderRecordDto[];
-  total_records: number;
-  offset: number;
-  limit: number;
+  orderDate!: string;
+  records!: AcoOrderRecordDto[];
+  total_records!: number;
+  offset!: number;
+  limit!: number;
 }
 
 export class AcoReferencesResponseDto {
-  references: string[];
-  total: number;
-  offset: number;
-  limit: number;
+  references!: string[];
+  total!: number;
+  offset!: number;
+  limit!: number;
 }

@@ -15,7 +15,7 @@ export class AuthRegisterDto {
   })
   @IsEmail({}, { message: 'Please provide a valid email address' })
   @IsNotEmpty({ message: 'Email is required' })
-  email: string;
+  email!: string;
 
   @ApiProperty({
     description: 'User password',
@@ -29,7 +29,7 @@ export class AuthRegisterDto {
       'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
   })
   @IsNotEmpty({ message: 'Password is required' })
-  password: string;
+  password!: string;
 
   @ApiProperty({
     description: 'User full name',

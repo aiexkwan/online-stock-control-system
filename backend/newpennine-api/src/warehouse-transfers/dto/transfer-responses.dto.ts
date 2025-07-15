@@ -15,10 +15,10 @@ export class TransferRecordDto {
 }
 
 export class TransferListResponseDto {
-  transfers: TransferRecordDto[];
-  total_records: number;
-  offset: number;
-  limit: number;
+  transfers!: TransferRecordDto[];
+  total_records!: number;
+  offset!: number;
+  limit!: number;
   filters?: {
     startDate?: string;
     endDate?: string;

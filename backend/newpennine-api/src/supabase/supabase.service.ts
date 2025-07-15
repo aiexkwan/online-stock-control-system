@@ -26,4 +26,17 @@ export class SupabaseService {
   getClient(): SupabaseClient {
     return this.supabase;
   }
+
+  async testConnection(): Promise<boolean> {
+    try {
+      const { data, error } = await this.supabase
+        .from('data_id')
+        .select('id')
+        .limit(1);
+      return !error;
+    } catch (e) {
+      console.error('Supabase connection test failed:', e);
+      return false;
+    }
+  }
 }

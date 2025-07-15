@@ -2,18 +2,18 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, IsArray } from 'class-validator';
 
 export class InventoryOrderedAnalysisQueryDto {
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Product type to filter by',
-    example: 'Injection Plastic'
+    example: 'Injection Plastic',
   })
   @IsOptional()
   @IsString()
   productType?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Array of product codes to filter by',
     example: ['PROD001', 'PROD002'],
-    type: [String]
+    type: [String],
   })
   @IsOptional()
   @IsArray()

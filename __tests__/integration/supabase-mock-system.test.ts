@@ -21,7 +21,7 @@ import { server } from '../../jest.setup';
 
 describe('Supabase Mock System', () => {
   describe('Enhanced createMockSupabaseClient', () => {
-    let supabase: ReturnType<typeof createMockSupabaseClient>;
+    let supabase: any;
 
     beforeEach(() => {
       supabase = createMockSupabaseClient();

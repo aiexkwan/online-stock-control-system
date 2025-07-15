@@ -1,5 +1,5 @@
 export class StockDistributionItemDto {
-  product_code: string;
+  product_code!: string;
   injection?: number;
   pipeline?: number;
   prebook?: number;
@@ -16,8 +16,8 @@ export class StockDistributionItemDto {
 }
 
 export class StockDistributionResponseDto {
-  data: StockDistributionItemDto[];
-  total: number;
-  offset: number;
-  limit: number;
+  data!: StockDistributionItemDto[];
+  total!: number;
+  offset!: number;
+  limit!: number;
 }

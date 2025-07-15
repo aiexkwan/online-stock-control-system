@@ -3,7 +3,7 @@
  * 統一的列表 Widget 類型定義，替代 5 個現有的 list widgets
  */
 
-import { DocumentNode } from '@apollo/client';
+// Note: DocumentNode removed with GraphQL migration
 import { DataTableColumn } from '@/app/admin/components/dashboard/widgets/common/data-display/DataTable';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 
@@ -44,7 +44,7 @@ export interface FilterConfig {
  * 連接狀態
  */
 export interface ConnectionStatus {
-  type: 'graphql' | 'server' | 'batch' | 'error';
+  type: 'realtime' | 'polling' | 'offline' | 'error';
   label: string;
   optimized?: boolean;
 }
@@ -73,10 +73,7 @@ export interface WidgetPlugin<T = any> {
  * 數據源配置
  */
 export interface DataSourceConfig<T = any> {
-  // GraphQL 查詢 (主要數據源)
-  graphqlQuery: DocumentNode;
-  
-  // Server Action (fallback)
+  // Server Action (primary data source)
   serverAction: (variables?: any) => Promise<T[]>;
   
   // 查詢變數
@@ -233,7 +230,7 @@ export interface UseUniversalListReturn<T = any> extends ListDataState<T> {
   refresh: () => void;
   
   // 狀態
-  mode: 'graphql' | 'server' | 'context';
+  mode: 'context' | 'server-action' | 'fallback';
   lastUpdated: Date | null;
   source: string;
   

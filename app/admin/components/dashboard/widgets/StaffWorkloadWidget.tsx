@@ -20,7 +20,7 @@ import { CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartBarIcon } from '@heroicons/react/24/outline';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { useGetStaffWorkloadQuery } from '@/lib/graphql/generated/apollo-hooks';
+// Note: Migrated to REST API - GraphQL hooks removed
 import { WidgetSkeleton } from './common/WidgetStates';
 
 interface StaffWorkloadWidgetProps extends WidgetComponentProps {

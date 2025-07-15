@@ -27,10 +27,10 @@ import {
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { motion } from 'framer-motion';
 import { Progress } from '@/components/ui/progress';
-import { useGetInventoryOrderedAnalysisWidgetQuery } from '@/lib/graphql/generated/apollo-hooks';
+// Note: Migrated to REST API - GraphQL hooks removed
 import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
 import { useInViewport, InViewportPresets } from '@/app/admin/hooks/useInViewport';
-import { GET_INVENTORY_ORDERED_ANALYSIS_WIDGET } from '@/lib/graphql/queries/stock/inventoryOrderedAnalysis';
+// Note: GraphQL query removed - migrated to REST API
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
   brandColors, 
@@ -281,7 +281,7 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
     if (!fetchedData) return null;
     
     // If data comes from GraphQL, it needs processing
-    if (mode === 'graphql' && 'record_inventoryCollection' in (fetchedData as any)) {
+    if (mode === 'context' && 'record_inventoryCollection' in (fetchedData as any)) {
       return processGraphQLData(fetchedData);
     }
     
@@ -357,7 +357,7 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
               <Package className='h-5 w-5' />
               Inventory Ordered Analysis
             </CardTitle>
-            {mode === 'graphql' && (
+            {mode === 'context' && (
               <span className='text-xs text-blue-400'>
                 ⚡ GraphQL
               </span>
@@ -389,7 +389,7 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
             Inventory Ordered Analysis
           </CardTitle>
           <div className='flex items-center gap-2'>
-            {mode === 'graphql' && (
+            {mode === 'context' && (
               <span className={cn(textClasses['label-small'])} style={{ color: semanticColors.info.DEFAULT }}>
                 ⚡ GraphQL
               </span>

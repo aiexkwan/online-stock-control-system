@@ -19,7 +19,7 @@ import { WidgetComponentProps } from '@/app/types/dashboard';
 import { motion } from 'framer-motion';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
-import { useGetTopProductsByQuantityQuery } from '@/lib/graphql/generated/apollo-hooks';
+// Note: Migrated to REST API - GraphQL hooks removed
 import { WidgetSkeleton, WidgetError } from './common/WidgetStates';
 
 interface ProductData {

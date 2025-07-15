@@ -29,7 +29,7 @@ export class AnalysisController {
         {
           status: HttpStatus.INTERNAL_SERVER_ERROR,
           error: 'Failed to fetch ACO order progress cards',
-          message: error.message,
+          message: (error as Error).message,
           timestamp: new Date().toISOString(),
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -48,7 +48,7 @@ export class AnalysisController {
         {
           status: HttpStatus.INTERNAL_SERVER_ERROR,
           error: 'Failed to fetch ACO order progress chart data',
-          message: error.message,
+          message: (error as Error).message,
           timestamp: new Date().toISOString(),
         },
         HttpStatus.INTERNAL_SERVER_ERROR,

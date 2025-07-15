@@ -49,7 +49,7 @@ export class GrnController {
     @Param('grnRef') grnRef: string,
   ): Promise<GrnMaterialCodesResponseDto> {
     this.logger.log('Fetching GRN material codes', { grnRef });
-    
+
     const query: GrnMaterialCodesQueryDto = { grnRef };
     return this.grnService.getGrnMaterialCodes(query);
   }
@@ -65,7 +65,7 @@ export class GrnController {
     @Query('productCodes') productCodes?: string | string[],
   ): Promise<GrnReportDataResponseDto> {
     this.logger.log('Fetching GRN report data', { grnRef, productCodes });
-    
+
     // 處理 productCodes 參數
     let processedProductCodes: string[] | undefined;
     if (productCodes) {
@@ -82,11 +82,16 @@ export class GrnController {
       }
     }
 
-    const query: GrnReportDataQueryDto = {
+    const query: any = {
       grnRef,
-      productCodes: processedProductCodes,
     };
-    
-    return this.grnService.getGrnReportData(query);
+
+    if (processedProductCodes && processedProductCodes.length > 0) {
+      query.productCodes = processedProductCodes;
+    }
+
+    const typedQuery = query as GrnReportDataQueryDto;
+
+    return this.grnService.getGrnReportData(typedQuery);
   }
 }

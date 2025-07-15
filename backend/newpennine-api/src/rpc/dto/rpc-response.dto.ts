@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class RpcResponseDto<T = any> {
   @ApiProperty({ description: 'Success status' })
-  success: boolean;
+  success!: boolean;
 
   @ApiProperty({ description: 'Response data' })
   data?: T;
@@ -20,24 +20,24 @@ export class RpcResponseDto<T = any> {
 
 export class AwaitLocationCountResponseDto {
   @ApiProperty({ description: 'Total count of await locations' })
-  count: number;
+  count!: number;
 
   @ApiProperty({ description: 'Location breakdown' })
-  locations: {
+  locations!: {
     location: string;
     count: number;
   }[];
 
   @ApiProperty({ description: 'Last updated timestamp' })
-  lastUpdated: string;
+  lastUpdated!: string;
 }
 
 export class StockLevelHistoryResponseDto {
   @ApiProperty({ description: 'Product code' })
-  productCode: string;
+  productCode!: string;
 
   @ApiProperty({ description: 'Stock level history data' })
-  history: {
+  history!: {
     date: string;
     stockLevel: number;
     location: string;
@@ -47,7 +47,7 @@ export class StockLevelHistoryResponseDto {
   }[];
 
   @ApiProperty({ description: 'Summary statistics' })
-  summary: {
+  summary!: {
     totalRecords: number;
     averageLevel: number;
     maxLevel: number;

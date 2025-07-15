@@ -12,6 +12,9 @@
 - Open/Closed Principle
 - 減少冗碼
 
+## 編碼技巧
+- 情況許可下，優先使用 React Query ，取代 useEffect + useState 組合
+
 ## 必須遵守規則
 - 資料庫欄位名稱或設定：優先使用Supabase MCP 工具確定，次選閱讀 docs\databaseStructure.md
 - 不可作出任何假設行為：如沒有所需資料，必須提問
@@ -21,6 +24,7 @@
 - 服務器啟動時間超時 : 再次重試，不可以此為理由跳過
 
 ## 系統資訊
+Widget系統：REST API
 預計使用人數：30-40人
 同時在線：4-5人
 在線方式：移動裝置及電腦端
@@ -60,11 +64,12 @@ issue fixing記錄庫：docs\issue-library
 todolist記憶庫：docs\task
 RPC 文檔庫：docs\rpc-functions
 SQL 文檔庫：docs\SQL-Library
-無法歸類文檔庫 : docs\Others
-
+無法歸類文檔庫：docs\Others
+進度報告庫：docs/Progress-check
 
 ## 文檔儲存命名格式
 評核紀錄：docs\audit\{相關審查工作}.md
 issue fixing記錄：docs\issue-library\{問題類型}.md
 計劃文檔：docs\planning\{相關計劃}.md
-todolist記憶庫：docs\task\{當天日期}.md
+todolist文檔：docs\task\{當天日期}.md
+進度報告：docs/Progress-check\{進度報告}.md

@@ -16,12 +16,7 @@ import { format } from 'date-fns';
 import { fromDbTime } from '@/app/utils/timezone';
 import { cn } from '@/lib/utils';
 
-// GraphQL Documents
-import { GetOrdersListDocument } from '@/lib/graphql/generated/apollo-hooks';
-import { GetOtherFilesListDocument } from '@/lib/graphql/generated/apollo-hooks';
-import { GetWarehouseTransferListDocument } from '@/lib/graphql/generated/apollo-hooks';
-import { GetOrderStateListDocument } from '@/lib/graphql/generated/apollo-hooks';
-import { GetProductionDetailsDocument } from '@/lib/graphql/generated/apollo-hooks';
+// Note: GraphQL Documents removed - migrated to REST API
 
 // Server Actions
 import { ordersAPI } from '@/lib/api/modules/OrdersAPI';
@@ -636,7 +631,6 @@ export function getListWidgetConfig<T = any>(
  */
 export function validateListConfig<T>(config: UniversalListWidgetConfig<T>): boolean {
   return !!(
-    config.dataSource?.graphqlQuery &&
     config.dataSource?.serverAction &&
     config.display?.title &&
     config.display?.icon &&
@@ -661,7 +655,6 @@ export function createDefaultListConfig<T>(
   return {
     // 必需的默認配置
     dataSource: {
-      graphqlQuery: null as any,
       serverAction: async () => [],
       ...baseConfig.dataSource,
     },

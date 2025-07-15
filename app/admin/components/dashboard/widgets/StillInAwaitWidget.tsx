@@ -12,39 +12,11 @@ import { WidgetComponentProps } from '@/app/types/dashboard';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { getYesterdayRange } from '@/app/utils/timezone';
 import { format, startOfDay, endOfDay } from 'date-fns';
-import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
+import { useUnifiedAPI } from '@/app/admin/hooks/useUnifiedAPI';
 import { MetricCard } from './common';
-import { gql } from '@apollo/client';
 
-// GraphQL Query
-const GET_STILL_IN_AWAIT_OPTIMIZED = gql`
-  query GetStillInAwaitOptimized($startDate: timestamptz!, $endDate: timestamptz!) {
-    record_palletinfoCollection(
-      filter: { generated_datetime: { gte: $startDate, lte: $endDate } }
-      orderBy: [{ generated_datetime: DESC }]
-    ) {
-      edges {
-        node {
-          pallet_id
-          generated_datetime
-          record_inventoryCollection(
-            filter: { await: { gt: 0 } }
-            orderBy: [{ datetime_in: DESC }]
-            first: 1
-          ) {
-            edges {
-              node {
-                await
-                location
-                datetime_in
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`;
+// REST API endpoint for still in await data
+const STILL_IN_AWAIT_API_ENDPOINT = '/api/admin/dashboard/widgets/still-in-await';
 
 export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
   widget,
@@ -66,99 +38,38 @@ export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
     };
   }, [timeFrame]);
 
-  // 使用統一的 GraphQL fallback hook
+  // 使用統一的 API hook
   const { 
-    data: graphqlData, 
+    data: apiData, 
     loading, 
     error 
-  } = useGraphQLFallback<
-    { record_palletinfoCollection: { edges: Array<{ node: any }> } },
+  } = useUnifiedAPI<
+    { count: number; totalPallets: number },
     { startDate: string; endDate: string }
   >({
-    graphqlQuery: GET_STILL_IN_AWAIT_OPTIMIZED,
-    serverAction: async () => {
-      // Server Actions fallback
-      const dashboardAPI = createDashboardAPI();
-      const dashboardResult = await dashboardAPI.fetch(
-        {
-          widgetIds: ['still_in_await'],
-          dateRange: {
-            start: dateRange.start.toISOString(),
-            end: dateRange.end.toISOString(),
-          },
-        },
-        {
-          strategy: 'client',
-          cache: { ttl: 120 }, // 2-minute cache
-        }
-      );
-
-      const widgetData = dashboardResult.widgets?.find(
-        w => w.widgetId === 'still_in_await'
-      );
-
-      if (widgetData && !widgetData.data.error) {
-        // Transform server data to match GraphQL format
-        const count = widgetData.data.value || 0;
-        const totalPallets = widgetData.data.metadata?.totalPallets || 0;
-        
-        // Create mock GraphQL response
-        const mockEdges = [];
-        for (let i = 0; i < totalPallets; i++) {
-          mockEdges.push({
-            node: {
-              pallet_id: `mock-${i}`,
-              generated_datetime: dateRange.start.toISOString(),
-              record_inventoryCollection: {
-                edges: i < count ? [{ node: { await: 1 } }] : []
-              }
-            }
-          });
-        }
-        
-        return {
-          record_palletinfoCollection: {
-            edges: mockEdges
-          }
-        };
-      }
-      
-      throw new Error(widgetData?.data.error || 'No data received');
-    },
+    restEndpoint: STILL_IN_AWAIT_API_ENDPOINT,
+    restMethod: 'GET',
     variables: {
       startDate: startOfDay(dateRange.start).toISOString(),
       endDate: endOfDay(dateRange.end).toISOString(),
     },
     skip: isEditMode,
-    fallbackEnabled: true,
     widgetId: 'StillInAwaitWidget',
-    ...GraphQLFallbackPresets.cached,
+    cacheTime: 5 * 60 * 1000, // 5 minutes cache
+    staleTime: 2 * 60 * 1000, // 2 minutes stale time
   });
 
-  // 計算數據
+  // 從 API 數據中提取計算結果
   const { count, totalPallets } = useMemo(() => {
-    if (!graphqlData?.record_palletinfoCollection?.edges) {
+    if (!apiData) {
       return { count: 0, totalPallets: 0 };
     }
 
-    const edges = graphqlData.record_palletinfoCollection.edges;
-    let awaitCount = 0;
-    
-    // 計算所有 await > 0 的總數
-    edges.forEach((edge: any) => {
-      const inventoryEdges = edge.node.record_inventoryCollection?.edges || [];
-      inventoryEdges.forEach((invEdge: any) => {
-        if (invEdge.node.await > 0) {
-          awaitCount += invEdge.node.await;
-        }
-      });
-    });
-    
     return { 
-      count: awaitCount, 
-      totalPallets: edges.length 
+      count: apiData.count || 0, 
+      totalPallets: apiData.totalPallets || 0 
     };
-  }, [graphqlData]);
+  }, [apiData]);
 
   if (isEditMode) {
     return (
@@ -181,7 +92,7 @@ export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
       iconColor="from-yellow-500 to-orange-500"
       dateRange={`${format(dateRange.start, 'MMM d')} - ${format(dateRange.end, 'MMM d')}`}
       performanceMetrics={{
-        source: 'GraphQL',
+        source: 'REST API',
         optimized: true,
       }}
       loading={loading}
@@ -194,17 +105,17 @@ export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
 export default StillInAwaitWidget;
 
 /**
- * Refactored on 2025-07-31 (Week 4 Day 1)
+ * Refactored on 2025-07-15 (v1.4.3 GraphQL Cleanup)
  * 
  * Changes:
- * - Migrated to useGraphQLFallback hook for unified data fetching
- * - Simplified implementation using MetricCard component
- * - Removed redundant state management
- * - Reduced from 277 lines to ~160 lines (42% reduction)
+ * - Migrated from useGraphQLFallback to useUnifiedAPI
+ * - Replaced GraphQL query with REST API endpoint
+ * - Simplified data processing logic
+ * - Removed Apollo Client dependency
  * 
  * Features:
- * - GraphQL primary with Server Actions fallback
- * - Automatic caching via GraphQLFallbackPresets
- * - Performance monitoring built-in
- * - Real-time updates with polling
+ * - REST API primary with unified routing
+ * - Automatic caching and performance monitoring
+ * - Simplified data structure
+ * - Better error handling
  */

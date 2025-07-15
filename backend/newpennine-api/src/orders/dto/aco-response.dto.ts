@@ -6,19 +6,19 @@ export class AcoRecordDto {
     description: 'ACO record ID',
     example: 'ACO-2024-001',
   })
-  id: string;
+  id!: string;
 
   @ApiProperty({
     description: 'ACO ID',
     example: 'ACO-2024-001',
   })
-  aco_id: string;
+  aco_id!: string;
 
   @ApiProperty({
     description: 'Product code',
     example: 'PRD-001',
   })
-  product_code: string;
+  product_code!: string;
 
   @ApiProperty({
     description: 'Product description',
@@ -30,13 +30,13 @@ export class AcoRecordDto {
     description: 'Supplier name',
     example: 'Supplier ABC',
   })
-  supplier: string;
+  supplier!: string;
 
   @ApiProperty({
     description: 'Quantity ordered',
     example: 100,
   })
-  quantity: number;
+  quantity!: number;
 
   @ApiProperty({
     description: 'Unit price',
@@ -55,7 +55,7 @@ export class AcoRecordDto {
     enum: AcoStatus,
     example: AcoStatus.PENDING,
   })
-  status: AcoStatus;
+  status!: AcoStatus;
 
   @ApiProperty({
     description: 'Expected delivery date',
@@ -79,13 +79,13 @@ export class AcoRecordDto {
     description: 'Created timestamp',
     example: '2024-07-15T09:00:00Z',
   })
-  created_at: string;
+  created_at!: string;
 
   @ApiProperty({
     description: 'Updated timestamp',
     example: '2024-07-15T09:30:00Z',
   })
-  updated_at: string;
+  updated_at!: string;
 
   @ApiProperty({
     description: 'Created by user ID',
@@ -105,41 +105,41 @@ export class AcoResponseDto {
     description: 'Array of ACO records',
     type: [AcoRecordDto],
   })
-  data: AcoRecordDto[];
+  data!: AcoRecordDto[];
 
   @ApiProperty({
     description: 'Total count of records',
     example: 150,
   })
-  total: number;
+  total!: number;
 
   @ApiProperty({
     description: 'Current page number',
     example: 1,
   })
-  page: number;
+  page!: number;
 
   @ApiProperty({
     description: 'Number of items per page',
     example: 10,
   })
-  limit: number;
+  limit!: number;
 
   @ApiProperty({
     description: 'Total number of pages',
     example: 15,
   })
-  total_pages: number;
+  total_pages!: number;
 
   @ApiProperty({
     description: 'Has next page',
     example: true,
   })
-  has_next: boolean;
+  has_next!: boolean;
 
   @ApiProperty({
     description: 'Has previous page',
     example: false,
   })
-  has_previous: boolean;
+  has_previous!: boolean;
 }

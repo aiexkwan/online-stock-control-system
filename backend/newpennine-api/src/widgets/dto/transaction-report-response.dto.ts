@@ -2,22 +2,22 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class TransactionReportItemDto {
   @ApiProperty({ example: '2025-01-15T10:30:00Z' })
-  timestamp: string;
+  timestamp!: string;
 
   @ApiProperty({ example: 'Transfer' })
-  transactionType: string;
+  transactionType!: string;
 
   @ApiProperty({ example: 'PAL001' })
-  palletId: string;
+  palletId!: string;
 
   @ApiProperty({ example: 'PROD001' })
-  productCode: string;
+  productCode!: string;
 
   @ApiProperty({ example: 'Widget A' })
-  productName: string;
+  productName!: string;
 
   @ApiProperty({ example: 100 })
-  quantity: number;
+  quantity!: number;
 
   @ApiProperty({ example: 'Injection' })
   fromLocation?: string;
@@ -37,19 +37,19 @@ export class TransactionReportItemDto {
 
 export class TransactionReportSummaryDto {
   @ApiProperty({ example: 150 })
-  totalTransactions: number;
+  totalTransactions!: number;
 
   @ApiProperty({ example: 10000 })
-  totalQuantity: number;
+  totalQuantity!: number;
 
   @ApiProperty({ example: 50 })
-  uniqueProducts: number;
+  uniqueProducts!: number;
 
   @ApiProperty({ example: 25 })
-  uniqueUsers: number;
+  uniqueUsers!: number;
 
   @ApiProperty({ example: { Transfer: 100, Receipt: 30, Adjustment: 20 } })
-  transactionsByType: Record<string, number>;
+  transactionsByType!: Record<string, number>;
 }
 
 export class TransactionReportMetadataDto {
@@ -60,30 +60,30 @@ export class TransactionReportMetadataDto {
   calculation_time?: string;
 
   @ApiProperty({ example: '2025-01-01' })
-  startDate: string;
+  startDate!: string;
 
   @ApiProperty({ example: '2025-01-15' })
-  endDate: string;
+  endDate!: string;
 
   @ApiProperty({ example: 'All Warehouses' })
   warehouse?: string;
 }
 
 export class TransactionReportResponseDto {
-  @ApiProperty({ 
+  @ApiProperty({
     type: [TransactionReportItemDto],
-    description: 'Array of transaction records'
+    description: 'Array of transaction records',
   })
-  transactions: TransactionReportItemDto[];
+  transactions!: TransactionReportItemDto[];
 
   @ApiProperty({ type: TransactionReportSummaryDto })
-  summary: TransactionReportSummaryDto;
+  summary!: TransactionReportSummaryDto;
 
   @ApiProperty({ type: TransactionReportMetadataDto })
-  metadata: TransactionReportMetadataDto;
+  metadata!: TransactionReportMetadataDto;
 
   @ApiProperty({ example: '2025-01-15T10:30:00Z' })
-  timestamp: string;
+  timestamp!: string;
 
   @ApiProperty({ required: false })
   error?: string;

@@ -16,9 +16,7 @@ export class AcoService {
   /**
    * 按日期獲取 ACO 訂單
    */
-  async getAcoByDate(
-    query: AcoByDateQueryDto,
-  ): Promise<AcoByDateResponseDto> {
+  async getAcoByDate(query: AcoByDateQueryDto): Promise<AcoByDateResponseDto> {
     try {
       // 首先嘗試使用 RPC 函數
       const { data: rpcData, error: rpcError } = await this.supabaseService
@@ -35,8 +33,8 @@ export class AcoService {
           orderDate: query.orderDate,
           records: rpcData,
           total_records: rpcData.length,
-          offset: query.offset,
-          limit: query.limit,
+          offset: query.offset || 0,
+          limit: query.limit || 50,
         };
       }
 
@@ -45,7 +43,8 @@ export class AcoService {
       const { data, error, count } = await this.supabaseService
         .getClient()
         .from('record_aco')
-        .select(`
+        .select(
+          `
           aco_ref,
           order_date,
           product_description,
@@ -55,10 +54,15 @@ export class AcoService {
           status,
           created_at,
           updated_at
-        `, { count: 'exact' })
+        `,
+          { count: 'exact' },
+        )
         .eq('order_date', query.orderDate)
         .order('created_at', { ascending: false })
-        .range(query.offset, query.offset + query.limit - 1);
+        .range(
+          query.offset || 0,
+          (query.offset || 0) + (query.limit || 50) - 1,
+        );
 
       if (error) {
         throw new Error(`Failed to fetch ACO orders by date: ${error.message}`);
@@ -68,11 +72,14 @@ export class AcoService {
         orderDate: query.orderDate,
         records: data || [],
         total_records: count || 0,
-        offset: query.offset,
-        limit: query.limit,
+        offset: query.offset || 0,
+        limit: query.limit || 50,
       };
     } catch (error) {
-      this.logger.error('Error fetching ACO orders by date:', error.message);
+      this.logger.error(
+        'Error fetching ACO orders by date:',
+        (error as Error).message,
+      );
       throw error;
     }
   }
@@ -97,8 +104,8 @@ export class AcoService {
         return {
           references: rpcData.map((item: any) => item.aco_ref),
           total: rpcData.length,
-          offset: query.offset,
-          limit: query.limit,
+          offset: query.offset || 0,
+          limit: query.limit || 50,
         };
       }
 
@@ -110,7 +117,10 @@ export class AcoService {
         .select('aco_ref', { count: 'exact' })
         .not('aco_ref', 'is', null)
         .order('aco_ref', { ascending: false })
-        .range(query.offset, query.offset + query.limit - 1);
+        .range(
+          query.offset || 0,
+          (query.offset || 0) + (query.limit || 50) - 1,
+        );
 
       if (error) {
         throw new Error(`Failed to fetch ACO references: ${error.message}`);
@@ -121,11 +131,14 @@ export class AcoService {
       return {
         references: uniqueRefs,
         total: count || 0,
-        offset: query.offset,
-        limit: query.limit,
+        offset: query.offset || 0,
+        limit: query.limit || 50,
       };
     } catch (error) {
-      this.logger.error('Error fetching ACO references:', error.message);
+      this.logger.error(
+        'Error fetching ACO references:',
+        (error as Error).message,
+      );
       throw error;
     }
   }

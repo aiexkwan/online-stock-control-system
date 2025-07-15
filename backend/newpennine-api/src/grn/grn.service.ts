@@ -35,8 +35,8 @@ export class GrnService {
         return {
           references: rpcData.map((item: any) => item.grn_ref),
           total: rpcData.length,
-          offset: query.offset,
-          limit: query.limit,
+          offset: query.offset || 0,
+          limit: query.limit || 100,
         };
       }
 
@@ -48,7 +48,10 @@ export class GrnService {
         .select('grn_ref', { count: 'exact' })
         .not('grn_ref', 'is', null)
         .order('grn_ref', { ascending: false })
-        .range(query.offset, query.offset + query.limit - 1);
+        .range(
+          query.offset || 0,
+          (query.offset || 0) + (query.limit || 100) - 1,
+        );
 
       if (error) {
         throw new Error(`Failed to fetch GRN references: ${error.message}`);
@@ -59,11 +62,14 @@ export class GrnService {
       return {
         references: uniqueRefs,
         total: count || 0,
-        offset: query.offset,
-        limit: query.limit,
+        offset: query.offset || 0,
+        limit: query.limit || 100,
       };
     } catch (error) {
-      this.logger.error('Error fetching GRN references:', error.message);
+      this.logger.error(
+        'Error fetching GRN references:',
+        (error as Error).message,
+      );
       throw error;
     }
   }
@@ -118,7 +124,10 @@ export class GrnService {
         total: uniqueCodes.length,
       };
     } catch (error) {
-      this.logger.error('Error fetching GRN material codes:', error.message);
+      this.logger.error(
+        'Error fetching GRN material codes:',
+        (error as Error).message,
+      );
       throw error;
     }
   }
@@ -141,7 +150,7 @@ export class GrnService {
       if (!rpcError && rpcData && rpcData.length > 0) {
         this.logger.debug('Using RPC function for GRN report data');
         const firstRecord = rpcData[0];
-        
+
         return {
           grnRef: query.grnRef,
           material_description: firstRecord.material_description,
@@ -164,7 +173,8 @@ export class GrnService {
       let grnQuery = this.supabaseService
         .getClient()
         .from('record_grn')
-        .select(`
+        .select(
+          `
           grn_ref,
           material_code,
           supplier_invoice_number,
@@ -174,7 +184,8 @@ export class GrnService {
           net_weight,
           data_code!inner(description),
           data_supplier!inner(supplier_name)
-        `)
+        `,
+        )
         .eq('grn_ref', query.grnRef);
 
       if (query.productCodes && query.productCodes.length > 0) {
@@ -194,24 +205,40 @@ export class GrnService {
       }
 
       const firstRecord = data[0];
-      
-      return {
+
+      const result: any = {
         grnRef: query.grnRef,
-        material_description: firstRecord.data_code?.description,
-        supplier_name: firstRecord.data_supplier?.supplier_name,
-        report_date: new Date().toISOString().split('T')[0],
         records: data.map((record: any) => ({
           supplier_invoice_number: record.supplier_invoice_number,
           date_received: record.date_received,
           package_count: record.package_count,
           gross_weight: record.gross_weight,
           net_weight: record.net_weight,
-          pallet_weight: (record.gross_weight || 0) - (record.net_weight || 0),
+          pallet_weight: record.pallet_weight,
         })),
         total_records: data.length,
       };
+
+      if (firstRecord) {
+        const materialDescription = (firstRecord.data_code as any)?.description;
+        if (materialDescription) {
+          result.material_description = materialDescription;
+        }
+
+        const supplierName = (firstRecord.data_supplier as any)?.supplier_name;
+        if (supplierName) {
+          result.supplier_name = supplierName;
+        }
+      }
+
+      result.report_date = new Date().toISOString().split('T')[0];
+
+      return result as GrnReportDataResponseDto;
     } catch (error) {
-      this.logger.error('Error fetching GRN report data:', error.message);
+      this.logger.error(
+        'Error fetching GRN report data:',
+        (error as Error).message,
+      );
       throw error;
     }
   }

@@ -1,12 +1,12 @@
 export class InventoryDto {
-  id: number;
-  plt_num: string;
-  product_code: string;
-  loc: string;
-  warehouse: string;
-  qty: number;
-  damage: number;
-  total_qty: number;
+  id!: number;
+  plt_num!: string;
+  product_code!: string;
+  loc!: string;
+  warehouse!: string;
+  qty!: number;
+  damage!: number;
+  total_qty!: number;
   last_update?: string;
   // Additional fields from joins
   product_description?: string;
@@ -17,10 +17,10 @@ export class InventoryDto {
 }
 
 export class InventoryResponseDto {
-  data: InventoryDto[];
-  total: number;
-  limit: number;
-  offset: number;
+  data!: InventoryDto[];
+  total!: number;
+  limit!: number;
+  offset!: number;
   error?: string;
 }
 
@@ -32,16 +32,16 @@ export class InventoryDetailResponseDto extends InventoryDto {
 }
 
 export class InventorySummaryDto {
-  warehouse: string;
-  total_locations: number;
-  total_pallets: number;
-  total_good_qty: number;
-  total_damage_qty: number;
-  total_qty: number;
-  products_count: number;
+  warehouse!: string;
+  total_locations!: number;
+  total_pallets!: number;
+  total_good_qty!: number;
+  total_damage_qty!: number;
+  total_qty!: number;
+  products_count!: number;
 }
 
 export class InventorySummaryResponseDto {
-  data: InventorySummaryDto[];
+  data!: InventorySummaryDto[];
   error?: string;
 }

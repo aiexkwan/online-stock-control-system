@@ -2,46 +2,46 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class TransferResponseDto {
   @ApiProperty({ description: 'Transfer record ID' })
-  id: string;
+  id!: string;
 
   @ApiProperty({ description: 'Pallet ID' })
-  palletId: string;
+  palletId!: string;
 
   @ApiProperty({ description: 'Product code' })
-  productCode: string;
+  productCode!: string;
 
   @ApiProperty({ description: 'Product name', required: false })
   productName?: string;
 
   @ApiProperty({ description: 'Transfer quantity' })
-  quantity: number;
+  quantity!: number;
 
   @ApiProperty({ description: 'Source location' })
-  fromLocation: string;
+  fromLocation!: string;
 
   @ApiProperty({ description: 'Destination location' })
-  toLocation: string;
+  toLocation!: string;
 
   @ApiProperty({ description: 'Transfer status' })
-  status: string;
+  status!: string;
 
   @ApiProperty({ description: 'User ID who performed the transfer' })
-  userId: string;
+  userId!: string;
 
   @ApiProperty({ description: 'User name', required: false })
   userName?: string;
 
   @ApiProperty({ description: 'Transfer date' })
-  transferDate: Date;
+  transferDate!: Date;
 
   @ApiProperty({ description: 'Transfer notes', required: false })
   notes?: string;
 
   @ApiProperty({ description: 'Created timestamp' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty({ description: 'Updated timestamp' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }
 
 export class TransfersListResponseDto {
@@ -49,23 +49,23 @@ export class TransfersListResponseDto {
     description: 'List of transfers',
     type: [TransferResponseDto],
   })
-  items: TransferResponseDto[];
+  items!: TransferResponseDto[];
 
   @ApiProperty({ description: 'Total number of transfers' })
-  total: number;
+  total!: number;
 
   @ApiProperty({ description: 'Current page number' })
-  page: number;
+  page!: number;
 
   @ApiProperty({ description: 'Number of items per page' })
-  limit: number;
+  limit!: number;
 
   @ApiProperty({ description: 'Total number of pages' })
-  totalPages: number;
+  totalPages!: number;
 
   @ApiProperty({ description: 'Has next page' })
-  hasNext: boolean;
+  hasNext!: boolean;
 
   @ApiProperty({ description: 'Has previous page' })
-  hasPrevious: boolean;
+  hasPrevious!: boolean;
 }

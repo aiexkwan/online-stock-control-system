@@ -182,7 +182,7 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
       let processedData: StockDistributionData[];
       
       // 判斷數據來源並處理
-      if (mode === 'graphql' && rawData.record_inventoryCollection) {
+      if (mode === 'context' && rawData.record_inventoryCollection) {
         // GraphQL 數據需要轉換
         processedData = processGraphQLData(rawData);
       } else if (Array.isArray(rawData)) {
@@ -450,7 +450,7 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
               {mode === 'context' && (
                 <span className='text-primary'>⚡ Context optimized</span>
               )}
-              {mode === 'graphql' && (
+              {mode === 'context' && (
                 <span className='text-info'>⚡ GraphQL optimized</span>
               )}
               {mode === 'server-action' && (

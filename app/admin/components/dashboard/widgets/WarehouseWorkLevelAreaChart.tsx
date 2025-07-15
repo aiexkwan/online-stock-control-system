@@ -19,7 +19,7 @@ import { format, startOfDay } from 'date-fns';
 import { getYesterdayRange } from '@/app/utils/timezone';
 import { WidgetStyles } from '@/app/utils/widgetStyles';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
-import { useGetWarehouseWorkLevelQuery } from '@/lib/graphql/generated/apollo-hooks';
+// Note: Migrated to REST API - GraphQL hooks removed
 import { WidgetSkeleton } from './common/WidgetStates';
 import { 
   brandColors, 

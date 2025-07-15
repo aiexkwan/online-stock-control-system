@@ -118,7 +118,10 @@ describe('WidgetsController', () => {
       const result = await controller.getDashboardStats(query);
 
       expect(result).toEqual(mockStats);
-      expect(service.getDashboardStats).toHaveBeenCalledWith(undefined, undefined);
+      expect(service.getDashboardStats).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+      );
     });
   });
 

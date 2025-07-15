@@ -1,14 +1,14 @@
 export class GrnReferencesResponseDto {
-  references: string[];
-  total: number;
-  offset: number;
-  limit: number;
+  references!: string[];
+  total!: number;
+  offset!: number;
+  limit!: number;
 }
 
 export class GrnMaterialCodesResponseDto {
-  grnRef: string;
-  materialCodes: string[];
-  total: number;
+  grnRef!: string;
+  materialCodes!: string[];
+  total!: number;
 }
 
 export class GrnReportRecordDto {
@@ -21,10 +21,10 @@ export class GrnReportRecordDto {
 }
 
 export class GrnReportDataResponseDto {
-  grnRef: string;
+  grnRef!: string;
   material_description?: string;
   supplier_name?: string;
   report_date?: string;
-  records: GrnReportRecordDto[];
-  total_records: number;
+  records!: GrnReportRecordDto[];
+  total_records!: number;
 }

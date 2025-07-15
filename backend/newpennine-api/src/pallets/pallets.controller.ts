@@ -49,7 +49,7 @@ export class PalletsController {
         {
           status: HttpStatus.INTERNAL_SERVER_ERROR,
           error: 'Failed to fetch pallets',
-          message: error.message,
+          message: (error as Error).message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -63,7 +63,7 @@ export class PalletsController {
     try {
       return await this.palletsService.getPalletById(id);
     } catch (error) {
-      if (error.message === 'Pallet not found') {
+      if ((error as Error).message === 'Pallet not found') {
         throw new HttpException(
           {
             status: HttpStatus.NOT_FOUND,
@@ -78,7 +78,7 @@ export class PalletsController {
         {
           status: HttpStatus.INTERNAL_SERVER_ERROR,
           error: 'Failed to fetch pallet',
-          message: error.message,
+          message: (error as Error).message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );

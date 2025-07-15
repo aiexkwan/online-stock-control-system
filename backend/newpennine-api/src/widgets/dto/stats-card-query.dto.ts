@@ -20,7 +20,7 @@ export class StatsCardQueryDto {
     example: StatsCardDataSource.TOTAL_PALLETS,
   })
   @IsEnum(StatsCardDataSource)
-  dataSource: StatsCardDataSource;
+  dataSource!: StatsCardDataSource;
 
   @ApiProperty({
     description: 'Start date for filtering (YYYY-MM-DD)',

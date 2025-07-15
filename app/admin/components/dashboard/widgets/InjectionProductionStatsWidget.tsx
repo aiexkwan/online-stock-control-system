@@ -19,7 +19,7 @@ import { CubeIcon } from '@heroicons/react/24/outline';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { WidgetComponentProps } from '@/app/types/dashboard';
-import { useGetInjectionProductionStatsQuery } from '@/lib/graphql/generated/apollo-hooks';
+// Note: Migrated to REST API - GraphQL hooks removed
 import { MetricCard } from './common/data-display/MetricCard';
 
 interface InjectionProductionStatsWidgetProps extends WidgetComponentProps {

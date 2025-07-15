@@ -5,13 +5,13 @@ export class UserDto {
     description: 'User ID',
     example: 'uuid-string',
   })
-  id: string;
+  id!: string;
 
   @ApiProperty({
     description: 'User email address',
     example: 'user@example.com',
   })
-  email: string;
+  email!: string;
 
   @ApiProperty({
     description: 'User full name',
@@ -38,7 +38,7 @@ export class UserDto {
     description: 'Account creation date',
     example: '2024-01-01T00:00:00.000Z',
   })
-  created_at: string;
+  created_at!: string;
 
   @ApiProperty({
     description: 'Last update date',
@@ -50,7 +50,7 @@ export class UserDto {
     description: 'Email verification status',
     example: true,
   })
-  email_verified: boolean;
+  email_verified!: boolean;
 }
 
 export class AuthResponseDto {
@@ -58,31 +58,31 @@ export class AuthResponseDto {
     description: 'JWT access token',
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
   })
-  access_token: string;
+  access_token!: string;
 
   @ApiProperty({
     description: 'JWT refresh token',
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
   })
-  refresh_token: string;
+  refresh_token!: string;
 
   @ApiProperty({
     description: 'Token expiration time in seconds',
     example: 3600,
   })
-  expires_in: number;
+  expires_in!: number;
 
   @ApiProperty({
     description: 'Token type',
     example: 'Bearer',
   })
-  token_type: string;
+  token_type!: string;
 
   @ApiProperty({
     description: 'User information',
     type: UserDto,
   })
-  user: UserDto;
+  user!: UserDto;
 }
 
 export class AuthErrorDto {
@@ -90,17 +90,17 @@ export class AuthErrorDto {
     description: 'Error message',
     example: 'Invalid credentials',
   })
-  message: string;
+  message!: string;
 
   @ApiProperty({
     description: 'Error code',
     example: 'INVALID_CREDENTIALS',
   })
-  error: string;
+  error!: string;
 
   @ApiProperty({
     description: 'HTTP status code',
     example: 401,
   })
-  statusCode: number;
+  statusCode!: number;
 }

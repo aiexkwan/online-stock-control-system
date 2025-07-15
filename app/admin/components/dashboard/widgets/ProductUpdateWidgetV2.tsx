@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useWidgetErrorHandler } from '@/app/admin/hooks/useWidgetErrorHandler';
 import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
-import { useGetProductByCodeQuery } from '@/lib/graphql/generated/apollo-hooks';
+// Note: Migrated to REST API - GraphQL hooks removed
 import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client';
 import {

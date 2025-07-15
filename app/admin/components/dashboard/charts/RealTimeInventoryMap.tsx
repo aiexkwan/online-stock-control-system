@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { useGetInventoryLocationsQuery } from '@/lib/graphql/generated/apollo-hooks';
-import type { GetInventoryLocationsQuery } from '@/lib/graphql/generated/types';
+// Note: Migrated to REST API - GraphQL hooks removed
+// Type removed with GraphQL migration
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Package } from 'lucide-react';

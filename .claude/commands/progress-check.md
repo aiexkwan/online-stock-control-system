@@ -1,4 +1,5 @@
 - Ultrathink, Sequential-thinking, Task 工具(同步平行執行任務)
 - 先閱讀守則手冊 docs\general_rules.md
 - 檢查完成進度
+- 利用各種測試工具進行實際驗證
 - 檢查是否完全按照文檔中的規劃執行

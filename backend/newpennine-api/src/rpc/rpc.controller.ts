@@ -78,7 +78,7 @@ export class RpcController {
       throw new HttpException(
         {
           success: false,
-          error: error.message || 'Internal server error',
+          error: (error as Error).message || 'Internal server error',
           metadata: {
             executionTime: Date.now() - startTime,
             functionName: 'await_location_count',
@@ -148,7 +148,7 @@ export class RpcController {
       throw new HttpException(
         {
           success: false,
-          error: error.message || 'Internal server error',
+          error: (error as Error).message || 'Internal server error',
           metadata: {
             executionTime: Date.now() - startTime,
             functionName: 'stock_level_history',

@@ -1,13 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../../src/app.module';
-import { SupabaseService } from '../../src/supabase/supabase.service';
+import { TestHelpers } from '../test-helpers';
 
 describe('Transaction Report Widget Endpoint (e2e)', () => {
   let app: INestApplication;
   let authToken: string;
-  let supabaseService: SupabaseService;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -17,20 +16,8 @@ describe('Transaction Report Widget Endpoint (e2e)', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
 
-    supabaseService = moduleFixture.get(SupabaseService);
-
-    // Get test authentication token
-    const { data } = await supabaseService.getClient().auth.signInWithPassword({
-      email: process.env.TEST_USER_EMAIL || 'test@example.com',
-      password: process.env.TEST_USER_PASSWORD || 'testpassword123',
-    });
-
-    if (data?.session?.access_token) {
-      authToken = data.session.access_token;
-    } else {
-      // Create mock token for testing
-      authToken = 'test-token';
-    }
+    // Get valid JWT token for testing using real login
+    authToken = await TestHelpers.loginAndGetToken(app);
   });
 
   afterAll(async () => {
@@ -56,9 +43,9 @@ describe('Transaction Report Widget Endpoint (e2e)', () => {
       expect(response.body).toHaveProperty('summary');
       expect(response.body).toHaveProperty('metadata');
       expect(response.body).toHaveProperty('timestamp');
-      
+
       expect(Array.isArray(response.body.transactions)).toBe(true);
-      
+
       // Check summary structure
       const summary = response.body.summary;
       expect(summary).toHaveProperty('totalTransactions');
@@ -67,7 +54,7 @@ describe('Transaction Report Widget Endpoint (e2e)', () => {
       expect(summary).toHaveProperty('uniqueUsers');
       expect(summary).toHaveProperty('transactionsByType');
       expect(typeof summary.transactionsByType).toBe('object');
-      
+
       // Check metadata
       const metadata = response.body.metadata;
       expect(metadata).toHaveProperty('executed_at');
@@ -92,11 +79,11 @@ describe('Transaction Report Widget Endpoint (e2e)', () => {
         .expect(200);
 
       expect(response.body.metadata.warehouse).toBe('injection');
-      
+
       // All transactions should involve the specified warehouse
       response.body.transactions.forEach((transaction: any) => {
-        const involvesWarehouse = 
-          transaction.fromLocation === 'injection' || 
+        const involvesWarehouse =
+          transaction.fromLocation === 'injection' ||
           transaction.toLocation === 'injection';
         expect(involvesWarehouse).toBe(true);
       });
@@ -173,7 +160,9 @@ describe('Transaction Report Widget Endpoint (e2e)', () => {
       const transactions = response.body.transactions;
       if (transactions.length > 1) {
         for (let i = 1; i < transactions.length; i++) {
-          const prevTimestamp = new Date(transactions[i - 1].timestamp).getTime();
+          const prevTimestamp = new Date(
+            transactions[i - 1].timestamp,
+          ).getTime();
           const currTimestamp = new Date(transactions[i].timestamp).getTime();
           expect(prevTimestamp).toBeGreaterThanOrEqual(currTimestamp);
         }

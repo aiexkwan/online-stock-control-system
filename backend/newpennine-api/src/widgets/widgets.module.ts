@@ -8,11 +8,7 @@ import { WidgetPermissionsGuard } from './guards/widget-permissions.guard';
 @Module({
   imports: [SupabaseModule],
   controllers: [WidgetsController],
-  providers: [
-    WidgetsService,
-    WidgetCacheService,
-    WidgetPermissionsGuard,
-  ],
+  providers: [WidgetsService, WidgetCacheService, WidgetPermissionsGuard],
   exports: [WidgetsService, WidgetCacheService],
 })
 export class WidgetsModule {}
