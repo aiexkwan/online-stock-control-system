@@ -41,13 +41,13 @@ export class AuthRegisterDto {
   name?: string;
 
   @ApiProperty({
-    description: 'User phone number',
-    example: '+1234567890',
+    description: 'User department',
+    example: 'System',
     required: false,
   })
-  @IsString({ message: 'Phone must be a string' })
+  @IsString({ message: 'Department must be a string' })
   @IsOptional()
-  phone?: string;
+  department?: string;
 
   @ApiProperty({
     description: 'User role',

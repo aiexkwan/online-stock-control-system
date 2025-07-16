@@ -1,0 +1,53 @@
+import {
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ProductsService } from './products.service';
+import { ProductsTypesResponseDto } from './dto/products-types-response.dto';
+
+@ApiTags('products')
+@Controller('products')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
+export class ProductsController {
+  constructor(private readonly productsService: ProductsService) {}
+
+  @Get('types')
+  @ApiOperation({
+    summary: 'Get all product types',
+    description: 'Retrieve a list of all product types with their counts',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Product types retrieved successfully',
+    type: ProductsTypesResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    description: 'Failed to fetch product types',
+  })
+  async getProductTypes(): Promise<ProductsTypesResponseDto> {
+    try {
+      return await this.productsService.getProductTypes();
+    } catch (error) {
+      throw new HttpException(
+        {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          error: 'Failed to fetch product types',
+          message: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+}

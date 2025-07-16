@@ -25,10 +25,7 @@ export class RpcService {
 
       const { data, error } = await this.supabaseService
         .getClient()
-        .rpc('await_location_count', {
-          p_location: query.location || null,
-          p_date: query.date || null,
-        });
+        .rpc('rpc_get_await_location_count', {});
 
       if (error) {
         this.logger.error('Error calling await_location_count:', error);
@@ -38,11 +35,11 @@ export class RpcService {
       const executionTime = Date.now() - startTime;
       this.logger.log(`await_location_count executed in ${executionTime}ms`);
 
-      // Process the response data
+      // Process the response data based on the actual RPC function response
       const response: AwaitLocationCountResponseDto = {
-        count: data?.total_count || 0,
-        locations: data?.location_breakdown || [],
-        lastUpdated: new Date().toISOString(),
+        count: data?.await_count || 0,
+        locations: [], // The optimized RPC doesn't return location breakdown
+        lastUpdated: data?.calculation_time || new Date().toISOString(),
       };
 
       return response;

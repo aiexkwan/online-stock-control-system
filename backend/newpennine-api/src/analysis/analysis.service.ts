@@ -16,6 +16,15 @@ import {
   ChartDataPointDto,
   ChartConfigDto,
 } from './dto/aco-order-progress-chart-response.dto';
+import { VoidRecordsAnalysisQueryDto } from './dto/void-records-analysis-query.dto';
+import {
+  VoidRecordsAnalysisResponseDto,
+  VoidRecordDto,
+  VoidReasonDistributionDto,
+  VoidTrendDataDto,
+  TopVoidedProductDto,
+  VoidUserActivityDto,
+} from './dto/void-records-analysis-response.dto';
 
 @Injectable()
 export class AnalysisService {
@@ -197,7 +206,7 @@ export class AnalysisService {
     if (endDate) {
       query = query.lte('latest_update', endDate);
     }
-    
+
     // Note: warehouse, status, customer_ref filters are not available in current schema
     // These would need to be added to the database schema for full functionality
 
@@ -246,16 +255,16 @@ export class AnalysisService {
    */
   private processOrderStats(orders: any[]): any {
     const totalOrders = orders.length;
-    
+
     // Calculate completion based on finished_qty vs required_qty
     const completedOrders = orders.filter(
       (o) => o.finished_qty >= o.required_qty,
     ).length;
-    
+
     const partialOrders = orders.filter(
       (o) => o.finished_qty > 0 && o.finished_qty < o.required_qty,
     ).length;
-    
+
     const pendingOrders = orders.filter(
       (o) => !o.finished_qty || o.finished_qty === 0,
     ).length;
@@ -264,14 +273,16 @@ export class AnalysisService {
       totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0;
 
     // Calculate average completion percentage
-    const avgCompletionPercentage = totalOrders > 0 
-      ? orders.reduce((sum, order) => {
-          const completion = order.required_qty > 0 
-            ? (order.finished_qty || 0) / order.required_qty * 100 
-            : 0;
-          return sum + Math.min(completion, 100);
-        }, 0) / totalOrders
-      : 0;
+    const avgCompletionPercentage =
+      totalOrders > 0
+        ? orders.reduce((sum, order) => {
+            const completion =
+              order.required_qty > 0
+                ? ((order.finished_qty || 0) / order.required_qty) * 100
+                : 0;
+            return sum + Math.min(completion, 100);
+          }, 0) / totalOrders
+        : 0;
 
     return {
       totalOrders,
@@ -522,14 +533,16 @@ export class AnalysisService {
             break;
           case ChartMetric.PROCESSING_TIME:
             // Calculate average completion percentage as a proxy for processing efficiency
-            value = orderGroup.length > 0 
-              ? orderGroup.reduce((sum, order) => {
-                  const completion = order.required_qty > 0 
-                    ? ((order.finished_qty || 0) / order.required_qty) * 100 
-                    : 0;
-                  return sum + Math.min(completion, 100);
-                }, 0) / orderGroup.length
-              : 0;
+            value =
+              orderGroup.length > 0
+                ? orderGroup.reduce((sum, order) => {
+                    const completion =
+                      order.required_qty > 0
+                        ? ((order.finished_qty || 0) / order.required_qty) * 100
+                        : 0;
+                    return sum + Math.min(completion, 100);
+                  }, 0) / orderGroup.length
+                : 0;
             break;
           default:
             value = orderGroup.length;
@@ -540,8 +553,9 @@ export class AnalysisService {
           value: Math.round(value * 100) / 100,
           metadata: {
             orderCount: orderGroup.length,
-            completedCount: orderGroup.filter((o) => (o.finished_qty || 0) >= (o.required_qty || 1))
-              .length,
+            completedCount: orderGroup.filter(
+              (o) => (o.finished_qty || 0) >= (o.required_qty || 1),
+            ).length,
           },
         };
       })
@@ -692,5 +706,486 @@ export class AnalysisService {
     }
 
     return `${startDate} to ${endDate}`;
+  }
+
+  /**
+   * Get void records analysis
+   */
+  async getVoidRecordsAnalysis(
+    query: VoidRecordsAnalysisQueryDto,
+  ): Promise<VoidRecordsAnalysisResponseDto> {
+    const cacheKey = this.cacheService.generateKey(
+      'void-records-analysis',
+      query,
+    );
+
+    // Try to get from cache first
+    const cachedData =
+      this.cacheService.get<VoidRecordsAnalysisResponseDto>(cacheKey);
+    if (cachedData) {
+      this.logger.debug('Returning cached void records analysis data');
+      return cachedData;
+    }
+
+    try {
+      // Fetch void records with related data
+      const voidRecords = await this.fetchVoidRecords(query);
+
+      // Process the data for analysis
+      const analysisData = this.processVoidRecordsAnalysis(voidRecords, query);
+
+      const response: VoidRecordsAnalysisResponseDto = {
+        total_void_qty: analysisData.totalVoidQty,
+        total_records: analysisData.totalRecords,
+        average_void_qty: analysisData.averageVoidQty,
+        reason_distribution: analysisData.reasonDistribution,
+        trend_data: analysisData.trendData,
+        top_voided_products: analysisData.topVoidedProducts,
+        user_activity: analysisData.userActivity,
+        void_records: analysisData.detailedRecords,
+        metadata: {
+          generated_at: new Date().toISOString(),
+          date_range: {
+            start: query.startDate || new Date('2020-01-01').toISOString(),
+            end: query.endDate || new Date().toISOString(),
+          },
+          filters_applied: {
+            ...(query.productCodes && { product_codes: query.productCodes }),
+            ...(query.reasons && { reasons: query.reasons }),
+          },
+        },
+      };
+
+      // Cache the result for 15 minutes
+      this.cacheService.set(cacheKey, response, 15 * 60 * 1000);
+
+      this.logger.log(
+        `Generated void records analysis with ${analysisData.totalRecords} records`,
+      );
+      return response;
+    } catch (error) {
+      this.logger.error(
+        'Failed to get void records analysis',
+        (error as Error).stack,
+      );
+      throw new Error(
+        `Failed to fetch void records analysis: ${(error as Error).message}`,
+      );
+    }
+  }
+
+  /**
+   * Fetch void records from database with filters
+   */
+  private async fetchVoidRecords(
+    query: VoidRecordsAnalysisQueryDto,
+  ): Promise<any[]> {
+    const supabase = this.supabaseService.getClient();
+
+    try {
+      // Try RPC function first for optimized query
+      const { data: rpcData, error: rpcError } = await supabase.rpc(
+        'get_void_records_analysis',
+        {
+          p_start_date: query.startDate,
+          p_end_date: query.endDate,
+          p_product_codes: query.productCodes,
+          p_reasons: query.reasons,
+        },
+      );
+
+      if (!rpcError && rpcData) {
+        this.logger.log('Using RPC function for void records analysis');
+        return rpcData;
+      }
+
+      this.logger.warn(
+        'RPC function not available, falling back to manual queries',
+      );
+
+      // Fallback to manual query approach
+      return await this.fetchVoidRecordsFallback(query);
+    } catch (error) {
+      this.logger.error('Error in fetchVoidRecords', (error as Error).stack);
+      throw error;
+    }
+  }
+
+  /**
+   * Fallback method for fetching void records
+   */
+  private async fetchVoidRecordsFallback(
+    query: VoidRecordsAnalysisQueryDto,
+  ): Promise<any[]> {
+    const supabase = this.supabaseService.getClient();
+
+    // Step 1: Fetch void records from report_void table
+    let voidQuery = supabase
+      .from('report_void')
+      .select('uuid, plt_num, time, reason, damage_qty')
+      .order('time', { ascending: false });
+
+    // Apply date filters
+    if (query.startDate) {
+      voidQuery = voidQuery.gte('time', query.startDate);
+    }
+    if (query.endDate) {
+      voidQuery = voidQuery.lte('time', query.endDate);
+    }
+
+    // Apply reason filters
+    if (query.reasons && query.reasons.length > 0) {
+      voidQuery = voidQuery.in('reason', query.reasons);
+    }
+
+    const { data: voidRecords, error: voidError } = await voidQuery;
+
+    if (voidError) {
+      throw new Error(`Failed to fetch void records: ${voidError.message}`);
+    }
+
+    if (!voidRecords || voidRecords.length === 0) {
+      return [];
+    }
+
+    // Step 2: Get pallet info for product codes
+    const palletNumbers = Array.from(
+      new Set(voidRecords.map((v) => v.plt_num)),
+    );
+    const { data: palletInfos, error: palletError } = await supabase
+      .from('record_palletinfo')
+      .select('plt_num, product_code, product_qty')
+      .in('plt_num', palletNumbers);
+
+    if (palletError) {
+      this.logger.warn(`Failed to fetch pallet info: ${palletError.message}`);
+    }
+
+    // Create pallet info map
+    const palletInfoMap = new Map();
+    if (palletInfos) {
+      palletInfos.forEach((p) => palletInfoMap.set(p.plt_num, p));
+    }
+
+    // Step 3: Get user info from history records
+    const { data: historyRecords, error: historyError } = await supabase
+      .from('record_history')
+      .select(
+        `
+        plt_num,
+        time,
+        id,
+        loc,
+        data_id (
+          id,
+          name
+        )
+      `,
+      )
+      .eq('action', 'Void Pallet')
+      .in('plt_num', palletNumbers)
+      .order('time', { ascending: false });
+
+    if (historyError) {
+      this.logger.warn(
+        `Failed to fetch history records: ${historyError.message}`,
+      );
+    }
+
+    // Create user map
+    const userMap = new Map();
+    if (historyRecords) {
+      historyRecords.forEach((h) => {
+        if (!userMap.has(h.plt_num)) {
+          userMap.set(h.plt_num, {
+            user: h.data_id,
+            loc: h.loc,
+          });
+        }
+      });
+    }
+
+    // Step 4: Combine all data
+    let combinedRecords = voidRecords.map((voidRecord) => {
+      const palletInfo = palletInfoMap.get(voidRecord.plt_num);
+      const historyInfo = userMap.get(voidRecord.plt_num);
+
+      const voidQty =
+        voidRecord.damage_qty !== null && voidRecord.damage_qty > 0
+          ? voidRecord.damage_qty
+          : palletInfo?.product_qty || 0;
+
+      return {
+        uuid: voidRecord.uuid,
+        plt_num: voidRecord.plt_num,
+        time: voidRecord.time,
+        reason: voidRecord.reason,
+        damage_qty: voidRecord.damage_qty,
+        product_code: palletInfo?.product_code || 'N/A',
+        product_qty: palletInfo?.product_qty || 0,
+        user_name: historyInfo?.user?.name || 'System',
+        user_id: historyInfo?.user?.id || 0,
+        plt_loc: historyInfo?.loc || 'Voided',
+        void_qty: voidQty,
+      };
+    });
+
+    // Step 5: Apply product code filters if specified
+    if (query.productCodes && query.productCodes.length > 0) {
+      combinedRecords = combinedRecords.filter((record) =>
+        query.productCodes!.includes(record.product_code),
+      );
+    }
+
+    return combinedRecords;
+  }
+
+  /**
+   * Process void records data for analysis
+   */
+  private processVoidRecordsAnalysis(
+    voidRecords: any[],
+    query: VoidRecordsAnalysisQueryDto,
+  ): {
+    totalVoidQty: number;
+    totalRecords: number;
+    averageVoidQty: number;
+    reasonDistribution: VoidReasonDistributionDto[];
+    trendData: VoidTrendDataDto[];
+    topVoidedProducts: TopVoidedProductDto[];
+    userActivity: VoidUserActivityDto[];
+    detailedRecords: VoidRecordDto[];
+  } {
+    if (voidRecords.length === 0) {
+      return {
+        totalVoidQty: 0,
+        totalRecords: 0,
+        averageVoidQty: 0,
+        reasonDistribution: [],
+        trendData: [],
+        topVoidedProducts: [],
+        userActivity: [],
+        detailedRecords: [],
+      };
+    }
+
+    const totalVoidQty = voidRecords.reduce(
+      (sum, record) => sum + (record.void_qty || 0),
+      0,
+    );
+    const totalRecords = voidRecords.length;
+    const averageVoidQty = totalRecords > 0 ? totalVoidQty / totalRecords : 0;
+
+    // Process reason distribution
+    const reasonDistribution = this.processReasonDistribution(
+      voidRecords,
+      totalVoidQty,
+    );
+
+    // Process trend data
+    const trendData = this.processTrendData(
+      voidRecords,
+      query.groupBy || 'day',
+    );
+
+    // Process top voided products
+    const topVoidedProducts = this.processTopVoidedProducts(
+      voidRecords,
+      totalVoidQty,
+      query.topProductsLimit || 10,
+    );
+
+    // Process user activity
+    const userActivity = this.processUserActivity(voidRecords, totalVoidQty);
+
+    // Process detailed records
+    const detailedRecords = this.processDetailedRecords(voidRecords);
+
+    return {
+      totalVoidQty: Math.round(totalVoidQty * 100) / 100,
+      totalRecords,
+      averageVoidQty: Math.round(averageVoidQty * 100) / 100,
+      reasonDistribution,
+      trendData,
+      topVoidedProducts,
+      userActivity,
+      detailedRecords,
+    };
+  }
+
+  /**
+   * Process reason distribution for pie chart
+   */
+  private processReasonDistribution(
+    voidRecords: any[],
+    totalVoidQty: number,
+  ): VoidReasonDistributionDto[] {
+    const reasonMap = new Map<string, { qty: number; count: number }>();
+
+    voidRecords.forEach((record) => {
+      const reason = record.reason || 'Unknown';
+      const qty = record.void_qty || 0;
+
+      if (!reasonMap.has(reason)) {
+        reasonMap.set(reason, { qty: 0, count: 0 });
+      }
+
+      const stats = reasonMap.get(reason)!;
+      stats.qty += qty;
+      stats.count += 1;
+    });
+
+    return Array.from(reasonMap.entries())
+      .map(([reason, stats]) => ({
+        reason,
+        total_void_qty: Math.round(stats.qty * 100) / 100,
+        record_count: stats.count,
+        percentage:
+          totalVoidQty > 0
+            ? Math.round((stats.qty / totalVoidQty) * 10000) / 100
+            : 0,
+      }))
+      .sort((a, b) => b.total_void_qty - a.total_void_qty);
+  }
+
+  /**
+   * Process trend data for line/bar chart
+   */
+  private processTrendData(
+    voidRecords: any[],
+    groupBy: 'day' | 'week' | 'month',
+  ): VoidTrendDataDto[] {
+    const trendMap = new Map<string, { qty: number; count: number }>();
+
+    voidRecords.forEach((record) => {
+      const date = new Date(record.time);
+      let period = '';
+
+      switch (groupBy) {
+        case 'day':
+          period = date.toISOString().split('T')[0] || '';
+          break;
+        case 'week':
+          const weekStart = new Date(date);
+          weekStart.setDate(date.getDate() - date.getDay());
+          period = weekStart.toISOString().split('T')[0] || '';
+          break;
+        case 'month':
+          period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          break;
+      }
+
+      if (!trendMap.has(period)) {
+        trendMap.set(period, { qty: 0, count: 0 });
+      }
+
+      const stats = trendMap.get(period)!;
+      stats.qty += record.void_qty || 0;
+      stats.count += 1;
+    });
+
+    return Array.from(trendMap.entries())
+      .map(([period, stats]) => ({
+        period,
+        total_void_qty: Math.round(stats.qty * 100) / 100,
+        record_count: stats.count,
+      }))
+      .sort((a, b) => a.period.localeCompare(b.period));
+  }
+
+  /**
+   * Process top voided products
+   */
+  private processTopVoidedProducts(
+    voidRecords: any[],
+    totalVoidQty: number,
+    limit: number,
+  ): TopVoidedProductDto[] {
+    const productMap = new Map<string, { qty: number; count: number }>();
+
+    voidRecords.forEach((record) => {
+      const product = record.product_code || 'Unknown';
+      const qty = record.void_qty || 0;
+
+      if (!productMap.has(product)) {
+        productMap.set(product, { qty: 0, count: 0 });
+      }
+
+      const stats = productMap.get(product)!;
+      stats.qty += qty;
+      stats.count += 1;
+    });
+
+    return Array.from(productMap.entries())
+      .map(([product_code, stats]) => ({
+        product_code,
+        total_void_qty: Math.round(stats.qty * 100) / 100,
+        record_count: stats.count,
+        percentage:
+          totalVoidQty > 0
+            ? Math.round((stats.qty / totalVoidQty) * 10000) / 100
+            : 0,
+      }))
+      .sort((a, b) => b.total_void_qty - a.total_void_qty)
+      .slice(0, limit);
+  }
+
+  /**
+   * Process user activity
+   */
+  private processUserActivity(
+    voidRecords: any[],
+    totalVoidQty: number,
+  ): VoidUserActivityDto[] {
+    const userMap = new Map<
+      string,
+      { qty: number; count: number; id: number }
+    >();
+
+    voidRecords.forEach((record) => {
+      const userName = record.user_name || 'Unknown';
+      const userId = record.user_id || 0;
+      const qty = record.void_qty || 0;
+
+      if (!userMap.has(userName)) {
+        userMap.set(userName, { qty: 0, count: 0, id: userId });
+      }
+
+      const stats = userMap.get(userName)!;
+      stats.qty += qty;
+      stats.count += 1;
+    });
+
+    return Array.from(userMap.entries())
+      .map(([user_name, stats]) => ({
+        user_name,
+        user_id: stats.id,
+        total_void_qty: Math.round(stats.qty * 100) / 100,
+        record_count: stats.count,
+        percentage:
+          totalVoidQty > 0
+            ? Math.round((stats.qty / totalVoidQty) * 10000) / 100
+            : 0,
+      }))
+      .sort((a, b) => b.total_void_qty - a.total_void_qty);
+  }
+
+  /**
+   * Process detailed records for display
+   */
+  private processDetailedRecords(voidRecords: any[]): VoidRecordDto[] {
+    return voidRecords.map((record) => ({
+      uuid: record.uuid,
+      plt_num: record.plt_num,
+      time: record.time,
+      reason: record.reason || 'Unknown',
+      damage_qty: record.damage_qty,
+      product_code: record.product_code || 'N/A',
+      product_qty: record.product_qty || 0,
+      user_name: record.user_name || 'Unknown',
+      user_id: record.user_id || 0,
+      plt_loc: record.plt_loc || 'N/A',
+      void_qty: record.void_qty || 0,
+    }));
   }
 }

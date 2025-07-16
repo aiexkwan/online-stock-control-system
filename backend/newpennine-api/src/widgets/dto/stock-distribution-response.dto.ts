@@ -1,0 +1,149 @@
+import { ApiProperty } from '@nestjs/swagger';
+
+export class StockDistributionDataItemDto {
+  @ApiProperty({
+    example: 'PROD001',
+    description: 'Product code or identifier',
+  })
+  name!: string;
+
+  @ApiProperty({
+    example: 1500,
+    description: 'Size metric for TreeMap visualization',
+  })
+  size!: number;
+
+  @ApiProperty({
+    example: 1500,
+    description: 'Value metric (typically same as size for stock distribution)',
+  })
+  value!: number;
+
+  @ApiProperty({
+    example: 25.5,
+    description: 'Percentage of total stock',
+  })
+  percentage!: number;
+
+  @ApiProperty({
+    example: '#3b82f6',
+    description: 'Color code for TreeMap visualization',
+  })
+  color!: string;
+
+  @ApiProperty({
+    example: '#3b82f6',
+    description: 'Fill color for TreeMap (typically same as color)',
+  })
+  fill!: string;
+
+  @ApiProperty({
+    example: 'Widget Component A - High demand product',
+    description: 'Product description or additional info',
+  })
+  description!: string;
+
+  @ApiProperty({
+    example: 'electronic',
+    description: 'Product type or category',
+  })
+  type!: string;
+
+  @ApiProperty({
+    example: 'injection',
+    description: 'Stock location type',
+  })
+  stock!: string;
+
+  @ApiProperty({
+    example: 1500,
+    description: 'Actual stock level quantity',
+  })
+  stock_level!: number;
+}
+
+export class StockDistributionMetadataDto {
+  @ApiProperty({
+    example: '2025-01-15T10:30:00Z',
+    description: 'Timestamp when calculation was executed',
+  })
+  executed_at?: string;
+
+  @ApiProperty({
+    example: '250ms',
+    description: 'Time taken for calculation',
+  })
+  calculation_time?: string;
+
+  @ApiProperty({
+    example: true,
+    description: 'Whether data was fetched using RPC function',
+  })
+  rpcFunction?: boolean;
+
+  @ApiProperty({
+    example: 'get_stock_distribution_treemap',
+    description: 'Name of the RPC function used',
+  })
+  rpcName?: string;
+
+  @ApiProperty({
+    example: 'injection',
+    description: 'Stock type filter applied',
+  })
+  appliedFilter?: string;
+
+  @ApiProperty({
+    example: 150,
+    description: 'Total number of products in distribution',
+  })
+  totalProducts?: number;
+
+  @ApiProperty({
+    example: 25000,
+    description: 'Total stock quantity across all products',
+  })
+  totalStockQuantity?: number;
+}
+
+export class StockDistributionResponseDto {
+  @ApiProperty({
+    type: [StockDistributionDataItemDto],
+    description:
+      'Array of stock distribution data formatted for TreeMap visualization',
+    example: [
+      {
+        name: 'PROD001',
+        size: 1500,
+        value: 1500,
+        percentage: 25.5,
+        color: '#3b82f6',
+        fill: '#3b82f6',
+        description: 'Widget Component A - High demand product',
+        type: 'electronic',
+        stock: 'injection',
+        stock_level: 1500,
+      },
+    ],
+  })
+  value!: StockDistributionDataItemDto[];
+
+  @ApiProperty({
+    type: StockDistributionMetadataDto,
+    required: false,
+    description: 'Metadata about the query execution and results',
+  })
+  metadata?: StockDistributionMetadataDto;
+
+  @ApiProperty({
+    example: '2025-01-15T10:30:00Z',
+    description: 'Response timestamp',
+  })
+  timestamp!: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Error message if any occurred during processing',
+  })
+  error?: string;
+}

@@ -5,7 +5,7 @@ import { AppModule } from '../src/app.module';
 
 /**
  * 快速驗證測試
- * 
+ *
  * 用於快速檢查系統基本功能是否正常
  * 適用於開發過程中的快速檢查
  */
@@ -71,9 +71,7 @@ describe('Quick Validation Tests', () => {
     });
 
     it('CORS 預檢請求應該正常', async () => {
-      await request(app.getHttpServer())
-        .options('/api/v1/health')
-        .expect(204);
+      await request(app.getHttpServer()).options('/api/v1/health').expect(204);
 
       console.log('✅ CORS 配置正常');
     });
@@ -84,7 +82,7 @@ describe('Quick Validation Tests', () => {
       const requiredEnvVars = [
         'PORT',
         'SUPABASE_URL',
-        'SUPABASE_SERVICE_ROLE_KEY'
+        'SUPABASE_SERVICE_ROLE_KEY',
       ];
 
       for (const envVar of requiredEnvVars) {
@@ -96,7 +94,7 @@ describe('Quick Validation Tests', () => {
     it('JWT 相關環境變量應該存在', () => {
       expect(process.env.JWT_SECRET).toBeDefined();
       console.log('✅ JWT_SECRET 已設置');
-      
+
       if (process.env.JWT_EXPIRES_IN) {
         console.log(`✅ JWT_EXPIRES_IN: ${process.env.JWT_EXPIRES_IN}`);
       }
@@ -117,7 +115,7 @@ describe('Quick Validation Tests', () => {
     expectedEndpoints.forEach(({ path, method, auth }) => {
       it(`${method} ${path} 應該${auth ? '需要' : '不需要'}認證`, async () => {
         const req = request(app.getHttpServer());
-        
+
         if (method === 'GET') {
           const response = await req.get(path);
           if (auth) {
@@ -129,7 +127,7 @@ describe('Quick Validation Tests', () => {
           const response = await req.post(path);
           expect([200, 400, 401]).toContain(response.status);
         }
-        
+
         console.log(`✅ ${method} ${path} 路由正常`);
       });
     });

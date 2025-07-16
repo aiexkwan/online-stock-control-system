@@ -23,11 +23,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly authService: AuthService,
   ) {
     const jwtSecret = configService.get<string>('JWT_SECRET');
-    
+
     if (!jwtSecret) {
       throw new Error('JWT_SECRET is required');
     }
-    
+
     const options: StrategyOptions = {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -35,12 +35,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     };
 
     super(options);
-    this.logger.log(`JwtStrategy initialized with secret length: ${jwtSecret.length}`);
+    this.logger.log(
+      `JwtStrategy initialized with secret length: ${jwtSecret.length}`,
+    );
   }
 
   async validate(payload: JwtPayload) {
-    this.logger.debug(`Validating JWT payload for user: ${payload.sub}, email: ${payload.email}`);
-    
+    this.logger.debug(
+      `Validating JWT payload for user: ${payload.sub}, email: ${payload.email}`,
+    );
+
     try {
       // Validate user exists through AuthService
       const user = await this.authService.validateUser(payload.sub);

@@ -1,15 +1,15 @@
 /**
  * Universal Stats Data Hook
  * 統一的數據獲取邏輯，支援多種數據源
+ * GraphQL removed - using REST API only
  */
 
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useGraphQLFallback } from '@/app/admin/hooks/useGraphQLFallback';
 import { useDashboardData } from '@/app/admin/contexts/DashboardDataContext';
 import { useInViewport } from '@/app/admin/hooks/useInViewport';
-import { gql } from '@apollo/client';
+// GraphQL imports removed - using REST API only
 import {
   StatsDataSourceConfig,
   StatsData,
@@ -30,50 +30,14 @@ export function useUniversalStats(
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>();
-  const [source, setSource] = useState<'cache' | 'graphql' | 'server' | 'fallback'>();
+  const [source, setSource] = useState<'cache' | 'server' | 'fallback'>();
 
   // Dashboard batch data context
   const dashboardData = useDashboardData();
 
-  // GraphQL fallback 配置
-  const graphqlConfig = useMemo(() => {
-    if (dataSourceConfig.type !== 'graphql' || !dataSourceConfig.query) {
-      return null;
-    }
+  // GraphQL configuration removed - using REST API only
 
-    return {
-      graphqlQuery: gql(dataSourceConfig.query),
-      serverAction: dataSourceConfig.serverAction,
-      variables: {
-        ...dataSourceConfig.variables,
-        ...(timeFrame && {
-          startDate: timeFrame.start.toISOString(),
-          endDate: timeFrame.end.toISOString(),
-        }),
-      },
-      skip: isEditMode,
-      fallbackEnabled: performanceConfig?.enableFallback ?? true,
-      widgetId: dataSourceConfig.widgetId || 'universal-stats',
-    };
-  }, [dataSourceConfig, timeFrame, isEditMode, performanceConfig?.enableFallback]);
-
-  // GraphQL fallback hook
-  const {
-    data: graphqlData,
-    loading: graphqlLoading,
-    error: graphqlError,
-    refetch: graphqlRefetch,
-    mode: graphqlMode,
-  } = useGraphQLFallback<any, any>(
-    graphqlConfig || {
-      graphqlQuery: gql`query EmptyQuery { __typename }`,
-      serverAction: async () => null,
-      variables: {},
-      skip: true,
-      fallbackEnabled: false,
-      widgetId: 'empty',
-    }
-  );
+  // GraphQL fallback hook removed - using REST API only
 
   // 批量數據獲取
   const getBatchData = useCallback(() => {
@@ -158,18 +122,13 @@ export function useUniversalStats(
           dataSource = 'cache';
           break;
 
-        case 'graphql':
-          rawData = graphqlData;
-          dataSource = graphqlMode as typeof source;
-          break;
-
         case 'server':
           rawData = await getServerData();
           dataSource = 'server';
           break;
 
         default:
-          throw new Error(`Unsupported data source type: ${dataSourceConfig.type}`);
+          throw new Error(`Unsupported data source type: ${dataSourceConfig.type}. Only 'batch' and 'server' are supported.`);
       }
 
       const transformedData = transformData(rawData);
@@ -191,8 +150,6 @@ export function useUniversalStats(
     isEditMode,
     dataSourceConfig.type,
     getBatchData,
-    graphqlData,
-    graphqlMode,
     getServerData,
     transformData,
     performanceConfig?.fallbackData,
@@ -200,44 +157,21 @@ export function useUniversalStats(
 
   // 刷新函數
   const refetch = useCallback(async () => {
-    if (dataSourceConfig.type === 'graphql' && graphqlRefetch) {
-      await graphqlRefetch();
-    } else {
-      await fetchData();
-    }
-  }, [dataSourceConfig.type, graphqlRefetch, fetchData]);
+    await fetchData();
+  }, [fetchData]);
 
   // 初始化和依賴更新
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // GraphQL 數據更新
-  useEffect(() => {
-    if (dataSourceConfig.type === 'graphql' && graphqlData) {
-      const transformedData = transformData(graphqlData);
-      if (transformedData) {
-        setData(transformedData);
-        setLastUpdated(new Date());
-        setSource(graphqlMode as typeof source);
-      }
-    }
-  }, [dataSourceConfig.type, graphqlData, graphqlMode, transformData]);
-
-  // 錯誤處理
-  useEffect(() => {
-    if (dataSourceConfig.type === 'graphql' && graphqlError) {
-      setError(graphqlError);
-    }
-  }, [dataSourceConfig.type, graphqlError]);
+  // GraphQL data update and error handling removed - using REST API only
 
   // 載入狀態
   const isLoading = useMemo(() => {
     if (isEditMode) return false;
     
     switch (dataSourceConfig.type) {
-      case 'graphql':
-        return graphqlLoading;
       case 'batch':
         return false; // 批量數據應該立即可用
       case 'server':
@@ -245,7 +179,7 @@ export function useUniversalStats(
       default:
         return false;
     }
-  }, [dataSourceConfig.type, graphqlLoading, loading, isEditMode]);
+  }, [dataSourceConfig.type, loading, isEditMode]);
 
   return {
     data,
@@ -288,67 +222,32 @@ export function createStatsConfig(
       }),
     },
     production: {
-      type: 'graphql' as const,
-      query: `
-        query GetProductionStats($startDate: timestamptz!, $endDate: timestamptz!) {
-          record_palletinfoCollection(
-            filter: { generated_datetime: { gte: $startDate, lte: $endDate } }
-          ) {
-            edges {
-              node {
-                pallet_id
-                generated_datetime
-              }
-            }
-          }
-        }
-      `,
+      type: 'server' as const,
+      serverAction: async (variables: any, timeFrame?: { start: Date; end: Date }) => {
+        // TODO: Replace with actual Server Action for production stats
+        console.warn('Production stats GraphQL query removed - implement Server Action');
+        return { value: 0, label: 'Production Pallets' };
+      },
       transform: (data: any) => ({
-        value: data?.record_palletinfoCollection?.edges?.length || 0,
+        value: data?.value || 0,
         label: 'Production Pallets',
       }),
     },
     percentage: {
-      type: 'graphql' as const,
-      query: `
-        query GetAwaitPercentage($startDate: timestamptz!, $endDate: timestamptz!) {
-          record_palletinfoCollection(
-            filter: { generated_datetime: { gte: $startDate, lte: $endDate } }
-          ) {
-            edges {
-              node {
-                pallet_id
-                record_inventoryCollection(
-                  filter: { await: { gt: 0 } }
-                  first: 1
-                ) {
-                  edges {
-                    node {
-                      await
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      `,
+      type: 'server' as const,
+      serverAction: async (variables: any, timeFrame?: { start: Date; end: Date }) => {
+        // TODO: Replace with actual Server Action for await percentage
+        console.warn('Await percentage GraphQL query removed - implement Server Action');
+        return { value: 0, label: 'Still in Await' };
+      },
       transform: (data: any) => {
-        const edges = data?.record_palletinfoCollection?.edges || [];
-        const total = edges.length;
-        const awaitCount = edges.filter((edge: any) => 
-          edge.node.record_inventoryCollection?.edges?.length > 0
-        ).length;
-        
-        const percentage = total > 0 ? Math.round((awaitCount / total) * 100) : 0;
-        
         return {
-          value: percentage,
+          value: data?.value || 0,
           label: 'Still in Await',
-          progress: {
-            current: awaitCount,
-            total,
-            percentage,
+          progress: data?.progress || {
+            current: 0,
+            total: 0,
+            percentage: 0,
           },
         };
       },

@@ -31,6 +31,14 @@ import { ProductDistributionQueryDto } from './dto/product-distribution-query.dt
 import { ProductDistributionResponseDto } from './dto/product-distribution-response.dto';
 import { TransactionReportQueryDto } from './dto/transaction-report-query.dto';
 import { TransactionReportResponseDto } from './dto/transaction-report-response.dto';
+import { TopProductsByQuantityQueryDto } from './dto/top-products-by-quantity-query.dto';
+import { TopProductsByQuantityResponseDto } from './dto/top-products-by-quantity-response.dto';
+import { ProductionDetailsQueryDto } from './dto/production-details-query.dto';
+import { ProductionDetailsResponseDto } from './dto/production-details-response.dto';
+import { StaffWorkloadQueryDto } from './dto/staff-workload-query.dto';
+import { StaffWorkloadResponseDto } from './dto/staff-workload-response.dto';
+import { StockDistributionQueryDto } from '../inventory/dto/stock-distribution-query.dto';
+import { StockDistributionResponseDto } from '../inventory/dto/stock-distribution-response.dto';
 
 @ApiTags('widgets')
 @Controller('widgets')
@@ -238,6 +246,108 @@ export class WidgetsController {
         {
           status: HttpStatus.INTERNAL_SERVER_ERROR,
           error: 'Failed to fetch transaction report data',
+          message: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('top-products-by-quantity')
+  @WidgetPermissions([WIDGET_PERMISSION_CONSTANTS.VIEW_DASHBOARD])
+  @ApiOperation({ summary: 'Get top products by quantity data' })
+  @ApiResponse({
+    status: 200,
+    description: 'Top products by quantity data retrieved successfully',
+    type: TopProductsByQuantityResponseDto,
+  })
+  async getTopProductsByQuantity(
+    @Query(ValidationPipe) query: TopProductsByQuantityQueryDto,
+  ): Promise<TopProductsByQuantityResponseDto> {
+    try {
+      return await this.widgetsService.getTopProductsByQuantity(query);
+    } catch (error) {
+      throw new HttpException(
+        {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          error: 'Failed to fetch top products by quantity data',
+          message: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('production-details')
+  @WidgetPermissions([WIDGET_PERMISSION_CONSTANTS.VIEW_DASHBOARD])
+  @ApiOperation({ summary: 'Get production details data' })
+  @ApiResponse({
+    status: 200,
+    description: 'Production details data retrieved successfully',
+    type: ProductionDetailsResponseDto,
+  })
+  async getProductionDetails(
+    @Query(ValidationPipe) query: ProductionDetailsQueryDto,
+  ): Promise<ProductionDetailsResponseDto> {
+    try {
+      return await this.widgetsService.getProductionDetails(query);
+    } catch (error) {
+      throw new HttpException(
+        {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          error: 'Failed to fetch production details data',
+          message: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('staff-workload')
+  @WidgetPermissions([WIDGET_PERMISSION_CONSTANTS.VIEW_DASHBOARD])
+  @ApiOperation({ summary: 'Get staff workload analysis data' })
+  @ApiResponse({
+    status: 200,
+    description: 'Staff workload data retrieved successfully',
+    type: StaffWorkloadResponseDto,
+  })
+  async getStaffWorkload(
+    @Query(ValidationPipe) query: StaffWorkloadQueryDto,
+  ): Promise<StaffWorkloadResponseDto> {
+    try {
+      return await this.widgetsService.getStaffWorkload(query);
+    } catch (error) {
+      throw new HttpException(
+        {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          error: 'Failed to fetch staff workload data',
+          message: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('stock-distribution')
+  @WidgetPermissions([WIDGET_PERMISSION_CONSTANTS.VIEW_DASHBOARD])
+  @ApiOperation({
+    summary: 'Get stock distribution data for TreeMap visualization',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Stock distribution data retrieved successfully',
+    type: StockDistributionResponseDto,
+  })
+  async getStockDistribution(
+    @Query(ValidationPipe) query: StockDistributionQueryDto,
+  ): Promise<StockDistributionResponseDto> {
+    try {
+      return await this.widgetsService.getStockDistribution(query);
+    } catch (error) {
+      throw new HttpException(
+        {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          error: 'Failed to fetch stock distribution data',
           message: (error as Error).message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,

@@ -1,50 +1,21 @@
 /**
  * Still In Await Percentage Widget
  * 顯示指定時間生成的棧板中仍在 await location 的百分比
- * 使用統一的 useGraphQLFallback hook 和 MetricCardProgress 組件
+ * REST API 版本，已移除所有 GraphQL 相關代碼
  */
 
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { ChartPieIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { getYesterdayRange } from '@/app/utils/timezone';
 import { format } from 'date-fns';
-import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
 import { MetricCardProgress } from './common';
-import { gql } from '@apollo/client';
+// GraphQL imports removed - using REST API only
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 
-// GraphQL Query
-const GET_STILL_IN_AWAIT_OPTIMIZED = gql`
-  query GetStillInAwaitOptimized($startDate: timestamptz!, $endDate: timestamptz!) {
-    record_palletinfoCollection(
-      filter: { generated_datetime: { gte: $startDate, lte: $endDate } }
-      orderBy: [{ generated_datetime: DESC }]
-    ) {
-      edges {
-        node {
-          pallet_id
-          generated_datetime
-          record_inventoryCollection(
-            filter: { await: { gt: 0 } }
-            orderBy: [{ datetime_in: DESC }]
-            first: 1
-          ) {
-            edges {
-              node {
-                await
-                location
-                datetime_in
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`;
+// GraphQL query removed - using REST API only
 
 interface AwaitStatsData {
   percentage: number;
@@ -74,18 +45,18 @@ const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPercentageW
     };
   }, [timeFrame]);
 
-  // 使用統一的 GraphQL fallback hook
-  const { 
-    data: graphqlData, 
-    loading, 
-    error 
-  } = useGraphQLFallback<
-    { record_palletinfoCollection: { edges: Array<{ node: any }> } },
-    { startDate: string; endDate: string }
-  >({
-    graphqlQuery: GET_STILL_IN_AWAIT_OPTIMIZED,
-    serverAction: async () => {
-      // Server Actions fallback
+  // 使用 REST API 獲取數據
+  const [apiData, setApiData] = useState<{ percentage: number; stillAwait: number; totalPallets: number } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchData = useCallback(async () => {
+    if (isEditMode) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
       const dashboardAPI = createDashboardAPI();
       const dashboardResult = await dashboardAPI.fetch(
         {
@@ -106,73 +77,42 @@ const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPercentageW
       );
 
       if (widgetData && !widgetData.data.error) {
-        // Transform server data to match GraphQL format
         const percentage = widgetData.data.value || 0;
         const stillInAwait = widgetData.data.metadata?.stillAwait || 0;
         const totalMoved = widgetData.data.metadata?.totalPallets || 0;
         
-        // Create mock GraphQL response that matches the expected format
-        const mockEdges = [];
-        for (let i = 0; i < totalMoved; i++) {
-          mockEdges.push({
-            node: {
-              pallet_id: `mock-${i}`,
-              generated_datetime: dateRange.start.toISOString(),
-              record_inventoryCollection: {
-                edges: i < stillInAwait ? [{ node: { await: 1 } }] : []
-              }
-            }
-          });
-        }
-        
-        return {
-          record_palletinfoCollection: {
-            edges: mockEdges
-          }
-        };
+        setApiData({
+          percentage,
+          stillAwait: stillInAwait,
+          totalPallets: totalMoved,
+        });
+      } else {
+        throw new Error(widgetData?.data.error || 'No data received');
       }
-      
-      throw new Error(widgetData?.data.error || 'No data received');
-    },
-    variables: {
-      startDate: dateRange.start.toISOString(),
-      endDate: dateRange.end.toISOString(),
-    },
-    skip: isEditMode,
-    fallbackEnabled: true,
-    widgetId: 'StillInAwaitPercentageWidget',
-    ...GraphQLFallbackPresets.cached,
-  });
+    } catch (err) {
+      setError(err as Error);
+    } finally {
+      setLoading(false);
+    }
+  }, [dateRange, isEditMode]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // 計算百分比數據
   const data = useMemo<AwaitStatsData>(() => {
-    if (!graphqlData?.record_palletinfoCollection?.edges) {
+    if (!apiData) {
       return { percentage: 0, stillInAwait: 0, totalMoved: 0 };
     }
 
-    const edges = graphqlData.record_palletinfoCollection.edges;
-    const totalPallets = edges.length;
-    let stillInAwaitCount = 0;
-
-    // 計算仍在 await location 的棧板數量
-    edges.forEach((edge: any) => {
-      const inventoryEdges = edge.node.record_inventoryCollection?.edges || [];
-      // await 是數字，不是 boolean，检查是否 > 0
-      const hasAwaitRecord = inventoryEdges.some((invEdge: any) => invEdge.node.await > 0);
-      if (hasAwaitRecord) {
-        stillInAwaitCount++;
-      }
-    });
-
-    const percentage = totalPallets > 0 ? (stillInAwaitCount / totalPallets) * 100 : 0;
-
     return {
-      percentage,
-      stillInAwait: stillInAwaitCount,
-      totalMoved: totalPallets,
+      percentage: apiData.percentage,
+      stillInAwait: apiData.stillAwait,
+      totalMoved: apiData.totalPallets,
       optimized: true,
     };
-  }, [graphqlData]);
+  }, [apiData]);
 
   if (isEditMode) {
     return (
@@ -197,7 +137,7 @@ const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPercentageW
       progressColor="bg-gradient-to-r from-purple-500 to-pink-500"
       dateRange={format(dateRange.start, 'MMM d')}
       performanceMetrics={{
-        source: 'GraphQL',
+        source: 'REST API',
         optimized: data.optimized,
       }}
       loading={loading}
@@ -210,17 +150,17 @@ const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPercentageW
 export default StillInAwaitPercentageWidget;
 
 /**
- * Refactored on 2025-07-31 (Week 4 Day 1)
+ * Updated for GraphQL removal (2025-07-16)
  * 
  * Changes:
- * - Migrated to useGraphQLFallback hook for unified data fetching
- * - Replaced custom UI with MetricCardProgress component
- * - Simplified from 276 lines to ~150 lines (45% reduction)
- * - Maintained all functionality with cleaner architecture
+ * - Removed all GraphQL dependencies (useGraphQLFallback, gql, GraphQL query)
+ * - Converted to direct REST API usage via Dashboard API client
+ * - Maintained all functionality with simplified architecture
+ * - Removed GraphQL-to-REST transformation logic
  * 
  * Features:
- * - GraphQL primary with Server Actions fallback
+ * - Pure REST API data fetching
  * - Progress bar visualization for percentage
  * - Performance monitoring built-in
- * - Automatic caching via GraphQLFallbackPresets
+ * - 2-minute caching via Dashboard API client
  */

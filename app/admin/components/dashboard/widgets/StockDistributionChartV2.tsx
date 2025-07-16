@@ -1,18 +1,17 @@
 /**
  * Stock Distribution Chart V2
- * 使用標準化 useGraphQLFallback hook 進行數據獲取
- * 展示從自定義 useGraphQLQuery 遷移到統一架構
- * 支持 GraphQL 優先，Server Action fallback
+ * 完全遷移到 REST API 架構
+ * 使用 NestJS API 端點進行數據獲取
+ * 移除 GraphQL 依賴
  */
 
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
+import { useQuery } from '@tanstack/react-query';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
-import { useGraphQLFallback } from '@/app/admin/hooks/useGraphQLFallback';
-import { gql } from '@apollo/client';
 import { WidgetSkeleton, WidgetError } from './common/WidgetStates';
 import { 
   brandColors, 
@@ -24,33 +23,20 @@ import { textClasses, getTextClass } from '@/lib/design-system/typography';
 import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
 import { cn } from '@/lib/utils';
 
-// GraphQL query for stock distribution
-const GET_STOCK_DISTRIBUTION = gql`
-  query GetStockDistribution {
-    record_inventoryCollection {
-      edges {
-        node {
-          product_code
-          injection
-          pipeline
-          prebook
-          await
-          fold
-          bulk
-          await_grn
-          backcarpark
-          data_code {
-            description
-            colour
-            type
-          }
-        }
-      }
-    }
-  }
-`;
+import { widgetAPI } from '@/lib/api/widgets/widget-api-client';
 
-import { getStockDistributionRPCAction, type StockDistributionData } from '@/app/actions/dashboardActions';
+export interface StockDistributionData {
+  name: string;
+  size: number;
+  value: number;
+  percentage: number;
+  color: string;
+  fill: string;
+  description: string;
+  type: string;
+  stock: string;
+  stock_level: number;
+}
 
 interface StockDistributionChartProps extends WidgetComponentProps {
   useGraphQL?: boolean;
@@ -61,92 +47,61 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
   isEditMode,
   useGraphQL,
 }) => {
-  // 決定是否使用 GraphQL - 可以通過 widget config 或 props 控制
-  const shouldUseGraphQL = useGraphQL ?? (widget as any)?.useGraphQL ?? true; // 默認使用 GraphQL
-  const [chartData, setChartData] = useState<StockDistributionData[]>([]);
+  // 完全使用 NestJS REST API with React Query
   const [selectedType, setSelectedType] = useState<string>('all');
-  const [performanceMetrics, setPerformanceMetrics] = useState<{
-    lastFetchTime?: number;
-    optimized?: boolean;
-    totalStock?: number;
-  }>({});
   const { refreshTrigger } = useAdminRefresh();
 
-  // 使用標準化的 useGraphQLFallback hook
-  const {
-    data: rawData,
-    loading,
+  // React Query for data fetching
+  const { 
+    data: response, 
+    isLoading: loading, 
     error,
-    refetch,
-    mode,
-    performanceMetrics: hookMetrics,
-  } = useGraphQLFallback<any>({
-    graphqlQuery: shouldUseGraphQL ? GET_STOCK_DISTRIBUTION : undefined,
-    serverAction: useCallback(async () => {
-      // 使用 RPC 版本的 Server Action 作為 fallback
-      return getStockDistributionRPCAction(selectedType);
-    }, [selectedType]),
-    variables: {},
-    skip: isEditMode,
-    pollInterval: 300000, // 5分鐘自動刷新
-    cacheTime: 300000, // 5分鐘緩存
-    widgetId: 'stock-distribution-chart-v2',
-    extractFromContext: (contextData) => {
-      // 從 DashboardDataContext 提取數據（如果有）
-      if (contextData?.stockDistribution) {
-        return contextData.stockDistribution;
-      }
-      return null;
-    },
-    onCompleted: (data) => {
-      // 處理成功回調
-      console.log('[StockDistributionChartV2] Data fetched via', mode);
-    },
-    onError: (error) => {
-      // 處理錯誤回調
-      console.error('[StockDistributionChartV2] Error:', error);
-    },
+    isError,
+    refetch
+  } = useQuery({
+    queryKey: ['stock-distribution', selectedType],
+    queryFn: () => widgetAPI.getStockDistribution({
+      type: selectedType === 'all' ? undefined : selectedType,
+      limit: 100,
+      offset: 0,
+    }),
+    enabled: !isEditMode, // Only fetch when not in edit mode
+    staleTime: 5 * 60 * 1000, // Consider data stale after 5 minutes
+    cacheTime: 5 * 60 * 1000, // Cache for 5 minutes
+    refetchOnWindowFocus: false,
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  // 處理 GraphQL 數據的轉換函數
-  const processGraphQLData = useCallback((data: any): StockDistributionData[] => {
-    if (!data?.record_inventoryCollection?.edges) return [];
-    
-    const edges = data.record_inventoryCollection.edges;
-    const items = edges.map((edge: any) => {
-      const node = edge.node;
-      // 計算總庫存 - 所有庫存欄位嘅總和
-      const stockTotal = (node.injection || 0) + 
-                        (node.pipeline || 0) + 
-                        (node.prebook || 0) + 
-                        (node.await || 0) + 
-                        (node.fold || 0) + 
-                        (node.bulk || 0) + 
-                        (node.await_grn || 0) + 
-                        (node.backcarpark || 0);
-      
-      return {
-        stock: node.product_code,
-        stock_level: stockTotal,
-        description: node.data_code?.description,
-        type: node.data_code?.type,
-      };
-    });
+  // Extract and process data
+  const rawData = response?.success && response.data ? response.data.data || response.data : [];
+  const chartData = processStockDistributionData(rawData, selectedType);
+  
+  // Performance metrics
+  const performanceMetrics = {
+    lastFetchTime: response?.responseTime || 0,
+    optimized: true,
+    totalStock: chartData.reduce((sum, item) => sum + item.stock_level, 0),
+  };
+
+  // 數據處理函數
+  const processStockDistributionData = (rawData: any[], type: string): StockDistributionData[] => {
+    if (!rawData || !Array.isArray(rawData)) return [];
     
     // 過濾選定類型
-    let filteredItems = items;
-    if (selectedType !== 'all' && selectedType !== 'ALL TYPES') {
-      filteredItems = items.filter((item: any) => item.type === selectedType);
+    let filteredData = rawData;
+    if (type !== 'all' && type !== 'ALL TYPES') {
+      filteredData = rawData.filter((item) => item.type === type);
     }
     
-    const totalStock = filteredItems.reduce((sum: number, item: any) => sum + item.stock_level, 0);
-    
     // 按庫存量排序
-    const sortedData = filteredItems
-      .filter((item: any) => item.stock_level > 0)
-      .sort((a: any, b: any) => b.stock_level - a.stock_level);
+    const sortedData = filteredData
+      .filter(item => item.stock_level > 0)
+      .sort((a, b) => b.stock_level - a.stock_level);
     
-    // Use design system colors for chart data
+    const totalStock = sortedData.reduce((sum, item) => sum + item.stock_level, 0);
+    
+    // 設計系統顏色
     const CHART_COLORS = [
       widgetColors.charts.primary,
       widgetColors.charts.secondary,
@@ -158,14 +113,14 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
       brandColors.secondary,
       brandColors.accent,
       widgetColors.charts.grid,
-      // Fallback to additional colors if needed
+      // 備用顏色
       '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b',
       '#06b6d4', '#f97316', '#6366f1', '#84cc16', '#14b8a6',
       '#a855f7', '#eab308', '#059669', '#2563eb', '#7c3aed',
     ];
     
-    return sortedData.map((item: any, index: number) => ({
-      name: item.stock,
+    return sortedData.map((item, index) => ({
+      name: item.product_code || item.stock,
       size: item.stock_level,
       value: item.stock_level,
       percentage: totalStock > 0 ? (item.stock_level / totalStock) * 100 : 0,
@@ -173,101 +128,10 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
       fill: CHART_COLORS[index % CHART_COLORS.length],
       description: item.description || '-',
       type: item.type || '-',
+      stock: item.product_code || item.stock,
+      stock_level: item.stock_level,
     }));
-  }, [selectedType]);
-
-  // 處理數據更新
-  useEffect(() => {
-    if (!loading && rawData) {
-      let processedData: StockDistributionData[];
-      
-      // 判斷數據來源並處理
-      if (mode === 'context' && rawData.record_inventoryCollection) {
-        // GraphQL 數據需要轉換
-        processedData = processGraphQLData(rawData);
-      } else if (Array.isArray(rawData)) {
-        // Server Action 或 Context 數據已經是正確格式
-        processedData = rawData;
-      } else {
-        processedData = [];
-      }
-      
-      setChartData(processedData);
-      
-      // 更新性能指標
-      const totalStock = processedData.reduce((sum, item) => sum + item.value, 0);
-      setPerformanceMetrics({
-        lastFetchTime: hookMetrics?.queryTime || 0,
-        optimized: mode !== 'fallback',
-        totalStock,
-      });
-    }
-  }, [rawData, loading, mode, processGraphQLData, hookMetrics]);
-
-  // 監聽類型變更事件
-  useEffect(() => {
-    const handleTypeChange = async (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const { type, data } = customEvent.detail;
-      setSelectedType(type);
-
-      // 如果選擇 all 或 ALL TYPES，重新獲取所有數據
-      if (type === 'all' || type === 'ALL TYPES') {
-        await refetch();
-      } else {
-        // 否則使用傳入的過濾數據（需要計算百分比和顏色）
-        if (data && Array.isArray(data)) {
-          const totalStock = data.reduce((sum, item) => sum + item.stock_level, 0);
-
-          // 按庫存量排序
-          const sortedData = [...data]
-            .filter(item => item.stock_level > 0)
-            .sort((a, b) => b.stock_level - a.stock_level);
-
-          // Use design system colors for consistent styling
-          const CHART_COLORS = [
-            widgetColors.charts.primary,
-            widgetColors.charts.secondary,
-            widgetColors.charts.accent,
-            semanticColors.success.DEFAULT,
-            semanticColors.warning.DEFAULT,
-            semanticColors.info.DEFAULT,
-            brandColors.primary,
-            brandColors.secondary,
-            brandColors.accent,
-            widgetColors.charts.grid,
-            // Fallback to additional colors if needed
-            '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b',
-            '#06b6d4', '#f97316', '#6366f1', '#84cc16', '#14b8a6',
-          ];
-
-          // 生成 Treemap 數據
-          const processedData: StockDistributionData[] = sortedData.map((item, index) => ({
-            name: item.stock,
-            size: item.stock_level,
-            value: item.stock_level,
-            percentage: totalStock > 0 ? (item.stock_level / totalStock) * 100 : 0,
-            color: CHART_COLORS[index % CHART_COLORS.length],
-            fill: CHART_COLORS[index % CHART_COLORS.length],
-            description: item.description || '-',
-            type: item.type || '-',
-          }));
-
-          setChartData(processedData);
-          setPerformanceMetrics({
-            lastFetchTime: 0,
-            optimized: false, // Client-side filter
-            totalStock: totalStock,
-          });
-        }
-      }
-    };
-
-    window.addEventListener('stockTypeChanged', handleTypeChange);
-    return () => {
-      window.removeEventListener('stockTypeChanged', handleTypeChange);
-    };
-  }, [refetch]);
+  };
 
   // 監聽刷新觸發器
   useEffect(() => {
@@ -276,13 +140,20 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
     }
   }, [refreshTrigger, refetch]);
 
-  // 當 selectedType 變更時重新獲取數據（只在使用 server action 時）
+  // 監聽類型變更事件
   useEffect(() => {
-    if (mode === 'server-action' && !loading) {
-      refetch();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedType]); // 故意不包含 refetch 和 mode 以避免無限循環
+    const handleTypeChange = async (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { type } = customEvent.detail;
+      setSelectedType(type);
+      // React Query will automatically refetch when selectedType changes
+    };
+
+    window.addEventListener('stockTypeChanged', handleTypeChange);
+    return () => {
+      window.removeEventListener('stockTypeChanged', handleTypeChange);
+    };
+  }, []);
 
   // 自定義 Tooltip
   const CustomTooltip = ({ active, payload }: any) => {
@@ -326,7 +197,6 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
     if (width < 50 || height < 40) return null;
 
     // 判斷是否需要使用白色文字（深色背景）
-    // 使用更通用嘅方法：將顏色轉換為 RGB 並計算亮度
     const getTextColor = (bgColor: string) => {
       // 轉換 hex 到 RGB
       const hex = bgColor.replace('#', '');
@@ -410,13 +280,14 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
     return <WidgetSkeleton type="chart-bar" height={200} />;
   }
 
-  if (error) {
+  if (isError) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch stock distribution data';
     return (
       <WidgetError 
-        message={error.message || "Failed to load stock distribution data"}
+        message={errorMessage}
         severity="error"
         display="inline"
-        onRetry={() => window.location.reload()}
+        onRetry={() => refetch()}
       />
     );
   }
@@ -447,20 +318,9 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
               'absolute bottom-2 right-2 rounded bg-card/80 border border-border px-2 py-1',
               textClasses['label-small']
             )}>
-              {mode === 'context' && (
-                <span className='text-primary'>⚡ Context optimized</span>
-              )}
-              {mode === 'context' && (
-                <span className='text-info'>⚡ GraphQL optimized</span>
-              )}
-              {mode === 'server-action' && (
-                <span className='text-success'>
-                  ✓ Server-optimized ({performanceMetrics.lastFetchTime}ms)
-                </span>
-              )}
-              {mode === 'fallback' && (
-                <span className='text-warning'>⚠ Fallback mode</span>
-              )}
+              <span className='text-success'>
+                ✓ NestJS API ({performanceMetrics.lastFetchTime}ms)
+              </span>
               {performanceMetrics.totalStock && (
                 <span className='ml-2 text-muted-foreground'>
                   Total: {performanceMetrics.totalStock.toLocaleString()}

@@ -6,7 +6,7 @@ import { TestHelpers } from './test-helpers';
 
 /**
  * v1.3.2 功能驗證測試套件
- * 
+ *
  * 專門針對 v1.3.2 版本新增的功能和修復進行測試
  * 包括：
  * - JWT 認證流程
@@ -17,11 +17,11 @@ import { TestHelpers } from './test-helpers';
 describe('v1.3.2 Feature Validation (e2e)', () => {
   let app: INestApplication;
   let authToken: string;
-  
+
   // 系統登入憑據
   const systemCredentials = {
     email: 'akwan@pennineindustries.com',
-    password: 'X315Y316'
+    password: 'X315Y316',
   };
 
   beforeAll(async () => {
@@ -59,7 +59,7 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
       expect(response.body).toHaveProperty('status', 'ok');
       expect(response.body).toHaveProperty('service', 'newpennine-api');
       expect(response.body).toHaveProperty('timestamp');
-      
+
       console.log('✅ 基本健康檢查通過');
     });
 
@@ -72,7 +72,7 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
       expect(response.body).toHaveProperty('database');
       expect(response.body).toHaveProperty('memory');
       expect(response.body).toHaveProperty('uptime');
-      
+
       console.log('✅ 詳細健康檢查通過');
     });
   });
@@ -105,7 +105,7 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
 
       expect(response.body).toHaveProperty('valid', true);
       expect(response.body).toHaveProperty('user');
-      
+
       console.log('✅ JWT token 驗證成功');
     });
 
@@ -116,7 +116,7 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
         .expect(200);
 
       expect(response.body).toHaveProperty('email');
-      
+
       console.log('✅ 用戶資料獲取成功');
     });
   });
@@ -127,7 +127,7 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
         .get('/api/v1/analysis/aco-order-progress-cards')
         .query({
           startDate: '2025-01-01',
-          endDate: '2025-01-15'
+          endDate: '2025-01-15',
         })
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -135,7 +135,7 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
       expect(response.body).toHaveProperty('cards');
       expect(Array.isArray(response.body.cards)).toBe(true);
       expect(response.body).toHaveProperty('metadata');
-      
+
       console.log('✅ ACO 訂單進度卡片 API 正常');
     });
 
@@ -145,7 +145,7 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
         .query({
           startDate: '2025-01-01',
           endDate: '2025-01-15',
-          granularity: 'daily'
+          granularity: 'daily',
         })
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -153,15 +153,20 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
       expect(response.body).toHaveProperty('chartData');
       expect(response.body).toHaveProperty('summary');
       expect(Array.isArray(response.body.chartData)).toBe(true);
-      
+
       console.log('✅ ACO 訂單進度圖表 API 正常');
     });
   });
 
   describe('4. Widget API 端點驗證', () => {
-    const validDataSources = ['totalPallets', 'activeTransfers', 'todayGRN', 'pendingOrders'];
+    const validDataSources = [
+      'totalPallets',
+      'activeTransfers',
+      'todayGRN',
+      'pendingOrders',
+    ];
 
-    validDataSources.forEach(dataSource => {
+    validDataSources.forEach((dataSource) => {
       it(`應該返回 ${dataSource} 統計卡片數據`, async () => {
         const response = await request(app.getHttpServer())
           .get('/api/v1/widgets/stats-card')
@@ -173,7 +178,7 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
         expect(response.body).toHaveProperty('label');
         expect(response.body).toHaveProperty('dataSource', dataSource);
         expect(typeof response.body.value).toBe('number');
-        
+
         console.log(`✅ ${dataSource} 統計卡片 API 正常`);
       });
     });
@@ -188,7 +193,7 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
       expect(response.body).toHaveProperty('totalItems');
       expect(response.body).toHaveProperty('totalQuantity');
       expect(Array.isArray(response.body.warehouses)).toBe(true);
-      
+
       console.log('✅ 庫存分析 API 正常');
     });
 
@@ -201,7 +206,7 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
       expect(response.body).toHaveProperty('distribution');
       expect(response.body).toHaveProperty('total');
       expect(Array.isArray(response.body.distribution)).toBe(true);
-      
+
       console.log('✅ 產品分佈 API 正常');
     });
 
@@ -210,7 +215,7 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
         .get('/api/v1/widgets/inventory-ordered-analysis')
         .query({
           startDate: '2025-01-01',
-          endDate: '2025-01-15'
+          endDate: '2025-01-15',
         })
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -218,7 +223,7 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
       expect(response.body).toHaveProperty('products');
       expect(response.body).toHaveProperty('summary');
       expect(Array.isArray(response.body.products)).toBe(true);
-      
+
       console.log('✅ 庫存與訂單需求分析 API 正常');
     });
   });
@@ -232,7 +237,7 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
 
       expect(response.body).toHaveProperty('data');
       expect(Array.isArray(response.body.data)).toBe(true);
-      
+
       console.log('✅ 棧板信息 API 正常');
     });
 
@@ -244,7 +249,7 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
 
       expect(response.body).toHaveProperty('data');
       expect(Array.isArray(response.body.data)).toBe(true);
-      
+
       console.log('✅ 庫存數據 API 正常');
     });
 
@@ -256,7 +261,7 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
 
       expect(response.body).toHaveProperty('data');
       expect(Array.isArray(response.body.data)).toBe(true);
-      
+
       console.log('✅ 轉移記錄 API 正常');
     });
 
@@ -268,7 +273,7 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
 
       expect(response.body).toHaveProperty('data');
       expect(Array.isArray(response.body.data)).toBe(true);
-      
+
       console.log('✅ 歷史記錄 API 正常');
     });
   });
@@ -281,7 +286,7 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
         .expect(200);
 
       expect(response.body).toHaveProperty('data');
-      
+
       console.log('✅ RPC 等待位置計數正常');
     });
   });
@@ -294,14 +299,12 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
       '/api/v1/pallets',
       '/api/v1/inventory',
       '/api/v1/transfers',
-      '/api/v1/history'
+      '/api/v1/history',
     ];
 
-    protectedEndpoints.forEach(endpoint => {
+    protectedEndpoints.forEach((endpoint) => {
       it(`${endpoint} 應該要求認證`, async () => {
-        await request(app.getHttpServer())
-          .get(endpoint)
-          .expect(401);
+        await request(app.getHttpServer()).get(endpoint).expect(401);
       });
     });
 
@@ -315,7 +318,7 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
         .query({ dataSource: 'invalidSource' })
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
-        
+
       console.log('✅ 無效數據源錯誤處理正常');
     });
 
@@ -324,11 +327,11 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
         .get('/api/v1/widgets/inventory-ordered-analysis')
         .query({
           startDate: 'invalid-date',
-          endDate: '2025-01-15'
+          endDate: '2025-01-15',
         })
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
-        
+
       console.log('✅ 無效日期格式錯誤處理正常');
     });
 
@@ -336,7 +339,7 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
       await request(app.getHttpServer())
         .get('/api/v1/nonexistent-endpoint')
         .expect(404);
-        
+
       console.log('✅ 不存在路由錯誤處理正常');
     });
   });
@@ -346,22 +349,22 @@ describe('v1.3.2 Feature Validation (e2e)', () => {
       const endpoints = [
         '/api/v1/health',
         '/api/v1/widgets/stats-card?dataSource=totalPallets',
-        '/api/v1/widgets/inventory-analysis'
+        '/api/v1/widgets/inventory-analysis',
       ];
 
       for (const endpoint of endpoints) {
         const startTime = Date.now();
-        
+
         await request(app.getHttpServer())
           .get(endpoint)
           .set('Authorization', `Bearer ${authToken}`)
-          .expect(res => {
+          .expect((res) => {
             expect([200, 401]).toContain(res.status);
           });
 
         const responseTime = Date.now() - startTime;
         expect(responseTime).toBeLessThan(10000); // 10秒內
-        
+
         console.log(`✅ ${endpoint} 響應時間: ${responseTime}ms`);
       }
     }, 30000);

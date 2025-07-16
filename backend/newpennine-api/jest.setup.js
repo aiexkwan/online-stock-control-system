@@ -24,11 +24,12 @@ global.console = {
 // 設置測試超時
 jest.setTimeout(30000);
 
-// 模擬環境變量
-process.env.SUPABASE_URL = 'https://test.supabase.co';
-process.env.SUPABASE_SERVICE_KEY = 'test-service-key';
-process.env.SUPABASE_ANON_KEY = 'test-anon-key';
-process.env.JWT_SECRET = 'test-jwt-secret';
+// 使用真實環境變量進行 E2E 測試
+// 如果需要 mock，應該在特定的單元測試中進行，而不是全局設置
+// process.env.SUPABASE_URL = 'https://test.supabase.co';
+// process.env.SUPABASE_SERVICE_KEY = 'test-service-key';
+// process.env.SUPABASE_ANON_KEY = 'test-anon-key';
+// process.env.JWT_SECRET = 'test-jwt-secret';
 
 // 全域測試工具
 global.TestUtils = {

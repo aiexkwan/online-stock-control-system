@@ -21,11 +21,18 @@ export class UserDto {
   name?: string | null;
 
   @ApiProperty({
-    description: 'User phone number',
-    example: '+1234567890',
+    description: 'User department',
+    example: 'System',
     required: false,
   })
-  phone?: string | null;
+  department?: string;
+
+  @ApiProperty({
+    description: 'User position',
+    example: 'User',
+    required: false,
+  })
+  position?: string;
 
   @ApiProperty({
     description: 'User role',

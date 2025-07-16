@@ -48,11 +48,15 @@ export class AuthService {
 
       // Generate JWT tokens
       const payload = { sub: data.user.id, email: data.user.email };
-      this.logger.debug(`Generating JWT for user ${data.user.id} with payload: ${JSON.stringify(payload)}`);
-      
+      this.logger.debug(
+        `Generating JWT for user ${data.user.id} with payload: ${JSON.stringify(payload)}`,
+      );
+
       const jwtSecret = this.configService.get<string>('JWT_SECRET');
-      this.logger.debug(`Using JWT secret length: ${jwtSecret?.length || 'undefined'}`);
-      
+      this.logger.debug(
+        `Using JWT secret length: ${jwtSecret?.length || 'undefined'}`,
+      );
+
       const accessToken = this.jwtService.sign(payload);
       const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
 
@@ -65,8 +69,9 @@ export class AuthService {
           id: data.user.id,
           email: data.user.email || email,
           name: userProfile?.name || data.user.user_metadata?.name || null,
-          phone: userProfile?.phone || data.user.user_metadata?.phone || null,
           role: userProfile?.role || 'user',
+          department: userProfile?.department || 'System',
+          position: userProfile?.position || 'User',
           created_at: data.user.created_at,
           updated_at: data.user.updated_at || new Date().toISOString(),
           email_verified: data.user.email_confirmed_at ? true : false,
@@ -83,7 +88,7 @@ export class AuthService {
 
   async register(registerDto: AuthRegisterDto): Promise<AuthResponseDto> {
     try {
-      const { email, password, name, phone, role } = registerDto;
+      const { email, password, name, department, role } = registerDto;
 
       // Check if user already exists
       const { data: existingUser } = await this.supabaseService
@@ -97,8 +102,7 @@ export class AuthService {
         throw new BadRequestException('User already exists');
       }
 
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 12);
+      // Note: Password hashing is handled by Supabase Auth, not needed here
 
       // Sign up with Supabase Auth
       const { data, error } = await this.supabaseService
@@ -109,7 +113,7 @@ export class AuthService {
           options: {
             data: {
               name,
-              phone,
+              department: department || 'System',
               role: role || 'user',
             },
           },
@@ -126,19 +130,22 @@ export class AuthService {
         throw new BadRequestException('Registration failed');
       }
 
-      // Insert user profile into database
+      // Generate employee number (use timestamp + random for uniqueness)
+      const employeeNumber = Date.now().toString().slice(-6) + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      
+      // Insert user profile into database - only include fields that exist in data_id table
       const { error: profileError } = await this.supabaseService
         .getClient()
         .from('data_id')
         .insert({
-          id: data.user.id,
+          id: employeeNumber, // Generate unique employee number
           email,
           name: name || null,
-          phone: phone || null,
-          role: role || 'user',
-          password_hash: hashedPassword,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          position: role === 'admin' ? 'Admin' : 'User', // data_id uses 'position' not 'role'
+          department: department || 'System', // Use provided department or default
+          uuid: data.user.id, // Store Supabase UUID for consistency
+          // Note: phone field doesn't exist in data_id table according to database schema
+          // Note: password is stored in Supabase Auth, not in data_id table
         });
 
       if (profileError) {
@@ -164,8 +171,9 @@ export class AuthService {
           id: data.user.id,
           email: data.user.email || email,
           name: name || null,
-          phone: phone || null,
           role: role || 'user',
+          department: department || 'System',
+          position: role === 'admin' ? 'Admin' : 'User',
           created_at: data.user.created_at,
           updated_at: data.user.updated_at || new Date().toISOString(),
           email_verified: data.user.email_confirmed_at ? true : false,
@@ -209,8 +217,9 @@ export class AuthService {
           id: data.user.id,
           email: data.user.email || '',
           name: userProfile?.name || null,
-          phone: userProfile?.phone || null,
           role: userProfile?.role || 'user',
+          department: userProfile?.department || 'System',
+          position: userProfile?.position || 'User',
           created_at: data.user.created_at,
           updated_at: data.user.updated_at || new Date().toISOString(),
           email_verified: data.user.email_confirmed_at ? true : false,
@@ -268,16 +277,20 @@ export class AuthService {
       const { data, error } = await this.supabaseService
         .getClient()
         .from('data_id')
-        .select('id, email, name, phone, position')
-        .eq('id', userId)
+        .select('id, email, name, position, department')
+        .eq('uuid', userId)
         .single();
 
       if (error) {
-        this.logger.warn(`Database user lookup failed for ${userId}: ${error.message}`);
-        
+        this.logger.warn(
+          `Database user lookup failed for ${userId}: ${error.message}`,
+        );
+
         // Final fallback: create a basic user object for valid UUID
         if (this.isValidUUID(userId)) {
-          this.logger.log(`Creating fallback user object for valid UUID: ${userId}`);
+          this.logger.log(
+            `Creating fallback user object for valid UUID: ${userId}`,
+          );
           return {
             id: userId,
             email: 'unknown@example.com',
@@ -291,8 +304,10 @@ export class AuthService {
 
       return data ? this.mapDbUserToDto(data) : null;
     } catch (dbError) {
-      this.logger.error(`Database error in getUserFromDatabase: ${(dbError as Error).message}`);
-      
+      this.logger.error(
+        `Database error in getUserFromDatabase: ${(dbError as Error).message}`,
+      );
+
       // Final fallback for valid UUIDs
       if (this.isValidUUID(userId)) {
         this.logger.log(`Emergency fallback user object for UUID: ${userId}`);
@@ -309,27 +324,31 @@ export class AuthService {
   }
 
   private isValidUUID(str: string): boolean {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     return uuidRegex.test(str);
   }
 
   private async mapAuthUserToDto(authUser: any): Promise<UserDto> {
     // Optionally get additional user info from data_id table for display name
     let displayName = authUser.user_metadata?.name || null;
-    const phone = authUser.user_metadata?.phone || null;
     let role = 'user';
+    let department = 'System';
+    let position = 'User';
 
     try {
       const { data: profileData } = await this.supabaseService
         .getClient()
         .from('data_id')
-        .select('name, position')
+        .select('name, position, department')
         .eq('email', authUser.email)
         .single();
 
       if (profileData) {
         displayName = profileData.name || displayName;
         role = profileData.position === 'Admin' ? 'admin' : 'user';
+        department = profileData.department || department;
+        position = profileData.position || position;
       }
     } catch (profileError) {
       // Profile lookup is optional, don't fail authentication
@@ -347,12 +366,16 @@ export class AuthService {
       result.name = displayName;
     }
 
-    if (phone) {
-      result.phone = phone;
-    }
-
     if (role) {
       result.role = role;
+    }
+
+    if (department) {
+      result.department = department;
+    }
+
+    if (position) {
+      result.position = position;
     }
 
     if (authUser.updated_at) {
@@ -374,11 +397,9 @@ export class AuthService {
       result.name = dbUser.name;
     }
 
-    if (dbUser.phone) {
-      result.phone = dbUser.phone;
-    }
-
     result.role = dbUser.position === 'Admin' ? 'admin' : 'user';
+    result.department = dbUser.department || 'System';
+    result.position = dbUser.position || 'User';
 
     return result;
   }
@@ -400,8 +421,8 @@ export class AuthService {
       const { data, error } = await this.supabaseService
         .getClient()
         .from('data_id')
-        .select('name, phone, role')
-        .eq('id', userId)
+        .select('name, position, department')
+        .eq('uuid', userId)
         .single();
 
       if (error) {
@@ -423,7 +444,7 @@ export class AuthService {
       const { data, error } = await this.supabaseService
         .getClient()
         .from('data_id')
-        .select('name, phone, role, position')
+        .select('name, position, department')
         .eq('email', email)
         .single();
 
@@ -434,15 +455,18 @@ export class AuthService {
         return { data: null };
       }
 
-      return { 
+      return {
         data: {
           name: data.name,
-          phone: data.phone,
           role: data.position === 'Admin' ? 'admin' : 'user',
-        }
+          department: data.department,
+          position: data.position,
+        },
       };
     } catch (error) {
-      this.logger.error(`Get user profile by email error: ${(error as Error).message}`);
+      this.logger.error(
+        `Get user profile by email error: ${(error as Error).message}`,
+      );
       return { data: null };
     }
   }

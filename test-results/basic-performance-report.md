@@ -1,34 +1,27 @@
 # 基本性能測試報告
 
 ## 測試概要
-- 測試時間: 2025-07-15T23:31:48.676Z
-- 測試次數: 1
+- 測試時間: 2025-07-16T15:35:00.329Z
+- 測試次數: 0
 
 ## 基本指標
 
 ### Bundle 狀態
-- **Bundle 存在**: ✅ 是
-- **平均 Bundle Size**: 20351.00 KB
+- **Bundle 存在**: ❌ 否
+- **平均 Bundle Size**: 0.00 KB
 
 ### 項目大小
-- **Package.json Size**: 8.00 KB
-- **Node Modules Size**: 1.00 MB
+- **Package.json Size**: 0.00 KB
+- **Node Modules Size**: 0.00 MB
 
 ## 詳細結果
 
 
-### 測試 1
-- 時間: 2025-07-15T23:31:48.671Z
-- Bundle 存在: 是
-- Bundle Size: 20351 KB
-- Package.json Size: 8 KB
-- Node Modules Size: 1 MB
-
 
 ## 狀態檢查
-✅ 項目已構建
-✅ Node modules 已安裝
-✅ Package.json 存在
+⚠️ 項目尚未構建，請運行 npm run build
+⚠️ Node modules 未安裝
+❌ Package.json 不存在
 
 ## 建議
 - 如果 Bundle 不存在，請運行 `npm run build`

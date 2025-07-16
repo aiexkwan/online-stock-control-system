@@ -46,58 +46,47 @@ export class TransfersService {
         .select('*', { count: 'exact', head: true });
 
       let dataQuery = this.supabase.from('record_transfer').select(`
-          id,
-          pallet_id,
-          product_code,
-          quantity,
-          from_location,
-          to_location,
-          status,
-          user_id,
-          transfer_date,
-          notes,
-          created_at,
-          updated_at
+          plt_num,
+          f_loc,
+          t_loc,
+          operator_id,
+          tran_date,
+          uuid
         `);
 
       // Apply filters to both queries
       const applyFilters = (query: any) => {
         if (palletId) {
-          query = query.eq('pallet_id', palletId);
+          query = query.eq('plt_num', palletId);
         }
 
-        if (productCode) {
-          query = query.eq('product_code', productCode);
-        }
+        // Note: product_code is not directly available in record_transfer
+        // It would need to be joined from record_palletinfo
 
         if (fromLocation) {
-          query = query.eq('from_location', fromLocation);
+          query = query.eq('f_loc', fromLocation);
         }
 
         if (toLocation) {
-          query = query.eq('to_location', toLocation);
+          query = query.eq('t_loc', toLocation);
         }
 
-        if (status) {
-          query = query.eq('status', status);
-        }
+        // Note: status field doesn't exist in record_transfer
 
         if (userId) {
-          query = query.eq('user_id', userId);
+          query = query.eq('operator_id', userId);
         }
 
         if (fromDate) {
-          query = query.gte('transfer_date', fromDate);
+          query = query.gte('tran_date', fromDate);
         }
 
         if (toDate) {
-          query = query.lte('transfer_date', toDate);
+          query = query.lte('tran_date', toDate);
         }
 
         if (search) {
-          query = query.or(
-            `pallet_id.ilike.%${search}%,product_code.ilike.%${search}%`,
-          );
+          query = query.or(`plt_num.ilike.%${search}%`);
         }
 
         return query;
@@ -137,18 +126,18 @@ export class TransfersService {
       // Map to response DTOs
       const items: TransferResponseDto[] = (transfers || []).map((transfer) => {
         const result: any = {
-          id: transfer.id,
-          palletId: transfer.pallet_id,
-          productCode: transfer.product_code,
-          quantity: transfer.quantity,
-          fromLocation: transfer.from_location,
-          toLocation: transfer.to_location,
-          status: transfer.status || 'completed',
-          userId: transfer.user_id,
-          transferDate: new Date(transfer.transfer_date),
-          notes: transfer.notes,
-          createdAt: new Date(transfer.created_at),
-          updatedAt: new Date(transfer.updated_at),
+          id: transfer.uuid,
+          palletId: transfer.plt_num,
+          productCode: '', // Will need to join with record_palletinfo to get this
+          quantity: 0, // Not available in record_transfer
+          fromLocation: transfer.f_loc,
+          toLocation: transfer.t_loc,
+          status: 'completed', // Default since not in table
+          userId: transfer.operator_id,
+          transferDate: new Date(transfer.tran_date),
+          notes: '', // Not available in record_transfer
+          createdAt: new Date(transfer.tran_date), // Using tran_date as created_at
+          updatedAt: new Date(transfer.tran_date), // Using tran_date as updated_at
         };
 
         // Only add optional properties if they have values
@@ -180,12 +169,12 @@ export class TransfersService {
 
   private mapSortField(sortBy: string): string {
     const fieldMap: Record<string, string> = {
-      created_at: 'created_at',
-      updated_at: 'updated_at',
-      transfer_date: 'transfer_date',
-      quantity: 'quantity',
+      created_at: 'tran_date',
+      updated_at: 'tran_date',
+      transfer_date: 'tran_date',
+      quantity: 'tran_date', // No quantity field, using tran_date as fallback
     };
 
-    return fieldMap[sortBy] || 'created_at';
+    return fieldMap[sortBy] || 'tran_date';
   }
 }

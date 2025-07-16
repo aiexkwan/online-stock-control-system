@@ -12,6 +12,8 @@ import { AcoOrderProgressCardsQueryDto } from './dto/aco-order-progress-cards-qu
 import { AcoOrderProgressCardsResponseDto } from './dto/aco-order-progress-cards-response.dto';
 import { AcoOrderProgressChartQueryDto } from './dto/aco-order-progress-chart-query.dto';
 import { AcoOrderProgressChartResponseDto } from './dto/aco-order-progress-chart-response.dto';
+import { VoidRecordsAnalysisQueryDto } from './dto/void-records-analysis-query.dto';
+import { VoidRecordsAnalysisResponseDto } from './dto/void-records-analysis-response.dto';
 
 @Controller('analysis')
 @UseGuards(JwtAuthGuard)
@@ -48,6 +50,25 @@ export class AnalysisController {
         {
           status: HttpStatus.INTERNAL_SERVER_ERROR,
           error: 'Failed to fetch ACO order progress chart data',
+          message: (error as Error).message,
+          timestamp: new Date().toISOString(),
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('void-records')
+  async getVoidRecordsAnalysis(
+    @Query() query: VoidRecordsAnalysisQueryDto,
+  ): Promise<VoidRecordsAnalysisResponseDto> {
+    try {
+      return await this.analysisService.getVoidRecordsAnalysis(query);
+    } catch (error) {
+      throw new HttpException(
+        {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          error: 'Failed to fetch void records analysis',
           message: (error as Error).message,
           timestamp: new Date().toISOString(),
         },

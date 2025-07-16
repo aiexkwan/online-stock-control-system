@@ -25,6 +25,8 @@ import {
 } from './dto/inventory-response.dto';
 import { StockDistributionQueryDto } from './dto/stock-distribution-query.dto';
 import { StockDistributionResponseDto } from './dto/stock-distribution-response.dto';
+import { StockLevelsQueryDto } from './dto/stock-levels-query.dto';
+import { StockLevelsResponseDto } from './dto/stock-levels-response.dto';
 
 @ApiTags('inventory')
 @Controller('inventory')
@@ -101,6 +103,34 @@ export class InventoryController {
         {
           status: HttpStatus.INTERNAL_SERVER_ERROR,
           error: 'Failed to fetch stock distribution',
+          message: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('stock-levels')
+  @ApiOperation({
+    summary: 'Get current stock levels',
+    description:
+      'Retrieve current stock levels for all products with filtering options',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Stock levels retrieved successfully',
+    type: StockLevelsResponseDto,
+  })
+  async getStockLevels(
+    @Query(ValidationPipe) query: StockLevelsQueryDto,
+  ): Promise<StockLevelsResponseDto> {
+    try {
+      return await this.inventoryService.getStockLevels(query);
+    } catch (error) {
+      throw new HttpException(
+        {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          error: 'Failed to fetch stock levels',
           message: (error as Error).message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,

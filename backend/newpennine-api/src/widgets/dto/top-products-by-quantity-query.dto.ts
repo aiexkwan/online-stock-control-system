@@ -1,0 +1,47 @@
+import { IsOptional, IsString, IsInt, Min, Max } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class TopProductsByQuantityQueryDto {
+  @ApiProperty({
+    description: 'Maximum number of products to return',
+    minimum: 1,
+    maximum: 100,
+    default: 10,
+    required: false,
+  })
+  @IsOptional()
+  @IsInt({ message: 'Limit must be an integer' })
+  @Type(() => Number)
+  @Min(1, { message: 'Limit must be at least 1' })
+  @Max(100, { message: 'Limit cannot exceed 100' })
+  limit?: number = 10;
+
+  @ApiProperty({
+    description: 'Filter by warehouse location',
+    example: 'warehouse_a',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'Warehouse must be a string' })
+  warehouse?: string;
+
+  @ApiProperty({
+    description: 'Sort products by quantity or value',
+    enum: ['quantity', 'value'],
+    default: 'quantity',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'Sort field must be a string' })
+  sortBy?: 'quantity' | 'value' = 'quantity';
+
+  @ApiProperty({
+    description: 'Time range for filtering (e.g., 7d, 30d, 90d)',
+    example: '30d',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'Time range must be a string' })
+  timeRange?: string;
+}

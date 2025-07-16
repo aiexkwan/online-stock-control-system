@@ -47,10 +47,7 @@ import {
 import { textClasses, getTextClass } from '@/lib/design-system/typography';
 import { spacing, widgetSpacing } from '@/lib/design-system/spacing';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
-import { gql } from '@apollo/client';
 import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
-import { useApolloClient } from '@apollo/client';
-import { apolloClient } from '@/lib/apollo-client';
 import { useInViewport, InViewportPresets } from '@/app/admin/hooks/useInViewport';
 import { WidgetSkeleton } from './common/WidgetStates';
 
@@ -68,37 +65,6 @@ interface MergedEvent {
   merged_count: number;
 }
 
-// Apollo GraphQL query
-const GET_HISTORY_TREE = gql`
-  query GetHistoryTree($limit: Int = 50, $offset: Int = 0) {
-    record_historyCollection(
-      orderBy: [{ time: DescNullsLast }]
-      first: $limit
-      offset: $offset
-    ) {
-      edges {
-        node {
-          id
-          time
-          action
-          plt_num
-          loc
-          remark
-          who
-          doc_url
-          data_id {
-            id
-            name
-          }
-        }
-      }
-      pageInfo {
-        hasNextPage
-        hasPreviousPage
-      }
-    }
-  }
-`;
 
 interface HistoryTreeV2Props extends WidgetComponentProps {
   useGraphQL?: boolean;
@@ -233,15 +199,8 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
   // Progressive Loading - 檢測 widget 是否在視窗內
   const { isInViewport, hasBeenInViewport } = useInViewport(widgetRef, InViewportPresets.chart);
   
-  // Apollo Client availability check
-  const currentApolloClient = useApolloClient();
-  const isApolloAvailable = Boolean(currentApolloClient || apolloClient);
-  
-  // 使用環境變量控制是否使用 GraphQL - 但只有在 Apollo Client 可用時
-  const shouldUseGraphQL = isApolloAvailable && (
-    process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_SHARED === 'true' || 
-    (useGraphQL ?? (widget as any)?.useGraphQL ?? false)
-  );
+  // Using REST API system, no GraphQL needed
+  const shouldUseGraphQL = false;
 
   // Server Action function to fetch history data
   const fetchHistoryData = useCallback(async (variables?: { limit: number; offset: number }) => {
@@ -278,7 +237,6 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
     mode,
     performanceMetrics,
   } = useGraphQLFallback<{ events?: MergedEvent[]; metadata?: any; record_historyCollection?: any }, { limit: number; offset: number }>({
-    graphqlQuery: shouldUseGraphQL ? GET_HISTORY_TREE : undefined, // 使用 undefined 而不是 null
     serverAction: fetchHistoryData,
     variables: { limit: 50, offset: 0 },
     skip: isEditMode || !hasBeenInViewport, // Progressive Loading

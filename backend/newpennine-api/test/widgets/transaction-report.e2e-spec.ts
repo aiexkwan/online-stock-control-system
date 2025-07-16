@@ -14,6 +14,16 @@ describe('Transaction Report Widget Endpoint (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+
+    // Apply same configuration as main.ts
+    app.setGlobalPrefix('api/v1');
+    app.enableCors({
+      origin: '*',
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+    });
+
     await app.init();
 
     // Get valid JWT token for testing using real login
@@ -31,7 +41,7 @@ describe('Transaction Report Widget Endpoint (e2e)', () => {
       const endDate = new Date();
 
       const response = await request(app.getHttpServer())
-        .get('/widgets/transaction-report')
+        .get('/api/v1/widgets/transaction-report')
         .query({
           startDate: startDate.toISOString().split('T')[0],
           endDate: endDate.toISOString().split('T')[0],
@@ -69,7 +79,7 @@ describe('Transaction Report Widget Endpoint (e2e)', () => {
       const endDate = new Date();
 
       const response = await request(app.getHttpServer())
-        .get('/widgets/transaction-report')
+        .get('/api/v1/widgets/transaction-report')
         .query({
           startDate: startDate.toISOString().split('T')[0],
           endDate: endDate.toISOString().split('T')[0],
@@ -91,7 +101,7 @@ describe('Transaction Report Widget Endpoint (e2e)', () => {
 
     it('should return 400 for invalid date format', async () => {
       await request(app.getHttpServer())
-        .get('/widgets/transaction-report')
+        .get('/api/v1/widgets/transaction-report')
         .query({
           startDate: 'invalid-date',
           endDate: '2025-01-15',
@@ -102,14 +112,14 @@ describe('Transaction Report Widget Endpoint (e2e)', () => {
 
     it('should return 400 when dates are missing', async () => {
       await request(app.getHttpServer())
-        .get('/widgets/transaction-report')
+        .get('/api/v1/widgets/transaction-report')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
     });
 
     it('should return 401 without authentication', async () => {
       await request(app.getHttpServer())
-        .get('/widgets/transaction-report')
+        .get('/api/v1/widgets/transaction-report')
         .query({
           startDate: '2025-01-01',
           endDate: '2025-01-15',
@@ -123,7 +133,7 @@ describe('Transaction Report Widget Endpoint (e2e)', () => {
       const endDate = new Date();
 
       const response = await request(app.getHttpServer())
-        .get('/widgets/transaction-report')
+        .get('/api/v1/widgets/transaction-report')
         .query({
           startDate: startDate.toISOString().split('T')[0],
           endDate: endDate.toISOString().split('T')[0],
@@ -149,7 +159,7 @@ describe('Transaction Report Widget Endpoint (e2e)', () => {
       const endDate = new Date();
 
       const response = await request(app.getHttpServer())
-        .get('/widgets/transaction-report')
+        .get('/api/v1/widgets/transaction-report')
         .query({
           startDate: startDate.toISOString().split('T')[0],
           endDate: endDate.toISOString().split('T')[0],

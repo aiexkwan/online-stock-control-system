@@ -1,0 +1,82 @@
+import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsOptional,
+  IsString,
+  IsArray,
+  IsDateString,
+  IsIn,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
+
+export class VoidRecordsAnalysisQueryDto {
+  @ApiProperty({
+    description: 'Start date for analysis (ISO 8601 format)',
+    example: '2025-01-01T00:00:00.000Z',
+    required: false,
+  })
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+
+  @ApiProperty({
+    description: 'End date for analysis (ISO 8601 format)',
+    example: '2025-01-31T23:59:59.999Z',
+    required: false,
+  })
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @ApiProperty({
+    description: 'Product codes to filter by',
+    example: ['PROD001', 'PROD002'],
+    type: [String],
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value.split(',').filter(Boolean);
+    }
+    return value;
+  })
+  productCodes?: string[];
+
+  @ApiProperty({
+    description: 'Void reasons to filter by',
+    example: ['Damaged', 'Expired', 'Wrong Product'],
+    type: [String],
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value.split(',').filter(Boolean);
+    }
+    return value;
+  })
+  reasons?: string[];
+
+  @ApiProperty({
+    description: 'Group by time period for trend analysis',
+    enum: ['day', 'week', 'month'],
+    example: 'day',
+    required: false,
+  })
+  @IsOptional()
+  @IsIn(['day', 'week', 'month'])
+  groupBy?: 'day' | 'week' | 'month';
+
+  @ApiProperty({
+    description: 'Limit number of results for top products',
+    example: 10,
+    required: false,
+  })
+  @IsOptional()
+  @Transform(({ value }) => parseInt(value, 10))
+  topProductsLimit?: number;
+}

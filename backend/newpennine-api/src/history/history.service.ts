@@ -13,27 +13,16 @@ export class HistoryService {
   constructor(private readonly supabaseService: SupabaseService) {}
 
   async getHistory(query: HistoryQueryDto): Promise<HistoryResponseDto> {
-    const {
-      page = 1,
-      limit = 20,
-      sortBy = 'timestamp',
-      sortOrder = 'desc',
-    } = query;
+    const { page = 1, limit = 20, sortBy = 'time', sortOrder = 'desc' } = query;
     const offset = (page - 1) * limit;
 
     try {
       const supabase = this.supabaseService.getClient();
 
-      // Build the base query
-      let baseQuery = supabase.from('record_history').select(
-        `
-          *,
-          data_id!record_history_user_id_fkey (
-            username
-          )
-        `,
-        { count: 'exact' },
-      );
+      // Build the base query - remove the join for now as it's causing schema cache issues
+      let baseQuery = supabase
+        .from('record_history')
+        .select('*', { count: 'exact' });
 
       // Apply filters
       if (query.userId) {
@@ -57,11 +46,11 @@ export class HistoryService {
       }
 
       if (query.startDate) {
-        baseQuery = baseQuery.gte('timestamp', query.startDate);
+        baseQuery = baseQuery.gte('time', query.startDate);
       }
 
       if (query.endDate) {
-        baseQuery = baseQuery.lte('timestamp', query.endDate);
+        baseQuery = baseQuery.lte('time', query.endDate);
       }
 
       if (query.search) {
@@ -105,7 +94,7 @@ export class HistoryService {
           previousState: record.previous_state,
           newState: record.new_state,
           metadata: record.metadata,
-          timestamp: record.timestamp,
+          timestamp: record.time,
           createdAt: record.created_at,
           updatedAt: record.updated_at,
         })) || [];
@@ -140,7 +129,7 @@ export class HistoryService {
         `,
         )
         .eq('pallet_id', palletId)
-        .order('timestamp', { ascending: false });
+        .order('time', { ascending: false });
 
       if (error) {
         this.logger.error(
@@ -166,7 +155,7 @@ export class HistoryService {
           previousState: record.previous_state,
           newState: record.new_state,
           metadata: record.metadata,
-          timestamp: record.timestamp,
+          timestamp: record.time,
           createdAt: record.created_at,
           updatedAt: record.updated_at,
         })) || []
@@ -192,7 +181,7 @@ export class HistoryService {
         `,
         )
         .eq('user_id', userId)
-        .order('timestamp', { ascending: false });
+        .order('time', { ascending: false });
 
       if (error) {
         this.logger.error(`Error fetching history for user ${userId}:`, error);
@@ -215,7 +204,7 @@ export class HistoryService {
           previousState: record.previous_state,
           newState: record.new_state,
           metadata: record.metadata,
-          timestamp: record.timestamp,
+          timestamp: record.time,
           createdAt: record.created_at,
           updatedAt: record.updated_at,
         })) || []
@@ -260,7 +249,7 @@ export class HistoryService {
           previous_state: data.previousState,
           new_state: data.newState,
           metadata: data.metadata,
-          timestamp: new Date().toISOString(),
+          time: new Date().toISOString(),
         })
         .select(
           `
@@ -292,7 +281,7 @@ export class HistoryService {
         previousState: result.previous_state,
         newState: result.new_state,
         metadata: result.metadata,
-        timestamp: result.timestamp,
+        timestamp: result.time,
         createdAt: result.created_at,
         updatedAt: result.updated_at,
       };

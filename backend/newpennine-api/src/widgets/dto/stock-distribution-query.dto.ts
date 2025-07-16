@@ -1,0 +1,71 @@
+import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional, IsString, IsInt, Min, Max } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class StockDistributionQueryDto {
+  @ApiProperty({
+    description: 'Stock type filter for distribution analysis',
+    required: false,
+    example: 'injection',
+    enum: [
+      'injection',
+      'pipeline',
+      'prebook',
+      'await',
+      'fold',
+      'bulk',
+      'await_grn',
+      'backcarpark',
+      'all',
+    ],
+  })
+  @IsOptional()
+  @IsString()
+  selectedType?: string = 'all';
+
+  @ApiProperty({
+    description: 'Maximum number of items to return',
+    required: false,
+    example: 20,
+    minimum: 1,
+    maximum: 100,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  @Type(() => Number)
+  limit?: number = 20;
+
+  @ApiProperty({
+    description: 'Offset for pagination',
+    required: false,
+    example: 0,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Type(() => Number)
+  offset?: number = 0;
+
+  @ApiProperty({
+    description: 'Minimum stock level to include in distribution',
+    required: false,
+    example: 1,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Type(() => Number)
+  minStockLevel?: number = 1;
+
+  @ApiProperty({
+    description: 'Include color information for TreeMap visualization',
+    required: false,
+    example: true,
+  })
+  @IsOptional()
+  includeColors?: boolean = true;
+}

@@ -1,12 +1,12 @@
 /**
  * Product Update Widget V2
- * 使用 GraphQL + useGraphQLFallback 實現產品管理功能
- * 展示 GraphQL 優先，Server Actions 作為 fallback 嘅最佳實踐
+ * 使用 Server Actions 實現產品管理功能
+ * REST API 版本，已移除所有 GraphQL 相關代碼
  */
 
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   CubeIcon,
@@ -23,10 +23,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useWidgetErrorHandler } from '@/app/admin/hooks/useWidgetErrorHandler';
-import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
-// Note: Migrated to REST API - GraphQL hooks removed
-import { gql } from '@apollo/client';
-import { useMutation } from '@apollo/client';
 import {
   getProductByCode,
   createProduct,
@@ -43,89 +39,11 @@ import { textClasses, getTextClass } from '@/lib/design-system/typography';
 import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
 import { cn } from '@/lib/utils';
 
-// GraphQL Queries 同 Mutations
-const GET_PRODUCT_BY_CODE = gql`
-  query GetProductByCode($code: String!) {
-    data_codeCollection(filter: { code: { eq: $code } }) {
-      edges {
-        node {
-          code
-          description
-          colour
-          standard_qty
-          type
-          remark
-        }
-      }
-    }
-  }
-`;
-
-const CREATE_PRODUCT_MUTATION = gql`
-  mutation CreateProduct($input: CreateProductInput!) {
-    createProduct(input: $input) {
-      ... on Product {
-        id
-        code
-        description
-        colour
-        standardQty
-        type
-        remark
-      }
-      ... on UserError {
-        message
-        code
-        field
-      }
-      ... on SystemError {
-        message
-        code
-        details
-      }
-    }
-  }
-`;
-
-const UPDATE_PRODUCT_MUTATION = gql`
-  mutation UpdateProduct($id: ID!, $input: UpdateProductInput!) {
-    updateProduct(id: $id, input: $input) {
-      ... on Product {
-        id
-        code
-        description
-        colour
-        standardQty
-        type
-        remark
-      }
-      ... on UserError {
-        message
-        code
-        field
-      }
-      ... on SystemError {
-        message
-        code
-        details
-      }
-    }
-  }
-`;
-
 interface StatusMessageType {
   type: 'success' | 'error' | 'warning' | 'info';
   message: string;
 }
 
-// Transform GraphQL data to ProductData format
-const transformGraphQLProduct = (node: any): ProductData => ({
-  code: node.code,
-  description: node.description || '',
-  colour: node.colour || '',
-  standard_qty: node.standard_qty || node.standardQty || 0,
-  type: node.type || '',
-});
 
 export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
   widget,
@@ -153,71 +71,6 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
     type: '',
   });
 
-  // GraphQL mutations
-  const [createProductMutation] = useMutation(CREATE_PRODUCT_MUTATION, {
-    onCompleted: (data) => {
-      if (data.createProduct.__typename === 'Product') {
-        const product = transformGraphQLProduct(data.createProduct);
-        setProductData(product);
-        setStatusMessage({
-          type: 'success',
-          message: 'Created successfully!',
-        });
-        handleSuccess('Product created successfully', 'create_product', {
-          productCode: product.code,
-        });
-        setIsEditing(false);
-        setShowForm(false);
-        setShowCreateDialog(false);
-      } else {
-        const error = data.createProduct;
-        throw new Error(error.message || 'Failed to create product');
-      }
-    },
-    onError: (error) => {
-      handleSubmitError(error, {
-        action: 'create_product',
-        productCode: formData.code,
-        formData,
-      });
-      setStatusMessage({
-        type: 'error',
-        message: 'Failed to create product',
-      });
-    },
-  });
-
-  const [updateProductMutation] = useMutation(UPDATE_PRODUCT_MUTATION, {
-    onCompleted: (data) => {
-      if (data.updateProduct.__typename === 'Product') {
-        const product = transformGraphQLProduct(data.updateProduct);
-        setProductData(product);
-        setStatusMessage({
-          type: 'success',
-          message: 'Updated successfully!',
-        });
-        handleSuccess('Product updated successfully', 'update_product', {
-          productCode: product.code,
-        });
-        setIsEditing(false);
-        setShowForm(false);
-      } else {
-        const error = data.updateProduct;
-        throw new Error(error.message || 'Failed to update product');
-      }
-    },
-    onError: (error) => {
-      handleSubmitError(error, {
-        action: 'update_product',
-        productCode: productData?.code,
-        formData,
-      });
-      setStatusMessage({
-        type: 'error',
-        message: 'Failed to update product',
-      });
-    },
-  });
 
   // Reset state
   const resetState = useCallback(() => {
@@ -236,29 +89,6 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
     });
   }, []);
 
-  // Search product with useGraphQLFallback hook
-  const { data: searchData, loading: searchLoading, error: searchError, refetch: searchRefetch } = useGraphQLFallback<
-    { data_codeCollection: { edges: Array<{ node: any }> } },
-    { code: string }
-  >({
-    graphqlQuery: GET_PRODUCT_BY_CODE,
-    serverAction: async (variables) => {
-      const result = await getProductByCode(variables?.code || '');
-      if (result.success && result.data) {
-        return {
-          data_codeCollection: {
-            edges: [{ node: result.data }],
-          },
-        };
-      }
-      return { data_codeCollection: { edges: [] } };
-    },
-    variables: { code: searchedCode },
-    skip: !searchedCode,
-    fallbackEnabled: true,
-    widgetId: 'ProductUpdateWidgetV2',
-    ...GraphQLFallbackPresets.cached,
-  });
 
   // Search product handler
   const handleSearch = useCallback(
@@ -274,53 +104,47 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
 
       setStatusMessage(null);
       setSearchedCode(code.trim());
-    },
-    [handleWarning]
-  );
+      setIsLoading(true);
 
-  // React to search data changes
-  React.useEffect(() => {
-    if (searchData && searchedCode) {
-      const edges = searchData.data_codeCollection?.edges || [];
-      
-      if (edges.length > 0) {
-        const product = transformGraphQLProduct(edges[0].node);
-        setProductData(product);
-        setIsEditing(false);
-        setShowForm(false);
-        setShowCreateDialog(false);
+      try {
+        const result = await getProductByCode(code.trim());
+        
+        if (result.success && result.data) {
+          setProductData(result.data);
+          setIsEditing(false);
+          setShowForm(false);
+          setShowCreateDialog(false);
+          setStatusMessage({
+            type: 'success',
+            message: `Found: ${result.data.code}`,
+          });
+          handleSuccess(`Product ${result.data.code} found`, 'search_product', {
+            productCode: result.data.code,
+          });
+        } else {
+          // Product not found
+          setProductData(null);
+          setShowCreateDialog(true);
+          setShowForm(false);
+          setIsEditing(false);
+          setStatusMessage({
+            type: 'warning',
+            message: `"${code.trim()}" not found`,
+          });
+          handleWarning(`Product "${code.trim()}" not found`, 'search_product');
+        }
+      } catch (error) {
+        handleFetchError(error, 'product_search');
         setStatusMessage({
-          type: 'success',
-          message: `Found: ${product.code}`,
+          type: 'error',
+          message: 'Search failed. Please try again.',
         });
-        handleSuccess(`Product ${product.code} found`, 'search_product', {
-          productCode: product.code,
-        });
-      } else {
-        // Product not found
-        setProductData(null);
-        setShowCreateDialog(true);
-        setShowForm(false);
-        setIsEditing(false);
-        setStatusMessage({
-          type: 'warning',
-          message: `"${searchedCode}" not found`,
-        });
-        handleWarning(`Product "${searchedCode}" not found`, 'search_product');
+      } finally {
+        setIsLoading(false);
       }
-    }
-  }, [searchData, searchedCode, handleSuccess, handleWarning]);
-
-  // React to search errors
-  React.useEffect(() => {
-    if (searchError && searchedCode) {
-      handleFetchError(searchError, 'product_search');
-      setStatusMessage({
-        type: 'error',
-        message: 'Search failed. Please try again.',
-      });
-    }
-  }, [searchError, searchedCode, handleFetchError]);
+    },
+    [handleWarning, handleSuccess, handleFetchError]
+  );
 
   // Start editing
   const handleEdit = useCallback(() => {
@@ -358,7 +182,7 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
     setStatusMessage(null);
   }, []);
 
-  // Submit form - 優先使用 GraphQL mutations，fallback 到 Server Actions
+  // Submit form - 使用 Server Actions
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -367,78 +191,44 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
       try {
         if (isEditing && productData) {
           // Update existing product
-          try {
-            // 嘗試使用 GraphQL mutation
-            await updateProductMutation({
-              variables: {
-                id: productData.code, // 使用 code 作為 ID
-                input: {
-                  description: formData.description,
-                  colour: formData.colour,
-                  standardQty: formData.standard_qty,
-                  type: formData.type,
-                },
-              },
+          const { code: _, ...updateData } = formData;
+          if (typeof updateData.standard_qty === 'string') {
+            updateData.standard_qty = parseInt(updateData.standard_qty) || 0;
+          }
+          const result = await updateProduct(productData.code, updateData);
+          
+          if (result.success) {
+            setProductData(result.data!);
+            setStatusMessage({
+              type: 'success',
+              message: 'Updated successfully!',
             });
-          } catch (graphqlError) {
-            console.error('GraphQL mutation failed, falling back to Server Action:', graphqlError);
-            // Fallback to Server Action
-            const { code: _, ...updateData } = formData;
-            if (typeof updateData.standard_qty === 'string') {
-              updateData.standard_qty = parseInt(updateData.standard_qty) || 0;
-            }
-            const result = await updateProduct(productData.code, updateData);
-            
-            if (result.success) {
-              setProductData(result.data!);
-              setStatusMessage({
-                type: 'success',
-                message: 'Updated successfully!',
-              });
-              handleSuccess('Product updated successfully', 'update_product', {
-                productCode: productData.code,
-                changes: updateData,
-              });
-              setIsEditing(false);
-              setShowForm(false);
-            } else {
-              throw new Error(result.error || 'Operation failed');
-            }
+            handleSuccess('Product updated successfully', 'update_product', {
+              productCode: productData.code,
+              changes: updateData,
+            });
+            setIsEditing(false);
+            setShowForm(false);
+          } else {
+            throw new Error(result.error || 'Operation failed');
           }
         } else {
           // Create new product
-          try {
-            // 嘗試使用 GraphQL mutation
-            await createProductMutation({
-              variables: {
-                input: {
-                  code: formData.code,
-                  description: formData.description,
-                  colour: formData.colour,
-                  standardQty: formData.standard_qty,
-                  type: formData.type,
-                },
-              },
+          const result = await createProduct(formData);
+          if (result.success) {
+            setProductData(result.data!);
+            setStatusMessage({
+              type: 'success',
+              message: 'Created successfully!',
             });
-          } catch (graphqlError) {
-            console.error('GraphQL mutation failed, falling back to Server Action:', graphqlError);
-            // Fallback to Server Action
-            const result = await createProduct(formData);
-            if (result.success) {
-              setProductData(result.data!);
-              setStatusMessage({
-                type: 'success',
-                message: 'Created successfully!',
-              });
-              handleSuccess('Product created successfully', 'create_product', {
-                productCode: formData.code,
-              });
-              setIsEditing(false);
-              setShowForm(false);
-              setShowCreateDialog(false);
-            } else {
-              throw new Error(result.error || 'Operation failed');
-            }
+            handleSuccess('Product created successfully', 'create_product', {
+              productCode: formData.code,
+            });
+            setIsEditing(false);
+            setShowForm(false);
+            setShowCreateDialog(false);
+          } else {
+            throw new Error(result.error || 'Operation failed');
           }
         }
       } catch (error) {
@@ -460,8 +250,6 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
       isEditing,
       productData,
       formData,
-      createProductMutation,
-      updateProductMutation,
       handleSuccess,
       handleSubmitError,
     ]
@@ -482,7 +270,7 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
           <CardTitle className='flex items-center gap-2'>
             <CubeIcon className='h-5 w-5' />
             <span className={textClasses['widget-title']}>Product Update V2</span>
-            <span className={cn(textClasses['label-small'], 'text-muted-foreground')}>(GraphQL + Fallback)</span>
+            <span className={cn(textClasses['label-small'], 'text-muted-foreground')}>(REST API)</span>
           </CardTitle>
         </CardHeader>
         <CardContent className='max-h-[calc(100%-60px)] space-y-3 overflow-y-auto'>
@@ -501,14 +289,14 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
                     'h-8 flex-1 border-input bg-background',
                     textClasses['body-small']
                   )}
-                  disabled={searchLoading || isLoading || isEditMode}
+                  disabled={isLoading || isEditMode}
                 />
                 <Button
                   onClick={() => {
                     const input = document.getElementById('search') as HTMLInputElement;
                     if (input) handleSearch(input.value);
                   }}
-                  disabled={searchLoading || isLoading || isEditMode}
+                  disabled={isLoading || isEditMode}
                   size='sm'
                   className={cn(
                     'h-8 px-3 bg-gradient-to-br',
@@ -516,7 +304,7 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
                     'hover:opacity-90'
                   )}
                 >
-                  {searchLoading ? (
+                  {isLoading ? (
                     <div className='h-3 w-3 animate-spin rounded-full border-b-2 border-white' />
                   ) : (
                     <MagnifyingGlassIcon className='h-4 w-4' />
@@ -618,7 +406,7 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
                   size='sm'
                   variant='ghost'
                   className='h-6 px-2 text-xs'
-                  disabled={searchLoading || isLoading || isEditMode}
+                  disabled={isLoading || isEditMode}
                 >
                   <ArrowPathIcon className='h-3 w-3' />
                 </Button>
@@ -712,14 +500,14 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
                   size='sm'
                   variant='outline'
                   className='h-7 flex-1 border-slate-600 text-xs'
-                  disabled={searchLoading || isLoading || isEditMode}
+                  disabled={isLoading || isEditMode}
                 >
                   Cancel
                 </Button>
                 <Button
                   type='submit'
                   size='sm'
-                  disabled={searchLoading || isLoading || isEditMode}
+                  disabled={isLoading || isEditMode}
                   className='h-7 flex-1 bg-orange-600 text-xs hover:bg-orange-700'
                 >
                   {isLoading ? (

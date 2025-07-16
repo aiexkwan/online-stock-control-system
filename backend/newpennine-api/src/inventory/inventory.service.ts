@@ -11,6 +11,11 @@ import {
 import { StockType } from './dto/inventory-query.dto';
 import { StockDistributionQueryDto } from './dto/stock-distribution-query.dto';
 import { StockDistributionResponseDto } from './dto/stock-distribution-response.dto';
+import { StockLevelsQueryDto } from './dto/stock-levels-query.dto';
+import {
+  StockLevelsResponseDto,
+  StockLevelItemDto,
+} from './dto/stock-levels-response.dto';
 
 @Injectable()
 export class InventoryService {
@@ -398,6 +403,116 @@ export class InventoryService {
     } catch (error) {
       console.error('Error in getStockDistribution:', error);
       throw error;
+    }
+  }
+
+  async getStockLevels(
+    query: StockLevelsQueryDto,
+  ): Promise<StockLevelsResponseDto> {
+    try {
+      if (!this.supabase) {
+        return {
+          stockLevels: [],
+          totalItems: 0,
+          timestamp: new Date().toISOString(),
+          dataSource: 'record_inventory',
+          error: 'Database connection not available',
+        };
+      }
+
+      // Build query with joins to get product information
+      let dbQuery = this.supabase.from('record_inventory').select(
+        `
+          product_code,
+          injection,
+          pipeline,
+          prebook,
+          await,
+          fold,
+          bulk,
+          await_grn,
+          backcarpark,
+          latest_update,
+          data_code!inner(
+            description,
+            type
+          )
+        `,
+        { count: 'exact' },
+      );
+
+      // Apply filters
+      if (query.productType) {
+        dbQuery = dbQuery.eq('data_code.type', query.productType);
+      }
+
+      if (query.productCode) {
+        dbQuery = dbQuery.eq('product_code', query.productCode);
+      }
+
+      // Apply stock level filters
+      if (query.minStockLevel !== undefined) {
+        // Calculate total stock and filter by minimum
+        dbQuery = dbQuery.gte('injection', query.minStockLevel);
+      }
+
+      if (query.maxStockLevel !== undefined) {
+        // Calculate total stock and filter by maximum
+        dbQuery = dbQuery.lte('injection', query.maxStockLevel);
+      }
+
+      // Apply pagination
+      const limit = query.limit || 100;
+      const offset = query.offset || 0;
+
+      dbQuery = dbQuery
+        .range(offset, offset + limit - 1)
+        .order('product_code', { ascending: true });
+
+      const { data, count, error } = await dbQuery;
+
+      if (error) {
+        console.error('Error fetching stock levels:', error);
+        throw error;
+      }
+
+      // Transform the data
+      const stockLevels: StockLevelItemDto[] = (data || []).map((item: any) => {
+        const totalStock =
+          (item.injection || 0) +
+          (item.pipeline || 0) +
+          (item.prebook || 0) +
+          (item.await || 0) +
+          (item.fold || 0) +
+          (item.bulk || 0) +
+          (item.await_grn || 0) +
+          (item.backcarpark || 0);
+
+        return {
+          productCode: item.product_code,
+          productDescription: item.data_code?.description,
+          productType: item.data_code?.type,
+          stockLevel: totalStock,
+          lastUpdated: item.latest_update,
+          location: 'Multi-Location', // Since we're aggregating across locations
+        };
+      });
+
+      return {
+        stockLevels,
+        totalItems: count || 0,
+        timestamp: new Date().toISOString(),
+        dataSource: 'record_inventory',
+      };
+    } catch (error) {
+      console.error('Error in getStockLevels:', error);
+      return {
+        stockLevels: [],
+        totalItems: 0,
+        timestamp: new Date().toISOString(),
+        dataSource: 'record_inventory',
+        error: (error as Error).message,
+      };
     }
   }
 }

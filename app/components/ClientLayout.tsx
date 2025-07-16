@@ -3,9 +3,7 @@
 import React from 'react';
 import { Toaster } from 'sonner';
 import { usePathname } from 'next/navigation';
-import { ApolloProvider } from '@apollo/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { getApolloClient } from '@/lib/apollo-client';
 import AuthChecker from './AuthChecker';
 import GlobalHeader from '@/components/GlobalHeader';
 import { UniversalBackground } from './UniversalBackground';
@@ -112,8 +110,6 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
 
   const currentTheme = getThemeFromPath(pathname || '');
   
-  // Get Apollo client safely (will be null on server)
-  const apolloClient = getApolloClient();
 
   const content = (
     <UniversalProvider
@@ -180,13 +176,7 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {apolloClient ? (
-        <ApolloProvider client={apolloClient}>
-          {content}
-        </ApolloProvider>
-      ) : (
-        content
-      )}
+      {content}
     </QueryClientProvider>
   );
 }

@@ -24,9 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { searchSupplier, createSupplier, updateSupplier } from '@/app/actions/supplierActions';
 import { errorHandler } from '@/app/components/qc-label-form/services/ErrorHandler';
-import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
-import { gql } from '@apollo/client';
-import { useMutation } from '@apollo/client';
+// GraphQL dependencies removed - using REST API only
 import { useWidgetErrorHandler } from '@/app/admin/hooks/useWidgetErrorHandler';
 import { 
   brandColors, 
@@ -38,46 +36,7 @@ import { textClasses, getTextClass } from '@/lib/design-system/typography';
 import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
 import { cn } from '@/lib/utils';
 
-// GraphQL Queries and Mutations
-const GET_SUPPLIER_BY_CODE = gql`
-  query GetSupplierByCode($code: String!) {
-    data_supplierCollection(filter: { supplier_code: { eq: $code } }) {
-      edges {
-        node {
-          supplier_code
-          supplier_name
-        }
-      }
-    }
-  }
-`;
-
-const CREATE_SUPPLIER_MUTATION = gql`
-  mutation CreateSupplier($code: String!, $name: String!) {
-    insertIntodata_supplierCollection(
-      objects: [{ supplier_code: $code, supplier_name: $name }]
-    ) {
-      records {
-        supplier_code
-        supplier_name
-      }
-    }
-  }
-`;
-
-const UPDATE_SUPPLIER_MUTATION = gql`
-  mutation UpdateSupplier($code: String!, $name: String!) {
-    updatedata_supplierCollection(
-      filter: { supplier_code: { eq: $code } }
-      set: { supplier_name: $name }
-    ) {
-      records {
-        supplier_code
-        supplier_name
-      }
-    }
-  }
-`;
+// GraphQL queries removed - using REST API only
 
 interface SupplierData {
   supplier_code: string;
@@ -117,62 +76,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
   });
 
 
-  // GraphQL Mutations
-  const [createSupplierMutation] = useMutation(CREATE_SUPPLIER_MUTATION, {
-    onCompleted: (data) => {
-      if (data?.insertIntodata_supplierCollection?.records?.[0]) {
-        const newSupplier = data.insertIntodata_supplierCollection.records[0];
-        setSupplierData(newSupplier);
-        setShowForm(false);
-        setShowCreateDialog(false);
-        setStatusMessage({
-          type: 'success',
-          message: `Supplier "${newSupplier.supplier_code}" created successfully`,
-        });
-        handleSuccess(`Supplier ${newSupplier.supplier_code} created`, 'create_supplier', {
-          supplierCode: newSupplier.supplier_code,
-        });
-      }
-    },
-    onError: (error) => {
-      handleSubmitError(error, {
-        action: 'create_supplier',
-        supplierCode: formData.supplier_code,
-      });
-      setStatusMessage({
-        type: 'error',
-        message: 'Failed to create supplier',
-      });
-    },
-  });
-
-  const [updateSupplierMutation] = useMutation(UPDATE_SUPPLIER_MUTATION, {
-    onCompleted: (data) => {
-      if (data?.updatedata_supplierCollection?.records?.[0]) {
-        const updatedSupplier = data.updatedata_supplierCollection.records[0];
-        setSupplierData(updatedSupplier);
-        setIsEditing(false);
-        setShowForm(false);
-        setStatusMessage({
-          type: 'success',
-          message: `Supplier "${updatedSupplier.supplier_code}" updated successfully`,
-        });
-        handleSuccess(`Supplier ${updatedSupplier.supplier_code} updated`, 'update_supplier', {
-          supplierCode: updatedSupplier.supplier_code,
-        });
-      }
-    },
-    onError: (error) => {
-      handleSubmitError(error, {
-        action: 'update_supplier',
-        supplierCode: supplierData?.supplier_code,
-      });
-      setStatusMessage({
-        type: 'error',
-        message: 'Failed to update supplier',
-      });
-    },
-  });
+  // GraphQL mutations removed - using REST API only
 
 
   // Reset state
@@ -190,40 +94,12 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
     });
   }, []);
 
-  // Search supplier using GraphQL with fallback
-  const { data: searchData, loading: searchLoading, error: searchError, refetch: searchRefetch } = useGraphQLFallback<
-    { data_supplierCollection: { edges: Array<{ node: SupplierData }> } },
-    { code: string }
-  >({
-    graphqlQuery: GET_SUPPLIER_BY_CODE,
-    serverAction: async (variables) => {
-      // Use Server Action for supplier search
-      const code = variables?.code || '';
-      const startTime = performance.now();
-      
-      const result = await searchSupplier(code);
+  // Search supplier using REST API only
+  const [searchData, setSearchData] = useState<{ data_supplierCollection: { edges: Array<{ node: SupplierData }> } } | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<any>(null);
 
-      const endTime = performance.now();
-      console.log(`[SupplierUpdateWidgetV2] Server Action search: ${Math.round(endTime - startTime)}ms`);
-
-      if (result.exists && result.supplier) {
-        return {
-          data_supplierCollection: {
-            edges: [{ node: result.supplier }],
-          },
-        };
-      }
-      
-      return { data_supplierCollection: { edges: [] } };
-    },
-    variables: { code: searchedCode },
-    skip: !searchedCode,
-    widgetId: 'SupplierUpdateWidgetV2',
-    ...GraphQLFallbackPresets.cached,
-    fallbackEnabled: true,
-  });
-
-  // Handle search
+  // Handle search using REST API only
   const handleSearch = useCallback(
     async (code: string) => {
       if (!code || !code.trim()) {
@@ -236,7 +112,36 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
       }
 
       setStatusMessage(null);
-      setSearchedCode(code.trim().toUpperCase());
+      setSearchLoading(true);
+      setSearchError(null);
+      const searchCode = code.trim().toUpperCase();
+      setSearchedCode(searchCode);
+
+      try {
+        const startTime = performance.now();
+        const result = await searchSupplier(searchCode);
+        const endTime = performance.now();
+        
+        console.log(`[SupplierUpdateWidgetV2] Server Action search: ${Math.round(endTime - startTime)}ms`);
+        
+        if (result.exists && result.supplier) {
+          setSearchData({
+            data_supplierCollection: {
+              edges: [{ node: result.supplier }],
+            },
+          });
+        } else {
+          setSearchData({ data_supplierCollection: { edges: [] } });
+        }
+      } catch (error) {
+        setSearchError(error);
+        setStatusMessage({
+          type: 'error',
+          message: 'Search failed. Please try again.',
+        });
+      } finally {
+        setSearchLoading(false);
+      }
     },
     [handleWarning]
   );
@@ -310,7 +215,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
     setStatusMessage(null);
   }, []);
 
-  // Submit form using GraphQL with RPC fallback
+  // Submit form using REST API only
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -330,56 +235,34 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
 
       try {
         if (isEditing) {
-          // Try GraphQL mutation first
-          try {
-            await updateSupplierMutation({
-              variables: {
-                code: formData.supplier_code,
-                name: formData.supplier_name,
-              },
+          // Update existing supplier
+          const result = await updateSupplier(supplierData!.supplier_code, formData.supplier_name);
+          
+          if (!result.success) {
+            throw new Error(result.error || 'Update failed');
+          }
+          
+          if (result.supplier) {
+            setSupplierData(result.supplier);
+            setStatusMessage({ type: 'success', message: 'Updated successfully!' });
+            handleSuccess(`Supplier ${result.supplier.supplier_code} updated`, 'update_supplier', {
+              supplierCode: result.supplier.supplier_code,
             });
-          } catch (graphqlError) {
-            // Fallback to Server Action if GraphQL fails
-            console.log('[SupplierUpdateWidgetV2] GraphQL failed, falling back to Server Action');
-            const result = await updateSupplier(supplierData!.supplier_code, formData.supplier_name);
-            
-            if (!result.success) {
-              throw new Error(result.error || 'Update failed');
-            }
-            
-            if (result.supplier) {
-              setSupplierData(result.supplier);
-              setStatusMessage({ type: 'success', message: 'Updated successfully!' });
-              handleSuccess(`Supplier ${result.supplier.supplier_code} updated`, 'update_supplier', {
-                supplierCode: result.supplier.supplier_code,
-              });
-            }
           }
         } else {
-          // Try GraphQL mutation first
-          try {
-            await createSupplierMutation({
-              variables: {
-                code: formData.supplier_code,
-                name: formData.supplier_name,
-              },
+          // Create new supplier
+          const result = await createSupplier(formData.supplier_code, formData.supplier_name);
+          
+          if (!result.success) {
+            throw new Error(result.error || 'Creation failed');
+          }
+          
+          if (result.supplier) {
+            setSupplierData(result.supplier);
+            setStatusMessage({ type: 'success', message: 'Created successfully!' });
+            handleSuccess(`Supplier ${result.supplier.supplier_code} created`, 'create_supplier', {
+              supplierCode: result.supplier.supplier_code,
             });
-          } catch (graphqlError) {
-            // Fallback to Server Action if GraphQL fails
-            console.log('[SupplierUpdateWidgetV2] GraphQL failed, falling back to Server Action');
-            const result = await createSupplier(formData.supplier_code, formData.supplier_name);
-            
-            if (!result.success) {
-              throw new Error(result.error || 'Creation failed');
-            }
-            
-            if (result.supplier) {
-              setSupplierData(result.supplier);
-              setStatusMessage({ type: 'success', message: 'Created successfully!' });
-              handleSuccess(`Supplier ${result.supplier.supplier_code} created`, 'create_supplier', {
-                supplierCode: result.supplier.supplier_code,
-              });
-            }
           }
         }
 
@@ -414,7 +297,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
         setIsLoading(false);
       }
     },
-    [isEditing, supplierData, formData, createSupplierMutation, updateSupplierMutation, handleWarning, handleSuccess]
+    [isEditing, supplierData, formData, handleWarning, handleSuccess]
   );
 
   // Handle form input change

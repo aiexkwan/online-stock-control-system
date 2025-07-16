@@ -16,11 +16,9 @@ import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { TrendingUp } from 'lucide-react';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { format } from 'date-fns';
-import { useGraphQLFallback } from '@/app/admin/hooks/useGraphQLFallback';
 import { useInViewport } from '@/app/admin/hooks/useInViewport';
 import { ChartContainer } from './common/charts/ChartContainer';
 import { LineChartSkeleton } from './common/charts/ChartSkeleton';
-import gql from 'graphql-tag';
 import { 
   brandColors, 
   widgetColors, 
@@ -31,35 +29,7 @@ import { textClasses, getTextClass } from '@/lib/design-system/typography';
 import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
 import { cn } from '@/lib/utils';
 
-// GraphQL query for stock level snapshots from inventory table
-// 注意：這個查詢假設我們有一個方式追蹤庫存歷史快照
-// 實際上可能需要使用 RPC function 或專門的歷史表
-const GET_STOCK_LEVEL_HISTORY = gql`
-  query GetStockLevelHistory($productCodes: [String!]!, $startDate: String!, $endDate: String!) {
-    record_inventoryCollection(
-      filter: {
-        product_code: { in: $productCodes }
-        latest_update: { gte: $startDate, lte: $endDate }
-      }
-      orderBy: [{ latest_update: AscNullsLast }]
-    ) {
-      edges {
-        node {
-          product_code
-          injection
-          pipeline
-          prebook
-          await
-          fold
-          bulk
-          backcarpark
-          damage
-          latest_update
-        }
-      }
-    }
-  }
-`;
+// GraphQL query removed - using REST API only
 
 interface ChartDataPoint {
   time: string;
@@ -78,7 +48,6 @@ interface StockLevelHistoryChartProps extends WidgetComponentProps {
     start: Date;
     end: Date;
   };
-  useGraphQL?: boolean;
 }
 
 // 顏色調色板 - 使用設計系統顏色
@@ -97,10 +66,8 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
   widget,
   isEditMode,
   timeFrame,
-  useGraphQL,
 }) => {
-  // 決定是否使用 GraphQL - 可以通過 widget config 或 props 控制
-  const shouldUseGraphQL = useGraphQL ?? (widget as any)?.useGraphQL ?? false;
+  // Using REST API only - GraphQL removed
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [productCodes, setProductCodes] = useState<string[]>([]);
   const [selectedType, setSelectedType] = useState<string>('all');
@@ -228,36 +195,50 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
     [dashboardAPI, adjustedTimeFrame]
   );
 
-  // GraphQL variables setup
-  const graphqlVariables = useMemo(
-    () => {
-      if (!adjustedTimeFrame || productCodes.length === 0) {
-        return null;
-      }
-      return {
+  // State for data fetching
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<any>(null);
+
+  // Fetch data using REST API
+  const fetchData = useCallback(async () => {
+    if (!adjustedTimeFrame || productCodes.length === 0 || !hasBeenInViewport) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const variables = {
         productCodes: productCodes.slice(0, 10),
         startDate: adjustedTimeFrame.start.toISOString(),
         endDate: adjustedTimeFrame.end.toISOString(),
       };
-    },
-    [adjustedTimeFrame, productCodes]
-  );
 
-  // Use the unified GraphQL fallback hook
-  const { data, loading, error, refetch } = useGraphQLFallback({
-    graphqlQuery: shouldUseGraphQL ? GET_STOCK_LEVEL_HISTORY : undefined,
-    serverAction: fetchStockHistoryServerAction,
-    variables: graphqlVariables,
-    skip: !graphqlVariables || !hasBeenInViewport,
-    fallbackEnabled: true,
-    widgetId: 'stock-level-history',
-    onCompleted: (data) => {
-      if (data.chartData) {
-        setChartData(data.chartData);
-        setProductCodes(data.productCodes || productCodes);
+      const result = await fetchStockHistoryServerAction(variables);
+      setData(result);
+      
+      if (result.chartData) {
+        setChartData(result.chartData);
+        setProductCodes(result.productCodes || productCodes);
       }
-    },
-  });
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [adjustedTimeFrame, productCodes, hasBeenInViewport, fetchStockHistoryServerAction]);
+
+  // Effect to fetch data when dependencies change
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Refetch function for compatibility
+  const refetch = useCallback(() => {
+    fetchData();
+  }, [fetchData]);
 
   // Update chart data when data changes
   useEffect(() => {
@@ -383,7 +364,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
         dateRange={adjustedTimeFrame || undefined}
         performanceMetrics={{
           optimized: true,
-          source: 'GraphQL Fallback',
+          source: 'REST API',
         }}
       >
       {chartData.length === 0 || productCodes.length === 0 ? (

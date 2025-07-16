@@ -1,4 +1,3 @@
-import { useQuery, DocumentNode, ApolloError, WatchQueryFetchPolicy, gql } from '@apollo/client';
 import useSWR, { SWRConfiguration } from 'swr';
 import { useState, useCallback, useContext, useMemo, useRef, useEffect } from 'react';
 import { DashboardDataContext } from '../contexts/DashboardDataContext';
@@ -7,12 +6,10 @@ import { simplePerformanceMonitor, recordMetric } from '@/lib/performance/Simple
 
 // Types
 export interface UseGraphQLFallbackOptions<TData, TVariables> {
-  graphqlQuery?: DocumentNode;
   serverAction?: (variables?: TVariables) => Promise<TData>;
   variables?: TVariables;
   skip?: boolean;
   pollInterval?: number;
-  fetchPolicy?: WatchQueryFetchPolicy;
   onCompleted?: (data: TData) => void;
   onError?: (error: Error) => void;
   extractFromContext?: (contextData: any) => TData | null;
@@ -26,7 +23,7 @@ export interface UseGraphQLFallbackOptions<TData, TVariables> {
 export interface UseGraphQLFallbackResult<TData> {
   data: TData | undefined;
   loading: boolean;
-  error: Error | ApolloError | undefined;
+  error: Error | undefined;
   refetch: () => Promise<void>;
   mode: 'context' | 'server-action' | 'fallback';
   performanceMetrics?: {
@@ -38,7 +35,7 @@ export interface UseGraphQLFallbackResult<TData> {
 
 // Default SWR config for fallback
 const defaultSWRConfig: SWRConfiguration = {
-  revalidateOnFocus: false, // Avoid conflicts with Apollo
+  revalidateOnFocus: false,
   revalidateOnReconnect: true,
   dedupingInterval: 2000,
   errorRetryCount: 3,
@@ -52,16 +49,14 @@ const defaultSWRConfig: SWRConfiguration = {
 };
 
 /**
- * A unified hook that handles GraphQL queries with Server Action fallback
+ * A unified hook that handles Server Action with context fallback
  * Integrates with DashboardDataContext for optimized data fetching
  */
 export function useGraphQLFallback<TData = any, TVariables = any>({
-  graphqlQuery,
   serverAction,
   variables,
   skip = false,
   pollInterval,
-  fetchPolicy = 'cache-first',
   onCompleted,
   onError,
   extractFromContext,
@@ -105,76 +100,12 @@ export function useGraphQLFallback<TData = any, TVariables = any>({
       
       setPerformanceMetrics(metrics);
       
-      // Record to performance monitor (使用簡化系統)
+      // Record to performance monitor
       simplePerformanceMonitor.recordMetric(`${widgetId}_query_time`, queryTime, 'performance');
       simplePerformanceMonitor.recordMetric(`${widgetId}_data_source`, dataSource === 'context' ? 1 : 0, 'performance');
       simplePerformanceMonitor.recordMetric(`${widgetId}_fallback_used`, fallbackUsed ? 1 : 0, 'performance');
     }
-  }, [widgetId]); // Removed variables dependency to prevent infinite loops
-
-  // Check if Apollo Client is available - 優化檢查邏輯，避免重複檢查
-  const [isApolloAvailable, setIsApolloAvailable] = useState(false);
-  const apolloCheckRef = useRef(false);
-  
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !apolloCheckRef.current) {
-      apolloCheckRef.current = true;
-      
-      let mounted = true;
-      try {
-        // Try to get Apollo client from the import
-        import('@/lib/apollo-client').then(({ apolloClient }) => {
-          if (mounted) {
-            setIsApolloAvailable(Boolean(apolloClient));
-          }
-        }).catch(() => {
-          if (mounted) {
-            setIsApolloAvailable(false);
-          }
-        });
-      } catch (error) {
-        if (mounted) {
-          setIsApolloAvailable(false);
-        }
-      }
-      
-      return () => {
-        mounted = false;
-      };
-    }
-  }, []);
-  
-  // GraphQL Query - only use when we have a valid query and Apollo Client is available
-  const {
-    data: graphqlData,
-    loading: graphqlLoading,
-    error: graphqlError,
-    refetch: graphqlRefetch,
-  } = useQuery(
-    graphqlQuery || gql`query EmptyQuery { __typename }`, 
-    {
-      variables,
-      skip: true, // GraphQL disabled - always skip
-      pollInterval,
-      fetchPolicy,
-      errorPolicy: 'all', // Handle errors gracefully
-      onCompleted: (data) => {
-        recordPerformance('context', false);
-        onCompleted?.(data);
-      },
-      onError: (error) => {
-        console.warn('GraphQL error (will fallback):', error.message);
-        handleFetchError(error, 'graphql-query');
-        
-        // Fallback to server action if enabled
-        if (fallbackEnabled && serverAction) {
-          setMode(currentMode => currentMode !== 'server-action' ? 'server-action' : currentMode);
-        } else {
-          onError?.(error);
-        }
-      },
-    }
-  );
+  }, [widgetId]);
 
   // Server Action fallback (using SWR)
   const {
@@ -207,7 +138,7 @@ export function useGraphQLFallback<TData = any, TVariables = any>({
     }
   );
 
-  // Effect to manage mode transitions - 修復無限循環問題
+  // Effect to manage mode transitions
   useEffect(() => {
     if (!skip) {
       startTimeRef.current = Date.now();
@@ -224,7 +155,7 @@ export function useGraphQLFallback<TData = any, TVariables = any>({
         setMode(currentMode => currentMode !== 'server-action' ? 'server-action' : currentMode);
       }
     }
-  }, [skip, contextData, graphqlQuery, isApolloAvailable, graphqlError, serverAction]); // 移除 recordPerformance 依賴
+  }, [skip, contextData, serverAction, recordPerformance]);
 
   // Unified refetch function
   const refetch = useCallback(async () => {
@@ -240,7 +171,7 @@ export function useGraphQLFallback<TData = any, TVariables = any>({
       console.error('Refetch error:', error);
       handleFetchError(error as Error, 'refetch');
     }
-  }, [mode, dashboardData, graphqlRefetch, serverMutate, handleFetchError]);
+  }, [mode, dashboardData, serverMutate, handleFetchError]);
 
   // Return unified result
   const data = contextData ?? serverData;
@@ -257,30 +188,24 @@ export function useGraphQLFallback<TData = any, TVariables = any>({
   };
 }
 
-// Preset configurations for common use cases - OPTIMIZED FOR MINIMAL API CALLS
+// Preset configurations for common use cases
 export const GraphQLFallbackPresets = {
-  // For critical widgets that need real-time data - DISABLED POLLING
+  // For critical widgets that need real-time data
   realtime: {
-    fetchPolicy: 'cache-first' as WatchQueryFetchPolicy, // Changed from network-only
-    pollInterval: undefined, // DISABLED: was 5000
     fallbackEnabled: true,
-    cacheTime: 30 * 60 * 1000, // 30 minutes - increased
-    staleTime: 10 * 60 * 1000, // 10 minutes - increased
+    cacheTime: 30 * 60 * 1000, // 30 minutes
+    staleTime: 10 * 60 * 1000, // 10 minutes
   },
   
   // For widgets that can use cached data
   cached: {
-    fetchPolicy: 'cache-first' as WatchQueryFetchPolicy,
-    pollInterval: undefined,
     fallbackEnabled: true,
-    cacheTime: 60 * 60 * 1000, // 60 minutes - increased
-    staleTime: 30 * 60 * 1000, // 30 minutes - increased
+    cacheTime: 60 * 60 * 1000, // 60 minutes
+    staleTime: 30 * 60 * 1000, // 30 minutes
   },
   
   // For write operations
   mutation: {
-    fetchPolicy: 'no-cache' as WatchQueryFetchPolicy,
-    pollInterval: undefined,
     fallbackEnabled: true,
     cacheTime: 0,
     staleTime: 0,

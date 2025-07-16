@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useGraphQLQuery } from '@/lib/graphql-client-stable';
-import { gql } from 'graphql-tag';
-import { print } from 'graphql';
+// GraphQL imports removed - using REST API only
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 
 interface StockData {
   stock: string;
@@ -19,127 +18,79 @@ interface StockData {
 interface StockTypeSelectorProps extends WidgetComponentProps {
 }
 
-// GraphQL query for stock types
-const GET_STOCK_TYPES = gql`
-  query GetStockTypes {
-    data_codeCollection(
-      filter: {
-        type: { neq: "-" }
-      }
-      orderBy: [{ type: AscNullsLast }]
-    ) {
-      edges {
-        node {
-          type
-        }
-      }
-    }
-  }
-`;
-
-// GraphQL query for latest stock levels
-const GET_LATEST_STOCK_LEVELS = gql`
-  query GetLatestStockLevels {
-    stock_levelCollection(
-      orderBy: [{ stock: AscNullsLast }, { update_time: DescNullsLast }]
-    ) {
-      edges {
-        node {
-          stock
-          stock_level
-          update_time
-          data_code {
-            description
-            type
-          }
-        }
-      }
-    }
-  }
-`;
+// GraphQL queries removed - using REST API only
 
 export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, isEditMode }) => {
   const [productTypes, setProductTypes] = useState<string[]>([]);
   const [selectedType, setSelectedType] = useState<string>('all');
   const [stockData, setStockData] = useState<StockData[]>([]);
   const [filteredStockData, setFilteredStockData] = useState<StockData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   const { refreshTrigger } = useAdminRefresh();
 
-  // GraphQL queries
-  const {
-    data: typesData,
-    loading: typesLoading,
-    error: typesError,
-  } = useGraphQLQuery(
-    print(GET_STOCK_TYPES),
-    {},
-    {
-      enabled: !isEditMode,
-      cacheTime: 600000, // 10分鐘快取 - types 很少變化
-    }
-  );
-
-  const {
-    data: stockLevelsData,
-    loading: stockLevelsLoading,
-    error: stockLevelsError,
-    refetch: refetchStockLevels,
-  } = useGraphQLQuery(
-    print(GET_LATEST_STOCK_LEVELS),
-    {},
-    {
-      enabled: !isEditMode,
-      cacheTime: 300000, // 5分鐘快取
-      refetchInterval: 300000, // 5分鐘自動刷新
-    }
-  );
-
-  // Process GraphQL types data
-  useEffect(() => {
-    if (typesData?.data_codeCollection) {
-      const edges = typesData.data_codeCollection.edges || [];
-      const types = edges
-        .map((edge: any) => edge.node.type)
-        .filter((type: string) => type && type !== '-' && type !== '');
-      const uniqueTypes = [...new Set(types)];
-      
-      if (uniqueTypes.length > 0) {
-        setProductTypes(uniqueTypes as string[]);
-      } else {
-        // 使用預設值
-        const defaultTypes = ['EasyLiner', 'EcoPlus', 'Slate', 'SupaStack', 'Manhole', 'ACO'];
-        setProductTypes(defaultTypes);
-      }
-    }
-  }, [typesData]);
-
-  // Process GraphQL stock levels data
-  useEffect(() => {
-    if (stockLevelsData?.stock_levelCollection) {
-      const edges = stockLevelsData.stock_levelCollection.edges || [];
-      
-      // Group by product to get latest stock level
-      const latestByProduct = new Map<string, any>();
-      edges.forEach((edge: any) => {
-        const { stock, stock_level, update_time, data_code } = edge.node;
-        if (!latestByProduct.has(stock) || latestByProduct.get(stock).update_time < update_time) {
-          latestByProduct.set(stock, {
-            stock,
-            stock_level,
-            update_time,
-            description: data_code?.description || '-',
-            type: data_code?.type || '-',
-          });
+  // REST API data fetching
+  const fetchStockData = useCallback(async () => {
+    if (isEditMode) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const dashboardAPI = createDashboardAPI();
+      const result = await dashboardAPI.fetch(
+        {
+          widgetIds: ['stock_distribution', 'product_types'],
+          dateRange: {
+            start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
+            end: new Date().toISOString(),
+          },
+        },
+        {
+          strategy: 'client',
+          cache: { ttl: 300 }, // 5-minute cache
         }
-      });
+      );
 
-      // Convert to array and filter stock level > 0
-      const allStockData = Array.from(latestByProduct.values())
-        .filter(item => item.stock_level > 0);
-      
-      setStockData(allStockData);
+      if (result.widgets && result.widgets.length > 0) {
+        // Process stock distribution data
+        const stockWidget = result.widgets.find(w => w.widgetId === 'stock_distribution');
+        if (stockWidget && !stockWidget.data.error) {
+          const stockItems = stockWidget.data.value || [];
+          setStockData(stockItems.filter((item: any) => item.stock_level > 0));
+        }
+
+        // Process product types data
+        const typesWidget = result.widgets.find(w => w.widgetId === 'product_types');
+        if (typesWidget && !typesWidget.data.error) {
+          const types = typesWidget.data.value || [];
+          setProductTypes(types.length > 0 ? types : ['EasyLiner', 'EcoPlus', 'Slate', 'SupaStack', 'Manhole', 'ACO']);
+        } else {
+          // Use default types if API fails
+          setProductTypes(['EasyLiner', 'EcoPlus', 'Slate', 'SupaStack', 'Manhole', 'ACO']);
+        }
+      }
+    } catch (err) {
+      setError(err as Error);
+      toast.error('Failed to load stock data');
+      // Use default types on error
+      setProductTypes(['EasyLiner', 'EcoPlus', 'Slate', 'SupaStack', 'Manhole', 'ACO']);
+    } finally {
+      setLoading(false);
     }
-  }, [stockLevelsData]);
+  }, [isEditMode]);
+
+  // Initial data load
+  useEffect(() => {
+    fetchStockData();
+  }, [fetchStockData]);
+
+  // Refresh on trigger
+  useEffect(() => {
+    if (refreshTrigger) {
+      fetchStockData();
+    }
+  }, [refreshTrigger, fetchStockData]);
 
   // Filter stock data based on selected type
   useEffect(() => {
@@ -168,12 +119,12 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
   // 當選擇類型改變時
   const handleTypeChange = (type: string) => {
     setSelectedType(type);
-    refetchStockLevels();
+    fetchStockData(); // Refresh data
   };
 
-  // Unified loading state
-  const isLoading = typesLoading && !productTypes.length;
-  const isLoadingStock = stockLevelsLoading;
+  // Loading states
+  const isLoading = loading && !productTypes.length;
+  const isLoadingStock = loading;
 
   if (isLoading) {
     return (
@@ -189,7 +140,7 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
       <div className='mb-6 flex items-center justify-between'>
         <h3 className='text-xl font-semibold text-white'>
           Stock Inventory
-          <span className='ml-2 text-xs text-blue-400'>⚡ GraphQL</span>
+          <span className='ml-2 text-xs text-green-400'>⚡ REST API</span>
         </h3>
         <select
           value={selectedType}

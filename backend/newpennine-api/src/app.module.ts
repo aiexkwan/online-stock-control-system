@@ -16,6 +16,7 @@ import { GrnModule } from './grn/grn.module';
 import { AcoModule } from './aco/aco.module';
 import { WarehouseTransfersModule } from './warehouse-transfers/warehouse-transfers.module';
 import { AnalysisModule } from './analysis/analysis.module';
+import { ProductsModule } from './products/products.module';
 import supabaseConfig from './config/supabase.config';
 
 @Module({
@@ -38,6 +39,7 @@ import supabaseConfig from './config/supabase.config';
     AcoModule,
     WarehouseTransfersModule,
     AnalysisModule,
+    ProductsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

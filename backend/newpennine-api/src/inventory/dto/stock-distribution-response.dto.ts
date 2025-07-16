@@ -20,4 +20,10 @@ export class StockDistributionResponseDto {
   total!: number;
   offset!: number;
   limit!: number;
+  metadata?: {
+    executed_at?: string;
+    calculation_time?: string;
+    cached?: boolean;
+  };
+  error?: string;
 }

@@ -1,12 +1,12 @@
 /**
  * Transfer Time Distribution Widget
  * 以線形圖顯示 transfer done 的時間分布
- * 使用統一的 ChartContainer 和 Progressive Loading
+ * REST API 版本，已移除所有 GraphQL 相關代碼
  */
 
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { ChartBarIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import {
@@ -22,33 +22,11 @@ import { format, startOfHour, addHours } from 'date-fns';
 import { getYesterdayRange } from '@/app/utils/timezone';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { WidgetStyles } from '@/app/utils/widgetStyles';
-import { useGraphQLFallback, GraphQLFallbackPresets } from '@/app/admin/hooks/useGraphQLFallback';
+// GraphQL imports removed - using REST API only
 import { useInViewport } from '@/app/admin/hooks/useInViewport';
 import { ChartContainer, LineChartSkeleton } from './common';
-import { gql } from '@apollo/client';
 
-// GraphQL Query
-const GET_TRANSFER_TIME_DISTRIBUTION = gql`
-  query GetTransferTimeDistribution($startDate: timestamptz!, $endDate: timestamptz!) {
-    record_transferCollection(
-      filter: {
-        datetime_done: { gte: $startDate, lte: $endDate }
-        is_done: { eq: true }
-      }
-      orderBy: [{ datetime_done: ASC }]
-    ) {
-      edges {
-        node {
-          record_transfer_id
-          datetime_done
-          pallet_id
-          from_location
-          to_location
-        }
-      }
-    }
-  }
-`;
+// GraphQL query removed - using REST API only
 
 interface TimeDistributionData {
   timeSlots: Array<{
@@ -88,18 +66,18 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
     };
   }, [timeFrame]);
 
-  // 使用統一的 GraphQL fallback hook
-  const { 
-    data: graphqlData, 
-    loading, 
-    error 
-  } = useGraphQLFallback<
-    { record_transferCollection: { edges: Array<{ node: any }> } },
-    { startDate: string; endDate: string }
-  >({
-    graphqlQuery: GET_TRANSFER_TIME_DISTRIBUTION,
-    serverAction: async () => {
-      // Server Actions fallback
+  // 使用 REST API 獲取數據
+  const [apiData, setApiData] = useState<{ timeSlots: any[]; totalTransfers: number } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchData = useCallback(async () => {
+    if (isEditMode || !isInViewport) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
       const dashboardAPI = createDashboardAPI();
       const dashboardResult = await dashboardAPI.fetch(
         {
@@ -120,88 +98,39 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
       );
 
       if (widgetData && !widgetData.data.error) {
-        // Transform server data to match GraphQL format
         const timeSlots = widgetData.data.value || [];
+        const totalTransfers = timeSlots.reduce((sum: number, slot: any) => sum + (slot.value || 0), 0);
         
-        // Create mock GraphQL response
-        const mockEdges = timeSlots.flatMap((slot: any) => {
-          const transfers = [];
-          for (let i = 0; i < slot.value; i++) {
-            transfers.push({
-              node: {
-                record_transfer_id: `mock-${slot.time}-${i}`,
-                datetime_done: slot.fullTime || slot.time,
-              }
-            });
-          }
-          return transfers;
+        setApiData({
+          timeSlots,
+          totalTransfers,
         });
-        
-        return {
-          record_transferCollection: {
-            edges: mockEdges
-          }
-        };
+      } else {
+        throw new Error(widgetData?.data.error || 'No data received');
       }
-      
-      throw new Error(widgetData?.data.error || 'No data received');
-    },
-    variables: {
-      startDate: dateRange.start.toISOString(),
-      endDate: dateRange.end.toISOString(),
-    },
-    skip: isEditMode || !isInViewport,
-    fallbackEnabled: true,
-    widgetId: 'TransferTimeDistributionWidget',
-    ...GraphQLFallbackPresets.cached,
-  });
+    } catch (err) {
+      setError(err as Error);
+    } finally {
+      setLoading(false);
+    }
+  }, [dateRange, isEditMode, isInViewport]);
 
-  // 處理數據 - 將時間分組為 12 個時間段
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // 處理數據 - 使用 REST API 的結果
   const data = useMemo<TimeDistributionData>(() => {
-    if (!graphqlData?.record_transferCollection?.edges) {
+    if (!apiData) {
       return { timeSlots: [], totalTransfers: 0 };
     }
 
-    const edges = graphqlData.record_transferCollection.edges;
-    const totalTransfers = edges.length;
-
-    // 計算時間範圍並分成 12 個時間段
-    const timeSlotCount = 12;
-    const totalMillis = dateRange.end.getTime() - dateRange.start.getTime();
-    const slotMillis = totalMillis / timeSlotCount;
-
-    // 初始化時間段
-    const slots: Map<number, { time: string; value: number; fullTime: string }> = new Map();
-    for (let i = 0; i < timeSlotCount; i++) {
-      const slotStart = new Date(dateRange.start.getTime() + i * slotMillis);
-      slots.set(i, {
-        time: format(slotStart, 'HH:mm'),
-        fullTime: format(slotStart, 'yyyy-MM-dd HH:mm'),
-        value: 0,
-      });
-    }
-
-    // 統計每個時間段的傳輸數量
-    edges.forEach((edge: any) => {
-      const datetime_done = edge.node.datetime_done;
-      if (!datetime_done) return;
-      
-      const tranDate = new Date(datetime_done);
-      const timeDiff = tranDate.getTime() - dateRange.start.getTime();
-      const slotIndex = Math.min(Math.floor(timeDiff / slotMillis), timeSlotCount - 1);
-      
-      if (slotIndex >= 0 && slotIndex < timeSlotCount) {
-        const slot = slots.get(slotIndex)!;
-        slot.value++;
-      }
-    });
-
-    const timeSlots = Array.from(slots.values());
+    const { timeSlots, totalTransfers } = apiData;
     
     // 找出高峰時段
     let peakHour = '';
     let maxValue = 0;
-    timeSlots.forEach(slot => {
+    timeSlots.forEach((slot: any) => {
       if (slot.value > maxValue) {
         maxValue = slot.value;
         peakHour = slot.time;
@@ -214,7 +143,7 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
       peakHour,
       optimized: true,
     };
-  }, [graphqlData, dateRange]);
+  }, [apiData]);
 
   // 當不在視窗中時顯示 skeleton
   if (!isInViewport && !isEditMode) {
@@ -285,7 +214,7 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
         emptyMessage="No transfers found in this time period"
         dateRange={`${format(dateRange.start, 'MMM d')} - ${format(dateRange.end, 'MMM d')}`}
         performanceMetrics={{
-          source: 'GraphQL',
+          source: 'REST API',
           optimized: data.optimized,
         }}
         metadata={{
@@ -293,8 +222,7 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
           peakHour: data.peakHour,
         }}
         onRefresh={() => {
-          // Trigger refetch if needed
-          window.location.reload();
+          fetchData();
         }}
       >
         {chartContent}

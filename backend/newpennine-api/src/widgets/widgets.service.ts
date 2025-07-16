@@ -32,6 +32,30 @@ import {
   TransactionReportItemDto,
   TransactionReportSummaryDto,
 } from './dto/transaction-report-response.dto';
+import { TopProductsByQuantityQueryDto } from './dto/top-products-by-quantity-query.dto';
+import {
+  TopProductsByQuantityResponseDto,
+  TopProductItemDto,
+  TopProductsByQuantityMetadataDto,
+} from './dto/top-products-by-quantity-response.dto';
+import { ProductionDetailsQueryDto } from './dto/production-details-query.dto';
+import {
+  ProductionDetailsResponseDto,
+  ProductionDetailsItemDto,
+  ProductionDetailsMetadataDto,
+} from './dto/production-details-response.dto';
+import { StaffWorkloadQueryDto } from './dto/staff-workload-query.dto';
+import {
+  StaffWorkloadResponseDto,
+  StaffWorkloadItemDto,
+  StaffWorkloadSummaryDto,
+  StaffWorkloadMetadataDto,
+} from './dto/staff-workload-response.dto';
+import { StockDistributionQueryDto } from '../inventory/dto/stock-distribution-query.dto';
+import {
+  StockDistributionResponseDto,
+  StockDistributionItemDto,
+} from '../inventory/dto/stock-distribution-response.dto';
 
 @Injectable()
 export class WidgetsService {
@@ -131,22 +155,20 @@ export class WidgetsService {
     }
 
     try {
-      let query = this.supabase
+      const query = this.supabase
         .from('record_inventory')
         .select(
           `
           *,
-          data_code:code(code, descr, unit, material),
-          record_palletinfo:palletid(location)
+          data_code(code, description, type),
+          record_palletinfo(*)
         `,
           { count: 'exact' },
         )
-        .order('time', { ascending: false })
+        .order('latest_update', { ascending: false })
         .range(offset, offset + limit - 1);
 
-      if (warehouse) {
-        query = query.eq('whouse', warehouse);
-      }
+      // Note: warehouse filtering not available - record_inventory has no whouse column
 
       const { data, count, error } = await query;
 
@@ -155,16 +177,25 @@ export class WidgetsService {
       // Transform the data to a cleaner format
       const transformedData =
         data?.map((item) => ({
-          id: item.id,
-          palletId: item.palletid,
-          productCode: item.code,
-          productDescription: item.data_code?.descr || '',
-          quantity: item.qty,
-          unit: item.data_code?.unit || '',
-          material: item.data_code?.material || '',
-          warehouse: item.whouse,
-          location: item.record_palletinfo?.location || '',
-          timestamp: item.time,
+          id: item.uuid,
+          palletId: item.plt_num,
+          productCode: item.product_code,
+          productDescription: item.data_code?.description || '',
+          quantity:
+            (item.injection || 0) +
+            (item.pipeline || 0) +
+            (item.prebook || 0) +
+            (item.await || 0) +
+            (item.fold || 0) +
+            (item.bulk || 0) +
+            (item.backcarpark || 0) +
+            (item.damage || 0) +
+            (item.await_grn || 0),
+          unit: '',
+          material: '',
+          warehouse: '', // No warehouse column in record_inventory
+          location: '', // No location column in record_palletinfo
+          timestamp: item.latest_update,
         })) || [];
 
       return {
@@ -225,17 +256,15 @@ export class WidgetsService {
 
     try {
       // Build base query
-      let baseQuery = this.supabase.from('record_inventory').select(
+      const baseQuery = this.supabase.from('record_inventory').select(
         `
           *,
-          data_code:code(code, descr, unit, material),
-          record_palletinfo:palletid(location)
+          data_code(code, description, type),
+          record_palletinfo(*)
         `,
       );
 
-      if (warehouse) {
-        baseQuery = baseQuery.eq('whouse', warehouse);
-      }
+      // Note: warehouse filtering not available - record_inventory has no whouse column
 
       const { data: inventoryData, error: inventoryError } = await baseQuery;
 
@@ -250,13 +279,22 @@ export class WidgetsService {
       const uniqueWarehouses = new Set<string>();
 
       inventoryData?.forEach((item) => {
-        const productCode = item.code;
-        const productDescription = item.data_code?.descr || '';
-        const quantity = item.qty || 0;
-        const unit = item.data_code?.unit || '';
-        const material = item.data_code?.material || '';
-        const location = item.record_palletinfo?.location || '';
-        const itemWarehouse = item.whouse;
+        const productCode = item.product_code;
+        const productDescription = item.data_code?.description || '';
+        const quantity =
+          (item.injection || 0) +
+          (item.pipeline || 0) +
+          (item.prebook || 0) +
+          (item.await || 0) +
+          (item.fold || 0) +
+          (item.bulk || 0) +
+          (item.backcarpark || 0) +
+          (item.damage || 0) +
+          (item.await_grn || 0);
+        const unit = '';
+        const material = '';
+        const location = ''; // No location column in record_palletinfo
+        const itemWarehouse = 'Unknown'; // No warehouse column
 
         totalQuantity += quantity;
         totalPallets += 1;
@@ -268,13 +306,13 @@ export class WidgetsService {
             productCode,
             productDescription,
             totalQuantity: 0,
-            unit,
-            material,
+            unit: '',
+            material: '',
             totalPallets: 0,
             averageQuantityPerPallet: 0,
             locations: [],
             warehouses: [],
-            lastUpdate: item.time,
+            lastUpdate: item.latest_update,
           });
         }
 
@@ -430,12 +468,14 @@ export class WidgetsService {
       const result: any = {
         value,
         label,
+        dataSource: query.dataSource, // Add dataSource at root level for backward compatibility
         metadata: {
           optimized: true,
           calculationTime: `${calculationTime}ms`,
           dataSource: query.dataSource,
           cached: false,
           lastUpdated: new Date().toISOString(),
+          ...(query.warehouse && { warehouse: query.warehouse }), // Add warehouse if provided
         },
         timestamp: new Date().toISOString(),
       };
@@ -859,6 +899,7 @@ export class WidgetsService {
         metadata: {
           executed_at: new Date().toISOString(),
           calculation_time: `${calculationTime}ms`,
+          ...(query.warehouse && { warehouse: query.warehouse }),
         },
         timestamp: new Date().toISOString(),
       };
@@ -1073,6 +1114,8 @@ export class WidgetsService {
           transactionsByType: {},
         },
         metadata: {
+          executed_at: new Date().toISOString(),
+          calculation_time: '0ms',
           startDate: query.startDate,
           endDate: query.endDate,
           ...(query.warehouse && { warehouse: query.warehouse }),
@@ -1093,9 +1136,9 @@ export class WidgetsService {
           product:data_code!record_transfer_product_code_fkey(code, description)
         `,
         )
-        .gte('timestamp', query.startDate)
-        .lte('timestamp', query.endDate)
-        .order('timestamp', { ascending: false });
+        .gte('time', query.startDate)
+        .lte('time', query.endDate)
+        .order('time', { ascending: false });
 
       if (query.warehouse) {
         transferQuery = transferQuery.or(
@@ -1115,9 +1158,9 @@ export class WidgetsService {
           user:data_id!record_history_userid_fkey(user_id, user_fullname)
         `,
         )
-        .gte('timestamp', query.startDate)
-        .lte('timestamp', query.endDate)
-        .order('timestamp', { ascending: false });
+        .gte('time', query.startDate)
+        .lte('time', query.endDate)
+        .order('time', { ascending: false });
 
       if (query.warehouse) {
         historyQuery = historyQuery.or(
@@ -1137,7 +1180,7 @@ export class WidgetsService {
       // Process transfers
       transferData?.forEach((transfer) => {
         transactions.push({
-          timestamp: transfer.timestamp,
+          timestamp: transfer.tran_date,
           transactionType: 'Transfer',
           palletId: transfer.pallet_id,
           productCode: transfer.product_code,
@@ -1228,11 +1271,497 @@ export class WidgetsService {
           transactionsByType: {},
         },
         metadata: {
+          executed_at: new Date().toISOString(),
+          calculation_time: '0ms',
           startDate: query.startDate,
           endDate: query.endDate,
           ...(query.warehouse && { warehouse: query.warehouse }),
         },
         timestamp: new Date().toISOString(),
+        error: (error as Error).message,
+      };
+    }
+  }
+
+  async getTopProductsByQuantity(
+    query: TopProductsByQuantityQueryDto,
+  ): Promise<TopProductsByQuantityResponseDto> {
+    const startTime = Date.now();
+
+    try {
+      const { limit = 10, warehouse, sortBy = 'quantity', timeRange } = query;
+
+      // Build query conditions
+      let queryBuilder = this.supabase.from('record_palletinfo').select(`
+          product_code,
+          product_qty,
+          data_code (
+            description,
+            colour,
+            type
+          )
+        `);
+
+      // Apply warehouse filter if provided
+      if (warehouse) {
+        queryBuilder = queryBuilder.eq('warehouse', warehouse);
+      }
+
+      // Apply time range filter if provided
+      if (timeRange) {
+        const now = new Date();
+        let startDate: Date;
+
+        switch (timeRange) {
+          case '7d':
+            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+          case '30d':
+            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            break;
+          case '90d':
+            startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+            break;
+          default:
+            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        }
+
+        queryBuilder = queryBuilder.gte(
+          'generate_time',
+          startDate.toISOString(),
+        );
+      }
+
+      const { data, error } = await queryBuilder;
+
+      if (error) {
+        throw new Error(`Database error: ${error.message}`);
+      }
+
+      // Aggregate data by product code
+      const productMap = new Map<
+        string,
+        {
+          product_code: string;
+          description: string;
+          colour?: string;
+          type?: string;
+          total_quantity: number;
+          total_value: number;
+          pallet_count: number;
+        }
+      >();
+
+      data?.forEach((record: any) => {
+        const key = record.product_code;
+        const existing = productMap.get(key);
+
+        if (existing) {
+          existing.total_quantity += record.product_qty || 0;
+          existing.pallet_count += 1;
+        } else {
+          productMap.set(key, {
+            product_code: record.product_code,
+            description: record.data_code?.description || '',
+            colour: record.data_code?.colour || undefined,
+            type: record.data_code?.type || undefined,
+            total_quantity: record.product_qty || 0,
+            total_value: 0, // Would need pricing data
+            pallet_count: 1,
+          });
+        }
+      });
+
+      // Sort and limit results
+      const products = Array.from(productMap.values())
+        .sort((a, b) => {
+          if (sortBy === 'quantity') {
+            return b.total_quantity - a.total_quantity;
+          } else {
+            return b.total_value - a.total_value;
+          }
+        })
+        .slice(0, limit);
+
+      const executionTime = Date.now() - startTime;
+
+      return {
+        products: products.map((p) => ({
+          product_code: p.product_code,
+          description: p.description,
+          total_quantity: p.total_quantity,
+          colour: p.colour,
+          type: p.type,
+          total_value: p.total_value,
+          pallet_count: p.pallet_count,
+        })),
+        metadata: {
+          total_products: productMap.size,
+          filters: { warehouse, timeRange },
+          execution_time_ms: executionTime,
+          executed_at: new Date().toISOString(),
+          sort_by: sortBy,
+        },
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error('Error fetching top products by quantity:', error);
+      throw error;
+    }
+  }
+
+  async getProductionDetails(
+    query: ProductionDetailsQueryDto,
+  ): Promise<ProductionDetailsResponseDto> {
+    const startTime = Date.now();
+
+    try {
+      const { startDate, endDate, warehouse, productType, limit = 50 } = query;
+
+      let queryBuilder = this.supabase
+        .from('record_palletinfo')
+        .select(
+          `
+          plt_num,
+          product_code,
+          product_qty,
+          generate_time,
+          plt_remark,
+          series,
+          pdf_url,
+          data_code (
+            description,
+            colour,
+            type
+          )
+        `,
+        )
+        .gte('generate_time', startDate)
+        .lte('generate_time', endDate)
+        .ilike('plt_remark', '%finished in production%')
+        .order('generate_time', { ascending: false })
+        .limit(limit);
+
+      // Apply warehouse filter if provided (using plt_remark as warehouse info)
+      if (warehouse) {
+        queryBuilder = queryBuilder.ilike('plt_remark', `%${warehouse}%`);
+      }
+
+      // Apply product type filter if provided
+      if (productType) {
+        queryBuilder = queryBuilder.filter('data_code.type', 'eq', productType);
+      }
+
+      const { data, error } = await queryBuilder;
+
+      if (error) {
+        throw new Error(`Database error: ${error.message}`);
+      }
+
+      // Calculate metadata
+      const totalQuantity =
+        data?.reduce((sum, record) => sum + (record.product_qty || 0), 0) || 0;
+      const uniqueProducts = new Set(data?.map((record) => record.product_code))
+        .size;
+      const executionTime = Date.now() - startTime;
+
+      return {
+        details:
+          data?.map((record) => ({
+            plt_num: record.plt_num,
+            product_code: record.product_code,
+            description: record.data_code?.description || '',
+            product_qty: record.product_qty,
+            generate_time: record.generate_time,
+            plt_remark: record.plt_remark,
+            series: record.series,
+            pdf_url: record.pdf_url,
+            colour: record.data_code?.colour,
+            type: record.data_code?.type,
+          })) || [],
+        metadata: {
+          total_records: data?.length || 0,
+          unique_products: uniqueProducts,
+          total_quantity: totalQuantity,
+          filters: { warehouse, productType },
+          execution_time_ms: executionTime,
+          executed_at: new Date().toISOString(),
+        },
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error('Error fetching production details:', error);
+      throw error;
+    }
+  }
+
+  async getStaffWorkload(
+    query: StaffWorkloadQueryDto,
+  ): Promise<StaffWorkloadResponseDto> {
+    const startTime = Date.now();
+
+    try {
+      const {
+        startDate,
+        endDate,
+        department,
+        userId,
+        actionType = 'QC passed',
+      } = query;
+
+      let queryBuilder = this.supabase
+        .from('record_history')
+        .select(
+          `
+          id,
+          time,
+          action,
+          plt_num,
+          loc,
+          remark,
+          uuid
+        `,
+        )
+        .gte('time', startDate)
+        .lte('time', endDate)
+        .ilike('action', `%${actionType}%`)
+        .order('time', { ascending: true });
+
+      // Apply filters
+      if (department) {
+        queryBuilder = queryBuilder.ilike('loc', `%${department}%`);
+      }
+
+      if (userId) {
+        queryBuilder = queryBuilder.eq('uuid', userId);
+      }
+
+      const { data, error } = await queryBuilder;
+
+      if (error) {
+        throw new Error(`Database error: ${error.message}`);
+      }
+
+      // Group by date and user
+      const workloadMap = new Map<
+        string,
+        {
+          date: string;
+          user_id: string;
+          task_count: number;
+          department?: string;
+          action_type: string;
+        }
+      >();
+
+      data?.forEach((record) => {
+        const date = new Date(record.time).toISOString().split('T')[0];
+        const key = `${date}-${record.uuid}`;
+
+        if (workloadMap.has(key)) {
+          workloadMap.get(key)!.task_count += 1;
+        } else {
+          workloadMap.set(key, {
+            date,
+            user_id: record.uuid || '',
+            task_count: 1,
+            department: record.loc,
+            action_type: record.action || '',
+          });
+        }
+      });
+
+      const workloadData = Array.from(workloadMap.values());
+
+      // Calculate summary statistics
+      const totalTasks = workloadData.reduce((sum, w) => sum + w.task_count, 0);
+      const uniqueDays = new Set(workloadData.map((w) => w.date)).size;
+      const avgTasksPerDay = uniqueDays > 0 ? totalTasks / uniqueDays : 0;
+
+      // Find peak day
+      const dailyTasks = new Map<string, number>();
+      workloadData.forEach((w) => {
+        dailyTasks.set(w.date, (dailyTasks.get(w.date) || 0) + w.task_count);
+      });
+
+      let peakDay = '';
+      let peakTasks = 0;
+      dailyTasks.forEach((tasks, date) => {
+        if (tasks > peakTasks) {
+          peakTasks = tasks;
+          peakDay = date;
+        }
+      });
+
+      const activeStaffCount = new Set(workloadData.map((w) => w.user_id)).size;
+
+      const executionTime = Date.now() - startTime;
+
+      return {
+        workload: workloadData,
+        summary: {
+          total_tasks: totalTasks,
+          avg_tasks_per_day: Math.round(avgTasksPerDay * 100) / 100,
+          peak_day: peakDay,
+          peak_tasks: peakTasks,
+          active_staff_count: activeStaffCount,
+        },
+        metadata: {
+          filters: { department, userId, actionType },
+          execution_time_ms: executionTime,
+          executed_at: new Date().toISOString(),
+          date_range: { start: startDate, end: endDate },
+        },
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error('Error fetching staff workload:', error);
+      throw error;
+    }
+  }
+
+  async getStockDistribution(
+    query: StockDistributionQueryDto,
+  ): Promise<StockDistributionResponseDto> {
+    const startTime = Date.now();
+
+    // Check cache first
+    const cacheKey = this.cacheService.generateKey('stock-distribution', query);
+    const cachedData =
+      this.cacheService.get<StockDistributionResponseDto>(cacheKey);
+
+    if (cachedData) {
+      return cachedData;
+    }
+
+    if (!this.supabase) {
+      return {
+        data: [],
+        total: 0,
+        offset: query.offset || 0,
+        limit: query.limit || 50,
+        error: 'Database connection not available',
+      };
+    }
+
+    try {
+      // Build the query to get stock distribution data
+      const { data, error, count } = await this.supabase
+        .from('record_inventory')
+        .select(
+          `
+          product_code,
+          injection,
+          pipeline,
+          prebook,
+          await,
+          fold,
+          bulk,
+          await_grn,
+          backcarpark,
+          data_code!inner(
+            description,
+            colour,
+            type
+          )
+        `,
+          { count: 'exact' },
+        )
+        .order('product_code')
+        .range(
+          query.offset || 0,
+          (query.offset || 0) + (query.limit || 50) - 1,
+        );
+
+      if (error) {
+        console.error('Error fetching stock distribution:', error);
+        throw error;
+      }
+
+      // Group by product code and aggregate the data
+      const productMap = new Map<string, StockDistributionItemDto>();
+
+      data?.forEach((item: any) => {
+        const productCode = item.product_code;
+
+        if (!productMap.has(productCode)) {
+          productMap.set(productCode, {
+            product_code: productCode,
+            injection: 0,
+            pipeline: 0,
+            prebook: 0,
+            await: 0,
+            fold: 0,
+            bulk: 0,
+            await_grn: 0,
+            backcarpark: 0,
+            data_code: {
+              description: item.data_code?.description,
+              colour: item.data_code?.colour,
+              type: item.data_code?.type,
+            },
+          });
+        }
+
+        const product = productMap.get(productCode)!;
+        product.injection += item.injection || 0;
+        product.pipeline += item.pipeline || 0;
+        product.prebook += item.prebook || 0;
+        product.await += item.await || 0;
+        product.fold += item.fold || 0;
+        product.bulk += item.bulk || 0;
+        product.await_grn += item.await_grn || 0;
+        product.backcarpark += item.backcarpark || 0;
+      });
+
+      // Convert to array and sort by total quantity
+      const transformedData = Array.from(productMap.values()).sort((a, b) => {
+        const totalA =
+          (a.injection || 0) +
+          (a.pipeline || 0) +
+          (a.prebook || 0) +
+          (a.await || 0) +
+          (a.fold || 0) +
+          (a.bulk || 0) +
+          (a.await_grn || 0) +
+          (a.backcarpark || 0);
+        const totalB =
+          (b.injection || 0) +
+          (b.pipeline || 0) +
+          (b.prebook || 0) +
+          (b.await || 0) +
+          (b.fold || 0) +
+          (b.bulk || 0) +
+          (b.await_grn || 0) +
+          (b.backcarpark || 0);
+        return totalB - totalA;
+      });
+
+      const calculationTime = Date.now() - startTime;
+
+      const result: StockDistributionResponseDto = {
+        data: transformedData,
+        total: count || 0,
+        offset: query.offset || 0,
+        limit: query.limit || 50,
+        metadata: {
+          executed_at: new Date().toISOString(),
+          calculation_time: `${calculationTime}ms`,
+          cached: false,
+        },
+      };
+
+      // Cache the result for 5 minutes
+      this.cacheService.set(cacheKey, result, 5 * 60 * 1000);
+
+      return result;
+    } catch (error) {
+      console.error('Error fetching stock distribution:', error);
+      return {
+        data: [],
+        total: 0,
+        offset: query.offset || 0,
+        limit: query.limit || 50,
         error: (error as Error).message,
       };
     }

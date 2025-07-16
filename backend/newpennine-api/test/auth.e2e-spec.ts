@@ -32,34 +32,40 @@ describe('Authentication System (e2e)', () => {
     });
 
     it('should register a new user', () => {
+      const testEmail = `test-${Date.now()}@example.com`;
       return request(app.getHttpServer())
         .post('/auth/register')
         .send({
-          email: 'test@example.com',
-          password: 'password123',
-          confirmPassword: 'password123',
+          email: testEmail,
+          password: 'Test@Pass123!',
+          confirmPassword: 'Test@Pass123!',
+          name: 'Test User',
         })
         .expect(201)
         .expect((res) => {
           expect(res.body.user).toBeDefined();
-          expect(res.body.user.email).toBe('test@example.com');
+          expect(res.body.user.email).toBe(testEmail);
           expect(res.body.access_token).toBeDefined();
           authToken = res.body.access_token;
         });
     });
 
     it('should login with valid credentials', () => {
+      // Use system login credentials from environment
+      const email = process.env.SYS_LOGIN || 'akwan@pennineindustries.com';
+      const password = process.env.SYS_PASSWORD || 'X315Y316';
+
       return request(app.getHttpServer())
         .post('/auth/login')
         .send({
-          email: 'test@example.com',
-          password: 'password123',
+          email,
+          password,
         })
         .expect(200)
         .expect((res) => {
           expect(res.body.access_token).toBeDefined();
           expect(res.body.user).toBeDefined();
-          expect(res.body.user.email).toBe('test@example.com');
+          expect(res.body.user.email).toBe(email);
           authToken = res.body.access_token;
         });
     });
@@ -98,12 +104,15 @@ describe('Authentication System (e2e)', () => {
 
   describe('Protected API Endpoints', () => {
     beforeEach(async () => {
-      // Login to get auth token
+      // Login to get auth token using system credentials
+      const email = process.env.SYS_LOGIN || 'akwan@pennineindustries.com';
+      const password = process.env.SYS_PASSWORD || 'X315Y316';
+
       const loginResponse = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
-          email: 'test@example.com',
-          password: 'password123',
+          email,
+          password,
         });
       authToken = loginResponse.body.access_token;
     });
@@ -150,12 +159,15 @@ describe('Authentication System (e2e)', () => {
 
   describe('JWT Token Validation', () => {
     it('should refresh token successfully', async () => {
-      // First login
+      // First login with system credentials
+      const email = process.env.SYS_LOGIN || 'akwan@pennineindustries.com';
+      const password = process.env.SYS_PASSWORD || 'X315Y316';
+
       const loginResponse = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
-          email: 'test@example.com',
-          password: 'password123',
+          email,
+          password,
         });
 
       const refreshToken = loginResponse.body.refresh_token;
