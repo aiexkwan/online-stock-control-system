@@ -1,12 +1,9 @@
 /**
- * Top Products Distribution Widget - Apollo GraphQL Version
+ * Top Products Distribution Widget - REST API Version
  * 顯示指定時間範圍內產量最高的前10個產品的分布圖（Donut Chart）
  * 用於 Injection Dashboard
  * 
- * GraphQL Migration:
- * - 使用 Apollo Client 查詢
- * - 支援 cache-and-network 策略
- * - 保留 Server Actions fallback
+ * REST API 版本，已移除所有 GraphQL 相關代碼
  */
 
 'use client';
@@ -65,69 +62,16 @@ export const TopProductsDistributionWidget = React.memo(function TopProductsDist
     };
   }, [timeFrame]);
 
-  // 使用環境變量控制是否使用 GraphQL
-  const useGraphQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_INJECTION === 'true' || 
-                     widget?.config?.useGraphQL === true;
-
-  // GraphQL 查詢 - 使用生成嘅 hook (同 TopProductsByQuantityWidget 共享)
-  const { 
-    data: graphqlData, 
-    loading: graphqlLoading, 
-    error: graphqlError 
-  } = useGetTopProductsByQuantityQuery({
-    skip: !useGraphQL || isEditMode,
-    variables: { startDate, endDate },
-    pollInterval: 300000, // 5分鐘輪詢
-    fetchPolicy: 'cache-and-network',
-    onCompleted: (data) => {
-      // 處理查詢結果：按產品代碼聚合數量
-      const productMap = new Map<string, { qty: number; description?: string; colour?: string }>();
-      
-      data?.record_palletinfoCollection?.edges?.forEach((edge: any) => {
-        const { product_code, product_qty, data_code } = edge.node;
-        
-        if (productMap.has(product_code)) {
-          const existing = productMap.get(product_code)!;
-          existing.qty += product_qty || 0;
-        } else {
-          productMap.set(product_code, {
-            qty: product_qty || 0,
-            description: data_code?.description,
-            colour: data_code?.colour,
-          });
-        }
-      });
-      
-      // 排序並取前10個
-      const sorted = Array.from(productMap.entries())
-        .sort((a, b) => b[1].qty - a[1].qty)
-        .slice(0, 10);
-      
-      // 計算總數
-      const total = sorted.reduce((sum, [_, data]) => sum + data.qty, 0);
-      
-      // 轉換為圖表數據格式
-      const chartData: ChartData[] = sorted.map(([code, data], index) => ({
-        name: code,
-        value: data.qty,
-        percentage: (data.qty / total) * 100,
-        colour: data.colour || COLORS[index % COLORS.length],
-      }));
-      
-      setChartData(chartData);
-    }
-  });
-
-  // Server Actions fallback
-  const [serverActionsLoading, setServerActionsLoading] = useState(!useGraphQL);
-  const [serverActionsError, setServerActionsError] = useState<string | null>(null);
+  // 使用 REST API 獲取數據
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (useGraphQL || isEditMode) return;
+    if (isEditMode) return;
 
     const fetchData = async () => {
-      setServerActionsLoading(true);
-      setServerActionsError(null);
+      setLoading(true);
+      setError(null);
 
       try {
         const dashboardAPI = createDashboardAPI();
@@ -137,31 +81,42 @@ export const TopProductsDistributionWidget = React.memo(function TopProductsDist
             dateRange: { start: startDate, end: endDate },
           },
           {
-            strategy: 'server',
-            cache: { ttl: 300 },
+            strategy: 'client',
+            cache: { ttl: 300 }, // 5-minute cache
           }
         );
 
-        if (result.widgets && result.widgets.length > 0) {
-          const data = result.widgets[0].data;
-          if (data.chartData) {
-            setChartData(data.chartData);
-          }
+        const widgetData = result.widgets?.find(
+          w => w.widgetId === 'top_products_distribution'
+        );
+
+        if (widgetData && !widgetData.data.error) {
+          const rawData = widgetData.data.value || [];
+          
+          // 轉換為圖表數據格式，計算百分比
+          const total = rawData.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+          
+          const chartData: ChartData[] = rawData.map((item: any, index: number) => ({
+            name: item.product_code || item.name,
+            value: item.quantity || item.value || 0,
+            percentage: total > 0 ? ((item.quantity || item.value || 0) / total) * 100 : 0,
+            colour: item.colour || COLORS[index % COLORS.length],
+          }));
+          
+          setChartData(chartData);
+        } else {
+          throw new Error(widgetData?.data.error || 'No data received');
         }
       } catch (err) {
         console.error('Error fetching product distribution:', err);
-        setServerActionsError(err instanceof Error ? err.message : 'Unknown error');
+        setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
-        setServerActionsLoading(false);
+        setLoading(false);
       }
     };
 
     fetchData();
-  }, [startDate, endDate, useGraphQL, isEditMode]);
-
-  // 合併 loading 和 error 狀態
-  const loading = useGraphQL ? graphqlLoading : serverActionsLoading;
-  const error = useGraphQL ? graphqlError?.message : serverActionsError;
+  }, [startDate, endDate, isEditMode]);
 
   // 獲取實際數據時間範圍（用於顯示）
   const displayDateRange = useMemo(() => {
@@ -213,9 +168,7 @@ export const TopProductsDistributionWidget = React.memo(function TopProductsDist
         </CardTitle>
         <p className='mt-1 text-xs text-slate-400'>
           {displayDateRange}
-          {useGraphQL && (
-            <span className='ml-2 text-xs text-blue-400'>⚡ GraphQL</span>
-          )}
+          <span className='ml-2 text-xs text-green-400'>✓ REST API</span>
         </p>
       </CardHeader>
       <CardContent className='flex-1'>
@@ -276,17 +229,23 @@ export const TopProductsDistributionWidget = React.memo(function TopProductsDist
 export default TopProductsDistributionWidget;
 
 /**
- * GraphQL Migration completed on 2025-07-09
+ * GraphQL to REST API Migration completed on 2025-07-16
+ * 
+ * Changes:
+ * - Removed all GraphQL dependencies (Apollo Client, useGetTopProductsByQuantityQuery)
+ * - Converted to pure REST API usage via Dashboard API client
+ * - Removed environment variable control logic (NEXT_PUBLIC_ENABLE_GRAPHQL_INJECTION)
+ * - Removed dual-mode GraphQL/REST architecture
+ * - Maintained all functionality with simplified architecture
  * 
  * Features:
- * - Apollo Client with cache-and-network policy
- * - 5-minute polling for real-time updates
+ * - Pure REST API data fetching with 5-minute cache
  * - Interactive donut chart with Recharts
  * - Custom tooltips and legends
- * - Feature flag control: NEXT_PUBLIC_ENABLE_GRAPHQL_INJECTION
+ * - Responsive design
  * 
  * Performance improvements:
- * - Efficient data aggregation on client
- * - Apollo cache reduces network requests
+ * - Efficient data processing on client
+ * - Dashboard API client cache reduces network requests
  * - Smooth animations with Recharts
  */

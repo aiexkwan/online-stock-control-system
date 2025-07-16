@@ -201,13 +201,9 @@ export class UnifiedAPIClient {
       throw new Error('GraphQL query is required');
     }
 
-    // 這裡應該使用現有的 GraphQL 客戶端
-    // 為了示例，我們假設有一個 graphqlClient
-    const graphqlClient = await import('@/lib/graphql-client-stable');
-    
     try {
-      // GraphQL disabled - temporary fallback
-    throw new Error('GraphQL support has been removed');
+      // GraphQL support has been completely removed
+      throw new Error('GraphQL support has been removed');
       const responseTime = Date.now() - startTime;
       
       if (result.errors && result.errors.length > 0) {
