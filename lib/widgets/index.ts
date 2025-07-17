@@ -7,7 +7,7 @@
 export * from './types';
 
 // 導出核心功能
-export { widgetRegistry } from './enhanced-registry';
+export { widgetRegistry } from './unified-registry';
 export { layoutCompatibilityManager } from './layout-compatibility';
 
 // 導出工具函數
@@ -16,9 +16,8 @@ export {
   getGraphQLVersion,
   getPreloadPriority,
   getRoutePreloadWidgets,
-  widgetMapping,
-  routePreloadMap
-} from './widget-mappings';
+  ROUTE_PRELOAD_MAP as routePreloadMap
+} from './unified-widget-config';
 
 // 導出布局快照工具
 export {
@@ -36,7 +35,7 @@ export async function initializeWidgetRegistry(): Promise<void> {
   
   try {
     // 1. 自動註冊所有 widgets
-    const { widgetRegistry } = await import('./enhanced-registry');
+    const { widgetRegistry } = await import('./unified-registry');
     await widgetRegistry.autoRegisterWidgets();
     
     // 2. 載入布局基準（如果存在）
@@ -81,7 +80,7 @@ export function useWidgetPerformance(widgetId?: string) {
   const [stats, setStats] = useState<any>(null);
   
   useEffect(() => {
-    import('./enhanced-registry').then(({ widgetRegistry }) => {
+    import('./unified-registry').then(({ widgetRegistry }) => {
       const updateStats = () => {
         if (widgetId) {
           const allStats = widgetRegistry.getLoadStatistics();

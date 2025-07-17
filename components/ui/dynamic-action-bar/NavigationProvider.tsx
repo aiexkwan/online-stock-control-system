@@ -43,12 +43,20 @@ export function NavigationProvider({ children }: NavigationProviderProps) {
       try {
         setIsLoading(true);
 
-        // 預熱緩存和加載歷史數據
+        // 只在用戶存在時初始化，避免不必要的調用
         if (user?.id) {
-          await Promise.all([
-            navigationCacheManager.warmupCache([user.id]),
-            navigationPreloader.preloadUserData(user.id),
-          ]);
+          // 串行執行以避免併發問題
+          try {
+            await navigationCacheManager.warmupCache([user.id]);
+          } catch (err) {
+            console.warn('Cache warmup failed:', err);
+          }
+          
+          try {
+            await navigationPreloader.preloadUserData(user.id);
+          } catch (err) {
+            console.warn('Preload user data failed:', err);
+          }
         }
 
         setIsReady(true);
@@ -60,7 +68,9 @@ export function NavigationProvider({ children }: NavigationProviderProps) {
       }
     };
 
-    initializeNavigation();
+    // 延遲初始化以避免阻塞主線程
+    const timeoutId = setTimeout(initializeNavigation, 100);
+    return () => clearTimeout(timeoutId);
   }, [user?.id]);
 
   // 預加載路由

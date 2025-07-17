@@ -8,7 +8,7 @@ export class StaffWorkloadQueryDto {
   })
   @IsNotEmpty({ message: 'Start date is required' })
   @IsString({ message: 'Start date must be a string' })
-  startDate: string;
+  startDate!: string;
 
   @ApiProperty({
     description: 'End date for staff workload analysis (ISO 8601)',
@@ -16,7 +16,7 @@ export class StaffWorkloadQueryDto {
   })
   @IsNotEmpty({ message: 'End date is required' })
   @IsString({ message: 'End date must be a string' })
-  endDate: string;
+  endDate!: string;
 
   @ApiProperty({
     description: 'Filter by department',

@@ -1,8 +1,8 @@
 /**
  * Unified API Client - 統一 API 客戶端 (v1.2.3)
  * 
- * 根據 feature flags 自動選擇 GraphQL 或 REST API
- * 支援 fallback 機制和性能監控
+ * 統一 REST API 調用接口，支援 fallback 機制和性能監控
+ * Note: 保留 GraphQL 接口以供向後兼容
  */
 
 import { APIRouter, getAPIRouter } from './api-router';
@@ -17,7 +17,7 @@ export interface APIClientConfig {
 }
 
 export interface APIRequest {
-  // GraphQL 相關
+  // Legacy GraphQL support (向後兼容)
   query?: string;
   variables?: Record<string, any>;
   operationName?: string;

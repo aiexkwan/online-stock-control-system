@@ -1,0 +1,249 @@
+'use client';
+
+import React, { useMemo } from 'react';
+import dynamic from 'next/dynamic';
+import { useQuery } from '@tanstack/react-query';
+import { widgetAPI } from '@/lib/api/widgets/widget-api-client';
+
+// Recharts components - dynamically imported to avoid SSR issues
+const PieChart = dynamic(() => import('recharts').then(mod => ({ default: mod.PieChart })), { ssr: false });
+const Pie = dynamic(() => import('recharts').then(mod => ({ default: mod.Pie })), { ssr: false });
+const Cell = dynamic(() => import('recharts').then(mod => ({ default: mod.Cell })), { ssr: false });
+const ResponsiveContainer = dynamic(() => import('recharts').then(mod => ({ default: mod.ResponsiveContainer })), { ssr: false });
+const Tooltip = dynamic(() => import('recharts').then(mod => ({ default: mod.Tooltip })), { ssr: false });
+const Legend = dynamic(() => import('recharts').then(mod => ({ default: mod.Legend })), { ssr: false });
+const BarChart = dynamic(() => import('recharts').then(mod => ({ default: mod.BarChart })), { ssr: false });
+const Bar = dynamic(() => import('recharts').then(mod => ({ default: mod.Bar })), { ssr: false });
+const XAxis = dynamic(() => import('recharts').then(mod => ({ default: mod.XAxis })), { ssr: false });
+const YAxis = dynamic(() => import('recharts').then(mod => ({ default: mod.YAxis })), { ssr: false });
+const CartesianGrid = dynamic(() => import('recharts').then(mod => ({ default: mod.CartesianGrid })), { ssr: false });
+
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
+
+interface VoidRecordsAnalysisProps {
+  timeFrame?: any;
+}
+
+interface VoidRecord {
+  id: string;
+  product_code?: string;
+  reason?: string;
+  void_qty?: number;
+  created_at: string;
+  user_name?: string;
+}
+
+export default function VoidRecordsAnalysis({ timeFrame }: VoidRecordsAnalysisProps) {
+  // Get last 30 days of data for analysis
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - 30);
+  
+  const queryParams = {
+    startDate: startDate.toISOString().split('T')[0],
+    endDate: endDate.toISOString().split('T')[0],
+    limit: 100, // Limit to last 100 records for performance
+  };
+
+  // Use React Query for data fetching
+  const { 
+    data: response, 
+    isLoading: loading, 
+    error,
+    isError 
+  } = useQuery({
+    queryKey: ['void-records-analysis', queryParams],
+    queryFn: () => widgetAPI.getVoidRecordsAnalysis(queryParams),
+    refetchInterval: 30000, // Refetch every 30 seconds
+    staleTime: 25000, // Consider data stale after 25 seconds
+    cacheTime: 5 * 60 * 1000, // Cache for 5 minutes
+    refetchOnWindowFocus: false,
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
+
+  // Extract data from response
+  const data = response?.success && response.data ? response.data.records || [] : [];
+
+  const { reasonData, productData } = useMemo(() => {
+    if (!data || data.length === 0) return { reasonData: [], productData: [] };
+
+    // Group by void reason
+    const reasonMap = new Map<string, number>();
+    const productMap = new Map<string, { count: number; qty: number }>();
+
+    data.forEach((record) => {
+      // Count by reason
+      const reason = record.reason || 'Unspecified Reason';
+      reasonMap.set(reason, (reasonMap.get(reason) || 0) + 1);
+
+      // Count by product code
+      const productCode = record.product_code || 'Unknown';
+      const existing = productMap.get(productCode) || { count: 0, qty: 0 };
+      productMap.set(productCode, {
+        count: existing.count + 1,
+        qty: existing.qty + (record.void_qty || 0),
+      });
+    });
+
+    // Convert to array format for charts
+    const reasonData = Array.from(reasonMap.entries())
+      .map(([reason, count]) => ({ reason, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const productData = Array.from(productMap.entries())
+      .map(([code, stats]) => ({
+        code,
+        count: stats.count,
+        qty: stats.qty,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10); // Top 10 products
+
+    return { reasonData, productData };
+  }, [data]);
+
+  if (loading) {
+    return (
+      <div className='flex h-full w-full flex-col gap-4'>
+        <Skeleton className='h-8 w-48' />
+        <Skeleton className='flex-1' />
+      </div>
+    );
+  }
+
+  if (isError) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to load void records';
+    return (
+      <Alert variant='destructive'>
+        <AlertCircle className='h-4 w-4' />
+        <AlertDescription>Failed to load void records: {errorMessage}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  // Colors for pie chart
+  const COLORS = [
+    '#ef4444',
+    '#f97316',
+    '#f59e0b',
+    '#84cc16',
+    '#10b981',
+    '#06b6d4',
+    '#3b82f6',
+    '#8b5cf6',
+  ];
+
+  // Calculate total voids
+  const totalVoids = reasonData.reduce((sum, item) => sum + item.count, 0);
+
+  return (
+    <div className='flex h-full w-full flex-col'>
+      <div className='mb-4'>
+        <p className='text-sm text-white/60'>
+          Analysis of the last {data.length} void records (Total: {totalVoids} records)
+        </p>
+      </div>
+
+      <div className='grid flex-1 grid-cols-2 gap-4'>
+        {/* Void Reasons Pie Chart */}
+        <div className='flex flex-col'>
+          <h3 className='mb-2 text-sm font-medium'>Void Reasons Distribution</h3>
+          <div className='flex-1'>
+            <ResponsiveContainer width='100%' height='100%'>
+              <PieChart>
+                <Pie
+                  data={reasonData}
+                  cx='50%'
+                  cy='50%'
+                  labelLine={false}
+                  label={({ reason, percent }) => `${reason} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill='#8884d8'
+                  dataKey='count'
+                >
+                  {reasonData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload[0]) {
+                      const data = payload[0].payload;
+                      return (
+                        <div className='rounded-lg border bg-background/95 p-3 shadow-lg backdrop-blur-sm'>
+                          <p className='font-medium'>{data.reason}</p>
+                          <p className='text-sm'>Count: {data.count}</p>
+                          <p className='text-sm text-white/60'>
+                            Percentage: {((data.count / totalVoids) * 100).toFixed(1)}%
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Top Products Bar Chart */}
+        <div className='flex flex-col'>
+          <h3 className='mb-2 text-sm font-medium'>High Risk Products - Top 10</h3>
+          <div className='flex-1'>
+            <ResponsiveContainer width='100%' height='100%'>
+              <BarChart
+                data={productData}
+                layout='horizontal'
+                margin={{ top: 5, right: 30, left: 60, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray='3 3' className='opacity-30' />
+                <XAxis type='number' className='text-xs' />
+                <YAxis dataKey='code' type='category' width={50} className='text-xs' />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload[0]) {
+                      const data = payload[0].payload;
+                      return (
+                        <div className='rounded-lg border bg-background/95 p-3 shadow-lg backdrop-blur-sm'>
+                          <p className='font-medium'>{data.code}</p>
+                          <p className='text-sm'>Void Count: {data.count}</p>
+                          <p className='text-sm'>Total Quantity: {data.qty}</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar dataKey='count' fill='#ef4444' radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Summary Stats */}
+      <div className='mt-4 grid grid-cols-4 gap-2 border-t pt-4 text-xs'>
+        <div className='text-center'>
+          <div className='font-medium text-red-600'>{reasonData[0]?.reason || 'N/A'}</div>
+          <div className='text-white/60'>Most Common Reason</div>
+        </div>
+        <div className='text-center'>
+          <div className='font-medium'>{productData[0]?.code || 'N/A'}</div>
+          <div className='text-white/60'>Most Voided Product</div>
+        </div>
+        <div className='text-center'>
+          <div className='font-medium'>{reasonData.length}</div>
+          <div className='text-white/60'>Void Reason Types</div>
+        </div>
+        <div className='text-center'>
+          <div className='font-medium'>{productData.reduce((sum, p) => sum + p.qty, 0)}</div>
+          <div className='text-white/60'>Total Voided Quantity</div>
+        </div>
+      </div>
+    </div>
+  );
+}

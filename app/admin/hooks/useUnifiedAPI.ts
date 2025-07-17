@@ -1,27 +1,20 @@
 /**
- * useUnifiedAPI Hook - 統一 API Hook (v1.2.3)
+ * useUnifiedAPI Hook - 統一 REST API Hook (v1.7.0)
  * 
- * 根據 feature flags 自動選擇 GraphQL 或 REST API
- * 整合現有的 useGraphQLFallback 功能
- * 支援 A/B 測試和性能監控
+ * 統一的 REST API 訪問接口
+ * 支援緩存、重試和性能監控
  */
 
 import { useState, useCallback, useEffect, useRef, useMemo, useContext } from 'react';
-import { DocumentNode } from '@apollo/client';
 import { getAPIClient, APIRequest, APIResponse } from '@/lib/api/unified-api-client';
-import { getAPIRoutingInfo } from '@/lib/api/api-router';
 import { useAuth } from '@/app/hooks/useAuth';
 import { DashboardDataContext } from '../contexts/DashboardDataContext';
 import { useWidgetErrorHandler } from './useWidgetErrorHandler';
 import { logger } from '@/lib/logger';
 
 export interface UseUnifiedAPIOptions<TData, TVariables> {
-  // GraphQL 支援
-  graphqlQuery?: DocumentNode;
-  graphqlOperationName?: string;
-  
-  // REST API 支援
-  restEndpoint?: string;
+  // REST API 配置
+  restEndpoint: string;
   restMethod?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   
   // 通用選項
@@ -36,9 +29,6 @@ export interface UseUnifiedAPIOptions<TData, TVariables> {
   cacheTime?: number;
   staleTime?: number;
   retryCount?: number;
-  
-  // A/B 測試
-  forceAPIType?: 'graphql' | 'rest';
 }
 
 export interface UseUnifiedAPIResult<TData> {
@@ -46,26 +36,19 @@ export interface UseUnifiedAPIResult<TData> {
   loading: boolean;
   error: Error | undefined;
   refetch: () => Promise<void>;
-  apiType: 'graphql' | 'rest' | 'context';
-  routingInfo?: {
-    useRestAPI: boolean;
-    percentage: number;
-    reason: string;
-  };
+  apiType: 'rest' | 'context';
   performanceMetrics?: {
     queryTime: number;
-    dataSource: 'context' | 'graphql' | 'rest' | 'cache';
+    dataSource: 'context' | 'rest' | 'cache';
     fallbackUsed: boolean;
   };
 }
 
 /**
- * 統一 API Hook
- * 自動選擇最佳 API 類型
+ * 統一 REST API Hook
+ * 提供統一的 REST API 訪問接口
  */
 export function useUnifiedAPI<TData = any, TVariables = any>({
-  graphqlQuery,
-  graphqlOperationName,
   restEndpoint,
   restMethod = 'GET',
   variables,
@@ -77,15 +60,13 @@ export function useUnifiedAPI<TData = any, TVariables = any>({
   cacheTime = 5 * 60 * 1000,
   staleTime = 30 * 1000,
   retryCount = 3,
-  forceAPIType,
 }: UseUnifiedAPIOptions<TData, TVariables>): UseUnifiedAPIResult<TData> {
   
   // State
   const [data, setData] = useState<TData | undefined>();
   const [loading, setLoading] = useState(!skip);
   const [error, setError] = useState<Error | undefined>();
-  const [apiType, setApiType] = useState<'graphql' | 'rest' | 'context'>('context');
-  const [routingInfo, setRoutingInfo] = useState<any>();
+  const [apiType, setApiType] = useState<'rest' | 'context'>('context');
   const [performanceMetrics, setPerformanceMetrics] = useState<any>();
   
   // Refs
@@ -123,11 +104,11 @@ export function useUnifiedAPI<TData = any, TVariables = any>({
   const cacheKey = useMemo(() => {
     return JSON.stringify({
       endpoint: restEndpoint,
-      query: graphqlQuery?.loc?.source?.body,
+      method: restMethod,
       variables,
       widgetId,
     });
-  }, [restEndpoint, graphqlQuery, variables, widgetId]);
+  }, [restEndpoint, restMethod, variables, widgetId]);
 
   // Check cache
   const getCachedData = useCallback((): TData | null => {
@@ -202,18 +183,11 @@ export function useUnifiedAPI<TData = any, TVariables = any>({
         return;
       }
 
-      // Get routing information
-      let routing;
-      if (!forceAPIType) {
-        routing = await getAPIRoutingInfo({
-          userId: user?.id,
-          userEmail: user?.email,
-        });
-        setRoutingInfo(routing);
-      }
-
-      // Prepare API request
+      // Prepare REST API request
       const apiRequest: APIRequest = {
+        method: restMethod,
+        endpoint: restEndpoint,
+        params: variables,
         headers: {
           'Authorization': user?.access_token ? `Bearer ${user.access_token}` : undefined,
         },
@@ -223,31 +197,11 @@ export function useUnifiedAPI<TData = any, TVariables = any>({
         },
       };
 
-      let useRest = forceAPIType === 'rest' || 
-        (!forceAPIType && routing?.useRestAPI && restEndpoint);
+      setApiType('rest');
 
-      if (useRest && restEndpoint) {
-        // Use REST API
-        apiRequest.method = restMethod;
-        apiRequest.endpoint = restEndpoint;
-        apiRequest.params = variables;
-        
-        setApiType('rest');
-      } else if (graphqlQuery) {
-        // Use GraphQL
-        apiRequest.query = graphqlQuery.loc?.source?.body;
-        apiRequest.variables = variables;
-        apiRequest.operationName = graphqlOperationName;
-        
-        setApiType('graphql');
-      } else {
-        throw new Error('No valid API configuration provided');
-      }
-
-      logger.debug('Executing API request', {
-        apiType: useRest ? 'rest' : 'graphql',
+      logger.debug('Executing REST API request', {
         endpoint: restEndpoint,
-        operationName: graphqlOperationName,
+        method: restMethod,
         widgetId,
       });
 
@@ -283,13 +237,10 @@ export function useUnifiedAPI<TData = any, TVariables = any>({
     skip,
     contextData,
     getCachedData,
-    forceAPIType,
     user,
     restEndpoint,
     restMethod,
     variables,
-    graphqlQuery,
-    graphqlOperationName,
     widgetId,
     apiClient,
     setCachedData,
@@ -318,7 +269,6 @@ export function useUnifiedAPI<TData = any, TVariables = any>({
     error,
     refetch,
     apiType,
-    routingInfo,
     performanceMetrics,
   };
 }
@@ -326,7 +276,7 @@ export function useUnifiedAPI<TData = any, TVariables = any>({
 // 便利 hooks
 
 /**
- * REST API Hook
+ * REST API Hook - 簡化版本
  */
 export function useRestAPI<TData = any, TVariables = any>(
   endpoint: string,
@@ -337,22 +287,5 @@ export function useRestAPI<TData = any, TVariables = any>(
     ...options,
     restEndpoint: endpoint,
     restMethod: method,
-    forceAPIType: 'rest',
-  });
-}
-
-/**
- * GraphQL Hook
- */
-export function useGraphQLAPI<TData = any, TVariables = any>(
-  query: DocumentNode,
-  operationName?: string,
-  options?: Omit<UseUnifiedAPIOptions<TData, TVariables>, 'graphqlQuery' | 'graphqlOperationName'>
-) {
-  return useUnifiedAPI({
-    ...options,
-    graphqlQuery: query,
-    graphqlOperationName: operationName,
-    forceAPIType: 'graphql',
   });
 }

@@ -36,49 +36,6 @@ const queryClient = new QueryClient({
 // 導入新的錯誤邊界
 import ErrorBoundary from './ErrorBoundary';
 
-// Error boundary for dialog components - 保留用於向後兼容
-class DialogErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; error?: Error }
-> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Dialog Error Boundary caught an error:', error, errorInfo);
-    
-    // Special handling for originalFactory.call errors
-    if (error.message.includes('originalFactory.call') || 
-        error.message.includes('undefined is not an object') ||
-        error.message.includes('Cannot read properties of undefined')) {
-      console.warn('Dynamic import error detected in dialog components');
-      
-      // Auto-retry after a delay for originalFactory errors
-      setTimeout(() => {
-        this.setState({ hasError: false });
-      }, 3000);
-    }
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="text-xs text-gray-500 p-2">
-          Dialog loading error - recovering...
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
 // Suspense fallback for dialogs
 const DialogSuspenseFallback = () => (
   <div className="text-xs text-gray-500 p-2">
@@ -143,14 +100,22 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
         </ErrorBoundary>
 
         {/* Global report dialogs with enhanced error boundary */}
-        <ErrorBoundary>
+        <ErrorBoundary
+          onError={(error, errorInfo) => {
+            console.error('Report dialogs error:', error, errorInfo);
+          }}
+        >
           <React.Suspense fallback={<DialogSuspenseFallback />}>
             <GlobalReportDialogs />
           </React.Suspense>
         </ErrorBoundary>
 
         {/* Global analytics dialogs with enhanced error boundary */}
-        <ErrorBoundary>
+        <ErrorBoundary
+          onError={(error, errorInfo) => {
+            console.error('Analytics dialogs error:', error, errorInfo);
+          }}
+        >
           <React.Suspense fallback={<DialogSuspenseFallback />}>
             <GlobalAnalyticsDialogs />
           </React.Suspense>
@@ -158,17 +123,37 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
 
         {/* Dynamic Navigation Bar - Show only when authenticated and not on login/access pages */}
         {isAuthenticated && !isLoginPage && !isAccessPage && (
-          <NavigationProvider>
-            <DynamicActionBar />
-          </NavigationProvider>
+          <ErrorBoundary
+            onError={(error, errorInfo) => {
+              console.error('Navigation system error:', error, errorInfo);
+            }}
+          >
+            <NavigationProvider>
+              <DynamicActionBar />
+            </NavigationProvider>
+          </ErrorBoundary>
         )}
 
         {/* Universal Chatbot - Show for authenticated users */}
-        {isAuthenticated && !isLoginPage && !isAccessPage && <UniversalChatbot />}
+        {isAuthenticated && !isLoginPage && !isAccessPage && (
+          <ErrorBoundary
+            onError={(error, errorInfo) => {
+              console.error('Chatbot error:', error, errorInfo);
+            }}
+          >
+            <UniversalChatbot />
+          </ErrorBoundary>
+        )}
 
         {/* Smart Reminder - Show for authenticated users */}
         {isAuthenticated && user?.id && !isLoginPage && !isAccessPage && (
-          <SmartReminder userId={user.id} />
+          <ErrorBoundary
+            onError={(error, errorInfo) => {
+              console.error('Smart reminder error:', error, errorInfo);
+            }}
+          >
+            <SmartReminder userId={user.id} />
+          </ErrorBoundary>
         )}
       </AuthChecker>
     </UniversalProvider>

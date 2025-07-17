@@ -124,12 +124,6 @@ export const MAIN_NAVIGATION: NavigationItem[] = [
         description: 'Data analysis',
       },
       {
-        id: 'graphql-monitor',
-        label: 'GraphQL Monitor',
-        href: '/admin/graphql-monitor',
-        description: 'GraphQL performance monitoring',
-      },
-      {
         id: 'performance-dashboard',
         label: 'Performance',
         href: '/admin/performance-dashboard',

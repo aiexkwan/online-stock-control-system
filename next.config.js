@@ -111,22 +111,7 @@ const nextConfig = {
       tls: false,
     };
     
-    // 添加 webpack 插件來處理 originalFactory.call 錯誤
-    if (!isServer && dev) {
-      const { IgnorePlugin } = require('webpack');
-      // 忽略可能導致問題的模塊
-      config.plugins.push(
-        new IgnorePlugin({
-          checkResource(resource, context) {
-            // 忽略可能導致問題的 CSS imports
-            if (resource.endsWith('.css') && context.includes('_next/static')) {
-              return true;
-            }
-            return false;
-          },
-        })
-      );
-    }
+    // Note: Removed IgnorePlugin that was potentially causing CSS/JS module conflicts
 
     // 優化 chunk 分割以減少 originalFactory.call 錯誤
     if (!isServer) {
@@ -273,15 +258,6 @@ const nextConfig = {
               maxSize: 200000, // 200KB 限制
             },
 
-            // Apollo GraphQL 數據層
-            apollo: {
-              test: /[\\/]node_modules[\\/](@apollo\/client|@apollo\/utils|graphql|dataloader)[\\/]/,
-              name: 'apollo',
-              chunks: 'all',
-              priority: 30,
-              enforce: true,
-              maxSize: 150000,
-            },
 
             // Supabase 數據層
             supabase: {

@@ -131,8 +131,12 @@ export class AuthService {
       }
 
       // Generate employee number (use timestamp + random for uniqueness)
-      const employeeNumber = Date.now().toString().slice(-6) + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-      
+      const employeeNumber =
+        Date.now().toString().slice(-6) +
+        Math.floor(Math.random() * 1000)
+          .toString()
+          .padStart(3, '0');
+
       // Insert user profile into database - only include fields that exist in data_id table
       const { error: profileError } = await this.supabaseService
         .getClient()

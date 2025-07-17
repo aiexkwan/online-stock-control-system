@@ -1,4 +1,4 @@
-import { widgetRegistry, smartPreloader } from '../lib/widgets/enhanced-registry';
+import { widgetRegistry, preloader as smartPreloader } from '../lib/widgets/unified-registry';
 import { WidgetDefinition } from '../lib/widgets/types';
 
 async function runTests() {

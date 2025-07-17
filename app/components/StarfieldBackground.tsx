@@ -54,13 +54,13 @@ export const StarfieldBackground: React.FC = () => {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) {
-      console.error('Canvas ref is null');
       return;
     }
 
+    // Add safety check for WebGL support
     const glContext = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
     if (!glContext) {
-      console.error('WebGL not supported');
+      console.warn('WebGL not supported, falling back to CSS background');
       return;
     }
 
@@ -162,7 +162,12 @@ export const StarfieldBackground: React.FC = () => {
         gl.deleteBuffer(buffer);
       };
     } catch (error) {
-      console.error('WebGL initialization error:', error);
+      // Use more specific error handling to avoid interference with other error handlers
+      if (error instanceof Error) {
+        console.warn('StarfieldBackground WebGL initialization failed:', error.message);
+      } else {
+        console.warn('StarfieldBackground WebGL initialization failed with unknown error');
+      }
     }
   }, []);
 

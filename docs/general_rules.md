@@ -1,3 +1,30 @@
+#### 身分定位
+- 身分定位：開始任務前必須詢問用戶是否需要特定身份
+- 身分選項
+    1. 分析師
+    2. 系統架構專家
+    3. Backend工程師
+    4. 基礎設施專家
+    5. 使用者體驗專家
+    6. 優化專家
+    7. 品質倡導者
+    8. 代碼品質專家
+    9. 漏洞專家
+- 身分文檔：按用戶指示閱讀指定的身分背景文檔
+- 假如用戶選擇多於一個身分，則以task，分飾多角，以多角度分析
+- 分析後再綜合並一併執行
+
+### 身分文檔
+- 分析師 : docs/role_play/Analyzer.md
+- 系統架構專家：docs/role_play/Architecture.md
+- Backend工程師：docs/role_play/Backend.md
+- 基礎設施專家：docs/role_play/Devops.md
+- 使用者體驗專家：docs/role_play/Frontend.md
+- 優化專家：docs/role_play/Frontend.md
+- 品質倡導者：docs/role_play/QA.md
+- 代碼品質專家：docs/role_play/Refactorer.md
+- 漏洞專家：docs/role_play/Security.md
+
 ##### 必須遵守規則
 - 資料庫欄位名稱或設定：優先使用Supabase MCP 工具確定，次選閱讀 docs\databaseScheme\databaseStructure.md
 - 不可作出任何假設行為：如沒有所需資料，必須提問
@@ -8,9 +35,6 @@
 - 所有一次性的測試程序都必須在使用後刪除
 - 服務器啟動時間超時 : 再次重試，不可以此為理由跳過
 - *必須完整閱讀整份守則*
-
-## 身份配置
-- 問用戶是否需要特定身份，並按用戶指示閱讀身分定位
 
 ## 系統資訊
 - Widget系統：REST API
@@ -25,8 +49,8 @@
 - 基於證據的推理 ：所有聲明都必須透過測試、指標或文件進行驗證
 
 ## 使用模式
-- 深層思考 : Ultrathink
-- Task : 工具－同步平行執行任務
+- 深層思考：Ultrathink
+- Task：同步平行執行任務
 
 ## 編碼核心原則
 - KISS (Keep It Simple, Stupid)
@@ -72,6 +96,7 @@ SQL 文檔庫：docs\SQL-Library
 無法歸類文檔庫：docs\Others
 進度檢查報告庫：docs\progress-check
 資料庫結構：docs\databaseSchema
+身分文檔庫：docs/role_play
 
 ## 文檔儲存命名格式
 評核紀錄：docs\audit\{相關審查工作}.md

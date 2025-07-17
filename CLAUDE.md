@@ -8,11 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 專案概述
 NewPennine 倉庫管理系統 - 基於 Next.js 14、TypeScript 同 Supabase 嘅現代化 WMS。企業級倉庫管理解決方案，支援完整供應鏈管理，包括 QC/GRN 標籤列印、庫存轉移、AI 訂單分析同管理儀表板。
 
-**最新狀態 (2025-07-15)**: v1.3.2 GraphQL to REST API 遷移 ✅ 100% 完成  
+**最新狀態 (2025-07-16)**: v1.4 系統清理 ✅ 85% 完成  
 - 35+ REST API 端點已實施並經過測試
 - 前端 widgets 完全遷移到 REST API 架構  
 - NestJS 後端完整功能，包括 JWT 認證、資料庫整合、性能優化
-- 準備進入 v1.4 GraphQL 清理階段
+- 系統註釋和文檔已更新，移除過時的架構描述
 
 ## 開發命令
 
@@ -176,14 +176,14 @@ npm run mcpIOS       # 啟動 Supabase MCP 服務器 (用於 Claude Code 數據�
 
 ## 高階開發模式 (2025 更新)
 
-### 統一數據獲取模式 - useGraphQLFallback
-使用 `useGraphQLFallback` hook 統一處理數據獲取，支援 GraphQL → Server Action fallback：
+### 統一數據獲取模式 - useUnifiedAPI
+使用 `useUnifiedAPI` hook 統一處理數據獲取，支援現代化 REST API 架構：
 ```typescript
-const { data, loading, error } = useGraphQLFallback({
-  graphqlQuery: GET_DATA_QUERY,
-  serverAction: getDataAction,
-  extractFromContext: (ctx) => ctx.getWidgetData('widgetId'),
-  fallbackEnabled: true,
+const { data, loading, error } = useUnifiedAPI({
+  endpoint: '/api/data',
+  params: { id },
+  enabled: !!id,
+  queryKey: ['data', id]
 });
 ```
 
@@ -214,7 +214,7 @@ const { data, loading, error } = useGraphQLFallback({
 
 ### Bundle Size 優化
 已實現 93% bundle size 減少：
-- 精確分離大型庫 (ExcelJS, recharts, Apollo)
+- 精確分離大型庫 (ExcelJS, recharts, 舊式 API 客戶端)
 - 智能優先級策略 (框架 > 圖表 > 數據層)
 - maxSize 限制 200KB per chunk
 
@@ -226,7 +226,7 @@ const { data, loading, error } = useGraphQLFallback({
 
 ## 文檔資源
 - **項目文檔**: `/docs` 目錄
-- **GraphQL Schema**: `lib/graphql/schema.graphql`
+- **API 文檔**: `lib/api/` 目錄下的 REST API 實現
 - **數據庫結構**: `docs/databaseStructure.md`
 - **Widget 開發指南**: `docs/widget-development-guide.md`
 - **性能最佳實踐**: `docs/performance-best-practices.md`

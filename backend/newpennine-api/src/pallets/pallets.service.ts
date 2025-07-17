@@ -45,10 +45,6 @@ export class PalletsService {
           pdf_url,
           data_code!inner(
             description
-          ),
-          record_inventory!left(
-            loc,
-            warehouse
           )
         `,
         { count: 'exact' },
@@ -61,9 +57,8 @@ export class PalletsService {
       if (series) {
         query = query.eq('series', series);
       }
-      if (warehouse) {
-        query = query.eq('record_inventory.warehouse', warehouse);
-      }
+      // Note: warehouse filtering removed as record_inventory join was causing issues
+      // TODO: Implement warehouse filtering using record_transfer table
 
       // Apply pagination
       query = query
@@ -87,8 +82,8 @@ export class PalletsService {
         product_qty: item.product_qty,
         pdf_url: item.pdf_url,
         product_description: item.data_code?.description,
-        location: item.record_inventory?.[0]?.loc,
-        warehouse: item.record_inventory?.[0]?.warehouse,
+        location: null, // TODO: Get from latest record_transfer
+        warehouse: null, // TODO: Get from latest record_transfer
       }));
 
       return {
@@ -118,14 +113,7 @@ export class PalletsService {
           data_code!inner(
             description,
             colour,
-            standard_qty,
-            unit
-          ),
-          record_inventory!left(
-            loc,
-            warehouse,
-            qty,
-            damage
+            standard_qty
           )
         `,
         )
@@ -175,11 +163,11 @@ export class PalletsService {
         product_qty: palletData.product_qty,
         pdf_url: palletData.pdf_url,
         product_description: palletData.data_code?.description,
-        location: palletData.record_inventory?.[0]?.loc,
-        warehouse: palletData.record_inventory?.[0]?.warehouse,
+        location: transfers && transfers.length > 0 ? transfers[0].t_loc : null,
+        warehouse: null, // TODO: Derive from location or implement warehouse mapping
         transfers: transfers || [],
         history: history || [],
-        current_inventory: palletData.record_inventory?.[0] || null,
+        current_inventory: null, // TODO: Implement from record_inventory if needed
       };
     } catch (error) {
       console.error('Error in getPalletById:', error);

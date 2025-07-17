@@ -13,33 +13,41 @@ export const metadata: Metadata = {
   },
 };
 
-// Global error handler for originalFactory.call errors
-if (typeof window !== 'undefined') {
-  const originalConsoleError = console.error;
-  console.error = (...args) => {
-    const message = args.join(' ');
-    if (message.includes('originalFactory.call') || 
-        message.includes('undefined is not an object')) {
-      console.warn('[Global Error Handler] Detected originalFactory.call error, this might be a dynamic import issue');
-      // Don't spam the console with these errors
-      return;
-    }
-    originalConsoleError(...args);
-  };
+// Note: Global error handlers for originalFactory.call errors have been removed
+// as they can interfere with proper error reporting and SSR
 
-  // Global unhandled promise rejection handler
-  window.addEventListener('unhandledrejection', (event) => {
-    const error = event.reason;
-    if (error && typeof error === 'object' && 'message' in error) {
-      const message = error.message as string;
-      if (message.includes('originalFactory.call') || 
-          message.includes('undefined is not an object')) {
-        console.warn('[Global Promise Handler] Caught originalFactory.call error in promise');
-        event.preventDefault(); // Prevent the error from being logged
-        return;
+// Add runtime check for CSS loading issues
+if (typeof window !== 'undefined') {
+  // Monitor for CSS/JS MIME type conflicts
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'childList') {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const element = node as Element;
+            if (element.tagName === 'LINK' && element.getAttribute('rel') === 'stylesheet') {
+              const href = element.getAttribute('href');
+              if (href && href.includes('_next/static/css/')) {
+                // Ensure CSS files are loaded with correct MIME type
+                element.addEventListener('error', (e) => {
+                  console.warn('CSS loading error detected:', href);
+                });
+              }
+            }
+          }
+        });
       }
-    }
+    });
   });
+  
+  // Start observing after DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      observer.observe(document.head, { childList: true, subtree: true });
+    });
+  } else {
+    observer.observe(document.head, { childList: true, subtree: true });
+  }
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

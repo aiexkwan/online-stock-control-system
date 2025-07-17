@@ -159,7 +159,9 @@
       "Bash(echo $NODE_ENV)",
       "Bash(ss:*)",
       "mcp__supabase__get_project",
-      "Bash(./fix_dto_properties.sh:*)"
+      "Bash(./fix_dto_properties.sh:*)",
+      "Bash(for:*)",
+      "Bash(tsx scripts/test-fixes-verification.ts:*)"
     ],
     "deny": []
   },

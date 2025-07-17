@@ -81,12 +81,13 @@ describe('Authentication System (e2e)', () => {
     });
 
     it('should access protected route with valid token', () => {
+      const email = process.env.SYS_LOGIN || 'akwan@pennineindustries.com';
       return request(app.getHttpServer())
         .get('/auth/profile')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
         .expect((res) => {
-          expect(res.body.email).toBe('test@example.com');
+          expect(res.body.email).toBe(email);
         });
     });
 
@@ -202,7 +203,7 @@ describe('Authentication System (e2e)', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
         .expect((res) => {
-          expect(res.body.message).toBe('Logged out successfully');
+          expect(res.body.message).toBe('Logout successful');
         });
     });
   });

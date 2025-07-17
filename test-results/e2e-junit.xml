@@ -1,0 +1,43 @@
+<testsuites id="" name="" tests="1" failures="1" skipped="0" errors="0" time="12.477691">
+<testsuite name="admin-basic-test.spec.ts" timestamp="2025-07-17T00:44:02.507Z" hostname="chromium" tests="1" failures="1" skipped="0" time="11.132" errors="0">
+<testcase name="Admin Dashboard Basic Test › Login and access dashboard" classname="admin-basic-test.spec.ts" time="11.132">
+<failure message="admin-basic-test.spec.ts:4:7 Login and access dashboard" type="FAILURE">
+<![CDATA[  [chromium] › admin-basic-test.spec.ts:4:7 › Admin Dashboard Basic Test › Login and access dashboard 
+
+    TimeoutError: page.fill: Timeout 10000ms exceeded.
+    Call log:
+      - waiting for locator('input[name="email"]')
+
+
+       7 |     
+       8 |     // Login
+    >  9 |     await page.fill('input[name="email"]', 'akwan@pennineindustries.com');
+         |                ^
+      10 |     await page.fill('input[name="password"]', 'X315Y316');
+      11 |     await page.click('button[type="submit"]');
+      12 |     
+        at /Users/kwanchuncheong/NewPennine/e2e/admin-basic-test.spec.ts:9:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/admin-basic-test-Admin-Das-8346c--Login-and-access-dashboard-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/admin-basic-test-Admin-Das-8346c--Login-and-access-dashboard-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/admin-basic-test-Admin-Das-8346c--Login-and-access-dashboard-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|admin-basic-test-Admin-Das-8346c--Login-and-access-dashboard-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|admin-basic-test-Admin-Das-8346c--Login-and-access-dashboard-chromium/video.webm]]
+
+[[ATTACHMENT|admin-basic-test-Admin-Das-8346c--Login-and-access-dashboard-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

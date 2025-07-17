@@ -23,13 +23,12 @@ export default function AccessPage() {
   useEffect(() => {
     const initializeAccess = async () => {
       try {
-        // 由於中間件已經驗證了用戶認證，這裡只需要獲取用戶信息用於顯示
-        const supabase = createClient();
-        const { data: { user }, error } = await supabase.auth.getUser();
+        // 使用與中間件一致的統一認證系統
+        const user = await unifiedAuth.getCurrentUser();
 
-        if (error || !user?.email) {
+        if (!user?.email) {
           // 如果無法獲取用戶信息，說明認證狀態不一致，重新登入
-          console.log('[AccessPage] Cannot get user info, redirecting to login', error);
+          console.log('[AccessPage] Cannot get user info, redirecting to login');
           router.push('/main-login?error=session_error');
           return;
         }

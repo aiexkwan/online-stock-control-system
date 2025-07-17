@@ -16,7 +16,7 @@ export class ProductionDetailsQueryDto {
   })
   @IsNotEmpty({ message: 'Start date is required' })
   @IsString({ message: 'Start date must be a string' })
-  startDate: string;
+  startDate!: string;
 
   @ApiProperty({
     description: 'End date for production details (ISO 8601)',
@@ -24,7 +24,7 @@ export class ProductionDetailsQueryDto {
   })
   @IsNotEmpty({ message: 'End date is required' })
   @IsString({ message: 'End date must be a string' })
-  endDate: string;
+  endDate!: string;
 
   @ApiProperty({
     description: 'Filter by warehouse location',

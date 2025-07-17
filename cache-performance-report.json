@@ -1,0 +1,126 @@
+{
+  "timestamp": "2025-07-16T22:39:37.596Z",
+  "tests": [
+    {
+      "test": "v1-health-check",
+      "status": "success",
+      "responseTime": 41,
+      "httpStatus": 200,
+      "data": {
+        "status": "healthy",
+        "version": "v1",
+        "timestamp": "2025-07-16T22:39:37.637Z",
+        "uptime": "208s",
+        "environment": "development",
+        "appVersion": "0.1.0",
+        "services": {
+          "database": "healthy",
+          "authentication": "healthy",
+          "cache": "healthy"
+        },
+        "compatibility": {
+          "apiVersion": "v1",
+          "isDeprecated": false,
+          "supportedUntil": null
+        }
+      },
+      "cacheStatus": "healthy"
+    },
+    {
+      "test": "v2-health-check",
+      "status": "success",
+      "responseTime": 82,
+      "httpStatus": 200,
+      "data": {
+        "status": "healthy",
+        "version": "v2",
+        "timestamp": "2025-07-16T22:39:37.723Z",
+        "uptime": "208s",
+        "environment": "development",
+        "appVersion": "0.1.0",
+        "services": {
+          "database": {
+            "status": "healthy",
+            "connectionPool": "active",
+            "responseTime": "<100ms"
+          },
+          "authentication": {
+            "status": "healthy",
+            "provider": "supabase",
+            "sessionCount": "active"
+          },
+          "cache": {
+            "status": "healthy",
+            "type": "memory",
+            "hitRate": "85%"
+          },
+          "storage": {
+            "status": "healthy",
+            "availableSpace": "> 1GB"
+          }
+        },
+        "metrics": {
+          "memory": {
+            "used": 211,
+            "total": 229,
+            "external": 260,
+            "unit": "MB"
+          },
+          "cpu": {
+            "usage": {
+              "user": 8638952,
+              "system": 1672265
+            },
+            "platform": "darwin",
+            "arch": "arm64"
+          },
+          "node": {
+            "version": "v22.15.0",
+            "pid": 40953
+          }
+        },
+        "compatibility": {
+          "apiVersion": "v2",
+          "isDeprecated": false,
+          "supportedUntil": null,
+          "features": [
+            "enhanced-metrics",
+            "detailed-service-status",
+            "performance-monitoring"
+          ]
+        }
+      }
+    },
+    {
+      "test": "metrics-collection",
+      "status": "success",
+      "responseTime": 192,
+      "httpStatus": 200,
+      "metricsCollected": 7
+    },
+    {
+      "test": "load-test",
+      "status": "success",
+      "totalDuration": 92,
+      "totalRequests": 50,
+      "successRequests": 50,
+      "failedRequests": 0,
+      "avgResponseTime": 76,
+      "maxResponseTime": 88,
+      "minResponseTime": 32,
+      "requestsPerSecond": 543
+    }
+  ],
+  "summary": {
+    "totalTests": 4,
+    "successfulTests": 4,
+    "failedTests": 0,
+    "avgResponseTime": 79,
+    "cacheServiceStatus": "healthy",
+    "loadTestPerformance": {
+      "requestsPerSecond": 543,
+      "avgResponseTime": 76,
+      "successRate": "100%"
+    }
+  }
+}

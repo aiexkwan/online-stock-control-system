@@ -4,8 +4,8 @@
  * 驗證 Stats widgets 遷移成功
  */
 
-import { widgetRegistry } from '../lib/widgets/enhanced-registry';
-import { UNIFIED_WIDGET_CONFIG } from '../lib/widgets/widget-config';
+import { widgetRegistry } from '../lib/widgets/unified-registry';
+import { UNIFIED_WIDGET_CONFIG } from '../lib/widgets/unified-widget-config';
 
 async function testStatsWidgetMigration() {
   console.log('\n🔍 Testing Stats Widget Migration...\n');

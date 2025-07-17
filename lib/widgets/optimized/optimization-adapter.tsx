@@ -5,10 +5,13 @@
 
 import React, { Suspense } from 'react';
 import { WidgetComponentProps } from '../types';
-import { widgetRegistry } from '../enhanced-registry';
+import { widgetRegistry } from '../unified-registry';
 import { lazyWidgetMap, shouldUseLazyLoading } from './lazy-widgets';
 import { getOptimizedComponent } from './memoized-widgets';
-import { performanceMonitor } from '../performance-monitor';
+import { simplePerformanceMonitor } from '../../performance/SimplePerformanceMonitor';
+
+// 使用已導出的性能監控實例
+const performanceMonitor = simplePerformanceMonitor;
 
 /**
  * Widget 加載狀態組件
@@ -48,12 +51,11 @@ class WidgetErrorBoundary extends React.Component<
     console.error(`Widget ${this.props.widgetId} crashed:`, error, errorInfo);
 
     // 記錄到性能監控
-    const timer = performanceMonitor.startMonitoring(this.props.widgetId, 'v2');
-    timer.complete({
-      route: window.location.pathname,
-      sessionId: 'error',
-      error: error.message,
-    } as any);
+    performanceMonitor.recordMetric(
+      `widget_error_${this.props.widgetId}`,
+      1,
+      'widget_errors'
+    );
   }
 
   render() {

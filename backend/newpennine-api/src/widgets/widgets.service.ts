@@ -1362,9 +1362,9 @@ export class WidgetsService {
         } else {
           productMap.set(key, {
             product_code: record.product_code,
-            description: record.data_code?.description || '',
-            colour: record.data_code?.colour || undefined,
-            type: record.data_code?.type || undefined,
+            description: record.data_code?.[0]?.description || '',
+            colour: record.data_code?.[0]?.colour || undefined,
+            type: record.data_code?.[0]?.type || undefined,
             total_quantity: record.product_qty || 0,
             total_value: 0, // Would need pricing data
             pallet_count: 1,
@@ -1390,8 +1390,8 @@ export class WidgetsService {
           product_code: p.product_code,
           description: p.description,
           total_quantity: p.total_quantity,
-          colour: p.colour,
-          type: p.type,
+          colour: p.colour || undefined,
+          type: p.type || undefined,
           total_value: p.total_value,
           pallet_count: p.pallet_count,
         })),
@@ -1470,14 +1470,14 @@ export class WidgetsService {
           data?.map((record) => ({
             plt_num: record.plt_num,
             product_code: record.product_code,
-            description: record.data_code?.description || '',
+            description: record.data_code?.[0]?.description || '',
             product_qty: record.product_qty,
             generate_time: record.generate_time,
             plt_remark: record.plt_remark,
             series: record.series,
             pdf_url: record.pdf_url,
-            colour: record.data_code?.colour,
-            type: record.data_code?.type,
+            colour: record.data_code?.[0]?.colour,
+            type: record.data_code?.[0]?.type,
           })) || [],
         metadata: {
           total_records: data?.length || 0,
@@ -1555,14 +1555,14 @@ export class WidgetsService {
       >();
 
       data?.forEach((record) => {
-        const date = new Date(record.time).toISOString().split('T')[0];
+        const date: string = (new Date(record.time || new Date()).toISOString().split('T')[0] || new Date().toISOString().split('T')[0]) as string;
         const key = `${date}-${record.uuid}`;
 
         if (workloadMap.has(key)) {
           workloadMap.get(key)!.task_count += 1;
         } else {
           workloadMap.set(key, {
-            date,
+            date: date,
             user_id: record.uuid || '',
             task_count: 1,
             department: record.loc,

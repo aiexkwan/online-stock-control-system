@@ -3,6 +3,8 @@
  * 統一處理動態導入錯誤，特別是 originalFactory.call 相關問題
  */
 
+import React from 'react';
+
 export interface DynamicImportOptions {
   retryCount?: number;
   retryDelay?: number;
@@ -144,5 +146,4 @@ export function useSafeDynamicImport<T>(
   return { data, loading, error, retry };
 }
 
-// Re-export React for convenience
-import React from 'react'; 
+ 

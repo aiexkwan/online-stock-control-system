@@ -8,6 +8,11 @@ import {
   logMiddlewareRouting,
   getCorrelationId 
 } from '@/lib/logger';
+import { 
+  handleApiVersioning, 
+  addVersionHeadersToResponse, 
+  recordVersionUsage 
+} from '@/lib/middleware/apiVersioning';
 // import { emailToClockNumber } from './app/utils/authUtils'; // 可能不再需要在中間件中直接使用
 
 // 認證中間件 - 處理用戶會話和路由保護
@@ -32,8 +37,10 @@ export async function middleware(request: NextRequest) {
     '/new-password', // 密碼重設頁面需要公開，用戶通過電郵連結訪問
     '/print-label/html-preview', // HTML 標籤預覽頁面（用於測試和預覽）
     '/api/health', // Health check API
+    '/api/v1/health', // v1 健康檢查 API (v1.8 新增)
+    '/api/v2/health', // v2 健康檢查 API (v1.8 新增)
+    '/api/v1/metrics', // v1 監控統計 API (v1.8 新增)
     '/api/auth', // 認證相關 API
-    '/api/health', // 健康檢查 API（如果有的話）
     '/api/print-label-pdf', // PDF 生成 API（用於內部調用）
     '/api/print-label-html', // HTML 標籤預覽 API（用於測試和預覽）
     '/api/send-order-email', // 訂單郵件發送 API（用於內部調用）
@@ -55,6 +62,36 @@ export async function middleware(request: NextRequest) {
   // 記錄路由決策
   logMiddlewareRouting(correlationId, request.nextUrl.pathname, isPublicRoute);
 
+  // API 版本管理處理 (v1.8 新增)
+  let processedRequest = request;
+  let apiVersion = 'v1'; // 預設版本
+  let versionInfo: any = undefined;
+  
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    try {
+      const versioningResult = await handleApiVersioning(request, correlationId);
+      
+      if (versioningResult.response) {
+        // 版本錯誤，直接返回錯誤回應
+        recordVersionUsage(versioningResult.version, true);
+        return versioningResult.response;
+      }
+      
+      processedRequest = versioningResult.request;
+      apiVersion = versioningResult.version;
+      versionInfo = versioningResult.versionInfo;
+      
+      // 記錄版本使用
+      recordVersionUsage(apiVersion, false);
+      
+    } catch (error) {
+      middlewareLogger.warn({
+        correlationId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      }, 'API versioning failed, continuing with default version');
+    }
+  }
+
   if (isPublicRoute) {
     middlewareLogger.info({
       correlationId,
@@ -66,12 +103,17 @@ export async function middleware(request: NextRequest) {
     // 創建基礎回應
     let response = NextResponse.next({
       request: {
-        headers: request.headers,
+        headers: processedRequest.headers,
       },
     });
     
     // 添加 correlation ID 到回應
     response.headers.set('x-correlation-id', correlationId);
+    
+    // 添加 API 版本 headers (v1.8 新增)
+    if (processedRequest.nextUrl.pathname.startsWith('/api/')) {
+      response = addVersionHeadersToResponse(response, apiVersion, versionInfo);
+    }
     
     // 記錄請求完成時間
     const duration = Date.now() - startTime;
@@ -79,6 +121,7 @@ export async function middleware(request: NextRequest) {
       correlationId,
       duration,
       status: 'allowed',
+      apiVersion: processedRequest.nextUrl.pathname.startsWith('/api/') ? apiVersion : undefined,
     }, 'Middleware request completed');
     
     return response; // 直接放行公開路由
@@ -87,7 +130,7 @@ export async function middleware(request: NextRequest) {
   // 創建基礎回應
   let response = NextResponse.next({
     request: {
-      headers: request.headers,
+      headers: processedRequest.headers,
     },
   });
 
@@ -110,11 +153,19 @@ export async function middleware(request: NextRequest) {
   // 用於追蹤是否已經記錄過 cookie 檢查
   let cookieLoggedForThisRequest = false;
 
-  // 創建 Supabase client
+  // 創建 Supabase client - 與前端保持一致的配置
+  // 使用處理過的請求 (v1.8 版本管理)
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+      storageKey: 'sb-bbmkuiplnzvpudszrend-auth-token', // 與前端統一
+      flowType: 'pkce',
+    },
     cookies: {
       get(name: string) {
-        const cookie = request.cookies.get(name);
+        const cookie = processedRequest.cookies.get(name);
         // 只在開發環境且第一次檢查主要認證 cookie 時記錄
         if (
           isDevelopment() &&
@@ -142,7 +193,7 @@ export async function middleware(request: NextRequest) {
         }
 
         // 設置 request cookie
-        request.cookies.set({
+        processedRequest.cookies.set({
           name,
           value,
           ...options,
@@ -151,7 +202,7 @@ export async function middleware(request: NextRequest) {
         // 創建新嘅回應並設置 cookie
         response = NextResponse.next({
           request: {
-            headers: request.headers,
+            headers: processedRequest.headers,
           },
         });
 
@@ -176,12 +227,12 @@ export async function middleware(request: NextRequest) {
         }, 'Removing cookie');
 
         // 從 request 中移除
-        request.cookies.delete(name);
+        processedRequest.cookies.delete(name);
 
         // 創建新嘅回應並移除 cookie
         response = NextResponse.next({
           request: {
-            headers: request.headers,
+            headers: processedRequest.headers,
           },
         });
 
@@ -268,6 +319,11 @@ export async function middleware(request: NextRequest) {
     // 添加 correlation ID 到所有回應
     response.headers.set('x-correlation-id', correlationId);
     
+    // 添加 API 版本 headers (v1.8 新增)
+    if (processedRequest.nextUrl.pathname.startsWith('/api/')) {
+      response = addVersionHeadersToResponse(response, apiVersion, versionInfo);
+    }
+    
     // 記錄請求完成
     const duration = Date.now() - startTime;
     middlewareLogger.info({
@@ -275,6 +331,7 @@ export async function middleware(request: NextRequest) {
       duration,
       status: 'completed',
       authenticated: true,
+      apiVersion: processedRequest.nextUrl.pathname.startsWith('/api/') ? apiVersion : undefined,
     }, 'Middleware request completed');
     
     return response;
@@ -283,11 +340,16 @@ export async function middleware(request: NextRequest) {
       correlationId,
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
-      path: request.nextUrl.pathname,
+      path: processedRequest.nextUrl.pathname,
     }, 'Unexpected error in middleware');
     
     // 確保即使出錯也返回 correlation ID
     response.headers.set('x-correlation-id', correlationId);
+    
+    // 添加 API 版本 headers (v1.8 新增)
+    if (processedRequest.nextUrl.pathname.startsWith('/api/')) {
+      response = addVersionHeadersToResponse(response, apiVersion, versionInfo);
+    }
     
     return response;
   }

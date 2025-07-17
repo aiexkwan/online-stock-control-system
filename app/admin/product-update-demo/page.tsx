@@ -81,7 +81,7 @@ export default function ProductUpdateDemoPage() {
               <p>✓ Automatic Server Actions fallback</p>
               <p>✓ Performance monitoring</p>
               <p>✓ Better error handling</p>
-              <p>✓ useGraphQLFallback hook</p>
+              <p>✓ Unified API client</p>
             </div>
           </motion.div>
         </div>
@@ -114,14 +114,13 @@ export default function ProductUpdateDemoPage() {
               </pre>
             </div>
             <div>
-              <h4 className='mb-2 font-medium text-gray-300'>useGraphQLFallback Usage</h4>
+              <h4 className='mb-2 font-medium text-gray-300'>Unified API Usage</h4>
               <pre className='overflow-x-auto rounded bg-slate-900 p-3 text-xs text-gray-400'>
-                {`const { data, loading, error, mode } = useGraphQLFallback({
-  graphqlQuery: GET_PRODUCT_BY_CODE,
-  serverAction: getProductByCode,
-  variables: { code },
-  fallbackEnabled: true,
-  widgetId: 'ProductUpdateV2'
+                {`const { data, loading, error } = useUnifiedAPI({
+  endpoint: '/api/products/by-code',
+  params: { code },
+  enabled: !!code,
+  queryKey: ['product', code]
 });`}
               </pre>
             </div>

@@ -46,37 +46,33 @@ export class InventoryService {
         };
       }
 
-      // Build the query
+      // Build the query - removing non-existent columns
       let query = this.supabase.from('record_inventory').select(
         `
-          id,
           plt_num,
           product_code,
-          loc,
-          warehouse,
-          qty,
           damage,
-          last_update,
+          latest_update,
+          injection,
+          pipeline,
+          prebook,
+          await,
+          fold,
+          bulk,
+          backcarpark,
+          await_grn,
           data_code!inner(
             description,
             colour,
-            unit
-          ),
-          record_palletinfo!inner(
-            series,
-            generate_time
+            standard_qty
           )
         `,
         { count: 'exact' },
       );
 
       // Apply filters
-      if (warehouse) {
-        query = query.eq('warehouse', warehouse);
-      }
-      if (location) {
-        query = query.eq('loc', location);
-      }
+      // Note: warehouse and location filters removed as these columns don't exist in record_inventory
+      // TODO: Implement warehouse/location filtering using record_transfer table
       if (productCode) {
         query = query.eq('product_code', productCode);
       }
@@ -84,19 +80,16 @@ export class InventoryService {
         query = query.eq('plt_num', pltNum);
       }
 
-      // Stock type filter
+      // Stock type filter - using available columns
       if (stockType && stockType !== StockType.ALL) {
-        if (stockType === StockType.GOOD) {
-          query = query.gt('qty', 0);
-        } else if (stockType === StockType.DAMAGE) {
+        if (stockType === StockType.DAMAGE) {
           query = query.gt('damage', 0);
         }
+        // TODO: Implement GOOD stock type filtering using location-based logic
       }
 
-      // Minimum quantity filter
-      if (minQty !== undefined && minQty > 0) {
-        query = query.gte('qty', minQty);
-      }
+      // Note: Minimum quantity filter removed as 'qty' column doesn't exist
+      // TODO: Implement minimum quantity filtering using location-based totals
 
       // Apply pagination
       query = query
@@ -111,23 +104,30 @@ export class InventoryService {
         throw error;
       }
 
-      // Transform the data
-      const transformedData: InventoryDto[] = (data || []).map((item: any) => ({
-        id: item.id,
-        plt_num: item.plt_num,
-        product_code: item.product_code,
-        loc: item.loc,
-        warehouse: item.warehouse,
-        qty: item.qty || 0,
-        damage: item.damage || 0,
-        total_qty: (item.qty || 0) + (item.damage || 0),
-        last_update: item.last_update,
-        product_description: item.data_code?.description,
-        product_colour: item.data_code?.colour,
-        product_unit: item.data_code?.unit,
-        pallet_series: item.record_palletinfo?.series,
-        pallet_generate_time: item.record_palletinfo?.generate_time,
-      }));
+      // Transform the data - mapping to available columns
+      const transformedData: InventoryDto[] = (data || []).map((item: any) => {
+        // Calculate total quantity from all location columns
+        const totalGoodQty = (item.injection || 0) + (item.pipeline || 0) + (item.prebook || 0) + 
+                            (item.await || 0) + (item.fold || 0) + (item.bulk || 0) + 
+                            (item.backcarpark || 0) + (item.await_grn || 0);
+        
+        return {
+          id: item.uuid || item.plt_num, // Use UUID or plt_num as ID
+          plt_num: item.plt_num,
+          product_code: item.product_code,
+          loc: 'Multiple', // Since we have multiple location columns
+          warehouse: 'Main', // Default warehouse
+          qty: totalGoodQty,
+          damage: item.damage || 0,
+          total_qty: totalGoodQty + (item.damage || 0),
+          last_update: item.latest_update,
+          product_description: item.data_code?.description,
+          product_colour: item.data_code?.colour,
+          product_unit: null, // Not available in data_code
+          pallet_series: null, // Not joined in this query
+          pallet_generate_time: null, // Not joined in this query
+        };
+      });
 
       return {
         data: transformedData,

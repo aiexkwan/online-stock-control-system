@@ -26,7 +26,7 @@ import {
   getWidgetsByCategory,
   getWidgetsByPriority,
   getGraphQLWidgets 
-} from './widget-config';
+} from './unified-widget-config';
 
 // 定義 WidgetComponent 類型
 type WidgetComponent = React.ComponentType<WidgetComponentProps>;
