@@ -216,24 +216,24 @@ export async function exportGrnReport(data: GrnReportPageData) {
   const sheet = workbook.addWorksheet('GRN Report');
 
   // Define styles
-  const center: Partial<ExcelJS.Alignment> = {
+  const center: Partial<any> = {
     horizontal: 'center',
     vertical: 'middle',
     wrapText: true,
   };
-  const right: Partial<ExcelJS.Alignment> = { horizontal: 'right', vertical: 'middle' };
-  const grayFill: ExcelJS.Fill = {
+  const right: Partial<any> = { horizontal: 'right', vertical: 'middle' };
+  const grayFill: any = {
     type: 'pattern',
     pattern: 'solid',
     fgColor: { argb: 'FFDCDCDC' },
   };
-  const thinBorder: Partial<ExcelJS.Borders> = {
+  const thinBorder: Partial<any> = {
     top: { style: 'thin' },
     bottom: { style: 'thin' },
     left: { style: 'thin' },
     right: { style: 'thin' },
   };
-  const thickBorder: Partial<ExcelJS.Borders> = {
+  const thickBorder: Partial<any> = {
     top: { style: 'thick' },
     bottom: { style: 'thick' },
     left: { style: 'thick' },
@@ -396,7 +396,7 @@ export async function exportGrnReport(data: GrnReportPageData) {
         // Check individual border sides if necessary for more complex scenarios
         let applyThin = true;
         if (cell.border) {
-          const currentBorder = cell.border as ExcelJS.Borders;
+          const currentBorder = cell.border as any;
           if (
             currentBorder.top?.style === 'thick' &&
             currentBorder.bottom?.style === 'thick' &&

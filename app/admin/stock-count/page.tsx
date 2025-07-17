@@ -78,7 +78,7 @@ export default function AdminStockCountPage() {
       if (batchMode) {
         // 檢查是否已經在批量列表中
         const existingItem = batchScans.find(item => item.plt_num === scanResult.data.plt_num);
-        if (existingItem && existingItem.status === 'pending') {
+        if (existingItem && (existingItem as { status: string }).status === 'pending') {
           toast.error('This pallet is already in the batch list');
           setState('batch_mode');
           return;
@@ -197,8 +197,8 @@ export default function AdminStockCountPage() {
       // 如果是編輯模式
       if (editingIndex !== null) {
         const updatedScans = [...batchScans];
-        updatedScans[editingIndex] = {
-          ...updatedScans[editingIndex],
+        updatedScans[editingIndex as string] = {
+          ...updatedScans[editingIndex as string],
           counted_qty: countedQty,
         };
         setBatchScans(updatedScans);
@@ -212,7 +212,7 @@ export default function AdminStockCountPage() {
       // 數據驗證
       const validation = await validateQuantity(pendingBatchItem.product_code!, countedQty);
       if (!validation.is_valid) {
-        toast.error(validation.message || 'Invalid quantity');
+        toast.error((validation as { message: string }).message || 'Invalid quantity');
 
         // 如果有警告但允許繼續，顯示確認對話框
         if (validation.warnings && validation.warnings.length > 0) {
@@ -243,7 +243,7 @@ export default function AdminStockCountPage() {
     // 數據驗證
     const validation = await validateQuantity(countData.product_code, countedQty);
     if (!validation.is_valid) {
-      toast.error(validation.message || 'Invalid quantity');
+      toast.error((validation as { message: string }).message || 'Invalid quantity');
 
       // 如果有警告但允許繼續，顯示確認對話框
       if (validation.warnings && validation.warnings.length > 0) {
@@ -368,7 +368,7 @@ export default function AdminStockCountPage() {
         },
         body: JSON.stringify({
           session_id: sessionId,
-          scans: batchScans.filter(s => s.status === 'pending'),
+          scans: batchScans.filter((s: any) => (s as { status: string }).status === 'pending'),
         }),
       });
 
@@ -414,8 +414,8 @@ export default function AdminStockCountPage() {
 
   // 編輯批量項目數量
   const handleEditBatchItem = (index: number) => {
-    const item = batchScans[index];
-    if (item.status !== 'pending') return;
+    const item = batchScans[index as string];
+    if ((item as { status: string }).status !== 'pending') return;
 
     setEditingIndex(index);
     setPendingBatchItem(item);
@@ -489,17 +489,17 @@ export default function AdminStockCountPage() {
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: index * 0.05 }}
                           className={`flex items-center justify-between rounded-lg p-3 ${
-                            scan.status === 'error'
+                            (scan as { status: string }).status === 'error'
                               ? 'border border-red-700/50 bg-red-900/20'
-                              : scan.status === 'success'
+                              : (scan as { status: string }).status === 'success'
                                 ? 'border border-green-700/50 bg-green-900/20'
                                 : 'border border-slate-600/50 bg-slate-700/30'
                           }`}
                         >
                           <div className='flex items-center gap-3'>
-                            {scan.status === 'error' ? (
+                            {(scan as { status: string }).status === 'error' ? (
                               <XCircleIcon className='h-5 w-5 text-red-400' />
-                            ) : scan.status === 'success' ? (
+                            ) : (scan as { status: string }).status === 'success' ? (
                               <CheckCircleIcon className='h-5 w-5 text-green-400' />
                             ) : (
                               <ClockIcon className='h-5 w-5 text-yellow-400' />
@@ -526,7 +526,7 @@ export default function AdminStockCountPage() {
                               </p>
                               {scan.error && <p className='text-xs text-red-400'>{scan.error}</p>}
                             </div>
-                            {scan.status === 'pending' && (
+                            {(scan as { status: string }).status === 'pending' && (
                               <div className='flex gap-1'>
                                 <button
                                   onClick={() => handleEditBatchItem(index)}
@@ -577,11 +577,11 @@ export default function AdminStockCountPage() {
                       <button
                         onClick={handleBatchSubmit}
                         disabled={
-                          isLoading || batchScans.filter(s => s.status === 'pending').length === 0
+                          isLoading || batchScans.filter((s: any) => (s as { status: string }).status === 'pending').length === 0
                         }
                         className='flex-1 rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-600'
                       >
-                        Submit Batch ({batchScans.filter(s => s.status === 'pending').length} items)
+                        Submit Batch ({batchScans.filter((s: any) => (s as { status: string }).status === 'pending').length} items)
                       </button>
                       <button
                         onClick={() => setBatchScans([])}

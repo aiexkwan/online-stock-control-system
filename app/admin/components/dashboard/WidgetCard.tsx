@@ -27,7 +27,7 @@ export function WidgetCard({
   onClick,
   // size parameter removed
 }: WidgetCardProps) {
-  const borderStyle = WidgetStyles.borders[widgetType] || '';
+  const borderStyle = WidgetStyles.borders[widgetType as string] || '';
 
   // 所有 widget 使用固定佈局
 

@@ -44,7 +44,7 @@ async function runPhase12Tests() {
     
     // Debug: Print all button texts
     const buttonTexts = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll('button')).map(btn => btn.textContent?.trim());
+      return Array.from(document.querySelectorAll('button')).map((btn: any) => btn.textContent?.trim());
     });
     console.log('🔍 Found buttons:', buttonTexts);
     
@@ -129,7 +129,7 @@ async function runPhase12Tests() {
         const value = card.querySelector('[class*="text-2xl font-bold"]')?.textContent;
         
         if (title && value) {
-          stats[title] = value;
+          stats[title as string] = value;
         }
       });
       
@@ -151,15 +151,15 @@ async function runPhase12Tests() {
     });
     
     console.log('\n📋 Individual Test Results:');
-    const passedTests = testResults.filter(r => r.status === 'passed').length;
+    const passedTests = testResults.filter((r: any) => (r as { status: string }).status === 'passed').length;
     const totalTests = testResults.length;
     const passRate = ((passedTests / totalTests) * 100).toFixed(1);
     
     testResults.forEach((result, index) => {
-      const icon = result.status === 'passed' ? '✅' : '❌';
+      const icon = (result as { status: string }).status === 'passed' ? '✅' : '❌';
       console.log(`   ${index + 1}. ${icon} ${result.test}`);
-      if (result.message) {
-        console.log(`      └─ ${result.message}`);
+      if ((result as { message: string }).message) {
+        console.log(`      └─ ${(result as { message: string }).message}`);
       }
       if (result.duration) {
         console.log(`      └─ Duration: ${result.duration}ms`);

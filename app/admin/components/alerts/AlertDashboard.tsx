@@ -12,10 +12,18 @@ import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, CheckCircle, Clock, Bell, Settings, Plus, Play, Square } from 'lucide-react';
 import { Alert, AlertLevel, AlertState } from '@/lib/alerts/types';
 import { AlertRulesList } from './AlertRulesList';
-import { AlertHistoryView } from './AlertHistoryView';
-import { NotificationSettings } from './NotificationSettings';
-import { AlertSystemStatus } from './AlertSystemStatus';
-import { CreateAlertRuleDialog } from './CreateAlertRuleDialog';
+// Component not implemented yet
+// // Component not implemented yet
+// import { AlertHistoryView } from './AlertHistoryView';
+// Component not implemented yet
+// // Component not implemented yet
+// import { NotificationSettings } from './NotificationSettings';
+// Component not implemented yet
+// // Component not implemented yet
+// import { AlertSystemStatus } from './AlertSystemStatus';
+// Component not implemented yet
+// // Component not implemented yet
+// import { CreateAlertRuleDialog } from './CreateAlertRuleDialog';
 
 interface AlertStats {
   total: number;
@@ -313,7 +321,7 @@ export function AlertDashboard() {
           { id: 'history', label: 'History' },
           { id: 'notifications', label: 'Notifications' },
           { id: 'settings', label: 'Settings' }
-        ].map(tab => (
+        ].map((tab: any) => (
           <Button
             key={tab.id}
             variant={activeTab === tab.id ? 'default' : 'outline'}
@@ -327,7 +335,9 @@ export function AlertDashboard() {
       {/* Tab Content */}
       <div>
         {activeTab === 'overview' && (
-          <AlertSystemStatus />
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">AlertSystemStatus component not implemented yet</p>
+          </div>
         )}
         
         {activeTab === 'rules' && (
@@ -335,11 +345,15 @@ export function AlertDashboard() {
         )}
         
         {activeTab === 'history' && (
-          <AlertHistoryView />
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">AlertHistoryView component not implemented yet</p>
+          </div>
         )}
         
         {activeTab === 'notifications' && (
-          <NotificationSettings />
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">NotificationSettings component not implemented yet</p>
+          </div>
         )}
         
         {activeTab === 'settings' && (
@@ -351,6 +365,8 @@ export function AlertDashboard() {
       </div>
 
       {/* Create Alert Rule Dialog */}
+      {/* CreateAlertRuleDialog component not implemented yet */}
+      {/*
       <CreateAlertRuleDialog
         isOpen={isCreateRuleOpen}
         onClose={() => setIsCreateRuleOpen(false)}
@@ -360,6 +376,7 @@ export function AlertDashboard() {
           loadSystemStatus();
         }}
       />
+      */}
     </div>
   );
 }

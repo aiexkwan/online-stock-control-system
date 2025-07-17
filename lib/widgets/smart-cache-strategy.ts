@@ -69,6 +69,7 @@ export const CACHE_STRATEGIES = {
     enableSWR: true,
     swrWindow: 10,
     enablePreload: false,
+    preloadTiming: undefined,
     dateRangeAware: false,
   },
   

@@ -154,7 +154,7 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
       console.log('Sample void record:', JSON.stringify(voidReports[0], null, 2));
 
     // Step 2: Get unique pallet numbers for user lookup
-    const palletNumbers = [...new Set(voidReports.map(v => v.plt_num))];
+    const palletNumbers = [...new Set(voidReports.map((v: any) => v.plt_num))];
 
     // Step 3: Try to get user information from record_history (optional)
     let userMap = new Map<string, any>();
@@ -271,10 +271,10 @@ export function generateVoidReportPDF(records: VoidRecord[], filters: VoidReport
     // Summary statistics
     const totalVoids = records.length;
     const totalQty = records.reduce((sum, r) => sum + (r.void_qty || 0), 0);
-    const damageVoids = records.filter(r => r.damage_qty !== null && r.damage_qty > 0).length;
-    const fullVoids = records.filter(r => r.damage_qty === null || r.damage_qty === 0).length;
-    const voidReasons = [...new Set(records.map(r => r.reason).filter(Boolean))];
-    const uniqueProducts = [...new Set(records.map(r => r.product_code).filter(Boolean))].length;
+    const damageVoids = records.filter((r: any) => r.damage_qty !== null && r.damage_qty > 0).length;
+    const fullVoids = records.filter((r: any) => r.damage_qty === null || r.damage_qty === 0).length;
+    const voidReasons = [...new Set(records.map((r: any) => r.reason).filter(Boolean))];
+    const uniqueProducts = [...new Set(records.map((r: any) => r.product_code).filter(Boolean))].length;
 
     doc.text(`Total Voids: ${totalVoids}`, 14, 40);
     doc.text(`Total Quantity: ${totalQty}`, 14, 47);
@@ -459,7 +459,7 @@ export function generateVoidReportPDF(records: VoidRecord[], filters: VoidReport
   } catch (error) {
     console.error('Error generating PDF:', error);
     throw new Error(
-      `Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Failed to generate PDF: ${error instanceof Error ? (error as { message: string }).message : 'Unknown error'}`
     );
   }
 }
@@ -475,10 +475,10 @@ export async function generateVoidReportExcel(records: VoidRecord[], filters: Vo
     // Summary sheet
     const totalVoids = records.length;
     const totalQty = records.reduce((sum, r) => sum + (r.void_qty || 0), 0);
-    const damageVoids = records.filter(r => r.damage_qty !== null && r.damage_qty > 0).length;
-    const fullVoids = records.filter(r => r.damage_qty === null || r.damage_qty === 0).length;
-    const uniqueProducts = [...new Set(records.map(r => r.product_code).filter(Boolean))].length;
-    const uniqueReasons = [...new Set(records.map(r => r.reason).filter(Boolean))].length;
+    const damageVoids = records.filter((r: any) => r.damage_qty !== null && r.damage_qty > 0).length;
+    const fullVoids = records.filter((r: any) => r.damage_qty === null || r.damage_qty === 0).length;
+    const uniqueProducts = [...new Set(records.map((r: any) => r.product_code).filter(Boolean))].length;
+    const uniqueReasons = [...new Set(records.map((r: any) => r.reason).filter(Boolean))].length;
 
     const summaryData = [
       ['Void Pallet Report'],
@@ -797,7 +797,7 @@ export async function generateVoidReportExcel(records: VoidRecord[], filters: Vo
   } catch (error) {
     console.error('Error generating Excel:', error);
     throw new Error(
-      `Failed to generate Excel: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Failed to generate Excel: ${error instanceof Error ? (error as { message: string }).message : 'Unknown error'}`
     );
   }
 }
@@ -848,7 +848,7 @@ export async function fetchVoidRecordsAlternative(
       console.log(`Found ${voidReports.length} void records`);
 
     // Step 2: Get pallet info separately
-    const palletNumbers = [...new Set(voidReports.map(v => v.plt_num))];
+    const palletNumbers = [...new Set(voidReports.map((v: any) => v.plt_num))];
     isNotProduction() &&
       isNotProduction() &&
       console.log(`Fetching info for ${palletNumbers.length} unique pallets`);

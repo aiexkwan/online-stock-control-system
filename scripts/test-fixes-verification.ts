@@ -19,7 +19,7 @@ async function runTests() {
     // Get widgets for each category
     categories.forEach(category => {
       const widgets = widgetRegistry.getByCategory(category);
-      categorizedWidgets[category] = widgets;
+      categorizedWidgets[category as string] = widgets;
       totalCount += widgets.length;
     });
     

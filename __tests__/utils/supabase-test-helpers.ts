@@ -136,7 +136,7 @@ export const mockSupabaseQuery = (
     const queryBuilder = createMockSupabaseClient().from(tableName);
     
     // Override the then method to return our response
-    (queryBuilder as any).then = (resolve: Function) => {
+    (queryBuilder as any).then = (resolve: (value: any) => void) => {
       return Promise.resolve(response).then(resolve);
     };
     
@@ -146,8 +146,8 @@ export const mockSupabaseQuery = (
                      'limit', 'offset', 'single', 'maybeSingle'];
     
     methods.forEach(method => {
-      if (queryBuilder[method]) {
-        (queryBuilder[method] as jest.Mock).mockImplementation((...args: any[]) => {
+      if ((queryBuilder as any)[method]) {
+        ((queryBuilder as any)[method] as jest.Mock).mockImplementation((...args: any[]) => {
           // For terminal methods (single, maybeSingle), return the promise
           if (method === 'single' || method === 'maybeSingle') {
             return Promise.resolve(response);
@@ -171,8 +171,8 @@ export const mockSupabaseRPC = (
   response: any
 ) => {
   // First register the function in the mock registry if it doesn't exist
-  if (!rpcMocks[functionName]) {
-    rpcMocks[functionName] = jest.fn();
+  if (!(rpcMocks as any)[functionName]) {
+    (rpcMocks as any)[functionName] = jest.fn();
   }
   
   // Then set the response
@@ -188,8 +188,8 @@ export const mockSupabaseRPCError = (
   errorMessage: string
 ) => {
   // First register the function in the mock registry if it doesn't exist
-  if (!rpcMocks[functionName]) {
-    rpcMocks[functionName] = jest.fn();
+  if (!(rpcMocks as any)[functionName]) {
+    (rpcMocks as any)[functionName] = jest.fn();
   }
   
   // Then set the error response
@@ -225,8 +225,8 @@ export const mockSupabaseRealtime = (
   channel: string,
   events: Array<{ event: string; payload: any }>
 ) => {
-  const mockChannel = {
-    on: jest.fn((event: string, callback: Function) => {
+  const mockChannel: any = {
+    on: jest.fn((event: string, callback: (payload: any) => void) => {
       // Find matching events and schedule callbacks
       events
         .filter(e => e.event === event)
@@ -235,7 +235,7 @@ export const mockSupabaseRealtime = (
         });
       return mockChannel;
     }),
-    subscribe: jest.fn((callback?: Function) => {
+    subscribe: jest.fn((callback?: (status: string) => void) => {
       if (callback) callback('subscribed');
       return Promise.resolve('subscribed');
     }),

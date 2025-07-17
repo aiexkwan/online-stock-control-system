@@ -933,7 +933,7 @@ export class AnalysisService {
     // Step 5: Apply product code filters if specified
     if (query.productCodes && query.productCodes.length > 0) {
       combinedRecords = combinedRecords.filter((record) =>
-        query.productCodes!.includes(record.product_code),
+        query.productCodes.includes(record.product_code),
       );
     }
 
@@ -1030,7 +1030,7 @@ export class AnalysisService {
         reasonMap.set(reason, { qty: 0, count: 0 });
       }
 
-      const stats = reasonMap.get(reason)!;
+      const stats = reasonMap.get(reason);
       stats.qty += qty;
       stats.count += 1;
     });
@@ -1079,7 +1079,7 @@ export class AnalysisService {
         trendMap.set(period, { qty: 0, count: 0 });
       }
 
-      const stats = trendMap.get(period)!;
+      const stats = trendMap.get(period);
       stats.qty += record.void_qty || 0;
       stats.count += 1;
     });
@@ -1111,7 +1111,7 @@ export class AnalysisService {
         productMap.set(product, { qty: 0, count: 0 });
       }
 
-      const stats = productMap.get(product)!;
+      const stats = productMap.get(product);
       stats.qty += qty;
       stats.count += 1;
     });
@@ -1151,7 +1151,7 @@ export class AnalysisService {
         userMap.set(userName, { qty: 0, count: 0, id: userId });
       }
 
-      const stats = userMap.get(userName)!;
+      const stats = userMap.get(userName);
       stats.qty += qty;
       stats.count += 1;
     });

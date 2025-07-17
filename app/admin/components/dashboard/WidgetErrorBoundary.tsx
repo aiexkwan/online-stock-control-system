@@ -81,7 +81,7 @@ export class WidgetErrorBoundary extends Component<Props, State> {
               <h3 className='mb-1 text-sm font-semibold text-red-400'>Widget Error</h3>
               <p className='text-xs text-gray-400'>{this.props.widgetName} encountered an error</p>
               {isDevelopment() && this.state.error && (
-                <p className='mt-2 font-mono text-xs text-gray-500'>{this.state.error.message}</p>
+                <p className='mt-2 font-mono text-xs text-gray-500'>{(this.state.error as { message: string }).message}</p>
               )}
             </div>
 

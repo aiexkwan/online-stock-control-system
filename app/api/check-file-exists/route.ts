@@ -22,7 +22,7 @@ function createSupabaseAdmin() {
   });
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { fileName, folder } = await request.json();
 
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Failed to check file existence',
-          details: listError.message,
+          details: (listError as { message: string }).message,
         },
         { status: 500 }
       );
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: 'Internal server error',
-        details: error.message,
+        details: (error as { message: string }).message,
       },
       { status: 500 }
     );

@@ -40,4 +40,4 @@ declare module 'class-validator' {
 
 declare module 'class-transformer' {
   export * from 'class-transformer/index';
-} 
+}

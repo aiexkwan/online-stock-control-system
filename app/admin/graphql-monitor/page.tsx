@@ -106,27 +106,27 @@ export default function GraphQLMonitorPage() {
           fetch('/api/graphql-monitoring?type=performance-history'),
         ]);
 
-      if (rateLimitRes.status === 'fulfilled' && rateLimitRes.value.ok) {
+      if ((rateLimitRes as { status: string }).status === 'fulfilled' && rateLimitRes.value.ok) {
         const data = await rateLimitRes.value.json();
         setRateLimitStats(data);
       }
 
-      if (cacheRes.status === 'fulfilled' && cacheRes.value.ok) {
+      if ((cacheRes as { status: string }).status === 'fulfilled' && cacheRes.value.ok) {
         const data = await cacheRes.value.json();
         setCacheStats(data);
       }
 
-      if (healthRes.status === 'fulfilled' && healthRes.value.ok) {
+      if ((healthRes as { status: string }).status === 'fulfilled' && healthRes.value.ok) {
         const data = await healthRes.value.json();
         setSystemHealth(data);
       }
 
-      if (warmupRes.status === 'fulfilled' && warmupRes.value.ok) {
+      if ((warmupRes as { status: string }).status === 'fulfilled' && warmupRes.value.ok) {
         const data = await warmupRes.value.json();
         setWarmupStats(data);
       }
 
-      if (performanceRes.status === 'fulfilled' && performanceRes.value.ok) {
+      if ((performanceRes as { status: string }).status === 'fulfilled' && performanceRes.value.ok) {
         const data = await performanceRes.value.json();
         setPerformanceData(data.history || []);
       }
@@ -196,7 +196,7 @@ export default function GraphQLMonitorPage() {
     }, 30000); // Refresh every 30 seconds
 
     return () => clearInterval(interval);
-  }, [autoRefresh]);
+  }, [autoRefresh as string]);
 
   // System health status icon
   const getHealthIcon = (status: string) => {
@@ -271,11 +271,11 @@ export default function GraphQLMonitorPage() {
           <CardHeader>
             <div className='flex items-center justify-between'>
               <CardTitle className='flex items-center gap-2'>
-                {getHealthIcon(systemHealth.status)}
+                {getHealthIcon((systemHealth as { status: string }).status)}
                 System Health Status
               </CardTitle>
-              <Badge variant={systemHealth.status === 'healthy' ? 'default' : 'destructive'}>
-                {systemHealth.status.toUpperCase()}
+              <Badge variant={(systemHealth as { status: string }).status === 'healthy' ? 'default' : 'destructive'}>
+                {(systemHealth as { status: string }).status.toUpperCase()}
               </Badge>
             </div>
           </CardHeader>

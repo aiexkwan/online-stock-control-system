@@ -60,7 +60,7 @@ async function testStatsWidgetMigration() {
       }
       
       // 檢查特殊配置
-      const config = UNIFIED_WIDGET_CONFIG[widgetId];
+      const config = UNIFIED_WIDGET_CONFIG[widgetId as string];
       if (config?.metadata?.refreshInterval) {
         console.log(`   Refresh Interval: ${config.metadata.refreshInterval}ms`);
       }

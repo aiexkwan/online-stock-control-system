@@ -85,7 +85,7 @@ export class AlertConfigManager {
       return {
         success: false,
         message: 'Failed to initialize default rules',
-        errors: [error.message]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
       };
     }
   }
@@ -326,7 +326,7 @@ export class AlertConfigManager {
       return {
         success: false,
         message: 'Failed to initialize default templates',
-        errors: [error.message]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
       };
     }
   }
@@ -348,7 +348,7 @@ Alert Details:
 - Rule: {{alert.ruleName}}
 - Level: {{alert.level}}
 - State: {{alert.state}}
-- Message: {{alert.message}}
+- Message: {{(alert as { message: string }).message}}
 - Current Value: {{alert.value}}
 - Threshold: {{alert.threshold}}
 - Triggered: {{alert.triggeredAt}}
@@ -359,7 +359,7 @@ Alert Details:
 
 Please take appropriate action if required.
         `,
-        variables: ['alert.ruleName', 'alert.level', 'alert.state', 'alert.message', 'alert.value', 'alert.threshold', 'alert.triggeredAt', 'alert.resolvedAt'],
+        variables: ['alert.ruleName', 'alert.level', 'alert.state', '(alert as { message: string }).message', 'alert.value', 'alert.threshold', 'alert.triggeredAt', 'alert.resolvedAt'],
         defaultValues: {}
       },
       {
@@ -374,11 +374,11 @@ Please take appropriate action if required.
 *Threshold:* {{alert.threshold}}
 *Status:* {{alert.state}}
 
-*Message:* {{alert.message}}
+*Message:* {{(alert as { message: string }).message}}
 
 *Time:* {{alert.triggeredAt}}
         `,
-        variables: ['alert.ruleName', 'alert.level', 'alert.value', 'alert.threshold', 'alert.state', 'alert.message', 'alert.triggeredAt'],
+        variables: ['alert.ruleName', 'alert.level', 'alert.value', 'alert.threshold', 'alert.state', '(alert as { message: string }).message', 'alert.triggeredAt'],
         defaultValues: {}
       },
       {
@@ -392,7 +392,7 @@ Please take appropriate action if required.
     "ruleName": "{{alert.ruleName}}",
     "level": "{{alert.level}}",
     "state": "{{alert.state}}",
-    "message": "{{alert.message}}",
+    "message": "{{(alert as { message: string }).message}}",
     "value": {{alert.value}},
     "threshold": {{alert.threshold}},
     "triggeredAt": "{{alert.triggeredAt}}",
@@ -401,7 +401,7 @@ Please take appropriate action if required.
   "timestamp": "{{now}}",
   "system": "NewPennine Alert System"
 }`,
-        variables: ['alert.id', 'alert.ruleName', 'alert.level', 'alert.state', 'alert.message', 'alert.value', 'alert.threshold', 'alert.triggeredAt', 'alert.resolvedAt', 'now'],
+        variables: ['alert.id', 'alert.ruleName', 'alert.level', 'alert.state', '(alert as { message: string }).message', 'alert.value', 'alert.threshold', 'alert.triggeredAt', 'alert.resolvedAt', 'now'],
         defaultValues: {
           now: new Date().toISOString()
         }
@@ -532,7 +532,7 @@ Please take appropriate action if required.
       return {
         success: false,
         message: 'Failed to create database schema',
-        errors: [error.message]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
       };
     }
   }

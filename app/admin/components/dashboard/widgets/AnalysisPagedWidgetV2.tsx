@@ -128,8 +128,8 @@ export const AnalysisPagedWidgetV2 = function AnalysisPagedWidgetV2({
     [currentPage, isFlipping]
   );
 
-  const CurrentComponent = pages[currentPage].component;
-  const currentPageData = pages[currentPage];
+  const CurrentComponent = pages[currentPage as string].component;
+  const currentPageData = pages[currentPage as string];
 
   return (
     <div className='flex h-full gap-6'>

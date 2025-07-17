@@ -480,10 +480,10 @@ describe('UnifiedPrintingService', () => {
         options: {
           copies: 2,
           paperSize: PaperSize.A4,
-          orientation: 'portrait'
+          orientation: 'portrait' as const
         },
         metadata: { userId: 'user-123', original: true },
-        result: { success: true },
+        result: { success: true, jobId: 'job-123' },
         createdAt: new Date().toISOString()
       };
 

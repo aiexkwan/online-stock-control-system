@@ -95,7 +95,7 @@ export function WidgetTitle({
   className,
 }: WidgetTitleProps) {
   return (
-    <h3 className={cn(WidgetTextStyles.title[size], GlowStyles[glow], className)}>{children}</h3>
+    <h3 className={cn(WidgetTextStyles.title[size as string], GlowStyles[glow as string], className)}>{children}</h3>
   );
 }
 
@@ -113,7 +113,7 @@ export function WidgetText({
   glow = 'subtle',
   className,
 }: WidgetTextProps) {
-  return <p className={cn(WidgetTextStyles.body[size], GlowStyles[glow], className)}>{children}</p>;
+  return <p className={cn(WidgetTextStyles.body[size as string], GlowStyles[glow as string], className)}>{children}</p>;
 }
 
 // Widget 標籤組件
@@ -131,7 +131,7 @@ export function WidgetLabel({
   className,
 }: WidgetLabelProps) {
   return (
-    <span className={cn(WidgetTextStyles.label[size], GlowStyles[glow], className)}>
+    <span className={cn(WidgetTextStyles.label[size as string], GlowStyles[glow as string], className)}>
       {children}
     </span>
   );
@@ -152,7 +152,7 @@ export function WidgetValue({
   className,
 }: WidgetValueProps) {
   return (
-    <div className={cn(WidgetTextStyles.value[size], GlowStyles[glow], className)}>{children}</div>
+    <div className={cn(WidgetTextStyles.value[size as string], GlowStyles[glow as string], className)}>{children}</div>
   );
 }
 
@@ -180,7 +180,7 @@ export function getGlowColorForWidget(widgetType: string): keyof typeof GlowStyl
     default: 'white',
   };
 
-  return colorMap[widgetType] || colorMap.default;
+  return colorMap[widgetType as string] || colorMap.default;
 }
 
 // 輔助函數：根據數值大小自動選擇字體大小

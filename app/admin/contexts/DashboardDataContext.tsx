@@ -47,12 +47,12 @@ export function DashboardDataProvider({
   prefetchedData = null,
   ssrMode = false
 }: DashboardDataProviderProps) {
-  console.log('[DEBUG] DashboardDataProvider initializing with:', { initialDateRange, ssrMode });
+  console.log('[DEBUG as string] DashboardDataProvider initializing with:', { initialDateRange, ssrMode });
   
   // 添加渲染計數器以監控重新渲染頻率
   const renderCountRef = useRef(0);
   renderCountRef.current += 1;
-  console.log('[DEBUG] DashboardDataProvider render count:', renderCountRef.current);
+  console.log('[DEBUG as string] DashboardDataProvider render count:', renderCountRef.current);
   const [dateRange, setDateRange] = useState<DashboardDateRange>(initialDateRange);
   const [isRefetching, setIsRefetching] = useState(false);
   const [hybridData, setHybridData] = useState<DashboardBatchQueryData | null>(prefetchedData);
@@ -99,7 +99,7 @@ export function DashboardDataProvider({
     } finally {
       setIsRefetching(false);
     }
-  }, [queryRefetch]);
+  }, [queryRefetch as string]);
 
   // 單個 widget refetch 包裝
   const refetchWidget = useCallback(async (widgetId: string) => {
@@ -109,15 +109,15 @@ export function DashboardDataProvider({
     } finally {
       setIsRefetching(false);
     }
-  }, [queryRefetchWidget]);
+  }, [queryRefetchWidget as string]);
 
   // 移除自動刷新功能以簡化系統和減少 API 調用
 
   // 工具方法：獲取特定 widget 數據
   const getWidgetData = useCallback(<T = any>(widgetId: string): T | null => {
     if (!data) return null;
-    return (data as any)[widgetId] || null;
-  }, [data]);
+    return (data as any)[widgetId as string] || null;
+  }, [data as string]);
 
   // 工具方法：檢查特定 widget 是否正在加載
   const isWidgetLoading = useCallback((widgetId: string): boolean => {
@@ -126,7 +126,7 @@ export function DashboardDataProvider({
     
     // 可以擴展為支持單個 widget 的加載狀態
     return false;
-  }, [loading]);
+  }, [loading as string]);
 
   // 工具方法：獲取特定 widget 的錯誤
   const getWidgetError = useCallback((widgetId: string): Error | null => {
@@ -141,7 +141,7 @@ export function DashboardDataProvider({
     }
     
     return null;
-  }, [error]);
+  }, [error as string]);
 
   // 簡化日期範圍改變處理
   useEffect(() => {
@@ -154,7 +154,7 @@ export function DashboardDataProvider({
     }
     
     const timeoutId = setTimeout(() => {
-      console.log('[DEBUG] Date range changed, triggering refetch');
+      console.log('[DEBUG as string] Date range changed, triggering refetch');
       refetch();
     }, 300); // 300ms 防抖
     

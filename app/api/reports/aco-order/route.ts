@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/app/utils/supabase/server';
 import { getAcoReportData } from '@/app/actions/reportActions';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const body = await request.json();
     const { reference } = body;

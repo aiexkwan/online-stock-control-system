@@ -119,7 +119,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
           <CardTitle className="text-sm text-red-400">Error</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-xs text-red-300">{error.message}</p>
+          <p className="text-xs text-red-300">{(error as { message: string }).message}</p>
         </CardContent>
       </Card>
     );

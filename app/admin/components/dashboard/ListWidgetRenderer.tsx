@@ -103,7 +103,7 @@ export const ListWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
                     <tr key={index} className="border-b hover:bg-gray-50">
                       {columns.map((col: string) => (
                         <td key={col} className="px-3 py-2 text-gray-600">
-                          {row[col] || '-'}
+                          {row[col as string] || '-'}
                         </td>
                       ))}
                     </tr>
@@ -156,6 +156,6 @@ export const ListWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
     }
   } catch (err) {
     console.error('ListWidgetRenderer error:', err);
-    return createErrorFallback(config.type, err instanceof Error ? err.message : 'Unknown error');
+    return createErrorFallback(config.type, err instanceof Error ? (err as { message: string }).message : 'Unknown error');
   }
 };

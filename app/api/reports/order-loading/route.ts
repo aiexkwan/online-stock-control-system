@@ -3,7 +3,7 @@ import { orderLoadingDataSources } from '@/app/components/reports/dataSources/Or
 
 import { createJsPDF } from '@/lib/services/unified-pdf-service';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     // 解析請求參數
     const body = await request.json();
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       worksheet.addRows(records);
 
       const buffer = await workbook.xlsx.writeBuffer();
-      blob = new Blob([buffer], {
+      blob = new Blob([buffer as string], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       });
       contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';

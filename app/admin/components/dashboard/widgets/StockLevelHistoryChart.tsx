@@ -94,7 +94,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
 
       // 如果沒有提供時間範圍，使用預設2週
       if (!originalTimeFrame) {
-        console.log('[StockLevelHistoryChart] No timeFrame provided, using default 2 weeks');
+        console.log('[StockLevelHistoryChart as string] No timeFrame provided, using default 2 weeks');
         return { start: twoWeeksAgo, end: now };
       }
 
@@ -103,7 +103,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
 
       // 如果時間範圍太短（少於1天），使用預設2週
       if (days < 1) {
-        console.log('[StockLevelHistoryChart] Time range too short, using default 2 weeks');
+        console.log('[StockLevelHistoryChart as string] Time range too short, using default 2 weeks');
         return { start: twoWeeksAgo, end: now };
       }
 
@@ -143,9 +143,9 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
 
   // 更新調整後的時間範圍
   useEffect(() => {
-    console.log('[StockLevelHistoryChart] timeFrame prop:', timeFrame);
+    console.log('[StockLevelHistoryChart as string] timeFrame prop:', timeFrame);
     const adjusted = calculateAdjustedTimeFrame(timeFrame);
-    console.log('[StockLevelHistoryChart] adjusted timeFrame:', adjusted);
+    console.log('[StockLevelHistoryChart as string] adjusted timeFrame:', adjusted);
     setAdjustedTimeFrame(adjusted);
   }, [timeFrame, calculateAdjustedTimeFrame]);
 
@@ -188,7 +188,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
         
         return { chartData: [], productCodes: [] };
       } catch (error) {
-        console.error('[StockLevelHistoryChart] Server action error:', error);
+        console.error('[StockLevelHistoryChart as string] Server action error:', error);
         return { chartData: [], productCodes: [] };
       }
     },
@@ -233,12 +233,12 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
   // Effect to fetch data when dependencies change
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, [fetchData as string]);
 
   // Refetch function for compatibility
   const refetch = useCallback(() => {
     fetchData();
-  }, [fetchData]);
+  }, [fetchData as string]);
 
   // Update chart data when data changes
   useEffect(() => {
@@ -248,23 +248,23 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
         setProductCodes(data.productCodes);
       }
     }
-  }, [data]);
+  }, [data as string]);
 
   // 監聽 StockTypeSelector 的類型變更事件
   useEffect(() => {
     const handleTypeChange = (event: CustomEvent) => {
-      console.log('[StockLevelHistoryChart] Received stockTypeChanged event:', event.detail);
+      console.log('[StockLevelHistoryChart as string] Received stockTypeChanged event:', event.detail);
       const { type, data } = event.detail;
       setSelectedType(type);
 
       // 獲取該類型所有產品的代碼（限制最多10個）
       const codes = data.map((item: any) => item.stock).slice(0, 10);
-      console.log('[StockLevelHistoryChart] Product codes:', codes);
+      console.log('[StockLevelHistoryChart as string] Product codes:', codes);
 
       if (codes.length > 0) {
         setProductCodes(codes);
       } else {
-        console.log('[StockLevelHistoryChart] No product codes, clearing data');
+        console.log('[StockLevelHistoryChart as string] No product codes, clearing data');
         setChartData([]);
         setProductCodes([]);
       }
@@ -284,14 +284,14 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
       twoWeeksAgo.setDate(now.getDate() - 14);
       setAdjustedTimeFrame({ start: twoWeeksAgo, end: now });
     }
-  }, [timeFrame]);
+  }, [timeFrame as string]);
 
   // 當刷新觸發器改變時，重新加載數據
   const prevRefreshTriggerRef = React.useRef(refreshTrigger);
   useEffect(() => {
     // 只在 refreshTrigger 真正改變時重新加載
     if (productCodes.length > 0 && refreshTrigger !== prevRefreshTriggerRef.current) {
-      console.log('[StockLevelHistoryChart] Refresh triggered, reloading data');
+      console.log('[StockLevelHistoryChart as string] Refresh triggered, reloading data');
       prevRefreshTriggerRef.current = refreshTrigger;
       refetch();
     }
@@ -326,10 +326,10 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
     return (
       <div className={cn(
         'mt-1 flex flex-wrap justify-center',
-        spacingUtilities.gap.small
+        theme.spacing.gap.small
       )}>
         {payload.map((entry: any, index: number) => (
-          <div key={`legend-${index}`} className={cn('flex items-center', spacingUtilities.gap.small)}>
+          <div key={`legend-${index}`} className={cn('flex items-center', theme.spacing.gap.small)}>
             <div className='h-2 w-2 rounded-full' style={{ backgroundColor: entry.color }} />
             <span className={cn(textClasses['label-small'], 'text-muted-foreground')}>{entry.value}</span>
           </div>

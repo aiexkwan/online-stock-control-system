@@ -70,7 +70,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
       start: timeFrame.start,
       end: timeFrame.end,
     };
-  }, [timeFrame]);
+  }, [timeFrame as string]);
 
   // 使用環境變量控制是否使用 GraphQL
   const useGraphQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_AWAIT === 'true' || 
@@ -157,7 +157,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
         setServerActionsError(null);
       } catch (err) {
         console.error('Error fetching warehouse work level:', err);
-        setServerActionsError(err instanceof Error ? err.message : 'Unknown error');
+        setServerActionsError(err instanceof Error ? (err as { message: string }).message : 'Unknown error');
       } finally {
         setServerActionsLoading(false);
       }
@@ -218,7 +218,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
       peakDay,
       optimized: true,
     };
-  }, [graphqlData]);
+  }, [graphqlData as string]);
 
   // 合併數據源
   const data = useGraphQL ? graphqlWorkLevelStats : serverActionsData;
@@ -252,7 +252,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
         ) : error ? (
           <div className={cn('text-center', textClasses['body-small'])} style={{ color: semanticColors.destructive.DEFAULT }}>
             <p>Error loading data</p>
-            <p className={cn('mt-1', textClasses['label-small'])}>{error.message}</p>
+            <p className={cn('mt-1', textClasses['label-small'])}>{(error as { message: string }).message}</p>
           </div>
         ) : data.dailyStats.length === 0 ? (
           <div className={cn('py-8 text-center font-medium', textClasses['body-base'], 'text-muted-foreground')}>
@@ -301,7 +301,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
               {data.optimized && (
                 <div className={cn(
                   'absolute right-2 top-2 flex items-center',
-                  spacingUtilities.gap.small,
+                  theme.spacing.gap.small,
                   textClasses['label-small']
                 )} style={{ color: semanticColors.info.DEFAULT }}>
                   <span>⚡</span>

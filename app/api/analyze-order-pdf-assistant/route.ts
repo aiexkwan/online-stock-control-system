@@ -114,7 +114,7 @@ async function storeEnhancedOrderData(
   const tokenPerRecord = Math.ceil(tokenUsed / orderData.products.length);
 
   // 準備插入資料
-  const orderRecords = orderData.products.map(product => {
+  const orderRecords = orderData.products.map((product: any) => {
     const record: any = {
       order_ref: String(orderData.order_ref),
       account_num: orderData.account_num || '-',
@@ -153,7 +153,7 @@ async function storeEnhancedOrderData(
 
     if (error) {
       apiLogger.error('[Assistant API] Database insert failed', {
-        error: error.message,
+        error: (error as { message: string }).message,
         code: error.code,
         details: error.details,
         hint: error.hint,
@@ -166,13 +166,13 @@ async function storeEnhancedOrderData(
 
       if (singleError) {
         apiLogger.error('[Assistant API] Single record insert also failed', {
-          error: singleError.message,
+          error: (singleError as { message: string }).message,
           code: singleError.code,
           record: orderRecords[0],
         });
       }
 
-      throw new Error(`資料庫插入失敗: ${error.message}`);
+      throw new Error(`資料庫插入失敗: ${(error as { message: string }).message}`);
     }
 
     insertResults = data || [];
@@ -187,10 +187,10 @@ async function storeEnhancedOrderData(
   }
 
   // 處理 ACO 產品
-  const acoProducts = orderData.products.filter(p => ACO_PRODUCT_CODES.includes(p.product_code));
+  const acoProducts = orderData.products.filter((p: any) => ACO_PRODUCT_CODES.includes(p.product_code));
 
   if (acoProducts.length > 0) {
-    const acoRecords = acoProducts.map(product => ({
+    const acoRecords = acoProducts.map((product: any) => ({
       code: product.product_code, // record_aco 表使用 'code' 而不是 'product_code'
       order_ref: parseInt(orderData.order_ref), // record_aco 需要 integer
       required_qty: product.product_qty,
@@ -206,7 +206,7 @@ async function storeEnhancedOrderData(
 
     if (acoError) {
       apiLogger.warn('[Assistant API] ACO records insert failed', {
-        error: acoError.message,
+        error: (acoError as { message: string }).message,
         code: acoError.code,
         details: acoError.details,
       });
@@ -237,14 +237,14 @@ async function recordOrderUploadHistory(orderRef: string, uploadedBy: string): P
     });
 
     if (error) {
-      apiLogger.error('[recordOrderUploadHistory] Error recording history:', error);
+      apiLogger.error('[recordOrderUploadHistory as string] Error recording history:', error);
     } else {
       apiLogger.info(
-        `[recordOrderUploadHistory] Recorded: Order Upload for ${orderRef} by user ID ${userId}`
+        `[recordOrderUploadHistory as string] Recorded: Order Upload for ${orderRef} by user ID ${userId}`
       );
     }
   } catch (error) {
-    apiLogger.error('[recordOrderUploadHistory] Unexpected error:', error);
+    apiLogger.error('[recordOrderUploadHistory as string] Unexpected error:', error);
   }
 }
 
@@ -294,7 +294,7 @@ async function uploadToStorageAsync(
 
     return urlData.publicUrl;
   } catch (error: any) {
-    systemLogger.error('[Background Storage] Upload failed', { error: error.message });
+    systemLogger.error('[Background Storage] Upload failed', { error: (error as { message: string }).message });
     throw error;
   }
 }
@@ -312,7 +312,7 @@ async function sendEmailNotification(
     const { sendOrderCreatedEmail } = await import('../../services/emailService');
 
     const emailRequestBody = {
-      orderData: orderData.products.map(product => ({
+      orderData: orderData.products.map((product: any) => ({
         order_ref: parseInt(orderData.order_ref), // emailService expects number
         product_code: product.product_code,
         product_desc: product.product_desc,
@@ -332,18 +332,18 @@ async function sendEmailNotification(
       });
     } else {
       apiLogger.warn('[Assistant API] Failed to send order created email', {
-        error: emailResponse.message || 'Unknown error',
+        error: (emailResponse as { message: string }).message || 'Unknown error',
       });
     }
 
     return emailResponse;
   } catch (error: any) {
-    apiLogger.error('[Assistant API] Email notification error', { error: error.message });
-    return { success: false, error: error.message };
+    apiLogger.error('[Assistant API] Email notification error', { error: (error as { message: string }).message });
+    return { success: false, error: (error as { message: string }).message };
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const startTime = Date.now();
   logApiRequest('POST', '/api/analyze-order-pdf-assistant');
 
@@ -436,10 +436,10 @@ export async function POST(request: NextRequest) {
       orderData = assistantService.parseAssistantResponse(result);
     } catch (parseError: any) {
       apiLogger.error('[Assistant API] Failed to parse assistant response', {
-        error: parseError.message,
+        error: (parseError as { message: string }).message,
         rawResponse: result.substring(0, 1000),
       });
-      throw new Error(`Failed to parse assistant response: ${parseError.message}`);
+      throw new Error(`Failed to parse assistant response: ${(parseError as { message: string }).message}`);
     }
 
     apiLogger.info('[Assistant API] Analysis completed', {
@@ -492,7 +492,7 @@ export async function POST(request: NextRequest) {
     logApiResponse('POST', '/api/analyze-order-pdf-assistant', 200, processingTime);
 
     // 準備返回數據（兼容前端）
-    const extractedData = orderData.products.map(product => ({
+    const extractedData = orderData.products.map((product: any) => ({
       order_ref: orderData.order_ref,
       account_num: orderData.account_num,
       delivery_add: orderData.delivery_add,
@@ -522,8 +522,8 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     apiLogger.error('[Assistant API] Analysis failed', {
-      error: error.message,
-      stack: error.stack,
+      error: (error as { message: string }).message,
+      stack: (error as Error).stack,
     });
 
     // 清理資源
@@ -539,7 +539,7 @@ export async function POST(request: NextRequest) {
     logApiResponse('POST', '/api/analyze-order-pdf-assistant', 500, Date.now() - startTime);
 
     return NextResponse.json(
-      { error: 'PDF analysis failed', details: error.message },
+      { error: 'PDF analysis failed', details: (error as { message: string }).message },
       { status: 500 }
     );
   }

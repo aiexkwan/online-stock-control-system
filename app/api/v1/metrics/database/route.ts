@@ -149,7 +149,7 @@ async function getQueryPerformanceMetrics(supabase: any) {
     }
 
     const avgQueryTime = totalTime / queryTests.length;
-    const slowQueriesCount = queryResults.filter(r => r.duration > 1000).length;
+    const slowQueriesCount = queryResults.filter((r: any) => r.duration > 1000).length;
     
     return {
       averageQueryTime: avgQueryTime,
@@ -450,12 +450,12 @@ export async function GET() {
     let overallHealth: 'optimal' | 'good' | 'degraded' | 'critical' = 'optimal';
     const criticalIssues: string[] = [];
     
-    if (systemHealth.status === 'critical') {
+    if ((systemHealth as { status: string }).status === 'critical') {
       overallHealth = 'critical';
       criticalIssues.push(...systemHealth.alerts.filter(alert => alert.includes('critical')));
-    } else if (systemHealth.status === 'degraded' || queryPerformance.averageQueryTime > 1000) {
+    } else if ((systemHealth as { status: string }).status === 'degraded' || queryPerformance.averageQueryTime > 1000) {
       overallHealth = 'degraded';
-    } else if (systemHealth.status === 'good') {
+    } else if ((systemHealth as { status: string }).status === 'good') {
       overallHealth = 'good';
     }
 
@@ -502,7 +502,7 @@ export async function GET() {
     return NextResponse.json({
       status: 'error',
       timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
       message: 'Failed to retrieve database metrics'
     }, {
       status: 500,

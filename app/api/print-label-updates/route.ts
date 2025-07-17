@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/app/utils/supabase/server';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const body = await request.json();
     const { productCode, quantity, userId, palletCount = 1, description } = body;
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: `Database error: ${error.message}`,
+          error: `Database error: ${(error as { message: string }).message}`,
         },
         { status: 500 }
       );
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: result.message || 'Unknown error occurred',
+          error: (result as { message: string }).message || 'Unknown error occurred',
         },
         { status: 500 }
       );
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: result.message,
+      message: (result as { message: string }).message,
       stockUpdated: result.stock_updated,
       workUpdated: result.work_updated,
     });
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: `Server error: ${error.message}`,
+        error: `Server error: ${(error as { message: string }).message}`,
       },
       { status: 500 }
     );

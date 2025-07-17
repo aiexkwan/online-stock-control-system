@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/app/utils/supabase/server';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { plt_num, product_code, counted_qty, check_only = false } = await request.json();
 
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
         if (insertError) {
           console.error('Failed to create initial record:', insertError);
           return NextResponse.json(
-            { success: false, error: `Failed to create initial record: ${insertError.message}` },
+            { success: false, error: `Failed to create initial record: ${(insertError as { message: string }).message}` },
             { status: 500 }
           );
         }
@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
       if (insertError) {
         console.error('Failed to create count record:', insertError);
         return NextResponse.json(
-          { success: false, error: `Failed to create count record: ${insertError.message}` },
+          { success: false, error: `Failed to create count record: ${(insertError as { message: string }).message}` },
           { status: 500 }
         );
       }

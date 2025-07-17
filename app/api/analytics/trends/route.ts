@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     // TODO: 實作趨勢分析邏輯
     const data = {

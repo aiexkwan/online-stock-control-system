@@ -129,6 +129,6 @@ export const StatsWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
     }
   } catch (err) {
     console.error('StatsWidgetRenderer error:', err);
-    return createErrorFallback(config.type, err instanceof Error ? err.message : 'Unknown error');
+    return createErrorFallback(config.type, err instanceof Error ? (err as { message: string }).message : 'Unknown error');
   }
 };

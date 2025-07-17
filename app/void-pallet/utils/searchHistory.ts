@@ -29,7 +29,7 @@ export function getSearchHistory(): SearchHistoryItem[] {
 
     const items = JSON.parse(stored) as SearchHistoryItem[];
     // Convert timestamp strings back to Date objects
-    return items.map(item => ({
+    return items.map((item: any) => ({
       ...item,
       timestamp: new Date(item.timestamp),
     }));

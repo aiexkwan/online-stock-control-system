@@ -121,6 +121,6 @@ export const ChartWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
     }
   } catch (err) {
     console.error('ChartWidgetRenderer error:', err);
-    return createErrorFallback(config.type, err instanceof Error ? err.message : 'Unknown error');
+    return createErrorFallback(config.type, err instanceof Error ? (err as { message: string }).message : 'Unknown error');
   }
 };

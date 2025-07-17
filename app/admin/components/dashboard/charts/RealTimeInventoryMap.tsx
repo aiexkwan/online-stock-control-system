@@ -34,14 +34,13 @@ export default function RealTimeInventoryMap({ timeFrame }: RealTimeInventoryMap
   // Check if GraphQL analysis is enabled
   const isGraphQLEnabled = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS === 'true';
 
-  const { data, loading, error } = useGetInventoryLocationsQuery({
-    skip: !isGraphQLEnabled,
-    pollInterval: 30000, // Poll every 30 seconds
-    fetchPolicy: 'cache-and-network',
-  });
+// TODO: Replace GraphQL - // TODO: Replace GraphQL - useGetInventoryLocationsQuery removed
+  const data = null;
+  const loading = false;
+  const error = null;
 
   const locationStats = useMemo(() => {
-    if (!data?.record_inventoryCollection?.edges) return new Map();
+// TODO: Replace GraphQL -     // TODO: Replace GraphQL - if (!data?.record_inventoryCollection?.edges) return new Map();
 
     const stats = new Map<string, { total: number; products: Set<string> }>();
 
@@ -51,22 +50,22 @@ export default function RealTimeInventoryMap({ timeFrame }: RealTimeInventoryMap
     });
 
     // Calculate totals for each location
-    data.record_inventoryCollection.edges.forEach((edge: NonNullable<GetInventoryLocationsQuery['record_inventoryCollection']>['edges'][0]) => {
-      if (!edge?.node) return;
-      const node = edge.node;
-      
-      WAREHOUSE_LOCATIONS.forEach(loc => {
-        // Type assertion for dynamic property access
-        const qty = Number(node[loc.key as keyof typeof node]) || 0;
-        if (qty > 0) {
-          const current = stats.get(loc.key)!;
-          current.total += qty;
-          if (node.product_code) {
-            current.products.add(node.product_code); // Track unique products
-          }
-        }
-      });
-    });
+// TODO: Replace GraphQL -     // TODO: Replace GraphQL - data.record_inventoryCollection.edges.forEach((edge: NonNullable<GetInventoryLocationsQuery['record_inventoryCollection']>['edges'][0]) => {
+    //   if (!edge?.node) return;
+    //   const node = edge.node;
+    //   
+    //   WAREHOUSE_LOCATIONS.forEach(loc => {
+    //     // Type assertion for dynamic property access
+    //     const qty = Number(node[loc.key as keyof typeof node]) || 0;
+    //     if (qty > 0) {
+    //       const current = stats.get(loc.key)!;
+    //       current.total += qty;
+    //       if (node.product_code) {
+    //         current.products.add(node.product_code); // Track unique products
+    //       }
+    //     }
+    //   });
+    // });
 
     // Convert Set to count for display
     const displayStats = new Map<string, { total: number; products: number }>();
@@ -78,7 +77,7 @@ export default function RealTimeInventoryMap({ timeFrame }: RealTimeInventoryMap
     });
 
     return displayStats;
-  }, [data]);
+  }, [data as string]);
 
   // Show disabled state if GraphQL is not enabled
   if (!isGraphQLEnabled) {
@@ -105,13 +104,13 @@ export default function RealTimeInventoryMap({ timeFrame }: RealTimeInventoryMap
     return (
       <Alert variant='destructive'>
         <AlertCircle className='h-4 w-4' />
-        <AlertDescription>Failed to load inventory location data: {error.message}</AlertDescription>
+        <AlertDescription>Failed to load inventory location data: {(error as { message: string }).message}</AlertDescription>
       </Alert>
     );
   }
 
   // Calculate max for color scaling
-  const maxInventory = Math.max(...Array.from(locationStats.values()).map(s => s.total), 1);
+  const maxInventory = Math.max(...Array.from(locationStats.values()).map((s: any) => s.total), 1);
 
   const getLocationColor = (total: number) => {
     const intensity = total / maxInventory;
@@ -140,7 +139,7 @@ export default function RealTimeInventoryMap({ timeFrame }: RealTimeInventoryMap
         {/* Warehouse Grid */}
         <div className='flex-1 p-4'>
           <div className='warehouse-grid grid h-full grid-cols-4 grid-rows-3 gap-4'>
-            {WAREHOUSE_LOCATIONS.map(location => {
+            {WAREHOUSE_LOCATIONS.map((location: any) => {
               const stats = locationStats.get(location.key) || { total: 0, products: 0 };
               const utilization = getUtilization(stats.total);
 

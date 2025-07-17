@@ -83,9 +83,9 @@ export async function GET() {
       status: 'unhealthy',
       version: 'v2',
       timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
       debug: {
-        stack: error instanceof Error ? error.stack : undefined,
+        stack: error instanceof Error ? (error as Error).stack : undefined,
       },
     }, {
       status: 500

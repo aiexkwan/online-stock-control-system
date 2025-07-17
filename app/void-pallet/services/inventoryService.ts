@@ -12,12 +12,12 @@ export function getInventoryColumn(location: string | null): string {
   if (!location) return 'injection'; // Default value
 
   isNotProduction() &&
-    console.log(`[Inventory] Mapping location "${location}" to inventory column`);
+    console.log(`[Inventory as string] Mapping location "${location}" to inventory column`);
 
   // Use the unified LocationMapper
   const column = LocationMapper.toDbColumn(location) || 'injection';
   isNotProduction() &&
-    console.log(`[Inventory] Location "${location}" mapped to column "${column}"`);
+    console.log(`[Inventory as string] Location "${location}" mapped to column "${column}"`);
 
   return column;
 }
@@ -43,7 +43,7 @@ export async function updateInventoryForVoid(
     };
 
     // Deduct from original location
-    inventoryUpdate[inventoryColumn] = -quantity;
+    inventoryUpdate[inventoryColumn as string] = -quantity;
 
     // Add to damage if applicable
     if (damageQuantity && damageQuantity > 0) {
@@ -53,17 +53,17 @@ export async function updateInventoryForVoid(
     const { error } = await supabase.from('record_inventory').insert(inventoryUpdate);
 
     if (error) {
-      console.error('[Inventory] Update failed:', error);
-      return { success: false, error: error.message };
+      console.error('[Inventory as string] Update failed:', error);
+      return { success: false, error: (error as { message: string }).message };
     }
 
     isNotProduction() &&
       isNotProduction() &&
-      console.log('[Inventory] Successfully updated inventory:', inventoryUpdate);
+      console.log('[Inventory as string] Successfully updated inventory:', inventoryUpdate);
     return { success: true };
   } catch (error: any) {
-    console.error('[Inventory] Unexpected error:', error);
-    return { success: false, error: error.message };
+    console.error('[Inventory as string] Unexpected error:', error);
+    return { success: false, error: (error as { message: string }).message };
   }
 }
 
@@ -94,7 +94,7 @@ export async function updateStockLevel(
 
     if (error) {
       console.error('[Stock Level] Update failed:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: (error as { message: string }).message };
     }
 
     isNotProduction() &&
@@ -103,6 +103,6 @@ export async function updateStockLevel(
     return { success: true, result: data };
   } catch (error: any) {
     console.error('[Stock Level] Unexpected error:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error as { message: string }).message };
   }
 }

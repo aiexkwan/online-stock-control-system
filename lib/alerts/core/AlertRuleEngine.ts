@@ -101,7 +101,7 @@ export class AlertRuleEngine {
         this.emitEvent({
           type: 'alert_triggered',
           timestamp: new Date(),
-          data: { ruleId, error: error.message }
+          data: { ruleId, error: error instanceof Error ? (error as { message: string }).message : String(error) }
         });
       }
     }, rule.evaluationInterval * 1000);
@@ -196,7 +196,7 @@ export class AlertRuleEngine {
   private async checkDependencies(dependencies: string[]): Promise<boolean> {
     try {
       const activeAlerts = await Promise.all(
-        dependencies.map(dep => this.getCurrentAlert(dep))
+        dependencies.map((dep: any) => this.getCurrentAlert(dep))
       );
 
       return activeAlerts.some(alert => 
@@ -372,7 +372,7 @@ export class AlertRuleEngine {
         .select('user_id')
         .gte('last_activity', new Date(Date.now() - 5 * 60 * 1000).toISOString());
 
-      return new Set(users?.map(u => u.user_id)).size || 0;
+      return new Set(users?.map((u: any) => u.user_id)).size || 0;
     } catch (error) {
       return 0;
     }
@@ -553,7 +553,7 @@ export class AlertRuleEngine {
       rule_name: alert.ruleName,
       level: alert.level,
       state: alert.state,
-      message: alert.message,
+      message: (alert as { message: string }).message,
       value: alert.value,
       threshold: alert.threshold,
       triggered_at: alert.triggeredAt.toISOString(),
@@ -576,7 +576,7 @@ export class AlertRuleEngine {
       ruleName: data.rule_name,
       level: data.level,
       state: data.state,
-      message: data.message,
+      message: (data as { message: string }).message,
       value: data.value,
       threshold: data.threshold,
       triggeredAt: new Date(data.triggered_at),
@@ -637,9 +637,9 @@ export class AlertRuleEngine {
     } catch (error) {
       return {
         success: false,
-        message: error.message,
+        message: error instanceof Error ? (error as { message: string }).message : String(error),
         wouldTrigger: false,
-        errors: [error.message]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
       };
     }
   }
@@ -692,7 +692,7 @@ export class AlertRuleEngine {
       return {
         success: false,
         message: 'Failed to reload rules',
-        errors: [error.message]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
       };
     }
   }

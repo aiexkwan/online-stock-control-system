@@ -3,7 +3,7 @@ import { createClient } from '@/app/utils/supabase/server';
 import { getMaterialCodesForGrnRef, getGrnReportData } from '@/app/actions/reportActions';
 import { exportGrnReport } from '@/lib/exportReport';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const body = await request.json();
     const { reference } = body;
@@ -305,7 +305,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error generating GRN report:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to generate report' },
+      { error: error instanceof Error ? (error as { message: string }).message : 'Failed to generate report' },
       { status: 500 }
     );
   }

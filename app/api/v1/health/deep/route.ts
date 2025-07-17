@@ -61,7 +61,7 @@ async function testSupabaseConnection(): Promise<HealthCheckResult> {
         service: 'supabase',
         status: 'unhealthy',
         responseTime,
-        error: error.message,
+        error: (error as { message: string }).message,
         details: {
           code: error.code,
           hint: error.hint,
@@ -84,7 +84,7 @@ async function testSupabaseConnection(): Promise<HealthCheckResult> {
       service: 'supabase',
       status: 'unhealthy',
       responseTime: Date.now() - startTime,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
     };
   }
 }
@@ -108,7 +108,7 @@ async function testDatabaseHealth(): Promise<HealthCheckResult> {
     const results = await Promise.allSettled(testQueries);
     const responseTime = Date.now() - startTime;
     
-    const successCount = results.filter(r => r.status === 'fulfilled').length;
+    const successCount = results.filter((r: any) => (r as { status: string }).status === 'fulfilled').length;
     const failureCount = results.length - successCount;
     
     let status: 'healthy' | 'degraded' | 'unhealthy';
@@ -137,7 +137,7 @@ async function testDatabaseHealth(): Promise<HealthCheckResult> {
       service: 'database',
       status: 'unhealthy',
       responseTime: Date.now() - startTime,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
     };
   }
 }
@@ -190,7 +190,7 @@ async function testRedisHealth(): Promise<HealthCheckResult> {
       service: 'redis',
       status: 'unhealthy',
       responseTime: Date.now() - startTime,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
     };
   }
 }
@@ -244,7 +244,7 @@ async function checkSystemResources(): Promise<HealthCheckResult> {
       service: 'system',
       status: 'unhealthy',
       responseTime: Date.now() - startTime,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
     };
   }
 }
@@ -267,9 +267,9 @@ export async function GET() {
     
     // 計算總結
     const services = [databaseResult, supabaseResult, redisResult, systemResult];
-    const healthyServices = services.filter(s => s.status === 'healthy').length;
-    const degradedServices = services.filter(s => s.status === 'degraded').length;
-    const unhealthyServices = services.filter(s => s.status === 'unhealthy').length;
+    const healthyServices = services.filter((s: any) => (s as { status: string }).status === 'healthy').length;
+    const degradedServices = services.filter((s: any) => (s as { status: string }).status === 'degraded').length;
+    const unhealthyServices = services.filter((s: any) => (s as { status: string }).status === 'unhealthy').length;
     
     let overallStatus: 'healthy' | 'degraded' | 'unhealthy';
     if (unhealthyServices > 0) {
@@ -321,7 +321,7 @@ export async function GET() {
       status: 'unhealthy',
       version: 'v1',
       timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
       message: 'Deep health check failed',
     }, {
       status: 500,
@@ -344,7 +344,7 @@ export async function HEAD() {
       testRedisHealth(),
     ]);
     
-    const isHealthy = dbTest.status !== 'unhealthy' && redisTest.status !== 'unhealthy';
+    const isHealthy = (dbTest as { status: string }).status !== 'unhealthy' && (redisTest as { status: string }).status !== 'unhealthy';
     
     return new Response(null, {
       status: isHealthy ? 200 : 503,

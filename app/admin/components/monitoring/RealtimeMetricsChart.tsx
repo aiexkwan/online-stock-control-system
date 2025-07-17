@@ -98,12 +98,12 @@ export default function RealtimeMetricsChart({
   const processedData = useMemo(() => {
     if (!data || data.length === 0) return [];
     
-    return data.map(item => ({
+    return data.map((item: any) => ({
       ...item,
       timestamp: new Date(item.timestamp).toLocaleTimeString(),
       time: new Date(item.timestamp).getTime()
     }));
-  }, [data]);
+  }, [data as string]);
 
   // 計算趨勢
   const trend = useMemo(() => {
@@ -119,11 +119,11 @@ export default function RealtimeMetricsChart({
       percentage,
       direction: change > 0 ? 'up' : change < 0 ? 'down' : 'stable'
     };
-  }, [processedData]);
+  }, [processedData as string]);
 
   // 獲取圖表顏色
   const getChartColors = () => {
-    return COLORS[type] || COLORS.performance;
+    return COLORS[type as string] || COLORS.performance;
   };
 
   // 格式化工具提示

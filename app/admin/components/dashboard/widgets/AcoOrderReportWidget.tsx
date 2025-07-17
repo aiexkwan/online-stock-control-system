@@ -53,7 +53,7 @@ const acoApiClient = {
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch ACO references: ${response.statusText}`);
+      throw new Error(`Failed to fetch ACO references: ${(response as { status: string }).statusText}`);
     }
     
     const data = await response.json();
@@ -72,7 +72,7 @@ const acoApiClient = {
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch ACO orders: ${response.statusText}`);
+      throw new Error(`Failed to fetch ACO orders: ${(response as { status: string }).statusText}`);
     }
     
     const data = await response.json();
@@ -113,7 +113,7 @@ export function AcoOrderReportWidget({ widget, isEditMode }: WidgetComponentProp
         setSelectedAcoOrder(refs[0]);
       }
     } catch (error) {
-      console.error('[AcoOrderReportWidget] Error fetching ACO orders:', error);
+      console.error('[AcoOrderReportWidget as string] Error fetching ACO orders:', error);
       toast({
         title: 'Error',
         description: 'Failed to fetch ACO order references',
@@ -126,7 +126,7 @@ export function AcoOrderReportWidget({ widget, isEditMode }: WidgetComponentProp
 
   useEffect(() => {
     fetchAcoOrders();
-  }, [fetchAcoOrders]);
+  }, [fetchAcoOrders as string]);
 
   const handleGenerateReport = async () => {
     if (!selectedAcoOrder) {
@@ -168,10 +168,10 @@ export function AcoOrderReportWidget({ widget, isEditMode }: WidgetComponentProp
         description: 'ACO order report generated successfully',
       });
     } catch (error) {
-      console.error('[AcoOrderReportWidget] Error generating report:', error);
+      console.error('[AcoOrderReportWidget as string] Error generating report:', error);
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to generate report',
+        description: error instanceof Error ? (error as { message: string }).message : 'Failed to generate report',
         variant: 'destructive',
       });
     } finally {
@@ -253,7 +253,7 @@ export function AcoOrderReportWidget({ widget, isEditMode }: WidgetComponentProp
                 </Label>
                 <Select
                   value={selectedAcoOrder}
-                  onValueChange={setSelectedAcoOrder}
+                  onChange={(e) => setSelectedAcoOrder(e.target.value)}
                   disabled={loading || acoOrders.length === 0}
                 >
                   <SelectTrigger className={cn(

@@ -44,7 +44,7 @@ export class AlertSystemHealthChecker {
       ]);
 
       const overallStatus = this.calculateOverallStatus(checks);
-      const unhealthyComponents = checks.filter(check => check.status === 'unhealthy');
+      const unhealthyComponents = checks.filter(check => (check as { status: string }).status === 'unhealthy');
 
       return {
         success: overallStatus !== 'unhealthy',
@@ -61,7 +61,7 @@ export class AlertSystemHealthChecker {
       return {
         success: false,
         message: 'Health check failed',
-        errors: [error.message]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
       };
     }
   }
@@ -99,7 +99,7 @@ export class AlertSystemHealthChecker {
       return {
         component: 'Redis',
         status: 'unhealthy',
-        message: `Redis connection failed: ${error.message}`,
+        message: `Redis connection failed: ${error instanceof Error ? (error as { message: string }).message : String(error)}`,
         responseTime: Date.now() - start
       };
     }
@@ -124,7 +124,7 @@ export class AlertSystemHealthChecker {
         return {
           component: 'Database',
           status: 'unhealthy',
-          message: `Database query failed: ${error.message}`,
+          message: `Database query failed: ${(error as { message: string }).message}`,
           responseTime
         };
       }
@@ -147,7 +147,7 @@ export class AlertSystemHealthChecker {
       return {
         component: 'Database',
         status: 'unhealthy',
-        message: `Database connection failed: ${error.message}`,
+        message: `Database connection failed: ${error instanceof Error ? (error as { message: string }).message : String(error)}`,
         responseTime: Date.now() - start
       };
     }
@@ -228,7 +228,7 @@ export class AlertSystemHealthChecker {
       return {
         component: 'Monitoring Service',
         status: 'unhealthy',
-        message: `Monitoring service check failed: ${error.message}`,
+        message: `Monitoring service check failed: ${error instanceof Error ? (error as { message: string }).message : String(error)}`,
         responseTime: Date.now() - start
       };
     }
@@ -279,7 +279,7 @@ export class AlertSystemHealthChecker {
       return {
         component: 'Alert Rules',
         status: 'unhealthy',
-        message: `Alert rules check failed: ${error.message}`,
+        message: `Alert rules check failed: ${error instanceof Error ? (error as { message: string }).message : String(error)}`,
         responseTime: Date.now() - start
       };
     }
@@ -311,8 +311,8 @@ export class AlertSystemHealthChecker {
       }
 
       const notifications = recentNotifications || [];
-      const successCount = notifications.filter(n => n.status === 'sent').length;
-      const failureCount = notifications.filter(n => n.status === 'failed').length;
+      const successCount = notifications.filter((n: { status: string; channel: string }) => (n as { status: string }).status === 'sent').length;
+      const failureCount = notifications.filter((n: { status: string; channel: string }) => (n as { status: string }).status === 'failed').length;
       const totalCount = notifications.length;
 
       const successRate = totalCount > 0 ? (successCount / totalCount) * 100 : 100;
@@ -348,7 +348,7 @@ export class AlertSystemHealthChecker {
       return {
         component: 'Notifications',
         status: 'unhealthy',
-        message: `Notification check failed: ${error.message}`,
+        message: `Notification check failed: ${error instanceof Error ? (error as { message: string }).message : String(error)}`,
         responseTime: Date.now() - start
       };
     }
@@ -358,8 +358,8 @@ export class AlertSystemHealthChecker {
    * 計算整體狀態
    */
   private calculateOverallStatus(checks: HealthCheckResult[]): 'healthy' | 'degraded' | 'unhealthy' {
-    const unhealthyCount = checks.filter(check => check.status === 'unhealthy').length;
-    const degradedCount = checks.filter(check => check.status === 'degraded').length;
+    const unhealthyCount = checks.filter(check => (check as { status: string }).status === 'unhealthy').length;
+    const degradedCount = checks.filter(check => (check as { status: string }).status === 'degraded').length;
 
     if (unhealthyCount > 0) {
       return 'unhealthy';
@@ -429,17 +429,17 @@ export class AlertSystemHealthChecker {
         },
         summary: {
           healthy: [redisCheck, dbCheck, monitoringCheck, rulesCheck, notificationCheck]
-            .filter(check => check.status === 'healthy').length,
+            .filter(check => (check as { status: string }).status === 'healthy').length,
           degraded: [redisCheck, dbCheck, monitoringCheck, rulesCheck, notificationCheck]
-            .filter(check => check.status === 'degraded').length,
+            .filter(check => (check as { status: string }).status === 'degraded').length,
           unhealthy: [redisCheck, dbCheck, monitoringCheck, rulesCheck, notificationCheck]
-            .filter(check => check.status === 'unhealthy').length
+            .filter(check => (check as { status: string }).status === 'unhealthy').length
         }
       };
     } catch (error) {
       return {
         timestamp: new Date().toISOString(),
-        error: error.message
+        error: error instanceof Error ? (error as { message: string }).message : String(error)
       };
     }
   }

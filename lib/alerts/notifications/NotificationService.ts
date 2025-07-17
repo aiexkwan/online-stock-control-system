@@ -115,14 +115,14 @@ export class NotificationService {
 
       return {
         success: results.some(r => r.success),
-        message: `Sent ${results.filter(r => r.success).length} of ${results.length} notifications`,
+        message: `Sent ${results.filter((r: any) => r.success).length} of ${results.length} notifications`,
         data: results
       };
     } catch (error) {
       return {
         success: false,
         message: 'Failed to send notifications',
-        errors: [error.message]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
       };
     }
   }
@@ -160,7 +160,7 @@ export class NotificationService {
       return {
         success: false,
         message: 'Failed to send notification',
-        error: error.message
+        error: error instanceof Error ? (error as { message: string }).message : String(error)
       };
     }
   }
@@ -327,7 +327,7 @@ export class NotificationService {
 Alert: {{alert.ruleName}}
 Level: {{alert.level}}
 State: {{alert.state}}
-Message: {{alert.message}}
+Message: {{(alert as { message: string }).message}}
 Value: {{alert.value}}
 Threshold: {{alert.threshold}}
 Triggered: {{alert.triggeredAt}}
@@ -360,7 +360,7 @@ Resolved: {{alert.resolvedAt}}
       return rendered;
     } catch (error) {
       console.error('Failed to render template:', error);
-      return `Alert: ${alert.ruleName} - ${alert.message}`;
+      return `Alert: ${alert.ruleName} - ${(alert as { message: string }).message}`;
     }
   }
 
@@ -392,7 +392,7 @@ Resolved: {{alert.resolvedAt}}
           alert_id: alert.id,
           channel: history.channel,
           sent_at: history.sentAt.toISOString(),
-          status: history.status,
+          status: (history as { status: string }).status,
           error: history.error,
           retry_count: history.retryCount
         });
@@ -425,7 +425,7 @@ Resolved: {{alert.resolvedAt}}
       return {
         success: false,
         message: 'Failed to test notification',
-        errors: [error.message]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
       };
     }
   }
@@ -448,11 +448,11 @@ Resolved: {{alert.resolvedAt}}
           processed++;
         } else {
           failed++;
-          errors.push(`Alert ${alert.id}: ${result.message}`);
+          errors.push(`Alert ${alert.id}: ${(result as { message: string }).message}`);
         }
       } catch (error) {
         failed++;
-        errors.push(`Alert ${alert.id}: ${error.message}`);
+        errors.push(`Alert ${alert.id}: ${error instanceof Error ? (error as { message: string }).message : String(error)}`);
       }
     }
 
@@ -491,7 +491,7 @@ Resolved: {{alert.resolvedAt}}
       return {
         success: false,
         message: 'Failed to create template',
-        errors: [error.message]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
       };
     }
   }
@@ -533,7 +533,7 @@ class EmailProvider implements NotificationProvider {
       console.log('Sending email notification:', {
         recipients: config.recipients,
         subject: config.subject || `Alert: ${alert.ruleName}`,
-        content: template || alert.message
+        content: template || (alert as { message: string }).message
       });
 
       return {
@@ -544,7 +544,7 @@ class EmailProvider implements NotificationProvider {
       return {
         success: false,
         message: 'Failed to send email',
-        error: error.message
+        error: error instanceof Error ? (error as { message: string }).message : String(error)
       };
     }
   }
@@ -571,7 +571,7 @@ class SlackProvider implements NotificationProvider {
         channel: config.channel,
         username: config.username || 'Alert Bot',
         icon_emoji: config.iconEmoji || ':warning:',
-        text: template || alert.message,
+        text: template || (alert as { message: string }).message,
         attachments: [
           {
             color: this.getColorForLevel(alert.level),
@@ -612,7 +612,7 @@ class SlackProvider implements NotificationProvider {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(`HTTP ${(response as { status: string }).status}: ${(response as { status: string }).statusText}`);
       }
 
       return {
@@ -623,7 +623,7 @@ class SlackProvider implements NotificationProvider {
       return {
         success: false,
         message: 'Failed to send Slack notification',
-        error: error.message
+        error: error instanceof Error ? (error as { message: string }).message : String(error)
       };
     }
   }
@@ -686,7 +686,7 @@ class WebhookProvider implements NotificationProvider {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(`HTTP ${(response as { status: string }).status}: ${(response as { status: string }).statusText}`);
       }
 
       return {
@@ -697,7 +697,7 @@ class WebhookProvider implements NotificationProvider {
       return {
         success: false,
         message: 'Failed to send webhook notification',
-        error: error.message
+        error: error instanceof Error ? (error as { message: string }).message : String(error)
       };
     }
   }
@@ -737,7 +737,7 @@ class SmsProvider implements NotificationProvider {
       // 這裡應該整合實際的短信服務 (如 Twilio, AWS SNS 等)
       console.log('Sending SMS notification:', {
         recipients: config.recipients,
-        message: template || alert.message
+        message: template || (alert as { message: string }).message
       });
 
       return {
@@ -748,7 +748,7 @@ class SmsProvider implements NotificationProvider {
       return {
         success: false,
         message: 'Failed to send SMS',
-        error: error.message
+        error: error instanceof Error ? (error as { message: string }).message : String(error)
       };
     }
   }

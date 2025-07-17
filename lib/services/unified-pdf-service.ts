@@ -128,9 +128,12 @@ export function clearPDFCache() {
 export type { PDFDocumentType, jsPDFType };
 
 // Font 管理
+type FontStyle = 'normal' | 'italic' | 'oblique';
+type FontWeight = number | 'thin' | 'ultralight' | 'light' | 'normal' | 'medium' | 'semibold' | 'bold' | 'ultrabold' | 'heavy';
+
 export async function registerFont(config: {
   family: string;
-  fonts: Array<{ src: string; fontWeight?: string | number; fontStyle?: string }>;
+  fonts: Array<{ src: string; fontWeight?: FontWeight; fontStyle?: FontStyle }>;
 }): Promise<void> {
   const { Font } = await getReactPDF();
   Font.register(config);

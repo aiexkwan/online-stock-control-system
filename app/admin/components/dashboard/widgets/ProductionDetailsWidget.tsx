@@ -55,7 +55,7 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
       start: timeFrame.start,
       end: timeFrame.end,
     };
-  }, [timeFrame]);
+  }, [timeFrame as string]);
 
   // REST API state management
   const [data, setData] = useState<any[]>([]);
@@ -94,7 +94,7 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
           const widgetData = result.widgets[0];
 
           if (widgetData.data.error) {
-            console.error('[ProductionDetailsWidget] API error:', widgetData.data.error);
+            console.error('[ProductionDetailsWidget as string] API error:', widgetData.data.error);
             setError(widgetData.data.error);
             setData([]);
             return;
@@ -103,19 +103,19 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
           const detailsData = widgetData.data.value || [];
           const widgetMetadata = widgetData.data.metadata || {};
 
-          console.log('[ProductionDetailsWidget] API returned data:', detailsData);
-          console.log('[ProductionDetailsWidget] Metadata:', widgetMetadata);
+          console.log('[ProductionDetailsWidget as string] API returned data:', detailsData);
+          console.log('[ProductionDetailsWidget as string] Metadata:', widgetMetadata);
 
           setData(detailsData);
           setMetadata({ ...widgetMetadata, useGraphQL: false });
 
         } else {
-          console.warn('[ProductionDetailsWidget] No widget data returned from API');
+          console.warn('[ProductionDetailsWidget as string] No widget data returned from API');
           setData([]);
         }
       } catch (err) {
-        console.error('[ProductionDetailsWidget] Error fetching data from API:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        console.error('[ProductionDetailsWidget as string] Error fetching data from API:', err);
+        setError(err instanceof Error ? (err as { message: string }).message : 'Unknown error');
         setData([]);
       } finally {
         setLoading(false);

@@ -62,7 +62,7 @@ const ThemeLayouts = {
 const ThemeLoadingSkeleton = () => (
   <div className='h-full w-full space-y-4 p-6'>
     <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
-      {[1, 2, 3, 4, 5, 6].map(i => (
+      {[1, 2, 3, 4, 5, 6].map((i: any) => (
         <div key={i} className='space-y-3'>
           <Skeleton className='h-48 w-full bg-slate-700' />
           <Skeleton className='h-4 w-3/4 bg-slate-700' />
@@ -128,10 +128,10 @@ export const AdminDashboardContent: React.FC<AdminDashboardContentProps> = ({
       return ThemeLayouts[theme as keyof typeof ThemeLayouts];
     }
     return null;
-  }, [theme]);
+  }, [theme as string]);
 
   // 獲取 layout 配置 - 使用 useMemo 穩定引用
-  const layout = useMemo(() => adminDashboardLayouts[theme], [theme]);
+  const layout = useMemo(() => adminDashboardLayouts[theme as string], [theme as string]);
 
   // 穩定 widget 配置的引用，避免無限循環
   const stableWidgets = useMemo(() => {
@@ -149,7 +149,7 @@ export const AdminDashboardContent: React.FC<AdminDashboardContentProps> = ({
         index
       };
     });
-  }, [layout]);
+  }, [layout as string]);
 
   // 如果正在初始化，顯示加載狀態
   if (!isInitialized) {
@@ -162,7 +162,7 @@ export const AdminDashboardContent: React.FC<AdminDashboardContentProps> = ({
       <div className='flex h-full w-full items-center justify-center'>
         <div className='text-center text-red-500'>
           <h2 className='mb-2 text-xl font-semibold'>Failed to Initialize Widgets</h2>
-          <p>{error.message}</p>
+          <p>{(error as { message: string }).message}</p>
         </div>
       </div>
     );

@@ -150,7 +150,7 @@ export function autoFitColumns(
 
     let maxLength = 0;
 
-    if (column) {
+    if (column?.eachCell) {
       column.eachCell({ includeEmpty: false }, cell => {
         const columnLength = cell.value ? cell.value.toString().length : 0;
         if (columnLength > maxLength) {
@@ -172,7 +172,9 @@ export function setNumberFormat(
   format: string
 ): void {
   const column = worksheet.getColumn(columnIndex);
-  column.numFmt = format;
+  if (column) {
+    column.numFmt = format;
+  }
 }
 
 /**

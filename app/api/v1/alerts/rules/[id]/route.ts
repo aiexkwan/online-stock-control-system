@@ -57,13 +57,10 @@ const UpdateAlertRuleSchema = z.object({
 });
 
 /**
- * GET /api/v1/alerts/rules/[id]
+ * GET /api/v1/alerts/rules/[id as string]
  * 獲取單個告警規則
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = params;
 
@@ -91,19 +88,16 @@ export async function GET(
     console.error('Failed to get alert rule:', error);
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Internal server error'
+      error: error instanceof Error ? (error as { message: string }).message : 'Internal server error'
     }, { status: 500 });
   }
 }
 
 /**
- * PUT /api/v1/alerts/rules/[id]
+ * PUT /api/v1/alerts/rules/[id as string]
  * 更新告警規則
  */
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = params;
     const body = await request.json();
@@ -165,19 +159,16 @@ export async function PUT(
 
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Internal server error'
+      error: error instanceof Error ? (error as { message: string }).message : 'Internal server error'
     }, { status: 500 });
   }
 }
 
 /**
- * DELETE /api/v1/alerts/rules/[id]
+ * DELETE /api/v1/alerts/rules/[id as string]
  * 刪除告警規則
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = params;
 
@@ -226,7 +217,7 @@ export async function DELETE(
     console.error('Failed to delete alert rule:', error);
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Internal server error'
+      error: error instanceof Error ? (error as { message: string }).message : 'Internal server error'
     }, { status: 500 });
   }
 }

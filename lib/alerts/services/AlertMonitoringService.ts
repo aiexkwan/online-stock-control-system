@@ -90,7 +90,7 @@ export class AlertMonitoringService {
       return {
         success: false,
         message: 'Failed to start monitoring service',
-        errors: [error.message]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
       };
     }
   }
@@ -125,7 +125,7 @@ export class AlertMonitoringService {
       return {
         success: false,
         message: 'Failed to stop monitoring service',
-        errors: [error.message]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
       };
     }
   }
@@ -154,7 +154,7 @@ export class AlertMonitoringService {
         uptime: 0,
         rulesCount: 0,
         activeAlertsCount: 0,
-        errors: [error.message]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
       };
     }
   }
@@ -275,7 +275,7 @@ export class AlertMonitoringService {
   private async checkDependencies(dependencies: string[]): Promise<boolean> {
     try {
       const dependencyAlerts = await Promise.all(
-        dependencies.map(dep => this.stateManager.queryAlerts({
+        dependencies.map((dep: any) => this.stateManager.queryAlerts({
           ruleIds: [dep],
           states: [AlertState.ACTIVE],
           limit: 1
@@ -359,7 +359,7 @@ export class AlertMonitoringService {
       const escalatedAlert = {
         ...alert,
         level: escalationLevel.level,
-        message: `[ESCALATED] ${alert.message}`,
+        message: `[ESCALATED] ${(alert as { message: string }).message}`,
         annotations: {
           ...alert.annotations,
           escalated: true,

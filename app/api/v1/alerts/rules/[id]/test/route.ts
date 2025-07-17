@@ -17,13 +17,10 @@ async function getAlertEngine() {
 }
 
 /**
- * POST /api/v1/alerts/rules/[id]/test
+ * POST /api/v1/alerts/rules/[id as string]/test
  * 測試告警規則
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = params;
 
@@ -41,7 +38,7 @@ export async function POST(
     console.error('Failed to test alert rule:', error);
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Internal server error'
+      error: error instanceof Error ? (error as { message: string }).message : 'Internal server error'
     }, { status: 500 });
   }
 }

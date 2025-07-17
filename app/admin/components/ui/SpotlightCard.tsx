@@ -38,7 +38,7 @@ export function SpotlightCard({
   const [isHovered, setIsHovered] = useState(false);
 
   // Get theme-specific colors
-  const themeColors = theme ? THEME.colors.tabs[theme] : null;
+  const themeColors = theme ? THEME.colors.tabs[theme as string] : null;
   const spotlightColor = themeColors ? themeColors.primary : '#3B82F6';
   
   // Convert hex to RGB for better control
@@ -85,7 +85,7 @@ export function SpotlightCard({
       card.removeEventListener('mouseenter', handleMouseEnter);
       card.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [disableSpotlight]);
+  }, [disableSpotlight as string]);
 
   // Enhanced spotlight gradient with multiple layers - optimized for smaller range
   const spotlightStyle = !disableSpotlight && isHovered ? {

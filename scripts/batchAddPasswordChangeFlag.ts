@@ -14,7 +14,7 @@ async function run() {
   const { data: users, error } = await supabase.auth.admin.listUsers();
 
   if (error) {
-    console.error('❌ 無法獲取用戶列表：', error.message);
+    console.error('❌ 無法獲取用戶列表：', (error as { message: string }).message);
     return;
   }
 
@@ -34,7 +34,7 @@ async function run() {
     });
 
     if (error) {
-      console.error(`❌ 更新 ${user.email} 失敗:`, error.message);
+      console.error(`❌ 更新 ${user.email} 失敗:`, (error as { message: string }).message);
     } else {
       console.log(`✅ 已更新 ${user.email}`);
     }

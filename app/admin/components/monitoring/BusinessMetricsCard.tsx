@@ -177,8 +177,8 @@ export default function BusinessMetricsCard({ data, compact = false, onRefresh }
               <TrendingUp className="h-4 w-4" />
               <span>Business Metrics</span>
             </div>
-            <Badge variant={data.status === 'healthy' ? 'default' : 'secondary'}>
-              {data.status}
+            <Badge variant={(data as { status: string }).status === 'healthy' ? 'default' : 'secondary'}>
+              {(data as { status: string }).status}
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -217,8 +217,8 @@ export default function BusinessMetricsCard({ data, compact = false, onRefresh }
             <span>Business Metrics</span>
           </div>
           <div className="flex items-center space-x-2">
-            <Badge variant={data.status === 'healthy' ? 'default' : 'secondary'}>
-              {data.status}
+            <Badge variant={(data as { status: string }).status === 'healthy' ? 'default' : 'secondary'}>
+              {(data as { status: string }).status}
             </Badge>
             {onRefresh && (
               <Button variant="outline" size="sm" onClick={onRefresh}>

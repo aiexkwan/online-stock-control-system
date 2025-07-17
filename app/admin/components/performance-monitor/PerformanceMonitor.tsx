@@ -108,7 +108,7 @@ export function PerformanceMonitor() {
     const interval = setInterval(collectMetrics, 5000); // Update every 5 seconds
 
     return () => clearInterval(interval);
-  }, [isMonitoring]);
+  }, [isMonitoring as string]);
 
   const getMetricStatus = (metric: PerformanceMetric): 'good' | 'warning' | 'poor' => {
     const ratio = metric.value / metric.target;

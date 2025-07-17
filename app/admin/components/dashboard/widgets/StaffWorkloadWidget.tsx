@@ -67,7 +67,7 @@ export const StaffWorkloadWidget: React.FC<StaffWorkloadWidgetProps> = ({
       start: timeFrame.start,
       end: timeFrame.end,
     };
-  }, [timeFrame]);
+  }, [timeFrame as string]);
 
   // API 狀態管理
   const [chartData, setChartData] = useState<any[]>([]);
@@ -106,7 +106,7 @@ export const StaffWorkloadWidget: React.FC<StaffWorkloadWidgetProps> = ({
           const widgetData = result.widgets[0];
 
           if (widgetData.data.error) {
-            console.error('[StaffWorkloadWidget] API error:', widgetData.data.error);
+            console.error('[StaffWorkloadWidget as string] API error:', widgetData.data.error);
             setError(widgetData.data.error);
             setChartData([]);
             return;
@@ -115,8 +115,8 @@ export const StaffWorkloadWidget: React.FC<StaffWorkloadWidgetProps> = ({
           const workloadData = widgetData.data.value || [];
           const widgetMetadata = widgetData.data.metadata || {};
 
-          console.log('[StaffWorkloadWidget] API returned data:', workloadData);
-          console.log('[StaffWorkloadWidget] Metadata:', widgetMetadata);
+          console.log('[StaffWorkloadWidget as string] API returned data:', workloadData);
+          console.log('[StaffWorkloadWidget as string] Metadata:', widgetMetadata);
 
           // 處理數據格式 - 轉換為 Recharts 需要的格式
           const processedData = processWorkloadData(workloadData);
@@ -124,12 +124,12 @@ export const StaffWorkloadWidget: React.FC<StaffWorkloadWidgetProps> = ({
           setMetadata({ ...widgetMetadata, useGraphQL: false });
 
         } else {
-          console.warn('[StaffWorkloadWidget] No widget data returned from API');
+          console.warn('[StaffWorkloadWidget as string] No widget data returned from API');
           setChartData([]);
         }
       } catch (err) {
-        console.error('[StaffWorkloadWidget] Error fetching data from API:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        console.error('[StaffWorkloadWidget as string] Error fetching data from API:', err);
+        setError(err instanceof Error ? (err as { message: string }).message : 'Unknown error');
         setChartData([]);
       } finally {
         setLoading(false);
@@ -159,11 +159,11 @@ export const StaffWorkloadWidget: React.FC<StaffWorkloadWidgetProps> = ({
     });
 
     // 轉換為數組並補充缺失的員工數據
-    const processedData = Array.from(dateGroups.values()).map(dayData => {
+    const processedData = Array.from(dateGroups.values()).map((dayData: any) => {
       const completeData = { ...dayData };
       staffNames.forEach(name => {
         if (!(name in completeData)) {
-          completeData[name] = 0;
+          completeData[name as string] = 0;
         }
       });
       return completeData;
@@ -191,7 +191,7 @@ export const StaffWorkloadWidget: React.FC<StaffWorkloadWidgetProps> = ({
     });
     
     return Array.from(names).sort();
-  }, [chartData]);
+  }, [chartData as string]);
 
   // 自定義 Tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {

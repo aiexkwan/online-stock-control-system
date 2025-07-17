@@ -96,7 +96,7 @@ export default function NumberPad({ onConfirm, onCancel, isLoading = false }: Nu
 
       {/* 數字鍵盤 */}
       <div className='mb-6 grid grid-cols-3 gap-3'>
-        {numbers.slice(0, 9).map(num => (
+        {numbers.slice(0, 9).map((num: any) => (
           <motion.button
             key={num}
             whileHover={{ scale: 1.05 }}

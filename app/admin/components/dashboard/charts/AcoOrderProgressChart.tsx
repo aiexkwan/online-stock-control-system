@@ -83,7 +83,7 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
     });
     
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
+      throw new Error(`API Error: ${(response as { status: string }).status}`);
     }
     
     return response.json();
@@ -129,7 +129,7 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
     return (
       <Alert variant='destructive'>
         <AlertCircle className='h-4 w-4' />
-        <AlertDescription>Failed to load order data: {error.message}</AlertDescription>
+        <AlertDescription>Failed to load order data: {(error as { message: string }).message}</AlertDescription>
       </Alert>
     );
   }
@@ -142,7 +142,7 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
 
   return (
     <div className='flex h-full w-full flex-col'>
-      <div className={spacingUtilities.margin.bottom.medium}>
+      <div className={theme.spacing.margin.bottom.medium}>
         <p className={cn(textClasses['body-small'], 'text-muted-foreground')}>
           {chartApiData?.config?.title || 'ACO Order Completion Progress'}
         </p>
@@ -200,17 +200,17 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
               content={() => (
                 <div className={cn(
                   'mt-4 flex justify-center',
-                  spacingUtilities.gap.medium
+                  theme.spacing.gap.medium
                 )}>
-                  <div className={cn('flex items-center', spacingUtilities.gap.small)}>
+                  <div className={cn('flex items-center', theme.spacing.gap.small)}>
                     <div className={cn('h-3 w-3 rounded')} style={{ backgroundColor: semanticColors.success.DEFAULT }} />
                     <span className={cn(textClasses['label-small'], 'text-foreground')}>≥80%</span>
                   </div>
-                  <div className={cn('flex items-center', spacingUtilities.gap.small)}>
+                  <div className={cn('flex items-center', theme.spacing.gap.small)}>
                     <div className={cn('h-3 w-3 rounded')} style={{ backgroundColor: semanticColors.warning.DEFAULT }} />
                     <span className={cn(textClasses['label-small'], 'text-foreground')}>50-79%</span>
                   </div>
-                  <div className={cn('flex items-center', spacingUtilities.gap.small)}>
+                  <div className={cn('flex items-center', theme.spacing.gap.small)}>
                     <div className={cn('h-3 w-3 rounded')} style={{ backgroundColor: semanticColors.destructive.DEFAULT }} />
                     <span className={cn(textClasses['label-small'], 'text-foreground')}>&lt;50%</span>
                   </div>

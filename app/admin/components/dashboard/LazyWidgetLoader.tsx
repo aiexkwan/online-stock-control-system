@@ -43,7 +43,7 @@ export const LazyWidgetLoader: React.FC<LazyWidgetLoaderProps> = React.memo(
       return () => {
         observer.disconnect();
       };
-    }, [hasLoaded]);
+    }, [hasLoaded as string]);
 
     return (
       <div ref={containerRef} style={{ minHeight: height }} className='h-full w-full'>

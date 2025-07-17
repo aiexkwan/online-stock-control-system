@@ -84,7 +84,7 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
     });
     
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
+      throw new Error(`API Error: ${(response as { status: string }).status}`);
     }
     
     return response.json();
@@ -112,7 +112,7 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
   const progressCards = useMemo(() => {
     if (!cardsData?.cards) return [];
     return cardsData.cards;
-  }, [cardsData]);
+  }, [cardsData as string]);
 
   // Create mock incomplete orders for dropdown (this should come from a separate endpoint)
   const incompleteOrders = useMemo(() => {
@@ -175,12 +175,12 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
         setOrderProgress(mockProgress);
         setProgressMetadata({ orderRef, productCount: mockProgress.length });
       } catch (err: any) {
-        console.error('[AcoOrderProgressWidget] Error loading order progress:', err);
+        console.error('[AcoOrderProgressWidget as string] Error loading order progress:', err);
         showError('Failed to load order progress', err);
         setOrderProgress([]);
       }
     },
-    [showError]
+    [showError as string]
   );
 
   // Load order progress when selected order changes

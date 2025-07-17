@@ -62,7 +62,7 @@ export default function AcoOrderProgressCards({ timeFrame, useGraphQL = false }:
           setError(response.error || 'Failed to fetch data');
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        setError(err instanceof Error ? (err as { message: string }).message : 'Unknown error');
       } finally {
         setLoading(false);
       }
@@ -74,7 +74,7 @@ export default function AcoOrderProgressCards({ timeFrame, useGraphQL = false }:
     const interval = setInterval(fetchData, 300000);
     
     return () => clearInterval(interval);
-  }, [timeFrame]);
+  }, [timeFrame as string]);
 
   const displayCards = useMemo(() => {
     if (!data?.cards) return [];
@@ -85,7 +85,7 @@ export default function AcoOrderProgressCards({ timeFrame, useGraphQL = false }:
       completionPercentage: card.value,
       orderRef: card.title.replace('Order ', ''),
     }));
-  }, [data]);
+  }, [data as string]);
 
   if (loading) {
     return (

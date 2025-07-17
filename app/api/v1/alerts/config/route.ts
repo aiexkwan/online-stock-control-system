@@ -327,7 +327,7 @@ const defaultAlertRules: AlertRule[] = [
     enabled: true,
     priority: 'critical',
     condition: {
-      metric: 'system.redis.status',
+      metric: 'system.(redis as { status: string }).status',
       operator: 'eq',
       value: 'unhealthy'
     },
@@ -438,7 +438,7 @@ export async function GET() {
     return NextResponse.json({
       status: 'error',
       timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
       message: 'Failed to retrieve alert configuration'
     }, {
       status: 500,
@@ -453,7 +453,7 @@ export async function GET() {
 /**
  * 更新告警配置 (PUT)
  */
-export async function PUT(request: Request) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const body = await request.json();
     const timestamp = new Date().toISOString();
@@ -499,7 +499,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({
       status: 'error',
       timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
       message: 'Failed to update alert configuration'
     }, {
       status: 500,
@@ -513,14 +513,14 @@ export async function PUT(request: Request) {
 /**
  * 創建新告警規則 (POST)
  */
-export async function POST(request: Request) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const body = await request.json();
     const timestamp = new Date().toISOString();
 
     // 驗證必要欄位
     const requiredFields = ['name', 'type', 'category', 'condition', 'actions'];
-    const missingFields = requiredFields.filter(field => !body[field]);
+    const missingFields = requiredFields.filter(field => !body[field as string]);
     
     if (missingFields.length > 0) {
       return NextResponse.json({
@@ -571,7 +571,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       status: 'error',
       timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
       message: 'Failed to create alert rule'
     }, {
       status: 500,
@@ -585,7 +585,7 @@ export async function POST(request: Request) {
 /**
  * 刪除告警規則 (DELETE)
  */
-export async function DELETE(request: Request) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { searchParams } = new URL(request.url);
     const ruleId = searchParams.get('id');
@@ -621,7 +621,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({
       status: 'error',
       timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
       message: 'Failed to delete alert rule'
     }, {
       status: 500,

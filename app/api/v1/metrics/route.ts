@@ -22,7 +22,7 @@ export async function GET() {
     const totalErrors = versionStats.reduce((sum, stat) => sum + stat.errorCount, 0);
     
     // 計算版本分佈
-    const versionDistribution = versionStats.map(stat => ({
+    const versionDistribution = versionStats.map((stat: any) => ({
       version: stat.version,
       requestCount: stat.requestCount,
       percentage: totalRequests > 0 ? (stat.requestCount / totalRequests * 100).toFixed(2) : '0.00',
@@ -60,7 +60,7 @@ export async function GET() {
     return NextResponse.json({
       status: 'error',
       timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
       message: 'Failed to retrieve metrics',
     }, {
       status: 500
@@ -85,7 +85,7 @@ export async function DELETE() {
     return NextResponse.json({
       status: 'error',
       message: 'Failed to clear statistics',
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
     }, {
       status: 500
     });

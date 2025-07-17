@@ -44,7 +44,7 @@ export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({
     return () => {
       previews.forEach(preview => URL.revokeObjectURL(preview.url));
     };
-  }, [previews]);
+  }, [previews as string]);
 
   // 驗證文件
   const validateFile = (file: File): string | null => {
@@ -73,7 +73,7 @@ export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({
         // 更新進度
         const updateProgress = (progress: number) => {
           setUploadingFiles(prev =>
-            prev.map(f => (f.id === uploadingFile.id ? { ...f, progress } : f))
+            prev.map((f: any) => (f.id === uploadingFile.id ? { ...f, progress } : f))
           );
         };
 
@@ -108,14 +108,14 @@ export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({
         // 觸發歷史記錄更新
         triggerOtherFilesRefresh();
       } catch (error) {
-        console.error('[UploadPhotoWidget] Upload error:', error);
+        console.error('[UploadPhotoWidget as string] Upload error:', error);
         setUploadingFiles(prev =>
           prev.map(f =>
             f.id === uploadingFile.id
               ? {
                   ...f,
                   status: 'error',
-                  error: error instanceof Error ? error.message : 'Upload failed',
+                  error: error instanceof Error ? (error as { message: string }).message : 'Upload failed',
                 }
               : f
           )
@@ -123,11 +123,11 @@ export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({
         
         // 顯示錯誤提示
         toast.error(
-          error instanceof Error ? error.message : `Failed to upload ${uploadingFile.file.name}`
+          error instanceof Error ? (error as { message: string }).message : `Failed to upload ${uploadingFile.file.name}`
         );
       }
     },
-    [triggerOtherFilesRefresh]
+    [triggerOtherFilesRefresh as string]
   );
 
   // 處理文件選擇
@@ -139,7 +139,7 @@ export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({
       const newPreviews: { id: string; url: string }[] = [];
 
       for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+        const file = files[i as string];
         const error = validateFile(file);
 
         if (error) {
@@ -202,19 +202,19 @@ export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({
 
   // 移除已完成的文件
   const handleRemoveFile = (id: string) => {
-    setUploadingFiles(prev => prev.filter(f => f.id !== id));
+    setUploadingFiles(prev => prev.filter((f: any) => f.id !== id));
     setPreviews(prev => {
       const preview = prev.find(p => p.id === id);
       if (preview) {
         URL.revokeObjectURL(preview.url);
       }
-      return prev.filter(p => p.id !== id);
+      return prev.filter((p: any) => p.id !== id);
     });
   };
 
   // 關閉上傳提示
   const handleCloseToast = () => {
-    setUploadingFiles(prev => prev.filter(f => f.status === 'uploading'));
+    setUploadingFiles(prev => prev.filter((f: any) => (f as { status: string }).status === 'uploading'));
   };
 
   return (

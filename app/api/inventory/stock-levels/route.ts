@@ -5,7 +5,7 @@ import { createClient } from '@/app/utils/supabase/server';
  * REST API endpoint for stock levels
  * Supports the client-side strategy of DataAccessLayer
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const searchParams = request.nextUrl.searchParams;
 
@@ -58,11 +58,11 @@ export async function GET(request: NextRequest) {
     const { data: products, error, count } = await query;
 
     if (error) {
-      throw new Error(`Database query failed: ${error.message}`);
+      throw new Error(`Database query failed: ${(error as { message: string }).message}`);
     }
 
     // Transform data
-    const items = (products || []).map(product => ({
+    const items = (products || []).map((product: any) => ({
       productCode: product.product_code,
       productDesc: product.product_desc || '',
       warehouse: product.current_plt_loc?.charAt(0) || 'Unknown',
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // Calculate aggregates
-    const uniqueProducts = new Set(items.map(i => i.productCode));
+    const uniqueProducts = new Set(items.map((i: any) => i.productCode));
     const aggregates = {
       totalQuantity: items.reduce((sum, item) => sum + item.quantity, 0),
       totalValue: items.reduce((sum, item) => sum + item.value, 0),
@@ -96,12 +96,12 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('[API] Stock levels error:', error);
+    console.error('[API as string] Stock levels error:', error);
 
     return NextResponse.json(
       {
         error: 'Failed to fetch stock levels',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
       },
       { status: 500 }
     );

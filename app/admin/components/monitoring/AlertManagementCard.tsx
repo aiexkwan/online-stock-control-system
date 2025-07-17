@@ -193,7 +193,7 @@ export default function AlertManagementCard({
                          alert.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || alert.category === selectedCategory;
     const matchesSeverity = selectedSeverity === 'all' || alert.severity === selectedSeverity;
-    const matchesStatus = selectedStatus === 'all' || alert.status === selectedStatus;
+    const matchesStatus = selectedStatus === 'all' || (alert as { status: string }).status === selectedStatus;
     
     return matchesSearch && matchesCategory && matchesSeverity && matchesStatus;
   });
@@ -269,8 +269,8 @@ export default function AlertManagementCard({
             <span>Alert Management</span>
           </div>
           <div className="flex items-center space-x-2">
-            <Badge variant={data.status === 'healthy' ? 'default' : 'destructive'}>
-              {data.status}
+            <Badge variant={(data as { status: string }).status === 'healthy' ? 'default' : 'destructive'}>
+              {(data as { status: string }).status}
             </Badge>
             {onRefresh && (
               <Button variant="outline" size="sm" onClick={onRefresh}>
@@ -390,8 +390,8 @@ export default function AlertManagementCard({
                               {getCategoryIcon(alert.category)}
                               <span className="ml-1 capitalize">{alert.category}</span>
                             </Badge>
-                            <Badge variant={getStatusVariant(alert.status)}>
-                              {alert.status}
+                            <Badge variant={getStatusVariant((alert as { status: string }).status)}>
+                              {(alert as { status: string }).status}
                             </Badge>
                           </div>
                           <h4 className="font-medium">{alert.title}</h4>
@@ -414,7 +414,7 @@ export default function AlertManagementCard({
                           </div>
                         </div>
                         <div className="flex space-x-2">
-                          {alert.status === 'active' && onAcknowledge && (
+                          {(alert as { status: string }).status === 'active' && onAcknowledge && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -423,7 +423,7 @@ export default function AlertManagementCard({
                               <Eye className="h-4 w-4" />
                             </Button>
                           )}
-                          {alert.status !== 'resolved' && onResolve && (
+                          {(alert as { status: string }).status !== 'resolved' && onResolve && (
                             <Button
                               variant="outline"
                               size="sm"

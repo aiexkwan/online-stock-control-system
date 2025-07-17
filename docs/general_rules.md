@@ -1,130 +1,188 @@
-#### 身分定位
-- 身分定位：開始任務前必須詢問用戶是否需要特定身份
-- 身分選項
-    1. 分析師
-    2. 系統架構專家
-    3. Backend工程師
-    4. 基礎設施專家
-    5. 使用者體驗專家
-    6. 優化專家
-    7. 品質倡導者
-    8. 代碼品質專家
-    9. 漏洞專家
-- 身分文檔：按用戶指示閱讀指定的身分背景文檔
-- 假如用戶選擇多於一個身分，則以task工具分飾多角色家位
-- 以各角色定位分析現時問題
-- 分析後各角色定位再加以討論
-- 最後將討論的結果綜合成一個方案計劃並執行
+# Claude Code 系統配置指引
 
-### 身分文檔
-- 分析師 : docs/role_play/Analyzer.md
-- 系統架構專家：docs/role_play/Architecture.md
-- Backend工程師：docs/role_play/Backend.md
-- 基礎設施專家：docs/role_play/Devops.md
-- 使用者體驗專家：docs/role_play/Frontend.md
-- 優化專家：docs/role_play/Frontend.md
-- 品質倡導者：docs/role_play/QA.md
-- 代碼品質專家：docs/role_play/Refactorer.md
-- 漏洞專家：docs/role_play/Security.md
+## 🎭 身分定位系統
 
-##### 必須遵守規則
-- 資料庫欄位名稱或設定：優先使用Supabase MCP 工具確定，次選閱讀 docs\databaseScheme\databaseStructure.md
-- 不可作出任何假設行為：如沒有所需資料，必須提問
-- 不可自作主張：如有疑問必須提問
-- 更新後測試：更新後必須使用工具進行測試，不可跳過
-- 測驗時會用的系統登入email：.env.local.SYS_LOGIN
-- 測驗時會用的系統登入password ：.env.local.SYS_PASSWORD
-- 所有一次性的測試程序都必須在使用後刪除
-- 服務器啟動時間超時 : 再次重試，不可以此為理由跳過
-- *必須完整閱讀整份守則*
+### 執行規則
+- [ ] **必須**：開始任務前詢問用戶是否需要特定身份
+- [ ] **必須**：按用戶指示閱讀指定的身分背景文檔
+- [ ] **多角色模式**：使用task工具分飾多角色進行分析
 
-## 系統資訊
-- Widget系統：REST API
-- 預計使用人數：30-40人
-- 同時在線：4-5人
-- 在線方式：移動裝置及電腦端
-- 運作時間：24/7
+### 默認長駐角色
+- 代碼品質專家
+- 分析師
+- 系統架構專家
+- 優化專家
 
-## 工作執行方式
-- 根據用戶指示，判斷需要的文檔及整個專案（如有需要）
-- 必須建立todolist
-- 基於證據的推理 ：所有聲明都必須透過測試、指標或文件進行驗證
+### 角色清單
+| ID | 角色名稱 | 職責定位 | 文檔路徑 |
+|:---:|----------|----------|----------|
+| 1 | 分析師 | 需求分析、問題定義 | `docs/role_play/Analyzer.md` |
+| 2 | 系統架構專家 | 系統設計、架構規劃 | `docs/role_play/Architecture.md` |
+| 3 | Backend工程師 | 後端開發、API設計 | `docs/role_play/Backend.md` |
+| 4 | 基礎設施專家 | 部署、維運、效能 | `docs/role_play/Devops.md` |
+| 5 | 使用者體驗專家 | UI/UX設計、前端體驗 | `docs/role_play/Frontend.md` |
+| 6 | 優化專家 | 效能優化、重構建議 | `docs/role_play/Frontend.md` |
+| 7 | 品質倡導者 | 測試策略、品質保證 | `docs/role_play/QA.md` |
+| 8 | 代碼品質專家 | 長駐角色丶程式碼審查、重構 | `docs/role_play/Refactorer.md` |
+| 9 | 漏洞專家 | 安全審計、漏洞修復 | `docs/role_play/Security.md` |
 
-## 使用模式
-- 深層思考：Ultrathink
-- Task：同步平行執行任務
+### 多角色協作流程
+```
+用戶選擇多個角色 → 各角色獨立分析 → 角色間討論交流 → 綜合方案計劃 → 執行實施
+```
+---
 
-## 編碼核心原則
-- KISS (Keep It Simple, Stupid)
-- YAGNI (You Aren't Gonna Need It)
-- Open/Closed Principle
-- SOLID Principles
-- 減少冗碼
+## ⚠️ 核心規則（必須嚴格遵守）
 
-## 編碼技巧
-- 優先使用 React Query ，取代 useEffect + useState 組合
+### 🔐 資料庫操作
+| 優先級 | 方法 | 使用場景 |
+|:------:|------|----------|
+| 1 | Supabase MCP 工具 | 查詢欄位名稱、設定 |
+| 2 | `docs/databaseScheme/databaseStructure.md` | MCP不可用時 |
 
-## 可使用工具
-- 思維模式 : Sequential-thinking MCP
-- 搜尋資料：Brave Search MCP
-- Headless：puppeteer MCP
-- DATABASE 查詢：Supabase MCP
-- Web 前端測試 : Playwright
-- 快速測試工具 : Vitest
-- 前端元件開發、測試 : Storybook
+### 🚫 禁止行為
+- ❌ **禁止假設**：缺少資料必須提問
+- ❌ **禁止自作主張**：有疑問必須確認
+- ❌ **禁止跳過測試**：更新後必須測試
 
-***系統文檔有關***
-## 文檔儲存格式
-UTF-8
+### ✅ 測試規範
+```yaml
+登入憑證:
+  email: ${env.local.SYS_LOGIN}
+  password: ${env.local.SYS_PASSWORD}
+  
+測試原則:
+  - 一次性測試程序使用後必須刪除
+  - 服務器超時須重試，不可跳過
+  - 必須完整閱讀整份守則
+```
 
-## 文檔用途分類
-- 計劃文檔：只用於寫入已擬定／未來計劃，不牽涉任何完成度紀錄
-- todolist文檔：只用於規劃每天TodoList（根據 計劃文檔 內編定及執行），不牽涉任何未來計劃丶進度檢查
-- 進度檢查報告文檔：根據 計劃文檔 及 todolist文檔庫 內的文檔，檢查及追蹤進度，不牽涉任何未來計劃
-- 評核紀錄庫：當 進度檢查報告文檔 評定為［完成］後，交由審判員寫入
+---
 
-## 文檔儲存方式
-- 必須放入相對應的文檔庫
-- 不可任意位置儲存
-- 如無法歸類，一律存入無法歸類文檔
+## 💻 系統資訊
 
-## 文檔庫
-錯誤記錄庫：docs\issue-library
-評核紀錄庫：docs\audit
-計劃文檔庫：docs\planning
-todolist記憶庫：docs\Today_Todo
-RPC 文檔庫：docs\rpc-functions
-SQL 文檔庫：docs\SQL-Library
-無法歸類文檔庫：docs\Others
-進度檢查報告庫：docs\progress-check
-資料庫結構：docs\databaseSchema
-身分文檔庫：docs/role_play
+| 項目 | 規格 |
+|------|------|
+| **系統類型** | Widget系統 (REST API) |
+| **預計用戶** | 30-40人 |
+| **同時在線** | 4-5人 |
+| **支援平台** | 移動裝置 + 電腦端 |
+| **運作時間** | 24/7 |
 
-## 文檔儲存命名格式
-評核紀錄：docs\audit\{相關審查工作}.md
-錯誤記錄：docs\issue-library\{問題類型}.md
-計劃文檔：docs\planning\{相關計劃}.md
-todolist文檔：docs\Today_Todo\{當天日期}.md
-進度報告：docs/progress-check\{進度檢查報告}.md
+---
 
-## 更新文檔方式
-- TodoList 只用於記錄 當天工作
-- 詳細紀錄應寫入回各自的計劃書
-- 計畫書中所有更新，均應在該計劃的計劃書中更新／新增，並非不停新增 
-- 進度更新時：直接修改內容，並非在文檔末段加上紀錄
-- 有內容添加時：在文檔末段加上
+## 🔧 工作執行方式
 
-***TodoList相關***
-## TodoList 文檔紀錄守則
-- 每次執行任務前先檢查 todolist記憶庫 有否當天任務
-- 如有當天未完成任務，則詢問用戶是否優先處理新增任務
-- 進度一律以版本號(1.1.2, 2.3.4)或 優先級數 作進度單位
-- 不使用任日期丶時間丶上下午 作進度單位
-- 只可存在一個當天任務文檔，任何新增或更改，均需在 docs\Today_Todo\{當天日期}.md 內進行，不可新增
-- 只專汪當天工作，不應包含明天的計劃
+### 執行流程
+1. **分析階段**：根據用戶指示判斷需要的文檔
+2. **規劃階段**：建立詳細todolist
+3. **驗證階段**：基於證據的推理（測試/指標/文件）
 
-## TodoList 文檔範本
-- 已經完成的工作 ([x] - 極致簡單描述) 
-- 等待開始的工作 ([ ] - 極致簡單描述)
-- 其餘關工作的詳細紀錄：應寫入回各自的計劃書
-- 文檔末加入有關的計劃/評核/錯誤 等文檔牽引
+### 使用模式
+- **深層思考**：Ultrathink
+- **任務執行**：Task（同步平行執行）
+
+---
+
+## 📐 編碼原則與技巧
+
+### 核心原則
+- **KISS** - Keep It Simple, Stupid
+- **YAGNI** - You Aren't Gonna Need It
+- **Open/Closed Principle**
+- **SOLID Principles**
+- **DRY** - 減少冗碼
+
+### 最佳實踐
+> 💡 優先使用 React Query，取代 useEffect + useState 組合
+
+---
+
+## 🛠️ 可用工具清單
+
+| 類別 | 工具名稱 | 用途 |
+|------|----------|------|
+| **思維模式** | Sequential-thinking MCP | 邏輯推理 |
+| **搜尋** | Brave Search MCP | 資料搜尋 |
+| **自動化** | Puppeteer MCP | 無頭瀏覽器操作 |
+| **資料庫** | Supabase MCP | 資料庫查詢 |
+| **前端測試** | Playwright | E2E測試 |
+| **單元測試** | Vitest | 快速測試 |
+| **元件開發** | Storybook | 元件開發與測試 |
+
+---
+
+## 📁 文檔管理系統
+
+### 文檔格式
+- **編碼**：UTF-8
+- **儲存規則**：必須放入對應文檔庫，不可任意儲存
+
+### 文檔分類與用途
+
+| 文檔類型 | 用途說明 | 儲存路徑 |
+|----------|----------|----------|
+| **計劃文檔** | 擬定/未來計劃（不含完成度） | `docs/planning/{相關計劃}.md` |
+| **TodoList文檔** | 每日任務規劃（不含未來計劃） | `docs/Today_Todo/{當天日期}.md` |
+| **進度檢查報告** | 追蹤進度（不含未來計劃） | `docs/progress-check/{進度檢查報告}.md` |
+| **評核紀錄** | 完成項目的審核記錄 | `docs/audit/{相關審查工作}.md` |
+
+### 專門文檔庫
+
+| 文檔庫 | 路徑 | 內容 |
+|--------|------|------|
+| **錯誤記錄庫** | `docs/issue-library/{問題類型}.md` | 系統錯誤與問題 |
+| **RPC文檔庫** | `docs/rpc-functions/` | RPC函數文檔 |
+| **SQL文檔庫** | `docs/SQL-Library/` | SQL查詢語句 |
+| **資料庫結構** | `docs/databaseSchema/` | 資料庫架構文檔 |
+| **身分文檔庫** | `docs/role_play/` | 角色定位文檔 |
+| **無法歸類** | `docs/Others/` | 其他文檔 |
+
+---
+
+## 📋 TodoList 管理守則
+
+### 執行流程
+```
+開始任務 → 檢查當天TodoList → 
+  ├─ 存在：詢問優先級 → 執行任務
+  └─ 不存在：建立新任務 → 執行任務
+              ↓
+          更新進度
+```
+
+### TodoList 規範
+- ✅ **進度單位**：使用版本號（1.1.2）或優先級數
+- ❌ **禁止使用**：日期、時間、上下午作為進度單位
+- 📝 **文檔原則**：當天只能有一個TodoList文檔
+- 🎯 **專注當天**：不包含明天的計劃
+
+### TodoList 文檔範本
+```markdown
+# TodoList - {當天日期}
+
+## 已完成
+- [x] 極致簡單描述1
+- [x] 極致簡單描述2
+
+## 待處理
+- [ ] 極致簡單描述3
+- [ ] 極致簡單描述4
+
+## 相關文檔
+- 計劃：[計劃名稱](docs/planning/xxx.md)
+- 評核：[評核記錄](docs/audit/xxx.md)
+- 錯誤：[錯誤追蹤](docs/issue-library/xxx.md)
+```
+
+### 文檔更新原則
+| 情況 | 處理方式 |
+|------|----------|
+| **進度更新** | 直接修改內容，不在末段添加 |
+| **內容添加** | 在文檔末段新增 |
+| **詳細記錄** | 寫回各自計劃書，不在TodoList |
+
+---
+
+## 🎯 總結
+> **記住**：這是一個嚴謹的開發系統，所有操作都必須有據可依、有跡可循。質量優先於速度，準確優先於假設。

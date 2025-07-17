@@ -131,7 +131,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       }, delay);
       return () => clearTimeout(timer);
     }
-  }, [delay]);
+  }, [delay as string]);
 
   // 穩定 config 的關鍵屬性以避免無限循環
   const stableConfigKey = useMemo(() => {
@@ -175,7 +175,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         }
       } catch (err) {
         console.error('Data loading error:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        setError(err instanceof Error ? (err as { message: string }).message : 'Unknown error');
       } finally {
         setLoading(false);
       }
@@ -232,7 +232,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
     }
   } catch (err) {
     console.error('Widget rendering error:', err);
-    renderedContent = createErrorFallback(config.type, err instanceof Error ? err.message : 'Unknown error');
+    renderedContent = createErrorFallback(config.type, err instanceof Error ? (err as { message: string }).message : 'Unknown error');
   }
 
   return (
@@ -385,7 +385,7 @@ const AlertsWidget: React.FC<{ data: any }> = ({ data }) => {
       ) : (
         alerts.map((alert: any, index: number) => (
           <div key={index} className="p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
-            {alert.message || `警報 ${index + 1}`}
+            {(alert as { message: string }).message || `警報 ${index + 1}`}
           </div>
         ))
       )}

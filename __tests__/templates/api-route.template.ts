@@ -14,11 +14,35 @@
  * before running the tests. Most tests are commented out as placeholders.
  */
 
-const { testApiHandler } = require('next-test-api-route-handler');
-const { http, HttpResponse } = require('msw');
+import { testApiHandler } from 'next-test-api-route-handler';
+import { http, HttpResponse } from 'msw';
+import { setupServer } from 'msw/node';
 
-// Import MSW server - using direct import instead of jest.setup
-const { setupServer } = require('msw/node');
+// Type definitions for better TypeScript support
+interface TestContext {
+  fetch: (options?: RequestInit) => Promise<Response>;
+}
+
+interface AuthContext extends TestContext {
+  fetch: (options?: RequestInit) => Promise<Response>;
+}
+
+interface TestApiHandlerOptions {
+  appHandler: any;
+  url?: string;
+  test: (context: TestContext) => Promise<void>;
+}
+
+interface ValidationScenario {
+  data: any;
+  expectedError: string;
+}
+
+interface PaginatedResponse {
+  items: any[];
+  total: number;
+  page: number;
+}
 
 // Simple handlers for testing
 const handlers = [
@@ -45,10 +69,10 @@ const server = setupServer(...handlers);
 
 // Placeholder handler for template validation (remove when using actual handler)
 const handler = {
-  GET: async (request) => {
+  GET: async (request: Request) => {
     // For next-test-api-route-handler, we need to handle URL differently
     // Check if request has nextUrl property (NextRequest)
-    const url = request.nextUrl || new URL(request.url, 'http://localhost');
+    const url = (request as any).nextUrl || new URL(request.url, 'http://localhost');
     const params = url.searchParams;
     
     // Also check for direct URL parameter in request
@@ -76,7 +100,7 @@ const handler = {
     });
   },
   
-  POST: async (request) => {
+  POST: async (request: Request) => {
     try {
       const body = await request.json();
       
@@ -103,7 +127,7 @@ const handler = {
     }
   },
   
-  DELETE: async (request) => {
+  DELETE: async (request: Request) => {
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.includes('Bearer')) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -135,7 +159,7 @@ describe('/api/[YOUR-ROUTE]', () => {
     it('should return successful response with correct data', async () => {
       await testApiHandler({
         appHandler: handler,
-        async test({ fetch }) {
+        async test({ fetch }: TestContext) {
           const response = await fetch({
             method: 'GET',
           });
@@ -154,7 +178,7 @@ describe('/api/[YOUR-ROUTE]', () => {
       await testApiHandler({
         appHandler: handler,
         url: '/?param1=value1&param2=value2',
-        async test({ fetch }) {
+        async test({ fetch }: TestContext) {
           const response = await fetch({
             method: 'GET',
           });
@@ -178,7 +202,7 @@ describe('/api/[YOUR-ROUTE]', () => {
       await testApiHandler({
         appHandler: handler,
         url: '/?invalid=parameter',
-        async test({ fetch }) {
+        async test({ fetch }: TestContext) {
           const response = await fetch({
             method: 'GET',
           });
@@ -201,7 +225,7 @@ describe('/api/[YOUR-ROUTE]', () => {
 
       await testApiHandler({
         appHandler: handler,
-        async test({ fetch }) {
+        async test({ fetch }: TestContext) {
           const response = await fetch({
             method: 'POST',
             headers: {
@@ -228,7 +252,7 @@ describe('/api/[YOUR-ROUTE]', () => {
 
       await testApiHandler({
         appHandler: handler,
-        async test({ fetch }) {
+        async test({ fetch }: TestContext) {
           const response = await fetch({
             method: 'POST',
             headers: {
@@ -258,7 +282,7 @@ describe('/api/[YOUR-ROUTE]', () => {
 
       await testApiHandler({
         appHandler: errorHandler,
-        async test({ fetch }) {
+        async test({ fetch }: TestContext) {
           const response = await fetch({
             method: 'GET',
           });
@@ -273,7 +297,7 @@ describe('/api/[YOUR-ROUTE]', () => {
     it('should handle unauthorized requests', async () => {
       await testApiHandler({
         appHandler: handler,
-        async test({ fetch }) {
+        async test({ fetch }: TestContext) {
           const response = await fetch({
             method: 'DELETE',
             headers: {
@@ -293,7 +317,7 @@ describe('/api/[YOUR-ROUTE]', () => {
     it('should accept valid authentication token', async () => {
       await testApiHandler({
         appHandler: handler,
-        async test({ fetch }) {
+        async test({ fetch }: TestContext) {
           const response = await fetch({
             method: 'GET',
             headers: {
@@ -321,7 +345,7 @@ describe('/api/[YOUR-ROUTE]', () => {
 
       await testApiHandler({
         appHandler: handler,
-        async test({ fetch }) {
+        async test({ fetch }: TestContext) {
           const response = await fetch({
             method: 'DELETE',
             headers: {
@@ -359,7 +383,7 @@ describe('/api/[YOUR-ROUTE]', () => {
 
       await testApiHandler({
         appHandler: rateLimitHandler,
-        async test({ fetch }) {
+        async test({ fetch }: TestContext) {
           // Make multiple requests
           const requests = Array(10).fill(null).map(() => 
             fetch({ method: 'GET' })
@@ -379,7 +403,7 @@ describe('/api/[YOUR-ROUTE]', () => {
 /**
  * Helper function to create authenticated test context
  */
-async function withAuth(testFn) {
+async function withAuth(testFn: (context: AuthContext) => Promise<void>): Promise<void> {
   // Mock authenticated user
   server.use(
     http.post('*/auth/v1/token', () => {
@@ -396,14 +420,14 @@ async function withAuth(testFn) {
 
   await testApiHandler({
     appHandler: handler,
-    async test(context) {
+    async test(context: TestContext) {
       // Add auth header to all requests
       const originalFetch = context.fetch;
-      context.fetch = (options = {}) => {
+      context.fetch = (options: RequestInit = {}) => {
         return originalFetch({
           ...options,
           headers: {
-            ...options.headers,
+            ...(options.headers || {}),
             'Authorization': 'Bearer test-token',
           },
         });
@@ -418,20 +442,20 @@ async function withAuth(testFn) {
  * Helper to test paginated endpoints
  */
 async function testPagination(
-  endpoint,
-  expectedTotalItems
-) {
+  endpoint: string,
+  expectedTotalItems: number
+): Promise<void> {
   await testApiHandler({
     appHandler: handler,
     url: `${endpoint}?page=1&limit=10`,
-    async test({ fetch }) {
+    async test({ fetch }: TestContext) {
       // Test first page
       const page1 = await fetch({
         method: 'GET',
       });
       expect(page1.status).toBe(200);
       
-      const data1 = await page1.json();
+      const data1 = await page1.json() as PaginatedResponse;
       expect(data1).toHaveProperty('items');
       expect(data1).toHaveProperty('total', expectedTotalItems);
       expect(data1).toHaveProperty('page', 1);
@@ -444,7 +468,7 @@ async function testPagination(
   await testApiHandler({
     appHandler: handler,
     url: `${endpoint}?page=${lastPage}&limit=10`,
-    async test({ fetch }) {
+    async test({ fetch }: TestContext) {
       const pageLast = await fetch({
         method: 'GET',
       });
@@ -457,15 +481,15 @@ async function testPagination(
  * Helper to test input validation
  */
 function createValidationTest(
-  validData,
-  invalidScenarios
-) {
+  validData: any,
+  invalidScenarios: ValidationScenario[]
+): Array<{ name: string; test: () => Promise<void> }> {
   return invalidScenarios.map(({ data, expectedError }) => ({
     name: `should reject invalid data: ${expectedError}`,
     test: async () => {
       await testApiHandler({
         appHandler: handler,
-        async test({ fetch }) {
+        async test({ fetch }: TestContext) {
           const response = await fetch({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -482,7 +506,7 @@ function createValidationTest(
 }
 
 // Export helper functions for use in other tests
-module.exports = {
+export {
   withAuth,
   testPagination,
   createValidationTest,

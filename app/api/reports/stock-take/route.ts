@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = await createClient();
 
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         actual_qty: record.actual_qty || 0,
         variance: variance,
         variance_pct: variancePct,
-        status: record.status || 'Pending',
+        status: (record as { status: string }).status || 'Pending',
         counted_by: record.counted_by || '',
         verified_by: record.verified_by || '',
         notes: record.notes || '',

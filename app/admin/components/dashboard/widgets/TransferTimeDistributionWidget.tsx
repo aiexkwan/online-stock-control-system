@@ -64,7 +64,7 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
       start: timeFrame.start,
       end: timeFrame.end,
     };
-  }, [timeFrame]);
+  }, [timeFrame as string]);
 
   // 使用 REST API 獲取數據
   const [apiData, setApiData] = useState<{ timeSlots: any[]; totalTransfers: number } | null>(null);
@@ -117,7 +117,7 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, [fetchData as string]);
 
   // 處理數據 - 使用 REST API 的結果
   const data = useMemo<TimeDistributionData>(() => {
@@ -143,7 +143,7 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
       peakHour,
       optimized: true,
     };
-  }, [apiData]);
+  }, [apiData as string]);
 
   // 當不在視窗中時顯示 skeleton
   if (!isInViewport && !isEditMode) {

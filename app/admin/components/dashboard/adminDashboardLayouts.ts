@@ -20,6 +20,7 @@ export interface AdminWidgetConfig {
   dataTable?: string;
   referenceField?: string;
   useGraphQL?: boolean; // 是否使用 GraphQL 優化版本
+  department?: 'injection' | 'pipeline' | 'warehouse' | 'all'; // 部門過濾支援
 }
 
 export interface AdminDashboardLayout {
@@ -70,6 +71,93 @@ const defaultLayout: AdminDashboardLayout = {
 
 export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
   overview: defaultLayout,
+  
+  // 統一營運監控主題 (合併 injection + pipeline + warehouse)
+  'operations-monitoring': {
+    theme: 'operations-monitoring',
+    gridTemplate: `"widget2 widget2 widget3 widget3 widget4 widget4 widget5 widget5 widget1 widget1" "widget2 widget2 widget3 widget3 widget4 widget4 widget5 widget5 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget1 widget1" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget1 widget1"`,
+    widgets: [
+      {
+        type: 'history-tree',
+        title: '',
+        gridArea: 'widget1',
+        component: 'HistoryTree',
+      },
+      {
+        type: 'stats',
+        title: 'Primary Metric',
+        gridArea: 'widget2',
+        dataSource: 'record_palletinfo',
+        metrics: ['dynamic_metric_1'],
+        component: 'UnifiedStatsWidget', // 統一統計組件
+      },
+      {
+        type: 'stats',
+        title: 'Secondary Metric',
+        gridArea: 'widget3',
+        dataSource: 'record_palletinfo',
+        metrics: ['dynamic_metric_2'],
+        component: 'UnifiedStatsWidget', // 統一統計組件
+      },
+      {
+        type: 'department-selector',
+        title: 'Department',
+        gridArea: 'widget4',
+        component: 'DepartmentSelectorWidget', // 部門選擇器
+      },
+      {
+        type: 'stats',
+        title: 'Tertiary Metric',
+        gridArea: 'widget5',
+        dataSource: 'record_inventory',
+        metrics: ['dynamic_metric_3'],
+        component: 'UnifiedStatsWidget',
+      },
+      {
+        type: 'chart',
+        title: 'Performance Chart',
+        gridArea: 'widget6',
+        dataSource: 'record_palletinfo',
+        chartType: 'bar',
+        component: 'UnifiedChartWidget', // 統一圖表組件
+        useGraphQL: true,
+      },
+      {
+        type: 'chart',
+        title: 'Distribution Chart',
+        gridArea: 'widget7',
+        dataSource: 'record_palletinfo',
+        chartType: 'donut',
+        component: 'UnifiedChartWidget', // 統一圖表組件
+        useGraphQL: true,
+      },
+      {
+        type: 'available-soon',
+        title: 'Coming Soon',
+        gridArea: 'widget8',
+        component: 'AvailableSoonWidget',
+      },
+      {
+        type: 'table',
+        title: 'Operations Details',
+        gridArea: 'widget9',
+        dataSource: 'unified_operations',
+        component: 'UnifiedTableWidget', // 統一表格組件
+        useGraphQL: true,
+      },
+      {
+        type: 'chart',
+        title: 'Staff Workload',
+        gridArea: 'widget10',
+        dataSource: 'work_level',
+        chartType: 'line',
+        component: 'UnifiedChartWidget', // 統一圖表組件
+        useGraphQL: true,
+      },
+    ],
+  },
+
+  // 向後兼容性 - injection 主題指向新的 production-monitoring
   injection: {
     theme: 'injection',
     gridTemplate: `"widget2 widget2 widget3 widget3 widget4 widget4 widget5 widget5 widget1 widget1" "widget2 widget2 widget3 widget3 widget4 widget4 widget5 widget5 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget1 widget1" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget1 widget1"`,
@@ -86,7 +174,8 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget2',
         dataSource: 'record_palletinfo',
         metrics: ['pallet_count'],
-        component: 'InjectionProductionStatsWidget', // GraphQL optimized version
+        component: 'ProductionStatsWidget',
+        department: 'injection', // 指定部門
       },
       {
         type: 'stats',
@@ -94,7 +183,8 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget3',
         dataSource: 'record_palletinfo',
         metrics: ['quantity_sum'],
-        component: 'InjectionProductionStatsWidget', // GraphQL optimized version
+        component: 'ProductionStatsWidget',
+        department: 'injection', // 指定部門
       },
       {
         type: 'available-soon',
@@ -114,8 +204,9 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget6',
         dataSource: 'record_palletinfo',
         chartType: 'bar',
-        component: 'TopProductsByQuantityWidget', // GraphQL optimized version
+        component: 'TopProductsByQuantityWidget',
         useGraphQL: true,
+        department: 'injection',
       },
       {
         type: 'chart',
@@ -123,8 +214,9 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget7',
         dataSource: 'record_palletinfo',
         chartType: 'donut',
-        component: 'TopProductsDistributionWidget', // GraphQL optimized version
+        component: 'TopProductsDistributionWidget',
         useGraphQL: true,
+        department: 'injection',
       },
       {
         type: 'available-soon',
@@ -137,6 +229,8 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         title: 'Production Details',
         gridArea: 'widget9',
         dataSource: 'production_details',
+        component: 'ProductionDetailsWidget',
+        department: 'injection',
       },
       {
         type: 'chart',
@@ -144,10 +238,13 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget10',
         dataSource: 'work_level',
         chartType: 'line',
+        component: 'StaffWorkloadWidget',
+        department: 'injection',
       },
     ],
   },
 
+  // 向後兼容性 - pipeline 主題指向新的 production-monitoring
   pipeline: {
     theme: 'pipeline',
     gridTemplate: `"widget2 widget2 widget3 widget3 widget4 widget4 widget5 widget5 widget1 widget1" "widget2 widget2 widget3 widget3 widget4 widget4 widget5 widget5 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget1 widget1" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget1 widget1"`,
@@ -164,6 +261,8 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget2',
         dataSource: 'record_palletinfo',
         metrics: ['pipeline_pallet_count'],
+        component: 'ProductionStatsWidget',
+        department: 'pipeline', // 指定部門
       },
       {
         type: 'stats',
@@ -171,6 +270,8 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget3',
         dataSource: 'record_palletinfo',
         metrics: ['pipeline_quantity_sum'],
+        component: 'ProductionStatsWidget',
+        department: 'pipeline', // 指定部門
       },
       {
         type: 'available-soon',
@@ -197,6 +298,8 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         dataSource: 'record_palletinfo',
         chartType: 'bar',
         metrics: ['pipeline_products'],
+        component: 'TopProductsByQuantityWidget',
+        department: 'pipeline',
       },
       {
         type: 'chart',
@@ -205,6 +308,8 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         dataSource: 'record_palletinfo',
         chartType: 'donut',
         metrics: ['pipeline_products_top10'],
+        component: 'TopProductsDistributionWidget',
+        department: 'pipeline',
       },
       {
         type: 'table',
@@ -212,7 +317,8 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget9',
         dataSource: 'pipeline_production_details',
         component: 'ProductionDetailsWidget',
-        useGraphQL: true, // GraphQL optimized for frequent time switching
+        useGraphQL: true,
+        department: 'pipeline',
       },
       {
         type: 'chart',
@@ -221,7 +327,8 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         dataSource: 'pipeline_work_level',
         chartType: 'line',
         component: 'StaffWorkloadWidget',
-        useGraphQL: true, // GraphQL optimized for frequent time switching
+        useGraphQL: true,
+        department: 'pipeline',
       },
     ],
   },

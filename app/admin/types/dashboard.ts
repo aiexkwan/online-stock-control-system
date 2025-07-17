@@ -14,6 +14,13 @@ export interface DashboardBatchQueryData {
     averageStockLevel: number;
   };
   
+  // 棧板總數（用於測試）
+  total_pallets?: number | {
+    value: number;
+    label?: string;
+    trend?: number;
+  };
+  
   // 庫存相關數據
   stockDistribution?: {
     warehouseData: Array<{

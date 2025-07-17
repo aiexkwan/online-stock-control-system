@@ -25,7 +25,7 @@ console.log('\n✅ Validating conversions...');
 let allValid = true;
 
 Object.entries(adminDashboardLayouts).forEach(([theme, layout]) => {
-  const converted = snapshots[theme];
+  const converted = snapshots[theme as string];
   const isValid = validateLayoutSnapshot(layout, converted);
   
   console.log(`  ${theme}: ${isValid ? '✅' : '❌'} (${layout.widgets.length} widgets)`);
@@ -82,7 +82,7 @@ import { layoutCompatibilityManager } from '@/lib/widgets/layout-compatibility';
 import baselineData from '../docs/widget-registry/layout-baseline.json';
 
 describe('Widget Registry Layout Compatibility', () => {
-  ${Object.keys(snapshots).map(theme => `
+  ${Object.keys(snapshots).map((theme: any) => `
   describe('${theme} theme', () => {
     it('should maintain layout integrity after migration', () => {
       const originalLayout = adminDashboardLayouts['${theme}'];

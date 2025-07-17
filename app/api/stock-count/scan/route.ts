@@ -3,7 +3,7 @@ import { createClient } from '@/app/utils/supabase/server';
 import { createInventoryService } from '@/lib/inventory/services';
 import { detectSearchType } from '@/app/utils/palletSearchUtils';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { qrCode } = await request.json();
 

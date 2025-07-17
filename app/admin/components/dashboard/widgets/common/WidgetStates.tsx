@@ -373,7 +373,7 @@ export const WidgetError = React.memo(function WidgetError({
     },
   };
 
-  const styles = severityStyles[severity];
+  const styles = severityStyles[severity as string];
 
   // Get default icon based on severity
   const defaultIcon = severity === 'info' 
@@ -425,7 +425,7 @@ export const WidgetError = React.memo(function WidgetError({
             </div>
             {isDev && error && (
               <p className='mt-1 font-mono text-xs text-gray-500'>
-                {error.message}
+                {(error as { message: string }).message}
               </p>
             )}
             {(onRetry || actions) && (
@@ -494,7 +494,7 @@ export const WidgetError = React.memo(function WidgetError({
       
       {isDev && error && (
         <p className='mb-4 max-w-sm font-mono text-xs text-gray-500'>
-          {error.message}
+          {(error as { message: string }).message}
         </p>
       )}
       
@@ -675,7 +675,7 @@ export const WidgetStateWrapper = React.memo(function WidgetStateWrapper({
 
   // Error state
   if (error) {
-    const message = errorMessage || (typeof error === 'string' ? error : error.message);
+    const message = errorMessage || (typeof error === 'string' ? error : (error as { message: string }).message);
     return (
       <div className={className}>
         <WidgetError
@@ -758,7 +758,7 @@ export const WidgetSuspenseFallback = React.memo(function WidgetSuspenseFallback
       <div className={`${baseClasses} ${className || ''}`}>
         <div className="p-4 space-y-2 w-full">
           <div className="h-4 w-32 bg-slate-700/60 rounded mb-3"></div>
-          {[1, 2, 3].map(i => (
+          {[1, 2, 3].map((i: any) => (
             <div key={i} className="h-6 w-full bg-slate-700/40 rounded"></div>
           ))}
         </div>
@@ -772,7 +772,7 @@ export const WidgetSuspenseFallback = React.memo(function WidgetSuspenseFallback
       <div className={`${baseClasses} ${className || ''}`}>
         <div className="p-4 space-y-3 w-full">
           <div className="h-4 w-32 bg-slate-700/60 rounded mb-3"></div>
-          {[1, 2, 3].map(i => (
+          {[1, 2, 3].map((i: any) => (
             <div key={i} className="flex items-center gap-3">
               <div className="h-8 w-8 bg-slate-700/60 rounded"></div>
               <div className="flex-1 space-y-1">

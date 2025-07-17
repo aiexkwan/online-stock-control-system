@@ -88,7 +88,7 @@ const UserActivityHeatmap = React.memo(function UserActivityHeatmap({
     return (
       <Alert variant='destructive'>
         <AlertCircle className='h-4 w-4' />
-        <AlertDescription>Failed to load activity data: {error.message}</AlertDescription>
+        <AlertDescription>Failed to load activity data: {(error as { message: string }).message}</AlertDescription>
       </Alert>
     );
   }
@@ -123,7 +123,7 @@ const UserActivityHeatmap = React.memo(function UserActivityHeatmap({
           <div className='mb-2 flex items-center'>
             <div className='w-32 shrink-0' />
             <div className='flex gap-1'>
-              {hours.map(hour => (
+              {hours.map((hour: any) => (
                 <div key={hour} className='w-6 text-center text-xs text-white/50'>
                   {hour}
                 </div>

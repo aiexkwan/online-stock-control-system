@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/app/utils/supabase/server';
 import { createInventoryService } from '@/lib/inventory/services';
 
-export async function POST(req: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const body = await req.json();
     const { product_code, counted_qty } = body;
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       console.error('[Stock Count Validate] RPC error:', error);
 
       // 如果函數不存在，使用基本驗證邏輯
-      if (error.message.includes('function') && error.message.includes('does not exist')) {
+      if ((error as { message: string }).message.includes('function') && (error as { message: string }).message.includes('does not exist')) {
         console.log('[Stock Count Validate] Using fallback validation logic');
 
         // 基本驗證規則
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Validation failed: ' + error.message,
+          error: 'Validation failed: ' + (error as { message: string }).message,
         },
         { status: 500 }
       );

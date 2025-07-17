@@ -115,7 +115,7 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
   // Quick option handlers
   const handleQuickOption = useCallback((range: TimeFrame) => {
     onDateRangeChange?.(range);
-  }, [onDateRangeChange]);
+  }, [onDateRangeChange as string]);
 
   const sizeClasses = {
     sm: 'h-7 px-2 text-xs',

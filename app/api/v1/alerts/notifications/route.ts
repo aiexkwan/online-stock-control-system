@@ -52,7 +52,7 @@ const TestNotificationSchema = z.object({
  * GET /api/v1/alerts/notifications
  * 獲取通知統計
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const service = await getNotificationService();
     const stats = await service.getNotificationStats();
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     console.error('Failed to get notification stats:', error);
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Internal server error'
+      error: error instanceof Error ? (error as { message: string }).message : 'Internal server error'
     }, { status: 500 });
   }
 }
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
  * POST /api/v1/alerts/notifications/test
  * 測試通知配置
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const body = await request.json();
     const validated = TestNotificationSchema.parse(body);
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Internal server error'
+      error: error instanceof Error ? (error as { message: string }).message : 'Internal server error'
     }, { status: 500 });
   }
 }

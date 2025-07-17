@@ -206,7 +206,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
       if (result.success) {
         setVoidResult({
           success: true,
-          message: result.message || 'Pallet void successfully',
+          message: (result as { message: string }).message || 'Pallet void successfully',
           remainingQty: result.remainingQty,
           requiresReprint: result.requiresReprint,
         });
@@ -255,10 +255,10 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
           successful: result.summary?.successful || 0,
           failed: result.summary?.failed || 0,
           details: batchState.items
-            .filter(item => item.status === 'completed' || item.status === 'error')
-            .map(item => ({
+            .filter(item => (item as { status: string }).status === 'completed' || (item as { status: string }).status === 'error')
+            .map((item: any) => ({
               plt_num: item.palletInfo.plt_num,
-              success: item.status === 'completed',
+              success: (item as { status: string }).status === 'completed',
               error: item.error,
             })),
         });
@@ -375,7 +375,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
 
       {state.error && (
         <WidgetError
-          message={state.error.message}
+          message={(state.error as { message: string }).message}
           severity='error'
           display='inline'
           actions={[
@@ -503,7 +503,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
           }`}
         >
           <option value=''>Select reason...</option>
-          {VOID_REASONS.map(reason => (
+          {VOID_REASONS.map((reason: any) => (
             <option key={reason.value} value={reason.value}>
               {reason.label}
             </option>
@@ -584,7 +584,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
 
       {state.error && (
         <WidgetError
-          message={state.error.message}
+          message={(state.error as { message: string }).message}
           severity='error'
           display='inline'
           actions={[
@@ -636,7 +636,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
               error={new Error(
                 batchVoidResult.details
                   .filter(item => !item.success)
-                  .map(item => `${item.plt_num}: ${item.error}`)
+                  .map((item: any) => `${item.plt_num}: ${item.error}`)
                   .join('\n')
               )}
             />
@@ -783,7 +783,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
                       }
                     } catch (error: any) {
                       dismiss();
-                      showError(`Reprint failed: ${error.message}`);
+                      showError(`Reprint failed: ${(error as { message: string }).message}`);
                     }
                   }
                 }}

@@ -25,9 +25,9 @@ export const GoogleDriveUploadToast: React.FC<GoogleDriveUploadToastProps> = ({
 }) => {
   if (files.length === 0) return null;
 
-  const uploadingCount = files.filter(f => f.status === 'uploading').length;
-  const completedCount = files.filter(f => f.status === 'completed').length;
-  const errorCount = files.filter(f => f.status === 'error').length;
+  const uploadingCount = files.filter((f: any) => (f as { status: string }).status === 'uploading').length;
+  const completedCount = files.filter((f: any) => (f as { status: string }).status === 'completed').length;
+  const errorCount = files.filter((f: any) => (f as { status: string }).status === 'error').length;
 
   return (
     <AnimatePresence>
@@ -63,21 +63,21 @@ export const GoogleDriveUploadToast: React.FC<GoogleDriveUploadToastProps> = ({
 
         {/* File List */}
         <div className='max-h-[300px] overflow-y-auto'>
-          {files.map(file => (
+          {files.map((file: any) => (
             <div key={file.id} className='border-b border-slate-700/50 px-4 py-3 last:border-0'>
               <div className='mb-2 flex items-center justify-between'>
                 <div className='flex min-w-0 flex-1 items-center gap-2'>
-                  {file.status === 'completed' && (
+                  {(file as { status: string }).status === 'completed' && (
                     <CheckCircleIcon className='h-4 w-4 flex-shrink-0 text-green-400' />
                   )}
-                  {file.status === 'error' && (
+                  {(file as { status: string }).status === 'error' && (
                     <XMarkIcon className='h-4 w-4 flex-shrink-0 text-red-400' />
                   )}
                   <span className='truncate text-sm text-slate-200' title={file.name}>
                     {file.name}
                   </span>
                 </div>
-                {file.status !== 'uploading' && (
+                {(file as { status: string }).status !== 'uploading' && (
                   <button
                     onClick={() => onRemoveFile(file.id)}
                     className='ml-2 text-slate-500 transition-colors hover:text-slate-300'
@@ -87,7 +87,7 @@ export const GoogleDriveUploadToast: React.FC<GoogleDriveUploadToastProps> = ({
                 )}
               </div>
 
-              {file.status === 'uploading' && (
+              {(file as { status: string }).status === 'uploading' && (
                 <div className='relative h-1 w-full overflow-hidden rounded-full bg-slate-700'>
                   <motion.div
                     className='absolute left-0 top-0 h-full bg-blue-500'
@@ -98,7 +98,7 @@ export const GoogleDriveUploadToast: React.FC<GoogleDriveUploadToastProps> = ({
                 </div>
               )}
 
-              {file.status === 'error' && file.error && (
+              {(file as { status: string }).status === 'error' && file.error && (
                 <p className='mt-1 text-xs text-red-400'>{file.error}</p>
               )}
             </div>

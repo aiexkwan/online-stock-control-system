@@ -102,7 +102,7 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
   // 重新獲取數據
   const refetch = useCallback(() => {
     fetchOrdersData();
-  }, [fetchOrdersData]);
+  }, [fetchOrdersData as string]);
 
   // 處理數據
   const data = useMemo<OrderProgress[]>(() => {
@@ -145,52 +145,52 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
             status_color: statusColor,
           };
         })
-        .filter((order: OrderProgress) => order.status !== 'completed'); // 只顯示未完成訂單
+        .filter((order: OrderProgress) => (order as { status: string }).status !== 'completed'); // 只顯示未完成訂單
     }
     
     // 處理嵌套格式數據 (fallback)
-    if (rawData?.data_orderCollection?.edges) {
-      return rawData.data_orderCollection.edges
-        .map((edge: any) => {
-          const node = edge.node;
-          const productQty = node.product_qty || 0;
-          const loadedQty = parseInt(node.loaded_qty || '0', 10);
-          
-          // 計算進度
-          const progress = productQty > 0 ? (loadedQty / productQty) * 100 : 0;
-          
-          // 判斷狀態
-          let status: 'pending' | 'in_progress' | 'completed' = 'pending';
-          let statusColor: 'red' | 'yellow' | 'orange' | 'green' = 'red';
-          
-          if (progress >= 100) {
-            status = 'completed';
-            statusColor = 'green';
-          } else if (progress > 0) {
-            status = 'in_progress';
-            statusColor = progress >= 75 ? 'orange' : 'yellow';
-          }
-
-          return {
-            uuid: node.uuid,
-            order_ref: node.order_ref,
-            account_num: node.account_num,
-            product_code: node.product_code,
-            product_desc: node.product_desc,
-            product_qty: productQty,
-            loaded_qty: loadedQty,
-            created_at: node.created_at,
-            progress,
-            progress_text: `${loadedQty}/${productQty}`,
-            status,
-            status_color: statusColor,
-          };
-        })
-        .filter((order: OrderProgress) => order.status !== 'completed'); // 只顯示未完成訂單
-    }
+// TODO: Replace GraphQL -     // TODO: Replace GraphQL - if (rawData?.data_orderCollection?.edges) {
+// TODO: Replace GraphQL -     //   return rawData.data_orderCollection.edges
+    //     .map((edge: any) => {
+    //       const node = edge.node;
+    //       const productQty = node.product_qty || 0;
+    //       const loadedQty = parseInt(node.loaded_qty || '0', 10);
+    //       
+    //       // 計算進度
+    //       const progress = productQty > 0 ? (loadedQty / productQty) * 100 : 0;
+    //       
+    //       // 判斷狀態
+    //       let status: 'pending' | 'in_progress' | 'completed' = 'pending';
+    //       let statusColor: 'red' | 'yellow' | 'orange' | 'green' = 'red';
+    //       
+    //       if (progress >= 100) {
+    //         status = 'completed';
+    //         statusColor = 'green';
+    //       } else if (progress > 0) {
+    //         status = 'in_progress';
+    //         statusColor = progress >= 75 ? 'orange' : 'yellow';
+    //       }
+    //
+    //       return {
+    //         uuid: node.uuid,
+    //         order_ref: node.order_ref,
+    //         account_num: node.account_num,
+    //         product_code: node.product_code,
+    //         product_desc: node.product_desc,
+    //         product_qty: productQty,
+    //         loaded_qty: loadedQty,
+    //         created_at: node.created_at,
+    //         progress,
+    //         progress_text: `${loadedQty}/${productQty}`,
+    //         status,
+    //         status_color: statusColor,
+    //       };
+    //     })
+    //     .filter((order: OrderProgress) => (order as { status: string }).status !== 'completed'); // 只顯示未完成訂單
+    // }
     
     return [];
-  }, [rawData]);
+  }, [rawData as string]);
 
   // 定義 DataTable columns
   const columns = useMemo<DataTableColumn<OrderProgress>[]>(() => [
@@ -204,13 +204,13 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
           <div
             className={cn(
               'h-2 w-2 flex-shrink-0 rounded-full',
-              item.status_color === 'green'
+              (item as { status: string }).status_color === 'green'
                 ? 'bg-green-400'
-                : item.status_color === 'orange'
+                : (item as { status: string }).status_color === 'orange'
                   ? 'bg-orange-400'
-                  : item.status_color === 'yellow'
+                  : (item as { status: string }).status_color === 'yellow'
                     ? 'bg-yellow-400'
-                    : item.status_color === 'red'
+                    : (item as { status: string }).status_color === 'red'
                       ? 'bg-red-400'
                       : 'bg-slate-400'
             )}
@@ -253,18 +253,18 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
       align: 'center',
       render: (value, item) => (
         <div className="flex justify-center">
-          {item.status === 'completed' && (
+          {(item as { status: string }).status === 'completed' && (
             <TruckIcon className="h-4 w-4 text-green-400" />
           )}
-          {item.status === 'in_progress' && (
+          {(item as { status: string }).status === 'in_progress' && (
             <span className={cn(
               'text-xs font-medium',
-              item.status_color === 'orange' ? 'text-orange-400' : 'text-yellow-400'
+              (item as { status: string }).status_color === 'orange' ? 'text-orange-400' : 'text-yellow-400'
             )}>
               {item.progress >= 75 ? 'Almost' : 'Loading'}
             </span>
           )}
-          {item.status === 'pending' && (
+          {(item as { status: string }).status === 'pending' && (
             <span className="text-xs font-medium text-red-400">Pending</span>
           )}
         </div>
@@ -280,7 +280,7 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
       pendingCount,
       totalCount: pendingCount, // 因為已經過濾了完成的訂單
     };
-  }, [data]);
+  }, [data as string]);
 
   // Edit mode - 顯示空白狀態
   if (isEditMode) {
@@ -349,7 +349,7 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
         rowClassName={(item) => 
           cn(
             'transition-colors hover:bg-slate-700/50',
-            item.status === 'completed' && 'opacity-50'
+            (item as { status: string }).status === 'completed' && 'opacity-50'
           )
         }
       />

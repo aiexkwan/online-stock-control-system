@@ -59,8 +59,8 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
       const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
 
       // 檢查文件格式
-      if (!fileValidation[selectedFolder].includes(fileExtension)) {
-        return `Invalid file format. Allowed: ${fileValidation[selectedFolder].join(', ')}`;
+      if (!fileValidation[selectedFolder as string].includes(fileExtension)) {
+        return `Invalid file format. Allowed: ${fileValidation[selectedFolder as string].join(', ')}`;
       }
 
       // 檢查文件大小
@@ -70,7 +70,7 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
 
       return null;
     },
-    [selectedFolder]
+    [selectedFolder as string]
   );
 
   // 上傳單個文件
@@ -80,7 +80,7 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
         // 更新進度
         const updateProgress = (progress: number) => {
           setUploadingFiles(prev =>
-            prev.map(f => (f.id === uploadingFile.id ? { ...f, progress } : f))
+            prev.map((f: any) => (f.id === uploadingFile.id ? { ...f, progress } : f))
           );
         };
 
@@ -116,14 +116,14 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
         // 觸發歷史記錄更新
         triggerOtherFilesRefresh();
       } catch (error) {
-        console.error('[UploadFilesWidget] Upload error:', error);
+        console.error('[UploadFilesWidget as string] Upload error:', error);
         setUploadingFiles(prev =>
           prev.map(f =>
             f.id === uploadingFile.id
               ? {
                   ...f,
                   status: 'error',
-                  error: error instanceof Error ? error.message : 'Upload failed',
+                  error: error instanceof Error ? (error as { message: string }).message : 'Upload failed',
                 }
               : f
           )
@@ -147,7 +147,7 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
       const newFiles: UploadingFile[] = [];
 
       for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+        const file = files[i as string];
         const error = validateFile(file);
 
         if (error) {
@@ -205,12 +205,12 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
 
   // 移除已完成的文件
   const handleRemoveFile = (id: string) => {
-    setUploadingFiles(prev => prev.filter(f => f.id !== id));
+    setUploadingFiles(prev => prev.filter((f: any) => f.id !== id));
   };
 
   // 關閉上傳提示
   const handleCloseToast = () => {
-    setUploadingFiles(prev => prev.filter(f => f.status === 'uploading'));
+    setUploadingFiles(prev => prev.filter((f: any) => (f as { status: string }).status === 'uploading'));
   };
 
   return (
@@ -273,7 +273,7 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
           ref={fileInputRef}
           type='file'
           multiple
-          accept={fileValidation[selectedFolder].join(',')}
+          accept={fileValidation[selectedFolder as string].join(',')}
           onChange={e => handleFiles(e.target.files)}
           className='hidden'
         />

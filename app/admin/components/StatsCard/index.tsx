@@ -42,7 +42,7 @@ export function StatsCard({
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [setIsOpen]);
+  }, [setIsOpen as string]);
 
   const timeRangeOptions = ['Today', 'Yesterday', 'Past 3 days', 'This week'];
   const value = getDataForTimeRange(stats, type);
@@ -92,7 +92,7 @@ export function StatsCard({
                       transition={{ duration: 0.2 }}
                       className='bg-slate-900/98 absolute right-0 top-full z-[99999] mt-1 min-w-[100px] rounded-xl border border-slate-600/50 shadow-2xl backdrop-blur-xl'
                     >
-                      {timeRangeOptions.map(option => (
+                      {timeRangeOptions.map((option: any) => (
                         <button
                           key={option}
                           onClick={() => {

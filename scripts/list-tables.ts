@@ -71,7 +71,7 @@ async function listAllTables() {
     // Display results grouped by category
     console.log('📁 Record Tables (Transaction/History)');
     console.log('─'.repeat(50));
-    tableInfo.filter(t => t.name.startsWith('record_')).forEach(table => {
+    tableInfo.filter((t: any) => t.name.startsWith('record_')).forEach(table => {
       if (table.exists) {
         console.log(`  ✅ ${table.name}: ${table.count?.toLocaleString()} records`);
       } else {
@@ -81,7 +81,7 @@ async function listAllTables() {
 
     console.log('\n📁 Data Tables (Master Data)');
     console.log('─'.repeat(50));
-    tableInfo.filter(t => t.name.startsWith('data_')).forEach(table => {
+    tableInfo.filter((t: any) => t.name.startsWith('data_')).forEach(table => {
       if (table.exists) {
         console.log(`  ✅ ${table.name}: ${table.count?.toLocaleString()} records`);
       } else {
@@ -91,7 +91,7 @@ async function listAllTables() {
 
     console.log('\n📁 Other Tables');
     console.log('─'.repeat(50));
-    tableInfo.filter(t => !t.name.startsWith('record_') && !t.name.startsWith('data_')).forEach(table => {
+    tableInfo.filter((t: any) => !t.name.startsWith('record_') && !t.name.startsWith('data_')).forEach(table => {
       if (table.exists) {
         console.log(`  ✅ ${table.name}: ${table.count?.toLocaleString()} records`);
       } else {
@@ -100,7 +100,7 @@ async function listAllTables() {
     });
 
     // Summary
-    const existingTables = tableInfo.filter(t => t.exists);
+    const existingTables = tableInfo.filter((t: any) => t.exists);
     const totalRecords = existingTables.reduce((sum, t) => sum + (t.count || 0), 0);
     
     console.log('\n📊 Summary');

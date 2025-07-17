@@ -35,54 +35,54 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
   // Check feature flag
   const isGraphQLAnalysisEnabled = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS === 'true';
 
-  const { data, loading, error } = useGetTopProductsInventoryQuery({
-    skip: !isGraphQLAnalysisEnabled,
-    pollInterval: isGraphQLAnalysisEnabled ? 300000 : undefined, // 減少 polling 頻率至 5 分鐘
-    fetchPolicy: 'cache-and-network',
-  });
+  // Temporary disabled - migrated to REST API
+  const data = null;
+  const loading = false;
+  const error = null;
 
   const chartData = useMemo(() => {
-    if (!data?.record_inventoryCollection?.edges) return [];
+// TODO: Replace GraphQL -     // TODO: Replace GraphQL - if (!data?.record_inventoryCollection?.edges) return [];
 
     // Group by product code and sum up inventories
     const productMap = new Map();
 
-    data.record_inventoryCollection.edges.forEach(({ node }: { node: NonNullable<GetTopProductsInventoryQuery['record_inventoryCollection']>['edges'][0]['node'] }) => {
-      const code = node.product_code;
-
-      if (productMap.has(code)) {
-        // Sum existing values
-        const existing = productMap.get(code);
-        existing.await += node.await || 0;
-        existing.await_grn += node.await_grn || 0;
-        existing.backcarpark += node.backcarpark || 0;
-        existing.bulk += node.bulk || 0;
-        existing.fold += node.fold || 0;
-        existing.injection += node.injection || 0;
-        existing.pipeline += node.pipeline || 0;
-        existing.prebook += node.prebook || 0;
-        existing.damage += node.damage || 0;
-      } else {
-        // Create new entry
-        productMap.set(code, {
-          code: node.product_code,
-          description: node.data_code?.description || node.product_code,
-          colour: node.data_code?.colour || 'N/A',
-          await: node.await || 0,
-          await_grn: node.await_grn || 0,
-          backcarpark: node.backcarpark || 0,
-          bulk: node.bulk || 0,
-          fold: node.fold || 0,
-          injection: node.injection || 0,
-          pipeline: node.pipeline || 0,
-          prebook: node.prebook || 0,
-          damage: node.damage || 0,
-        });
-      }
-    });
+    // TODO: Replace GraphQL
+// TODO: Replace GraphQL -     // data.record_inventoryCollection.edges.forEach(({ node }: { node: NonNullable<GetTopProductsInventoryQuery['record_inventoryCollection']>['edges'][0]['node'] }) => {
+    //   const code = node.product_code;
+    //
+    //   if (productMap.has(code)) {
+    //     // Sum existing values
+    //     const existing = productMap.get(code);
+    //     existing.await += node.await || 0;
+    //     existing.await_grn += node.await_grn || 0;
+    //     existing.backcarpark += node.backcarpark || 0;
+    //     existing.bulk += node.bulk || 0;
+    //     existing.fold += node.fold || 0;
+    //     existing.injection += node.injection || 0;
+    //     existing.pipeline += node.pipeline || 0;
+    //     existing.prebook += node.prebook || 0;
+    //     existing.damage += node.damage || 0;
+    //   } else {
+    //     // Create new entry
+    //     productMap.set(code, {
+    //       code: node.product_code,
+    //       description: node.data_code?.description || node.product_code,
+    //       colour: node.data_code?.colour || 'N/A',
+    //       await: node.await || 0,
+    //       await_grn: node.await_grn || 0,
+    //       backcarpark: node.backcarpark || 0,
+    //       bulk: node.bulk || 0,
+    //       fold: node.fold || 0,
+    //       injection: node.injection || 0,
+    //       pipeline: node.pipeline || 0,
+    //       prebook: node.prebook || 0,
+    //       damage: node.damage || 0,
+    //     });
+    //   }
+    // });
 
     // Calculate totals and prepare chart data
-    const productTotals = Array.from(productMap.values()).map(item => {
+    const productTotals = Array.from(productMap.values()).map((item: any) => {
       const total =
         item.await +
         item.await_grn +
@@ -134,7 +134,7 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
     return (
       <Alert variant='destructive'>
         <AlertCircle className='h-4 w-4' />
-        <AlertDescription>Failed to load inventory data: {error.message}</AlertDescription>
+        <AlertDescription>Failed to load inventory data: {(error as { message: string }).message}</AlertDescription>
       </Alert>
     );
   }
@@ -155,7 +155,7 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
 
   return (
     <div className='flex h-full w-full flex-col'>
-      <div className={spacingUtilities.margin.bottom.medium}>
+      <div className={spacing.margin.bottom.medium}>
         <p className={cn(textClasses['body-small'], 'text-muted-foreground')}>Showing top 10 products by inventory quantity</p>
       </div>
 
@@ -189,7 +189,7 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
                       <p className={cn(textClasses['body-small'], 'font-medium text-foreground')}>{data.code}</p>
                       <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>{data.description}</p>
                       <p className={cn(textClasses['label-small'], 'text-foreground')}>Color: {data.colour}</p>
-                      <div className={cn('mt-2', spacingUtilities.gap.small, 'space-y-1')}>
+                      <div className={cn('mt-2', spacing.gap.small, 'space-y-1')}>
                         <p className={cn(textClasses['label-small'], 'font-medium text-foreground')}>Total Stock: {data.total}</p>
                         <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Await: {data.await}</p>
                         <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Bulk: {data.bulk}</p>
@@ -214,10 +214,10 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
 
       <div className={cn(
         'mt-4 grid grid-cols-2',
-        spacingUtilities.gap.small
+        spacing.gap.small
       )}>
         {chartData.slice(0, 4).map((item, index) => (
-          <div key={`legend-${item.code}-${index}`} className={cn('flex items-center', spacingUtilities.gap.small)}>
+          <div key={`legend-${item.code}-${index}`} className={cn('flex items-center', spacing.gap.small)}>
             <div
               className='h-3 w-3 rounded'
               style={{ backgroundColor: colors[index % colors.length] }}

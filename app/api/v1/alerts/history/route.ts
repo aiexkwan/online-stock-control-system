@@ -41,7 +41,7 @@ const QueryAlertHistorySchema = z.object({
  * GET /api/v1/alerts/history
  * 查詢告警歷史
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { searchParams } = new URL(request.url);
     const queryParams = Object.fromEntries(searchParams);
@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Internal server error'
+      error: error instanceof Error ? (error as { message: string }).message : 'Internal server error'
     }, { status: 500 });
   }
 }
@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
  * GET /api/v1/alerts/history/stats
  * 獲取告警統計
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const manager = await getAlertStateManager();
     const stats = await manager.getAlertStats();
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
     console.error('Failed to get alert stats:', error);
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Internal server error'
+      error: error instanceof Error ? (error as { message: string }).message : 'Internal server error'
     }, { status: 500 });
   }
 }

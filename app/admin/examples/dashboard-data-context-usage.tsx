@@ -38,7 +38,7 @@ function DashboardOverview() {
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          Error loading dashboard data: {error.message}
+          Error loading dashboard data: {(error as { message: string }).message}
         </AlertDescription>
       </Alert>
     );
@@ -118,7 +118,7 @@ function StockDistributionWidget() {
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          Error loading stock distribution: {error.message}
+          Error loading stock distribution: {(error as { message: string }).message}
         </AlertDescription>
       </Alert>
     );
@@ -272,7 +272,7 @@ export function ExistingWidgetWithContext() {
                 <div key={order.id} className="flex justify-between">
                   <span>{order.orderNumber}</span>
                   <span className="text-sm text-muted-foreground">
-                    {order.status}
+                    {(order as { status: string }).status}
                   </span>
                 </div>
               ))}

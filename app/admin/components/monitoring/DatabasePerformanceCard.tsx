@@ -163,15 +163,15 @@ export default function DatabasePerformanceCard({ data, compact = false, onRefre
               <Database className="h-4 w-4" />
               <span>Database</span>
             </div>
-            {getStatusIcon(data.status)}
+            {getStatusIcon((data as { status: string }).status)}
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-2">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm">Status</span>
-              <Badge variant={getStatusVariant(data.status)}>
-                {data.status}
+              <Badge variant={getStatusVariant((data as { status: string }).status)}>
+                {(data as { status: string }).status}
               </Badge>
             </div>
             <div className="flex items-center justify-between">
@@ -201,9 +201,9 @@ export default function DatabasePerformanceCard({ data, compact = false, onRefre
             <span>Database Performance</span>
           </div>
           <div className="flex items-center space-x-2">
-            <Badge variant={getStatusVariant(data.status)}>
-              {getStatusIcon(data.status)}
-              <span className="ml-1 capitalize">{data.status}</span>
+            <Badge variant={getStatusVariant((data as { status: string }).status)}>
+              {getStatusIcon((data as { status: string }).status)}
+              <span className="ml-1 capitalize">{(data as { status: string }).status}</span>
             </Badge>
             {onRefresh && (
               <Button variant="outline" size="sm" onClick={onRefresh}>

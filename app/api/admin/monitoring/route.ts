@@ -8,7 +8,7 @@ import { NextResponse } from 'next/server';
 /**
  * 獲取統一監控數據
  */
-export async function GET(request: Request) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const startTime = Date.now();
   
   try {
@@ -158,7 +158,7 @@ export async function GET(request: Request) {
           
           // 資料庫性能數據
           databasePerformance: cacheData ? {
-            status: cacheData.status === 'healthy' ? 'healthy' : 'degraded',
+            status: (cacheData as { status: string }).status === 'healthy' ? 'healthy' : 'degraded',
             timestamp: cacheData.timestamp,
             connectionInfo: {
               activeConnections: 25,
@@ -250,7 +250,7 @@ export async function GET(request: Request) {
       status: 'error',
       timestamp: new Date().toISOString(),
       responseTime: `${responseTime}ms`,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
       message: 'Failed to retrieve monitoring data'
     }, {
       status: 500
@@ -261,7 +261,7 @@ export async function GET(request: Request) {
 /**
  * 更新監控配置
  */
-export async function POST(request: Request) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const body = await request.json();
     const { type, config } = body;
@@ -299,7 +299,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       status: 'error',
       message: 'Failed to update configuration',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error'
     }, {
       status: 500
     });
@@ -309,7 +309,7 @@ export async function POST(request: Request) {
 /**
  * 告警操作 (acknowledge, resolve, delete)
  */
-export async function PUT(request: Request) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const body = await request.json();
     const { alertId, action, userId } = body;
@@ -346,7 +346,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({
       status: 'error',
       message: 'Failed to perform alert action',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error'
     }, {
       status: 500
     });

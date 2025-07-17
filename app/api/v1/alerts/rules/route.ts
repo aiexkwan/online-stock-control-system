@@ -75,7 +75,7 @@ const QueryAlertRulesSchema = z.object({
  * GET /api/v1/alerts/rules
  * 查詢告警規則
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { searchParams } = new URL(request.url);
     const queryParams = Object.fromEntries(searchParams);
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
     console.error('Failed to get alert rules:', error);
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Internal server error'
+      error: error instanceof Error ? (error as { message: string }).message : 'Internal server error'
     }, { status: 500 });
   }
 }
@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
  * POST /api/v1/alerts/rules
  * 創建告警規則
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const body = await request.json();
     const validated = CreateAlertRuleSchema.parse(body);
@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Internal server error'
+      error: error instanceof Error ? (error as { message: string }).message : 'Internal server error'
     }, { status: 500 });
   }
 }

@@ -27,28 +27,28 @@ export class AlertSystemInitializer {
       console.log('Creating database schema...');
       const schemaResult = await this.configManager.createDatabaseSchema();
       if (!schemaResult.success) {
-        throw new Error(`Database schema creation failed: ${schemaResult.message}`);
+        throw new Error(`Database schema creation failed: ${(schemaResult as { message: string }).message}`);
       }
 
       // 2. 初始化預設規則
       console.log('Initializing default alert rules...');
       const rulesResult = await this.configManager.initializeDefaultRules();
       if (!rulesResult.success) {
-        throw new Error(`Default rules initialization failed: ${rulesResult.message}`);
+        throw new Error(`Default rules initialization failed: ${(rulesResult as { message: string }).message}`);
       }
 
       // 3. 初始化通知模板
       console.log('Initializing notification templates...');
       const templatesResult = await this.configManager.initializeDefaultTemplates();
       if (!templatesResult.success) {
-        throw new Error(`Templates initialization failed: ${templatesResult.message}`);
+        throw new Error(`Templates initialization failed: ${(templatesResult as { message: string }).message}`);
       }
 
       // 4. 啟動監控服務
       console.log('Starting monitoring service...');
       const monitoringResult = await this.monitoringService.start();
       if (!monitoringResult.success) {
-        throw new Error(`Monitoring service failed to start: ${monitoringResult.message}`);
+        throw new Error(`Monitoring service failed to start: ${(monitoringResult as { message: string }).message}`);
       }
 
       console.log('Alert System initialized successfully');
@@ -68,7 +68,7 @@ export class AlertSystemInitializer {
       return {
         success: false,
         message: 'Failed to initialize alert system',
-        errors: [error.message]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
       };
     }
   }
@@ -83,7 +83,7 @@ export class AlertSystemInitializer {
       // 停止監控服務
       const result = await this.monitoringService.stop();
       if (!result.success) {
-        throw new Error(`Failed to stop monitoring service: ${result.message}`);
+        throw new Error(`Failed to stop monitoring service: ${(result as { message: string }).message}`);
       }
 
       console.log('Alert System shutdown successfully');
@@ -97,7 +97,7 @@ export class AlertSystemInitializer {
       return {
         success: false,
         message: 'Failed to shutdown alert system',
-        errors: [error.message]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
       };
     }
   }
@@ -119,7 +119,7 @@ export class AlertSystemInitializer {
       return {
         success: false,
         message: 'Failed to reset alert system',
-        errors: [error.message]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
       };
     }
   }
@@ -142,7 +142,7 @@ export class AlertSystemInitializer {
     } catch (error) {
       console.error('Failed to get system status:', error);
       return {
-        error: error.message,
+        error: error instanceof Error ? (error as { message: string }).message : String(error),
         lastCheck: new Date().toISOString()
       };
     }

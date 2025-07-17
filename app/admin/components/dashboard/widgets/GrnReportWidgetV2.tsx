@@ -72,7 +72,7 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
     onError: error => {
       toast({
         title: 'Error',
-        description: error.message,
+        description: (error as { message: string }).message,
         variant: 'destructive',
       });
     },
@@ -132,7 +132,7 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
   // Fetch GRN references when component mounts
   useEffect(() => {
     fetchGrnRefs();
-  }, [fetchGrnRefs]);
+  }, [fetchGrnRefs as string]);
 
   const handleDownload = async () => {
     if (!selectedGrnRef) {
@@ -193,7 +193,7 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
           params: {
             dataSource: 'grn_report_data',
             staticValue: selectedGrnRef,
-            productCodes: [materialCode],
+            productCodes: [materialCode as string],
           },
         });
 
@@ -236,7 +236,7 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
 
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to generate report',
+        description: error instanceof Error ? (error as { message: string }).message : 'Failed to generate report',
         variant: 'destructive',
       });
     }
@@ -541,13 +541,13 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
 
       // Send to print service
       const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const blob = new Blob([pdfBytes as string], { type: 'application/pdf' });
       await printReport(blob, `GRN_${selectedGrnRef}_${materialCodes[0]}`);
     } catch (error) {
       console.error('[GrnReportWidgetV2] Print error:', error);
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to print report',
+        description: error instanceof Error ? (error as { message: string }).message : 'Failed to print report',
         variant: 'destructive',
       });
     }
@@ -566,11 +566,11 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
         <p className={cn('mt-0.5', textClasses['label-small'], 'text-muted-foreground')}>{description || 'GRN Report'}</p>
       </div>
       <div className={cn('min-h-0 flex-1 overflow-visible', widgetSpacing.container)}>
-        <div className={cn('flex h-full items-center', spacingUtilities.gap.small)}>
+        <div className={cn('flex h-full items-center', theme.spacing.gap.small)}>
           <div className='flex-1'>
             <Select
               value={selectedGrnRef}
-              onValueChange={setSelectedGrnRef}
+              onChange={(e) => setSelectedGrnRef(e.target.value)}
               disabled={grnRefs.length === 0}
             >
               <SelectTrigger
@@ -587,7 +587,7 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
                 />
               </SelectTrigger>
               <SelectContent className={cn('border-border bg-card')}>
-                {grnRefs.map(ref => (
+                {grnRefs.map((ref: any) => (
                   <SelectItem key={ref} value={ref} className={cn(
                     'text-foreground hover:bg-accent',
                     textClasses['body-small']

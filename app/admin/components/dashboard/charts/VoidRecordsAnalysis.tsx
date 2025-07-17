@@ -115,7 +115,7 @@ export default function VoidRecordsAnalysis({ timeFrame }: VoidRecordsAnalysisPr
   }
 
   if (isError) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to load void records';
+    const errorMessage = error instanceof Error ? (error as { message: string }).message : 'Failed to load void records';
     return (
       <Alert variant='destructive'>
         <AlertCircle className='h-4 w-4' />

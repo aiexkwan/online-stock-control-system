@@ -59,7 +59,7 @@ export const TransactionReportWidget = function TransactionReportWidget({
       showSuccess('Report processed successfully');
     },
     onError: error => {
-      showError(error.message);
+      showError((error as { message: string }).message);
     },
   });
 
@@ -72,7 +72,7 @@ export const TransactionReportWidget = function TransactionReportWidget({
         left: rect.left,
       });
     }
-  }, [isCalendarOpen]);
+  }, [isCalendarOpen as string]);
 
   const handleDownload = async () => {
     if (downloadStatus !== 'idle') return;
@@ -140,7 +140,7 @@ export const TransactionReportWidget = function TransactionReportWidget({
       setDownloadStatus('idle');
       setProgress(0);
 
-      showError(error instanceof Error ? error.message : 'Failed to generate report');
+      showError(error instanceof Error ? (error as { message: string }).message : 'Failed to generate report');
     }
   };
 

@@ -6,7 +6,7 @@ import { NextRequest } from 'next/server';
  * 優化的倉庫摘要 API - v1.8 性能優化
  * 使用 Redis 緩存 + RPC 函數實現 85%+ 性能提升
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const startTime = Date.now();
   
   try {
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: false,
       error: 'Failed to fetch warehouse summary',
-      message: error instanceof Error ? error.message : 'Internal server error',
+      message: error instanceof Error ? (error as { message: string }).message : 'Internal server error',
       metadata: {
         responseTime: `${responseTime}ms`,
         timestamp: new Date().toISOString(),

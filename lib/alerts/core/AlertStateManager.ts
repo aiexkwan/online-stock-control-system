@@ -220,7 +220,7 @@ export class AlertStateManager {
       return {
         success: false,
         message: 'Failed to update alert state',
-        errors: [error.message]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
       };
     }
   }
@@ -324,7 +324,7 @@ export class AlertStateManager {
 
       if (error) throw error;
 
-      return data?.map(item => this.deserializeAlert(item)) || [];
+      return data?.map((item: any) => this.deserializeAlert(item)) || [];
     } catch (error) {
       console.error('Failed to query alerts:', error);
       return [];
@@ -407,11 +407,11 @@ export class AlertStateManager {
           processed++;
         } else {
           failed++;
-          errors.push(`${alertId}: ${result.message}`);
+          errors.push(`${alertId}: ${(result as { message: string }).message}`);
         }
       } catch (error) {
         failed++;
-        errors.push(`${alertId}: ${error.message}`);
+        errors.push(`${alertId}: ${error instanceof Error ? (error as { message: string }).message : String(error)}`);
       }
     }
 
@@ -466,7 +466,7 @@ export class AlertStateManager {
       return {
         success: false,
         message: 'Failed to create suppression',
-        errors: [error.message]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
       };
     }
   }
@@ -534,7 +534,7 @@ export class AlertStateManager {
         success: false,
         processed: 0,
         failed: 1,
-        errors: [error.message]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
       };
     }
   }
@@ -604,7 +604,7 @@ export class AlertStateManager {
       rule_name: alert.ruleName,
       level: alert.level,
       state: alert.state,
-      message: alert.message,
+      message: (alert as { message: string }).message,
       value: alert.value,
       threshold: alert.threshold,
       triggered_at: alert.triggeredAt.toISOString(),
@@ -627,7 +627,7 @@ export class AlertStateManager {
       ruleName: data.rule_name,
       level: data.level,
       state: data.state,
-      message: data.message,
+      message: (data as { message: string }).message,
       value: data.value,
       threshold: data.threshold,
       triggeredAt: new Date(data.triggered_at),
