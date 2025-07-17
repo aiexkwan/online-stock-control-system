@@ -122,13 +122,17 @@ export interface BatchPrintRequest {
 export interface BatchPrintOptions {
   parallel?: boolean;
   stopOnError?: boolean;
+  groupByType?: boolean;
 }
 
 export interface PrintJobStatus {
   jobId: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: 'queued' | 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
   progress?: number;
   message?: string;
+  startedAt?: string;
+  completedAt?: string;
+  error?: string;
   groupByType?: boolean;
 }
 

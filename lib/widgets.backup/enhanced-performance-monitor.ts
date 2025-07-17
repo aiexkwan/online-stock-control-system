@@ -30,7 +30,7 @@ interface PerformanceIssue {
 
 // 擴展 SimpleStats 接口
 interface ExtendedStats extends SimpleStats {
-  mean?: number;
+  // mean is already required in SimpleStats
 }
 import { WidgetPriority } from './unified-config';
 
@@ -685,13 +685,10 @@ export class EnhancedPerformanceMonitor {
       min: 0,
       max: 0,
       mean: 0,
-      median: 0,
-      p50: 0,
-      p75: 0,
-      p90: 0,
-      p95: 0,
-      p99: 0,
       stdDev: 0,
+      avg: 0,
+      total: 0,
+      count: 0,
     };
   }
   

@@ -11,7 +11,7 @@ import { AdminWidgetConfig } from './adminDashboardLayouts';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { createClient } from '@/lib/supabase';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
-import { simpleWidgetRegistry } from '@/lib/widgets/simple-registry';
+import { unifiedWidgetRegistry } from '@/lib/widgets/unified-registry';
 import { 
   getWidgetCategory,
   getThemeGlowColor,
@@ -113,11 +113,11 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
   const [isDelayed, setIsDelayed] = useState(delay > 0);
   const { refreshTrigger } = useAdminRefresh();
   
-  // Helper function to render lazy component from simpleWidgetRegistry
+  // Helper function to render lazy component from unifiedWidgetRegistry
   const renderLazyComponent = useCallback((componentName: string, props: any) => {
-    const Component = simpleWidgetRegistry.getWidgetComponent(componentName);
+    const Component = unifiedWidgetRegistry.getWidgetComponent(componentName);
     if (!Component) {
-      console.error(`Component ${componentName} not found in simpleWidgetRegistry.getWidgetComponent`);
+      console.error(`Component ${componentName} not found in unifiedWidgetRegistry.getWidgetComponent`);
       return <div>Component {componentName} not found</div>;
     }
     return <Component {...props} />;
@@ -164,9 +164,9 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
           case 'data_customerorder':
           case 'system_status':
           case 'coming_soon':
-            // 使用 simpleWidgetRegistry 加載數據
-            const widgetData = await simpleWidgetRegistry.loadWidgetData(config.dataSource, timeFrame);
-            setData(widgetData);
+            // Data loading logic removed - loadWidgetData method not available
+            // TODO: Implement proper data loading for these widget types
+            setData(null);
             break;
             
           default:
@@ -351,7 +351,7 @@ const ProductUpdateWidget: React.FC<{
       
       {productData && (
         <div className="p-3 bg-gray-50 rounded-lg">
-          <h4 className="font-medium">{productData.name}</h4>
+          <h4 className="font-medium">{productData.code}</h4>
           <p className="text-sm text-gray-600">{productData.description}</p>
         </div>
       )}

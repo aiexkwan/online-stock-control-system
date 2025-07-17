@@ -1,4 +1,4 @@
-import { widgetRegistry, preloader as smartPreloader } from '../lib/widgets/unified-registry';
+import { widgetRegistry } from '../lib/widgets/unified-registry';
 import { WidgetDefinition } from '../lib/widgets/types';
 
 async function runTests() {
@@ -10,8 +10,7 @@ async function runTests() {
   // Test 1: Widget Categorization
   console.log('1️⃣ Testing Widget Categorization (getWidgetsByCategory)');
   try {
-    // Auto-register widgets first
-    await widgetRegistry.autoRegisterWidgets();
+    // Widget registry auto-initializes from config
     
     const categories = widgetRegistry.getCategories();
     const categorizedWidgets: Record<string, WidgetDefinition[]> = {};
@@ -42,31 +41,17 @@ async function runTests() {
     console.error(`   Error: ${error}\n`);
   }
 
-  // Test 2: Network-Aware Loading
-  console.log('2️⃣ Testing Network-Aware Loading (smartPreloader)');
+  // Test 2: Preload Widgets
+  console.log('2️⃣ Testing Widget Preloading');
   try {
-    // Check if smartPreloader is exported
-    if (!smartPreloader) {
-      throw new Error('smartPreloader is not exported');
-    }
-    
-    console.log('   ✅ smartPreloader is properly exported');
-    
-    // Check if preloadForRoute method exists
-    if (typeof smartPreloader.preloadForRoute !== 'function') {
-      throw new Error('preloadForRoute method not found');
-    }
-    
-    console.log('   ✅ preloadForRoute method exists');
-    
-    // Test calling preloadForRoute
-    await smartPreloader.preloadForRoute('/admin/warehouse');
-    console.log('   ✅ preloadForRoute executed successfully');
+    // Test preloading high priority widgets
+    await widgetRegistry.preloadWidgets(['AwaitLocationQtyWidget', 'YesterdayTransferCountWidget']);
+    console.log('   ✅ preloadWidgets executed successfully');
     
     test2Passed = true;
-    console.log('   ✅ Network-Aware Loading: PASSED\n');
+    console.log('   ✅ Widget Preloading: PASSED\n');
   } catch (error) {
-    console.error('   ❌ Network-Aware Loading: FAILED');
+    console.error('   ❌ Widget Preloading: FAILED');
     console.error(`   Error: ${error}\n`);
   }
 
@@ -74,7 +59,7 @@ async function runTests() {
   console.log('═══════════════════════════════════════════');
   console.log('📊 Test Summary:');
   console.log(`   1. Widget Categorization: ${test1Passed ? '✅ FIXED' : '❌ FAILED'}`);
-  console.log(`   2. Network-Aware Loading: ${test2Passed ? '✅ FIXED' : '❌ FAILED'}`);
+  console.log(`   2. Widget Preloading: ${test2Passed ? '✅ FIXED' : '❌ FAILED'}`);
   console.log(`   Overall: ${test1Passed && test2Passed ? 'All issues have been resolved!' : 'Some issues remain'}`);
   console.log('═══════════════════════════════════════════');
 }

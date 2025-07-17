@@ -19,7 +19,7 @@ export const waitFor = (ms: number) => new Promise(resolve => setTimeout(resolve
 // Mock Supabase client with enhanced query capabilities
 export const createMockSupabaseClient = () => {
   // Store query state for complex query building
-  const queryState = {
+  const queryState: any = {
     table: '',
     selectColumns: '*',
     filters: [],
@@ -28,6 +28,7 @@ export const createMockSupabaseClient = () => {
     limitValue: null,
     offsetValue: null,
     modifiers: [],
+    data: null, // Add data property for insert/update operations
   };
 
   // Helper to reset query state
@@ -40,6 +41,7 @@ export const createMockSupabaseClient = () => {
     queryState.limitValue = null;
     queryState.offsetValue = null;
     queryState.modifiers = [];
+    queryState.data = null;
   };
 
   // Create chainable query builder

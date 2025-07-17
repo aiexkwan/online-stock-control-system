@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { orderLoadingDataSources } from '@/app/components/reports/dataSources/OrderLoadingDataSource';
-import ExcelJS from 'exceljs';
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+
+import { createJsPDF } from '@/lib/services/unified-pdf-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     if (format === 'pdf') {
       // 生成 PDF
-      const doc = new jsPDF();
+      const doc = await createJsPDF();
       doc.text('Order Loading Report', 14, 15);
       doc.text(`Period: ${body.startDate} to ${body.endDate}`, 14, 25);
 
@@ -61,6 +60,8 @@ export async function POST(request: NextRequest) {
       extension = 'pdf';
     } else {
       // 生成 Excel
+    // Dynamic import ExcelJS
+    const ExcelJS = await import('exceljs');
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Loading Report');
 

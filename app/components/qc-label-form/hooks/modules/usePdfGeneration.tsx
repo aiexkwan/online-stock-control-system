@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
-import { pdf } from '@react-pdf/renderer';
+import { renderReactPDFToBlob, loadPDF } from '@/lib/services/unified-pdf-service';
 import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf';
 import { prepareQcLabelData, mergeAndPrintPdfs, type QcInputData } from '@/lib/pdfUtils';
 import { uploadPdfToStorage, updatePalletPdfUrl } from '@/app/actions/qcActions';
@@ -128,7 +128,7 @@ export const usePdfGeneration = (): UsePdfGenerationReturn => {
 
         // 生成 PDF blob
         const pdfElement = <PrintLabelPdf {...pdfLabelProps} />;
-        const pdfBlob = await pdf(pdfElement).toBlob();
+        const pdfBlob = await renderReactPDFToBlob(pdfElement);
 
         if (!pdfBlob) {
           throw new Error('PDF generation failed to return a blob.');
@@ -313,7 +313,8 @@ export const usePdfGeneration = (): UsePdfGenerationReturn => {
             console.log('[PrintPDF] Using enhanced hardware printing for multiple PDFs');
 
             // First merge PDFs using pdf-lib
-            const { PDFDocument } = await import('pdf-lib');
+            const pdfLib = await import('@/lib/services/unified-pdf-service');
+            const { PDFDocument } = await pdfLib.getPDFLib();
             const mergedPdf = await PDFDocument.create();
 
             for (const pdfBlob of pdfBlobs) {
@@ -393,7 +394,8 @@ export const usePdfGeneration = (): UsePdfGenerationReturn => {
             toast.success('QC label sent to print queue.');
           } else {
             // Multiple PDFs - merge first
-            const { PDFDocument } = await import('pdf-lib');
+            const pdfLib = await import('@/lib/services/unified-pdf-service');
+            const { PDFDocument } = await pdfLib.getPDFLib();
             const mergedPdf = await PDFDocument.create();
 
             for (const pdfBlob of pdfBlobs) {

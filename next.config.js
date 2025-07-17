@@ -6,7 +6,7 @@ const nextConfig = {
     // 忽略構建時的 TypeScript 錯誤
     ignoreBuildErrors: true,
   },
-  serverExternalPackages: ['pdf-parse', 'pdfjs-dist', 'sharp'],
+  serverExternalPackages: ['pdf-parse', 'pdfjs-dist', 'sharp', 'pdfkit', '@react-pdf/renderer'],
   // CSS 優化配置 (優化 CSS 使用率)
   experimental: {
     optimizeCss: true, // 啟用 CSS 優化
@@ -113,6 +113,12 @@ const nextConfig = {
     
     // Note: Removed IgnorePlugin that was potentially causing CSS/JS module conflicts
 
+    // 添加 PDF 優化插件
+    if (!isServer) {
+      const PDFOptimizationPlugin = require('./webpack-pdf-optimization.js');
+      config.plugins.push(new PDFOptimizationPlugin());
+    }
+    
     // 優化 chunk 分割以減少 originalFactory.call 錯誤
     if (!isServer) {
       config.optimization = {
@@ -195,6 +201,18 @@ const nextConfig = {
         canvas: false,
         fs: false,
         path: false,
+        crypto: false,
+        stream: false,
+        buffer: false,
+        util: false,
+        assert: false,
+        process: false,
+      };
+      
+      // 修復 pdfkit resolution 問題
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'pdfkit': require.resolve('./lib/pdf-polyfill.js'),
       };
     }
 
@@ -227,6 +245,7 @@ const nextConfig = {
         // usedExports: true,
         sideEffects: false,
         runtimeChunk: 'single',
+        moduleIds: 'deterministic',
         splitChunks: {
           chunks: 'all',
           maxInitialRequests: 20, // 增加並行請求數
@@ -296,14 +315,43 @@ const nextConfig = {
               enforce: true,
             },
 
-            // PDF 和文檔處理 (解決 Bundle Analyzer 發現的 ExcelJS/PDF 問題)
-            documents: {
-              test: /[\\/]node_modules[\\/](jspdf|pdf-lib|@react-pdf\/renderer|pdf-parse|exceljs)[\\/]/,
-              name: 'documents',
+            // PDF 核心庫 - 統一處理避免重複
+            pdfRenderer: {
+              test: /[\\/]node_modules[\\/]@react-pdf[\\/]/,
+              name: 'pdf-renderer',
               chunks: 'all',
-              priority: 25,
+              priority: 32,
               enforce: true,
-              maxSize: 200000, // 限制 PDF/Excel 庫大小
+              reuseExistingChunk: true,
+            },
+            
+            // PDFKit 相關庫
+            pdfkit: {
+              test: /[\\/]node_modules[\\/](pdfkit|fontkit|png-js|jpeg-js|brotli|@react-pdf)[\\/]/,
+              name: 'pdfkit-core',
+              chunks: 'all',
+              priority: 31,
+              enforce: true,
+              reuseExistingChunk: true,
+            },
+            
+            // Excel 處理
+            excel: {
+              test: /[\\/]node_modules[\\/]exceljs[\\/]/,
+              name: 'excel',
+              chunks: 'async',
+              priority: 28,
+              enforce: true,
+            },
+            
+            // 其他 PDF 庫
+            pdfOthers: {
+              test: /[\\/]node_modules[\\/](jspdf|pdf-lib|pdf-parse|pdf2pic)[\\/]/,
+              name: 'pdf-others',
+              chunks: 'all',
+              priority: 27,
+              enforce: true,
+              maxSize: 150000,
             },
 
             // 工具庫
@@ -318,7 +366,7 @@ const nextConfig = {
 
             // 其他第三方庫 (縮小範圍，排除已分組的庫)
             vendor: {
-              test: /[\\/]node_modules[\\/](?!(@apollo|@supabase|@radix-ui|@tanstack|recharts|chart\.js|framer-motion|jspdf|pdf-lib|exceljs|date-fns|react|react-dom)).*[\\/]/,
+              test: /[\\/]node_modules[\\/](?!(@apollo|@supabase|@radix-ui|@tanstack|@react-pdf|recharts|chart\.js|framer-motion|jspdf|pdf-lib|pdfkit|fontkit|exceljs|date-fns|react|react-dom)).*[\\/]/,
               name: 'vendor',
               chunks: 'initial',
               priority: 10,
@@ -343,12 +391,20 @@ const nextConfig = {
       // 不需要額外的 babel 配置
 
       // 配置 prefetch/preload 插件
-      const { DefinePlugin } = require('webpack');
+      const { DefinePlugin, ProvidePlugin } = require('webpack');
       config.plugins.push(
         new DefinePlugin({
           'process.env.ENABLE_ROUTE_PREFETCH': JSON.stringify(
             process.env.ENABLE_ROUTE_PREFETCH || 'true'
           ),
+        })
+      );
+      
+      // 解決 pdfkit 問題
+      config.plugins.push(
+        new ProvidePlugin({
+          Buffer: ['buffer', 'Buffer'],
+          process: 'process/browser',
         })
       );
     }

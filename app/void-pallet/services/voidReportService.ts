@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase';
 import { jsPDF } from 'jspdf';
-import ExcelJS from 'exceljs';
 import { format } from 'date-fns';
 import { isNotProduction } from '@/lib/utils/env';
 
@@ -467,6 +466,9 @@ export function generateVoidReportPDF(records: VoidRecord[], filters: VoidReport
 
 export async function generateVoidReportExcel(records: VoidRecord[], filters: VoidReportFilters): Promise<Blob> {
   try {
+    // Dynamic import ExcelJS
+    const ExcelJS = await import('exceljs');
+    
     // Create workbook
     const wb = new ExcelJS.Workbook();
 

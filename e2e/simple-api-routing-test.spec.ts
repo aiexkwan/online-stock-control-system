@@ -61,7 +61,7 @@ test.describe('API Routing Basic Tests', () => {
         };
       } catch (error) {
         console.error('API Router error:', error);
-        return { error: error.message };
+        return { error: (error as Error).message };
       }
     });
     
@@ -94,9 +94,9 @@ test.describe('API Routing Basic Tests', () => {
           hasComparison: !!comparison,
           monitorWorking: stats.totalRequests === 2,
         };
-      } catch (error) {
+              } catch (error) {
         console.error('API Monitor error:', error);
-        return { error: error.message };
+        return { error: (error as Error).message };
       }
     });
     
@@ -124,7 +124,7 @@ test.describe('API Routing Basic Tests', () => {
         };
       } catch (error) {
         console.error('Feature flag evaluation error:', error);
-        return { error: error.message, testPassed: false };
+        return { error: (error as Error).message, testPassed: false };
       }
     });
     
@@ -144,9 +144,9 @@ test.describe('API Routing Basic Tests', () => {
         
         // 測試不同配置下的路由決策
         const configs = [
-          { userId: 'user1', environment: 'development' },
-          { userId: 'user2', environment: 'development' },
-          { userId: 'user3', environment: 'production' },
+          { userId: 'user1', environment: 'development' as const },
+          { userId: 'user2', environment: 'development' as const },
+          { userId: 'user3', environment: 'production' as const },
         ];
         
         for (const config of configs) {
@@ -170,7 +170,7 @@ test.describe('API Routing Basic Tests', () => {
         };
       } catch (error) {
         console.error('API switching test error:', error);
-        return { error: error.message };
+        return { error: (error as Error).message };
       }
     });
     
@@ -199,7 +199,7 @@ test.describe('API Routing Basic Tests', () => {
         };
       } catch (error) {
         console.error('Unified API client error:', error);
-        return { error: error.message };
+        return { error: (error as Error).message };
       }
     });
     
@@ -226,7 +226,7 @@ test.describe('Performance Baseline Tests', () => {
     // 檢查頁面內容是否正常加載
     const pageContent = await page.textContent('body');
     expect(pageContent).toBeTruthy();
-    expect(pageContent.length).toBeGreaterThan(0);
+    expect(pageContent?.length || 0).toBeGreaterThan(0);
   });
 
   test('should record API routing decisions', async ({ page }) => {
@@ -250,9 +250,9 @@ test.describe('Performance Baseline Tests', () => {
         const { APIRouter } = await import('@/lib/api/api-router');
         
         const testCases = [
-          { userId: 'test1', environment: 'development' },
-          { userId: 'test2', environment: 'development' },
-          { userId: 'test3', environment: 'production' },
+          { userId: 'test1', environment: 'development' as const },
+          { userId: 'test2', environment: 'development' as const },
+          { userId: 'test3', environment: 'production' as const },
         ];
         
         const decisions = [];

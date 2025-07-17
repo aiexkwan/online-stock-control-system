@@ -156,7 +156,7 @@ function generateSchemaDescription(): string {
     for (const [tableName, info] of Object.entries(tables)) {
       description += `- ${tableName}: ${info.description}\n`;
       description += `  Columns: ${info.key_columns.join(', ')}\n`;
-      if (info.notes) {
+      if ('notes' in info && info.notes) {
         description += `  Note: ${info.notes}\n`;
       }
     }

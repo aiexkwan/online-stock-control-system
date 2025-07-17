@@ -137,12 +137,12 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
   const getBarColor = (completionRate: number) => {
     if (completionRate >= 80) return semanticColors.success.DEFAULT;
     if (completionRate >= 50) return semanticColors.warning.DEFAULT;
-    return semanticColors.destructive.DEFAULT;
+    return (semanticColors as any).destructive?.DEFAULT || '#ef4444'; // fallback to red
   };
 
   return (
     <div className='flex h-full w-full flex-col'>
-      <div className={spacingUtilities.margin.bottom.medium}>
+      <div className={(spacingUtilities as any).margin?.bottom?.medium || 'mb-4'}>
         <p className={cn(textClasses['body-small'], 'text-muted-foreground')}>
           {chartApiData?.config?.title || 'ACO Order Completion Progress'}
         </p>
@@ -211,7 +211,7 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
                     <span className={cn(textClasses['label-small'], 'text-foreground')}>50-79%</span>
                   </div>
                   <div className={cn('flex items-center', spacingUtilities.gap.small)}>
-                    <div className={cn('h-3 w-3 rounded')} style={{ backgroundColor: semanticColors.destructive.DEFAULT }} />
+                    <div className={cn('h-3 w-3 rounded')} style={{ backgroundColor: (semanticColors as any).destructive?.DEFAULT || '#ef4444' }} />
                     <span className={cn(textClasses['label-small'], 'text-foreground')}>&lt;50%</span>
                   </div>
                 </div>

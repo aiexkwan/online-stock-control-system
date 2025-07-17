@@ -255,13 +255,13 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
           }
           
           // Transform data to match widget expectations
-          const records = awaitInventory?.map(item => ({
+          const records = awaitInventory?.map((item: any) => ({
             location: 'AWAIT',
             quantity: item.await || 0,
             product_code: item.product_code
           })) || [];
           
-          const totalQuantity = records.reduce((sum, record) => sum + record.quantity, 0);
+          const totalQuantity = records.reduce((sum: number, record: any) => sum + record.quantity, 0);
           
           return {
             records,

@@ -298,7 +298,8 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
       console.log('[GrnReportWidgetV2] Report data received:', reportData);
 
       // Generate a proper PDF from the GRN report data
-      const { PDFDocument, rgb, StandardFonts } = await import('pdf-lib');
+      const pdfLib = await import('@/lib/services/unified-pdf-service');
+      const { PDFDocument, rgb, StandardFonts } = await pdfLib.getPDFLib();
       const pdfDoc = await PDFDocument.create();
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);

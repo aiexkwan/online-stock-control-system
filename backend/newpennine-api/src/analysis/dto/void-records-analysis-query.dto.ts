@@ -16,7 +16,7 @@ export class VoidRecordsAnalysisQueryDto {
   })
   @IsOptional()
   @IsDateString()
-  startDate?: string;
+  startDate?: string = undefined;
 
   @ApiProperty({
     description: 'End date for analysis (ISO 8601 format)',
@@ -25,7 +25,7 @@ export class VoidRecordsAnalysisQueryDto {
   })
   @IsOptional()
   @IsDateString()
-  endDate?: string;
+  endDate?: string = undefined;
 
   @ApiProperty({
     description: 'Product codes to filter by',
@@ -42,7 +42,7 @@ export class VoidRecordsAnalysisQueryDto {
     }
     return value;
   })
-  productCodes?: string[];
+  productCodes?: string[] = undefined;
 
   @ApiProperty({
     description: 'Void reasons to filter by',
@@ -59,7 +59,7 @@ export class VoidRecordsAnalysisQueryDto {
     }
     return value;
   })
-  reasons?: string[];
+  reasons?: string[] = undefined;
 
   @ApiProperty({
     description: 'Group by time period for trend analysis',
@@ -69,7 +69,7 @@ export class VoidRecordsAnalysisQueryDto {
   })
   @IsOptional()
   @IsIn(['day', 'week', 'month'])
-  groupBy?: 'day' | 'week' | 'month';
+  groupBy?: 'day' | 'week' | 'month' = undefined;
 
   @ApiProperty({
     description: 'Limit number of results for top products',
@@ -78,5 +78,5 @@ export class VoidRecordsAnalysisQueryDto {
   })
   @IsOptional()
   @Transform(({ value }) => parseInt(value, 10))
-  topProductsLimit?: number;
+  topProductsLimit?: number = undefined;
 }

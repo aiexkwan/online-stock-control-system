@@ -3,12 +3,17 @@
  * 測試實際的服務器端預取邏輯
  */
 
-import { createClient } from '@/app/utils/supabase/server';
+import { createClient } from '../../utils/supabase/server';
 import { cookies } from 'next/headers';
 
 // Mock Supabase server client
-jest.mock('@/app/utils/supabase/server', () => ({
-  createClient: jest.fn(),
+jest.mock('../../utils/supabase/server', () => ({
+  createClient: jest.fn(() => ({
+    from: jest.fn(() => ({
+      select: jest.fn(() => Promise.resolve({ data: [], error: null, count: 0 })),
+    })),
+    rpc: jest.fn(() => Promise.resolve({ data: [], error: null })),
+  })),
 }));
 
 // Mock Next.js cookies
@@ -21,7 +26,7 @@ async function serverPrefetchCriticalWidgets(dateRange: {
   startDate: Date | null;
   endDate: Date | null;
 }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const results: Record<string, any> = {};
 
   try {

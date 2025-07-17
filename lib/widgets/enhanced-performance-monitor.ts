@@ -30,7 +30,7 @@ interface PerformanceIssue {
 
 // 擴展 SimpleStats 接口
 interface ExtendedStats extends SimpleStats {
-  mean?: number;
+  // mean is already included in SimpleStats
 }
 import { WidgetPriority } from './unified-config';
 
@@ -218,10 +218,8 @@ export class EnhancedPerformanceMonitor {
     });
     
     // Get total requests from base monitor
-    const report = this.baseMonitor.getWidgetReport(widgetId, timeRange);
-    const totalRequests = 
-      (report.v2Performance?.sampleCount || 0) + 
-      (report.legacyPerformance?.sampleCount || 0);
+    const widgetReport = this.baseMonitor.getWidgetReport(widgetId);
+    const totalRequests = widgetReport.v2Performance?.sampleCount || 0;
     
     return totalRequests > 0 ? errors.length / totalRequests : 0;
   }
@@ -300,8 +298,8 @@ export class EnhancedPerformanceMonitor {
     variant: string,
     timeRange: { start: Date; end: Date }
   ): VariantMetrics {
-    const report = this.baseMonitor.getWidgetReport(widgetId, timeRange);
-    const variantPerf = variant === 'v2' ? report.v2Performance : report.legacyPerformance;
+    const report = this.baseMonitor.getWidgetReport(widgetId);
+    const variantPerf = report?.v2Performance;
     
     return {
       sampleSize: variantPerf?.sampleCount || 0,
@@ -326,8 +324,8 @@ export class EnhancedPerformanceMonitor {
     test: VariantMetrics
   ): ABTestResults['analysis'] {
     // Simple t-test for load time difference
-    const controlMean = control.performance.loadTime.mean;
-    const testMean = test.performance.loadTime.mean;
+    const controlMean = control.performance.loadTime.avg;
+    const testMean = test.performance.loadTime.avg;
     const improvement = ((controlMean - testMean) / controlMean) * 100;
     
     // Simplified significance calculation
@@ -431,14 +429,20 @@ export class EnhancedPerformanceMonitor {
     const widgetIds = new Set<string>();
     const realtimeData = this.baseMonitor.getRealtimeMetrics();
     
-    // This is a simplified implementation
-    // In production, you'd get all widget IDs from the registry
+    // Extract widget IDs from metrics
+    const allMetrics = this.baseMonitor.getMetrics();
+    allMetrics.forEach(metric => {
+      if (metric.name.includes('_loadTime')) {
+        widgetIds.add(metric.name.replace('_loadTime', ''));
+      }
+    });
+    
     return Array.from(widgetIds).map(widgetId => {
-      const report = this.baseMonitor.getWidgetReport(widgetId, timeRange);
+      const report = this.baseMonitor.getWidgetReport(widgetId);
       const errorRate = this.getErrorRate(widgetId, timeRange);
       
-      const avgLoadTime = report.v2Performance?.loadTime.mean || 0;
-      const avgRenderTime = report.v2Performance?.renderTime.mean || 0;
+      const avgLoadTime = report?.v2Performance?.loadTime.avg || 0;
+      const avgRenderTime = report?.v2Performance?.renderTime.avg || 0;
       
       return {
         widgetId,
@@ -446,7 +450,7 @@ export class EnhancedPerformanceMonitor {
           loadTime: avgLoadTime,
           renderTime: avgRenderTime,
           errorRate,
-          sampleSize: report.v2Performance?.sampleCount || 0,
+          sampleSize: report?.v2Performance?.sampleCount || 0,
         },
         trend: this.determineTrend(widgetId, timeRange),
         score: this.calculatePerformanceScore(avgLoadTime, avgRenderTime, errorRate),
@@ -658,9 +662,9 @@ export class EnhancedPerformanceMonitor {
     const report = this.baseMonitor.getWidgetReport(widgetId);
     const anomalies: PerformanceIssue[] = [];
     
-    if (!report.v2Performance) return anomalies;
+    if (!report?.v2Performance) return anomalies;
     
-    const stats = report.v2Performance.loadTime;
+    const stats: SimpleStats = report.v2Performance.loadTime;
     const threshold = stats.mean + (stats.stdDev * sensitivity);
     
     // Check for outliers
@@ -680,18 +684,13 @@ export class EnhancedPerformanceMonitor {
   /**
    * Empty statistical summary helper
    */
-  private emptyStatisticalSummary(): StatisticalSummary {
+  private emptyStatisticalSummary(): any {
     return {
-      min: 0,
+      avg: 0,
       max: 0,
-      mean: 0,
-      median: 0,
-      p50: 0,
-      p75: 0,
-      p90: 0,
-      p95: 0,
-      p99: 0,
-      stdDev: 0,
+      min: 0,
+      count: 0,
+      total: 0,
     };
   }
   

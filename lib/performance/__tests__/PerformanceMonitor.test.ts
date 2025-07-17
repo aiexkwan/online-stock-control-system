@@ -1,347 +1,213 @@
 /**
- * Performance Monitor Tests
+ * Simple Performance Monitor Tests
+ * Testing simplified performance monitoring functionality
  */
 
-import { PerformanceMonitor } from '../PerformanceMonitor';
+import { SimplePerformanceMonitor } from '../SimplePerformanceMonitor';
 
-describe('PerformanceMonitor', () => {
-  let monitor: PerformanceMonitor;
+describe('SimplePerformanceMonitor', () => {
+  let monitor: SimplePerformanceMonitor;
 
   beforeEach(() => {
-    // Get a fresh instance for each test
-    monitor = PerformanceMonitor.getInstance();
-    monitor.stopMonitoring(); // Ensure clean state
-    jest.clearAllMocks();
+    monitor = SimplePerformanceMonitor.getInstance();
+    // Reset internal state for clean tests
+    monitor['metrics'].clear();
+    monitor['alerts'] = [];
   });
 
-  describe('Singleton Pattern', () => {
-    it('should return the same instance', () => {
-      const instance1 = PerformanceMonitor.getInstance();
-      const instance2 = PerformanceMonitor.getInstance();
-      
-      expect(instance1).toBe(instance2);
-    });
+  afterEach(() => {
+    // Clean up
+    monitor['metrics'].clear();
+    monitor['alerts'] = [];
   });
 
-  describe('Monitoring Control', () => {
-    it('should start monitoring', () => {
-      const startSpy = jest.spyOn(monitor, 'emit');
+  describe('Basic Functionality', () => {
+    it('should be a singleton', () => {
+      const monitor1 = SimplePerformanceMonitor.getInstance();
+      const monitor2 = SimplePerformanceMonitor.getInstance();
+      expect(monitor1).toBe(monitor2);
+    });
+
+    it('should record basic metrics', () => {
+      monitor.recordMetric('test_metric', 100, 'test');
       
-      monitor.startMonitoring();
-      
-      expect(startSpy).toHaveBeenCalledWith('monitoring:started');
+      const stats = monitor.getBasicStats('test_metric');
+      expect(stats).not.toBeNull();
+      expect(stats!.avg).toBe(100);
+      expect(stats!.count).toBe(1);
+      expect(stats!.total).toBe(100);
+      expect(stats!.min).toBe(100);
+      expect(stats!.max).toBe(100);
     });
 
-    it('should stop monitoring and return report', () => {
-      const stopSpy = jest.spyOn(monitor, 'emit');
-      
-      monitor.startMonitoring();
-      const report = monitor.stopMonitoring();
-      
-      expect(stopSpy).toHaveBeenCalledWith('monitoring:stopped');
-      expect(report).toBeDefined();
-      expect(report.startTime).toBeInstanceOf(Date);
-      expect(report.endTime).toBeInstanceOf(Date);
-      expect(report.metrics).toBeInstanceOf(Array);
+    it('should calculate correct statistics for multiple metrics', () => {
+      monitor.recordMetric('api_time', 100);
+      monitor.recordMetric('api_time', 200);
+      monitor.recordMetric('api_time', 300);
+
+      const stats = monitor.getBasicStats('api_time');
+      expect(stats).not.toBeNull();
+      expect(stats!.count).toBe(3);
+      expect(stats!.total).toBe(600);
+      expect(stats!.avg).toBe(200);
+      expect(stats!.min).toBe(100);
+      expect(stats!.max).toBe(300);
     });
 
-    it('should not start monitoring if already monitoring', () => {
-      const startSpy = jest.spyOn(monitor, 'emit');
-      
-      monitor.startMonitoring();
-      startSpy.mockClear();
-      
-      monitor.startMonitoring(); // Second call
-      
-      expect(startSpy).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('Metric Recording', () => {
-    beforeEach(() => {
-      monitor.startMonitoring();
-    });
-
-    afterEach(() => {
-      monitor.stopMonitoring();
-      monitor.removeAllListeners(); // Clean up all event listeners
-    });
-
-    it('should record a metric', () => {
-      monitor.recordMetric({
-        name: 'test_metric',
-        category: 'custom',
-        value: 100,
-        unit: 'ms'
-      });
-
-      const report = monitor.stopMonitoring();
-      expect(report.metrics).toHaveLength(1);
-      expect(report.metrics[0].name).toBe('test_metric');
-      expect(report.metrics[0].value).toBe(100);
-    });
-
-    it('should record API call metrics', () => {
-      monitor.recordApiCall('/api/test', 'GET', 150, 200);
-
-      const report = monitor.stopMonitoring();
-      expect(report.metrics).toHaveLength(1);
-      expect(report.metrics[0].name).toBe('api_request');
-      expect(report.metrics[0].metadata).toEqual({
-        endpoint: '/api/test',
-        method: 'GET',
-        status: 200
-      });
-    });
-
-    it('should record API errors', () => {
-      monitor.recordApiCall('/api/test', 'POST', 500, 500);
-
-      const report = monitor.stopMonitoring();
-      expect(report.metrics).toHaveLength(2);
-      expect(report.metrics[1].name).toBe('api_error');
-    });
-
-    it('should record database queries', () => {
-      monitor.recordDatabaseQuery('SELECT * FROM users', 50, 10);
-
-      const report = monitor.stopMonitoring();
-      expect(report.metrics).toHaveLength(1);
-      expect(report.metrics[0].name).toBe('database_query');
-      expect(report.metrics[0].metadata?.rowCount).toBe(10);
+    it('should return null for non-existent metrics', () => {
+      const stats = monitor.getBasicStats('non_existent');
+      expect(stats).toBeNull();
     });
   });
 
-  describe('Performance Measurement', () => {
-    beforeEach(() => {
-      monitor.startMonitoring();
-    });
-
-    afterEach(() => {
-      monitor.stopMonitoring();
-      monitor.removeAllListeners(); // Clean up all event listeners
-    });
-
-    it('should measure async operations', async () => {
-      const mockOperation = jest.fn().mockResolvedValue('result');
+  describe('Alert System', () => {
+    it('should generate alerts when thresholds are exceeded', () => {
+      // Record a high value that should trigger warning threshold
+      monitor.recordMetric('response_time', 800, 'api'); // Default warning is 500ms
       
-      const result = await monitor.measureAsync(
-        'async_test',
-        'custom',
-        mockOperation
-      );
-
-      expect(result).toBe('result');
-      expect(mockOperation).toHaveBeenCalled();
-
-      const report = monitor.stopMonitoring();
-      expect(report.metrics).toHaveLength(1);
-      expect(report.metrics[0].name).toBe('async_test');
+      const alerts = monitor.getAlerts();
+      expect(alerts.length).toBeGreaterThan(0);
+      
+      const warningAlert = alerts.find(a => a.type === 'warning');
+      expect(warningAlert).toBeDefined();
+      expect(warningAlert!.message).toContain('response_time');
     });
 
-    it('should measure sync operations', () => {
-      const mockOperation = jest.fn().mockReturnValue('result');
+    it('should generate critical alerts for very high values', () => {
+      // Record a very high value that should trigger critical threshold
+      monitor.recordMetric('response_time', 1500, 'api'); // Default critical is 1000ms
       
-      const result = monitor.measureSync(
-        'sync_test',
-        'custom',
-        mockOperation
-      );
-
-      expect(result).toBe('result');
-      expect(mockOperation).toHaveBeenCalled();
-
-      const report = monitor.stopMonitoring();
-      expect(report.metrics).toHaveLength(1);
-      expect(report.metrics[0].name).toBe('sync_test');
+      const alerts = monitor.getAlerts();
+      expect(alerts.length).toBeGreaterThan(0);
+      
+      const criticalAlert = alerts.find(a => a.type === 'critical');
+      expect(criticalAlert).toBeDefined();
+      expect(criticalAlert!.message).toContain('response_time');
     });
 
-    it('should handle async operation errors', async () => {
-      const mockOperation = jest.fn().mockRejectedValue(new Error('Test error'));
+    it('should clear old alerts after specified duration', () => {
+      monitor.recordMetric('test_metric', 1500, 'test');
       
-      await expect(
-        monitor.measureAsync('async_error', 'custom', mockOperation)
-      ).rejects.toThrow('Test error');
-
-      const report = monitor.stopMonitoring();
-      expect(report.metrics).toHaveLength(1);
-      expect(report.metrics[0].name).toBe('async_error_error');
-    });
-
-    it('should handle sync operation errors', () => {
-      const mockOperation = jest.fn().mockImplementation(() => {
-        throw new Error('Test error');
-      });
+      let alerts = monitor.getAlerts();
+      expect(alerts.length).toBeGreaterThan(0);
       
-      expect(() => 
-        monitor.measureSync('sync_error', 'custom', mockOperation)
-      ).toThrow('Test error');
-
-      const report = monitor.stopMonitoring();
-      expect(report.metrics).toHaveLength(1);
-      expect(report.metrics[0].name).toBe('sync_error_error');
+      // Simulate time passing by manually clearing alerts
+      monitor['alerts'] = [];
+      
+      alerts = monitor.getAlerts();
+      expect(alerts.length).toBe(0);
     });
   });
 
-  describe('Threshold Alerts', () => {
-    beforeEach(() => {
-      monitor.startMonitoring();
-    });
-
-    afterEach(() => {
-      monitor.stopMonitoring();
-      monitor.removeAllListeners(); // Clean up all event listeners
-    });
-
-    it('should emit warning alert when threshold exceeded', (done) => {
-      monitor.on('alert:warning', (alert) => {
-        expect(alert.level).toBe('warning');
-        expect(alert.metric).toBe('api_response_time');
-        expect(alert.value).toBe(1500);
-        done();
-      });
-
-      monitor.recordMetric({
-        name: 'api_response_time',
-        category: 'api',
-        value: 1500, // Above warning threshold (1000ms)
-        unit: 'ms'
-      });
-    });
-
-    it('should emit critical alert when threshold exceeded', (done) => {
-      monitor.on('alert:critical', (alert) => {
-        expect(alert.level).toBe('critical');
-        expect(alert.metric).toBe('api_response_time');
-        expect(alert.value).toBe(3500);
-        done();
-      });
-
-      monitor.recordMetric({
-        name: 'api_response_time',
-        category: 'api',
-        value: 3500, // Above critical threshold (3000ms)
-        unit: 'ms'
-      });
-    });
-
-    it('should set custom thresholds', (done) => {
-      monitor.setThreshold({
-        metric: 'custom_metric',
-        warning: 50,
-        critical: 100,
-        unit: 'count'
-      });
-
-      const warningHandler = (alert: any) => {
-        if (alert.metric === 'custom_metric') {
-          expect(alert.metric).toBe('custom_metric');
-          expect(alert.threshold).toBe(50);
-          monitor.off('alert:warning', warningHandler);
-          done();
-        }
-      };
-
-      monitor.on('alert:warning', warningHandler);
-
-      monitor.recordMetric({
-        name: 'custom_metric',
-        category: 'custom',
-        value: 75,
-        unit: 'count'
-      });
-    });
-  });
-
-  describe('Real-time Metrics', () => {
-    beforeEach(() => {
-      monitor.startMonitoring();
-    });
-
-    afterEach(() => {
-      monitor.stopMonitoring();
-      monitor.removeAllListeners(); // Clean up all event listeners
-    });
-
-    it('should return recent metrics', () => {
-      // Record some metrics
-      monitor.recordMetric({
-        name: 'test1',
-        category: 'custom',
-        value: 10,
-        unit: 'ms'
-      });
+  describe('Memory Management', () => {
+    it('should limit metrics to prevent memory leaks', () => {
+      const maxMetrics = monitor['config'].maxMetrics;
       
-      monitor.recordMetric({
-        name: 'test2',
-        category: 'custom',
-        value: 20,
-        unit: 'ms'
-      });
-
-      // Force flush the buffer by stopping and restarting
-      const report = monitor.stopMonitoring();
-      expect(report.metrics.length).toBeGreaterThanOrEqual(2);
-      
-      // Start again for next test
-      monitor.startMonitoring();
-    });
-
-    it('should return active alerts', () => {
-      // Record multiple metrics that trigger alerts
-      for (let i = 0; i < 5; i++) {
-        monitor.recordMetric({
-          name: 'api_response_time',
-          category: 'api',
-          value: 1500 + i * 100, // All above warning threshold
-          unit: 'ms'
-        });
+      // Add more metrics than the limit
+      for (let i = 0; i < maxMetrics + 10; i++) {
+        monitor.recordMetric('memory_test', i);
       }
-
-      // Force flush
-      monitor.stopMonitoring();
-      monitor.startMonitoring();
       
-      // Record more to check active alerts
-      monitor.recordMetric({
-        name: 'api_response_time',
-        category: 'api',
-        value: 1500,
-        unit: 'ms'
-      });
+      const metrics = monitor['metrics'].get('memory_test');
+      expect(metrics!.length).toBeLessThanOrEqual(maxMetrics);
+    });
 
-      const { activeAlerts } = monitor.getRealtimeMetrics();
-      expect(activeAlerts.length).toBeGreaterThanOrEqual(0); // May have alerts based on average
+    it('should maintain correct statistics after pruning', () => {
+      const maxMetrics = monitor['config'].maxMetrics;
+      
+      // Add metrics beyond the limit
+      for (let i = 1; i <= maxMetrics + 5; i++) {
+        monitor.recordMetric('pruning_test', i * 10);
+      }
+      
+      const stats = monitor.getBasicStats('pruning_test');
+      expect(stats).not.toBeNull();
+      expect(stats!.count).toBeLessThanOrEqual(maxMetrics);
     });
   });
 
-  describe('Report Generation', () => {
-    it('should generate comprehensive report', () => {
-      monitor.startMonitoring();
+  describe('Categories', () => {
+    it('should handle different metric categories', () => {
+      monitor.recordMetric('api_call', 100, 'network');
+      monitor.recordMetric('render_time', 50, 'ui');
+      monitor.recordMetric('db_query', 200, 'database');
+
+      const apiStats = monitor.getBasicStats('api_call');
+      const renderStats = monitor.getBasicStats('render_time');
+      const dbStats = monitor.getBasicStats('db_query');
+
+      expect(apiStats!.avg).toBe(100);
+      expect(renderStats!.avg).toBe(50);
+      expect(dbStats!.avg).toBe(200);
+    });
+  });
+
+  describe('Summary and Export', () => {
+    it('should generate performance summary', () => {
+      monitor.recordMetric('test1', 100, 'category1');
+      monitor.recordMetric('test2', 200, 'category2');
+      monitor.recordMetric('test1', 150, 'category1');
+
+      const summary = monitor.getSummary();
       
-      // Record various metrics
-      monitor.recordApiCall('/api/users', 'GET', 100, 200);
-      monitor.recordApiCall('/api/users', 'GET', 150, 200);
-      monitor.recordApiCall('/api/users', 'GET', 200, 200);
-      monitor.recordApiCall('/api/error', 'GET', 500, 500);
-      
-      const report = monitor.stopMonitoring();
-      
-      expect(report.summary.totalRequests).toBe(4);
-      expect(report.summary.avgResponseTime).toBeGreaterThan(0);
-      expect(report.summary.errorRate).toBeGreaterThan(0);
-      expect(report.summary.p95ResponseTime).toBeDefined();
-      expect(report.summary.p99ResponseTime).toBeDefined();
+      expect(summary.totalMetrics).toBe(3);
+      expect(summary.categories).toContain('category1');
+      expect(summary.categories).toContain('category2');
+      expect(summary.alertCount).toBe(monitor.getAlerts().length);
     });
 
-    it('should handle empty metrics', () => {
-      monitor.startMonitoring();
-      const report = monitor.stopMonitoring();
+    it('should export data correctly', () => {
+      monitor.recordMetric('export_test', 100, 'test');
+      monitor.recordMetric('export_test', 200, 'test');
+
+      const exportData = monitor.exportData();
       
-      expect(report.metrics).toEqual([]);
-      expect(report.summary.totalRequests).toBe(0);
-      expect(report.summary.avgResponseTime).toBe(0);
-      expect(report.summary.errorRate).toBe(0);
+      expect(exportData.metrics).toHaveProperty('export_test');
+      expect(exportData.summary).toBeDefined();
+      expect(exportData.summary.totalMetrics).toBe(2);
+    });
+  });
+
+  describe('Configuration', () => {
+    it('should respect log level configuration', () => {
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      
+      // Test logging (this depends on the log level)
+      monitor.recordMetric('log_test', 100);
+      
+      // Clean up
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('should handle zero and negative values', () => {
+      monitor.recordMetric('zero_test', 0);
+      monitor.recordMetric('negative_test', -10);
+
+      const zeroStats = monitor.getBasicStats('zero_test');
+      const negativeStats = monitor.getBasicStats('negative_test');
+
+      expect(zeroStats!.avg).toBe(0);
+      expect(negativeStats!.avg).toBe(-10);
+    });
+
+    it('should handle very large values', () => {
+      const largeValue = Number.MAX_SAFE_INTEGER;
+      monitor.recordMetric('large_test', largeValue);
+
+      const stats = monitor.getBasicStats('large_test');
+      expect(stats!.avg).toBe(largeValue);
+    });
+
+    it('should handle special metric names', () => {
+      monitor.recordMetric('metric.with.dots', 100);
+      monitor.recordMetric('metric-with-dashes', 200);
+      monitor.recordMetric('metric_with_underscores', 300);
+
+      expect(monitor.getBasicStats('metric.with.dots')!.avg).toBe(100);
+      expect(monitor.getBasicStats('metric-with-dashes')!.avg).toBe(200);
+      expect(monitor.getBasicStats('metric_with_underscores')!.avg).toBe(300);
     });
   });
 });

@@ -742,7 +742,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
                           const { prepareQcLabelData, mergeAndPrintPdfs } = await import(
                             '@/lib/pdfUtils'
                           );
-                          const { pdf } = await import('@react-pdf/renderer');
+                          const { renderReactPDFToBlob } = await import('@/lib/services/unified-pdf-service');
                           const { PrintLabelPdf } = await import(
                             '@/components/print-label-pdf/PrintLabelPdf'
                           );
@@ -751,7 +751,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
                           const pdfLabelProps = await prepareQcLabelData(result.data.qcInputData);
 
                           // Generate PDF blob
-                          const pdfBlob = await pdf(<PrintLabelPdf {...pdfLabelProps} />).toBlob();
+                          const pdfBlob = await renderReactPDFToBlob(<PrintLabelPdf {...pdfLabelProps} />);
 
                           if (!pdfBlob) {
                             throw new Error('PDF generation failed');

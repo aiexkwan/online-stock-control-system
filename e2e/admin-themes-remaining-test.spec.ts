@@ -152,8 +152,8 @@ test.describe('Admin Themes Remaining Test', () => {
         
       } catch (error) {
         const loadTime = Date.now() - startTime;
-        themeErrors.push(`Navigation failed: ${error.message}`);
-        console.log(`  ❌ ${theme}: 失敗 (${loadTime}ms) - ${error.message}`);
+        themeErrors.push(`Navigation failed: ${(error as Error).message}`);
+        console.log(`  ❌ ${theme}: 失敗 (${loadTime}ms) - ${(error as Error).message}`);
       }
       
       // 記錄結果
@@ -262,7 +262,7 @@ test.describe('Admin Themes Remaining Test', () => {
         expect(performanceErrors, `${theme} 有 performance monitor 錯誤: ${performanceErrors.join(', ')}`).toHaveLength(0);
         
       } catch (error) {
-        console.log(`  ⚠️  ${theme} 深度測試部分失敗: ${error.message}`);
+        console.log(`  ⚠️  ${theme} 深度測試部分失敗: ${(error as Error).message}`);
         
         // 仍然檢查沒有 performance 錯誤
         expect(performanceErrors, `${theme} 有 performance monitor 錯誤: ${performanceErrors.join(', ')}`).toHaveLength(0);

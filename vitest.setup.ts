@@ -2,7 +2,7 @@ import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
 // Make vi global for jest compatibility
-globalThis.jest = vi;
+(globalThis as any).jest = vi;
 
 // Mock Next.js router
 vi.mock('next/navigation', () => ({
@@ -43,10 +43,14 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock IntersectionObserver
-global.IntersectionObserver = vi.fn(() => ({
+(global as any).IntersectionObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   disconnect: vi.fn(),
   unobserve: vi.fn(),
+  root: null,
+  rootMargin: '0px',
+  thresholds: [],
+  takeRecords: vi.fn(() => []),
 }));
 
 // Mock ResizeObserver

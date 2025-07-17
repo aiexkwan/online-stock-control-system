@@ -271,7 +271,7 @@ export function getTypographyStyle(
   category: keyof typeof typography,
   variant: string
 ): React.CSSProperties {
-  const styles = typography[category]?.[variant as any];
+  const styles = (typography[category] as any)?.[variant];
   if (!styles) {
     console.warn(`Typography style not found: ${category}.${variant}`);
     return {};

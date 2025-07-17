@@ -161,7 +161,10 @@
       "mcp__supabase__get_project",
       "Bash(./fix_dto_properties.sh:*)",
       "Bash(for:*)",
-      "Bash(tsx scripts/test-fixes-verification.ts:*)"
+      "Bash(tsx scripts/test-fixes-verification.ts:*)",
+      "Bash(git rm:*)",
+      "Bash(time curl:*)",
+      "Bash(/dev/null)"
     ],
     "deny": []
   },

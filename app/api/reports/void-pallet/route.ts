@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
-import ExcelJS from 'exceljs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,6 +16,9 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
+    // Dynamic import ExcelJS
+    const ExcelJS = await import('exceljs');
+    
     // 創建 Excel 工作簿
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Void Pallet Report');

@@ -125,8 +125,8 @@ export interface IWidgetRegistry {
   getAllDefinitions(): Map<string, WidgetDefinition>;
   getByCategory(category: WidgetCategory): WidgetDefinition[];
 
-  // 自動發現和註冊
-  autoRegisterWidgets(): Promise<void>;
+  // 自動發現和註冊 - v2.0.5 已移除，系統自動從配置初始化
+  // autoRegisterWidgets(): Promise<void>;
 
   // 性能和統計
   getLoadStatistics(): Map<string, WidgetRegistryItem>;

@@ -73,7 +73,7 @@ test.describe('Inventory Ordered Analysis Widget API', () => {
         'Authorization': `Bearer ${authToken}`
       },
       params: {
-        productCodes: ['PROD001', 'PROD002']
+        'productCodes[]': 'PROD001,PROD002'
       }
     });
 

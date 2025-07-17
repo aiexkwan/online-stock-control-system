@@ -1,4 +1,4 @@
-import ExcelJS from 'exceljs';
+
 import { saveAs } from 'file-saver';
 import {
   AcoProductData,
@@ -33,6 +33,8 @@ export async function exportAcoReport(reportData: AcoProductData[], orderRef: st
     return;
   }
 
+    // Dynamic import ExcelJS
+    const ExcelJS = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('ACO Report');
 
@@ -208,6 +210,8 @@ export async function exportGrnReport(data: GrnReportPageData) {
     return;
   }
 
+    // Dynamic import ExcelJS
+    const ExcelJS = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('GRN Report');
 
@@ -660,6 +664,8 @@ function getPackageColumn(packageType: string | null): string | null {
 // ... existing code ...
 
 export async function buildTransactionReport(reportData?: TransactionReportData): Promise<Buffer> {
+    // Dynamic import ExcelJS
+    const ExcelJS = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Transaction Report');
 

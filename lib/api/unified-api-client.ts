@@ -204,18 +204,6 @@ export class UnifiedAPIClient {
     try {
       // GraphQL support has been completely removed
       throw new Error('GraphQL support has been removed');
-      const responseTime = Date.now() - startTime;
-      
-      if (result.errors && result.errors.length > 0) {
-        throw new Error(result.errors[0].message);
-      }
-      
-      return {
-        data: result.data,
-        success: true,
-        apiType: 'graphql',
-        responseTime,
-      };
       
     } catch (error) {
       const responseTime = Date.now() - startTime;
