@@ -69,6 +69,7 @@ export const CACHE_STRATEGIES = {
     enableSWR: true,
     swrWindow: 10,
     enablePreload: false,
+    preloadTiming: undefined,
     dateRangeAware: false,
   },
   
@@ -384,7 +385,7 @@ export function createWidgetCacheConfig(
     enableSWR: baseStrategy.enableSWR,
     swrWindow: baseStrategy.swrWindow || 60,
     enablePreload: baseStrategy.enablePreload,
-    preloadTiming: baseStrategy.preloadTiming || 30,
+    preloadTiming: baseStrategy.preloadTiming ?? 30,
     dateRangeAware: baseStrategy.dateRangeAware,
     generateKey: (params) => DateRangeCacheKeyGenerator.generate(params),
     ...options.customStrategy,

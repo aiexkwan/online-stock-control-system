@@ -30,7 +30,7 @@ interface PerformanceIssue {
 
 // 擴展 SimpleStats 接口
 interface ExtendedStats extends SimpleStats {
-  mean?: number;
+  // mean is already required in SimpleStats
 }
 import { WidgetPriority } from './unified-config';
 
@@ -218,7 +218,7 @@ export class EnhancedPerformanceMonitor {
     });
     
     // Get total requests from base monitor
-    const report = this.baseMonitor.getWidgetReport(widgetId, timeRange);
+    const report = this.baseMonitor.getWidgetReport(widgetId);
     const totalRequests = 
       (report.v2Performance?.sampleCount || 0) + 
       (report.legacyPerformance?.sampleCount || 0);
@@ -300,7 +300,7 @@ export class EnhancedPerformanceMonitor {
     variant: string,
     timeRange: { start: Date; end: Date }
   ): VariantMetrics {
-    const report = this.baseMonitor.getWidgetReport(widgetId, timeRange);
+    const report = this.baseMonitor.getWidgetReport(widgetId);
     const variantPerf = variant === 'v2' ? report.v2Performance : report.legacyPerformance;
     
     return {
@@ -434,7 +434,7 @@ export class EnhancedPerformanceMonitor {
     // This is a simplified implementation
     // In production, you'd get all widget IDs from the registry
     return Array.from(widgetIds).map(widgetId => {
-      const report = this.baseMonitor.getWidgetReport(widgetId, timeRange);
+      const report = this.baseMonitor.getWidgetReport(widgetId);
       const errorRate = this.getErrorRate(widgetId, timeRange);
       
       const avgLoadTime = report.v2Performance?.loadTime.mean || 0;
@@ -685,13 +685,10 @@ export class EnhancedPerformanceMonitor {
       min: 0,
       max: 0,
       mean: 0,
-      median: 0,
-      p50: 0,
-      p75: 0,
-      p90: 0,
-      p95: 0,
-      p99: 0,
       stdDev: 0,
+      avg: 0,
+      total: 0,
+      count: 0,
     };
   }
   

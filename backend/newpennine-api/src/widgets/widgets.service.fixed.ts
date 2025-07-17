@@ -222,7 +222,7 @@ export class WidgetsService {
           });
         }
 
-        const productAnalysis = productMap.get(productCode)!;
+        const productAnalysis = productMap.get(productCode);
         productAnalysis.totalQuantity += quantity;
         productAnalysis.totalPallets += 1;
 
@@ -246,7 +246,7 @@ export class WidgetsService {
           });
         }
 
-        const warehouseAnalysis = warehouseMap.get(itemWarehouse)!;
+        const warehouseAnalysis = warehouseMap.get(itemWarehouse);
         warehouseAnalysis.totalQuantity += quantity;
         warehouseAnalysis.totalPallets += 1;
       });
@@ -299,9 +299,8 @@ export class WidgetsService {
         ),
         slowMoving: turnoverAnalysis
           .filter((t) => t.daysInStock > slowMovingThreshold)
-          .map(
-            (t) =>
-              productAnalysis.find((p) => p.productCode === t.productCode)!,
+          .map((t) =>
+            productAnalysis.find((p) => p.productCode === t.productCode),
           )
           .filter(Boolean),
       };

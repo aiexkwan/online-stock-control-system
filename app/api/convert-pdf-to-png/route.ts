@@ -24,7 +24,7 @@ function createSupabaseAdmin() {
   });
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (process.env.NODE_ENV !== 'production') {
       console.log('[PDF to PNG] Starting conversion');
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: 'PDF to PNG conversion failed',
-        details: error.message,
+        details: (error as { message: string }).message,
       },
       { status: 500 }
     );

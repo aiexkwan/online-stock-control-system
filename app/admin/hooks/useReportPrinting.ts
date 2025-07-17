@@ -126,7 +126,8 @@ export function useReportPrinting({
         } else {
           // Convert to PDF if needed (for Excel or other formats)
           console.log('[ReportPrinting] Converting to PDF...');
-          const { PDFDocument, rgb } = await import('pdf-lib');
+          const pdfLib = await import('@/lib/services/unified-pdf-service');
+          const { PDFDocument, rgb } = await pdfLib.getPDFLib();
           const pdfDoc = await PDFDocument.create();
           const page = pdfDoc.addPage();
           const { width, height } = page.getSize();

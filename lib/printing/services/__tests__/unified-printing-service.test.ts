@@ -472,16 +472,19 @@ describe('UnifiedPrintingService', () => {
     });
 
     it('should reprint from history', async () => {
-      const historyEntry = {
+            const historyEntry = {
         id: 'history-123',
+        jobId: 'job-123',
         type: PrintType.QC_LABEL,
         data: { test: 'original' },
-        options: { 
+        options: {
           copies: 2,
           paperSize: PaperSize.A4,
-          orientation: 'portrait'
+          orientation: 'portrait' as const
         },
-        metadata: { original: true }
+        metadata: { userId: 'user-123', original: true },
+        result: { success: true, jobId: 'job-123' },
+        createdAt: new Date().toISOString()
       };
 
       mockHistoryService.getById.mockResolvedValue(historyEntry);
@@ -560,9 +563,20 @@ describe('UnifiedPrintingService', () => {
       const startDate = new Date('2024-01-01');
       const endDate = new Date('2024-01-31');
       const expectedStats = {
-        totalPrints: 100,
-        successfulPrints: 95,
-        failedPrints: 5
+        totalJobs: 100,
+        successRate: 0.95,
+        averageTime: 2500,
+        byType: {
+          'qc-label': 50,
+          'grn-label': 30,
+          'transaction-report': 20,
+          'inventory-report': 0,
+          'aco-order-report': 0,
+          'grn-report': 0,
+          'custom-document': 0
+        },
+        byUser: { 'user-123': 100 },
+        errorRate: 0.05
       };
 
       mockHistoryService.getStatistics.mockResolvedValue(expectedStats);
@@ -585,7 +599,7 @@ describe('UnifiedPrintingService', () => {
 
       // Simulate HAL queue event
       const eventHandler = mockHAL.queue.on.mock.calls.find(
-        call => call[0] === 'job.added'
+        (call: any) => call[0] === 'job.added'
       )?.[1];
       
       const testJob = { id: 'test-job', type: 'qc-label' };
@@ -600,7 +614,7 @@ describe('UnifiedPrintingService', () => {
 
       // Simulate monitoring event
       const eventHandler = mockHAL.monitoring.on.mock.calls.find(
-        call => call[0] === 'statusChange'
+        (call: any) => call[0] === 'statusChange'
       )?.[1];
 
       const status = { online: true, queue: 0 };

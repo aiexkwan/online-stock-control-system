@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { orderLoadingDataSources } from '@/app/components/reports/dataSources/OrderLoadingDataSource';
-import ExcelJS from 'exceljs';
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
 
-export async function POST(request: NextRequest) {
+import { createJsPDF } from '@/lib/services/unified-pdf-service';
+
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     // 解析請求參數
     const body = await request.json();
@@ -39,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     if (format === 'pdf') {
       // 生成 PDF
-      const doc = new jsPDF();
+      const doc = await createJsPDF();
       doc.text('Order Loading Report', 14, 15);
       doc.text(`Period: ${body.startDate} to ${body.endDate}`, 14, 25);
 
@@ -61,6 +60,8 @@ export async function POST(request: NextRequest) {
       extension = 'pdf';
     } else {
       // 生成 Excel
+    // Dynamic import ExcelJS
+    const ExcelJS = await import('exceljs');
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Loading Report');
 
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
       worksheet.addRows(records);
 
       const buffer = await workbook.xlsx.writeBuffer();
-      blob = new Blob([buffer], {
+      blob = new Blob([buffer as string], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       });
       contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';

@@ -1,4 +1,4 @@
-import ExcelJS from 'exceljs';
+
 import { saveAs } from 'file-saver';
 import {
   AcoProductData,
@@ -33,6 +33,8 @@ export async function exportAcoReport(reportData: AcoProductData[], orderRef: st
     return;
   }
 
+    // Dynamic import ExcelJS
+    const ExcelJS = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('ACO Report');
 
@@ -208,28 +210,30 @@ export async function exportGrnReport(data: GrnReportPageData) {
     return;
   }
 
+    // Dynamic import ExcelJS
+    const ExcelJS = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('GRN Report');
 
   // Define styles
-  const center: Partial<ExcelJS.Alignment> = {
+  const center: Partial<any> = {
     horizontal: 'center',
     vertical: 'middle',
     wrapText: true,
   };
-  const right: Partial<ExcelJS.Alignment> = { horizontal: 'right', vertical: 'middle' };
-  const grayFill: ExcelJS.Fill = {
+  const right: Partial<any> = { horizontal: 'right', vertical: 'middle' };
+  const grayFill: any = {
     type: 'pattern',
     pattern: 'solid',
     fgColor: { argb: 'FFDCDCDC' },
   };
-  const thinBorder: Partial<ExcelJS.Borders> = {
+  const thinBorder: Partial<any> = {
     top: { style: 'thin' },
     bottom: { style: 'thin' },
     left: { style: 'thin' },
     right: { style: 'thin' },
   };
-  const thickBorder: Partial<ExcelJS.Borders> = {
+  const thickBorder: Partial<any> = {
     top: { style: 'thick' },
     bottom: { style: 'thick' },
     left: { style: 'thick' },
@@ -392,7 +396,7 @@ export async function exportGrnReport(data: GrnReportPageData) {
         // Check individual border sides if necessary for more complex scenarios
         let applyThin = true;
         if (cell.border) {
-          const currentBorder = cell.border as ExcelJS.Borders;
+          const currentBorder = cell.border as any;
           if (
             currentBorder.top?.style === 'thick' &&
             currentBorder.bottom?.style === 'thick' &&
@@ -660,6 +664,8 @@ function getPackageColumn(packageType: string | null): string | null {
 // ... existing code ...
 
 export async function buildTransactionReport(reportData?: TransactionReportData): Promise<Buffer> {
+    // Dynamic import ExcelJS
+    const ExcelJS = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Transaction Report');
 

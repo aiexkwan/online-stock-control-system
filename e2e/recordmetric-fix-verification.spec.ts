@@ -59,7 +59,7 @@ test.describe('recordMetric Fix Verification', () => {
     // 額外檢查：確保頁面至少部分渲染
     const bodyText = await page.textContent('body');
     expect(bodyText).toBeTruthy();
-    expect(bodyText.trim().length).toBeGreaterThan(0);
+    expect(bodyText?.trim().length || 0).toBeGreaterThan(0);
     
     console.log('✅ Page rendering verification passed');
   });

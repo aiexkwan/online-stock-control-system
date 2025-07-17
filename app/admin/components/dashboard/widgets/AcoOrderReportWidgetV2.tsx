@@ -106,7 +106,7 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
       fetchAcoOrders();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditMode]);
+  }, [isEditMode as string]);
 
   const handleGenerateReport = async () => {
     if (!selectedAcoOrder) {
@@ -163,7 +163,7 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
       console.error('[AcoOrderReportWidgetV2] Error generating report:', error);
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to generate report',
+        description: error instanceof Error ? (error as { message: string }).message : 'Failed to generate report',
         variant: 'destructive',
       });
     } finally {
@@ -186,7 +186,7 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
         <div className='flex h-full flex-col'>
           {/* Title */}
           <div className='mb-3 flex items-center justify-between'>
-            <div className={cn('flex items-center', spacingUtilities.gap.small)}>
+            <div className={cn('flex items-center', theme.spacing.gap.small)}>
               <DocumentArrowDownIcon className='h-5 w-5' style={{ color: semanticColors.info.DEFAULT }} />
               <h3 className={cn(textClasses['body-small'], 'font-semibold text-foreground')}>ACO Order Report</h3>
             </div>
@@ -208,7 +208,7 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
                 </Label>
                 <Select
                   value={selectedAcoOrder}
-                  onValueChange={setSelectedAcoOrder}
+                  onChange={(e) => setSelectedAcoOrder(e.target.value)}
                   disabled={isEditMode || loading || acoOrders.length === 0}
                 >
                   <SelectTrigger
@@ -230,7 +230,7 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
                     />
                   </SelectTrigger>
                   <SelectContent className={cn('border-border bg-card')}>
-                    {acoOrders.map(order => (
+                    {acoOrders.map((order: any) => (
                       <SelectItem
                         key={order}
                         value={order}

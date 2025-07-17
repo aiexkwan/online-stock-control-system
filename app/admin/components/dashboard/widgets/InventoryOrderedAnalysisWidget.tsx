@@ -155,7 +155,7 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
   // 監聽 StockTypeSelector 的類型變更事件
   useEffect(() => {
     const handleTypeChange = (event: CustomEvent) => {
-      console.log('[InventoryOrderedAnalysis] Received stockTypeChanged event:', event.detail);
+      console.log('[InventoryOrderedAnalysis as string] Received stockTypeChanged event:', event.detail);
       const { type, data } = event.detail;
       setSelectedType(type);
 
@@ -191,7 +191,7 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
       <Card ref={containerRef} className={cn('h-full bg-card/50 border-border')}>
         <CardHeader className='pb-3'>
           <div className='flex items-center justify-between'>
-            <div className={cn('flex items-center', spacingUtilities.gap.small)}>
+            <div className={cn('flex items-center', theme.spacing.gap.small)}>
               <Package className='h-5 w-5 text-muted-foreground' />
               <Skeleton className='h-6 w-48' />
             </div>
@@ -243,7 +243,7 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
     <Card ref={containerRef} className={cn('h-full bg-card/50 border-border')}>
       <CardHeader className='pb-3'>
         <div className='flex items-center justify-between'>
-          <CardTitle className={cn('flex items-center text-lg', spacingUtilities.gap.small, textClasses['heading-base'])}>
+          <CardTitle className={cn('flex items-center text-lg', theme.spacing.gap.small, textClasses['heading-base'])}>
             <Package className='h-5 w-5 text-foreground' />
             Inventory Ordered Analysis
           </CardTitle>

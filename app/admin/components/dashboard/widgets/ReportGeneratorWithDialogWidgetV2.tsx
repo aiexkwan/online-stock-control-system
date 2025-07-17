@@ -107,7 +107,7 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
       setMetadata(result.metadata || {});
     } catch (err) {
       console.error('Error loading references:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(err instanceof Error ? (err as { message: string }).message : 'Unknown error');
       setReferences([]);
     } finally {
       setIsLoadingRefs(false);
@@ -182,7 +182,7 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
       clearInterval(interval);
       setDownloadStatus('idle');
       setProgress(0);
-      setError(error instanceof Error ? error.message : 'Download failed');
+      setError(error instanceof Error ? (error as { message: string }).message : 'Download failed');
     }
   };
 
@@ -197,7 +197,7 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
       }
       return a.localeCompare(b);
     });
-  }, [references]);
+  }, [references as string]);
 
   return (
     <>
@@ -252,7 +252,7 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
               )}>
                 {selectLabel}
               </label>
-              <Select value={selectedRef} onValueChange={setSelectedRef}>
+              <Select value={selectedRef} onChange={(e) => setSelectedRef(e.target.value)}>
                 <SelectTrigger
                   id='reference'
                   className={cn(
@@ -268,7 +268,7 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
                   />
                 </SelectTrigger>
                 <SelectContent className={cn('max-h-[300px] border-border bg-card')}>
-                  {sortedReferences.map(ref => (
+                  {sortedReferences.map((ref: any) => (
                     <SelectItem
                       key={ref}
                       value={ref}

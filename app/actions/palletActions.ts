@@ -5,8 +5,8 @@ import {
   confirmPalletUsage as confirmPalletUsageClient,
   releasePalletReservation as releasePalletReservationClient,
   type GenerationOptions,
-} from '@/app/utils/palletGeneration';
-import { createClient as createServerClient } from '@/app/utils/supabase/server';
+} from '../utils/palletGeneration';
+import { createClient as createServerClient } from '../utils/supabase/server';
 import { z } from 'zod';
 
 /**
@@ -207,7 +207,13 @@ export async function fetchPalletForReprint(palletNumber: string) {
       data: {
         plt_num: palletInfo.plt_num,
         product_code: palletInfo.product_code,
-        product_description: palletInfo.data_code?.description || '',
+        product_description: (() => {
+          const dataCode = palletInfo.data_code as any;
+          if (Array.isArray(dataCode)) {
+            return dataCode[0]?.description || '';
+          }
+          return dataCode?.description || '';
+        })(),
         product_qty: palletInfo.product_qty,
         lot_num: palletInfo.lot_num,
         expiry_date: palletInfo.expiry_date,

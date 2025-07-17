@@ -48,7 +48,7 @@ const grnApiClient = {
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch GRN references: ${response.statusText}`);
+      throw new Error(`Failed to fetch GRN references: ${(response as { status: string }).statusText}`);
     }
     
     const data = await response.json();
@@ -64,7 +64,7 @@ const grnApiClient = {
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch material codes: ${response.statusText}`);
+      throw new Error(`Failed to fetch material codes: ${(response as { status: string }).statusText}`);
     }
     
     const data = await response.json();
@@ -85,7 +85,7 @@ const grnApiClient = {
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch report data: ${response.statusText}`);
+      throw new Error(`Failed to fetch report data: ${(response as { status: string }).statusText}`);
     }
     
     return await response.json();
@@ -123,7 +123,7 @@ export const GrnReportWidget = function GrnReportWidget({
     onError: error => {
       toast({
         title: 'Error',
-        description: error.message,
+        description: (error as { message: string }).message,
         variant: 'destructive',
       });
     },
@@ -149,7 +149,7 @@ export const GrnReportWidget = function GrnReportWidget({
         optimized: true,
       });
     } catch (error) {
-      console.error('[GrnReportWidget] Error fetching GRN references:', error);
+      console.error('[GrnReportWidget as string] Error fetching GRN references:', error);
       toast({
         title: 'Error',
         description: 'Failed to fetch GRN references',
@@ -163,7 +163,7 @@ export const GrnReportWidget = function GrnReportWidget({
   // Fetch GRN references when component mounts
   useEffect(() => {
     fetchGrnRefs();
-  }, [fetchGrnRefs]);
+  }, [fetchGrnRefs as string]);
 
   const handleDownload = async () => {
     if (!selectedGrnRef) {
@@ -206,7 +206,7 @@ export const GrnReportWidget = function GrnReportWidget({
       let successCount = 0;
       for (const materialCode of materialCodes) {
         try {
-          const reportData = await grnApiClient.getReportData(selectedGrnRef, [materialCode]);
+          const reportData = await grnApiClient.getReportData(selectedGrnRef, [materialCode as string]);
           
           if (reportData && !reportData.error) {
             // Export using existing PDF generation logic
@@ -240,14 +240,14 @@ export const GrnReportWidget = function GrnReportWidget({
         }, 500);
       }, 2000);
     } catch (error) {
-      console.error('[GrnReportWidget] Download failed:', error);
+      console.error('[GrnReportWidget as string] Download failed:', error);
       clearInterval(interval);
       setDownloadStatus('idle');
       setProgress(0);
 
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to generate report',
+        description: error instanceof Error ? (error as { message: string }).message : 'Failed to generate report',
         variant: 'destructive',
       });
     }
@@ -278,7 +278,7 @@ export const GrnReportWidget = function GrnReportWidget({
         throw new Error(reportData?.error || 'Failed to get report data');
       }
 
-      console.log('[GrnReportWidget] Report data received:', reportData);
+      console.log('[GrnReportWidget as string] Report data received:', reportData);
 
       // Generate PDF using pdf-lib
       const { PDFDocument, rgb, StandardFonts } = await import('pdf-lib');
@@ -516,13 +516,13 @@ export const GrnReportWidget = function GrnReportWidget({
 
       // Send to print service
       const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const blob = new Blob([pdfBytes as string], { type: 'application/pdf' });
       await printReport(blob, `GRN_${selectedGrnRef}_${materialCodes[0]}`);
     } catch (error) {
-      console.error('[GrnReportWidget] Print error:', error);
+      console.error('[GrnReportWidget as string] Print error:', error);
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to print report',
+        description: error instanceof Error ? (error as { message: string }).message : 'Failed to print report',
         variant: 'destructive',
       });
     }
@@ -541,11 +541,11 @@ export const GrnReportWidget = function GrnReportWidget({
         <p className={cn('mt-0.5', textClasses['label-small'], 'text-muted-foreground')}>{description || 'GRN Report'}</p>
       </div>
       <div className={cn('min-h-0 flex-1 overflow-visible', widgetSpacing.container)}>
-        <div className={cn('flex h-full items-center', spacingUtilities.gap.small)}>
+        <div className={cn('flex h-full items-center', theme.spacing.gap.small)}>
           <div className='flex-1'>
             <Select
               value={selectedGrnRef}
-              onValueChange={setSelectedGrnRef}
+              onChange={(e) => setSelectedGrnRef(e.target.value)}
               disabled={loading || grnRefs.length === 0}
             >
               <SelectTrigger
@@ -562,7 +562,7 @@ export const GrnReportWidget = function GrnReportWidget({
                 />
               </SelectTrigger>
               <SelectContent className={cn('border-border bg-card')}>
-                {grnRefs.map(ref => (
+                {grnRefs.map((ref: any) => (
                   <SelectItem key={ref} value={ref} className={cn(
                     'text-foreground hover:bg-accent',
                     textClasses['body-small']

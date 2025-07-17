@@ -116,7 +116,7 @@ export async function updateACORecord(
     console.error('[ACO Update] Error:', error);
     return {
       success: false,
-      error: `Failed to update ACO record: ${error.message}`,
+      error: `Failed to update ACO record: ${(error as { message: string }).message}`,
     };
   }
 }
@@ -199,7 +199,7 @@ export async function deleteGRNRecord(
     console.error('[GRN Delete] Error:', error);
     return {
       success: false,
-      error: `Failed to delete GRN record: ${error.message}`,
+      error: `Failed to delete GRN record: ${(error as { message: string }).message}`,
     };
   }
 }

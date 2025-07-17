@@ -7,8 +7,8 @@ import React from 'react';
 import { render, screen, waitFor, renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act } from 'react';
-import AdminThemePage from '@/app/admin/[theme]/page';
-import { prefetchCriticalWidgetsData } from '@/app/admin/hooks/useDashboardConcurrentQuery';
+import AdminThemePage from '@/app/admin/[theme as string]/page';
+import { prefetchCriticalWidgetsData } from '@/app/admin/hooks/server/prefetch.server';
 import { DashboardDataProvider, useDashboardData, useWidgetData } from '@/app/admin/contexts/DashboardDataContext';
 import StatsCardWidget from '@/app/admin/components/dashboard/widgets/StatsCardWidget';
 import type { DashboardBatchQueryData } from '@/app/admin/types/dashboard';
@@ -161,8 +161,18 @@ describe('SSR Integration Tests', () => {
   describe('DashboardDataProvider SSR Mode', () => {
     const mockPrefetchedData: DashboardBatchQueryData = {
       total_pallets: { value: 100, label: 'Total Pallets', trend: 5 },
-      awaitLocationQty: { totalAwaitingQty: 50, locations: [] },
-      yesterdayTransferCount: { count: 25, trend: -2, dateRange: {}, optimized: true },
+      awaitLocationQty: { 
+        records: [],
+        value: 50,
+        totalAwaitingQty: 50, 
+        locations: [] 
+      },
+      yesterdayTransferCount: { 
+        count: 25, 
+        trend: -2, 
+        dateRange: { start: '', end: '' }, 
+        optimized: true 
+      },
     };
 
     it('應該正確注入 prefetched data', () => {
@@ -245,7 +255,7 @@ describe('SSR Integration Tests', () => {
 
   describe('Critical Widgets SSR Support', () => {
     it.skip('StatsCard 應該正確使用 SSR 數據', () => {
-      const mockWidget = {
+      const mockWidget: any = {
         id: 'stats-1',
         type: 'stats-card',
         title: 'Total Pallets',
@@ -278,7 +288,7 @@ describe('SSR Integration Tests', () => {
     });
 
     it.skip('應該優雅降級到 CSR 當沒有預取數據時', () => {
-      const mockWidget = {
+      const mockWidget: any = {
         id: 'stats-1',
         type: 'stats-card',
         title: 'Total Pallets',
@@ -316,11 +326,11 @@ describe('SSR Integration Tests', () => {
         const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
         
         // 模擬 server component 行為
-        await AdminThemePage({ params: { theme } });
+        await AdminThemePage({ params: Promise.resolve({ theme }) });
         
         // 應該嘗試預取數據
         expect(consoleSpy).toHaveBeenCalledWith(
-          expect.stringContaining(`[SSR] Prefetching critical widgets data for theme: ${theme}`)
+          expect.stringContaining(`[SSR as string] Prefetching critical widgets data for theme: ${theme}`)
         );
         
         consoleSpy.mockRestore();
@@ -331,11 +341,11 @@ describe('SSR Integration Tests', () => {
         const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
         
         // 模擬 server component 行為
-        await AdminThemePage({ params: { theme } });
+        await AdminThemePage({ params: Promise.resolve({ theme }) });
         
         // 不應該嘗試預取數據
         expect(consoleSpy).not.toHaveBeenCalledWith(
-          expect.stringContaining(`[SSR] Prefetching critical widgets data for theme: ${theme}`)
+          expect.stringContaining(`[SSR as string] Prefetching critical widgets data for theme: ${theme}`)
         );
         
         consoleSpy.mockRestore();
@@ -351,12 +361,12 @@ describe('SSR Integration Tests', () => {
       jest.spyOn(global, 'fetch').mockRejectedValueOnce(new Error('Network error'));
       
       const result = await AdminThemePage({ 
-        params: { theme: 'injection' } 
+        params: Promise.resolve({ theme: 'injection' }) 
       });
       
       // 應該記錄錯誤但不崩潰
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[SSR] Critical widgets prefetch failed'),
+        expect.stringContaining('[SSR as string] Critical widgets prefetch failed'),
         expect.any(Error)
       );
       
@@ -391,9 +401,13 @@ describe('SSR Integration Tests', () => {
 
   describe('Widget Data Hooks', () => {
     it('useWidgetData 應該正確獲取特定 widget 的數據', () => {
-      const mockPrefetchedData = {
+      const mockPrefetchedData: DashboardBatchQueryData = {
         total_pallets: { value: 100, label: 'Total Pallets' },
-        awaitLocationQty: { totalAwaitingQty: 50 },
+        awaitLocationQty: { 
+          records: [],
+          value: 50,
+          totalAwaitingQty: 50 
+        },
       };
 
       const TestComponent = () => {

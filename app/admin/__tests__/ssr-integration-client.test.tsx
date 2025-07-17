@@ -3,7 +3,7 @@
  * 測試 prefetchCriticalWidgetsData 的客戶端行為
  */
 
-import { prefetchCriticalWidgetsData } from '@/app/admin/hooks/useDashboardConcurrentQuery';
+import { prefetchCriticalWidgetsData } from '@/app/admin/hooks/server/prefetch.server';
 
 describe('prefetchCriticalWidgetsData - Client Side Behavior', () => {
   let originalNodeEnv: string | undefined;
@@ -11,11 +11,22 @@ describe('prefetchCriticalWidgetsData - Client Side Behavior', () => {
   beforeEach(() => {
     originalNodeEnv = process.env.NODE_ENV;
     // 模擬非測試環境
-    process.env.NODE_ENV = 'development';
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      value: 'development',
+      writable: true,
+      configurable: true,
+      enumerable: true
+    });
   });
   
   afterEach(() => {
-    process.env.NODE_ENV = originalNodeEnv;
+    // 恢復原始值
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      value: originalNodeEnv,
+      writable: true,
+      configurable: true,
+      enumerable: true
+    });
   });
   
   it('應該在客戶端環境返回空對象並顯示警告', async () => {
@@ -29,7 +40,7 @@ describe('prefetchCriticalWidgetsData - Client Side Behavior', () => {
     // 在非測試環境的客戶端，函數應返回空對象
     expect(result).toEqual({});
     expect(consoleSpy).toHaveBeenCalledWith(
-      '[SSR] Client-side prefetch called - should be server-side only'
+      '[SSR as string] Client-side prefetch called - should be server-side only'
     );
 
     consoleSpy.mockRestore();

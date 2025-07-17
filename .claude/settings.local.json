@@ -161,7 +161,17 @@
       "mcp__supabase__get_project",
       "Bash(./fix_dto_properties.sh:*)",
       "Bash(for:*)",
-      "Bash(tsx scripts/test-fixes-verification.ts:*)"
+      "Bash(tsx scripts/test-fixes-verification.ts:*)",
+      "Bash(git rm:*)",
+      "Bash(time curl:*)",
+      "Bash(/dev/null)",
+      "Bash(tsc --noEmit)",
+      "Bash(# 統計各類錯誤類型數量\necho \"\"=== TypeScript 錯誤類型統計 ===\"\"\necho \"\"\"\"\necho \"\"1. 各錯誤類型數量：\"\"\ncat tsc_errors.log | grep -E \"\"error TS[0-9]+\"\" | sed -E ''s/.*error (TS[0-9]+).*/\\1/'' | sort | uniq -c | sort -nr\n\necho \"\"\"\"\necho \"\"2. 錯誤總數：\"\"\ncat tsc_errors.log | grep -E \"\"error TS[0-9]+\"\" | wc -l\n\necho \"\"\"\"\necho \"\"3. 受影響文件數量：\"\"\ncat tsc_errors.log | grep -E \"\"error TS[0-9]+\"\" | cut -d''('' -f1 | sort | uniq | wc -l)",
+      "Bash(# 找出錯誤最多的前 20 個文件\necho \"\"=== 錯誤最多的文件 (前 20 個) ===\"\"\necho \"\"\"\"\ncat tsc_errors.log | grep -E \"\"error TS[0-9]+\"\" | cut -d''('' -f1 | sort | uniq -c | sort -nr | head -20\n\necho \"\"\"\"\necho \"\"=== 各錯誤類型詳細說明 ===\"\"\necho \"\"\"\"\necho \"\"主要錯誤類型：\"\"\necho \"\"- TS1240 (801個): 模塊語法錯誤 - Unable to resolve signature of expression decorator when called as an expression\"\"\necho \"\"- TS2339 (205個): 屬性不存在錯誤 - Property ''...'' does not exist on type ''...''\"\"\necho \"\"- TS2345 (132個): 參數類型不匹配 - Argument of type ''...'' is not assignable to parameter of type ''...''\"\"\necho \"\"- TS1270 (98個): 裝飾器相關錯誤 - Decorator function return type ''...'' is not assignable to type ''...''\"\"\necho \"\"- TS1241 (98個): 無法解析方法裝飾器簽名\"\"\necho \"\"- TS2322 (82個): 類型賦值錯誤 - Type ''...'' is not assignable to type ''...''\"\"\necho \"\"- TS2367 (57個): 條件比較錯誤 - This comparison appears to be unintentional\"\")",
+      "Bash(# 分析 components.backup 目錄的錯誤\necho \"\"=== components.backup 目錄錯誤分析 ===\"\"\necho \"\"\"\"\necho \"\"1. components.backup 目錄錯誤數量：\"\"\ncat tsc_errors.log | grep -E \"\"error TS[0-9]+\"\" | grep \"\"components.backup\"\" | wc -l\n\necho \"\"\"\"\necho \"\"2. components.backup 目錄受影響文件：\"\"\ncat tsc_errors.log | grep -E \"\"error TS[0-9]+\"\" | grep \"\"components.backup\"\" | cut -d''('' -f1 | sort | uniq -c | sort -nr | head -10\n\necho \"\"\"\"\necho \"\"3. components.backup 目錄主要錯誤類型：\"\"\ncat tsc_errors.log | grep -E \"\"error TS[0-9]+\"\" | grep \"\"components.backup\"\" | sed -E ''s/.*error (TS[0-9]+).*/\\1/'' | sort | uniq -c | sort -nr)",
+      "Bash(# 分析 NestJS 裝飾器相關錯誤\necho \"\"=== NestJS 裝飾器錯誤分析 ===\"\"\necho \"\"\"\"\necho \"\"1. TS1240 錯誤的具體內容（前 5 個）：\"\"\ncat tsc_errors.log | grep \"\"TS1240\"\" | head -5 | cut -d: -f3-\n\necho \"\"\"\"\necho \"\"2. 受 TS1240 影響的文件類型：\"\"\ncat tsc_errors.log | grep \"\"TS1240\"\" | cut -d''('' -f1 | grep -E \"\"\\.(controller|service|dto)\\.ts$\"\" | sed -E ''s/.*\\.(controller|service|dto)\\.ts$/\\1/'' | sort | uniq -c\n\necho \"\"\"\"\necho \"\"3. 特定文件的 TS1240 錯誤示例：\"\"\necho \"\"--- widgets.controller.ts 的錯誤：\"\"\ncat tsc_errors.log | grep \"\"widgets.controller.ts\"\" | grep \"\"TS1240\"\" | head -3)",
+      "Bash(git tag:*)",
+      "Bash(git branch:*)"
     ],
     "deny": []
   },

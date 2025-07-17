@@ -202,7 +202,7 @@ async function updateACORecord(
     console.error('[ACO Update] Error updating ACO record:', error);
     return {
       success: false,
-      error: `Failed to update ACO record: ${error.message}`,
+      error: `Failed to update ACO record: ${(error as { message: string }).message}`,
     };
   }
 }
@@ -254,7 +254,7 @@ export async function verifyPasswordWithSupabaseAuth(
     });
 
     if (signInError) {
-      if (signInError.message.includes('Invalid login credentials')) {
+      if ((signInError as { message: string }).message.includes('Invalid login credentials')) {
         return {
           success: false,
           error: 'Incorrect password, please try again',
@@ -393,7 +393,7 @@ export async function searchPalletAction(params: SearchParams): Promise<SearchRe
     console.error('Error searching pallet:', error);
     return {
       success: false,
-      error: `Search failed: ${error.message || 'Unknown error'}`,
+      error: `Search failed: ${(error as { message: string }).message || 'Unknown error'}`,
     };
   }
 }
@@ -462,7 +462,7 @@ export async function recordHistoryAction(
     console.error('Error recording history:', error);
     return {
       success: false,
-      error: `Failed to record history: ${error.message}`,
+      error: `Failed to record history: ${(error as { message: string }).message}`,
     };
   }
 }
@@ -571,11 +571,11 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
         'Void Pallet Fail',
         palletInfo.plt_num,
         palletInfo.plt_loc,
-        `Update failed: ${updateError.message}`
+        `Update failed: ${(updateError as { message: string }).message}`
       );
       return {
         success: false,
-        error: `Failed to update pallet: ${updateError.message}`,
+        error: `Failed to update pallet: ${(updateError as { message: string }).message}`,
       };
     }
 
@@ -599,7 +599,7 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
 
       return {
         success: false,
-        error: `Failed to void pallet: ${voidError.message}`,
+        error: `Failed to void pallet: ${(voidError as { message: string }).message}`,
       };
     }
 
@@ -632,7 +632,7 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
           'Stock Level Update Failed',
           palletInfo.plt_num,
           'Voided',
-          `Stock level update failed: ${stockError.message}`
+          `Stock level update failed: ${(stockError as { message: string }).message}`
         );
       } else {
         process.env.NODE_ENV !== 'production' &&
@@ -650,7 +650,7 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
         'Stock Level Update Error',
         palletInfo.plt_num,
         'Voided',
-        `Stock level update error: ${stockUpdateError.message}`
+        `Stock level update error: ${(stockUpdateError as { message: string }).message}`
       );
     }
 
@@ -765,10 +765,10 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
     };
   } catch (error: any) {
     console.error('Error in voidPalletAction:', error);
-    await logErrorAction('unknown', `Void pallet error: ${error.message}`);
+    await logErrorAction('unknown', `Void pallet error: ${(error as { message: string }).message}`);
     return {
       success: false,
-      error: `An unexpected error occurred: ${error.message}`,
+      error: `An unexpected error occurred: ${(error as { message: string }).message}`,
     };
   }
 }
@@ -840,7 +840,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
     if (updateError) {
       return {
         success: false,
-        error: `Failed to update pallet: ${updateError.message}`,
+        error: `Failed to update pallet: ${(updateError as { message: string }).message}`,
       };
     }
 
@@ -903,7 +903,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
 
       return {
         success: false,
-        error: `Failed to update inventory: ${error.message}`,
+        error: `Failed to update inventory: ${(error as { message: string }).message}`,
       };
     }
 
@@ -937,7 +937,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
           'Stock Level Update Failed',
           palletInfo.plt_num,
           newLocation,
-          `Stock level update failed: ${stockError.message}`
+          `Stock level update failed: ${(stockError as { message: string }).message}`
         );
       } else {
         process.env.NODE_ENV !== 'production' &&
@@ -955,7 +955,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
         'Stock Level Update Error',
         palletInfo.plt_num,
         newLocation,
-        `Stock level update error: ${stockUpdateError.message}`
+        `Stock level update error: ${(stockUpdateError as { message: string }).message}`
       );
     }
 
@@ -1089,10 +1089,10 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
     }
   } catch (error: any) {
     console.error('Error in processDamageAction:', error);
-    await logErrorAction('unknown', `Damage processing error: ${error.message}`);
+    await logErrorAction('unknown', `Damage processing error: ${(error as { message: string }).message}`);
     return {
       success: false,
-      error: `An unexpected error occurred: ${error.message}`,
+      error: `An unexpected error occurred: ${(error as { message: string }).message}`,
     };
   }
 }
@@ -1176,7 +1176,7 @@ async function deleteGRNRecord(pltNum: string): Promise<{ success: boolean; erro
     console.error('[GRN Delete] Error deleting GRN record:', error);
     return {
       success: false,
-      error: `Failed to delete GRN record: ${error.message}`,
+      error: `Failed to delete GRN record: ${(error as { message: string }).message}`,
     };
   }
 }
@@ -1251,7 +1251,7 @@ export async function getUserHistoryAction(
     console.error('Error fetching user history:', error);
     return {
       success: false,
-      error: `Failed to fetch history: ${error.message}`,
+      error: `Failed to fetch history: ${(error as { message: string }).message}`,
     };
   }
 }

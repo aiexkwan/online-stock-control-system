@@ -1,9 +1,8 @@
-import { pdf } from '@react-pdf/renderer';
+import { renderReactPDFToBlob, loadPDF, createPDFDocument } from '@/lib/services/unified-pdf-service';
 import { PrintLabelPdf, PrintLabelPdfProps } from '@/components/print-label-pdf/PrintLabelPdf';
 import { format } from 'date-fns';
 import { SupabaseClient } from '@supabase/supabase-js'; // For type hinting Supabase client
 import QRCode from 'qrcode'; // Import QRCode library
-import { PDFDocument } from 'pdf-lib'; // Added for PDF merging
 
 // Define an interface for the expected structure of getPublicUrl response
 interface StoragePublicUrlResponse {
@@ -109,7 +108,7 @@ export async function generateAndUploadPdf({
   let blob: Blob | null = null;
   try {
     console.log('[pdfUtils.generateAndUploadPdf] 調用 @react-pdf/renderer...');
-    blob = await pdf(<PrintLabelPdf {...pdfProps} />).toBlob();
+    blob = await renderReactPDFToBlob(<PrintLabelPdf {...pdfProps} />);
     console.log('[pdfUtils.generateAndUploadPdf] PDF 渲染完成:', {
       blobExists: !!blob,
       blobSize: blob?.size,
@@ -312,14 +311,14 @@ export async function mergeAndPrintPdfs(
   }
 
   try {
-    const mergedPdf = await PDFDocument.create();
+    const mergedPdf = await createPDFDocument();
     for (const pdfBuffer of pdfArrayBuffers) {
       if (pdfBuffer.byteLength === 0) {
         console.warn('[mergeAndPrintPdfs] Encountered an empty ArrayBuffer, skipping.');
         continue;
       }
       try {
-        const pdfToMerge = await PDFDocument.load(pdfBuffer);
+        const pdfToMerge = await loadPDF(pdfBuffer);
         const copiedPages = await mergedPdf.copyPages(pdfToMerge, pdfToMerge.getPageIndices());
         copiedPages.forEach(page => {
           mergedPdf.addPage(page);

@@ -8,7 +8,7 @@
  * - Real-time metrics
  */
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { simplePerformanceMonitor, recordMetric } from '@/lib/performance/SimplePerformanceMonitor';
 import { 
@@ -342,5 +342,3 @@ function determineSeverity(
 
 // Re-export types for convenience
 export type { ErrorMetrics, ABTestResults, AutomatedPerformanceReport } from '@/lib/widgets/enhanced-performance-monitor';
-
-import { useState } from 'react';

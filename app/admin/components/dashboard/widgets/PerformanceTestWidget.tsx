@@ -49,7 +49,7 @@ const PerformanceTestWidget: React.FC<WidgetProps> = ({ className }) => {
       setProgress(100);
       setResult(testResult);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '性能測試失敗');
+      setError(err instanceof Error ? (err as { message: string }).message : '性能測試失敗');
     } finally {
       setIsRunning(false);
     }

@@ -62,13 +62,13 @@ test.describe('Admin Themes Quick Test', () => {
         const bodyText = await page.textContent('body');
         const hasContent = bodyText && bodyText.trim().length > 200;
         
-        success = hasContent && performanceErrors.length === 0;
+        success = Boolean(hasContent) && performanceErrors.length === 0;
         
         console.log(`  ${success ? '✅' : '❌'} ${theme}: ${performanceErrors.length === 0 ? '無 performance 錯誤' : '有 performance 錯誤'}`);
         console.log(`     Widgets: ${widgetCount}, 其他錯誤: ${allErrors.length - performanceErrors.length}`);
         
       } catch (error) {
-        console.log(`  ❌ ${theme}: 加載失敗 - ${error.message}`);
+        console.log(`  ❌ ${theme}: 加載失敗 - ${(error as Error).message}`);
       }
       
       const loadTime = Date.now() - startTime;

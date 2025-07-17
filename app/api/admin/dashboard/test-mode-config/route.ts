@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
  * 測試模式配置 API
  * 為測試環境提供最小化的模擬數據，避免大量真實 API 調用
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const startTime = Date.now();
   const requestId = Math.random().toString(36).substring(7);
   

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
-import ExcelJS from 'exceljs';
+
 import {
   jsonToWorksheet,
   setHeaderStyle,
@@ -13,6 +13,8 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
 
     // 創建 Excel 工作簿
+    // Dynamic import ExcelJS
+    const ExcelJS = await import('exceljs');
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'NewPennine WMS';
     workbook.created = new Date();

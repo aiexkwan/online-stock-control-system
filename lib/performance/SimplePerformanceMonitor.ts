@@ -32,6 +32,8 @@ interface SimpleStats {
   min: number;
   count: number;
   total: number;
+  mean: number; // 添加 mean 屬性作為 avg 的別名
+  stdDev: number; // 添加標準差計算
 }
 
 // 簡化的配置接口
@@ -48,6 +50,8 @@ interface SimpleConfig {
 
 // 警報接口
 interface PerformanceAlert {
+  type: 'warning' | 'critical';
+  message: string;
   metric: string;
   value: number;
   threshold: number;
@@ -145,6 +149,17 @@ class SimplePerformanceMonitor {
   }
 
   /**
+   * 獲取所有指標
+   */
+  getMetrics(): SimpleMetric[] {
+    const allMetrics: SimpleMetric[] = [];
+    this.metrics.forEach((metricArray) => {
+      allMetrics.push(...metricArray);
+    });
+    return allMetrics;
+  }
+
+  /**
    * 獲取簡單統計數據
    */
   getBasicStats(metricName: string): SimpleStats | null {
@@ -156,13 +171,20 @@ class SimplePerformanceMonitor {
     const values = metricArray.map(m => m.value);
     const total = values.reduce((sum, val) => sum + val, 0);
     const count = values.length;
+    const avg = total / count;
+    
+    // 計算標準差
+    const variance = values.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / count;
+    const stdDev = Math.sqrt(variance);
     
     return {
-      avg: Math.round(total / count),
+      avg: Math.round(avg),
       max: Math.max(...values),
       min: Math.min(...values),
       count,
-      total: Math.round(total)
+      total: Math.round(total),
+      mean: Math.round(avg), // mean 是 avg 的別名
+      stdDev: Math.round(stdDev)
     };
   }
 
@@ -206,7 +228,10 @@ class SimplePerformanceMonitor {
     }
     
     if (threshold && value > threshold) {
+      const alertType: 'warning' | 'critical' = value > threshold * 2 ? 'critical' : 'warning';
       const alert: PerformanceAlert = {
+        type: alertType,
+        message: `${metric} exceeded threshold: ${value} > ${threshold}`,
         metric,
         value,
         threshold,
@@ -244,6 +269,8 @@ class SimplePerformanceMonitor {
    */
   getSummary(): {
     totalMetrics: number;
+    categories: string[];
+    alertCount: number;
     activeCategories: string[];
     recentAlerts: number;
     memoryUsage: number;
@@ -264,6 +291,8 @@ class SimplePerformanceMonitor {
     
     return {
       totalMetrics,
+      categories: Array.from(activeCategories), // 匹配測試期望
+      alertCount: recentAlerts, // 匹配測試期望
       activeCategories: Array.from(activeCategories),
       recentAlerts,
       memoryUsage: this.getMemoryUsage()
@@ -317,8 +346,96 @@ class SimplePerformanceMonitor {
     const messageLevel = levels.indexOf(level);
     
     if (messageLevel <= configLevel) {
-      console[level as keyof Console](`[SimplePerformanceMonitor] ${message}`);
+      (console as any)[level](`[SimplePerformanceMonitor] ${message}`);
     }
+  }
+
+  /**
+   * 獲取實時指標 (for backward compatibility)
+   */
+  getRealtimeMetrics(): {
+    totalMetrics: number;
+    activeWidgets: number;
+    avgResponseTime: number;
+    errorRate: number;
+    alerts: PerformanceAlert[];
+  } {
+    const summary = this.getSummary();
+    const avgResponseTime = this.calculateAverageResponseTime();
+    const errorRate = this.calculateOverallErrorRate();
+    
+    return {
+      totalMetrics: summary.totalMetrics,
+      activeWidgets: this.metrics.size,
+      avgResponseTime,
+      errorRate,
+      alerts: this.getAlerts()
+    };
+  }
+
+  /**
+   * 獲取特定 Widget 的報告 (for backward compatibility)
+   */
+  getWidgetReport(widgetId: string): {
+    widgetId: string;
+    v2Performance: {
+      loadTime: SimpleStats;
+      renderTime: SimpleStats;
+      sampleCount: number;
+    } | null;
+    legacyPerformance: {
+      loadTime: SimpleStats;
+      renderTime: SimpleStats;
+      sampleCount: number;
+    } | null;
+  } {
+    const loadTimeStats = this.getBasicStats(`${widgetId}_loadTime`);
+    const renderTimeStats = this.getBasicStats(`${widgetId}_renderTime`);
+    const sampleCount = this.metrics.get(`${widgetId}_loadTime`)?.length || 0;
+    
+    return {
+      widgetId,
+      v2Performance: loadTimeStats && renderTimeStats ? {
+        loadTime: loadTimeStats,
+        renderTime: renderTimeStats,
+        sampleCount
+      } : null,
+      legacyPerformance: null // 舊版本已棄用
+    };
+  }
+
+  /**
+   * 開始監控一個 Widget (for backward compatibility)
+   */
+  startMonitoring(widgetId: string, variant: string = 'v2'): PerformanceTimer {
+    const startTime = performance.now();
+    
+    return new PerformanceTimer(widgetId, variant, startTime, this);
+  }
+
+  /**
+   * 計算平均響應時間
+   */
+  private calculateAverageResponseTime(): number {
+    const allMetrics = this.getMetrics();
+    if (allMetrics.length === 0) return 0;
+    
+    const loadTimeMetrics = allMetrics.filter(m => m.name.includes('loadTime'));
+    if (loadTimeMetrics.length === 0) return 0;
+    
+    const totalLoadTime = loadTimeMetrics.reduce((sum, m) => sum + m.value, 0);
+    return Math.round(totalLoadTime / loadTimeMetrics.length);
+  }
+
+  /**
+   * 計算整體錯誤率
+   */
+  private calculateOverallErrorRate(): number {
+    const errorMetrics = this.getMetrics().filter(m => m.name.includes('error'));
+    const totalMetrics = this.getMetrics().length;
+    
+    if (totalMetrics === 0) return 0;
+    return errorMetrics.length / totalMetrics;
   }
 
   /**
@@ -346,6 +463,9 @@ class SimplePerformanceMonitor {
 export const simplePerformanceMonitor = SimplePerformanceMonitor.getInstance();
 export default simplePerformanceMonitor;
 
+// 導出類
+export { SimplePerformanceMonitor };
+
 // 便利函數
 export const recordMetric = (name: string, value: number, category?: string) => {
   simplePerformanceMonitor.recordMetric(name, value, category);
@@ -362,6 +482,57 @@ export const getAlerts = () => {
 export const getSummary = () => {
   return simplePerformanceMonitor.getSummary();
 };
+
+/**
+ * 性能計時器類 (for backward compatibility)
+ */
+class PerformanceTimer {
+  private widgetId: string;
+  private variant: string;
+  private startTime: number;
+  private renderStartTime?: number;
+  private dataFetchStartTime?: number;
+  private monitor: SimplePerformanceMonitor;
+
+  constructor(widgetId: string, variant: string, startTime: number, monitor: SimplePerformanceMonitor) {
+    this.widgetId = widgetId;
+    this.variant = variant;
+    this.startTime = startTime;
+    this.monitor = monitor;
+  }
+
+  startRender(): void {
+    this.renderStartTime = performance.now();
+  }
+
+  startDataFetch(): void {
+    this.dataFetchStartTime = performance.now();
+  }
+
+  complete(context?: {
+    route?: string;
+    sessionId?: string;
+    userId?: string;
+  }): void {
+    const endTime = performance.now();
+    const loadTime = endTime - this.startTime;
+    
+    // 記錄加載時間
+    this.monitor.recordMetric(`${this.widgetId}_loadTime`, loadTime, 'performance');
+    
+    // 記錄渲染時間（如果有）
+    if (this.renderStartTime) {
+      const renderTime = endTime - this.renderStartTime;
+      this.monitor.recordMetric(`${this.widgetId}_renderTime`, renderTime, 'performance');
+    }
+    
+    // 記錄數據獲取時間（如果有）
+    if (this.dataFetchStartTime) {
+      const dataFetchTime = endTime - this.dataFetchStartTime;
+      this.monitor.recordMetric(`${this.widgetId}_dataFetchTime`, dataFetchTime, 'performance');
+    }
+  }
+}
 
 // 類型導出
 export type { SimpleMetric, SimpleStats, SimpleConfig, PerformanceAlert };

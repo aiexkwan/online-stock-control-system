@@ -33,7 +33,7 @@ function createSupabaseAdmin() {
   });
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     process.env.NODE_ENV !== 'production' &&
       process.env.NODE_ENV !== 'production' &&
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     // 轉換文件為 Blob
     const arrayBuffer = await file.arrayBuffer();
-    const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+    const blob = new Blob([arrayBuffer as string], { type: 'application/pdf' });
 
     process.env.NODE_ENV !== 'production' &&
       process.env.NODE_ENV !== 'production' &&
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
       console.error('[Upload PDF API] Storage 上傳錯誤:', uploadError);
       return NextResponse.json(
         {
-          error: `Storage upload failed: ${uploadError.message}`,
+          error: `Storage upload failed: ${(uploadError as { message: string }).message}`,
         },
         { status: 500 }
       );
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
     console.error('[Upload PDF API] 意外錯誤:', error);
     return NextResponse.json(
       {
-        error: `Server error: ${error.message}`,
+        error: `Server error: ${(error as { message: string }).message}`,
       },
       { status: 500 }
     );

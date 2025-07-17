@@ -94,7 +94,7 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
       setTotalCount(response.totalCount);
     } catch (err) {
       console.error('Error fetching orders:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch orders');
+      setError(err instanceof Error ? (err as { message: string }).message : 'Failed to fetch orders');
     } finally {
       setLoading(false);
     }
@@ -126,7 +126,7 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
     setPage(0);
     setAllOrders([]);
     await fetchOrders(0);
-  }, [fetchOrders]);
+  }, [fetchOrders as string]);
 
   // Loading states
   const isLoading = loading && page === 0;

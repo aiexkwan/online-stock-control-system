@@ -556,7 +556,7 @@ export function useVoidPallet() {
             (process.env.NODE_ENV as string) !== 'production' &&
             console.log('[Auto Reprint] Generating PDF using QC Label logic...');
           const { prepareQcLabelData, mergeAndPrintPdfs } = await import('@/lib/pdfUtils');
-          const { pdf } = await import('@react-pdf/renderer');
+          const { renderReactPDFToBlob } = await import('@/lib/services/unified-pdf-service');
           const { PrintLabelPdf } = await import('@/components/print-label-pdf/PrintLabelPdf');
 
           (process.env.NODE_ENV as string) !== 'production' &&
@@ -568,7 +568,7 @@ export function useVoidPallet() {
             (process.env.NODE_ENV as string) !== 'production' &&
             console.log('[Auto Reprint] Generating PDF blob...');
           // Use JSX syntax now that this is a .tsx file
-          const pdfBlob = await pdf(<PrintLabelPdf {...pdfLabelProps} />).toBlob();
+          const pdfBlob = await renderReactPDFToBlob(<PrintLabelPdf {...pdfLabelProps} />);
 
           if (!pdfBlob) {
             throw new Error('PDF generation failed to return a blob.');

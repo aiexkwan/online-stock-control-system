@@ -41,7 +41,7 @@ test.describe('Widget Error Detection', () => {
     // 檢查頁面是否正常渲染（沒有白屏）
     const bodyContent = await page.textContent('body');
     expect(bodyContent).toBeTruthy();
-    expect(bodyContent.length).toBeGreaterThan(0);
+    expect(bodyContent?.length || 0).toBeGreaterThan(0);
     
     console.log('✅ Widget error test passed - no recordMetric errors found');
   });

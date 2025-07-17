@@ -5,7 +5,7 @@
 
 import { createHash } from 'crypto';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
-import path from 'path';
+import * as path from 'path';
 
 export interface CacheConfig {
   enabled: boolean;
@@ -40,7 +40,7 @@ export class TestCacheStrategy {
     size: 0,
   };
 
-  private constructor(config: CacheConfig) {
+  protected constructor(config: CacheConfig) {
     this.config = config;
     this.ensureCacheDirectory();
   }
@@ -168,6 +168,16 @@ export class TestCacheStrategy {
 
 // 特定緩存類型
 export class SupabaseRpcCache extends TestCacheStrategy {
+  constructor(config?: Partial<CacheConfig>) {
+    const defaultConfig: CacheConfig = {
+      enabled: process.env.JEST_CACHE_ENABLED !== 'false',
+      directory: path.join(process.cwd(), '.jest-cache', 'rpc-data'),
+      ttl: 24 * 60 * 60 * 1000, // 24 hours
+      maxSize: 100, // 100 MB
+    };
+    super({ ...defaultConfig, ...config });
+  }
+
   async cacheRpcCall(
     functionName: string,
     params: any,
@@ -185,6 +195,16 @@ export class SupabaseRpcCache extends TestCacheStrategy {
 }
 
 export class WidgetDataCache extends TestCacheStrategy {
+  constructor(config?: Partial<CacheConfig>) {
+    const defaultConfig: CacheConfig = {
+      enabled: process.env.JEST_CACHE_ENABLED !== 'false',
+      directory: path.join(process.cwd(), '.jest-cache', 'widget-data'),
+      ttl: 24 * 60 * 60 * 1000, // 24 hours
+      maxSize: 100, // 100 MB
+    };
+    super({ ...defaultConfig, ...config });
+  }
+
   async cacheWidgetData(
     widgetId: string,
     timeframe: string,
@@ -202,6 +222,16 @@ export class WidgetDataCache extends TestCacheStrategy {
 }
 
 export class FileSystemCache extends TestCacheStrategy {
+  constructor(config?: Partial<CacheConfig>) {
+    const defaultConfig: CacheConfig = {
+      enabled: process.env.JEST_CACHE_ENABLED !== 'false',
+      directory: path.join(process.cwd(), '.jest-cache', 'file-data'),
+      ttl: 24 * 60 * 60 * 1000, // 24 hours
+      maxSize: 100, // 100 MB
+    };
+    super({ ...defaultConfig, ...config });
+  }
+
   async cacheFileRead(filePath: string, content: string): Promise<void> {
     await this.set(`file:${filePath}`, content);
   }

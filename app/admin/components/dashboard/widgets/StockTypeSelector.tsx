@@ -78,12 +78,12 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
     } finally {
       setLoading(false);
     }
-  }, [isEditMode]);
+  }, [isEditMode as string]);
 
   // Initial data load
   useEffect(() => {
     fetchStockData();
-  }, [fetchStockData]);
+  }, [fetchStockData as string]);
 
   // Refresh on trigger
   useEffect(() => {
@@ -149,7 +149,7 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
         >
           <option value='all'>All Types</option>
           <option value='non-material'>Non-Material</option>
-          {productTypes.map(type => (
+          {productTypes.map((type: any) => (
             <option key={type} value={type}>
               {type}
             </option>

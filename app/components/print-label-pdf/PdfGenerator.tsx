@@ -1,6 +1,6 @@
 'use client';
 
-import { pdf, Font } from '@react-pdf/renderer';
+import { renderReactPDFToBlob, registerFont } from '@/lib/services/unified-pdf-service';
 import {
   PrintLabelPdf,
   PrintLabelPdfProps,
@@ -58,7 +58,7 @@ export async function generateAndUploadPdf(
 
   // Font registration (optional for minimal test, but good to keep if fonts are used elsewhere or for future)
   try {
-    Font.register({
+    await registerFont({
       family: 'Montserrat',
       fonts: [
         { src: '/fonts/Montserrat-Regular.ttf' },
@@ -77,7 +77,7 @@ export async function generateAndUploadPdf(
       (process.env.NODE_ENV as string) !== 'production' &&
       console.log('[PdfGenerator] Attempting to generate PDF blob with PrintLabelPdf...');
     // Use the actual PrintLabelPdf component and pass the pdfData props
-    const blob = await pdf(<PrintLabelPdf {...pdfData} />).toBlob();
+    const blob = await renderReactPDFToBlob(<PrintLabelPdf {...pdfData} />);
     (process.env.NODE_ENV as string) !== 'production' &&
       (process.env.NODE_ENV as string) !== 'production' &&
       console.log(

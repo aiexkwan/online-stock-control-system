@@ -49,7 +49,7 @@ export const TopProductsByQuantityWidget = React.memo(function TopProductsByQuan
       startDate: timeFrame.start.toISOString(),
       endDate: timeFrame.end.toISOString(),
     };
-  }, [timeFrame]);
+  }, [timeFrame as string]);
 
   // API 狀態管理
   const [loading, setLoading] = useState(!isEditMode);
@@ -83,7 +83,7 @@ export const TopProductsByQuantityWidget = React.memo(function TopProductsByQuan
         }
       } catch (err) {
         console.error('Error fetching top products:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        setError(err instanceof Error ? (err as { message: string }).message : 'Unknown error');
       } finally {
         setLoading(false);
       }
@@ -102,7 +102,7 @@ export const TopProductsByQuantityWidget = React.memo(function TopProductsByQuan
     }
     
     return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`;
-  }, [timeFrame]);
+  }, [timeFrame as string]);
 
   if (isEditMode) {
     return (

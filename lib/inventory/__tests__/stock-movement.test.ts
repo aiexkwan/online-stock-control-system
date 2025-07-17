@@ -3,7 +3,7 @@
  * Testing inventory movement tracking and validation
  */
 
-import { StockMovementService } from '../services/StockMovementService';
+import { StockMovementService, MovementResult } from '../services/StockMovementService';
 import { LocationMapper } from '../utils/locationMapper';
 import { createMockPallet, createMockUser, createSupabaseResponse, createSupabaseError } from '@/__tests__/mocks/factories';
 import { createMockSupabaseClient, createMockSupabaseChain } from './test-helpers';
@@ -47,7 +47,7 @@ describe('StockMovementService', () => {
   let service: StockMovementService;
 
   beforeEach(() => {
-    service = new StockMovementService(mockSupabase, LocationMapper as any);
+    service = new StockMovementService(mockSupabase as any, LocationMapper as any);
     jest.clearAllMocks();
   });
 
@@ -88,8 +88,8 @@ describe('StockMovementService', () => {
 
       const result = await service.recordMovement(movement);
 
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Invalid from location');
+      expect((result as MovementResult).success).toBe(false);
+      expect((result as MovementResult).error).toContain('Invalid from location');
       expect(mockSupabase.from).not.toHaveBeenCalled();
     });
 
@@ -104,8 +104,8 @@ describe('StockMovementService', () => {
 
       const result = await service.recordMovement(movement);
 
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Quantity must be positive');
+      expect((result as MovementResult).success).toBe(false);
+      expect((result as MovementResult).error).toContain('Quantity must be positive');
     });
 
     it('should handle database errors', async () => {
@@ -122,8 +122,8 @@ describe('StockMovementService', () => {
 
       const result = await service.recordMovement(movement);
 
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Database error');
+      expect((result as MovementResult).success).toBe(false);
+      expect((result as MovementResult).error).toContain('Database error');
     });
   });
 
@@ -369,7 +369,8 @@ describe('StockMovementService', () => {
         palletCode: 'PLT12345678',
         fromLocation: 'injection',
         toLocation: 'pipeline',
-        quantity: 100
+        quantity: 100,
+        userId: 'user-123'
       };
 
       const result = await service.validateMovement(movement);
@@ -400,7 +401,8 @@ describe('StockMovementService', () => {
         palletCode: 'PLT12345678',
         fromLocation: 'injection',
         toLocation: 'pipeline',
-        quantity: 100
+        quantity: 100,
+        userId: 'user-123'
       };
 
       const result = await service.validateMovement(movement);
@@ -417,7 +419,8 @@ describe('StockMovementService', () => {
         palletCode: 'PLT99999999',
         fromLocation: 'injection',
         toLocation: 'pipeline',
-        quantity: 100
+        quantity: 100,
+        userId: 'user-123'
       };
 
       const result = await service.validateMovement(movement);

@@ -25,7 +25,7 @@ import {
   TransactionSource,
   TransactionOperation,
 } from '@/app/services/transactionLog.service';
-import { pdf } from '@react-pdf/renderer';
+// Import moved to dynamic import where needed
 import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf';
 import {
   PALLET_WEIGHTS,
@@ -283,7 +283,8 @@ export const useGrnLabelBusinessV3 = ({
                 if (pdfProps) {
                   let pdfBlob: Blob;
                   try {
-                    pdfBlob = await pdf(<PrintLabelPdf {...pdfProps} />).toBlob();
+                    const { renderReactPDFToBlob } = await import('@/lib/services/unified-pdf-service');
+                    pdfBlob = await renderReactPDFToBlob(<PrintLabelPdf {...pdfProps} />);
                     collectedPdfBlobs.push(pdfBlob);
                     actions.updateProgressStatus(i, 'Success');
                   } catch (error) {

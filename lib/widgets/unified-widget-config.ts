@@ -27,8 +27,6 @@ export interface UnifiedWidgetConfig {
     cacheEnabled?: boolean;
     realtimeUpdates?: boolean;
     supportDateRange?: boolean;
-    configType?: string; // For Universal widgets
-    universalWidget?: boolean;
   };
 }
 
@@ -90,9 +88,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     metadata: {
       dataSource: 'record_palletinfo',
       refreshInterval: 5000,
-      realtimeUpdates: true,
-      universalWidget: true,
-      configType: 'awaitLocationQtyConfig'
+      realtimeUpdates: true
     }
   },
 
@@ -106,9 +102,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     metadata: {
       dataSource: 'record_transfer',
       refreshInterval: 60000,
-      cacheEnabled: true,
-      universalWidget: true,
-      configType: 'yesterdayTransferConfig'
+      cacheEnabled: true
     }
   },
 
@@ -122,9 +116,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     metadata: {
       dataSource: 'record_palletinfo',
       refreshInterval: 10000,
-      realtimeUpdates: true,
-      universalWidget: true,
-      configType: 'stillInAwaitConfig'
+      realtimeUpdates: true
     }
   },
 
@@ -138,9 +130,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     metadata: {
       dataSource: 'record_palletinfo',
       refreshInterval: 10000,
-      realtimeUpdates: true,
-      universalWidget: true,
-      configType: 'stillInAwaitPercentageConfig'
+      realtimeUpdates: true
     }
   },
 
@@ -298,9 +288,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
       refreshInterval: 30000,
       supportsFilters: true,
       supportDateRange: true,
-      exportFormats: ['csv', 'excel'],
-      universalWidget: true,
-      configType: 'ordersListConfig'
+      exportFormats: ['csv', 'excel']
     }
   },
 
@@ -314,9 +302,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     metadata: {
       refreshInterval: 60000,
       supportsFilters: true,
-      exportFormats: ['csv'],
-      universalWidget: true,
-      configType: 'otherFilesListConfig'
+      exportFormats: ['csv']
     }
   },
 
@@ -349,9 +335,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
       refreshInterval: 30000,
       supportsFilters: true,
       supportDateRange: true,
-      exportFormats: ['csv'],
-      universalWidget: true,
-      configType: 'orderStateListConfig'
+      exportFormats: ['csv']
     }
   },
 
@@ -419,9 +403,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     lazyLoad: true,
     preloadPriority: 7,
     metadata: {
-      requiresAuth: true,
-      universalWidget: true,
-      configType: 'uploadOrdersConfig'
+      requiresAuth: true
     }
   },
 
@@ -433,9 +415,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     lazyLoad: true,
     preloadPriority: 6,
     metadata: {
-      requiresAuth: true,
-      universalWidget: true,
-      configType: 'uploadFilesConfig'
+      requiresAuth: true
     }
   },
 
@@ -597,10 +577,10 @@ export function toWidgetDefinition(config: UnifiedWidgetConfig): Partial<WidgetD
     description: config.description,
     lazyLoad: config.lazyLoad,
     preloadPriority: config.preloadPriority,
-    dataSource: config.metadata.dataSource,
-    refreshInterval: config.metadata.refreshInterval,
-    supportsFilters: config.metadata.supportsFilters,
-    exportFormats: config.metadata.exportFormats,
-    requiresAuth: config.metadata.requiresAuth
+    // dataSource: config.metadata.dataSource, // Removed for compatibility
+    // refreshInterval: config.metadata.refreshInterval, // Removed for compatibility
+    // supportsFilters: config.metadata.supportsFilters, // Removed for compatibility
+    // exportFormats: config.metadata.exportFormats, // Removed for compatibility
+    // requiresAuth: config.metadata.requiresAuth // Removed for compatibility
   };
 }

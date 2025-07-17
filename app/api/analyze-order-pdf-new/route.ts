@@ -77,14 +77,14 @@ async function recordOrderUploadHistory(orderRef: string, uploadedBy: string): P
     });
 
     if (error) {
-      apiLogger.error('[recordOrderUploadHistory] Error recording history:', error);
+      apiLogger.error('[recordOrderUploadHistory as string] Error recording history:', error);
     } else {
       apiLogger.info(
-        `[recordOrderUploadHistory] Recorded: Order Upload for ${orderRef} by user ID ${userId}`
+        `[recordOrderUploadHistory as string] Recorded: Order Upload for ${orderRef} by user ID ${userId}`
       );
     }
   } catch (error) {
-    apiLogger.error('[recordOrderUploadHistory] Unexpected error:', error);
+    apiLogger.error('[recordOrderUploadHistory as string] Unexpected error:', error);
   }
 }
 
@@ -167,8 +167,8 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
 
     return extractedText;
   } catch (error: any) {
-    systemLogger.error('[PDF Text Extract] Error', { error: error.message });
-    throw new Error(`PDF text extraction failed: ${error.message}`);
+    systemLogger.error('[PDF Text Extract] Error', { error: (error as { message: string }).message });
+    throw new Error(`PDF text extraction failed: ${(error as { message: string }).message}`);
   }
 }
 
@@ -239,7 +239,7 @@ function preprocessPdfText(rawText: string): string {
 
       deliveryAdd = rawAddress
         .split('\n')
-        .map(line => line.trim())
+        .map((line: any) => line.trim())
         .filter(line => {
           if (!line) return false;
           if (
@@ -273,8 +273,8 @@ function preprocessPdfText(rawText: string): string {
           const lineIndex = lines.indexOf(line);
           const addressLines = lines
             .slice(Math.max(0, lineIndex - 3), lineIndex + 1)
-            .map(l => l.trim())
-            .filter(l => l && !l.match(/^(Tel:|Email:|Date:|Account|Customer)/i));
+            .map((l: any) => l.trim())
+            .filter((l: any) => l && !l.match(/^(Tel:|Email:|Date:|Account|Customer)/i));
 
           if (addressLines.length > 0) {
             deliveryAdd = addressLines.join(', ');
@@ -424,12 +424,12 @@ async function uploadToStorageAsync(
     systemLogger.info('[Background Storage] Upload completed', { publicUrl: urlData.publicUrl });
     return urlData.publicUrl;
   } catch (error: any) {
-    systemLogger.error('[Background Storage] Upload failed', { error: error.message });
+    systemLogger.error('[Background Storage] Upload failed', { error: (error as { message: string }).message });
     throw error;
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const startTime = Date.now();
   logApiRequest('POST', '/api/analyze-order-pdf-new');
 
@@ -486,7 +486,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (fileError: any) {
       apiLogger.error('[PDF Analysis] FormData processing error', {
-        error: fileError.message,
+        error: (fileError as { message: string }).message,
         stack: fileError.stack,
         fileName,
         fileSize: file?.size,
@@ -496,7 +496,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Failed to process uploaded file',
-          details: fileError.message,
+          details: (fileError as { message: string }).message,
         },
         { status: 400 }
       );
@@ -606,7 +606,7 @@ export async function POST(request: NextRequest) {
             }
           } catch (jsonUpdateError: any) {
             apiLogger.error('[PDF Analysis] Error updating doc_upload json field (cached)', {
-              error: jsonUpdateError.message,
+              error: (jsonUpdateError as { message: string }).message,
             });
           }
 
@@ -645,17 +645,17 @@ export async function POST(request: NextRequest) {
             emailResult = {
               success: true,
               error: '',
-              message: emailData.message,
+              message: (emailData as { message: string }).message,
               emailId: emailData.emailId,
               recipients: emailData.recipients,
             } as any;
           } catch (emailError: any) {
             apiLogger.error('[PDF Analysis] Error sending order created email (cached)', {
-              error: emailError.message,
+              error: (emailError as { message: string }).message,
             });
             emailResult = {
               success: false,
-              error: `Email service error: ${emailError.message}`,
+              error: `Email service error: ${(emailError as { message: string }).message}`,
             };
           }
 
@@ -673,13 +673,13 @@ export async function POST(request: NextRequest) {
           });
         } catch (insertError: any) {
           apiLogger.error('[PDF Analysis] Database insertion failed', {
-            error: insertError.message,
+            error: (insertError as { message: string }).message,
           });
           logApiResponse('POST', '/api/analyze-order-pdf-new', 500, Date.now() - startTime);
           return NextResponse.json(
             {
               error: 'Database insertion failed',
-              details: insertError.message,
+              details: (insertError as { message: string }).message,
             },
             { status: 500 }
           );
@@ -707,12 +707,12 @@ export async function POST(request: NextRequest) {
         reductionPercent: textReductionPercentage,
       });
     } catch (textError: any) {
-      apiLogger.error('[PDF Analysis] Text extraction failed', { error: textError.message });
+      apiLogger.error('[PDF Analysis] Text extraction failed', { error: (textError as { message: string }).message });
       logApiResponse('POST', '/api/analyze-order-pdf-new', 500, Date.now() - startTime);
       return NextResponse.json(
         {
           error: 'PDF text extraction failed',
-          details: textError.message,
+          details: (textError as { message: string }).message,
           suggestion:
             'The PDF might be a scanned image. Please ensure the PDF contains selectable text.',
         },
@@ -727,12 +727,12 @@ export async function POST(request: NextRequest) {
       prompt = fs.readFileSync(promptPath, 'utf8');
       apiLogger.debug('[PDF Analysis] Prompt loaded from file');
     } catch (promptError: any) {
-      apiLogger.error('[PDF Analysis] Failed to read prompt file', { error: promptError.message });
+      apiLogger.error('[PDF Analysis] Failed to read prompt file', { error: (promptError as { message: string }).message });
       logApiResponse('POST', '/api/analyze-order-pdf-new', 500, Date.now() - startTime);
       return NextResponse.json(
         {
           error: 'Failed to load prompt file',
-          details: promptError.message,
+          details: (promptError as { message: string }).message,
         },
         { status: 500 }
       );
@@ -769,7 +769,7 @@ export async function POST(request: NextRequest) {
         response_format: { type: 'json_object' },
       });
     } catch (error: any) {
-      apiLogger.warn('[PDF Analysis] GPT-4o failed', { error: error.message });
+      apiLogger.warn('[PDF Analysis] GPT-4o failed', { error: (error as { message: string }).message });
 
       apiLogger.info('[PDF Analysis] Falling back to GPT-4-turbo model');
       try {
@@ -791,7 +791,7 @@ export async function POST(request: NextRequest) {
           response_format: { type: 'json_object' },
         });
       } catch (fallbackError: any) {
-        apiLogger.error('[PDF Analysis] GPT-4-turbo also failed', { error: fallbackError.message });
+        apiLogger.error('[PDF Analysis] GPT-4-turbo also failed', { error: (fallbackError as { message: string }).message });
         throw new Error('Both GPT-4o and GPT-4-turbo models failed');
       }
     }
@@ -870,7 +870,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (parseError: any) {
       apiLogger.error('[PDF Analysis] Parse error', {
-        error: parseError.message,
+        error: (parseError as { message: string }).message,
         rawResponse: extractedContent.substring(0, 500),
         sentTextPreview: extractedText.substring(0, 1000),
       });
@@ -879,7 +879,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Failed to parse OpenAI response',
-          details: parseError.message,
+          details: (parseError as { message: string }).message,
           rawResponse: extractedContent.substring(0, 500),
           sentText: extractedText.substring(0, 500),
         },
@@ -907,7 +907,7 @@ export async function POST(request: NextRequest) {
 
         apiLogger.debug('[PDF Analysis] Raw orderData', { orderData });
 
-        const insertData = orderData.map(order => {
+        const insertData = orderData.map((order: any) => {
           const record = {
             order_ref: String(order.order_ref),
             product_code: order.product_code,
@@ -994,7 +994,7 @@ export async function POST(request: NextRequest) {
             }
           } catch (jsonUpdateError: any) {
             apiLogger.error('[PDF Analysis] Error updating doc_upload json field', {
-              error: jsonUpdateError.message,
+              error: (jsonUpdateError as { message: string }).message,
             });
           }
         } else {
@@ -1024,7 +1024,7 @@ export async function POST(request: NextRequest) {
           const { sendOrderCreatedEmail } = await import('../../services/emailService');
 
           const emailRequestBody = {
-            orderData: orderData.map(order => ({
+            orderData: orderData.map((order: any) => ({
               order_ref: order.order_ref,
               product_code: order.product_code,
               product_desc: order.product_desc,
@@ -1046,17 +1046,17 @@ export async function POST(request: NextRequest) {
           emailResult = {
             success: true,
             error: '',
-            message: emailData.message,
+            message: (emailData as { message: string }).message,
             emailId: emailData.emailId,
             recipients: emailData.recipients,
           } as any;
         } catch (emailError: any) {
           apiLogger.error('[PDF Analysis] Error sending order created email', {
-            error: emailError.message,
+            error: (emailError as { message: string }).message,
           });
           emailResult = {
             success: false,
-            error: `Email service error: ${emailError.message}`,
+            error: `Email service error: ${(emailError as { message: string }).message}`,
           };
         }
 
@@ -1068,7 +1068,7 @@ export async function POST(request: NextRequest) {
         let acoInsertResults = null;
         if (acoRecords.length > 0) {
           try {
-            const acoInsertData = acoRecords.map(record => ({
+            const acoInsertData = acoRecords.map((record: any) => ({
               order_ref: record.order_ref,
               code: record.product_code,
               required_qty: record.product_qty,
@@ -1081,13 +1081,13 @@ export async function POST(request: NextRequest) {
               .select();
 
             if (acoError) {
-              apiLogger.error('[PDF Analysis] ACO insertion failed', { error: acoError.message });
+              apiLogger.error('[PDF Analysis] ACO insertion failed', { error: (acoError as { message: string }).message });
             } else {
               acoInsertResults = acoResults;
               apiLogger.info('[PDF Analysis] ACO records inserted', { count: acoResults.length });
             }
           } catch (acoError: any) {
-            apiLogger.error('[PDF Analysis] ACO insertion error', { error: acoError.message });
+            apiLogger.error('[PDF Analysis] ACO insertion error', { error: (acoError as { message: string }).message });
           }
         }
 
@@ -1113,12 +1113,12 @@ export async function POST(request: NextRequest) {
           },
         });
       } catch (insertError: any) {
-        apiLogger.error('[PDF Analysis] Database insertion failed', { error: insertError.message });
+        apiLogger.error('[PDF Analysis] Database insertion failed', { error: (insertError as { message: string }).message });
         logApiResponse('POST', '/api/analyze-order-pdf-new', 500, Date.now() - startTime);
         return NextResponse.json(
           {
             error: 'Database insertion failed',
-            details: insertError.message,
+            details: (insertError as { message: string }).message,
           },
           { status: 500 }
         );
@@ -1146,20 +1146,20 @@ export async function POST(request: NextRequest) {
     }
   } catch (error: any) {
     apiLogger.error('[PDF Analysis] System error', {
-      message: error.message,
+      message: (error as { message: string }).message,
       name: error.name,
       code: error.code,
-      stack: error.stack,
+      stack: (error as Error).stack,
     });
 
     logApiResponse('POST', '/api/analyze-order-pdf-new', 500, Date.now() - startTime);
     return NextResponse.json(
       {
         error: 'System error',
-        details: error.message,
+        details: (error as { message: string }).message,
         errorType: error.name,
         errorCode: error.code,
-        ...(isDevelopment() && { stack: error.stack }),
+        ...(isDevelopment() && { stack: (error as Error).stack }),
       },
       { status: 500 }
     );
@@ -1167,7 +1167,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GET 方法：清理緩存和獲取緩存狀態
-export async function GET(request: NextRequest) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const startTime = Date.now();
   logApiRequest('GET', '/api/analyze-order-pdf-new');
 
@@ -1212,12 +1212,12 @@ export async function GET(request: NextRequest) {
       availableActions: ['clear-cache', 'cache-status'],
     });
   } catch (error: any) {
-    apiLogger.error('[PDF Analysis] GET request error', { error: error.message });
+    apiLogger.error('[PDF Analysis] GET request error', { error: (error as { message: string }).message });
     logApiResponse('GET', '/api/analyze-order-pdf-new', 500, Date.now() - startTime);
     return NextResponse.json(
       {
         error: 'Failed to process request',
-        details: error.message,
+        details: (error as { message: string }).message,
       },
       { status: 500 }
     );

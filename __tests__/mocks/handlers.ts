@@ -84,7 +84,7 @@ export const handlers = [
 
   // Ask database endpoint (AI-powered queries)
   http.post(`${API_BASE}/api/ask-database`, async ({ request }) => {
-    const { query } = await request.json();
+    const { query } = await request.json() as { query: string };
     
     // Mock AI response
     return HttpResponse.json({

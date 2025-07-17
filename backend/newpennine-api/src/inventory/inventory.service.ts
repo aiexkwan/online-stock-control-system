@@ -107,10 +107,16 @@ export class InventoryService {
       // Transform the data - mapping to available columns
       const transformedData: InventoryDto[] = (data || []).map((item: any) => {
         // Calculate total quantity from all location columns
-        const totalGoodQty = (item.injection || 0) + (item.pipeline || 0) + (item.prebook || 0) + 
-                            (item.await || 0) + (item.fold || 0) + (item.bulk || 0) + 
-                            (item.backcarpark || 0) + (item.await_grn || 0);
-        
+        const totalGoodQty =
+          (item.injection || 0) +
+          (item.pipeline || 0) +
+          (item.prebook || 0) +
+          (item.await || 0) +
+          (item.fold || 0) +
+          (item.bulk || 0) +
+          (item.backcarpark || 0) +
+          (item.await_grn || 0);
+
         return {
           id: item.uuid || item.plt_num, // Use UUID or plt_num as ID
           plt_num: item.plt_num,
@@ -275,7 +281,7 @@ export class InventoryService {
             } as any);
           }
 
-          const summary = summaryMap.get(key)!;
+          const summary = summaryMap.get(key);
           (summary as any).total_locations.add(item.loc);
           (summary as any).total_pallets.add(item.plt_num);
           (summary as any).products_count.add(item.product_code);

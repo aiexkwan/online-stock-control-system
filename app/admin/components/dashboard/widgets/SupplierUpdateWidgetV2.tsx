@@ -143,7 +143,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
         setSearchLoading(false);
       }
     },
-    [handleWarning]
+    [handleWarning as string]
   );
 
   // React to search data changes
@@ -190,7 +190,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
       setShowForm(true);
       setShowCreateDialog(false);
     }
-  }, [supplierData]);
+  }, [supplierData as string]);
 
   // Confirm create supplier
   const handleConfirmCreate = useCallback(() => {
@@ -205,7 +205,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
       type: 'info',
       message: 'Fill in supplier details',
     });
-  }, [searchedCode]);
+  }, [searchedCode as string]);
 
   // Cancel operation
   const handleCancel = useCallback(() => {
@@ -287,11 +287,11 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
               isEditing,
             },
           },
-          error.message || 'Unexpected error'
+          (error as { message: string }).message || 'Unexpected error'
         );
         setStatusMessage({
           type: 'error',
-          message: error.message || 'Unexpected error',
+          message: (error as { message: string }).message || 'Unexpected error',
         });
       } finally {
         setIsLoading(false);
@@ -304,7 +304,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
   const handleInputChange = useCallback((field: keyof SupplierData, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value,
+      [field as string]: value,
     }));
   }, []);
 
@@ -383,7 +383,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
                       : 'bg-info/20 text-info'
               )}
             >
-              {statusMessage.message}
+              {(statusMessage as { message: string }).message}
             </div>
           )}
 

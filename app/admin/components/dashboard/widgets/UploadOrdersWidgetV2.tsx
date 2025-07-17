@@ -88,7 +88,7 @@ export const UploadOrdersWidgetV2 = React.memo(function UploadOrdersWidgetV2({
         // 更新進度
         const updateProgress = (progress: number) => {
           setUploadingFiles(prev =>
-            prev.map(f => (f.id === uploadingFile.id ? { ...f, progress } : f))
+            prev.map((f: any) => (f.id === uploadingFile.id ? { ...f, progress } : f))
           );
         };
 
@@ -156,13 +156,13 @@ export const UploadOrdersWidgetV2 = React.memo(function UploadOrdersWidgetV2({
               ? {
                   ...f,
                   status: 'error',
-                  error: error instanceof Error ? error.message : 'Upload failed',
+                  error: error instanceof Error ? (error as { message: string }).message : 'Upload failed',
                 }
               : f
           )
         );
 
-        toast.error(error instanceof Error ? error.message : 'Failed to analyze PDF');
+        toast.error(error instanceof Error ? (error as { message: string }).message : 'Failed to analyze PDF');
       }
     },
     [currentUserId, triggerOrderHistoryRefresh]
@@ -230,12 +230,12 @@ export const UploadOrdersWidgetV2 = React.memo(function UploadOrdersWidgetV2({
 
   // 移除已完成的文件
   const handleRemoveFile = (id: string) => {
-    setUploadingFiles(prev => prev.filter(f => f.id !== id));
+    setUploadingFiles(prev => prev.filter((f: any) => f.id !== id));
   };
 
   // 關閉上傳提示
   const handleCloseToast = () => {
-    setUploadingFiles(prev => prev.filter(f => f.status === 'uploading'));
+    setUploadingFiles(prev => prev.filter((f: any) => (f as { status: string }).status === 'uploading'));
   };
 
   return (

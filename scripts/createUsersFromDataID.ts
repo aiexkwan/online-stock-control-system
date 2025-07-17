@@ -42,10 +42,10 @@ async function batchCreateUsers() {
     });
 
     if (error) {
-      if (error.message.includes('User already registered')) {
+      if ((error as { message: string }).message.includes('User already registered')) {
         console.log(`⚠️ 已存在：${email}`);
       } else {
-        console.error(`❌ 建立 ${email} 失敗：`, error.message);
+        console.error(`❌ 建立 ${email} 失敗：`, (error as { message: string }).message);
       }
     } else {
       console.log(`✅ 建立成功：${email}`);

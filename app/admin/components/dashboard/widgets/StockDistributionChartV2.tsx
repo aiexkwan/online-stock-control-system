@@ -281,7 +281,7 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
   }
 
   if (isError) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch stock distribution data';
+    const errorMessage = error instanceof Error ? (error as { message: string }).message : 'Failed to fetch stock distribution data';
     return (
       <WidgetError 
         message={errorMessage}

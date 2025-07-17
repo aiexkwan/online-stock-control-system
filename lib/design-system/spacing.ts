@@ -223,7 +223,7 @@ export function getComponentSpacing(
   type: keyof typeof componentSpacing,
   size: string
 ): string {
-  return componentSpacing[type]?.[size as any] || spacing[4];
+  return (componentSpacing[type] as any)?.[size] || spacing[4];
 }
 
 /**

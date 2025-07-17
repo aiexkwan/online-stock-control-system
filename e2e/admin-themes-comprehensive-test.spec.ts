@@ -144,8 +144,8 @@ test.describe('Admin Themes Comprehensive Testing', () => {
         
       } catch (error) {
         const loadTime = Date.now() - startTime;
-        themeErrors.push(`Navigation failed: ${error.message}`);
-        console.log(`  ❌ ${theme}: 失敗 (${loadTime}ms) - ${error.message}`);
+        themeErrors.push(`Navigation failed: ${(error as Error).message}`);
+        console.log(`  ❌ ${theme}: 失敗 (${loadTime}ms) - ${(error as Error).message}`);
       }
       
       // 記錄結果

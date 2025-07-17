@@ -167,7 +167,13 @@ export const useTestCleanup = (options: TestCleanupOptions = {}) => {
     },
     resetEnvironment: () => {
       // Reset environment variables to test defaults
-      process.env.NODE_ENV = 'test';
+      // Use Object.defineProperty to set read-only NODE_ENV in tests
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'test',
+        writable: true,
+        configurable: true,
+        enumerable: true
+      });
       process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
     },

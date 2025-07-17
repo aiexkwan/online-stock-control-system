@@ -183,16 +183,16 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
         setError(null);
 
         // Subscribe to batch progress
-        const unsubscribe = serviceRef.current.on('progress', ({ percentage, current }) => {
+        const progressHandler = ({ percentage, current }: any) => {
           setProgress(percentage);
           setStatus(current);
-        });
-
+        };
+        
+        serviceRef.current.on('progress', progressHandler);
+        
         const result = await serviceRef.current.batchPrint(batch);
-
-        if (typeof unsubscribe === 'function') {
-          unsubscribe();
-        }
+        
+        serviceRef.current.off('progress', progressHandler);
 
         if (result.failed > 0) {
           setStatus(`Completed with ${result.failed} failures`);

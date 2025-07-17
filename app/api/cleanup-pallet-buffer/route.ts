@@ -7,7 +7,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     // 檢查 authorization（可選）
     const authHeader = request.headers.get('authorization');
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: error.message,
+          error: (error as { message: string }).message,
         },
         { status: 500 }
       );
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: error.message || 'Internal server error',
+        error: (error as { message: string }).message || 'Internal server error',
       },
       { status: 500 }
     );
@@ -83,7 +83,7 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        error: error.message,
+        error: (error as { message: string }).message,
       },
       { status: 500 }
     );

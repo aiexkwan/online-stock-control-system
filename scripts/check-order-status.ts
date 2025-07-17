@@ -44,7 +44,7 @@ async function checkOrderStatus() {
             console.log(`  - 第一個訂單:`, jsonData[0]);
           }
         } catch (e: any) {
-          console.log(`  - JSON 解析錯誤:`, e.message);
+          console.log(`  - JSON 解析錯誤:`, (e as { message: string }).message);
         }
       }
     });
@@ -73,7 +73,7 @@ async function checkOrderStatus() {
     
     Object.entries(byUploader).forEach(([uploaderId, orders]) => {
       console.log(`\n上傳者 ID ${uploaderId}: ${orders.length} 個訂單`);
-      console.log(`  訂單號: ${orders.map(o => o.order_ref).join(', ')}`);
+      console.log(`  訂單號: ${orders.map((o: any) => o.order_ref).join(', ')}`);
       
       // 檢查 delivery_add 和 account_num
       const hasDeliveryAdd = orders.some(o => o.delivery_add && o.delivery_add !== '-');
@@ -98,7 +98,7 @@ async function checkOrderStatus() {
   
   // 3. 檢查是否使用了新的 Vision API
   console.log('\n\n3. 檢查 Vision API 使用情況:');
-  const recentTokenUsage = docUploads?.filter(d => d.token && d.token > 0);
+  const recentTokenUsage = docUploads?.filter((d: any) => d.token && d.token > 0);
   if (recentTokenUsage && recentTokenUsage.length > 0) {
     console.log(`✓ 有 ${recentTokenUsage.length} 個文件使用了 API 分析`);
     recentTokenUsage.forEach(doc => {

@@ -222,7 +222,7 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
     }
     
     return [];
-  }, [data]);
+  }, [data as string]);
   const metadata = data?.metadata || {};
 
   // 將事件轉換為 Timeline 組件需要的格式
@@ -233,7 +233,7 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
       description: formatEventDescription(event),
       icon: getActionIcon(event.action),
     }));
-  }, [displayEvents]);
+  }, [displayEvents as string]);
 
   // Progressive Loading - 如果還未進入視窗，顯示 skeleton
   if (!hasBeenInViewport && !isEditMode) {
@@ -288,7 +288,7 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
           ) : error ? (
             <div className='space-y-2'>
               <WidgetText size='xs' glow='red' className='py-4 text-center'>
-                {error.message || 'Failed to load history data'}
+                {(error as { message: string }).message || 'Failed to load history data'}
               </WidgetText>
               {mode === 'context' && (
                 <WidgetText size='xs' className={cn('text-center', textClasses['body-small'], 'text-muted-foreground')}>

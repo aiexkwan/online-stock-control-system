@@ -49,7 +49,7 @@ export const ProductionStatsWidget: React.FC<ProductionStatsWidgetProps> = ({
       start: timeFrame.start,
       end: timeFrame.end,
     };
-  }, [timeFrame]);
+  }, [timeFrame as string]);
 
   useEffect(() => {
     if (isEditMode) return;
@@ -82,7 +82,7 @@ export const ProductionStatsWidget: React.FC<ProductionStatsWidgetProps> = ({
           const widgetData = result.widgets[0];
 
           if (widgetData.data.error) {
-            console.error('[ProductionStatsWidget] API error:', widgetData.data.error);
+            console.error('[ProductionStatsWidget as string] API error:', widgetData.data.error);
             setError(widgetData.data.error);
             setStatValue(0);
             return;
@@ -91,19 +91,19 @@ export const ProductionStatsWidget: React.FC<ProductionStatsWidgetProps> = ({
           const productionValue = widgetData.data.value || 0;
           const widgetMetadata = widgetData.data.metadata || {};
 
-          console.log('[ProductionStatsWidget] API returned value:', productionValue);
-          console.log('[ProductionStatsWidget] Metadata:', widgetMetadata);
+          console.log('[ProductionStatsWidget as string] API returned value:', productionValue);
+          console.log('[ProductionStatsWidget as string] Metadata:', widgetMetadata);
 
           setStatValue(productionValue);
           setMetadata(widgetMetadata);
 
         } else {
-          console.warn('[ProductionStatsWidget] No widget data returned from API');
+          console.warn('[ProductionStatsWidget as string] No widget data returned from API');
           setStatValue(0);
         }
       } catch (err) {
-        console.error('[ProductionStatsWidget] Error fetching data from API:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        console.error('[ProductionStatsWidget as string] Error fetching data from API:', err);
+        setError(err instanceof Error ? (err as { message: string }).message : 'Unknown error');
         setStatValue(0);
       } finally {
         setLoading(false);

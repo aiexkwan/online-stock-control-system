@@ -11,8 +11,7 @@ async function testStatsWidgetMigration() {
   console.log('\n🔍 Testing Stats Widget Migration...\n');
   
   try {
-    // 初始化 registry
-    await widgetRegistry.autoRegisterWidgets();
+    // Widget registry auto-initializes from config
     
     // 要測試的 Stats widgets
     const statsWidgets = [
@@ -61,12 +60,12 @@ async function testStatsWidgetMigration() {
       }
       
       // 檢查特殊配置
-      const config = UNIFIED_WIDGET_CONFIG[widgetId];
+      const config = UNIFIED_WIDGET_CONFIG[widgetId as string];
       if (config?.metadata?.refreshInterval) {
         console.log(`   Refresh Interval: ${config.metadata.refreshInterval}ms`);
       }
       
-      const hasTimeFrame = config?.metadata?.timeFrameSupport || false;
+      const hasTimeFrame = config?.metadata?.supportDateRange || false;
       console.log(`   Supports TimeFrame: ${hasTimeFrame ? 'Yes' : 'No'}`);
       
       // 檢查 GraphQL 支援

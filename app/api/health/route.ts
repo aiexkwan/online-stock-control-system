@@ -22,7 +22,7 @@ export async function GET() {
     return NextResponse.json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error'
     }, {
       status: 500
     });

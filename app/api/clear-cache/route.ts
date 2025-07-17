@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (process.env.NODE_ENV !== 'production') {
       console.log('[clear-cache] 開始清除 Next.js 緩存...');
@@ -73,14 +73,14 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: 'Cache clearing failed',
-        message: error.message,
+        message: (error as { message: string }).message,
       },
       { status: 500 }
     );
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   return NextResponse.json({
     message: 'Cache clearing endpoint',
     usage: 'Send POST request to clear Next.js cache',

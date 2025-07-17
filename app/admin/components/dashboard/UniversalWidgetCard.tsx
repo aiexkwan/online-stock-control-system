@@ -29,7 +29,7 @@ export function UniversalWidgetCard({
   onClick,
   disableErrorBoundary = false,
 }: UniversalWidgetCardProps) {
-  const borderStyle = WidgetStyles.borders[widgetType] || '';
+  const borderStyle = WidgetStyles.borders[widgetType as string] || '';
 
   // 基礎卡片組件
   const cardContent = (

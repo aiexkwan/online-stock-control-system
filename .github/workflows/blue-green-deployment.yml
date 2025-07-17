@@ -1,0 +1,335 @@
+# Blue-Green Deployment Workflow for NewPennine WMS
+
+name: Blue-Green Deployment
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+      force_deploy:
+        description: 'Force deployment even if tests fail'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run ESLint
+      run: npm run lint
+      
+    - name: Run TypeScript check
+      run: npm run typecheck
+      
+    - name: Run unit tests
+      run: npm run test:ci
+      
+    - name: Run E2E tests
+      run: npm run test:e2e
+      
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results
+        path: |
+          test-results/
+          coverage/
+          
+  build:
+    name: Build and Push Image
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+      digest: ${{ steps.build.outputs.digest }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha
+          type=raw,value=latest,enable={{is_default_branch}}
+          
+    - name: Build and push image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.prod
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        build-args: |
+          NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_ENVIRONMENT=${{ github.event.inputs.environment || 'production' }}
+          NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        
+    - name: Output image
+      id: image
+      run: echo "image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+      
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ needs.build.outputs.image }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+        
+  deploy:
+    name: Blue-Green Deployment
+    runs-on: ubuntu-latest
+    needs: [test, build, security-scan]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    environment: 
+      name: ${{ github.event.inputs.environment || 'production' }}
+      url: ${{ steps.deploy.outputs.url }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+        
+    - name: Add server to known hosts
+      run: |
+        ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+        
+    - name: Create deployment directory
+      run: |
+        ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "mkdir -p /opt/newpennine"
+        
+    - name: Copy deployment files
+      run: |
+        scp -r deployment/ ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/newpennine/
+        scp docker-compose.prod.yml ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/newpennine/
+        scp Dockerfile.prod ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/newpennine/
+        
+    - name: Create environment file
+      run: |
+        ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "cat > /opt/newpennine/.env << 'EOF'
+        NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }}
+        NEXT_PUBLIC_ENVIRONMENT=${{ github.event.inputs.environment || 'production' }}
+        NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+        DEPLOYMENT_VERSION=${{ github.sha }}
+        DEPLOYMENT_TIMESTAMP=$(date +%s)
+        EOF"
+        
+    - name: Login to container registry on server
+      run: |
+        ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "echo '${{ secrets.GITHUB_TOKEN }}' | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin"
+        
+    - name: Pull latest image
+      run: |
+        ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "docker pull ${{ needs.build.outputs.image }}"
+        
+    - name: Update docker-compose with new image
+      run: |
+        ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+        cd /opt/newpennine
+        sed -i 's|image: .*|image: ${{ needs.build.outputs.image }}|g' docker-compose.prod.yml
+        "
+        
+    - name: Run blue-green deployment
+      id: deploy
+      run: |
+        ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+        cd /opt/newpennine
+        chmod +x deployment/scripts/blue-green-deploy.sh
+        ./deployment/scripts/blue-green-deploy.sh deploy
+        "
+        
+        # Get deployment URL
+        echo "url=https://${{ secrets.DEPLOY_HOST }}" >> $GITHUB_OUTPUT
+        
+    - name: Verify deployment
+      run: |
+        # Wait for deployment to stabilize
+        sleep 30
+        
+        # Check health endpoint
+        curl -f https://${{ secrets.DEPLOY_HOST }}/api/v1/health || exit 1
+        
+        # Check main pages
+        curl -f https://${{ secrets.DEPLOY_HOST }}/main-login || exit 1
+        curl -f https://${{ secrets.DEPLOY_HOST }}/admin || exit 1
+        
+    - name: Run post-deployment tests
+      run: |
+        ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+        cd /opt/newpennine
+        chmod +x deployment/scripts/health-check.sh
+        ./deployment/scripts/health-check.sh check
+        ./deployment/scripts/health-check.sh endpoints https://${{ secrets.DEPLOY_HOST }}
+        ./deployment/scripts/health-check.sh performance https://${{ secrets.DEPLOY_HOST }}
+        "
+        
+    - name: Notify deployment success
+      uses: 8398a7/action-slack@v3
+      if: success()
+      with:
+        status: success
+        channel: '#deployments'
+        text: |
+          ✅ Blue-Green deployment successful!
+          
+          **Repository:** ${{ github.repository }}
+          **Branch:** ${{ github.ref_name }}
+          **Commit:** ${{ github.sha }}
+          **Environment:** ${{ github.event.inputs.environment || 'production' }}
+          **URL:** https://${{ secrets.DEPLOY_HOST }}
+          
+          **Deployment Details:**
+          - Image: ${{ needs.build.outputs.image }}
+          - Triggered by: ${{ github.actor }}
+          - Workflow: ${{ github.workflow }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: failure() && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+        
+    - name: Rollback deployment
+      run: |
+        ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+        cd /opt/newpennine
+        chmod +x deployment/scripts/blue-green-deploy.sh
+        ./deployment/scripts/blue-green-deploy.sh rollback
+        "
+        
+    - name: Verify rollback
+      run: |
+        sleep 30
+        curl -f https://${{ secrets.DEPLOY_HOST }}/api/v1/health || exit 1
+        
+    - name: Notify rollback
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        channel: '#deployments'
+        text: |
+          ⚠️ Deployment failed and was rolled back!
+          
+          **Repository:** ${{ github.repository }}
+          **Branch:** ${{ github.ref_name }}
+          **Commit:** ${{ github.sha }}
+          **Environment:** ${{ github.event.inputs.environment || 'production' }}
+          **URL:** https://${{ secrets.DEPLOY_HOST }}
+          
+          **Failure Details:**
+          - Triggered by: ${{ github.actor }}
+          - Workflow: ${{ github.workflow }}
+          - Check logs for more details
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        
+  cleanup:
+    name: Cleanup
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: always() && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
+    
+    steps:
+    - name: Cleanup old images
+      run: |
+        ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+        # Remove old images (keep last 5 versions)
+        docker images '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}' --format 'table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}' | tail -n +6 | awk '{print \$1}' | xargs -r docker rmi || true
+        
+        # Cleanup unused volumes and networks
+        docker system prune -f --volumes
+        "
+        
+    - name: Archive deployment logs
+      run: |
+        ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} "
+        cd /opt/newpennine
+        tar -czf deployment-logs-$(date +%Y%m%d-%H%M%S).tar.gz /var/log/newpennine-*.log
+        find /var/log -name 'newpennine-*.log' -mtime +7 -delete
+        "

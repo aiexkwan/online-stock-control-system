@@ -39,7 +39,7 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
           value: code,
           type: 'product_code',
           label: `Product: ${code}`,
-          count: productCodeCounts[code],
+          count: productCodeCounts[code as string],
         });
       });
     }
@@ -73,7 +73,7 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
 
     if (locations) {
       // Get unique locations
-      const uniqueLocations = [...new Set(locations.map(l => l.loc))];
+      const uniqueLocations = [...new Set(locations.map((l: any) => l.loc))];
 
       uniqueLocations.forEach(loc => {
         if (loc) {

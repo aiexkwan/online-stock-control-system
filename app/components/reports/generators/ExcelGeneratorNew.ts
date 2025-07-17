@@ -3,7 +3,8 @@
  * 替代原有 xlsx 版本，提供更豐富嘅功能同更好嘅安全性
  */
 
-import ExcelJS from 'exceljs';
+import { getExcelJS } from '@/lib/utils/exceljs-dynamic';
+import type { Workbook, Worksheet } from '@/lib/utils/exceljs-dynamic';
 import {
   ReportGenerator,
   ProcessedReportData,
@@ -24,6 +25,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
   supportLegacyMode = true;
 
   async generate(data: ProcessedReportData, config: ReportConfig): Promise<Blob> {
+    const ExcelJS = await getExcelJS();
     const workbook = new ExcelJS.Workbook();
 
     // 設置工作簿屬性
@@ -64,7 +66,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
   }
 
   private async addSummarySheet(
-    workbook: ExcelJS.Workbook,
+    workbook: Workbook,
     summary: Record<string, any>,
     config: ReportConfig
   ): Promise<void> {
@@ -124,7 +126,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
   }
 
   private async addDataSheet(
-    workbook: ExcelJS.Workbook,
+    workbook: Workbook,
     section: any,
     data: any[],
     config: ReportConfig
@@ -211,7 +213,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
   }
 
   private async addMetadataSheet(
-    workbook: ExcelJS.Workbook,
+    workbook: Workbook,
     metadata: any,
     config: ReportConfig
   ): Promise<void> {
@@ -267,7 +269,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
     addBorders(worksheet, filterStartRow, 1, lastRow, 2);
   }
 
-  private applyStyles(worksheet: ExcelJS.Worksheet, columns: any[], config: ReportConfig): void {
+  private applyStyles(worksheet: Worksheet, columns: any[], config: ReportConfig): void {
     // 應用列格式
     columns.forEach((col: any, index: number) => {
       const colNum = index + 1;

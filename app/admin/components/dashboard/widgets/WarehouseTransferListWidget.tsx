@@ -56,7 +56,7 @@ const warehouseTransferApiClient = {
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch warehouse transfers: ${response.statusText}`);
+      throw new Error(`Failed to fetch warehouse transfers: ${(response as { status: string }).statusText}`);
     }
     
     const data = await response.json();
@@ -100,7 +100,7 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
     endDate: dateRange.end.toISOString(),
     limit: 50,
     offset: 0,
-  }), [dateRange]);
+  }), [dateRange as string]);
 
   // Fetch data function
   const fetchData = useCallback(async () => {
@@ -121,8 +121,8 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
         optimized: true,
       });
     } catch (err) {
-      console.error('[WarehouseTransferListWidget] Error fetching data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch warehouse transfers');
+      console.error('[WarehouseTransferListWidget as string] Error fetching data:', err);
+      setError(err instanceof Error ? (err as { message: string }).message : 'Failed to fetch warehouse transfers');
     } finally {
       setLoading(false);
     }
@@ -135,7 +135,7 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
     // Set up polling every 60 seconds
     const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
-  }, [fetchData]);
+  }, [fetchData as string]);
 
   // 處理數據格式
   const transfers = useMemo<TransferRecord[]>(() => {
@@ -146,7 +146,7 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
       plt_num: transfer.pallet_ref || transfer.plt_num || 'N/A',
       operator_name: transfer.transferred_by || transfer.operator_name || 'Unknown Operator',
     }));
-  }, [data]);
+  }, [data as string]);
 
   // 定義 DataTable columns
   const columns = useMemo<DataTableColumn<TransferRecord>[]>(() => [

@@ -5,7 +5,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { pdf } from '@react-pdf/renderer';
+// Import moved to dynamic import in generatePdfStream function
 import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf';
 import { prepareQcLabelData, type QcInputData } from '@/lib/pdfUtils';
 import { uploadPdfToStorage, updatePalletPdfUrl } from '@/app/actions/qcActions';
@@ -109,11 +109,11 @@ export const useStreamingPdfGeneration = (): UseStreamingPdfGenerationReturn => 
         }
 
         // 生成 PDF blob - 使用串流方式
+        const { renderReactPDFToBlob } = await import('@/lib/services/unified-pdf-service');
         const pdfElement = <PrintLabelPdf {...pdfLabelProps} />;
-        const pdfInstance = pdf(pdfElement);
-
-        // 使用 toBlob 而不是 toBuffer 來減少記憶體使用
-        const pdfBlob = await pdfInstance.toBlob();
+        
+        // 使用統一 PDF 服務生成 blob
+        const pdfBlob = await renderReactPDFToBlob(pdfElement);
 
         if (!pdfBlob) {
           throw new Error('PDF generation failed to return a blob.');

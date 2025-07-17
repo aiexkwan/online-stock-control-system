@@ -145,7 +145,7 @@ export const ChartContainer: React.FC<ChartContainerProps> = ({
           <div className="flex flex-col items-center justify-center py-8">
             <AlertCircle className="mb-2 h-12 w-12 text-red-500" />
             <p className="mb-2 text-sm text-red-400">Error loading chart</p>
-            <p className="mb-4 text-xs text-slate-500">{error.message}</p>
+            <p className="mb-4 text-xs text-slate-500">{(error as { message: string }).message}</p>
             {onRetry && (
               <Button
                 variant="outline"

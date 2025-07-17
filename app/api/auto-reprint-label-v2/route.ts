@@ -57,7 +57,7 @@ function mapLocationToDbField(location: string): string {
   return LocationMapper.toDbColumn(location) || 'await'; // Default to 'await' if not found
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   let palletNum: string | undefined;
 
   try {
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
         `[Auto Reprint V2 API] Location mapping: "${data.originalLocation}" -> "${mappedLocation}"`
       );
     }
-    inventoryRecord[mappedLocation] = data.quantity;
+    inventoryRecord[mappedLocation as string] = data.quantity;
 
     const databasePayload: QcDatabaseEntryPayload = {
       palletInfo: palletInfoRecord,
@@ -309,7 +309,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Confirm pallet usage in V6 system (since DB transaction was successful)
-    const confirmResult = await confirmPalletUsage([palletNum], supabase);
+    const confirmResult = await confirmPalletUsage([palletNum as string], supabase);
     if (!confirmResult) {
       if (process.env.NODE_ENV !== 'production') {
         console.warn('[Auto Reprint V2 API] Failed to confirm pallet usage for v6 system');
@@ -335,7 +335,7 @@ export async function POST(request: NextRequest) {
 
     // Release pallet reservation in V6 system on error
     if (palletNum) {
-      const releaseResult = await releasePalletReservation([palletNum], supabase);
+      const releaseResult = await releasePalletReservation([palletNum as string], supabase);
       if (!releaseResult) {
         if (process.env.NODE_ENV !== 'production') {
           console.warn('[Auto Reprint V2 API] Failed to release pallet reservation after error');
@@ -346,7 +346,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: `Auto reprint failed: ${error.message}`,
+        error: `Auto reprint failed: ${(error as { message: string }).message}`,
       },
       { status: 500 }
     );

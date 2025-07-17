@@ -195,16 +195,10 @@ export function useDashboardConcurrentQuery(
     setPerformanceMetrics(metrics);
     
     // 記錄總體性能
-    simplePerformanceMonitor.recordMetrics({
-      widgetId: 'dashboard-concurrent',
-      timestamp: Date.now(),
-      loadTime: totalFetchTime,
-      renderTime: 0,
-      dataFetchTime: totalFetchTime,
-      route: window.location.pathname,
-      variant: 'v2',
-      sessionId: 'concurrent-query-session',
-    });
+    simplePerformanceMonitor.recordMetric('dashboard-concurrent_totalFetchTime', totalFetchTime, 'performance');
+    simplePerformanceMonitor.recordMetric('dashboard-concurrent_totalRequests', totalRequests, 'performance');
+    simplePerformanceMonitor.recordMetric('dashboard-concurrent_failedRequests', failedRequests, 'performance');
+    simplePerformanceMonitor.recordMetric('dashboard-concurrent_successRate', successRate, 'performance');
 
     return results;
   }, [stableDateRange, stableEnabledWidgets]);

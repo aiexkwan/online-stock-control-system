@@ -44,9 +44,9 @@ describe('WidgetsService', () => {
       ],
     }).compile();
 
-    service = module.get(WidgetsService);
-    supabaseService = module.get(SupabaseService);
-    cacheService = module.get(WidgetCacheService);
+    service = module.get<WidgetsService>(WidgetsService);
+    supabaseService = module.get<SupabaseService>(SupabaseService);
+    cacheService = module.get<WidgetCacheService>(WidgetCacheService);
   });
 
   afterEach(() => {

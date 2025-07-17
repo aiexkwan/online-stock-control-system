@@ -31,14 +31,8 @@ import {
 // 定義 WidgetComponent 類型
 type WidgetComponent = React.ComponentType<WidgetComponentProps>;
 
-// 簡化的預加載策略
-enum PreloadStrategy {
-  HIGH_PRIORITY = 'high_priority',
-  NORMAL = 'normal'
-}
+// 移除預加載策略 - 簡化系統
 
-// 導入簡化的性能監控系統
-import { simplePerformanceMonitor, recordMetric } from '../performance/SimplePerformanceMonitor';
 
 // 簡化的性能監控接口
 interface WidgetMetrics {
@@ -61,25 +55,12 @@ class UnifiedWidgetRegistry implements IWidgetRegistry {
   private widgetMetrics = new Map<string, WidgetMetrics>();
   private initialized = false;
   
-  private preloadStrategy: PreloadStrategy = PreloadStrategy.NORMAL;
+  // 預加載策略已移除 - 簡化系統
 
   private constructor() {
     // 簡化的構造函數
-    this.initializePreloadStrategy();
   }
 
-  private initializePreloadStrategy(): void {
-    // 根據環境決定預加載策略
-    if (typeof window !== 'undefined' && 'navigator' in window) {
-      const navigator = window.navigator as any;
-      if (navigator.connection && navigator.connection.effectiveType) {
-        const connectionType = navigator.connection.effectiveType;
-        this.preloadStrategy = ['4g', '5g'].includes(connectionType) 
-          ? PreloadStrategy.HIGH_PRIORITY 
-          : PreloadStrategy.NORMAL;
-      }
-    }
-  }
 
   static getInstance(): UnifiedWidgetRegistry {
     if (!UnifiedWidgetRegistry.instance) {
@@ -138,19 +119,7 @@ class UnifiedWidgetRegistry implements IWidgetRegistry {
         return this.loadedComponents.get(widgetId)!;
       }
 
-      // 檢查是否為 Universal Widget (V1.2 新增)
-      const config = UNIFIED_WIDGET_CONFIG[widgetId];
-      if (config?.metadata?.universalWidget) {
-        // 根據 widget 類型創建對應的 Universal Widget
-        if (config.category === 'stats') {
-          return this.createUniversalStatsWidget(widgetId, config);
-        } else if (config.category === 'lists') {
-          return this.createUniversalListWidget(widgetId, config);
-        } else if (config.category === 'operations' && config.metadata?.configType?.includes('Upload')) {
-          // V1.3 新增：支援 UniversalUploadWidget
-          return this.createUniversalUploadWidget(widgetId, config);
-        }
-      }
+      // Universal Widget 邏輯已移除 (v2.0.4)
 
       // 獲取動態導入函數
       const importFn = getWidgetImport(widgetId);
@@ -175,240 +144,15 @@ class UnifiedWidgetRegistry implements IWidgetRegistry {
       // 緩存組件
       this.loadedComponents.set(widgetId, WrappedComponent);
       
-      // 記錄性能指標（使用簡化的監控系統）
+      // 記錄性能指標
       const loadTime = performance.now() - startTime;
-      recordMetric(`widget_load_${widgetId}`, loadTime, 'widget');
       this.updateWidgetMetrics(widgetId, loadTime);
       
       return WrappedComponent;
     } catch (error) {
       console.error(`Failed to load widget ${widgetId}:`, error);
-      recordMetric(`widget_error_${widgetId}`, 1, 'error');
       return undefined;
     }
-  }
-
-  // 創建 UniversalStatsWidget 實例 (V1.2 新增)
-  private createUniversalStatsWidget(widgetId: string, config: UnifiedWidgetConfig): ComponentType<WidgetComponentProps> {
-    // 懶加載 UniversalStatsWidget
-    const LazyUniversalStatsWidget = React.lazy(() => 
-      import('@/app/admin/components/dashboard/widgets/common/UniversalStatsWidget').then(module => ({
-        default: module.UniversalStatsWidget || module.default
-      }))
-    );
-
-    // 懶加載配置 (僅用於類型檢查，實際使用動態導入)
-    // const LazyStatsConfigs = React.lazy(() => 
-    //   import('@/app/admin/components/dashboard/widgets/common/UniversalStatsWidget/statsConfigs').then(module => ({
-    //     default: module
-    //   }))
-    // );
-
-    const WrappedComponent = (props: WidgetComponentProps) => {
-      const [universalConfig, setUniversalConfig] = React.useState<any>(null);
-      const [configError, setConfigError] = React.useState<Error | null>(null);
-
-      React.useEffect(() => {
-        // 動態加載配置
-        const loadConfig = async () => {
-          try {
-            const configModule = await import('@/app/admin/components/dashboard/widgets/common/UniversalStatsWidget/statsConfigs');
-            const configType = config.metadata?.configType as string;
-            
-            if (configType && (configModule as any)[configType]) {
-              setUniversalConfig((configModule as any)[configType]);
-            } else {
-              throw new Error(`Configuration type '${configType}' not found for widget '${widgetId}'`);
-            }
-          } catch (error) {
-            console.error(`Failed to load configuration for ${widgetId}:`, error);
-            setConfigError(error as Error);
-          }
-        };
-
-        loadConfig();
-      }, []);
-
-      if (configError) {
-        return React.createElement('div', { 
-          className: 'text-red-500 p-4 border border-red-300 rounded bg-red-50' 
-        }, [
-          React.createElement('h4', { key: 'title', className: 'font-semibold' }, 'Configuration Error'),
-          React.createElement('p', { key: 'message', className: 'text-sm mt-1' }, `Failed to load config for ${widgetId}`),
-          React.createElement('p', { key: 'hint', className: 'text-xs text-gray-600 mt-2' }, configError?.message || 'Unknown error')
-        ]);
-      }
-
-      if (!universalConfig) {
-        return React.createElement(DefaultLoadingComponent);
-      }
-
-      return React.createElement(Suspense, 
-        { fallback: React.createElement(DefaultLoadingComponent) },
-        React.createElement(LazyUniversalStatsWidget, {
-          ...props,
-          config: universalConfig
-        })
-      );
-    };
-
-    WrappedComponent.displayName = `UniversalStatsWidget_${widgetId}`;
-
-    // 緩存組件
-    this.loadedComponents.set(widgetId, WrappedComponent);
-    
-    // 記錄性能指標
-    const loadTime = performance.now();
-    recordMetric(`universal_widget_load_${widgetId}`, loadTime, 'universal_widget');
-    this.updateWidgetMetrics(widgetId, loadTime);
-
-    return WrappedComponent;
-  }
-
-  // 創建 UniversalListWidget 實例 (V1.2 新增)
-  private createUniversalListWidget(widgetId: string, config: UnifiedWidgetConfig): ComponentType<WidgetComponentProps> {
-    // 懶加載 UniversalListWidget
-    const LazyUniversalListWidget = React.lazy(() => 
-      import('@/app/admin/components/dashboard/widgets/common/UniversalListWidget').then(module => ({
-        default: module.UniversalListWidget || module.default
-      }))
-    );
-
-    const WrappedComponent = (props: WidgetComponentProps) => {
-      const [listConfig, setListConfig] = React.useState<any>(null);
-      const [configError, setConfigError] = React.useState<Error | null>(null);
-
-      React.useEffect(() => {
-        // 動態加載配置
-        const loadConfig = async () => {
-          try {
-            const configModule = await import('@/app/admin/components/dashboard/widgets/common/UniversalListWidget/listConfigs');
-            const configType = config.metadata?.configType as string;
-            
-            if (configType && (configModule as any)[configType]) {
-              // 執行配置函數獲取實際配置
-              const configFn = (configModule as any)[configType];
-              const actualConfig = configFn();
-              setListConfig(actualConfig);
-            } else {
-              throw new Error(`Configuration type '${configType}' not found for widget '${widgetId}'`);
-            }
-          } catch (error) {
-            console.error(`Failed to load configuration for ${widgetId}:`, error);
-            setConfigError(error as Error);
-          }
-        };
-
-        loadConfig();
-      }, []);
-
-      if (configError) {
-        return React.createElement('div', { 
-          className: 'text-red-500 p-4 border border-red-300 rounded bg-red-50' 
-        }, [
-          React.createElement('h4', { key: 'title', className: 'font-semibold' }, 'Configuration Error'),
-          React.createElement('p', { key: 'message', className: 'text-sm mt-1' }, `Failed to load config for ${widgetId}`),
-          React.createElement('p', { key: 'hint', className: 'text-xs text-gray-600 mt-2' }, configError?.message || 'Unknown error')
-        ]);
-      }
-
-      if (!listConfig) {
-        return React.createElement(DefaultLoadingComponent);
-      }
-
-      return React.createElement(Suspense, 
-        { fallback: React.createElement(DefaultLoadingComponent) },
-        React.createElement(LazyUniversalListWidget, {
-          ...props,
-          config: listConfig
-        })
-      );
-    };
-
-    WrappedComponent.displayName = `UniversalListWidget_${widgetId}`;
-
-    // 緩存組件
-    this.loadedComponents.set(widgetId, WrappedComponent);
-    
-    // 記錄性能指標
-    const loadTime = performance.now();
-    recordMetric(`universal_list_widget_load_${widgetId}`, loadTime, 'universal_widget');
-    this.updateWidgetMetrics(widgetId, loadTime);
-
-    return WrappedComponent;
-  }
-
-  // 創建 UniversalUploadWidget 實例 (V1.3 新增)
-  private createUniversalUploadWidget(widgetId: string, config: UnifiedWidgetConfig): ComponentType<WidgetComponentProps> {
-    // 懶加載 UniversalUploadWidget
-    const LazyUniversalUploadWidget = React.lazy(() => 
-      import('@/app/admin/components/dashboard/widgets/common/UniversalUploadWidget').then(module => ({
-        default: module.UniversalUploadWidget
-      }))
-    );
-
-    const WrappedComponent = (props: WidgetComponentProps) => {
-      const [uploadConfig, setUploadConfig] = React.useState<any>(null);
-      const [configError, setConfigError] = React.useState<Error | null>(null);
-
-      React.useEffect(() => {
-        // 動態加載配置
-        const loadConfig = async () => {
-          try {
-            const configModule = await import('@/app/admin/components/dashboard/widgets/common/UniversalUploadWidget/uploadConfigs');
-            const configType = config.metadata?.configType as string;
-            
-            if (configType && (configModule as any)[configType]) {
-              // 執行配置函數獲取實際配置
-              const configFn = (configModule as any)[configType];
-              const actualConfig = configFn();
-              setUploadConfig(actualConfig);
-            } else {
-              throw new Error(`Configuration type '${configType}' not found for widget '${widgetId}'`);
-            }
-          } catch (error) {
-            console.error(`Failed to load configuration for ${widgetId}:`, error);
-            setConfigError(error as Error);
-          }
-        };
-
-        loadConfig();
-      }, []);
-
-      if (configError) {
-        return React.createElement('div', { 
-          className: 'text-red-500 p-4 border border-red-300 rounded bg-red-50' 
-        }, [
-          React.createElement('h4', { key: 'title', className: 'font-semibold' }, 'Configuration Error'),
-          React.createElement('p', { key: 'message', className: 'text-sm mt-1' }, `Failed to load config for ${widgetId}`),
-          React.createElement('p', { key: 'hint', className: 'text-xs text-gray-600 mt-2' }, configError?.message || 'Unknown error')
-        ]);
-      }
-
-      if (!uploadConfig) {
-        return React.createElement(DefaultLoadingComponent);
-      }
-
-      return React.createElement(Suspense, 
-        { fallback: React.createElement(DefaultLoadingComponent) },
-        React.createElement(LazyUniversalUploadWidget, {
-          ...props,
-          configId: widgetId
-        })
-      );
-    };
-
-    WrappedComponent.displayName = `UniversalUploadWidget_${widgetId}`;
-
-    // 緩存組件
-    this.loadedComponents.set(widgetId, WrappedComponent);
-    
-    // 記錄性能指標
-    const loadTime = performance.now();
-    recordMetric(`universal_upload_widget_load_${widgetId}`, loadTime, 'universal_widget');
-    this.updateWidgetMetrics(widgetId, loadTime);
-
-    return WrappedComponent;
   }
 
   // 簡化的性能監控
@@ -489,17 +233,9 @@ class UnifiedWidgetRegistry implements IWidgetRegistry {
   }
 
   private shouldPreload(widgetId: string): boolean {
+    // 簡化為只預加載高優先級 widgets
     const config = UNIFIED_WIDGET_CONFIG[widgetId];
-    if (!config) return false;
-
-    switch (this.preloadStrategy) {
-      case PreloadStrategy.HIGH_PRIORITY:
-        return config.preloadPriority >= 6;
-      case PreloadStrategy.NORMAL:
-        return config.preloadPriority >= 8;
-      default:
-        return false;
-    }
+    return config ? config.preloadPriority >= 8 : false;
   }
 
   // 簡化的路由預加載
@@ -551,24 +287,7 @@ class UnifiedWidgetRegistry implements IWidgetRegistry {
     return getGraphQLWidgets().map(config => toWidgetDefinition(config) as WidgetDefinition);
   }
 
-  // 自動註冊方法 (保持接口兼容性)
-  async autoRegisterWidgets(): Promise<void> {
-    // 統一註冊系統會自動從配置初始化，此方法保持兼容性
-    this.ensureInitialized();
-  }
 
-  // 簡化的清理功能
-  cleanup(): void {
-    const currentTime = Date.now();
-    const CLEANUP_THRESHOLD = 5 * 60 * 1000; // 5分鐘
-
-    this.widgetMetrics.forEach((metrics, widgetId) => {
-      if (currentTime - metrics.lastUsed > CLEANUP_THRESHOLD) {
-        this.loadedComponents.delete(widgetId);
-        console.log(`Cleaned up unused widget: ${widgetId}`);
-      }
-    });
-  }
 }
 
 // 導出統一實例
@@ -581,14 +300,7 @@ export const widgetRegistry = unifiedWidgetRegistry;
 // 簡化的性能監控工具
 export const performanceMonitor = {
   getMetrics: () => unifiedWidgetRegistry.getPerformanceMetrics(),
-  getStatistics: () => unifiedWidgetRegistry.getLoadStatistics(),
-  cleanup: () => unifiedWidgetRegistry.cleanup(),
-  getSummary: () => simplePerformanceMonitor.getSummary(),
-  getAlerts: () => simplePerformanceMonitor.getAlerts()
+  getStatistics: () => unifiedWidgetRegistry.getLoadStatistics()
 };
 
-// 預加載工具
-export const preloader = {
-  preloadForRoute: (route: string) => unifiedWidgetRegistry.preloadForRoute(route),
-  preloadWidgets: (widgetIds: string[]) => unifiedWidgetRegistry.preloadWidgets(widgetIds)
-};
+

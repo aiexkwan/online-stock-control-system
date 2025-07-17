@@ -1,4 +1,5 @@
-import ExcelJS from 'exceljs';
+import type { Workbook, Worksheet, Style, BorderStyle } from './exceljs-dynamic';
+import { getExcelJS } from './exceljs-dynamic';
 
 /**
  * ExcelJS 遷移輔助函數
@@ -9,18 +10,18 @@ export interface ColumnConfig {
   header: string;
   key: string;
   width?: number;
-  style?: Partial<ExcelJS.Style>;
+  style?: Partial<Style>;
 }
 
 /**
  * 將數據陣列轉換為 ExcelJS 工作表
  */
 export async function jsonToWorksheet(
-  workbook: ExcelJS.Workbook,
+  workbook: Workbook,
   data: any[],
   sheetName: string,
   columns?: ColumnConfig[]
-): Promise<ExcelJS.Worksheet> {
+): Promise<Worksheet> {
   const worksheet = workbook.addWorksheet(sheetName);
 
   if (columns) {
@@ -62,7 +63,7 @@ export async function jsonToWorksheet(
  * 設置標題樣式
  */
 export function setHeaderStyle(
-  worksheet: ExcelJS.Worksheet,
+  worksheet: Worksheet,
   options: {
     fontSize?: number;
     bold?: boolean;
@@ -103,12 +104,12 @@ export function setHeaderStyle(
  * 添加邊框到範圍
  */
 export function addBorders(
-  worksheet: ExcelJS.Worksheet,
+  worksheet: Worksheet,
   startRow: number,
   startCol: number,
   endRow: number,
   endCol: number,
-  style: ExcelJS.BorderStyle = 'thin'
+  style: BorderStyle = 'thin'
 ): void {
   for (let row = startRow; row <= endRow; row++) {
     for (let col = startCol; col <= endCol; col++) {
@@ -127,7 +128,7 @@ export function addBorders(
  * 合併儲存格
  */
 export function mergeCells(
-  worksheet: ExcelJS.Worksheet,
+  worksheet: Worksheet,
   startRow: number,
   startCol: number,
   endRow: number,
@@ -140,7 +141,7 @@ export function mergeCells(
  * 自動調整列寬
  */
 export function autoFitColumns(
-  worksheet: ExcelJS.Worksheet,
+  worksheet: Worksheet,
   minWidth: number = 10,
   maxWidth: number = 50
 ): void {
@@ -149,14 +150,16 @@ export function autoFitColumns(
 
     let maxLength = 0;
 
-    column.eachCell({ includeEmpty: false }, cell => {
-      const columnLength = cell.value ? cell.value.toString().length : 0;
-      if (columnLength > maxLength) {
-        maxLength = columnLength;
-      }
-    });
+    if (column?.eachCell) {
+      column.eachCell({ includeEmpty: false }, cell => {
+        const columnLength = cell.value ? cell.value.toString().length : 0;
+        if (columnLength > maxLength) {
+          maxLength = columnLength;
+        }
+      });
 
-    column.width = Math.max(minWidth, Math.min(maxLength + 2, maxWidth));
+      column.width = Math.max(minWidth, Math.min(maxLength + 2, maxWidth));
+    }
   });
 }
 
@@ -164,12 +167,14 @@ export function autoFitColumns(
  * 設置數字格式
  */
 export function setNumberFormat(
-  worksheet: ExcelJS.Worksheet,
+  worksheet: Worksheet,
   columnIndex: number,
   format: string
 ): void {
   const column = worksheet.getColumn(columnIndex);
-  column.numFmt = format;
+  if (column) {
+    column.numFmt = format;
+  }
 }
 
 /**
@@ -192,6 +197,7 @@ export async function createStyledReport(
   title: string,
   columns?: ColumnConfig[]
 ): Promise<Buffer> {
+  const ExcelJS = await getExcelJS();
   const workbook = new ExcelJS.Workbook();
 
   // 設置工作簿屬性
@@ -236,7 +242,7 @@ export function convertColumnWidth(xlsxWidth: number): number {
  * 處理合併儲存格配置
  */
 export function applyMerges(
-  worksheet: ExcelJS.Worksheet,
+  worksheet: Worksheet,
   merges: Array<{ s: { r: number; c: number }; e: { r: number; c: number } }>
 ): void {
   merges.forEach(merge => {

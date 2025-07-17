@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/app/utils/supabase/server';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const body = await request.json();
     const {
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            error: `Database error: ${error.message}`,
+            error: `Database error: ${(error as { message: string }).message}`,
           },
           { status: 500 }
         );
@@ -88,10 +88,10 @@ export async function POST(request: NextRequest) {
     if (result.order_completed) {
       try {
         if (process.env.NODE_ENV !== 'production') {
-          console.log(`[ACO] Order ${orderRefNum} completed, sending email notification...`);
+          console.log(`[ACO as string] Order ${orderRefNum} completed, sending email notification...`);
         }
         if (process.env.NODE_ENV !== 'production') {
-          console.log('[ACO] Environment check:', {
+          console.log('[ACO as string] Environment check:', {
             nodeEnv: process.env.NODE_ENV,
             isLocalhost: request.url.includes('localhost'),
             supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 20) + '...',
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
         );
 
         if (process.env.NODE_ENV !== 'production') {
-          console.log('[ACO] Edge Function response:', { emailData, emailError });
+          console.log('[ACO as string] Edge Function response:', { emailData, emailError });
         }
 
         if (emailError) {
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
           }
           emailResult = {
             success: false,
-            error: emailError.message,
+            error: (emailError as { message: string }).message,
           };
         } else {
           if (process.env.NODE_ENV !== 'production') {
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
           }
           emailResult = {
             success: true,
-            message: emailData.message,
+            message: (emailData as { message: string }).message,
             emailId: emailData.emailId,
           };
         }
@@ -146,14 +146,14 @@ export async function POST(request: NextRequest) {
         }
         emailResult = {
           success: false,
-          error: `Email service error: ${emailError.message}`,
+          error: `Email service error: ${(emailError as { message: string }).message}`,
         };
       }
     }
 
     return NextResponse.json({
       success: true,
-      message: result.message,
+      message: (result as { message: string }).message,
       orderRef: result.order_ref,
       productCode: result.product_code,
       previousFinishedQty: result.previous_finished_qty,
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: `Server error: ${error.message}`,
+        error: `Server error: ${(error as { message: string }).message}`,
       },
       { status: 500 }
     );
@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GET endpoint to check order completion status
-export async function GET(request: NextRequest) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { searchParams } = new URL(request.url);
     const orderRef = searchParams.get('orderRef');
@@ -215,7 +215,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: `Database error: ${error.message}`,
+          error: `Database error: ${(error as { message: string }).message}`,
         },
         { status: 500 }
       );
@@ -227,7 +227,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: `Server error: ${error.message}`,
+        error: `Server error: ${(error as { message: string }).message}`,
       },
       { status: 500 }
     );

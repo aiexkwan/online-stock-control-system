@@ -24,7 +24,7 @@ function createSupabaseAdmin() {
   });
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const isDevelopment = process.env.NODE_ENV === 'development';
     
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     // 從公開 URL 提取存儲路徑
     const urlParts = pdfUrl.split('/');
     const bucketIndex = urlParts.indexOf('object') + 2; // 'public' or 'sign'
-    const bucket = urlParts[bucketIndex];
+    const bucket = urlParts[bucketIndex as string];
     const filePath = urlParts.slice(bucketIndex + 1).join('/');
 
     isDevelopment && console.log('[PDF to Images] Bucket:', bucket, 'Path:', filePath);
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       // 如果失敗，返回原始 URL
       return NextResponse.json({
         success: true,
-        imageUrls: [pdfUrl],
+        imageUrls: [pdfUrl as string],
         pageCount: 1,
         note: 'Using original PDF URL',
       });
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: 'PDF processing failed',
-        details: error.message,
+        details: (error as { message: string }).message,
       },
       { status: 500 }
     );

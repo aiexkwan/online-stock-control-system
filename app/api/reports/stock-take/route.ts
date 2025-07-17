@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
-import ExcelJS from 'exceljs';
 
-export async function POST(request: NextRequest) {
+
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = await createClient();
 
@@ -17,6 +17,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 創建 Excel 工作簿
+    // Dynamic import ExcelJS
+    const ExcelJS = await import('exceljs');
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Stock Take Report');
 
@@ -63,7 +65,7 @@ export async function POST(request: NextRequest) {
         actual_qty: record.actual_qty || 0,
         variance: variance,
         variance_pct: variancePct,
-        status: record.status || 'Pending',
+        status: (record as { status: string }).status || 'Pending',
         counted_by: record.counted_by || '',
         verified_by: record.verified_by || '',
         notes: record.notes || '',

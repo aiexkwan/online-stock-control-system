@@ -56,15 +56,15 @@ export function PerformanceDashboard() {
   const latestMemoryUsage = useMemo(() => {
     const memoryMetrics = metrics
       .filter(m => m.name === 'memory_usage')
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      .sort((a, b) => b.timestamp - a.timestamp);
 
     return memoryMetrics[0]?.value || 0;
   }, [metrics]);
 
   // 分組警報
   const groupedAlerts = useMemo(() => {
-    const critical = alerts.filter(a => a.level === 'critical');
-    const warning = alerts.filter(a => a.level === 'warning');
+    const critical = alerts.filter(a => a.type === 'critical');
+    const warning = alerts.filter(a => a.type === 'warning');
     return { critical, warning };
   }, [alerts]);
 
@@ -321,14 +321,14 @@ function MetricRow({ metric }: MetricRowProps) {
   return (
     <div className='flex items-center justify-between rounded px-3 py-2 hover:bg-gray-50'>
       <div className='flex items-center gap-3'>
-        <Badge variant='secondary' className={`text-xs ${categoryColors[metric.category]}`}>
+        <Badge variant='secondary' className={`text-xs ${categoryColors[metric.category as keyof typeof categoryColors] || ''}`}>
           {metric.category}
         </Badge>
         <span className='text-sm'>{metric.name}</span>
       </div>
       <div className='flex items-center gap-4'>
         <span className='text-sm font-medium'>
-          {metric.value.toFixed(1)} {metric.unit}
+          {metric.value.toFixed(1)} ms
         </span>
         <span className='text-xs text-muted-foreground'>
           {new Date(metric.timestamp).toLocaleTimeString()}

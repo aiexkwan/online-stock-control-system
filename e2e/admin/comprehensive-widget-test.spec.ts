@@ -105,10 +105,10 @@ test.describe('Admin Sub-pages - Comprehensive Widget Testing', () => {
     const testResults = {
       totalPages: adminSubPages.length,
       successfulPages: 0,
-      failedPages: [],
-      widgetCounts: {},
+      failedPages: [] as Array<{ page: string; error: string }>,
+      widgetCounts: {} as Record<string, any>,
       totalWidgets: 0,
-      errors: [],
+      errors: [] as Array<{ page: string; errors: string[] }>,
       timestamp: new Date().toISOString()
     };
     
@@ -193,10 +193,10 @@ test.describe('Admin Sub-pages - Comprehensive Widget Testing', () => {
         }
         
       } catch (error) {
-        console.log(`❌ Failed to test page ${subPage}:`, error.message);
+        console.log(`❌ Failed to test page ${subPage}:`, (error as Error).message);
         testResults.failedPages.push({
           page: subPage,
-          error: error.message
+          error: (error as Error).message
         });
       }
     }
@@ -216,7 +216,8 @@ test.describe('Admin Sub-pages - Comprehensive Widget Testing', () => {
     // Detailed widget counts per page
     console.log('\n📋 Widget Counts by Page:');
     for (const [page, data] of Object.entries(testResults.widgetCounts)) {
-      console.log(`  ${page}: ${data.domElements} DOM elements, ${data.registeredWidgets} registered, ${data.errors} errors`);
+      const widgetData = data as any;
+      console.log(`  ${page}: ${widgetData.domElements} DOM elements, ${widgetData.registeredWidgets} registered, ${widgetData.errors} errors`);
     }
     
     // Check for critical widget registry functionality

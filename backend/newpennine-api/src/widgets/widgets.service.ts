@@ -316,7 +316,7 @@ export class WidgetsService {
           });
         }
 
-        const productAnalysis = productMap.get(productCode)!;
+        const productAnalysis = productMap.get(productCode);
         productAnalysis.totalQuantity += quantity;
         productAnalysis.totalPallets += 1;
 
@@ -340,7 +340,7 @@ export class WidgetsService {
           });
         }
 
-        const warehouseAnalysis = warehouseMap.get(itemWarehouse)!;
+        const warehouseAnalysis = warehouseMap.get(itemWarehouse);
         warehouseAnalysis.totalQuantity += quantity;
         warehouseAnalysis.totalPallets += 1;
       });
@@ -392,9 +392,8 @@ export class WidgetsService {
         ),
         slowMoving: turnoverAnalysis
           .filter((t) => t.daysInStock > slowMovingThreshold)
-          .map(
-            (t) =>
-              productAnalysis.find((p) => p.productCode === t.productCode)!,
+          .map((t) =>
+            productAnalysis.find((p) => p.productCode === t.productCode),
           )
           .filter(Boolean),
       };
@@ -684,8 +683,8 @@ export class WidgetsService {
     const currentValue = await this.getStatsCardValue(dataSource, query);
 
     // Calculate previous period dates
-    const startDate = new Date(query.startDate!);
-    const endDate = new Date(query.endDate!);
+    const startDate = new Date(query.startDate);
+    const endDate = new Date(query.endDate);
     const periodDays = Math.ceil(
       (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
     );
@@ -1555,11 +1554,13 @@ export class WidgetsService {
       >();
 
       data?.forEach((record) => {
-        const date: string = (new Date(record.time || new Date()).toISOString().split('T')[0] || new Date().toISOString().split('T')[0]) as string;
+        const date: string =
+          new Date(record.time || new Date()).toISOString().split('T')[0] ||
+          new Date().toISOString().split('T')[0];
         const key = `${date}-${record.uuid}`;
 
         if (workloadMap.has(key)) {
-          workloadMap.get(key)!.task_count += 1;
+          workloadMap.get(key).task_count += 1;
         } else {
           workloadMap.set(key, {
             date: date,
@@ -1703,7 +1704,7 @@ export class WidgetsService {
           });
         }
 
-        const product = productMap.get(productCode)!;
+        const product = productMap.get(productCode);
         product.injection += item.injection || 0;
         product.pipeline += item.pipeline || 0;
         product.prebook += item.prebook || 0;

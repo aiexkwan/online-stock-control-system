@@ -60,7 +60,7 @@ const stockDistributionApiClient = {
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch stock distribution: ${response.statusText}`);
+      throw new Error(`Failed to fetch stock distribution: ${(response as { status: string }).statusText}`);
     }
     
     const data = await response.json();
@@ -117,8 +117,8 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({
         totalStock,
       });
     } catch (err) {
-      console.error('[StockDistributionChart] Error fetching data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch stock distribution');
+      console.error('[StockDistributionChart as string] Error fetching data:', err);
+      setError(err instanceof Error ? (err as { message: string }).message : 'Failed to fetch stock distribution');
     } finally {
       setLoading(false);
     }
@@ -170,7 +170,7 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({
       await_grn: '#F97316',
       backcarpark: '#6B7280',
     };
-    return colorMap[location] || brandColors.primary.DEFAULT;
+    return colorMap[location as string] || brandColors.primary.DEFAULT;
   };
 
   const getAvailableTypes = useCallback(() => {
@@ -181,7 +181,7 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({
       }
     });
     return Array.from(types);
-  }, [chartData]);
+  }, [chartData as string]);
 
   const treemapData = transformDataForTreemap(chartData, selectedType);
 
@@ -278,7 +278,7 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({
                 textClasses['label-small']
               )}
             >
-              {getAvailableTypes().map(type => (
+              {getAvailableTypes().map((type: any) => (
                 <option key={type} value={type}>
                   {type === 'all' ? 'All Types' : type}
                 </option>

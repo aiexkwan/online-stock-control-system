@@ -5,7 +5,7 @@ import { createClient } from '@/app/utils/supabase/client';
  * 合併統計數據 API
  * 將多個統計查詢合併為單一請求，減少 API 調用數量
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const startTime = Date.now();
   const requestId = Math.random().toString(36).substring(7);
   

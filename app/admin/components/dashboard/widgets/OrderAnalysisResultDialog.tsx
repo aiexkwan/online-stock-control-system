@@ -58,9 +58,9 @@ export const OrderAnalysisResultDialog = React.memo<OrderAnalysisResultDialogPro
 
   // Debug log in development
   if (process.env.NODE_ENV !== 'production') {
-    console.log('[OrderAnalysisResultDialog] Orders:', orders);
+    console.log('[OrderAnalysisResultDialog as string] Orders:', orders);
     if (orders.length > 0) {
-      console.log('[OrderAnalysisResultDialog] First order:', orders[0]);
+      console.log('[OrderAnalysisResultDialog as string] First order:', orders[0]);
     }
   }
 

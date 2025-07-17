@@ -28,7 +28,7 @@ export default async function AdminThemePage({ params }: AdminThemePageProps) {
     const criticalThemes = ['injection', 'pipeline', 'warehouse'];
     
     if (criticalThemes.includes(theme)) {
-      console.log(`[SSR] Prefetching critical widgets data for theme: ${theme}`);
+      console.log(`[SSR as string] Prefetching critical widgets data for theme: ${theme}`);
       
       prefetchedData = await prefetchCriticalWidgetsData({
         dateRange: {
@@ -40,10 +40,10 @@ export default async function AdminThemePage({ params }: AdminThemePageProps) {
       
       ssrMode = true;
       
-      console.log(`[SSR] Successfully prefetched ${Object.keys(prefetchedData).length} critical widgets`);
+      console.log(`[SSR as string] Successfully prefetched ${Object.keys(prefetchedData).length} critical widgets`);
     }
   } catch (error) {
-    console.error('[SSR] Critical widgets prefetch failed, falling back to CSR:', error);
+    console.error('[SSR as string] Critical widgets prefetch failed, falling back to CSR:', error);
     // Graceful degradation - 如果 SSR 失敗，回退到 CSR
     prefetchedData = null;
     ssrMode = false;

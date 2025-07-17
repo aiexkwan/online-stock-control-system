@@ -4,7 +4,7 @@ import { buildTransactionReport } from '@/lib/exportReport';
 import { format } from 'date-fns';
 import type { TransactionReportData } from '@/app/actions/reportActions';
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = await createClient();
 
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 轉換數據格式以符合 buildTransactionReport 的要求
-    const transfers = data.map(transaction => ({
+    const transfers = data.map((transaction: any) => ({
       from_location: transaction.f_loc || '',
       to_location: transaction.t_loc || '',
       product_code: transaction.record_palletinfo?.product_code || '',
@@ -67,11 +67,11 @@ export async function POST(request: NextRequest) {
     }));
 
     // 計算日期範圍
-    const dates = data.map(t => new Date(t.tran_date)).filter(d => !isNaN(d.getTime()));
+    const dates = data.map((t: any) => new Date(t.tran_date)).filter((d: any) => !isNaN(d.getTime()));
     const minDate =
-      dates.length > 0 ? format(Math.min(...dates.map(d => d.getTime())), 'yyyy-MM-dd') : '';
+      dates.length > 0 ? format(Math.min(...dates.map((d: any) => d.getTime())), 'yyyy-MM-dd') : '';
     const maxDate =
-      dates.length > 0 ? format(Math.max(...dates.map(d => d.getTime())), 'yyyy-MM-dd') : '';
+      dates.length > 0 ? format(Math.max(...dates.map((d: any) => d.getTime())), 'yyyy-MM-dd') : '';
 
     const reportData: TransactionReportData = {
       date_range: {
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: 'Failed to generate report',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        details: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
       },
       { status: 500 }
     );

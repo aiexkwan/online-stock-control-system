@@ -6,7 +6,7 @@
  * 這個模組為整個應用提供一致的 PDF 生成介面。
  */
 
-import { pdf } from '@react-pdf/renderer';
+import { renderReactPDFToBlob } from '@/lib/services/unified-pdf-service';
 import { type ReactElement } from 'react';
 
 /**
@@ -69,8 +69,7 @@ export async function generatePdf(options: PdfGenerationOptions): Promise<PdfGen
     onProgress?.(10);
 
     // Generate PDF blob
-    const pdfInstance = pdf(component);
-    const blob = await pdfInstance.toBlob();
+    const blob = await renderReactPDFToBlob(component);
 
     onProgress?.(50);
 

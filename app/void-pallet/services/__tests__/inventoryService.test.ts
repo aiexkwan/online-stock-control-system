@@ -40,7 +40,13 @@ describe('InventoryService', () => {
   afterEach(async () => {
     await cleanup();
     console.log = originalConsoleLog;
-    process.env.NODE_ENV = originalEnv;
+    // 恢復原始 NODE_ENV
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      value: originalEnv,
+      writable: true,
+      configurable: true,
+      enumerable: true
+    });
   });
 
   describe('getInventoryColumn - Field Mapping', () => {
@@ -82,21 +88,31 @@ describe('InventoryService', () => {
     });
 
     test('should log mapping in non-production', () => {
-      process.env.NODE_ENV = 'development';
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'development',
+        writable: true,
+        configurable: true,
+        enumerable: true
+      });
       (LocationMapper.toDbColumn as jest.Mock).mockReturnValue('bulk');
       
       getInventoryColumn('BULK');
       
       expect(console.log).toHaveBeenCalledWith(
-        '[Inventory] Mapping location "BULK" to inventory column'
+        '[Inventory as string] Mapping location "BULK" to inventory column'
       );
       expect(console.log).toHaveBeenCalledWith(
-        '[Inventory] Location "BULK" mapped to column "bulk"'
+        '[Inventory as string] Location "BULK" mapped to column "bulk"'
       );
     });
 
     test('should not log mapping in production', () => {
-      process.env.NODE_ENV = 'production';
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'production',
+        writable: true,
+        configurable: true,
+        enumerable: true
+      });
       (LocationMapper.toDbColumn as jest.Mock).mockReturnValue('bulk');
       
       getInventoryColumn('BULK');
@@ -250,7 +266,12 @@ describe('InventoryService', () => {
     });
 
     test('should log operations in non-production', async () => {
-      process.env.NODE_ENV = 'development';
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'development',
+        writable: true,
+        configurable: true,
+        enumerable: true
+      });
       mockInventoryInsert.insert.mockResolvedValue(createSupabaseResponse({}));
       (LocationMapper.toDbColumn as jest.Mock).mockReturnValue('pipeline');
 
@@ -262,7 +283,7 @@ describe('InventoryService', () => {
       );
 
       expect(console.log).toHaveBeenCalledWith(
-        '[Inventory] Successfully updated inventory:',
+        '[Inventory as string] Successfully updated inventory:',
         expect.objectContaining({
           product_code: 'PROD123',
           pipeline: -100,
@@ -348,7 +369,12 @@ describe('InventoryService', () => {
 
     describe('Logging', () => {
       test('should log operations in non-production', async () => {
-        process.env.NODE_ENV = 'development';
+        Object.defineProperty(process.env, 'NODE_ENV', {
+          value: 'development',
+          writable: true,
+          configurable: true,
+          enumerable: true
+        });
         mockSupabase.rpc.mockResolvedValue(createSupabaseResponse('Success'));
 
         await updateStockLevel('PROD123', 100, 'void');

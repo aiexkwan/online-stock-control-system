@@ -178,7 +178,7 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
         <h3 className={cn(textClasses['body-small'], 'font-semibold text-foreground')}>{title}</h3>
       </div>
       <div className={cn('min-h-0 flex-1 overflow-auto', widgetSpacing.container)}>
-        <div className={cn('flex h-full items-center', spacingUtilities.gap.small)}>
+        <div className={cn('flex h-full items-center', theme.spacing.gap.small)}>
           <div className='flex-1'>
             <Input
               type='text'

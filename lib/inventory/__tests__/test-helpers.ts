@@ -46,7 +46,7 @@ export const createMockSupabaseChain = (returnData: any = null, returnError: any
   });
 
   // Add special handling for promise-like behavior
-  methods.then = (callback: Function) => {
+  methods.then = (callback: (value: { data: any; error: any }) => any) => {
     return Promise.resolve({ data: returnData, error: returnError }).then(callback);
   };
   
@@ -57,7 +57,7 @@ export const createMockSupabaseChain = (returnData: any = null, returnError: any
   
   // Ensure the chain can be awaited directly
   if (!('then' in methods)) {
-    methods.then = (resolve: Function) => {
+    methods.then = (resolve: (value: { data: any; error: any }) => any) => {
       return Promise.resolve({ data: returnData, error: returnError }).then(resolve);
     };
   }

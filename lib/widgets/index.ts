@@ -34,9 +34,9 @@ export async function initializeWidgetRegistry(): Promise<void> {
   console.log('[WidgetRegistry] Initializing Widget Registry System v2.0...');
   
   try {
-    // 1. 自動註冊所有 widgets
+    // 1. 確保 widget registry 初始化
     const { widgetRegistry } = await import('./unified-registry');
-    await widgetRegistry.autoRegisterWidgets();
+    // autoRegisterWidgets 已移除 - 系統自動從配置初始化
     
     // 2. 載入布局基準（如果存在）
     if (typeof window !== 'undefined') {

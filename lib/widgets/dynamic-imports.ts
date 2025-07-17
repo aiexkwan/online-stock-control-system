@@ -53,11 +53,11 @@ export const operationsWidgetImports = {
 
 // Uploads Widgets
 export const uploadsWidgetImports = {
-  'UploadOrdersWidget': () => import('@/app/admin/components/dashboard/widgets/common/UniversalUploadWidget').then(m => m.UniversalUploadWidget),
-  'UploadOrdersWidgetV2': () => import('@/app/admin/components/dashboard/widgets/common/UniversalUploadWidget').then(m => m.UniversalUploadWidget),
-  'UploadFilesWidget': () => import('@/app/admin/components/dashboard/widgets/common/UniversalUploadWidget').then(m => m.UniversalUploadWidget),
-  'UploadProductSpecWidget': () => import('@/app/admin/components/dashboard/widgets/common/UniversalUploadWidget').then(m => m.UniversalUploadWidget),
-  'UploadPhotoWidget': () => import('@/app/admin/components/dashboard/widgets/common/UniversalUploadWidget').then(m => m.UniversalUploadWidget),
+  'UploadOrdersWidget': () => import('@/app/admin/components/dashboard/widgets/UploadOrdersWidgetV2'),
+  'UploadOrdersWidgetV2': () => import('@/app/admin/components/dashboard/widgets/UploadOrdersWidgetV2'),
+  'UploadFilesWidget': () => import('@/app/admin/components/dashboard/widgets/UploadFilesWidget'),
+  'UploadProductSpecWidget': () => import('@/app/admin/components/dashboard/widgets/UploadProductSpecWidget'),
+  'UploadPhotoWidget': () => import('@/app/admin/components/dashboard/widgets/UploadPhotoWidget'),
   'AvailableSoonWidget': () => import('@/app/admin/components/dashboard/widgets/AvailableSoonWidget'),
   'GoogleDriveUploadToast': () => import('@/app/admin/components/dashboard/widgets/GoogleDriveUploadToast'),
 };

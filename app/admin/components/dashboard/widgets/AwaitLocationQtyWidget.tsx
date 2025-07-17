@@ -23,7 +23,7 @@ const AwaitLocationQtyWidget: React.FC<WidgetComponentProps> = ({ widgetId }) =>
       }
       return total;
     }, 0);
-  }, [data]);
+  }, [data as string]);
 
   return (
     <MetricCard

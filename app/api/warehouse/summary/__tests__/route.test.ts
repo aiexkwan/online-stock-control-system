@@ -75,7 +75,7 @@ describe('GET /api/warehouse/summary', () => {
 
       const response = await GET();
       
-      expect(response.status).toBe(200);
+      expect((response as { status: string }).status).toBe(200);
       
       const data = await response.json();
       expect(data.success).toBe(true);
@@ -186,7 +186,7 @@ describe('GET /api/warehouse/summary', () => {
 
       const response = await GET();
       
-      expect(response.status).toBe(500);
+      expect((response as { status: string }).status).toBe(500);
       
       const data = await response.json();
       expect(data.error).toBe('Failed to fetch warehouse summary');
@@ -200,7 +200,7 @@ describe('GET /api/warehouse/summary', () => {
 
       const response = await GET();
       
-      expect(response.status).toBe(500);
+      expect((response as { status: string }).status).toBe(500);
       
       const data = await response.json();
       expect(data.error).toBe('Internal server error');
@@ -311,7 +311,7 @@ describe('GET /api/warehouse/summary', () => {
       const end = Date.now();
       
       const responseTime = end - start;
-      expect(response.status).toBe(200);
+      expect((response as { status: string }).status).toBe(200);
       expect(responseTime).toBeLessThan(500); // Should handle 1000 items in less than 500ms
     });
   });

@@ -31,9 +31,9 @@ export class AdminErrorBoundary extends React.Component<Props, State> {
     console.error('Admin Dashboard Error:', error, errorInfo);
     
     // Special handling for common dynamic import errors
-    if (error.message.includes('originalFactory.call') || 
-        error.message.includes('Cannot read properties of undefined') ||
-        error.message.includes('undefined is not an object')) {
+    if ((error as { message: string }).message.includes('originalFactory.call') || 
+        (error as { message: string }).message.includes('Cannot read properties of undefined') ||
+        (error as { message: string }).message.includes('undefined is not an object')) {
       console.warn('Dynamic import error detected - likely a lazy loading issue');
       
       // Add a small delay before auto-refresh to prevent rapid reload loops
@@ -48,9 +48,9 @@ export class AdminErrorBoundary extends React.Component<Props, State> {
   render() {
     if (this.state.hasError) {
       const isDynamicImportError = this.state.error && (
-        this.state.error.message.includes('originalFactory.call') ||
-        this.state.error.message.includes('Cannot read properties of undefined') ||
-        this.state.error.message.includes('undefined is not an object')
+        (this.state.error as { message: string }).message.includes('originalFactory.call') ||
+        (this.state.error as { message: string }).message.includes('Cannot read properties of undefined') ||
+        (this.state.error as { message: string }).message.includes('undefined is not an object')
       );
 
       return (
@@ -86,7 +86,7 @@ export class AdminErrorBoundary extends React.Component<Props, State> {
               <details className='mt-4 text-left'>
                 <summary className='cursor-pointer text-sm text-gray-500'>Error Details</summary>
                 <pre className='mt-2 whitespace-pre-wrap text-xs text-gray-400'>
-                  {this.state.error.message}
+                  {(this.state.error as { message: string }).message}
                 </pre>
               </details>
             )}

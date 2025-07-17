@@ -70,7 +70,7 @@ isNotProduction() &&
 isNotProduction() &&
   console.log('[Ask Database] ✅ Using OpenAI for SQL generation and natural language responses');
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const startTime = Date.now();
   let userEmail: string | null = null;
   let userName: string | null = null;
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
 
         if (!error && userHistory && userHistory.length > 0) {
           // 轉換格式以匹配 recentHistory 的結構
-          recentHistory = userHistory.reverse().map(record => ({
+          recentHistory = userHistory.reverse().map((record: any) => ({
             question: record.query,
             sql: record.sql_query,
             answer: record.answer,
@@ -432,7 +432,7 @@ export async function POST(request: NextRequest) {
             });
           break; // 成功則跳出循環
         } catch (execError: any) {
-          console.log(`[SQL Execution] Attempt ${sqlExecutionAttempts} failed:`, execError.message);
+          console.log(`[SQL Execution] Attempt ${sqlExecutionAttempts} failed:`, (execError as { message: string }).message);
           
           // 如果已經是最後一次嘗試，拋出錯誤
           if (sqlExecutionAttempts >= maxAttempts) {
@@ -570,9 +570,9 @@ export async function POST(request: NextRequest) {
     const errorType = classificationResult.errorType;
     
     console.error('[Ask Database] Error details:', {
-      message: error.message,
+      message: (error as { message: string }).message,
       errorType: errorType,
-      stack: error.stack,
+      stack: (error as Error).stack,
       name: error.name,
       cause: error.cause,
       responseTime: Date.now() - startTime,
@@ -588,7 +588,7 @@ export async function POST(request: NextRequest) {
     const recoveryStrategy = getRecoveryStrategy(errorType);
 
     // 使用增強的錯誤訊息
-    let errorMessage = enhanceErrorMessage(errorType, error.message);
+    let errorMessage = enhanceErrorMessage(errorType, (error as { message: string }).message);
     
     // 如果有恢復建議，添加到錯誤訊息
     if (recoveryStrategy.suggestion) {
@@ -598,7 +598,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: errorMessage,
-        details: isDevelopment() ? error.message : undefined,
+        details: isDevelopment() ? (error as { message: string }).message : undefined,
         responseTime: Date.now() - startTime,
         mode: 'OPENAI_SQL_GENERATION',
       },
@@ -779,7 +779,7 @@ async function generateSQLWithOpenAI(
     // 這裡只需要拋出增強的錯誤訊息
     
     // 增強錯誤訊息
-    const enhancedMessage = enhanceErrorMessage(errorType, error.message);
+    const enhancedMessage = enhanceErrorMessage(errorType, (error as { message: string }).message);
     throw new Error(enhancedMessage);
   }
 }
@@ -830,7 +830,7 @@ async function checkQueryCost(sql: string): Promise<{
       blocked: false
     };
   } catch (error) {
-    console.error('[checkQueryCost] Error:', error);
+    console.error('[checkQueryCost as string] Error:', error);
     // 如果出錯，允許查詢繼續執行
     return {
       estimatedCost: 0,
@@ -862,7 +862,7 @@ async function executeSQLQuery(
 
     if (error) {
       console.error('[SQL Execution] Error:', error);
-      throw new Error(`SQL execution failed: ${error.message}`);
+      throw new Error(`SQL execution failed: ${(error as { message: string }).message}`);
     }
 
     const resultData = Array.isArray(data) ? data : [];
@@ -894,7 +894,7 @@ async function executeSQLQuery(
     );
     
     // 增強錯誤訊息  
-    const enhancedMessage = enhanceErrorMessage(errorType, error.message);
+    const enhancedMessage = enhanceErrorMessage(errorType, (error as { message: string }).message);
     
     // 為了向上層傳遞錯誤類型，創建新錯誤
     const enhancedError = new Error(enhancedMessage);
@@ -1053,7 +1053,7 @@ async function generateConversationSummary(
     const tokensUsed = response.usage?.total_tokens || 0;
     return { summary: summary.trim(), tokensUsed };
   } catch (error) {
-    console.error('[generateConversationSummary] Error:', error);
+    console.error('[generateConversationSummary as string] Error:', error);
     throw error;
   }
 }
@@ -1078,16 +1078,16 @@ async function getDailyQueryHistory(
       .limit(10); // 限制最多10條歷史記錄
 
     if (error) {
-      console.error('[getDailyQueryHistory] Error:', error);
+      console.error('[getDailyQueryHistory as string] Error:', error);
       return [];
     }
 
-    return (data || []).map(record => ({
+    return (data || []).map((record: any) => ({
       question: record.query,
       answer: record.answer,
     }));
   } catch (error) {
-    console.error('[getDailyQueryHistory] Error:', error);
+    console.error('[getDailyQueryHistory as string] Error:', error);
     return [];
   }
 }
@@ -1105,7 +1105,7 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
 
       if (!user?.email) {
         isNotProduction() &&
-          console.log('[getUserInfo] Development mode: No authenticated user, using test user');
+          console.log('[getUserInfo as string] Development mode: No authenticated user, using test user');
         const { data: testUser, error } = await supabase
           .from('data_id')
           .select('name, email')
@@ -1116,7 +1116,7 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
           const testEmail =
             testUser.email || `test-user-${testUser.name.toLowerCase()}@pennineindustries.com`;
           isNotProduction() &&
-            console.log('[getUserInfo] Using test user:', testUser.name, 'with email:', testEmail);
+            console.log('[getUserInfo as string] Using test user:', testUser.name, 'with email:', testEmail);
           return { email: testEmail, name: testUser.name };
         }
       }
@@ -1128,7 +1128,7 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
 
     if (!user?.email) {
       isNotProduction() &&
-        console.log('[getUserInfo] No authenticated user found');
+        console.log('[getUserInfo as string] No authenticated user found');
       return { email: null, name: null };
     }
 
@@ -1136,13 +1136,13 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
     const cachedName = userNameCache.get(user.email);
     if (cachedName) {
       isNotProduction() &&
-        console.log('[getUserInfo] Using cached user name for:', user.email);
+        console.log('[getUserInfo as string] Using cached user name for:', user.email);
       return { email: user.email, name: cachedName };
     }
 
     // 從 data_id 表獲取用戶名
     isNotProduction() &&
-      console.log('[getUserInfo] Fetching user name from database for:', user.email);
+      console.log('[getUserInfo as string] Fetching user name from database for:', user.email);
     const { data: userData, error } = await supabase
       .from('data_id')
       .select('name')
@@ -1152,7 +1152,7 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
     if (error || !userData) {
       isNotProduction() &&
         console.log(
-          '[getUserInfo] User not found in data_id table:',
+          '[getUserInfo as string] User not found in data_id table:',
           user.email,
           'Error:',
           error?.message
@@ -1163,11 +1163,11 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
     // 緩存用戶名
     userNameCache.set(user.email, userData.name);
     isNotProduction() &&
-      console.log('[getUserInfo] User name cached:', userData.name);
+      console.log('[getUserInfo as string] User name cached:', userData.name);
 
     return { email: user.email, name: userData.name };
   } catch (error) {
-    console.error('[getUserInfo] Error:', error);
+    console.error('[getUserInfo as string] Error:', error);
     return { email: null, name: null };
   }
 }
@@ -1250,7 +1250,7 @@ async function checkIntelligentCache(
     if (exactMatch.data && exactMatch.data.length > 0) {
       const record = exactMatch.data[0];
       isNotProduction() &&
-        console.log('[checkIntelligentCache] L1 exact match found');
+        console.log('[checkIntelligentCache as string] L1 exact match found');
 
       // 安全處理 result_json，確保有正確結構
       const safeResult = record.result_json || {
@@ -1303,7 +1303,7 @@ async function checkIntelligentCache(
       if (bestMatch) {
         isNotProduction() &&
           console.log(
-            `[checkIntelligentCache] L2 fuzzy match found (${Math.round(bestSimilarity * 100)}% similarity)`
+            `[checkIntelligentCache as string] L2 fuzzy match found (${Math.round(bestSimilarity * 100)}% similarity)`
           );
 
         const safeResult = bestMatch.result_json || {
@@ -1356,7 +1356,7 @@ async function checkIntelligentCache(
       if (bestMatch) {
         isNotProduction() &&
           console.log(
-            `[checkIntelligentCache] L2 similar match found (${Math.round(bestSimilarity * 100)}% similarity)`
+            `[checkIntelligentCache as string] L2 similar match found (${Math.round(bestSimilarity * 100)}% similarity)`
           );
 
         // 安全處理 result_json
@@ -1387,7 +1387,7 @@ async function checkIntelligentCache(
 
     return null;
   } catch (error) {
-    console.error('[checkIntelligentCache] Error:', error);
+    console.error('[checkIntelligentCache as string] Error:', error);
     return null;
   }
 }
@@ -1402,7 +1402,7 @@ function calculateSimilarity(words1: string[], words2: string[]): number {
   const set2 = new Set(words2);
 
   // 計算交集
-  const intersectionArray = Array.from(set1).filter(x => set2.has(x));
+  const intersectionArray = Array.from(set1).filter((x: any) => set2.has(x));
   const intersection = new Set(intersectionArray);
 
   // 計算聯集
@@ -1436,7 +1436,7 @@ async function checkSQLCache(sql: string): Promise<any | null> {
 
     if (sqlMatch.data && sqlMatch.data.length > 0) {
       const record = sqlMatch.data[0];
-      isNotProduction() && console.log('[checkSQLCache] L3 SQL cache hit');
+      isNotProduction() && console.log('[checkSQLCache as string] L3 SQL cache hit');
       return {
         result: record.result_json,
         executionTime: record.execution_time || 0,
@@ -1447,7 +1447,7 @@ async function checkSQLCache(sql: string): Promise<any | null> {
 
     return null;
   } catch (error) {
-    console.error('[checkSQLCache] Error:', error);
+    console.error('[checkSQLCache as string] Error:', error);
     return null;
   }
 }
@@ -1492,13 +1492,13 @@ async function saveQueryRecordEnhanced(
       });
 
       if (error) {
-        console.error('[saveQueryRecordEnhanced] Failed to save query record:', error);
+        console.error('[saveQueryRecordEnhanced as string] Failed to save query record:', error);
       } else {
         isNotProduction() &&
-          console.log('[saveQueryRecordEnhanced] Enhanced query record saved successfully');
+          console.log('[saveQueryRecordEnhanced as string] Enhanced query record saved successfully');
       }
     } catch (error) {
-      console.error('[saveQueryRecordEnhanced] Error saving query record:', error);
+      console.error('[saveQueryRecordEnhanced as string] Error saving query record:', error);
     }
   });
 }
@@ -1519,7 +1519,7 @@ async function checkUserPermission(): Promise<boolean> {
   // 開發環境下跳過權限檢查
   if (isDevelopment()) {
     isNotProduction() &&
-      console.log('[checkUserPermission] Development mode: skipping auth check for debugging');
+      console.log('[checkUserPermission as string] Development mode: skipping auth check for debugging');
     return true;
   }
 
@@ -1550,7 +1550,7 @@ function generateCacheKey(
     conversationHistory && conversationHistory.length > 0
       ? conversationHistory
           .slice(-2)
-          .map(entry => `${entry.question}:${entry.sql}`)
+          .map((entry: any) => `${entry.question}:${entry.sql}`)
           .join('|')
       : '';
 
@@ -1573,11 +1573,11 @@ async function warmFrequentQueries(): Promise<void> {
       });
       
     if (!frequentPatterns || frequentPatterns.length === 0) {
-      console.log('[CacheWarmer] No frequent patterns found');
+      console.log('[CacheWarmer as string] No frequent patterns found');
       return;
     }
     
-    console.log(`[CacheWarmer] Found ${frequentPatterns.length} frequent query patterns`);
+    console.log(`[CacheWarmer as string] Found ${frequentPatterns.length} frequent query patterns`);
     
     // 2. 預熱每個查詢模式的最新結果
     for (const pattern of frequentPatterns) {
@@ -1590,7 +1590,7 @@ async function warmFrequentQueries(): Promise<void> {
         .limit(1);
         
       if (data && data.length > 0) {
-        console.log(`[CacheWarmer] Warmed pattern: ${pattern.pattern} (${pattern.count} uses)`);
+        console.log(`[CacheWarmer as string] Warmed pattern: ${pattern.pattern} (${pattern.count} uses)`);
       }
     }
     
@@ -1605,11 +1605,11 @@ async function warmFrequentQueries(): Promise<void> {
       .limit(10);
       
     if (todayQueries && todayQueries.length > 0) {
-      console.log(`[CacheWarmer] Warmed ${todayQueries.length} queries from today`);
+      console.log(`[CacheWarmer as string] Warmed ${todayQueries.length} queries from today`);
     }
     
   } catch (error) {
-    console.error('[CacheWarmer] Error during cache warming:', error);
+    console.error('[CacheWarmer as string] Error during cache warming:', error);
   }
 }
 
@@ -1631,9 +1631,9 @@ async function invalidateCacheByTable(tableName: string): Promise<void> {
       'data_id': ['staff', 'user', 'employee', 'alex']
     };
     
-    const keywords = tableKeywordMap[tableName] || [];
+    const keywords = tableKeywordMap[tableName as string] || [];
     if (keywords.length === 0) {
-      console.log(`[CacheInvalidator] No keywords mapped for table: ${tableName}`);
+      console.log(`[CacheInvalidator as string] No keywords mapped for table: ${tableName}`);
       return;
     }
     
@@ -1652,15 +1652,15 @@ async function invalidateCacheByTable(tableName: string): Promise<void> {
         .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
         
       if (!error) {
-        console.log(`[CacheInvalidator] Invalidated cache entries containing: ${keyword}`);
+        console.log(`[CacheInvalidator as string] Invalidated cache entries containing: ${keyword}`);
       }
     }
   } catch (error) {
-    console.error('[CacheInvalidator] Error:', error);
+    console.error('[CacheInvalidator as string] Error:', error);
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = await createClient();
 
@@ -1814,7 +1814,7 @@ export async function GET(request: NextRequest) {
         });
       } catch (error: any) {
         return NextResponse.json(
-          { error: 'Query analysis failed', details: error.message },
+          { error: 'Query analysis failed', details: (error as { message: string }).message },
           { status: 500 }
         );
       }
@@ -1824,7 +1824,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('[Ask Database Status] Error:', error);
     return NextResponse.json(
-      { error: 'Status check failed', details: error.message, mode: 'OPENAI_SQL_GENERATION' },
+      { error: 'Status check failed', details: (error as { message: string }).message, mode: 'OPENAI_SQL_GENERATION' },
       { status: 500 }
     );
   }
@@ -1902,7 +1902,7 @@ async function analyzeCachePerformance(): Promise<{
     };
     
   } catch (error) {
-    console.error('[analyzeCachePerformance] Error:', error);
+    console.error('[analyzeCachePerformance as string] Error:', error);
     return {
       hitRate: 0,
       totalQueries: 0,

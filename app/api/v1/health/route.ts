@@ -42,7 +42,7 @@ export async function GET() {
       status: 'unhealthy',
       version: 'v1',
       timestamp: new Date().toISOString(),
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
     }, {
       status: 500
     });

@@ -13,7 +13,7 @@ const requestLog: Array<{
   duration?: number;
 }> = [];
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const startTime = Date.now();
   const requestId = ++requestCounter;
   

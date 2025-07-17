@@ -113,11 +113,11 @@ export function DataTable<T = any>({
     } finally {
       setIsRefreshing(false);
     }
-  }, [onRefresh]);
+  }, [onRefresh as string]);
 
   const getRowKey = (item: T, index: number): string => {
     if (keyField && typeof item === 'object' && item !== null && keyField in item) {
-      return String((item as any)[keyField]);
+      return String((item as any)[keyField as string]);
     }
     return String(index);
   };
@@ -172,7 +172,7 @@ export function DataTable<T = any>({
           <div className="flex flex-col items-center justify-center py-8">
             <AlertCircle className="mb-2 h-12 w-12 text-red-500" />
             <p className="mb-2 text-sm text-red-400">Error loading data</p>
-            <p className="mb-4 text-xs text-slate-500">{error.message}</p>
+            <p className="mb-4 text-xs text-slate-500">{(error as { message: string }).message}</p>
             {onRefresh && (
               <Button
                 variant="outline"

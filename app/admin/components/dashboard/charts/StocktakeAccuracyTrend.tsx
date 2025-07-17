@@ -31,23 +31,23 @@ export default function StocktakeAccuracyTrend({ timeFrame }: StocktakeAccuracyT
   const error = null;
 
   const chartData = useMemo(() => {
-    if (!data?.stocktake_daily_summaryCollection?.edges) return [];
+// TODO: Replace GraphQL -     // TODO: Replace GraphQL - if (!data?.stocktake_daily_summaryCollection?.edges) return [];
 
     // Group by date and calculate accuracy
     const dateMap = new Map<string, { counted: number; expected: number; products: number }>();
 
-    data.stocktake_daily_summaryCollection.edges.forEach(({ node }) => {
-      if (!node?.count_date) return;
-      
-      const date = node.count_date;
-      const existing = dateMap.get(date) || { counted: 0, expected: 0, products: 0 };
-
-      dateMap.set(date, {
-        counted: existing.counted + (node.total_counted || 0),
-        expected: existing.expected + (node.final_remain_qty || 0),
-        products: existing.products + 1,
-      });
-    });
+// TODO: Replace GraphQL -     // TODO: Replace GraphQL - data.stocktake_daily_summaryCollection.edges.forEach(({ node }) => {
+    //   if (!node?.count_date) return;
+    //   
+    //   const date = node.count_date;
+    //   const existing = dateMap.get(date) || { counted: 0, expected: 0, products: 0 };
+    //
+    //   dateMap.set(date, {
+    //     counted: existing.counted + (node.total_counted || 0),
+    //     expected: existing.expected + (node.final_remain_qty || 0),
+    //     products: existing.products + 1,
+    //   });
+    // });
 
     // Convert to array and calculate accuracy
     return Array.from(dateMap.entries())
@@ -82,7 +82,7 @@ export default function StocktakeAccuracyTrend({ timeFrame }: StocktakeAccuracyT
     return (
       <Alert variant='destructive'>
         <AlertCircle className='h-4 w-4' />
-        <AlertDescription>Failed to load stocktake data: {error.message}</AlertDescription>
+        <AlertDescription>Failed to load stocktake data: {(error as { message: string }).message}</AlertDescription>
       </Alert>
     );
   }
@@ -225,19 +225,19 @@ export default function StocktakeAccuracyTrend({ timeFrame }: StocktakeAccuracyT
       <div className='mt-4 grid grid-cols-3 gap-4 border-t pt-4 text-xs'>
         <div className='text-center'>
           <div className='text-2xl font-bold text-green-600'>
-            {chartData.filter(d => d.accuracy >= 95).length}
+            {chartData.filter((d: any) => d.accuracy >= 95).length}
           </div>
           <div className='text-white/60'>Days Meeting Target (≥95%)</div>
         </div>
         <div className='text-center'>
           <div className='text-2xl font-bold text-amber-600'>
-            {chartData.filter(d => d.accuracy >= 90 && d.accuracy < 95).length}
+            {chartData.filter((d: any) => d.accuracy >= 90 && d.accuracy < 95).length}
           </div>
           <div className='text-white/60'>Near Target (90-94%)</div>
         </div>
         <div className='text-center'>
           <div className='text-2xl font-bold text-red-600'>
-            {chartData.filter(d => d.accuracy < 90).length}
+            {chartData.filter((d: any) => d.accuracy < 90).length}
           </div>
           <div className='text-white/60'>Needs Improvement (&lt;90%)</div>
         </div>

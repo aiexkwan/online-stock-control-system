@@ -75,7 +75,7 @@ export async function GET() {
       status: 'error',
       timestamp: new Date().toISOString(),
       responseTime: `${responseTime}ms`,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
       message: 'Failed to retrieve cache metrics',
     }, {
       status: 500,
@@ -86,7 +86,7 @@ export async function GET() {
 /**
  * 清除指定的緩存 (開發/管理用途)
  */
-export async function DELETE(request: Request) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') as 'summary' | 'dashboard' | 'inventory' | 'all';
@@ -129,7 +129,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({
       status: 'error',
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
       message: 'Failed to clear cache',
     }, {
       status: 500,
@@ -158,7 +158,7 @@ export async function POST() {
 
     return NextResponse.json({
       status: 'error',
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
       message: 'Failed to pre-warm cache',
     }, {
       status: 500,

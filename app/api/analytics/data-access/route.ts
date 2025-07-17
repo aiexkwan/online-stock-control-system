@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
  * API endpoint for DataAccessStrategy metrics recording
  * This endpoint receives performance metrics from the DataAccessLayer
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const metrics = await request.json();
 

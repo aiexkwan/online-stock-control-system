@@ -1,0 +1,802 @@
+app/admin/components/alerts/AlertDashboard.tsx(15,34): error TS2307: Cannot find module './AlertHistoryView' or its corresponding type declarations.
+app/admin/components/alerts/AlertDashboard.tsx(16,38): error TS2307: Cannot find module './NotificationSettings' or its corresponding type declarations.
+app/admin/components/alerts/AlertDashboard.tsx(17,35): error TS2307: Cannot find module './AlertSystemStatus' or its corresponding type declarations.
+app/admin/components/alerts/AlertDashboard.tsx(18,39): error TS2307: Cannot find module './CreateAlertRuleDialog' or its corresponding type declarations.
+app/admin/components/alerts/AlertRulesList.tsx(29,37): error TS2307: Cannot find module './AlertRuleEditDialog' or its corresponding type declarations.
+app/admin/components/alerts/AlertRulesList.tsx(30,37): error TS2307: Cannot find module './AlertRuleTestDialog' or its corresponding type declarations.
+app/admin/components/alerts/AlertRulesList.tsx(184,43): error TS2322: Type '{ children: Element[]; value: "all" | AlertLevel; onValueChange: Dispatch<SetStateAction<"all" | AlertLevel>>; }' is not assignable to type 'IntrinsicAttributes & SelectHTMLAttributes<HTMLSelectElement> & RefAttributes<HTMLSelectElement>'.
+  Property 'onValueChange' does not exist on type 'IntrinsicAttributes & SelectHTMLAttributes<HTMLSelectElement> & RefAttributes<HTMLSelectElement>'. Did you mean 'onVolumeChange'?
+app/admin/components/alerts/AlertRulesList.tsx(197,44): error TS2322: Type '{ children: Element[]; value: "enabled" | "all" | "disabled"; onValueChange: Dispatch<SetStateAction<"enabled" | "all" | "disabled">>; }' is not assignable to type 'IntrinsicAttributes & SelectHTMLAttributes<HTMLSelectElement> & RefAttributes<HTMLSelectElement>'.
+  Property 'onValueChange' does not exist on type 'IntrinsicAttributes & SelectHTMLAttributes<HTMLSelectElement> & RefAttributes<HTMLSelectElement>'. Did you mean 'onVolumeChange'?
+app/admin/components/dashboard/AdminWidgetRenderer.tsx(240,50): error TS2345: Argument of type '"list" | "stats" | "chart" | "core"' is not assignable to parameter of type '"default" | "table" | "list" | "stats" | "chart" | undefined'.
+  Type '"core"' is not assignable to type '"default" | "table" | "list" | "stats" | "chart" | undefined'.
+app/admin/components/dashboard/AdminWidgetRenderer.tsx(330,22): error TS2345: Argument of type 'ProductActionResult' is not assignable to parameter of type 'SetStateAction<ProductData | null>'.
+app/admin/components/dashboard/ChartWidgetRenderer.tsx(19,22): error TS2345: Argument of type '() => Promise<{ default: typeof Line; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof Line; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof Line; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof Line; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof Line; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Line' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof Line' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.legendType' are incompatible between these types.
+                  Type 'string' is not assignable to type 'LegendType | undefined'.
+app/admin/components/dashboard/ChartWidgetRenderer.tsx(21,21): error TS2345: Argument of type '() => Promise<{ default: typeof Bar; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof Bar; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof Bar; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof Bar; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof Bar; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Bar' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof Bar' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.layout' are incompatible between these types.
+                  Type 'string' is not assignable to type '"horizontal" | "vertical" | undefined'.
+app/admin/components/dashboard/ChartWidgetRenderer.tsx(23,21): error TS2345: Argument of type '() => Promise<{ default: typeof Pie; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof Pie; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof Pie; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof Pie; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof Pie; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Pie' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof Pie' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.legendType' are incompatible between these types.
+                  Type 'string' is not assignable to type 'LegendType | undefined'.
+app/admin/components/dashboard/ChartWidgetRenderer.tsx(26,22): error TS2345: Argument of type '() => Promise<{ default: typeof Area; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof Area; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof Area; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof Area; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof Area; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Area' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof Area' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.legendType' are incompatible between these types.
+                  Type 'string' is not assignable to type 'LegendType | undefined'.
+app/admin/components/dashboard/ChartWidgetRenderer.tsx(27,23): error TS2345: Argument of type '() => Promise<{ default: typeof XAxis; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof XAxis; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof XAxis; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof XAxis; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof XAxis; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof XAxis' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof XAxis' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.type' are incompatible between these types.
+                  Type 'string' is not assignable to type '"number" | "category" | undefined'.
+app/admin/components/dashboard/ChartWidgetRenderer.tsx(28,23): error TS2345: Argument of type '() => Promise<{ default: typeof YAxis; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof YAxis; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof YAxis; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof YAxis; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof YAxis; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof YAxis' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof YAxis' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.type' are incompatible between these types.
+                  Type 'string' is not assignable to type '"number" | "category" | undefined'.
+app/admin/components/dashboard/ChartWidgetRenderer.tsx(30,25): error TS2345: Argument of type '() => Promise<{ default: typeof Tooltip; }>' is not assignable to parameter of type 'DynamicOptions<TooltipProps<ValueType, NameType>> | Loader<TooltipProps<ValueType, NameType>>'.
+  Type '() => Promise<{ default: typeof Tooltip; }>' is not assignable to type '() => LoaderComponent<TooltipProps<ValueType, NameType>>'.
+    Type 'Promise<{ default: typeof Tooltip; }>' is not assignable to type 'LoaderComponent<TooltipProps<ValueType, NameType>>'.
+      Type '{ default: typeof Tooltip; }' is not assignable to type 'ComponentType<TooltipProps<ValueType, NameType>> | ComponentModule<TooltipProps<ValueType, NameType>>'.
+        Type '{ default: typeof Tooltip; }' is not assignable to type 'ComponentModule<TooltipProps<ValueType, NameType>>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Tooltip' is not assignable to type 'ComponentType<TooltipProps<ValueType, NameType>>'.
+              Type 'typeof Tooltip' is not assignable to type 'ComponentClass<TooltipProps<ValueType, NameType>, any>'.
+                The types of 'defaultProps.animationEasing' are incompatible between these types.
+                  Type 'string' is not assignable to type 'AnimationTiming | undefined'.
+app/admin/components/dashboard/charts/AcoOrderProgressChart.tsx(9,21): error TS2345: Argument of type '() => Promise<{ default: typeof Bar; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof Bar; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof Bar; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof Bar; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof Bar; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Bar' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof Bar' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.layout' are incompatible between these types.
+                  Type 'string' is not assignable to type '"horizontal" | "vertical" | undefined'.
+app/admin/components/dashboard/charts/AcoOrderProgressChart.tsx(10,23): error TS2345: Argument of type '() => Promise<{ default: typeof XAxis; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof XAxis; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof XAxis; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof XAxis; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof XAxis; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof XAxis' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof XAxis' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.type' are incompatible between these types.
+                  Type 'string' is not assignable to type '"number" | "category" | undefined'.
+app/admin/components/dashboard/charts/AcoOrderProgressChart.tsx(11,23): error TS2345: Argument of type '() => Promise<{ default: typeof YAxis; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof YAxis; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof YAxis; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof YAxis; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof YAxis; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof YAxis' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof YAxis' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.type' are incompatible between these types.
+                  Type 'string' is not assignable to type '"number" | "category" | undefined'.
+app/admin/components/dashboard/charts/AcoOrderProgressChart.tsx(13,25): error TS2345: Argument of type '() => Promise<{ default: typeof Tooltip; }>' is not assignable to parameter of type 'DynamicOptions<TooltipProps<ValueType, NameType>> | Loader<TooltipProps<ValueType, NameType>>'.
+  Type '() => Promise<{ default: typeof Tooltip; }>' is not assignable to type '() => LoaderComponent<TooltipProps<ValueType, NameType>>'.
+    Type 'Promise<{ default: typeof Tooltip; }>' is not assignable to type 'LoaderComponent<TooltipProps<ValueType, NameType>>'.
+      Type '{ default: typeof Tooltip; }' is not assignable to type 'ComponentType<TooltipProps<ValueType, NameType>> | ComponentModule<TooltipProps<ValueType, NameType>>'.
+        Type '{ default: typeof Tooltip; }' is not assignable to type 'ComponentModule<TooltipProps<ValueType, NameType>>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Tooltip' is not assignable to type 'ComponentType<TooltipProps<ValueType, NameType>>'.
+              Type 'typeof Tooltip' is not assignable to type 'ComponentClass<TooltipProps<ValueType, NameType>, any>'.
+                The types of 'defaultProps.animationEasing' are incompatible between these types.
+                  Type 'string' is not assignable to type 'AnimationTiming | undefined'.
+app/admin/components/dashboard/charts/AcoOrderProgressChart.tsx(14,24): error TS2345: Argument of type '() => Promise<{ default: typeof Legend; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof Legend; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof Legend; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof Legend; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof Legend; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Legend' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof Legend' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.layout' are incompatible between these types.
+                  Type 'string' is not assignable to type 'LayoutType | undefined'.
+app/admin/components/dashboard/charts/AcoOrderProgressChart.tsx(140,27): error TS2339: Property 'destructive' does not exist on type '{ readonly success: { readonly light: "#22c55e"; readonly DEFAULT: "#16a34a"; readonly dark: "#15803d"; readonly bg: "#dcfce7"; readonly border: "#86efac"; }; readonly warning: { readonly light: "#facc15"; readonly DEFAULT: "#eab308"; readonly dark: "#ca8a04"; readonly bg: "#fef3c7"; readonly border: "#fde047"; }; r...'.
+app/admin/components/dashboard/charts/AcoOrderProgressChart.tsx(145,40): error TS2339: Property 'margin' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/charts/AcoOrderProgressChart.tsx(203,36): error TS2339: Property 'gap' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/charts/AcoOrderProgressChart.tsx(205,76): error TS2339: Property 'gap' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/charts/AcoOrderProgressChart.tsx(209,76): error TS2339: Property 'gap' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/charts/AcoOrderProgressChart.tsx(213,76): error TS2339: Property 'gap' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/charts/AcoOrderProgressChart.tsx(214,101): error TS2339: Property 'destructive' does not exist on type '{ readonly success: { readonly light: "#22c55e"; readonly DEFAULT: "#16a34a"; readonly dark: "#15803d"; readonly bg: "#dcfce7"; readonly border: "#86efac"; }; readonly warning: { readonly light: "#facc15"; readonly DEFAULT: "#eab308"; readonly dark: "#ca8a04"; readonly bg: "#fef3c7"; readonly border: "#fde047"; }; r...'.
+app/admin/components/dashboard/charts/InventoryTurnoverAnalysis.tsx(8,22): error TS2345: Argument of type '() => Promise<{ default: typeof Line; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof Line; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof Line; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof Line; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof Line; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Line' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof Line' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.legendType' are incompatible between these types.
+                  Type 'string' is not assignable to type 'LegendType | undefined'.
+app/admin/components/dashboard/charts/InventoryTurnoverAnalysis.tsx(9,23): error TS2345: Argument of type '() => Promise<{ default: typeof XAxis; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof XAxis; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof XAxis; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof XAxis; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof XAxis; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof XAxis' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof XAxis' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.type' are incompatible between these types.
+                  Type 'string' is not assignable to type '"number" | "category" | undefined'.
+app/admin/components/dashboard/charts/InventoryTurnoverAnalysis.tsx(10,23): error TS2345: Argument of type '() => Promise<{ default: typeof YAxis; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof YAxis; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof YAxis; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof YAxis; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof YAxis; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof YAxis' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof YAxis' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.type' are incompatible between these types.
+                  Type 'string' is not assignable to type '"number" | "category" | undefined'.
+app/admin/components/dashboard/charts/InventoryTurnoverAnalysis.tsx(12,25): error TS2345: Argument of type '() => Promise<{ default: typeof Tooltip; }>' is not assignable to parameter of type 'DynamicOptions<TooltipProps<ValueType, NameType>> | Loader<TooltipProps<ValueType, NameType>>'.
+  Type '() => Promise<{ default: typeof Tooltip; }>' is not assignable to type '() => LoaderComponent<TooltipProps<ValueType, NameType>>'.
+    Type 'Promise<{ default: typeof Tooltip; }>' is not assignable to type 'LoaderComponent<TooltipProps<ValueType, NameType>>'.
+      Type '{ default: typeof Tooltip; }' is not assignable to type 'ComponentType<TooltipProps<ValueType, NameType>> | ComponentModule<TooltipProps<ValueType, NameType>>'.
+        Type '{ default: typeof Tooltip; }' is not assignable to type 'ComponentModule<TooltipProps<ValueType, NameType>>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Tooltip' is not assignable to type 'ComponentType<TooltipProps<ValueType, NameType>>'.
+              Type 'typeof Tooltip' is not assignable to type 'ComponentClass<TooltipProps<ValueType, NameType>, any>'.
+                The types of 'defaultProps.animationEasing' are incompatible between these types.
+                  Type 'string' is not assignable to type 'AnimationTiming | undefined'.
+app/admin/components/dashboard/charts/InventoryTurnoverAnalysis.tsx(13,24): error TS2345: Argument of type '() => Promise<{ default: typeof Legend; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof Legend; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof Legend; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof Legend; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof Legend; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Legend' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof Legend' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.layout' are incompatible between these types.
+                  Type 'string' is not assignable to type 'LayoutType | undefined'.
+app/admin/components/dashboard/charts/InventoryTurnoverAnalysis.tsx(43,16): error TS2339: Property 'record_inventoryCollection' does not exist on type 'never'.
+app/admin/components/dashboard/charts/InventoryTurnoverAnalysis.tsx(43,60): error TS2339: Property 'data_orderCollection' does not exist on type 'never'.
+app/admin/components/dashboard/charts/InventoryTurnoverAnalysis.tsx(47,10): error TS2339: Property 'record_inventoryCollection' does not exist on type 'never'.
+app/admin/components/dashboard/charts/InventoryTurnoverAnalysis.tsx(70,10): error TS2339: Property 'data_orderCollection' does not exist on type 'never'.
+app/admin/components/dashboard/charts/InventoryTurnoverAnalysis.tsx(137,64): error TS2339: Property 'message' does not exist on type 'never'.
+app/admin/components/dashboard/charts/InventoryTurnoverAnalysis.tsx(144,40): error TS2339: Property 'margin' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/charts/InventoryTurnoverAnalysis.tsx(185,67): error TS2339: Property 'gap' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/charts/InventoryTurnoverAnalysis.tsx(186,107): error TS2339: Property 'primary' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/charts/InventoryTurnoverAnalysis.tsx(209,43): error TS2339: Property 'primary' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/charts/InventoryTurnoverAnalysis.tsx(239,26): error TS2339: Property 'gap' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/charts/InventoryTurnoverAnalysis.tsx(242,105): error TS2339: Property 'destructive' does not exist on type '{ readonly success: { readonly light: "#22c55e"; readonly DEFAULT: "#16a34a"; readonly dark: "#15803d"; readonly bg: "#dcfce7"; readonly border: "#86efac"; }; readonly warning: { readonly light: "#facc15"; readonly DEFAULT: "#eab308"; readonly dark: "#ca8a04"; readonly bg: "#fef3c7"; readonly border: "#fde047"; }; r...'.
+app/admin/components/dashboard/charts/RealTimeInventoryMap.tsx(37,36): error TS2304: Cannot find name 'useGetInventoryLocationsQuery'.
+app/admin/components/dashboard/charts/RealTimeInventoryMap.tsx(54,70): error TS2304: Cannot find name 'GetInventoryLocationsQuery'.
+app/admin/components/dashboard/charts/StocktakeAccuracyTrend.tsx(8,22): error TS2345: Argument of type '() => Promise<{ default: typeof Line; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof Line; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof Line; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof Line; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof Line; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Line' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof Line' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.legendType' are incompatible between these types.
+                  Type 'string' is not assignable to type 'LegendType | undefined'.
+app/admin/components/dashboard/charts/StocktakeAccuracyTrend.tsx(9,23): error TS2345: Argument of type '() => Promise<{ default: typeof XAxis; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof XAxis; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof XAxis; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof XAxis; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof XAxis; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof XAxis' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof XAxis' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.type' are incompatible between these types.
+                  Type 'string' is not assignable to type '"number" | "category" | undefined'.
+app/admin/components/dashboard/charts/StocktakeAccuracyTrend.tsx(10,23): error TS2345: Argument of type '() => Promise<{ default: typeof YAxis; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof YAxis; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof YAxis; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof YAxis; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof YAxis; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof YAxis' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof YAxis' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.type' are incompatible between these types.
+                  Type 'string' is not assignable to type '"number" | "category" | undefined'.
+app/admin/components/dashboard/charts/StocktakeAccuracyTrend.tsx(12,25): error TS2345: Argument of type '() => Promise<{ default: typeof Tooltip; }>' is not assignable to parameter of type 'DynamicOptions<TooltipProps<ValueType, NameType>> | Loader<TooltipProps<ValueType, NameType>>'.
+  Type '() => Promise<{ default: typeof Tooltip; }>' is not assignable to type '() => LoaderComponent<TooltipProps<ValueType, NameType>>'.
+    Type 'Promise<{ default: typeof Tooltip; }>' is not assignable to type 'LoaderComponent<TooltipProps<ValueType, NameType>>'.
+      Type '{ default: typeof Tooltip; }' is not assignable to type 'ComponentType<TooltipProps<ValueType, NameType>> | ComponentModule<TooltipProps<ValueType, NameType>>'.
+        Type '{ default: typeof Tooltip; }' is not assignable to type 'ComponentModule<TooltipProps<ValueType, NameType>>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Tooltip' is not assignable to type 'ComponentType<TooltipProps<ValueType, NameType>>'.
+              Type 'typeof Tooltip' is not assignable to type 'ComponentClass<TooltipProps<ValueType, NameType>, any>'.
+                The types of 'defaultProps.animationEasing' are incompatible between these types.
+                  Type 'string' is not assignable to type 'AnimationTiming | undefined'.
+app/admin/components/dashboard/charts/StocktakeAccuracyTrend.tsx(13,24): error TS2345: Argument of type '() => Promise<{ default: typeof Legend; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof Legend; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof Legend; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof Legend; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof Legend; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Legend' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof Legend' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.layout' are incompatible between these types.
+                  Type 'string' is not assignable to type 'LayoutType | undefined'.
+app/admin/components/dashboard/charts/StocktakeAccuracyTrend.tsx(15,22): error TS2345: Argument of type '() => Promise<{ default: typeof Area; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof Area; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof Area; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof Area; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof Area; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Area' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof Area' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.legendType' are incompatible between these types.
+                  Type 'string' is not assignable to type 'LegendType | undefined'.
+app/admin/components/dashboard/charts/StocktakeAccuracyTrend.tsx(34,16): error TS2339: Property 'stocktake_daily_summaryCollection' does not exist on type 'never'.
+app/admin/components/dashboard/charts/StocktakeAccuracyTrend.tsx(39,10): error TS2339: Property 'stocktake_daily_summaryCollection' does not exist on type 'never'.
+app/admin/components/dashboard/charts/StocktakeAccuracyTrend.tsx(39,61): error TS7031: Binding element 'node' implicitly has an 'any' type.
+app/admin/components/dashboard/charts/StocktakeAccuracyTrend.tsx(85,65): error TS2339: Property 'message' does not exist on type 'never'.
+app/admin/components/dashboard/charts/TopProductsInventoryChart.tsx(8,21): error TS2345: Argument of type '() => Promise<{ default: typeof Bar; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof Bar; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof Bar; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof Bar; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof Bar; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Bar' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof Bar' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.layout' are incompatible between these types.
+                  Type 'string' is not assignable to type '"horizontal" | "vertical" | undefined'.
+app/admin/components/dashboard/charts/TopProductsInventoryChart.tsx(9,23): error TS2345: Argument of type '() => Promise<{ default: typeof XAxis; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof XAxis; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof XAxis; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof XAxis; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof XAxis; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof XAxis' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof XAxis' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.type' are incompatible between these types.
+                  Type 'string' is not assignable to type '"number" | "category" | undefined'.
+app/admin/components/dashboard/charts/TopProductsInventoryChart.tsx(10,23): error TS2345: Argument of type '() => Promise<{ default: typeof YAxis; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof YAxis; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof YAxis; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof YAxis; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof YAxis; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof YAxis' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof YAxis' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.type' are incompatible between these types.
+                  Type 'string' is not assignable to type '"number" | "category" | undefined'.
+app/admin/components/dashboard/charts/TopProductsInventoryChart.tsx(12,25): error TS2345: Argument of type '() => Promise<{ default: typeof Tooltip; }>' is not assignable to parameter of type 'DynamicOptions<TooltipProps<ValueType, NameType>> | Loader<TooltipProps<ValueType, NameType>>'.
+  Type '() => Promise<{ default: typeof Tooltip; }>' is not assignable to type '() => LoaderComponent<TooltipProps<ValueType, NameType>>'.
+    Type 'Promise<{ default: typeof Tooltip; }>' is not assignable to type 'LoaderComponent<TooltipProps<ValueType, NameType>>'.
+      Type '{ default: typeof Tooltip; }' is not assignable to type 'ComponentType<TooltipProps<ValueType, NameType>> | ComponentModule<TooltipProps<ValueType, NameType>>'.
+        Type '{ default: typeof Tooltip; }' is not assignable to type 'ComponentModule<TooltipProps<ValueType, NameType>>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Tooltip' is not assignable to type 'ComponentType<TooltipProps<ValueType, NameType>>'.
+              Type 'typeof Tooltip' is not assignable to type 'ComponentClass<TooltipProps<ValueType, NameType>, any>'.
+                The types of 'defaultProps.animationEasing' are incompatible between these types.
+                  Type 'string' is not assignable to type 'AnimationTiming | undefined'.
+app/admin/components/dashboard/charts/TopProductsInventoryChart.tsx(38,36): error TS2304: Cannot find name 'useGetTopProductsInventoryQuery'.
+app/admin/components/dashboard/charts/TopProductsInventoryChart.tsx(50,82): error TS2304: Cannot find name 'GetTopProductsInventoryQuery'.
+app/admin/components/dashboard/charts/TopProductsInventoryChart.tsx(144,25): error TS2339: Property 'primary' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/charts/TopProductsInventoryChart.tsx(145,25): error TS2339: Property 'secondary' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/charts/TopProductsInventoryChart.tsx(146,25): error TS2339: Property 'accent' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/charts/TopProductsInventoryChart.tsx(150,20): error TS2339: Property 'destructive' does not exist on type '{ readonly success: { readonly light: "#22c55e"; readonly DEFAULT: "#16a34a"; readonly dark: "#15803d"; readonly bg: "#dcfce7"; readonly border: "#86efac"; }; readonly warning: { readonly light: "#facc15"; readonly DEFAULT: "#eab308"; readonly dark: "#ca8a04"; readonly bg: "#fef3c7"; readonly border: "#fde047"; }; r...'.
+app/admin/components/dashboard/charts/TopProductsInventoryChart.tsx(153,17): error TS2339: Property 'accent' does not exist on type '{ readonly primary: { readonly 50: "#fff7ed"; readonly 100: "#ffedd5"; readonly 200: "#fed7aa"; readonly 300: "#fdba74"; readonly 400: "#fb923c"; readonly 500: "#f97316"; readonly 600: "#ea580c"; readonly 700: "#c2410c"; readonly 800: "#9a3412"; readonly 900: "#7c2d12"; }; readonly secondary: { ...; }; }'.
+app/admin/components/dashboard/charts/TopProductsInventoryChart.tsx(158,40): error TS2339: Property 'margin' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/charts/TopProductsInventoryChart.tsx(192,67): error TS2339: Property 'gap' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/charts/TopProductsInventoryChart.tsx(217,26): error TS2339: Property 'gap' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/charts/TopProductsInventoryChart.tsx(220,105): error TS2339: Property 'gap' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/charts/UserActivityHeatmap.tsx(30,36): error TS2304: Cannot find name 'useGetUserActivityQuery'.
+app/admin/components/dashboard/charts/VoidRecordsAnalysis.tsx(10,21): error TS2345: Argument of type '() => Promise<{ default: typeof Pie; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof Pie; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof Pie; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof Pie; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof Pie; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Pie' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof Pie' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.legendType' are incompatible between these types.
+                  Type 'string' is not assignable to type 'LegendType | undefined'.
+app/admin/components/dashboard/charts/VoidRecordsAnalysis.tsx(13,25): error TS2345: Argument of type '() => Promise<{ default: typeof Tooltip; }>' is not assignable to parameter of type 'DynamicOptions<TooltipProps<ValueType, NameType>> | Loader<TooltipProps<ValueType, NameType>>'.
+  Type '() => Promise<{ default: typeof Tooltip; }>' is not assignable to type '() => LoaderComponent<TooltipProps<ValueType, NameType>>'.
+    Type 'Promise<{ default: typeof Tooltip; }>' is not assignable to type 'LoaderComponent<TooltipProps<ValueType, NameType>>'.
+      Type '{ default: typeof Tooltip; }' is not assignable to type 'ComponentType<TooltipProps<ValueType, NameType>> | ComponentModule<TooltipProps<ValueType, NameType>>'.
+        Type '{ default: typeof Tooltip; }' is not assignable to type 'ComponentModule<TooltipProps<ValueType, NameType>>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Tooltip' is not assignable to type 'ComponentType<TooltipProps<ValueType, NameType>>'.
+              Type 'typeof Tooltip' is not assignable to type 'ComponentClass<TooltipProps<ValueType, NameType>, any>'.
+                The types of 'defaultProps.animationEasing' are incompatible between these types.
+                  Type 'string' is not assignable to type 'AnimationTiming | undefined'.
+app/admin/components/dashboard/charts/VoidRecordsAnalysis.tsx(14,24): error TS2345: Argument of type '() => Promise<{ default: typeof Legend; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof Legend; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof Legend; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof Legend; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof Legend; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Legend' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof Legend' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.layout' are incompatible between these types.
+                  Type 'string' is not assignable to type 'LayoutType | undefined'.
+app/admin/components/dashboard/charts/VoidRecordsAnalysis.tsx(16,21): error TS2345: Argument of type '() => Promise<{ default: typeof Bar; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof Bar; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof Bar; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof Bar; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof Bar; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof Bar' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof Bar' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.layout' are incompatible between these types.
+                  Type 'string' is not assignable to type '"horizontal" | "vertical" | undefined'.
+app/admin/components/dashboard/charts/VoidRecordsAnalysis.tsx(17,23): error TS2345: Argument of type '() => Promise<{ default: typeof XAxis; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof XAxis; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof XAxis; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof XAxis; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof XAxis; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof XAxis' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof XAxis' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.type' are incompatible between these types.
+                  Type 'string' is not assignable to type '"number" | "category" | undefined'.
+app/admin/components/dashboard/charts/VoidRecordsAnalysis.tsx(18,23): error TS2345: Argument of type '() => Promise<{ default: typeof YAxis; }>' is not assignable to parameter of type 'DynamicOptions<Props> | Loader<Props>'.
+  Type '() => Promise<{ default: typeof YAxis; }>' is not assignable to type '() => LoaderComponent<Props>'.
+    Type 'Promise<{ default: typeof YAxis; }>' is not assignable to type 'LoaderComponent<Props>'.
+      Type '{ default: typeof YAxis; }' is not assignable to type 'ComponentType<Props> | ComponentModule<Props>'.
+        Type '{ default: typeof YAxis; }' is not assignable to type 'ComponentModule<Props>'.
+          Types of property 'default' are incompatible.
+            Type 'typeof YAxis' is not assignable to type 'ComponentType<Props>'.
+              Type 'typeof YAxis' is not assignable to type 'ComponentClass<Props, any>'.
+                The types of 'defaultProps.type' are incompatible between these types.
+                  Type 'string' is not assignable to type '"number" | "category" | undefined'.
+app/admin/components/dashboard/charts/VoidRecordsAnalysis.tsx(61,5): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(options: DefinedInitialDataOptions<unknown, Error, unknown, (string | { startDate: string; endDate: string; limit: number; })[]>, queryClient?: QueryClient | undefined): DefinedUseQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, and 'cacheTime' does not exist in type 'DefinedInitialDataOptions<unknown, Error, unknown, (string | { startDate: string; endDate: string; limit: number; })[]>'.
+  Overload 2 of 3, '(options: UndefinedInitialDataOptions<APIResponse<any>, Error, APIResponse<any>, (string | { startDate: string; endDate: string; limit: number; })[]>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, and 'cacheTime' does not exist in type 'UndefinedInitialDataOptions<APIResponse<any>, Error, APIResponse<any>, (string | { startDate: string; endDate: string; limit: number; })[]>'.
+  Overload 3 of 3, '(options: UseQueryOptions<APIResponse<any>, Error, APIResponse<any>, (string | { startDate: string; endDate: string; limit: number; })[]>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, and 'cacheTime' does not exist in type 'UseQueryOptions<APIResponse<any>, Error, APIResponse<any>, (string | { startDate: string; endDate: string; limit: number; })[]>'.
+app/admin/components/dashboard/charts/VoidRecordsAnalysis.tsx(68,26): error TS2339: Property 'success' does not exist on type '{}'.
+app/admin/components/dashboard/charts/VoidRecordsAnalysis.tsx(68,46): error TS2339: Property 'data' does not exist on type '{}'.
+app/admin/components/dashboard/charts/VoidRecordsAnalysis.tsx(68,62): error TS2339: Property 'data' does not exist on type '{}'.
+app/admin/components/dashboard/charts/VoidRecordsAnalysis.tsx(77,19): error TS7006: Parameter 'record' implicitly has an 'any' type.
+app/admin/components/dashboard/widget-renderer-shared.tsx(105,40): error TS2345: Argument of type 'string' is not assignable to parameter of type '"chart" | "TransferTimeDistributionWidget" | "WarehouseWorkLevelAreaChart" | "StockLevelHistoryChart" | "StockDistributionChart" | "StockDistributionChartV2" | "WarehouseHeatmap" | "PipelineFlowDiagram"'.
+app/admin/components/dashboard/widget-renderer-shared.tsx(106,40): error TS2345: Argument of type 'string' is not assignable to parameter of type '"stats" | "work_level" | "production_details" | "system_status" | "pipeline_production_details" | "pipeline_work_level" | "AwaitLocationQtyWidget" | "YesterdayTransferCountWidget" | "StillInAwaitWidget" | "StillInAwaitPercentageWidget" | "production_summary"'.
+app/admin/components/dashboard/widget-renderer-shared.tsx(107,39): error TS2345: Argument of type 'string' is not assignable to parameter of type '"table" | "list" | "WarehouseTransferListWidget" | "orders-list" | "other-files-list" | "OrderStateListWidget" | "StockInventoryTable" | "activity-feed"'.
+app/admin/components/dashboard/widgets/AcoOrderProgressWidget.tsx(309,77): error TS2339: Property 'value' does not exist on type '{ table: string; tableHeader: string; tableData: string; chart: string; chartLabel: string; chartData: string; title: string; subtitle: string; description: string; }'.
+app/admin/components/dashboard/widgets/AcoOrderReportWidget.tsx(164,13): error TS2554: Expected 2 arguments, but got 1.
+app/admin/components/dashboard/widgets/AcoOrderReportWidget.tsx(218,93): error TS2339: Property 'container' does not exist on type '{ readonly containerPadding: "1rem"; readonly headerGap: "1rem"; readonly betweenWidgets: "1rem"; readonly card: { readonly padding: "1rem"; readonly paddingCompact: "0.75rem"; readonly paddingLarge: "1.5rem"; }; readonly listItem: { ...; }; readonly form: { ...; }; }'.
+app/admin/components/dashboard/widgets/AcoOrderReportWidget.tsx(220,31): error TS7053: Element implicitly has an 'any' type because expression of type '"body-medium"' can't be used to index type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+  Property 'body-medium' does not exist on type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+app/admin/components/dashboard/widgets/AcoOrderReportWidget.tsx(234,58): error TS2339: Property 'container' does not exist on type '{ readonly containerPadding: "1rem"; readonly headerGap: "1rem"; readonly betweenWidgets: "1rem"; readonly card: { readonly padding: "1rem"; readonly paddingCompact: "0.75rem"; readonly paddingLarge: "1.5rem"; }; readonly listItem: { ...; }; readonly form: { ...; }; }'.
+app/admin/components/dashboard/widgets/AcoOrderReportWidget.tsx(251,38): error TS7053: Element implicitly has an 'any' type because expression of type '"label-medium"' can't be used to index type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+  Property 'label-medium' does not exist on type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+app/admin/components/dashboard/widgets/AcoOrderReportWidgetV2.tsx(189,70): error TS2339: Property 'gap' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/widgets/AnalysisExpandableCards.tsx(136,48): error TS2345: Argument of type '"analysis"' is not assignable to parameter of type '"stats" | "reports" | "charts" | "lists" | "operations" | "uploads"'.
+app/admin/components/dashboard/widgets/AnalysisExpandableCards.tsx(137,39): error TS2345: Argument of type '"analysis"' is not assignable to parameter of type '"stats" | "reports" | "charts" | "lists" | "operations" | "uploads"'.
+app/admin/components/dashboard/widgets/AnalysisExpandableCards.tsx(146,49): error TS2345: Argument of type '"accent"' is not assignable to parameter of type '"text" | "icon" | "border" | "bg" | "gradient" | undefined'.
+app/admin/components/dashboard/widgets/AnalysisExpandableCards.tsx(154,48): error TS2345: Argument of type '"analysis"' is not assignable to parameter of type '"stats" | "reports" | "charts" | "lists" | "operations" | "uploads"'.
+app/admin/components/dashboard/widgets/AnalysisExpandableCards.tsx(155,39): error TS2345: Argument of type '"analysis"' is not assignable to parameter of type '"stats" | "reports" | "charts" | "lists" | "operations" | "uploads"'.
+app/admin/components/dashboard/widgets/AnalysisExpandableCards.tsx(163,48): error TS2345: Argument of type '"analysis"' is not assignable to parameter of type '"stats" | "reports" | "charts" | "lists" | "operations" | "uploads"'.
+app/admin/components/dashboard/widgets/AnalysisExpandableCards.tsx(164,39): error TS2345: Argument of type '"analysis"' is not assignable to parameter of type '"stats" | "reports" | "charts" | "lists" | "operations" | "uploads"'.
+app/admin/components/dashboard/widgets/AnalysisExpandableCards.tsx(172,48): error TS2345: Argument of type '"analysis"' is not assignable to parameter of type '"stats" | "reports" | "charts" | "lists" | "operations" | "uploads"'.
+app/admin/components/dashboard/widgets/AnalysisExpandableCards.tsx(173,39): error TS2345: Argument of type '"analysis"' is not assignable to parameter of type '"stats" | "reports" | "charts" | "lists" | "operations" | "uploads"'.
+app/admin/components/dashboard/widgets/AnalysisExpandableCards.tsx(181,48): error TS2345: Argument of type '"analysis"' is not assignable to parameter of type '"stats" | "reports" | "charts" | "lists" | "operations" | "uploads"'.
+app/admin/components/dashboard/widgets/AnalysisExpandableCards.tsx(182,39): error TS2345: Argument of type '"analysis"' is not assignable to parameter of type '"stats" | "reports" | "charts" | "lists" | "operations" | "uploads"'.
+app/admin/components/dashboard/widgets/AnalysisExpandableCards.tsx(190,48): error TS2345: Argument of type '"analysis"' is not assignable to parameter of type '"stats" | "reports" | "charts" | "lists" | "operations" | "uploads"'.
+app/admin/components/dashboard/widgets/AnalysisExpandableCards.tsx(191,39): error TS2345: Argument of type '"analysis"' is not assignable to parameter of type '"stats" | "reports" | "charts" | "lists" | "operations" | "uploads"'.
+app/admin/components/dashboard/widgets/AnalysisPagedWidgetV2.tsx(32,40): error TS2322: Type 'Promise<typeof import("/mnt/c/Users/ccohen/Documents/NewPennine/online-stock-control-system/app/admin/components/dashboard/charts/UserActivityHeatmap") | { default: () => Element; }>' is not assignable to type 'Promise<{ default: NamedExoticComponent<UserActivityHeatmapProps>; }>'.
+  Type 'typeof import("/mnt/c/Users/ccohen/Documents/NewPennine/online-stock-control-system/app/admin/components/dashboard/charts/UserActivityHeatmap") | { default: () => Element; }' is not assignable to type '{ default: NamedExoticComponent<UserActivityHeatmapProps>; }'.
+    Type '{ default: () => React.JSX.Element; }' is not assignable to type '{ default: NamedExoticComponent<UserActivityHeatmapProps>; }'.
+      Types of property 'default' are incompatible.
+        Property '$$typeof' is missing in type '() => React.JSX.Element' but required in type 'NamedExoticComponent<UserActivityHeatmapProps>'.
+app/admin/components/dashboard/widgets/AnalysisPagedWidgetV2.tsx(54,35): error TS2345: Argument of type '"analysis"' is not assignable to parameter of type '"stats" | "reports" | "charts" | "lists" | "operations" | "uploads"'.
+app/admin/components/dashboard/widgets/AnalysisPagedWidgetV2.tsx(70,35): error TS2345: Argument of type '"analysis"' is not assignable to parameter of type '"stats" | "reports" | "charts" | "lists" | "operations" | "uploads"'.
+app/admin/components/dashboard/widgets/AnalysisPagedWidgetV2.tsx(78,35): error TS2345: Argument of type '"analysis"' is not assignable to parameter of type '"stats" | "reports" | "charts" | "lists" | "operations" | "uploads"'.
+app/admin/components/dashboard/widgets/AnalysisPagedWidgetV2.tsx(86,35): error TS2345: Argument of type '"analysis"' is not assignable to parameter of type '"stats" | "reports" | "charts" | "lists" | "operations" | "uploads"'.
+app/admin/components/dashboard/widgets/AnalysisPagedWidgetV2.tsx(94,35): error TS2345: Argument of type '"analysis"' is not assignable to parameter of type '"stats" | "reports" | "charts" | "lists" | "operations" | "uploads"'.
+app/admin/components/dashboard/widgets/AnalysisPagedWidgetV2.tsx(102,35): error TS2345: Argument of type '"analysis"' is not assignable to parameter of type '"stats" | "reports" | "charts" | "lists" | "operations" | "uploads"'.
+app/admin/components/dashboard/widgets/AnalysisPagedWidgetV2.tsx(193,70): error TS2345: Argument of type '"analysis"' is not assignable to parameter of type '"stats" | "reports" | "charts" | "lists" | "operations" | "uploads"'.
+app/admin/components/dashboard/widgets/AwaitLocationQtyWidget.tsx(12,67): error TS2339: Property 'widgetId' does not exist on type 'WidgetComponentProps'.
+app/admin/components/dashboard/widgets/GrnReportWidget.tsx(543,75): error TS2339: Property 'container' does not exist on type '{ readonly containerPadding: "1rem"; readonly headerGap: "1rem"; readonly betweenWidgets: "1rem"; readonly card: { readonly padding: "1rem"; readonly paddingCompact: "0.75rem"; readonly paddingLarge: "1.5rem"; }; readonly listItem: { ...; }; readonly form: { ...; }; }'.
+app/admin/components/dashboard/widgets/GrnReportWidget.tsx(544,73): error TS2339: Property 'gap' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/widgets/GrnReportWidgetV2.tsx(568,75): error TS2339: Property 'container' does not exist on type '{ readonly containerPadding: "1rem"; readonly headerGap: "1rem"; readonly betweenWidgets: "1rem"; readonly card: { readonly padding: "1rem"; readonly paddingCompact: "0.75rem"; readonly paddingLarge: "1.5rem"; }; readonly listItem: { ...; }; readonly form: { ...; }; }'.
+app/admin/components/dashboard/widgets/GrnReportWidgetV2.tsx(569,73): error TS2339: Property 'gap' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/widgets/HistoryTreeV2.tsx(261,16): error TS2304: Cannot find name 'mode'.
+app/admin/components/dashboard/widgets/HistoryTreeV2.tsx(266,16): error TS2304: Cannot find name 'mode'.
+app/admin/components/dashboard/widgets/HistoryTreeV2.tsx(271,16): error TS2304: Cannot find name 'mode'.
+app/admin/components/dashboard/widgets/HistoryTreeV2.tsx(276,31): error TS2304: Cannot find name 'performanceMetrics'.
+app/admin/components/dashboard/widgets/HistoryTreeV2.tsx(278,20): error TS2304: Cannot find name 'performanceMetrics'.
+app/admin/components/dashboard/widgets/HistoryTreeV2.tsx(279,20): error TS2304: Cannot find name 'performanceMetrics'.
+app/admin/components/dashboard/widgets/HistoryTreeV2.tsx(293,16): error TS2304: Cannot find name 'mode'.
+app/admin/components/dashboard/widgets/HistoryTreeV2.tsx(313,42): error TS2345: Argument of type '"special"' is not assignable to parameter of type '"stats" | "reports" | "charts" | "lists" | "operations" | "uploads"'.
+app/admin/components/dashboard/widgets/InjectionProductionStatsWidget.tsx(146,9): error TS2322: Type '{ title: any; value: number; label: string; icon: ForwardRefExoticComponent<Omit<SVGProps<SVGSVGElement>, "ref"> & { title?: string | undefined; titleId?: string | undefined; } & RefAttributes<...>>; isEditMode: boolean; }' is not assignable to type 'IntrinsicAttributes & MetricCardProps'.
+  Property 'isEditMode' does not exist on type 'IntrinsicAttributes & MetricCardProps'.
+app/admin/components/dashboard/widgets/InjectionProductionStatsWidget.tsx(163,7): error TS2322: Type 'string | undefined' is not assignable to type 'Error | null | undefined'.
+  Type 'string' is not assignable to type 'Error'.
+app/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget.tsx(80,32): error TS2339: Property 'destructive' does not exist on type '{ readonly success: { readonly light: "#22c55e"; readonly DEFAULT: "#16a34a"; readonly dark: "#15803d"; readonly bg: "#dcfce7"; readonly border: "#86efac"; }; readonly warning: { readonly light: "#facc15"; readonly DEFAULT: "#eab308"; readonly dark: "#ca8a04"; readonly bg: "#fef3c7"; readonly border: "#fde047"; }; r...'.
+app/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget.tsx(194,70): error TS2339: Property 'gap' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget.tsx(246,82): error TS2339: Property 'gap' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget.tsx(246,93): error TS7053: Element implicitly has an 'any' type because expression of type '"heading-base"' can't be used to index type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+  Property 'heading-base' does not exist on type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+app/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget.tsx(280,79): error TS2339: Property 'destructive' does not exist on type '{ readonly success: { readonly light: "#22c55e"; readonly DEFAULT: "#16a34a"; readonly dark: "#15803d"; readonly bg: "#dcfce7"; readonly border: "#86efac"; }; readonly warning: { readonly light: "#facc15"; readonly DEFAULT: "#eab308"; readonly dark: "#ca8a04"; readonly bg: "#fef3c7"; readonly border: "#fde047"; }; r...'.
+app/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget.tsx(290,32): error TS7053: Element implicitly has an 'any' type because expression of type '"heading-base"' can't be used to index type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+  Property 'heading-base' does not exist on type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+app/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget.tsx(294,32): error TS7053: Element implicitly has an 'any' type because expression of type '"heading-base"' can't be used to index type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+  Property 'heading-base' does not exist on type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+app/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget.tsx(301,31): error TS7053: Element implicitly has an 'any' type because expression of type '"heading-base"' can't be used to index type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+  Property 'heading-base' does not exist on type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+app/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget.tsx(302,111): error TS2339: Property 'destructive' does not exist on type '{ readonly success: { readonly light: "#22c55e"; readonly DEFAULT: "#16a34a"; readonly dark: "#15803d"; readonly bg: "#dcfce7"; readonly border: "#86efac"; }; readonly warning: { readonly light: "#facc15"; readonly DEFAULT: "#eab308"; readonly dark: "#ca8a04"; readonly bg: "#fef3c7"; readonly border: "#fde047"; }; r...'.
+app/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget.tsx(337,104): error TS2339: Property 'destructive' does not exist on type '{ readonly success: { readonly light: "#22c55e"; readonly DEFAULT: "#16a34a"; readonly dark: "#15803d"; readonly bg: "#dcfce7"; readonly border: "#86efac"; }; readonly warning: { readonly light: "#facc15"; readonly DEFAULT: "#eab308"; readonly dark: "#ca8a04"; readonly bg: "#fef3c7"; readonly border: "#fde047"; }; r...'.
+app/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget.tsx(381,117): error TS2339: Property 'destructive' does not exist on type '{ readonly success: { readonly light: "#22c55e"; readonly DEFAULT: "#16a34a"; readonly dark: "#15803d"; readonly bg: "#dcfce7"; readonly border: "#86efac"; }; readonly warning: { readonly light: "#facc15"; readonly DEFAULT: "#eab308"; readonly dark: "#ca8a04"; readonly bg: "#fef3c7"; readonly border: "#fde047"; }; r...'.
+app/admin/components/dashboard/widgets/OrdersListWidgetV2.tsx(264,9): error TS2322: Type 'string | null' is not assignable to type 'Error | null | undefined'.
+  Type 'string' is not assignable to type 'Error'.
+app/admin/components/dashboard/widgets/OtherFilesListWidgetV2.tsx(222,9): error TS2322: Type 'string | null' is not assignable to type 'Error | null | undefined'.
+  Type 'string' is not assignable to type 'Error'.
+app/admin/components/dashboard/widgets/PerformanceTestWidget.tsx(11,34): error TS2307: Cannot find module '@/app/admin/types/widget-types' or its corresponding type declarations.
+app/admin/components/dashboard/widgets/PerformanceTestWidget.tsx(65,61): error TS7053: Element implicitly has an 'any' type because expression of type '"heading-base"' can't be used to index type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+  Property 'heading-base' does not exist on type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+app/admin/components/dashboard/widgets/PerformanceTestWidget.tsx(105,34): error TS7053: Element implicitly has an 'any' type because expression of type '"heading-large"' can't be used to index type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+  Property 'heading-large' does not exist on type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+app/admin/components/dashboard/widgets/PerformanceTestWidget.tsx(121,34): error TS7053: Element implicitly has an 'any' type because expression of type '"heading-large"' can't be used to index type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+  Property 'heading-large' does not exist on type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+app/admin/components/dashboard/widgets/ProductDistributionChartWidget.tsx(35,23): error TS2339: Property 'primary' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/widgets/ProductDistributionChartWidget.tsx(38,18): error TS2339: Property 'destructive' does not exist on type '{ readonly success: { readonly light: "#22c55e"; readonly DEFAULT: "#16a34a"; readonly dark: "#15803d"; readonly bg: "#dcfce7"; readonly border: "#86efac"; }; readonly warning: { readonly light: "#facc15"; readonly DEFAULT: "#eab308"; readonly dark: "#ca8a04"; readonly bg: "#fef3c7"; readonly border: "#fde047"; }; r...'.
+app/admin/components/dashboard/widgets/ProductDistributionChartWidget.tsx(42,23): error TS2339: Property 'grid' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/widgets/ProductDistributionChartWidget.tsx(43,23): error TS2339: Property 'accent' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/widgets/ProductDistributionChartWidget.tsx(44,15): error TS2339: Property 'accent' does not exist on type '{ readonly primary: { readonly 50: "#fff7ed"; readonly 100: "#ffedd5"; readonly 200: "#fed7aa"; readonly 300: "#fdba74"; readonly 400: "#fb923c"; readonly 500: "#f97316"; readonly 600: "#ea580c"; readonly 700: "#c2410c"; readonly 800: "#9a3412"; readonly 900: "#7c2d12"; }; readonly secondary: { ...; }; }'.
+app/admin/components/dashboard/widgets/ProductDistributionChartWidget.tsx(164,93): error TS2339: Property 'primary' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/widgets/ProductionDetailsWidget.tsx(23,15): error TS2305: Module '"./common/data-display/DataTable"' has no exported member 'Column'.
+app/admin/components/dashboard/widgets/ProductionDetailsWidget.tsx(23,23): error TS2305: Module '"./common/data-display/DataTable"' has no exported member 'TableData'.
+app/admin/components/dashboard/widgets/ProductionDetailsWidget.tsx(148,16): error TS7006: Parameter 'value' implicitly has an 'any' type.
+app/admin/components/dashboard/widgets/ProductionDetailsWidget.tsx(159,16): error TS7006: Parameter 'value' implicitly has an 'any' type.
+app/admin/components/dashboard/widgets/ProductionDetailsWidget.tsx(189,9): error TS2322: Type 'boolean' is not assignable to type '{ enabled: boolean; pageSize?: number | undefined; loadMore?: boolean | undefined; hasMore?: boolean | undefined; onLoadMore?: (() => void) | undefined; loadingMore?: boolean | undefined; totalCount?: number | undefined; remainingCount?: number | undefined; }'.
+app/admin/components/dashboard/widgets/ProductionStatsWidget.tsx(129,9): error TS2322: Type '{ title: string; value: number; label: string; icon: ForwardRefExoticComponent<Omit<SVGProps<SVGSVGElement>, "ref"> & { title?: string | undefined; titleId?: string | undefined; } & RefAttributes<...>>; isEditMode: boolean; }' is not assignable to type 'IntrinsicAttributes & MetricCardProps'.
+  Property 'isEditMode' does not exist on type 'IntrinsicAttributes & MetricCardProps'.
+app/admin/components/dashboard/widgets/ProductionStatsWidget.tsx(146,7): error TS2322: Type 'string | undefined' is not assignable to type 'Error | null | undefined'.
+  Type 'string' is not assignable to type 'Error'.
+app/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2.tsx(210,28): error TS7053: Element implicitly has an 'any' type because expression of type '"heading-large"' can't be used to index type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+  Property 'heading-large' does not exist on type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+app/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2.tsx(244,93): error TS2339: Property 'destructive' does not exist on type '{ readonly success: { readonly light: "#22c55e"; readonly DEFAULT: "#16a34a"; readonly dark: "#15803d"; readonly bg: "#dcfce7"; readonly border: "#86efac"; }; readonly warning: { readonly light: "#facc15"; readonly DEFAULT: "#eab308"; readonly dark: "#ca8a04"; readonly bg: "#fef3c7"; readonly border: "#fde047"; }; r...'.
+app/admin/components/dashboard/widgets/ReprintLabelWidget.tsx(180,72): error TS2339: Property 'container' does not exist on type '{ readonly containerPadding: "1rem"; readonly headerGap: "1rem"; readonly betweenWidgets: "1rem"; readonly card: { readonly padding: "1rem"; readonly paddingCompact: "0.75rem"; readonly paddingLarge: "1.5rem"; }; readonly listItem: { ...; }; readonly form: { ...; }; }'.
+app/admin/components/dashboard/widgets/ReprintLabelWidget.tsx(181,73): error TS2339: Property 'gap' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/widgets/StatsCardWidget.tsx(81,48): error TS2345: Argument of type '"success"' is not assignable to parameter of type '"text" | "icon" | "border" | "bg" | "gradient" | undefined'.
+app/admin/components/dashboard/widgets/StatsCardWidget.tsx(83,48): error TS2345: Argument of type '"destructive"' is not assignable to parameter of type '"text" | "icon" | "border" | "bg" | "gradient" | undefined'.
+app/admin/components/dashboard/widgets/StatsCardWidget.tsx(85,48): error TS2345: Argument of type '"warning"' is not assignable to parameter of type '"text" | "icon" | "border" | "bg" | "gradient" | undefined'.
+app/admin/components/dashboard/widgets/StatsCardWidget.tsx(87,48): error TS2345: Argument of type '"primary"' is not assignable to parameter of type '"text" | "icon" | "border" | "bg" | "gradient" | undefined'.
+app/admin/components/dashboard/widgets/StatsCardWidget.tsx(108,51): error TS2345: Argument of type '"accent"' is not assignable to parameter of type '"text" | "icon" | "border" | "bg" | "gradient" | undefined'.
+app/admin/components/dashboard/widgets/StockDistributionChart.tsx(164,38): error TS2339: Property 'DEFAULT' does not exist on type '{ readonly 50: "#fff7ed"; readonly 100: "#ffedd5"; readonly 200: "#fed7aa"; readonly 300: "#fdba74"; readonly 400: "#fb923c"; readonly 500: "#f97316"; readonly 600: "#ea580c"; readonly 700: "#c2410c"; readonly 800: "#9a3412"; readonly 900: "#7c2d12"; }'.
+app/admin/components/dashboard/widgets/StockDistributionChart.tsx(165,39): error TS2339: Property 'DEFAULT' does not exist on type '{ readonly 50: "#f0f9ff"; readonly 100: "#e0f2fe"; readonly 200: "#bae6fd"; readonly 300: "#7dd3fc"; readonly 400: "#38bdf8"; readonly 500: "#0ea5e9"; readonly 600: "#0284c7"; readonly 700: "#0369a1"; readonly 800: "#075985"; readonly 900: "#0c4a6e"; }'.
+app/admin/components/dashboard/widgets/StockDistributionChart.tsx(173,54): error TS2339: Property 'DEFAULT' does not exist on type '{ readonly 50: "#fff7ed"; readonly 100: "#ffedd5"; readonly 200: "#fed7aa"; readonly 300: "#fdba74"; readonly 400: "#fb923c"; readonly 500: "#f97316"; readonly 600: "#ea580c"; readonly 700: "#c2410c"; readonly 800: "#9a3412"; readonly 900: "#7c2d12"; }'.
+app/admin/components/dashboard/widgets/StockDistributionChart.tsx(216,29): error TS7053: Element implicitly has an 'any' type because expression of type '"body-medium"' can't be used to index type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+  Property 'body-medium' does not exist on type '{ readonly h1: "text-4xl font-bold leading-tight tracking-tight"; readonly h2: "text-3xl font-semibold leading-tight tracking-tight"; readonly h3: "text-2xl font-semibold leading-snug"; ... 16 more ...; readonly truncate: "truncate"; }'.
+app/admin/components/dashboard/widgets/StockDistributionChart.tsx(233,25): error TS2322: Type '"chart"' is not assignable to type 'SkeletonType | undefined'.
+app/admin/components/dashboard/widgets/StockDistributionChart.tsx(292,58): error TS2339: Property 'container' does not exist on type '{ readonly containerPadding: "1rem"; readonly headerGap: "1rem"; readonly betweenWidgets: "1rem"; readonly card: { readonly padding: "1rem"; readonly paddingCompact: "0.75rem"; readonly paddingLarge: "1.5rem"; }; readonly listItem: { ...; }; readonly form: { ...; }; }'.
+app/admin/components/dashboard/widgets/StockDistributionChart.tsx(301,41): error TS2339: Property 'DEFAULT' does not exist on type '{ readonly 50: "#fff7ed"; readonly 100: "#ffedd5"; readonly 200: "#fed7aa"; readonly 300: "#fdba74"; readonly 400: "#fb923c"; readonly 500: "#f97316"; readonly 600: "#ea580c"; readonly 700: "#c2410c"; readonly 800: "#9a3412"; readonly 900: "#7c2d12"; }'.
+app/admin/components/dashboard/widgets/StockDistributionChart.tsx(302,15): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: Props): Treemap', gave the following error.
+    Type '({ x, y, width, height, payload }: { x: any; y: any; width: any; height: any; payload: any; }) => Element | null' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+  Overload 2 of 2, '(props: Props, context: any): Treemap', gave the following error.
+    Type '({ x, y, width, height, payload }: { x: any; y: any; width: any; height: any; payload: any; }) => Element | null' is not assignable to type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+app/admin/components/dashboard/widgets/StockDistributionChart.tsx(302,27): error TS7031: Binding element 'x' implicitly has an 'any' type.
+app/admin/components/dashboard/widgets/StockDistributionChart.tsx(302,30): error TS7031: Binding element 'y' implicitly has an 'any' type.
+app/admin/components/dashboard/widgets/StockDistributionChart.tsx(302,33): error TS7031: Binding element 'width' implicitly has an 'any' type.
+app/admin/components/dashboard/widgets/StockDistributionChart.tsx(302,40): error TS7031: Binding element 'height' implicitly has an 'any' type.
+app/admin/components/dashboard/widgets/StockDistributionChart.tsx(302,48): error TS7031: Binding element 'payload' implicitly has an 'any' type.
+app/admin/components/dashboard/widgets/StockDistributionChartV2.tsx(65,7): error TS2353: Object literal may only specify known properties, and 'limit' does not exist in type '{ type?: string | undefined; warehouseId?: string | undefined; }'.
+app/admin/components/dashboard/widgets/StockDistributionChartV2.tsx(70,5): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(options: DefinedInitialDataOptions<unknown, Error, unknown, string[]>, queryClient?: QueryClient | undefined): DefinedUseQueryResult<unknown, Error>', gave the following error.
+    Object literal may only specify known properties, and 'cacheTime' does not exist in type 'DefinedInitialDataOptions<unknown, Error, unknown, string[]>'.
+  Overload 2 of 3, '(options: UndefinedInitialDataOptions<APIResponse<any>, Error, APIResponse<any>, string[]>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, and 'cacheTime' does not exist in type 'UndefinedInitialDataOptions<APIResponse<any>, Error, APIResponse<any>, string[]>'.
+  Overload 3 of 3, '(options: UseQueryOptions<APIResponse<any>, Error, APIResponse<any>, string[]>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+    Object literal may only specify known properties, and 'cacheTime' does not exist in type 'UseQueryOptions<APIResponse<any>, Error, APIResponse<any>, string[]>'.
+app/admin/components/dashboard/widgets/StockDistributionChartV2.tsx(77,29): error TS2339: Property 'success' does not exist on type '{}'.
+app/admin/components/dashboard/widgets/StockDistributionChartV2.tsx(77,49): error TS2339: Property 'data' does not exist on type '{}'.
+app/admin/components/dashboard/widgets/StockDistributionChartV2.tsx(77,65): error TS2339: Property 'data' does not exist on type '{}'.
+app/admin/components/dashboard/widgets/StockDistributionChartV2.tsx(77,87): error TS2339: Property 'data' does not exist on type '{}'.
+app/admin/components/dashboard/widgets/StockDistributionChartV2.tsx(78,21): error TS2448: Block-scoped variable 'processStockDistributionData' used before its declaration.
+app/admin/components/dashboard/widgets/StockDistributionChartV2.tsx(78,21): error TS2454: Variable 'processStockDistributionData' is used before being assigned.
+app/admin/components/dashboard/widgets/StockDistributionChartV2.tsx(82,30): error TS2339: Property 'responseTime' does not exist on type '{}'.
+app/admin/components/dashboard/widgets/StockDistributionChartV2.tsx(106,27): error TS2339: Property 'primary' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/widgets/StockDistributionChartV2.tsx(107,27): error TS2339: Property 'secondary' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/widgets/StockDistributionChartV2.tsx(108,27): error TS2339: Property 'accent' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/widgets/StockDistributionChartV2.tsx(114,19): error TS2339: Property 'accent' does not exist on type '{ readonly primary: { readonly 50: "#fff7ed"; readonly 100: "#ffedd5"; readonly 200: "#fed7aa"; readonly 300: "#fdba74"; readonly 400: "#fb923c"; readonly 500: "#f97316"; readonly 600: "#ea580c"; readonly 700: "#c2410c"; readonly 800: "#9a3412"; readonly 900: "#7c2d12"; }; readonly secondary: { ...; }; }'.
+app/admin/components/dashboard/widgets/StockDistributionChartV2.tsx(115,27): error TS2339: Property 'grid' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/widgets/StockLevelHistoryChart.tsx(56,23): error TS2339: Property 'primary' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/widgets/StockLevelHistoryChart.tsx(59,18): error TS2339: Property 'destructive' does not exist on type '{ readonly success: { readonly light: "#22c55e"; readonly DEFAULT: "#16a34a"; readonly dark: "#15803d"; readonly bg: "#dcfce7"; readonly border: "#86efac"; }; readonly warning: { readonly light: "#facc15"; readonly DEFAULT: "#eab308"; readonly dark: "#ca8a04"; readonly bg: "#fef3c7"; readonly border: "#fde047"; }; r...'.
+app/admin/components/dashboard/widgets/StockLevelHistoryChart.tsx(60,23): error TS2339: Property 'accent' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/widgets/StockLevelHistoryChart.tsx(329,26): error TS2339: Property 'gap' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/widgets/StockLevelHistoryChart.tsx(332,92): error TS2339: Property 'gap' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/widgets/StockLevelHistoryChart.tsx(385,43): error TS2339: Property 'grid' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/widgets/StockLevelHistoryChart.tsx(390,43): error TS2339: Property 'axis' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/widgets/StockLevelHistoryChart.tsx(400,43): error TS2339: Property 'axis' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/widgets/SupplierUpdateWidgetV2.tsx(56,5): error TS2345: Argument of type '{}' is not assignable to parameter of type 'string'.
+app/admin/components/dashboard/widgets/TransferTimeDistributionWidget.tsx(49,9): error TS2488: Type 'UseInViewportReturn' must have a '[Symbol.iterator]()' method that returns an iterator.
+app/admin/components/dashboard/widgets/TransferTimeDistributionWidget.tsx(50,5): error TS2353: Object literal may only specify known properties, and 'threshold' does not exist in type 'RefObject<HTMLDivElement>'.
+app/admin/components/dashboard/widgets/TransferTimeDistributionWidget.tsx(153,11): error TS2322: Type '{ title: string; icon: ForwardRefExoticComponent<Omit<SVGProps<SVGSVGElement>, "ref"> & { title?: string | undefined; titleId?: string | undefined; } & RefAttributes<SVGSVGElement>>; }' is not assignable to type 'IntrinsicAttributes & Omit<ChartSkeletonProps, "type">'.
+  Property 'title' does not exist on type 'IntrinsicAttributes & Omit<ChartSkeletonProps, "type">'.
+app/admin/components/dashboard/widgets/TransferTimeDistributionWidget.tsx(164,11): error TS2322: Type '{ title: string; icon: ForwardRefExoticComponent<Omit<SVGProps<SVGSVGElement>, "ref"> & { title?: string | undefined; titleId?: string | undefined; } & RefAttributes<SVGSVGElement>>; }' is not assignable to type 'IntrinsicAttributes & Omit<ChartSkeletonProps, "type">'.
+  Property 'title' does not exist on type 'IntrinsicAttributes & Omit<ChartSkeletonProps, "type">'.
+app/admin/components/dashboard/widgets/TransferTimeDistributionWidget.tsx(215,9): error TS2322: Type 'string' is not assignable to type '{ start: Date; end: Date; }'.
+app/admin/components/dashboard/widgets/VoidPalletWidget.tsx(785,23): error TS2304: Cannot find name 'dismiss'.
+app/admin/components/dashboard/widgets/WarehouseTransferListWidget.tsx(199,13): error TS2353: Object literal may only specify known properties, and 'mode' does not exist in type '{ source?: string | undefined; fetchTime?: number | undefined; optimized?: boolean | undefined; }'.
+app/admin/components/dashboard/widgets/WarehouseTransferListWidget.tsx(224,13): error TS2353: Object literal may only specify known properties, and 'mode' does not exist in type '{ source?: string | undefined; fetchTime?: number | undefined; optimized?: boolean | undefined; }'.
+app/admin/components/dashboard/widgets/WarehouseTransferListWidget.tsx(242,9): error TS2322: Type 'string | null' is not assignable to type 'Error | null | undefined'.
+  Type 'string' is not assignable to type 'Error'.
+app/admin/components/dashboard/widgets/WarehouseWorkLevelAreaChart.tsx(84,7): error TS2304: Cannot find name 'useGetWarehouseWorkLevelQuery'.
+app/admin/components/dashboard/widgets/WarehouseWorkLevelAreaChart.tsx(253,104): error TS2339: Property 'destructive' does not exist on type '{ readonly success: { readonly light: "#22c55e"; readonly DEFAULT: "#16a34a"; readonly dark: "#15803d"; readonly bg: "#dcfce7"; readonly border: "#86efac"; }; readonly warning: { readonly light: "#facc15"; readonly DEFAULT: "#eab308"; readonly dark: "#ca8a04"; readonly bg: "#fef3c7"; readonly border: "#fde047"; }; r...'.
+app/admin/components/dashboard/widgets/WarehouseWorkLevelAreaChart.tsx(272,84): error TS2339: Property 'grid' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/widgets/WarehouseWorkLevelAreaChart.tsx(273,69): error TS2339: Property 'axis' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/widgets/WarehouseWorkLevelAreaChart.tsx(274,54): error TS2339: Property 'axis' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/widgets/WarehouseWorkLevelAreaChart.tsx(292,49): error TS2339: Property 'primary' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/widgets/WarehouseWorkLevelAreaChart.tsx(293,47): error TS2339: Property 'primary' does not exist on type '{ readonly gradient: "from-indigo-500 to-purple-500"; readonly icon: "#6366f1"; readonly text: "#4f46e5"; readonly bg: "bg-indigo-500/10"; readonly border: "border-indigo-500/30"; }'.
+app/admin/components/dashboard/widgets/WarehouseWorkLevelAreaChart.tsx(304,36): error TS2339: Property 'gap' does not exist on type '{ readonly container: { readonly base: "px-4 md:px-6 lg:px-8"; readonly compact: "px-3 md:px-4 lg:px-6"; readonly wide: "px-6 md:px-8 lg:px-12"; }; readonly widget: { readonly container: "p-4"; readonly header: "mb-4"; readonly content: "space-y-4"; }; readonly form: { ...; }; readonly list: { ...; }; readonly grid:...'.
+app/admin/components/dashboard/widgets/YesterdayTransferCountWidget.tsx(77,9): error TS2322: Type '{ title: string; value: number; label: string; icon: ForwardRefExoticComponent<Omit<SVGProps<SVGSVGElement>, "ref"> & { title?: string | undefined; titleId?: string | undefined; } & RefAttributes<...>>; isEditMode: boolean; }' is not assignable to type 'IntrinsicAttributes & MetricCardProps'.
+  Property 'isEditMode' does not exist on type 'IntrinsicAttributes & MetricCardProps'.
+app/admin/components/dashboard/widgets/YesterdayTransferCountWidget.tsx(98,7): error TS2322: Type '{ title: string; value: number; label: string; icon: ForwardRefExoticComponent<Omit<SVGProps<SVGSVGElement>, "ref"> & { title?: string | undefined; titleId?: string | undefined; } & RefAttributes<...>>; ... 9 more ...; widgetType: any; }' is not assignable to type 'IntrinsicAttributes & MetricCardProps'.
+  Property 'onRetry' does not exist on type 'IntrinsicAttributes & MetricCardProps'.
+app/admin/components/dashboard/widgets/__tests__/AwaitLocationQtyWidget.test.tsx(54,36): error TS2322: Type '{ widgetId: string; }' is not assignable to type 'IntrinsicAttributes & WidgetComponentProps'.
+  Property 'widgetId' does not exist on type 'IntrinsicAttributes & WidgetComponentProps'. Did you mean 'widget'?
+app/admin/components/dashboard/widgets/__tests__/AwaitLocationQtyWidget.test.tsx(72,36): error TS2322: Type '{ widgetId: string; }' is not assignable to type 'IntrinsicAttributes & WidgetComponentProps'.
+  Property 'widgetId' does not exist on type 'IntrinsicAttributes & WidgetComponentProps'. Did you mean 'widget'?
+app/admin/components/dashboard/widgets/__tests__/AwaitLocationQtyWidget.test.tsx(93,36): error TS2322: Type '{ widgetId: string; }' is not assignable to type 'IntrinsicAttributes & WidgetComponentProps'.
+  Property 'widgetId' does not exist on type 'IntrinsicAttributes & WidgetComponentProps'. Did you mean 'widget'?
+app/admin/components/dashboard/widgets/__tests__/AwaitLocationQtyWidget.test.tsx(107,36): error TS2322: Type '{ widgetId: string; }' is not assignable to type 'IntrinsicAttributes & WidgetComponentProps'.
+  Property 'widgetId' does not exist on type 'IntrinsicAttributes & WidgetComponentProps'. Did you mean 'widget'?
+app/admin/components/dashboard/widgets/__tests__/AwaitLocationQtyWidget.test.tsx(122,36): error TS2322: Type '{ widgetId: string; }' is not assignable to type 'IntrinsicAttributes & WidgetComponentProps'.
+  Property 'widgetId' does not exist on type 'IntrinsicAttributes & WidgetComponentProps'. Did you mean 'widget'?
+app/admin/components/dashboard/widgets/common/WidgetStates.tsx(449,21): error TS2322: Type '"outline" | "secondary" | "ghost" | "primary"' is not assignable to type '"default" | "link" | "destructive" | "outline" | "secondary" | "ghost" | null | undefined'.
+  Type '"primary"' is not assignable to type '"default" | "link" | "destructive" | "outline" | "secondary" | "ghost" | null | undefined'.
+app/admin/components/dashboard/widgets/common/WidgetStates.tsx(519,15): error TS2322: Type '"outline" | "secondary" | "ghost" | "primary"' is not assignable to type '"default" | "link" | "destructive" | "outline" | "secondary" | "ghost" | null | undefined'.
+  Type '"primary"' is not assignable to type '"default" | "link" | "destructive" | "outline" | "secondary" | "ghost" | null | undefined'.
+app/admin/components/dashboard/widgets/common/data-display/DataTable.tsx(311,19): error TS2322: Type 'false | { opacity: number; x: number; }' is not assignable to type 'VariantLabels | TargetAndTransition | undefined'.
+  Type 'false' is not assignable to type 'VariantLabels | TargetAndTransition | undefined'.
+app/admin/components/dashboard/widgets/common/data-display/DataTable.tsx(312,19): error TS2322: Type 'false | { delay: number; }' is not assignable to type 'Transition | undefined'.
+  Type 'false' is not assignable to type 'Transition | undefined'.
+app/admin/components/dashboard/widgets/common/filters/DateRangeFilter.tsx(130,9): error TS2322: Type '"sm" | "lg" | "md"' is not assignable to type '"default" | "icon" | "sm" | "lg" | null | undefined'.
+  Type '"md"' is not assignable to type '"default" | "icon" | "sm" | "lg" | null | undefined'.
+app/admin/components/monitoring/AlertManagementCard.tsx(15,27): error TS2307: Cannot find module '@/components/ui/separator' or its corresponding type declarations.
+app/admin/components/monitoring/AlertManagementCard.tsx(16,28): error TS2307: Cannot find module '@/components/ui/scroll-area' or its corresponding type declarations.
+app/admin/components/monitoring/AlertManagementCard.tsx(341,50): error TS2322: Type '{ children: Element[]; value: string; onValueChange: Dispatch<SetStateAction<string>>; }' is not assignable to type 'IntrinsicAttributes & SelectHTMLAttributes<HTMLSelectElement> & RefAttributes<HTMLSelectElement>'.
+  Property 'onValueChange' does not exist on type 'IntrinsicAttributes & SelectHTMLAttributes<HTMLSelectElement> & RefAttributes<HTMLSelectElement>'. Did you mean 'onVolumeChange'?
+app/admin/components/monitoring/AlertManagementCard.tsx(353,50): error TS2322: Type '{ children: Element[]; value: string; onValueChange: Dispatch<SetStateAction<string>>; }' is not assignable to type 'IntrinsicAttributes & SelectHTMLAttributes<HTMLSelectElement> & RefAttributes<HTMLSelectElement>'.
+  Property 'onValueChange' does not exist on type 'IntrinsicAttributes & SelectHTMLAttributes<HTMLSelectElement> & RefAttributes<HTMLSelectElement>'. Did you mean 'onVolumeChange'?
+app/admin/components/monitoring/AlertManagementCard.tsx(364,48): error TS2322: Type '{ children: Element[]; value: string; onValueChange: Dispatch<SetStateAction<string>>; }' is not assignable to type 'IntrinsicAttributes & SelectHTMLAttributes<HTMLSelectElement> & RefAttributes<HTMLSelectElement>'.
+  Property 'onValueChange' does not exist on type 'IntrinsicAttributes & SelectHTMLAttributes<HTMLSelectElement> & RefAttributes<HTMLSelectElement>'. Did you mean 'onVolumeChange'?
+app/admin/components/monitoring/BusinessMetricsCard.tsx(13,27): error TS2307: Cannot find module '@/components/ui/separator' or its corresponding type declarations.
+app/admin/components/monitoring/DatabasePerformanceCard.tsx(13,27): error TS2307: Cannot find module '@/components/ui/separator' or its corresponding type declarations.
+app/admin/components/monitoring/RealtimeMetricsChart.tsx(315,43): error TS2322: Type '{ children: Element[]; value: "7d" | "5m" | "1h" | "24h"; onValueChange: (range: string) => void; }' is not assignable to type 'IntrinsicAttributes & SelectHTMLAttributes<HTMLSelectElement> & RefAttributes<HTMLSelectElement>'.
+  Property 'onValueChange' does not exist on type 'IntrinsicAttributes & SelectHTMLAttributes<HTMLSelectElement> & RefAttributes<HTMLSelectElement>'. Did you mean 'onVolumeChange'?
+app/admin/components/monitoring/RealtimeMetricsChart.tsx(328,43): error TS2322: Type '{ children: Element[]; value: "line" | "bar" | "pie" | "area"; onValueChange: (type: string) => void; }' is not assignable to type 'IntrinsicAttributes & SelectHTMLAttributes<HTMLSelectElement> & RefAttributes<HTMLSelectElement>'.
+  Property 'onValueChange' does not exist on type 'IntrinsicAttributes & SelectHTMLAttributes<HTMLSelectElement> & RefAttributes<HTMLSelectElement>'. Did you mean 'onVolumeChange'?
+app/admin/components/monitoring/SystemHealthCard.tsx(13,27): error TS2307: Cannot find module '@/components/ui/separator' or its corresponding type declarations.
+app/admin/components/monitoring/SystemHealthCard.tsx(251,59): error TS2322: Type '{ children: "healthy" | "degraded" | "unhealthy"; variant: "default" | "destructive" | "outline" | "secondary"; size: string; }' is not assignable to type 'IntrinsicAttributes & BadgeProps'.
+  Property 'size' does not exist on type 'IntrinsicAttributes & BadgeProps'.
+app/admin/components/performance-monitor/PerformanceMonitor.tsx(4,58): error TS2307: Cannot find module '@/app/components/ui/card' or its corresponding type declarations.
+app/admin/components/performance-monitor/PerformanceMonitor.tsx(5,26): error TS2307: Cannot find module '@/app/components/ui/progress' or its corresponding type declarations.
+app/admin/components/performance-monitor/PerformanceMonitor.tsx(6,41): error TS2307: Cannot find module '@/app/components/ui/alert' or its corresponding type declarations.
+app/admin/components/performance-monitor/PerformanceMonitor.tsx(7,23): error TS2307: Cannot find module '@/app/components/ui/badge' or its corresponding type declarations.
+app/admin/examples/dashboard-data-context-usage.tsx(141,38): error TS7006: Parameter 'warehouse' implicitly has an 'any' type.
+app/admin/examples/dashboard-integration-example.tsx(6,37): error TS2307: Cannot find module '@/components/ui/date-range-picker' or its corresponding type declarations.
+app/admin/examples/dashboard-integration-example.tsx(19,22): error TS7006: Parameter 'range' implicitly has an 'any' type.
+app/admin/examples/dashboard-integration-example.tsx(51,12): error TS2739: Type '{}' is missing the following properties from type 'AdminDashboardContentProps': theme, timeFrame
+app/admin/hooks/server/prefetch.server.ts(69,9): error TS2322: Type 'number' is not assignable to type '{ count: number; trend: number; dateRange: { start: string; end: string; }; optimized?: boolean | undefined; }'.
+app/admin/hooks/server/prefetch.server.ts(146,35): error TS2322: Type 'number' is not assignable to type '{ count: number; trend: number; dateRange: { start: string; end: string; }; optimized?: boolean | undefined; }'.
+app/admin/hooks/useDashboardConcurrentQuery.ts(178,9): error TS2322: Type '"concurrent"' is not assignable to type '"widget" | "batch"'.
+app/admin/hooks/useDashboardConcurrentQuery.ts(201,79): error TS2304: Cannot find name 'successRate'.
+app/admin/hooks/useDashboardConcurrentQuery.ts(219,26): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(options: DefinedInitialDataOptions<unknown, Error, unknown, (string | undefined)[]>, queryClient?: QueryClient | undefined): DefinedUseQueryResult<unknown, Error>', gave the following error.
+    Argument of type '{ staleTime: number; cacheTime: number; refetchOnWindowFocus: boolean; refetchOnMount: boolean; refetchOnReconnect: boolean; refetchInterval: boolean; retry: number; retryDelay: number; queryKey: (string | undefined)[]; queryFn: () => Promise<DashboardBatchQueryData>; enabled: boolean; }' is not assignable to parameter of type 'DefinedInitialDataOptions<unknown, Error, unknown, (string | undefined)[]>'.
+      Type '{ staleTime: number; cacheTime: number; refetchOnWindowFocus: boolean; refetchOnMount: boolean; refetchOnReconnect: boolean; refetchInterval: boolean; retry: number; retryDelay: number; queryKey: (string | undefined)[]; queryFn: () => Promise<DashboardBatchQueryData>; enabled: boolean; }' is not assignable to type 'Omit<UseQueryOptions<unknown, Error, unknown, (string | undefined)[]>, "queryFn">'.
+        Types of property 'refetchInterval' are incompatible.
+          Type 'boolean' is not assignable to type 'number | false | ((query: Query<unknown, Error, unknown, (string | undefined)[]>) => number | false | undefined) | undefined'.
+  Overload 2 of 3, '(options: UndefinedInitialDataOptions<DashboardBatchQueryData, Error, DashboardBatchQueryData, (string | undefined)[]>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+    Argument of type '{ staleTime: number; cacheTime: number; refetchOnWindowFocus: boolean; refetchOnMount: boolean; refetchOnReconnect: boolean; refetchInterval: boolean; retry: number; retryDelay: number; queryKey: (string | undefined)[]; queryFn: () => Promise<DashboardBatchQueryData>; enabled: boolean; }' is not assignable to parameter of type 'UndefinedInitialDataOptions<DashboardBatchQueryData, Error, DashboardBatchQueryData, (string | undefined)[]>'.
+      Type '{ staleTime: number; cacheTime: number; refetchOnWindowFocus: boolean; refetchOnMount: boolean; refetchOnReconnect: boolean; refetchInterval: boolean; retry: number; retryDelay: number; queryKey: (string | undefined)[]; queryFn: () => Promise<DashboardBatchQueryData>; enabled: boolean; }' is not assignable to type 'UseQueryOptions<DashboardBatchQueryData, Error, DashboardBatchQueryData, (string | undefined)[]>'.
+        Types of property 'refetchInterval' are incompatible.
+          Type 'boolean' is not assignable to type 'number | false | ((query: Query<DashboardBatchQueryData, Error, DashboardBatchQueryData, (string | undefined)[]>) => number | ... 1 more ... | undefined) | undefined'.
+  Overload 3 of 3, '(options: UseQueryOptions<DashboardBatchQueryData, Error, DashboardBatchQueryData, (string | undefined)[]>, queryClient?: QueryClient | undefined): UseQueryResult<...>', gave the following error.
+    Argument of type '{ staleTime: number; cacheTime: number; refetchOnWindowFocus: boolean; refetchOnMount: boolean; refetchOnReconnect: boolean; refetchInterval: boolean; retry: number; retryDelay: number; queryKey: (string | undefined)[]; queryFn: () => Promise<DashboardBatchQueryData>; enabled: boolean; }' is not assignable to parameter of type 'UseQueryOptions<DashboardBatchQueryData, Error, DashboardBatchQueryData, (string | undefined)[]>'.
+      Types of property 'refetchInterval' are incompatible.
+        Type 'boolean' is not assignable to type 'number | false | ((query: Query<DashboardBatchQueryData, Error, DashboardBatchQueryData, (string | undefined)[]>) => number | ... 1 more ... | undefined) | undefined'.
+app/admin/hooks/useDashboardConcurrentQuery.ts(275,16): error TS2345: Argument of type '{ type: "widget"; widgetId: string; message: string; details: unknown; timestamp: Date; }' is not assignable to parameter of type 'SetStateAction<DashboardBatchQueryError | null>'.
+  Property 'name' is missing in type '{ type: "widget"; widgetId: string; message: string; details: unknown; timestamp: Date; }' but required in type 'DashboardBatchQueryError'.
+app/admin/hooks/useDashboardConcurrentQuery.ts(297,5): error TS2322: Type 'DashboardBatchQueryError | { type: "concurrent"; message: string; timestamp: Date; } | null' is not assignable to type 'DashboardBatchQueryError | null'.
+  Property 'name' is missing in type '{ type: "concurrent"; message: string; timestamp: Date; }' but required in type 'DashboardBatchQueryError'.
+app/admin/hooks/useUnifiedAPI.ts(190,9): error TS2322: Type 'TVariables | undefined' is not assignable to type 'Record<string, any> | undefined'.
+  Type 'TVariables' is not assignable to type 'Record<string, any> | undefined'.
+app/admin/hooks/useUnifiedAPI.ts(192,11): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/admin/hooks/useUnifiedAPI.ts(192,34): error TS2339: Property 'access_token' does not exist on type 'User'.
+app/admin/hooks/useUnifiedAPI.ts(192,64): error TS2339: Property 'access_token' does not exist on type 'User'.
+app/admin/hooks/useWidgetPerformanceTracking.ts(65,27): error TS2304: Cannot find name 'PerformanceTimer'.
+app/admin/hooks/useWidgetSmartCache.ts(157,5): error TS2353: Object literal may only specify known properties, and 'enabled' does not exist in type 'QueryOptions<T, Error, T, readonly unknown[], never>'.
+app/admin/hooks/useWidgetSmartCache.ts(168,26): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(options: DefinedInitialDataOptions<T, Error, T, readonly unknown[]>, queryClient?: QueryClient | undefined): DefinedUseQueryResult<NoInfer<T>, Error>', gave the following error.
+    Argument of type 'QueryOptions<T, Error, T, readonly unknown[], never>' is not assignable to parameter of type 'DefinedInitialDataOptions<T, Error, T, readonly unknown[]>'.
+      Type 'QueryOptions<T, Error, T, readonly unknown[], never>' is not assignable to type 'Omit<UseQueryOptions<T, Error, T, readonly unknown[]>, "queryFn">'.
+        Types of property 'queryKey' are incompatible.
+          Type 'readonly unknown[] | undefined' is not assignable to type 'readonly unknown[]'.
+            Type 'undefined' is not assignable to type 'readonly unknown[]'.
+  Overload 2 of 3, '(options: UndefinedInitialDataOptions<T, Error, T, readonly unknown[]>, queryClient?: QueryClient | undefined): UseQueryResult<NoInfer<T>, Error>', gave the following error.
+    Argument of type 'QueryOptions<T, Error, T, readonly unknown[], never>' is not assignable to parameter of type 'UndefinedInitialDataOptions<T, Error, T, readonly unknown[]>'.
+      Type 'QueryOptions<T, Error, T, readonly unknown[], never>' is not assignable to type 'UseQueryOptions<T, Error, T, readonly unknown[]>'.
+        Types of property 'queryKey' are incompatible.
+          Type 'readonly unknown[] | undefined' is not assignable to type 'readonly unknown[]'.
+            Type 'undefined' is not assignable to type 'readonly unknown[]'.
+  Overload 3 of 3, '(options: UseQueryOptions<T, Error, T, readonly unknown[]>, queryClient?: QueryClient | undefined): UseQueryResult<NoInfer<T>, Error>', gave the following error.
+    Argument of type 'QueryOptions<T, Error, T, readonly unknown[], never>' is not assignable to parameter of type 'UseQueryOptions<T, Error, T, readonly unknown[]>'.
+      Types of property 'queryKey' are incompatible.
+        Type 'readonly unknown[] | undefined' is not assignable to type 'readonly unknown[]'.
+          Type 'undefined' is not assignable to type 'readonly unknown[]'.
+app/admin/hooks/useWidgetToast.ts(110,5): error TS2322: Type '(string & { unwrap: () => Promise<T>; }) | (number & { unwrap: () => Promise<T>; }) | { unwrap: () => Promise<T>; }' is not assignable to type 'Promise<T>'.
+  Type 'String & { unwrap: () => Promise<T>; }' is missing the following properties from type 'Promise<T>': then, catch, finally, [Symbol.toStringTag]
+app/admin/monitoring/__tests__/monitoring.test.tsx(7,41): error TS2307: Cannot find module 'jest-axe' or its corresponding type declarations.
+app/admin/monitoring/__tests__/monitoring.test.tsx(9,35): error TS2307: Cannot find module '../hooks/useMonitoringData' or its corresponding type declarations.
+app/admin/monitoring/__tests__/monitoring.test.tsx(242,23): error TS2339: Property 'toHaveNoViolations' does not exist on type 'JestMatchers<any>'.
+app/admin/monitoring/page.tsx(96,32): error TS2339: Property 'criticalCount' does not exist on type 'AlertManagementData'.
+app/admin/monitoring/page.tsx(209,53): error TS2339: Property 'criticalCount' does not exist on type 'AlertManagementData'.
+app/admin/monitoring/page.tsx(209,78): error TS18047: 'alerts' is possibly 'null'.
+app/admin/monitoring/page.tsx(209,85): error TS2339: Property 'criticalCount' does not exist on type 'AlertManagementData'.
+app/admin/monitoring/page.tsx(213,22): error TS2339: Property 'criticalCount' does not exist on type 'AlertManagementData'.
+app/admin/monitoring/page.tsx(218,32): error TS18047: 'alerts' is possibly 'null'.
+app/admin/monitoring/page.tsx(218,39): error TS2339: Property 'criticalCount' does not exist on type 'AlertManagementData'.
+app/admin/monitoring/page.tsx(220,18): error TS18047: 'alerts' is possibly 'null'.
+app/admin/monitoring/page.tsx(220,25): error TS2339: Property 'criticalCount' does not exist on type 'AlertManagementData'.
+app/admin/monitoring/page.tsx(242,36): error TS2719: Type 'BusinessMetricsData | null' is not assignable to type 'BusinessMetricsData | null'. Two different types with this name exist, but they are unrelated.
+  Property 'trends' is missing in type 'BusinessMetricsData' but required in type 'BusinessMetricsData'.
+app/admin/monitoring/page.tsx(245,36): error TS2719: Type 'AlertManagementData | null' is not assignable to type 'AlertManagementData | null'. Two different types with this name exist, but they are unrelated.
+  Property 'alertTrends' is missing in type 'AlertManagementData' but required in type 'AlertManagementData'.
+app/admin/monitoring/page.tsx(255,37): error TS2339: Property 'performanceHistory' does not exist on type 'SystemHealthData'.
+app/admin/monitoring/page.tsx(262,44): error TS2339: Property 'performanceHistory' does not exist on type 'DatabasePerformanceData'.
+app/admin/monitoring/page.tsx(285,34): error TS2719: Type 'BusinessMetricsData | null' is not assignable to type 'BusinessMetricsData | null'. Two different types with this name exist, but they are unrelated.
+  Property 'trends' is missing in type 'BusinessMetricsData' but required in type 'BusinessMetricsData'.
+app/admin/monitoring/page.tsx(292,34): error TS2719: Type 'AlertManagementData | null' is not assignable to type 'AlertManagementData | null'. Two different types with this name exist, but they are unrelated.
+  Property 'alertTrends' is missing in type 'AlertManagementData' but required in type 'AlertManagementData'.
+app/admin/product-update-demo/page.tsx(71,19): error TS2353: Object literal may only specify known properties, and 'gridX' does not exist in type 'DashboardWidget | WidgetConfig'.
+app/admin/utils/performanceTestBatchQuery.ts(208,21): error TS2339: Property 'batchQuery' does not exist on type 'ComparisonResult'.
+app/admin/utils/performanceTestBatchQuery.ts(209,22): error TS2339: Property 'batchQuery' does not exist on type 'ComparisonResult'.
+app/admin/utils/performanceTestBatchQuery.ts(210,24): error TS2339: Property 'batchQuery' does not exist on type 'ComparisonResult'.
+app/admin/utils/performanceTestBatchQuery.ts(211,39): error TS2339: Property 'batchQuery' does not exist on type 'ComparisonResult'.
+app/admin/utils/performanceTestBatchQuery.ts(225,70): error TS2339: Property 'batchQuery' does not exist on type 'ComparisonResult'.
+app/api/admin/dashboard/route.ts(57,14): error TS2339: Property 'duration' does not exist on type '{ id: number; timestamp: string; widgets: string[]; userAgent: string | null; referer: string | null; ip: string | null; }'.
+app/api/admin/dashboard/route.ts(58,21): error TS2345: Argument of type '{ id: number; timestamp: string; widgets: string[]; userAgent: string | null; referer: string | null; ip: string | null; }' is not assignable to parameter of type '{ id: number; timestamp: string; widgets: string[]; userAgent?: string | undefined; referer?: string | undefined; ip?: string | undefined; duration?: number | undefined; }'.
+  Types of property 'userAgent' are incompatible.
+    Type 'string | null' is not assignable to type 'string | undefined'.
+      Type 'null' is not assignable to type 'string | undefined'.
+app/api/upload-file/route.ts(37,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/api/upload-file/route.ts(90,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/api/upload-file/route.ts(105,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/api/upload-file/route.ts(144,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/api/upload-file/route.ts(156,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/api/upload-file/route.ts(185,9): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/api/upload-file/route.ts(211,11): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/api/upload-pdf/route.ts(39,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/api/upload-pdf/route.ts(58,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/api/upload-pdf/route.ts(82,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/api/upload-pdf/route.ts(121,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/api/upload-pdf/route.ts(138,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/api/v1/alerts/history/route.ts(78,46): error TS2345: Argument of type '{ ruleIds: string[] | undefined; levels: AlertLevel[] | undefined; states: AlertState[] | undefined; startTime: Date | undefined; endTime: Date | undefined; limit: number; offset: number; sortBy: "level" | ... 1 more ... | "triggered_at"; sortOrder: "desc" | "asc"; }' is not assignable to parameter of type 'AlertQuery'.
+  Types of property 'sortBy' are incompatible.
+    Type '"level" | "state" | "triggered_at"' is not assignable to type '"level" | "state" | "triggeredAt" | undefined'.
+      Type '"triggered_at"' is not assignable to type '"level" | "state" | "triggeredAt" | undefined'. Did you mean '"triggeredAt"'?
+app/api/v1/alerts/notifications/route.ts(94,51): error TS2345: Argument of type '{ id: string; channel: NotificationChannel; enabled: boolean; config: Record<string, any>; template: string | undefined; }' is not assignable to parameter of type 'NotificationConfig'.
+  Types of property 'config' are incompatible.
+    Type 'Record<string, any>' is not assignable to type 'EmailConfig | SlackConfig | WebhookConfig | SmsConfig'.
+      Type 'Record<string, any>' is missing the following properties from type 'WebhookConfig': url, method
+app/api/v1/alerts/rules/route.ts(168,7): error TS2322: Type '{ channel: NotificationChannel; enabled: boolean; id: string; config: Record<string, any>; template?: string | undefined; conditions?: { levels?: AlertLevel[] | undefined; timeRanges?: { ...; }[] | undefined; } | undefined; }[]' is not assignable to type 'NotificationConfig[]'.
+  Type '{ channel: NotificationChannel; enabled: boolean; id: string; config: Record<string, any>; template?: string | undefined; conditions?: { levels?: AlertLevel[] | undefined; timeRanges?: { ...; }[] | undefined; } | undefined; }' is not assignable to type 'NotificationConfig'.
+    Types of property 'config' are incompatible.
+      Type 'Record<string, any>' is not assignable to type 'EmailConfig | SlackConfig | WebhookConfig | SmsConfig'.
+        Type 'Record<string, any>' is missing the following properties from type 'WebhookConfig': url, method
+app/api/v1/metrics/business/route.ts(128,48): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+app/api/v1/metrics/business/route.ts(128,53): error TS7006: Parameter 'item' implicitly has an 'any' type.
+app/api/v1/metrics/business/route.ts(137,37): error TS7006: Parameter 'item' implicitly has an 'any' type.
+app/api/v1/metrics/business/route.ts(198,28): error TS7006: Parameter 'stat' implicitly has an 'any' type.
+app/api/v1/metrics/business/route.ts(270,49): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+app/api/v1/metrics/business/route.ts(270,54): error TS7006: Parameter 'item' implicitly has an 'any' type.
+app/api/v1/metrics/business/route.ts(277,43): error TS7006: Parameter 'item' implicitly has an 'any' type.
+app/api/v1/metrics/business/route.ts(338,41): error TS7006: Parameter 'item' implicitly has an 'any' type.
+app/api/warehouse/summary/__tests__/route.test.ts(76,30): error TS2554: Expected 1 arguments, but got 0.
+app/api/warehouse/summary/__tests__/route.test.ts(118,30): error TS2554: Expected 1 arguments, but got 0.
+app/api/warehouse/summary/__tests__/route.test.ts(133,30): error TS2554: Expected 1 arguments, but got 0.
+app/api/warehouse/summary/__tests__/route.test.ts(161,30): error TS2554: Expected 1 arguments, but got 0.
+app/api/warehouse/summary/__tests__/route.test.ts(187,30): error TS2554: Expected 1 arguments, but got 0.
+app/api/warehouse/summary/__tests__/route.test.ts(201,30): error TS2554: Expected 1 arguments, but got 0.
+app/api/warehouse/summary/__tests__/route.test.ts(231,30): error TS2554: Expected 1 arguments, but got 0.
+app/api/warehouse/summary/__tests__/route.test.ts(249,30): error TS2554: Expected 1 arguments, but got 0.
+app/api/warehouse/summary/__tests__/route.test.ts(281,30): error TS2554: Expected 1 arguments, but got 0.
+app/api/warehouse/summary/__tests__/route.test.ts(310,30): error TS2554: Expected 1 arguments, but got 0.
+app/components/__tests__/ErrorBoundary.test.tsx(125,13): error TS2741: Property 'children' is missing in type '{}' but required in type 'Readonly<ErrorBoundaryProps>'.
+app/hooks/useWidgetRegistry.tsx(20,37): error TS2339: Property 'autoRegisterWidgets' does not exist on type 'UnifiedWidgetRegistry'.
+app/print-grnlabel/components/__tests__/WeightInputList.test.tsx(66,11): error TS2322: Type '"wooden"' is not assignable to type '"euro" | "whiteDry" | "whiteWet" | "chepDry" | "chepWet" | "notIncluded" | undefined'.
+app/print-grnlabel/components/__tests__/WeightInputList.test.tsx(67,11): error TS2322: Type '"carton"' is not assignable to type '"still" | "bag" | "tote" | "octo" | "notIncluded" | undefined'.
+app/test-performance/page.tsx(83,15): error TS2322: Type '{ widget: any; isEditMode: false; useGraphQL: boolean; }' is not assignable to type 'IntrinsicAttributes & StockLevelHistoryChartProps'.
+  Property 'useGraphQL' does not exist on type 'IntrinsicAttributes & StockLevelHistoryChartProps'.
+app/void-pallet/actions.ts(26,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(36,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(43,11): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(52,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(68,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(74,5): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(90,9): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(97,5): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(114,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(128,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(134,11): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(144,11): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(157,9): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(169,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(179,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(195,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(428,11): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(491,11): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(505,9): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(533,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(609,9): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(627,11): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(639,11): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(645,9): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(678,9): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(691,11): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(717,9): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(726,11): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(786,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(913,9): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(932,11): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(944,11): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(950,9): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(995,9): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(1008,11): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(1034,9): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(1043,11): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(1106,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(1112,5): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(1121,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(1127,5): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(1140,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(1157,9): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(1166,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+app/void-pallet/actions.ts(1171,7): error TS2367: This comparison appears to be unintentional because the types '"development" | "test"' and '"production"' have no overlap.
+lib/alerts/core/AlertRuleEngine.ts(375,33): error TS7006: Parameter 'u' implicitly has an 'any' type.
+lib/alerts/core/AlertStateManager.ts(327,24): error TS7006: Parameter 'item' implicitly has an 'any' type.
+lib/alerts/services/AlertMonitoringService.ts(373,58): error TS2345: Argument of type '{ level: any; message: string; annotations: { escalated: boolean; escalationLevel: any; escalationTime: string; }; id: string; ruleId: string; ruleName: string; state: AlertState; value: number | string; ... 6 more ...; labels?: Record<string, string>; }' is not assignable to parameter of type 'Alert'.
+  Types of property 'annotations' are incompatible.
+    Type '{ escalated: boolean; escalationLevel: any; escalationTime: string; }' is not assignable to type 'Record<string, string>'.
+      Property 'escalated' is incompatible with index signature.
+        Type 'boolean' is not assignable to type 'string'.
+lib/alerts/utils/AlertSystemHealthChecker.ts(179,9): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+lib/alerts/utils/AlertSystemHealthChecker.ts(182,9): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.
+lib/alerts/utils/AlertSystemHealthChecker.ts(190,54): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'.
+  No index signature with a parameter of type 'string' was found on type '{}'.

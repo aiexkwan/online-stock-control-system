@@ -83,7 +83,7 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
       start: timeFrame.start,
       end: timeFrame.end,
     };
-  }, [timeFrame]);
+  }, [timeFrame as string]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -113,7 +113,7 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
         const widgetData = result.widgets[0];
 
         if (widgetData.data.error) {
-          console.error('[ProductDistributionChartWidget] API error:', widgetData.data.error);
+          console.error('[ProductDistributionChartWidget as string] API error:', widgetData.data.error);
           setError(widgetData.data.error);
           setChartData([]);
           return;
@@ -122,19 +122,19 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
         const distributionData = widgetData.data.value || [];
         const widgetMetadata = widgetData.data.metadata || {};
 
-        console.log('[ProductDistributionChartWidget] API returned data:', distributionData);
-        console.log('[ProductDistributionChartWidget] Metadata:', widgetMetadata);
+        console.log('[ProductDistributionChartWidget as string] API returned data:', distributionData);
+        console.log('[ProductDistributionChartWidget as string] Metadata:', widgetMetadata);
 
         setChartData(distributionData);
         setMetadata(widgetMetadata);
 
       } else {
-        console.warn('[ProductDistributionChartWidget] No widget data returned from API');
+        console.warn('[ProductDistributionChartWidget as string] No widget data returned from API');
         setChartData([]);
       }
     } catch (err) {
-      console.error('[ProductDistributionChartWidget] Error fetching data from API:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      console.error('[ProductDistributionChartWidget as string] Error fetching data from API:', err);
+      setError(err instanceof Error ? (err as { message: string }).message : 'Unknown error');
       setChartData([]);
     } finally {
       setLoading(false);
@@ -149,7 +149,7 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
   // 計算總數
   const total = useMemo(() => {
     return chartData.reduce((sum, item) => sum + item.value, 0);
-  }, [chartData]);
+  }, [chartData as string]);
 
   // 自定義 Tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {

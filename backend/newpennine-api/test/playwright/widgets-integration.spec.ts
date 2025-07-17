@@ -227,7 +227,7 @@ test.describe('v1.3.2 前端 Widgets 整合測試', () => {
   test('性能監控應該記錄 Web Vitals', async ({ page }) => {
     // 添加性能監控
     await page.addInitScript(() => {
-      window.performanceMetrics = {};
+      (window as any).performanceMetrics = {};
     });
 
     await page.goto('http://localhost:3000/admin');
