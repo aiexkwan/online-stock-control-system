@@ -103,7 +103,7 @@ export function useUnifiedPdfGeneration(options: UseUnifiedPdfGenerationOptions)
    * Generate labels based on type
    */
   const generateLabels = async (
-    dataArray: any[],
+    dataArray: Record<string, unknown>[],
     onProgress?: (current: number, total: number) => void
   ) => {
     if (labelType === 'qc') {
@@ -116,7 +116,7 @@ export function useUnifiedPdfGeneration(options: UseUnifiedPdfGenerationOptions)
   /**
    * Generate a single label
    */
-  const generateSingleLabel = async (data: any) => {
+  const generateSingleLabel = async (data: Record<string, unknown>) => {
     const component =
       labelType === 'qc' ? (
         <PrintLabelPdf

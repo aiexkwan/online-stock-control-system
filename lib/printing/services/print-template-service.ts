@@ -3,7 +3,8 @@
  * Manages print templates and data formatting
  */
 
-import { PrintType, TemplateConfig } from '../types';
+import { PrintType, TemplateConfig, TemplateSchema } from '../types';
+import { DatabaseRecord } from '@/lib/types/database';
 
 export class PrintTemplateService {
   private templates: Map<PrintType, TemplateConfig> = new Map();
@@ -23,7 +24,11 @@ export class PrintTemplateService {
   /**
    * Apply template to data
    */
-  async applyTemplate(template: TemplateConfig, data: any): Promise<any> {
+  async applyTemplate(template: TemplateConfig, data: DatabaseRecord[]): Promise<{
+    formattedData: unknown;
+    template: string;
+    metadata: Record<string, string | number>;
+  }> {
     try {
       // Validate data against schema if available
       if (template.schema) {
@@ -67,7 +72,16 @@ export class PrintTemplateService {
   }
 
   // Private formatting methods
-  private formatQcLabelData(data: any): any {
+  private formatQcLabelData(data: DatabaseRecord[]): {
+    items: Array<{
+      itemCode: string;
+      quantity: number;
+      supplier: string;
+      palletNumber: string;
+      qrCode: string;
+    }>;
+    metadata: Record<string, string | number>;
+  } {
     // Ensure all required fields for QC label
     return {
       // Product information
@@ -102,7 +116,15 @@ export class PrintTemplateService {
     };
   }
 
-  private formatGrnLabelData(data: any): any {
+  private formatGrnLabelData(data: DatabaseRecord[]): {
+    items: Array<{
+      grnNumber: string;
+      supplier: string;
+      receivedDate: string;
+      items: Array<{ code: string; quantity: number }>;
+    }>;
+    metadata: Record<string, string | number>;
+  } {
     // Ensure all required fields for GRN label
     return {
       // GRN information
@@ -133,7 +155,14 @@ export class PrintTemplateService {
     };
   }
 
-  private formatTransactionReportData(data: any): any {
+  private formatTransactionReportData(data: DatabaseRecord[]): {
+    transactions: Array<Record<string, string | number | boolean | null>>;
+    summary: {
+      totalCount: number;
+      dateRange: { from: string; to: string };
+    };
+    metadata: Record<string, string | number>;
+  } {
     return {
       // Report parameters
       startDate: data.startDate || new Date().toISOString(),
@@ -156,7 +185,15 @@ export class PrintTemplateService {
     };
   }
 
-  private formatInventoryReportData(data: any): any {
+  private formatInventoryReportData(data: DatabaseRecord[]): {
+    inventory: Array<Record<string, string | number | boolean | null>>;
+    summary: {
+      totalItems: number;
+      totalValue: number;
+      categories: Record<string, number>;
+    };
+    metadata: Record<string, string | number>;
+  } {
     return {
       // Report parameters
       reportDate: data.reportDate || new Date().toISOString(),
@@ -180,7 +217,15 @@ export class PrintTemplateService {
     };
   }
 
-  private formatAcoOrderReportData(data: any): any {
+  private formatAcoOrderReportData(data: DatabaseRecord[]): {
+    orders: Array<Record<string, string | number | boolean | null>>;
+    summary: {
+      totalOrders: number;
+      totalValue: number;
+      status: Record<string, number>;
+    };
+    metadata: Record<string, string | number>;
+  } {
     return {
       // Report parameters
       orderRef: data.orderRef || '',
@@ -203,7 +248,15 @@ export class PrintTemplateService {
     };
   }
 
-  private formatGrnReportData(data: any): any {
+  private formatGrnReportData(data: DatabaseRecord[]): {
+    grns: Array<Record<string, string | number | boolean | null>>;
+    summary: {
+      totalGrns: number;
+      totalValue: number;
+      suppliers: Record<string, number>;
+    };
+    metadata: Record<string, string | number>;
+  } {
     return {
       // GRN parameters
       grnRef: data.grnRef || '',
@@ -222,7 +275,7 @@ export class PrintTemplateService {
     };
   }
 
-  private validateData(data: any, schema: any): void {
+  private validateData(data: DatabaseRecord[], schema: TemplateSchema): void {
     // Basic validation - can be enhanced with a proper schema validator
     const requiredFields = schema.required || [];
 

@@ -268,7 +268,7 @@ export function ExistingWidgetWithContext() {
           <div>
             <h3 className="font-medium">Recent Orders</h3>
             <div className="space-y-2">
-              {orderData?.orders?.slice(0, 5).map((order: any) => (
+              {orderData?.orders?.slice(0, 5).map((order: Record<string, unknown>) => (
                 <div key={order.id} className="flex justify-between">
                   <span>{order.orderNumber}</span>
                   <span className="text-sm text-muted-foreground">

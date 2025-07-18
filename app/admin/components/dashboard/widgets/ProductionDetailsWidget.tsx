@@ -142,7 +142,7 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
       key: 'product_qty', 
       header: 'Quantity',
       align: 'right',
-      render: (value: any) => typeof value === 'number' ? value.toLocaleString() : value || 'N/A'
+      render: (value: unknown) => typeof value === 'number' ? value.toLocaleString() : value || 'N/A'
     },
     { 
       key: 'qc_by', 
@@ -151,7 +151,7 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
     { 
       key: 'generate_time', 
       header: 'Generate Time',
-      render: (value: any) => value ? format(new Date(value), 'MMM d, HH:mm') : 'N/A'
+      render: (value: unknown) => value ? format(new Date(value), 'MMM d, HH:mm') : 'N/A'
     }
   ];
 

@@ -4,6 +4,7 @@
  */
 
 import { ReportDataSource } from '../core/ReportConfig';
+import { DatabaseRecord } from '@/lib/types/database';
 import { 
   getStockTakeSummary, 
   getStockTakeDetails, 
@@ -29,7 +30,7 @@ const stockTakeSummaryDataSource: ReportDataSource = {
     return result.data;
   },
 
-  transform(data: any) {
+  transform(data: DatabaseRecord[]) {
     return data;
   },
 };
@@ -52,7 +53,7 @@ const stockTakeDetailsDataSource: ReportDataSource = {
     return result.data;
   },
 
-  transform(data: any) {
+  transform(data: DatabaseRecord[]) {
     return data;
   },
 };
@@ -75,7 +76,7 @@ const notCountedItemsDataSource: ReportDataSource = {
     return result.data;
   },
 
-  transform(data: any) {
+  transform(data: DatabaseRecord[]) {
     return data;
   },
 };

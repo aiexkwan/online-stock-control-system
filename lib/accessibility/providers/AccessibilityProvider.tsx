@@ -30,7 +30,7 @@ import {
 import { 
   calculateColorContrast,
   isElementFocusable,
-  runAccessibilityAudit 
+  runAccessibilityAudit as runWCAGAudit
 } from '../utils/wcag-helpers';
 
 import { globalFocusManager } from '../utils/focus-helpers';
@@ -185,7 +185,7 @@ export const AccessibilityProvider: React.FC<AccessibilityProviderProps> = ({
       contrastQuery.removeEventListener('change', handleContrastChange);
       colorSchemeQuery.removeEventListener('change', handleColorSchemeChange);
     };
-  }, [enableAutoDetection, preferences.colorScheme]);
+  }, [enableAutoDetection, preferences.colorScheme, updatePreferences]);
 
   /**
    * 檢測螢幕閱讀器
@@ -205,7 +205,7 @@ export const AccessibilityProvider: React.FC<AccessibilityProviderProps> = ({
     if (screenReaderDetected) {
       updateScreenReader({ enabled: true });
     }
-  }, []);
+  }, [updateScreenReader]);
 
   /**
    * 創建宣告區域
@@ -349,7 +349,7 @@ export const AccessibilityProvider: React.FC<AccessibilityProviderProps> = ({
     }
 
     const startTime = performance.now();
-    const auditResult = runAccessibilityAudit(container);
+    const auditResult = runWCAGAudit(container);
     const endTime = performance.now();
 
     const result: AccessibilityAuditResult = {

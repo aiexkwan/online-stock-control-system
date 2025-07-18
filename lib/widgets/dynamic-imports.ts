@@ -3,6 +3,8 @@
  * 為所有 widgets 提供動態導入函數
  */
 
+import { wrapAllWidgetsWithErrorBoundary } from './error-boundary-wrapper';
+
 // Core Widgets
 export const coreWidgetImports = {
   'HistoryTree': () => import('@/app/admin/components/dashboard/widgets/HistoryTreeV2').then(module => module.HistoryTreeV2),
@@ -104,13 +106,13 @@ export const specialWidgetImports = {
 
 // Unified Widgets - v2.0.3 新增統一組件
 export const unifiedWidgetImports = {
-  'UnifiedStatsWidget': () => import('@/app/admin/components/dashboard/widgets/UnifiedStatsWidget'),
-  'UnifiedChartWidget': () => import('@/app/admin/components/dashboard/widgets/UnifiedChartWidget'),
-  'UnifiedTableWidget': () => import('@/app/admin/components/dashboard/widgets/UnifiedTableWidget'),
+  'UnifiedStatsWidget': () => import('@/app/admin/components/dashboard/widgets/UnifiedStatsWidgetWithErrorBoundary'),
+  'UnifiedChartWidget': () => import('@/app/admin/components/dashboard/widgets/UnifiedChartWidgetWithErrorBoundary'),
+  'UnifiedTableWidget': () => import('@/app/admin/components/dashboard/widgets/UnifiedTableWidgetWithErrorBoundary'),
 };
 
-// 合併所有導入映射
-export const allWidgetImports: Record<string, () => Promise<any>> = {
+// 合併所有導入映射 (不包含已有錯誤邊界的統一組件)
+const rawWidgetImports: Record<string, () => Promise<{ default: React.ComponentType }>> = {
   ...coreWidgetImports,
   ...statsWidgetImports,
   ...chartsWidgetImports,
@@ -121,10 +123,18 @@ export const allWidgetImports: Record<string, () => Promise<any>> = {
   ...analysisWidgetImports,
   ...productionWidgetImports,
   ...specialWidgetImports,
-  ...unifiedWidgetImports,
+};
+
+// 為所有 widgets 自動添加錯誤邊界保護
+const wrappedWidgetImports = wrapAllWidgetsWithErrorBoundary(rawWidgetImports);
+
+// 合併所有導入映射，包含已有錯誤邊界的統一組件
+export const allWidgetImports: Record<string, () => Promise<{ default: React.ComponentType }>> = {
+  ...wrappedWidgetImports,
+  ...unifiedWidgetImports, // 這些已經有錯誤邊界
 };
 
 // 根據 widget ID 獲取導入函數
-export function getWidgetImport(widgetId: string): (() => Promise<any>) | undefined {
+export function getWidgetImport(widgetId: string): (() => Promise<{ default: React.ComponentType }>) | undefined {
   return allWidgetImports[widgetId];
 }

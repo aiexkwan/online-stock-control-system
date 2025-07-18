@@ -5,6 +5,7 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
+import type { DatabaseRecord } from '../types';
 import { ITransactionService } from '../interfaces/ITransactionService';
 import {
   TransactionOptions,
@@ -13,8 +14,9 @@ import {
   StockTransferDto,
   VoidPalletDto,
   TransactionContext,
+  InventoryRecord,
 } from '../types';
-import { LocationMapper } from '../utils/locationMapper';
+import { LocationMapper, DatabaseLocationColumn } from '../utils/locationMapper';
 import { validatePalletNumber } from '../utils/validators';
 
 export class TransactionService implements ITransactionService {
@@ -55,7 +57,7 @@ export class TransactionService implements ITransactionService {
           failed: 0,
         },
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[TransactionService] Transaction failed:', error);
 
       // Log transaction failure
@@ -116,7 +118,7 @@ export class TransactionService implements ITransactionService {
         }
 
         // Update inventory
-        const updates: any = {
+        const updates: DatabaseRecord = {
           [fromColumn]: currentQty - transfer.quantity,
           [toColumn]: (inventory[toColumn] || 0) + transfer.quantity,
           latest_update: new Date().toISOString(),
@@ -183,10 +185,10 @@ export class TransactionService implements ITransactionService {
         }
 
         const currentQty = inventory[locationColumn];
-        const standardLocation = LocationMapper.fromDbColumn(locationColumn as any);
+        const standardLocation = LocationMapper.fromDbColumn(locationColumn as DatabaseLocationColumn);
 
         // Update inventory to zero
-        const updates: any = {
+        const updates: DatabaseRecord = {
           [locationColumn]: 0,
           latest_update: new Date().toISOString(),
         };
@@ -237,7 +239,7 @@ export class TransactionService implements ITransactionService {
       if (error) {
         throw error;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[TransactionService] Create history record error:', error);
       throw error;
     }
@@ -258,7 +260,7 @@ export class TransactionService implements ITransactionService {
       if (error) {
         throw error;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[TransactionService] Create history records batch error:', error);
       throw error;
     }
@@ -268,7 +270,7 @@ export class TransactionService implements ITransactionService {
    * Execute batch operations within a single transaction
    */
   async executeBatchOperations<T>(
-    operations: Array<(client: SupabaseClient) => Promise<any>>,
+    operations: Array<(client: SupabaseClient) => Promise<T>>,
     options?: TransactionOptions
   ): Promise<TransactionResult<T[]>> {
     return this.executeTransaction(async client => {
@@ -329,7 +331,7 @@ export class TransactionService implements ITransactionService {
     startDate?: string;
     endDate?: string;
     status?: string;
-  }): Promise<any[]> {
+  }): Promise<Record<string, unknown>[]> {
     try {
       let query = this.supabase
         .from('transaction_logs')
@@ -397,7 +399,7 @@ export class TransactionService implements ITransactionService {
     }
   }
 
-  private findLocationWithStock(inventory: any): string | null {
+  private findLocationWithStock(inventory: InventoryRecord): string | null {
     const locationColumns = LocationMapper.getAllDbColumns();
 
     for (const column of locationColumns) {
@@ -409,8 +411,8 @@ export class TransactionService implements ITransactionService {
     return null;
   }
 
-  private calculateInventoryFromHistory(history: HistoryRecord[]): any {
-    const inventory: any = {};
+  private calculateInventoryFromHistory(history: HistoryRecord[]): DatabaseRecord {
+    const inventory: DatabaseRecord = {};
 
     for (const record of history) {
       if (record.loc && record.action === 'Transfer') {
@@ -421,7 +423,7 @@ export class TransactionService implements ITransactionService {
     return inventory;
   }
 
-  private compareInventory(actual: any, calculated: any): boolean {
+  private compareInventory(actual: DatabaseRecord, calculated: DatabaseRecord): boolean {
     const locationColumns = LocationMapper.getAllDbColumns();
 
     for (const column of locationColumns) {
@@ -466,7 +468,7 @@ export class TransactionService implements ITransactionService {
   async logTransaction(
     context: TransactionContext,
     result: 'success' | 'failed',
-    error?: any
+    error?: Error | { message: string; code?: string }
   ): Promise<void> {
     // 記錄事務日誌
   }
@@ -506,7 +508,7 @@ export class TransactionService implements ITransactionService {
         operations: { total: 1, completed: 1, failed: 0 },
         duration: Date.now() - startTime,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
         transactionId: txId,

@@ -22,7 +22,7 @@ import 'jspdf-autotable';
 // 擴展 jsPDF 類型
 declare module 'jspdf' {
   interface jsPDF {
-    autoTable: (options: any) => jsPDF;
+    autoTable: (options: Record<string, unknown>) => jsPDF;
     lastAutoTable: {
       finalY: number;
     };
@@ -166,7 +166,7 @@ export class LegacyVoidPalletPdfGenerator {
     this.currentY += 5;
   }
 
-  private addReasonBreakdown(reasons: any[]) {
+  private addReasonBreakdown(reasons: Record<string, unknown>[]) {
     this.doc.setFontSize(14);
     this.doc.setFont('helvetica', 'bold');
     this.doc.text('Breakdown by Void Reason', this.margin, this.currentY);
@@ -211,7 +211,7 @@ export class LegacyVoidPalletPdfGenerator {
     this.currentY = this.doc.lastAutoTable.finalY + 10;
   }
 
-  private addDetailsTable(details: any[]) {
+  private addDetailsTable(details: Record<string, unknown>[]) {
     this.doc.setFontSize(14);
     this.doc.setFont('helvetica', 'bold');
     this.doc.text('Void Details', this.margin, this.currentY);
@@ -259,7 +259,7 @@ export class LegacyVoidPalletPdfGenerator {
         5: { cellWidth: 25 },
         6: { cellWidth: 25 },
       },
-      didDrawPage: (data: any) => {
+      didDrawPage: (data: Record<string, unknown>) => {
         // 在新頁面添加標題
         if (data.pageNumber > 1) {
           this.doc.setFontSize(10);
@@ -272,7 +272,7 @@ export class LegacyVoidPalletPdfGenerator {
     this.currentY = this.doc.lastAutoTable.finalY + 10;
   }
 
-  private addProductAnalysis(products: any[]) {
+  private addProductAnalysis(products: Record<string, unknown>[]) {
     // 檢查是否需要新頁
     if (this.currentY > 200) {
       this.doc.addPage();

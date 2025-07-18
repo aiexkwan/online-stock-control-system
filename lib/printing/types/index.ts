@@ -27,9 +27,29 @@ export enum PaperSize {
   CUSTOM = 'Custom',
 }
 
+// 定義打印數據的具體類型
+export type PrintData = {
+  // QC Label 數據
+  itemCode?: string;
+  quantity?: number;
+  supplier?: string;
+  palletNumber?: string;
+  // GRN Label 數據
+  grnNumber?: string;
+  receivedDate?: string;
+  // Report 數據
+  reportData?: Array<Record<string, string | number | boolean | null>>;
+  filters?: Record<string, string | number | boolean>;
+  dateRange?: { from: string; to: string };
+  // 通用數據
+  title?: string;
+  description?: string;
+  customFields?: Record<string, string | number | boolean>;
+};
+
 export interface PrintRequest {
   type: PrintType;
-  data: Record<string, any>;
+  data: PrintData;
   options: PrintOptions;
   metadata?: PrintMetadata;
 }
@@ -76,7 +96,7 @@ export interface PrintHistory {
   id: string;
   jobId: string;
   type: PrintType;
-  data: Record<string, any>;
+  data: PrintData;
   options: PrintOptions;
   metadata?: PrintMetadata;
   result: PrintResult;
@@ -92,13 +112,35 @@ export interface PrintStatistics {
   errorRate: number;
 }
 
+// Template schema 類型定義
+export type TemplateSchema = {
+  fields: Array<{
+    name: string;
+    type: 'string' | 'number' | 'boolean' | 'date' | 'array';
+    required?: boolean;
+    validation?: {
+      min?: number;
+      max?: number;
+      pattern?: string;
+    };
+  }>;
+  layout?: {
+    orientation: 'portrait' | 'landscape';
+    paperSize: PaperSize;
+    sections: Array<{
+      name: string;
+      fields: string[];
+    }>;
+  };
+};
+
 export interface TemplateConfig {
   id: string;
   name: string;
   type: PrintType;
   version: string;
   template: string;
-  schema?: Record<string, any>;
+  schema?: TemplateSchema;
   preview?: string;
 }
 

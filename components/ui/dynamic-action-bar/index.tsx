@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,7 @@ import { navigationCacheManager } from '@/lib/navigation/cache-manager';
 import { VirtualizedNavigation } from './VirtualizedNavigation';
 import { QuickAccess } from './QuickAccess';
 import { SmartReminder } from './SmartReminder';
+import { useKeyboardNavigation } from '@/lib/accessibility';
 
 interface DynamicActionBarProps {
   className?: string;
@@ -40,6 +41,7 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
+  const navigationRef = useRef<HTMLDivElement>(null);
 
   // Get greeting based on time
   const getGreeting = () => {
@@ -175,6 +177,64 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
 
   const shouldUseVirtualization = allowedNavigation.length > 10;
 
+  // Keyboard navigation setup
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const { navigateToNext, navigateToPrevious, navigateToFirst, navigateToLast } = useKeyboardNavigation(
+    {
+      arrowKeys: true,
+      homeEndKeys: true,
+    },
+    navigationRef
+  );
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if navigation bar is visible
+      if (!isHovered && !isMobile) return;
+
+      // Check if we're focused on the navigation bar
+      if (!navigationRef.current?.contains(document.activeElement)) return;
+
+      let newIndex = currentIndex;
+      
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          navigateToPrevious();
+          newIndex = Math.max(0, currentIndex - 1);
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          navigateToNext();
+          newIndex = Math.min(allowedNavigation.length - 1, currentIndex + 1);
+          break;
+        case 'Home':
+          e.preventDefault();
+          navigateToFirst();
+          newIndex = 0;
+          break;
+        case 'End':
+          e.preventDefault();
+          navigateToLast();
+          newIndex = allowedNavigation.length - 1;
+          break;
+      }
+      
+      if (newIndex !== currentIndex) {
+        setCurrentIndex(newIndex);
+        // Focus the navigation item
+        const items = navigationRef.current?.querySelectorAll('[role="menuitem"]');
+        if (items && items[newIndex]) {
+          (items[newIndex] as HTMLElement).focus();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isHovered, isMobile, navigateToNext, navigateToPrevious, navigateToFirst, navigateToLast, currentIndex, allowedNavigation.length]);
+
   // Handle hover logic
   const handleMouseEnter = useCallback(() => {
     setIsHovered(true);
@@ -276,13 +336,21 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
                   className='flex-1'
                 />
               ) : (
-                <div className='flex items-center gap-2'>
-                  {allowedNavigation.map(item => (
+                <div 
+                  ref={navigationRef}
+                  className='flex items-center gap-2'
+                  role="menubar"
+                  aria-label="Main navigation"
+                  id="navigation-bar"
+                >
+                  {allowedNavigation.map((item, index) => (
                     <NavigationItem
                       key={item.id}
                       item={item}
                       isActive={activeItem === item.id}
                       onActiveChange={setActiveItem}
+                      tabIndex={currentIndex === index ? 0 : -1}
+                      aria-current={activeItem === item.id ? 'page' : undefined}
                     />
                   ))}
                 </div>

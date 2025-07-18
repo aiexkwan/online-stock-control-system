@@ -154,10 +154,18 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
       console.log('Sample void record:', JSON.stringify(voidReports[0], null, 2));
 
     // Step 2: Get unique pallet numbers for user lookup
-    const palletNumbers = [...new Set(voidReports.map((v: any) => v.plt_num))];
+    const palletNumbers = [...new Set(voidReports.map((v: Record<string, unknown>) => v.plt_num))];
 
     // Step 3: Try to get user information from record_history (optional)
-    let userMap = new Map<string, any>();
+    let userMap = new Map<string, {
+      clock_number?: string;
+      name?: string;
+      record_history?: Array<{
+        time: string;
+        action: string;
+        id?: number;
+      }>;
+    }>();
 
     try {
       if (palletNumbers.length > 0) {
@@ -202,7 +210,7 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
     }
 
     // Step 4: Combine all data
-    let combinedRecords: VoidRecord[] = voidReports.map((voidRecord: any) => {
+    let combinedRecords: VoidRecord[] = voidReports.map((voidRecord: Record<string, unknown>) => {
       const palletInfo = voidRecord.record_palletinfo;
       const historyInfo = userMap.get(voidRecord.plt_num);
 
@@ -271,10 +279,10 @@ export function generateVoidReportPDF(records: VoidRecord[], filters: VoidReport
     // Summary statistics
     const totalVoids = records.length;
     const totalQty = records.reduce((sum, r) => sum + (r.void_qty || 0), 0);
-    const damageVoids = records.filter((r: any) => r.damage_qty !== null && r.damage_qty > 0).length;
-    const fullVoids = records.filter((r: any) => r.damage_qty === null || r.damage_qty === 0).length;
-    const voidReasons = [...new Set(records.map((r: any) => r.reason).filter(Boolean))];
-    const uniqueProducts = [...new Set(records.map((r: any) => r.product_code).filter(Boolean))].length;
+    const damageVoids = records.filter((r: Record<string, unknown>) => r.damage_qty !== null && r.damage_qty > 0).length;
+    const fullVoids = records.filter((r: Record<string, unknown>) => r.damage_qty === null || r.damage_qty === 0).length;
+    const voidReasons = [...new Set(records.map((r: Record<string, unknown>) => r.reason).filter(Boolean))];
+    const uniqueProducts = [...new Set(records.map((r: Record<string, unknown>) => r.product_code).filter(Boolean))].length;
 
     doc.text(`Total Voids: ${totalVoids}`, 14, 40);
     doc.text(`Total Quantity: ${totalQty}`, 14, 47);
@@ -475,10 +483,10 @@ export async function generateVoidReportExcel(records: VoidRecord[], filters: Vo
     // Summary sheet
     const totalVoids = records.length;
     const totalQty = records.reduce((sum, r) => sum + (r.void_qty || 0), 0);
-    const damageVoids = records.filter((r: any) => r.damage_qty !== null && r.damage_qty > 0).length;
-    const fullVoids = records.filter((r: any) => r.damage_qty === null || r.damage_qty === 0).length;
-    const uniqueProducts = [...new Set(records.map((r: any) => r.product_code).filter(Boolean))].length;
-    const uniqueReasons = [...new Set(records.map((r: any) => r.reason).filter(Boolean))].length;
+    const damageVoids = records.filter((r: Record<string, unknown>) => r.damage_qty !== null && r.damage_qty > 0).length;
+    const fullVoids = records.filter((r: Record<string, unknown>) => r.damage_qty === null || r.damage_qty === 0).length;
+    const uniqueProducts = [...new Set(records.map((r: Record<string, unknown>) => r.product_code).filter(Boolean))].length;
+    const uniqueReasons = [...new Set(records.map((r: Record<string, unknown>) => r.reason).filter(Boolean))].length;
 
     const summaryData = [
       ['Void Pallet Report'],
@@ -848,7 +856,7 @@ export async function fetchVoidRecordsAlternative(
       console.log(`Found ${voidReports.length} void records`);
 
     // Step 2: Get pallet info separately
-    const palletNumbers = [...new Set(voidReports.map((v: any) => v.plt_num))];
+    const palletNumbers = [...new Set(voidReports.map((v: Record<string, unknown>) => v.plt_num))];
     isNotProduction() &&
       isNotProduction() &&
       console.log(`Fetching info for ${palletNumbers.length} unique pallets`);
@@ -869,7 +877,15 @@ export async function fetchVoidRecordsAlternative(
     }
 
     // Step 3: Get history info for users and locations
-    let userMap = new Map<string, any>();
+    let userMap = new Map<string, {
+      clock_number?: string;
+      name?: string;
+      record_history?: Array<{
+        time: string;
+        action: string;
+        id?: number;
+      }>;
+    }>();
     try {
       const { data: historyRecords } = await supabase
         .from('record_history')
@@ -908,7 +924,7 @@ export async function fetchVoidRecordsAlternative(
     }
 
     // Step 4: Combine all data
-    let combinedRecords: VoidRecord[] = voidReports.map((voidRecord: any) => {
+    let combinedRecords: VoidRecord[] = voidReports.map((voidRecord: Record<string, unknown>) => {
       const palletInfo = palletInfoMap.get(voidRecord.plt_num);
       const historyInfo = userMap.get(voidRecord.plt_num);
 

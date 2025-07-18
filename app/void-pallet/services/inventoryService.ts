@@ -1,6 +1,8 @@
 'use server';
 
 import { createClient } from '@/app/utils/supabase/server';
+import { DatabaseRecord } from '@/lib/types/database';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { LocationMapper } from '@/lib/inventory/utils/locationMapper';
 import { isNotProduction } from '@/lib/utils/env';
 
@@ -36,7 +38,7 @@ export async function updateInventoryForVoid(
     const supabase = await createClient();
     const inventoryColumn = getInventoryColumn(location);
 
-    const inventoryUpdate: any = {
+    const inventoryUpdate: DatabaseRecord = {
       product_code: productCode,
       latest_update: new Date().toISOString(),
       plt_num: palletNum,
@@ -54,16 +56,16 @@ export async function updateInventoryForVoid(
 
     if (error) {
       console.error('[Inventory as string] Update failed:', error);
-      return { success: false, error: (error as { message: string }).message };
+      return { success: false, error: getErrorMessage(error) };
     }
 
     isNotProduction() &&
       isNotProduction() &&
       console.log('[Inventory as string] Successfully updated inventory:', inventoryUpdate);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Inventory as string] Unexpected error:', error);
-    return { success: false, error: (error as { message: string }).message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -74,7 +76,7 @@ export async function updateStockLevel(
   productCode: string,
   quantity: number,
   operation: 'void' | 'damage'
-): Promise<{ success: boolean; result?: any; error?: string }> {
+): Promise<{ success: boolean; result?: unknown; error?: string }> {
   try {
     const supabase = await createClient();
 
@@ -94,15 +96,15 @@ export async function updateStockLevel(
 
     if (error) {
       console.error('[Stock Level] Update failed:', error);
-      return { success: false, error: (error as { message: string }).message };
+      return { success: false, error: getErrorMessage(error) };
     }
 
     isNotProduction() &&
       isNotProduction() &&
       console.log('[Stock Level] Updated successfully:', data);
     return { success: true, result: data };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Stock Level] Unexpected error:', error);
-    return { success: false, error: (error as { message: string }).message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }

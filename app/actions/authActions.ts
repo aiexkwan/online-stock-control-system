@@ -14,6 +14,7 @@ import { createClient as createServerSideClient } from '@/app/utils/supabase/ser
 import { clockNumberToEmail } from '@/app/utils/authUtils';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { getErrorMessage } from '@/lib/types/error-handling';
 
 interface ActionResult {
   success: boolean;
@@ -87,10 +88,10 @@ export async function verifyCurrentUserPasswordAction(
       process.env.NODE_ENV !== 'production' &&
         console.warn(
           `[verifyCurrentUserPasswordAction] Supabase signInWithPassword error for ${email}:`,
-          signInError.message
+          getErrorMessage(signInError)
         );
       // Provide a generic error message to the client
-      if (signInError.message.includes('Invalid login credentials')) {
+      if (getErrorMessage(signInError).includes('Invalid login credentials')) {
         return { success: false, error: 'Incorrect password. Please try again.' };
       }
       // Handle other potential errors like user not found in Supabase Auth, though this action assumes user exists
@@ -115,7 +116,7 @@ export async function verifyCurrentUserPasswordAction(
         `[verifyCurrentUserPasswordAction] Password verified successfully for user ID (clockNumber) ${userId} / email ${email} via Supabase Auth.`
       );
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(
       '[verifyCurrentUserPasswordAction] Unhandled error during Supabase password verification:',
       error
@@ -163,14 +164,14 @@ export async function checkFirstLoginStatus(
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'PGRST116') {
         // PostgREST error code for "Searched for a single row, but found no rows"
         process.env.NODE_ENV !== 'production' &&
           console.warn(`[authActions] No user found in data_id for clock number: ${clockNumber}`);
         return { isFirstLogin: null, error: 'User record not found in system.' };
       }
       console.error('[authActions] Error fetching first_login status:', error);
-      return { isFirstLogin: null, error: error.message };
+      return { isFirstLogin: null, error: getErrorMessage(error) };
     }
 
     if (data === null || typeof data.first_login !== 'boolean') {
@@ -185,9 +186,10 @@ export async function checkFirstLoginStatus(
     }
 
     return { isFirstLogin: data.first_login };
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('[authActions] Unexpected error in checkFirstLoginStatus:', e);
-    return { isFirstLogin: null, error: e.message || 'An unexpected server error occurred.' };
+    const errorMessage = e instanceof Error ? e.message : 'An unexpected server error occurred.';
+    return { isFirstLogin: null, error: errorMessage };
   }
 }
 
@@ -285,7 +287,7 @@ export async function customLoginAction(
 
       if (error) {
         console.error(`[customLoginAction] Error fetching user data:`, error);
-        if (error.code === 'PGRST116') {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'PGRST116') {
           return { success: false, error: `User ${clockNumber} not found.` };
         }
         return { success: false, error: 'Error fetching user data.' };
@@ -401,9 +403,9 @@ export async function customLoginAction(
       success: false,
       error: 'Invalid credentials or user not found. Please try again.',
     };
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('[customLoginAction] Unexpected error:', e);
-    return { success: false, error: e.message || 'An unexpected server error occurred.' };
+    return { success: false, error: e instanceof Error ? e.message : 'An unexpected server error occurred.' };
   }
 }
 

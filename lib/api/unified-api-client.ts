@@ -19,21 +19,21 @@ export interface APIClientConfig {
 export interface APIRequest {
   // Legacy GraphQL support (向後兼容)
   query?: string;
-  variables?: Record<string, any>;
+  variables?: Record<string, unknown>;
   operationName?: string;
   
   // REST API 相關
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   endpoint?: string;
-  params?: Record<string, any>;
-  data?: any;
+  params?: Record<string, unknown>;
+  data?: unknown;
   
   // 通用
   headers?: Record<string, string>;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
-export interface APIResponse<T = any> {
+export interface APIResponse<T = unknown> {
   data?: T;
   error?: string;
   errors?: Array<{ message: string; code?: string }>;
@@ -67,7 +67,7 @@ export class UnifiedAPIClient {
   /**
    * 執行 API 請求
    */
-  async request<T = any>(request: APIRequest): Promise<APIResponse<T>> {
+  async request<T = unknown>(request: APIRequest): Promise<APIResponse<T>> {
     const startTime = Date.now();
     
     try {
@@ -228,7 +228,7 @@ export class UnifiedAPIClient {
    */
   private async attemptFallback<T>(
     request: APIRequest,
-    originalError: any
+    originalError: unknown
   ): Promise<APIResponse<T>> {
     const startTime = Date.now();
     
@@ -288,16 +288,16 @@ export function getAPIClient(config?: APIClientConfig): UnifiedAPIClient {
 }
 
 // 便利函數
-export async function apiRequest<T = any>(request: APIRequest): Promise<APIResponse<T>> {
+export async function apiRequest<T = unknown>(request: APIRequest): Promise<APIResponse<T>> {
   const client = getAPIClient();
   return client.request<T>(request);
 }
 
-export async function restRequest<T = any>(
+export async function restRequest<T = unknown>(
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
   endpoint: string,
-  data?: any,
-  params?: Record<string, any>
+  data?: unknown,
+  params?: Record<string, unknown>
 ): Promise<APIResponse<T>> {
   return apiRequest<T>({
     method,
@@ -307,9 +307,9 @@ export async function restRequest<T = any>(
   });
 }
 
-export async function graphqlRequest<T = any>(
+export async function graphqlRequest<T = unknown>(
   query: string,
-  variables?: Record<string, any>,
+  variables?: Record<string, unknown>,
   operationName?: string
 ): Promise<APIResponse<T>> {
   return apiRequest<T>({

@@ -22,7 +22,7 @@ export async function GET() {
     const totalErrors = versionStats.reduce((sum, stat) => sum + stat.errorCount, 0);
     
     // 計算版本分佈
-    const versionDistribution = versionStats.map((stat: any) => ({
+    const versionDistribution = versionStats.map((stat: Record<string, unknown>) => ({
       version: stat.version,
       requestCount: stat.requestCount,
       percentage: totalRequests > 0 ? (stat.requestCount / totalRequests * 100).toFixed(2) : '0.00',

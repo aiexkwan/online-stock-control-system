@@ -64,7 +64,7 @@ export async function getVoidStatistics(
     if (voidError) throw voidError;
 
     // Get pallet info for voided pallets
-    const palletNums = voidRecords?.map((v: any) => v.plt_num) || [];
+    const palletNums = voidRecords?.map((v: Record<string, unknown>) => v.plt_num) || [];
     const { data: palletInfo, error: palletError } = await supabase
       .from('record_palletinfo')
       .select('plt_num, product_code, product_qty')
@@ -73,7 +73,7 @@ export async function getVoidStatistics(
     if (palletError) throw palletError;
 
     // Create a map for quick lookup
-    const palletMap = new Map(palletInfo?.map((p: any) => [p.plt_num, p]) || []);
+    const palletMap = new Map(palletInfo?.map((p: Record<string, unknown>) => [p.plt_num, p]) || []);
 
     // Calculate statistics
     const uniqueProducts = new Set<string>();
@@ -183,11 +183,11 @@ export async function getVoidStatistics(
         recentVoids: stats.recentVoids,
       },
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting void statistics:', error);
     return {
       success: false,
-      error: (error as { message: string }).message,
+      error: getErrorMessage(error),
     };
   }
 }
@@ -198,7 +198,13 @@ export async function getVoidStatistics(
 export async function getDamageTrend(
   productCode?: string,
   days: number = 30
-): Promise<{ success: boolean; data?: any; error?: string }> {
+): Promise<{ success: boolean; data?: Array<{
+  plt_num: string;
+  product_code: string;
+  product_qty: number;
+  voided_at: string;
+  reason?: string;
+}>; error?: string }> {
   try {
     const supabase = await createClient();
     const endDate = new Date();
@@ -217,17 +223,17 @@ export async function getDamageTrend(
 
     // Get pallet info if product code filter is applied
     if (productCode && damageRecords) {
-      const palletNums = damageRecords.map((d: any) => d.plt_num);
+      const palletNums = damageRecords.map((d: Record<string, unknown>) => d.plt_num);
       const { data: palletInfo } = await supabase
         .from('record_palletinfo')
         .select('plt_num, product_code')
         .in('plt_num', palletNums)
         .eq('product_code', productCode);
 
-      const validPalletNums = new Set(palletInfo?.map((p: any) => p.plt_num) || []);
+      const validPalletNums = new Set(palletInfo?.map((p: Record<string, unknown>) => p.plt_num) || []);
       return {
         success: true,
-        data: damageRecords.filter((d: any) => validPalletNums.has(d.plt_num)),
+        data: damageRecords.filter((d: Record<string, unknown>) => validPalletNums.has(d.plt_num)),
       };
     }
 
@@ -235,11 +241,11 @@ export async function getDamageTrend(
       success: true,
       data: damageRecords,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting damage trend:', error);
     return {
       success: false,
-      error: (error as { message: string }).message,
+      error: getErrorMessage(error),
     };
   }
 }

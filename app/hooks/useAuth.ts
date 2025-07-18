@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { getErrorMessage } from '../../lib/types/error-handling';
 import { createClient } from '@/app/utils/supabase/client';
 import { unifiedAuth } from '@/app/main-login/utils/unified-auth';
 import type { User } from '@supabase/supabase-js';
@@ -126,7 +127,7 @@ export const getUserRoleFromDatabase = async (email: string): Promise<UserRole |
     const queryTime = Date.now() - startTime;
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if ((error as any).code === 'PGRST116') {
         // 用戶不存在，這是正常情況
         return null;
       }
@@ -149,9 +150,9 @@ export const getUserRoleFromDatabase = async (email: string): Promise<UserRole |
     retryCounters.delete(email);
     
     return getUserRoleByDepartmentAndPosition(data.department, data.position);
-  } catch (error: any) {
+  } catch (error: unknown) {
     
-    if (error.message === 'Database query timeout') {
+    if (getErrorMessage(error) === 'Database query timeout') {
       console.warn(
         `[getUserRoleFromDatabase] Database query timeout for ${email}, falling back to legacy auth`
       );
@@ -377,7 +378,7 @@ export async function getCurrentUserClockNumberAsync(): Promise<string | null> {
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if ((error as any).code === 'PGRST116') {
         process.env.NODE_ENV !== 'production' &&
           console.warn(`[getCurrentUserClockNumberAsync] No user found for email: ${user.email}`);
         return null;
@@ -395,7 +396,7 @@ export async function getCurrentUserClockNumberAsync(): Promise<string | null> {
     }
 
     return null;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[getCurrentUserClockNumberAsync] Error getting clock number:', error);
     return null;
   }

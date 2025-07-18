@@ -1,6 +1,9 @@
 'use server';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { DatabaseRecord } from '@/lib/types/database';
+import { ApiResponse, ApiRequest, QueryParams } from '@/lib/validation/zod-schemas';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 import crypto from 'crypto';
@@ -89,7 +92,7 @@ async function recordOrderUploadHistory(orderRef: string, uploadedBy: string): P
 }
 
 // 設置緩存
-function setCachedResult(fileHash: string, data: any): void {
+function setCachedResult(fileHash: string, data: DatabaseRecord[]): void {
   fileCache.set(fileHash, {
     data,
     timestamp: Date.now(),
@@ -166,9 +169,9 @@ async function extractTextFromPDF(pdfBuffer: Buffer): Promise<string> {
     });
 
     return extractedText;
-  } catch (error: any) {
-    systemLogger.error('[PDF Text Extract] Error', { error: (error as { message: string }).message });
-    throw new Error(`PDF text extraction failed: ${(error as { message: string }).message}`);
+  } catch (error: unknown) {
+    systemLogger.error('[PDF Text Extract] Error', { error: getErrorMessage(error) });
+    throw new Error(`PDF text extraction failed: ${getErrorMessage(error)}`);
   }
 }
 
@@ -239,7 +242,7 @@ function preprocessPdfText(rawText: string): string {
 
       deliveryAdd = rawAddress
         .split('\n')
-        .map((line: any) => line.trim())
+        .map((line: Record<string, unknown>) => line.trim())
         .filter(line => {
           if (!line) return false;
           if (
@@ -273,7 +276,7 @@ function preprocessPdfText(rawText: string): string {
           const lineIndex = lines.indexOf(line);
           const addressLines = lines
             .slice(Math.max(0, lineIndex - 3), lineIndex + 1)
-            .map((l: any) => l.trim())
+            .map((l: Record<string, unknown>) => l.trim())
             .filter((l: any) => l && !l.match(/^(Tel:|Email:|Date:|Account|Customer)/i));
 
           if (addressLines.length > 0) {
@@ -423,8 +426,8 @@ async function uploadToStorageAsync(
 
     systemLogger.info('[Background Storage] Upload completed', { publicUrl: urlData.publicUrl });
     return urlData.publicUrl;
-  } catch (error: any) {
-    systemLogger.error('[Background Storage] Upload failed', { error: (error as { message: string }).message });
+  } catch (error: unknown) {
+    systemLogger.error('[Background Storage] Upload failed', { error: getErrorMessage(error) });
     throw error;
   }
 }
@@ -484,10 +487,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       if (!pdfMagic.startsWith('%PDF')) {
         throw new Error('Uploaded file is not a valid PDF');
       }
-    } catch (fileError: any) {
+    } catch (fileError: unknown) {
       apiLogger.error('[PDF Analysis] FormData processing error', {
-        error: (fileError as { message: string }).message,
-        stack: fileError.stack,
+        error: getErrorMessage(fileError),
+        stack: (fileError as Error).stack,
         fileName,
         fileSize: file?.size,
         fileType: file?.type,
@@ -496,7 +499,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json(
         {
           error: 'Failed to process uploaded file',
-          details: (fileError as { message: string }).message,
+          details: getErrorMessage(fileError),
         },
         { status: 400 }
       );
@@ -521,7 +524,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             cachedResult.orderData.length
           );
 
-          const insertData = cachedResult.orderData.map((order: any) => ({
+          const insertData = cachedResult.orderData.map((order: Record<string, unknown>) => ({
             order_ref: String(order.order_ref),
             product_code: order.product_code,
             product_desc: order.product_desc,
@@ -604,9 +607,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                 '[PDF Analysis] No matching doc_upload record found for json update (cached)'
               );
             }
-          } catch (jsonUpdateError: any) {
+          } catch (jsonUpdateError: unknown) {
             apiLogger.error('[PDF Analysis] Error updating doc_upload json field (cached)', {
-              error: (jsonUpdateError as { message: string }).message,
+              error: getErrorMessage(jsonUpdateError),
             });
           }
 
@@ -618,7 +621,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             const { sendOrderCreatedEmail } = await import('../../services/emailService');
 
             const emailRequestBody = {
-              orderData: cachedResult.orderData.map((order: any) => ({
+              orderData: cachedResult.orderData.map((order: Record<string, unknown>) => ({
                 order_ref: order.order_ref,
                 product_code: order.product_code,
                 product_desc: order.product_desc,
@@ -645,17 +648,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             emailResult = {
               success: true,
               error: '',
-              message: (emailData as { message: string }).message,
+              message: getErrorMessage(emailData),
               emailId: emailData.emailId,
               recipients: emailData.recipients,
             } as any;
-          } catch (emailError: any) {
+          } catch (emailError: unknown) {
             apiLogger.error('[PDF Analysis] Error sending order created email (cached)', {
-              error: (emailError as { message: string }).message,
+              error: getErrorMessage(emailError),
             });
             emailResult = {
               success: false,
-              error: `Email service error: ${(emailError as { message: string }).message}`,
+              error: `Email service error: ${getErrorMessage(emailError)}`,
             };
           }
 
@@ -671,15 +674,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             usage: cachedResult.usage,
             tokenPerRecord: tokenPerRecord,
           });
-        } catch (insertError: any) {
+        } catch (insertError: unknown) {
           apiLogger.error('[PDF Analysis] Database insertion failed', {
-            error: (insertError as { message: string }).message,
+            error: getErrorMessage(insertError),
           });
           logApiResponse('POST', '/api/analyze-order-pdf-new', 500, Date.now() - startTime);
           return NextResponse.json(
             {
               error: 'Database insertion failed',
-              details: (insertError as { message: string }).message,
+              details: getErrorMessage(insertError),
             },
             { status: 500 }
           );
@@ -706,13 +709,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         processedLength: extractedText.length,
         reductionPercent: textReductionPercentage,
       });
-    } catch (textError: any) {
-      apiLogger.error('[PDF Analysis] Text extraction failed', { error: (textError as { message: string }).message });
+    } catch (textError: unknown) {
+      apiLogger.error('[PDF Analysis] Text extraction failed', { error: getErrorMessage(textError) });
       logApiResponse('POST', '/api/analyze-order-pdf-new', 500, Date.now() - startTime);
       return NextResponse.json(
         {
           error: 'PDF text extraction failed',
-          details: (textError as { message: string }).message,
+          details: getErrorMessage(textError),
           suggestion:
             'The PDF might be a scanned image. Please ensure the PDF contains selectable text.',
         },
@@ -726,13 +729,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       const promptPath = path.join(process.cwd(), 'docs', 'openAI_pdf_prompt');
       prompt = fs.readFileSync(promptPath, 'utf8');
       apiLogger.debug('[PDF Analysis] Prompt loaded from file');
-    } catch (promptError: any) {
-      apiLogger.error('[PDF Analysis] Failed to read prompt file', { error: (promptError as { message: string }).message });
+    } catch (promptError: unknown) {
+      apiLogger.error('[PDF Analysis] Failed to read prompt file', { error: getErrorMessage(promptError) });
       logApiResponse('POST', '/api/analyze-order-pdf-new', 500, Date.now() - startTime);
       return NextResponse.json(
         {
           error: 'Failed to load prompt file',
-          details: (promptError as { message: string }).message,
+          details: getErrorMessage(promptError),
         },
         { status: 500 }
       );
@@ -768,8 +771,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         temperature: 0.0,
         response_format: { type: 'json_object' },
       });
-    } catch (error: any) {
-      apiLogger.warn('[PDF Analysis] GPT-4o failed', { error: (error as { message: string }).message });
+    } catch (error: unknown) {
+      apiLogger.warn('[PDF Analysis] GPT-4o failed', { error: getErrorMessage(error) });
 
       apiLogger.info('[PDF Analysis] Falling back to GPT-4-turbo model');
       try {
@@ -790,8 +793,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           temperature: 0.0,
           response_format: { type: 'json_object' },
         });
-      } catch (fallbackError: any) {
-        apiLogger.error('[PDF Analysis] GPT-4-turbo also failed', { error: (fallbackError as { message: string }).message });
+      } catch (fallbackError: unknown) {
+        apiLogger.error('[PDF Analysis] GPT-4-turbo also failed', { error: getErrorMessage(fallbackError) });
         throw new Error('Both GPT-4o and GPT-4-turbo models failed');
       }
     }
@@ -868,9 +871,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           },
         });
       }
-    } catch (parseError: any) {
+    } catch (parseError: unknown) {
       apiLogger.error('[PDF Analysis] Parse error', {
-        error: (parseError as { message: string }).message,
+        error: getErrorMessage(parseError),
         rawResponse: extractedContent.substring(0, 500),
         sentTextPreview: extractedText.substring(0, 1000),
       });
@@ -879,7 +882,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json(
         {
           error: 'Failed to parse OpenAI response',
-          details: (parseError as { message: string }).message,
+          details: getErrorMessage(parseError),
           rawResponse: extractedContent.substring(0, 500),
           sentText: extractedText.substring(0, 500),
         },
@@ -907,7 +910,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
         apiLogger.debug('[PDF Analysis] Raw orderData', { orderData });
 
-        const insertData = orderData.map((order: any) => {
+        const insertData = orderData.map((order: Record<string, unknown>) => {
           const record = {
             order_ref: String(order.order_ref),
             product_code: order.product_code,
@@ -992,9 +995,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             } else {
               apiLogger.warn('[PDF Analysis] No matching doc_upload record found for json update');
             }
-          } catch (jsonUpdateError: any) {
+          } catch (jsonUpdateError: unknown) {
             apiLogger.error('[PDF Analysis] Error updating doc_upload json field', {
-              error: (jsonUpdateError as { message: string }).message,
+              error: getErrorMessage(jsonUpdateError),
             });
           }
         } else {
@@ -1024,7 +1027,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           const { sendOrderCreatedEmail } = await import('../../services/emailService');
 
           const emailRequestBody = {
-            orderData: orderData.map((order: any) => ({
+            orderData: orderData.map((order: Record<string, unknown>) => ({
               order_ref: order.order_ref,
               product_code: order.product_code,
               product_desc: order.product_desc,
@@ -1046,17 +1049,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           emailResult = {
             success: true,
             error: '',
-            message: (emailData as { message: string }).message,
+            message: getErrorMessage(emailData),
             emailId: emailData.emailId,
             recipients: emailData.recipients,
           } as any;
-        } catch (emailError: any) {
+        } catch (emailError: unknown) {
           apiLogger.error('[PDF Analysis] Error sending order created email', {
-            error: (emailError as { message: string }).message,
+            error: getErrorMessage(emailError),
           });
           emailResult = {
             success: false,
-            error: `Email service error: ${(emailError as { message: string }).message}`,
+            error: `Email service error: ${getErrorMessage(emailError)}`,
           };
         }
 
@@ -1068,7 +1071,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         let acoInsertResults = null;
         if (acoRecords.length > 0) {
           try {
-            const acoInsertData = acoRecords.map((record: any) => ({
+            const acoInsertData = acoRecords.map((record: Record<string, unknown>) => ({
               order_ref: record.order_ref,
               code: record.product_code,
               required_qty: record.product_qty,
@@ -1081,13 +1084,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
               .select();
 
             if (acoError) {
-              apiLogger.error('[PDF Analysis] ACO insertion failed', { error: (acoError as { message: string }).message });
+              apiLogger.error('[PDF Analysis] ACO insertion failed', { error: getErrorMessage(acoError) });
             } else {
               acoInsertResults = acoResults;
               apiLogger.info('[PDF Analysis] ACO records inserted', { count: acoResults.length });
             }
-          } catch (acoError: any) {
-            apiLogger.error('[PDF Analysis] ACO insertion error', { error: (acoError as { message: string }).message });
+          } catch (acoError: unknown) {
+            apiLogger.error('[PDF Analysis] ACO insertion error', { error: getErrorMessage(acoError) });
           }
         }
 
@@ -1112,13 +1115,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             tokensSaved: Math.round((rawText.length - extractedText.length) / 4),
           },
         });
-      } catch (insertError: any) {
-        apiLogger.error('[PDF Analysis] Database insertion failed', { error: (insertError as { message: string }).message });
+      } catch (insertError: unknown) {
+        apiLogger.error('[PDF Analysis] Database insertion failed', { error: getErrorMessage(insertError) });
         logApiResponse('POST', '/api/analyze-order-pdf-new', 500, Date.now() - startTime);
         return NextResponse.json(
           {
             error: 'Database insertion failed',
-            details: (insertError as { message: string }).message,
+            details: getErrorMessage(insertError),
           },
           { status: 500 }
         );
@@ -1144,11 +1147,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         },
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     apiLogger.error('[PDF Analysis] System error', {
-      message: (error as { message: string }).message,
-      name: error.name,
-      code: error.code,
+      message: getErrorMessage(error),
+      name: (error as Error).name,
+      code: (error as any).code,
       stack: (error as Error).stack,
     });
 
@@ -1156,9 +1159,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json(
       {
         error: 'System error',
-        details: (error as { message: string }).message,
-        errorType: error.name,
-        errorCode: error.code,
+        details: getErrorMessage(error),
+        errorType: (error as Error).name,
+        errorCode: (error as any).code,
         ...(isDevelopment() && { stack: (error as Error).stack }),
       },
       { status: 500 }
@@ -1211,13 +1214,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       supportedMethods: ['POST (FormData)'],
       availableActions: ['clear-cache', 'cache-status'],
     });
-  } catch (error: any) {
-    apiLogger.error('[PDF Analysis] GET request error', { error: (error as { message: string }).message });
+  } catch (error: unknown) {
+    apiLogger.error('[PDF Analysis] GET request error', { error: getErrorMessage(error) });
     logApiResponse('GET', '/api/analyze-order-pdf-new', 500, Date.now() - startTime);
     return NextResponse.json(
       {
         error: 'Failed to process request',
-        details: (error as { message: string }).message,
+        details: getErrorMessage(error),
       },
       { status: 500 }
     );

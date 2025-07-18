@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
@@ -9,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 export interface PrintPreviewProps {
   type: string;
-  data: any;
+  data: DatabaseRecord[];
   options: PrintOptions;
   className?: string;
 }
@@ -52,7 +53,7 @@ export function PrintPreview({ type, data, options, className }: PrintPreviewPro
     generatePreview();
   }, [generatePreview]);
 
-  const generateQcLabelPreview = (data: any) => {
+  const generateQcLabelPreview = (data: Record<string, unknown>) => {
     return `
       <div class="p-6 space-y-4">
         <h2 class="text-xl font-bold text-center">QC Label</h2>
@@ -98,7 +99,7 @@ export function PrintPreview({ type, data, options, className }: PrintPreviewPro
     `;
   };
 
-  const generateGrnLabelPreview = (data: any) => {
+  const generateGrnLabelPreview = (data: Record<string, unknown>) => {
     return `
       <div class="p-6 space-y-4">
         <h2 class="text-xl font-bold text-center">GRN Label</h2>
@@ -124,7 +125,7 @@ export function PrintPreview({ type, data, options, className }: PrintPreviewPro
     `;
   };
 
-  const generateReportPreview = (data: any, title: string) => {
+  const generateReportPreview = (data: DatabaseRecord[], title: string) => {
     return `
       <div class="p-6 space-y-4">
         <h2 class="text-xl font-bold text-center">${title}</h2>

@@ -15,12 +15,12 @@ interface ValidationFormContextType {
   setFieldTouched: (field: string, touched: boolean) => void;
   clearFieldError: (field: string) => void;
   clearAllErrors: () => void;
-  validateField: (field: string, value: any, rules: ValidationRule[]) => string;
+  validateField: (field: string, value: unknown, rules: ValidationRule[]) => string;
   isValid: boolean;
 }
 
 interface ValidationRule {
-  validate: (value: any, formData?: any) => boolean | string | Promise<boolean | string>;
+  validate: (value: unknown, formData?: any) => boolean | string | Promise<boolean | string>;
   message?: string;
 }
 
@@ -31,9 +31,9 @@ interface ValidationFormProps {
         errors: Record<string, string>;
         touched: Record<string, boolean>;
         isValid: boolean;
-        handleFieldChange: (name: string, value: any) => void;
+        handleFieldChange: (name: string, value: unknown) => void;
       }) => React.ReactNode);
-  onSubmit: (data: any) => void | Promise<void>;
+  onSubmit: (data: Record<string, unknown>) => void | Promise<void>;
   validationRules?: Record<string, ValidationRule[]>;
   initialValues?: Record<string, any>;
   validateOnSubmit?: boolean;
@@ -89,7 +89,7 @@ export function ValidationForm({
   const [formData, setFormData] = useState(initialValues);
 
   const validateField = useCallback(
-    async (field: string, value: any, rules: ValidationRule[]): Promise<string> => {
+    async (field: string, value: unknown, rules: ValidationRule[]): Promise<string> => {
       for (const rule of rules) {
         const result = await rule.validate(value, formData);
         if (typeof result === 'string') {
@@ -183,7 +183,7 @@ export function ValidationForm({
   };
 
   const handleFieldChange = useCallback(
-    (field: string, value: any) => {
+    (field: string, value: unknown) => {
       setFormData(prev => ({ ...prev, [field]: value }));
 
       if (validateOnChange && validationRules[field]) {

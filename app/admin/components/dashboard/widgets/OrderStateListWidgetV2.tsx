@@ -111,7 +111,7 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
     // 處理 REST API 數據 - 如果是數組直接返回，否則從嵌套格式轉換
     if (Array.isArray(rawData)) {
       return rawData
-        .map((item: any) => {
+        .map((item: Record<string, unknown>) => {
           const productQty = item.product_qty || 0;
           const loadedQty = parseInt(item.loaded_qty || '0', 10);
           

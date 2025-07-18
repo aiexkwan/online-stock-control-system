@@ -177,42 +177,61 @@ export function useImageLoading(imageId: string) {
  * 批量載入 Hook - 管理多個載入狀態
  */
 export function useBatchLoading(ids: string[], type: LoadingType = 'component') {
-  const loadingHooks = ids.map(id => useLoading({ id, type }));
+  const {
+    startLoading: contextStartLoading,
+    stopLoading: contextStopLoading,
+    updateProgress: contextUpdateProgress,
+    updateText: contextUpdateText,
+    setError: contextSetError,
+    getLoadingState,
+  } = useLoadingContext();
+
+  const loadingStates = useMemo(() => {
+    return ids.map(id => getLoadingState(id));
+  }, [ids, getLoadingState]);
 
   const isAnyLoading = useMemo(() => {
-    return loadingHooks.some(hook => hook.isLoading);
-  }, [loadingHooks]);
+    return loadingStates.some(state => state?.isLoading ?? false);
+  }, [loadingStates]);
 
   const isAllLoading = useMemo(() => {
-    return loadingHooks.every(hook => hook.isLoading);
-  }, [loadingHooks]);
+    return loadingStates.length > 0 && loadingStates.every(state => state?.isLoading ?? false);
+  }, [loadingStates]);
 
   const totalProgress = useMemo(() => {
-    const progressValues = loadingHooks
-      .map(hook => hook.progress)
+    const progressValues = loadingStates
+      .map(state => state?.progress)
       .filter((progress): progress is number => progress !== undefined);
     
     if (progressValues.length === 0) return undefined;
     
     return progressValues.reduce((sum, progress) => sum + progress, 0) / progressValues.length;
-  }, [loadingHooks]);
+  }, [loadingStates]);
 
   const startAll = useCallback((text?: string) => {
-    loadingHooks.forEach(hook => hook.startLoading(text));
-  }, [loadingHooks]);
+    ids.forEach(id => {
+      contextStartLoading({
+        id,
+        type,
+        text,
+      });
+    });
+  }, [ids, type, contextStartLoading]);
 
   const stopAll = useCallback(() => {
-    loadingHooks.forEach(hook => hook.stopLoading());
-  }, [loadingHooks]);
+    ids.forEach(id => {
+      contextStopLoading(id);
+    });
+  }, [ids, contextStopLoading]);
 
   const errors = useMemo(() => {
-    return loadingHooks
-      .map(hook => hook.error)
+    return loadingStates
+      .map(state => state?.error)
       .filter((error): error is string => error !== undefined);
-  }, [loadingHooks]);
+  }, [loadingStates]);
 
   return {
-    hooks: loadingHooks,
+    states: loadingStates,
     isAnyLoading,
     isAllLoading,
     totalProgress,

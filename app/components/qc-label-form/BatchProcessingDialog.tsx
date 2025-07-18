@@ -45,7 +45,7 @@ export const BatchProcessingDialog: React.FC<BatchProcessingDialogProps> = React
     }, []);
 
     // 更新項目
-    const updateBatchItem = useCallback((id: string, field: keyof BatchItem, value: any) => {
+    const updateBatchItem = useCallback((id: string, field: keyof BatchItem, value: unknown) => {
       setBatchItems(prev =>
         prev.map(item => (item.id === id ? { ...item, [field]: value } : item))
       );

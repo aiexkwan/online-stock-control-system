@@ -69,7 +69,7 @@ export class PalletService implements IPalletService {
         pallet: result,
         searchTime: Date.now() - startTime,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[PalletService] Search error:', error);
       return {
         pallet: null,
@@ -92,7 +92,7 @@ export class PalletService implements IPalletService {
 
       if (error) throw error;
       return data || [];
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[PalletService] Search by product code error:', error);
       return [];
     }
@@ -134,7 +134,7 @@ export class PalletService implements IPalletService {
           locationDisplay: LocationMapper.getDisplayName(location),
         };
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[PalletService] Search by location error:', error);
       return [];
     }
@@ -162,7 +162,7 @@ export class PalletService implements IPalletService {
 
       if (error) throw error;
       return newPallet;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[PalletService] Create error:', error);
       throw error;
     }
@@ -182,7 +182,7 @@ export class PalletService implements IPalletService {
 
       if (error) throw error;
       return updated;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[PalletService] Update error:', error);
       throw error;
     }
@@ -236,7 +236,7 @@ export class PalletService implements IPalletService {
       }
 
       return { valid: true, pallet };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return { valid: false, error: error.message };
     }
   }
@@ -264,7 +264,7 @@ export class PalletService implements IPalletService {
 
       if (error) throw error;
       return data || [];
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[PalletService] Get history error:', error);
       return [];
     }
@@ -286,7 +286,7 @@ export class PalletService implements IPalletService {
       if (error || !data?.loc) return null;
 
       // Convert DB column to standard location if needed
-      const standardLocation = LocationMapper.fromDbColumn(data.loc as any);
+      const standardLocation = LocationMapper.fromDbColumn(data.loc as DatabaseLocationColumn);
       return standardLocation;
     } catch (error) {
       console.error('[PalletService] Get current location error:', error);
@@ -314,7 +314,7 @@ export class PalletService implements IPalletService {
       });
 
       return resultMap;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[PalletService] Search multiple error:', error);
       return new Map();
     }
@@ -341,7 +341,7 @@ export class PalletService implements IPalletService {
       }
 
       return resultMap;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[PalletService] Validate multiple error:', error);
       return new Map();
     }
@@ -407,7 +407,7 @@ export class PalletService implements IPalletService {
         ...pallet,
         locationDisplay: 'Unknown Location', // Would need to join with inventory to get actual location
       }));
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[PalletService] Get by filter error:', error);
       return [];
     }

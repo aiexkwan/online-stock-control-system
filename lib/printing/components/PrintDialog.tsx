@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
 import {
   Dialog,
   DialogContent,
@@ -31,7 +32,7 @@ export interface PrintDialogProps {
   onOpenChange: (open: boolean) => void;
   title: string;
   description?: string;
-  data: any;
+  data: DatabaseRecord[];
   type: string;
   onPrint?: (options: PrintOptions) => Promise<void>;
   defaultOptions?: Partial<PrintOptions>;

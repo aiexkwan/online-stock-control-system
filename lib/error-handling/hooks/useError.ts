@@ -243,8 +243,22 @@ export function useErrorAnalytics() {
     const errors = Array.from(errorState.errors.values());
     
     const errorsByComponent: Record<string, number> = {};
-    const errorsByCategory: Record<ErrorCategory, number> = {};
-    const errorsBySeverity: Record<ErrorSeverity, number> = {};
+    const errorsByCategory: Record<ErrorCategory, number> = {
+      network: 0,
+      auth: 0,
+      validation: 0,
+      api: 0,
+      permission: 0,
+      timeout: 0,
+      rendering: 0,
+      unknown: 0,
+    };
+    const errorsBySeverity: Record<ErrorSeverity, number> = {
+      low: 0,
+      medium: 0,
+      high: 0,
+      critical: 0,
+    };
     
     errors.forEach(error => {
       // By component
@@ -288,12 +302,14 @@ export function useErrorRecovery() {
         window.location.href = '/';
         break;
       case 'clear_cache':
-        if ('caches' in window) {
-          caches.keys().then(names => {
-            names.forEach(name => caches.delete(name));
-          }).then(() => window.location.reload());
-        } else {
-          window.location.reload();
+        if (typeof window !== 'undefined') {
+          if ('caches' in window) {
+            caches.keys().then(names => {
+              names.forEach(name => caches.delete(name));
+            }).then(() => window.location.reload());
+          } else {
+            (window as any).location.reload();
+          }
         }
         break;
       case 'logout':

@@ -152,7 +152,7 @@ export class StockLevelsAPI extends DataAccessLayer<StockLevelParams, StockLevel
   /**
    * Transform raw product data to stock level format
    */
-  private transformProducts(products: any[]): StockLevelItem[] {
+  private transformProducts(products: Record<string, unknown>[]): StockLevelItem[] {
     return products.map(product => ({
       productCode: product.product_code,
       productDesc: product.product_desc || '',

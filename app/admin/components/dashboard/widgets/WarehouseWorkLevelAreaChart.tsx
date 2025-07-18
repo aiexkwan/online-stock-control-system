@@ -211,7 +211,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
                       color: 'hsl(var(--foreground))',
                     }}
                     labelFormatter={label => `Date: ${label}`}
-                    formatter={(value: any, name: any, props: any) => [
+                    formatter={(value: unknown, name: any, props: any) => [
                       `${value} moves`,
                       'Total Moves',
                     ]}

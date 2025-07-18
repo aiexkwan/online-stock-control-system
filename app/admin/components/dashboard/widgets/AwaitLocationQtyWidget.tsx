@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { BatchQueryWidgetComponentProps } from '@/app/types/dashboard';
 import { useWidgetData } from '@/app/admin/contexts/DashboardDataContext';
 import { MetricCard } from './common';
@@ -16,7 +17,7 @@ const AwaitLocationQtyWidget: React.FC<BatchQueryWidgetComponentProps> = ({ widg
   const awaitQty = React.useMemo(() => {
     if (!data?.records) return 0;
     
-    return data.records.reduce((total: number, record: any) => {
+    return data.records.reduce((total: number, record: DatabaseRecord) => {
       // 假設 location 欄位包含 'AWAIT' 表示等待區
       if (record.location && record.location.includes('AWAIT')) {
         return total + (record.quantity || 0);

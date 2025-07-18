@@ -97,7 +97,7 @@ export async function sendOrderCreatedEmail(emailRequest: EmailRequest) {
     )
     .join('');
 
-  const emailData: any = {
+  const emailData: Record<string, unknown> = {
     from: fromEmail,
     to: toEmails,
     cc: ccEmails,

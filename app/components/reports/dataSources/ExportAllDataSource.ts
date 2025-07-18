@@ -15,7 +15,7 @@ const exportAllDataSource: ReportDataSource = {
     return [];
   },
 
-  transform(data: any[]) {
+  transform(data: Record<string, unknown>[]) {
     // No transformation needed
     return data;
   },

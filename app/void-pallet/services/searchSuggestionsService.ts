@@ -73,7 +73,7 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
 
     if (locations) {
       // Get unique locations
-      const uniqueLocations = [...new Set(locations.map((l: any) => l.loc))];
+      const uniqueLocations = [...new Set(locations.map((l: Record<string, unknown>) => l.loc))];
 
       uniqueLocations.forEach(loc => {
         if (loc) {

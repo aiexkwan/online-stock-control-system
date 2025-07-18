@@ -1,10 +1,12 @@
+import { DatabaseRecord } from '@/lib/types/database';
+
 /**
  * 報表緩存系統
  * 減少重複查詢，提升報表生成性能
  */
 
 interface CacheEntry {
-  data: any;
+  data: DatabaseRecord[];
   timestamp: number;
   ttl: number;
 }
@@ -75,7 +77,7 @@ export class ReportCache {
   /**
    * 設置緩存數據
    */
-  set(reportId: string, filters: Record<string, any>, data: any, ttl?: number): void {
+  set(reportId: string, filters: Record<string, any>, data: DatabaseRecord[], ttl?: number): void {
     const key = this.generateKey(reportId, filters);
 
     this.cache.set(key, {

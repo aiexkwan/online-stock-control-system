@@ -4,6 +4,7 @@
  */
 
 import { Redis } from 'ioredis';
+import { DatabaseRecord } from '@/lib/types/database';
 import { createClient } from '@supabase/supabase-js';
 import {
   Alert,
@@ -324,7 +325,7 @@ export class AlertStateManager {
 
       if (error) throw error;
 
-      return data?.map((item: any) => this.deserializeAlert(item)) || [];
+      return data?.map((item: Record<string, unknown>) => this.deserializeAlert(item)) || [];
     } catch (error) {
       console.error('Failed to query alerts:', error);
       return [];
@@ -620,7 +621,7 @@ export class AlertStateManager {
   /**
    * 反序列化告警
    */
-  private deserializeAlert(data: any): Alert {
+  private deserializeAlert(data: DatabaseRecord[]): Alert {
     return {
       id: data.id,
       ruleId: data.rule_id,

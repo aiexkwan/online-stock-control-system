@@ -7,6 +7,9 @@ import { createClient } from '@/app/utils/supabase/server'; // NEW: Using @supab
 import { getUserIdFromEmail } from '@/lib/utils/getUserId'; // 統一的用戶 ID 獲取函數
 import { format, isValid } from 'date-fns'; // 用於日期格式化
 import { isDevelopment } from '@/lib/utils/env';
+import { DatabaseRecord, convertToReportItem } from '@/lib/types/database-types';
+import { getErrorMessage } from '@/lib/types/error-handling';
+import { Tables } from '@/lib/types/supabase-generated';
 // Database record types
 interface AcoOrderRecord {
   order_ref: number;
@@ -47,6 +50,41 @@ interface OperatorRecord {
   name: string;
 }
 
+// 擴展類型定義用於複雜查詢
+interface OrderItemWithJoins {
+  order_number: string;
+  product_qty: string;
+  loaded_qty: string | number;
+  data_order?: { status?: string; order_date?: string };
+  data_code?: { description?: string };
+  data_id?: { name?: string };
+  user_id?: number;
+  created_at?: string;
+  product_code?: string;
+  action?: string;
+}
+
+interface OrderSummary {
+  totalQty: number;
+  loadedQty: number;
+  status: string;
+}
+
+interface OrderDetails {
+  order_number: string;
+  order_date?: string;
+  total_qty: number;
+  loaded_qty: number;
+  products: Set<string>;
+}
+
+interface UserStats {
+  user_name: string;
+  total_loads: number;
+  total_quantity: number;
+  load_times: string[];
+}
+
 /**
  * Fetches unique, non-null ACO order references from the 'record_aco' table.
  * @returns A promise that resolves to an array of unique order reference strings, sorted numerically.
@@ -73,7 +111,7 @@ export async function getUniqueAcoOrderRefs(): Promise<string[]> {
     const uniqueRefs = Array.from(
       new Set(
         data
-          .map((item: { order_ref: any }) => item.order_ref)
+          .map((item: { order_ref: number }) => item.order_ref)
           .filter((ref: number) => ref != null && !isNaN(Number(ref)))
           .map((ref: number) => ref.toString())
       )
@@ -154,7 +192,7 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
     const productCodeToRequiredQty = new Map<string, number>();
     const uniqueProductCodes: string[] = [];
 
-    acoCodesData.forEach((item: { code: any; required_qty: any }) => {
+    acoCodesData.forEach((item: { code: string; required_qty: number }) => {
       if (item.code && typeof item.code === 'string' && item.code.trim() !== '') {
         const productCode = item.code.trim();
         if (!uniqueProductCodes.includes(productCode)) {
@@ -190,11 +228,11 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
 
     // 步驟 3: 按產品代碼分組處理數據
     const reportData: AcoProductData[] = [];
-    const palletsByProduct = new Map<string, any[]>();
+    const palletsByProduct = new Map<string, Tables<'record_palletinfo'>[]>();
 
     // 將棧板數據按產品代碼分組
-    (allPalletDetails || []).forEach((pallet: any) => {
-      const productCode = pallet.product_code;
+    (allPalletDetails || []).forEach((pallet: DatabaseRecord) => {
+      const productCode = String(pallet.product_code);
       if (!palletsByProduct.has(productCode)) {
         palletsByProduct.set(productCode, []);
       }
@@ -205,7 +243,7 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
     for (const productCode of uniqueProductCodes) {
       const palletDetails = palletsByProduct.get(productCode) || [];
 
-      const formattedPallets: PalletInfo[] = palletDetails.map((p: any) => {
+      const formattedPallets: PalletInfo[] = palletDetails.map((p: Record<string, unknown>) => {
         let formattedDate: string | null = null;
         if (p.generate_time) {
           try {
@@ -230,8 +268,8 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
         }
 
         return {
-          plt_num: p.plt_num || null,
-          product_qty: typeof p.product_qty === 'number' ? p.product_qty : null,
+          plt_num: String(p.plt_num || ''),
+          product_qty: Number(p.product_qty || 0),
           generate_time: formattedDate,
         };
       });
@@ -294,7 +332,7 @@ export async function getUniqueGrnRefs(): Promise<string[]> {
         data
           .map((item: { grn_ref: number }) => item.grn_ref)
           .filter((ref: number) => ref !== null && ref !== undefined && !isNaN(Number(ref)))
-          .map((ref: any) => ref.toString())
+          .map((ref: Record<string, unknown>) => ref.toString())
       )
     ) as string[];
 
@@ -1081,15 +1119,15 @@ export async function getVoidPalletSummary(filters: VoidPalletFilters): Promise<
     // Calculate summary statistics
     const totalVoided = data.length;
     const totalQuantity = data.reduce(
-      (sum: number, item: any) => sum + (item.record_palletinfo?.product_qty || 0),
+      (sum: number, item: DatabaseRecord) => sum + (item.record_palletinfo?.product_qty || 0),
       0
     );
     const uniqueProducts = new Set(
-      data.map((item: any) => item.record_palletinfo?.product_code).filter(Boolean)
+      data.map((item: Record<string, unknown>) => item.record_palletinfo?.product_code).filter(Boolean)
     ).size;
 
     // Calculate most common reason
-    const reasons = data.map((item: any) => extractVoidReason(item.remark));
+    const reasons = data.map((item: Record<string, unknown>) => extractVoidReason(item.remark));
     const reasonCounts = new Map<string, number>();
 
     reasons.forEach((reason: string) => {
@@ -1172,7 +1210,7 @@ export async function getVoidReasonStats(filters: VoidPalletFilters): Promise<{
     // Calculate reason statistics
     const reasonStats = new Map<string, { count: number; quantity: number }>();
 
-    data.forEach((item: any) => {
+    data.forEach((item: Record<string, unknown>) => {
       const reason = extractVoidReason(item.remark);
       const quantity = item.record_palletinfo?.product_qty || 0;
 
@@ -1263,7 +1301,7 @@ export async function getVoidPalletDetails(filters: VoidPalletFilters): Promise<
       return { success: true, data: [] };
     }
 
-    const result = data.map((item: any) => ({
+    const result = data.map((item: Record<string, unknown>) => ({
       void_date: item.time,
       plt_num: item.plt_num,
       product_code: item.record_palletinfo?.product_code || '',
@@ -1343,7 +1381,7 @@ export async function getVoidProductStats(filters: VoidPalletFilters): Promise<{
       }
     >();
 
-    data.forEach((item: any) => {
+    data.forEach((item: Record<string, unknown>) => {
       const code = item.record_palletinfo?.product_code;
       if (!code) return;
 
@@ -1909,13 +1947,13 @@ export async function getOrderLoadingSummary(filters: OrderLoadingFilters): Prom
       }
     >();
 
-    data.forEach((item: any) => {
+    data.forEach((item: Record<string, unknown>) => {
       const orderNumber = item.order_number;
       if (!orderMap.has(orderNumber)) {
         orderMap.set(orderNumber, {
           totalQty: 0,
           loadedQty: 0,
-          status: (item as any).data_order?.status || 'pending',
+          status: (item as OrderItemWithJoins).data_order?.status || 'pending',
         });
       }
 
@@ -2018,14 +2056,14 @@ export async function getOrderProgress(filters: OrderLoadingFilters): Promise<{
     }
 
     // Group by order
-    const orderMap = new Map<string, any>();
+    const orderMap = new Map<string, OrderDetails>();
 
     rawData.forEach(item => {
       const orderNumber = item.order_number;
       if (!orderMap.has(orderNumber)) {
         orderMap.set(orderNumber, {
           order_number: orderNumber,
-          order_date: (item as any).data_order?.order_date,
+          order_date: (item as OrderItemWithJoins).data_order?.order_date,
           total_qty: 0,
           loaded_qty: 0,
           products: new Set(),
@@ -2129,9 +2167,9 @@ export async function getLoadingDetails(filters: OrderLoadingFilters): Promise<{
       timestamp: item.created_at,
       order_number: item.order_number,
       product_code: item.product_code,
-      product_description: (item as any).data_code?.description || '',
+      product_description: (item as OrderItemWithJoins).data_code?.description || '',
       loaded_qty: item.loaded_qty,
-      user_name: (item as any).data_id?.name || `User ${item.user_id}`,
+      user_name: (item as OrderItemWithJoins).data_id?.name || `User ${item.user_id}`,
       action: item.action || 'Load',
     }));
 
@@ -2218,12 +2256,12 @@ export async function getUserPerformance(filters: OrderLoadingFilters): Promise<
       }
     >();
 
-    data.forEach((item: any) => {
+    data.forEach((item: Record<string, unknown>) => {
       const userId = item.user_id?.toString() || 'unknown';
 
       if (!userStats.has(userId)) {
         userStats.set(userId, {
-          user_name: (item as any).data_id?.name || `User ${item.user_id}`,
+          user_name: (item as OrderItemWithJoins).data_id?.name || `User ${item.user_id}`,
           total_loads: 0,
           total_quantity: 0,
           load_times: [],

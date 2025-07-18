@@ -1,13 +1,15 @@
 /**
  * Admin Dashboard Theme Pages - SSR Enhanced
  * 動態路由處理所有 admin 子頁面
- * Week 2 Day 2: 添加 Critical Widgets SSR 支持
+ * v2.0.2: 實施主題簡化，11個主題合併為3個
  */
 
+import { redirect } from 'next/navigation';
 import { AdminRefreshProvider } from '../contexts/AdminRefreshContext';
 import { AdminErrorBoundary } from '../components/AdminErrorBoundary';
 import { NewAdminDashboard } from '../components/NewAdminDashboard';
 import { prefetchCriticalWidgetsData } from '../hooks/server/prefetch.server';
+import { getMappedTheme, isActiveTheme } from '../config/theme-mapping';
 
 interface AdminThemePageProps {
   params: Promise<{
@@ -18,6 +20,12 @@ interface AdminThemePageProps {
 export default async function AdminThemePage({ params }: AdminThemePageProps) {
   const { theme } = await params;
   
+  // v2.0.2: 檢查是否需要重定向到新主題
+  if (!isActiveTheme(theme)) {
+    const mappedTheme = getMappedTheme(theme);
+    redirect(`/admin/${mappedTheme}`);
+  }
+  
   // Server-side data prefetching for Critical Path Widgets
   // 服務器端預取 Critical Path Widgets 數據
   let prefetchedData = null;
@@ -25,7 +33,8 @@ export default async function AdminThemePage({ params }: AdminThemePageProps) {
 
   try {
     // 只為包含 Critical Widgets 的主題預取數據
-    const criticalThemes = ['injection', 'pipeline', 'warehouse'];
+    // v2.0.2: 更新為使用新主題名
+    const criticalThemes = ['operations-monitoring'];
     
     if (criticalThemes.includes(theme)) {
       console.log(`[SSR as string] Prefetching critical widgets data for theme: ${theme}`);
@@ -61,16 +70,11 @@ export default async function AdminThemePage({ params }: AdminThemePageProps) {
   );
 }
 
-// 生成靜態路徑
+// 生成靜態路徑 - v2.0.2: 只生成3個活躍主題
 export async function generateStaticParams() {
   return [
-    { theme: 'injection' },
-    { theme: 'pipeline' },
-    { theme: 'warehouse' },
-    { theme: 'upload' },
-    { theme: 'update' },
-    { theme: 'stock-management' },
-    { theme: 'system' },
-    { theme: 'analysis' },
+    { theme: 'operations-monitoring' },
+    { theme: 'data-management' },
+    { theme: 'analytics' },
   ];
 }

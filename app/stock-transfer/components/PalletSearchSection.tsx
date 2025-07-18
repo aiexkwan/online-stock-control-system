@@ -5,7 +5,7 @@ import { CARD_STYLES, TEXT_STYLES } from '../constants/styles';
 interface PalletSearchSectionProps {
   searchValue: string;
   onSearchValueChange: (value: string) => void;
-  onSearchSelect: (result: any) => void;
+  onSearchSelect: (result: Record<string, unknown>) => void;
   isLoading: boolean;
   searchInputRef?: React.RefObject<HTMLInputElement>;
   disabled?: boolean;

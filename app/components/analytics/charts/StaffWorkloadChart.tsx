@@ -228,7 +228,7 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
                 <YAxis stroke='#9CA3AF' />
                 <Tooltip
                   contentStyle={tooltipStyle}
-                  formatter={(value: any) => `${value} operations`}
+                  formatter={(value: unknown) => `${value} operations`}
                 />
                 <Bar dataKey='pallets' fill='#3B82F6' radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -256,12 +256,12 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
                 </Pie>
                 <Tooltip
                   contentStyle={tooltipStyle}
-                  formatter={(value: any, name: any) => [`${value} operations`, name]}
+                  formatter={(value: unknown, name: any) => [`${value} operations`, name]}
                 />
                 <Legend
                   verticalAlign='bottom'
                   height={36}
-                  formatter={(value: any, entry: any) => `${value} (${entry.payload.percentage}%)`}
+                  formatter={(value: unknown, entry: any) => `${value} (${entry.payload.percentage}%)`}
                 />
               </PieChart>
             </ResponsiveContainer>

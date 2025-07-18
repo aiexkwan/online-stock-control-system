@@ -1,4 +1,5 @@
 import { createClient } from './supabase/client';
+import { getErrorMessage } from '../../lib/types/error-handling';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { isNotProduction } from '../../lib/utils/env';
 
@@ -50,7 +51,7 @@ export async function generateOptimizedPalletNumbersV6(
         palletNumbers: [],
         series: [],
         success: false,
-        error: error.message,
+        error: getErrorMessage(error),
         method: 'v6_failed',
       };
     }
@@ -82,13 +83,13 @@ export async function generateOptimizedPalletNumbersV6(
       success: true,
       method: 'v6',
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PalletGenerationV6] Exception:', error);
     return {
       palletNumbers: [],
       series: [],
       success: false,
-      error: error.message || 'Unknown error',
+      error: getErrorMessage(error) || 'Unknown error',
       method: 'v6_exception',
     };
   }

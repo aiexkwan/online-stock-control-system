@@ -27,7 +27,7 @@ export interface UseWidgetSmartCacheOptions<T> {
   dataSource: WidgetDataSource;
   dataMode: WidgetDataMode;
   priority: WidgetPriority;
-  fetchFn: (params: any) => Promise<T>;
+  fetchFn: (params: QueryParams) => Promise<T>;
   params?: {
     dateRange?: {
       from: Date;

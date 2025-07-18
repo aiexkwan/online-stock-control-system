@@ -758,7 +758,7 @@ export const WidgetSuspenseFallback = React.memo(function WidgetSuspenseFallback
       <div className={`${baseClasses} ${className || ''}`}>
         <div className="p-4 space-y-2 w-full">
           <div className="h-4 w-32 bg-slate-700/60 rounded mb-3"></div>
-          {[1, 2, 3].map((i: any) => (
+          {[1, 2, 3].map((i: Record<string, unknown>) => (
             <div key={i} className="h-6 w-full bg-slate-700/40 rounded"></div>
           ))}
         </div>
@@ -772,7 +772,7 @@ export const WidgetSuspenseFallback = React.memo(function WidgetSuspenseFallback
       <div className={`${baseClasses} ${className || ''}`}>
         <div className="p-4 space-y-3 w-full">
           <div className="h-4 w-32 bg-slate-700/60 rounded mb-3"></div>
-          {[1, 2, 3].map((i: any) => (
+          {[1, 2, 3].map((i: Record<string, unknown>) => (
             <div key={i} className="flex items-center gap-3">
               <div className="h-8 w-8 bg-slate-700/60 rounded"></div>
               <div className="flex-1 space-y-1">

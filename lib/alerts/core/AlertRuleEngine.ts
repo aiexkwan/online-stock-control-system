@@ -4,7 +4,9 @@
  */
 
 import { Redis } from 'ioredis';
-import { createClient } from '@supabase/supabase-js';
+import { DatabaseRecord } from '@/lib/types/database';
+import { ApiResponse, ApiRequest, QueryParams } from '@/lib/validation/zod-schemas';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
   AlertRule,
   AlertLevel,
@@ -20,7 +22,7 @@ import {
 
 export class AlertRuleEngine {
   private redis: Redis;
-  private supabase: any;
+  private supabase: SupabaseClient;
   private rules: Map<string, AlertRule> = new Map();
   private evaluationTimers: Map<string, NodeJS.Timeout> = new Map();
   private eventListeners: ((event: AlertEngineEvent) => void)[] = [];
@@ -62,7 +64,7 @@ export class AlertRuleEngine {
       if (error) throw error;
 
       this.rules.clear();
-      rules?.forEach((rule: any) => {
+      rules?.forEach((rule: AlertRule) => {
         this.rules.set(rule.id, this.deserializeRule(rule));
       });
 
@@ -196,7 +198,7 @@ export class AlertRuleEngine {
   private async checkDependencies(dependencies: string[]): Promise<boolean> {
     try {
       const activeAlerts = await Promise.all(
-        dependencies.map((dep: any) => this.getCurrentAlert(dep))
+        dependencies.map((dep: string) => this.getCurrentAlert(dep))
       );
 
       return activeAlerts.some(alert => 
@@ -532,7 +534,7 @@ export class AlertRuleEngine {
   /**
    * 反序列化規則
    */
-  private deserializeRule(data: any): AlertRule {
+  private deserializeRule(data: DatabaseRecord[]): AlertRule {
     return {
       ...data,
       notifications: JSON.parse(data.notifications || '[]'),
@@ -569,7 +571,7 @@ export class AlertRuleEngine {
   /**
    * 反序列化告警
    */
-  private deserializeAlert(data: any): Alert {
+  private deserializeAlert(data: DatabaseRecord[]): Alert {
     return {
       id: data.id,
       ruleId: data.rule_id,

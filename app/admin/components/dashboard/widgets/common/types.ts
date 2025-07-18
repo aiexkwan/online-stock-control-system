@@ -1,3 +1,5 @@
+import { DatabaseRecord } from '@/lib/types/database';
+
 /**
  * Common types and utilities for dashboard widgets
  * 統一的 dashboard widget 類型和工具函數
@@ -70,7 +72,7 @@ export interface BaseWidgetState {
   loading: boolean;
   error: string | null;
   lastUpdated: Date | null;
-  data: any;
+  data: DatabaseRecord[];
 }
 
 /**

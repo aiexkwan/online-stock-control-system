@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { DatabaseRecord } from '@/lib/types/database';
 import { getCurrentSecurityConfig } from './auth-config';
 import { cleanupLegacyAuth, shouldCleanupLegacyAuth } from './cleanup-legacy-auth';
 import { createMainLoginSupabaseClient } from './supabase-client';
@@ -90,7 +91,7 @@ class SecureStorage {
 class UnifiedAuth {
   private config = getCurrentSecurityConfig();
   private secureStorage = new SecureStorage();
-  private supabaseClient: any = null;
+  private supabaseClient: DatabaseRecord = null;
 
   // 獲取或創建 Supabase 客戶端（單例模式）
   private getSupabaseClient() {

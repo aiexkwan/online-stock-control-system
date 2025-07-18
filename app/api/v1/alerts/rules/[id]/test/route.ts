@@ -22,7 +22,7 @@ async function getAlertEngine() {
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // 獲取告警引擎
     const engine = await getAlertEngine();

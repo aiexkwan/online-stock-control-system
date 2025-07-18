@@ -116,7 +116,7 @@ export class UnifiedInventoryService implements IInventoryService {
           timestamp: new Date().toISOString(),
         },
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[UnifiedInventoryService] Transfer stock error:', error);
       return {
         success: false,
@@ -146,7 +146,7 @@ export class UnifiedInventoryService implements IInventoryService {
 
       // Invalidate cache
       await this.invalidateCache(voidData.palletNum);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[UnifiedInventoryService] Void pallet error:', error);
       throw error;
     }
@@ -240,7 +240,7 @@ export class UnifiedInventoryService implements IInventoryService {
         results: Array.from(results.values()),
         duration: Date.now() - startTime,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[UnifiedInventoryService] Batch transfer error:', error);
       return {
         totalRequested: batch.transfers.length,
@@ -301,7 +301,7 @@ export class UnifiedInventoryService implements IInventoryService {
       }
 
       return snapshot;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[UnifiedInventoryService] Get inventory snapshot error:', error);
       throw error;
     }
@@ -327,7 +327,7 @@ export class UnifiedInventoryService implements IInventoryService {
         lowStockProducts,
         lastUpdated: new Date().toISOString(),
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[UnifiedInventoryService] Get inventory stats error:', error);
       throw error;
     }
@@ -423,7 +423,7 @@ export class UnifiedInventoryService implements IInventoryService {
 
       if (error || !data) return 0;
 
-      return data.filter((product: any) => product.total_quantity < 100).length;
+      return data.filter((product: { product_code: string; total_quantity: number }) => product.total_quantity < 100).length;
     } catch (error) {
       return 0;
     }

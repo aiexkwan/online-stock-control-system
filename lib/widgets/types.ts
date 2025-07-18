@@ -64,7 +64,7 @@ export interface WidgetDefinition {
     registryVersion?: string;
     createdAt?: string;
     updatedAt?: string;
-    [key: string]: any;
+    [key: string]: string | number | boolean | undefined;
   };
 }
 
@@ -94,7 +94,7 @@ export interface WidgetLayoutItem {
   maxH?: number;
   metadata?: {
     registryVersion?: string;
-    [key: string]: any;
+    [key: string]: string | number | boolean | undefined;
   };
 }
 
@@ -167,5 +167,5 @@ export interface WidgetRendererProps {
   fallback?: ReactElement;
   onLoad?: () => void;
   onError?: (error: Error) => void;
-  [key: string]: any;
+  [key: string]: unknown;
 }

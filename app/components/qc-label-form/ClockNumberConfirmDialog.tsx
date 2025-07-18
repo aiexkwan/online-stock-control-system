@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { createClient } from '@/app/utils/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -71,9 +72,9 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
         (process.env.NODE_ENV as string) !== 'production' &&
         console.log('[ClockNumberConfirmDialog] Validation result:', data);
       return !!data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[ClockNumberConfirmDialog] Exception during validation:', error);
-      if (error.message === 'Validation timeout') {
+      if (getErrorMessage(error) === 'Validation timeout') {
         toast.error('Validation timeout. Please try again.');
       }
       return false;

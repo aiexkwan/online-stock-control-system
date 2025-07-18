@@ -19,7 +19,7 @@ export interface DataTableColumn<T = any> {
   icon?: LucideIcon;
   width?: string;
   align?: 'left' | 'center' | 'right';
-  render?: (value: any, item: T, index: number) => React.ReactNode;
+  render?: (value: unknown, item: T, index: number) => React.ReactNode;
   className?: string;
 }
 

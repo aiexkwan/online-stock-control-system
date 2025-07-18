@@ -28,11 +28,16 @@ export interface MovementResult {
   success: boolean;
   error?: string;
   data?: StockMovement;
-  movements?: any[];
+  movements?: Record<string, unknown>[];
   movementIds?: string[];
   errors?: string[];
   totalQuantity?: number;
-  analysis?: any;
+  analysis?: {
+    totalMovements: number;
+    byLocation: Record<string, number>;
+    byProduct: Record<string, number>;
+    byStatus: Record<string, number>;
+  };
 }
 
 export interface ValidationResult {
@@ -445,7 +450,7 @@ export class StockMovementService {
   /**
    * 檢查庫存
    */
-  private async checkInventory(palletNumber: string, location: string): Promise<any> {
+  private async checkInventory(palletNumber: string, location: string): Promise<Record<string, unknown> | null> {
     const { data, error } = await this.supabase
       .from('record_palletinfo')
       .select('product_code')

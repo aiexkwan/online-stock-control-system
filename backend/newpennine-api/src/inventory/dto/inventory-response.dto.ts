@@ -26,8 +26,8 @@ export class InventoryResponseDto {
 
 export class InventoryDetailResponseDto extends InventoryDto {
   // Additional detailed information
-  transfers?: any[];
-  history?: any[];
+  transfers?: Record<string, unknown>[];
+  history?: Record<string, unknown>[];
   pallet_info?: any;
 }
 

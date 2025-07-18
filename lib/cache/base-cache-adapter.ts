@@ -74,7 +74,7 @@ export abstract class BaseCacheAdapter extends EventEmitter implements CacheAdap
     }
   }
 
-  protected handleError(operation: string, error: any): void {
+  protected handleError(operation: string, error: unknown): void {
     this.metrics.errors++;
     this.metrics.lastError = error.message;
     this.metrics.lastErrorTime = new Date();

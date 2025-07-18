@@ -4,10 +4,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { DatabaseRecord } from '@/lib/types/database';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { AlertRuleEngine } from '@/lib/alerts/core/AlertRuleEngine';
-import { AlertRule, AlertLevel, AlertCondition, NotificationChannel } from '@/lib/alerts/types';
+import { AlertRule, AlertLevel, AlertCondition, NotificationChannel, NotificationConfig, EmailConfig, SlackConfig, WebhookConfig, SmsConfig } from '@/lib/alerts/types';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -165,7 +166,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       evaluationInterval: validated.evaluationInterval,
       dependencies: validated.dependencies || [],
       silenceTime: validated.silenceTime,
-      notifications: validated.notifications,
+      notifications: validated.notifications.map((n: Record<string, unknown>) => ({
+        ...n,
+        config: n.config as EmailConfig | SlackConfig | WebhookConfig | SmsConfig
+      })) as NotificationConfig[],
       tags: validated.tags || {},
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -236,7 +240,7 @@ function serializeRule(rule: AlertRule): any {
 /**
  * 反序列化規則
  */
-function deserializeRule(data: any): AlertRule {
+function deserializeRule(data: DatabaseRecord[]): AlertRule {
   return {
     id: data.id,
     name: data.name,

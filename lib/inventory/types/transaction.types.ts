@@ -10,7 +10,7 @@ export interface TransactionOperation {
   id: string;
   type: 'create' | 'update' | 'delete' | 'transfer' | 'adjust';
   table: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   timestamp: string;
   status: 'pending' | 'completed' | 'failed' | 'rolled_back';
   error?: string;
@@ -24,13 +24,13 @@ export interface TransactionContext {
   userId: string;
   startTime: string;
   operations: TransactionOperation[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
  * Transaction result
  */
-export interface TransactionResult<T = any> {
+export interface TransactionResult<T = unknown> {
   success: boolean;
   transactionId: string;
   data?: T;
@@ -93,11 +93,11 @@ export interface TransactionLogEntry {
   action: string;
   entity_type: string;
   entity_id: string;
-  old_value?: any;
-  new_value?: any;
+  old_value?: unknown;
+  new_value?: unknown;
   status: 'success' | 'failed';
   error_message?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   created_at: string;
 }
 
@@ -181,7 +181,7 @@ export interface TransactionEvent {
   type: TransactionEventType;
   transactionId: string;
   timestamp: string;
-  data?: any;
+  data?: unknown;
   userId?: string;
   duration?: number;
 }

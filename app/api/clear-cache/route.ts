@@ -67,13 +67,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         vercelEnv: process.env.VERCEL_ENV,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[clear-cache] 緩存清除失敗:', error);
     return NextResponse.json(
       {
         success: false,
         error: 'Cache clearing failed',
-        message: (error as { message: string }).message,
+        message: getErrorMessage(error),
       },
       { status: 500 }
     );

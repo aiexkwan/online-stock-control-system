@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { DatabaseRecord } from '@/lib/types/database';
 import { SupabaseService } from '../supabase/supabase.service';
 import { HistoryQueryDto } from './dto/history-query.dto';
 import {
@@ -228,7 +229,7 @@ export class HistoryService {
       description: string;
       previousState: any;
       newState: any;
-      metadata: any;
+      metadata: DatabaseRecord[];
     }>,
   ): Promise<HistoryRecordDto> {
     try {

@@ -1,0 +1,72 @@
+<testsuites id="" name="" tests="15" failures="0" skipped="15" errors="0" time="0.24566100000000005">
+<testsuite name="widget-error-boundary.spec.ts" timestamp="2025-07-18T10:09:44.188Z" hostname="chromium" tests="3" failures="0" skipped="3" time="0" errors="0">
+<testcase name="Widget Error Boundary Integration › should display error fallback when widget fails" classname="widget-error-boundary.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Widget Error Boundary Integration › should have error boundaries on all dashboard widgets" classname="widget-error-boundary.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Widget Error Boundary Integration › error boundary should provide retry functionality" classname="widget-error-boundary.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="widget-error-boundary.spec.ts" timestamp="2025-07-18T10:09:44.188Z" hostname="firefox" tests="3" failures="0" skipped="3" time="0" errors="0">
+<testcase name="Widget Error Boundary Integration › should display error fallback when widget fails" classname="widget-error-boundary.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Widget Error Boundary Integration › should have error boundaries on all dashboard widgets" classname="widget-error-boundary.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Widget Error Boundary Integration › error boundary should provide retry functionality" classname="widget-error-boundary.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="widget-error-boundary.spec.ts" timestamp="2025-07-18T10:09:44.188Z" hostname="webkit" tests="3" failures="0" skipped="3" time="0" errors="0">
+<testcase name="Widget Error Boundary Integration › should display error fallback when widget fails" classname="widget-error-boundary.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Widget Error Boundary Integration › should have error boundaries on all dashboard widgets" classname="widget-error-boundary.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Widget Error Boundary Integration › error boundary should provide retry functionality" classname="widget-error-boundary.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="widget-error-boundary.spec.ts" timestamp="2025-07-18T10:09:44.188Z" hostname="Mobile Chrome" tests="3" failures="0" skipped="3" time="0" errors="0">
+<testcase name="Widget Error Boundary Integration › should display error fallback when widget fails" classname="widget-error-boundary.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Widget Error Boundary Integration › should have error boundaries on all dashboard widgets" classname="widget-error-boundary.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Widget Error Boundary Integration › error boundary should provide retry functionality" classname="widget-error-boundary.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="widget-error-boundary.spec.ts" timestamp="2025-07-18T10:09:44.188Z" hostname="Mobile Safari" tests="3" failures="0" skipped="3" time="0" errors="0">
+<testcase name="Widget Error Boundary Integration › should display error fallback when widget fails" classname="widget-error-boundary.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Widget Error Boundary Integration › should have error boundaries on all dashboard widgets" classname="widget-error-boundary.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Widget Error Boundary Integration › error boundary should provide retry functionality" classname="widget-error-boundary.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+</testsuites>

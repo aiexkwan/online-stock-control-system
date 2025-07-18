@@ -1,10 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { UnifiedStatsWidgetMockWrapper } from './components/UnifiedStatsWidgetMockWrapper';
 import { AdminWidgetConfig } from '@/app/admin/components/dashboard/adminDashboardLayouts';
 import React from 'react';
 
 // Mock 數據生成器
-const createMockData = (type: 'success' | 'loading' | 'error', overrides: any = {}) => {
+const createMockData = (type: 'success' | 'loading' | 'error', overrides: DatabaseRecord = {}) => {
   switch (type) {
     case 'loading':
       return {
@@ -17,7 +18,7 @@ const createMockData = (type: 'success' | 'loading' | 'error', overrides: any = 
       return {
         data: null,
         isLoading: false,
-        error: new Error('資料載入失敗'),
+        error: new globalThis.Error('資料載入失敗'),
         ...overrides,
       };
     case 'success':
@@ -80,14 +81,11 @@ const meta: Meta<typeof UnifiedStatsWidgetMockWrapper> = {
     },
   },
   decorators: [
-    (Story, context) => {
-      // For Storybook, we'll handle mocking through component props
-      return (
-        <div className="w-[400px] h-[200px] p-4">
-          <Story />
-        </div>
-      );
-    },
+    (Story) => (
+      <div className="w-[400px] h-[200px] p-4">
+        <Story />
+      </div>
+    ),
   ],
 };
 

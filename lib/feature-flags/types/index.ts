@@ -26,7 +26,7 @@ export type FeatureRuleType = 'user' | 'group' | 'percentage' | 'date' | 'enviro
  */
 export interface FeatureRule {
   type: FeatureRuleType;
-  value: any;
+  value: unknown;
   operator?: 'equals' | 'contains' | 'gt' | 'lt' | 'gte' | 'lte';
 }
 

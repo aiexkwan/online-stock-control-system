@@ -6,6 +6,7 @@
 'use client';
 
 import React from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { cn } from '@/lib/utils';
 // WidgetSize 已移除 - admin dashboard 使用固定佈局
 
@@ -13,8 +14,8 @@ interface UnifiedWidgetLayoutProps {
   // size 已移除 - admin dashboard 使用固定佈局
   // 數據表部分
   tableContent?: React.ReactNode;
-  tableData?: any[];
-  renderTableRow?: (item: any, index: number) => React.ReactNode;
+  tableData?: Record<string, unknown>[];
+  renderTableRow?: (item: DatabaseRecord, index: number) => React.ReactNode;
   // 圖表部分
   chartContent?: React.ReactNode;
   // 只有表格或只有圖表的情況

@@ -1,9 +1,11 @@
 import React from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
+import { DatabaseRecord } from '@/lib/types/database';
 import { DataTable } from '@/app/admin/components/dashboard/widgets/common/data-display/DataTable';
 import { AdminWidgetConfig } from '@/app/admin/components/dashboard/adminDashboardLayouts';
 
 interface MockData {
-  data: any;
+  data: DatabaseRecord[];
   isLoading: boolean;
   error: Error | null;
 }
@@ -71,7 +73,7 @@ export const UnifiedTableWidgetMockWrapper: React.FC<UnifiedTableWidgetMockWrapp
       header: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
       title: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
       dataIndex: key,
-      render: (value: any) => {
+      render: (value: unknown) => {
         // 處理不同類型的數據顯示
         if (value === null || value === undefined) return '-';
         if (typeof value === 'boolean') return value ? 'Yes' : 'No';

@@ -6,6 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'; // 只導入類型
 import { createClient as createServerSupabaseClient } from '@/app/utils/supabase/server'; // 新的服務器客戶端
 
 import bcrypt from 'bcryptjs';
+import { getErrorMessage } from '../../lib/types/error-handling';
 import { UserData } from './auth';
 import { clockNumberToEmail, emailToClockNumber } from '../utils/authUtils';
 
@@ -37,12 +38,12 @@ export async function userExistsInSupabaseAuth(
       email,
       options: { shouldCreateUser: false },
     });
-    if (error && error.message.includes('User not found')) {
+    if (error && getErrorMessage(error).includes('User not found')) {
       return false;
     }
     return true;
-  } catch (error: any) {
-    console.error('[userExistsInSupabaseAuth] Unexpected error:', error.message);
+  } catch (error: unknown) {
+    console.error('[userExistsInSupabaseAuth] Unexpected error:', getErrorMessage(error));
     return false;
   }
 }
@@ -110,14 +111,14 @@ export async function migrateUserToSupabaseAuth(
     });
 
     if (createError) {
-      return { success: false, error: `Failed to create auth user: ${createError.message}` };
+      return { success: false, error: `Failed to create auth user: ${getErrorMessage(createError)}` };
     }
     if (!authData || !authData.user) {
       return { success: false, error: 'User creation response did not include user data' };
     }
     return { success: true };
-  } catch (error: any) {
-    return { success: false, error: `Migration failed: ${error.message || 'Unknown error'}` };
+  } catch (error: unknown) {
+    return { success: false, error: `Migration failed: ${getErrorMessage(error) || 'Unknown error'}` };
   }
 }
 
@@ -133,7 +134,14 @@ export async function signInWithSupabaseAuth(
   user?: UserData;
   isFirstLogin?: boolean;
   error?: string;
-  session?: any;
+  session?: {
+    access_token: string;
+    refresh_token: string;
+    expires_in: number;
+    expires_at?: number;
+    token_type: string;
+    user?: UserData;
+  };
 }> {
   try {
     const email = clockNumberToEmail(clockNumber);
@@ -152,7 +160,7 @@ export async function signInWithSupabaseAuth(
     if (error) {
       console.error('[signInWithSupabaseAuth] Login error:', error);
 
-      if (error.message.includes('Invalid login credentials')) {
+      if (getErrorMessage(error).includes('Invalid login credentials')) {
         (process.env.NODE_ENV as string) !== 'production' &&
           (process.env.NODE_ENV as string) !== 'production' &&
           console.log(
@@ -168,7 +176,7 @@ export async function signInWithSupabaseAuth(
         }
       }
 
-      return { success: false, error: error.message };
+      return { success: false, error: getErrorMessage(error) };
     }
 
     if (!data || !data.user) {
@@ -225,9 +233,9 @@ export async function signInWithSupabaseAuth(
       isFirstLogin: needsPasswordChange,
       session: sessionData.session,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[signInWithSupabaseAuth] Unexpected error:', error);
-    return { success: false, error: error.message || 'An unexpected error occurred' };
+    return { success: false, error: getErrorMessage(error) || 'An unexpected error occurred' };
   }
 }
 
@@ -260,7 +268,7 @@ export async function updatePasswordWithSupabaseAuth(
       );
       return {
         success: false,
-        error: `Supabase Auth password update failed: ${updateError.message}`,
+        error: `Supabase Auth password update failed: ${getErrorMessage(updateError)}`,
       };
     }
     (process.env.NODE_ENV as string) !== 'production' &&
@@ -306,9 +314,9 @@ export async function updatePasswordWithSupabaseAuth(
     // }
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[updatePasswordWithSupabaseAuth] Unexpected error:', error);
-    return { success: false, error: `Update failed: ${error.message || 'Unknown error'}` };
+    return { success: false, error: `Update failed: ${getErrorMessage(error) || 'Unknown error'}` };
   }
 }
 

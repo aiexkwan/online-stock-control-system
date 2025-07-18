@@ -51,7 +51,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json(
         {
           error: 'Failed to check file existence',
-          details: (listError as { message: string }).message,
+          details: getErrorMessage(listError),
         },
         { status: 500 }
       );
@@ -77,12 +77,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       fileName: fileName,
       folder: folder,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Check File Exists] Error:', error);
     return NextResponse.json(
       {
         error: 'Internal server error',
-        details: (error as { message: string }).message,
+        details: getErrorMessage(error),
       },
       { status: 500 }
     );

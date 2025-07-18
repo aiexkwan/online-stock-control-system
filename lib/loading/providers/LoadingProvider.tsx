@@ -327,10 +327,13 @@ export function LoadingProvider({
 
   // 清理效果
   useEffect(() => {
+    // 在 effect 內部捕獲 ref
+    const timeouts = timeoutsRef;
+    
     return () => {
-      // 清理所有超時計時器
-      timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
-      timeoutsRef.current.clear();
+      // 使用捕獲的 ref
+      timeouts.current.forEach(timeout => clearTimeout(timeout));
+      timeouts.current.clear();
     };
   }, []);
 

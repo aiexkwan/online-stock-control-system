@@ -8,6 +8,14 @@
 import { PerformanceMetrics } from '../types';
 import { logger } from '@/lib/logger';
 
+// 網絡信息接口
+interface NetworkInformation {
+  type?: string;
+  effectiveType?: string;
+  downlink?: number;
+  rtt?: number;
+}
+
 export class PerformanceDetector {
   private metrics: PerformanceMetrics | null = null;
   private lastUpdate: number = 0;
@@ -61,9 +69,9 @@ export class PerformanceDetector {
    * 獲取網絡信息
    */
   private getNetworkInfo() {
-    const connection = (navigator as any).connection || 
-                      (navigator as any).mozConnection || 
-                      (navigator as any).webkitConnection;
+    const connection = (navigator as Navigator & { connection?: NetworkInformation; mozConnection?: NetworkInformation; webkitConnection?: NetworkInformation }).connection || 
+                      (navigator as Navigator & { connection?: NetworkInformation; mozConnection?: NetworkInformation; webkitConnection?: NetworkInformation }).mozConnection || 
+                      (navigator as Navigator & { connection?: NetworkInformation; mozConnection?: NetworkInformation; webkitConnection?: NetworkInformation }).webkitConnection;
 
     if (connection) {
       return {
@@ -87,7 +95,7 @@ export class PerformanceDetector {
    * 獲取設備信息
    */
   private getDeviceInfo() {
-    const deviceMemory = (navigator as any).deviceMemory;
+    const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
     const hardwareConcurrency = navigator.hardwareConcurrency;
 
     return {
@@ -167,7 +175,7 @@ export class PerformanceDetector {
    * 監聽網絡變化
    */
   public startNetworkMonitoring(callback: (metrics: PerformanceMetrics) => void): () => void {
-    const connection = (navigator as any).connection;
+    const connection = (navigator as Navigator & { connection?: NetworkInformation }).connection;
     
     if (!connection) {
       return () => {}; // 無法監聽，返回空函數

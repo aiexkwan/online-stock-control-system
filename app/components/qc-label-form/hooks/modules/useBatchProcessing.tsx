@@ -4,6 +4,8 @@
  */
 
 import { useState, useCallback } from 'react';
+import { getErrorMessage } from '@/lib/types/error-handling';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { toast } from 'sonner';
 import { createClient } from '@/app/utils/supabase/client';
 import type { ProductInfo } from '../../types';
@@ -28,11 +30,11 @@ interface BatchProcessingOptions {
 }
 
 interface UseBatchProcessingProps {
-  generatePdfs: (options: any) => Promise<any>;
+  generatePdfs: (options: Record<string, unknown>) => Promise<any>;
   generatePalletNumbers: (productCode: string, count: number) => Promise<any>;
-  createQcRecords: (options: any) => Promise<any>;
-  updateStockAndWorkLevels: (options: any) => Promise<any>;
-  validateForm: (options: any) => boolean;
+  createQcRecords: (options: Record<string, unknown>) => Promise<any>;
+  updateStockAndWorkLevels: (options: Record<string, unknown>) => Promise<any>;
+  validateForm: (options: Record<string, unknown>) => boolean;
 }
 
 export const useBatchProcessing = ({
@@ -158,9 +160,9 @@ export const useBatchProcessing = ({
         }
 
         return { success: true };
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Error processing batch item:', error);
-        return { success: false, error: error.message || 'Unknown error' };
+        return { success: false, error: getErrorMessage(error) || 'Unknown error' };
       }
     },
     [
@@ -240,13 +242,13 @@ export const useBatchProcessing = ({
           successCount,
           failCount,
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Batch processing error:', error);
-        toast.error('Batch processing failed: ' + error.message);
+        toast.error('Batch processing failed: ' + getErrorMessage(error));
         return {
           success: false,
           results,
-          error: error.message,
+          error: getErrorMessage(error),
         };
       } finally {
         setIsProcessing(false);

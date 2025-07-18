@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
+import { getErrorMessage } from '../../lib/types/error-handling';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import {
@@ -227,7 +228,7 @@ export async function createGrnDatabaseEntries(
 
     if (rpcError) {
       console.error('[grnActions] 統一 GRN RPC 調用失敗:', rpcError);
-      return { error: `Failed to process GRN label: ${rpcError.message}` };
+      return { error: `Failed to process GRN label: ${getErrorMessage(rpcError)}` };
     }
 
     if (!rpcResult || !rpcResult.success) {
@@ -268,7 +269,7 @@ export async function createGrnDatabaseEntries(
     return {
       data: `GRN label processed successfully. ${palletNumber ? `Pallet: ${palletNumber}` : ''}`,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Record transaction error
     try {
       await transactionService.recordError(
@@ -313,7 +314,7 @@ export async function createGrnDatabaseEntriesBatch(
   pdfUrls?: string[]
 ): Promise<{
   success?: boolean;
-  data?: any;
+  data?: Record<string, unknown>;
   error?: string;
   warning?: string;
   palletNumbers?: string[];
@@ -390,7 +391,7 @@ export async function createGrnDatabaseEntriesBatch(
 
     if (rpcError) {
       console.error('[grnActions] 統一批量 GRN RPC 調用失敗:', rpcError);
-      return { success: false, error: `Failed to process GRN labels: ${rpcError.message}` };
+      return { success: false, error: `Failed to process GRN labels: ${getErrorMessage(rpcError)}` };
     }
 
     if (!rpcResult || !rpcResult.success) {
@@ -422,9 +423,9 @@ export async function createGrnDatabaseEntriesBatch(
       palletNumbers,
       series,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[grnActions] 統一批量 GRN RPC 處理異常:', error);
-    return { success: false, error: `Batch processing failed: ${error.message}` };
+    return { success: false, error: `Batch processing failed: ${getErrorMessage(error)}` };
   }
 }
 
@@ -456,7 +457,7 @@ async function createGrnDatabaseEntriesLegacy(
 
     if (palletInfoError) {
       console.error('[grnActions] Error inserting pallet info:', palletInfoError);
-      return { error: `Failed to insert pallet info: ${palletInfoError.message}` };
+      return { error: `Failed to insert pallet info: ${getErrorMessage(palletInfoError)}` };
     }
 
     // 2. Insert GRN record
@@ -477,7 +478,7 @@ async function createGrnDatabaseEntriesLegacy(
 
     if (grnError) {
       console.error('[grnActions] Error inserting GRN record:', grnError);
-      return { error: `Failed to insert GRN record: ${grnError.message}` };
+      return { error: `Failed to insert GRN record: ${getErrorMessage(grnError)}` };
     }
 
     // 3. Insert inventory record
@@ -494,7 +495,7 @@ async function createGrnDatabaseEntriesLegacy(
 
     if (inventoryError) {
       console.error('[grnActions] Error inserting inventory record:', inventoryError);
-      return { error: `Failed to insert inventory record: ${inventoryError.message}` };
+      return { error: `Failed to insert inventory record: ${getErrorMessage(inventoryError)}` };
     }
 
     // 4. Insert history record
@@ -572,7 +573,7 @@ async function createGrnDatabaseEntriesLegacy(
         // 不中斷主流程，只記錄警告
         return {
           data: 'GRN database entries created successfully',
-          warning: `GRN workflow update failed: ${workflowError.message}`,
+          warning: `GRN workflow update failed: ${getErrorMessage(workflowError)}`,
         };
       }
 
@@ -596,17 +597,17 @@ async function createGrnDatabaseEntriesLegacy(
       process.env.NODE_ENV !== 'production' &&
         console.log('[grnActions] GRN workflow 更新成功:', workflowData);
       return { data: 'GRN database entries created successfully' };
-    } catch (workflowError: any) {
+    } catch (workflowError: unknown) {
       console.error('[grnActions] GRN workflow 更新異常:', workflowError);
       // 不中斷主流程，只記錄警告
       return {
         data: 'GRN database entries created successfully',
-        warning: `GRN workflow update exception: ${workflowError.message}`,
+        warning: `GRN workflow update exception: ${getErrorMessage(workflowError)}`,
       };
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[grnActions] Unexpected error in createGrnDatabaseEntries (RPC call):', error);
-    return { error: `An unexpected error occurred: ${error.message || 'Unknown error.'}` };
+    return { error: `An unexpected error occurred: ${getErrorMessage(error) || 'Unknown error.'}` };
   }
 }
 
@@ -627,15 +628,15 @@ export async function updatePalletPdfUrl(
 
     if (error) {
       console.error('[grnActions] Error updating PDF URL:', error);
-      return { success: false, error: `Failed to update PDF URL: ${error.message}` };
+      return { success: false, error: `Failed to update PDF URL: ${getErrorMessage(error)}` };
     }
 
     process.env.NODE_ENV !== 'production' &&
       console.log('[grnActions] PDF URL updated successfully for pallet:', pltNum);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[grnActions] Unexpected error updating PDF URL:', error);
-    return { success: false, error: `Update PDF URL error: ${error.message || 'Unknown error'}` };
+    return { success: false, error: `Update PDF URL error: ${getErrorMessage(error) || 'Unknown error'}` };
   }
 }
 
@@ -680,14 +681,14 @@ export async function uploadPdfToStorage(
       console.error('[grnActions] Supabase Upload Error:', uploadError);
 
       // 檢查是否是 API key 相關錯誤
-      if (uploadError.message && uploadError.message.toLowerCase().includes('api key')) {
+      if (getErrorMessage(uploadError) && getErrorMessage(uploadError).toLowerCase().includes('api key')) {
         console.error('[grnActions] 檢測到 API key 錯誤 - 這可能是環境變數問題');
         return {
-          error: `API Key Error: ${uploadError.message}. 請檢查 SUPABASE_SERVICE_ROLE_KEY 環境變數。`,
+          error: `API Key Error: ${getErrorMessage(uploadError)}. 請檢查 SUPABASE_SERVICE_ROLE_KEY 環境變數。`,
         };
       }
 
-      return { error: `Upload failed: ${uploadError.message}` };
+      return { error: `Upload failed: ${getErrorMessage(uploadError)}` };
     }
 
     if (!uploadData || !uploadData.path) {
@@ -710,9 +711,9 @@ export async function uploadPdfToStorage(
     process.env.NODE_ENV !== 'production' &&
       console.log('[grnActions] 公共 URL 生成成功:', urlData.publicUrl);
     return { publicUrl: urlData.publicUrl };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[grnActions] uploadPdfToStorage 意外錯誤:', error);
-    return { error: `Upload error: ${error.message || 'Unknown error'}` };
+    return { error: `Upload error: ${getErrorMessage(error) || 'Unknown error'}` };
   }
 }
 

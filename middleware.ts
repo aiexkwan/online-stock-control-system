@@ -1,4 +1,5 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { DatabaseRecord } from '@/lib/types/database';
 import { NextResponse, type NextRequest } from 'next/server';
 import { isDevelopment, isProduction } from '@/lib/utils/env';
 import { 
@@ -65,7 +66,7 @@ export async function middleware(request: NextRequest) {
   // API 版本管理處理 (v1.8 新增)
   let processedRequest = request;
   let apiVersion = 'v1'; // 預設版本
-  let versionInfo: any = undefined;
+  let versionInfo: DatabaseRecord = undefined;
   
   if (request.nextUrl.pathname.startsWith('/api/')) {
     try {

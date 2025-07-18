@@ -1,6 +1,9 @@
 'use server';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { DatabaseRecord } from '@/lib/types/database';
+import { ApiResponse, ApiRequest, QueryParams } from '@/lib/validation/zod-schemas';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { createClient } from '@supabase/supabase-js';
 import { AssistantService } from '@/lib/services/assistantService';
 import { SYSTEM_PROMPT } from '@/lib/openai-assistant-config';
@@ -73,7 +76,7 @@ function getCachedResult(fileHash: string): any | null {
 }
 
 // 設置緩存
-function setCachedResult(fileHash: string, data: any): void {
+function setCachedResult(fileHash: string, data: DatabaseRecord[]): void {
   fileCache.set(fileHash, {
     data,
     timestamp: Date.now(),
@@ -108,14 +111,14 @@ async function storeEnhancedOrderData(
   tokenUsed: number
 ) {
   const supabase = createSupabaseAdmin();
-  let insertResults: any[] = [];
+  let insertResults: Record<string, unknown>[] = [];
 
   // 計算每條記錄的 token
   const tokenPerRecord = Math.ceil(tokenUsed / orderData.products.length);
 
   // 準備插入資料
-  const orderRecords = orderData.products.map((product: any) => {
-    const record: any = {
+  const orderRecords = orderData.products.map((product: Record<string, unknown>) => {
+    const record: DatabaseRecord = {
       order_ref: String(orderData.order_ref),
       account_num: orderData.account_num || '-',
       delivery_add: orderData.delivery_add || '-',
@@ -153,8 +156,8 @@ async function storeEnhancedOrderData(
 
     if (error) {
       apiLogger.error('[Assistant API] Database insert failed', {
-        error: (error as { message: string }).message,
-        code: error.code,
+        error: getErrorMessage(error),
+        code: (error as any).code,
         details: error.details,
         hint: error.hint,
         sampleRecord: orderRecords[0],
@@ -166,13 +169,13 @@ async function storeEnhancedOrderData(
 
       if (singleError) {
         apiLogger.error('[Assistant API] Single record insert also failed', {
-          error: (singleError as { message: string }).message,
-          code: singleError.code,
+          error: getErrorMessage(singleError),
+          code: (singleError as any).code,
           record: orderRecords[0],
         });
       }
 
-      throw new Error(`資料庫插入失敗: ${(error as { message: string }).message}`);
+      throw new Error(`資料庫插入失敗: ${getErrorMessage(error)}`);
     }
 
     insertResults = data || [];
@@ -187,10 +190,10 @@ async function storeEnhancedOrderData(
   }
 
   // 處理 ACO 產品
-  const acoProducts = orderData.products.filter((p: any) => ACO_PRODUCT_CODES.includes(p.product_code));
+  const acoProducts = orderData.products.filter((p: Record<string, unknown>) => ACO_PRODUCT_CODES.includes(p.product_code));
 
   if (acoProducts.length > 0) {
-    const acoRecords = acoProducts.map((product: any) => ({
+    const acoRecords = acoProducts.map((product: Record<string, unknown>) => ({
       code: product.product_code, // record_aco 表使用 'code' 而不是 'product_code'
       order_ref: parseInt(orderData.order_ref), // record_aco 需要 integer
       required_qty: product.product_qty,
@@ -206,8 +209,8 @@ async function storeEnhancedOrderData(
 
     if (acoError) {
       apiLogger.warn('[Assistant API] ACO records insert failed', {
-        error: (acoError as { message: string }).message,
-        code: acoError.code,
+        error: getErrorMessage(acoError),
+        code: (acoError as any).code,
         details: acoError.details,
       });
     } else {
@@ -293,8 +296,8 @@ async function uploadToStorageAsync(
     }
 
     return urlData.publicUrl;
-  } catch (error: any) {
-    systemLogger.error('[Background Storage] Upload failed', { error: (error as { message: string }).message });
+  } catch (error: unknown) {
+    systemLogger.error('[Background Storage] Upload failed', { error: getErrorMessage(error) });
     throw error;
   }
 }
@@ -312,7 +315,7 @@ async function sendEmailNotification(
     const { sendOrderCreatedEmail } = await import('../../services/emailService');
 
     const emailRequestBody = {
-      orderData: orderData.products.map((product: any) => ({
+      orderData: orderData.products.map((product: Record<string, unknown>) => ({
         order_ref: parseInt(orderData.order_ref), // emailService expects number
         product_code: product.product_code,
         product_desc: product.product_desc,
@@ -332,14 +335,14 @@ async function sendEmailNotification(
       });
     } else {
       apiLogger.warn('[Assistant API] Failed to send order created email', {
-        error: (emailResponse as { message: string }).message || 'Unknown error',
+        error: getErrorMessage(emailResponse) || 'Unknown error',
       });
     }
 
     return emailResponse;
-  } catch (error: any) {
-    apiLogger.error('[Assistant API] Email notification error', { error: (error as { message: string }).message });
-    return { success: false, error: (error as { message: string }).message };
+  } catch (error: unknown) {
+    apiLogger.error('[Assistant API] Email notification error', { error: getErrorMessage(error) });
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -381,7 +384,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       apiLogger.info('[Assistant API] Using cached result', { fileHash });
 
       // 準備返回數據（與非緩存版本一致）
-      const cachedExtractedData = cachedResult.orderData.products.map((product: any) => ({
+      const cachedExtractedData = cachedResult.orderData.products.map((product: Record<string, unknown>) => ({
         order_ref: cachedResult.orderData.order_ref,
         account_num: cachedResult.orderData.account_num,
         delivery_add: cachedResult.orderData.delivery_add,
@@ -434,12 +437,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     let orderData: EnhancedOrderData;
     try {
       orderData = assistantService.parseAssistantResponse(result);
-    } catch (parseError: any) {
+    } catch (parseError: unknown) {
       apiLogger.error('[Assistant API] Failed to parse assistant response', {
-        error: (parseError as { message: string }).message,
+        error: getErrorMessage(parseError),
         rawResponse: result.substring(0, 1000),
       });
-      throw new Error(`Failed to parse assistant response: ${(parseError as { message: string }).message}`);
+      throw new Error(`Failed to parse assistant response: ${getErrorMessage(parseError)}`);
     }
 
     apiLogger.info('[Assistant API] Analysis completed', {
@@ -492,7 +495,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     logApiResponse('POST', '/api/analyze-order-pdf-assistant', 200, processingTime);
 
     // 準備返回數據（兼容前端）
-    const extractedData = orderData.products.map((product: any) => ({
+    const extractedData = orderData.products.map((product: Record<string, unknown>) => ({
       order_ref: orderData.order_ref,
       account_num: orderData.account_num,
       delivery_add: orderData.delivery_add,
@@ -520,9 +523,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         hasUnitPrices: orderData.products.some(p => !!p.unit_price && p.unit_price !== '-'),
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     apiLogger.error('[Assistant API] Analysis failed', {
-      error: (error as { message: string }).message,
+      error: getErrorMessage(error),
       stack: (error as Error).stack,
     });
 
@@ -539,7 +542,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     logApiResponse('POST', '/api/analyze-order-pdf-assistant', 500, Date.now() - startTime);
 
     return NextResponse.json(
-      { error: 'PDF analysis failed', details: (error as { message: string }).message },
+      { error: 'PDF analysis failed', details: getErrorMessage(error) },
       { status: 500 }
     );
   }

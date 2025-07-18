@@ -48,7 +48,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json(
         {
           success: false,
-          error: `Database error: ${(error as { message: string }).message}`,
+          error: `Database error: ${getErrorMessage(error)}`,
         },
         { status: 500 }
       );
@@ -61,7 +61,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json(
         {
           success: false,
-          error: (result as { message: string }).message || 'Unknown error occurred',
+          error: getErrorMessage(result) || 'Unknown error occurred',
         },
         { status: 500 }
       );
@@ -69,16 +69,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     return NextResponse.json({
       success: true,
-      message: (result as { message: string }).message,
+      message: getErrorMessage(result),
       stockUpdated: result.stock_updated,
       workUpdated: result.work_updated,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in print-label-updates API:', error);
     return NextResponse.json(
       {
         success: false,
-        error: `Server error: ${(error as { message: string }).message}`,
+        error: `Server error: ${getErrorMessage(error)}`,
       },
       { status: 500 }
     );

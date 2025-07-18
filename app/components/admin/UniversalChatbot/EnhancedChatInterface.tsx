@@ -20,7 +20,7 @@ export interface ChatMessage {
     tokensUsed?: number;
     cached?: boolean;
     sql?: string;
-    data?: any[];
+    data?: Record<string, unknown>[];
     error?: any;
   };
 }
@@ -131,7 +131,7 @@ export default function EnhancedChatInterface({ onNewMessage }: ChatInterfacePro
 
       setMessages(prev => [...prev, aiMessage]);
       onNewMessage?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       // 使用錯誤處理器
       const errorResponse = queryErrorHandler.handleError(error, {
         query: question,
@@ -250,7 +250,7 @@ export default function EnhancedChatInterface({ onNewMessage }: ChatInterfacePro
 }
 
 // 簡單的表格組件
-function DataTable({ data }: { data: any[] }) {
+function DataTable({ data }: { data: Record<string, unknown>[] }) {
   if (!data || data.length === 0) return <p className='text-slate-400'>No data to display</p>;
 
   // Ensure data is in the correct format
@@ -306,7 +306,7 @@ function formatColumnName(col: string): string {
   return col.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }
 
-function formatValue(value: any): string {
+function formatValue(value: unknown): string {
   if (value === null || value === undefined) return '-';
   if (typeof value === 'number') return value.toLocaleString();
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';

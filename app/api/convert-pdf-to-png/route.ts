@@ -128,12 +128,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       pageCount: imageUrls.length,
       note: 'Using original PDF URL - GPT-4o may handle some PDF formats directly',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDF to PNG] Error:', error);
     return NextResponse.json(
       {
         error: 'PDF to PNG conversion failed',
-        details: (error as { message: string }).message,
+        details: getErrorMessage(error),
       },
       { status: 500 }
     );

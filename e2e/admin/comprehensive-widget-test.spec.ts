@@ -21,7 +21,6 @@ test.describe('Admin Sub-pages - Comprehensive Widget Testing', () => {
     '/admin/transfer',
     '/admin/users',
     '/admin/settings',
-    '/admin/graphql-monitor',
     '/admin/stock-count',
     '/admin/product-update-demo'
   ];

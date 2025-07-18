@@ -73,9 +73,11 @@ describe('GET /api/warehouse/summary', () => {
         error: null
       });
 
-      const response = await GET();
+      const mockRequest = new Request('http://localhost:3000/api/warehouse/summary');
+      const mockParams = Promise.resolve({ id: 'test' });
+      const response = await GET(mockRequest, { params: mockParams });
       
-      expect((response as { status: string }).status).toBe(200);
+      expect(response.status).toBe(200);
       
       const data = await response.json();
       expect(data.success).toBe(true);
@@ -83,7 +85,7 @@ describe('GET /api/warehouse/summary', () => {
       expect(data.timestamp).toBeDefined();
       
       // Check if data is aggregated correctly
-      const summaryMap = data.data.reduce((acc: any, item: any) => {
+      const summaryMap = data.data.reduce((acc: Record<string, unknown>, item: Record<string, unknown>) => {
         acc[item.location] = item;
         return acc;
       }, {});
@@ -115,7 +117,9 @@ describe('GET /api/warehouse/summary', () => {
         error: null
       });
 
-      const response = await GET();
+      const mockRequest = new Request('http://localhost:3000/api/warehouse/summary');
+      const mockParams = Promise.resolve({ id: 'test' });
+      const response = await GET(mockRequest, { params: mockParams });
       const data = await response.json();
       
       // Should only include injection since it's the only one with quantity > 0
@@ -130,7 +134,9 @@ describe('GET /api/warehouse/summary', () => {
         error: null
       });
 
-      const response = await GET();
+      const mockRequest = new Request('http://localhost:3000/api/warehouse/summary');
+      const mockParams = Promise.resolve({ id: 'test' });
+      const response = await GET(mockRequest, { params: mockParams });
       const data = await response.json();
       
       expect(data.success).toBe(true);
@@ -158,10 +164,12 @@ describe('GET /api/warehouse/summary', () => {
         error: null
       });
 
-      const response = await GET();
+      const mockRequest = new Request('http://localhost:3000/api/warehouse/summary');
+      const mockParams = Promise.resolve({ id: 'test' });
+      const response = await GET(mockRequest, { params: mockParams });
       const data = await response.json();
       
-      const locations = data.data.map((item: any) => item.location).sort();
+      const locations = data.data.map((item: Record<string, unknown>) => item.location).sort();
       expect(locations).toEqual([
         'await',
         'await_grn',
@@ -184,9 +192,11 @@ describe('GET /api/warehouse/summary', () => {
         error: dbError
       });
 
-      const response = await GET();
+      const mockRequest = new Request('http://localhost:3000/api/warehouse/summary');
+      const mockParams = Promise.resolve({ id: 'test' });
+      const response = await GET(mockRequest, { params: mockParams });
       
-      expect((response as { status: string }).status).toBe(500);
+      expect(response.status).toBe(500);
       
       const data = await response.json();
       expect(data.error).toBe('Failed to fetch warehouse summary');
@@ -198,9 +208,11 @@ describe('GET /api/warehouse/summary', () => {
         throw new Error('Unexpected error');
       });
 
-      const response = await GET();
+      const mockRequest = new Request('http://localhost:3000/api/warehouse/summary');
+      const mockParams = Promise.resolve({ id: 'test' });
+      const response = await GET(mockRequest, { params: mockParams });
       
-      expect((response as { status: string }).status).toBe(500);
+      expect(response.status).toBe(500);
       
       const data = await response.json();
       expect(data.error).toBe('Internal server error');
@@ -228,7 +240,9 @@ describe('GET /api/warehouse/summary', () => {
         error: null
       });
 
-      const response = await GET();
+      const mockRequest = new Request('http://localhost:3000/api/warehouse/summary');
+      const mockParams = Promise.resolve({ id: 'test' });
+      const response = await GET(mockRequest, { params: mockParams });
       const data = await response.json();
       
       expect(data).toHaveProperty('success');
@@ -246,7 +260,9 @@ describe('GET /api/warehouse/summary', () => {
         error: null
       });
 
-      const response = await GET();
+      const mockRequest = new Request('http://localhost:3000/api/warehouse/summary');
+      const mockParams = Promise.resolve({ id: 'test' });
+      const response = await GET(mockRequest, { params: mockParams });
       const data = await response.json();
       
       // Check if timestamp is valid ISO string
@@ -278,12 +294,14 @@ describe('GET /api/warehouse/summary', () => {
         error: null
       });
 
-      const response = await GET();
+      const mockRequest = new Request('http://localhost:3000/api/warehouse/summary');
+      const mockParams = Promise.resolve({ id: 'test' });
+      const response = await GET(mockRequest, { params: mockParams });
       const data = await response.json();
       
       // Should only include prebook and bulk (non-zero values)
       expect(data.data).toHaveLength(2);
-      const locations = data.data.map((item: any) => item.location).sort();
+      const locations = data.data.map((item: Record<string, unknown>) => item.location).sort();
       expect(locations).toEqual(['bulk', 'prebook']);
     });
   });
@@ -307,11 +325,13 @@ describe('GET /api/warehouse/summary', () => {
       });
 
       const start = Date.now();
-      const response = await GET();
+      const mockRequest = new Request('http://localhost:3000/api/warehouse/summary');
+      const mockParams = Promise.resolve({ id: 'test' });
+      const response = await GET(mockRequest, { params: mockParams });
       const end = Date.now();
       
       const responseTime = end - start;
-      expect((response as { status: string }).status).toBe(200);
+      expect(response.status).toBe(200);
       expect(responseTime).toBeLessThan(500); // Should handle 1000 items in less than 500ms
     });
   });

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { DatabaseRecord } from '@/lib/types/database';
 import dotenv from 'dotenv';
 import path from 'path';
 
@@ -118,7 +119,7 @@ async function listAllTables() {
       if (!error && data) {
         console.log('\n📋 Complete list of public tables:');
         console.log('─'.repeat(50));
-        data.forEach((row: any) => {
+        data.forEach((row: DatabaseRecord) => {
           const isKnown = knownTables.includes(row.table_name);
           const icon = isKnown ? '✅' : '🆕';
           console.log(`  ${icon} ${row.table_name}`);

@@ -3,6 +3,15 @@
  * 無障礙性模塊 - WCAG 2.1 AA 合規的完整無障礙性解決方案
  */
 
+// Internal imports for use within this file
+import { 
+  runAccessibilityAudit as runAudit, 
+  auditColorContrast as auditContrast,
+  getFocusableElements
+} from './utils/wcag-helpers';
+import { AccessibilityProvider } from './providers/AccessibilityProvider';
+import { commonSkipLinks } from './components/SkipLink';
+
 // 類型定義
 export * from './types';
 
@@ -196,7 +205,7 @@ export class AccessibilityUtils {
    * 生成無障礙性報告
    */
   static async generateAccessibilityReport(container: HTMLElement = document.body) {
-    const audit = runAccessibilityAudit(container);
+    const audit = runAudit(container);
     const browserSupport = this.checkBrowserSupport();
     const screenReader = this.detectScreenReader();
     
@@ -222,7 +231,12 @@ export class AccessibilityUtils {
  */
 export class AccessibilityTester {
   private static instance: AccessibilityTester;
-  private issues: Array<any> = [];
+  private issues: Array<{
+    element: HTMLElement;
+    issue: string;
+    severity: 'error' | 'warning';
+    suggestion?: string;
+  }> = [];
   
   static getInstance() {
     if (!this.instance) {
@@ -246,7 +260,7 @@ export class AccessibilityTester {
     } = options;
     
     const results = {
-      basic: runAccessibilityAudit(container),
+      basic: runAudit(container),
       performance: includePerformance ? await this.runPerformanceTest(container) : null,
       browserSupport: includeBrowserSupport ? AccessibilityUtils.checkBrowserSupport() : null,
       recommendations: this.generateRecommendations(),
@@ -267,7 +281,7 @@ export class AccessibilityTester {
     
     // 測試色彩對比度檢查性能
     const contrastStartTime = performance.now();
-    auditColorContrast(container);
+    auditContrast(container);
     const contrastTime = performance.now() - contrastStartTime;
     
     return {
@@ -331,7 +345,7 @@ export class AccessibilityTester {
  * 便利函數：快速設置無障礙性
  */
 export function setupAccessibility(options: {
-  provider?: React.ComponentType<any>;
+  provider?: React.ComponentType<{ children: React.ReactNode }>;
   enableSkipLinks?: boolean;
   enableFocusManagement?: boolean;
   enableKeyboardNavigation?: boolean;
@@ -396,10 +410,12 @@ export function setupAccessibility(options: {
 }
 
 // 預設導出
-export default {
+const accessibilityExports = {
   AccessibilityProvider,
   setupAccessibility,
   ACCESSIBILITY_CONFIG,
   AccessibilityUtils,
   AccessibilityTester,
 };
+
+export default accessibilityExports;

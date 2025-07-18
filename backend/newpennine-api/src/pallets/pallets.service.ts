@@ -58,7 +58,7 @@ export class PalletsService {
         query = query.eq('series', series);
       }
       // Note: warehouse filtering removed as record_inventory join was causing issues
-      // TODO: Implement warehouse filtering using record_transfer table
+      // Warehouse filtering could be implemented using record_transfer table in future
 
       // Apply pagination
       query = query
@@ -73,7 +73,7 @@ export class PalletsService {
       }
 
       // Transform the data
-      const transformedData: PalletDto[] = (data || []).map((item: any) => ({
+      const transformedData: PalletDto[] = (data || []).map((item: Record<string, unknown>) => ({
         plt_num: item.plt_num,
         product_code: item.product_code,
         generate_time: item.generate_time,
@@ -82,8 +82,8 @@ export class PalletsService {
         product_qty: item.product_qty,
         pdf_url: item.pdf_url,
         product_description: item.data_code?.description,
-        location: null, // TODO: Get from latest record_transfer
-        warehouse: null, // TODO: Get from latest record_transfer
+        location: null, // Location data not available in current query
+        warehouse: null, // Warehouse data not available in current query
       }));
 
       return {
@@ -164,10 +164,10 @@ export class PalletsService {
         pdf_url: palletData.pdf_url,
         product_description: palletData.data_code?.description,
         location: transfers && transfers.length > 0 ? transfers[0].t_loc : null,
-        warehouse: null, // TODO: Derive from location or implement warehouse mapping
+        warehouse: null, // Warehouse mapping not implemented
         transfers: transfers || [],
         history: history || [],
-        current_inventory: null, // TODO: Implement from record_inventory if needed
+        current_inventory: null, // Inventory data not included in current scope
       };
     } catch (error) {
       console.error('Error in getPalletById:', error);

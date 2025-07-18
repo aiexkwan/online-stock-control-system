@@ -149,7 +149,7 @@ async function getQueryPerformanceMetrics(supabase: any) {
     }
 
     const avgQueryTime = totalTime / queryTests.length;
-    const slowQueriesCount = queryResults.filter((r: any) => r.duration > 1000).length;
+    const slowQueriesCount = queryResults.filter((r: Record<string, unknown>) => r.duration > 1000).length;
     
     return {
       averageQueryTime: avgQueryTime,

@@ -31,8 +31,7 @@ interface TopProductsInventoryChartProps {
 }
 
 export default function TopProductsInventoryChart({ timeFrame }: TopProductsInventoryChartProps) {
-  // Check feature flag
-  const isGraphQLAnalysisEnabled = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS === 'true';
+  // Feature flag removed - using REST API only
 
   // Temporary disabled - migrated to REST API
   const data = null;
@@ -81,7 +80,7 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
     // });
 
     // Calculate totals and prepare chart data
-    const productTotals = Array.from(productMap.values()).map((item: any) => {
+    const productTotals = Array.from(productMap.values()).map((item: Record<string, unknown>) => {
       const total =
         item.await +
         item.await_grn +
@@ -110,15 +109,7 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
     return productTotals.sort((a, b) => b.total - a.total).slice(0, 10);
   }, []);
 
-  // If feature flag is disabled, show disabled state
-  if (!isGraphQLAnalysisEnabled) {
-    return (
-      <Alert>
-        <AlertCircle className='h-4 w-4' />
-        <AlertDescription>GraphQL analysis is currently disabled.</AlertDescription>
-      </Alert>
-    );
-  }
+  // Feature flag removed - using REST API only
 
   if (loading) {
     return (

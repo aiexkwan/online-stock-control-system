@@ -34,17 +34,17 @@ interface MobileOrderLoadingProps {
   onChangeUser: () => void;
 
   // Order Data
-  orderData: any[];
+  orderData: Record<string, unknown>[];
   isLoadingOrders: boolean;
 
   // Search
   searchValue: string;
   isSearching: boolean;
   onSearchChange: (value: string) => void;
-  onSearchSelect: (result: any) => void;
+  onSearchSelect: (result: Record<string, unknown>) => void;
 
   // Recent Loads
-  recentLoads: any[];
+  recentLoads: Record<string, unknown>[];
   onUndoClick: (load: any) => void;
 
   // Refs

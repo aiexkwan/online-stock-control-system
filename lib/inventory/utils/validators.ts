@@ -160,7 +160,7 @@ export function validateProductCode(productCode: string): boolean {
 /**
  * Validate quantity
  */
-export function validateQuantity(quantity: any): boolean {
+export function validateQuantity(quantity: unknown): boolean {
   const num = Number(quantity);
   return !isNaN(num) && num > 0 && Number.isInteger(num);
 }

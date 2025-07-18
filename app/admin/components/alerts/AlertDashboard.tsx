@@ -41,6 +41,11 @@ interface SystemStatus {
   lastEvaluation?: string;
 }
 
+interface TabOption {
+  id: 'overview' | 'rules' | 'history' | 'notifications' | 'settings';
+  label: string;
+}
+
 export function AlertDashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'rules' | 'history' | 'notifications' | 'settings'>('overview');
   const [alertStats, setAlertStats] = useState<AlertStats>({
@@ -321,11 +326,11 @@ export function AlertDashboard() {
           { id: 'history', label: 'History' },
           { id: 'notifications', label: 'Notifications' },
           { id: 'settings', label: 'Settings' }
-        ].map((tab: any) => (
+        ].map((tab: TabOption) => (
           <Button
             key={tab.id}
             variant={activeTab === tab.id ? 'default' : 'outline'}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id)}
           >
             {tab.label}
           </Button>

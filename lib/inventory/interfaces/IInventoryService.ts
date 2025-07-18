@@ -57,5 +57,5 @@ export interface IInventoryService {
   }): Promise<ActivityLogEntry[]>;
 
   // Real-time Updates (if applicable)
-  subscribeToInventoryChanges?(callback: (event: any) => void): () => void;
+  subscribeToInventoryChanges?(callback: (event: import('../types/inventory.types').InventoryChangeEvent) => void): () => void;
 }

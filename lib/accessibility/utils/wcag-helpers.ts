@@ -166,7 +166,7 @@ export function checkLargeTextContrast(
   const contrast = calculateColorContrast(foreground, background);
   
   // 判斷是否為大文字 (18pt+ 或 14pt+ bold)
-  const isLargeText = fontSize >= 24 || (fontSize >= 18 && (fontWeight === 'bold' || fontWeight >= 700));
+  const isLargeText = fontSize >= 24 || (fontSize >= 18 && (fontWeight === 'bold' || (typeof fontWeight === 'number' && fontWeight >= 700)));
   
   return isLargeText ? contrast.ratio >= 3 : contrast.ratio >= 4.5;
 }

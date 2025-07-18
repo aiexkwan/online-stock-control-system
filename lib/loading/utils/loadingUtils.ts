@@ -8,7 +8,7 @@ import { LoadingType, LoadingPriority, LoadingStrategy } from '../types';
 /**
  * 防抖載入函數
  */
-export function debounceLoading<T extends any[]>(
+export function debounceLoading<T extends unknown[]>(
   fn: (...args: T) => void,
   delay: number
 ): (...args: T) => void {
@@ -23,7 +23,7 @@ export function debounceLoading<T extends any[]>(
 /**
  * 節流載入函數
  */
-export function throttleLoading<T extends any[]>(
+export function throttleLoading<T extends unknown[]>(
   fn: (...args: T) => void,
   limit: number
 ): (...args: T) => void {

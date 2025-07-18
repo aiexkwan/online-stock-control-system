@@ -121,11 +121,11 @@ class LegacyUserBehaviorTracker {
     const predictions: PredictedAction[] = [];
     const currentHour = new Date().getHours();
 
-    // 基於時間的常見模式
+    // 基於時間的常見模式 - v2.0.2: 更新為新主題
     const timePatterns: Record<string, string[]> = {
-      morning: ['/admin/warehouse', '/stock-transfer'], // 早上常訪問的頁面
-      afternoon: ['/order-loading', '/admin/analysis'], // 下午常訪問的頁面
-      evening: ['/admin/system', '/admin/stock-count'], // 晚上常訪問的頁面
+      morning: ['/admin/operations-monitoring', '/stock-transfer'], // 早上常訪問的頁面
+      afternoon: ['/order-loading', '/admin/analytics'], // 下午常訪問的頁面
+      evening: ['/admin/data-management', '/admin/stock-count'], // 晚上常訪問的頁面
     };
 
     let timeOfDay: keyof typeof timePatterns;
@@ -159,7 +159,7 @@ class LegacyUserBehaviorTracker {
 }
 
 export class NavigationPreloader {
-  private preloadCache = new Map<string, Promise<any>>();
+  private preloadCache = new Map<string, Promise<void>>();
   private preloadQueue: string[] = [];
   private isPreloading = false;
   private lastPath: string | null = null;
@@ -211,7 +211,7 @@ export class NavigationPreloader {
     ); // 5分鐘後清理
   }
 
-  private createPreloadPromise(path: string): Promise<any> {
+  private createPreloadPromise(path: string): Promise<void> {
     return new Promise(resolve => {
       // 使用 link prefetch 預加載頁面資源
       const link = document.createElement('link');
@@ -233,10 +233,11 @@ export class NavigationPreloader {
   }
 
   private async prefetchApiData(path: string): Promise<void> {
-    // 根據路徑預加載相關 API 數據
+    // 根據路徑預加載相關 API 數據 - v2.0.2: 更新為新主題
     const apiEndpoints: Record<string, string[]> = {
-      '/admin/warehouse': ['/api/warehouse/summary', '/api/warehouse/recent'],
-      '/admin/analysis': ['/api/analytics/overview', '/api/analytics/trends'],
+      '/admin/operations-monitoring': ['/api/warehouse/summary', '/api/warehouse/recent'],
+      '/admin/analytics': ['/api/analytics/overview', '/api/analytics/trends'],
+      '/admin/data-management': ['/api/reports/export-all', '/api/upload/status'],
       '/stock-transfer': ['/api/stock/locations', '/api/stock/available'],
     };
 
@@ -304,7 +305,16 @@ export class NavigationPreloader {
   }
 
   // 獲取預加載統計
-  getStats(): { cacheSize: number; queueLength: number; behaviorStats?: any } {
+  getStats(): { 
+    cacheSize: number; 
+    queueLength: number; 
+    behaviorStats?: {
+      totalPageviews: number;
+      uniquePaths: number;
+      averageTimeSpent: number;
+      commonTransitions: Array<{ from: string; to: string; count: number }>;
+    };
+  } {
     return {
       cacheSize: this.preloadCache.size,
       queueLength: this.preloadQueue.length,

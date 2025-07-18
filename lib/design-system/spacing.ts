@@ -265,7 +265,12 @@ export const zIndex = {
  * 獲取間距值
  */
 export function getSpacing(value: keyof typeof spacing): string {
-  return spacing[value];
+  const result = spacing[value];
+  // If it's the gap object, return a default
+  if (typeof result === 'object') {
+    return '0px';
+  }
+  return result;
 }
 
 /**

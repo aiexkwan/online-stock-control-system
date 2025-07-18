@@ -74,7 +74,7 @@ class OrdersAPI {
         const hasMore = offset + limit < totalCount;
 
         // Transform data to match interface
-        const orders: OrderRecord[] = (data || []).map((record: any) => ({
+        const orders: OrderRecord[] = (data || []).map((record: Record<string, unknown>) => ({
           uuid: record.uuid,
           time: record.time,
           id: record.id,

@@ -63,7 +63,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         return NextResponse.json(
           {
             success: false,
-            error: `Database error: ${(error as { message: string }).message}`,
+            error: `Database error: ${getErrorMessage(error)}`,
           },
           { status: 500 }
         );
@@ -124,7 +124,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           }
           emailResult = {
             success: false,
-            error: (emailError as { message: string }).message,
+            error: getErrorMessage(emailError),
           };
         } else {
           if (process.env.NODE_ENV !== 'production') {
@@ -132,11 +132,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           }
           emailResult = {
             success: true,
-            message: (emailData as { message: string }).message,
+            message: getErrorMessage(emailData),
             emailId: emailData.emailId,
           };
         }
-      } catch (emailError: any) {
+      } catch (emailError: unknown) {
         console.error('Error invoking email function:', emailError);
         // Log the completion even if email fails
         if (process.env.NODE_ENV !== 'production') {
@@ -146,14 +146,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         }
         emailResult = {
           success: false,
-          error: `Email service error: ${(emailError as { message: string }).message}`,
+          error: `Email service error: ${getErrorMessage(emailError)}`,
         };
       }
     }
 
     return NextResponse.json({
       success: true,
-      message: (result as { message: string }).message,
+      message: getErrorMessage(result),
       orderRef: result.order_ref,
       productCode: result.product_code,
       previousFinishedQty: result.previous_finished_qty,
@@ -164,12 +164,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       orderCompleted: result.order_completed,
       emailNotification: emailResult,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in aco-order-updates API:', error);
     return NextResponse.json(
       {
         success: false,
-        error: `Server error: ${(error as { message: string }).message}`,
+        error: `Server error: ${getErrorMessage(error)}`,
       },
       { status: 500 }
     );
@@ -215,19 +215,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json(
         {
           success: false,
-          error: `Database error: ${(error as { message: string }).message}`,
+          error: `Database error: ${getErrorMessage(error)}`,
         },
         { status: 500 }
       );
     }
 
     return NextResponse.json(data);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in aco-order-updates GET API:', error);
     return NextResponse.json(
       {
         success: false,
-        error: `Server error: ${(error as { message: string }).message}`,
+        error: `Server error: ${getErrorMessage(error)}`,
       },
       { status: 500 }
     );

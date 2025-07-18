@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { getErrorMessage } from '@/lib/types/error-handling';
 
 export default function CameraDebugPage() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -59,8 +60,8 @@ export default function CameraDebugPage() {
             `📷 設備 ${index + 1}: ${device.label || '未命名'} (${device.deviceId.substring(0, 10)}...)`
           );
         });
-      } catch (enumError: any) {
-        addLog(`⚠️ 設備枚舉失敗: ${enumError.message}`);
+      } catch (enumError: unknown) {
+        addLog(`⚠️ 設備枚舉失敗: ${getErrorMessage(enumError)}`);
       }
 
       // 權限檢查（如果支持）
@@ -69,8 +70,8 @@ export default function CameraDebugPage() {
           // @ts-ignore - permissions API 可能不在類型定義中
           const permission = await navigator.permissions.query({ name: 'camera' });
           addLog(`🔐 相機權限狀態: ${permission.state}`);
-        } catch (permError: any) {
-          addLog(`🔐 權限檢查失敗: ${permError.message}`);
+        } catch (permError: unknown) {
+          addLog(`🔐 權限檢查失敗: ${getErrorMessage(permError)}`);
         }
       }
 
@@ -140,11 +141,11 @@ export default function CameraDebugPage() {
           addLog('🏁 測試完成 - 相機已釋放');
         }
       }, 10000); // 10秒後自動停止
-    } catch (error: any) {
-      addLog(`❌ 相機測試失敗: ${error.name} - ${error.message}`);
+    } catch (error: unknown) {
+      addLog(`❌ 相機測試失敗: ${(error as Error).name} - ${getErrorMessage(error)}`);
 
       // 詳細錯誤分析
-      switch (error.name) {
+      switch ((error as Error).name) {
         case 'NotAllowedError':
           addLog('🚫 分析: 用戶拒絕了相機權限或瀏覽器阻止了訪問');
           break;
@@ -164,7 +165,7 @@ export default function CameraDebugPage() {
           addLog('⏹️ 分析: 操作被中止');
           break;
         default:
-          addLog(`🔍 分析: 未知錯誤類型 - ${error.name}`);
+          addLog(`🔍 分析: 未知錯誤類型 - ${(error as Error).name}`);
       }
 
       // 額外調試信息
@@ -172,8 +173,8 @@ export default function CameraDebugPage() {
         addLog(`🎯 問題約束: ${error.constraint}`);
       }
 
-      if (error.stack) {
-        addLog(`📋 錯誤堆疊: ${error.stack.substring(0, 200)}...`);
+      if ((error as Error).stack) {
+        addLog(`📋 錯誤堆疊: ${(error as Error).stack.substring(0, 200)}...`);
       }
     }
   };

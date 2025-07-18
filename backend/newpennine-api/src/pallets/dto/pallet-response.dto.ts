@@ -22,7 +22,7 @@ export class PalletsResponseDto {
 
 export class PalletDetailResponseDto extends PalletDto {
   // Additional detailed information
-  transfers?: any[];
-  history?: any[];
+  transfers?: Record<string, unknown>[];
+  history?: Record<string, unknown>[];
   current_inventory?: any;
 }

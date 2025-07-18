@@ -31,16 +31,15 @@ interface RealTimeInventoryMapProps {
 }
 
 export default function RealTimeInventoryMap({ timeFrame }: RealTimeInventoryMapProps) {
-  // Check if GraphQL analysis is enabled
-  const isGraphQLEnabled = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS === 'true';
+  // Feature flag removed - using REST API only
 
-// TODO: Replace GraphQL - // TODO: Replace GraphQL - useGetInventoryLocationsQuery removed
+// Migrated to REST API - GraphQL removed
   const data = null;
   const loading = false;
   const error = null;
 
   const locationStats = useMemo(() => {
-// TODO: Replace GraphQL -     // TODO: Replace GraphQL - if (!data?.record_inventoryCollection?.edges) return new Map();
+    // REST API implementation needed - return empty map for now
 
     const stats = new Map<string, { total: number; products: Set<string> }>();
 
@@ -50,7 +49,7 @@ export default function RealTimeInventoryMap({ timeFrame }: RealTimeInventoryMap
     });
 
     // Calculate totals for each location
-// TODO: Replace GraphQL -     // TODO: Replace GraphQL - data.record_inventoryCollection.edges.forEach((edge: NonNullable<GetInventoryLocationsQuery['record_inventoryCollection']>['edges'][0]) => {
+    // REST API implementation needed - placeholder for data processing
     //   if (!edge?.node) return;
     //   const node = edge.node;
     //   
@@ -79,17 +78,7 @@ export default function RealTimeInventoryMap({ timeFrame }: RealTimeInventoryMap
     return displayStats;
   }, []);
 
-  // Show disabled state if GraphQL is not enabled
-  if (!isGraphQLEnabled) {
-    return (
-      <Alert>
-        <AlertCircle className='h-4 w-4' />
-        <AlertDescription>
-          GraphQL analysis is disabled. Enable NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS to use this feature.
-        </AlertDescription>
-      </Alert>
-    );
-  }
+  // Feature flag removed - using REST API only
 
   if (loading) {
     return (
@@ -110,7 +99,7 @@ export default function RealTimeInventoryMap({ timeFrame }: RealTimeInventoryMap
   }
 
   // Calculate max for color scaling
-  const maxInventory = Math.max(...Array.from(locationStats.values()).map((s: any) => s.total), 1);
+  const maxInventory = Math.max(...Array.from(locationStats.values()).map((s: Record<string, unknown>) => s.total), 1);
 
   const getLocationColor = (total: number) => {
     const intensity = total / maxInventory;

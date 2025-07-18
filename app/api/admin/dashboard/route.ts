@@ -13,7 +13,7 @@ const requestLog: Array<{
   duration?: number;
 }> = [];
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest) {
   const startTime = Date.now();
   const requestId = ++requestCounter;
   
@@ -27,13 +27,21 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const offset = parseInt(searchParams.get('offset') || '0');
 
     // Log request details for debugging
-    const logEntry = {
+    const logEntry: {
+      id: number;
+      timestamp: string;
+      widgets: string[];
+      userAgent?: string;
+      referer?: string;
+      ip?: string;
+      duration?: number;
+    } = {
       id: requestId,
       timestamp: new Date().toISOString(),
       widgets,
-      userAgent: request.headers.get('user-agent'),
-      referer: request.headers.get('referer'),
-      ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
+      userAgent: request.headers.get('user-agent') || undefined,
+      referer: request.headers.get('referer') || undefined,
+      ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
     };
 
     console.log(`🔥 API CALL #${requestId}:`, JSON.stringify(logEntry, null, 2));

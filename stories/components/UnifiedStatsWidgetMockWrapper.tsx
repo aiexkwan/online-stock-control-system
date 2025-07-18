@@ -1,10 +1,11 @@
 import React from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { Box, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
 import { MetricCard } from '@/app/admin/components/dashboard/widgets/common/data-display/MetricCard';
 import { AdminWidgetConfig } from '@/app/admin/components/dashboard/adminDashboardLayouts';
 
 interface MockData {
-  data: any;
+  data: DatabaseRecord[];
   isLoading: boolean;
   error: Error | null;
 }

@@ -79,7 +79,7 @@ export class WarehouseCacheService {
       }
 
       // 轉換數據格式
-      const summary: WarehouseSummaryData[] = data.summary.map((item: any) => ({
+      const summary: WarehouseSummaryData[] = data.summary.map((item: Record<string, unknown>) => ({
         location: item.location,
         totalQty: parseInt(item.total_qty),
         itemCount: parseInt(item.item_count),

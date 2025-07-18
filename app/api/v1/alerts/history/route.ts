@@ -70,7 +70,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       endTime: query.endTime ? new Date(query.endTime) : undefined,
       limit: query.limit,
       offset: query.offset,
-      sortBy: query.sortBy,
+      sortBy: query.sortBy === 'triggered_at' ? 'triggeredAt' as const : query.sortBy === 'level' ? 'level' as const : query.sortBy === 'state' ? 'state' as const : undefined,
       sortOrder: query.sortOrder
     };
 

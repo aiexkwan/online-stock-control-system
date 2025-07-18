@@ -60,15 +60,15 @@ export class CsvGenerator implements ReportGenerator {
 
       // 添加列標題
       const headers = columns
-        .filter((col: any) => !col.exportOnly) // 排除僅導出列
-        .map((col: any) => this.escapeCSV(col.label));
+        .filter((col: Record<string, unknown>) => !col.exportOnly) // 排除僅導出列
+        .map((col: Record<string, unknown>) => this.escapeCSV(col.label));
       csvLines.push(headers.join(','));
 
       // 添加數據行
       sectionData.forEach(item => {
         const row = columns
-          .filter((col: any) => !col.exportOnly)
-          .map((col: any) => {
+          .filter((col: Record<string, unknown>) => !col.exportOnly)
+          .map((col: Record<string, unknown>) => {
             const value = item[col.id];
             const formatted = this.formatValue(value, col.format || col.type);
             return this.escapeCSV(formatted);
@@ -89,7 +89,7 @@ export class CsvGenerator implements ReportGenerator {
     });
   }
 
-  private inferColumns(dataItem: any): any[] {
+  private inferColumns(dataItem: any): Record<string, unknown>[] {
     return Object.keys(dataItem).map(key => ({
       id: key,
       label: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
@@ -97,7 +97,7 @@ export class CsvGenerator implements ReportGenerator {
     }));
   }
 
-  private formatValue(value: any, format?: string): string {
+  private formatValue(value: unknown, format?: string): string {
     if (value === null || value === undefined) {
       return '';
     }

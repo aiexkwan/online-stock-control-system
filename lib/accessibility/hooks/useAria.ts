@@ -24,9 +24,9 @@ export function useAria(defaultConfig?: Partial<AriaConfig>): UseAriaReturn {
    * @param config ARIA配置
    * @returns ARIA屬性對象
    */
-  const getAriaProps = useCallback((config: Partial<AriaConfig> = {}): Record<string, any> => {
+  const getAriaProps = useCallback((config: Partial<AriaConfig> = {}): Record<string, string | boolean | number | undefined> => {
     const mergedConfig = { ...defaultConfig, ...config };
-    const props: Record<string, any> = {};
+    const props: Record<string, string | boolean | number | undefined> = {};
 
     // 基本標籤屬性
     if (mergedConfig.label) {
@@ -398,12 +398,13 @@ export function useAriaDescriptions(descriptions: Array<{
 
     // 清理函數
     return () => {
+      const currentDescriptions = descriptionsRef.current;
       if (!descriptions.some(d => d.persistent)) {
-        descriptionsRef.current.forEach((element, id) => {
+        currentDescriptions.forEach((element, id) => {
           const desc = descriptions.find(d => d.id === id);
           if (!desc?.persistent && document.body.contains(element)) {
             document.body.removeChild(element);
-            descriptionsRef.current.delete(id);
+            currentDescriptions.delete(id);
           }
         });
       }
@@ -450,9 +451,9 @@ export function useAriaRole(defaultRole?: string) {
    */
   const getRoleProps = useCallback((
     role?: string,
-    additionalProps?: Record<string, any>
-  ): Record<string, any> => {
-    const props: Record<string, any> = {
+    additionalProps?: Record<string, unknown>
+  ): Record<string, unknown> => {
+    const props: Record<string, unknown> = {
       role: role || defaultRole,
       ...additionalProps,
     };

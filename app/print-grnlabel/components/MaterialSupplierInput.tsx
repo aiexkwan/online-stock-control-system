@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { validateSupplierCode } from '@/app/actions/grnActions';
 
 interface SupplierInfo {
@@ -100,9 +101,9 @@ export const MaterialSupplierInput: React.FC<MaterialSupplierInputProps> = ({
         (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[MaterialSupplierInput] Supplier found:', supplierData);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // 如果是取消請求，不處理
-      if (error.name === 'AbortError' || abortController.signal.aborted) {
+      if ((error as Error).name === 'AbortError' || abortController.signal.aborted) {
         (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[MaterialSupplierInput] Search cancelled or aborted');
         return;
@@ -111,7 +112,7 @@ export const MaterialSupplierInput: React.FC<MaterialSupplierInputProps> = ({
       console.error('[MaterialSupplierInput] Search error:', error);
       onSupplierInfoChange(null);
 
-      if (error.message?.includes('timeout') || error.message?.includes('aborted')) {
+      if (getErrorMessage(error)?.includes('timeout') || getErrorMessage(error)?.includes('aborted')) {
         setSupplierError('Search timeout. Please try again.');
       } else {
         setSupplierError('Search failed. Please try again.');

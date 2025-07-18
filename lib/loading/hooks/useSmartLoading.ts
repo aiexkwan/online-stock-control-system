@@ -73,7 +73,7 @@ export function useSmartLoading(options: UseSmartLoadingOptions): UseSmartLoadin
         updateAdaptiveConfig(metrics);
       }
     }
-  }, [enablePerformanceAware]);
+  }, [enablePerformanceAware, updateAdaptiveConfig]);
 
   // 網絡監控
   useEffect(() => {
@@ -92,7 +92,7 @@ export function useSmartLoading(options: UseSmartLoadingOptions): UseSmartLoadin
     });
 
     return stopMonitoring;
-  }, [enableNetworkMonitoring]);
+  }, [enableNetworkMonitoring, updateAdaptiveConfig]);
 
   // 更新適應性配置
   const updateAdaptiveConfig = useCallback((metrics: PerformanceMetrics) => {
@@ -154,7 +154,7 @@ export function useSmartLoading(options: UseSmartLoadingOptions): UseSmartLoadin
     // 根據類型估算數據大小
     const estimatedSize = getEstimatedDataSize(loadingOptions.type || 'component');
     return performanceDetector.current.estimateLoadTime(estimatedSize, loadingOptions.type as 'api' | 'image' | 'component');
-  }, [loadingOptions.type, performanceMetrics]);
+  }, [loadingOptions.type]);
 
   // 網絡狀態
   const networkStatus = useMemo((): 'fast' | 'slow' | 'unknown' => {

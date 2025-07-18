@@ -93,12 +93,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       originalUrl: pdfUrl,
       note: 'Using Supabase signed URL for PDF',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDF to Images] Error:', error);
     return NextResponse.json(
       {
         error: 'PDF processing failed',
-        details: (error as { message: string }).message,
+        details: getErrorMessage(error),
       },
       { status: 500 }
     );

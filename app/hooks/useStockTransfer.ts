@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { createClient } from '@/app/utils/supabase/client';
 import { toast } from 'sonner';
 import { LocationMapper } from '@/lib/inventory/utils/locationMapper';
@@ -133,7 +134,7 @@ export function useStockTransfer(options: UseStockTransferOptions = {}) {
         throw new Error('Invalid location mapping');
       }
 
-      const inventoryUpdate: any = {
+      const inventoryUpdate: DatabaseRecord = {
         product_code: palletInfo.product_code,
         plt_num: palletInfo.plt_num,
         latest_update: new Date().toISOString()

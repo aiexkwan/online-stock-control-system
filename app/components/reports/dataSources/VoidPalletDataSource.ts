@@ -4,6 +4,7 @@
  */
 
 import { ReportDataSource } from '../core/ReportConfig';
+import { DatabaseRecord } from '@/lib/types/database';
 import { 
   getVoidPalletSummary, 
   getVoidPalletDetails, 
@@ -31,7 +32,7 @@ const voidPalletSummaryDataSource: ReportDataSource = {
     return result.data;
   },
 
-  transform(data: any) {
+  transform(data: DatabaseRecord[]) {
     return data;
   },
 };
@@ -55,7 +56,7 @@ const voidPalletDetailsDataSource: ReportDataSource = {
     return result.data;
   },
 
-  transform(data: any) {
+  transform(data: DatabaseRecord[]) {
     return data;
   },
 };
@@ -79,7 +80,7 @@ const voidReasonStatsDataSource: ReportDataSource = {
     return result.data;
   },
 
-  transform(data: any) {
+  transform(data: DatabaseRecord[]) {
     return data;
   },
 };
@@ -103,7 +104,7 @@ const voidProductStatsDataSource: ReportDataSource = {
     return result.data;
   },
 
-  transform(data: any) {
+  transform(data: DatabaseRecord[]) {
     return data;
   },
 };

@@ -123,7 +123,7 @@ const AcoSection = React.memo<{
   acoSearchLoading: boolean;
   onAutoAcoConfirm: (orderRef: string) => Promise<void>;
   acoNewRef: boolean;
-  acoOrderDetails: any[];
+  acoOrderDetails: Record<string, unknown>[];
   acoOrderDetailErrors: string[];
   onAcoOrderDetailChange: (idx: number, key: 'code' | 'qty', value: string) => void;
   onAcoOrderDetailUpdate: () => void;

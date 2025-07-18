@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { UnifiedTableWidgetMockWrapper } from './components/UnifiedTableWidgetMockWrapper';
 import { AdminWidgetConfig } from '@/app/admin/components/dashboard/adminDashboardLayouts';
 import React from 'react';
@@ -78,7 +79,7 @@ const createMockTableData = (type: 'orders' | 'inventory' | 'transfers' | 'staff
 };
 
 // Mock hook 實現
-const createMockData = (type: 'success' | 'loading' | 'error', dataType: string = 'orders', dataCount: number = 10, overrides: any = {}) => {
+const createMockData = (type: 'success' | 'loading' | 'error', dataType: string = 'orders', dataCount: number = 10, overrides: DatabaseRecord = {}) => {
   switch (type) {
     case 'loading':
       return {
@@ -91,7 +92,7 @@ const createMockData = (type: 'success' | 'loading' | 'error', dataType: string 
       return {
         data: null,
         isLoading: false,
-        error: new Error('Table data loading failed'),
+        error: new globalThis.Error('Table data loading failed'),
         ...overrides,
       };
     case 'success':
@@ -162,13 +163,11 @@ const meta: Meta<typeof UnifiedTableWidgetMockWrapper> = {
     },
   },
   decorators: [
-    (Story, context) => {
-      return (
-        <div className="w-[800px] h-[600px] p-4">
-          <Story />
-        </div>
-      );
-    },
+    (Story) => (
+      <div className="w-[800px] h-[600px] p-4">
+        <Story />
+      </div>
+    ),
   ],
 };
 

@@ -17,7 +17,7 @@ describe('GET /api/analytics/overview', () => {
     const request = new NextRequest('http://localhost:3000/api/analytics/overview');
     const response = await GET(request);
     
-    expect((response as { status: string }).status).toBe(200);
+    expect(response.status).toBe(200);
     
     const data = await response.json();
     expect(data).toHaveProperty('totalUsers');
@@ -43,7 +43,7 @@ describe('GET /api/analytics/overview', () => {
     const request = new NextRequest('http://localhost:3000/api/analytics/overview?timeRange=week');
     const response = await GET(request);
     
-    expect((response as { status: string }).status).toBe(200);
+    expect(response.status).toBe(200);
     const data = await response.json();
     expect(data).toBeDefined();
   });
@@ -61,9 +61,9 @@ describe('GET /api/analytics/overview', () => {
       
       const { GET: mockedGET } = require('../route');
       const request = new NextRequest('http://localhost:3000/api/analytics/overview');
-      const response = await mockedGET(request);
+      const response = await mockedGET(request, { params: Promise.resolve({ id: 'test' }) });
       
-      expect((response as { status: string }).status).toBe(500);
+      expect(response.status).toBe(500);
       
       const errorData = await response.json();
       expect(errorData).toHaveProperty('error');
@@ -81,7 +81,7 @@ describe('GET /api/analytics/overview', () => {
       const request = new NextRequest('http://localhost:3000/api/analytics/overview');
       const response = await GET(request);
       
-      expect((response as { status: string }).status).toBe(200);
+      expect(response.status).toBe(200);
       
       const text = await response.text();
       const data = JSON.parse(text);
@@ -99,7 +99,7 @@ describe('GET /api/analytics/overview', () => {
       const request = new NextRequest('http://localhost:3000/api/analytics/overview');
       const response = await GET(request);
       
-      expect((response as { status: string }).status).toBe(200);
+      expect(response.status).toBe(200);
       
       const text = await response.text();
       const data = JSON.parse(text);
@@ -120,7 +120,7 @@ describe('GET /api/analytics/overview', () => {
       const end = Date.now();
       
       const responseTime = end - start;
-      expect((response as { status: string }).status).toBe(200);
+      expect(response.status).toBe(200);
       expect(responseTime).toBeLessThan(100); // Should respond in less than 100ms
     });
   });

@@ -10,6 +10,7 @@ import {
   BatchPrintRequest,
   BatchPrintResult,
   PrintPriority,
+  PrintData,
 } from '../types';
 import { getHardwareAbstractionLayer } from '@/lib/hardware/hardware-abstraction-layer';
 import { PrintHistoryService } from './print-history-service';
@@ -105,10 +106,10 @@ export class UnifiedPrintingService extends EventEmitter {
       }
 
       const printJob: PrintJob = {
-        type: halPrintType as any,
+        type: halPrintType as 'qc-label' | 'grn-label' | 'report',
         data: printData,
         copies: request.options.copies,
-        priority: (request.options.priority as any) || 'normal',
+        priority: (request.options.priority as 'high' | 'normal' | 'low') || 'normal',
         metadata: request.metadata,
       };
 
@@ -306,7 +307,11 @@ export class UnifiedPrintingService extends EventEmitter {
     return;
   }
 
-  private async preparePrintData(request: PrintRequest): Promise<any> {
+  private async preparePrintData(request: PrintRequest): Promise<{
+    formattedData: unknown;
+    template: string;
+    metadata: Record<string, string | number>;
+  } | PrintData> {
     // Apply template if available
     const template = await this.templateService.getTemplate(request.type);
     if (template) {

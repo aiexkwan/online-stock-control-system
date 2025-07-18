@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { DatabaseRecord } from '@/lib/types/database';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { createClient } from '@supabase/supabase-js';
 import { type QcInputData } from '@/lib/pdfUtils';
 import { LocationMapper } from '@/lib/inventory/utils/locationMapper';
@@ -148,7 +150,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     };
 
     // Create dynamic inventory record
-    const inventoryRecord: any = {
+    const inventoryRecord: DatabaseRecord = {
       product_code: productInfo.code,
       plt_num: palletNum,
     };
@@ -330,7 +332,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         autoprint: true,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Auto Reprint V2 API] Error in auto reprint process:', error);
 
     // Release pallet reservation in V6 system on error
@@ -346,7 +348,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json(
       {
         success: false,
-        error: `Auto reprint failed: ${(error as { message: string }).message}`,
+        error: `Auto reprint failed: ${getErrorMessage(error)}`,
       },
       { status: 500 }
     );

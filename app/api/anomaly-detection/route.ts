@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { DatabaseRecord } from '@/lib/types/database';
 import { createClient } from '@/app/utils/supabase/server';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -106,7 +107,7 @@ LIMIT 50`;
 
     if (data && data.length > 0) {
       // Convert JSONB result to proper format
-      const formattedData = data.map((row: any) => row.result || row);
+      const formattedData = data.map((row: Record<string, unknown>) => row.result || row);
 
       return {
         type: 'stuck_pallets',
@@ -176,9 +177,9 @@ LIMIT 20`;
 
     if (data && data.length > 0) {
       // Convert JSONB result to proper format
-      const formattedData = data.map((row: any) => row.result || row);
+      const formattedData = data.map((row: Record<string, unknown>) => row.result || row);
       const criticalCount = formattedData.filter(
-        (item: any) => item.variance_percentage > 20
+        (item: DatabaseRecord) => item.variance_percentage > 20
       ).length;
 
       return {
@@ -235,7 +236,7 @@ LIMIT 50`;
 
     if (data && data.length > 0) {
       // Convert JSONB result to proper format
-      const formattedData = data.map((row: any) => row.result || row);
+      const formattedData = data.map((row: Record<string, unknown>) => row.result || row);
       const criticalOrders = formattedData.filter((order: any) => order.days_overdue > 14).length;
 
       return {

@@ -9,7 +9,7 @@ declare module 'class-validator' {
   export function IsArray(validationOptions?: any): PropertyDecorator;
   export function IsDateString(validationOptions?: any): PropertyDecorator;
   export function IsIn(
-    values: any[],
+    values: Record<string, unknown>[],
     validationOptions?: any,
   ): PropertyDecorator;
   export function IsEmail(
@@ -81,7 +81,7 @@ declare module 'class-validator' {
   export function IsEmpty(options?: any): PropertyDecorator;
   export function Equals(comparison: any, options?: any): PropertyDecorator;
   export function NotEquals(comparison: any, options?: any): PropertyDecorator;
-  export function IsNotIn(values: any[], options?: any): PropertyDecorator;
+  export function IsNotIn(values: Record<string, unknown>[], options?: any): PropertyDecorator;
   export function IsDivisibleBy(num: number, options?: any): PropertyDecorator;
   export function IsPositive(options?: any): PropertyDecorator;
   export function IsNegative(options?: any): PropertyDecorator;
@@ -128,11 +128,11 @@ declare module 'class-validator' {
   export function IsDecimal(options?: any): PropertyDecorator;
   export function IsMacAddress(options?: any): PropertyDecorator;
   export function ArrayContains(
-    values: any[],
+    values: Record<string, unknown>[],
     options?: any,
   ): PropertyDecorator;
   export function ArrayNotContains(
-    values: any[],
+    values: Record<string, unknown>[],
     options?: any,
   ): PropertyDecorator;
   export function IsNotEmptyObject(options?: any): PropertyDecorator;
@@ -141,10 +141,10 @@ declare module 'class-validator' {
   export function IsDefined(options?: any): PropertyDecorator;
   export function Validate(
     constraintClass: any,
-    ...args: any[]
+    ...args: Record<string, unknown>[]
   ): PropertyDecorator;
   export function ValidateBy(
-    options: any,
+    options: Record<string, unknown>,
     validationOptions?: any,
   ): PropertyDecorator;
   export function ValidateIf(
@@ -156,7 +156,7 @@ declare module 'class-validator' {
 
   // Validation functions
   export function validate(object: any, options?: any): Promise<any[]>;
-  export function validateSync(object: any, options?: any): any[];
+  export function validateSync(object: any, options?: any): Record<string, unknown>[];
   export function validateOrReject(object: any, options?: any): Promise<void>;
   export function registerSchema(schema: any): void;
 

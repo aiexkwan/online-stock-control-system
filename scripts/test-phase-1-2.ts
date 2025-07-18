@@ -1,4 +1,5 @@
 import puppeteer from 'puppeteer';
+import { DatabaseRecord } from '@/lib/types/database';
 
 interface TestResult {
   test: string;
@@ -122,7 +123,7 @@ async function runPhase12Tests() {
     // Extract summary stats
     const summaryStats = await page.evaluate(() => {
       const cards = document.querySelectorAll('[class*="Card"]');
-      const stats: any = {};
+      const stats: DatabaseRecord = {};
       
       cards.forEach((card) => {
         const title = card.querySelector('[class*="CardTitle"]')?.textContent;
@@ -151,7 +152,7 @@ async function runPhase12Tests() {
     });
     
     console.log('\n📋 Individual Test Results:');
-    const passedTests = testResults.filter((r: any) => (r as { status: string }).status === 'passed').length;
+    const passedTests = testResults.filter((r: Record<string, unknown>) => (r as { status: string }).status === 'passed').length;
     const totalTests = testResults.length;
     const passRate = ((passedTests / totalTests) * 100).toFixed(1);
     

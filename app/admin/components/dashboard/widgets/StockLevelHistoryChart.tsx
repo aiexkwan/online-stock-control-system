@@ -258,7 +258,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
       setSelectedType(type);
 
       // 獲取該類型所有產品的代碼（限制最多10個）
-      const codes = data.map((item: any) => item.stock).slice(0, 10);
+      const codes = data.map((item: Record<string, unknown>) => item.stock).slice(0, 10);
       console.log('[StockLevelHistoryChart as string] Product codes:', codes);
 
       if (codes.length > 0) {

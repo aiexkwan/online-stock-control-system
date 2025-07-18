@@ -127,7 +127,7 @@ export interface ErrorBoundaryProps {
   /** Recovery strategy */
   recoveryStrategy?: ErrorRecoveryStrategy;
   /** Isolation level */
-  isolationLevel?: 'component' | 'page' | 'app';
+  isolationLevel?: 'component' | 'widget' | 'page' | 'app';
   /** Custom context */
   context?: Partial<ErrorContext>;
 }

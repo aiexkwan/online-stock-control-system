@@ -4,9 +4,9 @@ import { createInventoryService } from '@/lib/inventory/services';
 import { getCurrentUserId, getUserDetails } from '@/lib/inventory/utils/authHelpers';
 import { getUserIdFromEmail } from '@/lib/utils/getUserId';
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await request.json();
     const { session_id, scans } = body;
 
     if (!session_id || !scans || !Array.isArray(scans)) {

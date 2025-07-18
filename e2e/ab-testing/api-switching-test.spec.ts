@@ -6,6 +6,7 @@
  */
 
 import { test, expect, Page } from '@playwright/test';
+import { ApiResponse, ApiRequest, QueryParams } from '@/lib/validation/zod-schemas';
 
 interface APIMetrics {
   responseTime: number;
@@ -73,7 +74,7 @@ class APITestHelper {
   /**
    * 測量響應時間
    */
-  private async measureResponseTime(response: any): Promise<number> {
+  private async measureResponseTime(response: ApiResponse): Promise<number> {
     try {
       const timing = await response.timing();
       return timing.responseEnd - timing.requestStart;

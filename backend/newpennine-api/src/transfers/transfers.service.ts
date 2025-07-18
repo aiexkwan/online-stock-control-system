@@ -125,7 +125,7 @@ export class TransfersService {
 
       // Map to response DTOs
       const items: TransferResponseDto[] = (transfers || []).map((transfer) => {
-        const result: any = {
+        const result: Record<string, unknown> = {
           id: transfer.uuid,
           palletId: transfer.plt_num,
           productCode: '', // Will need to join with record_palletinfo to get this

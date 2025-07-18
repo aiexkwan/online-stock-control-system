@@ -32,16 +32,16 @@ interface ProductDistributionChartWidgetProps extends TraditionalWidgetComponent
 
 // 顏色配置 - 使用設計系統顏色
 const COLORS = [
-  widgetColors.charts.primary as unknown as string,
-  semanticColors.success.DEFAULT as unknown as string,
-  semanticColors.warning.DEFAULT as unknown as string,
-  semanticColors.destructive.DEFAULT as unknown as string,
-  brandColors.primary as unknown as string,
-  semanticColors.info.DEFAULT as unknown as string,
-  brandColors.secondary as unknown as string,
-  widgetColors.charts.grid as unknown as string,
-  widgetColors.charts.accent as unknown as string,
-  brandColors.primary[400] as unknown as string
+  String(widgetColors.charts.primary) || '#3B82F6',
+  String(semanticColors.success.DEFAULT) || '#10B981',
+  String(semanticColors.warning.DEFAULT) || '#F59E0B',
+  String(semanticColors.destructive.DEFAULT) || '#EF4444',
+  String(brandColors.primary) || '#6366F1',
+  String(semanticColors.info.DEFAULT) || '#3B82F6',
+  String(brandColors.secondary) || '#8B5CF6',
+  String(widgetColors.charts.grid) || '#6B7280',
+  String(widgetColors.charts.accent) || '#EC4899',
+  String(brandColors.primary) || '#3B82F6'
 ];
 
 export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWidgetProps> = ({ 

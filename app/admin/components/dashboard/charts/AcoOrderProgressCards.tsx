@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, CheckCircle, ClipboardList } from 'lucide-react';
 import { restRequest } from '@/lib/api/unified-api-client';
+import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 
 interface AcoOrderProgressCard {
   id: string;
@@ -26,11 +27,11 @@ interface AcoOrderProgressCardsResponse {
   totalCards: number;
   dateRange?: string;
   lastUpdated: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface AcoOrderProgressCardsProps {
-  timeFrame?: any;
+  timeFrame?: TimeFrame;
   useGraphQL?: boolean;
 }
 

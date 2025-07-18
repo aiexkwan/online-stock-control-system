@@ -32,7 +32,7 @@ export interface ITransactionService {
   logTransaction(
     context: TransactionContext,
     result: 'success' | 'failed',
-    error?: any
+    error?: Error | { message: string; code?: string }
   ): Promise<void>;
   getTransactionHistory(transactionId: string): Promise<TransactionContext | null>;
 }

@@ -176,7 +176,7 @@ export function AcoOrderReportWidget({ widget, isEditMode }: WidgetComponentProp
   };
 
   // Process order records to group by product code
-  const processOrderRecords = (records: any[]): AcoProductData[] => {
+  const processOrderRecords = (records: Record<string, unknown>[]): AcoProductData[] => {
     const productMap = new Map<string, AcoProductData>();
 
     records.forEach(record => {

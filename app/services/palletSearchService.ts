@@ -1,4 +1,5 @@
 import { createClient } from '@/app/utils/supabase/client';
+import { getErrorMessage } from '../../lib/types/error-handling';
 import { toast } from 'sonner';
 
 // 統一的托盤信息類型
@@ -115,11 +116,11 @@ export class PalletSearchService {
           is_voided: isVoided,
         },
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Pallet search failed:', error);
       return {
         success: false,
-        error: error.message || 'Search failed',
+        error: getErrorMessage(error) || 'Search failed',
       };
     }
   }

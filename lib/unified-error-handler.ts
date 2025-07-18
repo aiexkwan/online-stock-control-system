@@ -1,3 +1,6 @@
+import { DatabaseRecord } from '@/lib/types/database';
+import { DatabaseRecord } from '@/lib/types/database';
+
 // Unified Error Handler - 整合所有錯誤處理功能
 // 支持客戶端和服務端使用，簡化錯誤分類和恢復策略
 
@@ -93,7 +96,7 @@ const ERROR_PATTERNS = {
 };
 
 // 統一的錯誤分類函數
-export function classifyError(error: any, sql?: string): ClassificationResult {
+export function classifyError(error: unknown, sql?: string): ClassificationResult {
   const errorMessage = error.message || error.toString();
   
   // 嘗試匹配錯誤模式
@@ -133,7 +136,7 @@ export function classifyError(error: any, sql?: string): ClassificationResult {
 
 // 提取錯誤特徵
 function extractErrorFeatures(match: RegExpMatchArray, errorType: ErrorType) {
-  const features: any = {};
+  const features: DatabaseRecord = {};
   
   switch (errorType) {
     case ErrorType.COLUMN_NOT_EXISTS:

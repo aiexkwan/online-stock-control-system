@@ -197,7 +197,7 @@ export const UnifiedChartWidget: React.FC<UnifiedChartWidgetProps> = ({
   };
 
   // 動態渲染圖表組件
-  const renderChart = (chartType: string, chartData: any, options: any) => {
+  const renderChart = (chartType: string, chartData: any, options: Record<string, unknown>) => {
     const { labels, datasets } = chartData;
     const data = labels.map((label: string, index: number) => ({
       name: label,

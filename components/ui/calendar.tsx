@@ -149,6 +149,17 @@ function CalendarDayButton({
     if (modifiers.focused) ref.current?.focus();
   }, [modifiers.focused]);
 
+  // Fix aria attribute type conversions
+  const buttonProps = {
+    ...props,
+    'aria-expanded': props['aria-expanded'] === 'true' ? true : 
+                     props['aria-expanded'] === 'false' ? false : 
+                     props['aria-expanded'] as boolean | undefined,
+    'aria-pressed': props['aria-pressed'] === 'true' ? true : 
+                    props['aria-pressed'] === 'false' ? false : 
+                    props['aria-pressed'] as boolean | undefined,
+  };
+
   return (
     <Button
       ref={ref}
@@ -169,7 +180,7 @@ function CalendarDayButton({
         defaultClassNames.day,
         className
       )}
-      {...props}
+      {...buttonProps}
     />
   );
 }

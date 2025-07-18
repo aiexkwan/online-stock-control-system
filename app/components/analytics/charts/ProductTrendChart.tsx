@@ -205,7 +205,7 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
                 <YAxis stroke='#9CA3AF' />
                 <Tooltip
                   contentStyle={tooltipStyle}
-                  formatter={(value: any) => `${value} orders`}
+                  formatter={(value: unknown) => `${value} orders`}
                 />
                 <Legend wrapperStyle={{ paddingTop: '20px' }} iconType='rect' />
                 <Bar dataKey='count' fill='#3B82F6' name='Orders' radius={[4, 4, 0, 0]} />
@@ -217,7 +217,7 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
                 <YAxis stroke='#9CA3AF' />
                 <Tooltip
                   contentStyle={tooltipStyle}
-                  formatter={(value: any) => `${value} orders`}
+                  formatter={(value: unknown) => `${value} orders`}
                 />
                 <Legend wrapperStyle={{ paddingTop: '20px' }} iconType='line' />
                 <Line

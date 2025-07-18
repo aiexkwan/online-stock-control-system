@@ -123,7 +123,19 @@ export interface ActivityLogEntry {
   timestamp: string;
   message: string;
   type: 'success' | 'error' | 'info' | 'warning';
-  details?: any;
+  details?: Record<string, unknown>;
+}
+
+/**
+ * Inventory change event for real-time updates
+ */
+export interface InventoryChangeEvent {
+  type: 'created' | 'updated' | 'deleted' | 'transferred';
+  table: 'palletinfo' | 'inventory' | 'transfer';
+  recordId: string | number;
+  data: PalletInfo | InventoryRecord | TransferRecord;
+  timestamp: string;
+  userId?: string;
 }
 
 /**

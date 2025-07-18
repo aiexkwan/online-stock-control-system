@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Printer, FileText, History, Settings } from 'lucide-react';
-import { PrintType, PrintRequest, PrintOptions } from '../types';
+import { PrintType, PrintRequest, PrintOptions, PrintData } from '../types';
 import { usePrinting } from '../hooks/usePrinting';
 import { PrintDialog } from './PrintDialog';
 import { PrintQueueMonitor } from './PrintQueueMonitor';
@@ -16,7 +16,11 @@ export interface PrintInterfaceConfig {
   type: PrintType;
   title: string;
   description?: string;
-  FormComponent: React.ComponentType<any>;
+  FormComponent: React.ComponentType<{
+    data: PrintData;
+    onDataChange: (data: PrintData) => void;
+    onValidationChange: (isValid: boolean, errors: Record<string, string>) => void;
+  }>;
   defaultOptions?: Partial<PrintOptions>;
 }
 
@@ -26,13 +30,13 @@ export interface UnifiedPrintInterfaceProps {
 }
 
 interface PrintFormState {
-  data: Record<string, any>;
+  data: PrintData;
   isValid: boolean;
   errors: Record<string, string>;
 }
 
 type PrintFormAction =
-  | { type: 'UPDATE_FIELD'; field: string; value: any }
+  | { type: 'UPDATE_FIELD'; field: string; value: unknown }
   | { type: 'SET_ERRORS'; errors: Record<string, string> }
   | { type: 'RESET_FORM' }
   | { type: 'SET_VALID'; isValid: boolean };
@@ -66,7 +70,7 @@ export function UnifiedPrintInterface({ config, className }: UnifiedPrintInterfa
   const [showPrintDialog, setShowPrintDialog] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState('form');
 
-  const handleFieldChange = useCallback((field: string, value: any) => {
+  const handleFieldChange = useCallback((field: string, value: unknown) => {
     dispatch({ type: 'UPDATE_FIELD', field, value });
   }, []);
 

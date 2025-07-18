@@ -463,7 +463,7 @@ export function withScreenReaderSupport<P extends object>(
     announceOnMount?: string;
   } = {}
 ) {
-  const WrappedComponent = React.forwardRef<any, P>((props, ref) => {
+  const WrappedComponent = React.forwardRef<HTMLElement, P>((props, ref) => {
     const { announce, LiveRegionComponent } = useLiveRegion();
     
     // 組件掛載時宣告
@@ -475,7 +475,7 @@ export function withScreenReaderSupport<P extends object>(
     
     return (
       <>
-        <Component {...props} ref={ref} />
+        <Component {...(props as P)} ref={ref} />
         
         {/* 描述 */}
         {options.description && (

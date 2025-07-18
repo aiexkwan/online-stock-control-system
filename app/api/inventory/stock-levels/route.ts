@@ -5,7 +5,7 @@ import { createClient } from '@/app/utils/supabase/server';
  * REST API endpoint for stock levels
  * Supports the client-side strategy of DataAccessLayer
  */
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
 
@@ -62,7 +62,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
 
     // Transform data
-    const items = (products || []).map((product: any) => ({
+    const items = (products || []).map((product: Record<string, unknown>) => ({
       productCode: product.product_code,
       productDesc: product.product_desc || '',
       warehouse: product.current_plt_loc?.charAt(0) || 'Unknown',
@@ -74,7 +74,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }));
 
     // Calculate aggregates
-    const uniqueProducts = new Set(items.map((i: any) => i.productCode));
+    const uniqueProducts = new Set(items.map((i: Record<string, unknown>) => i.productCode));
     const aggregates = {
       totalQuantity: items.reduce((sum, item) => sum + item.quantity, 0),
       totalValue: items.reduce((sum, item) => sum + item.value, 0),

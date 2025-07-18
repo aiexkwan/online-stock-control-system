@@ -98,7 +98,7 @@ async function checkOrderStatus() {
   
   // 3. 檢查是否使用了新的 Vision API
   console.log('\n\n3. 檢查 Vision API 使用情況:');
-  const recentTokenUsage = docUploads?.filter((d: any) => d.token && d.token > 0);
+  const recentTokenUsage = docUploads?.filter((d: Record<string, unknown>) => d.token && d.token > 0);
   if (recentTokenUsage && recentTokenUsage.length > 0) {
     console.log(`✓ 有 ${recentTokenUsage.length} 個文件使用了 API 分析`);
     recentTokenUsage.forEach(doc => {

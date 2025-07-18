@@ -5,6 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { DatabaseRecord } from '@/lib/types/database';
 import { ConfigService } from '@nestjs/config';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AuthLoginDto } from './dto/auth-login.dto';
@@ -359,7 +360,7 @@ export class AuthService {
       this.logger.warn(`Profile lookup failed for ${authUser.email}`);
     }
 
-    const result: any = {
+    const result: Record<string, unknown> = {
       id: authUser.id,
       email: authUser.email!,
       created_at: authUser.created_at,
@@ -390,7 +391,7 @@ export class AuthService {
   }
 
   private mapDbUserToDto(dbUser: any): UserDto {
-    const result: any = {
+    const result: Record<string, unknown> = {
       id: dbUser.id,
       email: dbUser.email,
       created_at: new Date().toISOString(),
@@ -443,7 +444,7 @@ export class AuthService {
     }
   }
 
-  async getUserProfileByEmail(email: string): Promise<{ data: any }> {
+  async getUserProfileByEmail(email: string): Promise<{ data: DatabaseRecord[] }> {
     try {
       const { data, error } = await this.supabaseService
         .getClient()

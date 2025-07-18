@@ -9,6 +9,7 @@
 'use client';
 
 import React, { useMemo, useEffect, useState } from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { ChartPieIcon } from '@heroicons/react/24/outline';
@@ -94,9 +95,9 @@ export const TopProductsDistributionWidget = React.memo(function TopProductsDist
           const rawData = widgetData.data.value || [];
           
           // 轉換為圖表數據格式，計算百分比
-          const total = rawData.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+          const total = rawData.reduce((sum: number, item: Record<string, unknown>) => sum + (item.quantity || 0), 0);
           
-          const chartData: ChartData[] = rawData.map((item: any, index: number) => ({
+          const chartData: ChartData[] = rawData.map((item: DatabaseRecord, index: number) => ({
             name: item.product_code || item.name,
             value: item.quantity || item.value || 0,
             percentage: total > 0 ? ((item.quantity || item.value || 0) / total) * 100 : 0,

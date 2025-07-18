@@ -278,7 +278,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
         setIsEditing(false);
         setShowForm(false);
         setShowCreateDialog(false);
-      } catch (error: any) {
+      } catch (error: unknown) {
         errorHandler.handleApiError(
           error,
           {
@@ -289,11 +289,11 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
               isEditing,
             },
           },
-          (error as { message: string }).message || 'Unexpected error'
+          getErrorMessage(error) || 'Unexpected error'
         );
         setStatusMessage({
           type: 'error',
-          message: (error as { message: string }).message || 'Unexpected error',
+          message: getErrorMessage(error) || 'Unexpected error',
         });
       } finally {
         setIsLoading(false);
@@ -385,7 +385,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
                       : 'bg-info/20 text-info'
               )}
             >
-              {(statusMessage as { message: string }).message}
+              {getErrorMessage(statusMessage)}
             </div>
           )}
 

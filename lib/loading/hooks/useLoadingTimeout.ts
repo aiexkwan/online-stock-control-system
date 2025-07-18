@@ -157,7 +157,7 @@ export function useLoadingTimeout(options: UseLoadingTimeoutOptions): UseLoading
         timeout,
       });
     }
-  }, [currentAttempt, retryCount, retryDelay, exponentialBackoff, timeout, onTimeout, onRetry, onFinalFailure, loadingOptions.id, maxAttempts, loadingHook]);
+  }, [currentAttempt, retryCount, retryDelay, exponentialBackoff, timeout, onTimeout, onRetry, onFinalFailure, loadingOptions.id, maxAttempts, loadingHook, executeLoading]);
 
   // 執行載入邏輯
   const executeLoading = useCallback(async () => {

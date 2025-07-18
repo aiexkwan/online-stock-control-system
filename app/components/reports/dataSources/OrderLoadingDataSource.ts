@@ -4,6 +4,7 @@
  */
 
 import { ReportDataSource } from '../core/ReportConfig';
+import { DatabaseRecord } from '@/lib/types/database';
 import { 
   getOrderLoadingSummary, 
   getOrderProgress, 
@@ -30,7 +31,7 @@ const orderLoadingSummaryDataSource: ReportDataSource = {
     return result.data;
   },
 
-  transform(data: any) {
+  transform(data: DatabaseRecord[]) {
     return data;
   },
 };
@@ -53,7 +54,7 @@ const orderProgressDataSource: ReportDataSource = {
     return result.data;
   },
 
-  transform(data: any) {
+  transform(data: DatabaseRecord[]) {
     return data;
   },
 };
@@ -76,7 +77,7 @@ const loadingDetailsDataSource: ReportDataSource = {
     return result.data;
   },
 
-  transform(data: any) {
+  transform(data: DatabaseRecord[]) {
     return data;
   },
 };
@@ -99,7 +100,7 @@ const userPerformanceDataSource: ReportDataSource = {
     return result.data;
   },
 
-  transform(data: any) {
+  transform(data: DatabaseRecord[]) {
     return data;
   },
 };

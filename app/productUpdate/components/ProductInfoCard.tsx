@@ -74,7 +74,7 @@ export default function ProductInfoCard({
 interface InfoRowProps {
   icon: React.ReactNode;
   label: string;
-  value: any;
+  value: unknown;
 }
 
 function InfoRow({ icon, label, value }: InfoRowProps) {

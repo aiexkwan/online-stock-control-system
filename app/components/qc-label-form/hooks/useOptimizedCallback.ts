@@ -3,7 +3,7 @@
 import { useCallback, useRef, useMemo, useState, useEffect } from 'react';
 
 // Debounced callback hook
-export const useDebouncedCallback = <T extends (...args: any[]) => any>(
+export const useDebouncedCallback = <T extends (...args: Record<string, unknown>[]) => any>(
   callback: T,
   delay: number,
   deps: React.DependencyList = []
@@ -28,7 +28,7 @@ export const useDebouncedCallback = <T extends (...args: any[]) => any>(
 };
 
 // Throttled callback hook
-export const useThrottledCallback = <T extends (...args: any[]) => any>(
+export const useThrottledCallback = <T extends (...args: Record<string, unknown>[]) => any>(
   callback: T,
   delay: number,
   deps: React.DependencyList = []
@@ -63,7 +63,7 @@ export const useThrottledCallback = <T extends (...args: any[]) => any>(
 };
 
 // Stable callback hook - prevents unnecessary re-renders
-export const useStableCallback = <T extends (...args: any[]) => any>(callback: T): T => {
+export const useStableCallback = <T extends (...args: Record<string, unknown>[]) => any>(callback: T): T => {
   const callbackRef = useRef<T>(callback);
 
   // Update the ref when callback changes
@@ -78,7 +78,7 @@ export const useStableCallback = <T extends (...args: any[]) => any>(callback: T
 };
 
 // Memoized event handler hook
-export const useMemoizedEventHandler = <T extends (...args: any[]) => any>(
+export const useMemoizedEventHandler = <T extends (...args: Record<string, unknown>[]) => any>(
   handler: T,
   deps: React.DependencyList
 ): T => {
@@ -92,7 +92,7 @@ export const useOptimizedFormHandler = <T extends Record<string, any>>(
   debounceDelay: number = 0
 ) => {
   const handleChange = useCallback(
-    (field: keyof T, value: any) => {
+    (field: keyof T, value: unknown) => {
       setState(prev => ({ ...prev, [field]: value }));
     },
     [setState]
@@ -148,7 +148,7 @@ export const useBatchedUpdates = <T extends Record<string, any>>(
 };
 
 // Optimized async callback with loading state
-export const useAsyncCallback = <T extends (...args: any[]) => Promise<any>>(
+export const useAsyncCallback = <T extends (...args: Record<string, unknown>[]) => Promise<any>>(
   asyncCallback: T,
   deps: React.DependencyList = []
 ) => {

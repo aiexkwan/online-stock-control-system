@@ -4,7 +4,7 @@
  */
 
 export interface ValidationRule {
-  validate: (value: any, formData?: any) => boolean | string | Promise<boolean | string>;
+  validate: (value: unknown, formData?: any) => boolean | string | Promise<boolean | string>;
   message?: string;
 }
 
@@ -137,7 +137,7 @@ export const range = (minValue: number, maxValue: number, message?: string): Val
  * 自定義驗證
  */
 export const custom = (
-  validateFn: (value: any, formData?: any) => boolean | string | Promise<boolean | string>,
+  validateFn: (value: unknown, formData?: any) => boolean | string | Promise<boolean | string>,
   message?: string
 ): ValidationRule => ({
   validate: validateFn,

@@ -45,8 +45,8 @@ export async function uploadPalletLabelPdfAction(
         `[uploadPalletLabelPdfAction] File ${filePath} uploaded successfully to ${bucketName}. Path: ${data?.path}`
       );
     return { success: true, filePath: data?.path };
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('[uploadPalletLabelPdfAction] Unexpected error during upload:', e);
-    return { success: false, error: `An unexpected server error occurred: ${e.message}` };
+    return { success: false, error: `An unexpected server error occurred: ${e instanceof Error ? e.message : 'Unknown error'}` };
   }
 }

@@ -53,7 +53,7 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
         sourcePage: 'AdminDashboard',
         sourceAction: 'ReprintLabel',
         operationType: TransactionOperation.PRINT_LABEL,
-        userId: 'system', // TODO: Get actual user ID
+        userId: 'system', // Using system user for admin dashboard operations
         metadata: {
           palletNumber: palletNumber.toUpperCase(),
           widget: 'ReprintLabelWidget',

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { DatabaseRecord } from '@/lib/types/database';
 import { SupabaseService } from '../supabase/supabase.service';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { StatsResponseDto } from './dto/stats-response.dto';
@@ -464,7 +465,7 @@ export class WidgetsService {
 
       const calculationTime = Date.now() - startTime;
 
-      const result: any = {
+      const result: Record<string, unknown> = {
         value,
         label,
         dataSource: query.dataSource, // Add dataSource at root level for backward compatibility
@@ -1053,7 +1054,7 @@ export class WidgetsService {
 
       // Process RPC result
       const distributionData: ProductDistributionItemDto[] = (data || []).map(
-        (item: any) => ({
+        (item: DatabaseRecord) => ({
           name: item.product_code,
           value: item.total_quantity,
           description: item.product_description || item.product_code,
@@ -1351,7 +1352,7 @@ export class WidgetsService {
         }
       >();
 
-      data?.forEach((record: any) => {
+      data?.forEach((record: DatabaseRecord) => {
         const key = record.product_code;
         const existing = productMap.get(key);
 
@@ -1682,7 +1683,7 @@ export class WidgetsService {
       // Group by product code and aggregate the data
       const productMap = new Map<string, StockDistributionItemDto>();
 
-      data?.forEach((item: any) => {
+      data?.forEach((item: DatabaseRecord) => {
         const productCode = item.product_code;
 
         if (!productMap.has(productCode)) {

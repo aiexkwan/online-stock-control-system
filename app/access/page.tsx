@@ -15,7 +15,10 @@ export default function AccessPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string>('');
-  const [securityInfo, setSecurityInfo] = useState<any>(null);
+  const [securityInfo, setSecurityInfo] = useState<{
+    useLocalStorage: boolean;
+    sessionTimeout: number;
+  } | null>(null);
   const [countdown, setCountdown] = useState(3);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [redirectPath, setRedirectPath] = useState('/admin/analysis');

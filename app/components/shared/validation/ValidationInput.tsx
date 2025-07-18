@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 export interface ValidationRule {
-  validate: (value: any) => boolean | string;
+  validate: (value: unknown) => boolean | string;
   message?: string;
 }
 
@@ -67,7 +67,7 @@ export const ValidationInput = forwardRef<HTMLInputElement, ValidationInputProps
     const hasError = showValidation && !!displayError;
     const hasSuccess = showValidation && !hasError && success && touched;
 
-    const handleValidation = (value: any) => {
+    const handleValidation = (value: unknown) => {
       if (!rules || rules.length === 0) return '';
 
       for (const rule of rules) {

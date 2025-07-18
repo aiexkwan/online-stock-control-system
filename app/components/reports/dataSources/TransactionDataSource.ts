@@ -36,7 +36,7 @@ const transactionDataSource: ReportDataSource = {
     return data || [];
   },
 
-  transform(data: any[]) {
+  transform(data: Record<string, unknown>[]) {
     return data.map(item => ({
       transfer_date: item.created_at,
       pallet_number: item.pallet_number,

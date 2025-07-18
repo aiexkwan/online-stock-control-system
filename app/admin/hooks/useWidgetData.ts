@@ -8,7 +8,7 @@ import { useAdminRefresh } from '../contexts/AdminRefreshContext';
 
 interface UseWidgetDataOptions {
   loadFunction: () => Promise<void>;
-  dependencies?: any[];
+  dependencies?: Record<string, unknown>[];
   isEditMode?: boolean;
 }
 

@@ -12,9 +12,17 @@ interface NavigationItemProps {
   item: NavItem;
   isActive: boolean;
   onActiveChange: (id: string | null) => void;
+  tabIndex?: number;
+  'aria-current'?: 'page' | undefined;
 }
 
-export function NavigationItem({ item, isActive, onActiveChange }: NavigationItemProps) {
+export function NavigationItem({ 
+  item, 
+  isActive, 
+  onActiveChange,
+  tabIndex = 0,
+  'aria-current': ariaCurrent
+}: NavigationItemProps) {
   const [isHovered, setIsHovered] = useState(false);
   const router = useRouter();
 
@@ -82,6 +90,12 @@ export function NavigationItem({ item, isActive, onActiveChange }: NavigationIte
         onClick={handleClick}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
+        tabIndex={tabIndex}
+        role="menuitem"
+        aria-current={ariaCurrent}
+        aria-haspopup={item.children ? 'true' : undefined}
+        aria-expanded={item.children && isActive ? 'true' : 'false'}
+        aria-label={item.label}
         className={cn(
           'relative rounded-lg px-3 py-3',
           'bg-white/5 backdrop-blur-md',

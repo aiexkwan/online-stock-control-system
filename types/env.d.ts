@@ -22,7 +22,6 @@ declare global {
       NEXTAUTH_SECRET?: string;
       NEXTAUTH_URL?: string;
       OPENAI_API_KEY?: string;
-      NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS?: string;
       ANALYZE?: string;
     }
   }

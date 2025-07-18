@@ -4,6 +4,7 @@
  */
 
 import type { WidgetCategory } from './types';
+import type { WidgetComponentProps } from '@/app/types/dashboard';
 
 // Export types for reuse
 export type WidgetDataSource = 'batch' | 'graphql' | 'server-action' | 'mixed' | 'none';
@@ -14,7 +15,7 @@ export interface UnifiedWidgetConfig {
   name: string;
   category: WidgetCategory;
   description?: string;
-  loader: () => Promise<any>;
+  loader: () => Promise<{ default: React.ComponentType<WidgetComponentProps> }>;
   dataSource: WidgetDataSource;
   priority: WidgetPriority;
   refreshInterval?: number;
@@ -54,7 +55,7 @@ export interface UnifiedWidgetConfig {
     chartIntegration?: boolean;
     
     // Custom metadata
-    [key: string]: any;
+    [key: string]: string | number | boolean | undefined;
   };
 }
 

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { DatabaseRecord } from '@/lib/types/database';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SupabaseService } from '../supabase/supabase.service';
 import {
@@ -105,7 +106,7 @@ export class InventoryService {
       }
 
       // Transform the data - mapping to available columns
-      const transformedData: InventoryDto[] = (data || []).map((item: any) => {
+      const transformedData: InventoryDto[] = (data || []).map((item: Record<string, unknown>) => {
         // Calculate total quantity from all location columns
         const totalGoodQty =
           (item.injection || 0) +
@@ -267,7 +268,7 @@ export class InventoryService {
         // Manual aggregation
         const summaryMap = new Map<string, InventorySummaryDto>();
 
-        inventoryData?.forEach((item: any) => {
+        inventoryData?.forEach((item: DatabaseRecord) => {
           const key = item.warehouse;
           if (!summaryMap.has(key)) {
             summaryMap.set(key, {
@@ -383,7 +384,7 @@ export class InventoryService {
       }
 
       // Transform the data
-      const transformedData = (data || []).map((item: any) => ({
+      const transformedData = (data || []).map((item: Record<string, unknown>) => ({
         product_code: item.product_code,
         injection: item.injection || 0,
         pipeline: item.pipeline || 0,
@@ -483,7 +484,7 @@ export class InventoryService {
       }
 
       // Transform the data
-      const stockLevels: StockLevelItemDto[] = (data || []).map((item: any) => {
+      const stockLevels: StockLevelItemDto[] = (data || []).map((item: Record<string, unknown>) => {
         const totalStock =
           (item.injection || 0) +
           (item.pipeline || 0) +

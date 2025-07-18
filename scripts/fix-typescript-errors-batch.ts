@@ -5,6 +5,7 @@
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { DatabaseRecord } from '@/lib/types/database';
 import { glob } from 'glob';
 import path from 'path';
 
@@ -166,7 +167,7 @@ const fixes = {
     // 添加類型註解
     fixed = fixed.replace(
       /const (\w+) = supabase/g,
-      'const $1: any = supabase'
+      'const $1: DatabaseRecord = supabase'
     );
     
     // 修復 comparison 錯誤

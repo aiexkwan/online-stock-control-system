@@ -39,7 +39,7 @@ const warehouseTransferApiClient = {
     status?: string;
     offset?: number;
     limit?: number;
-  }): Promise<{ transfers: any[], total_records: number }> {
+  }): Promise<{ transfers: Record<string, unknown>[], total_records: number }> {
     const url = new URL('/api/v1/warehouse-transfers/list', window.location.origin);
     
     Object.entries(params).forEach(([key, value]) => {

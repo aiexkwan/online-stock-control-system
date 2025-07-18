@@ -36,7 +36,7 @@ export async function OPTIONS() {
   return new Response('ok', { headers: corsHeaders });
 }
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request) {
   // 強制標記此請求為公開路由
   const responseHeaders = {
     ...corsHeaders,
@@ -166,7 +166,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     // 生成郵件內容
-    const orderRefs = [...new Set(orderData.map((item: any) => item.order_ref))];
+    const orderRefs = [...new Set(orderData.map((item: Record<string, unknown>) => item.order_ref))];
 
     const orderSummaryHtml = orderData
       .map(
@@ -180,7 +180,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       )
       .join('');
 
-    const emailData: any = {
+    const emailData: Record<string, unknown> = {
       from: fromEmail,
       to: toEmails,
       cc: ccEmails,
@@ -240,7 +240,7 @@ New order has been created and uploaded
 
 Order Details:
 ${orderData
-  .map((item: any) => `${item.product_code}: ${item.product_desc} (Qty: ${item.product_qty})`)
+  .map((item: Record<string, unknown>) => `${item.product_code}: ${item.product_desc} (Qty: ${item.product_qty})`)
   .join('\n')}
 
 This is an automated notification from the Pennine Stock Control System.
@@ -284,7 +284,7 @@ This is an automated notification from the Pennine Stock Control System.
     });
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('📨 Resend API response status:', (response as { status: string }).status);
+      console.log('📨 Resend API response status:', response.status);
       console.log(
         '📨 Resend API response headers:',
         Object.fromEntries(response.headers.entries())
@@ -309,8 +309,8 @@ This is an automated notification from the Pennine Stock Control System.
           success: false,
           error: 'Failed to parse email service response',
           details: {
-            status: (response as { status: string }).status,
-            statusText: (response as { status: string }).statusText,
+            status: response.status,
+            statusText: response.statusText,
             rawResponse: textResult,
           },
         },
@@ -323,8 +323,8 @@ This is an automated notification from the Pennine Stock Control System.
 
     if (!response.ok) {
       console.error('❌ Resend API error:', {
-        status: (response as { status: string }).status,
-        statusText: (response as { status: string }).statusText,
+        status: response.status,
+        statusText: response.statusText,
         result,
       });
       return NextResponse.json(
@@ -332,8 +332,8 @@ This is an automated notification from the Pennine Stock Control System.
           success: false,
           error: 'Failed to send email via Resend API',
           details: {
-            status: (response as { status: string }).status,
-            statusText: (response as { status: string }).statusText,
+            status: response.status,
+            statusText: response.statusText,
             apiResponse: result,
           },
         },
@@ -364,13 +364,13 @@ This is an automated notification from the Pennine Stock Control System.
         headers: responseHeaders,
       }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('💥 Unexpected error in order email API:', error);
     return NextResponse.json(
       {
         success: false,
         error: 'Internal server error',
-        details: (error as { message: string }).message,
+        details: getErrorMessage(error) || 'Unknown error',
       },
       {
         status: 500,

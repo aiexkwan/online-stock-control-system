@@ -9,6 +9,7 @@ import {
   HttpCode,
 } from '@nestjs/common';
 import { GrnService } from './grn.service';
+import { DatabaseRecord } from '@/lib/types/database';
 import { GrnReferencesQueryDto } from './dto/grn-references-query.dto';
 import { GrnMaterialCodesQueryDto } from './dto/grn-material-codes-query.dto';
 import { GrnReportDataQueryDto } from './dto/grn-report-data-query.dto';
@@ -82,7 +83,7 @@ export class GrnController {
       }
     }
 
-    const query: any = {
+    const query: DatabaseRecord = {
       grnRef,
     };
 

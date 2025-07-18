@@ -208,7 +208,7 @@ export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({
       if (preview) {
         URL.revokeObjectURL(preview.url);
       }
-      return prev.filter((p: any) => p.id !== id);
+      return prev.filter((p: Record<string, unknown>) => p.id !== id);
     });
   };
 

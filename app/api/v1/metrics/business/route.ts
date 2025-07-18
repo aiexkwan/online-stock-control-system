@@ -125,7 +125,7 @@ async function getQcLabelMetrics(supabase: any) {
       .order('count', { ascending: false })
       .limit(10);
 
-    const totalProducts = topProducts?.reduce((sum, item) => sum + item.count, 0) || 0;
+    const totalProducts = topProducts?.reduce((sum: number, item: Record<string, unknown>) => sum + item.count, 0) || 0;
 
     return {
       todayCount: todayData?.count || 0,
@@ -134,7 +134,7 @@ async function getQcLabelMetrics(supabase: any) {
       monthlyCount: monthlyData?.count || 0,
       avgProcessingTime: 2.5, // 秒 - 可以從實際日誌計算
       errorRate: 1.2, // 百分比 - 可以從錯誤日誌計算
-      topProducts: topProducts?.map((item: any) => ({
+      topProducts: topProducts?.map((item: { product_code: string; count: number }) => ({
         productCode: item.product_code,
         count: item.count,
         percentage: totalProducts > 0 ? (item.count / totalProducts * 100) : 0
@@ -195,7 +195,7 @@ async function getStockTransferMetrics(supabase: any) {
 
     // 彙總位置統計
     const locationMap = new Map();
-    locationStats?.forEach(stat => {
+    locationStats?.forEach((stat: any) => {
       const from = stat.location_from;
       const to = stat.location_to;
       
@@ -267,15 +267,15 @@ async function getOrderProcessingMetrics(supabase: any) {
       .group('status')
       .order('count', { ascending: false });
 
-    const totalOrders = ordersByStatus?.reduce((sum, item) => sum + item.count, 0) || 0;
+    const totalOrders = ordersByStatus?.reduce((sum: number, item: Record<string, unknown>) => sum + item.count, 0) || 0;
 
     return {
       todayOrders: todayOrders?.count || 0,
       pendingOrders: pendingOrders?.count || 0,
       completedOrders: completedOrders?.count || 0,
       avgProcessingTime: 45.2, // 分鐘 - 可以從實際數據計算
-      ordersByStatus: ordersByStatus?.map((item: any) => ({
-        status: (item as { status: string }).status,
+      ordersByStatus: ordersByStatus?.map((item: { status: string; count: number }) => ({
+        status: item.status,
         count: item.count,
         percentage: totalOrders > 0 ? (item.count / totalOrders * 100) : 0
       })) || []
@@ -335,7 +335,7 @@ async function getWarehouseOperationsMetrics(supabase: any) {
       activePallets: activePallets?.count || 0,
       voidedToday: voidedPallets?.count || 0,
       avgUtilization: 78.5, // 百分比 - 可以從實際數據計算
-      locationStats: locationStats?.map((item: any) => ({
+      locationStats: locationStats?.map((item: { location: string; count: number }) => ({
         location: item.location,
         palletCount: item.count,
         utilization: Math.random() * 100 // 實際應該從容量計算

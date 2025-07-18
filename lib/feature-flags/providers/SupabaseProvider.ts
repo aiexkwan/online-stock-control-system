@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { DatabaseRecord } from '@/lib/types/database';
 import { BaseFeatureFlagProvider } from './BaseProvider';
 import { FeatureFlag, FeatureFlagStatus } from '../types';
 
@@ -287,7 +288,7 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
   /**
    * 轉換數據庫記錄為 FeatureFlag
    */
-  private transformDbRecord(record: any): FeatureFlag {
+  private transformDbRecord(record: DatabaseRecord): FeatureFlag {
     return {
       key: record.key,
       name: record.name,
@@ -308,7 +309,7 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
   /**
    * 轉換數據庫記錄數組
    */
-  private transformDbRecords(records: any[]): FeatureFlag[] {
+  private transformDbRecords(records: Record<string, unknown>[]): FeatureFlag[] {
     return records.map(record => this.transformDbRecord(record));
   }
 
@@ -316,7 +317,7 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
    * 轉換 FeatureFlag 為數據庫記錄
    */
   private transformToDbRecord(key: string, flag: Partial<FeatureFlag>): any {
-    const record: any = {
+    const record: DatabaseRecord = {
       key,
       updated_at: new Date().toISOString(),
     };
