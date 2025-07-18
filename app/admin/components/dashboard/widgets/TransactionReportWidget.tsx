@@ -72,7 +72,7 @@ export const TransactionReportWidget = function TransactionReportWidget({
         left: rect.left,
       });
     }
-  }, [isCalendarOpen as string]);
+  }, [isCalendarOpen]);
 
   const handleDownload = async () => {
     if (downloadStatus !== 'idle') return;

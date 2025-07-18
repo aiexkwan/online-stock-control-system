@@ -53,6 +53,32 @@ export const generateTestData = {
 };
 
 /**
+ * 統一憑證獲取函數
+ */
+export function getUnifiedCredentials() {
+  return {
+    email: process.env.UNIFIED_TEST_EMAIL || 
+           process.env.SYS_LOGIN || 
+           process.env.E2E_USER_EMAIL || 
+           process.env.PUPPETEER_LOGIN || 
+           'test@pennineindustries.com',
+    password: process.env.UNIFIED_TEST_PASSWORD || 
+             process.env.SYS_PASSWORD || 
+             process.env.E2E_USER_PASSWORD || 
+             process.env.PUPPETEER_PASSWORD || 
+             'testpassword'
+  };
+}
+
+/**
+ * 檢查是否有可用的測試憑證
+ */
+export function hasValidCredentials(): boolean {
+  const creds = getUnifiedCredentials();
+  return !!(creds.email && creds.password && creds.email.includes('@'));
+}
+
+/**
  * 測試環境配置
  */
 export const testConfig = {
@@ -63,15 +89,13 @@ export const testConfig = {
     long: 30000,
   },
 
-  // 測試用戶憑證
+  // 統一測試用戶憑證
   credentials: {
-    admin: {
-      email: process.env.E2E_ADMIN_EMAIL || process.env.PUPPETEER_LOGIN || 'admin@pennineindustries.com',
-      password: process.env.E2E_ADMIN_PASSWORD || process.env.PUPPETEER_PASSWORD || 'admin123',
+    get admin() {
+      return getUnifiedCredentials();
     },
-    user: {
-      email: process.env.E2E_USER_EMAIL || process.env.PUPPETEER_LOGIN || 'user@pennineindustries.com',
-      password: process.env.E2E_USER_PASSWORD || process.env.PUPPETEER_PASSWORD || 'user123',
+    get user() {
+      return getUnifiedCredentials();
     },
   },
 

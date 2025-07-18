@@ -14,7 +14,7 @@ export const WidgetTextStyles = {
     medium: 'text-lg font-medium',
     small: 'text-sm font-medium',
     xs: 'text-xs font-medium',
-  },
+  } as Record<string, string>,
 
   // 內容樣式
   body: {
@@ -22,7 +22,7 @@ export const WidgetTextStyles = {
     medium: 'text-sm',
     small: 'text-xs',
     xs: 'text-[10px]',
-  },
+  } as Record<string, string>,
 
   // 標籤樣式
   label: {
@@ -30,7 +30,7 @@ export const WidgetTextStyles = {
     medium: 'text-xs',
     small: 'text-[10px]',
     xs: 'text-[9px]',
-  },
+  } as Record<string, string>,
 
   // 數值樣式
   value: {
@@ -39,11 +39,11 @@ export const WidgetTextStyles = {
     large: 'text-2xl font-medium',
     medium: 'text-xl font-medium',
     small: 'text-lg font-medium',
-  },
+  } as Record<string, string>,
 };
 
 // 定義發光效果樣式
-export const GlowStyles = {
+export const GlowStyles: Record<string, string> = {
   // 白色發光
   white: 'text-white [text-shadow:_0_0_10px_rgba(255,255,255,0.5),_0_0_20px_rgba(255,255,255,0.3)]',
 

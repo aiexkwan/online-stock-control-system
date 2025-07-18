@@ -67,6 +67,13 @@ export const semanticColors = {
     bg: '#dbeafe',
     border: '#93c5fd',
   },
+  destructive: {
+    light: '#f87171',   // 危險/破壞性 - 紅色
+    DEFAULT: '#ef4444',
+    dark: '#dc2626',
+    bg: '#fee2e2',
+    border: '#fca5a5',
+  },
 } as const;
 
 /**
@@ -142,6 +149,10 @@ export const widgetColors = {
     text: '#4f46e5',
     bg: 'bg-indigo-500/10',
     border: 'border-indigo-500/30',
+    primary: '#6366f1',
+    secondary: '#8b5cf6',
+    accent: '#a855f7',
+    grid: '#475569', // 添加 grid 屬性
   },
   operations: {
     gradient: 'from-yellow-500 to-orange-500',
@@ -150,7 +161,19 @@ export const widgetColors = {
     bg: 'bg-yellow-500/10',
     border: 'border-yellow-500/30',
   },
-} as const;
+} as {
+  [key: string]: {
+    gradient?: string;
+    icon?: string;
+    text?: string;
+    bg?: string;
+    border?: string;
+    primary?: string;
+    secondary?: string;
+    accent?: string;
+    grid?: string;
+  };
+};
 
 /**
  * Chart Colors
@@ -253,18 +276,21 @@ export function getSemanticColorClass(
       warning: 'bg-yellow-500/10',
       error: 'bg-red-500/10',
       info: 'bg-blue-500/10',
+      destructive: 'bg-red-500/10',
     },
     text: {
       success: 'text-green-600',
       warning: 'text-yellow-600',
       error: 'text-red-600',
       info: 'text-blue-600',
+      destructive: 'text-red-600',
     },
     border: {
       success: 'border-green-500/30',
       warning: 'border-yellow-500/30',
       error: 'border-red-500/30',
       info: 'border-blue-500/30',
+      destructive: 'border-red-500/30',
     },
   };
 
@@ -278,7 +304,7 @@ export function getWidgetCategoryColor(
   category: keyof typeof widgetColors,
   property: keyof typeof widgetColors.stats = 'gradient'
 ): string {
-  return widgetColors[category][property];
+  return widgetColors[category][property] || '';
 }
 
 /**
@@ -287,6 +313,176 @@ export function getWidgetCategoryColor(
 export function getChartColor(index: number, extended = false): string {
   const colors = extended ? chartColors.extended : chartColors.primary;
   return colors[index % colors.length];
+}
+
+/**
+ * WCAG 色彩對比度標準
+ * 確保 AA 級別合規性 (4.5:1 普通文字, 3:1 大文字)
+ */
+export const wcagColors = {
+  // AA 級別對比度配對 (白色背景)
+  onWhite: {
+    text: {
+      primary: '#1f2937',    // 對比度 > 12:1
+      secondary: '#4b5563',  // 對比度 > 7:1
+      muted: '#6b7280',      // 對比度 > 4.5:1
+    },
+    interactive: {
+      primary: '#0369a1',    // 對比度 > 4.5:1
+      secondary: '#7c2d12',  // 對比度 > 4.5:1
+      focus: '#0066cc',      // 對比度 > 4.5:1
+    },
+  },
+  
+  // AA 級別對比度配對 (深色背景)
+  onDark: {
+    text: {
+      primary: '#f9fafb',    // 對比度 > 15:1
+      secondary: '#d1d5db',  // 對比度 > 7:1
+      muted: '#9ca3af',      // 對比度 > 4.5:1
+    },
+    interactive: {
+      primary: '#60a5fa',    // 對比度 > 4.5:1
+      secondary: '#fb923c',  // 對比度 > 4.5:1
+      focus: '#3b82f6',      // 對比度 > 4.5:1
+    },
+  },
+  
+  // 高對比度模式 (AAA 級別)
+  highContrast: {
+    onWhite: {
+      text: '#000000',       // 對比度 21:1
+      interactive: '#0000ee', // 對比度 > 7:1
+      focus: '#ff0000',      // 對比度 > 5:1
+    },
+    onDark: {
+      text: '#ffffff',       // 對比度 21:1
+      interactive: '#ffff00', // 對比度 > 7:1
+      focus: '#00ff00',      // 對比度 > 5:1
+    },
+  },
+};
+
+/**
+ * 無障礙性焦點樣式
+ */
+export const accessibilityStyles = {
+  focus: {
+    default: {
+      outline: '2px solid #0066cc',
+      outlineOffset: '2px',
+    },
+    enhanced: {
+      outline: '3px solid #0066cc',
+      outlineOffset: '2px',
+      boxShadow: '0 0 0 5px rgba(0, 102, 204, 0.3)',
+    },
+    highContrast: {
+      outline: '3px solid #000000',
+      outlineOffset: '2px',
+      backgroundColor: '#ffff00',
+    },
+  },
+  
+  // 減少動畫模式樣式
+  reducedMotion: {
+    transition: 'none',
+    animation: 'none',
+  },
+  
+  // 大文字模式
+  largeText: {
+    fontSize: '1.125rem', // 18px
+    lineHeight: '1.6',
+  },
+  
+  // 高對比度模式
+  highContrast: {
+    filter: 'contrast(150%)',
+    border: '1px solid currentColor',
+  },
+};
+
+/**
+ * 無障礙性工具函數
+ */
+
+/**
+ * 根據背景色獲取 WCAG 合規的文字顏色
+ * @param background 背景色 ('light' | 'dark')
+ * @param contrast 對比度級別 ('normal' | 'high')
+ * @param variant 文字變體 ('primary' | 'secondary' | 'muted')
+ * @returns 符合 WCAG 標準的文字顏色
+ */
+export function getAccessibleTextColor(
+  background: 'light' | 'dark' = 'light',
+  contrast: 'normal' | 'high' = 'normal',
+  variant: 'primary' | 'secondary' | 'muted' = 'primary'
+): string {
+  if (contrast === 'high') {
+    return background === 'light' 
+      ? wcagColors.highContrast.onWhite.text
+      : wcagColors.highContrast.onDark.text;
+  }
+  
+  const colorSet = background === 'light' ? wcagColors.onWhite : wcagColors.onDark;
+  return colorSet.text[variant];
+}
+
+/**
+ * 根據背景色獲取 WCAG 合規的互動元素顏色
+ * @param background 背景色 ('light' | 'dark')
+ * @param contrast 對比度級別 ('normal' | 'high')
+ * @param variant 互動變體 ('primary' | 'secondary' | 'focus')
+ * @returns 符合 WCAG 標準的互動顏色
+ */
+export function getAccessibleInteractiveColor(
+  background: 'light' | 'dark' = 'light',
+  contrast: 'normal' | 'high' = 'normal',
+  variant: 'primary' | 'secondary' | 'focus' = 'primary'
+): string {
+  if (contrast === 'high') {
+    const colorSet = background === 'light' 
+      ? wcagColors.highContrast.onWhite
+      : wcagColors.highContrast.onDark;
+    
+    return variant === 'focus' ? colorSet.focus : colorSet.interactive;
+  }
+  
+  const colorSet = background === 'light' ? wcagColors.onWhite : wcagColors.onDark;
+  return colorSet.interactive[variant];
+}
+
+/**
+ * 獲取無障礙性焦點樣式
+ * @param style 樣式類型 ('default' | 'enhanced' | 'highContrast')
+ * @returns CSS 樣式對象
+ */
+export function getAccessibleFocusStyle(
+  style: 'default' | 'enhanced' | 'highContrast' = 'default'
+): Record<string, string> {
+  return accessibilityStyles.focus[style];
+}
+
+/**
+ * 生成無障礙性 CSS 類名
+ * @param config 配置選項
+ * @returns CSS 類名字符串
+ */
+export function generateAccessibilityClasses(config: {
+  reducedMotion?: boolean;
+  highContrast?: boolean;
+  largeText?: boolean;
+  enhancedFocus?: boolean;
+}): string {
+  const classes: string[] = [];
+  
+  if (config.reducedMotion) classes.push('accessibility-reduced-motion');
+  if (config.highContrast) classes.push('accessibility-high-contrast');
+  if (config.largeText) classes.push('accessibility-large-text');
+  if (config.enhancedFocus) classes.push('accessibility-enhanced-focus');
+  
+  return classes.join(' ');
 }
 
 /**
@@ -318,6 +514,20 @@ export const cssVariables = `
     --text-primary: ${textColors.primary.light};
     --text-secondary: ${textColors.secondary.light};
     --text-muted: ${textColors.muted.light};
+    
+    /* Accessibility Colors */
+    --accessibility-text-primary: ${wcagColors.onWhite.text.primary};
+    --accessibility-text-secondary: ${wcagColors.onWhite.text.secondary};
+    --accessibility-text-muted: ${wcagColors.onWhite.text.muted};
+    --accessibility-interactive-primary: ${wcagColors.onWhite.interactive.primary};
+    --accessibility-interactive-secondary: ${wcagColors.onWhite.interactive.secondary};
+    --accessibility-focus-color: ${wcagColors.onWhite.interactive.focus};
+    
+    /* Accessibility Settings */
+    --accessibility-font-size: 16px;
+    --accessibility-line-height: 1.5;
+    --accessibility-focus-outline: 2px solid var(--accessibility-focus-color);
+    --accessibility-focus-offset: 2px;
   }
   
   .dark {
@@ -330,5 +540,77 @@ export const cssVariables = `
     --text-primary: ${textColors.primary.dark};
     --text-secondary: ${textColors.secondary.dark};
     --text-muted: ${textColors.muted.dark};
+    
+    /* Accessibility Colors for Dark Mode */
+    --accessibility-text-primary: ${wcagColors.onDark.text.primary};
+    --accessibility-text-secondary: ${wcagColors.onDark.text.secondary};
+    --accessibility-text-muted: ${wcagColors.onDark.text.muted};
+    --accessibility-interactive-primary: ${wcagColors.onDark.interactive.primary};
+    --accessibility-interactive-secondary: ${wcagColors.onDark.interactive.secondary};
+    --accessibility-focus-color: ${wcagColors.onDark.interactive.focus};
+  }
+  
+  /* 無障礙性全域樣式 */
+  .accessibility-reduced-motion,
+  .accessibility-reduced-motion * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .accessibility-high-contrast {
+    filter: contrast(150%);
+  }
+  
+  .accessibility-high-contrast * {
+    border-color: currentColor !important;
+  }
+  
+  .accessibility-large-text {
+    font-size: var(--accessibility-font-size);
+    line-height: var(--accessibility-line-height);
+  }
+  
+  .accessibility-enhanced-focus *:focus-visible {
+    outline: 3px solid var(--accessibility-focus-color) !important;
+    outline-offset: var(--accessibility-focus-offset) !important;
+    box-shadow: 0 0 0 5px rgba(0, 102, 204, 0.3) !important;
+  }
+  
+  /* 螢幕閱讀器專用 */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  
+  /* 跳過連結 */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--accessibility-focus-color);
+    color: white;
+    padding: 8px;
+    text-decoration: none;
+    z-index: 10000;
+    border-radius: 4px;
+  }
+  
+  .skip-link:focus {
+    top: 6px;
+  }
+  
+  /* 焦點指示器始終可見 */
+  .accessibility-focus-always-visible *:focus {
+    outline: var(--accessibility-focus-outline) !important;
+    outline-offset: var(--accessibility-focus-offset) !important;
   }
 `;

@@ -8,11 +8,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 專案概述
 NewPennine 倉庫管理系統 - 基於 Next.js 14、TypeScript 同 Supabase 嘅現代化 WMS。企業級倉庫管理解決方案，支援完整供應鏈管理，包括 QC/GRN 標籤列印、庫存轉移、AI 訂單分析同管理儀表板。
 
-**最新狀態 (2025-07-16)**: v1.4 系統清理 ✅ 85% 完成  
+**最新狀態 (2025-07-18)**: TypeScript 錯誤修復重大進展 ✅ 74.9% 完成  
+- TypeScript 錯誤從 271 個減少至 68 個 (203 個錯誤已修復)
+- Storybook 配置和可訪問性組件完成，jest-axe 測試框架建立
+- 監控系統類型完整，Widget 枚舉使用統一  
 - 35+ REST API 端點已實施並經過測試
-- 前端 widgets 完全遷移到 REST API 架構  
-- NestJS 後端完整功能，包括 JWT 認證、資料庫整合、性能優化
-- 系統註釋和文檔已更新，移除過時的架構描述
+- 前端 widgets 完全遷移到 REST API 架構
 
 ## 開發命令
 

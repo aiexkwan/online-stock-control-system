@@ -84,7 +84,7 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
     });
     
     if (!response.ok) {
-      throw new Error(`API Error: ${(response as { status: string }).status}`);
+      throw new Error(`API Error: ${response.status}`);
     }
     
     return response.json();
@@ -112,7 +112,7 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
   const progressCards = useMemo(() => {
     if (!cardsData?.cards) return [];
     return cardsData.cards;
-  }, [cardsData as string]);
+  }, [cardsData]);
 
   // Create mock incomplete orders for dropdown (this should come from a separate endpoint)
   const incompleteOrders = useMemo(() => {
@@ -180,7 +180,7 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
         setOrderProgress([]);
       }
     },
-    [showError as string]
+    [showError]
   );
 
   // Load order progress when selected order changes

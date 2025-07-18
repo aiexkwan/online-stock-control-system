@@ -34,7 +34,7 @@ interface UploadingFile {
   folder: 'stockPic' | 'productSpec';
 }
 
-const fileValidation = {
+const fileValidation: Record<string, string[]> = {
   stockPic: ['.png', '.jpeg', '.jpg'],
   productSpec: ['.pdf', '.doc', '.docx'],
 };
@@ -57,10 +57,11 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
   const validateFile = useCallback(
     (file: File): string | null => {
       const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+      const folderKey = selectedFolder as string;
 
       // 檢查文件格式
-      if (!fileValidation[selectedFolder as string].includes(fileExtension)) {
-        return `Invalid file format. Allowed: ${fileValidation[selectedFolder as string].join(', ')}`;
+      if (!fileValidation[folderKey].includes(fileExtension)) {
+        return `Invalid file format. Allowed: ${fileValidation[folderKey].join(', ')}`;
       }
 
       // 檢查文件大小
@@ -70,7 +71,7 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
 
       return null;
     },
-    [selectedFolder as string]
+    [selectedFolder]
   );
 
   // 上傳單個文件
@@ -147,7 +148,7 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
       const newFiles: UploadingFile[] = [];
 
       for (let i = 0; i < files.length; i++) {
-        const file = files[i as string];
+        const file = files[i];
         const error = validateFile(file);
 
         if (error) {

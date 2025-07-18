@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
-import { Progress } from '@/app/components/ui/progress';
-import { Alert, AlertDescription } from '@/app/components/ui/alert';
-import { Badge } from '@/app/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { 
   ArrowUpIcon, 
   ArrowDownIcon, 
@@ -108,7 +108,7 @@ export function PerformanceMonitor() {
     const interval = setInterval(collectMetrics, 5000); // Update every 5 seconds
 
     return () => clearInterval(interval);
-  }, [isMonitoring as string]);
+  }, [isMonitoring]);
 
   const getMetricStatus = (metric: PerformanceMetric): 'good' | 'warning' | 'poor' => {
     const ratio = metric.value / metric.target;

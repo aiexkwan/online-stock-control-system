@@ -14,7 +14,7 @@
 import React from 'react';
 import { MetricCard } from '@/app/admin/components/dashboard/widgets/common/data-display/MetricCard';
 import { TrendingUp, TrendingDown, Package, AlertCircle, LucideIcon } from 'lucide-react';
-import { WidgetComponentProps } from '@/app/types/dashboard';
+import { TraditionalWidgetComponentProps } from '@/app/types/dashboard';
 import { useWidgetData } from '@/app/admin/contexts/DashboardDataContext';
 import { 
   brandColors, 
@@ -30,7 +30,7 @@ interface StatsData {
   label?: string;
 }
 
-interface StatsCardWidgetProps extends WidgetComponentProps {}
+interface StatsCardWidgetProps extends TraditionalWidgetComponentProps {}
 
 const StatsCardWidget = React.memo(function StatsCardWidget({
   widget,
@@ -78,13 +78,13 @@ const StatsCardWidget = React.memo(function StatsCardWidget({
   const getIconColor = (): string => {
     switch (widget.config.icon) {
       case 'trending-up':
-        return getWidgetCategoryColor('stats', 'success');
+        return getWidgetCategoryColor('stats', 'gradient');
       case 'trending-down':
-        return getWidgetCategoryColor('stats', 'destructive');
+        return getWidgetCategoryColor('stats', 'gradient');
       case 'alert':
-        return getWidgetCategoryColor('stats', 'warning');
+        return getWidgetCategoryColor('stats', 'gradient');
       default:
-        return getWidgetCategoryColor('stats', 'primary');
+        return getWidgetCategoryColor('stats', 'gradient');
     }
   };
 

@@ -36,7 +36,7 @@ export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
       start: timeFrame.start,
       end: timeFrame.end,
     };
-  }, [timeFrame as string]);
+  }, [timeFrame]);
 
   // 使用統一的 API hook
   const { 
@@ -69,7 +69,7 @@ export const StillInAwaitWidget = React.memo(function StillInAwaitWidget({
       count: apiData.count || 0, 
       totalPallets: apiData.totalPallets || 0 
     };
-  }, [apiData as string]);
+  }, [apiData]);
 
   if (isEditMode) {
     return (

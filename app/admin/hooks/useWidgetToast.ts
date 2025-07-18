@@ -107,12 +107,15 @@ export function useWidgetToast(): UseWidgetToastReturn {
       error: string | ((error: Error) => string);
     }
   ): Promise<T> => {
-    return toast.promise(promise, {
+    const toastPromise = toast.promise(promise, {
       loading: options.loading,
       success: options.success,
       error: options.error,
       position: 'top-right',
     });
+    
+    // Return the original promise, not the toast promise wrapper
+    return promise;
   }, []);
 
   return {

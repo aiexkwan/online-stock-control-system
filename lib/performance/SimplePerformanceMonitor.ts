@@ -536,3 +536,6 @@ class PerformanceTimer {
 
 // 類型導出
 export type { SimpleMetric, SimpleStats, SimpleConfig, PerformanceAlert };
+
+// 類導出
+export { PerformanceTimer };

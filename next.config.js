@@ -1,10 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // 暫時禁用 strict mode 以避免開發環境的 double rendering
-  reactStrictMode: false,
+  // 啟用嚴格模式以提高代碼質量
+  reactStrictMode: true,
   typescript: {
-    // 忽略構建時的 TypeScript 錯誤
-    ignoreBuildErrors: true,
+    // 啟用嚴格 TypeScript 錯誤檢查
+    ignoreBuildErrors: false,
   },
   serverExternalPackages: ['pdf-parse', 'pdfjs-dist', 'sharp', 'pdfkit', '@react-pdf/renderer'],
   // CSS 優化配置 (優化 CSS 使用率)

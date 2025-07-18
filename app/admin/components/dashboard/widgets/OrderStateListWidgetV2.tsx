@@ -102,7 +102,7 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
   // 重新獲取數據
   const refetch = useCallback(() => {
     fetchOrdersData();
-  }, [fetchOrdersData as string]);
+  }, [fetchOrdersData]);
 
   // 處理數據
   const data = useMemo<OrderProgress[]>(() => {
@@ -145,7 +145,7 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
             status_color: statusColor,
           };
         })
-        .filter((order: OrderProgress) => (order as { status: string }).status !== 'completed'); // 只顯示未完成訂單
+        .filter((order: OrderProgress) => order.status !== 'completed'); // 只顯示未完成訂單
     }
     
     // 處理嵌套格式數據 (fallback)
@@ -190,7 +190,7 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
     // }
     
     return [];
-  }, [rawData as string]);
+  }, [rawData]);
 
   // 定義 DataTable columns
   const columns = useMemo<DataTableColumn<OrderProgress>[]>(() => [
@@ -204,13 +204,13 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
           <div
             className={cn(
               'h-2 w-2 flex-shrink-0 rounded-full',
-              (item as { status: string }).status_color === 'green'
+              (item as OrderProgress).status_color === 'green'
                 ? 'bg-green-400'
-                : (item as { status: string }).status_color === 'orange'
+                : (item as OrderProgress).status_color === 'orange'
                   ? 'bg-orange-400'
-                  : (item as { status: string }).status_color === 'yellow'
+                  : (item as OrderProgress).status_color === 'yellow'
                     ? 'bg-yellow-400'
-                    : (item as { status: string }).status_color === 'red'
+                    : (item as OrderProgress).status_color === 'red'
                       ? 'bg-red-400'
                       : 'bg-slate-400'
             )}
@@ -253,18 +253,18 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
       align: 'center',
       render: (value, item) => (
         <div className="flex justify-center">
-          {(item as { status: string }).status === 'completed' && (
+          {(item as OrderProgress).status === 'completed' && (
             <TruckIcon className="h-4 w-4 text-green-400" />
           )}
-          {(item as { status: string }).status === 'in_progress' && (
+          {(item as OrderProgress).status === 'in_progress' && (
             <span className={cn(
               'text-xs font-medium',
-              (item as { status: string }).status_color === 'orange' ? 'text-orange-400' : 'text-yellow-400'
+              (item as OrderProgress).status_color === 'orange' ? 'text-orange-400' : 'text-yellow-400'
             )}>
               {item.progress >= 75 ? 'Almost' : 'Loading'}
             </span>
           )}
-          {(item as { status: string }).status === 'pending' && (
+          {(item as OrderProgress).status === 'pending' && (
             <span className="text-xs font-medium text-red-400">Pending</span>
           )}
         </div>
@@ -280,7 +280,7 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
       pendingCount,
       totalCount: pendingCount, // 因為已經過濾了完成的訂單
     };
-  }, [data as string]);
+  }, [data]);
 
   // Edit mode - 顯示空白狀態
   if (isEditMode) {
@@ -349,7 +349,7 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
         rowClassName={(item) => 
           cn(
             'transition-colors hover:bg-slate-700/50',
-            (item as { status: string }).status === 'completed' && 'opacity-50'
+            (item as OrderProgress).status === 'completed' && 'opacity-50'
           )
         }
       />

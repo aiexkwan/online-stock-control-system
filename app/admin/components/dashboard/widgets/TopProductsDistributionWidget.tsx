@@ -60,7 +60,7 @@ export const TopProductsDistributionWidget = React.memo(function TopProductsDist
       startDate: timeFrame.start.toISOString(),
       endDate: timeFrame.end.toISOString(),
     };
-  }, [timeFrame as string]);
+  }, [timeFrame]);
 
   // 使用 REST API 獲取數據
   const [loading, setLoading] = useState(false);
@@ -128,7 +128,7 @@ export const TopProductsDistributionWidget = React.memo(function TopProductsDist
     }
     
     return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`;
-  }, [timeFrame as string]);
+  }, [timeFrame]);
 
   // 自定義 Tooltip
   const CustomTooltip = ({ active, payload }: any) => {

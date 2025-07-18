@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { LoginPage } from '../pages/login.page';
-import { testConfig } from '../utils/test-data';
+import { testConfig, hasValidCredentials, getUnifiedCredentials } from '../utils/test-data';
 
 /**
  * Authentication Flow Tests
@@ -34,15 +34,15 @@ test.describe('Authentication Flow', () => {
 
   test('should login with valid credentials', async ({ page }) => {
     // Skip if no valid credentials are provided
-    const hasE2ECreds = process.env.E2E_USER_EMAIL && process.env.E2E_USER_PASSWORD;
-    const hasPuppeteerCreds = process.env.PUPPETEER_LOGIN && process.env.PUPPETEER_PASSWORD;
-    if (!hasE2ECreds && !hasPuppeteerCreds) {
+    if (!hasValidCredentials()) {
       test.skip();
       return;
     }
 
+    const credentials = getUnifiedCredentials();
+
     // 執行登入
-    await loginPage.login(testConfig.credentials.user.email, testConfig.credentials.user.password);
+    await loginPage.login(credentials.email, credentials.password);
 
     // 驗證成功登入 - 應該跳轉到 /access 而非 /dashboard
     await expect(page).toHaveURL(/\/access/);
@@ -82,12 +82,12 @@ test.describe('Authentication Flow', () => {
 
   test('should redirect to requested page after login', async ({ page }) => {
     // Skip if no valid credentials are provided
-    const hasE2ECreds = process.env.E2E_USER_EMAIL && process.env.E2E_USER_PASSWORD;
-    const hasPuppeteerCreds = process.env.PUPPETEER_LOGIN && process.env.PUPPETEER_PASSWORD;
-    if (!hasE2ECreds && !hasPuppeteerCreds) {
+    if (!hasValidCredentials()) {
       test.skip();
       return;
     }
+
+    const credentials = getUnifiedCredentials();
 
     // 先訪問需要認證的頁面
     await page.goto('/inventory?redirect=true');
@@ -96,7 +96,7 @@ test.describe('Authentication Flow', () => {
     await expect(page).toHaveURL(/\/main-login/);
 
     // 登入
-    await loginPage.login(testConfig.credentials.user.email, testConfig.credentials.user.password);
+    await loginPage.login(credentials.email, credentials.password);
 
     // 應該先到 /access 頁面
     await expect(page).toHaveURL(/\/access/);
@@ -108,15 +108,15 @@ test.describe('Authentication Flow', () => {
 
   test('should maintain session across page reloads', async ({ page, context }) => {
     // Skip if no valid credentials are provided
-    const hasE2ECreds = process.env.E2E_USER_EMAIL && process.env.E2E_USER_PASSWORD;
-    const hasPuppeteerCreds = process.env.PUPPETEER_LOGIN && process.env.PUPPETEER_PASSWORD;
-    if (!hasE2ECreds && !hasPuppeteerCreds) {
+    if (!hasValidCredentials()) {
       test.skip();
       return;
     }
 
+    const credentials = getUnifiedCredentials();
+
     // 登入
-    await loginPage.login(testConfig.credentials.user.email, testConfig.credentials.user.password);
+    await loginPage.login(credentials.email, credentials.password);
 
     // 等待登入完成
     await page.waitForURL(/\/access/);
@@ -135,15 +135,15 @@ test.describe('Authentication Flow', () => {
 
   test('should logout successfully', async ({ page }) => {
     // Skip if no valid credentials are provided
-    const hasE2ECreds = process.env.E2E_USER_EMAIL && process.env.E2E_USER_PASSWORD;
-    const hasPuppeteerCreds = process.env.PUPPETEER_LOGIN && process.env.PUPPETEER_PASSWORD;
-    if (!hasE2ECreds && !hasPuppeteerCreds) {
+    if (!hasValidCredentials()) {
       test.skip();
       return;
     }
 
+    const credentials = getUnifiedCredentials();
+
     // 先登入
-    await loginPage.login(testConfig.credentials.user.email, testConfig.credentials.user.password);
+    await loginPage.login(credentials.email, credentials.password);
     await page.waitForURL(/\/access/);
 
     // 執行登出

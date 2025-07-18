@@ -8,11 +8,12 @@
 import { useState, useCallback, useEffect, useRef, useMemo, useContext } from 'react';
 import { getAPIClient, APIRequest, APIResponse } from '@/lib/api/unified-api-client';
 import { useAuth } from '@/app/hooks/useAuth';
+import { createClient } from '@/app/utils/supabase/client';
 import { DashboardDataContext } from '../contexts/DashboardDataContext';
 import { useWidgetErrorHandler } from './useWidgetErrorHandler';
 import { logger } from '@/lib/logger';
 
-export interface UseUnifiedAPIOptions<TData, TVariables> {
+export interface UseUnifiedAPIOptions<TData, TVariables extends Record<string, any> = Record<string, any>> {
   // REST API 配置
   restEndpoint: string;
   restMethod?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
@@ -48,7 +49,7 @@ export interface UseUnifiedAPIResult<TData> {
  * 統一 REST API Hook
  * 提供統一的 REST API 訪問接口
  */
-export function useUnifiedAPI<TData = any, TVariables = any>({
+export function useUnifiedAPI<TData = any, TVariables extends Record<string, any> = Record<string, any>>({
   restEndpoint,
   restMethod = 'GET',
   variables,
@@ -75,6 +76,7 @@ export function useUnifiedAPI<TData = any, TVariables = any>({
   
   // Hooks
   const { user } = useAuth();
+  const supabase = useMemo(() => createClient(), []);
   const dashboardData = useContext(DashboardDataContext);
   const { handleFetchError } = useWidgetErrorHandler(widgetId, 'system');
   
@@ -183,14 +185,17 @@ export function useUnifiedAPI<TData = any, TVariables = any>({
         return;
       }
 
+      // Get current session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      
       // Prepare REST API request
       const apiRequest: APIRequest = {
         method: restMethod,
         endpoint: restEndpoint,
-        params: variables,
-        headers: {
-          'Authorization': user?.access_token ? `Bearer ${user.access_token}` : undefined,
-        },
+        params: variables as Record<string, any> | undefined,
+        headers: session?.access_token ? {
+          'Authorization': `Bearer ${session.access_token}`,
+        } : {},
         metadata: {
           widgetId,
           userId: user?.id,
@@ -278,12 +283,12 @@ export function useUnifiedAPI<TData = any, TVariables = any>({
 /**
  * REST API Hook - 簡化版本
  */
-export function useRestAPI<TData = any, TVariables = any>(
+export function useRestAPI<TData = any, TVariables extends Record<string, any> = Record<string, any>>(
   endpoint: string,
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' = 'GET',
   options?: Omit<UseUnifiedAPIOptions<TData, TVariables>, 'restEndpoint' | 'restMethod'>
 ) {
-  return useUnifiedAPI({
+  return useUnifiedAPI<TData, TVariables>({
     ...options,
     restEndpoint: endpoint,
     restMethod: method,

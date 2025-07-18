@@ -9,7 +9,7 @@ import React, { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select-radix';
 import { 
   LineChart, 
   Line, 
@@ -103,7 +103,7 @@ export default function RealtimeMetricsChart({
       timestamp: new Date(item.timestamp).toLocaleTimeString(),
       time: new Date(item.timestamp).getTime()
     }));
-  }, [data as string]);
+  }, [data]);
 
   // 計算趨勢
   const trend = useMemo(() => {
@@ -119,11 +119,11 @@ export default function RealtimeMetricsChart({
       percentage,
       direction: change > 0 ? 'up' : change < 0 ? 'down' : 'stable'
     };
-  }, [processedData as string]);
+  }, [processedData]);
 
   // 獲取圖表顏色
   const getChartColors = () => {
-    return COLORS[type as string] || COLORS.performance;
+    return COLORS[type as keyof typeof COLORS] || COLORS.performance;
   };
 
   // 格式化工具提示

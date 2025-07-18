@@ -9,6 +9,7 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { UniversalContainer } from '@/components/layout/universal';
+import { WidgetType } from '@/app/types/dashboard';
 
 // Dynamic imports for widgets
 // V1 widget has been removed, now only V2 exists
@@ -68,10 +69,14 @@ export default function ProductUpdateDemoPage() {
               <ProductUpdateWidgetV2
                 widget={{
                   id: 'demo-product-update-v2',
-                  gridX: 0,
-                  gridY: 0,
-                  gridWidth: 12,
-                  gridHeight: 8,
+                  type: WidgetType.CUSTOM,
+                  gridProps: {
+                    x: 0,
+                    y: 0,
+                    w: 12,
+                    h: 8,
+                  },
+                  config: {},
                 }}
                 isEditMode={false}
               />

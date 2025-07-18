@@ -1,0 +1,407 @@
+/**
+ * Smart Loading Spinner
+ * 智能載入旋轉器
+ * 
+ * 根據性能指標和載入狀態自動調整動畫和樣式
+ */
+
+'use client';
+
+import React, { useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { LoadingComponentProps, PerformanceMetrics } from '../types';
+import { useSmartLoading } from '../hooks/useSmartLoading';
+
+interface SmartLoadingSpinnerProps extends LoadingComponentProps {
+  /** 旋轉器類型 */
+  variant?: 'default' | 'dots' | 'bars' | 'ring' | 'pulse';
+  /** 是否啟用性能感知 */
+  enablePerformanceAware?: boolean;
+  /** 自定義性能指標 */
+  performanceMetrics?: PerformanceMetrics;
+  /** 是否全螢幕 */
+  fullScreen?: boolean;
+  /** 顏色主題 */
+  theme?: 'primary' | 'secondary' | 'success' | 'warning' | 'error';
+  /** 是否顯示背景 */
+  showBackground?: boolean;
+  /** 動畫速度倍數 */
+  speedMultiplier?: number;
+}
+
+export function SmartLoadingSpinner({
+  id = 'smart-spinner',
+  isLoading = true,
+  text,
+  progress,
+  size = 'md',
+  className,
+  error,
+  variant = 'default',
+  enablePerformanceAware = true,
+  performanceMetrics,
+  fullScreen = false,
+  theme = 'primary',
+  showBackground = false,
+  speedMultiplier = 1,
+  onComplete,
+  onError,
+}: SmartLoadingSpinnerProps) {
+
+  // 使用智能載入 Hook
+  const smartLoading = useSmartLoading({
+    id,
+    type: 'component',
+    enablePerformanceAware,
+  });
+
+  // 使用提供的性能指標或從 Hook 獲取
+  const metrics = performanceMetrics || smartLoading.performanceMetrics;
+
+  // 尺寸配置
+  const sizeConfig = {
+    sm: { spinner: 'h-4 w-4', text: 'text-sm', container: 'gap-2' },
+    md: { spinner: 'h-6 w-6', text: 'text-base', container: 'gap-3' },
+    lg: { spinner: 'h-8 w-8', text: 'text-lg', container: 'gap-4' },
+    xl: { spinner: 'h-12 w-12', text: 'text-xl', container: 'gap-5' },
+  }[size];
+
+  // 主題配置
+  const themeConfig = {
+    primary: { 
+      spinner: 'text-blue-500', 
+      text: 'text-slate-300',
+      background: 'bg-blue-500/10',
+    },
+    secondary: { 
+      spinner: 'text-slate-400', 
+      text: 'text-slate-400',
+      background: 'bg-slate-500/10',
+    },
+    success: { 
+      spinner: 'text-green-500', 
+      text: 'text-green-400',
+      background: 'bg-green-500/10',
+    },
+    warning: { 
+      spinner: 'text-yellow-500', 
+      text: 'text-yellow-400',
+      background: 'bg-yellow-500/10',
+    },
+    error: { 
+      spinner: 'text-red-500', 
+      text: 'text-red-400',
+      background: 'bg-red-500/10',
+    },
+  }[theme];
+
+  // 動畫配置（基於性能）
+  const animationConfig = useMemo(() => {
+    if (!enablePerformanceAware || !metrics) {
+      return {
+        useMotion: true,
+        duration: 1 / speedMultiplier,
+        complexity: 'normal' as const,
+      };
+    }
+
+    const isLowPerformance = metrics.isLowEndDevice || metrics.isSlowNetwork;
+    
+    return {
+      useMotion: !isLowPerformance,
+      duration: isLowPerformance ? 1.5 / speedMultiplier : 1 / speedMultiplier,
+      complexity: isLowPerformance ? 'simple' : 'normal' as const,
+    };
+  }, [enablePerformanceAware, metrics, speedMultiplier]);
+
+  // 渲染不同變體的旋轉器
+  const renderSpinner = () => {
+    const spinnerClass = cn(sizeConfig.spinner, themeConfig.spinner);
+
+    if (error) {
+      return <AlertCircle className={spinnerClass} />;
+    }
+
+    if (!isLoading && progress === 100) {
+      return <CheckCircle2 className={spinnerClass} />;
+    }
+
+    switch (variant) {
+      case 'dots':
+        return renderDotsSpinner();
+      case 'bars':
+        return renderBarsSpinner();
+      case 'ring':
+        return renderRingSpinner();
+      case 'pulse':
+        return renderPulseSpinner();
+      case 'default':
+      default:
+        if (!animationConfig.useMotion) {
+          return <Loader2 className={cn(spinnerClass, 'animate-spin')} />;
+        }
+        
+        return (
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{
+              duration: animationConfig.duration,
+              repeat: Infinity,
+              ease: 'linear',
+            }}
+          >
+            <Loader2 className={spinnerClass} />
+          </motion.div>
+        );
+    }
+  };
+
+  // 點狀旋轉器
+  const renderDotsSpinner = () => {
+    const dotCount = animationConfig.complexity === 'simple' ? 3 : 5;
+    
+    return (
+      <div className={cn('flex', sizeConfig.container)}>
+        {Array.from({ length: dotCount }, (_, i) => {
+          if (!animationConfig.useMotion) {
+            return (
+              <div
+                key={i}
+                className={cn(
+                  'w-2 h-2 rounded-full',
+                  themeConfig.spinner.replace('text-', 'bg-'),
+                  'animate-pulse'
+                )}
+                style={{ animationDelay: `${i * 0.2}s` }}
+              />
+            );
+          }
+
+          return (
+            <motion.div
+              key={i}
+              className={cn(
+                'w-2 h-2 rounded-full',
+                themeConfig.spinner.replace('text-', 'bg-')
+              )}
+              animate={{
+                scale: [1, 1.5, 1],
+                opacity: [0.5, 1, 0.5],
+              }}
+              transition={{
+                duration: animationConfig.duration,
+                repeat: Infinity,
+                delay: i * 0.1,
+              }}
+            />
+          );
+        })}
+      </div>
+    );
+  };
+
+  // 條狀旋轉器
+  const renderBarsSpinner = () => {
+    const barCount = animationConfig.complexity === 'simple' ? 3 : 5;
+    
+    return (
+      <div className={cn('flex items-end', sizeConfig.container)}>
+        {Array.from({ length: barCount }, (_, i) => {
+          if (!animationConfig.useMotion) {
+            return (
+              <div
+                key={i}
+                className={cn(
+                  'w-1',
+                  sizeConfig.spinner.split(' ')[0],
+                  themeConfig.spinner.replace('text-', 'bg-'),
+                  'animate-pulse'
+                )}
+                style={{ animationDelay: `${i * 0.1}s` }}
+              />
+            );
+          }
+
+          return (
+            <motion.div
+              key={i}
+              className={cn(
+                'w-1',
+                themeConfig.spinner.replace('text-', 'bg-')
+              )}
+              animate={{
+                height: ['20%', '100%', '20%'],
+              }}
+              transition={{
+                duration: animationConfig.duration,
+                repeat: Infinity,
+                delay: i * 0.1,
+              }}
+              style={{ minHeight: '4px' }}
+            />
+          );
+        })}
+      </div>
+    );
+  };
+
+  // 環狀旋轉器
+  const renderRingSpinner = () => {
+    const ringSize = sizeConfig.spinner;
+    
+    if (!animationConfig.useMotion) {
+      return (
+        <div
+          className={cn(
+            ringSize,
+            'border-2 border-transparent border-t-current rounded-full animate-spin',
+            themeConfig.spinner
+          )}
+        />
+      );
+    }
+
+    return (
+      <motion.div
+        className={cn(
+          ringSize,
+          'border-2 border-transparent border-t-current rounded-full',
+          themeConfig.spinner
+        )}
+        animate={{ rotate: 360 }}
+        transition={{
+          duration: animationConfig.duration,
+          repeat: Infinity,
+          ease: 'linear',
+        }}
+      />
+    );
+  };
+
+  // 脈衝旋轉器
+  const renderPulseSpinner = () => {
+    if (!animationConfig.useMotion) {
+      return (
+        <div
+          className={cn(
+            sizeConfig.spinner,
+            'rounded-full animate-pulse',
+            themeConfig.spinner.replace('text-', 'bg-')
+          )}
+        />
+      );
+    }
+
+    return (
+      <motion.div
+        className={cn(
+          sizeConfig.spinner,
+          'rounded-full',
+          themeConfig.spinner.replace('text-', 'bg-')
+        )}
+        animate={{
+          scale: [1, 1.2, 1],
+          opacity: [0.5, 1, 0.5],
+        }}
+        transition={{
+          duration: animationConfig.duration,
+          repeat: Infinity,
+        }}
+      />
+    );
+  };
+
+  // 進度條
+  const renderProgress = () => {
+    if (typeof progress !== 'number') return null;
+
+    return (
+      <div className="w-full max-w-xs">
+        <div className="flex justify-between text-xs mb-1">
+          <span className={themeConfig.text}>進度</span>
+          <span className={themeConfig.text}>{Math.round(progress)}%</span>
+        </div>
+        <div className="w-full bg-slate-700 rounded-full h-2">
+          <motion.div
+            className={cn(
+              'h-2 rounded-full',
+              themeConfig.spinner.replace('text-', 'bg-')
+            )}
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.3 }}
+          />
+        </div>
+      </div>
+    );
+  };
+
+  const content = (
+    <div
+      className={cn(
+        'flex flex-col items-center justify-center',
+        sizeConfig.container,
+        showBackground && cn('p-6 rounded-lg', themeConfig.background),
+        className
+      )}
+    >
+      {renderSpinner()}
+      
+      {text && (
+        <span className={cn(sizeConfig.text, themeConfig.text)}>
+          {text}
+        </span>
+      )}
+      
+      {renderProgress()}
+      
+      {error && (
+        <span className="text-red-400 text-sm mt-2">
+          {error}
+        </span>
+      )}
+    </div>
+  );
+
+  if (fullScreen) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        {content}
+      </div>
+    );
+  }
+
+  return content;
+}
+
+// 預設變體
+export const DotsSpinner = (props: Omit<SmartLoadingSpinnerProps, 'variant'>) => (
+  <SmartLoadingSpinner variant="dots" {...props} />
+);
+
+export const BarsSpinner = (props: Omit<SmartLoadingSpinnerProps, 'variant'>) => (
+  <SmartLoadingSpinner variant="bars" {...props} />
+);
+
+export const RingSpinner = (props: Omit<SmartLoadingSpinnerProps, 'variant'>) => (
+  <SmartLoadingSpinner variant="ring" {...props} />
+);
+
+export const PulseSpinner = (props: Omit<SmartLoadingSpinnerProps, 'variant'>) => (
+  <SmartLoadingSpinner variant="pulse" {...props} />
+);
+
+// 專用旋轉器
+export const ApiSpinner = (props: Omit<SmartLoadingSpinnerProps, 'variant' | 'theme'>) => (
+  <SmartLoadingSpinner variant="default" theme="primary" size="sm" {...props} />
+);
+
+export const PageSpinner = (props: Omit<SmartLoadingSpinnerProps, 'variant' | 'fullScreen'>) => (
+  <SmartLoadingSpinner variant="default" fullScreen showBackground {...props} />
+);
+
+export const WidgetSpinner = (props: Omit<SmartLoadingSpinnerProps, 'variant' | 'size'>) => (
+  <SmartLoadingSpinner variant="dots" size="sm" {...props} />
+);

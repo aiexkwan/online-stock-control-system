@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { simplePerformanceMonitor, recordMetric } from '@/lib/performance/SimplePerformanceMonitor';
+import { simplePerformanceMonitor, recordMetric, PerformanceTimer } from '@/lib/performance/SimplePerformanceMonitor';
 import { 
   enhancedPerformanceMonitor,
   type ErrorMetrics,

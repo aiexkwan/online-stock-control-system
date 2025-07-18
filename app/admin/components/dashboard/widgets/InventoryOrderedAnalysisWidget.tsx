@@ -14,7 +14,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { WidgetComponentProps } from '@/app/types/dashboard';
+import { TraditionalWidgetComponentProps } from '@/app/types/dashboard';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import {
   Loader2,
@@ -69,7 +69,7 @@ interface InventoryAnalysisResponse {
   };
 }
 
-interface InventoryOrderedAnalysisWidgetProps extends WidgetComponentProps {
+interface InventoryOrderedAnalysisWidgetProps extends TraditionalWidgetComponentProps {
   // useGraphQL prop removed - using REST API only
 }
 
@@ -191,7 +191,7 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
       <Card ref={containerRef} className={cn('h-full bg-card/50 border-border')}>
         <CardHeader className='pb-3'>
           <div className='flex items-center justify-between'>
-            <div className={cn('flex items-center', theme.spacing.gap.small)}>
+            <div className={cn('flex items-center gap-2')}>
               <Package className='h-5 w-5 text-muted-foreground' />
               <Skeleton className='h-6 w-48' />
             </div>
@@ -243,7 +243,7 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
     <Card ref={containerRef} className={cn('h-full bg-card/50 border-border')}>
       <CardHeader className='pb-3'>
         <div className='flex items-center justify-between'>
-          <CardTitle className={cn('flex items-center text-lg', theme.spacing.gap.small, textClasses['heading-base'])}>
+          <CardTitle className={cn('flex items-center text-lg gap-2', textClasses['heading-base'])}>
             <Package className='h-5 w-5 text-foreground' />
             Inventory Ordered Analysis
           </CardTitle>

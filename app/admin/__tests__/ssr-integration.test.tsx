@@ -7,7 +7,7 @@ import React from 'react';
 import { render, screen, waitFor, renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act } from 'react';
-import AdminThemePage from '@/app/admin/[theme as string]/page';
+import AdminThemePage from '@/app/admin/[theme]/page';
 import { prefetchCriticalWidgetsData } from '@/app/admin/hooks/server/prefetch.server';
 import { DashboardDataProvider, useDashboardData, useWidgetData } from '@/app/admin/contexts/DashboardDataContext';
 import StatsCardWidget from '@/app/admin/components/dashboard/widgets/StatsCardWidget';

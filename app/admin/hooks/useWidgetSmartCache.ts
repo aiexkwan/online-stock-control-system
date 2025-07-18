@@ -9,7 +9,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery, type QueryOptions } from '@tanstack/react-query';
+import { useQuery, type UseQueryOptions } from '@tanstack/react-query';
 import {
   type WidgetCacheConfig,
   type CacheEntry,
@@ -151,8 +151,8 @@ export function useWidgetSmartCache<T>({
   }, [widgetId, fetchFn, params, onDataUpdate]);
   
   // Configure React Query
-  const queryOptions: QueryOptions<T, Error> = {
-    queryKey: [cacheKey],
+  const queryOptions: UseQueryOptions<T, Error, T, readonly unknown[]> = {
+    queryKey: [cacheKey] as readonly unknown[],
     queryFn: enhancedFetchFn,
     enabled: enabled,
     staleTime: dynamicTTL * 1000, // Convert to milliseconds

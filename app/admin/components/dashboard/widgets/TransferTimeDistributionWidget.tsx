@@ -6,7 +6,7 @@
 
 'use client';
 
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { ChartBarIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import {
@@ -46,7 +46,8 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
   timeFrame,
 }: WidgetComponentProps) {
   // Progressive Loading
-  const [ref, isInViewport] = useInViewport<HTMLDivElement>({
+  const ref = useRef<HTMLDivElement>(null);
+  const { isInViewport } = useInViewport(ref, {
     threshold: 0.1,
     rootMargin: '50px',
   });
@@ -64,7 +65,7 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
       start: timeFrame.start,
       end: timeFrame.end,
     };
-  }, [timeFrame as string]);
+  }, [timeFrame]);
 
   // 使用 REST API 獲取數據
   const [apiData, setApiData] = useState<{ timeSlots: any[]; totalTransfers: number } | null>(null);
@@ -117,7 +118,7 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
 
   useEffect(() => {
     fetchData();
-  }, [fetchData as string]);
+  }, [fetchData]);
 
   // 處理數據 - 使用 REST API 的結果
   const data = useMemo<TimeDistributionData>(() => {
@@ -143,15 +144,15 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
       peakHour,
       optimized: true,
     };
-  }, [apiData as string]);
+  }, [apiData]);
 
   // 當不在視窗中時顯示 skeleton
   if (!isInViewport && !isEditMode) {
     return (
       <div ref={ref}>
         <LineChartSkeleton
-          title="Transfer Time Distribution"
-          icon={ChartBarIcon}
+          height="md"
+          showHeader={true}
         />
       </div>
     );
@@ -161,8 +162,8 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
     return (
       <div ref={ref}>
         <LineChartSkeleton
-          title="Transfer Time Distribution"
-          icon={ChartBarIcon}
+          height="md"
+          showHeader={true}
         />
       </div>
     );
@@ -212,7 +213,7 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
         error={error}
         isEmpty={data.timeSlots.length === 0}
         emptyMessage="No transfers found in this time period"
-        dateRange={`${format(dateRange.start, 'MMM d')} - ${format(dateRange.end, 'MMM d')}`}
+        dateRange={dateRange}
         performanceMetrics={{
           source: 'REST API',
           optimized: data.optimized,

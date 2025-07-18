@@ -36,7 +36,6 @@ function createSupabaseAdmin() {
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
       console.log('[Upload PDF API] 接收 PDF 上傳請求...');
 
     const formData = await request.formData();
@@ -55,7 +54,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
       console.log('[Upload PDF API] 文件信息:', {
         fileName,
         fileSize: file.size,
@@ -79,7 +77,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const blob = new Blob([arrayBuffer as string], { type: 'application/pdf' });
 
     process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
       console.log(
         '[Upload PDF API] 文件轉換完成，準備上傳到 Supabase Storage bucket:',
         storagePath
@@ -118,7 +115,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
       console.log('[Upload PDF API] 文件上傳成功，路徑:', uploadData.path);
 
     // 獲取公共 URL
@@ -135,7 +131,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     process.env.NODE_ENV !== 'production' &&
-      process.env.NODE_ENV !== 'production' &&
       console.log('[Upload PDF API] 公共 URL 生成成功:', urlData.publicUrl);
 
     return NextResponse.json({

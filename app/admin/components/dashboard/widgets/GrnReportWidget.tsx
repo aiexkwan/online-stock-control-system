@@ -48,7 +48,7 @@ const grnApiClient = {
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch GRN references: ${(response as { status: string }).statusText}`);
+      throw new Error(`Failed to fetch GRN references: ${response.statusText}`);
     }
     
     const data = await response.json();
@@ -64,7 +64,7 @@ const grnApiClient = {
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch material codes: ${(response as { status: string }).statusText}`);
+      throw new Error(`Failed to fetch material codes: ${response.statusText}`);
     }
     
     const data = await response.json();
@@ -85,7 +85,7 @@ const grnApiClient = {
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch report data: ${(response as { status: string }).statusText}`);
+      throw new Error(`Failed to fetch report data: ${response.statusText}`);
     }
     
     return await response.json();
@@ -163,7 +163,7 @@ export const GrnReportWidget = function GrnReportWidget({
   // Fetch GRN references when component mounts
   useEffect(() => {
     fetchGrnRefs();
-  }, [fetchGrnRefs as string]);
+  }, [fetchGrnRefs]);
 
   const handleDownload = async () => {
     if (!selectedGrnRef) {
@@ -516,7 +516,7 @@ export const GrnReportWidget = function GrnReportWidget({
 
       // Send to print service
       const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([pdfBytes as string], { type: 'application/pdf' });
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
       await printReport(blob, `GRN_${selectedGrnRef}_${materialCodes[0]}`);
     } catch (error) {
       console.error('[GrnReportWidget as string] Print error:', error);
@@ -541,11 +541,11 @@ export const GrnReportWidget = function GrnReportWidget({
         <p className={cn('mt-0.5', textClasses['label-small'], 'text-muted-foreground')}>{description || 'GRN Report'}</p>
       </div>
       <div className={cn('min-h-0 flex-1 overflow-visible', widgetSpacing.container)}>
-        <div className={cn('flex h-full items-center', theme.spacing.gap.small)}>
+        <div className={cn('flex h-full items-center gap-2')}>
           <div className='flex-1'>
             <Select
               value={selectedGrnRef}
-              onChange={(e) => setSelectedGrnRef(e.target.value)}
+              onValueChange={(value) => setSelectedGrnRef(value)}
               disabled={loading || grnRefs.length === 0}
             >
               <SelectTrigger

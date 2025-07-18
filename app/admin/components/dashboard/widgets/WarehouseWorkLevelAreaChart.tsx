@@ -70,26 +70,10 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
       start: timeFrame.start,
       end: timeFrame.end,
     };
-  }, [timeFrame as string]);
+  }, [timeFrame]);
 
-  // 使用環境變量控制是否使用 GraphQL
-  const useGraphQL = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_AWAIT === 'true' || 
-                     widget?.config?.useGraphQL === true;
-
-  // 使用 GraphQL Codegen 生成嘅 hook
-  const { 
-    data: graphqlData, 
-    loading: graphqlLoading, 
-    error: graphqlError 
-  } = useGetWarehouseWorkLevelQuery({
-    skip: !useGraphQL || isEditMode,
-    variables: {
-      startDate: dateRange.start.toISOString(),
-      endDate: dateRange.end.toISOString(),
-    },
-    pollInterval: 180000, // 3分鐘輪詢
-    fetchPolicy: 'cache-and-network',
-  });
+  // GraphQL 已遷移到 REST API - 使用 Server Actions
+  const useGraphQL = false; // 禁用 GraphQL
 
   // Server Actions fallback
   const [serverActionsData, setServerActionsData] = useState<WorkLevelStats>({
@@ -166,68 +150,14 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
     fetchData();
   }, [dateRange, useGraphQL, isEditMode]);
 
-  // 處理 GraphQL 數據 - 按日期分組聚合
-  const graphqlWorkLevelStats = useMemo<WorkLevelStats>(() => {
-    if (!graphqlData?.work_levelCollection?.edges) {
-      return { dailyStats: [], totalMoves: 0, uniqueOperators: 0, avgMovesPerDay: 0 };
-    }
-
-    const edges = graphqlData.work_levelCollection.edges;
-    
-    // 按日期分組聚合 move 數據
-    const dailyMap = new Map<string, number>();
-    const operatorSet = new Set<number>();
-    let totalMoves = 0;
-
-    edges.forEach((edge: any) => {
-      const date = format(startOfDay(new Date(edge.node.latest_update)), 'MMM d');
-      const moves = edge.node.move || 0;
-      
-      dailyMap.set(date, (dailyMap.get(date) || 0) + moves);
-      operatorSet.add(edge.node.id);
-      totalMoves += moves;
-    });
-
-    // 轉換為數組格式
-    const dailyStats: WorkLevelData[] = Array.from(dailyMap.entries())
-      .map(([date, value]) => ({
-        date,
-        value,
-        fullDate: date,
-      }))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    // 計算統計數據
-    const avgMovesPerDay = dailyStats.length > 0 ? totalMoves / dailyStats.length : 0;
-    
-    // 找出高峰日
-    let peakDay = '';
-    let maxMoves = 0;
-    dailyStats.forEach(stat => {
-      if (stat.value > maxMoves) {
-        maxMoves = stat.value;
-        peakDay = stat.date;
-      }
-    });
-
-    return {
-      dailyStats,
-      totalMoves,
-      uniqueOperators: operatorSet.size,
-      avgMovesPerDay,
-      peakDay,
-      optimized: true,
-    };
-  }, [graphqlData as string]);
-
-  // 合併數據源
-  const data = useGraphQL ? graphqlWorkLevelStats : serverActionsData;
-  const loading = useGraphQL ? graphqlLoading : serverActionsLoading;
-  const error = useGraphQL ? graphqlError : (serverActionsError ? new Error(serverActionsError) : null);
+  // 使用 Server Actions 數據 (GraphQL 已移除)
+  const data = serverActionsData;
+  const loading = serverActionsLoading;
+  const error = serverActionsError ? new Error(serverActionsError) : null;
 
   if (isEditMode) {
     return (
-      <WidgetCard widgetType={widget.type.toUpperCase() as keyof typeof WidgetStyles.borders} isEditMode={true}>
+      <WidgetCard widgetType={widget?.type?.toUpperCase() as keyof typeof WidgetStyles.borders || 'DEFAULT'} isEditMode={true}>
         <div className='flex h-full items-center justify-center'>
           <p className='font-medium text-slate-400'>Warehouse Work Level Chart</p>
         </div>
@@ -236,7 +166,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
   }
 
   return (
-    <WidgetCard widgetType={widget.type.toUpperCase() as keyof typeof WidgetStyles.borders}>
+    <WidgetCard widgetType={widget?.type?.toUpperCase() as keyof typeof WidgetStyles.borders || 'DEFAULT'}>
       <CardHeader className='pb-2'>
         <CardTitle className='widget-title flex items-center gap-2'>
           <ChartBarIcon className='h-5 w-5' />
@@ -270,8 +200,8 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
               <ResponsiveContainer width='100%' height='100%'>
                 <AreaChart data={data.dailyStats} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                   <CartesianGrid strokeDasharray='3 3' stroke={widgetColors.charts.grid} />
-                  <XAxis dataKey='date' stroke={widgetColors.charts.axis} fontSize={11} />
-                  <YAxis stroke={widgetColors.charts.axis} fontSize={11} width={30} />
+                  <XAxis dataKey='date' stroke={widgetColors.charts.grid} fontSize={11} />
+                  <YAxis stroke={widgetColors.charts.grid} fontSize={11} width={30} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: 'hsl(var(--card))',
@@ -300,8 +230,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
               {/* Performance and metadata indicators */}
               {data.optimized && (
                 <div className={cn(
-                  'absolute right-2 top-2 flex items-center',
-                  theme.spacing.gap.small,
+                  'absolute right-2 top-2 flex items-center gap-2',
                   textClasses['label-small']
                 )} style={{ color: semanticColors.info.DEFAULT }}>
                   <span>⚡</span>

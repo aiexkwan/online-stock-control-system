@@ -128,10 +128,11 @@ export const AdminDashboardContent: React.FC<AdminDashboardContentProps> = ({
       return ThemeLayouts[theme as keyof typeof ThemeLayouts];
     }
     return null;
-  }, [theme as string]);
+  }, [theme]);
 
   // 獲取 layout 配置 - 使用 useMemo 穩定引用
-  const layout = useMemo(() => adminDashboardLayouts[theme as string], [theme as string]);
+  const themeString = theme as string;
+  const layout = useMemo(() => adminDashboardLayouts[themeString], [themeString]);
 
   // 穩定 widget 配置的引用，避免無限循環
   const stableWidgets = useMemo(() => {
@@ -149,7 +150,7 @@ export const AdminDashboardContent: React.FC<AdminDashboardContentProps> = ({
         index
       };
     });
-  }, [layout as string]);
+  }, [layout]);
 
   // 如果正在初始化，顯示加載狀態
   if (!isInitialized) {

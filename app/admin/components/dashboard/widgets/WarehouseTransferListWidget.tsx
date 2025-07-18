@@ -56,7 +56,7 @@ const warehouseTransferApiClient = {
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch warehouse transfers: ${(response as { status: string }).statusText}`);
+      throw new Error(`Failed to fetch warehouse transfers: ${response.statusText}`);
     }
     
     const data = await response.json();
@@ -100,7 +100,7 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
     endDate: dateRange.end.toISOString(),
     limit: 50,
     offset: 0,
-  }), [dateRange as string]);
+  }), [dateRange]);
 
   // Fetch data function
   const fetchData = useCallback(async () => {
@@ -135,7 +135,7 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
     // Set up polling every 60 seconds
     const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
-  }, [fetchData as string]);
+  }, [fetchData]);
 
   // 處理數據格式
   const transfers = useMemo<TransferRecord[]>(() => {
@@ -146,7 +146,7 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
       plt_num: transfer.pallet_ref || transfer.plt_num || 'N/A',
       operator_name: transfer.transferred_by || transfer.operator_name || 'Unknown Operator',
     }));
-  }, [data as string]);
+  }, [data]);
 
   // 定義 DataTable columns
   const columns = useMemo<DataTableColumn<TransferRecord>[]>(() => [
@@ -193,7 +193,7 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
           loading={false}
           error={null}
           emptyMessage="Configure warehouse transfer tracking"
-          showPagination={false}
+          pagination={{ enabled: false }}
           onRetry={() => {}}
           performanceMetrics={{
             mode: 'Edit Mode',
@@ -218,7 +218,7 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
           loading={true}
           error={null}
           emptyMessage="Loading warehouse transfers..."
-          showPagination={false}
+          pagination={{ enabled: false }}
           onRetry={() => {}}
           performanceMetrics={{
             mode: 'Progressive Loading',
@@ -239,9 +239,9 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
         data={transfers}
         columns={columns}
         loading={loading}
-        error={error}
+        error={error ? new Error(error) : null}
         emptyMessage="No warehouse transfers found"
-        showPagination={false}
+        pagination={{ enabled: false }}
         onRetry={fetchData}
         performanceMetrics={performanceMetrics}
         className="h-full"

@@ -10,7 +10,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
-import { WidgetComponentProps } from '@/app/types/dashboard';
+import { TraditionalWidgetComponentProps } from '@/app/types/dashboard';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { WidgetSkeleton, WidgetError } from './common/WidgetStates';
 import { 
@@ -38,7 +38,7 @@ export interface StockDistributionData {
   stock_level: number;
 }
 
-interface StockDistributionChartProps extends WidgetComponentProps {
+interface StockDistributionChartProps extends TraditionalWidgetComponentProps {
   useGraphQL?: boolean;
 }
 
@@ -62,30 +62,17 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
     queryKey: ['stock-distribution', selectedType],
     queryFn: () => widgetAPI.getStockDistribution({
       type: selectedType === 'all' ? undefined : selectedType,
-      limit: 100,
-      offset: 0,
     }),
     enabled: !isEditMode, // Only fetch when not in edit mode
     staleTime: 5 * 60 * 1000, // Consider data stale after 5 minutes
-    cacheTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 5 * 60 * 1000, // Cache for 5 minutes
     refetchOnWindowFocus: false,
     retry: 3,
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  // Extract and process data
-  const rawData = response?.success && response.data ? response.data.data || response.data : [];
-  const chartData = processStockDistributionData(rawData, selectedType);
-  
-  // Performance metrics
-  const performanceMetrics = {
-    lastFetchTime: response?.responseTime || 0,
-    optimized: true,
-    totalStock: chartData.reduce((sum, item) => sum + item.stock_level, 0),
-  };
-
   // 數據處理函數
-  const processStockDistributionData = (rawData: any[], type: string): StockDistributionData[] => {
+  function processStockDistributionData(rawData: any[], type: string): StockDistributionData[] {
     if (!rawData || !Array.isArray(rawData)) return [];
     
     // 過濾選定類型
@@ -109,9 +96,9 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
       semanticColors.success.DEFAULT,
       semanticColors.warning.DEFAULT,
       semanticColors.info.DEFAULT,
-      brandColors.primary,
-      brandColors.secondary,
-      brandColors.accent,
+      brandColors.primary[500],
+      brandColors.secondary[500],
+      widgetColors.charts.accent,
       widgetColors.charts.grid,
       // 備用顏色
       '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b',
@@ -120,18 +107,30 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
     ];
     
     return sortedData.map((item, index) => ({
-      name: item.product_code || item.stock,
-      size: item.stock_level,
-      value: item.stock_level,
+      name: item.product_code || item.stock || '',
+      size: item.stock_level || 0,
+      value: item.stock_level || 0,
       percentage: totalStock > 0 ? (item.stock_level / totalStock) * 100 : 0,
-      color: CHART_COLORS[index % CHART_COLORS.length],
-      fill: CHART_COLORS[index % CHART_COLORS.length],
+      color: CHART_COLORS[index % CHART_COLORS.length] || '#000000',
+      fill: CHART_COLORS[index % CHART_COLORS.length] || '#000000',
       description: item.description || '-',
       type: item.type || '-',
-      stock: item.product_code || item.stock,
-      stock_level: item.stock_level,
+      stock: item.product_code || item.stock || '',
+      stock_level: item.stock_level || 0,
     }));
+  }
+
+  // Extract and process data
+  const rawData = (response && typeof response === 'object' && response !== null && 'success' in response && response.success && 'data' in response && response.data) ? (Array.isArray(response.data) ? response.data : (typeof response.data === 'object' && response.data !== null && 'data' in response.data ? (response.data as any).data : response.data) || []) : [];
+  const chartData = processStockDistributionData(rawData, selectedType);
+  
+  // Performance metrics
+  const performanceMetrics = {
+    lastFetchTime: (response && typeof response === 'object' && response !== null && 'responseTime' in response ? (response as any).responseTime : 0) || 0,
+    optimized: true,
+    totalStock: chartData.reduce((sum, item) => sum + item.stock_level, 0),
   };
+
 
   // 監聽刷新觸發器
   useEffect(() => {

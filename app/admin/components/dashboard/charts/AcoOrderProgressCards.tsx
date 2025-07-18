@@ -74,7 +74,7 @@ export default function AcoOrderProgressCards({ timeFrame, useGraphQL = false }:
     const interval = setInterval(fetchData, 300000);
     
     return () => clearInterval(interval);
-  }, [timeFrame as string]);
+  }, [timeFrame]);
 
   const displayCards = useMemo(() => {
     if (!data?.cards) return [];
@@ -85,7 +85,7 @@ export default function AcoOrderProgressCards({ timeFrame, useGraphQL = false }:
       completionPercentage: card.value,
       orderRef: card.title.replace('Order ', ''),
     }));
-  }, [data as string]);
+  }, [data]);
 
   if (loading) {
     return (

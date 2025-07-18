@@ -37,7 +37,7 @@ export function StatCard({
   animationDelay = 0,
   className,
 }: StatCardProps) {
-  const themeColors = theme ? THEME.colors.tabs[theme as string] : null;
+  const themeColors = theme ? THEME.colors.tabs[theme] : null;
 
   return (
     <WidgetWrapper

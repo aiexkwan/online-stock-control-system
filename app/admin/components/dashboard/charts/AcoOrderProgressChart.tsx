@@ -1,19 +1,20 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import dynamic from 'next/dynamic';
 import useSWR from 'swr';
 
-// Recharts components - dynamically imported to avoid SSR issues
-const BarChart = dynamic(() => import('recharts').then(mod => ({ default: mod.BarChart })), { ssr: false });
-const Bar = dynamic(() => import('recharts').then(mod => ({ default: mod.Bar })), { ssr: false });
-const XAxis = dynamic(() => import('recharts').then(mod => ({ default: mod.XAxis })), { ssr: false });
-const YAxis = dynamic(() => import('recharts').then(mod => ({ default: mod.YAxis })), { ssr: false });
-const CartesianGrid = dynamic(() => import('recharts').then(mod => ({ default: mod.CartesianGrid })), { ssr: false });
-const Tooltip = dynamic(() => import('recharts').then(mod => ({ default: mod.Tooltip })), { ssr: false });
-const Legend = dynamic(() => import('recharts').then(mod => ({ default: mod.Legend })), { ssr: false });
-const ResponsiveContainer = dynamic(() => import('recharts').then(mod => ({ default: mod.ResponsiveContainer })), { ssr: false });
-const Cell = dynamic(() => import('recharts').then(mod => ({ default: mod.Cell })), { ssr: false });
+// Recharts components - using unified dynamic import module
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Cell
+} from '@/lib/recharts-dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
@@ -83,7 +84,7 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
     });
     
     if (!response.ok) {
-      throw new Error(`API Error: ${(response as { status: string }).status}`);
+      throw new Error(`API Error: ${response.status}`);
     }
     
     return response.json();
@@ -137,12 +138,12 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
   const getBarColor = (completionRate: number) => {
     if (completionRate >= 80) return semanticColors.success.DEFAULT;
     if (completionRate >= 50) return semanticColors.warning.DEFAULT;
-    return semanticColors.destructive.DEFAULT;
+    return semanticColors.error.DEFAULT;
   };
 
   return (
     <div className='flex h-full w-full flex-col'>
-      <div className={theme.spacing.margin.bottom.medium}>
+      <div className={cn(spacingUtilities.margin.bottom.medium)}>
         <p className={cn(textClasses['body-small'], 'text-muted-foreground')}>
           {chartApiData?.config?.title || 'ACO Order Completion Progress'}
         </p>
@@ -156,20 +157,20 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
       <div className='flex-1'>
         <ResponsiveContainer width='100%' height='100%'>
           <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-            <CartesianGrid strokeDasharray='3 3' className='opacity-30' />
+            <CartesianGrid strokeDasharray='3 3' opacity={0.3} />
             <XAxis
               dataKey='orderRef'
               angle={-45}
               textAnchor='end'
               height={80}
-              className='text-xs'
+              fontSize={12}
             />
             <YAxis
               label={{
                 value: chartApiData?.config?.yAxisLabel || 'Completion Rate (%)',
                 angle: -90,
                 position: 'insideLeft',
-                className: 'text-xs',
+                style: { fontSize: '12px' },
               }}
               domain={[0, 100]}
             />
@@ -199,25 +200,24 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
             <Legend
               content={() => (
                 <div className={cn(
-                  'mt-4 flex justify-center',
-                  theme.spacing.gap.medium
+                  'mt-4 flex justify-center gap-4'
                 )}>
-                  <div className={cn('flex items-center', theme.spacing.gap.small)}>
+                  <div className={cn('flex items-center gap-2')}>
                     <div className={cn('h-3 w-3 rounded')} style={{ backgroundColor: semanticColors.success.DEFAULT }} />
                     <span className={cn(textClasses['label-small'], 'text-foreground')}>≥80%</span>
                   </div>
-                  <div className={cn('flex items-center', theme.spacing.gap.small)}>
+                  <div className={cn('flex items-center gap-2')}>
                     <div className={cn('h-3 w-3 rounded')} style={{ backgroundColor: semanticColors.warning.DEFAULT }} />
                     <span className={cn(textClasses['label-small'], 'text-foreground')}>50-79%</span>
                   </div>
-                  <div className={cn('flex items-center', theme.spacing.gap.small)}>
-                    <div className={cn('h-3 w-3 rounded')} style={{ backgroundColor: semanticColors.destructive.DEFAULT }} />
+                  <div className={cn('flex items-center gap-2')}>
+                    <div className={cn('h-3 w-3 rounded')} style={{ backgroundColor: semanticColors.error.DEFAULT }} />
                     <span className={cn(textClasses['label-small'], 'text-foreground')}>&lt;50%</span>
                   </div>
                 </div>
               )}
             />
-            <Bar dataKey='completionRate' radius={[8, 8, 0, 0]}>
+            <Bar dataKey='completionRate' radius={[4, 4, 0, 0]}>
               {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={getBarColor(entry.completionRate)} />
               ))}

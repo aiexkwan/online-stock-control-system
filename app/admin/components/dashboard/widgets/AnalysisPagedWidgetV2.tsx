@@ -29,7 +29,9 @@ import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/sp
 // Week 2 Day 3: Progressive Loading for Charts
 const AcoOrderProgressChart = lazy(() => import('../charts/AcoOrderProgressChart').catch(() => ({ default: () => <ChartSkeleton /> })));
 const TopProductsInventoryChart = lazy(() => import('../charts/TopProductsInventoryChart').catch(() => ({ default: () => <ChartSkeleton /> })));
-const UserActivityHeatmap = lazy(() => import('../charts/UserActivityHeatmap').catch(() => ({ default: () => <ChartSkeleton /> })));
+const UserActivityHeatmapSkeleton = React.memo(() => <ChartSkeleton />);
+UserActivityHeatmapSkeleton.displayName = 'UserActivityHeatmapSkeleton';
+const UserActivityHeatmap = lazy(() => import('../charts/UserActivityHeatmap').catch(() => ({ default: UserActivityHeatmapSkeleton })));
 const InventoryTurnoverAnalysis = lazy(() => import('../charts/InventoryTurnoverAnalysis').catch(() => ({ default: () => <ChartSkeleton /> })));
 const StocktakeAccuracyTrend = lazy(() => import('../charts/StocktakeAccuracyTrend').catch(() => ({ default: () => <ChartSkeleton /> })));
 const VoidRecordsAnalysis = lazy(() => import('../charts/VoidRecordsAnalysis').catch(() => ({ default: () => <ChartSkeleton /> })));
@@ -128,8 +130,8 @@ export const AnalysisPagedWidgetV2 = function AnalysisPagedWidgetV2({
     [currentPage, isFlipping]
   );
 
-  const CurrentComponent = pages[currentPage as string].component;
-  const currentPageData = pages[currentPage as string];
+  const CurrentComponent = pages[currentPage].component;
+  const currentPageData = pages[currentPage];
 
   return (
     <div className='flex h-full gap-6'>
@@ -190,7 +192,7 @@ export const AnalysisPagedWidgetV2 = function AnalysisPagedWidgetV2({
                     className={cn(
                       'rounded-lg p-2',
                       'bg-gradient-to-br',
-                      isActive ? page.color : getWidgetCategoryColor('analysis', 'muted'),
+                      isActive ? page.color : getWidgetCategoryColor('stats', 'bg'),
                       'shadow-lg'
                     )}
                   >

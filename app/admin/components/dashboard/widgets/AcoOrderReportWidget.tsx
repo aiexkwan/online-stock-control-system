@@ -53,7 +53,7 @@ const acoApiClient = {
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch ACO references: ${(response as { status: string }).statusText}`);
+      throw new Error(`Failed to fetch ACO references: ${response.statusText}`);
     }
     
     const data = await response.json();
@@ -72,7 +72,7 @@ const acoApiClient = {
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch ACO orders: ${(response as { status: string }).statusText}`);
+      throw new Error(`Failed to fetch ACO orders: ${response.statusText}`);
     }
     
     const data = await response.json();
@@ -126,7 +126,7 @@ export function AcoOrderReportWidget({ widget, isEditMode }: WidgetComponentProp
 
   useEffect(() => {
     fetchAcoOrders();
-  }, [fetchAcoOrders as string]);
+  }, [fetchAcoOrders]);
 
   const handleGenerateReport = async () => {
     if (!selectedAcoOrder) {
@@ -153,15 +153,11 @@ export function AcoOrderReportWidget({ widget, isEditMode }: WidgetComponentProp
       }
 
       // Transform data for export
-      const exportData = {
-        order_date: selectedAcoOrder,
-        aco_ref: orderRecords[0]?.aco_ref || 'N/A',
-        supplier_name: orderRecords[0]?.supplier_name || 'N/A',
-        product_data: processOrderRecords(orderRecords),
-      };
+      const processedData = processOrderRecords(orderRecords);
+      const orderRef = orderRecords[0]?.aco_ref || 'N/A';
 
       // Export the report
-      await exportAcoReport(exportData);
+      await exportAcoReport(processedData, orderRef);
 
       toast({
         title: 'Success',
@@ -253,7 +249,7 @@ export function AcoOrderReportWidget({ widget, isEditMode }: WidgetComponentProp
                 </Label>
                 <Select
                   value={selectedAcoOrder}
-                  onChange={(e) => setSelectedAcoOrder(e.target.value)}
+                  onValueChange={(value) => setSelectedAcoOrder(value)}
                   disabled={loading || acoOrders.length === 0}
                 >
                   <SelectTrigger className={cn(

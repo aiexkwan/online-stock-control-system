@@ -115,7 +115,7 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
   // Quick option handlers
   const handleQuickOption = useCallback((range: TimeFrame) => {
     onDateRangeChange?.(range);
-  }, [onDateRangeChange as string]);
+  }, [onDateRangeChange]);
 
   const sizeClasses = {
     sm: 'h-7 px-2 text-xs',
@@ -127,7 +127,7 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
     return (
       <Button
         variant={variant}
-        size={size}
+        size={size === 'md' ? 'default' : size}
         className={cn('flex items-center gap-2', className)}
       >
         <Calendar className="h-4 w-4" />

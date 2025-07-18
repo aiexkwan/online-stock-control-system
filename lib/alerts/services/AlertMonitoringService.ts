@@ -362,8 +362,8 @@ export class AlertMonitoringService {
         message: `[ESCALATED] ${(alert as { message: string }).message}`,
         annotations: {
           ...alert.annotations,
-          escalated: true,
-          escalationLevel: escalationLevel.level,
+          escalated: 'true',
+          escalationLevel: escalationLevel.level.toString(),
           escalationTime: new Date().toISOString()
         }
       };

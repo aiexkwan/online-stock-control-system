@@ -93,7 +93,7 @@ export default function MonitoringDashboard() {
   // 計算總體系統狀態
   const overallStatus = systemHealth?.status === 'healthy' && 
                        databasePerformance?.status === 'healthy' && 
-                       alerts?.criticalCount === 0 
+                       alerts?.summary?.criticalCount === 0 
                        ? 'healthy' : 'degraded';
 
   return (
@@ -206,18 +206,18 @@ export default function MonitoringDashboard() {
             className="flex items-center space-x-2"
             role="tab"
             aria-controls="alerts-panel"
-            aria-label={`Alert management ${alerts?.criticalCount > 0 ? `- ${alerts.criticalCount} critical alerts` : ''}`}
+            aria-label={`Alert management ${alerts?.summary?.criticalCount && alerts.summary.criticalCount > 0 ? `- ${alerts.summary.criticalCount} critical alerts` : ''}`}
           >
             <AlertTriangle className="h-4 w-4" aria-hidden="true" />
             <span className="hidden sm:inline">Alerts</span>
-            {alerts?.criticalCount > 0 && (
+            {alerts?.summary?.criticalCount && alerts.summary.criticalCount > 0 && (
               <Badge 
                 variant="destructive" 
                 className="ml-1 h-4 w-4 p-0 text-xs"
                 role="status"
-                aria-label={`${alerts.criticalCount} critical alerts`}
+                aria-label={`${alerts.summary.criticalCount} critical alerts`}
               >
-                {alerts.criticalCount}
+                {alerts.summary.criticalCount}
               </Badge>
             )}
           </TabsTrigger>
@@ -252,14 +252,14 @@ export default function MonitoringDashboard() {
               <RealtimeMetricsChart 
                 type="performance" 
                 title="System Performance" 
-                data={systemHealth?.performanceHistory} 
+                data={[]} 
               />
             </Suspense>
             <Suspense fallback={<div className="h-64 bg-gray-100 rounded animate-pulse" />}>
               <RealtimeMetricsChart 
                 type="database" 
                 title="Database Performance" 
-                data={databasePerformance?.performanceHistory} 
+                data={[]} 
               />
             </Suspense>
           </div>

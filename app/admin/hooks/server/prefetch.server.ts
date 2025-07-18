@@ -66,7 +66,15 @@ export async function prefetchCriticalWidgetsData(options?: {
     if (yesterdayTransferResult.status === 'fulfilled') {
       const { count, error } = yesterdayTransferResult.value;
       if (!error && count !== null) {
-        results.yesterdayTransferCount = count;
+        results.yesterdayTransferCount = {
+          count: count,
+          trend: 0, // 簡化處理，暫時設為0
+          dateRange: {
+            start: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+            end: new Date().toISOString()
+          },
+          optimized: true
+        };
       }
     }
     
@@ -143,7 +151,17 @@ export async function prefetchDashboardData(
               }
               break;
             case 2:
-              if (count !== null) results.yesterdayTransferCount = count;
+              if (count !== null) {
+                results.yesterdayTransferCount = {
+                  count: count,
+                  trend: 0,
+                  dateRange: {
+                    start: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+                    end: new Date().toISOString()
+                  },
+                  optimized: true
+                };
+              }
               break;
             case 3:
               if (count !== null) results.dateRangePallets = count;

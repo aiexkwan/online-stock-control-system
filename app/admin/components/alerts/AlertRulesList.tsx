@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select } from '@/components/ui/select';
 import { 
   MoreHorizontal, 
   Edit, 
@@ -185,28 +185,18 @@ export function AlertRulesList({ onRuleChange }: AlertRulesListProps) {
               />
             </div>
             
-            <Select value={selectedLevel} onChange={(e) => setSelectedLevel(e.target.value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by level" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Levels</SelectItem>
-                <SelectItem value="info">Info</SelectItem>
-                <SelectItem value="warning">Warning</SelectItem>
-                <SelectItem value="error">Error</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
-              </SelectContent>
+            <Select value={selectedLevel} onChange={(e) => setSelectedLevel(e.target.value as AlertLevel | 'all')}>
+              <option value="all">All Levels</option>
+              <option value="info">Info</option>
+              <option value="warning">Warning</option>
+              <option value="error">Error</option>
+              <option value="critical">Critical</option>
             </Select>
 
-            <Select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="enabled">Enabled</SelectItem>
-                <SelectItem value="disabled">Disabled</SelectItem>
-              </SelectContent>
+            <Select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value as 'enabled' | 'disabled' | 'all')}>
+              <option value="all">All Status</option>
+              <option value="enabled">Enabled</option>
+              <option value="disabled">Disabled</option>
             </Select>
           </div>
         </CardContent>

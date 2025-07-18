@@ -6,29 +6,28 @@
 'use client';
 
 import React from 'react';
-import dynamic from 'next/dynamic';
 import { 
   BaseWidgetRendererProps, 
   CHART_COLORS,
   createErrorFallback,
   getComponentPropsFactory 
 } from './widget-renderer-shared';
-
-// Recharts components - 動態導入避免 SSR 問題
-const LineChart = dynamic(() => import('recharts').then(mod => ({ default: mod.LineChart })), { ssr: false });
-const Line = dynamic(() => import('recharts').then(mod => ({ default: mod.Line })), { ssr: false });
-const BarChart = dynamic(() => import('recharts').then(mod => ({ default: mod.BarChart })), { ssr: false });
-const Bar = dynamic(() => import('recharts').then(mod => ({ default: mod.Bar })), { ssr: false });
-const PieChart = dynamic(() => import('recharts').then(mod => ({ default: mod.PieChart })), { ssr: false });
-const Pie = dynamic(() => import('recharts').then(mod => ({ default: mod.Pie })), { ssr: false });
-const Cell = dynamic(() => import('recharts').then(mod => ({ default: mod.Cell })), { ssr: false });
-const AreaChart = dynamic(() => import('recharts').then(mod => ({ default: mod.AreaChart })), { ssr: false });
-const Area = dynamic(() => import('recharts').then(mod => ({ default: mod.Area })), { ssr: false });
-const XAxis = dynamic(() => import('recharts').then(mod => ({ default: mod.XAxis })), { ssr: false });
-const YAxis = dynamic(() => import('recharts').then(mod => ({ default: mod.YAxis })), { ssr: false });
-const CartesianGrid = dynamic(() => import('recharts').then(mod => ({ default: mod.CartesianGrid })), { ssr: false });
-const Tooltip = dynamic(() => import('recharts').then(mod => ({ default: mod.Tooltip })), { ssr: false });
-const ResponsiveContainer = dynamic(() => import('recharts').then(mod => ({ default: mod.ResponsiveContainer })), { ssr: false });
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from '@/lib/recharts-dynamic';
 
 export const ChartWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
   config,

@@ -166,7 +166,7 @@ export class AlertSystemHealthChecker {
       'alert_suppressions'
     ];
 
-    const tableStatus = {};
+    const tableStatus: Record<string, boolean> = {};
     let allTablesExist = true;
 
     for (const table of requiredTables) {

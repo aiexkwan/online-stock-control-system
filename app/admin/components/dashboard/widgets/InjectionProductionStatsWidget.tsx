@@ -18,10 +18,10 @@ import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import { CubeIcon } from '@heroicons/react/24/outline';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
-import { WidgetComponentProps } from '@/app/types/dashboard';
+import { TraditionalWidgetComponentProps } from '@/app/types/dashboard';
 import { MetricCard } from './common/data-display/MetricCard';
 
-interface InjectionProductionStatsWidgetProps extends WidgetComponentProps {
+interface InjectionProductionStatsWidgetProps extends TraditionalWidgetComponentProps {
   title?: string;
   metric?: 'pallet_count' | 'quantity_sum';
 }
@@ -52,7 +52,7 @@ export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWi
       startDate: timeFrame.start.toISOString(),
       endDate: timeFrame.end.toISOString(),
     };
-  }, [timeFrame as string]);
+  }, [timeFrame]);
 
   // REST API 狀態管理
   const [data, setData] = useState<any>(null);
@@ -95,7 +95,7 @@ export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWi
     // 5分鐘輪詢
     const interval = setInterval(fetchProductionStats, 300000);
     return () => clearInterval(interval);
-  }, [fetchProductionStats as string]);
+  }, [fetchProductionStats]);
 
   // 計算統計值
   const statValue = useMemo(() => {
@@ -126,7 +126,7 @@ export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWi
     }
     
     return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`;
-  }, [timeFrame as string]);
+  }, [timeFrame]);
 
   // 決定標籤文字
   const label = widgetMetric === 'pallet_count' ? 'Pallets produced' : 'Total quantity';
@@ -134,7 +134,7 @@ export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWi
   // 處理重試
   const handleRetry = useCallback(() => {
     fetchProductionStats();
-  }, [fetchProductionStats as string]);
+  }, [fetchProductionStats]);
 
   if (isEditMode) {
     return (
@@ -143,7 +143,6 @@ export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWi
         value={0}
         label={label}
         icon={CubeIcon}
-        isEditMode={true}
       />
     );
   }
@@ -160,10 +159,8 @@ export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWi
         optimized: true
       }}
       loading={loading}
-      error={error ? (error as { message: string }).message : undefined}
-      onRetry={handleRetry}
+      error={error ? new Error(error.message) : undefined}
       animateOnMount={true}
-      widgetType={widget?.type?.toUpperCase() as any}
     />
   );
 };

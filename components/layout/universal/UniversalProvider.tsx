@@ -1,6 +1,6 @@
 /**
  * UniversalProvider - 統一佈局系統提供器
- * 全域管理主題、響應式狀態和佈局配置
+ * 全域管理主題、響應式狀態、佈局配置和錯誤處理
  */
 
 'use client';
@@ -8,6 +8,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UniversalTheme, ResponsiveBreakpoints } from './types';
 import { THEMES, BREAKPOINTS } from './constants';
+import { ErrorProvider } from '@/lib/error-handling';
+import { LoadingProvider } from '@/lib/loading/providers/LoadingProvider';
 
 interface UniversalLayoutContextType {
   // 主題管理
@@ -41,6 +43,13 @@ interface UniversalProviderProps {
   defaultTheme?: string;
   animationsEnabled?: boolean;
   debugMode?: boolean;
+  // Error handling settings
+  enableErrorHandling?: boolean;
+  maxErrorHistory?: number;
+  enableAutoErrorCleanup?: boolean;
+  // Loading management settings
+  enableLoadingManagement?: boolean;
+  enablePerformanceAware?: boolean;
 }
 
 export const UniversalProvider: React.FC<UniversalProviderProps> = ({
@@ -48,6 +57,11 @@ export const UniversalProvider: React.FC<UniversalProviderProps> = ({
   defaultTheme = 'neutral',
   animationsEnabled = true,
   debugMode = false,
+  enableErrorHandling = true,
+  maxErrorHistory = 100,
+  enableAutoErrorCleanup = true,
+  enableLoadingManagement = true,
+  enablePerformanceAware = true,
 }) => {
   // 主題狀態
   const [currentTheme, setCurrentTheme] = useState(defaultTheme);
@@ -183,11 +197,42 @@ export const UniversalProvider: React.FC<UniversalProviderProps> = ({
     updateConfig,
   };
 
-  return (
-    <UniversalLayoutContext.Provider value={contextValue}>
-      {children}
-    </UniversalLayoutContext.Provider>
-  );
+  // 渲染內容，根據設置包裹相應的 Provider
+  const renderContent = () => {
+    let content = (
+      <UniversalLayoutContext.Provider value={contextValue}>
+        {children}
+      </UniversalLayoutContext.Provider>
+    );
+
+    // 包裹 Loading Provider
+    if (enableLoadingManagement) {
+      content = (
+        <LoadingProvider
+          enablePerformanceAware={enablePerformanceAware}
+          enableAutoCleanup={true}
+        >
+          {content}
+        </LoadingProvider>
+      );
+    }
+
+    // 包裹 Error Provider
+    if (enableErrorHandling) {
+      content = (
+        <ErrorProvider
+          maxErrorHistory={maxErrorHistory}
+          enableAutoCleanup={enableAutoErrorCleanup}
+        >
+          {content}
+        </ErrorProvider>
+      );
+    }
+
+    return content;
+  };
+
+  return renderContent();
 };
 
 // Hook 用於訪問佈局上下文

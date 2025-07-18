@@ -50,3 +50,11 @@ export {
   useUniversalTheme,
   useMediaQuery,
 } from './UniversalProvider';
+
+// 錯誤處理組件
+export { 
+  UniversalErrorCard, 
+  UniversalSuccessCard, 
+  UniversalErrorBoundaryCard,
+  UniversalErrorUtils 
+} from './UniversalErrorCard';

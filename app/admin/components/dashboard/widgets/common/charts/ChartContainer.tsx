@@ -29,6 +29,8 @@ export interface ChartContainerProps {
   // States
   loading?: boolean;
   error?: Error | null;
+  isEmpty?: boolean;
+  emptyMessage?: string;
   onRetry?: () => void;
   
   // Chart configuration
@@ -42,6 +44,9 @@ export interface ChartContainerProps {
   onExport?: () => void;
   onRefresh?: () => void;
   refreshing?: boolean;
+  
+  // Metadata for analytics
+  metadata?: Record<string, any>;
   
   // Performance metrics
   performanceMetrics?: {
@@ -76,6 +81,8 @@ export const ChartContainer: React.FC<ChartContainerProps> = ({
   dateRange,
   loading = false,
   error = null,
+  isEmpty = false,
+  emptyMessage = "No data available",
   onRetry,
   height = 300,
   showHeader = true,
@@ -85,6 +92,7 @@ export const ChartContainer: React.FC<ChartContainerProps> = ({
   onExport,
   onRefresh,
   refreshing = false,
+  metadata,
   performanceMetrics,
   stats,
   children,
@@ -156,6 +164,24 @@ export const ChartContainer: React.FC<ChartContainerProps> = ({
                 Try again
               </Button>
             )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Empty state
+  if (isEmpty) {
+    return (
+      <Card className={cn('border border-slate-700/50 bg-slate-900/95 shadow-2xl backdrop-blur-xl', className)}>
+        <CardContent className="flex items-center justify-center p-8" style={{ height }}>
+          <div className="text-center">
+            <div className="mb-2 h-12 w-12 mx-auto text-slate-400">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <p className="text-sm text-slate-400">{emptyMessage}</p>
           </div>
         </CardContent>
       </Card>

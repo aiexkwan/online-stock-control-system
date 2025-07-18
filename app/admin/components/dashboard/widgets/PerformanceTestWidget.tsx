@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Play, BarChart3, TrendingUp } from 'lucide-react';
 import { runPerformanceTest } from '@/app/admin/utils/performanceTestBatchQuery';
 import { WidgetSkeleton } from './common/WidgetStates';
-import type { WidgetProps } from '@/app/admin/types/widget-types';
+import type { WidgetProps } from '@/app/admin/types/dashboard';
 import { 
   brandColors, 
   widgetColors, 

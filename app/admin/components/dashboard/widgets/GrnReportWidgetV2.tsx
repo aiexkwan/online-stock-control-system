@@ -132,7 +132,7 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
   // Fetch GRN references when component mounts
   useEffect(() => {
     fetchGrnRefs();
-  }, [fetchGrnRefs as string]);
+  }, [fetchGrnRefs]);
 
   const handleDownload = async () => {
     if (!selectedGrnRef) {
@@ -541,7 +541,7 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
 
       // Send to print service
       const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([pdfBytes as string], { type: 'application/pdf' });
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
       await printReport(blob, `GRN_${selectedGrnRef}_${materialCodes[0]}`);
     } catch (error) {
       console.error('[GrnReportWidgetV2] Print error:', error);
@@ -566,11 +566,11 @@ export const GrnReportWidgetV2 = function GrnReportWidgetV2({
         <p className={cn('mt-0.5', textClasses['label-small'], 'text-muted-foreground')}>{description || 'GRN Report'}</p>
       </div>
       <div className={cn('min-h-0 flex-1 overflow-visible', widgetSpacing.container)}>
-        <div className={cn('flex h-full items-center', theme.spacing.gap.small)}>
+        <div className={cn('flex h-full items-center gap-2')}>
           <div className='flex-1'>
             <Select
               value={selectedGrnRef}
-              onChange={(e) => setSelectedGrnRef(e.target.value)}
+              onValueChange={(value) => setSelectedGrnRef(value)}
               disabled={grnRefs.length === 0}
             >
               <SelectTrigger

@@ -70,7 +70,7 @@ export const OtherFilesListWidgetV2 = React.memo(function OtherFilesListWidgetV2
 
   // API 狀態管理
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [rawData, setRawData] = useState<FileRecord[]>([]);
 
   // 使用 REST API 獲取數據
@@ -88,7 +88,7 @@ export const OtherFilesListWidgetV2 = React.memo(function OtherFilesListWidgetV2
       setRawData(data);
     } catch (err) {
       console.error('Error fetching files:', err);
-      setError(err instanceof Error ? (err as { message: string }).message : 'Failed to fetch files');
+      setError(err instanceof Error ? err : new Error('Failed to fetch files'));
     } finally {
       setLoading(false);
     }
@@ -107,7 +107,7 @@ export const OtherFilesListWidgetV2 = React.memo(function OtherFilesListWidgetV2
     
     // REST API data is already processed
     return rawData || [];
-  }, [rawData as string]);
+  }, [rawData]);
 
   // 監聽 upload refresh
   useEffect(() => {
@@ -179,7 +179,7 @@ export const OtherFilesListWidgetV2 = React.memo(function OtherFilesListWidgetV2
       fileCount: files.length,
       hasMore: false, // 暫時設為 false，需要根據實際 API 返回調整
     };
-  }, [data as string]);
+  }, [data]);
 
   // Edit mode - 顯示空白狀態
   if (isEditMode) {

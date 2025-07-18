@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 import { ChartPieIcon } from '@heroicons/react/24/outline';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
-import { WidgetComponentProps } from '@/app/types/dashboard';
+import { TraditionalWidgetComponentProps } from '@/app/types/dashboard';
 import { ChartContainer } from './common/charts/ChartContainer';
 import { useInViewport } from '@/app/admin/hooks/useInViewport';
 import { 
@@ -25,23 +25,23 @@ import { textClasses, getTextClass } from '@/lib/design-system/typography';
 import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
 import { cn } from '@/lib/utils';
 
-interface ProductDistributionChartWidgetProps extends WidgetComponentProps {
+interface ProductDistributionChartWidgetProps extends TraditionalWidgetComponentProps {
   title: string;
   limit?: number;
 }
 
 // 顏色配置 - 使用設計系統顏色
 const COLORS = [
-  widgetColors.charts.primary,
-  semanticColors.success.DEFAULT,
-  semanticColors.warning.DEFAULT,
-  semanticColors.destructive.DEFAULT,
-  brandColors.primary,
-  semanticColors.info.DEFAULT,
-  brandColors.secondary,
-  widgetColors.charts.grid,
-  widgetColors.charts.accent,
-  brandColors.accent
+  widgetColors.charts.primary as unknown as string,
+  semanticColors.success.DEFAULT as unknown as string,
+  semanticColors.warning.DEFAULT as unknown as string,
+  semanticColors.destructive.DEFAULT as unknown as string,
+  brandColors.primary as unknown as string,
+  semanticColors.info.DEFAULT as unknown as string,
+  brandColors.secondary as unknown as string,
+  widgetColors.charts.grid as unknown as string,
+  widgetColors.charts.accent as unknown as string,
+  brandColors.primary[400] as unknown as string
 ];
 
 export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWidgetProps> = ({ 
@@ -83,7 +83,7 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
       start: timeFrame.start,
       end: timeFrame.end,
     };
-  }, [timeFrame as string]);
+  }, [timeFrame]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -149,7 +149,7 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
   // 計算總數
   const total = useMemo(() => {
     return chartData.reduce((sum, item) => sum + item.value, 0);
-  }, [chartData as string]);
+  }, [chartData]);
 
   // 自定義 Tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {

@@ -66,7 +66,7 @@ async function main() {
     const result = execSync('npx tsc --noEmit 2>&1', { encoding: 'utf8' });
     console.log('✅ TypeScript 檢查通過！');
   } catch (error) {
-    const errorOutput = error.stdout || (error as { message: string }).message;
+    const errorOutput = (error as any).stdout || (error as Error).message;
     const errorCount = (errorOutput.match(/error TS\d+:/g) || []).length;
     console.log(`⚠️  剩餘 ${errorCount} 個 TypeScript 錯誤`);
   }

@@ -27,20 +27,16 @@ const UserActivityHeatmap = React.memo(function UserActivityHeatmap({
     };
   }, []); // Empty dependency array means dates are calculated only once
 
-  const { data, loading, error } = useGetUserActivityQuery({
-    variables,
-    skip: !isGraphQLAnalysisEnabled,
-    pollInterval: isGraphQLAnalysisEnabled ? 300000 : undefined, // 減少 polling 頻率至 5 分鐘，避免過度請求
-    fetchPolicy: 'cache-and-network',
-  });
+  // TODO: Replace with REST API call  
+  const { data, loading, error } = { data: null as any, loading: false, error: null };
 
   const heatmapData = useMemo(() => {
-    if (!isGraphQLAnalysisEnabled || !data?.record_historyCollection?.edges) return [];
+    if (!isGraphQLAnalysisEnabled || !data?.historyCollection?.edges) return [];
 
     // Process data into hourly buckets for each user
     const activityMap = new Map<string, Map<number, number>>();
 
-    data.record_historyCollection.edges.forEach(({ node }: any) => {
+    data.historyCollection.edges.forEach(({ node }: any) => {
       const userName = node.data_id?.name || `User ${node.uuid}`;
       const hour = new Date(node.time).getHours();
 

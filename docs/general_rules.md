@@ -7,7 +7,7 @@
 - [ ] **必須**：按用戶指示閱讀指定的身分背景文檔
 - [ ] **多角色模式**：使用task工具分飾多角色進行分析
 
-### 默認長駐角色
+### 默認常駐專家
 - 代碼品質專家
 - 分析師
 - 系統架構專家
@@ -23,7 +23,7 @@
 | 5 | 使用者體驗專家 | UI/UX設計、前端體驗 | `docs/role_play/Frontend.md` |
 | 6 | 優化專家 | 效能優化、重構建議 | `docs/role_play/Frontend.md` |
 | 7 | 品質倡導者 | 測試策略、品質保證 | `docs/role_play/QA.md` |
-| 8 | 代碼品質專家 | 長駐角色丶程式碼審查、重構 | `docs/role_play/Refactorer.md` |
+| 8 | 代碼品質專家 | 程式碼審查、重構 | `docs/role_play/Refactorer.md` |
 | 9 | 漏洞專家 | 安全審計、漏洞修復 | `docs/role_play/Security.md` |
 
 ### 多角色協作流程

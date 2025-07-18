@@ -6,7 +6,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import MonitoringDashboard from '../page';
-import { useMonitoringData } from '../hooks/useMonitoringData';
+import { useMonitoringData } from '../../hooks/useMonitoringData';
 
 // 擴展 Jest 支援 axe 測試
 expect.extend(toHaveNoViolations);

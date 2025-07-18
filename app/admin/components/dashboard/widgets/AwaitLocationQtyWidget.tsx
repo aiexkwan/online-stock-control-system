@@ -4,12 +4,12 @@
  */
 
 import React from 'react';
-import { WidgetComponentProps } from '@/app/types/dashboard';
+import { BatchQueryWidgetComponentProps } from '@/app/types/dashboard';
 import { useWidgetData } from '@/app/admin/contexts/DashboardDataContext';
 import { MetricCard } from './common';
 import { Package } from 'lucide-react';
 
-const AwaitLocationQtyWidget: React.FC<WidgetComponentProps> = ({ widgetId }) => {
+const AwaitLocationQtyWidget: React.FC<BatchQueryWidgetComponentProps> = ({ widgetId }) => {
   const { data, loading, error } = useWidgetData(widgetId);
 
   // 計算等待區總數量
@@ -23,7 +23,7 @@ const AwaitLocationQtyWidget: React.FC<WidgetComponentProps> = ({ widgetId }) =>
       }
       return total;
     }, 0);
-  }, [data as string]);
+  }, [data]);
 
   return (
     <MetricCard

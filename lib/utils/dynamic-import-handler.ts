@@ -93,6 +93,7 @@ export class DynamicImportHandler {
         return [state, setState] as const;
       },
       useEffect: (effect: React.EffectCallback, deps?: React.DependencyList) => {
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         React.useEffect(effect, deps);
       },
       importWithErrorHandling: () => this.safeImport(importFn, options)
@@ -141,6 +142,7 @@ export function useSafeDynamicImport<T>(
 
   React.useEffect(() => {
     performImport();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [performImport]);
 
   return { data, loading, error, retry };

@@ -106,27 +106,27 @@ export default function GraphQLMonitorPage() {
           fetch('/api/graphql-monitoring?type=performance-history'),
         ]);
 
-      if ((rateLimitRes as { status: string }).status === 'fulfilled' && rateLimitRes.value.ok) {
+      if (rateLimitRes.status === 'fulfilled' && rateLimitRes.value.ok) {
         const data = await rateLimitRes.value.json();
         setRateLimitStats(data);
       }
 
-      if ((cacheRes as { status: string }).status === 'fulfilled' && cacheRes.value.ok) {
+      if (cacheRes.status === 'fulfilled' && cacheRes.value.ok) {
         const data = await cacheRes.value.json();
         setCacheStats(data);
       }
 
-      if ((healthRes as { status: string }).status === 'fulfilled' && healthRes.value.ok) {
+      if (healthRes.status === 'fulfilled' && healthRes.value.ok) {
         const data = await healthRes.value.json();
         setSystemHealth(data);
       }
 
-      if ((warmupRes as { status: string }).status === 'fulfilled' && warmupRes.value.ok) {
+      if (warmupRes.status === 'fulfilled' && warmupRes.value.ok) {
         const data = await warmupRes.value.json();
         setWarmupStats(data);
       }
 
-      if ((performanceRes as { status: string }).status === 'fulfilled' && performanceRes.value.ok) {
+      if (performanceRes.status === 'fulfilled' && performanceRes.value.ok) {
         const data = await performanceRes.value.json();
         setPerformanceData(data.history || []);
       }
@@ -196,7 +196,7 @@ export default function GraphQLMonitorPage() {
     }, 30000); // Refresh every 30 seconds
 
     return () => clearInterval(interval);
-  }, [autoRefresh as string]);
+  }, [autoRefresh]);
 
   // System health status icon
   const getHealthIcon = (status: string) => {

@@ -39,6 +39,13 @@ export interface MetricCardProps {
   // States
   loading?: boolean;
   error?: Error | null;
+  isEditMode?: boolean;
+  
+  // Actions
+  onRetry?: () => void;
+  
+  // Widget configuration
+  widgetType?: string;
   
   // Animation
   animateOnMount?: boolean;
@@ -63,6 +70,9 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   performanceMetrics,
   loading = false,
   error = null,
+  isEditMode = false,
+  onRetry,
+  widgetType,
   animateOnMount = true,
   animationDelay = 0,
 }) => {

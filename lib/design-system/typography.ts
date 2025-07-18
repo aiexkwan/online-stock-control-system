@@ -238,11 +238,13 @@ export const textClasses = {
   
   // 正文類
   'body-large': 'text-lg font-normal leading-relaxed',
+  'body-medium': 'text-base font-medium leading-normal',
   'body-base': 'text-base font-normal leading-normal',
   'body-small': 'text-sm font-normal leading-normal',
   
   // 標籤類
   'label-large': 'text-sm font-medium leading-tight tracking-wide',
+  'label-medium': 'text-sm font-normal leading-tight tracking-wide',
   'label-base': 'text-xs font-medium leading-tight tracking-wide',
   'label-small': 'text-xs font-normal leading-tight',
   
@@ -257,7 +259,7 @@ export const textClasses = {
   'code-block': 'text-sm font-mono leading-relaxed',
   'uppercase': 'uppercase tracking-wider',
   'truncate': 'truncate',
-} as const;
+} as { [key: string]: string };
 
 /**
  * Helper Functions

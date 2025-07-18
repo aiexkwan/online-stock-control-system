@@ -1,22 +1,21 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import dynamic from 'next/dynamic';
 import { useQuery } from '@tanstack/react-query';
 import { widgetAPI } from '@/lib/api/widgets/widget-api-client';
-
-// Recharts components - dynamically imported to avoid SSR issues
-const PieChart = dynamic(() => import('recharts').then(mod => ({ default: mod.PieChart })), { ssr: false });
-const Pie = dynamic(() => import('recharts').then(mod => ({ default: mod.Pie })), { ssr: false });
-const Cell = dynamic(() => import('recharts').then(mod => ({ default: mod.Cell })), { ssr: false });
-const ResponsiveContainer = dynamic(() => import('recharts').then(mod => ({ default: mod.ResponsiveContainer })), { ssr: false });
-const Tooltip = dynamic(() => import('recharts').then(mod => ({ default: mod.Tooltip })), { ssr: false });
-const Legend = dynamic(() => import('recharts').then(mod => ({ default: mod.Legend })), { ssr: false });
-const BarChart = dynamic(() => import('recharts').then(mod => ({ default: mod.BarChart })), { ssr: false });
-const Bar = dynamic(() => import('recharts').then(mod => ({ default: mod.Bar })), { ssr: false });
-const XAxis = dynamic(() => import('recharts').then(mod => ({ default: mod.XAxis })), { ssr: false });
-const YAxis = dynamic(() => import('recharts').then(mod => ({ default: mod.YAxis })), { ssr: false });
-const CartesianGrid = dynamic(() => import('recharts').then(mod => ({ default: mod.CartesianGrid })), { ssr: false });
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  Legend,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from '@/lib/recharts-dynamic';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -58,14 +57,16 @@ export default function VoidRecordsAnalysis({ timeFrame }: VoidRecordsAnalysisPr
     queryFn: () => widgetAPI.getVoidRecordsAnalysis(queryParams),
     refetchInterval: 30000, // Refetch every 30 seconds
     staleTime: 25000, // Consider data stale after 25 seconds
-    cacheTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 5 * 60 * 1000, // Cache for 5 minutes
     refetchOnWindowFocus: false,
     retry: 3,
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  // Extract data from response
-  const data = response?.success && response.data ? response.data.records || [] : [];
+  // Extract data from response and memoize to avoid dependency issues
+  const data = useMemo(() => {
+    return response?.success && response.data ? response.data.records || [] : [];
+  }, [response]);
 
   const { reasonData, productData } = useMemo(() => {
     if (!data || data.length === 0) return { reasonData: [], productData: [] };
@@ -74,7 +75,7 @@ export default function VoidRecordsAnalysis({ timeFrame }: VoidRecordsAnalysisPr
     const reasonMap = new Map<string, number>();
     const productMap = new Map<string, { count: number; qty: number }>();
 
-    data.forEach((record) => {
+    data.forEach((record: any) => {
       // Count by reason
       const reason = record.reason || 'Unspecified Reason';
       reasonMap.set(reason, (reasonMap.get(reason) || 0) + 1);
@@ -200,9 +201,9 @@ export default function VoidRecordsAnalysis({ timeFrame }: VoidRecordsAnalysisPr
                 layout='horizontal'
                 margin={{ top: 5, right: 30, left: 60, bottom: 5 }}
               >
-                <CartesianGrid strokeDasharray='3 3' className='opacity-30' />
-                <XAxis type='number' className='text-xs' />
-                <YAxis dataKey='code' type='category' width={50} className='text-xs' />
+                <CartesianGrid strokeDasharray='3 3' opacity={0.3} />
+                <XAxis type='number' tick={{ fontSize: '12px' }} />
+                <YAxis dataKey='code' type='category' width={50} tick={{ fontSize: '12px' }} />
                 <Tooltip
                   content={({ active, payload }) => {
                     if (active && payload && payload[0]) {

@@ -197,8 +197,8 @@ export default function AdminStockCountPage() {
       // 如果是編輯模式
       if (editingIndex !== null) {
         const updatedScans = [...batchScans];
-        updatedScans[editingIndex as string] = {
-          ...updatedScans[editingIndex as string],
+        updatedScans[editingIndex] = {
+          ...updatedScans[editingIndex],
           counted_qty: countedQty,
         };
         setBatchScans(updatedScans);
@@ -414,7 +414,7 @@ export default function AdminStockCountPage() {
 
   // 編輯批量項目數量
   const handleEditBatchItem = (index: number) => {
-    const item = batchScans[index as string];
+    const item = batchScans[index];
     if ((item as { status: string }).status !== 'pending') return;
 
     setEditingIndex(index);

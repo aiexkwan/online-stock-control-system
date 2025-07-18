@@ -99,7 +99,7 @@ export function DashboardDataProvider({
     } finally {
       setIsRefetching(false);
     }
-  }, [queryRefetch as string]);
+  }, [queryRefetch]);
 
   // 單個 widget refetch 包裝
   const refetchWidget = useCallback(async (widgetId: string) => {
@@ -109,7 +109,7 @@ export function DashboardDataProvider({
     } finally {
       setIsRefetching(false);
     }
-  }, [queryRefetchWidget as string]);
+  }, [queryRefetchWidget]);
 
   // 移除自動刷新功能以簡化系統和減少 API 調用
 
@@ -117,7 +117,7 @@ export function DashboardDataProvider({
   const getWidgetData = useCallback(<T = any>(widgetId: string): T | null => {
     if (!data) return null;
     return (data as any)[widgetId as string] || null;
-  }, [data as string]);
+  }, [data]);
 
   // 工具方法：檢查特定 widget 是否正在加載
   const isWidgetLoading = useCallback((widgetId: string): boolean => {
@@ -126,7 +126,7 @@ export function DashboardDataProvider({
     
     // 可以擴展為支持單個 widget 的加載狀態
     return false;
-  }, [loading as string]);
+  }, [loading]);
 
   // 工具方法：獲取特定 widget 的錯誤
   const getWidgetError = useCallback((widgetId: string): Error | null => {
@@ -141,7 +141,11 @@ export function DashboardDataProvider({
     }
     
     return null;
-  }, [error as string]);
+  }, [error]);
+
+  // 提取日期時間戳以穩定依賴
+  const startTime = dateRange.startDate?.getTime();
+  const endTime = dateRange.endDate?.getTime();
 
   // 簡化日期範圍改變處理
   useEffect(() => {
@@ -149,22 +153,23 @@ export function DashboardDataProvider({
       return;
     }
     
-    if (!dateRange.startDate && !dateRange.endDate) {
+    if (!startTime && !endTime) {
       return;
     }
     
     const timeoutId = setTimeout(() => {
-      console.log('[DEBUG as string] Date range changed, triggering refetch');
+      console.log('[DEBUG] Date range changed, triggering refetch');
       refetch();
     }, 300); // 300ms 防抖
     
     return () => clearTimeout(timeoutId);
   }, [
-    dateRange.startDate?.getTime(), 
-    dateRange.endDate?.getTime(), 
+    startTime, 
+    endTime, 
     ssrMode,
     prefetchedData,
-    queryData
+    queryData,
+    refetch
   ]);
 
   const contextValue = useMemo<DashboardDataContextValue>(() => ({

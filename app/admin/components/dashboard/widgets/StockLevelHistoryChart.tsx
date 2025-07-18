@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { WidgetComponentProps } from '@/app/types/dashboard';
+import { TraditionalWidgetComponentProps } from '@/app/types/dashboard';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { TrendingUp } from 'lucide-react';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
@@ -43,7 +43,7 @@ interface StockData {
   latest_update: string;
 }
 
-interface StockLevelHistoryChartProps extends WidgetComponentProps {
+interface StockLevelHistoryChartProps extends TraditionalWidgetComponentProps {
   timeFrame?: {
     start: Date;
     end: Date;
@@ -55,11 +55,11 @@ const LINE_COLORS = [
   semanticColors.success.DEFAULT,
   widgetColors.charts.primary,
   semanticColors.warning.DEFAULT,
-  brandColors.primary,
+  brandColors.primary[500],
   semanticColors.destructive.DEFAULT,
   widgetColors.charts.accent,
   semanticColors.info.DEFAULT,
-  brandColors.secondary,
+  brandColors.secondary[500],
 ];
 
 export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
@@ -233,12 +233,12 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
   // Effect to fetch data when dependencies change
   useEffect(() => {
     fetchData();
-  }, [fetchData as string]);
+  }, [fetchData]);
 
   // Refetch function for compatibility
   const refetch = useCallback(() => {
     fetchData();
-  }, [fetchData as string]);
+  }, [fetchData]);
 
   // Update chart data when data changes
   useEffect(() => {
@@ -248,7 +248,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
         setProductCodes(data.productCodes);
       }
     }
-  }, [data as string]);
+  }, [data]);
 
   // 監聽 StockTypeSelector 的類型變更事件
   useEffect(() => {
@@ -284,7 +284,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
       twoWeeksAgo.setDate(now.getDate() - 14);
       setAdjustedTimeFrame({ start: twoWeeksAgo, end: now });
     }
-  }, [timeFrame as string]);
+  }, [timeFrame]);
 
   // 當刷新觸發器改變時，重新加載數據
   const prevRefreshTriggerRef = React.useRef(refreshTrigger);
@@ -325,11 +325,10 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
     const { payload } = props;
     return (
       <div className={cn(
-        'mt-1 flex flex-wrap justify-center',
-        theme.spacing.gap.small
+        'mt-1 flex flex-wrap justify-center gap-2'
       )}>
         {payload.map((entry: any, index: number) => (
-          <div key={`legend-${index}`} className={cn('flex items-center', theme.spacing.gap.small)}>
+          <div key={`legend-${index}`} className={cn('flex items-center gap-2')}>
             <div className='h-2 w-2 rounded-full' style={{ backgroundColor: entry.color }} />
             <span className={cn(textClasses['label-small'], 'text-muted-foreground')}>{entry.value}</span>
           </div>
@@ -387,7 +386,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
             />
             <XAxis
               dataKey='time'
-              stroke={widgetColors.charts.axis}
+              stroke={widgetColors.charts.grid}
               fontSize={9}
               tickLine={false}
               axisLine={false}
@@ -397,7 +396,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
               interval={Math.floor(chartData.length / 8)}
             />
             <YAxis
-              stroke={widgetColors.charts.axis}
+              stroke={widgetColors.charts.grid}
               fontSize={10}
               tickLine={false}
               axisLine={false}

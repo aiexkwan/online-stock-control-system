@@ -53,7 +53,9 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
   isEditMode,
 }: WidgetComponentProps) {
   const { handleSuccess, handleError, handleWarning, handleSubmitError } = useWidgetErrorHandler(
-    'title' in widget ? widget.title : widget.config?.title || 'Supplier Update'
+    widget && 'title' in widget && typeof widget.title === 'string' ? widget.title : 
+    widget?.config?.title && typeof widget.config.title === 'string' ? widget.config.title : 
+    'Supplier Update'
   );
   // State management
   const [supplierData, setSupplierData] = useState<SupplierData | null>(null);
@@ -143,7 +145,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
         setSearchLoading(false);
       }
     },
-    [handleWarning as string]
+    [handleWarning]
   );
 
   // React to search data changes
@@ -190,7 +192,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
       setShowForm(true);
       setShowCreateDialog(false);
     }
-  }, [supplierData as string]);
+  }, [supplierData]);
 
   // Confirm create supplier
   const handleConfirmCreate = useCallback(() => {
@@ -205,7 +207,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
       type: 'info',
       message: 'Fill in supplier details',
     });
-  }, [searchedCode as string]);
+  }, [searchedCode]);
 
   // Cancel operation
   const handleCancel = useCallback(() => {

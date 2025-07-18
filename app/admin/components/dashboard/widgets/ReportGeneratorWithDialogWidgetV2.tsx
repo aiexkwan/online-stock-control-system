@@ -197,7 +197,7 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
       }
       return a.localeCompare(b);
     });
-  }, [references as string]);
+  }, [references]);
 
   return (
     <>
@@ -252,7 +252,7 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
               )}>
                 {selectLabel}
               </label>
-              <Select value={selectedRef} onChange={(e) => setSelectedRef(e.target.value)}>
+              <Select value={selectedRef} onValueChange={(value) => setSelectedRef(value)}>
                 <SelectTrigger
                   id='reference'
                   className={cn(

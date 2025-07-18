@@ -102,9 +102,9 @@ export const WIDGET_CATEGORIES = {
 
 // 判斷 Widget 類型的工具函數
 export const getWidgetCategory = (widgetType: string): 'chart' | 'stats' | 'list' | 'core' => {
-  if (WIDGET_CATEGORIES.CHART.includes(widgetType)) return 'chart';
-  if (WIDGET_CATEGORIES.STATS.includes(widgetType)) return 'stats';  
-  if (WIDGET_CATEGORIES.LIST.includes(widgetType)) return 'list';
+  if (WIDGET_CATEGORIES.CHART.includes(widgetType as any)) return 'chart';
+  if (WIDGET_CATEGORIES.STATS.includes(widgetType as any)) return 'stats';  
+  if (WIDGET_CATEGORIES.LIST.includes(widgetType as any)) return 'list';
   return 'core';
 };
 

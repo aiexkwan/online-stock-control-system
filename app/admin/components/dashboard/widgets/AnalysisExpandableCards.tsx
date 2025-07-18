@@ -214,7 +214,7 @@ export const AnalysisExpandableCards = function AnalysisExpandableCards({
     }, 1400);
   }, []);
 
-  const ActiveComponent = chartOptions[activeIndex as string].component;
+  const ActiveComponent = chartOptions[activeIndex].component;
 
   return (
     <div className='flex h-full flex-col'>

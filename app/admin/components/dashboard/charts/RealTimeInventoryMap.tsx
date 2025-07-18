@@ -77,7 +77,7 @@ export default function RealTimeInventoryMap({ timeFrame }: RealTimeInventoryMap
     });
 
     return displayStats;
-  }, [data as string]);
+  }, []);
 
   // Show disabled state if GraphQL is not enabled
   if (!isGraphQLEnabled) {

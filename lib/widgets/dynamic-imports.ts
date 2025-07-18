@@ -102,6 +102,13 @@ export const specialWidgetImports = {
   'PerformanceTestWidget': () => import('@/app/admin/components/dashboard/widgets/PerformanceTestWidget'),
 };
 
+// Unified Widgets - v2.0.3 新增統一組件
+export const unifiedWidgetImports = {
+  'UnifiedStatsWidget': () => import('@/app/admin/components/dashboard/widgets/UnifiedStatsWidget'),
+  'UnifiedChartWidget': () => import('@/app/admin/components/dashboard/widgets/UnifiedChartWidget'),
+  'UnifiedTableWidget': () => import('@/app/admin/components/dashboard/widgets/UnifiedTableWidget'),
+};
+
 // 合併所有導入映射
 export const allWidgetImports: Record<string, () => Promise<any>> = {
   ...coreWidgetImports,
@@ -114,6 +121,7 @@ export const allWidgetImports: Record<string, () => Promise<any>> = {
   ...analysisWidgetImports,
   ...productionWidgetImports,
   ...specialWidgetImports,
+  ...unifiedWidgetImports,
 };
 
 // 根據 widget ID 獲取導入函數

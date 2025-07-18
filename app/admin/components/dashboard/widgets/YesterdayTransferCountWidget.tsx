@@ -30,11 +30,13 @@ interface TransferCountData {
 
 const YesterdayTransferCountWidget = React.memo(function YesterdayTransferCountWidget({
   widget,
+  widgetId,
   isEditMode,
   timeFrame,
 }: WidgetComponentProps) {
   // 使用批量查詢系統獲取數據
-  const { data: widgetData, loading, error, refetch } = useWidgetData<TransferCountData>('yesterdayTransferCount');
+  const queryKey = widgetId || 'yesterdayTransferCount';
+  const { data: widgetData, loading, error, refetch } = useWidgetData<TransferCountData>(queryKey);
   
   // 格式化顯示數據
   const displayData = useMemo(() => {
@@ -97,7 +99,7 @@ const YesterdayTransferCountWidget = React.memo(function YesterdayTransferCountW
       error={error}
       onRetry={refetch}
       animateOnMount={true}
-      widgetType={widget.type.toUpperCase() as any}
+      widgetType={widget?.type.toUpperCase() as any}
     />
   );
 });

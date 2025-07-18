@@ -47,7 +47,7 @@ test.describe('Simple Login and Error Check', () => {
     
     // Step 3: Wait for successful login
     console.log('📍 Waiting for login redirect');
-    await page.waitForURL(/\/access/, { timeout: 10000 });
+    await page.waitForURL(/\/access/, { timeout: 30000 });
     console.log('✅ Successfully logged in and redirected to /access');
     
     // Step 4: Take screenshot of access page

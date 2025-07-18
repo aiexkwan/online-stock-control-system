@@ -44,7 +44,7 @@ export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({
     return () => {
       previews.forEach(preview => URL.revokeObjectURL(preview.url));
     };
-  }, [previews as string]);
+  }, [previews]);
 
   // 驗證文件
   const validateFile = (file: File): string | null => {
@@ -127,7 +127,7 @@ export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({
         );
       }
     },
-    [triggerOtherFilesRefresh as string]
+    [triggerOtherFilesRefresh]
   );
 
   // 處理文件選擇
@@ -139,7 +139,7 @@ export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({
       const newPreviews: { id: string; url: string }[] = [];
 
       for (let i = 0; i < files.length; i++) {
-        const file = files[i as string];
+        const file = files[i];
         const error = validateFile(file);
 
         if (error) {

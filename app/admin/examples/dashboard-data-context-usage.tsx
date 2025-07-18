@@ -138,7 +138,7 @@ function StockDistributionWidget() {
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {data?.warehouseData?.map((warehouse) => (
+          {data?.warehouseData?.map((warehouse: any) => (
             <div key={warehouse.warehouse} className="flex justify-between">
               <span>{warehouse.warehouse}</span>
               <span className="font-medium">

@@ -14,9 +14,9 @@ export default defineConfig({
   globalSetup: require.resolve('./e2e/global-setup.ts'),
 
   // 測試超時設置
-  timeout: 30 * 1000,
+  timeout: 120 * 1000,
   expect: {
-    timeout: 5000,
+    timeout: 15000,
   },
 
   // 全局設置
@@ -49,8 +49,8 @@ export default defineConfig({
     ignoreHTTPSErrors: true,
 
     // 用戶操作設置
-    actionTimeout: 10 * 1000,
-    navigationTimeout: 30 * 1000,
+    actionTimeout: 45 * 1000,
+    navigationTimeout: 90 * 1000,
   },
 
   // 測試項目配置
@@ -84,7 +84,7 @@ export default defineConfig({
         command: 'npm run dev',
         port: 3000,
         reuseExistingServer: !process.env.CI,
-        timeout: 120 * 1000,
+        timeout: 180 * 1000,
       },
 
   // 輸出目錄

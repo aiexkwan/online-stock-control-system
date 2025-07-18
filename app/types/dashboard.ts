@@ -102,9 +102,8 @@ export interface WidgetConfig {
   };
 }
 
-// 小部件組件屬性
-export interface WidgetComponentProps {
-  widget: DashboardWidget | WidgetConfig;
+// 小部件組件屬性基礎接口
+export interface BaseWidgetComponentProps {
   isEditMode?: boolean;
   onUpdate?: (config: WidgetBaseConfig) => void;
   onRemove?: () => void;
@@ -113,6 +112,21 @@ export interface WidgetComponentProps {
     end: Date;
   };
 }
+
+// 傳統 Widget 組件屬性（使用 widget 對象）
+export interface TraditionalWidgetComponentProps extends BaseWidgetComponentProps {
+  widget: DashboardWidget | WidgetConfig;
+  widgetId?: never;
+}
+
+// 批量查詢 Widget 組件屬性（使用 widgetId 字符串）
+export interface BatchQueryWidgetComponentProps extends BaseWidgetComponentProps {
+  widgetId: string;
+  widget?: never;
+}
+
+// 聯合類型，支持兩種模式
+export type WidgetComponentProps = TraditionalWidgetComponentProps | BatchQueryWidgetComponentProps;
 
 // 小部件註冊表項目
 export interface WidgetRegistryItem {

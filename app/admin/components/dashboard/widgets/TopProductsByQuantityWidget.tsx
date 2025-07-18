@@ -49,7 +49,7 @@ export const TopProductsByQuantityWidget = React.memo(function TopProductsByQuan
       startDate: timeFrame.start.toISOString(),
       endDate: timeFrame.end.toISOString(),
     };
-  }, [timeFrame as string]);
+  }, [timeFrame]);
 
   // API 狀態管理
   const [loading, setLoading] = useState(!isEditMode);
@@ -102,7 +102,7 @@ export const TopProductsByQuantityWidget = React.memo(function TopProductsByQuan
     }
     
     return `${format(start, 'MMM d')} - ${format(end, 'MMM d, yyyy')}`;
-  }, [timeFrame as string]);
+  }, [timeFrame]);
 
   if (isEditMode) {
     return (

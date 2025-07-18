@@ -106,7 +106,7 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
       fetchAcoOrders();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditMode as string]);
+  }, [isEditMode]);
 
   const handleGenerateReport = async () => {
     if (!selectedAcoOrder) {
@@ -186,7 +186,7 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
         <div className='flex h-full flex-col'>
           {/* Title */}
           <div className='mb-3 flex items-center justify-between'>
-            <div className={cn('flex items-center', theme.spacing.gap.small)}>
+            <div className={cn('flex items-center gap-2')}>
               <DocumentArrowDownIcon className='h-5 w-5' style={{ color: semanticColors.info.DEFAULT }} />
               <h3 className={cn(textClasses['body-small'], 'font-semibold text-foreground')}>ACO Order Report</h3>
             </div>
@@ -208,7 +208,7 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
                 </Label>
                 <Select
                   value={selectedAcoOrder}
-                  onChange={(e) => setSelectedAcoOrder(e.target.value)}
+                  onValueChange={(value) => setSelectedAcoOrder(value)}
                   disabled={isEditMode || loading || acoOrders.length === 0}
                 >
                   <SelectTrigger

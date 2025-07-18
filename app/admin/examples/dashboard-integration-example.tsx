@@ -3,7 +3,7 @@
 import React from 'react';
 import { DashboardDataProvider } from '@/app/admin/contexts/DashboardDataContext';
 import { AdminDashboardContent } from '@/app/admin/components/dashboard/AdminDashboardContent';
-import { DatePickerWithRange } from '@/components/ui/date-range-picker';
+// import { DatePickerWithRange } from '@/components/ui/date-range-picker'; // 暫時注釋，組件不存在
 import { useDashboardData } from '@/app/admin/contexts/DashboardDataContext';
 
 // 日期選擇器組件，使用 Context 中的狀態
@@ -11,18 +11,12 @@ function DashboardDateSelector() {
   const { dateRange, setDateRange } = useDashboardData();
 
   return (
-    <DatePickerWithRange
-      date={{
-        from: dateRange.startDate || undefined,
-        to: dateRange.endDate || undefined
-      }}
-      onDateChange={(range) => {
-        setDateRange({
-          startDate: range?.from || null,
-          endDate: range?.to || null
-        });
-      }}
-    />
+    <div className="flex items-center space-x-2">
+      <span className="text-sm text-gray-500">
+        Date Range: {dateRange.startDate?.toDateString()} - {dateRange.endDate?.toDateString()}
+      </span>
+      {/* DatePickerWithRange 暫時用簡單文字替代 */}
+    </div>
   );
 }
 
@@ -48,7 +42,15 @@ export default function AdminDashboardPage() {
 
         {/* 儀表板內容 */}
         <div className="flex-1 overflow-auto">
-          <AdminDashboardContent />
+          <AdminDashboardContent 
+            theme="production"
+            timeFrame={{
+              label: "Last 7 Days",
+              value: "7d",
+              start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+              end: new Date()
+            }}
+          />
         </div>
       </div>
     </DashboardDataProvider>

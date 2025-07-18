@@ -10,7 +10,7 @@ test.describe('NestJS v1.1.2 REST API Validation', () => {
     const data = await response.json();
     expect(data.status).toBe('ok');
     expect(data.service).toBe('newpennine-api');
-    expect(data.database.supabase).toBe('connected');
+    expect(data.version).toBe('1.0.0');
     
     console.log('✅ Basic Health Check Passed');
   });

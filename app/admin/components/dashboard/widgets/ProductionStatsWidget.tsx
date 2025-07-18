@@ -10,10 +10,10 @@ import React, { useMemo, useEffect, useState } from 'react';
 import { CubeIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
-import { WidgetComponentProps } from '@/app/types/dashboard';
+import { TraditionalWidgetComponentProps } from '@/app/types/dashboard';
 import { MetricCard } from './common/data-display/MetricCard';
 
-interface ProductionStatsWidgetProps extends WidgetComponentProps {
+interface ProductionStatsWidgetProps extends TraditionalWidgetComponentProps {
   title: string;
   metric: 'pallet_count' | 'quantity_sum';
 }
@@ -49,7 +49,7 @@ export const ProductionStatsWidget: React.FC<ProductionStatsWidgetProps> = ({
       start: timeFrame.start,
       end: timeFrame.end,
     };
-  }, [timeFrame as string]);
+  }, [timeFrame]);
 
   useEffect(() => {
     if (isEditMode) return;
@@ -126,7 +126,6 @@ export const ProductionStatsWidget: React.FC<ProductionStatsWidgetProps> = ({
         value={0}
         label={label}
         icon={CubeIcon}
-        isEditMode={true}
       />
     );
   }
@@ -143,13 +142,8 @@ export const ProductionStatsWidget: React.FC<ProductionStatsWidgetProps> = ({
         optimized: true
       } : undefined}
       loading={loading}
-      error={error ? error : undefined}
-      onRetry={() => {
-        // Trigger re-fetch by updating state
-        window.location.reload();
-      }}
+      error={error ? new Error(error) : undefined}
       animateOnMount={true}
-      widgetType={widget?.type?.toUpperCase() as any}
     />
   );
 };

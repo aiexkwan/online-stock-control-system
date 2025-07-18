@@ -16,19 +16,15 @@ export type WidgetCategory =
   | 'special'; // 特殊類
 
 // 導入必要的類型
-import { DashboardWidget, WidgetConfig, WidgetBaseConfig } from '@/app/types/dashboard';
+import { 
+  DashboardWidget, 
+  WidgetConfig, 
+  WidgetBaseConfig, 
+  WidgetComponentProps 
+} from '@/app/types/dashboard';
 
-// Widget 組件 Props (兼容現有系統)
-export interface WidgetComponentProps {
-  widget: DashboardWidget | WidgetConfig;
-  isEditMode?: boolean;
-  onUpdate?: (config: WidgetBaseConfig) => void;
-  onRemove?: () => void;
-  timeFrame?: {
-    start: Date;
-    end: Date;
-  };
-}
+// 重新導出 WidgetComponentProps 以保持兼容性
+export type { WidgetComponentProps };
 
 // Widget 定義接口
 export interface WidgetDefinition {

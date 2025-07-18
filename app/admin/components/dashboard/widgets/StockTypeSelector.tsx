@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { WidgetComponentProps } from '@/app/types/dashboard';
+import { TraditionalWidgetComponentProps } from '@/app/types/dashboard';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -15,7 +15,7 @@ interface StockData {
   type?: string;
 }
 
-interface StockTypeSelectorProps extends WidgetComponentProps {
+interface StockTypeSelectorProps extends TraditionalWidgetComponentProps {
 }
 
 // GraphQL queries removed - using REST API only
@@ -78,12 +78,12 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
     } finally {
       setLoading(false);
     }
-  }, [isEditMode as string]);
+  }, [isEditMode]);
 
   // Initial data load
   useEffect(() => {
     fetchStockData();
-  }, [fetchStockData as string]);
+  }, [fetchStockData]);
 
   // Refresh on trigger
   useEffect(() => {

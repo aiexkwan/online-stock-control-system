@@ -49,6 +49,55 @@ export const spacing = {
   72: '18rem',        // 288px
   80: '20rem',        // 320px
   96: '24rem',        // 384px
+  
+  // 語義化間距
+  small: '0.5rem',    // 8px
+  medium: '1rem',     // 16px
+  large: '1.5rem',    // 24px
+  
+  // Gap values for flexbox and grid
+  gap: {
+    0: '0px',
+    px: '1px',
+    0.5: '0.125rem',
+    1: '0.25rem',
+    1.5: '0.375rem',
+    2: '0.5rem',
+    2.5: '0.625rem',
+    3: '0.75rem',
+    3.5: '0.875rem',
+    4: '1rem',
+    5: '1.25rem',
+    6: '1.5rem',
+    7: '1.75rem',
+    8: '2rem',
+    9: '2.25rem',
+    10: '2.5rem',
+    11: '2.75rem',
+    12: '3rem',
+    14: '3.5rem',
+    16: '4rem',
+    20: '5rem',
+    24: '6rem',
+    28: '7rem',
+    32: '8rem',
+    36: '9rem',
+    40: '10rem',
+    44: '11rem',
+    48: '12rem',
+    52: '13rem',
+    56: '14rem',
+    60: '15rem',
+    64: '16rem',
+    72: '18rem',
+    80: '20rem',
+    96: '24rem',
+    
+    // 語義化間距
+    small: '0.5rem',    // 8px
+    medium: '1rem',     // 16px
+    large: '1.5rem',    // 24px
+  },
 } as const;
 
 /**
@@ -94,6 +143,9 @@ export const componentSpacing = {
 export const widgetSpacing = {
   // Widget 內部內邊距
   containerPadding: spacing[4],        // 16px
+  
+  // Widget 容器內邊距（用於統一 Widget 內部間距）
+  container: 'p-4',                    // 16px - Tailwind 類名
   
   // Widget 標題與內容間距
   headerGap: spacing[4],               // 16px
@@ -294,7 +346,7 @@ export const spacingUtilities = {
     base: 'px-4 md:px-6 lg:px-8',
     compact: 'px-3 md:px-4 lg:px-6',
     wide: 'px-6 md:px-8 lg:px-12',
-  },
+  } as { [key: string]: string },
   
   // Widget 類
   widget: {
@@ -322,5 +374,84 @@ export const spacingUtilities = {
     base: 'grid gap-4',
     compact: 'grid gap-2',
     wide: 'grid gap-6',
+  },
+  
+  // Margin 類
+  margin: {
+    // 全方向 margin
+    none: 'm-0',
+    xs: 'm-1',
+    sm: 'm-2',
+    base: 'm-4',
+    md: 'm-6',
+    lg: 'm-8',
+    xl: 'm-12',
+    
+    // 頂部 margin
+    top: {
+      none: 'mt-0',
+      xs: 'mt-1',
+      sm: 'mt-2',
+      base: 'mt-4',
+      md: 'mt-6',
+      lg: 'mt-8',
+      xl: 'mt-12',
+    },
+    
+    // 右側 margin
+    right: {
+      none: 'mr-0',
+      xs: 'mr-1',
+      sm: 'mr-2',
+      base: 'mr-4',
+      md: 'mr-6',
+      lg: 'mr-8',
+      xl: 'mr-12',
+    },
+    
+    // 底部 margin
+    bottom: {
+      none: 'mb-0',
+      xs: 'mb-1',
+      sm: 'mb-2',
+      base: 'mb-4',
+      md: 'mb-6',
+      lg: 'mb-8',
+      xl: 'mb-12',
+      medium: 'mb-4', // 兼容現有代碼
+    },
+    
+    // 左側 margin
+    left: {
+      none: 'ml-0',
+      xs: 'ml-1',
+      sm: 'ml-2',
+      base: 'ml-4',
+      md: 'ml-6',
+      lg: 'ml-8',
+      xl: 'ml-12',
+    },
+    
+    // 橫向 margin
+    horizontal: {
+      none: 'mx-0',
+      xs: 'mx-1',
+      sm: 'mx-2',
+      base: 'mx-4',
+      md: 'mx-6',
+      lg: 'mx-8',
+      xl: 'mx-12',
+    },
+    
+    // 縱向 margin
+    vertical: {
+      none: 'my-0',
+      xs: 'my-1',
+      sm: 'my-2',
+      base: 'my-4',
+      md: 'my-6',
+      lg: 'my-8',
+      xl: 'my-12',
+    },
   },
 } as const;

@@ -111,7 +111,7 @@ export const UploadProductSpecWidget = React.memo(function UploadProductSpecWidg
         );
       }
     },
-    [triggerOtherFilesRefresh as string]
+    [triggerOtherFilesRefresh]
   );
 
   // 處理文件選擇
@@ -122,7 +122,7 @@ export const UploadProductSpecWidget = React.memo(function UploadProductSpecWidg
       const newFiles: UploadingFile[] = [];
 
       for (let i = 0; i < files.length; i++) {
-        const file = files[i as string];
+        const file = files[i];
         const error = validateFile(file);
 
         if (error) {

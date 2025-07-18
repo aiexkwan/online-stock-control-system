@@ -8,7 +8,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
-import { WidgetComponentProps } from '@/app/types/dashboard';
+import { TraditionalWidgetComponentProps } from '@/app/types/dashboard';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { WidgetSkeleton, WidgetError } from './common/WidgetStates';
 import { 
@@ -60,7 +60,7 @@ const stockDistributionApiClient = {
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch stock distribution: ${(response as { status: string }).statusText}`);
+      throw new Error(`Failed to fetch stock distribution: ${response.statusText}`);
     }
     
     const data = await response.json();
@@ -68,7 +68,7 @@ const stockDistributionApiClient = {
   },
 };
 
-interface StockDistributionChartProps extends WidgetComponentProps {
+interface StockDistributionChartProps extends TraditionalWidgetComponentProps {
   useGraphQL?: boolean;
 }
 
@@ -161,8 +161,8 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({
 
   const getLocationColor = (location: string): string => {
     const colorMap: Record<string, string> = {
-      injection: brandColors.primary.DEFAULT,
-      pipeline: brandColors.secondary.DEFAULT,
+      injection: brandColors.primary[500],
+      pipeline: brandColors.secondary[500],
       prebook: '#F59E0B',
       await: '#EF4444',
       fold: '#8B5CF6',
@@ -170,7 +170,7 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({
       await_grn: '#F97316',
       backcarpark: '#6B7280',
     };
-    return colorMap[location as string] || brandColors.primary.DEFAULT;
+    return colorMap[location as string] || brandColors.primary[500];
   };
 
   const getAvailableTypes = useCallback(() => {
@@ -181,7 +181,7 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({
       }
     });
     return Array.from(types);
-  }, [chartData as string]);
+  }, [chartData]);
 
   const treemapData = transformDataForTreemap(chartData, selectedType);
 
@@ -230,7 +230,7 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({
         'flex h-full w-full items-center justify-center rounded-lg border',
         'border-border bg-card/40'
       )}>
-        <WidgetSkeleton type='chart' />
+        <WidgetSkeleton type='chart-bar' />
       </div>
     );
   }
@@ -295,11 +295,9 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({
             <Treemap
               data={treemapData}
               dataKey='value'
-              ratio={4 / 3}
               stroke='#ffffff'
-              strokeWidth={2}
-              fill={brandColors.primary.DEFAULT}
-              content={({ x, y, width, height, payload }) => {
+              fill={brandColors.primary[500]}
+              content={(({ x, y, width, height, payload }: any) => {
                 if (!payload || width < 40 || height < 30) return null;
                 
                 return (
@@ -339,7 +337,7 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({
                     )}
                   </g>
                 );
-              }}
+              }) as any}
             >
               <Tooltip content={customTooltip} />
             </Treemap>

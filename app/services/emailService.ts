@@ -19,12 +19,8 @@ interface EmailRequest {
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 export async function sendOrderCreatedEmail(emailRequest: EmailRequest) {
-  (process.env.NODE_ENV as string) !== 'production' &&
-    (process.env.NODE_ENV as string) !== 'production' &&
-    console.log('=== 📧 Internal Email Service Started ===');
-  (process.env.NODE_ENV as string) !== 'production' &&
-    (process.env.NODE_ENV as string) !== 'production' &&
-    console.log('🔍 [emailService] Bypassing all middleware and routes');
+  process.env.NODE_ENV !== 'production' &&
+    console.log('=== 📧 Internal Email Service Started ===', '🔍 [emailService] Bypassing all middleware and routes');
 
   if (!RESEND_API_KEY) {
     console.error('❌ RESEND_API_KEY is not set in environment variables');
@@ -77,8 +73,7 @@ export async function sendOrderCreatedEmail(emailRequest: EmailRequest) {
     ];
   }
 
-  (process.env.NODE_ENV as string) !== 'production' &&
-    (process.env.NODE_ENV as string) !== 'production' &&
+  process.env.NODE_ENV !== 'production' &&
     console.log('📧 Email details:', {
       from: fromEmail,
       to: toEmails,
@@ -178,13 +173,11 @@ This is an automated notification from the Pennine Stock Control System.
         type: 'application/pdf',
       },
     ];
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
       console.log('📎 PDF attachment added:', pdfAttachment.filename);
   }
 
-  (process.env.NODE_ENV as string) !== 'production' &&
-    (process.env.NODE_ENV as string) !== 'production' &&
+  process.env.NODE_ENV !== 'production' &&
     console.log('📤 Sending email directly to Resend API...');
 
   // 發送郵件使用 Resend API
@@ -197,21 +190,18 @@ This is an automated notification from the Pennine Stock Control System.
     body: JSON.stringify(emailData),
   });
 
-  (process.env.NODE_ENV as string) !== 'production' &&
-    (process.env.NODE_ENV as string) !== 'production' &&
+  process.env.NODE_ENV !== 'production' &&
     console.log('📨 Resend API response status:', response.status);
 
   let result;
   try {
     result = await response.json();
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
       console.log('📨 Resend API response body:', result);
   } catch (jsonError) {
     console.error('❌ Failed to parse Resend API response as JSON:', jsonError);
     const textResult = await response.text();
-    (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
+    process.env.NODE_ENV !== 'production' &&
       console.log('📨 Resend API response as text:', textResult);
     throw new Error(`Failed to parse email service response: ${textResult}`);
   }
@@ -227,8 +217,7 @@ This is an automated notification from the Pennine Stock Control System.
     );
   }
 
-  (process.env.NODE_ENV as string) !== 'production' &&
-    (process.env.NODE_ENV as string) !== 'production' &&
+  process.env.NODE_ENV !== 'production' &&
     console.log('✅ Email sent successfully via internal service:', result);
 
   return {

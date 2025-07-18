@@ -171,7 +171,14 @@
       "Bash(# 分析 components.backup 目錄的錯誤\necho \"\"=== components.backup 目錄錯誤分析 ===\"\"\necho \"\"\"\"\necho \"\"1. components.backup 目錄錯誤數量：\"\"\ncat tsc_errors.log | grep -E \"\"error TS[0-9]+\"\" | grep \"\"components.backup\"\" | wc -l\n\necho \"\"\"\"\necho \"\"2. components.backup 目錄受影響文件：\"\"\ncat tsc_errors.log | grep -E \"\"error TS[0-9]+\"\" | grep \"\"components.backup\"\" | cut -d''('' -f1 | sort | uniq -c | sort -nr | head -10\n\necho \"\"\"\"\necho \"\"3. components.backup 目錄主要錯誤類型：\"\"\ncat tsc_errors.log | grep -E \"\"error TS[0-9]+\"\" | grep \"\"components.backup\"\" | sed -E ''s/.*error (TS[0-9]+).*/\\1/'' | sort | uniq -c | sort -nr)",
       "Bash(# 分析 NestJS 裝飾器相關錯誤\necho \"\"=== NestJS 裝飾器錯誤分析 ===\"\"\necho \"\"\"\"\necho \"\"1. TS1240 錯誤的具體內容（前 5 個）：\"\"\ncat tsc_errors.log | grep \"\"TS1240\"\" | head -5 | cut -d: -f3-\n\necho \"\"\"\"\necho \"\"2. 受 TS1240 影響的文件類型：\"\"\ncat tsc_errors.log | grep \"\"TS1240\"\" | cut -d''('' -f1 | grep -E \"\"\\.(controller|service|dto)\\.ts$\"\" | sed -E ''s/.*\\.(controller|service|dto)\\.ts$/\\1/'' | sort | uniq -c\n\necho \"\"\"\"\necho \"\"3. 特定文件的 TS1240 錯誤示例：\"\"\necho \"\"--- widgets.controller.ts 的錯誤：\"\"\ncat tsc_errors.log | grep \"\"widgets.controller.ts\"\" | grep \"\"TS1240\"\" | head -3)",
       "Bash(git tag:*)",
-      "Bash(git branch:*)"
+      "Bash(git branch:*)",
+      "Bash(typescript-generator:*)",
+      "Bash(PLAYWRIGHT_BASE_URL=http://localhost:3002 npm run test:e2e -- --grep \"Simple Login and Error Check\")",
+      "Bash(PLAYWRIGHT_BASE_URL=http://localhost:3002 npx playwright test e2e/admin/data-management-theme.spec.ts --timeout=30000)",
+      "Bash(PLAYWRIGHT_BASE_URL=http://localhost:3002 npx playwright test e2e/admin/data-management-theme.spec.ts --timeout=60000)",
+      "Bash(PLAYWRIGHT_BASE_URL=http://localhost:3002 npx playwright test e2e/admin-themes-quick-test.spec.ts --grep=\"data-management\" --timeout=30000)",
+      "Bash(PLAYWRIGHT_BASE_URL=http://localhost:3002 npx playwright test e2e/admin/data-management-theme.spec.ts --timeout=60000 --project=chromium)",
+      "Bash(PLAYWRIGHT_BASE_URL=http://localhost:3002 npx playwright test e2e/admin-themes-quick-test.spec.ts --timeout=60000 --project=chromium)"
     ],
     "deny": []
   },

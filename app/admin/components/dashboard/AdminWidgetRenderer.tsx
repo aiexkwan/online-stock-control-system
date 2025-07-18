@@ -131,7 +131,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       }, delay);
       return () => clearTimeout(timer);
     }
-  }, [delay as string]);
+  }, [delay]);
 
   // 穩定 config 的關鍵屬性以避免無限循環
   const stableConfigKey = useMemo(() => {
@@ -182,7 +182,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
     };
 
     loadData();
-  }, [stableConfigKey, timeFrame, refreshTrigger, isDelayed]);
+  }, [config.dataSource, stableConfigKey, timeFrame, refreshTrigger, isDelayed]);
 
   // 如果還在延遲階段，顯示加載狀態
   if (isDelayed) {
@@ -237,7 +237,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
 
   return (
     <UnifiedWidgetWrapper theme={theme} title={config.title}>
-      <Suspense fallback={createSuspenseFallback(widgetCategory)}>
+      <Suspense fallback={createSuspenseFallback(widgetCategory as 'default' | 'stats' | 'chart' | 'table' | 'list')}>
         {renderedContent}
       </Suspense>
     </UnifiedWidgetWrapper>
@@ -327,7 +327,7 @@ const ProductUpdateWidget: React.FC<{
     setLoading(true);
     try {
       const result = await getProductByCode(productCode);
-      setProductData(result);
+      setProductData(result as unknown as ProductData);
     } catch (error) {
       console.error('Product search error:', error);
     } finally {

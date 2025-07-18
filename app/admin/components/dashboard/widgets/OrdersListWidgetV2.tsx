@@ -20,7 +20,7 @@ import {
   ArrowsRightLeftIcon,
 } from '@heroicons/react/24/outline';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { WidgetComponentProps } from '@/app/types/dashboard';
+import { TraditionalWidgetComponentProps } from '@/app/types/dashboard';
 import { format } from 'date-fns';
 import { fromDbTime } from '@/app/utils/timezone';
 import { ordersAPI, OrdersListResponse, OrderRecord } from '@/lib/api/modules/OrdersAPI';
@@ -34,7 +34,7 @@ import { useInViewport } from '@/app/admin/hooks/useInViewport';
 // Types
 // ================================
 
-export interface OrdersListWidgetV2Props extends WidgetComponentProps {
+export interface OrdersListWidgetV2Props extends TraditionalWidgetComponentProps {
   initialData?: OrdersListResponse;
 }
 
@@ -69,7 +69,7 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
   const [hasMore, setHasMore] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   // Fetch orders using REST API
   const fetchOrders = useCallback(async (currentPage: number) => {
@@ -94,7 +94,7 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
       setTotalCount(response.totalCount);
     } catch (err) {
       console.error('Error fetching orders:', err);
-      setError(err instanceof Error ? (err as { message: string }).message : 'Failed to fetch orders');
+      setError(err instanceof Error ? err : new Error('Failed to fetch orders'));
     } finally {
       setLoading(false);
     }
@@ -126,7 +126,7 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
     setPage(0);
     setAllOrders([]);
     await fetchOrders(0);
-  }, [fetchOrders as string]);
+  }, [fetchOrders]);
 
   // Loading states
   const isLoading = loading && page === 0;

@@ -43,6 +43,7 @@ const WIDGET_IDS = {
 interface UseDashboardConcurrentQueryReturn {
   data: DashboardBatchQueryData | null;
   loading: boolean;
+  isLoading: boolean; // 別名支援，向後兼容
   error: DashboardBatchQueryError | null;
   refetch: () => Promise<void>;
   refetchWidget: (widgetId: string) => Promise<void>;
@@ -65,15 +66,19 @@ export function useDashboardConcurrentQuery(
   const lastFetchTimeRef = useRef<number>(0);
   const MIN_FETCH_INTERVAL = 2000; // 2 seconds
 
+  // 提取日期時間戳以穩定依賴
+  const startTime = options.dateRange?.startDate?.getTime();
+  const endTime = options.dateRange?.endDate?.getTime();
+
   // 穩定化 options 的關鍵屬性
   const stableDateRange = useMemo(() => ({
     startDate: options.dateRange?.startDate,
     endDate: options.dateRange?.endDate
-  }), [options.dateRange?.startDate?.getTime(), options.dateRange?.endDate?.getTime()]);
+  }), [options.dateRange?.startDate, options.dateRange?.endDate]);
   
   const stableEnabledWidgets = useMemo(() => 
     options.enabledWidgets || Object.keys(WIDGET_IDS), 
-    [options.enabledWidgets?.join(',')]
+    [options.enabledWidgets]
   );
 
   // 並發查詢主函數 - 簡化版
@@ -175,7 +180,8 @@ export function useDashboardConcurrentQuery(
     // 處理錯誤
     if (errors.length > 0) {
       setError({
-        type: 'concurrent',
+        type: 'batch',
+        name: 'ConcurrentFetchError',
         message: `Failed to fetch ${errors.length} widget(s)`,
         details: errors,
         timestamp: new Date(),
@@ -186,6 +192,7 @@ export function useDashboardConcurrentQuery(
 
     // 計算性能指標
     const totalFetchTime = performance.now() - startTime;
+    const successRate = totalRequests > 0 ? ((totalRequests - failedRequests) / totalRequests) * 100 : 0;
     const metrics: UseDashboardConcurrentQueryReturn['performanceMetrics'] = {
       totalFetchTime,
       totalRequests,
@@ -220,7 +227,13 @@ export function useDashboardConcurrentQuery(
     queryKey,
     queryFn: fetchConcurrentData,
     enabled: options.enabled !== false,
-    ...CONCURRENT_QUERY_CONFIG,
+    staleTime: 300000, // 5 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: true,
+    refetchInterval: false, // 修復：使用 false 而不是 boolean
+    retry: 3,
+    retryDelay: 1000,
   });
 
   // 重新獲取所有數據
@@ -274,6 +287,7 @@ export function useDashboardConcurrentQuery(
     } catch (err) {
       setError({
         type: 'widget',
+        name: 'WidgetRefreshError',
         widgetId,
         message: `Failed to refresh ${widgetId}`,
         details: err,
@@ -294,8 +308,10 @@ export function useDashboardConcurrentQuery(
   return {
     data: query.data || null,
     loading: query.isLoading,
+    isLoading: query.isLoading, // 別名支援，向後兼容
     error: error || (query.error ? {
-      type: 'concurrent',
+      type: 'batch',
+      name: 'QueryError',
       message: query.error.message,
       timestamp: new Date(),
     } : null),

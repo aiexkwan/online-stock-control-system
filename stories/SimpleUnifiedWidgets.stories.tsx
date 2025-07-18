@@ -1,0 +1,485 @@
+import type { Meta, StoryObj } from '@storybook/react';
+import React from 'react';
+import { Box, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
+
+// Simplified mock components for Storybook demonstration
+const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <div className={`border border-gray-200 rounded-lg shadow-sm bg-white ${className}`}>
+    {children}
+  </div>
+);
+
+const CardHeader = ({ children }: { children: React.ReactNode }) => (
+  <div className="px-6 py-4 border-b border-gray-100">
+    {children}
+  </div>
+);
+
+const CardContent = ({ children }: { children: React.ReactNode }) => (
+  <div className="px-6 py-4">
+    {children}
+  </div>
+);
+
+const CardTitle = ({ children }: { children: React.ReactNode }) => (
+  <h3 className="text-lg font-semibold text-gray-900">
+    {children}
+  </h3>
+);
+
+// Simple Stats Widget Component
+interface SimpleStatsWidgetProps {
+  title: string;
+  value: string | number;
+  description?: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  loading?: boolean;
+  error?: string;
+}
+
+const SimpleStatsWidget: React.FC<SimpleStatsWidgetProps> = ({
+  title,
+  value,
+  description,
+  icon: Icon = Box,
+  loading = false,
+  error
+}) => {
+  if (loading) {
+    return (
+      <Card className="w-80 h-32">
+        <CardHeader>
+          <div className="animate-pulse h-4 bg-gray-200 rounded w-24"></div>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse h-8 bg-gray-200 rounded w-16 mb-2"></div>
+          <div className="animate-pulse h-3 bg-gray-200 rounded w-32"></div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="w-80 h-32 border-red-200">
+        <CardHeader>
+          <CardTitle className="text-red-600 flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            Error
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-red-500 text-sm">{error}</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="w-80 h-32">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Icon className="h-5 w-5 text-blue-500" />
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold text-gray-900 mb-1">{value}</div>
+        {description && (
+          <p className="text-sm text-gray-600">{description}</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+// Simple Chart Widget Component
+interface SimpleChartWidgetProps {
+  title: string;
+  chartType: 'bar' | 'line' | 'pie';
+  data: Array<{ name: string; value: number }>;
+  loading?: boolean;
+  error?: string;
+}
+
+const SimpleChartWidget: React.FC<SimpleChartWidgetProps> = ({
+  title,
+  chartType,
+  data,
+  loading = false,
+  error
+}) => {
+  if (loading) {
+    return (
+      <Card className="w-96 h-64">
+        <CardHeader>
+          <div className="animate-pulse h-4 bg-gray-200 rounded w-32"></div>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse h-40 bg-gray-200 rounded"></div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="w-96 h-64 border-red-200">
+        <CardHeader>
+          <CardTitle className="text-red-600">Chart Error</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-red-500 text-sm">{error}</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const maxValue = Math.max(...data.map(d => d.value));
+
+  return (
+    <Card className="w-96 h-64">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {chartType === 'bar' && data.map((item, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <span className="text-sm w-16 truncate">{item.name}</span>
+              <div className="flex-1 bg-gray-200 rounded h-4">
+                <div 
+                  className="bg-blue-500 h-4 rounded"
+                  style={{ width: `${(item.value / maxValue) * 100}%` }}
+                ></div>
+              </div>
+              <span className="text-sm w-8 text-right">{item.value}</span>
+            </div>
+          ))}
+          {chartType === 'pie' && (
+            <div className="text-center text-gray-600 text-sm">
+              Pie Chart Visualization ({data.length} segments)
+            </div>
+          )}
+          {chartType === 'line' && (
+            <div className="text-center text-gray-600 text-sm">
+              Line Chart Visualization ({data.length} data points)
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Simple Table Widget Component
+interface SimpleTableWidgetProps {
+  title: string;
+  data: Array<Record<string, any>>;
+  loading?: boolean;
+  error?: string;
+}
+
+const SimpleTableWidget: React.FC<SimpleTableWidgetProps> = ({
+  title,
+  data,
+  loading = false,
+  error
+}) => {
+  if (loading) {
+    return (
+      <Card className="w-full max-w-2xl">
+        <CardHeader>
+          <div className="animate-pulse h-4 bg-gray-200 rounded w-32"></div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="animate-pulse h-8 bg-gray-200 rounded"></div>
+            <div className="animate-pulse h-6 bg-gray-100 rounded"></div>
+            <div className="animate-pulse h-6 bg-gray-100 rounded"></div>
+            <div className="animate-pulse h-6 bg-gray-100 rounded"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="w-full max-w-2xl border-red-200">
+        <CardHeader>
+          <CardTitle className="text-red-600">Table Error</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-red-500 text-sm">{error}</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <Card className="w-full max-w-2xl">
+        <CardHeader>
+          <CardTitle>{title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-gray-500 text-center py-8">No data available</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const columns = Object.keys(data[0]);
+
+  return (
+    <Card className="w-full max-w-2xl">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b">
+                {columns.map(col => (
+                  <th key={col} className="text-left p-2 font-medium capitalize">
+                    {col.replace(/_/g, ' ')}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.slice(0, 5).map((row, index) => (
+                <tr key={index} className="border-b">
+                  {columns.map(col => (
+                    <td key={col} className="p-2">
+                      {typeof row[col] === 'boolean' 
+                        ? row[col] ? 'Yes' : 'No'
+                        : row[col]?.toString().length > 30
+                          ? `${row[col]?.toString().substring(0, 30)}...`
+                          : row[col]
+                      }
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {data.length > 5 && (
+            <div className="text-center text-gray-500 text-xs mt-2">
+              Showing 5 of {data.length} records
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Mock data
+const mockStatsData = {
+  success: { value: 1234, description: "Total pallets produced today" },
+  loading: { value: "Loading...", description: "Fetching data..." },
+  error: { value: "Error", description: "Failed to load data" }
+};
+
+const mockChartData = {
+  production: [
+    { name: 'Mon', value: 120 },
+    { name: 'Tue', value: 132 },
+    { name: 'Wed', value: 101 },
+    { name: 'Thu', value: 134 },
+    { name: 'Fri', value: 90 }
+  ],
+  departments: [
+    { name: 'Production', value: 45 },
+    { name: 'QC', value: 30 },
+    { name: 'Packaging', value: 25 }
+  ]
+};
+
+const mockTableData = [
+  { id: 'ORD-001', customer: 'Customer A', status: 'Pending', items: 5, amount: 1250 },
+  { id: 'ORD-002', customer: 'Customer B', status: 'Processing', items: 12, amount: 3400 },
+  { id: 'ORD-003', customer: 'Customer C', status: 'Shipped', items: 8, amount: 2100 },
+  { id: 'ORD-004', customer: 'Customer D', status: 'Delivered', items: 15, amount: 4800 }
+];
+
+// Stories
+const meta: Meta = {
+  title: 'Dashboard/Unified Widgets Demo',
+  parameters: {
+    layout: 'centered',
+    backgrounds: {
+      default: 'light',
+      values: [
+        { name: 'light', value: '#f5f5f5' },
+        { name: 'dark', value: '#333333' },
+      ],
+    },
+  },
+  tags: ['autodocs'],
+};
+
+export default meta;
+
+// Stats Widget Stories
+export const StatsDefault: StoryObj = {
+  render: () => (
+    <SimpleStatsWidget
+      title="Production Today"
+      value={mockStatsData.success.value}
+      description={mockStatsData.success.description}
+      icon={Box}
+    />
+  ),
+};
+
+export const StatsEfficiency: StoryObj = {
+  render: () => (
+    <SimpleStatsWidget
+      title="Production Efficiency"
+      value="87.6%"
+      description="Current efficiency rate"
+      icon={TrendingUp}
+    />
+  ),
+};
+
+export const StatsLoading: StoryObj = {
+  render: () => (
+    <SimpleStatsWidget
+      title="Production Today"
+      value={0}
+      loading={true}
+    />
+  ),
+};
+
+export const StatsError: StoryObj = {
+  render: () => (
+    <SimpleStatsWidget
+      title="Production Today"
+      value={0}
+      error="Failed to load production data"
+    />
+  ),
+};
+
+// Chart Widget Stories
+export const ChartBarDefault: StoryObj = {
+  render: () => (
+    <SimpleChartWidget
+      title="Weekly Production"
+      chartType="bar"
+      data={mockChartData.production}
+    />
+  ),
+};
+
+export const ChartPieDistribution: StoryObj = {
+  render: () => (
+    <SimpleChartWidget
+      title="Department Distribution"
+      chartType="pie"
+      data={mockChartData.departments}
+    />
+  ),
+};
+
+export const ChartLoading: StoryObj = {
+  render: () => (
+    <SimpleChartWidget
+      title="Weekly Production"
+      chartType="bar"
+      data={[]}
+      loading={true}
+    />
+  ),
+};
+
+export const ChartError: StoryObj = {
+  render: () => (
+    <SimpleChartWidget
+      title="Weekly Production"
+      chartType="bar"
+      data={[]}
+      error="Failed to load chart data"
+    />
+  ),
+};
+
+// Table Widget Stories
+export const TableDefault: StoryObj = {
+  render: () => (
+    <SimpleTableWidget
+      title="Recent Orders"
+      data={mockTableData}
+    />
+  ),
+};
+
+export const TableEmpty: StoryObj = {
+  render: () => (
+    <SimpleTableWidget
+      title="Recent Orders"
+      data={[]}
+    />
+  ),
+};
+
+export const TableLoading: StoryObj = {
+  render: () => (
+    <SimpleTableWidget
+      title="Recent Orders"
+      data={[]}
+      loading={true}
+    />
+  ),
+};
+
+export const TableError: StoryObj = {
+  render: () => (
+    <SimpleTableWidget
+      title="Recent Orders"
+      data={[]}
+      error="Failed to load table data"
+    />
+  ),
+};
+
+// Combined Layout Story
+export const AllWidgetsCombined: StoryObj = {
+  render: () => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 max-w-6xl">
+      <div className="space-y-4">
+        <SimpleStatsWidget
+          title="Production Today"
+          value={1234}
+          description="Total pallets produced"
+          icon={Box}
+        />
+        <SimpleStatsWidget
+          title="Efficiency Rate"
+          value="87.6%"
+          description="Current efficiency"
+          icon={TrendingUp}
+        />
+      </div>
+      <div className="space-y-4">
+        <SimpleChartWidget
+          title="Weekly Production"
+          chartType="bar"
+          data={mockChartData.production}
+        />
+      </div>
+      <div className="lg:col-span-2">
+        <SimpleTableWidget
+          title="Recent Orders"
+          data={mockTableData}
+        />
+      </div>
+    </div>
+  ),
+};

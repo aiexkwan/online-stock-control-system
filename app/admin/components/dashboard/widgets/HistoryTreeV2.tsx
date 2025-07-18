@@ -24,7 +24,7 @@ import {
   ArrowRightIcon,
 } from '@heroicons/react/24/outline';
 import { DocumentArrowDownIcon, ClipboardDocumentListIcon } from '@heroicons/react/24/outline';
-import { WidgetComponentProps } from '@/app/types/dashboard';
+import { TraditionalWidgetComponentProps } from '@/app/types/dashboard';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { Timeline } from '@/components/ui/timeline';
@@ -66,7 +66,7 @@ interface MergedEvent {
 }
 
 
-interface HistoryTreeV2Props extends WidgetComponentProps {
+interface HistoryTreeV2Props extends TraditionalWidgetComponentProps {
   useGraphQL?: boolean;
 }
 
@@ -214,6 +214,14 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
     },
   });
 
+  // 定義 mode 和 performanceMetrics 變數
+  const mode = 'rest-api'; // 使用 REST API 模式
+  const performanceMetrics = useMemo(() => ({
+    queryTime: data?.metadata?.queryTime || 0,
+    dataSource: data?.metadata?.dataSource || 'server',
+    optimized: true,
+  }), [data?.metadata]);
+
   // 處理 REST API 數據
   const displayEvents = useMemo(() => {
     // REST API 返回的數據已經被後端處理過
@@ -222,7 +230,7 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
     }
     
     return [];
-  }, [data as string]);
+  }, [data]);
   const metadata = data?.metadata || {};
 
   // 將事件轉換為 Timeline 組件需要的格式
@@ -233,7 +241,7 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
       description: formatEventDescription(event),
       icon: getActionIcon(event.action),
     }));
-  }, [displayEvents as string]);
+  }, [displayEvents]);
 
   // Progressive Loading - 如果還未進入視窗，顯示 skeleton
   if (!hasBeenInViewport && !isEditMode) {
@@ -258,19 +266,14 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
           <CardTitle className='flex items-center justify-between'>
             <span>History Tree</span>
             <div className='flex items-center gap-2'>
-              {mode === 'context' && (
+              {mode === 'rest-api' && (
                 <span className={cn(textClasses['label-small'], 'text-primary')}>
-                  ⚡ GraphQL
+                  🚀 REST API
                 </span>
               )}
-              {mode === 'server-action' && (
-                <span className={cn(textClasses['label-small'], 'text-secondary')}>
-                  🔄 Server Action
-                </span>
-              )}
-              {mode === 'context' && (
+              {performanceMetrics.optimized && (
                 <span className={cn(textClasses['label-small'], 'text-success')}>
-                  💾 Cached
+                  ⚡ Optimized
                 </span>
               )}
               {!isEditMode && performanceMetrics?.queryTime && (
@@ -290,9 +293,9 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
               <WidgetText size='xs' glow='red' className='py-4 text-center'>
                 {(error as { message: string }).message || 'Failed to load history data'}
               </WidgetText>
-              {mode === 'context' && (
+              {mode === 'rest-api' && (
                 <WidgetText size='xs' className={cn('text-center', textClasses['body-small'], 'text-muted-foreground')}>
-                  Attempting fallback to server action...
+                  REST API connection failed. Please try again.
                 </WidgetText>
               )}
             </div>

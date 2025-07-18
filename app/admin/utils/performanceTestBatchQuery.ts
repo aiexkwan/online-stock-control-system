@@ -204,11 +204,11 @@ class ConcurrentQueryPerformanceTester {
 
 ## 測試結果
 
-### 批量查詢
-- 總時間: ${comparison.batchQuery.duration.toFixed(2)}ms
-- 請求數量: ${comparison.batchQuery.requestCount}
-- 平均請求時間: ${comparison.batchQuery.avgRequestTime.toFixed(2)}ms
-- 網絡傳輸: ${this.formatBytes(comparison.batchQuery.networkBytes || 0)}
+### 並發查詢
+- 總時間: ${comparison.concurrentQuery.duration.toFixed(2)}ms
+- 請求數量: ${comparison.concurrentQuery.requestCount}
+- 平均請求時間: ${comparison.concurrentQuery.avgRequestTime.toFixed(2)}ms
+- 網絡傳輸: ${this.formatBytes(comparison.concurrentQuery.networkBytes || 0)}
 
 ### 個別查詢
 - 總時間: ${comparison.individualQueries.duration.toFixed(2)}ms
@@ -222,7 +222,7 @@ class ConcurrentQueryPerformanceTester {
 - **時間節省**: ${comparison.improvement.timeSaved.toFixed(2)}ms (${comparison.improvement.timeSavedPercentage.toFixed(1)}%)
 - **請求減少**: ${comparison.improvement.requestsReduced} 個 (${comparison.improvement.requestsReducedPercentage.toFixed(1)}%)
 - **網絡傳輸減少**: ${this.formatBytes(
-      (comparison.individualQueries.networkBytes || 0) - (comparison.batchQuery.networkBytes || 0)
+      (comparison.individualQueries.networkBytes || 0) - (comparison.concurrentQuery.networkBytes || 0)
     )}
 
 ## 結論

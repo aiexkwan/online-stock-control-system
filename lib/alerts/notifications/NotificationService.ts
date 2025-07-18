@@ -612,7 +612,7 @@ class SlackProvider implements NotificationProvider {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${(response as { status: string }).status}: ${(response as { status: string }).statusText}`);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       return {
@@ -686,7 +686,7 @@ class WebhookProvider implements NotificationProvider {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${(response as { status: string }).status}: ${(response as { status: string }).statusText}`);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       return {

@@ -43,7 +43,7 @@ const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPercentageW
       start: timeFrame.start,
       end: timeFrame.end,
     };
-  }, [timeFrame as string]);
+  }, [timeFrame]);
 
   // 使用 REST API 獲取數據
   const [apiData, setApiData] = useState<{ percentage: number; stillAwait: number; totalPallets: number } | null>(null);
@@ -98,7 +98,7 @@ const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPercentageW
 
   useEffect(() => {
     fetchData();
-  }, [fetchData as string]);
+  }, [fetchData]);
 
   // 計算百分比數據
   const data = useMemo<AwaitStatsData>(() => {
@@ -112,7 +112,7 @@ const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPercentageW
       totalMoved: apiData.totalPallets,
       optimized: true,
     };
-  }, [apiData as string]);
+  }, [apiData]);
 
   if (isEditMode) {
     return (

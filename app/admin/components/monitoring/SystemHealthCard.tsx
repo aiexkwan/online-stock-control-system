@@ -248,7 +248,7 @@ export default function SystemHealthCard({ data, compact = false, onRefresh }: S
                   {getStatusIcon(status)}
                   <span className="text-sm font-medium capitalize">{service}</span>
                 </div>
-                <Badge variant={getStatusVariant(status)} size="sm">
+                <Badge variant={getStatusVariant(status)}>
                   {status}
                 </Badge>
               </div>

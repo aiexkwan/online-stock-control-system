@@ -57,6 +57,7 @@ export interface DataTableProps<T = any> {
   // Features
   onRowClick?: (item: T, index: number) => void;
   onRefresh?: () => void;
+  onRetry?: () => void;
   showRefreshButton?: boolean;
   
   // Styling
@@ -70,6 +71,7 @@ export interface DataTableProps<T = any> {
     source?: string;
     fetchTime?: number;
     optimized?: boolean;
+    mode?: string;
   };
   
   // Connection status
@@ -113,7 +115,7 @@ export function DataTable<T = any>({
     } finally {
       setIsRefreshing(false);
     }
-  }, [onRefresh as string]);
+  }, [onRefresh]);
 
   const getRowKey = (item: T, index: number): string => {
     if (keyField && typeof item === 'object' && item !== null && keyField in item) {
@@ -306,10 +308,10 @@ export function DataTable<T = any>({
               return (
                 <motion.div
                   key={rowKey}
-                  initial={animate ? { opacity: 0, x: -20 } : false}
-                  animate={animate ? { opacity: 1, x: 0 } : false}
-                  exit={animate ? { opacity: 0, x: 20 } : false}
-                  transition={animate ? { delay: index * 0.02 } : false}
+                  initial={animate ? { opacity: 0, x: -20 } : undefined}
+                  animate={animate ? { opacity: 1, x: 0 } : undefined}
+                  exit={animate ? { opacity: 0, x: 20 } : undefined}
+                  transition={animate ? { delay: index * 0.02 } : undefined}
                   className={rowClass}
                   onClick={() => onRowClick?.(item, index)}
                 >

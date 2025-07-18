@@ -45,7 +45,7 @@ export const WidgetStyles = {
     reports: '',
     product_spec: '',
     custom: '',
-  },
+  } as { [key: string]: string },
 
   // 文字顏色
   text: {
@@ -63,7 +63,7 @@ export const WidgetStyles = {
     title: 'text-white',
     subtitle: 'text-slate-300',
     description: 'text-slate-400',
-  },
+  } as { [key: string]: string },
 
   // Quick Access 按鈕顏色配置
   quickAccess: {

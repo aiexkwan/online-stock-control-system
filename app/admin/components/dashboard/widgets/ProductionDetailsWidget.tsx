@@ -17,12 +17,12 @@ import { format, startOfDay, endOfDay } from 'date-fns';
 import { CardHeader, CardTitle } from '@/components/ui/card';
 import { TableCellsIcon } from '@heroicons/react/24/outline';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
-import { WidgetComponentProps } from '@/app/types/dashboard';
+import { TraditionalWidgetComponentProps } from '@/app/types/dashboard';
 // Note: Migrated to REST API - GraphQL hooks removed
 import { DataTable } from './common/data-display/DataTable';
-import type { Column, TableData } from './common/data-display/DataTable';
+import type { DataTableColumn } from './common/data-display/DataTable';
 
-interface ProductionDetailsWidgetProps extends WidgetComponentProps {
+interface ProductionDetailsWidgetProps extends TraditionalWidgetComponentProps {
   title: string;
   limit?: number;
   // useGraphQL prop removed - using REST API only
@@ -55,7 +55,7 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
       start: timeFrame.start,
       end: timeFrame.end,
     };
-  }, [timeFrame as string]);
+  }, [timeFrame]);
 
   // REST API state management
   const [data, setData] = useState<any[]>([]);
@@ -129,34 +129,29 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
   const tableData = data;
 
   // 定義 DataTable columns
-  const columns: Column[] = [
+  const columns: DataTableColumn[] = [
     { 
       key: 'plt_num', 
-      header: 'Pallet Number',
-      sortable: true
+      header: 'Pallet Number'
     },
     { 
       key: 'product_code', 
-      header: 'Product Code',
-      sortable: true
+      header: 'Product Code'
     },
     { 
       key: 'product_qty', 
       header: 'Quantity',
       align: 'right',
-      sortable: true,
-      render: (value) => typeof value === 'number' ? value.toLocaleString() : value || 'N/A'
+      render: (value: any) => typeof value === 'number' ? value.toLocaleString() : value || 'N/A'
     },
     { 
       key: 'qc_by', 
-      header: 'QC By',
-      sortable: true
+      header: 'QC By'
     },
     { 
       key: 'generate_time', 
       header: 'Generate Time',
-      sortable: true,
-      render: (value) => value ? format(new Date(value), 'MMM d, HH:mm') : 'N/A'
+      render: (value: any) => value ? format(new Date(value), 'MMM d, HH:mm') : 'N/A'
     }
   ];
 
@@ -170,10 +165,6 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
       <DataTable
         title={title}
         icon={TableCellsIcon}
-        dateRange={{
-          start: dateRange.start,
-          end: dateRange.end
-        }}
         performanceMetrics={metadata?.rpcFunction ? {
           source: 'REST API',
           optimized: true
@@ -182,15 +173,15 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
           optimized: false
         }}
         columns={columns}
-        data={tableData as TableData[]}
+        data={tableData}
         loading={loading}
         error={error ? new Error(error) : undefined}
         emptyMessage="No production data available for the selected period"
-        pagination={false}
-        pageSize={limit}
-        onLoadMore={undefined}
-        hasMore={false}
-        height="100%"
+        pagination={{ 
+          enabled: false,
+          pageSize: limit,
+          hasMore: false
+        }}
       />
     </motion.div>
   );

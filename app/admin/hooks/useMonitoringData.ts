@@ -66,6 +66,15 @@ interface BusinessMetricsData {
       disk: number;
     };
   };
+  trends: {
+    period: string;
+    data: Array<{
+      timestamp: string;
+      users: number;
+      orders: number;
+      responseTime: number;
+    }>;
+  };
 }
 
 interface DatabasePerformanceData {
@@ -133,6 +142,15 @@ interface AlertManagementData {
     resolvedCount: number;
   };
   recentAlerts: AlertData[];
+  alertTrends: {
+    period: string;
+    data: Array<{
+      timestamp: string;
+      critical: number;
+      warning: number;
+      info: number;
+    }>;
+  };
   notifications: {
     email: boolean;
     sms: boolean;
@@ -236,6 +254,16 @@ export function useMonitoringData() {
             memory: 62,
             disk: 38
           }
+        },
+        trends: {
+          period: '24h',
+          data: [
+            { timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), users: 350, orders: 2200, responseTime: 190 },
+            { timestamp: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(), users: 365, orders: 2300, responseTime: 185 },
+            { timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), users: 370, orders: 2400, responseTime: 180 },
+            { timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), users: 375, orders: 2420, responseTime: 175 },
+            { timestamp: new Date().toISOString(), users: 380, orders: 2450, responseTime: 180 }
+          ]
         }
       };
       
@@ -351,6 +379,16 @@ export function useMonitoringData() {
             actions: ['scale_service', 'implement_throttling']
           }
         ],
+        alertTrends: {
+          period: '24h',
+          data: [
+            { timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), critical: 2, warning: 4, info: 1 },
+            { timestamp: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(), critical: 1, warning: 3, info: 2 },
+            { timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), critical: 1, warning: 2, info: 1 },
+            { timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), critical: 1, warning: 3, info: 1 },
+            { timestamp: new Date().toISOString(), critical: 1, warning: 3, info: 1 }
+          ]
+        },
         notifications: {
           email: true,
           sms: true,

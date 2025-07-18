@@ -154,7 +154,7 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
       setShowForm(true);
       setShowCreateDialog(false);
     }
-  }, [productData as string]);
+  }, [productData]);
 
   // Confirm create product
   const handleConfirmCreate = useCallback(() => {
@@ -172,7 +172,7 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
       type: 'info',
       message: 'Fill in product details',
     });
-  }, [searchedCode as string]);
+  }, [searchedCode]);
 
   // Cancel operation
   const handleCancel = useCallback(() => {

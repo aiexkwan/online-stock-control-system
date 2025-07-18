@@ -1,17 +1,18 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import dynamic from 'next/dynamic';
 
-// Recharts components - dynamically imported to avoid SSR issues
-const LineChart = dynamic(() => import('recharts').then(mod => ({ default: mod.LineChart })), { ssr: false });
-const Line = dynamic(() => import('recharts').then(mod => ({ default: mod.Line })), { ssr: false });
-const XAxis = dynamic(() => import('recharts').then(mod => ({ default: mod.XAxis })), { ssr: false });
-const YAxis = dynamic(() => import('recharts').then(mod => ({ default: mod.YAxis })), { ssr: false });
-const CartesianGrid = dynamic(() => import('recharts').then(mod => ({ default: mod.CartesianGrid })), { ssr: false });
-const Tooltip = dynamic(() => import('recharts').then(mod => ({ default: mod.Tooltip })), { ssr: false });
-const Legend = dynamic(() => import('recharts').then(mod => ({ default: mod.Legend })), { ssr: false });
-const ResponsiveContainer = dynamic(() => import('recharts').then(mod => ({ default: mod.ResponsiveContainer })), { ssr: false });
+// Recharts components - using unified dynamic import module
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from '@/lib/recharts-dynamic';
 
 // Note: Migrated to REST API - GraphQL hooks removed
 import { Skeleton } from '@/components/ui/skeleton';
@@ -43,7 +44,7 @@ export default function InventoryTurnoverAnalysis({ timeFrame }: InventoryTurnov
   const chartData = useMemo(() => {
     // TODO: Replace GraphQL - migrated to REST API
     return [];
-  }, [data]);
+  }, []);
 
   if (loading) {
     return (
@@ -65,7 +66,7 @@ export default function InventoryTurnoverAnalysis({ timeFrame }: InventoryTurnov
 
   return (
     <div className="flex h-full w-full flex-col">
-      <div className={theme.spacing.margin.base}>
+      <div className={cn(spacingUtilities.margin.bottom.medium)}>
         <p className={cn(textClasses['body-small'], 'text-muted-foreground')}>
           Inventory Turnover = Order Demand ÷ Current Inventory (higher ratio indicates higher
           demand)
@@ -88,7 +89,7 @@ export default function InventoryTurnoverAnalysis({ timeFrame }: InventoryTurnov
                       'border-border'
                     )}>
                       <p className={cn(textClasses['body-small'], 'font-medium text-foreground')}>{data.code}</p>
-                      <div className={cn('mt-2', theme.spacing.gap.sm, 'space-y-1')}>
+                      <div className={cn('mt-2 space-y-1')}>
                         <p className={cn(textClasses['label-small'])} style={{ color: widgetColors.charts.text }}>Inventory: {data.inventory}</p>
                         <p className={cn(textClasses['label-small'])} style={{ color: semanticColors.warning.DEFAULT }}>Demand: {data.demand}</p>
                         <p className={cn(textClasses['label-small'], 'font-medium text-foreground')}>Turnover Rate: {data.turnoverRatio}</p>
@@ -110,7 +111,7 @@ export default function InventoryTurnoverAnalysis({ timeFrame }: InventoryTurnov
             <Line
               type="monotone"
               dataKey="turnoverRatio"
-              stroke={brandColors.primary}
+              stroke={brandColors.primary[500]}
               strokeWidth={2}
               dot={{ r: 4 }}
             />
@@ -119,8 +120,7 @@ export default function InventoryTurnoverAnalysis({ timeFrame }: InventoryTurnov
       </div>
 
       <div className={cn(
-        'mt-4 grid grid-cols-3',
-        theme.spacing.gap.md
+        'mt-4 grid grid-cols-3 gap-4'
       )}>
         <div className="text-center">
           <div className={cn(textClasses['label-small'], 'font-medium')} style={{ color: semanticColors.error.DEFAULT }}>High Demand Products</div>

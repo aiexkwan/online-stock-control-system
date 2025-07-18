@@ -691,8 +691,9 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
                 onClick={async () => {
                   // Use auto-reprint functionality
                   if (state.foundPallet) {
+                    let dismiss: (() => void) | undefined;
                     try {
-                      const dismiss = showLoading('Processing reprint...');
+                      dismiss = showLoading('Processing reprint...');
 
                       // Get current user clock number
                       const { getCurrentUserClockNumberAsync } = await import(
@@ -782,7 +783,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
                         throw new Error(result.error || 'Reprint failed');
                       }
                     } catch (error: any) {
-                      dismiss();
+                      if (dismiss) dismiss();
                       showError(`Reprint failed: ${(error as { message: string }).message}`);
                     }
                   }

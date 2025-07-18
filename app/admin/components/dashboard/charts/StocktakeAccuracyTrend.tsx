@@ -1,19 +1,18 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import dynamic from 'next/dynamic';
-
-// Recharts components - dynamically imported to avoid SSR issues
-const LineChart = dynamic(() => import('recharts').then(mod => ({ default: mod.LineChart })), { ssr: false });
-const Line = dynamic(() => import('recharts').then(mod => ({ default: mod.Line })), { ssr: false });
-const XAxis = dynamic(() => import('recharts').then(mod => ({ default: mod.XAxis })), { ssr: false });
-const YAxis = dynamic(() => import('recharts').then(mod => ({ default: mod.YAxis })), { ssr: false });
-const CartesianGrid = dynamic(() => import('recharts').then(mod => ({ default: mod.CartesianGrid })), { ssr: false });
-const Tooltip = dynamic(() => import('recharts').then(mod => ({ default: mod.Tooltip })), { ssr: false });
-const Legend = dynamic(() => import('recharts').then(mod => ({ default: mod.Legend })), { ssr: false });
-const ResponsiveContainer = dynamic(() => import('recharts').then(mod => ({ default: mod.ResponsiveContainer })), { ssr: false });
-const Area = dynamic(() => import('recharts').then(mod => ({ default: mod.Area })), { ssr: false });
-const AreaChart = dynamic(() => import('recharts').then(mod => ({ default: mod.AreaChart })), { ssr: false });
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Area,
+  AreaChart,
+} from '@/lib/recharts-dynamic';
 // Note: Migrated to REST API - GraphQL hooks removed
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -67,7 +66,7 @@ export default function StocktakeAccuracyTrend({ timeFrame }: StocktakeAccuracyT
       })
       .sort((a, b) => a.fullDate.localeCompare(b.fullDate))
       .slice(-30); // Last 30 days
-  }, [data]);
+  }, []);
 
   if (loading) {
     return (
@@ -146,15 +145,15 @@ export default function StocktakeAccuracyTrend({ timeFrame }: StocktakeAccuracyT
                 <stop offset='95%' stopColor='#ef4444' stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray='3 3' className='opacity-30' />
-            <XAxis dataKey='date' className='text-xs' />
+            <CartesianGrid strokeDasharray='3 3' opacity={0.3} />
+            <XAxis dataKey='date' fontSize={12} />
             <YAxis
               yAxisId='left'
               label={{
                 value: 'Accuracy Rate (%)',
                 angle: -90,
                 position: 'insideLeft',
-                className: 'text-xs',
+                style: { fontSize: '12px' },
               }}
               domain={[80, 100]}
             />
@@ -165,7 +164,7 @@ export default function StocktakeAccuracyTrend({ timeFrame }: StocktakeAccuracyT
                 value: 'Discrepancy Count',
                 angle: 90,
                 position: 'insideRight',
-                className: 'text-xs',
+                style: { fontSize: '12px' },
               }}
             />
             <Tooltip

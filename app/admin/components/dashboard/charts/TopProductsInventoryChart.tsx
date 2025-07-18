@@ -1,17 +1,16 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import dynamic from 'next/dynamic';
-
-// Recharts components - dynamically imported to avoid SSR issues
-const BarChart = dynamic(() => import('recharts').then(mod => ({ default: mod.BarChart })), { ssr: false });
-const Bar = dynamic(() => import('recharts').then(mod => ({ default: mod.Bar })), { ssr: false });
-const XAxis = dynamic(() => import('recharts').then(mod => ({ default: mod.XAxis })), { ssr: false });
-const YAxis = dynamic(() => import('recharts').then(mod => ({ default: mod.YAxis })), { ssr: false });
-const CartesianGrid = dynamic(() => import('recharts').then(mod => ({ default: mod.CartesianGrid })), { ssr: false });
-const Tooltip = dynamic(() => import('recharts').then(mod => ({ default: mod.Tooltip })), { ssr: false });
-const ResponsiveContainer = dynamic(() => import('recharts').then(mod => ({ default: mod.ResponsiveContainer })), { ssr: false });
-const Cell = dynamic(() => import('recharts').then(mod => ({ default: mod.Cell })), { ssr: false });
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from '@/lib/recharts-dynamic';
 // Note: Migrated to REST API - GraphQL hooks removed
 // Type removed with GraphQL migration
 import { Skeleton } from '@/components/ui/skeleton';
@@ -109,7 +108,7 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
 
     // Sort by total and take top 10
     return productTotals.sort((a, b) => b.total - a.total).slice(0, 10);
-  }, [data]);
+  }, []);
 
   // If feature flag is disabled, show disabled state
   if (!isGraphQLAnalysisEnabled) {
@@ -148,14 +147,14 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
     semanticColors.success.DEFAULT,
     semanticColors.info.DEFAULT,
     semanticColors.destructive.DEFAULT,
-    brandColors.primary,
-    brandColors.secondary,
-    brandColors.accent,
+    brandColors.primary[500],
+    brandColors.secondary[500],
+    widgetColors.charts.accent,
   ];
 
   return (
     <div className='flex h-full w-full flex-col'>
-      <div className={spacing.margin.bottom.medium}>
+      <div className={spacingUtilities.margin.bottom.medium}>
         <p className={cn(textClasses['body-small'], 'text-muted-foreground')}>Showing top 10 products by inventory quantity</p>
       </div>
 
@@ -166,17 +165,15 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
             layout='horizontal'
             margin={{ top: 20, right: 30, left: 100, bottom: 20 }}
           >
-            <CartesianGrid strokeDasharray='3 3' className='opacity-30' />
+            <CartesianGrid strokeDasharray='3 3' opacity={0.3} />
             <XAxis
               type='number'
               label={{
                 value: 'Inventory Quantity',
                 position: 'insideBottom',
-                offset: -10,
-                className: 'text-xs',
               }}
             />
-            <YAxis dataKey='code' type='category' width={90} className='text-xs' />
+            <YAxis dataKey='code' type='category' width={90} tick={{ fontSize: '12px' }} />
             <Tooltip
               content={({ active, payload }) => {
                 if (active && payload && payload[0]) {
@@ -189,7 +186,7 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
                       <p className={cn(textClasses['body-small'], 'font-medium text-foreground')}>{data.code}</p>
                       <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>{data.description}</p>
                       <p className={cn(textClasses['label-small'], 'text-foreground')}>Color: {data.colour}</p>
-                      <div className={cn('mt-2', spacing.gap.small, 'space-y-1')}>
+                      <div className={cn('mt-2', 'space-y-1')}>
                         <p className={cn(textClasses['label-small'], 'font-medium text-foreground')}>Total Stock: {data.total}</p>
                         <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Await: {data.await}</p>
                         <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Bulk: {data.bulk}</p>
@@ -213,11 +210,10 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
       </div>
 
       <div className={cn(
-        'mt-4 grid grid-cols-2',
-        spacing.gap.small
+        'mt-4 grid grid-cols-2 gap-2'
       )}>
         {chartData.slice(0, 4).map((item, index) => (
-          <div key={`legend-${item.code}-${index}`} className={cn('flex items-center', spacing.gap.small)}>
+          <div key={`legend-${item.code}-${index}`} className={cn('flex items-center gap-2')}>
             <div
               className='h-3 w-3 rounded'
               style={{ backgroundColor: colors[index % colors.length] }}

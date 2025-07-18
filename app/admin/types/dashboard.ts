@@ -1,5 +1,10 @@
 // Dashboard 相關類型定義
 
+// 通用 Widget Props
+export interface WidgetProps {
+  className?: string;
+}
+
 export interface DashboardDateRange {
   startDate: Date | null;
   endDate: Date | null;

@@ -60,7 +60,7 @@ export function UniversalWidgetCard({
   }
 
   // 否則包裹錯誤邊界
-  return <WidgetErrorBoundary widgetName={widgetType}>{cardContent}</WidgetErrorBoundary>;
+  return <WidgetErrorBoundary widgetName={String(widgetType)}>{cardContent}</WidgetErrorBoundary>;
 }
 
 // 完全兼容的舊 API 包裝器

@@ -19,10 +19,10 @@ import { format, startOfDay, endOfDay } from 'date-fns';
 import { CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartBarIcon } from '@heroicons/react/24/outline';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
-import { WidgetComponentProps } from '@/app/types/dashboard';
+import { TraditionalWidgetComponentProps } from '@/app/types/dashboard';
 import { WidgetSkeleton } from './common/WidgetStates';
 
-interface StaffWorkloadWidgetProps extends WidgetComponentProps {
+interface StaffWorkloadWidgetProps extends TraditionalWidgetComponentProps {
   title: string;
   department?: string;
 }
@@ -67,7 +67,7 @@ export const StaffWorkloadWidget: React.FC<StaffWorkloadWidgetProps> = ({
       start: timeFrame.start,
       end: timeFrame.end,
     };
-  }, [timeFrame as string]);
+  }, [timeFrame]);
 
   // API 狀態管理
   const [chartData, setChartData] = useState<any[]>([]);
@@ -191,7 +191,7 @@ export const StaffWorkloadWidget: React.FC<StaffWorkloadWidgetProps> = ({
     });
     
     return Array.from(names).sort();
-  }, [chartData as string]);
+  }, [chartData]);
 
   // 自定義 Tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {

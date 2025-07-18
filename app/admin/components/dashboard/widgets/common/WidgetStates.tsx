@@ -373,7 +373,7 @@ export const WidgetError = React.memo(function WidgetError({
     },
   };
 
-  const styles = severityStyles[severity as string];
+  const styles = severityStyles[severity as keyof typeof severityStyles];
 
   // Get default icon based on severity
   const defaultIcon = severity === 'info' 
@@ -446,7 +446,7 @@ export const WidgetError = React.memo(function WidgetError({
                     key={index}
                     onClick={action.onClick}
                     size='sm'
-                    variant={action.variant || 'outline'}
+                    variant={action.variant === 'primary' ? 'default' : (action.variant || 'outline')}
                     className={cn(
                       action.variant === 'primary' ? '' : styles.border,
                       action.variant === 'primary' ? '' : styles.hover
@@ -516,7 +516,7 @@ export const WidgetError = React.memo(function WidgetError({
               key={index}
               onClick={action.onClick}
               size='sm'
-              variant={action.variant || 'outline'}
+              variant={action.variant === 'primary' ? 'default' : (action.variant || 'outline')}
               className={cn(
                 action.variant === 'primary' ? '' : styles.border,
                 action.variant === 'primary' ? '' : styles.hover
