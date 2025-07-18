@@ -27,9 +27,10 @@ import {
 import { textClasses, getTextClass } from '@/lib/design-system/typography';
 import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
 import { cn } from '@/lib/utils';
+import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 
 interface AcoOrderProgressChartProps {
-  timeFrame?: any;
+  timeFrame?: TimeFrame;
 }
 
 interface ChartDataPoint {

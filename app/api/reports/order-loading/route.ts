@@ -44,7 +44,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
       (doc as any).autoTable({
         head: [['Timestamp', 'Order', 'Product', 'Qty', 'User', 'Action']],
-        body: records.map((r: any) => [
+        body: records.map((r: Record<string, unknown>) => [
           new Date(r.timestamp).toLocaleString(),
           r.order_number,
           r.product_code,
@@ -77,7 +77,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       worksheet.addRows(records);
 
       const buffer = await workbook.xlsx.writeBuffer();
-      blob = new Blob([buffer as string], {
+      blob = new Blob([buffer], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       });
       contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';

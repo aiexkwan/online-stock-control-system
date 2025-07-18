@@ -1,4 +1,6 @@
 import pino from 'pino';
+import { DatabaseRecord } from '@/lib/types/database';
+import { ApiResponse, ApiRequest, QueryParams } from '@/lib/validation/zod-schemas';
 import { isProduction, isNotProduction } from '@/lib/utils/env';
 
 // 基礎 logger 配置
@@ -91,8 +93,8 @@ export const getCorrelationId = (headers: Headers): string => {
 export const logApiRequest = (
   method: string,
   path: string,
-  params?: Record<string, any>,
-  body?: any
+  params?: Record<string, string | number | boolean>,
+  body?: Record<string, unknown> | FormData | string | null
 ) => {
   apiLogger.info(
     {
@@ -134,7 +136,7 @@ export const logApiResponse = (method: string, path: string, status: number, dur
 export const logDbOperation = (
   operation: string,
   table: string,
-  details?: Record<string, any>,
+  details?: Record<string, string | number | boolean | null>,
   error?: Error
 ) => {
   if (error) {
@@ -163,7 +165,7 @@ export const logDbOperation = (
 export const logPerformance = (
   operation: string,
   duration: number,
-  metadata?: Record<string, any>
+  metadata?: Record<string, string | number | boolean>
 ) => {
   systemLogger.info(
     {
@@ -180,7 +182,7 @@ export const logMiddlewareRequest = (
   path: string,
   method: string,
   correlationId: string,
-  metadata?: Record<string, any>
+  metadata?: Record<string, string | number | boolean>
 ) => {
   middlewareLogger.info(
     {
@@ -231,7 +233,7 @@ export const logMiddlewareRouting = (
 };
 
 // 敏感資料過濾器
-export const sanitizeLogData = (data: any): any => {
+export const sanitizeLogData = (data: DatabaseRecord[]): DatabaseRecord => {
   if (!data || typeof data !== 'object') return data;
   
   const sensitive = ['password', 'token', 'apiKey', 'secret', 'authorization'];

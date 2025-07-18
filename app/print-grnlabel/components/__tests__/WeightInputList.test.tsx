@@ -63,8 +63,8 @@ describe('WeightInputList', () => {
           {...defaultProps} 
           labelMode={LABEL_MODES.WEIGHT}
           grossWeights={['100', '200', '150', '']}
-          selectedPalletType="wooden"
-          selectedPackageType="carton"
+          selectedPalletType="whiteDry"
+          selectedPackageType="still"
         />
       );
       

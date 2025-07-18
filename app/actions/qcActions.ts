@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
+import { getErrorMessage } from '../../lib/types/error-handling';
 import { z } from 'zod';
 
 import {
@@ -141,7 +142,7 @@ export async function createQcDatabaseEntries(
 
     if (palletInfoError) {
       // console.error('[qcActions] Error inserting pallet info:', palletInfoError); // 保留錯誤日誌供生產環境調試
-      return { error: `Failed to insert pallet info: ${palletInfoError.message}` };
+      return { error: `Failed to insert pallet info: ${getErrorMessage(palletInfoError)}` };
     }
 
     // Insert history record
@@ -162,7 +163,7 @@ export async function createQcDatabaseEntries(
 
     if (inventoryError) {
       // console.error('[qcActions] Error inserting inventory record:', inventoryError); // 保留錯誤日誌供生產環境調試
-      return { error: `Failed to insert inventory record: ${inventoryError.message}` };
+      return { error: `Failed to insert inventory record: ${getErrorMessage(inventoryError)}` };
     }
 
     // Insert ACO records if provided
@@ -171,7 +172,7 @@ export async function createQcDatabaseEntries(
 
       if (acoError) {
         // console.error('[qcActions] Error inserting ACO records:', acoError); // 保留錯誤日誌供生產環境調試
-        return { error: `Failed to insert ACO records: ${acoError.message}` };
+        return { error: `Failed to insert ACO records: ${getErrorMessage(acoError)}` };
       }
     }
 
@@ -183,14 +184,14 @@ export async function createQcDatabaseEntries(
 
       if (slateError) {
         // console.error('[qcActions] Error inserting Slate records:', slateError); // 保留錯誤日誌供生產環境調試
-        return { error: `Failed to insert Slate records: ${slateError.message}` };
+        return { error: `Failed to insert Slate records: ${getErrorMessage(slateError)}` };
       }
     }
 
     return { data: 'QC database entries created successfully' };
-  } catch (error: any) {
+  } catch (error: unknown) {
     // console.error('[qcActions] Unexpected error in createQcDatabaseEntries:', error); // 保留錯誤日誌供生產環境調試
-    return { error: `An unexpected error occurred: ${error.message || 'Unknown error.'}` };
+    return { error: `An unexpected error occurred: ${getErrorMessage(error) || 'Unknown error.'}` };
   }
 }
 
@@ -211,14 +212,14 @@ export async function updatePalletPdfUrl(
 
     if (error) {
       console.error('[qcActions] Error updating PDF URL:', error);
-      return { success: false, error: `Failed to update PDF URL: ${error.message}` };
+      return { success: false, error: `Failed to update PDF URL: ${getErrorMessage(error)}` };
     }
 
     // process.env.NODE_ENV !== "production" && console.log('[qcActions] PDF URL updated successfully for pallet:', pltNum);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[qcActions] Unexpected error updating PDF URL:', error);
-    return { success: false, error: `Update PDF URL error: ${error.message || 'Unknown error'}` };
+    return { success: false, error: `Update PDF URL error: ${getErrorMessage(error) || 'Unknown error'}` };
   }
 }
 
@@ -245,7 +246,7 @@ export async function uploadPdfToStorage(
 
     if (uploadError) {
       // console.error('[qcActions] Supabase Upload Error:', uploadError); // 保留錯誤日誌供生產環境調試
-      return { error: `Upload failed: ${uploadError.message}` };
+      return { error: `Upload failed: ${getErrorMessage(uploadError)}` };
     }
 
     if (!uploadData || !uploadData.path) {
@@ -261,9 +262,9 @@ export async function uploadPdfToStorage(
     }
 
     return { publicUrl: urlData.publicUrl };
-  } catch (error: any) {
+  } catch (error: unknown) {
     // console.error('[qcActions] Unexpected error in uploadPdfToStorage:', error); // 保留錯誤日誌供生產環境調試
-    return { error: `Upload error: ${error.message || 'Unknown error'}` };
+    return { error: `Upload error: ${getErrorMessage(error) || 'Unknown error'}` };
   }
 }
 
@@ -286,7 +287,7 @@ export async function updateAcoOrderRemainQty(
 
     if (selectError) {
       // console.error('[qcActions] Error fetching current ACO data:', selectError); // 保留錯誤日誌供生產環境調試
-      return { error: `Failed to fetch current ACO data: ${selectError.message}` };
+      return { error: `Failed to fetch current ACO data: ${getErrorMessage(selectError)}` };
     }
 
     if (!currentData) {
@@ -312,15 +313,15 @@ export async function updateAcoOrderRemainQty(
 
     if (updateError) {
       // console.error('[qcActions] Error updating ACO finished_qty:', updateError); // 保留錯誤日誌供生產環境調試
-      return { error: `Failed to update ACO finished quantity: ${updateError.message}` };
+      return { error: `Failed to update ACO finished quantity: ${getErrorMessage(updateError)}` };
     }
 
     return {
       data: `ACO quantity updated successfully. Previous finished: ${currentFinishedQty}, Used: ${quantityUsed}, New finished: ${newFinishedQty}, Remaining: ${newRemainQty}`,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     // console.error('[qcActions] Unexpected error in updateAcoOrderRemainQty:', error); // 保留錯誤日誌供生產環境調試
-    return { error: `An unexpected error occurred: ${error.message || 'Unknown error.'}` };
+    return { error: `An unexpected error occurred: ${getErrorMessage(error) || 'Unknown error.'}` };
   }
 }
 
@@ -354,9 +355,9 @@ export async function createQcDatabaseEntriesWithTransaction(
         .eq('plt_num', payload.palletInfo.plt_num)
         .single();
 
-      if (checkError && checkError.code !== 'PGRST116') {
+      if (checkError && typeof checkError === 'object' && 'code' in checkError && checkError.code !== 'PGRST116') {
         // console.error('[qcActions] Error checking for duplicate pallet:', checkError); // 保留錯誤日誌供生產環境調試
-        throw new Error(`Failed to check for duplicate pallet: ${checkError.message}`);
+        throw new Error(`Failed to check for duplicate pallet: ${getErrorMessage(checkError)}`);
       }
 
       if (checkResult) {
@@ -402,8 +403,8 @@ export async function createQcDatabaseEntriesWithTransaction(
 
       // 檢查是否是重複主鍵錯誤
       if (
-        palletInfoError.message &&
-        palletInfoError.message.includes('duplicate key value violates unique constraint')
+        getErrorMessage(palletInfoError) &&
+        getErrorMessage(palletInfoError).includes('duplicate key value violates unique constraint')
       ) {
         // console.error('[qcActions] Duplicate pallet number constraint violation'); // 保留錯誤日誌供生產環境調試
         return {
@@ -412,14 +413,14 @@ export async function createQcDatabaseEntriesWithTransaction(
       }
 
       // 檢查是否是 API key 相關錯誤
-      if (palletInfoError.message && palletInfoError.message.toLowerCase().includes('api key')) {
+      if (getErrorMessage(palletInfoError) && getErrorMessage(palletInfoError).toLowerCase().includes('api key')) {
         // console.error('[qcActions] 檢測到 API key 錯誤 - 這可能是環境變數問題'); // 保留錯誤日誌供生產環境調試
         return {
-          error: `API Key Error: ${palletInfoError.message}. 請檢查 SUPABASE_SERVICE_ROLE_KEY 環境變數。`,
+          error: `API Key Error: ${getErrorMessage(palletInfoError)}. 請檢查 SUPABASE_SERVICE_ROLE_KEY 環境變數。`,
         };
       }
 
-      throw new Error(`Failed to insert pallet info: ${palletInfoError.message}`);
+      throw new Error(`Failed to insert pallet info: ${getErrorMessage(palletInfoError)}`);
     }
 
     // 2. Insert history record
@@ -429,7 +430,7 @@ export async function createQcDatabaseEntriesWithTransaction(
 
     if (historyError) {
       // console.error('[qcActions] Error inserting history record:', historyError); // 保留錯誤日誌供生產環境調試
-      throw new Error(`Failed to insert history record: ${historyError.message}`);
+      throw new Error(`Failed to insert history record: ${getErrorMessage(historyError)}`);
     }
 
     // 3. Insert inventory record (depends on pallet info)
@@ -439,7 +440,7 @@ export async function createQcDatabaseEntriesWithTransaction(
 
     if (inventoryError) {
       // console.error('[qcActions] Error inserting inventory record:', inventoryError); // 保留錯誤日誌供生產環境調試
-      throw new Error(`Failed to insert inventory record: ${inventoryError.message}`);
+      throw new Error(`Failed to insert inventory record: ${getErrorMessage(inventoryError)}`);
     }
 
     // 4. Insert ACO records if provided
@@ -448,7 +449,7 @@ export async function createQcDatabaseEntriesWithTransaction(
 
       if (acoError) {
         // console.error('[qcActions] Error inserting ACO records:', acoError); // 保留錯誤日誌供生產環境調試
-        throw new Error(`Failed to insert ACO records: ${acoError.message}`);
+        throw new Error(`Failed to insert ACO records: ${getErrorMessage(acoError)}`);
       }
     }
 
@@ -460,7 +461,7 @@ export async function createQcDatabaseEntriesWithTransaction(
 
       if (slateError) {
         // console.error('[qcActions] Error inserting Slate records:', slateError); // 保留錯誤日誌供生產環境調試
-        throw new Error(`Failed to insert Slate records: ${slateError.message}`);
+        throw new Error(`Failed to insert Slate records: ${getErrorMessage(slateError)}`);
       }
     }
 
@@ -479,14 +480,14 @@ export async function createQcDatabaseEntriesWithTransaction(
     }
 
     return { data: 'QC database entries created successfully with transaction' };
-  } catch (error: any) {
+  } catch (error: unknown) {
     // console.error('[qcActions] Transaction failed, all operations rolled back:', error); // 保留錯誤日誌供生產環境調試
     // console.error('[qcActions] Error details:', {
-    //   message: error.message,
-    //   stack: error.stack,
-    //   name: error.name
+    //   message: getErrorMessage(error),
+    //   stack: (error as Error).stack,
+    //   name: (error as Error).name
     // }); // 保留錯誤日誌供生產環境調試
-    return { error: `Transaction failed: ${error.message || 'Unknown error.'}` };
+    return { error: `Transaction failed: ${getErrorMessage(error) || 'Unknown error.'}` };
   }
 }
 

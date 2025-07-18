@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { useQuery } from '@tanstack/react-query';
 import { widgetAPI } from '@/lib/api/widgets/widget-api-client';
 import {
@@ -75,7 +76,7 @@ export default function VoidRecordsAnalysis({ timeFrame }: VoidRecordsAnalysisPr
     const reasonMap = new Map<string, number>();
     const productMap = new Map<string, { count: number; qty: number }>();
 
-    data.forEach((record: any) => {
+    data.forEach((record: DatabaseRecord) => {
       // Count by reason
       const reason = record.reason || 'Unspecified Reason';
       reasonMap.set(reason, (reasonMap.get(reason) || 0) + 1);

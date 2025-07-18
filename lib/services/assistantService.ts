@@ -1,4 +1,6 @@
 import OpenAI from 'openai';
+import { DatabaseRecord } from '@/lib/types/database';
+import { DatabaseRecord } from '@/lib/types/database';
 import { ORDER_ANALYZER_CONFIG, ASSISTANT_RETRY_CONFIG } from '@/lib/openai-assistant-config';
 import { systemLogger } from '@/lib/logger';
 
@@ -66,7 +68,7 @@ export class AssistantService {
       });
 
       return this.assistantId;
-    } catch (error: any) {
+    } catch (error: unknown) {
       systemLogger.error('[AssistantService] Failed to create assistant', {
         error: error.message,
       });
@@ -82,7 +84,7 @@ export class AssistantService {
       const thread = await this.openai.beta.threads.create();
       systemLogger.debug('[AssistantService] Thread created', { threadId: thread.id });
       return thread.id;
-    } catch (error: any) {
+    } catch (error: unknown) {
       systemLogger.error('[AssistantService] Failed to create thread', {
         error: error.message,
       });
@@ -116,7 +118,7 @@ export class AssistantService {
       });
 
       return openaiFile.id;
-    } catch (error: any) {
+    } catch (error: unknown) {
       systemLogger.error('[AssistantService] Failed to upload file', {
         error: error.message,
       });
@@ -129,7 +131,7 @@ export class AssistantService {
    */
   public async sendMessage(threadId: string, content: string, fileId?: string): Promise<void> {
     try {
-      const messageData: any = {
+      const messageData: DatabaseRecord = {
         role: 'user' as const,
         content,
       };
@@ -149,7 +151,7 @@ export class AssistantService {
         threadId,
         hasFile: !!fileId,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       systemLogger.error('[AssistantService] Failed to send message', {
         error: error.message,
       });
@@ -176,7 +178,7 @@ export class AssistantService {
       // 輪詢等待完成
       const result = await this.pollForCompletion(threadId, run.id);
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       systemLogger.error('[AssistantService] Failed to run assistant', {
         error: error.message,
       });
@@ -251,7 +253,7 @@ export class AssistantService {
    * 清理資源
    */
   public async cleanup(threadId?: string, fileId?: string): Promise<void> {
-    const promises: Promise<any>[] = [];
+    const promises: Promise<void>[] = [];
 
     if (threadId) {
       promises.push(
@@ -281,7 +283,18 @@ export class AssistantService {
   /**
    * 解析助手返回的 JSON 結果
    */
-  public parseAssistantResponse(response: string): any {
+  public parseAssistantResponse(response: string): {
+    order_ref: string;
+    products: Array<{
+      product_code: string;
+      description?: string;
+      quantity: number;
+      unit_price?: number;
+    }>;
+    supplier?: string;
+    order_date?: string;
+    total_amount?: number;
+  } {
     try {
       // 清理可能的多餘字符
       const cleanedResponse = response.trim();

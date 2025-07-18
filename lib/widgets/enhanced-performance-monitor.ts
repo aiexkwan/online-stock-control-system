@@ -684,7 +684,7 @@ export class EnhancedPerformanceMonitor {
   /**
    * Empty statistical summary helper
    */
-  private emptyStatisticalSummary(): any {
+  private emptyStatisticalSummary(): StatisticalSummary {
     return {
       avg: 0,
       max: 0,

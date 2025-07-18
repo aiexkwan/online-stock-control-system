@@ -183,7 +183,10 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
         setError(null);
 
         // Subscribe to batch progress
-        const progressHandler = ({ percentage, current }: any) => {
+        const progressHandler = ({ percentage, current }: { 
+          percentage: number; 
+          current: string; 
+        }) => {
           setProgress(percentage);
           setStatus(current);
         };

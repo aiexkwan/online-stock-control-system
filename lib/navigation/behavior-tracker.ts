@@ -392,7 +392,7 @@ export class EnhancedUserBehaviorTracker {
   /**
    * 合併歷史數據
    */
-  private mergeHistoryData(userId: string, history: any[], stats: any[]): void {
+  private mergeHistoryData(userId: string, history: Record<string, unknown>[], stats: Record<string, unknown>[]): void {
     const behavior = this.memoryCache.get(userId) || {
       currentPath: '',
       visitHistory: [],

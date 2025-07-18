@@ -142,7 +142,7 @@ export function InventoryAnalysisExample() {
         </CardHeader>
         <CardContent>
           <div className='space-y-2'>
-            {products.slice(0, 10).map((product: any) => (
+            {products.slice(0, 10).map((product: Record<string, unknown>) => (
               <div
                 key={product.product_code}
                 className='flex items-center justify-between rounded-lg border p-3'

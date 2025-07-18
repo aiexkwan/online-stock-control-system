@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request) {
   try {
-    // TODO: 實作分析數據概覽邏輯
+    // Analytics overview data - placeholder implementation
     const data = {
       totalUsers: 0,
       totalOrders: 0,

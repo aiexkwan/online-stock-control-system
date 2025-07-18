@@ -2,6 +2,7 @@
 // Uses query_record table for persistent conversation tracking
 
 import { createClient } from '@/app/utils/supabase/server';
+import { DatabaseRecord } from '@/lib/types/database';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export interface Entity {
@@ -16,7 +17,7 @@ export interface ConversationContext {
   entities: Entity[];
   lastQueryType?: string;
   lastQueryTime?: string;
-  lastResults?: any[];
+  lastResults?: Record<string, unknown>[];
   queryHistory: {
     question: string;
     sql: string;
@@ -107,7 +108,7 @@ export class DatabaseConversationContextManager {
   }
 
   // 從查詢結果中提取實體
-  private extractEntitiesFromResults(results: any[], sql: string): Entity[] {
+  private extractEntitiesFromResults(results: Record<string, unknown>[], sql: string): Entity[] {
     const entities: Entity[] = [];
     const timestamp = new Date().toISOString();
 
@@ -169,12 +170,12 @@ export class DatabaseConversationContextManager {
   }
 
   // 解析引用（基於數據庫中的歷史）
-  async resolveReferences(question: string): Promise<{ resolved: string; references: any[] }> {
+  async resolveReferences(question: string): Promise<{ resolved: string; references: Record<string, unknown>[] }> {
     // 先加載最新的上下文
     const context = await this.loadContext();
 
     let resolved = question;
-    const references: any[] = [];
+    const references: Record<string, unknown>[] = [];
 
     // 代詞映射表
     const pronounMappings = [
@@ -269,7 +270,7 @@ export class DatabaseConversationContextManager {
   }
 
   // 從結果行提取實體
-  private extractEntityFromRow(row: any): Entity {
+  private extractEntityFromRow(row: DatabaseRecord): Entity {
     // 優先級：產品 > 訂單 > 棧板
     if (row.product_code) {
       return {

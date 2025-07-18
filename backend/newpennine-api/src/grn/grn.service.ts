@@ -33,7 +33,7 @@ export class GrnService {
       if (!rpcError && rpcData) {
         this.logger.debug('Using RPC function for GRN references');
         return {
-          references: rpcData.map((item: any) => item.grn_ref),
+          references: rpcData.map((item: Record<string, unknown>) => item.grn_ref),
           total: rpcData.length,
           offset: query.offset || 0,
           limit: query.limit || 100,
@@ -92,7 +92,7 @@ export class GrnService {
         this.logger.debug('Using RPC function for GRN material codes');
         return {
           grnRef: query.grnRef,
-          materialCodes: rpcData.map((item: any) => item.material_code),
+          materialCodes: rpcData.map((item: Record<string, unknown>) => item.material_code),
           total: rpcData.length,
         };
       }
@@ -156,7 +156,7 @@ export class GrnService {
           material_description: firstRecord.material_description,
           supplier_name: firstRecord.supplier_name,
           report_date: firstRecord.report_date,
-          records: rpcData.map((record: any) => ({
+          records: rpcData.map((record: Record<string, unknown>) => ({
             supplier_invoice_number: record.supplier_invoice_number,
             date_received: record.date_received,
             package_count: record.package_count,
@@ -206,9 +206,9 @@ export class GrnService {
 
       const firstRecord = data[0];
 
-      const result: any = {
+      const result: Record<string, unknown> = {
         grnRef: query.grnRef,
-        records: data.map((record: any) => ({
+        records: data.map((record: Record<string, unknown>) => ({
           supplier_invoice_number: record.supplier_invoice_number,
           date_received: record.date_received,
           package_count: record.package_count,

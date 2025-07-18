@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { NotificationService } from '@/lib/alerts/notifications/NotificationService';
-import { NotificationChannel } from '@/lib/alerts/types';
+import { NotificationChannel, NotificationConfig, EmailConfig, SlackConfig, WebhookConfig, SmsConfig } from '@/lib/alerts/types';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -82,11 +82,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const service = await getNotificationService();
     
     // 創建測試通知配置
-    const testConfig = {
+    const testConfig: NotificationConfig = {
       id: 'test',
       channel: validated.channel,
       enabled: true,
-      config: validated.config,
+      config: validated.config as EmailConfig | SlackConfig | WebhookConfig | SmsConfig,
       template: validated.testMessage
     };
 

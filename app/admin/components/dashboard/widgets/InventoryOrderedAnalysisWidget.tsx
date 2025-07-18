@@ -160,7 +160,7 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
       setSelectedType(type);
 
       // 獲取該類型所有產品的代碼
-      const codes = data.map((item: any) => item.stock);
+      const codes = data.map((item: Record<string, unknown>) => item.stock);
       setSelectedProductCodes(codes);
     };
 

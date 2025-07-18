@@ -98,7 +98,7 @@ export default function RealtimeMetricsChart({
   const processedData = useMemo(() => {
     if (!data || data.length === 0) return [];
     
-    return data.map((item: any) => ({
+    return data.map((item: Record<string, unknown>) => ({
       ...item,
       timestamp: new Date(item.timestamp).toLocaleTimeString(),
       time: new Date(item.timestamp).getTime()

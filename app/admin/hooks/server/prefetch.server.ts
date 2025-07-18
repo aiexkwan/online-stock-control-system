@@ -48,11 +48,11 @@ export async function prefetchCriticalWidgetsData(options?: {
       const { data, error } = awaitLocationResult.value;
       if (!error && data) {
         // 轉換數據格式以匹配 widget 期望
-        const records = data.map((item: any) => ({
+        const records = data.map((item: Record<string, unknown>) => ({
           location: 'AWAIT',
           quantity: item.quantity || 0
         }));
-        const totalQuantity = records.reduce((sum: number, record: any) => sum + record.quantity, 0);
+        const totalQuantity = records.reduce((sum: number, record: Record<string, unknown>) => sum + record.quantity, 0);
         
         results.awaitLocationQty = {
           records,
@@ -137,11 +137,11 @@ export async function prefetchDashboardData(
               break;
             case 1:
               if (data) {
-                const records = data.map((item: any) => ({
+                const records = data.map((item: Record<string, unknown>) => ({
                   location: 'AWAIT',
                   quantity: item.quantity || 0
                 }));
-                const totalQuantity = records.reduce((sum: number, record: any) => sum + record.quantity, 0);
+                const totalQuantity = records.reduce((sum: number, record: Record<string, unknown>) => sum + record.quantity, 0);
                 
                 results.awaitLocationQty = {
                   records,

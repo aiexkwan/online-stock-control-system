@@ -79,7 +79,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
     total: number;
     successful: number;
     failed: number;
-    details: any[];
+    details: Record<string, unknown>[];
   } | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -206,7 +206,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
       if (result.success) {
         setVoidResult({
           success: true,
-          message: (result as { message: string }).message || 'Pallet void successfully',
+          message: getErrorMessage(result) || 'Pallet void successfully',
           remainingQty: result.remainingQty,
           requiresReprint: result.requiresReprint,
         });
@@ -256,7 +256,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
           failed: result.summary?.failed || 0,
           details: batchState.items
             .filter(item => (item as { status: string }).status === 'completed' || (item as { status: string }).status === 'error')
-            .map((item: any) => ({
+            .map((item: Record<string, unknown>) => ({
               plt_num: item.palletInfo.plt_num,
               success: (item as { status: string }).status === 'completed',
               error: item.error,
@@ -266,7 +266,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
       } else {
         showError('Batch void failed');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Batch void error:', error);
       showError('Batch void failed', error);
     }
@@ -636,7 +636,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
               error={new Error(
                 batchVoidResult.details
                   .filter(item => !item.success)
-                  .map((item: any) => `${item.plt_num}: ${item.error}`)
+                  .map((item: Record<string, unknown>) => `${item.plt_num}: ${item.error}`)
                   .join('\n')
               )}
             />
@@ -767,7 +767,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
                           showSuccess(
                             `New pallet ${result.data.newPalletNumber} created and sent to printer`
                           );
-                        } catch (printError: any) {
+                        } catch (printError: unknown) {
                           console.error('Print error:', printError);
                           showWarning(
                             `New pallet ${result.data.newPalletNumber} created but printing failed. Please print manually.`
@@ -782,9 +782,9 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
                         }
                         throw new Error(result.error || 'Reprint failed');
                       }
-                    } catch (error: any) {
+                    } catch (error: unknown) {
                       if (dismiss) dismiss();
-                      showError(`Reprint failed: ${(error as { message: string }).message}`);
+                      showError(`Reprint failed: ${getErrorMessage(error)}`);
                     }
                   }
                 }}

@@ -7,7 +7,7 @@ export interface ErrorContext {
   component: string;
   action: string;
   userId?: string;
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
 }
 
 export interface ErrorReport {

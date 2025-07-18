@@ -4,6 +4,8 @@
  */
 
 import { jsPDF } from 'jspdf';
+import { DatabaseRecord } from '@/lib/types/database';
+import { DatabaseRecord } from '@/lib/types/database';
 import 'jspdf-autotable';
 import {
   ReportGenerator,
@@ -16,7 +18,7 @@ import {
 // 擴展 jsPDF 類型以包含 autoTable
 declare module 'jspdf' {
   interface jsPDF {
-    autoTable: (options: any) => jsPDF;
+    autoTable: (options: Record<string, unknown>) => jsPDF;
     lastAutoTable: {
       finalY: number;
     };
@@ -169,7 +171,7 @@ export class PdfGenerator implements ReportGenerator {
     }
   }
 
-  private addSummarySection(doc: jsPDF, section: any, data: any, margins: any, y: number): number {
+  private addSummarySection(doc: jsPDF, section: any, data: DatabaseRecord[], margins: any, y: number): number {
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
 
@@ -188,7 +190,7 @@ export class PdfGenerator implements ReportGenerator {
     return currentY;
   }
 
-  private addTableSection(doc: jsPDF, section: any, data: any[], margins: any, y: number): number {
+  private addTableSection(doc: jsPDF, section: any, data: Record<string, unknown>[], margins: any, y: number): number {
     if (!Array.isArray(data) || data.length === 0) {
       doc.setFontSize(10);
       doc.text('No data available', margins.left, y);
@@ -260,7 +262,7 @@ export class PdfGenerator implements ReportGenerator {
     }));
   }
 
-  private formatValue(value: any, format?: string): string {
+  private formatValue(value: unknown, format?: string): string {
     if (value === null || value === undefined) {
       return '';
     }

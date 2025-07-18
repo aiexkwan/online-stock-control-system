@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { DatabaseRecord } from '@/lib/types/database';
 import { SupabaseService } from '../supabase/supabase.service';
 import {
   AwaitLocationCountQueryDto,
@@ -92,7 +93,7 @@ export class RpcService {
     }
   }
 
-  private calculateSummary(historyData: any[]): any {
+  private calculateSummary(historyData: Record<string, unknown>[]): any {
     if (!historyData || historyData.length === 0) {
       return {
         totalRecords: 0,
@@ -122,7 +123,7 @@ export class RpcService {
     };
   }
 
-  async callRpcFunction(functionName: string, params: any = {}): Promise<any> {
+  async callRpcFunction(functionName: string, params: DatabaseRecord = {}): Promise<any> {
     const startTime = Date.now();
 
     try {

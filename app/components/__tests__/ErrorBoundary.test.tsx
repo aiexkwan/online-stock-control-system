@@ -1,4 +1,5 @@
 import React from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { render, screen, fireEvent } from '@testing-library/react';
 import ErrorBoundary from '../ErrorBoundary';
 
@@ -122,7 +123,7 @@ describe('ErrorBoundary', () => {
   });
 
   it('should render without children', () => {
-    render(<ErrorBoundary />);
+    render(<ErrorBoundary><div>Test content</div></ErrorBoundary>);
     
     // Should not throw and should render nothing
     expect(document.body.firstChild).toBeDefined();
@@ -152,7 +153,7 @@ describe('ErrorBoundary', () => {
   it('should handle errors during render phase', () => {
     const BrokenComponent = () => {
       // Simulate error during render
-      const obj: any = null;
+      const obj: DatabaseRecord = null;
       return <div>{obj.nonExistent}</div>;
     };
 

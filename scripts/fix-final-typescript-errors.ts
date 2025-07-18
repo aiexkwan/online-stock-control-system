@@ -129,7 +129,7 @@ const fixes = {
     // 修復 parameter 'item' implicitly has an 'any' type
     fixed = fixed.replace(
       /\.map\(item => /g,
-      '.map((item: any) => '
+      '.map((item: Record<string, unknown>) => '
     );
     
     if (fixed !== content) fixCount++;

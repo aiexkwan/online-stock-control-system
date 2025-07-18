@@ -30,9 +30,9 @@ const grnDataSource: ReportDataSource = {
     return data || [];
   },
 
-  transform(data: any[]) {
+  transform(data: Record<string, unknown>[]) {
     // Group by material code for aggregation
-    const grouped = data.reduce((acc: any, item: any) => {
+    const grouped = data.reduce((acc: Record<string, unknown>, item: Record<string, unknown>) => {
       const key = item.material_code;
       if (!acc[key]) {
         acc[key] = {

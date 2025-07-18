@@ -1,3 +1,5 @@
+import { DatabaseRecord } from '@/lib/types/database';
+
 /**
  * Alert System Types
  * 告警系統類型定義 - 支援多級告警、通知管理、規則引擎
@@ -290,7 +292,7 @@ export interface AlertConfig {
 export interface AlertEngineEvent {
   type: 'alert_triggered' | 'alert_resolved' | 'notification_sent' | 'rule_created' | 'rule_updated';
   timestamp: Date;
-  data: any;
+  data: DatabaseRecord[];
 }
 
 // 告警引擎狀態

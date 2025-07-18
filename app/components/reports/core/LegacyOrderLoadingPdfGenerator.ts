@@ -8,7 +8,7 @@ import 'jspdf-autotable';
 
 declare module 'jspdf' {
   interface jsPDF {
-    autoTable: (options: any) => jsPDF;
+    autoTable: (options: Record<string, unknown>) => jsPDF;
     lastAutoTable: {
       finalY: number;
     };
@@ -174,7 +174,7 @@ export class LegacyOrderLoadingPdfGenerator {
     this.currentY += 5;
   }
 
-  private addOrderProgress(orders: any[]) {
+  private addOrderProgress(orders: Record<string, unknown>[]) {
     this.doc.setFontSize(14);
     this.doc.setFont('helvetica', 'bold');
     this.doc.text('Order Progress', this.margin, this.currentY);
@@ -228,7 +228,7 @@ export class LegacyOrderLoadingPdfGenerator {
     this.currentY = this.doc.lastAutoTable.finalY + 10;
   }
 
-  private addLoadingDetails(details: any[]) {
+  private addLoadingDetails(details: Record<string, unknown>[]) {
     this.doc.setFontSize(14);
     this.doc.setFont('helvetica', 'bold');
     this.doc.text('Loading Details', this.margin, this.currentY);
@@ -278,7 +278,7 @@ export class LegacyOrderLoadingPdfGenerator {
         5: { cellWidth: 25 },
         6: { cellWidth: 20 },
       },
-      didDrawPage: (data: any) => {
+      didDrawPage: (data: Record<string, unknown>) => {
         if (data.pageNumber > 1) {
           this.doc.setFontSize(10);
           this.doc.setFont('helvetica', 'normal');
@@ -302,7 +302,7 @@ export class LegacyOrderLoadingPdfGenerator {
     this.currentY = this.doc.lastAutoTable.finalY + 10;
   }
 
-  private addUserPerformance(users: any[]) {
+  private addUserPerformance(users: Record<string, unknown>[]) {
     // 檢查是否需要新頁
     if (this.currentY > 200) {
       this.doc.addPage();

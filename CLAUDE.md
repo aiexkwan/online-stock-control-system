@@ -15,6 +15,191 @@ NewPennine 倉庫管理系統 - 基於 Next.js 14、TypeScript 同 Supabase 嘅�
 - 35+ REST API 端點已實施並經過測試
 - 前端 widgets 完全遷移到 REST API 架構
 
+---
+
+## 🎭 專家角色與場景組合
+
+### 預設場景組合（快速選擇）
+根據不同工作場景，建議使用以下角色組合：
+
+| 場景 | 命令 | 包含角色 |
+|------|------|----------|
+| 日常操作優化 | `/role daily-ops` | Backend + Frontend + 流程優化 + QA + 數據分析 |
+| 緊急修復 | `/role emergency` | 分析師 + Backend + DevOps + 安全 |
+| 新功能開發 | `/role new-feature` | 產品經理 + 架構 + Backend + Frontend + QA |
+| 性能優化 | `/role performance` | 優化專家 + 架構 + Backend + 數據分析 |
+| 安全審計 | `/role security-audit` | 安全 + Backend + DevOps + QA |
+| 系統整合 | `/role integration` | 整合專家 + 架構 + Backend + QA + 安全 |
+
+### 角色詳細說明
+完整角色職責和使用指引請參考：
+- 角色總覽：`docs/general_rules.md` → 身分定位系統
+- 個別角色文檔：`docs/role_play/[角色名].md`
+
+---
+
+## 🎯 快速命令指引
+
+### 基本工作模式
+- **`/start`** - 執行 todolist 下一步任務
+- **`/plan`** - 建立完整計劃
+- **`/check`** - 檢查完成進度
+- **`/fix`** - 修復問題
+- **`/audit`** - 代碼審核
+- **`/final-audit`** - 最終系統審核
+- **`/think`** - 深度思考分析
+- **`/update-claude`** - 根據最新 codebase 更新 CLAUDE.md
+- **`/role [角色名稱]`** - 切換到特定專家角色
+
+### 專家角色系統
+使用 `/role` 命令切換角色，或在任務開始時選擇多個角色協作：
+
+| ID | 角色 | 用途 | 命令範例 |
+|:---:|------|------|----------|
+| 1 | 分析師 | 問題分析、根本原因調查 | `/role analyzer` |
+| 2 | 系統架構專家 | 架構設計、技術選型 | `/role architect` |
+| 3 | Backend工程師 | API開發、資料庫操作 | `/role backend` |
+| 4 | DevOps專家 | 部署、監控、自動化 | `/role devops` |
+| 5 | Frontend專家 | UI開發、用戶體驗 | `/role frontend` |
+| 6 | 優化專家 | 性能優化、瓶頸分析 | `/role optimizer` |
+| 7 | QA專家 | 測試策略、品質保證 | `/role qa` |
+| 8 | 代碼品質專家 | 重構、技術債管理 | `/role refactor` |
+| 9 | 安全專家 | 安全審計、漏洞修復 | `/role security` |
+| 10 | 產品經理 | 需求管理、優先級 | `/role pm` |
+| 11 | 整合專家 | 系統整合、API對接 | `/role integration` |
+| 12 | 流程優化專家 | 流程改進、效率提升 | `/role process` |
+| 13 | 數據分析師 | 數據洞察、報表分析 | `/role data` |
+| 14 | AI/ML工程師 | AI優化、模型調整 | `/role ai` |
+
+**多角色協作範例**：
+```
+/role backend,qa,security  # 同時使用3個角色進行安全API開發
+```
+
+### 每個命令詳細說明
+
+#### 📌 `/start` - 開始執行任務
+```
+執行流程：
+1. 閱讀 docs/general_rules.md
+2. 檢查 todolist（如為空，先詢問）
+3. 執行下一步任務
+4. 使用 Playwright 測試驗證
+5. 更新相關進度文檔
+```
+
+#### 📋 `/plan` - 制定計劃
+```
+執行流程：
+1. 閱讀 docs/general_rules.md
+2. 建立完整計劃
+3. 使用版本號（1.1, 1.2.4）作規劃單位
+4. 將計劃寫入 docs/planning/
+```
+
+#### ✅ `/check` - 進度檢查
+```
+執行流程：
+1. 閱讀 docs/general_rules.md
+2. 檢查完成進度
+3. 使用測試工具驗證
+4. 確認是否按規劃執行
+```
+
+#### 🔧 `/fix` - 問題修復
+```
+執行流程：
+1. 使用分析師角色（docs/role_play/Analyzer.md）
+2. 查看 issue-library 相似問題
+3. 專注解決當前問題
+4. Playwright 測試驗證
+5. 更新到 issue-library
+```
+
+#### 🔍 `/audit` - 代碼審核
+```
+審核項目：
+1. 重複或不合理的讀寫
+2. 循環引用問題
+3. A/B機制（edge case處理）
+4. 冗碼和不必要註釋
+5. 編碼原則遵守
+6. 用戶操作流程
+完成後寫入 docs/audit/
+```
+
+#### 🏆 `/final-audit` - 最終系統審核
+```
+審核範圍：
+1. Workflow 分析
+2. Dataflow 檢查
+3. Code Quality & 清潔度
+4. Component 維護性
+5. UI & 語言一致性
+6. 系統安全性
+7. 測試覆蓋率
+8. Logging 與分類
+9. 監控與警示系統
+10. Documentation
+輸出至：docs/Project-Restructure/audit/
+```
+
+#### 🔄 `/update-claude` - 更新 CLAUDE.md
+```
+執行流程：
+1. 掃描整個 codebase 結構
+2. 分析新增/修改的功能
+3. 檢查 package.json 的新命令
+4. 更新技術棧資訊
+5. 更新開發模式和最佳實踐
+6. 保持原有重要配置
+注意：只更新變更部分，保留核心指引
+```
+
+#### 👤 `/role [角色名稱]` - 角色切換
+```
+使用方式：
+- 單角色：/role backend
+- 多角色：/role backend,qa,security
+- 查看角色：/role list
+- 場景建議：/role suggest [場景描述]
+
+詳細角色文檔：docs/role_play/
+場景組合建議：docs/general_rules.md
+```
+
+---
+
+## 🛠️ 核心配置與規則
+
+### 必須遵守事項
+- **遵從"KISS"原則**: 系統、設計、程式碼、流程——只要可以簡單實現，無需複雜化
+- **長駐開啟 ultrathink 模式**
+- **優先編輯現有文件而非創建新文件，減少冗碼**
+- **只在用戶明確要求時創建文檔文件**
+- **每次更新必須解決 TypeScript 和 ESLint 問題**
+- **使用 MCP 工具確認數據庫結構，唔好假設**
+- **所有 UI 文字必須使用英文**
+- **保持代碼整潔，減少冗餘**
+
+### 工具使用
+所有命令都可使用：
+- **Ultrathink** - 深層思考
+- **Sequential-thinking** - 邏輯推理
+- **Task** - 同步平行執行任務
+- **Puppeteer MCP** - 自動化測試
+- **Supabase MCP** - 資料庫查詢
+- **Brave Search MCP** - 搜尋資料
+
+### 測試憑證
+```yaml
+登入憑證:
+  email: ${env.local.SYS_LOGIN} 或 ${env.local.PUPPETEER_LOGIN}
+  password: ${env.local.SYS_PASSWORD} 或 ${env.local.PUPPETEER_PASSWORD}
+```
+
+---
+
 ## 開發命令
 
 ### 基本開發
@@ -108,17 +293,6 @@ npm run mcpIOS       # 啟動 Supabase MCP 服務器 (用於 Claude Code 數據�
 - `data_id`: 用戶管理
 
 ## 開發規範
-
-### 必須遵守事項
-- **遵從"KISS"原則**: 系統、設計、程式碼、流程——只要可以簡單實現，無需複雜化，進一步降低維護成本
-- **長駐開啟 ultrathink 模式**
-- **優先編輯現有文件而非創建新文件，減少冗碼**
-- **只在用戶明確要求時創建文檔文件**
-- **運行 `npm run lint` 同 `npm run typecheck` 確保代碼質量**
-- **使用 MCP 工具確認數據庫結構，唔好假設**
-- **所有 UI 文字必須使用英文**
-- **保持代碼整潔，減少冗餘**
-- **避免使用鍵盤事件處理器** - 根據最近更新，已移除鍵盤事件改善用戶體驗
 
 ### 架構指引
 1. **Server Actions**: 所有數據變更必須通過 `app/actions/` 處理
@@ -227,11 +401,10 @@ const { data, loading, error } = useUnifiedAPI({
 
 ## 文檔資源
 - **項目文檔**: `/docs` 目錄
+- **通用規則**: `docs/general_rules.md`
+- **角色文檔**: `docs/role_play/` 目錄
 - **API 文檔**: `lib/api/` 目錄下的 REST API 實現
-- **數據庫結構**: `docs/databaseStructure.md`
-- **Widget 開發指南**: `docs/widget-development-guide.md`
-- **性能最佳實踐**: `docs/performance-best-practices.md`
-- **CSR to SSR 遷移**: `docs/migration-guide-csr-to-ssr.md`
+- **數據庫結構**: `docs\databaseScheme\databaseStructure.md`
 - **內部知識庫**: 使用 Ask Database 功能查詢
 - **測試報告**: E2E 測試結果同覆蓋率報告
 
@@ -247,3 +420,24 @@ npm test -- app/components/specific-component
 # 清除測試緩存
 npm test -- --clearCache
 ```
+
+---
+
+## 📚 相關資源連結
+
+### 文檔庫路徑
+- **計劃文檔**: `docs/planning/`
+- **TodoList**: `docs/Today_Todo/`
+- **進度報告**: `docs/progress-check/`
+- **審核記錄**: `docs/audit/`
+- **錯誤記錄**: `docs/issue-library/`
+- **RPC函數**: `docs/rpc-functions/`
+- **SQL查詢**: `docs/SQL-Library/`
+
+### 角色扮演文檔
+完整角色清單請參考 `docs/general_rules.md` 的身分定位系統部分。
+
+---
+
+*最後更新：2025年1月*
+*版本：3.0 (整合版)*

@@ -60,7 +60,7 @@ export class LegacyOrderLoadingAdapter {
     };
   }
 
-  private static transformOrderProgress(data: any[]): any[] {
+  private static transformOrderProgress(data: Record<string, unknown>[]): Record<string, unknown>[] {
     if (!Array.isArray(data)) return [];
 
     return data.map(item => ({
@@ -73,7 +73,7 @@ export class LegacyOrderLoadingAdapter {
     }));
   }
 
-  private static transformLoadingDetails(data: any[]): any[] {
+  private static transformLoadingDetails(data: Record<string, unknown>[]): Record<string, unknown>[] {
     if (!Array.isArray(data)) return [];
 
     return data.map(item => ({
@@ -87,7 +87,7 @@ export class LegacyOrderLoadingAdapter {
     }));
   }
 
-  private static transformUserPerformance(data: any[]): any[] {
+  private static transformUserPerformance(data: Record<string, unknown>[]): Record<string, unknown>[] {
     if (!Array.isArray(data)) return [];
 
     return data.map(item => ({

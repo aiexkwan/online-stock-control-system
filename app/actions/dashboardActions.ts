@@ -2,6 +2,7 @@
 
 import { createClient } from '@/app/utils/supabase/server';
 import { cookies } from 'next/headers';
+import { DatabaseRecord, convertToStockDistributionItem } from '@/lib/types/database-types';
 
 // Chart colors 配置
 const CHART_COLORS = [
@@ -69,39 +70,40 @@ export async function getStockDistributionAction(
     }
 
     // 處理數據
-    const items = data.map((item: any) => {
+    const items = data.map((item: DatabaseRecord) => {
+      const stockItem = convertToStockDistributionItem(item);
       // 計算總庫存
       const stockTotal = 
-        (item.injection || 0) + 
-        (item.pipeline || 0) + 
-        (item.prebook || 0) + 
-        (item.await || 0) + 
-        (item.fold || 0) + 
-        (item.bulk || 0) + 
-        (item.await_grn || 0) + 
-        (item.backcarpark || 0);
+        (stockItem.injection || 0) + 
+        (stockItem.pipeline || 0) + 
+        (stockItem.prebook || 0) + 
+        (stockItem.await || 0) + 
+        (stockItem.fold || 0) + 
+        (stockItem.bulk || 0) + 
+        (Number(item.await_grn) || 0) + 
+        (Number(item.backcarpark) || 0);
       
       return {
-        stock: item.product_code,
+        stock: String(item.product_code),
         stock_level: stockTotal,
-        description: item.data_code?.description,
-        type: item.data_code?.type,
+        description: String((item.data_code as DatabaseRecord)?.description || ''),
+        type: String((item.data_code as DatabaseRecord)?.type || ''),
       };
     });
 
     // 計算總庫存
     const totalStock = items.reduce(
-      (sum: number, item: any) => sum + item.stock_level, 
+      (sum: number, item: { stock: string; stock_level: number; description: string; type: string }) => sum + item.stock_level, 
       0
     );
 
     // 按庫存量排序並過濾掉零庫存
     const sortedData = items
-      .filter((item: any) => item.stock_level > 0)
-      .sort((a: any, b: any) => b.stock_level - a.stock_level);
+      .filter((item: { stock: string; stock_level: number; description: string; type: string }) => item.stock_level > 0)
+      .sort((a: { stock: string; stock_level: number; description: string; type: string }, b: { stock: string; stock_level: number; description: string; type: string }) => b.stock_level - a.stock_level);
 
     // 生成圖表數據
-    const chartData: StockDistributionData[] = sortedData.map((item: any, index: number) => ({
+    const chartData: StockDistributionData[] = sortedData.map((item: { stock: string; stock_level: number; description: string; type: string }, index: number) => ({
       name: item.stock,
       size: item.stock_level,
       value: item.stock_level,
@@ -144,22 +146,22 @@ export async function getStockDistributionRPCAction(
     }
 
     // RPC 返回的是包含 total_stock 和 data 的對象
-    const rpcResult = data as { total_stock: number; data: any[] };
+    const rpcResult = data as { total_stock: number; data: Record<string, unknown>[] };
     
     if (!rpcResult.data || !Array.isArray(rpcResult.data)) {
       return [];
     }
 
     // RPC 已經返回處理好的數據，包含顏色和百分比
-    const chartData: StockDistributionData[] = rpcResult.data.map((item: any) => ({
-      name: item.name,
-      size: item.size,
-      value: item.value,
-      percentage: item.percentage || 0,
-      color: item.color,
-      fill: item.fill,
-      description: item.description || '-',
-      type: item.type || '-',
+    const chartData: StockDistributionData[] = rpcResult.data.map((item: Record<string, unknown>) => ({
+      name: String(item.name),
+      size: Number(item.size),
+      value: Number(item.value),
+      percentage: Number(item.percentage || 0),
+      color: String(item.color),
+      fill: String(item.fill),
+      description: String(item.description || '-'),
+      type: String(item.type || '-'),
     }));
 
     return chartData;

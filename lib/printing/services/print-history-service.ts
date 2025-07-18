@@ -4,6 +4,7 @@
  */
 
 import { createClient } from '@/lib/supabase';
+import { DatabaseRecord } from '@/lib/types/database';
 import { PrintHistory, PrintStatistics, PrintType } from '../types';
 
 export interface HistoryFilter {
@@ -138,7 +139,7 @@ export class PrintHistoryService {
       const successRate = totalJobs > 0 ? (successful / totalJobs) * 100 : 0;
 
       // Group by type
-      const byType: Record<PrintType, number> = {} as any;
+      const byType: Record<PrintType, number> = {} as Record<PrintType, number>;
       Object.values(PrintType).forEach(type => {
         byType[type] = 0;
       });
@@ -220,7 +221,7 @@ export class PrintHistoryService {
   }
 
   // Private helper methods
-  private mapFromDatabase(row: any): PrintHistory {
+  private mapFromDatabase(row: DatabaseRecord): PrintHistory {
     return {
       id: row.id,
       jobId: row.job_id,
@@ -234,7 +235,7 @@ export class PrintHistoryService {
   }
 
   private getEmptyStatistics(): PrintStatistics {
-    const byType: Record<PrintType, number> = {} as any;
+    const byType: Record<PrintType, number> = {} as Record<PrintType, number>;
     Object.values(PrintType).forEach(type => {
       byType[type] = 0;
     });

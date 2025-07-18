@@ -11,7 +11,7 @@ interface OrderCacheItem<T> {
 interface UseOrderCacheOptions {
   defaultTTL?: number; // Time to live in milliseconds
   maxSize?: number; // Maximum cache size
-  onEvict?: (key: string, value: any) => void;
+  onEvict?: (key: string, value: unknown) => void;
 }
 
 export function useOrderCache<T = any>(options: UseOrderCacheOptions = {}) {

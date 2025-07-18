@@ -76,8 +76,16 @@ export function useWidgetRegistry() {
 }
 
 // 性能監控 Hook
+interface WidgetStats {
+  totalWidgets?: number;
+  loadedWidgets?: number;
+  avgLoadTime?: number;
+  loadStatus?: string;
+  loadTime?: number;
+}
+
 export function useWidgetPerformance(widgetId?: string) {
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<WidgetStats | null>(null);
   
   useEffect(() => {
     import('./unified-registry').then(({ widgetRegistry }) => {
@@ -89,10 +97,10 @@ export function useWidgetPerformance(widgetId?: string) {
           const allStats = widgetRegistry.getLoadStatistics();
           const summary = {
             totalWidgets: allStats.size,
-            loadedWidgets: Array.from(allStats.values()).filter((s: any) => s.loadStatus === 'loaded').length,
+            loadedWidgets: Array.from(allStats.values()).filter((s: Record<string, unknown>) => s.loadStatus === 'loaded').length,
             avgLoadTime: Array.from(allStats.values())
-              .filter((s: any) => s.loadTime)
-              .reduce((sum, s: any) => sum + (s.loadTime || 0), 0) / allStats.size || 0
+              .filter((s: Record<string, unknown>) => s.loadTime)
+              .reduce((sum, s: Record<string, unknown>) => sum + ((s.loadTime as number) || 0), 0) / allStats.size || 0
           };
           setStats(summary);
         }

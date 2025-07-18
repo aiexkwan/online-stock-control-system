@@ -25,7 +25,7 @@ export function createClient() {
           }
           return undefined;
         },
-        set(name: string, value: string, options: any) {
+        set(name: string, value: string, options: Record<string, unknown>) {
           if (typeof document !== 'undefined') {
             let cookieString = `${name}=${value}`;
             if (options?.maxAge) cookieString += `; max-age=${options.maxAge}`;
@@ -37,7 +37,7 @@ export function createClient() {
             document.cookie = cookieString;
           }
         },
-        remove(name: string, options: any) {
+        remove(name: string, options: Record<string, unknown>) {
           if (typeof document !== 'undefined') {
             let cookieString = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
             if (options?.path) cookieString += `; path=${options.path}`;

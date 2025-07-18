@@ -230,7 +230,7 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
                     />
                   </SelectTrigger>
                   <SelectContent className={cn('border-border bg-card')}>
-                    {acoOrders.map((order: any) => (
+                    {acoOrders.map((order: Record<string, unknown>) => (
                       <SelectItem
                         key={order}
                         value={order}

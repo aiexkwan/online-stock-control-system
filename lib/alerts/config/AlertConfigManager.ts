@@ -3,7 +3,7 @@
  * 告警配置管理器 - 管理預設規則、自定義規則、時間窗口等配置
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
   AlertRule,
   AlertLevel,
@@ -15,7 +15,7 @@ import {
 } from '../types';
 
 export class AlertConfigManager {
-  private supabase: any;
+  private supabase: SupabaseClient;
   private defaultConfig: AlertConfig;
   private templates: Map<string, AlertTemplate> = new Map();
 
@@ -702,7 +702,7 @@ Please take appropriate action if required.
   /**
    * 序列化規則
    */
-  private serializeRule(rule: AlertRule): any {
+  private serializeRule(rule: AlertRule): Record<string, unknown> {
     return {
       id: rule.id,
       name: rule.name,

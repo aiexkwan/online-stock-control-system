@@ -30,7 +30,7 @@ const acoOrderDataSource: ReportDataSource = {
     return data || [];
   },
 
-  transform(data: any[]) {
+  transform(data: Record<string, unknown>[]) {
     return data.map(item => ({
       product_code: item.product_code,
       pallet_number: item.pallet_number,

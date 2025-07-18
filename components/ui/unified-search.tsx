@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { Search, QrCode, X, Loader2 } from 'lucide-react';
 import { Button } from './button';
 import { Input } from './input';
@@ -18,7 +19,7 @@ interface SearchResult {
   title: string;
   subtitle: string;
   metadata?: string;
-  data: any;
+  data: DatabaseRecord[];
 }
 
 interface UnifiedSearchProps {

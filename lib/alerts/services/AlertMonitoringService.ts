@@ -4,7 +4,8 @@
  */
 
 import { Redis } from 'ioredis';
-import { createClient } from '@supabase/supabase-js';
+import { DatabaseRecord } from '@/lib/types/database';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { AlertRuleEngine } from '../core/AlertRuleEngine';
 import { AlertStateManager } from '../core/AlertStateManager';
 import { NotificationService } from '../notifications/NotificationService';
@@ -16,12 +17,13 @@ import {
   AlertEscalation,
   AlertEngineStatus,
   AlertEngineEvent,
-  AlertResponse
+  AlertResponse,
+  NotificationConfig
 } from '../types';
 
 export class AlertMonitoringService {
   private redis: Redis;
-  private supabase: any;
+  private supabase: SupabaseClient;
   private ruleEngine: AlertRuleEngine;
   private stateManager: AlertStateManager;
   private notificationService: NotificationService;
@@ -275,7 +277,7 @@ export class AlertMonitoringService {
   private async checkDependencies(dependencies: string[]): Promise<boolean> {
     try {
       const dependencyAlerts = await Promise.all(
-        dependencies.map((dep: any) => this.stateManager.queryAlerts({
+        dependencies.map((dep: string) => this.stateManager.queryAlerts({
           ruleIds: [dep],
           states: [AlertState.ACTIVE],
           limit: 1
@@ -353,7 +355,11 @@ export class AlertMonitoringService {
   /**
    * 觸發告警升級
    */
-  private async triggerEscalation(alert: Alert, escalationLevel: any): Promise<void> {
+  private async triggerEscalation(alert: Alert, escalationLevel: {
+    level: AlertLevel;
+    delay: number;
+    notifications: NotificationConfig[];
+  }): Promise<void> {
     try {
       // 更新告警級別
       const escalatedAlert = {
@@ -372,7 +378,7 @@ export class AlertMonitoringService {
       for (const notification of escalationLevel.notifications) {
         await this.notificationService.sendNotifications(escalatedAlert, {
           notifications: [notification]
-        } as any);
+        } as AlertRule);
       }
 
       console.log(`Alert ${alert.id} escalated to level ${escalationLevel.level}`);
@@ -496,7 +502,7 @@ export class AlertMonitoringService {
   /**
    * 處理告警觸發
    */
-  private handleAlertTriggered(data: any): void {
+  private handleAlertTriggered(data: DatabaseRecord[]): void {
     // 設置升級計時器
     if (data.alert && data.rule) {
       this.setupEscalationTimer(data.alert, data.rule);
@@ -506,7 +512,7 @@ export class AlertMonitoringService {
   /**
    * 處理告警解決
    */
-  private handleAlertResolved(data: any): void {
+  private handleAlertResolved(data: DatabaseRecord[]): void {
     // 清除升級計時器
     if (data.alert) {
       const timers = Array.from(this.escalationTimers.keys()).filter(key => 
@@ -526,7 +532,7 @@ export class AlertMonitoringService {
   /**
    * 處理通知發送
    */
-  private handleNotificationSent(data: any): void {
+  private handleNotificationSent(data: DatabaseRecord[]): void {
     // 記錄通知統計
     this.redis.hincrby('notification:stats', data.channel, 1);
   }
@@ -657,7 +663,7 @@ export class AlertMonitoringService {
   /**
    * 輔助方法 - 反序列化規則
    */
-  private deserializeRule(data: any): AlertRule {
+  private deserializeRule(data: DatabaseRecord[]): AlertRule {
     return {
       id: data.id,
       name: data.name,

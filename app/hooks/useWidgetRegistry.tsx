@@ -17,9 +17,9 @@ export function useWidgetRegistry() {
       try {
         // Initialize the registry
         console.log('[useWidgetRegistry] Initializing widget registry...');
-        await unifiedWidgetRegistry.autoRegisterWidgets();
-
-        // Check if registry has widgets registered
+        
+        // The registry is already initialized in its constructor
+        // Just check if registry has widgets registered
         const definitions = unifiedWidgetRegistry.getAllDefinitions();
         console.log(`[useWidgetRegistry] Registry has ${definitions.size} widgets registered`);
 

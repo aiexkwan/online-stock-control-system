@@ -235,7 +235,7 @@ export interface UseFocusManagementReturn {
  */
 export interface UseAriaReturn {
   // ARIA 屬性生成器
-  getAriaProps: (config: Partial<AriaConfig>) => Record<string, any>;
+  getAriaProps: (config: Partial<AriaConfig>) => Record<string, string | boolean | number | undefined>;
   getAriaLabel: (text: string, context?: string) => string;
   getAriaDescribedBy: (descriptions: string[]) => string;
   

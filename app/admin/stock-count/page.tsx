@@ -368,7 +368,7 @@ export default function AdminStockCountPage() {
         },
         body: JSON.stringify({
           session_id: sessionId,
-          scans: batchScans.filter((s: any) => (s as { status: string }).status === 'pending'),
+          scans: batchScans.filter((s: Record<string, unknown>) => (s as { status: string }).status === 'pending'),
         }),
       });
 
@@ -577,11 +577,11 @@ export default function AdminStockCountPage() {
                       <button
                         onClick={handleBatchSubmit}
                         disabled={
-                          isLoading || batchScans.filter((s: any) => (s as { status: string }).status === 'pending').length === 0
+                          isLoading || batchScans.filter((s: Record<string, unknown>) => (s as { status: string }).status === 'pending').length === 0
                         }
                         className='flex-1 rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-600'
                       >
-                        Submit Batch ({batchScans.filter((s: any) => (s as { status: string }).status === 'pending').length} items)
+                        Submit Batch ({batchScans.filter((s: Record<string, unknown>) => (s as { status: string }).status === 'pending').length} items)
                       </button>
                       <button
                         onClick={() => setBatchScans([])}

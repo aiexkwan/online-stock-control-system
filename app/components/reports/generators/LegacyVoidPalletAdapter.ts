@@ -64,7 +64,7 @@ export class LegacyVoidPalletAdapter {
     };
   }
 
-  private static transformReasonStats(reasonData: any[]): any[] {
+  private static transformReasonStats(reasonData: Record<string, unknown>[]): Record<string, unknown>[] {
     if (!Array.isArray(reasonData)) return [];
 
     return reasonData.map(item => ({
@@ -75,7 +75,7 @@ export class LegacyVoidPalletAdapter {
     }));
   }
 
-  private static transformDetails(detailsData: any[]): any[] {
+  private static transformDetails(detailsData: Record<string, unknown>[]): Record<string, unknown>[] {
     if (!Array.isArray(detailsData)) return [];
 
     return detailsData.map(item => ({
@@ -90,7 +90,7 @@ export class LegacyVoidPalletAdapter {
     }));
   }
 
-  private static transformProductStats(productData: any[]): any[] {
+  private static transformProductStats(productData: Record<string, unknown>[]): Record<string, unknown>[] {
     if (!Array.isArray(productData)) return [];
 
     return productData.map(item => ({

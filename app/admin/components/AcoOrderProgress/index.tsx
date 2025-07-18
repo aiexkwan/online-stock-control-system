@@ -96,7 +96,7 @@ export function AcoOrderProgress() {
                       {orders.length === 0 ? (
                         <div className='px-4 py-3 text-sm text-slate-400'>No incomplete orders</div>
                       ) : (
-                        orders.map((order: any) => (
+                        orders.map((order: Record<string, unknown>) => (
                           <button
                             key={order.order_ref}
                             onClick={() => {

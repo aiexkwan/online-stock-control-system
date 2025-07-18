@@ -101,13 +101,17 @@ export const FocusTrap = React.forwardRef<FocusTrapRef, FocusTrapProps>(({
   }, [active, onActivate, onDeactivate]);
   
   return (
-    <Component
-      ref={containerRef}
+    <div
+      ref={containerRef as React.RefObject<HTMLDivElement>}
       className={className}
       data-focus-trap={active ? 'active' : 'inactive'}
     >
-      {children}
-    </Component>
+      {Component !== 'div' ? (
+        React.createElement(Component, { className }, children)
+      ) : (
+        children
+      )}
+    </div>
   );
 });
 
@@ -324,7 +328,7 @@ export function withFocusTrap<P extends object>(
   Component: React.ComponentType<P>,
   options: Partial<FocusTrapProps> = {}
 ) {
-  const WrappedComponent = React.forwardRef<any, P & { focusTrapActive?: boolean }>((
+  const WrappedComponent = React.forwardRef<HTMLElement, P & { focusTrapActive?: boolean }>((
     { focusTrapActive = true, ...props },
     ref
   ) => {

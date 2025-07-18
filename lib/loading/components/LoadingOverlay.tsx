@@ -7,7 +7,7 @@
 
 'use client';
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -139,11 +139,11 @@ export function LoadingOverlay({
   const currentVariants = animationVariants[animation] || animationVariants.fade;
 
   // 處理取消
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     if (cancellable && onCancel) {
       onCancel();
     }
-  };
+  }, [cancellable, onCancel]);
 
   // 處理鍵盤事件
   useEffect(() => {

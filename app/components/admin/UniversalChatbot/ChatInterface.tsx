@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { AnimatePresence } from 'framer-motion';
 import { Brain } from 'lucide-react';
 import ChatMessage from './ChatMessage';
@@ -17,9 +18,9 @@ export interface ChatMessage {
     tokensUsed?: number;
     cached?: boolean;
     resolvedQuestion?: string;
-    references?: any[];
+    references?: Record<string, unknown>[];
     sql?: string;
-    data?: any[];
+    data?: Record<string, unknown>[];
     error?: any;
   };
 }
@@ -103,12 +104,12 @@ export default function ChatInterface({ onNewMessage }: ChatInterfaceProps) {
 
       setMessages(prev => [...prev, aiMessage]);
       onNewMessage?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       // 添加錯誤訊息
       const errorMessage: ChatMessage = {
         id: `error_${Date.now()}`,
         type: 'ai',
-        content: `Sorry, I encountered an error: ${error.message}`,
+        content: `Sorry, I encountered an error: ${getErrorMessage(error)}`,
         timestamp: new Date().toISOString(),
       };
 

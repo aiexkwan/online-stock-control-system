@@ -93,7 +93,7 @@ test.describe('NestJS REST API v1.2.2 Widget Endpoints', () => {
         expect(firstItem).toHaveProperty('percentage');
         
         // 驗證百分比計算
-        const total = data.value.reduce((sum: number, item: any) => sum + item.value, 0);
+        const total = data.value.reduce((sum: number, item: Record<string, unknown>) => sum + item.value, 0);
         const calculatedPercentage = (firstItem.value / total) * 100;
         expect(Math.abs(firstItem.percentage - calculatedPercentage)).toBeLessThan(0.1);
       }

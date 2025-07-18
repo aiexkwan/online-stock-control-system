@@ -6,6 +6,8 @@
 'use client';
 
 import React, { useState, useEffect, Suspense, useCallback, useMemo } from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
+import { Database } from '@/lib/types/supabase-generated';
 import { motion } from 'framer-motion';
 import { AdminWidgetConfig } from './adminDashboardLayouts';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
@@ -30,6 +32,22 @@ import {
   updateProduct,
   ProductData 
 } from '@/app/actions/productActions';
+
+// 類型定義
+interface WidgetComponentProps {
+  config: AdminWidgetConfig;
+  timeFrame: TimeFrame;
+  theme: string;
+  data?: DatabaseRecord[] | null;
+}
+
+interface AlertData {
+  message: string;
+  type?: 'info' | 'warning' | 'error';
+  timestamp?: string;
+}
+
+type WidgetData = DatabaseRecord[] | null;
 import { cn } from '@/lib/utils';
 import { 
   ArrowPathIcon,
@@ -69,8 +87,13 @@ const UnifiedWidgetWrapper = React.memo<{
       transition={{ duration: 0.3 }}
       className={cn(
         "relative h-full w-full rounded-lg border bg-card text-card-foreground shadow-sm",
-        `glow-${glowColor}`
+        `glow-${glowColor}`,
+        "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
       )}
+      data-widget-focusable="true"
+      tabIndex={-1}
+      role="region"
+      aria-label={title || 'Dashboard widget'}
     >
       {title && (
         <div className="flex items-center justify-between p-4 pb-2">
@@ -107,14 +130,14 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
   index = 0,
   delay = 0
 }) => {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<WidgetData>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDelayed, setIsDelayed] = useState(delay > 0);
   const { refreshTrigger } = useAdminRefresh();
   
   // Helper function to render lazy component from unifiedWidgetRegistry
-  const renderLazyComponent = useCallback((componentName: string, props: any) => {
+  const renderLazyComponent = useCallback((componentName: string, props: WidgetComponentProps) => {
     const Component = unifiedWidgetRegistry.getWidgetComponent(componentName);
     if (!Component) {
       console.error(`Component ${componentName} not found in unifiedWidgetRegistry.getWidgetComponent`);
@@ -165,7 +188,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
           case 'system_status':
           case 'coming_soon':
             // Data loading logic removed - loadWidgetData method not available
-            // TODO: Implement proper data loading for these widget types
+            // Using null data for these widget types as they don't require data loading
             setData(null);
             break;
             
@@ -249,10 +272,10 @@ function renderCoreWidget(
   config: AdminWidgetConfig,
   theme: string,
   timeFrame: TimeFrame,
-  data: any,
+  data: DatabaseRecord[],
   loading: boolean,
   error: string | null,
-  renderLazyComponent: (componentName: string, props: any) => JSX.Element
+  renderLazyComponent: (componentName: string, props: WidgetComponentProps) => JSX.Element
 ): JSX.Element {
   if (loading) {
     return <div>Loading...</div>;
@@ -262,7 +285,7 @@ function renderCoreWidget(
     return createErrorFallback(config.type, error);
   }
 
-  const getComponentProps = (data?: any) => ({
+  const getComponentProps = (data?: WidgetData) => ({
     config,
     timeFrame,
     theme,
@@ -327,9 +350,23 @@ const ProductUpdateWidget: React.FC<{
     setLoading(true);
     try {
       const result = await getProductByCode(productCode);
-      setProductData(result as unknown as ProductData);
+      if (result && typeof result === 'object' && 'code' in result && 'description' in result) {
+        // Transform result to match ProductData interface
+        const productData: ProductData = {
+          code: (result as Database['public']['Tables']['data_code']['Row']).code,
+          description: (result as Database['public']['Tables']['data_code']['Row']).description,
+          colour: (result as Database['public']['Tables']['data_code']['Row']).colour || '',
+          standard_qty: (result as Database['public']['Tables']['data_code']['Row']).standard_qty || 0,
+          type: (result as Database['public']['Tables']['data_code']['Row']).type || '',
+        };
+        setProductData(productData);
+      } else {
+        console.error('Invalid product data received:', result);
+        setProductData(null);
+      }
     } catch (error) {
       console.error('Product search error:', error);
+      setProductData(null);
     } finally {
       setLoading(false);
     }
@@ -373,7 +410,7 @@ const SupplierUpdateWidget: React.FC<{
 };
 
 // 簡化的警報 Widget
-const AlertsWidget: React.FC<{ data: any }> = ({ data }) => {
+const AlertsWidget: React.FC<{ data: DatabaseRecord[] }> = ({ data }) => {
   const alerts = data || [];
   
   return (
@@ -383,7 +420,7 @@ const AlertsWidget: React.FC<{ data: any }> = ({ data }) => {
           暫無警報
         </div>
       ) : (
-        alerts.map((alert: any, index: number) => (
+        alerts.map((alert: AlertData, index: number) => (
           <div key={index} className="p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
             {(alert as { message: string }).message || `警報 ${index + 1}`}
           </div>

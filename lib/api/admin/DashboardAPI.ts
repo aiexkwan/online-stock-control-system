@@ -4,13 +4,70 @@
  */
 
 import { DataAccessLayer } from '../core/DataAccessStrategy';
+import { DatabaseRecord } from '@/lib/types/database';
 import { isNotProduction } from '@/lib/utils/env';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '@/lib/types/supabase-generated';
+import { DataIdRow, RecordTransferRow, RecordHistoryRow, RecordInventoryRow, RecordPalletinfoRow, DataCodeRow } from '@/lib/types/database';
+
+// 定義具體的工作資料類型
+interface WorkLevelData {
+  id: string;
+  move: number;
+  latest_update: string;
+}
+
+// 定義操作員資料類型
+interface OperatorData {
+  id: string;
+  name: string;
+  department: string;
+}
+
+// 定義轉移資料類型
+interface TransferData {
+  tran_date: string;
+  plt_num?: string;
+  operator_id?: string;
+}
+
+// 定義庫存資料類型
+interface InventoryData {
+  product_code: string;
+  await: number;
+}
+
+// 定義報表資料類型
+interface ReportData {
+  [key: string]: unknown;
+}
+
+// 定義錯誤回應類型
+interface ErrorResponse {
+  error: string;
+  message?: string;
+}
+
+// 定義 Widget 資料類型
+type WidgetDataValue = number | string | DatabaseRecord[] | DatabaseRecord | null | ErrorResponse;
+
+// 定義 RPC 回應類型
+interface RPCResponse<T = unknown> {
+  success?: boolean;
+  error?: string;
+  message?: string;
+  data?: T;
+  [key: string]: unknown;
+}
+
+// 定義 Supabase 客戶端類型
+type SupabaseClientType = SupabaseClient<Database>;
 
 // Dashboard widget types
 export interface DashboardWidgetData {
   widgetId: string;
   title: string;
-  data: any;
+  data: DatabaseRecord[];
   lastUpdated: string;
 }
 
@@ -87,7 +144,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
         return {
           widgetId,
           title: this.getWidgetTitle(widgetId),
-          data: { error: 'Failed to load widget data' },
+          data: { error: 'Failed to load widget data' } as ErrorResponse,
           lastUpdated: new Date().toISOString()
         };
       }
@@ -143,7 +200,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
   /**
    * Fetch data for specific widget
    */
-  private async fetchWidgetData(widgetId: string, params: DashboardParams, supabase?: any): Promise<any> {
+  private async fetchWidgetData(widgetId: string, params: DashboardParams, supabase?: SupabaseClientType): Promise<WidgetDataValue> {
     // All widgets go through fetchStatsCardData
     // Either use provided dataSource or the widgetId itself as dataSource
     const dataSource = params.params?.dataSource || widgetId;
@@ -153,7 +210,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
   /**
    * Fetch stats card data using optimized direct queries
    */
-  private async fetchStatsCardData(dataSource: string, params: DashboardParams, supabase?: any): Promise<any> {
+  private async fetchStatsCardData(dataSource: string, params: DashboardParams, supabase?: SupabaseClientType): Promise<WidgetDataValue> {
     if (!supabase) {
       throw new Error('Supabase client is required for fetchStatsCardData');
     }
@@ -255,13 +312,13 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
           }
           
           // Transform data to match widget expectations
-          const records = awaitInventory?.map((item: any) => ({
+          const records = awaitInventory?.map((item: Record<string, unknown>) => ({
             location: 'AWAIT',
             quantity: item.await || 0,
             product_code: item.product_code
           })) || [];
           
-          const totalQuantity = records.reduce((sum: number, record: any) => sum + record.quantity, 0);
+          const totalQuantity = records.reduce((sum: number, record: Record<string, unknown>) => sum + record.quantity, 0);
           
           return {
             records,
@@ -380,7 +437,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             }
             
             // Get unique operator IDs
-            const operatorIds = [...new Set(workData.map((w: any) => w.id).filter((id: any) => id != null))];
+            const operatorIds = [...new Set(workData.map((w: WorkLevelData) => w.id).filter((id: string) => id != null))];
             
             // Query operator data
             const { data: operatorData, error: operatorError } = await supabase
@@ -394,17 +451,17 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             
             // Create operator map and filter for Warehouse department
             const operatorMap = new Map(
-              (operatorData || []).map((op: any) => [op.id, op])
+              (operatorData || []).map((op: OperatorData) => [op.id, op])
             );
             
-            const warehouseWork = workData.filter((work: any) => {
+            const warehouseWork = workData.filter((work: WorkLevelData) => {
               const operator = operatorMap.get(work.id);
-              return (operator as any)?.department === 'Warehouse';
+              return operator?.department === 'Warehouse';
             });
             
             // Group by date (simplified version)
             const dateGroups = new Map<string, number>();
-            warehouseWork.forEach((work: any) => {
+            warehouseWork.forEach((work: WorkLevelData) => {
               const date = new Date(work.latest_update).toISOString().split('T')[0];
               dateGroups.set(date, (dateGroups.get(date) || 0) + (work.move || 0));
             });
@@ -422,8 +479,8 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
               label: 'Warehouse Work Level',
               metadata: {
                 dateRange: { start: workStartDate, end: workEndDate },
-                totalMoves: warehouseWork.reduce((sum: number, w: any) => sum + (w.move || 0), 0),
-                uniqueOperators: new Set(warehouseWork.map((w: any) => w.id)).size,
+                totalMoves: warehouseWork.reduce((sum: number, w: WorkLevelData) => sum + (w.move || 0), 0),
+                uniqueOperators: new Set(warehouseWork.map((w: WorkLevelData) => w.id)).size,
                 optimized: false,
                 fallback: true
               }
@@ -491,7 +548,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
               const slotStart = new Date(startTime.getTime() + (i * intervalHours * 60 * 60 * 1000));
               const slotEnd = new Date(slotStart.getTime() + (intervalHours * 60 * 60 * 1000));
               
-              const count = transferData?.filter((transfer: any) => {
+              const count = transferData?.filter((transfer: TransferData) => {
                 const transferTime = new Date(transfer.tran_date);
                 return transferTime >= slotStart && transferTime < slotEnd;
               }).length || 0;
@@ -657,20 +714,22 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             }
             
             // 分離元數據和實際數據
-            const metadataEntry = historyData.find((item: any) => item.time_segment === 'metadata');
-            const chartData = historyData.filter((item: any) => item.time_segment !== 'metadata');
+            const metadataEntry = historyData.find((item: DatabaseRecord) => item.time_segment === 'metadata');
+            const chartData = historyData.filter((item: Record<string, unknown>) => item.time_segment !== 'metadata');
             
             // 處理圖表數據格式
-            const processedData = chartData.map((segment: any) => {
-              const dataPoint: any = {
+            const processedData = chartData.map((segment: DatabaseRecord) => {
+              const dataPoint: DatabaseRecord = {
                 time: segment.time_segment,
                 timestamp: segment.segment_start
               };
               
               // 將每個產品的數據添加到數據點中
-              if (segment.product_data) {
-                Object.entries(segment.product_data).forEach(([productCode, productInfo]: [string, any]) => {
-                  dataPoint[productCode] = productInfo.stock_level || 0;
+              if (segment.product_data && typeof segment.product_data === 'object') {
+                Object.entries(segment.product_data).forEach(([productCode, productInfo]: [string, unknown]) => {
+                  if (productInfo && typeof productInfo === 'object' && 'stock_level' in productInfo) {
+                    dataPoint[productCode] = (productInfo as { stock_level: number }).stock_level || 0;
+                  }
                 });
               }
               
@@ -743,7 +802,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             const totalCount = transferListData[0]?.total_count || 0;
             
             // Format the transfer records
-            const formattedTransfers = transferListData.map((transfer: any) => ({
+            const formattedTransfers = transferListData.map((transfer: DatabaseRecord) => ({
               tran_date: transfer.tran_date,
               plt_num: transfer.plt_num,
               operator_name: transfer.operator_name,
@@ -989,7 +1048,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             }
             
             // Transform the products data to match widget expectations
-            const transformedProducts = (progressData.products || []).map((product: any) => ({
+            const transformedProducts = (progressData.products || []).map((product: Record<string, unknown>) => ({
               code: product.code,
               required_qty: product.required_qty,
               completed_qty: product.finished_qty,

@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import { DatabaseRecord } from '@/lib/types/database';
 import { cacheLogger } from './logger';
 
 // Upstash Redis 配置類型
@@ -44,7 +45,7 @@ export function createRedisClient(config?: UpstashRedisConfig): Redis {
     });
   } else {
     // 傳統配置模式（本地開發）
-    const redisConfig: any = {
+    const redisConfig: DatabaseRecord = {
       host: config?.host || process.env.REDIS_HOST || 'localhost',
       port: config?.port || parseInt(process.env.REDIS_PORT || '6379'),
       password: config?.password || process.env.REDIS_PASSWORD,

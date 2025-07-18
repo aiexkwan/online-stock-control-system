@@ -5,6 +5,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { toast } from 'sonner';
 import { renderReactPDFToBlob, loadPDF } from '@/lib/services/unified-pdf-service';
 import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf';
@@ -162,9 +163,9 @@ export const usePdfGeneration = (): UsePdfGenerationReturn => {
         }
 
         return { blob: pdfBlob, url: uploadResult.publicUrl, error: null };
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(`Error generating PDF for pallet ${palletNum}:`, error);
-        return { blob: null, url: null, error: error.message };
+        return { blob: null, url: null, error: getErrorMessage(error) };
       }
     },
     []
@@ -449,9 +450,9 @@ export const usePdfGeneration = (): UsePdfGenerationReturn => {
           await mergeAndPrintPdfs(pdfArrayBuffers, printFileName);
           toast.success(`${pdfBlobs.length} QC label(s) generated and ready for printing.`);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('PDF printing error:', error);
-        toast.error(`PDF Printing Error: ${error.message}`);
+        toast.error(`PDF Printing Error: ${getErrorMessage(error)}`);
         throw error;
       }
     },

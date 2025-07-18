@@ -6,6 +6,7 @@
 'use client';
 
 import React from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { 
   BaseWidgetRendererProps,
   createErrorFallback,
@@ -58,7 +59,7 @@ export const ListWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
           <div className="h-full w-full p-4">
             <h3 className="mb-4 text-lg font-semibold">活動動態</h3>
             <div className="space-y-3 max-h-80 overflow-y-auto">
-              {(data || []).map((item: any, index: number) => (
+              {(data || []).map((item: DatabaseRecord, index: number) => (
                 <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
                   <div className="flex-shrink-0">
                     <TruckIcon className="h-5 w-5 text-blue-600" />
@@ -99,7 +100,7 @@ export const ListWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {tableData.map((row: any, index: number) => (
+                  {tableData.map((row: DatabaseRecord, index: number) => (
                     <tr key={index} className="border-b hover:bg-gray-50">
                       {columns.map((col: string) => (
                         <td key={col} className="px-3 py-2 text-gray-600">
@@ -129,7 +130,7 @@ export const ListWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
           <div className="h-full w-full p-4">
             <h3 className="mb-4 text-lg font-semibold">{config.title || '數據列表'}</h3>
             <div className="space-y-2 max-h-80 overflow-y-auto">
-              {listData.map((item: any, index: number) => (
+              {listData.map((item: DatabaseRecord, index: number) => (
                 <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
                   <div className="flex items-center space-x-3">
                     <DocumentArrowDownIcon className="h-4 w-4 text-gray-400" />

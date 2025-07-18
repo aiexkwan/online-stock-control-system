@@ -375,7 +375,7 @@ function UniversalErrorDemo() {
       case 'validation':
         return new Error('Invalid input provided');
       default:
-        return null;
+        return undefined;
     }
   };
   
@@ -436,6 +436,7 @@ function UniversalErrorDemo() {
             severity={errorType === 'auth' ? 'critical' : errorType === 'network' ? 'medium' : 'low'}
             showCard={false}
             retry={() => setErrorType('none')}
+            reset={() => window.location.reload()}
           />
         )}
       </CardContent>

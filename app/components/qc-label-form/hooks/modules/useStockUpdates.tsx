@@ -4,6 +4,7 @@
  */
 
 import { useCallback } from 'react';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { toast } from 'sonner';
 import type { ProductInfo } from '../../types';
 import { isProduction, isNotProduction } from '@/lib/utils/env';
@@ -112,11 +113,11 @@ export const useStockUpdates = (): UseStockUpdatesReturn => {
       }
 
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error updating stock/work levels:', error);
       return {
         success: false,
-        error: error.message || 'Error updating stock/work levels',
+        error: getErrorMessage(error) || 'Error updating stock/work levels',
       };
     }
   }, []);
@@ -164,11 +165,11 @@ export const useStockUpdates = (): UseStockUpdatesReturn => {
           totalRemainingInOrder: result.totalRemainingInOrder,
           emailNotification: result.emailNotification,
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Error processing ACO order enhancement:', error);
         return {
           success: false,
-          error: error.message || 'Error processing ACO order',
+          error: getErrorMessage(error) || 'Error processing ACO order',
         };
       }
     },

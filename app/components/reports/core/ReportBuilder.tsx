@@ -49,7 +49,7 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
     setFilters(defaultFilters);
   }, [config]);
 
-  const handleFilterChange = (filterId: string, value: any) => {
+  const handleFilterChange = (filterId: string, value: unknown) => {
     setFilters(prev => ({
       ...prev,
       [filterId]: value,

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { createClient } from '@/app/utils/supabase/client';
 
 interface ProductInfo {
@@ -125,9 +126,9 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
           onQuantityChange(productData.standard_qty);
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // 如果是取消請求，不處理
-      if (error.name === 'AbortError' || abortController.signal.aborted) {
+      if ((error as Error).name === 'AbortError' || abortController.signal.aborted) {
         (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[ProductCodeInput] Search cancelled or aborted');
         return;
@@ -136,7 +137,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
       console.error('[ProductCodeInput] Search error:', error);
       onProductInfoChange(null);
 
-      if (error.message?.includes('aborted')) {
+      if (getErrorMessage(error)?.includes('aborted')) {
         // 被取消的請求，不顯示錯誤
         return;
       } else {

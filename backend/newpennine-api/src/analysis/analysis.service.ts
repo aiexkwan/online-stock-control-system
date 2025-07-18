@@ -253,7 +253,7 @@ export class AnalysisService {
   /**
    * Process raw order data into statistics
    */
-  private processOrderStats(orders: any[]): any {
+  private processOrderStats(orders: Record<string, unknown>[]): any {
     const totalOrders = orders.length;
 
     // Calculate completion based on finished_qty vs required_qty
@@ -395,7 +395,7 @@ export class AnalysisService {
       }
     }
 
-    const result: any = {
+    const result: Record<string, unknown> = {
       id,
       title,
       value,
@@ -459,7 +459,7 @@ export class AnalysisService {
       );
     }
 
-    return (data || []).map((row: any) => ({
+    return (data || []).map((row: Record<string, unknown>) => ({
       date: row.date,
       value: row.value,
       previousValue: row.previous_value,
@@ -507,7 +507,7 @@ export class AnalysisService {
    * Process raw data into chart data points
    */
   private processChartData(
-    orders: any[],
+    orders: Record<string, unknown>[],
     timeframe: ChartTimeframe,
     metric: ChartMetric,
     limit: number,
@@ -569,7 +569,7 @@ export class AnalysisService {
    * Group orders by timeframe
    */
   private groupByTimeframe(
-    orders: any[],
+    orders: Record<string, unknown>[],
     timeframe: ChartTimeframe,
   ): Record<string, any[]> {
     const grouped: Record<string, any[]> = {};
@@ -944,7 +944,7 @@ export class AnalysisService {
    * Process void records data for analysis
    */
   private processVoidRecordsAnalysis(
-    voidRecords: any[],
+    voidRecords: Record<string, unknown>[],
     query: VoidRecordsAnalysisQueryDto,
   ): {
     totalVoidQty: number;
@@ -1017,7 +1017,7 @@ export class AnalysisService {
    * Process reason distribution for pie chart
    */
   private processReasonDistribution(
-    voidRecords: any[],
+    voidRecords: Record<string, unknown>[],
     totalVoidQty: number,
   ): VoidReasonDistributionDto[] {
     const reasonMap = new Map<string, { qty: number; count: number }>();
@@ -1052,7 +1052,7 @@ export class AnalysisService {
    * Process trend data for line/bar chart
    */
   private processTrendData(
-    voidRecords: any[],
+    voidRecords: Record<string, unknown>[],
     groupBy: 'day' | 'week' | 'month',
   ): VoidTrendDataDto[] {
     const trendMap = new Map<string, { qty: number; count: number }>();
@@ -1097,7 +1097,7 @@ export class AnalysisService {
    * Process top voided products
    */
   private processTopVoidedProducts(
-    voidRecords: any[],
+    voidRecords: Record<string, unknown>[],
     totalVoidQty: number,
     limit: number,
   ): TopVoidedProductDto[] {
@@ -1134,7 +1134,7 @@ export class AnalysisService {
    * Process user activity
    */
   private processUserActivity(
-    voidRecords: any[],
+    voidRecords: Record<string, unknown>[],
     totalVoidQty: number,
   ): VoidUserActivityDto[] {
     const userMap = new Map<
@@ -1173,7 +1173,7 @@ export class AnalysisService {
   /**
    * Process detailed records for display
    */
-  private processDetailedRecords(voidRecords: any[]): VoidRecordDto[] {
+  private processDetailedRecords(voidRecords: Record<string, unknown>[]): VoidRecordDto[] {
     return voidRecords.map((record) => ({
       uuid: record.uuid,
       plt_num: record.plt_num,

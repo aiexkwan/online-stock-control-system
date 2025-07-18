@@ -1,4 +1,5 @@
 import React from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Package, TrendingDown, Clock, ChevronRight, RefreshCw } from 'lucide-react';
@@ -169,7 +170,7 @@ export function AnomalyDisplay({ anomalies, onRefresh, onViewDetails }: AnomalyD
 }
 
 // 格式化數據預覽
-function formatDataPreview(type: string, item: any): string {
+function formatDataPreview(type: string, item: DatabaseRecord): string {
   switch (type) {
     case 'stuck_pallets':
       return `Pallet ${item.plt_num} (${item.product_code}) - ${item.days_stuck} days in ${item.current_location || 'Unknown'}`;

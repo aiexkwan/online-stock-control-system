@@ -29,7 +29,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json(
         {
           success: false,
-          error: (error as { message: string }).message,
+          error: getErrorMessage(error),
         },
         { status: 500 }
       );
@@ -42,12 +42,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       result: data,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Cleanup API] Unexpected error:', error);
     return NextResponse.json(
       {
         success: false,
-        error: (error as { message: string }).message || 'Internal server error',
+        error: getErrorMessage(error) || 'Internal server error',
       },
       { status: 500 }
     );
@@ -79,11 +79,11 @@ export async function GET() {
       stats,
       message: 'Use POST method to trigger cleanup',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
       {
         success: false,
-        error: (error as { message: string }).message,
+        error: getErrorMessage(error),
       },
       { status: 500 }
     );

@@ -431,7 +431,7 @@ export default function OrderLoadingPage() {
   };
 
   // Handle search selection (same as stock-transfer)
-  const handleSearchSelect = async (result: any) => {
+  const handleSearchSelect = async (result: Record<string, unknown>) => {
     if (!selectedOrderRef) {
       toast.error('Please select an order first');
       return;

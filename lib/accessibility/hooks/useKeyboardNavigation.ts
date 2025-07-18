@@ -6,6 +6,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { UseKeyboardNavigationReturn, KeyboardNavigationConfig } from '../types';
 import { useAccessibility } from '../providers/AccessibilityProvider';
 import { globalFocusManager } from '../utils/focus-helpers';
@@ -175,7 +176,7 @@ export function useKeyboardNavigation(
       event.preventDefault();
       shortcutAction();
     }
-  }, [mergedConfig, containerRef]);
+  }, [mergedConfig, containerRef, navigateToFirst, navigateToLast, navigateToNext, navigateToPrevious]);
 
   /**
    * 處理鍵盤釋放事件
@@ -286,12 +287,12 @@ export function useKeyboardNavigation(
   useEffect(() => {
     const element = containerRef?.current || document;
     
-    element.addEventListener('keydown', handleKeyDown as any);
-    element.addEventListener('keyup', handleKeyUp as any);
+    element.addEventListener('keydown', handleKeyDown as EventListener);
+    element.addEventListener('keyup', handleKeyUp as EventListener);
 
     return () => {
-      element.removeEventListener('keydown', handleKeyDown as any);
-      element.removeEventListener('keyup', handleKeyUp as any);
+      element.removeEventListener('keydown', handleKeyDown as EventListener);
+      element.removeEventListener('keyup', handleKeyUp as EventListener);
     };
   }, [handleKeyDown, handleKeyUp, containerRef]);
 
@@ -373,7 +374,7 @@ export function useDirectionalNavigation(options: {
   columns?: number;
   wrap?: boolean;
   onNavigate?: (index: number) => void;
-} = {} as any) {
+}) {
   const { containerRef, itemSelector = '[tabindex]', columns = 1, wrap = true, onNavigate } = options;
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -498,9 +499,9 @@ export function useDirectionalNavigation(options: {
  */
 export function useSearchableNavigation(options: {
   items: Array<{ id: string; text: string; element?: HTMLElement }>;
-  onSelect?: (item: any) => void;
+  onSelect?: (item: DatabaseRecord) => void;
   searchDelay?: number;
-} = {} as any) {
+}) {
   const { items, onSelect, searchDelay = 1000 } = options;
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredItems, setFilteredItems] = useState(items);

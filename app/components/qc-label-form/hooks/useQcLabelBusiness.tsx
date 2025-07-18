@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { MIN_ACO_ORDER_REF_LENGTH } from '../constants';
 // 導入新的模組化 hooks
 import { useUserId } from '@/app/hooks/useUserId';
@@ -414,9 +415,9 @@ export const useQcLabelBusiness = ({
             onProductInfoReset();
           }
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         // console.error('Error during print process:', error); // 保留錯誤日誌供生產環境調試
-        toast.error(`Print process failed: ${error.message}`);
+        toast.error(`Print process failed: ${getErrorMessage(error)}`);
 
         // 發生錯誤時釋放已保留的托盤編號（如果有的話）
         if (sortedPalletNumbers && sortedPalletNumbers.length > 0) {

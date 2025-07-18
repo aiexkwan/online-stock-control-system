@@ -74,7 +74,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     // 轉換文件為 Blob
     const arrayBuffer = await file.arrayBuffer();
-    const blob = new Blob([arrayBuffer as string], { type: 'application/pdf' });
+    const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
 
     process.env.NODE_ENV !== 'production' &&
       console.log(
@@ -98,7 +98,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       console.error('[Upload PDF API] Storage 上傳錯誤:', uploadError);
       return NextResponse.json(
         {
-          error: `Storage upload failed: ${(uploadError as { message: string }).message}`,
+          error: `Storage upload failed: ${getErrorMessage(uploadError)}`,
         },
         { status: 500 }
       );
@@ -139,11 +139,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       path: uploadData.path,
       bucket: storagePath,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Upload PDF API] 意外錯誤:', error);
     return NextResponse.json(
       {
-        error: `Server error: ${(error as { message: string }).message}`,
+        error: `Server error: ${getErrorMessage(error)}`,
       },
       { status: 500 }
     );

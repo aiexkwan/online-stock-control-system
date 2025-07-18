@@ -4,6 +4,8 @@
  */
 
 import { getExcelJS } from '@/lib/utils/exceljs-dynamic';
+import { DatabaseRecord } from '@/lib/types/database';
+import { DatabaseRecord } from '@/lib/types/database';
 import type { Workbook, Worksheet } from '@/lib/utils/exceljs-dynamic';
 import {
   ReportGenerator,
@@ -128,7 +130,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
   private async addDataSheet(
     workbook: Workbook,
     section: any,
-    data: any[],
+    data: Record<string, unknown>[],
     config: ReportConfig
   ): Promise<void> {
     // 使用簡短的工作表名稱（Excel 限制 31 字符）
@@ -159,7 +161,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
     worksheet.addRow([]);
 
     // 設置列配置
-    worksheet.columns = columns.map((col: any) => ({
+    worksheet.columns = columns.map((col: Record<string, unknown>) => ({
       header: col.label,
       key: col.id,
       width: col.width ? col.width / 7 : 15, // 轉換為 ExcelJS 寬度
@@ -167,7 +169,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
 
     // 數據行
     data.forEach(item => {
-      const rowData: any = {};
+      const rowData: DatabaseRecord = {};
       columns.forEach((col: any) => {
         rowData[col.id] = this.formatValue(item[col.id], col.format || col.type);
       });
@@ -214,7 +216,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
 
   private async addMetadataSheet(
     workbook: Workbook,
-    metadata: any,
+    metadata: DatabaseRecord[],
     config: ReportConfig
   ): Promise<void> {
     const worksheet = workbook.addWorksheet('Info');
@@ -269,7 +271,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
     addBorders(worksheet, filterStartRow, 1, lastRow, 2);
   }
 
-  private applyStyles(worksheet: Worksheet, columns: any[], config: ReportConfig): void {
+  private applyStyles(worksheet: Worksheet, columns: Record<string, unknown>[], config: ReportConfig): void {
     // 應用列格式
     columns.forEach((col: any, index: number) => {
       const colNum = index + 1;
@@ -292,7 +294,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
     }
   }
 
-  private inferColumns(dataItem: any): any[] {
+  private inferColumns(dataItem: any): Record<string, unknown>[] {
     return Object.keys(dataItem).map(key => ({
       id: key,
       label: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
@@ -300,7 +302,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
     }));
   }
 
-  private formatValue(value: any, format?: string): any {
+  private formatValue(value: unknown, format?: string): any {
     if (value === null || value === undefined) {
       return '';
     }
@@ -319,8 +321,8 @@ export class ExcelGeneratorNew implements ReportGenerator {
     }
   }
 
-  private calculateTotals(data: any[], columns: any[]): any[] {
-    const totals: any = { [columns[0].id]: 'Total' };
+  private calculateTotals(data: Record<string, unknown>[], columns: Record<string, unknown>[]): Record<string, unknown>[] {
+    const totals: DatabaseRecord = { [columns[0].id]: 'Total' };
 
     for (let i = 1; i < columns.length; i++) {
       const col = columns[i];

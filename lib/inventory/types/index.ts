@@ -10,6 +10,9 @@ export * from './transaction.types';
 // Re-export location mapper types with correct syntax
 export type { DatabaseLocationColumn, StandardLocation } from '../utils/locationMapper';
 
+// Database types
+export type DatabaseRecord = Record<string, unknown>;
+
 // Additional types for services
 export interface InventorySnapshot {
   timestamp: string;

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { DatabaseRecord } from '@/lib/types/database';
 import { SupabaseService } from '../supabase/supabase.service';
 import { SupabaseClient } from '@supabase/supabase-js';
 import {
@@ -39,7 +40,7 @@ export class ProductsService {
 
       // Count products per type
       const typeCounts = new Map<string, number>();
-      data?.forEach((item: any) => {
+      data?.forEach((item: DatabaseRecord) => {
         const type = item.type;
         typeCounts.set(type, (typeCounts.get(type) || 0) + 1);
       });

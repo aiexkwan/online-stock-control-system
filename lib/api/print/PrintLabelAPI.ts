@@ -4,6 +4,7 @@
  */
 
 import { DataAccessLayer } from '../core/DataAccessStrategy';
+import { DatabaseRecord } from '@/lib/types/database';
 import { createClient } from '@/app/utils/supabase/client';
 // Note: The following imports are commented out as the functions may have been moved
 // import { qcLabelGeneration, grnLabelGeneration } from '@/app/actions/qcActions';
@@ -168,7 +169,7 @@ export class PrintOperationsAPI {
   static async batchPrint(
     labels: Array<{
       type: 'qc' | 'grn';
-      data: any;
+      data: DatabaseRecord[];
     }>
   ) {
     // Process labels in parallel with concurrency limit

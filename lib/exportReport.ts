@@ -1,5 +1,6 @@
 
 import { saveAs } from 'file-saver';
+import { DatabaseRecord } from '@/lib/types/database';
 import {
   AcoProductData,
   GrnReportPageData,
@@ -222,7 +223,7 @@ export async function exportGrnReport(data: GrnReportPageData) {
     wrapText: true,
   };
   const right: Partial<any> = { horizontal: 'right', vertical: 'middle' };
-  const grayFill: any = {
+  const grayFill: DatabaseRecord = {
     type: 'pattern',
     pattern: 'solid',
     fgColor: { argb: 'FFDCDCDC' },

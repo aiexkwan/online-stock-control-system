@@ -5,6 +5,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
+import { DatabaseRecord } from '@/lib/types/database';
 import { AcoQueryDto } from './dto/aco-query.dto';
 import { AcoResponseDto, AcoRecordDto } from './dto/aco-response.dto';
 import { GrnQueryDto } from './dto/grn-query.dto';
@@ -276,7 +277,7 @@ export class OrdersService {
       }
 
       const stats = data.reduce(
-        (acc: Record<string, number>, record: any) => {
+        (acc: Record<string, number>, record: DatabaseRecord) => {
           acc[record.status] = (acc[record.status] || 0) + 1;
           return acc;
         },
@@ -312,7 +313,7 @@ export class OrdersService {
       }
 
       const stats = data.reduce(
-        (acc: Record<string, number>, record: any) => {
+        (acc: Record<string, number>, record: DatabaseRecord) => {
           acc[record.status] = (acc[record.status] || 0) + 1;
           return acc;
         },

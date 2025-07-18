@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { createClient } from '@/lib/supabase';
 import { toast } from 'sonner';
 import {
@@ -13,7 +14,7 @@ import { isNotProduction } from '@/lib/utils/env';
 
 // Cache configuration
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-const cache = new Map<string, { data: any; timestamp: number }>();
+const cache = new Map<string, { data: DatabaseRecord[]; timestamp: number }>();
 
 function getCachedData<T>(key: string): T | null {
   const cached = cache.get(key);
@@ -27,7 +28,7 @@ function getCachedData<T>(key: string): T | null {
   return cached.data as T;
 }
 
-function setCachedData(key: string, data: any) {
+function setCachedData(key: string, data: DatabaseRecord[]) {
   cache.set(key, { data, timestamp: Date.now() });
 }
 

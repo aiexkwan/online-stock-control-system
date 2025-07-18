@@ -19,12 +19,26 @@ export function PrintQueueMonitor({ className, compact = false }: PrintQueueMoni
   const { queueStatus, cancelJob } = usePrinting();
   const [activeJobs, setActiveJobs] = useState<PrintJobStatus[]>([]);
   const [completedJobs, setCompletedJobs] = useState<PrintJobStatus[]>([]);
-  const [statistics, setStatistics] = useState<any>(null);
+  const [statistics, setStatistics] = useState<{
+    totalJobs: number;
+    completedJobs: number;
+    failedJobs: number;
+    averageProcessingTime: number;
+  } | null>(null);
 
   useEffect(() => {
-    let monitor: any;
+    let monitor: {
+      getActiveJobs: () => Promise<PrintJobStatus[]>;
+      getCompletedJobs: () => Promise<PrintJobStatus[]>;
+      getStatistics: () => Promise<{
+        totalJobs: number;
+        completedJobs: number;
+        failedJobs: number;
+        averageProcessingTime: number;
+      }>;
+    };
     let interval: NodeJS.Timeout;
-    let updateJobsHandler: any;
+    let updateJobsHandler: (() => Promise<void>);
 
     const initializeMonitor = async () => {
       try {

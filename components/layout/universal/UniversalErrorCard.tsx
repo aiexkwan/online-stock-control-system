@@ -131,7 +131,7 @@ export function UniversalErrorCard({
   const cardProps = React.useMemo(() => {
     const baseProps = {
       className: className,
-      theme: theme.name,
+      theme: theme.name as 'admin' | 'warehouse' | 'production' | 'neutral' | 'qc' | 'grn',
     };
     
     if (isMobile) {
@@ -200,7 +200,7 @@ export function UniversalSuccessCard({
   
   const cardProps = {
     className,
-    theme: theme.name,
+    theme: theme.name as 'admin' | 'warehouse' | 'production' | 'neutral' | 'qc' | 'grn',
     ...(isMobile && {
       size: 'sm' as const,
       padding: 'sm' as const,
@@ -293,7 +293,8 @@ export const UniversalErrorUtils = {
       error={error}
       variant="widget"
       widgetName={componentName}
-      retry={onRetry}
+      retry={onRetry || (() => {})}
+      reset={() => window.location.reload()}
       title={`${componentName} Error`}
     />
   ),

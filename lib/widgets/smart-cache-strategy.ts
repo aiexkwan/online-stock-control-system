@@ -41,13 +41,13 @@ export interface CacheKeyParams {
     to: Date;
   };
   userId?: string;
-  filters?: Record<string, any>;
+  filters?: Record<string, string | number | boolean | Date>;
 }
 
 /**
  * Cache entry with metadata
  */
-export interface CacheEntry<T = any> {
+export interface CacheEntry<T = Record<string, unknown> | unknown[]> {
   data: T;
   timestamp: number;
   ttl: number;
@@ -267,7 +267,7 @@ export class PredictivePreloader {
    */
   schedulePreload(
     widgetId: string,
-    loadFunction: () => Promise<any>,
+    loadFunction: () => Promise<Record<string, unknown> | unknown[]>,
     prediction: {
       probability: number;
       timeUntilNeeded: number;

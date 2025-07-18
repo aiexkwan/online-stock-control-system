@@ -13,8 +13,7 @@ interface UserActivityHeatmapProps {
 const UserActivityHeatmap = React.memo(function UserActivityHeatmap({
   timeFrame,
 }: UserActivityHeatmapProps) {
-  // Check feature flag
-  const isGraphQLAnalysisEnabled = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS === 'true';
+  // Feature flag removed - using REST API only
 
   // Use useMemo to prevent date objects from changing on every render
   const variables = useMemo(() => {
@@ -31,7 +30,7 @@ const UserActivityHeatmap = React.memo(function UserActivityHeatmap({
   const { data, loading, error } = { data: null as any, loading: false, error: null };
 
   const heatmapData = useMemo(() => {
-    if (!isGraphQLAnalysisEnabled || !data?.historyCollection?.edges) return [];
+    if (!data?.historyCollection?.edges) return [];
 
     // Process data into hourly buckets for each user
     const activityMap = new Map<string, Map<number, number>>();
@@ -58,18 +57,9 @@ const UserActivityHeatmap = React.memo(function UserActivityHeatmap({
       .slice(0, 10);
 
     return userActivities;
-  }, [data, isGraphQLAnalysisEnabled]);
+  }, [data]);
 
-  if (!isGraphQLAnalysisEnabled) {
-    return (
-      <Alert>
-        <AlertCircle className='h-4 w-4' />
-        <AlertDescription>
-          GraphQL analysis is currently disabled. Enable NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS to view user activity data.
-        </AlertDescription>
-      </Alert>
-    );
-  }
+  // Feature flag removed - using REST API only
 
   if (loading) {
     return (

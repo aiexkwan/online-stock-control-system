@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { render, screen, waitFor, renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act } from 'react';
@@ -255,7 +256,7 @@ describe('SSR Integration Tests', () => {
 
   describe('Critical Widgets SSR Support', () => {
     it.skip('StatsCard 應該正確使用 SSR 數據', () => {
-      const mockWidget: any = {
+      const mockWidget: DatabaseRecord = {
         id: 'stats-1',
         type: 'stats-card',
         title: 'Total Pallets',
@@ -288,7 +289,7 @@ describe('SSR Integration Tests', () => {
     });
 
     it.skip('應該優雅降級到 CSR 當沒有預取數據時', () => {
-      const mockWidget: any = {
+      const mockWidget: DatabaseRecord = {
         id: 'stats-1',
         type: 'stats-card',
         title: 'Total Pallets',

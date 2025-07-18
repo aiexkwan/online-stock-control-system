@@ -33,8 +33,7 @@ interface InventoryTurnoverAnalysisProps {
 }
 
 export default function InventoryTurnoverAnalysis({ timeFrame }: InventoryTurnoverAnalysisProps) {
-  // Check feature flag
-  const isGraphQLAnalysisEnabled = process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS === 'true';
+  // Feature flag removed - using REST API only
 
   // Temporary disabled - migrated to REST API
   const data = null;
@@ -124,15 +123,15 @@ export default function InventoryTurnoverAnalysis({ timeFrame }: InventoryTurnov
       )}>
         <div className="text-center">
           <div className={cn(textClasses['label-small'], 'font-medium')} style={{ color: semanticColors.error.DEFAULT }}>High Demand Products</div>
-          <div className={cn(textClasses['label-small'], 'text-foreground')}>{chartData.filter((d: any) => (d as { status: string }).status === 'high-demand').length} items</div>
+          <div className={cn(textClasses['label-small'], 'text-foreground')}>{chartData.filter((d: Record<string, unknown>) => (d as { status: string }).status === 'high-demand').length} items</div>
         </div>
         <div className="text-center">
           <div className={cn(textClasses['label-small'], 'font-medium')} style={{ color: semanticColors.success.DEFAULT }}>Balanced Supply</div>
-          <div className={cn(textClasses['label-small'], 'text-foreground')}>{chartData.filter((d: any) => (d as { status: string }).status === 'balanced').length} items</div>
+          <div className={cn(textClasses['label-small'], 'text-foreground')}>{chartData.filter((d: Record<string, unknown>) => (d as { status: string }).status === 'balanced').length} items</div>
         </div>
         <div className="text-center">
           <div className={cn(textClasses['label-small'], 'font-medium')} style={{ color: semanticColors.warning.DEFAULT }}>Overstocked</div>
-          <div className={cn(textClasses['label-small'], 'text-foreground')}>{chartData.filter((d: any) => (d as { status: string }).status === 'overstocked').length} items</div>
+          <div className={cn(textClasses['label-small'], 'text-foreground')}>{chartData.filter((d: Record<string, unknown>) => (d as { status: string }).status === 'overstocked').length} items</div>
         </div>
       </div>
     </div>

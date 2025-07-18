@@ -1,3 +1,5 @@
+import { DatabaseRecord } from '@/lib/types/database';
+
 // 多輪對話上下文管理系統
 
 export interface Entity {
@@ -12,7 +14,7 @@ export interface ConversationContext {
   entities: Entity[];
   lastQueryType?: string;
   lastQueryTime?: string;
-  lastResults?: any[];
+  lastResults?: Record<string, unknown>[];
   queryHistory: {
     question: string;
     sql: string;
@@ -33,7 +35,7 @@ export class ConversationContextManager {
   }
 
   // 從查詢結果中提取實體
-  extractEntitiesFromResults(results: any[], sql: string): Entity[] {
+  extractEntitiesFromResults(results: Record<string, unknown>[], sql: string): Entity[] {
     const entities: Entity[] = [];
     const timestamp = new Date().toISOString();
 
@@ -95,7 +97,7 @@ export class ConversationContextManager {
   }
 
   // 更新上下文
-  updateContext(question: string, sql: string, results: any[]) {
+  updateContext(question: string, sql: string, results: Record<string, unknown>[]) {
     // 提取新實體
     const newEntities = this.extractEntitiesFromResults(results, sql);
 
@@ -137,9 +139,9 @@ export class ConversationContextManager {
   }
 
   // 解析引用
-  resolveReferences(question: string): { resolved: string; references: any[] } {
+  resolveReferences(question: string): { resolved: string; references: Record<string, unknown>[] } {
     let resolved = question;
-    const references: any[] = [];
+    const references: Record<string, unknown>[] = [];
 
     // 代詞映射表
     const pronounMappings = [
@@ -234,7 +236,7 @@ export class ConversationContextManager {
   }
 
   // 從結果行提取實體
-  private extractEntityFromRow(row: any): Entity {
+  private extractEntityFromRow(row: DatabaseRecord): Entity {
     // 優先級：產品 > 訂單 > 棧板
     if (row.product_code) {
       return {

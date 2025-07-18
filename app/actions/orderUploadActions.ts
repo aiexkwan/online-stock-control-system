@@ -1,6 +1,8 @@
 'use server';
 
 import { createClient } from '@/app/utils/supabase/server';
+import { DatabaseRecord } from '@/lib/types/database';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { AssistantService } from '@/lib/services/assistantService';
 import { SYSTEM_PROMPT } from '@/lib/openai-assistant-config';
 import crypto from 'crypto';
@@ -34,13 +36,13 @@ const ACO_PRODUCT_CODES = [
 ];
 
 // 簡單的內存緩存
-const fileCache = new Map<string, any>();
+const fileCache = new Map<string, { data: OrderAnalysisResult; timestamp: number }>();
 const CACHE_EXPIRY = 30 * 60 * 1000; // 30分鐘
 
 interface OrderAnalysisResult {
   success: boolean;
-  data?: any;
-  extractedData?: any[];
+  data?: EnhancedOrderData;
+  extractedData?: Record<string, unknown>[];
   recordCount?: number;
   cached?: boolean;
   processingTime?: number;
@@ -53,6 +55,7 @@ interface OrderAnalysisResult {
     hasUnitPrices: boolean;
   };
   error?: string;
+  orderData?: EnhancedOrderData;
 }
 
 interface EnhancedOrderData {
@@ -77,7 +80,7 @@ function generateFileHash(buffer: ArrayBuffer): string {
 }
 
 // 檢查緩存
-function getCachedResult(fileHash: string): any | null {
+function getCachedResult(fileHash: string): OrderAnalysisResult | null {
   const cached = fileCache.get(fileHash);
   if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY) {
     return cached.data;
@@ -89,7 +92,7 @@ function getCachedResult(fileHash: string): any | null {
 }
 
 // 設置緩存
-function setCachedResult(fileHash: string, data: any): void {
+function setCachedResult(fileHash: string, data: DatabaseRecord[]): void {
   fileCache.set(fileHash, {
     data,
     timestamp: Date.now(),
@@ -124,15 +127,15 @@ async function storeEnhancedOrderData(
   orderData: EnhancedOrderData,
   uploadedBy: string,
   tokenUsed: number
-): Promise<any[]> {
+): Promise<Record<string, unknown>[]> {
   const supabase = await createClient();
-  let insertResults: any[] = [];
+  let insertResults: Record<string, unknown>[] = [];
 
   const tokenPerRecord = Math.ceil(tokenUsed / orderData.products.length);
 
   // 準備插入資料
   const orderRecords = orderData.products.map(product => {
-    const record: any = {
+    const record: DatabaseRecord = {
       order_ref: String(orderData.order_ref),
       account_num: orderData.account_num || '-',
       delivery_add: orderData.delivery_add || '-',
@@ -162,7 +165,7 @@ async function storeEnhancedOrderData(
 
   if (error) {
     console.error('[storeEnhancedOrderData] Database insert failed:', error);
-    throw new Error(`資料庫插入失敗: ${error.message}`);
+    throw new Error(`資料庫插入失敗: ${getErrorMessage(error)}`);
   }
 
   insertResults = data || [];
@@ -261,9 +264,9 @@ async function sendEmailNotification(
 
     const emailResponse = await sendOrderCreatedEmail(emailRequestBody);
     return emailResponse;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[sendEmailNotification] Error:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -298,7 +301,7 @@ export async function analyzeOrderPDF(
     // 檢查緩存
     const cachedResult = getCachedResult(fileHash);
     if (cachedResult) {
-      const cachedExtractedData = cachedResult.orderData.products.map((product: any) => ({
+      const cachedExtractedData = cachedResult.orderData.products.map((product: Record<string, unknown>) => ({
         order_ref: cachedResult.orderData.order_ref,
         account_num: cachedResult.orderData.account_num,
         delivery_add: cachedResult.orderData.delivery_add,
@@ -345,8 +348,8 @@ export async function analyzeOrderPDF(
     let orderData: EnhancedOrderData;
     try {
       orderData = assistantService.parseAssistantResponse(result);
-    } catch (parseError: any) {
-      throw new Error(`Failed to parse assistant response: ${parseError.message}`);
+    } catch (parseError: unknown) {
+      throw new Error(`Failed to parse assistant response: ${getErrorMessage(parseError)}`);
     }
 
     // 估算 token 使用量
@@ -411,7 +414,7 @@ export async function analyzeOrderPDF(
         hasUnitPrices: orderData.products.some(p => !!p.unit_price && p.unit_price !== '-'),
       },
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[analyzeOrderPDF] Analysis failed:', error);
 
     // 清理資源
@@ -424,7 +427,7 @@ export async function analyzeOrderPDF(
 
     return {
       success: false,
-      error: error.message || 'PDF analysis failed',
+      error: getErrorMessage(error) || 'PDF analysis failed',
     };
   }
 }

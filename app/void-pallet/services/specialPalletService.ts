@@ -72,7 +72,7 @@ export async function updateACORecord(
       .single();
 
     if (findError) {
-      if (findError.code === 'PGRST116') {
+      if ((findError as { code?: string }).code === 'PGRST116') {
         isNotProduction() &&
           isNotProduction() &&
           console.log(`[ACO Update] No record found for ref=${refNumber}, code=${productCode}`);
@@ -112,11 +112,11 @@ export async function updateACORecord(
         `[ACO Update] Successfully updated: new_finished_qty=${newFinishedQty}, new_remain_qty=${newRemainQty}`
       );
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[ACO Update] Error:', error);
     return {
       success: false,
-      error: `Failed to update ACO record: ${(error as { message: string }).message}`,
+      error: `Failed to update ACO record: ${getErrorMessage(error)}`,
     };
   }
 }
@@ -195,11 +195,11 @@ export async function deleteGRNRecord(
       isNotProduction() &&
       console.log(`[GRN Delete] Successfully deleted ${deletedRecord.length} GRN record(s)`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[GRN Delete] Error:', error);
     return {
       success: false,
-      error: `Failed to delete GRN record: ${(error as { message: string }).message}`,
+      error: `Failed to delete GRN record: ${getErrorMessage(error)}`,
     };
   }
 }

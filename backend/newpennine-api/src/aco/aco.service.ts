@@ -102,7 +102,7 @@ export class AcoService {
       if (!rpcError && rpcData) {
         this.logger.debug('Using RPC function for ACO references');
         return {
-          references: rpcData.map((item: any) => item.aco_ref),
+          references: rpcData.map((item: Record<string, unknown>) => item.aco_ref),
           total: rpcData.length,
           offset: query.offset || 0,
           limit: query.limit || 50,

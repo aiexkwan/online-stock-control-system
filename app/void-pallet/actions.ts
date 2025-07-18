@@ -1,6 +1,8 @@
 'use server';
 
 import { createClient } from '@/app/utils/supabase/server';
+import { DatabaseRecord } from '@/lib/types/database';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { clockNumberToEmail, emailToClockNumber } from '@/app/utils/authUtils';
 import { LocationMapper } from '@/lib/inventory/utils/locationMapper';
 import { createInventoryService } from '@/lib/inventory/services';
@@ -35,7 +37,7 @@ async function getUserIdFromEmail(email: string): Promise<number | null> {
       console.log(`[getUserIdFromEmail] Query result:`, { data, error });
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if ((error as any).code === 'PGRST116') {
         // No user found with this email
         process.env.NODE_ENV !== 'production' &&
           console.log(`[getUserIdFromEmail] No user found for email: ${email}`);
@@ -49,7 +51,7 @@ async function getUserIdFromEmail(email: string): Promise<number | null> {
       console.log(`[getUserIdFromEmail] Found user ID: ${userId} for email: ${email}`);
 
     return userId || null;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting user ID from email:', error);
     return null;
   }
@@ -119,7 +121,7 @@ async function updateACORecord(
       console.log(`[ACO Update] Query result:`, { acoRecord, findError });
 
     if (findError) {
-      if (findError.code === 'PGRST116') {
+      if ((findError as any).code === 'PGRST116') {
         process.env.NODE_ENV !== 'production' &&
           console.log(`[ACO Update] No record found for ref=${refNumber}, code=${productCode}`);
 
@@ -182,11 +184,11 @@ async function updateACORecord(
       );
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[ACO Update] Error updating ACO record:', error);
     return {
       success: false,
-      error: `Failed to update ACO record: ${(error as { message: string }).message}`,
+      error: `Failed to update ACO record: ${getErrorMessage(error)}`,
     };
   }
 }
@@ -238,7 +240,7 @@ export async function verifyPasswordWithSupabaseAuth(
     });
 
     if (signInError) {
-      if ((signInError as { message: string }).message.includes('Invalid login credentials')) {
+      if (getErrorMessage(signInError).includes('Invalid login credentials')) {
         return {
           success: false,
           error: 'Incorrect password, please try again',
@@ -254,7 +256,7 @@ export async function verifyPasswordWithSupabaseAuth(
       success: true,
       clockNumber,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in verifyPasswordWithSupabaseAuth:', error);
     return {
       success: false,
@@ -280,7 +282,7 @@ async function getLatestPalletLocation(plt_num: string): Promise<string | null> 
       .single();
 
     if (error) {
-      if (error.code === 'PGRST116') {
+      if ((error as any).code === 'PGRST116') {
         // No history record found, return null
         return null;
       }
@@ -288,7 +290,7 @@ async function getLatestPalletLocation(plt_num: string): Promise<string | null> 
     }
 
     return data?.loc || null;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error getting latest pallet location:', error);
     return null;
   }
@@ -373,11 +375,11 @@ export async function searchPalletAction(params: SearchParams): Promise<SearchRe
     };
 
     return { success: true, data: palletInfo };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error searching pallet:', error);
     return {
       success: false,
-      error: `Search failed: ${(error as { message: string }).message || 'Unknown error'}`,
+      error: `Search failed: ${getErrorMessage(error) || 'Unknown error'}`,
     };
   }
 }
@@ -441,11 +443,11 @@ export async function recordHistoryAction(
     if (error) throw error;
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error recording history:', error);
     return {
       success: false,
-      error: `Failed to record history: ${(error as { message: string }).message}`,
+      error: `Failed to record history: ${getErrorMessage(error)}`,
     };
   }
 }
@@ -551,11 +553,11 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
         'Void Pallet Fail',
         palletInfo.plt_num,
         palletInfo.plt_loc,
-        `Update failed: ${(updateError as { message: string }).message}`
+        `Update failed: ${getErrorMessage(updateError)}`
       );
       return {
         success: false,
-        error: `Failed to update pallet: ${(updateError as { message: string }).message}`,
+        error: `Failed to update pallet: ${getErrorMessage(updateError)}`,
       };
     }
 
@@ -579,7 +581,7 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
 
       return {
         success: false,
-        error: `Failed to void pallet: ${(voidError as { message: string }).message}`,
+        error: `Failed to void pallet: ${getErrorMessage(voidError)}`,
       };
     }
 
@@ -610,7 +612,7 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
           'Stock Level Update Failed',
           palletInfo.plt_num,
           'Voided',
-          `Stock level update failed: ${(stockError as { message: string }).message}`
+          `Stock level update failed: ${getErrorMessage(stockError)}`
         );
       } else {
         process.env.NODE_ENV !== 'production' &&
@@ -626,7 +628,7 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
         'Stock Level Update Error',
         palletInfo.plt_num,
         'Voided',
-        `Stock level update error: ${(stockUpdateError as { message: string }).message}`
+        `Stock level update error: ${getErrorMessage(stockUpdateError)}`
       );
     }
 
@@ -735,12 +737,12 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
           }
         : undefined,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in voidPalletAction:', error);
-    await logErrorAction('unknown', `Void pallet error: ${(error as { message: string }).message}`);
+    await logErrorAction('unknown', `Void pallet error: ${getErrorMessage(error)}`);
     return {
       success: false,
-      error: `An unexpected error occurred: ${(error as { message: string }).message}`,
+      error: `An unexpected error occurred: ${getErrorMessage(error)}`,
     };
   }
 }
@@ -811,7 +813,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
     if (updateError) {
       return {
         success: false,
-        error: `Failed to update pallet: ${(updateError as { message: string }).message}`,
+        error: `Failed to update pallet: ${getErrorMessage(updateError)}`,
       };
     }
 
@@ -825,7 +827,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
         async (client: any) => {
           // Update inventory
           const inventoryColumn = getInventoryColumn(palletInfo.plt_loc);
-          const inventoryUpdate: any = {
+          const inventoryUpdate: DatabaseRecord = {
             product_code: palletInfo.product_code,
             damage: damageQuantity,
             latest_update: new Date().toISOString(),
@@ -862,7 +864,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
           error: `Failed to update inventory: ${result.error}`,
         };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Rollback pallet changes
       await supabase
         .from('record_palletinfo')
@@ -874,7 +876,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
 
       return {
         success: false,
-        error: `Failed to update inventory: ${(error as { message: string }).message}`,
+        error: `Failed to update inventory: ${getErrorMessage(error)}`,
       };
     }
 
@@ -906,7 +908,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
           'Stock Level Update Failed',
           palletInfo.plt_num,
           newLocation,
-          `Stock level update failed: ${(stockError as { message: string }).message}`
+          `Stock level update failed: ${getErrorMessage(stockError)}`
         );
       } else {
         process.env.NODE_ENV !== 'production' &&
@@ -922,7 +924,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
         'Stock Level Update Error',
         palletInfo.plt_num,
         newLocation,
-        `Stock level update error: ${(stockUpdateError as { message: string }).message}`
+        `Stock level update error: ${getErrorMessage(stockUpdateError)}`
       );
     }
 
@@ -1050,12 +1052,12 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
         },
       };
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in processDamageAction:', error);
-    await logErrorAction('unknown', `Damage processing error: ${(error as { message: string }).message}`);
+    await logErrorAction('unknown', `Damage processing error: ${getErrorMessage(error)}`);
     return {
       success: false,
-      error: `An unexpected error occurred: ${(error as { message: string }).message}`,
+      error: `An unexpected error occurred: ${getErrorMessage(error)}`,
     };
   }
 }
@@ -1127,11 +1129,11 @@ async function deleteGRNRecord(pltNum: string): Promise<{ success: boolean; erro
       console.log(`[GRN Delete] Deleted records:`, deletedRecord);
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[GRN Delete] Error deleting GRN record:', error);
     return {
       success: false,
-      error: `Failed to delete GRN record: ${(error as { message: string }).message}`,
+      error: `Failed to delete GRN record: ${getErrorMessage(error)}`,
     };
   }
 }
@@ -1202,11 +1204,11 @@ export async function getUserHistoryAction(
     if (error) throw error;
 
     return { success: true, data: data || [] };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching user history:', error);
     return {
       success: false,
-      error: `Failed to fetch history: ${(error as { message: string }).message}`,
+      error: `Failed to fetch history: ${getErrorMessage(error)}`,
     };
   }
 }

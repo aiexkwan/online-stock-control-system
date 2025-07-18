@@ -10,7 +10,7 @@ export interface Anomaly {
   title: string;
   description: string;
   count: number;
-  data: any[];
+  data: Record<string, unknown>[];
   suggestedAction: string;
   detectedAt: string;
 }

@@ -6,7 +6,7 @@ import { MessageSquare, Database, Link, Eye } from 'lucide-react';
 interface ContextDebuggerProps {
   resolvedQuestion?: string;
   originalQuestion: string;
-  references?: any[];
+  references?: Record<string, unknown>[];
   className?: string;
 }
 

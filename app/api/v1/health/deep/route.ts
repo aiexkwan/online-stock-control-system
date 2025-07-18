@@ -108,7 +108,7 @@ async function testDatabaseHealth(): Promise<HealthCheckResult> {
     const results = await Promise.allSettled(testQueries);
     const responseTime = Date.now() - startTime;
     
-    const successCount = results.filter((r: any) => (r as { status: string }).status === 'fulfilled').length;
+    const successCount = results.filter((r: Record<string, unknown>) => (r as { status: string }).status === 'fulfilled').length;
     const failureCount = results.length - successCount;
     
     let status: 'healthy' | 'degraded' | 'unhealthy';
@@ -267,9 +267,9 @@ export async function GET() {
     
     // 計算總結
     const services = [databaseResult, supabaseResult, redisResult, systemResult];
-    const healthyServices = services.filter((s: any) => (s as { status: string }).status === 'healthy').length;
-    const degradedServices = services.filter((s: any) => (s as { status: string }).status === 'degraded').length;
-    const unhealthyServices = services.filter((s: any) => (s as { status: string }).status === 'unhealthy').length;
+    const healthyServices = services.filter((s: Record<string, unknown>) => (s as { status: string }).status === 'healthy').length;
+    const degradedServices = services.filter((s: Record<string, unknown>) => (s as { status: string }).status === 'degraded').length;
+    const unhealthyServices = services.filter((s: Record<string, unknown>) => (s as { status: string }).status === 'unhealthy').length;
     
     let overallStatus: 'healthy' | 'degraded' | 'unhealthy';
     if (unhealthyServices > 0) {

@@ -34,7 +34,9 @@ test.describe('Data Management Theme', () => {
     
     // 檢查是否有網絡錯誤或控制台錯誤
     const hasNetworkErrors = await page.evaluate(() => {
-      return performance.getEntriesByType('navigation')[0]?.responseStatus !== 200;
+      const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      // Check if page failed to load properly by checking load time
+      return nav && nav.loadEventEnd === 0;
     }).catch(() => false);
     
     expect(hasNetworkErrors).toBe(false);

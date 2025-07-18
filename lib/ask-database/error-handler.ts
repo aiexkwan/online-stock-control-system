@@ -137,7 +137,7 @@ export class QueryErrorHandler {
     order_ref: ['order_number', 'order_no', 'reference'],
   };
 
-  handleError(error: any, context: QueryContext): ErrorResponse {
+  handleError(error: unknown, context: QueryContext): ErrorResponse {
     const errorMessage = error.message || error.toString();
 
     // 1. 匹配錯誤模式

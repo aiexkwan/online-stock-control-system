@@ -21,8 +21,8 @@ const CardContent = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
-const CardTitle = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="text-lg font-semibold text-gray-900">
+const CardTitle = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <h3 className={`text-lg font-semibold text-gray-900 ${className}`}>
     {children}
   </h3>
 );
@@ -307,7 +307,7 @@ const mockTableData = [
 ];
 
 // Stories
-const meta: Meta = {
+const meta = {
   title: 'Dashboard/Unified Widgets Demo',
   parameters: {
     layout: 'centered',
@@ -320,12 +320,13 @@ const meta: Meta = {
     },
   },
   tags: ['autodocs'],
-};
+} satisfies Meta;
 
 export default meta;
+type Story = StoryObj<typeof meta>;
 
 // Stats Widget Stories
-export const StatsDefault: StoryObj = {
+export const StatsDefault: Story = {
   render: () => (
     <SimpleStatsWidget
       title="Production Today"
@@ -336,7 +337,7 @@ export const StatsDefault: StoryObj = {
   ),
 };
 
-export const StatsEfficiency: StoryObj = {
+export const StatsEfficiency: Story = {
   render: () => (
     <SimpleStatsWidget
       title="Production Efficiency"
@@ -347,7 +348,7 @@ export const StatsEfficiency: StoryObj = {
   ),
 };
 
-export const StatsLoading: StoryObj = {
+export const StatsLoading: Story = {
   render: () => (
     <SimpleStatsWidget
       title="Production Today"
@@ -357,7 +358,7 @@ export const StatsLoading: StoryObj = {
   ),
 };
 
-export const StatsError: StoryObj = {
+export const StatsError: Story = {
   render: () => (
     <SimpleStatsWidget
       title="Production Today"
@@ -368,7 +369,7 @@ export const StatsError: StoryObj = {
 };
 
 // Chart Widget Stories
-export const ChartBarDefault: StoryObj = {
+export const ChartBarDefault: Story = {
   render: () => (
     <SimpleChartWidget
       title="Weekly Production"
@@ -378,7 +379,7 @@ export const ChartBarDefault: StoryObj = {
   ),
 };
 
-export const ChartPieDistribution: StoryObj = {
+export const ChartPieDistribution: Story = {
   render: () => (
     <SimpleChartWidget
       title="Department Distribution"
@@ -388,7 +389,7 @@ export const ChartPieDistribution: StoryObj = {
   ),
 };
 
-export const ChartLoading: StoryObj = {
+export const ChartLoading: Story = {
   render: () => (
     <SimpleChartWidget
       title="Weekly Production"
@@ -399,7 +400,7 @@ export const ChartLoading: StoryObj = {
   ),
 };
 
-export const ChartError: StoryObj = {
+export const ChartError: Story = {
   render: () => (
     <SimpleChartWidget
       title="Weekly Production"
@@ -411,7 +412,7 @@ export const ChartError: StoryObj = {
 };
 
 // Table Widget Stories
-export const TableDefault: StoryObj = {
+export const TableDefault: Story = {
   render: () => (
     <SimpleTableWidget
       title="Recent Orders"
@@ -420,7 +421,7 @@ export const TableDefault: StoryObj = {
   ),
 };
 
-export const TableEmpty: StoryObj = {
+export const TableEmpty: Story = {
   render: () => (
     <SimpleTableWidget
       title="Recent Orders"
@@ -429,7 +430,7 @@ export const TableEmpty: StoryObj = {
   ),
 };
 
-export const TableLoading: StoryObj = {
+export const TableLoading: Story = {
   render: () => (
     <SimpleTableWidget
       title="Recent Orders"
@@ -439,7 +440,7 @@ export const TableLoading: StoryObj = {
   ),
 };
 
-export const TableError: StoryObj = {
+export const TableError: Story = {
   render: () => (
     <SimpleTableWidget
       title="Recent Orders"
@@ -450,7 +451,7 @@ export const TableError: StoryObj = {
 };
 
 // Combined Layout Story
-export const AllWidgetsCombined: StoryObj = {
+export const AllWidgetsCombined: Story = {
   render: () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6 max-w-6xl">
       <div className="space-y-4">

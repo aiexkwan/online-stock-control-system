@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { UnifiedChartWidgetMockWrapper } from './components/UnifiedChartWidgetMockWrapper';
 import { AdminWidgetConfig } from '@/app/admin/components/dashboard/adminDashboardLayouts';
 import React from 'react';
@@ -44,7 +45,7 @@ const createMockChartData = (chartType: string, dataSize: number = 5) => {
 };
 
 // Mock hook 實現
-const createMockData = (type: 'success' | 'loading' | 'error', chartType: string = 'bar', overrides: any = {}) => {
+const createMockData = (type: 'success' | 'loading' | 'error', chartType: string = 'bar', overrides: DatabaseRecord = {}) => {
   switch (type) {
     case 'loading':
       return {
@@ -57,7 +58,7 @@ const createMockData = (type: 'success' | 'loading' | 'error', chartType: string
       return {
         data: null,
         isLoading: false,
-        error: new Error('Chart data loading failed'),
+        error: new globalThis.Error('Chart data loading failed'),
         ...overrides,
       };
     case 'success':
@@ -115,13 +116,11 @@ const meta: Meta<typeof UnifiedChartWidgetMockWrapper> = {
     },
   },
   decorators: [
-    (Story, context) => {
-      return (
-        <div className="w-[600px] h-[400px] p-4">
-          <Story />
-        </div>
-      );
-    },
+    (Story) => (
+      <div className="w-[600px] h-[400px] p-4">
+        <Story />
+      </div>
+    ),
   ],
 };
 

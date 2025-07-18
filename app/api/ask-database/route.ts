@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { DatabaseRecord } from '@/lib/types/database';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { createClient } from '@/app/utils/supabase/server';
 import { LRUCache } from 'lru-cache';
 import OpenAI from 'openai';
@@ -51,7 +53,7 @@ interface QueryResult {
   question: string;
   sql: string;
   result: {
-    data: any[];
+    data: Record<string, unknown>[];
     rowCount: number;
     executionTime: number;
   };
@@ -61,7 +63,7 @@ interface QueryResult {
   cached: boolean;
   timestamp: string;
   resolvedQuestion?: string;
-  references?: any[];
+  references?: Record<string, unknown>[];
   performanceAnalysis?: string;
 }
 
@@ -148,7 +150,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
         if (!error && userHistory && userHistory.length > 0) {
           // 轉換格式以匹配 recentHistory 的結構
-          recentHistory = userHistory.reverse().map((record: any) => ({
+          recentHistory = userHistory.reverse().map((record: Record<string, unknown>) => ({
             question: record.query,
             sql: record.sql_query,
             answer: record.answer,
@@ -404,7 +406,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     isNotProduction() &&
       console.log('[Ask Database] 🔍 Checking SQL cache (L3)...');
     const sqlCacheResult = await checkSQLCache(sql);
-    let queryResult: { data: any[]; rowCount: number; executionTime: number } | undefined = undefined;
+    let queryResult: { data: Record<string, unknown>[]; rowCount: number; executionTime: number } | undefined = undefined;
 
     if (sqlCacheResult) {
       isNotProduction() && console.log('[Ask Database] 🎯 L3 SQL cache hit');
@@ -431,8 +433,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
               executionTime: queryResult.executionTime,
             });
           break; // 成功則跳出循環
-        } catch (execError: any) {
-          console.log(`[SQL Execution] Attempt ${sqlExecutionAttempts} failed:`, (execError as { message: string }).message);
+        } catch (execError: unknown) {
+          console.log(`[SQL Execution] Attempt ${sqlExecutionAttempts} failed:`, getErrorMessage(execError));
           
           // 如果已經是最後一次嘗試，拋出錯誤
           if (sqlExecutionAttempts >= maxAttempts) {
@@ -563,17 +565,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         'ms'
       );
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     const classificationResult = error.errorType ? 
       { errorType: error.errorType } : 
       classifyError(error);
     const errorType = classificationResult.errorType;
     
     console.error('[Ask Database] Error details:', {
-      message: (error as { message: string }).message,
+      message: getErrorMessage(error),
       errorType: errorType,
       stack: (error as Error).stack,
-      name: error.name,
+      name: (error as Error).name,
       cause: error.cause,
       responseTime: Date.now() - startTime,
     });
@@ -588,7 +590,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const recoveryStrategy = getRecoveryStrategy(errorType);
 
     // 使用增強的錯誤訊息
-    let errorMessage = enhanceErrorMessage(errorType, (error as { message: string }).message);
+    let errorMessage = enhanceErrorMessage(errorType, getErrorMessage(error));
     
     // 如果有恢復建議，添加到錯誤訊息
     if (recoveryStrategy.suggestion) {
@@ -598,7 +600,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json(
       {
         error: errorMessage,
-        details: isDevelopment() ? (error as { message: string }).message : undefined,
+        details: isDevelopment() ? getErrorMessage(error) : undefined,
         responseTime: Date.now() - startTime,
         mode: 'OPENAI_SQL_GENERATION',
       },
@@ -768,7 +770,7 @@ async function generateSQLWithOpenAI(
 
     isNotProduction() && console.log('[OpenAI SQL] SQL generated successfully');
     return { sql, tokensUsed };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[OpenAI SQL] Error:', error);
     
     // 分類錯誤
@@ -779,7 +781,7 @@ async function generateSQLWithOpenAI(
     // 這裡只需要拋出增強的錯誤訊息
     
     // 增強錯誤訊息
-    const enhancedMessage = enhanceErrorMessage(errorType, (error as { message: string }).message);
+    const enhancedMessage = enhanceErrorMessage(errorType, getErrorMessage(error));
     throw new Error(enhancedMessage);
   }
 }
@@ -842,7 +844,7 @@ async function checkQueryCost(sql: string): Promise<{
 // 執行 SQL 查詢（增加超時控制）
 async function executeSQLQuery(
   sql: string
-): Promise<{ data: any[]; rowCount: number; executionTime: number }> {
+): Promise<{ data: Record<string, unknown>[]; rowCount: number; executionTime: number }> {
   const supabase = await createClient();
   const startTime = Date.now();
   const QUERY_TIMEOUT = 30000; // 30秒超時
@@ -862,7 +864,7 @@ async function executeSQLQuery(
 
     if (error) {
       console.error('[SQL Execution] Error:', error);
-      throw new Error(`SQL execution failed: ${(error as { message: string }).message}`);
+      throw new Error(`SQL execution failed: ${getErrorMessage(error)}`);
     }
 
     const resultData = Array.isArray(data) ? data : [];
@@ -879,7 +881,7 @@ async function executeSQLQuery(
       rowCount: resultData.length,
       executionTime,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[SQL Execution] Error:', error);
     
     // 分類錯誤
@@ -894,7 +896,7 @@ async function executeSQLQuery(
     );
     
     // 增強錯誤訊息  
-    const enhancedMessage = enhanceErrorMessage(errorType, (error as { message: string }).message);
+    const enhancedMessage = enhanceErrorMessage(errorType, getErrorMessage(error));
     
     // 為了向上層傳遞錯誤類型，創建新錯誤
     const enhancedError = new Error(enhancedMessage);
@@ -961,7 +963,7 @@ Please provide a natural English response to the user's question based on these 
     isNotProduction() &&
       console.log('[OpenAI Answer] Natural language response generated successfully');
     return { answer: answer.trim(), additionalTokens: tokensUsed };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[OpenAI Answer] Error:', error);
     // 如果 OpenAI 回應生成失敗，提供基本回應
     return {
@@ -1082,7 +1084,7 @@ async function getDailyQueryHistory(
       return [];
     }
 
-    return (data || []).map((record: any) => ({
+    return (data || []).map((record: Record<string, unknown>) => ({
       question: record.query,
       answer: record.answer,
     }));
@@ -1231,7 +1233,7 @@ async function checkIntelligentCache(
 
   try {
     // 檢查緩存是否過期
-    const checkExpired = (record: any) => {
+    const checkExpired = (record: DatabaseRecord) => {
       return !record.expired_at; // 沒有 expired_at 表示未過期
     };
     // L1: 精確匹配緩存（最近24小時）
@@ -1402,7 +1404,7 @@ function calculateSimilarity(words1: string[], words2: string[]): number {
   const set2 = new Set(words2);
 
   // 計算交集
-  const intersectionArray = Array.from(set1).filter((x: any) => set2.has(x));
+  const intersectionArray = Array.from(set1).filter((x: Record<string, unknown>) => set2.has(x));
   const intersection = new Set(intersectionArray);
 
   // 計算聯集
@@ -1459,7 +1461,7 @@ async function saveQueryRecordEnhanced(
   user: string | null,
   tokenUsage: number = 0,
   sqlQuery: string = '',
-  resultJson: any = null,
+  resultJson: DatabaseRecord = null,
   executionTime: number = 0,
   rowCount: number = 0,
   complexity: string = 'simple',
@@ -1550,7 +1552,7 @@ function generateCacheKey(
     conversationHistory && conversationHistory.length > 0
       ? conversationHistory
           .slice(-2)
-          .map((entry: any) => `${entry.question}:${entry.sql}`)
+          .map((entry: Record<string, unknown>) => `${entry.question}:${entry.sql}`)
           .join('|')
       : '';
 
@@ -1812,19 +1814,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           report,
           timestamp: new Date().toISOString()
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         return NextResponse.json(
-          { error: 'Query analysis failed', details: (error as { message: string }).message },
+          { error: 'Query analysis failed', details: getErrorMessage(error) },
           { status: 500 }
         );
       }
     }
 
     return NextResponse.json(status);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Ask Database Status] Error:', error);
     return NextResponse.json(
-      { error: 'Status check failed', details: (error as { message: string }).message, mode: 'OPENAI_SQL_GENERATION' },
+      { error: 'Status check failed', details: getErrorMessage(error), mode: 'OPENAI_SQL_GENERATION' },
       { status: 500 }
     );
   }

@@ -34,7 +34,7 @@ export const apiClientLogger = createClientLogger('api-client');
 export const logClientError = (
   error: Error,
   componentName?: string,
-  additionalInfo?: Record<string, any>
+  additionalInfo?: Record<string, string | number | boolean | null>
 ) => {
   uiLogger.error(
     {
@@ -49,7 +49,7 @@ export const logClientError = (
 };
 
 // 輔助函數：記錄用戶操作
-export const logUserAction = (action: string, component: string, details?: Record<string, any>) => {
+export const logUserAction = (action: string, component: string, details?: Record<string, string | number | boolean>) => {
   uiLogger.info(
     {
       action,

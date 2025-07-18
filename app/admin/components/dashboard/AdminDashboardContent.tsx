@@ -13,6 +13,7 @@ import { AdminWidgetRenderer } from './AdminWidgetRenderer';
 import { Skeleton } from '@/components/ui/skeleton';
 import { unifiedWidgetRegistry } from '@/lib/widgets/unified-registry';
 import { useWidgetRegistry } from '@/app/hooks/useWidgetRegistry';
+import { KeyboardNavigableGrid } from './KeyboardNavigableGrid';
 
 // 動態導入 theme layouts - 使用 webpack magic comments
 const ThemeLayouts = {
@@ -62,7 +63,7 @@ const ThemeLayouts = {
 const ThemeLoadingSkeleton = () => (
   <div className='h-full w-full space-y-4 p-6'>
     <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
-      {[1, 2, 3, 4, 5, 6].map((i: any) => (
+      {[1, 2, 3, 4, 5, 6].map((i: Record<string, unknown>) => (
         <div key={i} className='space-y-3'>
           <Skeleton className='h-48 w-full bg-slate-700' />
           <Skeleton className='h-4 w-3/4 bg-slate-700' />
@@ -208,19 +209,25 @@ export const AdminDashboardContent: React.FC<AdminDashboardContentProps> = ({
 
   // 默認佈局（如果沒有特定的 Layout 組件）
   return (
-    <div
+    <KeyboardNavigableGrid
       className='h-full w-full'
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(8, 1fr)',
-        gridTemplateRows: '200px 300px 200px',
-        gap: '16px',
-        gridTemplateAreas: layout.gridTemplate,
-        height: '100%',
-        width: '100%',
-      }}
+      gridColumns={8}
+      aria-label={`${theme} dashboard widgets`}
     >
-      {renderWidgets()}
-    </div>
+      <div
+        className='h-full w-full'
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(8, 1fr)',
+          gridTemplateRows: '200px 300px 200px',
+          gap: '16px',
+          gridTemplateAreas: layout.gridTemplate,
+          height: '100%',
+          width: '100%',
+        }}
+      >
+        {renderWidgets()}
+      </div>
+    </KeyboardNavigableGrid>
   );
 };

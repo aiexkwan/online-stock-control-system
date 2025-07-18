@@ -21,8 +21,8 @@ import {
 } from '../types';
 
 interface NotificationProvider {
-  send(alert: Alert, config: any, template?: string): Promise<NotificationResult>;
-  test(config: any): Promise<boolean>;
+  send(alert: Alert, config: Record<string, unknown>, template?: string): Promise<NotificationResult>;
+  test(config: Record<string, unknown>): Promise<boolean>;
 }
 
 interface NotificationResult {
@@ -115,7 +115,7 @@ export class NotificationService {
 
       return {
         success: results.some(r => r.success),
-        message: `Sent ${results.filter((r: any) => r.success).length} of ${results.length} notifications`,
+        message: `Sent ${results.filter((r: Record<string, unknown>) => r.success).length} of ${results.length} notifications`,
         data: results
       };
     } catch (error) {

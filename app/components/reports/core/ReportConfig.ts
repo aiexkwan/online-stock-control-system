@@ -1,3 +1,5 @@
+import { DatabaseRecord } from '@/lib/types/database';
+
 /**
  * 統一報表框架配置介面
  * 注意：此框架僅用於報表生成，不包括標籤生成（QC/GRN labels）
@@ -137,8 +139,8 @@ export interface ProcessedReportData {
 export interface ReportDataSource {
   id: string;
   fetch(filters: FilterValues): Promise<any>;
-  transform?(data: any): any;
-  validate?(data: any): boolean;
+  transform?(data: DatabaseRecord[]): any;
+  validate?(data: DatabaseRecord[]): boolean;
 }
 
 // 報表生成器介面

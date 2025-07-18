@@ -7,6 +7,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { Download, CheckCircle, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -416,7 +417,7 @@ export const GrnReportWidget = function GrnReportWidget({
       const records = reportData.records || [];
       const rowHeight = 20;
 
-      records.forEach((record: any, index: number) => {
+      records.forEach((record: DatabaseRecord, index: number) => {
         // Draw row borders
         page.drawRectangle({
           x: 25,

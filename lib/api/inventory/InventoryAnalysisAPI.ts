@@ -3,6 +3,7 @@
  */
 
 import { createClient } from '@/app/utils/supabase/client';
+import { DatabaseRecord } from '@/lib/types/database';
 import type {
   InventoryOrderedAnalysisResponse,
   InventoryAnalysisParams,
@@ -93,8 +94,8 @@ export class InventoryAnalysisAPI {
     const sorted = [...products];
 
     sorted.sort((a, b) => {
-      let aVal: any = a[sortBy];
-      let bVal: any = b[sortBy];
+      let aVal: DatabaseRecord = a[sortBy];
+      let bVal: DatabaseRecord = b[sortBy];
 
       // Handle boolean values
       if (typeof aVal === 'boolean') {

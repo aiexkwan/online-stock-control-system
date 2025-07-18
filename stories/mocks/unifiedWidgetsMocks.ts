@@ -4,9 +4,11 @@
  */
 
 import React from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
+import { DatabaseRecord } from '@/lib/types/database';
 
 // Mock Hook Factory
-export const createMockHook = (mockData: any) => {
+export const createMockHook = (mockData: Record<string, unknown>) => {
   return () => mockData;
 };
 
@@ -221,7 +223,7 @@ export const mockTableData = {
   ],
 };
 
-export const createMockTableData = (dataType: keyof typeof mockTableData, overrides: any = {}) => ({
+export const createMockTableData = (dataType: keyof typeof mockTableData, overrides: DatabaseRecord = {}) => ({
   success: {
     data: {
       table_data: {
@@ -264,7 +266,7 @@ export const createUnifiedMockHook = (mockReturn: any) => {
 };
 
 // Storybook Decorator 工廠
-export const createMockDecorator = (mockHookPath: string, mockData: any) => {
+export const createMockDecorator = (mockHookPath: string, mockData: Record<string, unknown>) => {
   return (Story: any, context: any) => {
     const { args } = context;
     const mockReturn = args.mockData || mockData.success;

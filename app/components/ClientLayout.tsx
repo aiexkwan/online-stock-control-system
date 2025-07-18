@@ -16,6 +16,8 @@ import { UniversalProvider } from '@/components/layout/universal';
 import { NavigationProvider } from '@/components/ui/dynamic-action-bar/NavigationProvider';
 import { SmartReminder } from '@/components/ui/dynamic-action-bar/SmartReminder';
 import { isDevelopment } from '@/lib/utils/env';
+import { AccessibilityProvider } from '@/lib/accessibility';
+import { GlobalSkipLinks } from './GlobalSkipLinks';
 
 // Create a client - OPTIMIZED FOR MINIMAL API CALLS
 const queryClient = new QueryClient({
@@ -69,11 +71,12 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   
 
   const content = (
-    <UniversalProvider
-      defaultTheme={currentTheme}
-      animationsEnabled={true}
-      debugMode={isDevelopment()}
-    >
+    <AccessibilityProvider>
+      <UniversalProvider
+        defaultTheme={currentTheme}
+        animationsEnabled={true}
+        debugMode={isDevelopment()}
+      >
       {/* Toast notifications */}
       <Toaster
         position='top-right'
@@ -91,6 +94,9 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
 
       {/* Authentication checker */}
       <AuthChecker>
+        {/* Global skip links for keyboard navigation */}
+        <GlobalSkipLinks />
+        
         {/* Global header - now empty */}
         <GlobalHeader />
 
@@ -156,7 +162,8 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
           </ErrorBoundary>
         )}
       </AuthChecker>
-    </UniversalProvider>
+      </UniversalProvider>
+    </AccessibilityProvider>
   );
 
   return (

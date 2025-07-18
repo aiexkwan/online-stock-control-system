@@ -7,7 +7,7 @@ declare module 'class-transformer' {
     version?: number;
     excludePrefixes?: string[];
     ignoreDecorators?: boolean;
-    targetMaps?: any[];
+    targetMaps?: Record<string, unknown>[];
     enableCircularCheck?: boolean;
     enableImplicitConversion?: boolean;
     exposeDefaultValues?: boolean;
@@ -15,14 +15,14 @@ declare module 'class-transformer' {
   }
 
   export interface ClassConstructor<T = {}> {
-    new (...args: any[]): T;
+    new (...args: Record<string, unknown>[]): T;
   }
 
   export interface TypeOptions {
     discriminator?: {
       property: string;
       subTypes: Array<{
-        value: any;
+        value: unknown;
         name: string;
       }>;
     };
@@ -44,9 +44,9 @@ declare module 'class-transformer' {
   }
 
   export interface TransformFnParams {
-    value: any;
+    value: unknown;
     key: string;
-    obj: any;
+    obj: Record<string, unknown>;
     type: any;
     options: ClassTransformOptions;
   }

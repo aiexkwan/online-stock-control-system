@@ -102,15 +102,7 @@ export default function StocktakeAccuracyTrend({ timeFrame }: StocktakeAccuracyT
       : recentAvg;
   const trend = recentAvg - oldAvg;
 
-  // Check if GraphQL analysis is disabled
-  if (!process.env.NEXT_PUBLIC_ENABLE_GRAPHQL_ANALYSIS) {
-    return (
-      <Alert>
-        <AlertCircle className='h-4 w-4' />
-        <AlertDescription>GraphQL analysis is disabled</AlertDescription>
-      </Alert>
-    );
-  }
+  // Feature flag removed - using REST API only
 
   return (
     <div className='flex h-full w-full flex-col'>
@@ -224,19 +216,19 @@ export default function StocktakeAccuracyTrend({ timeFrame }: StocktakeAccuracyT
       <div className='mt-4 grid grid-cols-3 gap-4 border-t pt-4 text-xs'>
         <div className='text-center'>
           <div className='text-2xl font-bold text-green-600'>
-            {chartData.filter((d: any) => d.accuracy >= 95).length}
+            {chartData.filter((d: Record<string, unknown>) => d.accuracy >= 95).length}
           </div>
           <div className='text-white/60'>Days Meeting Target (≥95%)</div>
         </div>
         <div className='text-center'>
           <div className='text-2xl font-bold text-amber-600'>
-            {chartData.filter((d: any) => d.accuracy >= 90 && d.accuracy < 95).length}
+            {chartData.filter((d: Record<string, unknown>) => d.accuracy >= 90 && d.accuracy < 95).length}
           </div>
           <div className='text-white/60'>Near Target (90-94%)</div>
         </div>
         <div className='text-center'>
           <div className='text-2xl font-bold text-red-600'>
-            {chartData.filter((d: any) => d.accuracy < 90).length}
+            {chartData.filter((d: Record<string, unknown>) => d.accuracy < 90).length}
           </div>
           <div className='text-white/60'>Needs Improvement (&lt;90%)</div>
         </div>

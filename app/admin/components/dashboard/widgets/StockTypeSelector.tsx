@@ -57,7 +57,7 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
         const stockWidget = result.widgets.find(w => w.widgetId === 'stock_distribution');
         if (stockWidget && !stockWidget.data.error) {
           const stockItems = stockWidget.data.value || [];
-          setStockData(stockItems.filter((item: any) => item.stock_level > 0));
+          setStockData(stockItems.filter((item: Record<string, unknown>) => item.stock_level > 0));
         }
 
         // Process product types data

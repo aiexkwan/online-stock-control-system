@@ -11,6 +11,7 @@
 'use client';
 
 import React, { useMemo, useEffect, useState } from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { motion } from 'framer-motion';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
@@ -140,7 +141,7 @@ export const StaffWorkloadWidget: React.FC<StaffWorkloadWidgetProps> = ({
   }, [dashboardAPI, dateRange, department, isEditMode]);
 
   // 處理工作量數據
-  const processWorkloadData = (rawData: any[]) => {
+  const processWorkloadData = (rawData: Record<string, unknown>[]) => {
     if (!rawData || rawData.length === 0) return [];
 
     // 按日期分組
@@ -199,7 +200,7 @@ export const StaffWorkloadWidget: React.FC<StaffWorkloadWidgetProps> = ({
       return (
         <div className="bg-slate-800 border border-slate-600 rounded-lg p-3 shadow-lg">
           <p className="text-white font-medium mb-2">{label}</p>
-          {payload.map((item: any, index: number) => (
+          {payload.map((item: DatabaseRecord, index: number) => (
             <p key={index} className="text-sm" style={{ color: item.color }}>
               {item.dataKey}: <span className="font-semibold">{item.value}</span>
             </p>

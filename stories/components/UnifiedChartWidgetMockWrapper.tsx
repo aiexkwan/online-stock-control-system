@@ -1,4 +1,5 @@
 import React from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { ChartContainer } from '@/app/admin/components/dashboard/widgets/common/charts/ChartContainer';
 import { ChartSkeleton } from '@/app/admin/components/dashboard/widgets/common/charts/ChartSkeleton';
 import { AdminWidgetConfig } from '@/app/admin/components/dashboard/adminDashboardLayouts';
@@ -23,7 +24,7 @@ import {
 } from '@/lib/recharts-dynamic';
 
 interface MockData {
-  data: any;
+  data: DatabaseRecord[];
   isLoading: boolean;
   error: Error | null;
 }

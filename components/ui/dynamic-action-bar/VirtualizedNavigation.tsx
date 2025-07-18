@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useCallback, useRef, useEffect, useState } from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { NavigationItem } from './NavigationItem';
 import { NavigationItem as NavItemType } from '@/config/navigation';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -101,8 +102,8 @@ export function VirtualizedNavigation({
 
 // 用於大量子菜單項的虛擬化列表
 interface VirtualizedSubMenuProps {
-  items: any[];
-  onItemClick: (item: any) => void;
+  items: Record<string, unknown>[];
+  onItemClick: (item: DatabaseRecord) => void;
   className?: string;
 }
 

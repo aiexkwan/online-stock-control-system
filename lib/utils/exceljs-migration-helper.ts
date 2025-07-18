@@ -18,7 +18,7 @@ export interface ColumnConfig {
  */
 export async function jsonToWorksheet(
   workbook: Workbook,
-  data: any[],
+  data: Record<string, unknown>[],
   sheetName: string,
   columns?: ColumnConfig[]
 ): Promise<Worksheet> {
@@ -193,7 +193,7 @@ export const NumberFormats = {
  * 創建帶樣式嘅報表
  */
 export async function createStyledReport(
-  data: any[],
+  data: Record<string, unknown>[],
   title: string,
   columns?: ColumnConfig[]
 ): Promise<Buffer> {

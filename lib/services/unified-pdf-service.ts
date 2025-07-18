@@ -12,7 +12,7 @@ const pdfLibraryCache = {
   pdfLib: null as typeof import('pdf-lib') | null,
   jsPDF: null as typeof import('jspdf') | null,
   reactPdf: null as typeof import('@react-pdf/renderer') | null,
-  jsPDFAutoTable: null as any,
+  jsPDFAutoTable: null as typeof import('jspdf-autotable') | null,
 };
 
 /**
@@ -61,7 +61,11 @@ export async function createPDFDocument() {
 /**
  * 創建新的 jsPDF 實例
  */
-export async function createJsPDF(options?: any) {
+export async function createJsPDF(options?: {
+  orientation?: 'portrait' | 'landscape';
+  unit?: 'pt' | 'mm' | 'cm' | 'in';
+  format?: string | [number, number];
+}) {
   const { jsPDF } = await getJsPDF();
   return new jsPDF(options);
 }

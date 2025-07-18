@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { toast } from 'sonner';
 import {
   BatchVoidState,
@@ -193,12 +194,12 @@ export function useBatchVoid() {
               errorCount: errorCount,
             }));
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           errorCount++;
           setBatchState(prev => ({
             ...prev,
             items: prev.items.map(i =>
-              i.id === item.id ? { ...i, status: 'error', error: error.message } : i
+              i.id === item.id ? { ...i, status: 'error', error: getErrorMessage(error) } : i
             ),
             errorCount: errorCount,
           }));

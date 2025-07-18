@@ -72,7 +72,7 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
   });
 
   // 數據處理函數
-  function processStockDistributionData(rawData: any[], type: string): StockDistributionData[] {
+  function processStockDistributionData(rawData: Record<string, unknown>[], type: string): StockDistributionData[] {
     if (!rawData || !Array.isArray(rawData)) return [];
     
     // 過濾選定類型

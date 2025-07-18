@@ -140,12 +140,14 @@ class ErrorBoundaryClass extends Component<ErrorBoundaryProps, ErrorBoundaryStat
         window.location.reload();
         break;
       case 'clear_cache':
-        if ('caches' in window) {
-          caches.keys().then(names => {
-            names.forEach(name => caches.delete(name));
-          }).then(() => window.location.reload());
-        } else {
-          window.location.reload();
+        if (typeof window !== 'undefined') {
+          if ('caches' in window) {
+            caches.keys().then(names => {
+              names.forEach(name => caches.delete(name));
+            }).then(() => window.location.reload());
+          } else {
+            (window as any).location.reload();
+          }
         }
         break;
       case 'redirect':

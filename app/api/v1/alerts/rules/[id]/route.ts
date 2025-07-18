@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { DatabaseRecord } from '@/lib/types/database';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { AlertRuleEngine } from '@/lib/alerts/core/AlertRuleEngine';
@@ -60,9 +61,9 @@ const UpdateAlertRuleSchema = z.object({
  * GET /api/v1/alerts/rules/[id as string]
  * 獲取單個告警規則
  */
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const { data, error } = await supabase
       .from('alert_rules')
@@ -97,9 +98,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
  * PUT /api/v1/alerts/rules/[id as string]
  * 更新告警規則
  */
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const validated = UpdateAlertRuleSchema.parse(body);
 
@@ -168,9 +169,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
  * DELETE /api/v1/alerts/rules/[id as string]
  * 刪除告警規則
  */
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // 檢查規則是否存在
     const { data: existingRule, error: fetchError } = await supabase
@@ -225,7 +226,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 /**
  * 反序列化規則
  */
-function deserializeRule(data: any): AlertRule {
+function deserializeRule(data: DatabaseRecord[]): AlertRule {
   return {
     id: data.id,
     name: data.name,

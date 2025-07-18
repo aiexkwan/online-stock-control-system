@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useUserId } from '@/app/hooks/useUserId';
@@ -73,18 +75,18 @@ export function useVoidPallet() {
 
       if (error) {
         // Log error to console for debugging
-        console.error(`[VoidPallet] ${error.type}: ${error.message}`);
+        console.error(`[VoidPallet] ${error.type}: ${getErrorMessage(error)}`);
 
         // Log error to database (使用異步方式獲取 clock number)
         getCurrentUserClockNumberAsync()
           .then((clockNumber: string | null) => {
-            logErrorAction(clockNumber || 'unknown', `${error.type}: ${error.message}`);
+            logErrorAction(clockNumber || 'unknown', `${error.type}: ${getErrorMessage(error)}`);
           })
           .catch((err: any) => {
             (process.env.NODE_ENV as string) !== 'production' &&
               (process.env.NODE_ENV as string) !== 'production' &&
               console.warn('[VoidPallet] Failed to get clock number for error logging:', err);
-            logErrorAction('unknown', `${error.type}: ${error.message}`);
+            logErrorAction('unknown', `${error.type}: ${getErrorMessage(error)}`);
           });
       }
     },
@@ -194,10 +196,10 @@ export function useVoidPallet() {
             });
           }
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         setError({
           type: 'system',
-          message: `Search error: ${error.message}`,
+          message: `Search error: ${getErrorMessage(error)}`,
           isBlocking: true,
           timestamp: new Date(),
         });
@@ -252,7 +254,7 @@ export function useVoidPallet() {
 
   // Enhanced reprint flow functions
   const shouldShowReprintDialog = useCallback(
-    (voidReason: string, result: any, palletInfo: PalletInfo): boolean => {
+    (voidReason: string, result: DatabaseRecord, palletInfo: PalletInfo): boolean => {
       // 🔥 修改：檢查是否為 ACO pallet
       const isACOPallet = palletInfo.plt_remark?.includes('ACO Ref');
 
@@ -377,10 +379,10 @@ export function useVoidPallet() {
         });
         return { success: false };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setError({
         type: 'system',
-        message: `Void error: ${error.message}`,
+        message: `Void error: ${getErrorMessage(error)}`,
         isBlocking: true,
         timestamp: new Date(),
       });
@@ -621,7 +623,7 @@ export function useVoidPallet() {
                   console.log('[Auto Reprint] PDF URL updated in database successfully');
               }
             }
-          } catch (uploadError: any) {
+          } catch (uploadError: unknown) {
             console.error('[Auto Reprint] Error during PDF upload:', uploadError);
             // Don't fail the whole operation, just log the error
           }
@@ -639,19 +641,19 @@ export function useVoidPallet() {
 
           // Reset state
           resetState();
-        } catch (fetchError: any) {
+        } catch (fetchError: unknown) {
           clearTimeout(timeoutId);
-          if (fetchError.name === 'AbortError') {
+          if ((fetchError as Error).name === 'AbortError') {
             throw new Error('Request timeout - please try again');
           }
           throw fetchError;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('[Auto Reprint] Error in reprint process:', error);
-        toast.error(`Auto reprint failed: ${error.message}`);
+        toast.error(`Auto reprint failed: ${getErrorMessage(error)}`);
         setError({
           type: 'system',
-          message: `Auto reprint failed: ${error.message}`,
+          message: `Auto reprint failed: ${getErrorMessage(error)}`,
           isBlocking: true,
           timestamp: new Date(),
         });

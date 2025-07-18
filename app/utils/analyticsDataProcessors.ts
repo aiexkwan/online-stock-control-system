@@ -38,8 +38,8 @@ export interface DailyData {
 }
 
 export function processOutputRatioData(
-  outputData: any[],
-  transferData: any[],
+  outputData: Record<string, unknown>[],
+  transferData: Record<string, unknown>[],
   timeRange: string
 ): HourlyData[] | DailyData[] {
   if (timeRange === '1d') {
@@ -49,7 +49,7 @@ export function processOutputRatioData(
   }
 }
 
-function groupByHour(outputData: any[], transferData: any[]): HourlyData[] {
+function groupByHour(outputData: Record<string, unknown>[], transferData: Record<string, unknown>[]): HourlyData[] {
   // Initialize hourly data for 24 hours
   const hourlyData: HourlyData[] = Array.from({ length: 24 }, (_, i) => ({
     hour: `${i.toString().padStart(2, '0')}:00`,
@@ -72,7 +72,7 @@ function groupByHour(outputData: any[], transferData: any[]): HourlyData[] {
   return hourlyData;
 }
 
-function groupByDate(outputData: any[], transferData: any[]): DailyData[] {
+function groupByDate(outputData: Record<string, unknown>[], transferData: Record<string, unknown>[]): DailyData[] {
   const dailyData = new Map<string, DailyData>();
 
   // Process output data
@@ -110,9 +110,9 @@ export interface ProductTrendData {
 }
 
 export function processOrderTrendData(
-  orderData: any[],
+  orderData: Record<string, unknown>[],
   timeRange: string
-): { detail: ProductTrendData[]; summary: any[] } {
+): { detail: ProductTrendData[]; summary: Record<string, unknown>[] } {
   const trendData = new Map<string, Map<string, number>>();
   const productCodes = new Set<string>();
 
@@ -170,7 +170,7 @@ export function processOrderTrendData(
 }
 
 // Keep the old function name for backward compatibility
-export function processProductTrendData(orderData: any[], timeRange: string): ProductTrendData[] {
+export function processProductTrendData(orderData: Record<string, unknown>[], timeRange: string): ProductTrendData[] {
   return processOrderTrendData(orderData, timeRange).detail;
 }
 
@@ -187,7 +187,7 @@ export interface StaffWorkloadTimeData {
 }
 
 export function processStaffWorkloadData(
-  workData: any[],
+  workData: Record<string, unknown>[],
   timeRange: string
 ): { summary: StaffWorkloadData[]; timeline: StaffWorkloadTimeData[] } {
   const staffStats = new Map<string, number>();

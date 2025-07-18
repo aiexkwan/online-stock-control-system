@@ -68,7 +68,7 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
   }, [timeFrame]);
 
   // 使用 REST API 獲取數據
-  const [apiData, setApiData] = useState<{ timeSlots: any[]; totalTransfers: number } | null>(null);
+  const [apiData, setApiData] = useState<{ timeSlots: Record<string, unknown>[]; totalTransfers: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -190,7 +190,7 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
             fontSize: '12px',
           }}
           labelFormatter={label => `Time: ${label}`}
-          formatter={(value: any) => [value, 'Transfers']}
+          formatter={(value: unknown) => [value, 'Transfers']}
         />
         <Line
           type='monotone'

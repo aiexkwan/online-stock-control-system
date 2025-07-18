@@ -86,7 +86,7 @@ export const generateAllDataReport = async () => {
     'record_inventory',
     'record_aco',
   ];
-  const allData: Record<string, any[]> = {};
+  const allData: Record<string, Record<string, unknown>[]> = {};
 
   for (const table of tables) {
     const { data, error } = await supabase.from(table).select('*').order('id', { ascending: true });

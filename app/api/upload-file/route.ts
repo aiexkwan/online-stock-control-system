@@ -119,17 +119,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       console.error('[Upload File API] Supabase 上傳錯誤:', error);
 
       // 如果是 RLS 錯誤，提供更詳細的錯誤信息
-      if ((error as { message: string }).message.includes('row-level security') || (error as { message: string }).message.includes('RLS')) {
+      if (getErrorMessage(error).includes('row-level security') || getErrorMessage(error).includes('RLS')) {
         return NextResponse.json(
           {
             error: 'Storage access denied. Please check bucket permissions.',
-            details: (error as { message: string }).message,
+            details: getErrorMessage(error),
           },
           { status: 403 }
         );
       }
 
-      return NextResponse.json({ error: `Upload failed: ${(error as { message: string }).message}` }, { status: 500 });
+      return NextResponse.json({ error: `Upload failed: ${getErrorMessage(error)}` }, { status: 500 });
     }
 
     if (!data || !data.path) {
@@ -222,8 +222,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         type: file.type,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Upload File API] 意外錯誤:', error);
-    return NextResponse.json({ error: `Internal server error: ${(error as { message: string }).message}` }, { status: 500 });
+    return NextResponse.json({ error: `Internal server error: ${getErrorMessage(error)}` }, { status: 500 });
   }
 }

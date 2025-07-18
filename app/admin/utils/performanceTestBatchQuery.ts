@@ -57,7 +57,7 @@ class ConcurrentQueryPerformanceTester {
       const newEntries = endResourceEntries.slice(startResourceEntries);
 
       // 計算網絡傳輸大小
-      const networkBytes = newEntries.reduce((total, entry: any) => {
+      const networkBytes = newEntries.reduce((total, entry: Record<string, unknown>) => {
         return total + (entry.transferSize || 0);
       }, 0);
 
@@ -122,7 +122,7 @@ class ConcurrentQueryPerformanceTester {
     const newEntries = endResourceEntries.slice(startResourceEntries);
 
     // 計算網絡傳輸大小
-    const networkBytes = newEntries.reduce((total, entry: any) => {
+    const networkBytes = newEntries.reduce((total, entry: Record<string, unknown>) => {
       return total + (entry.transferSize || 0);
     }, 0);
 

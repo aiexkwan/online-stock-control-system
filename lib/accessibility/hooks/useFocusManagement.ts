@@ -143,9 +143,9 @@ export function useFocusManagement(
    * @returns 可聚焦元素陣列
    */
   const getFocusableElements = useCallback((container: HTMLElement): HTMLElement[] => {
-    return globalFocusManager.getFocusableElements 
-      ? globalFocusManager.getFocusableElements(container)
-      : [];
+    // Import getFocusableElements from wcag-helpers directly
+    const { getFocusableElements: getElements } = require('../utils/wcag-helpers');
+    return getElements(container) || [];
   }, []);
 
   /**
@@ -364,17 +364,13 @@ export function useFocusAreas(areas: Array<{
     const area = areas.find(a => a.id === areaId);
     if (!area || !area.containerRef.current) return false;
 
-    const firstFocusable = globalFocusManager.getFocusableElements?.(area.containerRef.current)?.[0];
-    if (firstFocusable) {
-      const success = setFocus(firstFocusable);
-      if (success) {
-        setActiveAreaId(areaId);
-      }
-      return success;
+    // Use focusFirst method instead
+    const success = globalFocusManager.focusFirst(area.containerRef.current);
+    if (success) {
+      setActiveAreaId(areaId);
     }
-
-    return false;
-  }, [areas, setFocus]);
+    return success;
+  }, [areas]);
 
   /**
    * 移動到下一個區域

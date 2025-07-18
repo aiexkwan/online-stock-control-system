@@ -35,7 +35,7 @@ export default function BatchLoadPanel({ orderRef, onBatchComplete }: BatchLoadP
   const [showBatchMode, setShowBatchMode] = useState(false);
 
   // Add item to batch
-  const handleAddToBatch = (result: any) => {
+  const handleAddToBatch = (result: Record<string, unknown>) => {
     const input = result.data.value;
 
     // Check if already in batch

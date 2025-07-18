@@ -7,6 +7,7 @@ import {
   type GenerationOptions,
 } from '../utils/palletGeneration';
 import { createClient as createServerClient } from '../utils/supabase/server';
+import { getErrorMessage } from '../../lib/types/error-handling';
 import { z } from 'zod';
 
 /**
@@ -44,12 +45,12 @@ export async function generatePalletNumbers(
       palletNumbers: result.palletNumbers,
       series: result.series,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[palletActions] Error generating pallet numbers:', error);
     return {
       palletNumbers: [],
       series: [],
-      error: error.message || 'Unknown error occurred',
+      error: getErrorMessage(error) || 'Unknown error occurred',
     };
   }
 }
@@ -76,11 +77,11 @@ export async function confirmPalletUsage(palletNumbers: string[]): Promise<{
     }
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[palletActions] Error confirming pallet usage:', error);
     return {
       success: false,
-      error: error.message || 'Unknown error occurred',
+      error: getErrorMessage(error) || 'Unknown error occurred',
     };
   }
 }
@@ -107,11 +108,11 @@ export async function releasePalletReservation(palletNumbers: string[]): Promise
     }
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[palletActions] Error releasing pallet reservation:', error);
     return {
       success: false,
-      error: error.message || 'Unknown error occurred',
+      error: getErrorMessage(error) || 'Unknown error occurred',
     };
   }
 }
@@ -208,7 +209,7 @@ export async function fetchPalletForReprint(palletNumber: string) {
         plt_num: palletInfo.plt_num,
         product_code: palletInfo.product_code,
         product_description: (() => {
-          const dataCode = palletInfo.data_code as any;
+          const dataCode = palletInfo.data_code as { description?: string } | { description?: string }[];
           if (Array.isArray(dataCode)) {
             return dataCode[0]?.description || '';
           }
@@ -235,7 +236,7 @@ export async function fetchPalletForReprint(palletNumber: string) {
     
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch pallet information',
+      error: error instanceof Error ? getErrorMessage(error) : 'Failed to fetch pallet information',
     };
   }
 }

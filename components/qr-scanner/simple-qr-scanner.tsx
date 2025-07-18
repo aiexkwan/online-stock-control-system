@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { DatabaseRecord } from '@/lib/types/database';
 import { createPortal } from 'react-dom';
 import { Button } from '../ui/button';
 import { XMarkIcon } from '@heroicons/react/24/outline';
@@ -99,7 +100,7 @@ export const SimpleQRScanner: React.FC<SimpleQRScannerProps> = ({
     // 確保開新相機之前，舊嘅已經關閉
     cleanup();
 
-    let jsQR: any = null;
+    let jsQR: DatabaseRecord = null;
     let localStream: MediaStream | null = null;
 
     const initializeScanner = async () => {

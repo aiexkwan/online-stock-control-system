@@ -4,6 +4,7 @@
  */
 
 import { useCallback, useRef, useState } from 'react';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { toast } from 'sonner';
 // Import moved to dynamic import in generatePdfStream function
 import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf';
@@ -152,12 +153,12 @@ export const useStreamingPdfGeneration = (): UseStreamingPdfGenerationReturn => 
         }
 
         return { blob: pdfBlob, url: uploadResult.publicUrl, error: null };
-      } catch (error: any) {
-        if (error.message === 'Operation cancelled') {
+      } catch (error: unknown) {
+        if (getErrorMessage(error) === 'Operation cancelled') {
           return { blob: null, url: null, error: 'Cancelled' };
         }
         console.error(`Error generating PDF for pallet ${palletNum}:`, error);
-        return { blob: null, url: null, error: error.message };
+        return { blob: null, url: null, error: getErrorMessage(error) };
       }
     },
     []
@@ -287,18 +288,18 @@ export const useStreamingPdfGeneration = (): UseStreamingPdfGenerationReturn => 
           uploadedUrls,
           errors,
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Streaming PDF generation error:', error);
         setStreamingStatus(prev => ({
           ...prev,
           isStreaming: false,
-          errors: [...prev.errors, error.message],
+          errors: [...prev.errors, getErrorMessage(error)],
         }));
         return {
           success: false,
           pdfBlobs,
           uploadedUrls,
-          errors: [...errors, error.message],
+          errors: [...errors, getErrorMessage(error)],
         };
       } finally {
         abortControllerRef.current = null;

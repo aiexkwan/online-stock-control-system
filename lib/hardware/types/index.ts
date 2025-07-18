@@ -1,3 +1,5 @@
+import { DatabaseRecord } from '@/lib/types/database';
+
 /**
  * Unified Hardware Service Types
  * Based on existing print-label and print-grnlabel implementations
@@ -9,7 +11,7 @@ export type PrintJobType = 'qc-label' | 'grn-label' | 'report' | 'document';
 export interface PrintJob {
   id?: string;
   type: PrintJobType;
-  data: any; // Will be specific to each job type
+  data: DatabaseRecord[]; // Will be specific to each job type
   copies: number;
   priority: 'high' | 'normal' | 'low';
   metadata?: {
