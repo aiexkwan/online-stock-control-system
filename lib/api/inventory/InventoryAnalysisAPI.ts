@@ -94,23 +94,36 @@ export class InventoryAnalysisAPI {
     const sorted = [...products];
 
     sorted.sort((a, b) => {
-      let aVal: DatabaseRecord = a[sortBy];
-      let bVal: DatabaseRecord = b[sortBy];
+      // Strategy 4: unknown + type narrowing
+      let aVal: string | number | boolean = a[sortBy];
+      let bVal: string | number | boolean = b[sortBy];
 
-      // Handle boolean values
+      // Handle boolean values - convert to number for comparison
       if (typeof aVal === 'boolean') {
-        aVal = aVal ? 1 : 0;
-        bVal = bVal ? 1 : 0;
+        const aNum = aVal ? 1 : 0;
+        const bNum = typeof bVal === 'boolean' ? (bVal ? 1 : 0) : 0;
+        return ascending ? aNum - bNum : bNum - aNum;
       }
 
       // Handle string values
-      if (typeof aVal === 'string') {
-        aVal = aVal.toLowerCase();
-        bVal = bVal.toLowerCase();
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        const aStr = aVal.toLowerCase();
+        const bStr = bVal.toLowerCase();
+        if (aStr < bStr) return ascending ? -1 : 1;
+        if (aStr > bStr) return ascending ? 1 : -1;
+        return 0;
       }
 
-      if (aVal < bVal) return ascending ? -1 : 1;
-      if (aVal > bVal) return ascending ? 1 : -1;
+      // Handle number values
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return ascending ? aVal - bVal : bVal - aVal;
+      }
+
+      // Fallback: convert to string
+      const aStr = String(aVal).toLowerCase();
+      const bStr = String(bVal).toLowerCase();
+      if (aStr < bStr) return ascending ? -1 : 1;
+      if (aStr > bStr) return ascending ? 1 : -1;
       return 0;
     });
 

@@ -261,7 +261,10 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
                 <Legend
                   verticalAlign='bottom'
                   height={36}
-                  formatter={(value: unknown, entry: { payload: { percentage: number } }) => `${value} (${entry.payload.percentage}%)`}
+                  formatter={(value: any, entry: any) => {
+                    const percentage = entry?.payload?.percentage || 0;
+                    return `${value} (${percentage}%)`;
+                  }}
                 />
               </PieChart>
             </ResponsiveContainer>

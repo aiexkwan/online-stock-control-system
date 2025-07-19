@@ -151,18 +151,30 @@ export class StockLevelsAPI extends DataAccessLayer<StockLevelParams, StockLevel
 
   /**
    * Transform raw product data to stock level format
+   * Strategy 4: unknown + type narrowing with safe accessors
    */
   private transformProducts(products: Record<string, unknown>[]): StockLevelItem[] {
-    return products.map(product => ({
-      productCode: product.product_code,
-      productDesc: product.product_desc || '',
-      warehouse: product.current_plt_loc?.charAt(0) || 'Unknown',
-      location: product.current_plt_loc || 'Unknown',
-      quantity: product.product_qty || 0,
-      value: (product.product_qty || 0) * (product.unit_price || 0),
-      lastUpdated: product.updated_at || product.created_at,
-      palletCount: 1, // Each record represents one pallet
-    }));
+    return products.map(product => {
+      // Safe type narrowing for product data
+      const productCode = typeof product.product_code === 'string' ? product.product_code : 'Unknown';
+      const productDesc = typeof product.product_desc === 'string' ? product.product_desc : '';
+      const currentPltLoc = typeof product.current_plt_loc === 'string' ? product.current_plt_loc : 'Unknown';
+      const productQty = typeof product.product_qty === 'number' ? product.product_qty : 0;
+      const unitPrice = typeof product.unit_price === 'number' ? product.unit_price : 0;
+      const updatedAt = typeof product.updated_at === 'string' ? product.updated_at : 
+                       typeof product.created_at === 'string' ? product.created_at : new Date().toISOString();
+
+      return {
+        productCode,
+        productDesc,
+        warehouse: currentPltLoc.charAt(0) || 'Unknown',
+        location: currentPltLoc,
+        quantity: productQty,
+        value: productQty * unitPrice,
+        lastUpdated: updatedAt,
+        palletCount: 1, // Each record represents one pallet
+      };
+    });
   }
 
   /**

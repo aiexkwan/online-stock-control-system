@@ -4,26 +4,27 @@ import { format } from 'date-fns';
 import { isNotProduction } from '@/lib/utils/env';
 import { getErrorMessage } from '@/lib/types/error-handling';
 import { toRecordArray, safeGet, safeString, safeNumber } from '@/lib/types/supabase-helpers';
+import {
+  VoidRecord as ZodVoidRecord,
+  VoidReportFilters as ZodVoidReportFilters,
+  ReportVoidRecord as ZodReportVoidRecord,
+  PalletInfo,
+  HistoryRecord,
+  BusinessSchemaValidator,
+  BusinessTypeGuards,
+  VoidRecordSchema,
+  ReportVoidRecordSchema,
+  PalletInfoSchema,
+  HistoryRecordSchema
+} from '@/lib/types/business-schemas';
 
-// Based on database structure
-export interface VoidRecord {
-  uuid: string;
-  plt_num: string;
-  time: string;
-  reason: string;
-  damage_qty: number | null;
-  // Additional fields from joins
-  product_code?: string;
-  product_qty?: number;
-  user_name?: string;
-  user_id?: number;
-  plt_loc?: string;
-  // Computed fields
-  void_qty: number;
-}
+// Re-export types from business schemas for backward compatibility
+export type VoidRecord = ZodVoidRecord;
+export type VoidReportFilters = ZodVoidReportFilters;
+export type ReportVoidRecord = ZodReportVoidRecord;
 
-// Interface for database record structure
-interface ReportVoidRecord {
+// Legacy interface for internal use (to be phased out)
+interface LegacyReportVoidRecord {
   uuid: string;
   plt_num: string;
   time: string;
@@ -33,14 +34,6 @@ interface ReportVoidRecord {
     product_code: string;
     product_qty: number;
   } | null;
-}
-
-export interface VoidReportFilters {
-  startDate?: string;
-  endDate?: string;
-  voidReason?: string;
-  productCode?: string;
-  voidBy?: string;
 }
 
 export async function fetchVoidRecords(filters: VoidReportFilters): Promise<VoidRecord[]> {
@@ -155,17 +148,22 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
       isNotProduction() &&
       console.log('Sample void record:', JSON.stringify(voidReports[0], null, 2));
 
-    // Step 2: Get unique pallet numbers for user lookup
-    const palletNumbers = [...new Set(voidReports.map((v: Record<string, unknown>) => v.plt_num))];
+    // Step 2: Get unique pallet numbers for user lookup (Strategy 4: unknown + type narrowing)
+    const palletNumbers = [...new Set(voidReports.map(v => {
+      if (typeof v === 'object' && v !== null && 'plt_num' in v) {
+        return String(v.plt_num);
+      }
+      return '';
+    }).filter(Boolean))];
 
-    // Step 3: Try to get user information from record_history (optional)
-    let userMap = new Map<string, {
-      clock_number?: string;
-      name?: string;
-      record_history?: Array<{
+    // Step 3: Try to get user information from record_history (Strategy 2: Type-safe Map)
+    const userMap = new Map<string, {
+      clock_number: string;
+      name: string;
+      record_history: Array<{
         time: string;
         action: string;
-        id?: number;
+        id: number;
       }>;
     }>();
 
@@ -194,17 +192,40 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
           isNotProduction() &&
             isNotProduction() &&
             console.log(`Found ${historyRecords.length} history records`);
+          
+          // Strategy 4: unknown + type narrowing with validation
           historyRecords.forEach(h => {
-            if (!userMap.has(h.plt_num)) {
-              userMap.set(h.plt_num, {
-                clock_number: safeString(safeGet(h, 'data_id.id', '')),
-                name: safeString(safeGet(h, 'data_id.name', '')),
-                record_history: [{
-                  time: safeString(safeGet(h, 'time', '')),
-                  action: 'Void Pallet',
-                  id: safeNumber(safeGet(h, 'id', 0))
-                }]
-              });
+            // Try to validate using Zod schema
+            const parseResult = BusinessSchemaValidator.safeParseArray([h], HistoryRecordSchema);
+            
+            if (parseResult.success && parseResult.data.length > 0) {
+              const historyRecord = parseResult.data[0];
+              if (!userMap.has(historyRecord.plt_num)) {
+                const dataId = historyRecord.data_id;
+                userMap.set(historyRecord.plt_num, {
+                  clock_number: dataId ? String(dataId.id) : '0',
+                  name: dataId ? dataId.name : 'Unknown',
+                  record_history: [{
+                    time: historyRecord.time,
+                    action: 'Void Pallet',
+                    id: historyRecord.id
+                  }]
+                });
+              }
+            } else {
+              // Fallback for invalid records using safe accessors
+              const pltNum = safeString(safeGet(h, 'plt_num', ''));
+              if (pltNum && !userMap.has(pltNum)) {
+                userMap.set(pltNum, {
+                  clock_number: safeString(safeGet(h, 'data_id.id', '0')),
+                  name: safeString(safeGet(h, 'data_id.name', 'Unknown')),
+                  record_history: [{
+                    time: safeString(safeGet(h, 'time', '')),
+                    action: 'Void Pallet',
+                    id: safeNumber(safeGet(h, 'id', 0))
+                  }]
+                });
+              }
             }
           });
         }
@@ -215,34 +236,74 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
         console.warn('Could not fetch history records:', historyError);
     }
 
-    // Step 4: Combine all data (Strategy 4: unknown + type narrowing)
+    // Step 4: Combine all data (Strategy 1: Zod validation with type narrowing)
     let combinedRecords: VoidRecord[] = toRecordArray(voidReports).map((voidRecord) => {
       const palletInfo = safeGet(voidRecord, 'record_palletinfo', {});
-      const historyInfo = userMap.get(safeString(safeGet(voidRecord, 'plt_num', '')));
+      const pltNum = safeString(safeGet(voidRecord, 'plt_num', ''));
+      const historyInfo = userMap.get(pltNum);
 
-      // Log if palletInfo is missing
-      if (!palletInfo || Object.keys(palletInfo).length === 0) {
-        isNotProduction() &&
-          isNotProduction() &&
-          console.warn(`No pallet info found for plt_num: ${safeGet(voidRecord, 'plt_num', '')}`);
+      // Validate pallet info using type guards
+      let validatedPalletInfo: PalletInfo | null = null;
+      if (BusinessTypeGuards.isPalletInfo(palletInfo)) {
+        validatedPalletInfo = palletInfo;
+      } else {
+        // Try to construct valid pallet info from available data
+        const constructedInfo = {
+          plt_num: pltNum,
+          product_code: safeString(safeGet(palletInfo, 'product_code', 'N/A')),
+          product_qty: safeNumber(safeGet(palletInfo, 'product_qty', 0))
+        };
+        
+        if (BusinessTypeGuards.isPalletInfo(constructedInfo)) {
+          validatedPalletInfo = constructedInfo;
+        }
       }
 
-      return {
+      // Log if palletInfo is missing
+      if (!validatedPalletInfo) {
+        isNotProduction() &&
+          isNotProduction() &&
+          console.warn(`No valid pallet info found for plt_num: ${pltNum}`);
+      }
+
+      const damageQty = safeNumber(safeGet(voidRecord, 'damage_qty', 0));
+      const voidQty = damageQty > 0 ? damageQty : (validatedPalletInfo?.product_qty || 0);
+
+      // Create final validated record
+      const finalRecord: VoidRecord = {
         uuid: safeString(safeGet(voidRecord, 'uuid', '')),
-        plt_num: safeString(safeGet(voidRecord, 'plt_num', '')),
+        plt_num: pltNum,
         time: safeString(safeGet(voidRecord, 'time', '')),
         reason: safeString(safeGet(voidRecord, 'reason', '')),
-        damage_qty: safeNumber(safeGet(voidRecord, 'damage_qty', 0)),
-        product_code: safeString(safeGet(palletInfo, 'product_code', 'N/A')),
-        product_qty: safeNumber(safeGet(palletInfo, 'product_qty', 0)),
-        plt_loc: 'Voided', // 默認位置，因為結構已變化
-        user_name: safeString(safeGet(historyInfo, 'name', 'System')),
-        user_id: safeNumber(safeGet(historyInfo, 'clock_number', 0)),
-        void_qty:
-          safeNumber(safeGet(voidRecord, 'damage_qty', 0)) > 0
-            ? safeNumber(safeGet(voidRecord, 'damage_qty', 0))
-            : safeNumber(safeGet(palletInfo, 'product_qty', 0)),
+        damage_qty: safeGet(voidRecord, 'damage_qty', null) as number | null,
+        product_code: validatedPalletInfo?.product_code || 'N/A',
+        product_qty: validatedPalletInfo?.product_qty || 0,
+        plt_loc: 'Voided',
+        user_name: historyInfo?.name || 'System',
+        user_id: historyInfo ? parseInt(historyInfo.clock_number) || 0 : 0,
+        void_qty: voidQty
       };
+
+      // Final validation using Zod
+      try {
+        return BusinessSchemaValidator.validateVoidRecord(finalRecord);
+      } catch (error) {
+        console.warn(`Failed to validate final record for ${pltNum}: ${error}`, finalRecord);
+        // Return a safe default record
+        return {
+          uuid: finalRecord.uuid || 'unknown',
+          plt_num: pltNum || 'unknown',
+          time: finalRecord.time || new Date().toISOString(),
+          reason: finalRecord.reason || 'unknown',
+          damage_qty: null,
+          product_code: 'N/A',
+          product_qty: 0,
+          plt_loc: 'Voided',
+          user_name: 'System',
+          user_id: 0,
+          void_qty: 0
+        };
+      }
     });
 
     // Step 6: Apply additional filters
@@ -285,10 +346,10 @@ export function generateVoidReportPDF(records: VoidRecord[], filters: VoidReport
     // Summary statistics
     const totalVoids = records.length;
     const totalQty = records.reduce((sum, r) => sum + (r.void_qty || 0), 0);
-    const damageVoids = records.filter((r: Record<string, unknown>) => r.damage_qty !== null && r.damage_qty > 0).length;
-    const fullVoids = records.filter((r: Record<string, unknown>) => r.damage_qty === null || r.damage_qty === 0).length;
-    const voidReasons = [...new Set(records.map((r: Record<string, unknown>) => r.reason).filter(Boolean))];
-    const uniqueProducts = [...new Set(records.map((r: Record<string, unknown>) => r.product_code).filter(Boolean))].length;
+    const damageVoids = records.filter(r => r.damage_qty !== null && r.damage_qty > 0).length;
+    const fullVoids = records.filter(r => r.damage_qty === null || r.damage_qty === 0).length;
+    const voidReasons = [...new Set(records.map(r => r.reason).filter(Boolean))];
+    const uniqueProducts = [...new Set(records.map(r => r.product_code).filter(Boolean))].length;
 
     doc.text(`Total Voids: ${totalVoids}`, 14, 40);
     doc.text(`Total Quantity: ${totalQty}`, 14, 47);
@@ -489,10 +550,10 @@ export async function generateVoidReportExcel(records: VoidRecord[], filters: Vo
     // Summary sheet
     const totalVoids = records.length;
     const totalQty = records.reduce((sum, r) => sum + (r.void_qty || 0), 0);
-    const damageVoids = records.filter((r: Record<string, unknown>) => r.damage_qty !== null && r.damage_qty > 0).length;
-    const fullVoids = records.filter((r: Record<string, unknown>) => r.damage_qty === null || r.damage_qty === 0).length;
-    const uniqueProducts = [...new Set(records.map((r: Record<string, unknown>) => r.product_code).filter(Boolean))].length;
-    const uniqueReasons = [...new Set(records.map((r: Record<string, unknown>) => r.reason).filter(Boolean))].length;
+    const damageVoids = records.filter(r => r.damage_qty !== null && r.damage_qty > 0).length;
+    const fullVoids = records.filter(r => r.damage_qty === null || r.damage_qty === 0).length;
+    const uniqueProducts = [...new Set(records.map(r => r.product_code).filter(Boolean))].length;
+    const uniqueReasons = [...new Set(records.map(r => r.reason).filter(Boolean))].length;
 
     const summaryData = [
       ['Void Pallet Report'],
@@ -862,7 +923,12 @@ export async function fetchVoidRecordsAlternative(
       console.log(`Found ${voidReports.length} void records`);
 
     // Step 2: Get pallet info separately
-    const palletNumbers = [...new Set(voidReports.map((v: Record<string, unknown>) => v.plt_num))];
+    const palletNumbers = [...new Set(voidReports.map(v => {
+      if (typeof v === 'object' && v !== null && 'plt_num' in v) {
+        return String(v.plt_num);
+      }
+      return '';
+    }).filter(Boolean))];
     isNotProduction() &&
       isNotProduction() &&
       console.log(`Fetching info for ${palletNumbers.length} unique pallets`);
@@ -929,27 +995,59 @@ export async function fetchVoidRecordsAlternative(
         console.warn('Could not fetch history records:', historyError);
     }
 
-    // Step 4: Combine all data
-    let combinedRecords: VoidRecord[] = voidReports.map((voidRecord: Record<string, unknown>) => {
-      const palletInfo = palletInfoMap.get(voidRecord.plt_num);
-      const historyInfo = userMap.get(voidRecord.plt_num);
+    // Step 4: Combine all data (Strategy 1: Zod validation with type safety)
+    let combinedRecords: VoidRecord[] = voidReports.map(voidRecord => {
+      // Safely extract basic fields
+      const uuid = String(safeGet(voidRecord, 'uuid', ''));
+      const plt_num = String(safeGet(voidRecord, 'plt_num', ''));
+      const time = String(safeGet(voidRecord, 'time', ''));
+      const reason = String(safeGet(voidRecord, 'reason', ''));
+      const damage_qty = typeof voidRecord === 'object' && voidRecord !== null && 'damage_qty' in voidRecord 
+        ? (voidRecord.damage_qty as number | null) 
+        : null;
 
-      return {
-        uuid: voidRecord.uuid,
-        plt_num: voidRecord.plt_num,
-        time: voidRecord.time,
-        reason: voidRecord.reason,
-        damage_qty: voidRecord.damage_qty,
+      const palletInfo = palletInfoMap.get(plt_num);
+      const historyInfo = userMap.get(plt_num);
+
+      const voidQty = damage_qty !== null && damage_qty > 0
+        ? damage_qty
+        : palletInfo?.product_qty || 0;
+
+      // Create record with proper typing
+      const record: VoidRecord = {
+        uuid,
+        plt_num,
+        time,
+        reason,
+        damage_qty,
         product_code: palletInfo?.product_code || 'N/A',
         product_qty: palletInfo?.product_qty || 0,
         plt_loc: historyInfo?.loc || 'Voided',
         user_name: historyInfo?.user?.name || 'System',
         user_id: historyInfo?.user?.id || 0,
-        void_qty:
-          voidRecord.damage_qty !== null && voidRecord.damage_qty > 0
-            ? voidRecord.damage_qty
-            : palletInfo?.product_qty || 0,
+        void_qty: voidQty
       };
+
+      // Validate with Zod before returning
+      try {
+        return BusinessSchemaValidator.validateVoidRecord(record);
+      } catch (error) {
+        console.warn(`Validation failed for record ${plt_num}: ${error}`);
+        // Return safe fallback
+        return {
+          uuid: uuid || 'unknown',
+          plt_num: plt_num || 'unknown',
+          time: time || new Date().toISOString(),
+          reason: reason || 'unknown',
+          damage_qty: null,
+          product_code: 'N/A',
+          product_qty: 0,
+          plt_loc: 'Voided',
+          user_name: 'System',
+          user_id: 0,
+          void_qty: 0
+        };
+      }
     });
 
     // Apply additional filters

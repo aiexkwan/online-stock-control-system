@@ -117,19 +117,27 @@ export function processOrderTrendData(
   const productCodes = new Set<string>();
 
   orderData.forEach(record => {
+    // 安全地訪問屬性
+    const createdAt = record.created_at;
+    const productCode = record.product_code;
+    
+    if (typeof createdAt !== 'string' || typeof productCode !== 'string') {
+      return; // 跳過無效記錄
+    }
+
     const date =
       timeRange === '1d'
-        ? new Date(record.created_at).getHours().toString().padStart(2, '0') + ':00'
-        : new Date(record.created_at).toLocaleDateString('en-GB');
+        ? new Date(createdAt).getHours().toString().padStart(2, '0') + ':00'
+        : new Date(createdAt).toLocaleDateString('en-GB');
 
-    productCodes.add(record.product_code);
+    productCodes.add(productCode);
 
     if (!trendData.has(date)) {
       trendData.set(date, new Map());
     }
 
     const dateData = trendData.get(date)!;
-    dateData.set(record.product_code, (dateData.get(record.product_code) || 0) + 1);
+    dateData.set(productCode, (dateData.get(productCode) || 0) + 1);
   });
 
   // Convert to array format

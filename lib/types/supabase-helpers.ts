@@ -340,3 +340,50 @@ export function toTableRows<T extends keyof Database['public']['Tables']>(
   const records = toRecordArray(values);
   return records.map(record => toTableRow(record, tableName));
 }
+
+/**
+ * Supabase count 查詢結果類型
+ */
+export interface CountResult {
+  count: number;
+}
+
+/**
+ * 安全轉換 Supabase count(*) 查詢結果
+ */
+export function toSafeCount(value: unknown): number {
+  // 處理 Supabase count(*) 查詢返回的結果
+  if (value && typeof value === 'object' && value !== null) {
+    // Supabase count(*) 查詢返回 { count: number } 格式
+    if ('count' in value) {
+      return toSafeNumber(value.count);
+    }
+    // 也可能返回字段名為 'count(*)' 的格式
+    if ('count(*)' in value) {
+      return toSafeNumber((value as any)['count(*)']);
+    }
+  }
+  return 0;
+}
+
+/**
+ * 安全轉換為數字 (內部助手函數)
+ */
+function toSafeNumber(value: unknown, defaultValue = 0): number {
+  if (typeof value === 'number' && !isNaN(value)) return value;
+  if (typeof value === 'string') {
+    const num = Number(value);
+    if (!isNaN(num)) return num;
+  }
+  return defaultValue;
+}
+
+/**
+ * 安全轉換 Supabase count 查詢響應
+ */
+export function extractCount(response: { data: unknown; error: unknown }): number {
+  if (response.error || !response.data) {
+    return 0;
+  }
+  return toSafeCount(response.data);
+}

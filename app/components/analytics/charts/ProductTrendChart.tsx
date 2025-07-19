@@ -78,13 +78,20 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
 
       if (orderError) throw orderError;
 
-      // Process data for both views
-      const { detail, summary } = processOrderTrendData(orderData || [], timeRange);
+      // Process data for both views - 確保數據是正確格式
+      const safeOrderData = Array.isArray(orderData) 
+        ? orderData.filter(record => record && typeof record === 'object') as Record<string, unknown>[]
+        : [];
+      
+      const { detail, summary } = processOrderTrendData(safeOrderData, timeRange);
 
       // Extract product codes (top 10 by order count)
       const productTotals = new Map<string, number>();
-      (orderData || []).forEach(record => {
-        productTotals.set(record.product_code, (productTotals.get(record.product_code) || 0) + 1);
+      safeOrderData.forEach(record => {
+        const productCode = record.product_code;
+        if (typeof productCode === 'string' && productCode) {
+          productTotals.set(productCode, (productTotals.get(productCode) || 0) + 1);
+        }
       });
 
       const topProducts = Array.from(productTotals.entries())
@@ -93,7 +100,7 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
         .map(([code]) => code);
 
       setProductCodes(topProducts);
-      setData(detail);
+      setData(detail as ProductTrendData[]);
       setSummaryData(summary);
     } catch (err: unknown) {
       console.error('Error loading order trend data:', err);

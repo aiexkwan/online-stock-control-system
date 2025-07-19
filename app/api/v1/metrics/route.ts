@@ -4,7 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getVersionStats } from '@/lib/middleware/apiVersioning';
+import { getVersionStats, type VersionStats } from '@/lib/middleware/apiVersioning';
 
 /**
  * 獲取 API 版本使用統計
@@ -21,8 +21,8 @@ export async function GET() {
     const totalRequests = versionStats.reduce((sum, stat) => sum + stat.requestCount, 0);
     const totalErrors = versionStats.reduce((sum, stat) => sum + stat.errorCount, 0);
     
-    // 計算版本分佈
-    const versionDistribution = versionStats.map((stat: Record<string, unknown>) => ({
+    // 計算版本分佈 (Strategy 2: DTO/custom type interface)
+    const versionDistribution = versionStats.map((stat: VersionStats) => ({
       version: stat.version,
       requestCount: stat.requestCount,
       percentage: totalRequests > 0 ? (stat.requestCount / totalRequests * 100).toFixed(2) : '0.00',

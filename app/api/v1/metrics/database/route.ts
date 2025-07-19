@@ -130,10 +130,11 @@ async function getQueryPerformanceMetrics(supabase: TypedSupabaseClient) {
       const startTime = Date.now();
       
       try {
-        // 使用 RPC 函數來測試表性能，避免動態表名的類型問題 (Strategy 3: Supabase codegen)
-        const { data, error } = await supabase.rpc('test_table_performance', {
-          table_name: test.query
-        });
+        // 使用簡單查詢測試表性能 (Strategy 4: unknown + type narrowing)
+        const { data, error } = await supabase
+          .from(test.query as any)
+          .select('count(*)', { head: true, count: 'exact' })
+          .limit(1) as { data: unknown; error: unknown };
         
         if (error) {
           throw error;
@@ -207,13 +208,14 @@ async function getTableStatistics(supabase: TypedSupabaseClient) {
 
     for (const tableName of mainTables) {
       try {
-        // 使用 RPC 函數獲取表統計，避免動態表名的類型問題 (Strategy 3: Supabase codegen)
-        const { data, error } = await supabase.rpc('get_table_stats', {
-          table_name: tableName
-        });
+        // 使用直接查詢獲取表統計 (Strategy 4: unknown + type narrowing)
+        const { data, error, count } = await supabase
+          .from(tableName as any)
+          .select('*', { head: true, count: 'exact' })
+          .limit(1) as { data: unknown; error: unknown; count: number | null };
 
-        if (!error && data) {
-          const rowCount = safeNumber(safeGet(data, 'count', 0));
+        if (!error && count !== null) {
+          const rowCount = count;
           totalRows += rowCount;
           
           tableStats.push({

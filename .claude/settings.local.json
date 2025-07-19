@@ -182,7 +182,8 @@
       "Bash(ANALYZE=false NODE_ENV=production npm run build)",
       "Bash(tsx scripts/type-refactor-tool.ts:*)",
       "Bash(tsx scripts/replace-any-with-types.ts:*)",
-      "Bash(supabase gen types:*)"
+      "Bash(supabase gen types:*)",
+      "mcp__supabase__list_migrations"
     ],
     "deny": []
   },

@@ -108,7 +108,8 @@ async function testDatabaseHealth(): Promise<HealthCheckResult> {
     const results = await Promise.allSettled(testQueries);
     const responseTime = Date.now() - startTime;
     
-    const successCount = results.filter((r: Record<string, unknown>) => (r as { status: string }).status === 'fulfilled').length;
+    // Strategy 4: unknown + type narrowing for Promise.allSettled results
+    const successCount = results.filter(r => r.status === 'fulfilled').length;
     const failureCount = results.length - successCount;
     
     let status: 'healthy' | 'degraded' | 'unhealthy';
@@ -265,11 +266,11 @@ export async function GET() {
       checkSystemResources(),
     ]);
     
-    // 計算總結
+    // 計算總結 (Strategy 4: unknown + type narrowing)
     const services = [databaseResult, supabaseResult, redisResult, systemResult];
-    const healthyServices = services.filter((s: Record<string, unknown>) => (s as { status: string }).status === 'healthy').length;
-    const degradedServices = services.filter((s: Record<string, unknown>) => (s as { status: string }).status === 'degraded').length;
-    const unhealthyServices = services.filter((s: Record<string, unknown>) => (s as { status: string }).status === 'unhealthy').length;
+    const healthyServices = services.filter(s => s && typeof s === 'object' && 'status' in s && s.status === 'healthy').length;
+    const degradedServices = services.filter(s => s && typeof s === 'object' && 'status' in s && s.status === 'degraded').length;
+    const unhealthyServices = services.filter(s => s && typeof s === 'object' && 'status' in s && s.status === 'unhealthy').length;
     
     let overallStatus: 'healthy' | 'degraded' | 'unhealthy';
     if (unhealthyServices > 0) {

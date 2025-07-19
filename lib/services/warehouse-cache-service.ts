@@ -78,12 +78,12 @@ export class WarehouseCacheService {
         throw error;
       }
 
-      // 轉換數據格式
+      // 轉換數據格式 (Strategy 4: unknown + type narrowing)
       const summary: WarehouseSummaryData[] = data.summary.map((item: Record<string, unknown>) => ({
-        location: item.location,
-        totalQty: parseInt(item.total_qty),
-        itemCount: parseInt(item.item_count),
-        uniqueProducts: parseInt(item.unique_products || 0),
+        location: String(item.location || ''),
+        totalQty: Number(item.total_qty) || 0,
+        itemCount: Number(item.item_count) || 0,
+        uniqueProducts: Number(item.unique_products) || 0,
         lastUpdated: new Date().toISOString(),
       }));
 
@@ -147,15 +147,16 @@ export class WarehouseCacheService {
       // 獲取緩存統計用於健康監控
       const cacheStats = await this.cache.getStats();
       
+      // 安全的類型轉換 (Strategy 4: unknown + type narrowing)
       const stats: DashboardStatsData = {
-        totalPallets: parseInt(data.total_pallets || 0),
-        activePallets: parseInt(data.active_pallets || 0),
-        uniqueProducts: parseInt(data.unique_products || 0),
-        todayTransfers: parseInt(data.today_transfers || 0),
-        pendingOrders: parseInt(data.pending_orders || 0),
+        totalPallets: Number(data.total_pallets) || 0,
+        activePallets: Number(data.active_pallets) || 0,
+        uniqueProducts: Number(data.unique_products) || 0,
+        todayTransfers: Number(data.today_transfers) || 0,
+        pendingOrders: Number(data.pending_orders) || 0,
         systemHealth: {
-          dbResponseTime: data.execution_time_ms || 0,
-          cacheHitRate: cacheStats.hitRate || 0,
+          dbResponseTime: Number(data.execution_time_ms) || 0,
+          cacheHitRate: Number(cacheStats.hitRate) || 0,
           lastUpdated: new Date().toISOString(),
         },
       };

@@ -1,6 +1,9 @@
 /**
  * useBatchProcessing Hook
  * 處理批量 QC 標籤生成
+ * 
+ * Phase 6.1 Week 1: QcLabelForm Data Structure Refactoring
+ * Strategy 1: Zod schemas for type safety
  */
 
 import { useState, useCallback } from 'react';
@@ -8,6 +11,11 @@ import { getErrorMessage } from '@/lib/types/error-handling';
 import { toast } from 'sonner';
 import { createClient } from '@/app/utils/supabase/client';
 import type { ProductInfo } from '../../types';
+import {
+  BatchProcessingResult,
+  BusinessSchemaValidator,
+  BusinessTypeGuards
+} from '@/lib/types/business-schemas';
 
 interface BatchItem {
   id: string;
@@ -28,13 +36,68 @@ interface BatchProcessingOptions {
   onProgress?: (completed: number, total: number) => void;
 }
 
-// 批量處理方法類型
+// 批量處理方法參數類型 (Strategy 2: DTO/自定義 type interface)
+interface GeneratePdfsOptions {
+  productInfo: ProductInfo;
+  quantity: number;
+  count: number;
+  palletNumbers: string[];
+  series: string;
+  formData: {
+    operator?: string;
+    acoOrderRef?: string;
+  };
+  clockNumber: string;
+}
+
+interface CreateQcRecordsOptions {
+  productInfo: ProductInfo;
+  quantity: number;
+  count: number;
+  operatorClockNum: string;
+  qcClockNum: string;
+  palletNumbers: string[];
+  series: string;
+  acoOrderRef?: string;
+}
+
+interface UpdateStockOptions {
+  productInfo: ProductInfo;
+  totalQuantity: number;
+  palletCount: number;
+  clockNumber: string;
+  acoOrderRef?: string;
+}
+
+interface ValidateFormOptions {
+  productCode: string;
+  quantity: string;
+  count: string;
+  operator?: string;
+  acoOrderRef?: string;
+}
+
+// 批量處理方法返回類型
+interface PalletGenerationResult {
+  success: boolean;
+  palletNumbers?: string[];
+  series?: string;
+  error?: string;
+}
+
+interface ProcessingResult {
+  success: boolean;
+  error?: string;
+  data?: unknown;
+}
+
+// 批量處理方法類型 (Strategy 1: 強類型定義)
 interface BatchProcessingMethods {
-  generatePdfs: (options: Record<string, unknown>) => Promise<unknown>;
-  generatePalletNumbers: (productCode: string, count: number) => Promise<unknown>;
-  createQcRecords: (options: Record<string, unknown>) => Promise<unknown>;
-  updateStockAndWorkLevels: (options: Record<string, unknown>) => Promise<unknown>;
-  validateForm: (options: Record<string, unknown>) => boolean;
+  generatePdfs: (options: GeneratePdfsOptions) => Promise<ProcessingResult>;
+  generatePalletNumbers: (productCode: string, count: number) => Promise<PalletGenerationResult>;
+  createQcRecords: (options: CreateQcRecordsOptions) => Promise<ProcessingResult>;
+  updateStockAndWorkLevels: (options: UpdateStockOptions) => Promise<ProcessingResult>;
+  validateForm: (options: ValidateFormOptions) => boolean;
 }
 
 interface UseBatchProcessingProps extends BatchProcessingMethods {
@@ -109,14 +172,14 @@ export const useBatchProcessing = ({
         const quantity = parseInt(item.quantity);
         const count = parseInt(item.count);
 
-        // 生成托盤號碼
+        // 生成托盤號碼 (Strategy 4: unknown + type narrowing)
         const palletResult = await generatePalletNumbers(productInfo.code, count);
-        if (!palletResult.success) {
-          return { success: false, error: 'Failed to generate pallet numbers' };
+        if (!palletResult.success || !palletResult.palletNumbers || !palletResult.series) {
+          return { success: false, error: palletResult.error || 'Failed to generate pallet numbers' };
         }
 
-        // 創建 QC 記錄
-        const qcResult = await createQcRecords({
+        // 創建 QC 記錄 (Strategy 1: 強類型驗證)
+        const qcOptions: CreateQcRecordsOptions = {
           productInfo,
           quantity,
           count,
@@ -125,14 +188,15 @@ export const useBatchProcessing = ({
           palletNumbers: palletResult.palletNumbers,
           series: palletResult.series,
           acoOrderRef: item.acoOrderRef,
-        });
-
+        };
+        
+        const qcResult = await createQcRecords(qcOptions);
         if (!qcResult.success) {
-          return { success: false, error: 'Failed to create QC records' };
+          return { success: false, error: qcResult.error || 'Failed to create QC records' };
         }
 
-        // 生成 PDFs
-        const pdfResult = await generatePdfs({
+        // 生成 PDFs (Strategy 1: 強類型驗證)
+        const pdfOptions: GeneratePdfsOptions = {
           productInfo,
           quantity,
           count,
@@ -143,24 +207,26 @@ export const useBatchProcessing = ({
             acoOrderRef: item.acoOrderRef,
           },
           clockNumber,
-        });
-
+        };
+        
+        const pdfResult = await generatePdfs(pdfOptions);
         if (!pdfResult.success) {
-          return { success: false, error: 'Failed to generate PDFs' };
+          return { success: false, error: pdfResult.error || 'Failed to generate PDFs' };
         }
 
-        // 更新庫存
+        // 更新庫存 (Strategy 1: 強類型驗證)
         const totalQuantity = quantity * count;
-        const stockResult = await updateStockAndWorkLevels({
+        const stockOptions: UpdateStockOptions = {
           productInfo,
           totalQuantity,
           palletCount: count,
           clockNumber,
           acoOrderRef: item.acoOrderRef,
-        });
-
+        };
+        
+        const stockResult = await updateStockAndWorkLevels(stockOptions);
         if (!stockResult.success) {
-          return { success: false, error: 'Failed to update stock levels' };
+          return { success: false, error: stockResult.error || 'Failed to update stock levels' };
         }
 
         return { success: true };

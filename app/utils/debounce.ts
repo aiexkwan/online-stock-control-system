@@ -4,7 +4,7 @@
  * @param wait 等待時間（毫秒）
  * @returns 防抖後的函數
  */
-export function debounce<T extends (...args: Record<string, unknown>[]) => any>(
+export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -27,7 +27,7 @@ export function debounce<T extends (...args: Record<string, unknown>[]) => any>(
 /**
  * 帶取消功能的防抖函數
  */
-export function debounceWithCancel<T extends (...args: Record<string, unknown>[]) => any>(
+export function debounceWithCancel<T extends (...args: any[]) => any>(
   func: T,
   wait: number
 ): {

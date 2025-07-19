@@ -169,12 +169,13 @@ export default function CameraDebugPage() {
       }
 
       // 額外調試信息
-      if (error.constraint) {
-        addLog(`🎯 問題約束: ${error.constraint}`);
+      if (error && typeof error === 'object' && 'constraint' in error) {
+        addLog(`🎯 問題約束: ${String(error.constraint)}`);
       }
 
-      if ((error as Error).stack) {
-        addLog(`📋 錯誤堆疊: ${(error as Error).stack.substring(0, 200)}...`);
+      if (error && typeof error === 'object' && 'stack' in error) {
+        const stack = String(error.stack);
+        addLog(`📋 錯誤堆疊: ${stack.substring(0, 200)}...`);
       }
     }
   };

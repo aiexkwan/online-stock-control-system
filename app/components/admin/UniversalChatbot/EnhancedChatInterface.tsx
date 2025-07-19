@@ -147,13 +147,21 @@ export default function EnhancedChatInterface({ onNewMessage }: ChatInterfacePro
       });
 
       // 添加錯誤訊息
+      const chatError: ChatError = {
+        message: errorResponse.message,
+        type: 'server',
+        details: errorResponse.details && typeof errorResponse.details === 'string' 
+          ? { details: errorResponse.details }
+          : undefined,
+      };
+
       const errorMessage: ChatMessage = {
         id: `error_${Date.now()}`,
         type: 'error',
-        content: errorResponse.message,
+        content: chatError.message,
         timestamp: new Date().toISOString(),
         metadata: {
-          error: errorResponse,
+          error: chatError,
         },
       };
 

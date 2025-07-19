@@ -28,7 +28,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'No data found for the specified criteria' }, { status: 404 });
     }
     
-    const records = dataSource.transform ? dataSource.transform(rawData) : toRecordArray(rawData);
+    // Strategy 4: unknown + type narrowing for records transformation
+    const transformedData = dataSource.transform ? dataSource.transform(rawData) : toRecordArray(rawData);
+    const records = Array.isArray(transformedData) ? transformedData : [];
 
     // 生成報表
     const format = body.format || 'excel';
@@ -45,14 +47,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       // Type guard for record properties (Strategy 4: unknown + type narrowing)
       (doc as any).autoTable({
         head: [['Timestamp', 'Order', 'Product', 'Qty', 'User', 'Action']],
-        body: records.map((r: Record<string, unknown>) => [
-          new Date(r.timestamp as string).toLocaleString(),
-          r.order_number as string,
-          r.product_code as string,
-          r.loaded_qty as number,
-          r.user_name as string,
-          r.action as string,
-        ]),
+        body: records.map(r => {
+          // Strategy 4: Safe type narrowing for each record
+          if (typeof r === 'object' && r !== null) {
+            const record = r as Record<string, unknown>;
+            return [
+              record.timestamp ? new Date(String(record.timestamp)).toLocaleString() : 'N/A',
+              record.order_number ? String(record.order_number) : 'N/A',
+              record.product_code ? String(record.product_code) : 'N/A', 
+              record.loaded_qty ? Number(record.loaded_qty) : 0,
+              record.user_name ? String(record.user_name) : 'N/A',
+              record.action ? String(record.action) : 'N/A',
+            ];
+          }
+          return ['N/A', 'N/A', 'N/A', 0, 'N/A', 'N/A'];
+        }),
         startY: 35,
       });
 
