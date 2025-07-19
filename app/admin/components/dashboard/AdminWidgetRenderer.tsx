@@ -17,7 +17,9 @@ import { unifiedWidgetRegistry } from '@/lib/widgets/unified-registry';
 import { 
   getWidgetCategory,
   getThemeGlowColor,
-  createErrorFallback 
+  createErrorFallback,
+  WidgetData,
+  WidgetComponentProps
 } from './widget-renderer-shared';
 import { ChartWidgetRenderer } from './ChartWidgetRenderer';
 import { StatsWidgetRenderer } from './StatsWidgetRenderer';
@@ -33,21 +35,13 @@ import {
   ProductData 
 } from '@/app/actions/productActions';
 
-// 類型定義
-interface WidgetComponentProps {
-  config: AdminWidgetConfig;
-  timeFrame: TimeFrame;
-  theme: string;
-  data?: DatabaseRecord[] | null;
-}
-
 interface AlertData {
   message: string;
   type?: 'info' | 'warning' | 'error';
   timestamp?: string;
 }
 
-type WidgetData = DatabaseRecord[] | null;
+type LocalWidgetData = DatabaseRecord[] | null;
 import { cn } from '@/lib/utils';
 import { 
   ArrowPathIcon,
@@ -130,7 +124,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
   index = 0,
   delay = 0
 }) => {
-  const [data, setData] = useState<WidgetData>(null);
+  const [data, setData] = useState<LocalWidgetData>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDelayed, setIsDelayed] = useState(delay > 0);
@@ -143,7 +137,14 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       console.error(`Component ${componentName} not found in unifiedWidgetRegistry.getWidgetComponent`);
       return <div>Component {componentName} not found</div>;
     }
-    return <Component {...props} />;
+    
+    // Convert props to support unified registry's expected interface
+    const unifiedProps = {
+      ...props,
+      widgetId: componentName, // Add required widgetId for BatchQueryWidgetComponentProps
+    };
+    
+    return <Component {...unifiedProps} />;
   }, []);
 
   // 處理延遲加載
@@ -225,7 +226,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
     config,
     theme,
     timeFrame,
-    data,
+    data: data as unknown as WidgetData,
     loading,
     error,
     renderLazyComponent
@@ -250,7 +251,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       case 'core':
       default:
         // 處理核心 widgets (上傳、產品更新等)
-        renderedContent = renderCoreWidget(config, theme, timeFrame, data, loading, error, renderLazyComponent);
+        renderedContent = renderCoreWidget(config, theme, timeFrame, data || [], loading, error, renderLazyComponent);
         break;
     }
   } catch (err) {
@@ -285,11 +286,11 @@ function renderCoreWidget(
     return createErrorFallback(config.type, error);
   }
 
-  const getComponentProps = (data?: WidgetData) => ({
+  const getComponentProps = (data?: LocalWidgetData): WidgetComponentProps => ({
     config,
     timeFrame,
     theme,
-    data
+    data: data as unknown as WidgetData
   });
 
   switch (config.type) {
@@ -353,11 +354,11 @@ const ProductUpdateWidget: React.FC<{
       if (result && typeof result === 'object' && 'code' in result && 'description' in result) {
         // Transform result to match ProductData interface
         const productData: ProductData = {
-          code: (result as Database['public']['Tables']['data_code']['Row']).code,
-          description: (result as Database['public']['Tables']['data_code']['Row']).description,
-          colour: (result as Database['public']['Tables']['data_code']['Row']).colour || '',
-          standard_qty: (result as Database['public']['Tables']['data_code']['Row']).standard_qty || 0,
-          type: (result as Database['public']['Tables']['data_code']['Row']).type || '',
+          code: (result as unknown as ProductData).code,
+          description: (result as unknown as ProductData).description,
+          colour: (result as unknown as ProductData).colour || '',
+          standard_qty: (result as unknown as ProductData).standard_qty || 0,
+          type: (result as unknown as ProductData).type || '',
         };
         setProductData(productData);
       } else {
@@ -420,7 +421,7 @@ const AlertsWidget: React.FC<{ data: DatabaseRecord[] }> = ({ data }) => {
           暫無警報
         </div>
       ) : (
-        alerts.map((alert: AlertData, index: number) => (
+        alerts.map((alert: DatabaseRecord, index: number) => (
           <div key={index} className="p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
             {(alert as { message: string }).message || `警報 ${index + 1}`}
           </div>

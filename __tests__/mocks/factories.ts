@@ -4,7 +4,6 @@
 
 import { Database } from '@/lib/database.types';
 import { DatabaseRecord } from '@/lib/types/database';
-import { DatabaseRecord } from '@/lib/types/database';
 
 type Tables = Database['public']['Tables'];
 type PalletInfo = Tables['record_palletinfo']['Row'];

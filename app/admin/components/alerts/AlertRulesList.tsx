@@ -83,7 +83,7 @@ export function AlertRulesList({ onRuleChange }: AlertRulesListProps) {
       const data = await response.json();
       
       if (data.success) {
-        setRules(rules.map((r: Record<string, unknown>) => 
+        setRules(rules.map((r: AlertRule) => 
           r.id === rule.id ? { ...r, enabled: !r.enabled } : r
         ));
         onRuleChange?.();
@@ -108,7 +108,7 @@ export function AlertRulesList({ onRuleChange }: AlertRulesListProps) {
       const data = await response.json();
       
       if (data.success) {
-        setRules(rules.filter((r: Record<string, unknown>) => r.id !== rule.id));
+        setRules(rules.filter((r: AlertRule) => r.id !== rule.id));
         onRuleChange?.();
       } else {
         console.error('Failed to delete rule:', data.error);

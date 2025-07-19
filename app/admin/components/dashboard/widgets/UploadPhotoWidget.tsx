@@ -14,6 +14,11 @@ import { toast } from 'sonner';
 import { GoogleDriveUploadToast } from './GoogleDriveUploadToast';
 import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';
 import { uploadFile } from '@/app/actions/fileActions';
+import { 
+  FileValidator, 
+  IMAGE_UPLOAD_CONFIG,
+  SupportedFileType
+} from './types/UploadWidgetTypes';
 
 interface UploadingFile {
   id: string;
@@ -25,7 +30,7 @@ interface UploadingFile {
   preview?: string;
 }
 
-const fileValidation = ['.png', '.jpeg', '.jpg', '.gif', '.webp'];
+const fileValidation = [SupportedFileType.PNG, SupportedFileType.JPEG, SupportedFileType.JPG, SupportedFileType.GIF, SupportedFileType.WEBP];
 const maxFileSize = 10 * 1024 * 1024; // 10MB
 
 export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({
@@ -50,7 +55,7 @@ export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({
   const validateFile = (file: File): string | null => {
     const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
 
-    if (!fileValidation.includes(fileExtension)) {
+    if (!fileValidation.includes(fileExtension as SupportedFileType)) {
       return `Invalid file format. Allowed: ${fileValidation.join(', ')}`;
     }
 
@@ -73,7 +78,7 @@ export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({
         // 更新進度
         const updateProgress = (progress: number) => {
           setUploadingFiles(prev =>
-            prev.map((f: any) => (f.id === uploadingFile.id ? { ...f, progress } : f))
+            prev.map((f: UploadingFile) => (f.id === uploadingFile.id ? { ...f, progress } : f))
           );
         };
 
@@ -202,19 +207,19 @@ export const UploadPhotoWidget = React.memo(function UploadPhotoWidget({
 
   // 移除已完成的文件
   const handleRemoveFile = (id: string) => {
-    setUploadingFiles(prev => prev.filter((f: any) => f.id !== id));
+    setUploadingFiles(prev => prev.filter((f: UploadingFile) => f.id !== id));
     setPreviews(prev => {
       const preview = prev.find(p => p.id === id);
       if (preview) {
         URL.revokeObjectURL(preview.url);
       }
-      return prev.filter((p: Record<string, unknown>) => p.id !== id);
+      return prev.filter(p => p.id !== id);
     });
   };
 
   // 關閉上傳提示
   const handleCloseToast = () => {
-    setUploadingFiles(prev => prev.filter((f: any) => (f as { status: string }).status === 'uploading'));
+    setUploadingFiles(prev => prev.filter((f: UploadingFile) => f.status === 'uploading'));
   };
 
   return (

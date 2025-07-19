@@ -7,7 +7,17 @@ import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { ClockIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 
-function AvailableSoonWidget({ widget, isEditMode }: WidgetComponentProps) {
+function AvailableSoonWidget(props: WidgetComponentProps) {
+  // Type guard to check if using traditional or batch query props
+  const isTraditional = 'widget' in props;
+  const widgetTitle = isTraditional 
+    ? (props.widget && typeof props.widget === 'object' && 'title' in props.widget 
+       ? String(props.widget.title) 
+       : 'Coming Soon')
+    : 'Coming Soon';
+  
+  const isEditMode = props.isEditMode || false;
+  
   if (isEditMode) {
     return (
       <WidgetCard widgetType='custom' isEditMode={true}>
@@ -23,7 +33,7 @@ function AvailableSoonWidget({ widget, isEditMode }: WidgetComponentProps) {
       <CardHeader className='pb-2'>
         <CardTitle className='widget-title flex items-center gap-2'>
           <ClockIcon className='h-5 w-5' />
-          {(widget as any).title || 'Coming Soon'}
+          {widgetTitle}
         </CardTitle>
       </CardHeader>
       <CardContent className='flex flex-1 items-center justify-center'>

@@ -130,7 +130,7 @@ describe('DefaultPrinterService', () => {
       expect(result.jobId).toBeDefined();
       expect(result.pdfUrl).toBe('blob:mock-url');
       expect(result.message).toBe('QC label printed successfully');
-      expect(URL.createObjectURL).toHaveBeenCalledWith(job.data.pdfBlob);
+      expect(URL.createObjectURL).toHaveBeenCalledWith((job.data as any).pdfBlob);
     });
 
     it('should print QC label via API when no blob provided', async () => {
@@ -419,9 +419,9 @@ describe('DefaultPrinterService', () => {
       
       // Verify sequential processing
       const calls = printSpy.mock.calls;
-      expect(calls[0][0].data.pdfBlob).toBeDefined();
-      expect(calls[1][0].data.pdfBlob).toBeDefined();
-      expect(calls[2][0].data.pdfBlob).toBeDefined();
+      expect((calls[0][0].data as any).pdfBlob).toBeDefined();
+      expect((calls[1][0].data as any).pdfBlob).toBeDefined();
+      expect((calls[2][0].data as any).pdfBlob).toBeDefined();
     });
   });
 

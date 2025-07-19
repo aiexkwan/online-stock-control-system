@@ -177,20 +177,27 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
             />
             <Tooltip
               content={({ active, payload }) => {
-                if (active && payload && payload[0]) {
-                  const data = payload[0].payload;
+                if (active && Array.isArray(payload) && payload.length > 0 && payload[0]?.payload) {
+                  const payloadData = payload[0].payload;
+                  const data = payloadData as {
+                    orderRef: string;
+                    code: string;
+                    completed: number;
+                    total: number;
+                    completionRate: number;
+                  };
                   return (
                     <div className={cn(
                       'rounded-lg border bg-card/95 p-3 shadow-lg backdrop-blur-sm',
                       'border-border'
                     )}>
-                      <p className={cn(textClasses['body-small'], 'font-medium text-foreground')}>{data.orderRef}</p>
-                      <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Product: {data.code}</p>
+                      <p className={cn(textClasses['body-small'], 'font-medium text-foreground')}>{String(data.orderRef)}</p>
+                      <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>Product: {String(data.code)}</p>
                       <p className={cn(textClasses['label-small'], 'text-foreground')}>
-                        Completed: {data.completed}/{data.total}
+                        Completed: {Number(data.completed)}/{Number(data.total)}
                       </p>
                       <p className={cn(textClasses['label-small'], 'font-medium text-primary')}>
-                        Completion Rate: {data.completionRate}%
+                        Completion Rate: {Number(data.completionRate)}%
                       </p>
                     </div>
                   );

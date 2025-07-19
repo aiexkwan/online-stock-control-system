@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getErrorMessage } from '@/lib/types/error-handling';
 
 // 創建 Supabase 服務端客戶端
 function createSupabaseAdmin() {
@@ -115,7 +116,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           console.log('[PDF to PNG] Using original PDF URL for GPT-4o');
         }
       }
-    } catch (conversionError: any) {
+    } catch (conversionError: unknown) {
       console.error('[PDF to PNG] Conversion error:', conversionError);
       // 如果轉換失敗，直接返回原始 PDF URL
       // 讓 GPT-4o 嘗試處理

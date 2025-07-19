@@ -138,7 +138,7 @@ function StockDistributionWidget() {
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {data?.warehouseData?.map((warehouse: any) => (
+          {(data as { warehouseData?: Array<{ warehouse: string; quantity: number; percentage: number }> })?.warehouseData?.map((warehouse) => (
             <div key={warehouse.warehouse} className="flex justify-between">
               <span>{warehouse.warehouse}</span>
               <span className="font-medium">
@@ -150,7 +150,7 @@ function StockDistributionWidget() {
         <div className="mt-4 pt-4 border-t">
           <div className="flex justify-between font-bold">
             <span>Total</span>
-            <span>{data?.totalQuantity || 0}</span>
+            <span>{(data as { totalQuantity?: number })?.totalQuantity || 0}</span>
           </div>
         </div>
       </CardContent>
@@ -262,17 +262,17 @@ export function ExistingWidgetWithContext() {
         <div className="space-y-4">
           <div>
             <h3 className="font-medium">Total Orders</h3>
-            <p className="text-2xl">{progressData?.totalOrders || 0}</p>
+            <p className="text-2xl">{(progressData as { totalOrders?: number })?.totalOrders || 0}</p>
           </div>
           
           <div>
             <h3 className="font-medium">Recent Orders</h3>
             <div className="space-y-2">
-              {orderData?.orders?.slice(0, 5).map((order: Record<string, unknown>) => (
-                <div key={order.id} className="flex justify-between">
-                  <span>{order.orderNumber}</span>
+              {(orderData as { orders?: Array<Record<string, unknown>> })?.orders?.slice(0, 5).map((order: Record<string, unknown>) => (
+                <div key={String(order.id) || Math.random().toString()} className="flex justify-between">
+                  <span>{String(order.orderNumber) || 'N/A'}</span>
                   <span className="text-sm text-muted-foreground">
-                    {(order as { status: string }).status}
+                    {String((order as { status?: string }).status) || 'Unknown'}
                   </span>
                 </div>
               ))}

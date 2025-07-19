@@ -101,9 +101,9 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
       setSummaryData(summary);
       setTimelineData(timeline);
       setStaffNames(names);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error loading staff workload data:', err);
-      setError(err.message || 'Failed to load data');
+      setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -120,12 +120,12 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
     padding: '8px 12px',
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string; [key: string]: unknown }[]; label?: string }) => {
     if (active && payload && payload.length) {
       return (
         <div style={tooltipStyle}>
           <p className='mb-2 font-medium text-slate-300'>{label}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry: { name: string; value: number; color: string; [key: string]: unknown }, index: number) => (
             <p key={index} className='text-sm' style={{ color: entry.color }}>
               {entry.name}: {entry.value} operations
             </p>
@@ -136,7 +136,7 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
     return null;
   };
 
-  const CustomPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
+  const CustomPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: { cx: number; cy: number; midAngle: number; innerRadius: number; outerRadius: number; percent: number; name: string }) => {
     const RADIAN = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -256,12 +256,12 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
                 </Pie>
                 <Tooltip
                   contentStyle={tooltipStyle}
-                  formatter={(value: unknown, name: any) => [`${value} operations`, name]}
+                  formatter={(value: unknown, name: string) => [`${value} operations`, name]}
                 />
                 <Legend
                   verticalAlign='bottom'
                   height={36}
-                  formatter={(value: unknown, entry: any) => `${value} (${entry.payload.percentage}%)`}
+                  formatter={(value: unknown, entry: { payload: { percentage: number } }) => `${value} (${entry.payload.percentage}%)`}
                 />
               </PieChart>
             </ResponsiveContainer>

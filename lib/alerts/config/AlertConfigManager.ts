@@ -340,15 +340,12 @@ export class AlertConfigManager {
         id: 'email-default',
         name: 'Default Email Template',
         description: 'Standard email notification template',
-        channel: NotificationChannel.EMAIL,
-        template: `
-Subject: {{alert.level}} Alert: {{alert.ruleName}}
-
-Alert Details:
+        subject: '{{alert.level}} Alert: {{alert.ruleName}}',
+        body: `Alert Details:
 - Rule: {{alert.ruleName}}
 - Level: {{alert.level}}
 - State: {{alert.state}}
-- Message: {{(alert as { message: string }).message}}
+- Message: {{alert.message}}
 - Current Value: {{alert.value}}
 - Threshold: {{alert.threshold}}
 - Triggered: {{alert.triggeredAt}}
@@ -357,51 +354,35 @@ Alert Details:
 - Resolved: {{alert.resolvedAt}}
 {{/if}}
 
-Please take appropriate action if required.
-        `,
-        variables: ['alert.ruleName', 'alert.level', 'alert.state', '(alert as { message: string }).message', 'alert.value', 'alert.threshold', 'alert.triggeredAt', 'alert.resolvedAt'],
+Please take appropriate action if required.`,
+        channel: NotificationChannel.EMAIL,
+        template: `{{alert.level}} Alert: {{alert.ruleName}}\n\nAlert Details:\n- Rule: {{alert.ruleName}}\n- Level: {{alert.level}}\n- State: {{alert.state}}\n- Message: {{alert.message}}\n- Current Value: {{alert.value}}\n- Threshold: {{alert.threshold}}\n- Triggered: {{alert.triggeredAt}}`,
+        variables: ['alert.ruleName', 'alert.level', 'alert.state', 'alert.message', 'alert.value', 'alert.threshold', 'alert.triggeredAt', 'alert.resolvedAt'],
+        enabled: true,
         defaultValues: {}
       },
       {
         id: 'slack-default',
         name: 'Default Slack Template',
         description: 'Standard Slack notification template',
+        subject: '{{alert.level}} Alert: {{alert.ruleName}}',
+        body: '🚨 *{{alert.level}} Alert*: {{alert.ruleName}}\n\n*Current Value:* {{alert.value}}\n*Threshold:* {{alert.threshold}}\n*Status:* {{alert.state}}\n\n*Message:* {{alert.message}}\n\n*Time:* {{alert.triggeredAt}}',
         channel: NotificationChannel.SLACK,
-        template: `
-🚨 *{{alert.level}} Alert*: {{alert.ruleName}}
-
-*Current Value:* {{alert.value}}
-*Threshold:* {{alert.threshold}}
-*Status:* {{alert.state}}
-
-*Message:* {{(alert as { message: string }).message}}
-
-*Time:* {{alert.triggeredAt}}
-        `,
-        variables: ['alert.ruleName', 'alert.level', 'alert.value', 'alert.threshold', 'alert.state', '(alert as { message: string }).message', 'alert.triggeredAt'],
+        template: '🚨 *{{alert.level}} Alert*: {{alert.ruleName}}\n\n*Current Value:* {{alert.value}}\n*Threshold:* {{alert.threshold}}\n*Status:* {{alert.state}}\n\n*Message:* {{alert.message}}\n\n*Time:* {{alert.triggeredAt}}',
+        variables: ['alert.ruleName', 'alert.level', 'alert.value', 'alert.threshold', 'alert.state', 'alert.message', 'alert.triggeredAt'],
+        enabled: true,
         defaultValues: {}
       },
       {
         id: 'webhook-default',
         name: 'Default Webhook Template',
         description: 'Standard webhook notification template',
+        subject: 'Alert: {{alert.ruleName}}',
+        body: `{"alert": {"id": "{{alert.id}}", "ruleName": "{{alert.ruleName}}", "level": "{{alert.level}}", "state": "{{alert.state}}", "message": "{{alert.message}}", "value": {{alert.value}}, "threshold": {{alert.threshold}}, "triggeredAt": "{{alert.triggeredAt}}", "resolvedAt": {{#if alert.resolvedAt}}"{{alert.resolvedAt}}"{{else}}null{{/if}}}, "timestamp": "{{now}}", "system": "NewPennine Alert System"}`,
         channel: NotificationChannel.WEBHOOK,
-        template: `{
-  "alert": {
-    "id": "{{alert.id}}",
-    "ruleName": "{{alert.ruleName}}",
-    "level": "{{alert.level}}",
-    "state": "{{alert.state}}",
-    "message": "{{(alert as { message: string }).message}}",
-    "value": {{alert.value}},
-    "threshold": {{alert.threshold}},
-    "triggeredAt": "{{alert.triggeredAt}}",
-    "resolvedAt": {{#if alert.resolvedAt}}"{{alert.resolvedAt}}"{{else}}null{{/if}}
-  },
-  "timestamp": "{{now}}",
-  "system": "NewPennine Alert System"
-}`,
-        variables: ['alert.id', 'alert.ruleName', 'alert.level', 'alert.state', '(alert as { message: string }).message', 'alert.value', 'alert.threshold', 'alert.triggeredAt', 'alert.resolvedAt', 'now'],
+        template: `{"alert": {"id": "{{alert.id}}", "ruleName": "{{alert.ruleName}}", "level": "{{alert.level}}", "state": "{{alert.state}}", "message": "{{alert.message}}", "value": {{alert.value}}, "threshold": {{alert.threshold}}, "triggeredAt": "{{alert.triggeredAt}}", "resolvedAt": {{#if alert.resolvedAt}}"{{alert.resolvedAt}}"{{else}}null{{/if}}}, "timestamp": "{{now}}", "system": "NewPennine Alert System"}`,
+        variables: ['alert.id', 'alert.ruleName', 'alert.level', 'alert.state', 'alert.message', 'alert.value', 'alert.threshold', 'alert.triggeredAt', 'alert.resolvedAt', 'now'],
+        enabled: true,
         defaultValues: {
           now: new Date().toISOString()
         }

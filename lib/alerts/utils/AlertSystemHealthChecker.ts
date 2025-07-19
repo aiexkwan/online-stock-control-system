@@ -4,21 +4,21 @@
  */
 
 import { Redis } from 'ioredis';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { AlertMonitoringService } from '../services/AlertMonitoringService';
-import { AlertResponse } from '../types';
+import { AlertResponse, HealthCheckDetails, SystemMetrics } from '../types';
 
 interface HealthCheckResult {
   component: string;
   status: 'healthy' | 'unhealthy' | 'degraded';
   message: string;
   responseTime?: number;
-  details?: any;
+  details?: HealthCheckDetails;
 }
 
 export class AlertSystemHealthChecker {
   private redis: Redis;
-  private supabase: any;
+  private supabase: SupabaseClient;
   private monitoringService: AlertMonitoringService;
 
   constructor() {
@@ -156,7 +156,7 @@ export class AlertSystemHealthChecker {
   /**
    * 檢查數據庫表格
    */
-  private async checkDatabaseTables(): Promise<any> {
+  private async checkDatabaseTables(): Promise<HealthCheckDetails> {
     const requiredTables = [
       'alert_rules',
       'alerts',
@@ -221,7 +221,14 @@ export class AlertSystemHealthChecker {
           status: 'unhealthy',
           message: 'Monitoring service is not running',
           responseTime,
-          details: status
+          details: {
+            running: status.running,
+            uptime: status.uptime,
+            rulesCount: status.rulesCount,
+            activeAlertsCount: status.activeAlertsCount,
+            lastEvaluation: status.lastEvaluation?.toISOString(),
+            errors: status.errors
+          } as HealthCheckDetails
         };
       }
     } catch (error) {
@@ -402,7 +409,7 @@ export class AlertSystemHealthChecker {
   /**
    * 獲取系統指標
    */
-  public async getSystemMetrics(): Promise<any> {
+  public async getSystemMetrics(): Promise<SystemMetrics> {
     try {
       const [
         redisCheck,
@@ -418,7 +425,14 @@ export class AlertSystemHealthChecker {
         this.checkNotificationHealth()
       ]);
 
-      return {
+      const systemMetrics: SystemMetrics = {
+        alertsCount: 0,
+        rulesCount: 0,
+        notificationsCount: 0,
+        errorRate: 0,
+        avgResponseTime: 0,
+        uptime: 0,
+        memoryUsage: 0,
         timestamp: new Date().toISOString(),
         components: {
           redis: redisCheck,
@@ -436,11 +450,22 @@ export class AlertSystemHealthChecker {
             .filter(check => (check as { status: string }).status === 'unhealthy').length
         }
       };
+      
+      return systemMetrics;
     } catch (error) {
-      return {
+      const errorMetrics: SystemMetrics = {
+        alertsCount: 0,
+        rulesCount: 0,
+        notificationsCount: 0,
+        errorRate: 100,
+        avgResponseTime: 0,
+        uptime: 0,
+        memoryUsage: 0,
         timestamp: new Date().toISOString(),
         error: error instanceof Error ? (error as { message: string }).message : String(error)
       };
+      
+      return errorMetrics;
     }
   }
 }

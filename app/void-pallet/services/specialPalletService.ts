@@ -2,6 +2,7 @@
 
 import { createClient } from '@/app/utils/supabase/server';
 import { isNotProduction } from '@/lib/utils/env';
+import { getErrorMessage } from '@/lib/types/error-handling';
 
 /**
  * Check if pallet is an ACO Order Pallet

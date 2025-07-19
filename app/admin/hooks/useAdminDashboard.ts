@@ -11,10 +11,11 @@ import {
   InventorySearchResult,
 } from '../services/AdminDataService';
 import { isNotProduction } from '@/lib/utils/env';
+import type { AcoOrder } from '@/app/actions/acoOrderProgressActions';
 
 // Cache configuration
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-const cache = new Map<string, { data: DatabaseRecord[]; timestamp: number }>();
+const cache = new Map<string, { data: unknown; timestamp: number }>();
 
 function getCachedData<T>(key: string): T | null {
   const cached = cache.get(key);
@@ -28,7 +29,7 @@ function getCachedData<T>(key: string): T | null {
   return cached.data as T;
 }
 
-function setCachedData(key: string, data: DatabaseRecord[]) {
+function setCachedData<T>(key: string, data: T) {
   cache.set(key, { data, timestamp: Date.now() });
 }
 
@@ -67,9 +68,10 @@ export function useDashboardStats() {
       const data = await adminDataService.getDashboardStats();
       setStats(data);
       setCachedData(cacheKey, data);
-    } catch (err: any) {
-      console.error('Error loading dashboard stats:', err);
-      setError(err.message);
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error('Unknown error occurred');
+      console.error('Error loading dashboard stats:', error);
+      setError(error.message);
       toast.error('Failed to load dashboard statistics');
     } finally {
       setLoading(false);
@@ -85,7 +87,7 @@ export function useDashboardStats() {
 
 // Hook for ACO orders
 export function useAcoOrders() {
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<AcoOrder[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,7 +95,7 @@ export function useAcoOrders() {
     const cacheKey = 'aco-orders';
 
     if (!forceRefresh) {
-      const cachedOrders = getCachedData<any[]>(cacheKey);
+      const cachedOrders = getCachedData<AcoOrder[]>(cacheKey);
       if (cachedOrders) {
         setOrders(cachedOrders);
         return;
@@ -107,9 +109,10 @@ export function useAcoOrders() {
       const data = await adminDataService.getIncompleteAcoOrders();
       setOrders(data);
       setCachedData(cacheKey, data);
-    } catch (err: any) {
-      console.error('Error loading ACO orders:', err);
-      setError(err.message);
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error('Unknown error occurred');
+      console.error('Error loading ACO orders:', error);
+      setError(error.message);
       toast.error('Failed to load ACO orders');
     } finally {
       setLoading(false);
@@ -149,9 +152,10 @@ export function useAcoOrderProgress(orderRef: number | null) {
       const data = await adminDataService.getAcoOrderProgress(orderRef);
       setProgress(data);
       setCachedData(cacheKey, data);
-    } catch (err: any) {
-      console.error('Error loading order progress:', err);
-      setError(err.message);
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error('Unknown error occurred');
+      console.error('Error loading order progress:', error);
+      setError(error.message);
       toast.error('Failed to load order progress');
     } finally {
       setLoading(false);
@@ -193,9 +197,10 @@ export function useInventorySearch() {
       if (data) {
         setCachedData(cacheKey, data);
       }
-    } catch (err: any) {
-      console.error('Error searching inventory:', err);
-      setError(err.message);
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error('Unknown error occurred');
+      console.error('Error searching inventory:', error);
+      setError(error.message);
       toast.error('Failed to search inventory');
     } finally {
       setLoading(false);

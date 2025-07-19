@@ -264,16 +264,27 @@ export const orderLoadingReportConfig: ReportConfig = {
     },
     excel: {
       headerStyle: {
-        font: { bold: true, size: 12 },
-        fill: { fgColor: { rgb: '4A5568' } },
-        font_color: { rgb: 'FFFFFF' },
+        font: { 
+          bold: true, 
+          size: 12,
+          color: { rgb: 'FFFFFF' }
+        },
+        fill: { 
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { rgb: '4A5568' } 
+        },
       },
       dataStyle: {
         font: { size: 10 },
       },
       summaryStyle: {
         font: { bold: true, size: 11 },
-        fill: { fgColor: { rgb: 'E2E8F0' } },
+        fill: { 
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { rgb: 'E2E8F0' } 
+        },
       },
     },
   },

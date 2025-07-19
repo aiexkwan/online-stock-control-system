@@ -7,8 +7,6 @@
  */
 
 import dynamic from 'next/dynamic';
-import { DatabaseRecord } from '@/lib/types/database';
-import { DatabaseRecord } from '@/lib/types/database';
 import React from 'react';
 import { ComponentType } from 'react';
 
@@ -100,7 +98,7 @@ interface AxisProps {
 
 // 圖表元素類型
 interface ChartElementProps {
-  dataKey?: string | ((item: DatabaseRecord) => string | number);
+  dataKey?: string | ((item: Record<string, unknown>) => string | number);
   fill?: string;
   stroke?: string;
   strokeWidth?: number;
@@ -121,9 +119,9 @@ interface ChartElementProps {
   animationBegin?: number;
   animationDuration?: number;
   animationEasing?: 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'linear';
-  onClick?: (data: DatabaseRecord[], index: number) => void;
-  onMouseEnter?: (data: DatabaseRecord[], index: number) => void;
-  onMouseLeave?: (data: DatabaseRecord[], index: number) => void;
+  onClick?: (data: Record<string, unknown>[], index: number) => void;
+  onMouseEnter?: (data: Record<string, unknown>[], index: number) => void;
+  onMouseLeave?: (data: Record<string, unknown>[], index: number) => void;
   yAxisId?: string;
   children?: React.ReactNode;
   data?: Record<string, unknown>[];
@@ -163,7 +161,7 @@ interface TooltipProps<TValue = string | number, TName = string> {
   contentStyle?: React.CSSProperties;
   itemStyle?: React.CSSProperties;
   wrapperStyle?: React.CSSProperties;
-  itemSorter?: (item: DatabaseRecord) => number;
+  itemSorter?: (item: Record<string, unknown>) => number;
   filter?: (label: string, payload: Record<string, unknown>[]) => boolean;
   allowEscapeViewBox?: { x?: boolean; y?: boolean };
   animationDuration?: number;
@@ -198,9 +196,9 @@ interface LegendProps {
   formatter?: (value: unknown, entry: Record<string, unknown>, index: number) => React.ReactNode;
   wrapperStyle?: React.CSSProperties;
   iconSize?: number;
-  onClick?: (data: DatabaseRecord[], index: number) => void;
-  onMouseEnter?: (data: DatabaseRecord[], index: number) => void;
-  onMouseLeave?: (data: DatabaseRecord[], index: number) => void;
+  onClick?: (data: Record<string, unknown>[], index: number) => void;
+  onMouseEnter?: (data: Record<string, unknown>[], index: number) => void;
+  onMouseLeave?: (data: Record<string, unknown>[], index: number) => void;
 }
 
 // 動態導入的組件類型定義
@@ -212,27 +210,27 @@ type DynamicLegendComponent = ComponentType<LegendProps>;
 
 // 圖表組件
 export const BarChart = dynamic(
-  () => import('recharts').then((mod) => mod.BarChart),
+  () => import('recharts').then((mod: typeof import('recharts')) => mod.BarChart),
   { ssr: false }
 ) as DynamicChartComponent;
 
 export const LineChart = dynamic(
-  () => import('recharts').then((mod) => mod.LineChart),
+  () => import('recharts').then((mod: typeof import('recharts')) => mod.LineChart),
   { ssr: false }
 ) as DynamicChartComponent;
 
 export const AreaChart = dynamic(
-  () => import('recharts').then((mod) => mod.AreaChart),
+  () => import('recharts').then((mod: typeof import('recharts')) => mod.AreaChart),
   { ssr: false }
 ) as DynamicChartComponent;
 
 export const PieChart = dynamic(
-  () => import('recharts').then((mod) => mod.PieChart),
+  () => import('recharts').then((mod: typeof import('recharts')) => mod.PieChart),
   { ssr: false }
 ) as DynamicChartComponent;
 
 export const ResponsiveContainer = dynamic(
-  () => import('recharts').then((mod) => mod.ResponsiveContainer),
+  () => import('recharts').then((mod: typeof import('recharts')) => mod.ResponsiveContainer),
   { ssr: false }
 ) as ComponentType<{
   width?: string | number;
@@ -247,38 +245,38 @@ export const ResponsiveContainer = dynamic(
 
 // 軸組件
 export const XAxis = dynamic(
-  () => import('recharts').then((mod) => mod.XAxis),
+  () => import('recharts').then((mod: typeof import('recharts')) => mod.XAxis),
   { ssr: false }
 ) as DynamicAxisComponent;
 
 export const YAxis = dynamic(
-  () => import('recharts').then((mod) => mod.YAxis),
+  () => import('recharts').then((mod: typeof import('recharts')) => mod.YAxis),
   { ssr: false }
 ) as DynamicAxisComponent;
 
 // 圖表元素
 export const Bar = dynamic(
-  () => import('recharts').then((mod) => mod.Bar),
+  () => import('recharts').then((mod: typeof import('recharts')) => mod.Bar),
   { ssr: false }
 ) as DynamicElementComponent;
 
 export const Line = dynamic(
-  () => import('recharts').then((mod) => mod.Line),
+  () => import('recharts').then((mod: typeof import('recharts')) => mod.Line),
   { ssr: false }
 ) as DynamicElementComponent;
 
 export const Area = dynamic(
-  () => import('recharts').then((mod) => mod.Area),
+  () => import('recharts').then((mod: typeof import('recharts')) => mod.Area),
   { ssr: false }
 ) as DynamicElementComponent;
 
 export const Pie = dynamic(
-  () => import('recharts').then((mod) => mod.Pie),
+  () => import('recharts').then((mod: typeof import('recharts')) => mod.Pie),
   { ssr: false }
 ) as DynamicElementComponent;
 
 export const Cell = dynamic(
-  () => import('recharts').then((mod) => mod.Cell),
+  () => import('recharts').then((mod: typeof import('recharts')) => mod.Cell),
   { ssr: false }
 ) as ComponentType<{
   fill?: string;
@@ -289,7 +287,7 @@ export const Cell = dynamic(
 
 // 輔助組件
 export const CartesianGrid = dynamic(
-  () => import('recharts').then((mod) => mod.CartesianGrid),
+  () => import('recharts').then((mod: typeof import('recharts')) => mod.CartesianGrid),
   { ssr: false }
 ) as ComponentType<{
   x?: number;
@@ -309,12 +307,12 @@ export const CartesianGrid = dynamic(
 }>;
 
 export const Tooltip = dynamic(
-  () => import('recharts').then((mod) => mod.Tooltip),
+  () => import('recharts').then((mod: typeof import('recharts')) => mod.Tooltip),
   { ssr: false }
 ) as ComponentType<TooltipProps>;
 
 export const Legend = dynamic(
-  () => import('recharts').then((mod) => mod.Legend),
+  () => import('recharts').then((mod: typeof import('recharts')) => mod.Legend),
   { ssr: false }
 ) as ComponentType<LegendProps>;
 

@@ -7,13 +7,13 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 // GraphQL imports removed - using REST API only
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
+import { 
+  StockData, 
+  StockChartMapper, 
+  isStockWidgetApiWrapper 
+} from './types/StockChartTypes';
 
-interface StockData {
-  stock: string;
-  stock_level: number;
-  description?: string;
-  type?: string;
-}
+// StockData interface moved to StockChartTypes.ts
 
 interface StockTypeSelectorProps extends TraditionalWidgetComponentProps {
 }
@@ -55,16 +55,25 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
       if (result.widgets && result.widgets.length > 0) {
         // Process stock distribution data
         const stockWidget = result.widgets.find(w => w.widgetId === 'stock_distribution');
-        if (stockWidget && !stockWidget.data.error) {
-          const stockItems = stockWidget.data.value || [];
-          setStockData(stockItems.filter((item: Record<string, unknown>) => item.stock_level > 0));
+        if (stockWidget && isStockWidgetApiWrapper(stockWidget.data)) {
+          const errorMessage = StockChartMapper.extractErrorFromWidgetWrapper(stockWidget.data);
+          if (!errorMessage) {
+            const stockItems = StockChartMapper.extractStockDataFromWidgetWrapper(stockWidget.data);
+            setStockData(stockItems.filter(item => item.stock_level > 0));
+          }
         }
 
         // Process product types data
         const typesWidget = result.widgets.find(w => w.widgetId === 'product_types');
-        if (typesWidget && !typesWidget.data.error) {
-          const types = typesWidget.data.value || [];
-          setProductTypes(types.length > 0 ? types : ['EasyLiner', 'EcoPlus', 'Slate', 'SupaStack', 'Manhole', 'ACO']);
+        if (typesWidget && isStockWidgetApiWrapper(typesWidget.data)) {
+          const errorMessage = StockChartMapper.extractErrorFromWidgetWrapper(typesWidget.data);
+          if (!errorMessage) {
+            const types = StockChartMapper.extractStringArrayFromWidgetWrapper(typesWidget.data);
+            setProductTypes(types.length > 0 ? types : ['EasyLiner', 'EcoPlus', 'Slate', 'SupaStack', 'Manhole', 'ACO']);
+          } else {
+            // Use default types if API fails
+            setProductTypes(['EasyLiner', 'EcoPlus', 'Slate', 'SupaStack', 'Manhole', 'ACO']);
+          }
         } else {
           // Use default types if API fails
           setProductTypes(['EasyLiner', 'EcoPlus', 'Slate', 'SupaStack', 'Manhole', 'ACO']);
@@ -149,7 +158,7 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
         >
           <option value='all'>All Types</option>
           <option value='non-material'>Non-Material</option>
-          {productTypes.map((type: any) => (
+          {productTypes.map((type: string) => (
             <option key={type} value={type}>
               {type}
             </option>

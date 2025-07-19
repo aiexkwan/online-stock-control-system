@@ -24,6 +24,7 @@ import { AdminDashboardContent } from './dashboard/AdminDashboardContent';
 import { LoadingScreen, FadeInContainer } from '@/components/ui/loading';
 import { cn } from '@/lib/utils';
 import { DashboardDataProvider } from '@/app/admin/contexts/DashboardDataContext';
+import type { DashboardBatchQueryData } from '@/app/admin/types/dashboard';
 // import { MenuBar } from '@/components/ui/glow-menu'; // Removed - using dynamic action bar
 // import UniversalChatbot from '@/app/components/admin/UniversalChatbot'; // Removed - integrated into navigation
 import {
@@ -70,7 +71,7 @@ const DASHBOARD_THEMES = [
 ];
 
 interface NewAdminDashboardProps {
-  prefetchedData?: any; // SSR 預取數據
+  prefetchedData?: Partial<DashboardBatchQueryData> | null; // SSR 預取數據
   ssrMode?: boolean; // 是否為 SSR 模式
 }
 
@@ -177,13 +178,13 @@ export function NewAdminDashboard({
                 <DashboardDataProvider 
                   initialDateRange={memoizedDateRange}
                   autoRefreshInterval={0}
-                  prefetchedData={prefetchedData}
+                  prefetchedData={prefetchedData as DashboardBatchQueryData | null}
                   ssrMode={ssrMode}
                 >
                   <AdminDashboardContent 
                     theme={currentTheme} 
                     timeFrame={timeFrame}
-                    prefetchedData={prefetchedData}
+                    prefetchedData={prefetchedData as DashboardBatchQueryData | null}
                     ssrMode={ssrMode}
                   />
                 </DashboardDataProvider>

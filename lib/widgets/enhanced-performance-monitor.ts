@@ -691,6 +691,8 @@ export class EnhancedPerformanceMonitor {
       min: 0,
       count: 0,
       total: 0,
+      mean: 0,
+      stdDev: 0,
     };
   }
   

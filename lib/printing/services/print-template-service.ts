@@ -3,8 +3,20 @@
  * Manages print templates and data formatting
  */
 
-import { PrintType, TemplateConfig, TemplateSchema } from '../types';
-import { DatabaseRecord } from '@/lib/types/database';
+import {
+  PrintType,
+  PrintTypeSchema,
+  TemplateConfig,
+  TemplateConfigSchema,
+  QcLabelData,
+  GrnLabelData,
+  formatPrintData
+} from '@/lib/schemas/printing';
+import type { Database } from '@/lib/types/supabase-generated';
+
+// TODO: 使用更具體的表類型定義，現在使用 any 作為臨時解決方案
+// 未來應該根據具體的列印類型使用對應的表類型
+type DatabaseRecord = any;
 
 export class PrintTemplateService {
   private templates: Map<PrintType, TemplateConfig> = new Map();
@@ -37,26 +49,33 @@ export class PrintTemplateService {
 
       // Format data based on print type
       switch (template.type) {
-        case PrintType.QC_LABEL:
+        case 'QC_LABEL':
           return this.formatQcLabelData(data);
 
-        case PrintType.GRN_LABEL:
+        case 'GRN_LABEL':
           return this.formatGrnLabelData(data);
 
-        case PrintType.TRANSACTION_REPORT:
+        case 'TRANSACTION_REPORT':
           return this.formatTransactionReportData(data);
 
-        case PrintType.INVENTORY_REPORT:
+        case 'INVENTORY_REPORT':
           return this.formatInventoryReportData(data);
 
-        case PrintType.ACO_ORDER_REPORT:
-          return this.formatAcoOrderReportData(data);
+        case 'PALLET_LABEL':
+          return this.formatPalletLabelData(data);
 
-        case PrintType.GRN_REPORT:
-          return this.formatGrnReportData(data);
+        case 'TRANSFER_SLIP':
+          return this.formatTransferSlipData(data);
+
+        case 'VOID_REPORT':
+          return this.formatVoidReportData(data);
 
         default:
-          return data;
+          return {
+            formattedData: data,
+            template: template.template,
+            metadata: { type: template.type, timestamp: Date.now() }
+          };
       }
     } catch (error) {
       console.error('[PrintTemplateService] Error applying template:', error);
@@ -73,289 +92,275 @@ export class PrintTemplateService {
 
   // Private formatting methods
   private formatQcLabelData(data: DatabaseRecord[]): {
-    items: Array<{
-      itemCode: string;
-      quantity: number;
-      supplier: string;
-      palletNumber: string;
-      qrCode: string;
-    }>;
+    formattedData: QcLabelData[];
+    template: string;
     metadata: Record<string, string | number>;
   } {
-    // Ensure all required fields for QC label
-    return {
-      // Product information
-      productCode: data.productCode || '',
-      productDescription: data.productInfo?.description || '',
-      productNameChinese: data.productInfo?.chineseName || '',
+    try {
+      const formattedData = data.map((record) => {
+        // Convert DatabaseRecord to QcLabelData format
+        const qcData = {
+          plt_num: record.plt_num || '',
+          product_code: record.product_code || '',
+          product_qty: Number(record.product_qty || 0),
+          generate_time: record.generate_time || new Date().toISOString(),
+          series: record.series || '',
+          pdf_url: record.pdf_url || undefined,
+          plt_remark: record.plt_remark || undefined,
+        };
+        
+        // Validate using Zod
+        return formatPrintData.qcLabel(qcData);
+      });
 
-      // Quantity and count
-      quantity: data.quantity || 0,
-      count: data.count || 0,
-
-      // Pallet information
-      palletIds: data.palletIds || [],
-      palletCount: data.palletIds?.length || 0,
-
-      // Order information
-      acoOrderRef: data.acoOrderRef || '',
-      customerName: data.acoOrderDetails?.[0]?.customer_name || '',
-
-      // Slate details
-      slateDetail: {
-        batchNumber: data.slateDetail?.batchNumber || '',
-        ...data.slateDetail,
-      },
-
-      // Operator information
-      operatorClockNum: data.operator || '',
-      printDate: new Date().toISOString(),
-
-      // Additional data
-      ...data,
-    };
+      return {
+        formattedData,
+        template: 'qc-label-template',
+        metadata: {
+          type: 'QC_LABEL',
+          count: formattedData.length,
+          generatedAt: Date.now()
+        }
+      };
+    } catch (error) {
+      console.error('[PrintTemplateService] QC Label formatting error:', error);
+      throw error;
+    }
   }
 
   private formatGrnLabelData(data: DatabaseRecord[]): {
-    items: Array<{
-      grnNumber: string;
-      supplier: string;
-      receivedDate: string;
-      items: Array<{ code: string; quantity: number }>;
-    }>;
+    formattedData: GrnLabelData[];
+    template: string;
     metadata: Record<string, string | number>;
   } {
-    // Ensure all required fields for GRN label
-    return {
-      // GRN information
-      grnNumber: data.grnNumber || '',
-      supplierId: data.supplierId || '',
-      supplierName: data.supplierName || '',
+    try {
+      const formattedData = data.map((record) => {
+        // Convert DatabaseRecord to GrnLabelData format
+        const grnData = {
+          grn_ref: Number(record.grn_ref || 0),
+          plt_num: record.plt_num || '',
+          material_code: record.material_code || '',
+          gross_weight: Number(record.gross_weight || 0),
+          net_weight: Number(record.net_weight || 0),
+          package: record.package || '',
+          package_count: Number(record.package_count || 1),
+          pallet: record.pallet || '',
+          pallet_count: Number(record.pallet_count || 1),
+          sup_code: record.sup_code || '',
+          creat_time: record.creat_time || new Date().toISOString(),
+        };
+        
+        // Validate using Zod
+        return formatPrintData.grnLabel(grnData);
+      });
 
-      // Material information
-      materialCode: data.materialCode || '',
-      materialDescription: data.materialDescription || '',
-
-      // Pallet information
-      palletType: data.palletType || '',
-      packageType: data.packageType || '',
-      palletIds: data.palletIds || [],
-
-      // Weight information
-      weights: data.weights || [],
-      totalGrossWeight: data.totalGrossWeight || 0,
-      totalNetWeight: data.totalNetWeight || 0,
-
-      // Operator information
-      operatorClockNum: data.operatorClockNum || '',
-      printDate: new Date().toISOString(),
-
-      // Additional data
-      ...data,
-    };
+      return {
+        formattedData,
+        template: 'grn-label-template',
+        metadata: {
+          type: 'GRN_LABEL',
+          count: formattedData.length,
+          generatedAt: Date.now()
+        }
+      };
+    } catch (error) {
+      console.error('[PrintTemplateService] GRN Label formatting error:', error);
+      throw error;
+    }
   }
 
   private formatTransactionReportData(data: DatabaseRecord[]): {
-    transactions: Array<Record<string, string | number | boolean | null>>;
-    summary: {
-      totalCount: number;
-      dateRange: { from: string; to: string };
-    };
+    formattedData: DatabaseRecord[];
+    template: string;
     metadata: Record<string, string | number>;
   } {
     return {
-      // Report parameters
-      startDate: data.startDate || new Date().toISOString(),
-      endDate: data.endDate || new Date().toISOString(),
-
-      // Filter options
-      transactionType: data.transactionType || 'all',
-      location: data.location || 'all',
-      productCode: data.productCode || '',
-
-      // Report data
-      transactions: data.transactions || [],
-      summary: data.summary || {},
-
-      // Metadata
-      generatedAt: new Date().toISOString(),
-      generatedBy: data.userId || '',
-
-      ...data,
+      formattedData: data,
+      template: 'transaction-report-template',
+      metadata: {
+        type: 'TRANSACTION_REPORT',
+        count: data.length,
+        generatedAt: Date.now(),
+        dateFrom: new Date().toISOString(),
+        dateTo: new Date().toISOString()
+      }
     };
   }
 
   private formatInventoryReportData(data: DatabaseRecord[]): {
-    inventory: Array<Record<string, string | number | boolean | null>>;
-    summary: {
-      totalItems: number;
-      totalValue: number;
-      categories: Record<string, number>;
-    };
+    formattedData: DatabaseRecord[];
+    template: string;
     metadata: Record<string, string | number>;
   } {
     return {
-      // Report parameters
-      reportDate: data.reportDate || new Date().toISOString(),
-      location: data.location || 'all',
-      category: data.category || 'all',
-
-      // Report data
-      inventoryItems: data.inventoryItems || [],
-      totalValue: data.totalValue || 0,
-      itemCount: data.itemCount || 0,
-
-      // Analysis data
-      stockLevels: data.stockLevels || {},
-      turnoverRates: data.turnoverRates || {},
-
-      // Metadata
-      generatedAt: new Date().toISOString(),
-      generatedBy: data.userId || '',
-
-      ...data,
+      formattedData: data,
+      template: 'inventory-report-template',
+      metadata: {
+        type: 'INVENTORY_REPORT',
+        count: data.length,
+        generatedAt: Date.now(),
+        totalItems: data.length
+      }
     };
   }
 
-  private formatAcoOrderReportData(data: DatabaseRecord[]): {
-    orders: Array<Record<string, string | number | boolean | null>>;
-    summary: {
-      totalOrders: number;
-      totalValue: number;
-      status: Record<string, number>;
-    };
+  private formatPalletLabelData(data: DatabaseRecord[]): {
+    formattedData: DatabaseRecord[];
+    template: string;
     metadata: Record<string, string | number>;
   } {
     return {
-      // Report parameters
-      orderRef: data.orderRef || '',
-      startDate: data.startDate || new Date().toISOString(),
-      endDate: data.endDate || new Date().toISOString(),
-
-      // Order data
-      orders: data.orders || [],
-      orderSummary: data.orderSummary || {},
-
-      // Progress tracking
-      progressData: data.progressData || {},
-      completionRate: data.completionRate || 0,
-
-      // Metadata
-      generatedAt: new Date().toISOString(),
-      generatedBy: data.userId || '',
-
-      ...data,
+      formattedData: data,
+      template: 'pallet-label-template',
+      metadata: {
+        type: 'PALLET_LABEL',
+        count: data.length,
+        generatedAt: Date.now()
+      }
     };
   }
 
-  private formatGrnReportData(data: DatabaseRecord[]): {
-    grns: Array<Record<string, string | number | boolean | null>>;
-    summary: {
-      totalGrns: number;
-      totalValue: number;
-      suppliers: Record<string, number>;
-    };
+  private formatTransferSlipData(data: DatabaseRecord[]): {
+    formattedData: DatabaseRecord[];
+    template: string;
     metadata: Record<string, string | number>;
   } {
     return {
-      // GRN parameters
-      grnRef: data.grnRef || '',
-      materialCode: data.materialCode || '',
-
-      // Report data
-      palletData: data.palletData || [],
-      summary: data.summary || {},
-
-      // Metadata
-      generatedAt: new Date().toISOString(),
-      generatedBy: data.userId || '',
-      reportType: 'grn',
-
-      ...data,
+      formattedData: data,
+      template: 'transfer-slip-template',
+      metadata: {
+        type: 'TRANSFER_SLIP',
+        count: data.length,
+        generatedAt: Date.now()
+      }
     };
   }
 
-  private validateData(data: DatabaseRecord[], schema: TemplateSchema): void {
+  private formatVoidReportData(data: DatabaseRecord[]): {
+    formattedData: DatabaseRecord[];
+    template: string;
+    metadata: Record<string, string | number>;
+  } {
+    return {
+      formattedData: data,
+      template: 'void-report-template',
+      metadata: {
+        type: 'VOID_REPORT',
+        count: data.length,
+        generatedAt: Date.now()
+      }
+    };
+  }
+
+  private validateData(data: DatabaseRecord[], schema: { required?: string[] }): void {
     // Basic validation - can be enhanced with a proper schema validator
     const requiredFields = schema.required || [];
 
-    for (const field of requiredFields) {
-      if (!(field in data) || data[field] === null || data[field] === undefined) {
-        throw new Error(`Missing required field: ${field}`);
+    for (const record of data) {
+      for (const field of requiredFields) {
+        if (!(field in record) || record[field] === null || record[field] === undefined) {
+          throw new Error(`Missing required field: ${field}`);
+        }
       }
     }
   }
 
   private loadDefaultTemplates(): void {
     // QC Label Template
-    this.templates.set(PrintType.QC_LABEL, {
+    this.templates.set('QC_LABEL', {
       id: 'qc-label-default',
+      type: 'QC_LABEL',
       name: 'Default QC Label',
-      type: PrintType.QC_LABEL,
-      version: '1.0',
+      description: 'Default QC Label Template',
       template: 'qc-label-template',
+      pageSize: 'A4',
+      orientation: 'portrait',
       schema: {
-        required: ['productCode', 'quantity', 'operator'],
+        required: ['plt_num', 'product_code', 'product_qty'],
       },
     });
 
     // GRN Label Template
-    this.templates.set(PrintType.GRN_LABEL, {
+    this.templates.set('GRN_LABEL', {
       id: 'grn-label-default',
+      type: 'GRN_LABEL',
       name: 'Default GRN Label',
-      type: PrintType.GRN_LABEL,
-      version: '1.0',
+      description: 'Default GRN Label Template',
       template: 'grn-label-template',
+      pageSize: 'A4',
+      orientation: 'portrait',
       schema: {
-        required: ['grnNumber', 'supplierId', 'materialCode', 'operatorClockNum'],
+        required: ['grn_ref', 'plt_num', 'material_code'],
       },
     });
 
     // Transaction Report Template
-    this.templates.set(PrintType.TRANSACTION_REPORT, {
+    this.templates.set('TRANSACTION_REPORT', {
       id: 'transaction-report-default',
+      type: 'TRANSACTION_REPORT',
       name: 'Default Transaction Report',
-      type: PrintType.TRANSACTION_REPORT,
-      version: '1.0',
+      description: 'Default Transaction Report Template',
       template: 'transaction-report-template',
+      pageSize: 'A4',
+      orientation: 'portrait',
       schema: {
-        required: ['startDate', 'endDate'],
+        required: [],
       },
     });
 
     // Inventory Report Template
-    this.templates.set(PrintType.INVENTORY_REPORT, {
+    this.templates.set('INVENTORY_REPORT', {
       id: 'inventory-report-default',
+      type: 'INVENTORY_REPORT',
       name: 'Default Inventory Report',
-      type: PrintType.INVENTORY_REPORT,
-      version: '1.0',
+      description: 'Default Inventory Report Template',
       template: 'inventory-report-template',
+      pageSize: 'A4',
+      orientation: 'portrait',
       schema: {
-        required: ['reportDate'],
+        required: [],
       },
     });
 
-    // ACO Order Report Template
-    this.templates.set(PrintType.ACO_ORDER_REPORT, {
-      id: 'aco-order-report-default',
-      name: 'Default ACO Order Report',
-      type: PrintType.ACO_ORDER_REPORT,
-      version: '1.0',
-      template: 'aco-order-report-template',
+    // Pallet Label Template
+    this.templates.set('PALLET_LABEL', {
+      id: 'pallet-label-default',
+      type: 'PALLET_LABEL',
+      name: 'Default Pallet Label',
+      description: 'Default Pallet Label Template',
+      template: 'pallet-label-template',
+      pageSize: 'A4',
+      orientation: 'portrait',
       schema: {
-        required: ['orderRef'],
+        required: ['plt_num'],
       },
     });
 
-    // GRN Report Template
-    this.templates.set(PrintType.GRN_REPORT, {
-      id: 'grn-report-default',
-      name: 'Default GRN Report',
-      type: PrintType.GRN_REPORT,
-      version: '1.0',
-      template: 'grn-report-template',
+    // Transfer Slip Template
+    this.templates.set('TRANSFER_SLIP', {
+      id: 'transfer-slip-default',
+      type: 'TRANSFER_SLIP',
+      name: 'Default Transfer Slip',
+      description: 'Default Transfer Slip Template',
+      template: 'transfer-slip-template',
+      pageSize: 'A4',
+      orientation: 'portrait',
       schema: {
-        required: ['grnRef'],
+        required: [],
+      },
+    });
+
+    // Void Report Template
+    this.templates.set('VOID_REPORT', {
+      id: 'void-report-default',
+      type: 'VOID_REPORT',
+      name: 'Default Void Report',
+      description: 'Default Void Report Template',
+      template: 'void-report-template',
+      pageSize: 'A4',
+      orientation: 'portrait',
+      schema: {
+        required: [],
       },
     });
   }

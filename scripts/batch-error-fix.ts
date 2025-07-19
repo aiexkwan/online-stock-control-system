@@ -7,7 +7,6 @@
 
 import { promises as fs } from 'fs';
 import { DatabaseRecord } from '@/lib/types/database';
-import { DatabaseRecord } from '@/lib/types/database';
 import { TypeRefactorTool } from './type-refactor-tool';
 
 interface ErrorFixResult {
@@ -42,15 +41,17 @@ class BatchErrorFixer {
   
   private async fixSingleErrorHandling(item: DatabaseRecord) {
     try {
-      const content = await fs.readFile(item.file, 'utf-8');
+      const filePath = item.file as string;
+      const lineNumber = item.line as number;
+      const content = await fs.readFile(filePath, 'utf-8');
       const lines = content.split('\n');
       
       // 找到目標行
-      const targetLine = lines[item.line - 1];
+      const targetLine = lines[lineNumber - 1];
       if (!targetLine || !targetLine.includes('error: unknown')) {
         this.results.push({
-          file: item.file,
-          lineNumber: item.line,
+          file: filePath,
+          lineNumber: lineNumber,
           oldCode: targetLine || 'LINE_NOT_FOUND',
           newCode: 'SKIP',
           success: false,
@@ -61,25 +62,25 @@ class BatchErrorFixer {
       
       // 替換 error: unknown 為 error: unknown
       const newLine = targetLine.replace('error: unknown', 'error: unknown');
-      lines[item.line - 1] = newLine;
+      lines[lineNumber - 1] = newLine;
       
       // 寫回文件
-      await fs.writeFile(item.file, lines.join('\n'));
+      await fs.writeFile(filePath, lines.join('\n'));
       
       this.results.push({
-        file: item.file,
-        lineNumber: item.line,
+        file: filePath,
+        lineNumber: lineNumber,
         oldCode: targetLine,
         newCode: newLine,
         success: true
       });
       
-      console.log(`✅ 修復: ${item.file}:${item.line}`);
+      console.log(`✅ 修復: ${filePath}:${lineNumber}`);
       
     } catch (error) {
       this.results.push({
-        file: item.file,
-        lineNumber: item.line,
+        file: item.file as string,
+        lineNumber: item.line as number,
         oldCode: 'ERROR',
         newCode: 'ERROR',
         success: false,

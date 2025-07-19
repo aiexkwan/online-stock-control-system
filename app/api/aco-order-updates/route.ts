@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { createClient } from '@/app/utils/supabase/server';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {

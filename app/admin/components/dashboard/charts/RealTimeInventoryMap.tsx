@@ -27,7 +27,10 @@ const WAREHOUSE_LOCATIONS: LocationData[] = [
 ];
 
 interface RealTimeInventoryMapProps {
-  timeFrame?: any;
+  timeFrame?: {
+    start: Date;
+    end: Date;
+  };
 }
 
 export default function RealTimeInventoryMap({ timeFrame }: RealTimeInventoryMapProps) {
@@ -99,7 +102,7 @@ export default function RealTimeInventoryMap({ timeFrame }: RealTimeInventoryMap
   }
 
   // Calculate max for color scaling
-  const maxInventory = Math.max(...Array.from(locationStats.values()).map((s: Record<string, unknown>) => s.total), 1);
+  const maxInventory = Math.max(...Array.from(locationStats.values()).map((s: Record<string, unknown>) => Number(s.total || 0)), 1);
 
   const getLocationColor = (total: number) => {
     const intensity = total / maxInventory;
@@ -128,7 +131,7 @@ export default function RealTimeInventoryMap({ timeFrame }: RealTimeInventoryMap
         {/* Warehouse Grid */}
         <div className='flex-1 p-4'>
           <div className='warehouse-grid grid h-full grid-cols-4 grid-rows-3 gap-4'>
-            {WAREHOUSE_LOCATIONS.map((location: any) => {
+            {WAREHOUSE_LOCATIONS.map((location) => {
               const stats = locationStats.get(location.key) || { total: 0, products: 0 };
               const utilization = getUtilization(stats.total);
 

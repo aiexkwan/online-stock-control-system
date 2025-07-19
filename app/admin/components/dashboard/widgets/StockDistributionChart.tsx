@@ -20,30 +20,20 @@ import {
 import { textClasses, getTextClass } from '@/lib/design-system/typography';
 import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
 import { cn } from '@/lib/utils';
+import {
+  RechartsTooltipProps,
+  RechartsTreemapContentProps,
+  StockTypeInfo,
+  ProductStockData,
+  TreemapDataItem,
+  ChartDataMapper,
+  isValidTooltipProps,
+  isValidTreemapContentProps,
+} from './types/ChartWidgetTypes';
 
-interface StockDistributionData {
-  product_code: string;
-  injection?: number;
-  pipeline?: number;
-  prebook?: number;
-  await?: number;
-  fold?: number;
-  bulk?: number;
-  await_grn?: number;
-  backcarpark?: number;
-  data_code?: {
-    description?: string;
-    colour?: string;
-    type?: string;
-  };
-}
-
-interface TreemapData {
-  name: string;
-  value: number;
-  color: string;
-  description?: string;
-}
+// 使用統一的類型定義
+type StockDistributionData = ProductStockData;
+type TreemapData = TreemapDataItem;
 
 // REST API client for stock distribution
 const stockDistributionApiClient = {
@@ -173,37 +163,51 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({
     return colorMap[location as string] || brandColors.primary[500];
   };
 
-  const getAvailableTypes = useCallback(() => {
+  const getAvailableTypes = useCallback((): StockTypeInfo[] => {
     const types = new Set(['all']);
     chartData.forEach(item => {
       if (item.data_code?.type) {
         types.add(item.data_code.type);
       }
     });
-    return Array.from(types);
+    
+    // Strategy 2: DTO 轉換 - 將字符串轉換為 StockTypeInfo 對象
+    return Array.from(types).map((type, index) => ({
+      key: type,
+      label: type === 'all' ? 'All Types' : type.charAt(0).toUpperCase() + type.slice(1),
+      color: type === 'all' ? brandColors.primary[500] : getLocationColor(type),
+      enabled: true,
+    }));
   }, [chartData]);
 
   const treemapData = transformDataForTreemap(chartData, selectedType);
 
-  const customTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className={cn(
-          'rounded-lg border bg-card p-3 shadow-lg',
-          'border-border',
-          'text-foreground'
-        )}>
-          <p className={cn('font-semibold', textClasses['body-small'])}>
-            {data.description || data.name}
-          </p>
-          <p className={cn('text-muted-foreground', textClasses['label-small'])}>
-            Quantity: {data.value}
-          </p>
-        </div>
-      );
+  const customTooltip = (props: unknown) => {
+    // Strategy 2: DTO 類型驗證和轉換
+    if (!isValidTooltipProps(props)) {
+      return null;
     }
-    return null;
+    
+    const tooltipData = ChartDataMapper.extractTooltipData(props);
+    if (!tooltipData.isActive || !props.payload || props.payload.length === 0) {
+      return null;
+    }
+    
+    const data = props.payload[0].payload;
+    return (
+      <div className={cn(
+        'rounded-lg border bg-card p-3 shadow-lg',
+        'border-border',
+        'text-foreground'
+      )}>
+        <p className={cn('font-semibold', textClasses['body-small'])}>
+          {String(data.description || data.name)}
+        </p>
+        <p className={cn('text-muted-foreground', textClasses['label-small'])}>
+          Quantity: {String(data.value)}
+        </p>
+      </div>
+    );
   };
 
   if (isEditMode) {
@@ -278,9 +282,9 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({
                 textClasses['label-small']
               )}
             >
-              {getAvailableTypes().map((type: any) => (
-                <option key={type} value={type}>
-                  {type === 'all' ? 'All Types' : type}
+              {getAvailableTypes().map((type: StockTypeInfo) => (
+                <option key={type.key} value={type.key}>
+                  {type.label}
                 </option>
               ))}
             </select>
@@ -297,46 +301,45 @@ export const StockDistributionChart: React.FC<StockDistributionChartProps> = ({
               dataKey='value'
               stroke='#ffffff'
               fill={brandColors.primary[500]}
-              content={(({ x, y, width, height, payload }: any) => {
-                if (!payload || width < 40 || height < 30) return null;
+              content={((props: any) => {
+                // Strategy 5: any + 註解 - recharts 的 Treemap content 類型定義有問題，使用 any 暫時解決
+                if (!isValidTreemapContentProps(props)) {
+                  return React.createElement('g');
+                }
                 
-                return (
-                  <g>
-                    <rect
-                      x={x}
-                      y={y}
-                      width={width}
-                      height={height}
-                      fill={payload.color}
-                      stroke='#ffffff'
-                      strokeWidth={1}
-                      opacity={0.8}
-                    />
-                    {width > 60 && height > 40 && (
-                      <text
-                        x={x + width / 2}
-                        y={y + height / 2 - 6}
-                        textAnchor='middle'
-                        fill='#ffffff'
-                        fontSize={12}
-                        fontWeight='bold'
-                      >
-                        {payload.name.split(' ')[0]}
-                      </text>
-                    )}
-                    {width > 60 && height > 40 && (
-                      <text
-                        x={x + width / 2}
-                        y={y + height / 2 + 8}
-                        textAnchor='middle'
-                        fill='#ffffff'
-                        fontSize={10}
-                      >
-                        {payload.value}
-                      </text>
-                    )}
-                  </g>
-                );
+                const { x, y, width, height, payload } = props;
+                if (!payload || !width || !height || width < 40 || height < 30) return React.createElement('g');
+                
+                return React.createElement('g', {}, [
+                  React.createElement('rect', {
+                    key: 'rect',
+                    x: x ?? 0,
+                    y: y ?? 0,
+                    width: width,
+                    height: height,
+                    fill: payload.color,
+                    stroke: '#ffffff',
+                    strokeWidth: 1,
+                    opacity: 0.8
+                  }),
+                  width > 60 && height > 40 && React.createElement('text', {
+                    key: 'text1',
+                    x: (x ?? 0) + width / 2,
+                    y: (y ?? 0) + height / 2 - 6,
+                    textAnchor: 'middle',
+                    fill: '#ffffff',
+                    fontSize: 12,
+                    fontWeight: 'bold'
+                  }, payload.name.split(' ')[0]),
+                  width > 60 && height > 40 && React.createElement('text', {
+                    key: 'text2',
+                    x: (x ?? 0) + width / 2,
+                    y: (y ?? 0) + height / 2 + 8,
+                    textAnchor: 'middle',
+                    fill: '#ffffff',
+                    fontSize: 10
+                  }, payload.value)
+                ].filter(Boolean));
               }) as any}
             >
               <Tooltip content={customTooltip} />

@@ -28,7 +28,7 @@ export const ProductionStatsWidget: React.FC<ProductionStatsWidgetProps> = ({
   const [statValue, setStatValue] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [metadata, setMetadata] = useState<any>({});
+  const [metadata, setMetadata] = useState<Record<string, unknown>>({});
   const dashboardAPI = useMemo(() => createDashboardAPI(), []);
 
   // 根據 timeFrame 設定查詢時間範圍
@@ -81,21 +81,26 @@ export const ProductionStatsWidget: React.FC<ProductionStatsWidgetProps> = ({
         if (result.widgets && result.widgets.length > 0) {
           const widgetData = result.widgets[0];
 
-          if (widgetData.data.error) {
-            console.error('[ProductionStatsWidget as string] API error:', widgetData.data.error);
-            setError(widgetData.data.error);
+          if (typeof widgetData.data === 'object' && widgetData.data !== null && 'error' in widgetData.data && widgetData.data.error) {
+            const errorMsg = String(widgetData.data.error);
+            console.error('[ProductionStatsWidget as string] API error:', errorMsg);
+            setError(errorMsg);
             setStatValue(0);
             return;
           }
 
-          const productionValue = widgetData.data.value || 0;
-          const widgetMetadata = widgetData.data.metadata || {};
+          const productionValue = (typeof widgetData.data === 'object' && widgetData.data !== null && 'value' in widgetData.data) 
+            ? widgetData.data.value 
+            : 0;
+          const widgetMetadata = (typeof widgetData.data === 'object' && widgetData.data !== null && 'metadata' in widgetData.data) 
+            ? widgetData.data.metadata 
+            : {};
 
           console.log('[ProductionStatsWidget as string] API returned value:', productionValue);
           console.log('[ProductionStatsWidget as string] Metadata:', widgetMetadata);
 
-          setStatValue(productionValue);
-          setMetadata(widgetMetadata);
+          setStatValue(typeof productionValue === 'number' ? productionValue : Number(productionValue) || 0);
+          setMetadata(typeof widgetMetadata === 'object' && widgetMetadata !== null ? widgetMetadata as Record<string, unknown> : {});
 
         } else {
           console.warn('[ProductionStatsWidget as string] No widget data returned from API');

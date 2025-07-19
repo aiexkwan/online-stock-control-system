@@ -13,7 +13,21 @@ import { DashboardDataContext } from '../contexts/DashboardDataContext';
 import { useWidgetErrorHandler } from './useWidgetErrorHandler';
 import { logger } from '@/lib/logger';
 
-export interface UseUnifiedAPIOptions<TData, TVariables extends Record<string, any> = Record<string, any>> {
+// API 參數基礎類型
+type APIVariables = Record<string, string | number | boolean | string[] | null | undefined>;
+
+// API 響應基礎類型
+interface APIResponseBase {
+  data?: unknown;
+  error?: string | null;
+  meta?: {
+    total?: number;
+    page?: number;
+    hasMore?: boolean;
+  };
+}
+
+export interface UseUnifiedAPIOptions<TData, TVariables extends APIVariables = APIVariables> {
   // REST API 配置
   restEndpoint: string;
   restMethod?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
@@ -23,7 +37,7 @@ export interface UseUnifiedAPIOptions<TData, TVariables extends Record<string, a
   skip?: boolean;
   onCompleted?: (data: TData) => void;
   onError?: (error: Error) => void;
-  extractFromContext?: (contextData: any) => TData | null;
+  extractFromContext?: (contextData: APIResponseBase) => TData | null;
   widgetId?: string;
   
   // 快取和重試
@@ -49,7 +63,10 @@ export interface UseUnifiedAPIResult<TData> {
  * 統一 REST API Hook
  * 提供統一的 REST API 訪問接口
  */
-export function useUnifiedAPI<TData = any, TVariables extends Record<string, any> = Record<string, any>>({
+export function useUnifiedAPI<
+  TData = APIResponseBase['data'], 
+  TVariables extends APIVariables = APIVariables
+>({
   restEndpoint,
   restMethod = 'GET',
   variables,
@@ -68,7 +85,13 @@ export function useUnifiedAPI<TData = any, TVariables extends Record<string, any
   const [loading, setLoading] = useState(!skip);
   const [error, setError] = useState<Error | undefined>();
   const [apiType, setApiType] = useState<'rest' | 'context'>('context');
-  const [performanceMetrics, setPerformanceMetrics] = useState<any>();
+  interface PerformanceMetrics {
+    queryTime: number;
+    dataSource: 'context' | 'rest' | 'cache';
+    fallbackUsed: boolean;
+  }
+  
+  const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetrics>();
   
   // Refs
   const startTimeRef = useRef<number>();
@@ -92,7 +115,7 @@ export function useUnifiedAPI<TData = any, TVariables extends Record<string, any
       return null;
     }
     try {
-      return extractFromContext(dashboardData.data);
+      return extractFromContext(dashboardData.data as never);
     } catch (error) {
       logger.warn('Error extracting data from context', {
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -138,7 +161,7 @@ export function useUnifiedAPI<TData = any, TVariables extends Record<string, any
   }, [cacheKey, cacheTime]);
 
   // Record performance metrics
-  const recordPerformance = useCallback((dataSource: string, fallbackUsed: boolean) => {
+  const recordPerformance = useCallback((dataSource: 'context' | 'rest' | 'cache', fallbackUsed: boolean) => {
     if (startTimeRef.current) {
       const queryTime = Date.now() - startTimeRef.current;
       setPerformanceMetrics({
@@ -192,7 +215,7 @@ export function useUnifiedAPI<TData = any, TVariables extends Record<string, any
       const apiRequest: APIRequest = {
         method: restMethod,
         endpoint: restEndpoint,
-        params: variables as Record<string, any> | undefined,
+        params: variables,
         headers: session?.access_token ? {
           'Authorization': `Bearer ${session.access_token}`,
         } : {},
@@ -216,7 +239,7 @@ export function useUnifiedAPI<TData = any, TVariables extends Record<string, any
       if (response.success && response.data) {
         setData(response.data);
         setCachedData(response.data);
-        recordPerformance(response.apiType, false);
+        recordPerformance(response.apiType === 'graphql' ? 'context' : response.apiType as 'rest' | 'cache', false);
         onCompleted?.(response.data);
       } else {
         throw new Error(response.error || 'API request failed');
@@ -283,7 +306,7 @@ export function useUnifiedAPI<TData = any, TVariables extends Record<string, any
 /**
  * REST API Hook - 簡化版本
  */
-export function useRestAPI<TData = any, TVariables extends Record<string, any> = Record<string, any>>(
+export function useRestAPI<TData = APIResponseBase['data'], TVariables extends APIVariables = APIVariables>(
   endpoint: string,
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' = 'GET',
   options?: Omit<UseUnifiedAPIOptions<TData, TVariables>, 'restEndpoint' | 'restMethod'>

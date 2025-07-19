@@ -16,7 +16,6 @@ import { DatabaseRecord } from '@/lib/types/database';
 import { ApiResponse, ApiRequest, QueryParams } from '@/lib/validation/zod-schemas';
 import { getErrorMessage } from '@/lib/types/error-handling';
 import { glob } from 'glob';
-import { getErrorMessage } from '../lib/types/error-handling';
 
 interface FixPattern {
   pattern: RegExp;

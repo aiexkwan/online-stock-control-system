@@ -7,6 +7,23 @@ import React from 'react';
 import { AdminWidgetConfig } from './adminDashboardLayouts';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 
+// Widget 數據基礎類型定義
+export interface WidgetData {
+  [key: string]: unknown;
+}
+
+// 組件 Props 類型定義 (與統一系統兼容)
+export interface WidgetComponentProps {
+  config: AdminWidgetConfig;
+  timeFrame: TimeFrame;
+  theme: string;
+  data?: WidgetData;
+  loading?: boolean;
+  error?: string | null;
+  widgetId?: string; // 支持統一 Widget Registry
+  [key: string]: unknown;
+}
+
 // 主題顏色映射
 export const THEME_GLOW_COLORS = {
   injection: 'production',
@@ -39,10 +56,10 @@ export interface BaseWidgetRendererProps {
   config: AdminWidgetConfig;
   theme: string;
   timeFrame: TimeFrame;
-  data?: any;
+  data?: WidgetData;
   loading?: boolean;
   error?: string | null;
-  renderLazyComponent: (componentName: string, props: any) => JSX.Element;
+  renderLazyComponent: (componentName: string, props: WidgetComponentProps) => JSX.Element;
 }
 
 // Component Props Factory 類型
@@ -50,12 +67,12 @@ export interface ComponentProps {
   config: AdminWidgetConfig;
   timeFrame: TimeFrame;
   theme: string;
-  data?: any;
+  data?: WidgetData;
 }
 
 // Component Props Factory 函數
 export const getComponentPropsFactory = (config: AdminWidgetConfig, timeFrame: TimeFrame, theme: string) => {
-  return (data?: any): ComponentProps => ({
+  return (data?: WidgetData): ComponentProps => ({
     config,
     timeFrame,
     theme,
@@ -100,11 +117,16 @@ export const WIDGET_CATEGORIES = {
   ]
 } as const;
 
+// Widget 類型聯合類型
+type ChartWidgetType = typeof WIDGET_CATEGORIES.CHART[number];
+type StatsWidgetType = typeof WIDGET_CATEGORIES.STATS[number];
+type ListWidgetType = typeof WIDGET_CATEGORIES.LIST[number];
+
 // 判斷 Widget 類型的工具函數
 export const getWidgetCategory = (widgetType: string): 'chart' | 'stats' | 'list' | 'core' => {
-  if (WIDGET_CATEGORIES.CHART.includes(widgetType as any)) return 'chart';
-  if (WIDGET_CATEGORIES.STATS.includes(widgetType as any)) return 'stats';  
-  if (WIDGET_CATEGORIES.LIST.includes(widgetType as any)) return 'list';
+  if (WIDGET_CATEGORIES.CHART.includes(widgetType as ChartWidgetType)) return 'chart';
+  if (WIDGET_CATEGORIES.STATS.includes(widgetType as StatsWidgetType)) return 'stats';  
+  if (WIDGET_CATEGORIES.LIST.includes(widgetType as ListWidgetType)) return 'list';
   return 'core';
 };
 

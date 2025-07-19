@@ -38,6 +38,48 @@ export function useKeyboardNavigation(
   const shortcutsRef = useRef<Map<string, () => void>>(new Map());
 
   /**
+   * 導航到下一個元素
+   */
+  const navigateToNext = useCallback((): void => {
+    const container = containerRef?.current || document.body;
+    const result = globalFocusManager.cycleFocus('next', container);
+    
+    if (!result) {
+      // 如果沒有下一個元素，循環到第一個
+      globalFocusManager.focusFirst(container);
+    }
+  }, [containerRef]);
+
+  /**
+   * 導航到前一個元素
+   */
+  const navigateToPrevious = useCallback((): void => {
+    const container = containerRef?.current || document.body;
+    const result = globalFocusManager.cycleFocus('previous', container);
+    
+    if (!result) {
+      // 如果沒有前一個元素，循環到最後一個
+      globalFocusManager.focusLast(container);
+    }
+  }, [containerRef]);
+
+  /**
+   * 導航到第一個元素
+   */
+  const navigateToFirst = useCallback((): void => {
+    const container = containerRef?.current || document.body;
+    globalFocusManager.focusFirst(container);
+  }, [containerRef]);
+
+  /**
+   * 導航到最後一個元素
+   */
+  const navigateToLast = useCallback((): void => {
+    const container = containerRef?.current || document.body;
+    globalFocusManager.focusLast(container);
+  }, [containerRef]);
+
+  /**
    * 檢測鍵盤使用
    */
   useEffect(() => {
@@ -191,47 +233,6 @@ export function useKeyboardNavigation(
     });
   }, []);
 
-  /**
-   * 導航到下一個元素
-   */
-  const navigateToNext = useCallback((): void => {
-    const container = containerRef?.current || document.body;
-    const result = globalFocusManager.cycleFocus('next', container);
-    
-    if (!result) {
-      // 如果沒有下一個元素，循環到第一個
-      globalFocusManager.focusFirst(container);
-    }
-  }, [containerRef]);
-
-  /**
-   * 導航到前一個元素
-   */
-  const navigateToPrevious = useCallback((): void => {
-    const container = containerRef?.current || document.body;
-    const result = globalFocusManager.cycleFocus('previous', container);
-    
-    if (!result) {
-      // 如果沒有前一個元素，循環到最後一個
-      globalFocusManager.focusLast(container);
-    }
-  }, [containerRef]);
-
-  /**
-   * 導航到第一個元素
-   */
-  const navigateToFirst = useCallback((): void => {
-    const container = containerRef?.current || document.body;
-    globalFocusManager.focusFirst(container);
-  }, [containerRef]);
-
-  /**
-   * 導航到最後一個元素
-   */
-  const navigateToLast = useCallback((): void => {
-    const container = containerRef?.current || document.body;
-    globalFocusManager.focusLast(container);
-  }, [containerRef]);
 
   /**
    * 註冊快捷鍵

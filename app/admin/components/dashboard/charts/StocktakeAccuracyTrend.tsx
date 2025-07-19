@@ -20,7 +20,10 @@ import { AlertCircle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 
 interface StocktakeAccuracyTrendProps {
-  timeFrame?: any;
+  timeFrame?: {
+    start: Date;
+    end: Date;
+  };
 }
 
 export default function StocktakeAccuracyTrend({ timeFrame }: StocktakeAccuracyTrendProps) {
@@ -161,17 +164,25 @@ export default function StocktakeAccuracyTrend({ timeFrame }: StocktakeAccuracyT
             />
             <Tooltip
               content={({ active, payload }) => {
-                if (active && payload && payload[0]) {
-                  const data = payload[0].payload;
+                if (active && Array.isArray(payload) && payload.length > 0 && payload[0]?.payload) {
+                  const payloadData = payload[0].payload;
+                  const data = payloadData as {
+                    fullDate: string;
+                    accuracy: number;
+                    scanned: number;
+                    expected: number;
+                    discrepancy: number;
+                    products: number;
+                  };
                   return (
                     <div className='rounded-lg border bg-background/95 p-3 shadow-lg backdrop-blur-sm'>
-                      <p className='font-medium'>{data.fullDate}</p>
+                      <p className='font-medium'>{String(data.fullDate)}</p>
                       <div className='mt-2 space-y-1'>
-                        <p className='text-sm text-green-600'>Accuracy: {data.accuracy}%</p>
-                        <p className='text-sm'>Scanned: {data.scanned}</p>
-                        <p className='text-sm'>Expected: {data.expected}</p>
-                        <p className='text-sm text-red-600'>Discrepancy: {data.discrepancy}</p>
-                        <p className='text-sm text-white/60'>Products: {data.products}</p>
+                        <p className='text-sm text-green-600'>Accuracy: {Number(data.accuracy)}%</p>
+                        <p className='text-sm'>Scanned: {Number(data.scanned)}</p>
+                        <p className='text-sm'>Expected: {Number(data.expected)}</p>
+                        <p className='text-sm text-red-600'>Discrepancy: {Number(data.discrepancy)}</p>
+                        <p className='text-sm text-white/60'>Products: {Number(data.products)}</p>
                       </div>
                     </div>
                   );
@@ -216,19 +227,19 @@ export default function StocktakeAccuracyTrend({ timeFrame }: StocktakeAccuracyT
       <div className='mt-4 grid grid-cols-3 gap-4 border-t pt-4 text-xs'>
         <div className='text-center'>
           <div className='text-2xl font-bold text-green-600'>
-            {chartData.filter((d: Record<string, unknown>) => d.accuracy >= 95).length}
+            {chartData.filter((d: Record<string, unknown>) => Number(d.accuracy || 0) >= 95).length}
           </div>
           <div className='text-white/60'>Days Meeting Target (≥95%)</div>
         </div>
         <div className='text-center'>
           <div className='text-2xl font-bold text-amber-600'>
-            {chartData.filter((d: Record<string, unknown>) => d.accuracy >= 90 && d.accuracy < 95).length}
+            {chartData.filter((d: Record<string, unknown>) => Number(d.accuracy || 0) >= 90 && Number(d.accuracy || 0) < 95).length}
           </div>
           <div className='text-white/60'>Near Target (90-94%)</div>
         </div>
         <div className='text-center'>
           <div className='text-2xl font-bold text-red-600'>
-            {chartData.filter((d: Record<string, unknown>) => d.accuracy < 90).length}
+            {chartData.filter((d: Record<string, unknown>) => Number(d.accuracy || 0) < 90).length}
           </div>
           <div className='text-white/60'>Needs Improvement (&lt;90%)</div>
         </div>

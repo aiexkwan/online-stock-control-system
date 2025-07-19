@@ -29,7 +29,10 @@ import { componentSpacing, spacingUtilities } from '@/lib/design-system/spacing'
 import { cn } from '@/lib/utils';
 
 interface InventoryTurnoverAnalysisProps {
-  timeFrame?: any;
+  timeFrame?: {
+    start: Date;
+    end: Date;
+  };
 }
 
 export default function InventoryTurnoverAnalysis({ timeFrame }: InventoryTurnoverAnalysisProps) {
@@ -80,23 +83,30 @@ export default function InventoryTurnoverAnalysis({ timeFrame }: InventoryTurnov
             <YAxis />
             <Tooltip
               content={({ active, payload }) => {
-                if (active && payload && payload[0]) {
-                  const data = payload[0].payload;
+                if (active && Array.isArray(payload) && payload.length > 0 && payload[0]?.payload) {
+                  const payloadData = payload[0].payload;
+                  const data = payloadData as {
+                    code: string;
+                    inventory: number;
+                    demand: number;
+                    turnoverRatio: number;
+                    status: string;
+                  };
                   return (
                     <div className={cn(
                       'rounded-lg border bg-card/95 p-3 shadow-lg backdrop-blur-sm',
                       'border-border'
                     )}>
-                      <p className={cn(textClasses['body-small'], 'font-medium text-foreground')}>{data.code}</p>
+                      <p className={cn(textClasses['body-small'], 'font-medium text-foreground')}>{String(data.code)}</p>
                       <div className={cn('mt-2 space-y-1')}>
-                        <p className={cn(textClasses['label-small'])} style={{ color: widgetColors.charts.text }}>Inventory: {data.inventory}</p>
-                        <p className={cn(textClasses['label-small'])} style={{ color: semanticColors.warning.DEFAULT }}>Demand: {data.demand}</p>
-                        <p className={cn(textClasses['label-small'], 'font-medium text-foreground')}>Turnover Rate: {data.turnoverRatio}</p>
+                        <p className={cn(textClasses['label-small'])} style={{ color: widgetColors.charts.text }}>Inventory: {Number(data.inventory)}</p>
+                        <p className={cn(textClasses['label-small'])} style={{ color: semanticColors.warning.DEFAULT }}>Demand: {Number(data.demand)}</p>
+                        <p className={cn(textClasses['label-small'], 'font-medium text-foreground')}>Turnover Rate: {Number(data.turnoverRatio)}</p>
                         <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>
                           Status:{' '}
-                          {(data as { status: string }).status === 'high-demand'
+                          {data.status === 'high-demand'
                             ? 'High Demand'
-                            : (data as { status: string }).status === 'overstocked'
+                            : data.status === 'overstocked'
                               ? 'Overstocked'
                               : 'Balanced'}
                         </p>

@@ -144,27 +144,27 @@ export function InventoryAnalysisExample() {
           <div className='space-y-2'>
             {products.slice(0, 10).map((product: Record<string, unknown>) => (
               <div
-                key={product.product_code}
+                key={String(product.product_code) || Math.random().toString()}
                 className='flex items-center justify-between rounded-lg border p-3'
               >
                 <div className='flex-1'>
-                  <p className='font-medium'>{product.product_code}</p>
-                  <p className='text-sm text-muted-foreground'>{product.product_description}</p>
+                  <p className='font-medium'>{String(product.product_code) || 'N/A'}</p>
+                  <p className='text-sm text-muted-foreground'>{String(product.product_description) || 'No description'}</p>
                 </div>
                 <div className='flex items-center gap-4 text-sm'>
                   <div>
                     <span className='text-muted-foreground'>Stock: </span>
-                    <span className='font-medium'>{product.current_stock}</span>
+                    <span className='font-medium'>{String(product.current_stock) || '0'}</span>
                   </div>
                   <div>
                     <span className='text-muted-foreground'>Demand: </span>
-                    <span className='font-medium text-amber-600'>{product.order_demand}</span>
+                    <span className='font-medium text-amber-600'>{String(product.order_demand) || '0'}</span>
                   </div>
                   <Badge
-                    variant={product.is_sufficient ? 'default' : 'destructive'}
+                    variant={Boolean(product.is_sufficient) ? 'default' : 'destructive'}
                     className='ml-2'
                   >
-                    {product.is_sufficient ? 'OK' : 'Short'}
+                    {Boolean(product.is_sufficient) ? 'OK' : 'Short'}
                   </Badge>
                 </div>
               </div>

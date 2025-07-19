@@ -76,18 +76,30 @@ const StillInAwaitPercentageWidget = React.memo(function StillInAwaitPercentageW
         w => w.widgetId === 'await_percentage_stats'
       );
 
-      if (widgetData && !widgetData.data.error) {
-        const percentage = widgetData.data.value || 0;
-        const stillInAwait = widgetData.data.metadata?.stillAwait || 0;
-        const totalMoved = widgetData.data.metadata?.totalPallets || 0;
+      if (widgetData && !(typeof widgetData.data === 'object' && widgetData.data !== null && 'error' in widgetData.data && widgetData.data.error)) {
+        const percentage = (typeof widgetData.data === 'object' && widgetData.data !== null && 'value' in widgetData.data) 
+          ? widgetData.data.value 
+          : 0;
+        const metadata = (typeof widgetData.data === 'object' && widgetData.data !== null && 'metadata' in widgetData.data) 
+          ? widgetData.data.metadata 
+          : {};
+        const stillInAwait = typeof metadata === 'object' && metadata !== null && 'stillAwait' in metadata 
+          ? metadata.stillAwait 
+          : 0;
+        const totalMoved = typeof metadata === 'object' && metadata !== null && 'totalPallets' in metadata 
+          ? metadata.totalPallets 
+          : 0;
         
         setApiData({
-          percentage,
-          stillAwait: stillInAwait,
-          totalPallets: totalMoved,
+          percentage: typeof percentage === 'number' ? percentage : Number(percentage) || 0,
+          stillAwait: typeof stillInAwait === 'number' ? stillInAwait : Number(stillInAwait) || 0,
+          totalPallets: typeof totalMoved === 'number' ? totalMoved : Number(totalMoved) || 0,
         });
       } else {
-        throw new Error(widgetData?.data.error || 'No data received');
+        const errorMsg = (widgetData && typeof widgetData.data === 'object' && widgetData.data !== null && 'error' in widgetData.data) 
+          ? String(widgetData.data.error) 
+          : 'No data received';
+        throw new Error(errorMsg);
       }
     } catch (err) {
       setError(err as Error);

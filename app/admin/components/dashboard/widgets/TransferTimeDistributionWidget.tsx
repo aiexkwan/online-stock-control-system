@@ -25,20 +25,17 @@ import { WidgetStyles } from '@/app/utils/widgetStyles';
 // GraphQL imports removed - using REST API only
 import { useInViewport } from '@/app/admin/hooks/useInViewport';
 import { ChartContainer, LineChartSkeleton } from './common';
+import { 
+  TransferTimeDistributionData, 
+  TransferDistributionAPIResponse,
+  TransferDistributionMapper,
+  formatTransferTooltip
+} from './types/TransferDistributionTypes';
 
 // GraphQL query removed - using REST API only
 
-interface TimeDistributionData {
-  timeSlots: Array<{
-    time: string;
-    value: number;
-    fullTime: string;
-  }>;
-  totalTransfers: number;
-  optimized?: boolean;
-  calculationTime?: string;
-  peakHour?: string;
-}
+// 使用從 types 文件導入的類型
+// TransferTimeDistributionData 已定義在 TransferDistributionTypes.ts
 
 export const TransferTimeDistributionWidget = React.memo(function TransferTimeDistributionWidget({
   widget,
@@ -68,7 +65,7 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
   }, [timeFrame]);
 
   // 使用 REST API 獲取數據
-  const [apiData, setApiData] = useState<{ timeSlots: Record<string, unknown>[]; totalTransfers: number } | null>(null);
+  const [apiData, setApiData] = useState<TransferDistributionAPIResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -98,16 +95,23 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
         w => w.widgetId === 'transfer_time_distribution'
       );
 
-      if (widgetData && !widgetData.data.error) {
-        const timeSlots = widgetData.data.value || [];
-        const totalTransfers = timeSlots.reduce((sum: number, slot: any) => sum + (slot.value || 0), 0);
+      if (widgetData && !(typeof widgetData.data === 'object' && widgetData.data !== null && 'error' in widgetData.data && widgetData.data.error)) {
+        const timeSlots = (typeof widgetData.data === 'object' && widgetData.data !== null && 'value' in widgetData.data) 
+          ? widgetData.data.value 
+          : [];
+        const timeSlotsArray = Array.isArray(timeSlots) ? timeSlots : [];
+        const processedTimeSlots = TransferDistributionMapper.transformAPITimeSlots(timeSlotsArray);
+        const totalTransfers = TransferDistributionMapper.calculateTotalTransfers(processedTimeSlots);
         
         setApiData({
-          timeSlots,
+          timeSlots: processedTimeSlots,
           totalTransfers,
         });
       } else {
-        throw new Error(widgetData?.data.error || 'No data received');
+        const errorMsg = (widgetData && typeof widgetData.data === 'object' && widgetData.data !== null && 'error' in widgetData.data) 
+          ? String(widgetData.data.error) 
+          : 'No data received';
+        throw new Error(errorMsg);
       }
     } catch (err) {
       setError(err as Error);
@@ -121,26 +125,26 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
   }, [fetchData]);
 
   // 處理數據 - 使用 REST API 的結果
-  const data = useMemo<TimeDistributionData>(() => {
+  const data = useMemo<TransferTimeDistributionData>(() => {
     if (!apiData) {
-      return { timeSlots: [], totalTransfers: 0 };
+      return { 
+        timeSlots: [], 
+        totalTransfers: 0,
+        peakHour: undefined,
+        optimized: undefined,
+      };
     }
 
     const { timeSlots, totalTransfers } = apiData;
     
     // 找出高峰時段
-    let peakHour = '';
-    let maxValue = 0;
-    timeSlots.forEach((slot: any) => {
-      if (slot.value > maxValue) {
-        maxValue = slot.value;
-        peakHour = slot.time;
-      }
-    });
+    const peakHour = TransferDistributionMapper.calculatePeakHour(
+      Array.isArray(timeSlots) ? TransferDistributionMapper.transformAPITimeSlots(timeSlots) : []
+    );
 
     return {
-      timeSlots,
-      totalTransfers,
+      timeSlots: Array.isArray(timeSlots) ? TransferDistributionMapper.transformAPITimeSlots(timeSlots) : [],
+      totalTransfers: typeof totalTransfers === 'number' ? totalTransfers : 0,
       peakHour,
       optimized: true,
     };
@@ -190,7 +194,10 @@ export const TransferTimeDistributionWidget = React.memo(function TransferTimeDi
             fontSize: '12px',
           }}
           labelFormatter={label => `Time: ${label}`}
-          formatter={(value: unknown) => [value, 'Transfers']}
+          formatter={(value: unknown) => {
+            const formatted = formatTransferTooltip(value, '');
+            return [formatted.formattedValue, 'Count'];
+          }}
         />
         <Line
           type='monotone'

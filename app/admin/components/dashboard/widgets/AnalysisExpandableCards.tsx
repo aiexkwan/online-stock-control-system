@@ -121,7 +121,7 @@ interface ChartOption {
   title: string;
   subtitle: string;
   icon: React.ElementType;
-  component: React.ComponentType<{ timeFrame?: TimeFrame }>;
+  component: React.ComponentType<Record<string, unknown>>;
   backgroundGradient: string;
   iconColor: string;
 }

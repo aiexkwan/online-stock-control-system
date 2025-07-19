@@ -258,16 +258,27 @@ export const voidPalletReportConfig: ReportConfig = {
     },
     excel: {
       headerStyle: {
-        font: { bold: true, size: 12 },
-        fill: { fgColor: { rgb: '424242' } },
-        font_color: { rgb: 'FFFFFF' },
+        font: { 
+          bold: true, 
+          size: 12,
+          color: { rgb: 'FFFFFF' }
+        },
+        fill: { 
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { rgb: '424242' } 
+        },
       },
       dataStyle: {
         font: { size: 10 },
       },
       summaryStyle: {
         font: { bold: true, size: 11 },
-        fill: { fgColor: { rgb: 'E0E0E0' } },
+        fill: { 
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { rgb: 'E0E0E0' } 
+        },
       },
     },
   },

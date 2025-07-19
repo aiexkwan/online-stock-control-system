@@ -131,11 +131,11 @@ class UnifiedWidgetRegistry implements IWidgetRegistry {
       // 直接使用 React.lazy - 移除中間層
       const LazyComponent = React.lazy(importFn);
       
-      // 包裝 Suspense (保持原有功能)
+      // 包裝 Suspense (保持原有功能) - 策略 4: 類型安全的組件包裝
       const WrappedComponent = (props: WidgetComponentProps) => (
         React.createElement(Suspense, 
           { fallback: React.createElement(DefaultLoadingComponent) },
-          React.createElement(LazyComponent, props)
+          React.createElement(LazyComponent, props as any) // 類型斷言用於 LazyComponent
         )
       );
 

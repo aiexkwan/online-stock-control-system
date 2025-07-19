@@ -11,7 +11,23 @@ import { apiLogger, logApiRequest, logApiResponse, systemLogger } from '@/lib/lo
 import crypto from 'crypto';
 
 // 簡單的內存緩存（與現有系統一致）
-const fileCache = new Map<string, any>();
+interface CachedAssistantResult {
+  orderData: EnhancedOrderData;
+  analysis: string;
+  extractedText?: string;
+  usage?: {
+    total_tokens?: number;
+    prompt_tokens?: number;
+    completion_tokens?: number;
+  };
+}
+
+interface CacheData {
+  data: CachedAssistantResult;
+  timestamp: number;
+}
+
+const fileCache = new Map<string, CacheData>();
 const CACHE_EXPIRY = 30 * 60 * 1000; // 30分鐘
 
 // ACO 產品代碼列表（與現有系統一致）
@@ -64,7 +80,7 @@ function generateFileHash(buffer: Buffer): string {
 }
 
 // 檢查緩存
-function getCachedResult(fileHash: string): any | null {
+function getCachedResult(fileHash: string): CachedAssistantResult | null {
   const cached = fileCache.get(fileHash);
   if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY) {
     return cached.data;
@@ -76,7 +92,7 @@ function getCachedResult(fileHash: string): any | null {
 }
 
 // 設置緩存
-function setCachedResult(fileHash: string, data: DatabaseRecord[]): void {
+function setCachedResult(fileHash: string, data: CachedAssistantResult): void {
   fileCache.set(fileHash, {
     data,
     timestamp: Date.now(),
@@ -111,13 +127,13 @@ async function storeEnhancedOrderData(
   tokenUsed: number
 ) {
   const supabase = createSupabaseAdmin();
-  let insertResults: Record<string, unknown>[] = [];
+  let insertResults: DatabaseRecord[] = [];
 
   // 計算每條記錄的 token
   const tokenPerRecord = Math.ceil(tokenUsed / orderData.products.length);
 
   // 準備插入資料
-  const orderRecords = orderData.products.map((product: Record<string, unknown>) => {
+  const orderRecords = orderData.products.map((product) => {
     const record: DatabaseRecord = {
       order_ref: String(orderData.order_ref),
       account_num: orderData.account_num || '-',
@@ -157,7 +173,7 @@ async function storeEnhancedOrderData(
     if (error) {
       apiLogger.error('[Assistant API] Database insert failed', {
         error: getErrorMessage(error),
-        code: (error as any).code,
+        code: (error as Error & { code?: string }).code,
         details: error.details,
         hint: error.hint,
         sampleRecord: orderRecords[0],
@@ -170,7 +186,7 @@ async function storeEnhancedOrderData(
       if (singleError) {
         apiLogger.error('[Assistant API] Single record insert also failed', {
           error: getErrorMessage(singleError),
-          code: (singleError as any).code,
+          code: (singleError as Error & { code?: string }).code,
           record: orderRecords[0],
         });
       }
@@ -190,10 +206,10 @@ async function storeEnhancedOrderData(
   }
 
   // 處理 ACO 產品
-  const acoProducts = orderData.products.filter((p: Record<string, unknown>) => ACO_PRODUCT_CODES.includes(p.product_code));
+  const acoProducts = orderData.products.filter((p) => ACO_PRODUCT_CODES.includes(p.product_code));
 
   if (acoProducts.length > 0) {
-    const acoRecords = acoProducts.map((product: Record<string, unknown>) => ({
+    const acoRecords = acoProducts.map((product) => ({
       code: product.product_code, // record_aco 表使用 'code' 而不是 'product_code'
       order_ref: parseInt(orderData.order_ref), // record_aco 需要 integer
       required_qty: product.product_qty,
@@ -210,7 +226,7 @@ async function storeEnhancedOrderData(
     if (acoError) {
       apiLogger.warn('[Assistant API] ACO records insert failed', {
         error: getErrorMessage(acoError),
-        code: (acoError as any).code,
+        code: (acoError as Error & { code?: string }).code,
         details: acoError.details,
       });
     } else {
@@ -315,7 +331,7 @@ async function sendEmailNotification(
     const { sendOrderCreatedEmail } = await import('../../services/emailService');
 
     const emailRequestBody = {
-      orderData: orderData.products.map((product: Record<string, unknown>) => ({
+      orderData: orderData.products.map((product) => ({
         order_ref: parseInt(orderData.order_ref), // emailService expects number
         product_code: product.product_code,
         product_desc: product.product_desc,
@@ -384,7 +400,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       apiLogger.info('[Assistant API] Using cached result', { fileHash });
 
       // 準備返回數據（與非緩存版本一致）
-      const cachedExtractedData = cachedResult.orderData.products.map((product: Record<string, unknown>) => ({
+      const cachedExtractedData = cachedResult.orderData.products.map((product) => ({
         order_ref: cachedResult.orderData.order_ref,
         account_num: cachedResult.orderData.account_num,
         delivery_add: cachedResult.orderData.delivery_add,
@@ -434,9 +450,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     });
 
     // 解析結果
-    let orderData: EnhancedOrderData;
+    let parsedData: ReturnType<typeof assistantService.parseAssistantResponse>;
     try {
-      orderData = assistantService.parseAssistantResponse(result);
+      parsedData = assistantService.parseAssistantResponse(result);
     } catch (parseError: unknown) {
       apiLogger.error('[Assistant API] Failed to parse assistant response', {
         error: getErrorMessage(parseError),
@@ -444,6 +460,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       });
       throw new Error(`Failed to parse assistant response: ${getErrorMessage(parseError)}`);
     }
+
+    // 轉換為 EnhancedOrderData 格式
+    const orderData: EnhancedOrderData = {
+      order_ref: parsedData.order_ref,
+      account_num: '', // Assistant 版本沒有這些字段，使用空值
+      delivery_add: '',
+      invoice_to: '',
+      customer_ref: '',
+      products: parsedData.products.map(p => ({
+        product_code: p.product_code,
+        product_desc: p.description || '',
+        product_qty: p.quantity,
+        weight: 0,
+        unit_price: p.unit_price?.toString() || '0',
+      })),
+    };
 
     apiLogger.info('[Assistant API] Analysis completed', {
       orderRef: orderData.order_ref,
@@ -482,6 +514,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     // 緩存結果
     setCachedResult(fileHash, {
       orderData,
+      analysis: result,
       extractedText: result,
     });
 
@@ -495,7 +528,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     logApiResponse('POST', '/api/analyze-order-pdf-assistant', 200, processingTime);
 
     // 準備返回數據（兼容前端）
-    const extractedData = orderData.products.map((product: Record<string, unknown>) => ({
+    const extractedData = orderData.products.map((product) => ({
       order_ref: orderData.order_ref,
       account_num: orderData.account_num,
       delivery_add: orderData.delivery_add,

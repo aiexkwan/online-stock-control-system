@@ -27,7 +27,7 @@ interface MockChainMethods {
   limit: MockFunction;
   single: MockFunction;
   maybeSingle: MockFunction;
-  then?: (callback: (value: { data: DatabaseRecord[] | null; error: unknown }) => unknown) => Promise<unknown>;
+  then?: (callback: (value: { data: DatabaseRecord | DatabaseRecord[] | null; error: unknown }) => unknown) => Promise<unknown>;
 }
 
 // Mock Supabase client type
@@ -57,7 +57,7 @@ describe('test-helpers', () => {
   });
 });
 
-export const createMockSupabaseChain = (returnData: DatabaseRecord | null = null, returnError: DatabaseRecord | null = null): MockChainMethods => {
+export const createMockSupabaseChain = (returnData: DatabaseRecord | DatabaseRecord[] | null = null, returnError: DatabaseRecord | null = null): MockChainMethods => {
   const methods: MockChainMethods = {
     select: jest.fn(),
     insert: jest.fn(),
@@ -86,14 +86,14 @@ export const createMockSupabaseChain = (returnData: DatabaseRecord | null = null
   // Make all methods chainable
   Object.keys(methods).forEach(key => {
     if (key === 'single' || key === 'maybeSingle') {
-      methods[key].mockResolvedValue({ data: returnData, error: returnError });
+      (methods as any)[key].mockResolvedValue({ data: returnData, error: returnError });
     } else {
-      methods[key].mockReturnValue(methods);
+      (methods as any)[key].mockReturnValue(methods);
     }
   });
 
   // Add special handling for promise-like behavior
-  methods.then = (callback: (value: { data: DatabaseRecord[] | null; error: unknown }) => unknown) => {
+  methods.then = (callback: (value: { data: DatabaseRecord | DatabaseRecord[] | null; error: unknown }) => unknown) => {
     return Promise.resolve({ data: returnData, error: returnError }).then(callback);
   };
   
@@ -104,7 +104,7 @@ export const createMockSupabaseChain = (returnData: DatabaseRecord | null = null
   
   // Ensure the chain can be awaited directly
   if (!('then' in methods)) {
-    methods.then = (resolve: (value: { data: DatabaseRecord[] | null; error: unknown }) => unknown) => {
+    methods.then = (resolve: (value: { data: DatabaseRecord | DatabaseRecord[] | null; error: unknown }) => unknown) => {
       return Promise.resolve({ data: returnData, error: returnError }).then(resolve);
     };
   }

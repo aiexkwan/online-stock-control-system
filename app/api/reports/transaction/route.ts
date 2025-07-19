@@ -66,12 +66,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       pallet_number: transaction.plt_num || '',
     }));
 
-    // 計算日期範圍
-    const dates = data.map((t: Record<string, unknown>) => new Date(t.tran_date)).filter((d: Record<string, unknown>) => !isNaN(d.getTime()));
+    // 計算日期範圍 (Strategy 2: DTO + type narrowing)
+    const dates = data
+      .map((t: Record<string, unknown>) => new Date(t.tran_date as string))
+      .filter((d: Date) => !isNaN(d.getTime()));
     const minDate =
-      dates.length > 0 ? format(Math.min(...dates.map((d: Record<string, unknown>) => d.getTime())), 'yyyy-MM-dd') : '';
+      dates.length > 0 ? format(Math.min(...dates.map((d: Date) => d.getTime())), 'yyyy-MM-dd') : '';
     const maxDate =
-      dates.length > 0 ? format(Math.max(...dates.map((d: Record<string, unknown>) => d.getTime())), 'yyyy-MM-dd') : '';
+      dates.length > 0 ? format(Math.max(...dates.map((d: Date) => d.getTime())), 'yyyy-MM-dd') : '';
 
     const reportData: TransactionReportData = {
       date_range: {

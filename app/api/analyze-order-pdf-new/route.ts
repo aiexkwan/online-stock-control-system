@@ -13,7 +13,25 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // 簡單的內存緩存（生產環境建議使用 Redis）
-const fileCache = new Map<string, any>();
+interface CachedAnalysisResult {
+  orderData: OrderData[];
+  usage?: {
+    total_tokens?: number;
+    prompt_tokens?: number;
+    completion_tokens?: number;
+  };
+  extractedText?: string;
+  originalTextLength?: number;
+  processedTextLength?: number;
+  textReduction?: string;
+}
+
+interface CacheData {
+  data: CachedAnalysisResult;
+  timestamp: number;
+}
+
+const fileCache = new Map<string, CacheData>();
 const CACHE_EXPIRY = 30 * 60 * 1000; // 30分鐘
 
 // 🔥 需要插入到 record_aco 的 product_code 列表
@@ -50,7 +68,7 @@ function generateFileHash(buffer: Buffer): string {
 }
 
 // 檢查緩存
-function getCachedResult(fileHash: string): any | null {
+function getCachedResult(fileHash: string): CachedAnalysisResult | null {
   const cached = fileCache.get(fileHash);
   if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY) {
     return cached.data;
@@ -92,7 +110,7 @@ async function recordOrderUploadHistory(orderRef: string, uploadedBy: string): P
 }
 
 // 設置緩存
-function setCachedResult(fileHash: string, data: DatabaseRecord[]): void {
+function setCachedResult(fileHash: string, data: CachedAnalysisResult): void {
   fileCache.set(fileHash, {
     data,
     timestamp: Date.now(),
@@ -242,7 +260,7 @@ function preprocessPdfText(rawText: string): string {
 
       deliveryAdd = rawAddress
         .split('\n')
-        .map((line: Record<string, unknown>) => line.trim())
+        .map((line: string) => line.trim())
         .filter(line => {
           if (!line) return false;
           if (
@@ -276,8 +294,8 @@ function preprocessPdfText(rawText: string): string {
           const lineIndex = lines.indexOf(line);
           const addressLines = lines
             .slice(Math.max(0, lineIndex - 3), lineIndex + 1)
-            .map((l: Record<string, unknown>) => l.trim())
-            .filter((l: any) => l && !l.match(/^(Tel:|Email:|Date:|Account|Customer)/i));
+            .map((l: string) => l.trim())
+            .filter((l: string) => l && !l.match(/^(Tel:|Email:|Date:|Account|Customer)/i));
 
           if (addressLines.length > 0) {
             deliveryAdd = addressLines.join(', ');
@@ -524,7 +542,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             cachedResult.orderData.length
           );
 
-          const insertData = cachedResult.orderData.map((order: Record<string, unknown>) => ({
+          const insertData = cachedResult.orderData.map((order: OrderData) => ({
             order_ref: String(order.order_ref),
             product_code: order.product_code,
             product_desc: order.product_desc,
@@ -550,7 +568,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
           // 記錄操作歷史（緩存版本）
           if (cachedResult.orderData && cachedResult.orderData.length > 0) {
-            await recordOrderUploadHistory(cachedResult.orderData[0].order_ref, uploadedBy);
+            await recordOrderUploadHistory(String(cachedResult.orderData[0].order_ref), uploadedBy);
           }
 
           // 🔥 更新 doc_upload 表的 json 欄位（緩存版本 - 總是嘗試更新）
@@ -621,7 +639,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             const { sendOrderCreatedEmail } = await import('../../services/emailService');
 
             const emailRequestBody = {
-              orderData: cachedResult.orderData.map((order: Record<string, unknown>) => ({
+              orderData: cachedResult.orderData.map((order: OrderData) => ({
                 order_ref: order.order_ref,
                 product_code: order.product_code,
                 product_desc: order.product_desc,
@@ -910,7 +928,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
         apiLogger.debug('[PDF Analysis] Raw orderData', { orderData });
 
-        const insertData = orderData.map((order: Record<string, unknown>) => {
+        const insertData = orderData.map((order: OrderData) => {
           const record = {
             order_ref: String(order.order_ref),
             product_code: order.product_code,
@@ -1027,7 +1045,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           const { sendOrderCreatedEmail } = await import('../../services/emailService');
 
           const emailRequestBody = {
-            orderData: orderData.map((order: Record<string, unknown>) => ({
+            orderData: orderData.map((order: OrderData) => ({
               order_ref: order.order_ref,
               product_code: order.product_code,
               product_desc: order.product_desc,
@@ -1071,7 +1089,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         let acoInsertResults = null;
         if (acoRecords.length > 0) {
           try {
-            const acoInsertData = acoRecords.map((record: Record<string, unknown>) => ({
+            const acoInsertData = acoRecords.map((record: OrderData) => ({
               order_ref: record.order_ref,
               code: record.product_code,
               required_qty: record.product_qty,

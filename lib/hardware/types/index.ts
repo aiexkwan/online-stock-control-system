@@ -1,3 +1,4 @@
+// Strategy 4: unknown + type narrowing - 提升安全性
 import { DatabaseRecord } from '@/lib/types/database';
 
 /**
@@ -11,14 +12,14 @@ export type PrintJobType = 'qc-label' | 'grn-label' | 'report' | 'document';
 export interface PrintJob {
   id?: string;
   type: PrintJobType;
-  data: DatabaseRecord[]; // Will be specific to each job type
+  data: unknown; // Strategy 4: unknown 提供型別安全，需要 type narrowing
   copies: number;
   priority: 'high' | 'normal' | 'low';
   metadata?: {
     operatorClockNum?: string;
     timestamp?: string;
     source?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -119,7 +120,7 @@ export interface HardwareEvent {
   type: HardwareEventType;
   deviceId: string;
   timestamp: string;
-  data?: any;
+  data?: unknown;
 }
 
 // Callback Types

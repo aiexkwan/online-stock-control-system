@@ -35,6 +35,12 @@ import {
 } from '@/lib/design-system/colors';
 import { textClasses, getTextClass } from '@/lib/design-system/typography';
 import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
+import { 
+  ReportMetadata, 
+  ReportOrderMapper, 
+  isReportWidgetApiWrapper,
+  PerformanceMetrics 
+} from './types/ReportOrderTypes';
 
 interface ReportGeneratorWithDialogWidgetV2Props {
   title: string;
@@ -68,11 +74,8 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
   >('idle');
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [metadata, setMetadata] = useState<any>({});
-  const [performanceMetrics, setPerformanceMetrics] = useState<{
-    apiResponseTime?: number;
-    optimized?: boolean;
-  }>({});
+  const [metadata, setMetadata] = useState<ReportMetadata>({});
+  const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetrics>({});
 
   const loadReferences = useCallback(async () => {
     setIsLoadingRefs(true);
@@ -99,15 +102,24 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
       });
 
       // Check if widget data contains error
-      if (result.widgets?.[0]?.data?.error) {
-        throw new Error(result.widgets[0].data.error);
+      const widgetData = result.widgets?.[0];
+      if (!widgetData || !isReportWidgetApiWrapper(widgetData.data)) {
+        throw new Error('Invalid widget data format');
+      }
+      
+      const errorMessage = ReportOrderMapper.extractErrorFromWrapper(widgetData.data);
+      if (errorMessage) {
+        throw new Error(errorMessage);
       }
 
-      setReferences((result.widgets?.[0]?.data?.value as string[]) || []);
-      setMetadata(result.metadata || {});
+      const references = ReportOrderMapper.extractReferencesFromWrapper(widgetData.data);
+      const metadata = ReportOrderMapper.extractMetadataFromWrapper(widgetData.data);
+      
+      setReferences(references);
+      setMetadata(metadata);
     } catch (err) {
       console.error('Error loading references:', err);
-      setError(err instanceof Error ? (err as { message: string }).message : 'Unknown error');
+      setError(err instanceof Error ? err.message : 'Unknown error');
       setReferences([]);
     } finally {
       setIsLoadingRefs(false);
@@ -182,21 +194,13 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
       clearInterval(interval);
       setDownloadStatus('idle');
       setProgress(0);
-      setError(error instanceof Error ? (error as { message: string }).message : 'Download failed');
+      setError(error instanceof Error ? error.message : 'Download failed');
     }
   };
 
   // Memoize sorted references for better performance
   const sortedReferences = useMemo(() => {
-    return [...references].sort((a, b) => {
-      // Try to sort numerically if possible
-      const numA = parseInt(a);
-      const numB = parseInt(b);
-      if (!isNaN(numA) && !isNaN(numB)) {
-        return numB - numA; // Descending order for numbers
-      }
-      return a.localeCompare(b);
-    });
+    return ReportOrderMapper.sortReferences(references);
   }, [references]);
 
   return (
@@ -268,7 +272,7 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
                   />
                 </SelectTrigger>
                 <SelectContent className={cn('max-h-[300px] border-border bg-card')}>
-                  {sortedReferences.map((ref: any) => (
+                  {sortedReferences.map((ref: string) => (
                     <SelectItem
                       key={ref}
                       value={ref}

@@ -67,10 +67,11 @@ export function PerformanceMonitor() {
           });
 
           // Add memory metrics if available
-          if ((performance as any).memory) {
+          const memoryInfo = (performance as unknown as { memory?: { usedJSHeapSize: number } }).memory;
+          if (memoryInfo) {
             metrics.push({
               name: 'JS Heap Used',
-              value: (performance as any).memory.usedJSHeapSize / 1024 / 1024,
+              value: memoryInfo.usedJSHeapSize / 1024 / 1024,
               unit: 'MB',
               target: 50,
               icon: CpuChipIcon

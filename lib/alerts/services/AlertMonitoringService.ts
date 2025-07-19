@@ -17,8 +17,10 @@ import {
   AlertEscalation,
   AlertEngineStatus,
   AlertEngineEvent,
+  AlertEngineEventData,
   AlertResponse,
-  NotificationConfig
+  NotificationConfig,
+  AlertDatabaseRecord
 } from '../types';
 
 export class AlertMonitoringService {
@@ -92,7 +94,7 @@ export class AlertMonitoringService {
       return {
         success: false,
         message: 'Failed to start monitoring service',
-        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
+        errors: [error instanceof Error ? error.message : String(error)]
       };
     }
   }
@@ -127,7 +129,7 @@ export class AlertMonitoringService {
       return {
         success: false,
         message: 'Failed to stop monitoring service',
-        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
+        errors: [error instanceof Error ? error.message : String(error)]
       };
     }
   }
@@ -156,7 +158,7 @@ export class AlertMonitoringService {
         uptime: 0,
         rulesCount: 0,
         activeAlertsCount: 0,
-        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
+        errors: [error instanceof Error ? error.message : String(error)]
       };
     }
   }
@@ -365,7 +367,7 @@ export class AlertMonitoringService {
       const escalatedAlert = {
         ...alert,
         level: escalationLevel.level,
-        message: `[ESCALATED] ${(alert as { message: string }).message}`,
+        message: `[ESCALATED] ${alert.message as string}`,
         annotations: {
           ...alert.annotations,
           escalated: 'true',
@@ -502,7 +504,7 @@ export class AlertMonitoringService {
   /**
    * 處理告警觸發
    */
-  private handleAlertTriggered(data: DatabaseRecord[]): void {
+  private handleAlertTriggered(data: AlertEngineEventData): void {
     // 設置升級計時器
     if (data.alert && data.rule) {
       this.setupEscalationTimer(data.alert, data.rule);
@@ -512,11 +514,11 @@ export class AlertMonitoringService {
   /**
    * 處理告警解決
    */
-  private handleAlertResolved(data: DatabaseRecord[]): void {
+  private handleAlertResolved(data: AlertEngineEventData): void {
     // 清除升級計時器
     if (data.alert) {
       const timers = Array.from(this.escalationTimers.keys()).filter(key => 
-        key.startsWith(`escalation:${data.alert.id}:`)
+        key.startsWith(`escalation:${data.alert!.id}:`)
       );
       
       timers.forEach(key => {
@@ -532,9 +534,11 @@ export class AlertMonitoringService {
   /**
    * 處理通知發送
    */
-  private handleNotificationSent(data: DatabaseRecord[]): void {
+  private handleNotificationSent(data: AlertEngineEventData): void {
     // 記錄通知統計
-    this.redis.hincrby('notification:stats', data.channel, 1);
+    if (data.channel) {
+      this.redis.hincrby('notification:stats', data.channel, 1);
+    }
   }
 
   /**
@@ -663,25 +667,25 @@ export class AlertMonitoringService {
   /**
    * 輔助方法 - 反序列化規則
    */
-  private deserializeRule(data: DatabaseRecord[]): AlertRule {
+  private deserializeRule(data: AlertDatabaseRecord): AlertRule {
     return {
       id: data.id,
-      name: data.name,
-      description: data.description,
-      enabled: data.enabled,
-      level: data.level,
-      metric: data.metric,
-      condition: data.condition,
-      threshold: data.threshold,
-      timeWindow: data.time_window,
-      evaluationInterval: data.evaluation_interval,
-      dependencies: JSON.parse(data.dependencies || '[]'),
-      silenceTime: data.silence_time,
-      notifications: JSON.parse(data.notifications || '[]'),
-      tags: JSON.parse(data.tags || '{}'),
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at),
-      createdBy: data.created_by
+      name: data.name as string,
+      description: data.description as string,
+      enabled: data.enabled as boolean,
+      level: data.level as AlertLevel,
+      metric: data.metric as string,
+      condition: data.condition as any,
+      threshold: data.threshold as number | string,
+      timeWindow: data.time_window as number,
+      evaluationInterval: data.evaluation_interval as number,
+      dependencies: JSON.parse((data.dependencies as string) || '[]'),
+      silenceTime: data.silence_time as number | undefined,
+      notifications: JSON.parse((data.notifications as string) || '[]'),
+      tags: JSON.parse((data.tags as string) || '{}'),
+      createdAt: new Date(data.created_at as string),
+      updatedAt: new Date(data.updated_at as string),
+      createdBy: data.created_by as string
     };
   }
 }

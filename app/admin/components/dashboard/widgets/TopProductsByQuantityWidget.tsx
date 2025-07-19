@@ -77,7 +77,7 @@ export const TopProductsByQuantityWidget = React.memo(function TopProductsByQuan
 
         if (result.widgets && result.widgets.length > 0) {
           const data = result.widgets[0].data;
-          if (data.products) {
+          if (typeof data === 'object' && data !== null && 'products' in data && Array.isArray(data.products)) {
             setTopProducts(data.products);
           }
         }

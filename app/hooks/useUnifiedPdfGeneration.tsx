@@ -81,7 +81,7 @@ export function useUnifiedPdfGeneration(options: UseUnifiedPdfGenerationOptions)
   ) => {
     const components = dataArray.map(data => (
       // <GrnLabelPdf key={data.palletNumber} {...data} />
-      <PrintLabelPdf key={data.palletNumber} {...(data as any)} /> // Temporary: use PrintLabelPdf until GrnLabelPdf is created
+      <PrintLabelPdf key={data.palletNumber} {...(data as any /* TODO: Strategy 5 - Replace with proper QcInputData type when GrnLabelPdf component is created. Tracking issue: #ESLINT-CLEANUP-001 */)} />
     ));
 
     const filenames = dataArray.map(data => `grn-label-${data.palletNumber.replace(/\//g, '_')}`);
@@ -126,7 +126,7 @@ export function useUnifiedPdfGeneration(options: UseUnifiedPdfGenerationOptions)
           date={new Date().toISOString().split('T')[0]}
         />
       ) : (
-        <PrintLabelPdf {...(data as any)} />
+        <PrintLabelPdf {...(data as any /* TODO: Strategy 5 - Replace with proper GrnLabelData type conversion utility. Requires: 1. Create GrnLabelData to QcInputData mapper, 2. Implement type-safe conversion. Tracking: #ESLINT-CLEANUP-002 */)} />
       ); // Temporary: use PrintLabelPdf until GrnLabelPdf is created
 
     const filename =

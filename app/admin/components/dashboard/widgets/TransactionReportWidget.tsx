@@ -292,9 +292,8 @@ export const TransactionReportWidget = function TransactionReportWidget({
                     const buffer = await buildTransactionReport(reportData);
                     const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
                     await printReport(arrayBuffer, {
-                      dateRange: `${format(fromDate, 'MMM d')} - ${format(toDate, 'MMM d, yyyy')}`,
-                      startDate,
-                      endDate,
+                      reportTitle: `Transaction_Report_${format(fromDate, 'yyyy-MM-dd')}_to_${format(toDate, 'yyyy-MM-dd')}`,
+                      generatedAt: new Date().toISOString(),
                     });
                   } catch (error) {
                     console.error('Print failed:', error);

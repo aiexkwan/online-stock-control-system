@@ -37,7 +37,7 @@ export interface FeatureVariant {
   key: string;
   name: string;
   weight?: number; // 權重百分比
-  payload?: any;
+  payload?: Record<string, unknown>;
 }
 
 /**
@@ -56,7 +56,7 @@ export interface FeatureFlag {
   startDate?: Date;
   endDate?: Date;
   tags?: string[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -67,7 +67,7 @@ export interface FeatureContext {
   userEmail?: string;
   userGroups?: string[];
   environment?: 'development' | 'staging' | 'production';
-  customAttributes?: Record<string, any>;
+  customAttributes?: Record<string, unknown>;
   timestamp?: Date;
 }
 
@@ -78,7 +78,7 @@ export interface FeatureEvaluation {
   enabled: boolean;
   variant?: string;
   reason?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**

@@ -16,6 +16,7 @@ export interface InventoryAnalysisProduct {
   fulfillment_rate: number;
   is_sufficient: boolean;
   last_updated: string;
+  [key: string]: unknown; // 添加索引簽名以支持Record<string, unknown>兼容性
 }
 
 /**

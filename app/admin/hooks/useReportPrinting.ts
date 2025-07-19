@@ -2,8 +2,9 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
-import { getUnifiedPrintingService, PrintType, PrintRequest } from '@/lib/printing';
+import { getUnifiedPrintingService, PrintType, PrintRequest, PaperSize, PrintPriority } from '@/lib/printing';
 import { getHardwareAbstractionLayer } from '@/lib/hardware/hardware-abstraction-layer';
+import type { ReportPrintMetadata, PrintOptions } from './types';
 
 interface UseReportPrintingOptions {
   reportType: 'transaction' | 'inventory' | 'aco-order' | 'grn';
@@ -12,7 +13,7 @@ interface UseReportPrintingOptions {
 }
 
 interface UseReportPrintingReturn {
-  printReport: (data: ArrayBuffer | Blob, metadata?: any) => Promise<void>;
+  printReport: (data: ArrayBuffer | Blob, metadata?: ReportPrintMetadata) => Promise<void>;
   downloadReport: (data: ArrayBuffer | Blob, filename: string) => void;
   isPrinting: boolean;
   isServiceAvailable: boolean;
@@ -110,7 +111,7 @@ export function useReportPrinting({
 
   // Print report function
   const printReport = useCallback(
-    async (data: ArrayBuffer | Blob, metadata?: any) => {
+    async (data: ArrayBuffer | Blob, metadata?: ReportPrintMetadata) => {
       if (isPrinting) return;
 
       setIsPrinting(true);
@@ -172,15 +173,22 @@ export function useReportPrinting({
           const printRequest: PrintRequest = {
             type: getPrintType(),
             data: {
-              pdfBlob,
-              reportType,
-              ...metadata,
+              reportData: [{ type: reportType }],
+              title: `${reportType.toUpperCase()} Report`,
+              dateRange: metadata?.dateRange ? { from: metadata.dateRange, to: metadata.dateRange } : undefined,
+              customFields: { 
+                pdfBlob: 'attached',
+                userId: metadata?.userId || '',
+                reportTitle: metadata?.reportTitle || '',
+                generatedAt: metadata?.generatedAt || new Date().toISOString(),
+                totalRecords: metadata?.totalRecords || 0
+              },
             },
             options: {
               copies: 1,
-              paperSize: 'A4' as any,
+              paperSize: PaperSize.A4,
               orientation: 'portrait',
-              priority: 'normal' as any,
+              priority: PrintPriority.NORMAL,
             },
             metadata: {
               userId: metadata?.userId || 'report-user',
@@ -203,9 +211,9 @@ export function useReportPrinting({
           const printJob = {
             type: 'report' as const, // HAL only supports 'report', not 'grn-report'
             data: {
-              pdfBlob,
-              reportType,
-              ...metadata,
+              title: `${reportType.toUpperCase()} Report`,
+              content: pdfBlob,
+              metadata: { reportType, ...metadata },
             },
             copies: 1,
             priority: 'normal' as const,

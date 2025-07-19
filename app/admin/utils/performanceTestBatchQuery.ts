@@ -56,8 +56,8 @@ class ConcurrentQueryPerformanceTester {
       const endResourceEntries = performance.getEntriesByType('resource');
       const newEntries = endResourceEntries.slice(startResourceEntries);
 
-      // 計算網絡傳輸大小
-      const networkBytes = newEntries.reduce((total, entry: Record<string, unknown>) => {
+      // 計算網絡傳輸大小 - 策略 4: 類型安全的性能數據處理
+      const networkBytes = newEntries.reduce((total: number, entry: PerformanceResourceTiming) => {
         return total + (entry.transferSize || 0);
       }, 0);
 
@@ -121,8 +121,8 @@ class ConcurrentQueryPerformanceTester {
     const endResourceEntries = performance.getEntriesByType('resource');
     const newEntries = endResourceEntries.slice(startResourceEntries);
 
-    // 計算網絡傳輸大小
-    const networkBytes = newEntries.reduce((total, entry: Record<string, unknown>) => {
+    // 計算網絡傳輸大小 - 策略 4: 類型安全的性能數據處理
+    const networkBytes = newEntries.reduce((total: number, entry: PerformanceResourceTiming) => {
       return total + (entry.transferSize || 0);
     }, 0);
 

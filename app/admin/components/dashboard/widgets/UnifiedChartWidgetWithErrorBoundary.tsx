@@ -4,6 +4,7 @@ import { ChartSkeleton } from './common/charts/ChartSkeleton';
 import { useDashboardConcurrentQuery } from '@/app/admin/hooks/useDashboardConcurrentQuery';
 import { AdminWidgetConfig } from '../adminDashboardLayouts';
 import { WidgetErrorBoundary, useErrorHandler, WidgetErrorFallback, ERROR_MESSAGES } from '@/lib/error-handling';
+import { ChartDataPoint, ChartProcessedData } from './types/ChartWidgetTypes';
 
 // 直接導入 recharts 組件以優化 bundle size
 import { 
@@ -134,6 +135,7 @@ const UnifiedChartWidgetContent: React.FC<UnifiedChartWidgetProps> = ({
           return {
             labels: sourceData.labels || [],
             datasets: [{
+              label: config.title || 'Chart Data', // Strategy 2: DTO - 確保必須的 label 屬性
               data: sourceData.values || [],
               backgroundColor: sourceData.colors || [
                 '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6'
@@ -252,7 +254,7 @@ const UnifiedChartWidgetContent: React.FC<UnifiedChartWidgetProps> = ({
   };
 
   // 動態渲染圖表組件
-  const renderChart = (chartType: string, chartData: any, options: Record<string, unknown>) => {
+  const renderChart = (chartType: string, chartData: ChartProcessedData, options: Record<string, unknown>) => {
     try {
       const { labels, datasets } = chartData;
       const data = labels.map((label: string, index: number) => ({
@@ -303,7 +305,7 @@ const UnifiedChartWidgetContent: React.FC<UnifiedChartWidgetProps> = ({
                   dataKey="value"
                 >
                   {data.map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell key={`cell-${index}`} fill={Array.isArray(entry.color) ? entry.color[0] : entry.color} />
                   ))}
                 </Pie>
                 <Tooltip />

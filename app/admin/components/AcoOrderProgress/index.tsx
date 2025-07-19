@@ -6,6 +6,7 @@ import { ClipboardDocumentListIcon, ChevronDownIcon } from '@heroicons/react/24/
 import { useAcoOrders, useAcoOrderProgress } from '../../hooks/useAdminDashboard';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { AcoOrder, type AcoOrderProgress as AcoOrderProgressType } from '@/app/actions/acoOrderProgressActions';
 
 export function AcoOrderProgress() {
   const [selectedOrderRef, setSelectedOrderRef] = useState<number | null>(null);
@@ -96,7 +97,7 @@ export function AcoOrderProgress() {
                       {orders.length === 0 ? (
                         <div className='px-4 py-3 text-sm text-slate-400'>No incomplete orders</div>
                       ) : (
-                        orders.map((order: Record<string, unknown>) => (
+                        orders.map((order: AcoOrder) => (
                           <button
                             key={order.order_ref}
                             onClick={() => {
@@ -114,8 +115,8 @@ export function AcoOrderProgress() {
                             <div className='flex items-center justify-between'>
                               <span>Order {order.order_ref}</span>
                               <span className='text-xs text-slate-500'>
-                                {order.remain_qty > 0
-                                  ? `${order.remain_qty} remaining`
+                                {order.total_remaining > 0
+                                  ? `${order.total_remaining} remaining`
                                   : 'Complete'}
                               </span>
                             </div>

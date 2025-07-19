@@ -5,7 +5,6 @@
 
 import { getExcelJS } from '@/lib/utils/exceljs-dynamic';
 import { DatabaseRecord } from '@/lib/types/database';
-import { DatabaseRecord } from '@/lib/types/database';
 import type { Workbook, Worksheet } from '@/lib/utils/exceljs-dynamic';
 import {
   ReportGenerator,
@@ -21,12 +20,25 @@ import {
   NumberFormats,
   setNumberFormat,
 } from '@/lib/utils/exceljs-migration-helper';
+import {
+  validateAndParseReportConfig,
+  validateAndParseProcessedData,
+  validateColumnConfig,
+  validateSectionConfig,
+  type ValidatedColumnConfig,
+  type ValidatedSectionConfig,
+  type ValidatedReportConfig,
+  type ValidatedProcessedReportData,
+} from '../schemas/ExcelGeneratorSchemas';
 
 export class ExcelGeneratorNew implements ReportGenerator {
   format: ReportFormat = 'excel';
   supportLegacyMode = true;
 
   async generate(data: ProcessedReportData, config: ReportConfig): Promise<Blob> {
+    // Strategy 1: Zod validation for runtime safety
+    const validatedData = validateAndParseProcessedData(data);
+    const validatedConfig = validateAndParseReportConfig(config);
     const ExcelJS = await getExcelJS();
     const workbook = new ExcelJS.Workbook();
 
@@ -69,7 +81,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
 
   private async addSummarySheet(
     workbook: Workbook,
-    summary: Record<string, any>,
+    summary: Record<string, unknown>,
     config: ReportConfig
   ): Promise<void> {
     const worksheet = workbook.addWorksheet('Summary');
@@ -129,7 +141,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
 
   private async addDataSheet(
     workbook: Workbook,
-    section: any,
+    section: ValidatedSectionConfig,
     data: Record<string, unknown>[],
     config: ReportConfig
   ): Promise<void> {
@@ -148,7 +160,9 @@ export class ExcelGeneratorNew implements ReportGenerator {
       return;
     }
 
-    const columns = section.config?.columns || this.inferColumns(data[0]);
+    const columns = section.config?.columns ? 
+      section.config.columns.map(col => validateColumnConfig(col)) : 
+      this.inferColumns(data[0]);
 
     // 標題行
     const titleRow = worksheet.addRow([section.title]);
@@ -216,7 +230,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
 
   private async addMetadataSheet(
     workbook: Workbook,
-    metadata: DatabaseRecord[],
+    metadata: { generatedAt: string; filters: Record<string, unknown>; recordCount: number },
     config: ReportConfig
   ): Promise<void> {
     const worksheet = workbook.addWorksheet('Info');
@@ -271,9 +285,9 @@ export class ExcelGeneratorNew implements ReportGenerator {
     addBorders(worksheet, filterStartRow, 1, lastRow, 2);
   }
 
-  private applyStyles(worksheet: Worksheet, columns: Record<string, unknown>[], config: ReportConfig): void {
+  private applyStyles(worksheet: Worksheet, columns: ValidatedColumnConfig[], config: ValidatedReportConfig): void {
     // 應用列格式
-    columns.forEach((col: any, index: number) => {
+    columns.forEach((col: ValidatedColumnConfig, index: number) => {
       const colNum = index + 1;
 
       if (col.format === 'currency' || col.type === 'currency') {
@@ -294,15 +308,15 @@ export class ExcelGeneratorNew implements ReportGenerator {
     }
   }
 
-  private inferColumns(dataItem: any): Record<string, unknown>[] {
-    return Object.keys(dataItem).map(key => ({
+  private inferColumns(dataItem: Record<string, unknown>): ValidatedColumnConfig[] {
+    return Object.keys(dataItem).map(key => validateColumnConfig({
       id: key,
       label: key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '),
       type: typeof dataItem[key] === 'number' ? 'number' : 'text',
     }));
   }
 
-  private formatValue(value: unknown, format?: string): any {
+  private formatValue(value: unknown, format?: string): string | number | Date {
     if (value === null || value === undefined) {
       return '';
     }
@@ -321,7 +335,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
     }
   }
 
-  private calculateTotals(data: Record<string, unknown>[], columns: Record<string, unknown>[]): Record<string, unknown>[] {
+  private calculateTotals(data: Record<string, unknown>[], columns: ValidatedColumnConfig[]): (string | number | unknown)[] {
     const totals: DatabaseRecord = { [columns[0].id]: 'Total' };
 
     for (let i = 1; i < columns.length; i++) {

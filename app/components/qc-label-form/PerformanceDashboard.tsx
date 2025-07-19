@@ -204,7 +204,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
       );
     }
 
-    summary.componentBreakdown.forEach((component: any) => {
+    summary.componentBreakdown.forEach((component: { name: string; averageRenderTime: number; [key: string]: unknown }) => {
       if (component.averageRenderTime > 32) {
         recommendations.push(
           `${component.name} is consistently slow. Consider code splitting or optimization`

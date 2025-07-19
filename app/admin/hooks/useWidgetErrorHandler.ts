@@ -12,6 +12,7 @@ import {
   ErrorContext,
 } from '@/app/components/qc-label-form/services/ErrorHandler';
 import { TransactionLogService } from '@/app/services/transactionLog.service';
+import type { WidgetErrorContext, ErrorHandleResult, FormSubmissionData, FileOperationDetails } from './types';
 
 export interface WidgetErrorOptions {
   showToast?: boolean;
@@ -30,9 +31,9 @@ export function useWidgetErrorHandler(widgetName: string, userId?: string) {
     async (
       error: Error | unknown,
       action: string,
-      additionalData?: Record<string, any>,
+      additionalData?: Record<string, unknown>,
       options: WidgetErrorOptions = {}
-    ) => {
+    ): Promise<ErrorHandleResult> => {
       const { showToast = true, logToDatabase = true, transactionId, customMessage } = options;
 
       // Convert unknown error to Error object
@@ -99,7 +100,7 @@ export function useWidgetErrorHandler(widgetName: string, userId?: string) {
    * Handle form submission errors
    */
   const handleSubmitError = useCallback(
-    (error: Error | unknown, formData?: Record<string, any>) => {
+    (error: Error | unknown, formData?: FormSubmissionData) => {
       return handleError(
         error,
         'form_submit',
@@ -133,7 +134,7 @@ export function useWidgetErrorHandler(widgetName: string, userId?: string) {
    * Handle successful operations
    */
   const handleSuccess = useCallback(
-    (message: string, action: string, details?: Record<string, any>) => {
+    (message: string, action: string, details?: Record<string, unknown>) => {
       const context: ErrorContext = {
         component: `Widget.${widgetName}`,
         action,

@@ -1,6 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseRecord } from '@/lib/types/database';
 import { createClient } from '@/app/utils/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/types/supabase-generated';
+import { getErrorMessage } from '@/lib/types/error-handling';
+import { safeGet, toRecordArray } from '@/lib/types/supabase-helpers';
+import { toSupabaseResponse } from '@/lib/types/supabase-helpers';
+
+// Type alias for Supabase client (Strategy 3: Supabase codegen)
+type TypedSupabaseClient = SupabaseClient<Database>;
+
+// Interface for overdue order data
+interface OverdueOrderData {
+  order_ref: string;
+  product_code: string;
+  product_name: string;
+  ordered_qty: number;
+  loaded_qty: number;
+  remaining_qty: number;
+  created_at: string;
+  days_overdue: number;
+  customer: string;
+}
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -28,7 +49,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 }
 
-async function detectAllAnomalies(supabase: any) {
+async function detectAllAnomalies(supabase: TypedSupabaseClient) {
   const anomalies = [];
 
   try {
@@ -50,7 +71,7 @@ async function detectAllAnomalies(supabase: any) {
 }
 
 // 1. 檢測超過30日未移動的棧板
-async function detectStuckPallets(supabase: any) {
+async function detectStuckPallets(supabase: TypedSupabaseClient) {
   try {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -105,9 +126,10 @@ LIMIT 50`;
       return null;
     }
 
-    if (data && data.length > 0) {
+    // Type guard for array data (Strategy 4: unknown + type narrowing)
+    if (data && Array.isArray(data) && data.length > 0) {
       // Convert JSONB result to proper format
-      const formattedData = data.map((row: Record<string, unknown>) => row.result || row);
+      const formattedData = toRecordArray(data).map((row: DatabaseRecord) => safeGet(row, 'result', row));
 
       return {
         type: 'stuck_pallets',
@@ -129,7 +151,7 @@ LIMIT 50`;
 }
 
 // 2. 檢測庫存數量異常
-async function detectInventoryMismatch(supabase: any) {
+async function detectInventoryMismatch(supabase: TypedSupabaseClient) {
   try {
     const query = `WITH inventory_totals AS (
   SELECT 
@@ -175,11 +197,12 @@ LIMIT 20`;
       return null;
     }
 
-    if (data && data.length > 0) {
+    // Type guard for array data (Strategy 4: unknown + type narrowing)
+    if (data && Array.isArray(data) && data.length > 0) {
       // Convert JSONB result to proper format
-      const formattedData = data.map((row: Record<string, unknown>) => row.result || row);
+      const formattedData = toRecordArray(data).map((row: DatabaseRecord) => safeGet(row, 'result', row));
       const criticalCount = formattedData.filter(
-        (item: DatabaseRecord) => item.variance_percentage > 20
+        (item: unknown) => safeGet(item, 'variance_percentage', 0) > 20
       ).length;
 
       return {
@@ -203,7 +226,7 @@ LIMIT 20`;
 }
 
 // 3. 檢測超時訂單
-async function detectOverdueOrders(supabase: any) {
+async function detectOverdueOrders(supabase: TypedSupabaseClient) {
   try {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -234,10 +257,11 @@ LIMIT 50`;
       return null;
     }
 
-    if (data && data.length > 0) {
+    // Type guard for array data (Strategy 4: unknown + type narrowing)
+    if (data && Array.isArray(data) && data.length > 0) {
       // Convert JSONB result to proper format
-      const formattedData = data.map((row: Record<string, unknown>) => row.result || row);
-      const criticalOrders = formattedData.filter((order: any) => order.days_overdue > 14).length;
+      const formattedData = toRecordArray(data).map((row: DatabaseRecord) => safeGet(row, 'result', row));
+      const criticalOrders = formattedData.filter((order: unknown) => safeGet(order, 'days_overdue', 0) > 14).length;
 
       return {
         type: 'overdue_orders',

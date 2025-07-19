@@ -79,19 +79,19 @@ export function MigratedStatsCardWidget() {
     <div className="grid grid-cols-4 gap-4">
       <div className="p-4 bg-white rounded-lg shadow">
         <h3 className="text-sm text-gray-500">Total Products</h3>
-        <p className="text-2xl font-bold">{data?.totalProducts || 0}</p>
+        <p className="text-2xl font-bold">{(data as { totalProducts?: number })?.totalProducts || 0}</p>
       </div>
       <div className="p-4 bg-white rounded-lg shadow">
         <h3 className="text-sm text-gray-500">Total Stock</h3>
-        <p className="text-2xl font-bold">{data?.totalStock || 0}</p>
+        <p className="text-2xl font-bold">{(data as { totalStock?: number })?.totalStock || 0}</p>
       </div>
       <div className="p-4 bg-white rounded-lg shadow">
         <h3 className="text-sm text-gray-500">Low Stock</h3>
-        <p className="text-2xl font-bold text-red-600">{data?.lowStockCount || 0}</p>
+        <p className="text-2xl font-bold text-red-600">{(data as { lowStockCount?: number })?.lowStockCount || 0}</p>
       </div>
       <div className="p-4 bg-white rounded-lg shadow">
         <h3 className="text-sm text-gray-500">Avg Stock Level</h3>
-        <p className="text-2xl font-bold">{data?.averageStockLevel || 0}</p>
+        <p className="text-2xl font-bold">{(data as { averageStockLevel?: number })?.averageStockLevel || 0}</p>
       </div>
     </div>
   );
@@ -136,30 +136,30 @@ export function WarehouseOverviewWidget() {
         <div className="p-4 bg-white rounded-lg shadow">
           <h3 className="font-medium mb-2">Stock Distribution</h3>
           <p className="text-2xl font-bold">
-            {stockDistribution?.warehouseData?.length || 0} warehouses
+            {(stockDistribution as { warehouseData?: Array<unknown> })?.warehouseData?.length || 0} warehouses
           </p>
           <p className="text-sm text-gray-500">
-            Total: {stockDistribution?.totalQuantity || 0} units
+            Total: {(stockDistribution as { totalQuantity?: number })?.totalQuantity || 0} units
           </p>
         </div>
 
         <div className="p-4 bg-white rounded-lg shadow">
           <h3 className="font-medium mb-2">Active Transfers</h3>
           <p className="text-2xl font-bold">
-            {warehouseTransfers?.pendingCount || 0}
+            {(warehouseTransfers as { pendingCount?: number })?.pendingCount || 0}
           </p>
           <p className="text-sm text-gray-500">
-            Completed today: {warehouseTransfers?.completedCount || 0}
+            Completed today: {(warehouseTransfers as { completedCount?: number })?.completedCount || 0}
           </p>
         </div>
 
         <div className="p-4 bg-white rounded-lg shadow">
           <h3 className="font-medium mb-2">Peak Activity</h3>
           <p className="text-2xl font-bold">
-            {workLevel?.peakHour || 0}:00
+            {(workLevel as { peakHour?: number })?.peakHour || 0}:00
           </p>
           <p className="text-sm text-gray-500">
-            Avg activity: {workLevel?.averageActivity || 0}/hr
+            Avg activity: {(workLevel as { averageActivity?: number })?.averageActivity || 0}/hr
           </p>
         </div>
       </div>

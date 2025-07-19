@@ -14,6 +14,12 @@ import { useVoidPallet } from '@/app/void-pallet/hooks/useVoidPallet';
 import { useBatchVoid } from '@/app/void-pallet/hooks/useBatchVoid';
 import { VOID_REASONS } from '@/app/void-pallet/types';
 import { BatchPalletItem } from '@/app/void-pallet/types/batch';
+import {
+  VoidReasonDefinition,
+  VoidBatchItem,
+  VoidDataMapper,
+  isValidVoidReason,
+} from '@/app/void-pallet/types/SupabaseVoidTypes';
 import { BatchVoidPanel } from '@/app/void-pallet/components/BatchVoidPanel';
 import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
 import { WidgetComponentProps } from '@/app/types/dashboard';
@@ -206,7 +212,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
       if (result.success) {
         setVoidResult({
           success: true,
-          message: getErrorMessage(result) || 'Pallet void successfully',
+          message: (typeof result === 'object' && result !== null && 'message' in result ? String(result.message) : '') || 'Pallet void successfully',
           remainingQty: result.remainingQty,
           requiresReprint: result.requiresReprint,
         });
@@ -254,12 +260,12 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
           total: result.summary?.total || 0,
           successful: result.summary?.successful || 0,
           failed: result.summary?.failed || 0,
-          details: batchState.items
-            .filter(item => (item as { status: string }).status === 'completed' || (item as { status: string }).status === 'error')
-            .map((item: Record<string, unknown>) => ({
-              plt_num: item.palletInfo.plt_num,
-              success: (item as { status: string }).status === 'completed',
-              error: item.error,
+          details: VoidDataMapper.transformBatchItems(batchState.items)
+            .filter(item => item.status === 'completed' || item.status === 'failed')
+            .map((item: VoidBatchItem) => ({
+              plt_num: item.pallet_number,
+              success: item.status === 'completed',
+              error: item.error_message,
             })),
         });
         setCurrentStep('result');
@@ -268,7 +274,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
       }
     } catch (error: unknown) {
       console.error('Batch void error:', error);
-      showError('Batch void failed', error);
+      showError('Batch void failed', error instanceof Error ? error : undefined);
     }
   };
 
@@ -375,7 +381,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
 
       {state.error && (
         <WidgetError
-          message={(state.error as { message: string }).message}
+          message={state.error instanceof Error ? state.error.message : 'Unknown error'}
           severity='error'
           display='inline'
           actions={[
@@ -503,8 +509,8 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
           }`}
         >
           <option value=''>Select reason...</option>
-          {VOID_REASONS.map((reason: any) => (
-            <option key={reason.value} value={reason.value}>
+          {VoidDataMapper.transformVoidReasons(VOID_REASONS).map((reason: VoidReasonDefinition) => (
+            <option key={reason.code} value={reason.code}>
               {reason.label}
             </option>
           ))}
@@ -584,7 +590,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
 
       {state.error && (
         <WidgetError
-          message={(state.error as { message: string }).message}
+          message={state.error instanceof Error ? state.error.message : 'Unknown error'}
           severity='error'
           display='inline'
           actions={[
@@ -784,7 +790,8 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
                       }
                     } catch (error: unknown) {
                       if (dismiss) dismiss();
-                      showError(`Reprint failed: ${getErrorMessage(error)}`);
+                      const errorMsg = error instanceof Error ? error.message : (typeof error === 'string' ? error : 'Unknown error');
+                      showError(`Reprint failed: ${errorMsg}`);
                     }
                   }
                 }}

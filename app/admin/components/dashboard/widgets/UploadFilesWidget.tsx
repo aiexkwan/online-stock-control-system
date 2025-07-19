@@ -23,6 +23,11 @@ import {
 import { textClasses, getTextClass } from '@/lib/design-system/typography';
 import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
 import { cn } from '@/lib/utils';
+import { 
+  FileValidator, 
+  DEFAULT_UPLOAD_CONFIG,
+  SupportedFileType
+} from './types/UploadWidgetTypes';
 
 interface UploadingFile {
   id: string;
@@ -81,7 +86,7 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
         // 更新進度
         const updateProgress = (progress: number) => {
           setUploadingFiles(prev =>
-            prev.map((f: any) => (f.id === uploadingFile.id ? { ...f, progress } : f))
+            prev.map((f: UploadingFile) => (f.id === uploadingFile.id ? { ...f, progress } : f))
           );
         };
 
@@ -206,12 +211,12 @@ export const UploadFilesWidget = React.memo(function UploadFilesWidget({
 
   // 移除已完成的文件
   const handleRemoveFile = (id: string) => {
-    setUploadingFiles(prev => prev.filter((f: any) => f.id !== id));
+    setUploadingFiles(prev => prev.filter((f: UploadingFile) => f.id !== id));
   };
 
   // 關閉上傳提示
   const handleCloseToast = () => {
-    setUploadingFiles(prev => prev.filter((f: any) => (f as { status: string }).status === 'uploading'));
+    setUploadingFiles(prev => prev.filter((f: UploadingFile) => f.status === 'uploading'));
   };
 
   return (

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getErrorMessage } from '@/lib/types/error-handling';
 
 // 創建 service role client 用於清理操作
 const supabase = createClient(

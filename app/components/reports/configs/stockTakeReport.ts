@@ -212,16 +212,27 @@ export const stockTakeReportConfig: ReportConfig = {
     },
     excel: {
       headerStyle: {
-        font: { bold: true, size: 12 },
-        fill: { fgColor: { rgb: '1E3A8A' } }, // 深藍色
-        font_color: { rgb: 'FFFFFF' },
+        font: { 
+          bold: true, 
+          size: 12,
+          color: { rgb: 'FFFFFF' }
+        },
+        fill: { 
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { rgb: '1E3A8A' } 
+        }, // 深藍色
       },
       dataStyle: {
         font: { size: 10 },
       },
       summaryStyle: {
         font: { bold: true, size: 11 },
-        fill: { fgColor: { rgb: 'DBEAFE' } }, // 淺藍色
+        fill: { 
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { rgb: 'DBEAFE' } 
+        }, // 淺藍色
       },
     },
   },

@@ -86,7 +86,7 @@ describe('GET /api/warehouse/summary', () => {
       
       // Check if data is aggregated correctly
       const summaryMap = data.data.reduce((acc: Record<string, unknown>, item: Record<string, unknown>) => {
-        acc[item.location] = item;
+        acc[item.location as string] = item;
         return acc;
       }, {});
       

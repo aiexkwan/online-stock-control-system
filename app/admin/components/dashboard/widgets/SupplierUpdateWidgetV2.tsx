@@ -35,18 +35,17 @@ import {
 import { textClasses, getTextClass } from '@/lib/design-system/typography';
 import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
 import { cn } from '@/lib/utils';
+import { 
+  SupplierData as ImportedSupplierData, 
+  SupplierSearchResponse,
+  StatusMessageType as ImportedStatusMessageType
+} from './types/SupplierWarehouseTypes';
 
 // GraphQL queries removed - using REST API only
 
-interface SupplierData {
-  supplier_code: string;
-  supplier_name: string;
-}
-
-interface StatusMessageType {
-  type: 'success' | 'error' | 'warning' | 'info';
-  message: string;
-}
+// 使用從 types 文件導入的類型
+type SupplierData = ImportedSupplierData;
+type StatusMessageType = ImportedStatusMessageType;
 
 export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2({
   widget,
@@ -97,9 +96,9 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
   }, []);
 
   // Search supplier using REST API only
-  const [searchData, setSearchData] = useState<{ data_supplierCollection: { edges: Array<{ node: SupplierData }> } } | null>(null);
+  const [searchData, setSearchData] = useState<SupplierSearchResponse | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [searchError, setSearchError] = useState<any>(null);
+  const [searchError, setSearchError] = useState<Error | null>(null);
 
   // Handle search using REST API only
   const handleSearch = useCallback(
@@ -136,7 +135,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
           setSearchData({ data_supplierCollection: { edges: [] } });
         }
       } catch (error) {
-        setSearchError(error);
+        setSearchError(error instanceof Error ? error : new Error('Unknown error'));
         setStatusMessage({
           type: 'error',
           message: 'Search failed. Please try again.',
@@ -279,8 +278,9 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
         setShowForm(false);
         setShowCreateDialog(false);
       } catch (error: unknown) {
+        const errorMsg = error instanceof Error ? error.message : (typeof error === 'string' ? error : 'Unexpected error');
         errorHandler.handleApiError(
-          error,
+          error instanceof Error ? error : new Error(errorMsg),
           {
             component: 'SupplierUpdateWidgetV2',
             action: isEditing ? 'update_supplier' : 'create_supplier',
@@ -289,11 +289,11 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
               isEditing,
             },
           },
-          getErrorMessage(error) || 'Unexpected error'
+          errorMsg
         );
         setStatusMessage({
           type: 'error',
-          message: getErrorMessage(error) || 'Unexpected error',
+          message: errorMsg,
         });
       } finally {
         setIsLoading(false);
@@ -385,7 +385,7 @@ export const SupplierUpdateWidgetV2 = React.memo(function SupplierUpdateWidgetV2
                       : 'bg-info/20 text-info'
               )}
             >
-              {getErrorMessage(statusMessage)}
+              {statusMessage?.message || String(statusMessage || '')}
             </div>
           )}
 

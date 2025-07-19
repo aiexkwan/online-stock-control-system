@@ -5,7 +5,7 @@ import { MetricCard } from '@/app/admin/components/dashboard/widgets/common/data
 import { AdminWidgetConfig } from '@/app/admin/components/dashboard/adminDashboardLayouts';
 
 interface MockData {
-  data: DatabaseRecord[];
+  data: DatabaseRecord[] | null | { default: any };
   isLoading: boolean;
   error: Error | null;
 }
@@ -45,7 +45,7 @@ export const UnifiedStatsWidgetMockWrapper: React.FC<UnifiedStatsWidgetMockWrapp
   const processedData = React.useMemo(() => {
     if (!data || !config.metrics) return null;
 
-    const sourceData = data[config.dataSource || 'default'];
+    const sourceData = Array.isArray(data) ? data[0] : (data && typeof data === 'object' && 'default' in data ? (data as any)[config.dataSource || 'default'] : null);
     if (!sourceData) return null;
 
     // 根據配置的第一個指標提取數據

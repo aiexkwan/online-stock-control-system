@@ -16,16 +16,14 @@ import {
   type ErrorMetrics,
   type ABTestConfig 
 } from '@/lib/widgets/enhanced-performance-monitor';
+import type { PerformanceMetrics, ABTestConfiguration, PerformanceContext, RealtimeMetrics } from './types';
 
 export interface UseWidgetPerformanceTrackingOptions {
   widgetId: string;
   variant?: 'v2' | 'legacy';
   enableAutoTracking?: boolean;
-  abTest?: {
-    testId: string;
-    variant: 'control' | 'test';
-  };
-  customMetrics?: Record<string, any>;
+  abTest?: ABTestConfiguration;
+  customMetrics?: Record<string, unknown>;
 }
 
 export interface UseWidgetPerformanceTrackingResult {
@@ -39,12 +37,7 @@ export interface UseWidgetPerformanceTrackingResult {
   trackError: (error: Error, errorType?: ErrorMetrics['errorType']) => void;
   
   // Metrics
-  getMetrics: () => {
-    loadTime?: number;
-    renderTime?: number;
-    dataFetchTime?: number;
-    errorCount: number;
-  };
+  getMetrics: () => PerformanceMetrics;
   
   // A/B testing
   isTestVariant: boolean;
@@ -86,7 +79,7 @@ export function useWidgetPerformanceTracking({
       timerRef.current.complete({
         route: pathname,
         sessionId: sessionIdRef.current,
-        userId: customMetrics?.userId,
+        userId: customMetrics?.userId as string | undefined,
       });
       
       console.log(`[PerformanceTracking] Completed tracking for ${widgetId}`);
@@ -103,7 +96,7 @@ export function useWidgetPerformanceTracking({
   }, []);
   
   // Track data fetching with timing
-  const trackDataFetch = useCallback(async <T,>(fetchFn: () => Promise<T>): Promise<T> => {
+  const trackDataFetch = useCallback(async (fetchFn: () => Promise<unknown>): Promise<unknown> => {
     if (!timerRef.current) {
       return fetchFn();
     }
@@ -142,7 +135,7 @@ export function useWidgetPerformanceTracking({
         route: pathname,
         variant,
         sessionId: sessionIdRef.current,
-        userId: customMetrics?.userId,
+        userId: customMetrics?.userId as string | undefined,
       },
     };
     
@@ -261,7 +254,7 @@ export function usePerformanceReports() {
  * Hook for real-time performance monitoring
  */
 export function useRealtimePerformanceMonitor(widgetId?: string) {
-  const [metrics, setMetrics] = useState<any>(null);
+  const [metrics, setMetrics] = useState<RealtimeMetrics | null>(null);
   const [isMonitoring, setIsMonitoring] = useState(false);
   
   const startMonitoring = useCallback(() => {

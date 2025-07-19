@@ -19,10 +19,40 @@ import { textClasses, getTextClass } from '@/lib/design-system/typography';
 import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
 import { cn } from '@/lib/utils';
 
+// Strategy 4: unknown + type narrowing
 interface TestResult {
-  comparison: any;
+  comparison: unknown;
   report: string;
-  stats: any;
+  stats: unknown;
+}
+
+// Type guards for performance test results
+function isValidComparison(data: unknown): data is {
+  batchQuery: { duration: number; success: boolean };
+  individualQueries: { duration: number; success: boolean };
+  improvement: number;
+} {
+  if (!data || typeof data !== 'object') return false;
+  const d = data as Record<string, unknown>;
+  return (
+    typeof d.batchQuery === 'object' &&
+    typeof d.individualQueries === 'object' &&
+    typeof d.improvement === 'number'
+  );
+}
+
+function isValidStats(data: unknown): data is {
+  requestCount: number;
+  errorCount: number;
+  averageLatency: number;
+} {
+  if (!data || typeof data !== 'object') return false;
+  const d = data as Record<string, unknown>;
+  return (
+    typeof d.requestCount === 'number' &&
+    typeof d.errorCount === 'number' &&
+    typeof d.averageLatency === 'number'
+  );
 }
 
 const PerformanceTestWidget: React.FC<WidgetProps> = ({ className }) => {
@@ -103,10 +133,10 @@ const PerformanceTestWidget: React.FC<WidgetProps> = ({ className }) => {
                   <span className={cn(textClasses['body-small'], 'font-medium')}>加載速度提升</span>
                 </div>
                 <p className={cn(textClasses['heading-large'], 'font-bold')} style={{ color: semanticColors.success.DEFAULT }}>
-                  {formatPercentage(result.comparison.improvement.timeSavedPercentage)}
+                  {formatPercentage((result.comparison as any)?.improvement?.timeSavedPercentage || 0)}
                 </p>
                 <p className={cn(textClasses['label-small'], 'text-muted-foreground mt-1')}>
-                  節省 {result.comparison.improvement.timeSaved.toFixed(0)}ms
+                  節省 {((result.comparison as any)?.improvement?.timeSaved || 0).toFixed(0)}ms
                 </p>
               </div>
 
@@ -119,10 +149,10 @@ const PerformanceTestWidget: React.FC<WidgetProps> = ({ className }) => {
                   <span className={cn(textClasses['body-small'], 'font-medium')}>請求減少</span>
                 </div>
                 <p className={cn(textClasses['heading-large'], 'font-bold')} style={{ color: semanticColors.info.DEFAULT }}>
-                  {formatPercentage(result.comparison.improvement.requestsReducedPercentage)}
+                  {formatPercentage((result.comparison as any)?.improvement?.requestsReducedPercentage || 0)}
                 </p>
                 <p className={cn(textClasses['label-small'], 'text-muted-foreground mt-1')}>
-                  減少 {result.comparison.improvement.requestsReduced} 個請求
+                  減少 {(result.comparison as any)?.improvement?.requestsReduced || 0} 個請求
                 </p>
               </div>
             </div>
@@ -135,25 +165,25 @@ const PerformanceTestWidget: React.FC<WidgetProps> = ({ className }) => {
                 <div className="flex justify-between items-center">
                   <span className={cn(textClasses['body-small'], 'text-muted-foreground')}>批量查詢時間</span>
                   <span className={cn(textClasses['body-small'], 'font-medium')}>
-                    {result.comparison.batchQuery.duration.toFixed(0)}ms
+                    {((result.comparison as any)?.batchQuery?.duration || 0).toFixed(0)}ms
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className={cn(textClasses['body-small'], 'text-muted-foreground')}>個別查詢時間</span>
                   <span className={cn(textClasses['body-small'], 'font-medium')}>
-                    {result.comparison.individualQueries.duration.toFixed(0)}ms
+                    {((result.comparison as any)?.individualQueries?.duration || 0).toFixed(0)}ms
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className={cn(textClasses['body-small'], 'text-muted-foreground')}>批量查詢請求數</span>
                   <span className={cn(textClasses['body-small'], 'font-medium')}>
-                    {result.comparison.batchQuery.requestCount}
+                    {(result.comparison as any)?.batchQuery?.requestCount || 0}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className={cn(textClasses['body-small'], 'text-muted-foreground')}>個別查詢請求數</span>
                   <span className={cn(textClasses['body-small'], 'font-medium')}>
-                    {result.comparison.individualQueries.requestCount}
+                    {(result.comparison as any)?.individualQueries?.requestCount || 0}
                   </span>
                 </div>
               </div>

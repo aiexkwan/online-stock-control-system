@@ -48,7 +48,7 @@ const PRODUCT_COLORS = [
 
 export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
   const [data, setData] = useState<ProductTrendData[]>([]);
-  const [summaryData, setSummaryData] = useState<any[]>([]);
+  const [summaryData, setSummaryData] = useState<ProductTrendData[]>([]);
   const [productCodes, setProductCodes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,9 +95,9 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
       setProductCodes(topProducts);
       setData(detail);
       setSummaryData(summary);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error loading order trend data:', err);
-      setError(err.message || 'Failed to load data');
+      setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -117,13 +117,13 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
     overflow: 'auto',
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string; [key: string]: unknown }[]; label?: string }) => {
     if (active && payload && payload.length) {
       const sortedPayload = [...payload].sort((a, b) => b.value - a.value);
       return (
         <div style={tooltipStyle}>
           <p className='mb-2 font-medium text-slate-300'>{label}</p>
-          {sortedPayload.map((entry: any, index: number) => (
+          {sortedPayload.map((entry: { name: string; value: number; color: string; [key: string]: unknown }, index: number) => (
             <p key={index} className='text-sm' style={{ color: entry.color }}>
               {entry.name}: {entry.value}
             </p>

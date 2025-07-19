@@ -21,27 +21,20 @@ import {
 } from '@/lib/widgets/smart-cache-strategy';
 import { type WidgetDataSource, type WidgetPriority } from '@/lib/widgets/unified-config';
 import { type WidgetDataMode } from '@/lib/widgets/widget-data-classification';
+import type { QueryParams, HookCacheMetrics, PredictiveConfig, CacheInvalidationOptions, OverallCacheStats } from './types';
+import type { CacheMetrics } from '@/lib/widgets/smart-cache-strategy';
 
 export interface UseWidgetSmartCacheOptions<T> {
   widgetId: string;
   dataSource: WidgetDataSource;
   dataMode: WidgetDataMode;
   priority: WidgetPriority;
-  fetchFn: (params: QueryParams) => Promise<T>;
-  params?: {
-    dateRange?: {
-      from: Date;
-      to: Date;
-    };
-    filters?: Record<string, any>;
-  };
+  fetchFn: (params?: QueryParams) => Promise<T>;
+  params?: QueryParams;
   enabled?: boolean;
   customCacheConfig?: Partial<WidgetCacheConfig>;
   onDataUpdate?: (data: T) => void;
-  predictiveConfig?: {
-    enabled: boolean;
-    predictor: () => { probability: number; timeUntilNeeded: number };
-  };
+  predictiveConfig?: PredictiveConfig;
 }
 
 export interface UseWidgetSmartCacheResult<T> {
@@ -53,11 +46,7 @@ export interface UseWidgetSmartCacheResult<T> {
   isFetching: boolean;
   refetch: () => void;
   invalidate: () => void;
-  cacheMetrics: {
-    hitRate: number;
-    avgLoadTime: number;
-    lastUpdated: Date | null;
-  };
+  cacheMetrics: HookCacheMetrics;
 }
 
 /**
@@ -98,7 +87,7 @@ export function useWidgetSmartCache<T>({
     const keyParams: CacheKeyParams = {
       widgetId,
       dateRange: params?.dateRange,
-      filters: params?.filters,
+      filters: params?.filters as Record<string, string | number | boolean | Date> | undefined,
     };
     return cacheConfig.generateKey(keyParams);
   }, [widgetId, params, cacheConfig]);
@@ -127,7 +116,7 @@ export function useWidgetSmartCache<T>({
       cachePerformanceTracker.recordMiss(widgetId);
       
       // Fetch data
-      const data = await fetchFn(params);
+      const data = await fetchFn(params || {});
       
       // Update metrics
       lastUpdateRef.current = new Date();
@@ -179,7 +168,7 @@ export function useWidgetSmartCache<T>({
     if (cacheConfig.enableSWR && query.isStale && !query.isFetching) {
       setIsStale(true);
       // Trigger background refetch
-      query.refetch();
+      void query.refetch();
     }
   }, [cacheConfig.enableSWR, query.isStale, query.isFetching, query]);
   
@@ -192,7 +181,10 @@ export function useWidgetSmartCache<T>({
         if (prediction.probability > 0) {
           predictivePreloader.schedulePreload(
             widgetId,
-            () => query.refetch(),
+            async () => {
+              await query.refetch();
+              return [];
+            },
             {
               ...prediction,
               priority,
@@ -221,6 +213,8 @@ export function useWidgetSmartCache<T>({
         hitRate: 0,
         avgLoadTime: 0,
         lastUpdated: lastUpdateRef.current,
+        totalRequests: 0,
+        errorRate: 0,
       };
     }
     
@@ -229,6 +223,8 @@ export function useWidgetSmartCache<T>({
       hitRate: totalRequests > 0 ? metrics.hits / totalRequests : 0,
       avgLoadTime: metrics.avgLoadTime,
       lastUpdated: lastUpdateRef.current,
+      totalRequests,
+      errorRate: totalRequests > 0 ? metrics.errors / totalRequests : 0,
     };
   }, [widgetId]);
   
@@ -239,8 +235,8 @@ export function useWidgetSmartCache<T>({
     error: query.error,
     isStale: isStale || query.isStale,
     isFetching: query.isFetching,
-    refetch: () => query.refetch(),
-    invalidate: () => query.refetch(),
+    refetch: () => void query.refetch(),
+    invalidate: () => void query.refetch(),
     cacheMetrics,
   };
 }
@@ -250,10 +246,10 @@ export function useWidgetSmartCache<T>({
  */
 export function useWidgetCacheInvalidation() {
   const invalidateByDateRange = useCallback(
-    async (dateRange: { from: Date; to: Date }, widgetIds?: string[]) => {
+    async (options: CacheInvalidationOptions) => {
       // This would integrate with React Query's invalidation
       // Implementation depends on your query client setup
-      console.log('Invalidating cache for date range:', dateRange, 'widgets:', widgetIds);
+      console.log('Invalidating cache for options:', options);
     },
     []
   );
@@ -273,7 +269,7 @@ export function useWidgetCacheInvalidation() {
  * Hook to monitor overall cache performance
  */
 export function useCachePerformanceMonitor() {
-  const [metrics, setMetrics] = useState<Map<string, any>>(new Map());
+  const [metrics, setMetrics] = useState<Map<string, CacheMetrics>>(new Map());
   
   useEffect(() => {
     const interval = setInterval(() => {
@@ -283,7 +279,7 @@ export function useCachePerformanceMonitor() {
     return () => clearInterval(interval);
   }, []);
   
-  const overallStats = useMemo(() => {
+  const overallStats = useMemo((): OverallCacheStats => {
     let totalHits = 0;
     let totalMisses = 0;
     let totalErrors = 0;
@@ -308,6 +304,8 @@ export function useCachePerformanceMonitor() {
       overallHitRate: totalHits + totalMisses > 0 ? totalHits / (totalHits + totalMisses) : 0,
       avgLoadTime: count > 0 ? avgLoadTime / count : 0,
       widgetCount: count,
+      memoryUsage: 0, // Would be calculated from actual cache implementation
+      cacheSize: 0, // Would be calculated from actual cache implementation
     };
   }, [metrics]);
   

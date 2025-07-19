@@ -153,8 +153,8 @@ describe('ErrorBoundary', () => {
   it('should handle errors during render phase', () => {
     const BrokenComponent = () => {
       // Simulate error during render
-      const obj: DatabaseRecord = null;
-      return <div>{obj.nonExistent}</div>;
+      const obj: DatabaseRecord | null = null;
+      return <div>{(obj as any)?.nonExistent}</div>;
     };
 
     render(

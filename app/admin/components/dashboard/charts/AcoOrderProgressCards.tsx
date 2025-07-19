@@ -51,9 +51,9 @@ export default function AcoOrderProgressCards({ timeFrame, useGraphQL = false }:
           '/analysis/aco-order-progress-cards',
           undefined,
           {
-            startDate: timeFrame?.startDate,
-            endDate: timeFrame?.endDate,
-            warehouse: timeFrame?.warehouse,
+            startDate: timeFrame?.start,
+            endDate: timeFrame?.end,
+            // warehouse: timeFrame doesn't have warehouse property
           }
         );
 

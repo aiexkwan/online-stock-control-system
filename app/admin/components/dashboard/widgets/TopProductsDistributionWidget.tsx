@@ -19,6 +19,11 @@ import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 // Note: Migrated to REST API - GraphQL hooks removed
 import { WidgetSkeleton } from './common/WidgetStates';
+import { 
+  ProductDistributionItem,
+  ProductsDistributionData,
+  TransferDistributionMapper
+} from './types/TransferDistributionTypes';
 
 interface ChartData {
   name: string;
@@ -91,22 +96,34 @@ export const TopProductsDistributionWidget = React.memo(function TopProductsDist
           w => w.widgetId === 'top_products_distribution'
         );
 
-        if (widgetData && !widgetData.data.error) {
-          const rawData = widgetData.data.value || [];
+        if (widgetData && !(typeof widgetData.data === 'object' && widgetData.data !== null && 'error' in widgetData.data && widgetData.data.error)) {
+          const rawData = (typeof widgetData.data === 'object' && widgetData.data !== null && 'value' in widgetData.data) 
+            ? widgetData.data.value 
+            : [];
+          const dataArray = Array.isArray(rawData) ? rawData : [];
           
           // 轉換為圖表數據格式，計算百分比
-          const total = rawData.reduce((sum: number, item: Record<string, unknown>) => sum + (item.quantity || 0), 0);
+          const total = dataArray.reduce((sum: number, item: Record<string, unknown>) => {
+            const quantity = typeof item.quantity === 'number' ? item.quantity : (typeof item.value === 'number' ? item.value : 0);
+            return sum + quantity;
+          }, 0);
           
-          const chartData: ChartData[] = rawData.map((item: DatabaseRecord, index: number) => ({
-            name: item.product_code || item.name,
-            value: item.quantity || item.value || 0,
-            percentage: total > 0 ? ((item.quantity || item.value || 0) / total) * 100 : 0,
-            colour: item.colour || COLORS[index % COLORS.length],
-          }));
+          const chartData: ChartData[] = dataArray.map((item: Record<string, unknown>, index: number) => {
+            const quantity = typeof item.quantity === 'number' ? item.quantity : (typeof item.value === 'number' ? item.value : 0);
+            return {
+              name: String(item.product_code || item.name || ''),
+              value: quantity,
+              percentage: total > 0 ? (quantity / total) * 100 : 0,
+              colour: String(item.colour || COLORS[index % COLORS.length]),
+            };
+          });
           
           setChartData(chartData);
         } else {
-          throw new Error(widgetData?.data.error || 'No data received');
+          const errorMsg = (widgetData && typeof widgetData.data === 'object' && widgetData.data !== null && 'error' in widgetData.data) 
+            ? String(widgetData.data.error) 
+            : 'No data received';
+          throw new Error(errorMsg);
         }
       } catch (err) {
         console.error('Error fetching product distribution:', err);
@@ -132,7 +149,7 @@ export const TopProductsDistributionWidget = React.memo(function TopProductsDist
   }, [timeFrame]);
 
   // 自定義 Tooltip
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ name: string; value: number; payload: ChartData }> }) => {
     if (active && payload && payload.length) {
       const data = payload[0];
       return (
@@ -213,9 +230,9 @@ export const TopProductsDistributionWidget = React.memo(function TopProductsDist
                 verticalAlign='middle' 
                 align='right' 
                 layout='vertical'
-                formatter={(value, entry: any) => (
+                formatter={(value: any, entry: any) => (
                   <span className='text-xs text-slate-300'>
-                    {value} ({entry.payload.percentage.toFixed(1)}%)
+                    {value} ({entry?.payload?.percentage ? entry.payload.percentage.toFixed(1) : '0'}%)
                   </span>
                 )}
               />

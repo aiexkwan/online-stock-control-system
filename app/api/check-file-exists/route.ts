@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { createClient } from '@supabase/supabase-js';
 
 // 創建 Supabase 服務端客戶端的函數

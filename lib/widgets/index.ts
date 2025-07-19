@@ -1,7 +1,11 @@
 /**
  * Widget Registry System - Main Entry Point
  * 版本 2.0 - 無破壞性升級
+ * 
+ * 策略 4: unknown + type narrowing - 類型安全的統計數據處理
  */
+
+import { safeGet, safeNumber, safeString } from '@/lib/types/supabase-helpers';
 
 // 導出所有類型
 export * from './types';
@@ -92,15 +96,28 @@ export function useWidgetPerformance(widgetId?: string) {
       const updateStats = () => {
         if (widgetId) {
           const allStats = widgetRegistry.getLoadStatistics();
-          setStats(allStats.get(widgetId));
+          const widgetStat = allStats.get(widgetId);
+          // 策略 4: 類型安全轉換 - 將 WidgetRegistryItem 轉換為 WidgetStats
+          if (widgetStat) {
+            setStats({
+              loadStatus: safeString(safeGet(widgetStat, 'loadStatus', '')),
+              loadTime: safeNumber(safeGet(widgetStat, 'loadTime', 0))
+            });
+          } else {
+            setStats(null);
+          }
         } else {
           const allStats = widgetRegistry.getLoadStatistics();
+          const statsArray = Array.from(allStats.values());
           const summary = {
             totalWidgets: allStats.size,
-            loadedWidgets: Array.from(allStats.values()).filter((s: Record<string, unknown>) => s.loadStatus === 'loaded').length,
-            avgLoadTime: Array.from(allStats.values())
-              .filter((s: Record<string, unknown>) => s.loadTime)
-              .reduce((sum, s: Record<string, unknown>) => sum + ((s.loadTime as number) || 0), 0) / allStats.size || 0
+            loadedWidgets: statsArray.filter((s) => 
+              safeString(safeGet(s, 'loadStatus', '')) === 'loaded'
+            ).length,
+            avgLoadTime: statsArray
+              .filter((s) => safeNumber(safeGet(s, 'loadTime', 0)) > 0)
+              .reduce((sum, s) => sum + safeNumber(safeGet(s, 'loadTime', 0)), 0) / 
+              Math.max(statsArray.length, 1)
           };
           setStats(summary);
         }

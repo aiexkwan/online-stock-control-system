@@ -13,6 +13,7 @@ import { prefetchCriticalWidgetsData } from '@/app/admin/hooks/server/prefetch.s
 import { DashboardDataProvider, useDashboardData, useWidgetData } from '@/app/admin/contexts/DashboardDataContext';
 import StatsCardWidget from '@/app/admin/components/dashboard/widgets/StatsCardWidget';
 import type { DashboardBatchQueryData } from '@/app/admin/types/dashboard';
+import { WidgetType } from '@/app/types/dashboard';
 
 // Mock Next.js modules
 jest.mock('next/navigation', () => ({
@@ -256,9 +257,9 @@ describe('SSR Integration Tests', () => {
 
   describe('Critical Widgets SSR Support', () => {
     it.skip('StatsCard 應該正確使用 SSR 數據', () => {
-      const mockWidget: DatabaseRecord = {
+      const mockWidget = {
         id: 'stats-1',
-        type: 'stats-card',
+        type: WidgetType.STATS_CARD,
         title: 'Total Pallets',
         config: {
           dataSource: 'total_pallets',
@@ -289,9 +290,9 @@ describe('SSR Integration Tests', () => {
     });
 
     it.skip('應該優雅降級到 CSR 當沒有預取數據時', () => {
-      const mockWidget: DatabaseRecord = {
+      const mockWidget = {
         id: 'stats-1',
-        type: 'stats-card',
+        type: WidgetType.STATS_CARD,
         title: 'Total Pallets',
         config: {
           dataSource: 'total_pallets',

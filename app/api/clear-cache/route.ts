@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { getErrorMessage } from '@/lib/types/error-handling';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {

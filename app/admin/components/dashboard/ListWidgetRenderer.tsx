@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { DatabaseRecord } from '@/lib/types/database';
+import { WidgetComponentProps as SharedWidgetComponentProps } from './widget-renderer-shared';
 import { 
   BaseWidgetRendererProps,
   createErrorFallback,
@@ -17,6 +18,19 @@ import {
   TruckIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
+
+// 類型守衛函數
+function isArrayData(data: unknown): data is unknown[] {
+  return Array.isArray(data);
+}
+
+function isDatabaseRecord(item: unknown): item is DatabaseRecord {
+  return typeof item === 'object' && item !== null;
+}
+
+function hasStringProperty(obj: unknown, prop: string): obj is Record<string, unknown> {
+  return typeof obj === 'object' && obj !== null && prop in obj;
+}
 
 export const ListWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
   config,
@@ -29,6 +43,16 @@ export const ListWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
 }) => {
   const getComponentProps = getComponentPropsFactory(config, timeFrame, theme);
   
+  // 創建符合 SharedWidgetComponentProps 的 props 對象
+  const createWidgetProps = (widgetData?: unknown): SharedWidgetComponentProps => {
+    return {
+      config,
+      timeFrame,
+      theme,
+      data: widgetData as Record<string, unknown>
+    };
+  };
+  
   if (loading) {
     return <div>Loading list...</div>;
   }
@@ -40,38 +64,46 @@ export const ListWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
   try {
     switch (config.type) {
       case 'OrderStateListWidget':
-        return renderLazyComponent('OrderStateListWidgetV2', getComponentProps(data));
+        return renderLazyComponent('OrderStateListWidgetV2', createWidgetProps(data));
         
       case 'WarehouseTransferListWidget':
-        return renderLazyComponent('WarehouseTransferListWidget', getComponentProps(data));
+        return renderLazyComponent('WarehouseTransferListWidget', createWidgetProps(data));
         
       case 'StockInventoryTable':
-        return renderLazyComponent('StockInventoryTable', getComponentProps(data));
+        return renderLazyComponent('StockInventoryTable', createWidgetProps(data));
         
       case 'orders-list':
-        return renderLazyComponent('OrdersListWidgetV2', getComponentProps(data));
+        return renderLazyComponent('OrdersListWidgetV2', createWidgetProps(data));
         
       case 'other-files-list':
-        return renderLazyComponent('OtherFilesListWidgetV2', getComponentProps(data));
+        return renderLazyComponent('OtherFilesListWidgetV2', createWidgetProps(data));
         
       case 'activity-feed':
+        const activityData = isArrayData(data) ? data : [];
         return (
           <div className="h-full w-full p-4">
             <h3 className="mb-4 text-lg font-semibold">活動動態</h3>
             <div className="space-y-3 max-h-80 overflow-y-auto">
-              {(data || []).map((item: DatabaseRecord, index: number) => (
-                <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-shrink-0">
-                    <TruckIcon className="h-5 w-5 text-blue-600" />
+              {activityData.map((item: unknown, index: number) => {
+                const record = isDatabaseRecord(item) ? item as DatabaseRecord : {};
+                const title = hasStringProperty(record, 'title') ? String(record.title) : `活動 ${index + 1}`;
+                const description = hasStringProperty(record, 'description') ? String(record.description) : '詳細描述';
+                const time = hasStringProperty(record, 'time') ? String(record.time) : '剛剛';
+                
+                return (
+                  <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex-shrink-0">
+                      <TruckIcon className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">{title}</p>
+                      <p className="text-xs text-gray-500">{description}</p>
+                      <p className="text-xs text-gray-400 mt-1">{time}</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">{item.title || `活動 ${index + 1}`}</p>
-                    <p className="text-xs text-gray-500">{item.description || '詳細描述'}</p>
-                    <p className="text-xs text-gray-400 mt-1">{item.time || '剛剛'}</p>
-                  </div>
-                </div>
-              ))}
-              {(!data || data.length === 0) && (
+                );
+              })}
+              {activityData.length === 0 && (
                 <div className="text-center text-gray-500 py-8">
                   暫無活動記錄
                 </div>
@@ -82,8 +114,8 @@ export const ListWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
         
       case 'table':
         // 通用表格處理
-        const tableData = data || [];
-        const columns = config.metrics || ['name', 'value'];
+        const tableData = isArrayData(data) ? data : [];
+        const columns = Array.isArray(config.metrics) ? config.metrics : ['name', 'value'];
         
         return (
           <div className="h-full w-full p-4">
@@ -92,23 +124,30 @@ export const ListWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-gray-50">
-                    {columns.map((col: string) => (
-                      <th key={col} className="px-3 py-2 text-left font-medium text-gray-900">
-                        {col}
+                    {columns.map((col: unknown) => (
+                      <th key={String(col)} className="px-3 py-2 text-left font-medium text-gray-900">
+                        {String(col)}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {tableData.map((row: DatabaseRecord, index: number) => (
-                    <tr key={index} className="border-b hover:bg-gray-50">
-                      {columns.map((col: string) => (
-                        <td key={col} className="px-3 py-2 text-gray-600">
-                          {row[col as string] || '-'}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
+                  {tableData.map((row: unknown, index: number) => {
+                    const record = isDatabaseRecord(row) ? row as DatabaseRecord : {};
+                    return (
+                      <tr key={index} className="border-b hover:bg-gray-50">
+                        {columns.map((col: unknown) => {
+                          const colKey = String(col);
+                          const cellValue = hasStringProperty(record, colKey) ? String(record[colKey]) : '-';
+                          return (
+                            <td key={colKey} className="px-3 py-2 text-gray-600">
+                              {cellValue}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
                   {tableData.length === 0 && (
                     <tr>
                       <td colSpan={columns.length} className="px-3 py-8 text-center text-gray-500">
@@ -124,25 +163,46 @@ export const ListWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
         
       case 'list':
         // 通用列表處理  
-        const listData = data || [];
+        const listData = isArrayData(data) ? data : [];
         
         return (
           <div className="h-full w-full p-4">
             <h3 className="mb-4 text-lg font-semibold">{config.title || '數據列表'}</h3>
             <div className="space-y-2 max-h-80 overflow-y-auto">
-              {listData.map((item: DatabaseRecord, index: number) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
-                  <div className="flex items-center space-x-3">
-                    <DocumentArrowDownIcon className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm font-medium">
-                      {typeof item === 'object' ? (item.name || item.title || `項目 ${index + 1}`) : item}
-                    </span>
+              {listData.map((item: unknown, index: number) => {
+                let displayText: string;
+                let displayValue: string | null = null;
+                
+                if (isDatabaseRecord(item)) {
+                  const record = item as DatabaseRecord;
+                  if (hasStringProperty(record, 'name')) {
+                    displayText = String((record as Record<string, unknown>).name);
+                  } else if (hasStringProperty(record, 'title')) {
+                    displayText = String((record as Record<string, unknown>).title);
+                  } else {
+                    displayText = `項目 ${index + 1}`;
+                  }
+                  if (hasStringProperty(record, 'value')) {
+                    displayValue = String((record as Record<string, unknown>).value);
+                  }
+                } else {
+                  displayText = String(item);
+                }
+                
+                return (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                    <div className="flex items-center space-x-3">
+                      <DocumentArrowDownIcon className="h-4 w-4 text-gray-400" />
+                      <span className="text-sm font-medium">
+                        {displayText}
+                      </span>
+                    </div>
+                    {displayValue && (
+                      <span className="text-sm text-gray-600">{displayValue}</span>
+                    )}
                   </div>
-                  {typeof item === 'object' && item.value && (
-                    <span className="text-sm text-gray-600">{item.value}</span>
-                  )}
-                </div>
-              ))}
+                );
+              })}
               {listData.length === 0 && (
                 <div className="text-center text-gray-500 py-8">
                   暫無列表項目

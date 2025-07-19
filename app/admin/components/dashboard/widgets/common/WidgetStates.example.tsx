@@ -20,10 +20,16 @@ import { Button } from '@/components/ui/button';
 // Example 1: 使用 WidgetStateWrapper (推薦)
 // ================================
 
+// 定義示例數據的類型
+interface ExampleItem {
+  id: number;
+  name: string;
+}
+
 export function ExampleWidgetWithStateWrapper() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<ExampleItem[]>([]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -38,7 +44,11 @@ export function ExampleWidgetWithStateWrapper() {
       } else if (random < 0.6) {
         setData([]);
       } else {
-        setData([1, 2, 3]);
+        setData([
+          { id: 1, name: 'Item 1' },
+          { id: 2, name: 'Item 2' },
+          { id: 3, name: 'Item 3' }
+        ]);
       }
     } catch (err) {
       setError(err as Error);
@@ -66,9 +76,9 @@ export function ExampleWidgetWithStateWrapper() {
         >
           {/* Your actual content */}
           <div className='space-y-2'>
-            {data.map((item, index) => (
-              <div key={index} className='rounded bg-slate-800 p-3'>
-                Item {item}
+            {data.map((item) => (
+              <div key={item.id} className='rounded bg-slate-800 p-3'>
+                {item.name}
               </div>
             ))}
           </div>

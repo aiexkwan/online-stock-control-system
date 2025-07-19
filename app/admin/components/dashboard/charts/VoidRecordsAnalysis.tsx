@@ -23,7 +23,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
 interface VoidRecordsAnalysisProps {
-  timeFrame?: any;
+  timeFrame?: {
+    start: Date;
+    end: Date;
+  };
 }
 
 interface VoidRecord {
@@ -66,7 +69,9 @@ export default function VoidRecordsAnalysis({ timeFrame }: VoidRecordsAnalysisPr
 
   // Extract data from response and memoize to avoid dependency issues
   const data = useMemo(() => {
-    return response?.success && response.data ? response.data.records || [] : [];
+    if (!response?.success || !response.data) return [];
+    const apiData = response.data as { records?: unknown[] };
+    return apiData.records || [];
   }, [response]);
 
   const { reasonData, productData } = useMemo(() => {
@@ -76,17 +81,31 @@ export default function VoidRecordsAnalysis({ timeFrame }: VoidRecordsAnalysisPr
     const reasonMap = new Map<string, number>();
     const productMap = new Map<string, { count: number; qty: number }>();
 
-    data.forEach((record: DatabaseRecord) => {
+    data.forEach((record: unknown) => {
+      // Type guard to ensure record is a valid object
+      if (!record || typeof record !== 'object') return;
+      
+      const typedRecord = record as DatabaseRecord;
+      
       // Count by reason
-      const reason = record.reason || 'Unspecified Reason';
+      const reason = ('reason' in typedRecord && typeof typedRecord.reason === 'string') 
+        ? typedRecord.reason || 'Unspecified Reason'
+        : 'Unspecified Reason';
       reasonMap.set(reason, (reasonMap.get(reason) || 0) + 1);
 
       // Count by product code
-      const productCode = record.product_code || 'Unknown';
+      const productCode = ('product_code' in typedRecord && typeof typedRecord.product_code === 'string')
+        ? typedRecord.product_code || 'Unknown'
+        : 'Unknown';
       const existing = productMap.get(productCode) || { count: 0, qty: 0 };
+      
+      const voidQty = ('void_qty' in typedRecord && typeof typedRecord.void_qty === 'number')
+        ? typedRecord.void_qty || 0
+        : 0;
+      
       productMap.set(productCode, {
         count: existing.count + 1,
-        qty: existing.qty + (record.void_qty || 0),
+        qty: existing.qty + voidQty,
       });
     });
 
@@ -161,7 +180,11 @@ export default function VoidRecordsAnalysis({ timeFrame }: VoidRecordsAnalysisPr
                   cx='50%'
                   cy='50%'
                   labelLine={false}
-                  label={({ reason, percent }) => `${reason} ${(percent * 100).toFixed(0)}%`}
+                  label={(props: Record<string, unknown>) => {
+                    const reason = props.reason as string;
+                    const percent = props.percent as number;
+                    return `${reason} ${(percent * 100).toFixed(0)}%`;
+                  }}
                   outerRadius={80}
                   fill='#8884d8'
                   dataKey='count'
@@ -172,7 +195,7 @@ export default function VoidRecordsAnalysis({ timeFrame }: VoidRecordsAnalysisPr
                 </Pie>
                 <Tooltip
                   content={({ active, payload }) => {
-                    if (active && payload && payload[0]) {
+                    if (active && Array.isArray(payload) && payload.length > 0 && payload[0]?.payload) {
                       const data = payload[0].payload;
                       return (
                         <div className='rounded-lg border bg-background/95 p-3 shadow-lg backdrop-blur-sm'>
@@ -207,7 +230,7 @@ export default function VoidRecordsAnalysis({ timeFrame }: VoidRecordsAnalysisPr
                 <YAxis dataKey='code' type='category' width={50} tick={{ fontSize: '12px' }} />
                 <Tooltip
                   content={({ active, payload }) => {
-                    if (active && payload && payload[0]) {
+                    if (active && Array.isArray(payload) && payload.length > 0 && payload[0]?.payload) {
                       const data = payload[0].payload;
                       return (
                         <div className='rounded-lg border bg-background/95 p-3 shadow-lg backdrop-blur-sm'>

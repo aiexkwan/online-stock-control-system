@@ -103,9 +103,9 @@ export function OutputRatioChart({ timeRange }: OutputRatioChartProps) {
         console.log('Processed data:', processedData);
 
       setData(processedData);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error loading output ratio data:', err);
-      setError(err.message || 'Failed to load data');
+      setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -123,12 +123,12 @@ export function OutputRatioChart({ timeRange }: OutputRatioChartProps) {
     padding: '8px 12px',
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string; [key: string]: unknown }[]; label?: string }) => {
     if (active && payload && payload.length) {
       return (
         <div style={tooltipStyle}>
           <p className='mb-2 font-medium text-slate-300'>{label}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry: { name: string; value: number; color: string; [key: string]: unknown }, index: number) => (
             <p key={index} className='text-sm' style={{ color: entry.color }}>
               {entry.name}: {entry.value}
             </p>

@@ -1,9 +1,55 @@
-import { DatabaseRecord } from '@/lib/types/database';
+import { DatabaseRecord } from '../../types/database';
 
 /**
  * Alert System Types
  * 告警系統類型定義 - 支援多級告警、通知管理、規則引擎
  */
+
+// 用戶會話類型 (用於告警系統中的用戶統計)
+export interface UserSession {
+  user_id: string;
+  last_activity: string;
+  session_data?: Record<string, unknown>;
+}
+
+// 序列化對象類型
+export interface SerializedRule {
+  id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+  level: AlertLevel;
+  metric: string;
+  condition: AlertCondition;
+  threshold: number | string;
+  time_window: number;
+  evaluation_interval: number;
+  dependencies: string;
+  silence_time?: number;
+  notifications: string;
+  tags: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+}
+
+export interface SerializedAlert {
+  id: string;
+  rule_id: string;
+  rule_name: string;
+  level: AlertLevel;
+  state: AlertState;
+  message: string;
+  value: number | string;
+  threshold: number | string;
+  triggered_at: string;
+  resolved_at?: string;
+  acknowledged_at?: string;
+  acknowledged_by?: string;
+  notifications: string;
+  labels: string;
+  annotations: string;
+}
 
 // 告警級別
 export enum AlertLevel {
@@ -245,9 +291,12 @@ export interface AlertTemplate {
   id: string;
   name: string;
   description: string;
+  subject: string;
+  body: string;
   channel: NotificationChannel;
   template: string;
   variables: string[];
+  enabled: boolean;
   defaultValues?: Record<string, string>;
 }
 
@@ -292,7 +341,18 @@ export interface AlertConfig {
 export interface AlertEngineEvent {
   type: 'alert_triggered' | 'alert_resolved' | 'notification_sent' | 'rule_created' | 'rule_updated';
   timestamp: Date;
-  data: DatabaseRecord[];
+  data: AlertEngineEventData;
+}
+
+// 告警引擎事件數據
+export interface AlertEngineEventData {
+  ruleId?: string;
+  alertId?: string;
+  alert?: Alert;
+  rule?: AlertRule;
+  error?: string;
+  channel?: NotificationChannel;
+  [key: string]: unknown;
 }
 
 // 告警引擎狀態
@@ -322,11 +382,63 @@ export interface AlertContext {
   environment: string;
 }
 
+// 告警響應數據類型
+export interface AlertResponseData {
+  alertId?: string;
+  ruleId?: string;
+  metrics?: AlertMetric[];
+  notifications?: NotificationResult[];
+  timestamp?: string;
+  [key: string]: unknown;
+}
+
+// 通知統計類型
+export interface NotificationStats {
+  total: number;
+  sent: number;
+  failed: number;
+  pending: number;
+  byChannel: Record<NotificationChannel, number>;
+  byStatus: Record<string, number>;
+  avgDeliveryTime: number;
+}
+
+
+// 健康檢查詳情類型
+export interface HealthCheckDetails {
+  tableName?: string;
+  responseTime?: number;
+  errorMessage?: string;
+  lastCheck?: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+// 系統指標類型
+export interface SystemMetrics {
+  alertsCount: number;
+  rulesCount: number;
+  notificationsCount: number;
+  errorRate: number;
+  avgResponseTime: number;
+  uptime: number;
+  memoryUsage: number;
+  [key: string]: unknown;
+}
+
+// 初始化配置類型
+export interface InitializationConfig {
+  enabledFeatures: string[];
+  defaultSettings: Record<string, unknown>;
+  migrations: string[];
+  [key: string]: unknown;
+}
+
 // 告警響應
 export interface AlertResponse {
   success: boolean;
   message: string;
-  data?: any;
+  data?: AlertResponseData;
   errors?: string[];
 }
 
@@ -336,4 +448,17 @@ export interface BatchOperationResult {
   processed: number;
   failed: number;
   errors: string[];
+}
+
+// 通知結果
+export interface NotificationResult {
+  success: boolean;
+  message: string;
+  error?: string;
+}
+
+// 數據庫記錄類型 (單個記錄)
+export interface AlertDatabaseRecord {
+  id: string;
+  [key: string]: unknown;
 }

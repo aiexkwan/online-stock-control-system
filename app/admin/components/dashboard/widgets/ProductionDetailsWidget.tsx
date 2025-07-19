@@ -58,10 +58,10 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
   }, [timeFrame]);
 
   // REST API state management
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [metadata, setMetadata] = useState<any>({});
+  const [metadata, setMetadata] = useState<Record<string, unknown>>({});
 
   useEffect(() => {
     if (isEditMode) return;
@@ -93,21 +93,27 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
         if (result.widgets && result.widgets.length > 0) {
           const widgetData = result.widgets[0];
 
-          if (widgetData.data.error) {
-            console.error('[ProductionDetailsWidget as string] API error:', widgetData.data.error);
-            setError(widgetData.data.error);
+          if (typeof widgetData.data === 'object' && widgetData.data !== null && 'error' in widgetData.data && widgetData.data.error) {
+            const errorMsg = String(widgetData.data.error);
+            console.error('[ProductionDetailsWidget as string] API error:', errorMsg);
+            setError(errorMsg);
             setData([]);
             return;
           }
 
-          const detailsData = widgetData.data.value || [];
-          const widgetMetadata = widgetData.data.metadata || {};
+          const detailsData = (typeof widgetData.data === 'object' && widgetData.data !== null && 'value' in widgetData.data) 
+            ? widgetData.data.value 
+            : [];
+          const widgetMetadata = (typeof widgetData.data === 'object' && widgetData.data !== null && 'metadata' in widgetData.data) 
+            ? widgetData.data.metadata 
+            : {};
 
           console.log('[ProductionDetailsWidget as string] API returned data:', detailsData);
           console.log('[ProductionDetailsWidget as string] Metadata:', widgetMetadata);
 
-          setData(detailsData);
-          setMetadata({ ...widgetMetadata, useGraphQL: false });
+          setData(Array.isArray(detailsData) ? detailsData : []);
+          const safeMetadata = typeof widgetMetadata === 'object' && widgetMetadata !== null ? widgetMetadata : {};
+          setMetadata({ ...safeMetadata, useGraphQL: false });
 
         } else {
           console.warn('[ProductionDetailsWidget as string] No widget data returned from API');
@@ -142,7 +148,7 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
       key: 'product_qty', 
       header: 'Quantity',
       align: 'right',
-      render: (value: unknown) => typeof value === 'number' ? value.toLocaleString() : value || 'N/A'
+      render: (value: unknown, item: Record<string, unknown>, index: number) => typeof value === 'number' ? value.toLocaleString() : String(value || 'N/A')
     },
     { 
       key: 'qc_by', 
@@ -151,7 +157,7 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
     { 
       key: 'generate_time', 
       header: 'Generate Time',
-      render: (value: unknown) => value ? format(new Date(value), 'MMM d, HH:mm') : 'N/A'
+      render: (value: unknown, item: Record<string, unknown>, index: number) => value ? format(new Date(String(value)), 'MMM d, HH:mm') : 'N/A'
     }
   ];
 

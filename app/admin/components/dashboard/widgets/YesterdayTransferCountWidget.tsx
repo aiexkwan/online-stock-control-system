@@ -99,7 +99,7 @@ const YesterdayTransferCountWidget = React.memo(function YesterdayTransferCountW
       error={error}
       onRetry={refetch}
       animateOnMount={true}
-      widgetType={widget?.type.toUpperCase() as any}
+      widgetType={widget?.type ? String(widget.type).toUpperCase() : undefined}
     />
   );
 });

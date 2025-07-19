@@ -5,6 +5,18 @@
 
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import {
+  toSafeString,
+  toSafeNumber,
+  toSafeOrderData,
+  toSafeDetailData,
+  toSafePageData,
+  toSafeUserData,
+  type SafeOrderData,
+  type SafeDetailData,
+  type SafePageData,
+  type SafeUserData,
+} from '@/lib/types/report-type-guards';
 
 declare module 'jspdf' {
   interface jsPDF {
@@ -189,14 +201,17 @@ export class LegacyOrderLoadingPdfGenerator {
     }
 
     // 表格數據
-    const tableData = orders.map(order => [
-      order.order_number,
-      this.formatDate(order.order_date),
-      order.total_items.toString(),
-      order.loaded_items.toString(),
-      `${(order.completion_rate * 100).toFixed(1)}%`,
-      order.status,
-    ]);
+    const tableData = orders.map(order => {
+      const safeOrder = toSafeOrderData(order);
+      return [
+        toSafeString(order.order_number),
+        this.formatDate(toSafeString(order.order_date)),
+        safeOrder.total_items.toString(),
+        safeOrder.loaded_items.toString(),
+        `${(safeOrder.completion_rate * 100).toFixed(1)}%`,
+        toSafeString(order.status),
+      ];
+    });
 
     this.doc.autoTable({
       startY: this.currentY,
@@ -245,15 +260,18 @@ export class LegacyOrderLoadingPdfGenerator {
     // 限制顯示的記錄數
     const displayDetails = details.slice(0, 50);
 
-    const tableData = displayDetails.map(d => [
-      this.formatDateTime(d.timestamp),
-      d.order_number,
-      d.product_code,
-      this.truncateText(d.product_description, 25),
-      d.loaded_qty.toString(),
-      this.truncateText(d.user_name, 15),
-      d.action,
-    ]);
+    const tableData = displayDetails.map(d => {
+      const safeDetail = toSafeDetailData(d);
+      return [
+        this.formatDateTime(toSafeString(d.timestamp)),
+        toSafeString(d.order_number),
+        safeDetail.product_code,
+        this.truncateText(toSafeString(d.product_description), 25),
+        safeDetail.loaded_qty.toString(),
+        this.truncateText(toSafeString(d.user_name), 15),
+        toSafeString(d.action),
+      ];
+    });
 
     this.doc.autoTable({
       startY: this.currentY,
@@ -279,7 +297,8 @@ export class LegacyOrderLoadingPdfGenerator {
         6: { cellWidth: 20 },
       },
       didDrawPage: (data: Record<string, unknown>) => {
-        if (data.pageNumber > 1) {
+        const safePageData = toSafePageData(data);
+        if (safePageData.pageNumber > 1) {
           this.doc.setFontSize(10);
           this.doc.setFont('helvetica', 'normal');
           this.doc.text('Order Loading Report (Continued)', this.margin, 10);
@@ -314,13 +333,16 @@ export class LegacyOrderLoadingPdfGenerator {
     this.doc.text('User Performance', this.margin, this.currentY);
     this.currentY += 8;
 
-    const tableData = users.map(u => [
-      u.user_id,
-      this.truncateText(u.user_name, 25),
-      u.total_loads.toString(),
-      u.total_quantity.toLocaleString(),
-      u.avg_load_time,
-    ]);
+    const tableData = users.map(u => {
+      const safeUser = toSafeUserData(u);
+      return [
+        toSafeString(u.user_id),
+        this.truncateText(safeUser.user_name, 25),
+        safeUser.total_loads.toString(),
+        safeUser.total_quantity.toLocaleString(),
+        toSafeString(u.avg_load_time),
+      ];
+    });
 
     this.doc.autoTable({
       startY: this.currentY,

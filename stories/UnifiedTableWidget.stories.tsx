@@ -116,7 +116,8 @@ const createMockData = (type: 'success' | 'loading' | 'error', dataType: string 
           staff_workload: {
             items: createMockTableData('staff', dataCount),
           },
-          ...overrides.data,
+          // Strategy 4: unknown + type narrowing - 安全的對象展開
+          ...(overrides.data && typeof overrides.data === 'object' ? overrides.data as Record<string, unknown> : {}),
         },
         isLoading: false,
         error: null,

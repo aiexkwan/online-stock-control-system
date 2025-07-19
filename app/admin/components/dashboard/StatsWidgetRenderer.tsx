@@ -6,6 +6,7 @@
 'use client';
 
 import React from 'react';
+import { WidgetComponentProps } from './widget-renderer-shared';
 import { 
   BaseWidgetRendererProps,
   createErrorFallback,
@@ -31,6 +32,16 @@ export const StatsWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
 }) => {
   const getComponentProps = getComponentPropsFactory(config, timeFrame, theme);
   
+  // 創建符合 WidgetComponentProps 的 props 對象
+  const createWidgetProps = (widgetData?: unknown): WidgetComponentProps => {
+    return {
+      config,
+      timeFrame,
+      theme,
+      data: widgetData as Record<string, unknown>
+    };
+  };
+  
   if (loading) {
     return <div>Loading stats...</div>;
   }
@@ -42,27 +53,27 @@ export const StatsWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
   try {
     switch (config.type) {
       case 'AwaitLocationQtyWidget':
-        return renderLazyComponent('AwaitLocationQtyWidget', getComponentProps(data));
+        return renderLazyComponent('AwaitLocationQtyWidget', createWidgetProps(data));
         
       case 'YesterdayTransferCountWidget':
-        return renderLazyComponent('YesterdayTransferCountWidget', getComponentProps(data));
+        return renderLazyComponent('YesterdayTransferCountWidget', createWidgetProps(data));
         
       case 'StillInAwaitWidget':
-        return renderLazyComponent('StillInAwaitWidget', getComponentProps(data));
+        return renderLazyComponent('StillInAwaitWidget', createWidgetProps(data));
         
       case 'StillInAwaitPercentageWidget':
-        return renderLazyComponent('StillInAwaitPercentageWidget', getComponentProps(data));
+        return renderLazyComponent('StillInAwaitPercentageWidget', createWidgetProps(data));
         
       case 'production_summary':
       case 'production_details':
-        return renderLazyComponent('ProductionDetailsWidget', getComponentProps(data));
+        return renderLazyComponent('ProductionDetailsWidget', createWidgetProps(data));
         
       case 'work_level':
       case 'pipeline_work_level':
-        return renderLazyComponent('StaffWorkloadWidget', getComponentProps(data));
+        return renderLazyComponent('StaffWorkloadWidget', createWidgetProps(data));
         
       case 'pipeline_production_details':
-        return renderLazyComponent('ProductionDetailsWidget', getComponentProps(data));
+        return renderLazyComponent('ProductionDetailsWidget', createWidgetProps(data));
         
       case 'system_status':
         return (
@@ -95,8 +106,19 @@ export const StatsWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
         );
         
       case 'stats':
-        // 通用統計處理
-        const statsData = data || { value: 0, change: 0 };
+        // 通用統計處理 - 添加類型安全檢查
+        const defaultStats = { value: 0, change: 0 };
+        let statsData = defaultStats;
+        
+        if (data && typeof data === 'object' && data !== null) {
+          const value = 'value' in data ? data.value : 0;
+          const change = 'change' in data ? data.change : 0;
+          statsData = {
+            value: typeof value === 'number' ? value : (typeof value === 'string' ? parseFloat(value) || 0 : 0),
+            change: typeof change === 'number' ? change : (typeof change === 'string' ? parseFloat(change) || 0 : 0)
+          };
+        }
+        
         const isPositive = statsData.change >= 0;
         
         return (
@@ -105,7 +127,7 @@ export const StatsWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
               <div className="text-3xl font-bold mb-2">
                 {typeof statsData.value === 'number' 
                   ? statsData.value.toLocaleString() 
-                  : statsData.value}
+                  : String(statsData.value)}
               </div>
               <div className={`flex items-center justify-center space-x-1 text-sm ${
                 isPositive ? 'text-green-600' : 'text-red-600'

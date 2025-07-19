@@ -77,11 +77,15 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
       });
 
       // Check if widget data contains error
-      if (result.widgets?.[0]?.data?.error) {
-        throw new Error(result.widgets[0].data.error);
+      const widgetData = result.widgets?.[0]?.data;
+      if (widgetData && typeof widgetData === 'object' && 'error' in widgetData && widgetData.error) {
+        throw new Error(String(widgetData.error));
       }
 
-      const orderRefs = (result.widgets?.[0]?.data?.value as string[]) || [];
+      const widgetResultData = result.widgets?.[0]?.data;
+      const orderRefs = (widgetResultData && typeof widgetResultData === 'object' && 'value' in widgetResultData 
+        ? widgetResultData.value as string[] 
+        : []) || [];
       setAcoOrders(orderRefs);
 
       // Set default selection
@@ -139,11 +143,15 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
       );
 
       // Check if widget data contains error
-      if (result.widgets?.[0]?.data?.error) {
-        throw new Error(result.widgets[0].data.error);
+      const fetchWidgetData = result.widgets?.[0]?.data;
+      if (fetchWidgetData && typeof fetchWidgetData === 'object' && 'error' in fetchWidgetData && fetchWidgetData.error) {
+        throw new Error(String(fetchWidgetData.error));
       }
 
-      const reportData = result.widgets?.[0]?.data?.value as AcoProductData[];
+      const reportWidgetData = result.widgets?.[0]?.data;
+      const reportData = (reportWidgetData && typeof reportWidgetData === 'object' && 'value' in reportWidgetData 
+        ? reportWidgetData.value as AcoProductData[] 
+        : []);
 
       // Generate Excel report
       await exportAcoReport(reportData, selectedAcoOrder);
@@ -230,7 +238,7 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
                     />
                   </SelectTrigger>
                   <SelectContent className={cn('border-border bg-card')}>
-                    {acoOrders.map((order: Record<string, unknown>) => (
+                    {acoOrders.map((order: string) => (
                       <SelectItem
                         key={order}
                         value={order}

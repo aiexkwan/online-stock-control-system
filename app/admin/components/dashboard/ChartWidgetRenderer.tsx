@@ -6,6 +6,7 @@
 'use client';
 
 import React from 'react';
+import { WidgetComponentProps as SharedWidgetComponentProps } from './widget-renderer-shared';
 import { 
   BaseWidgetRendererProps, 
   CHART_COLORS,
@@ -40,6 +41,16 @@ export const ChartWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
 }) => {
   const getComponentProps = getComponentPropsFactory(config, timeFrame, theme);
   
+  // 創建符合 SharedWidgetComponentProps 的 props 對象
+  const createWidgetProps = (widgetData?: unknown): SharedWidgetComponentProps => {
+    return {
+      config,
+      timeFrame,
+      theme,
+      data: widgetData as Record<string, unknown>
+    };
+  };
+  
   if (loading) {
     return <div>Loading chart...</div>;
   }
@@ -52,16 +63,16 @@ export const ChartWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
     switch (config.type) {
       case 'StockDistributionChart':
       case 'StockDistributionChartV2':
-        return renderLazyComponent('StockDistributionChartV2', getComponentProps(data));
+        return renderLazyComponent('StockDistributionChartV2', createWidgetProps(data));
         
       case 'StockLevelHistoryChart':
-        return renderLazyComponent('StockLevelHistoryChart', getComponentProps(data));
+        return renderLazyComponent('StockLevelHistoryChart', createWidgetProps(data));
         
       case 'TransferTimeDistributionWidget':
-        return renderLazyComponent('TransferTimeDistributionWidget', getComponentProps(data));
+        return renderLazyComponent('TransferTimeDistributionWidget', createWidgetProps(data));
         
       case 'WarehouseWorkLevelAreaChart':
-        return renderLazyComponent('WarehouseWorkLevelAreaChart', getComponentProps(data));
+        return renderLazyComponent('WarehouseWorkLevelAreaChart', createWidgetProps(data));
         
       case 'WarehouseHeatmap':
         return (

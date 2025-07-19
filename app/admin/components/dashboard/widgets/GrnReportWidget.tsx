@@ -15,6 +15,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { exportGrnReport } from '@/lib/exportReport';
 import { useReportPrinting } from '@/app/admin/hooks/useReportPrinting';
 import { WidgetSkeleton } from './common/WidgetStates';
+import { GrnReportExportData } from './types/GrnReportTypes';
+import { GrnReportPageData } from '@/app/actions/reportActions';
 import {
   Select,
   SelectContent,
@@ -36,6 +38,16 @@ interface GrnReportWidgetProps {
   reportType: string;
   description?: string;
   apiEndpoint?: string;
+}
+
+// GRN Report Data interface
+interface GrnReportData {
+  material_description?: string;
+  supplier_name?: string;
+  report_date?: string;
+  records?: DatabaseRecord[];
+  error?: string;
+  [key: string]: unknown;
 }
 
 // REST API client for GRN endpoints
@@ -72,7 +84,7 @@ const grnApiClient = {
     return data.materialCodes || [];
   },
 
-  async getReportData(grnRef: string, productCodes?: string[]): Promise<any> {
+  async getReportData(grnRef: string, productCodes?: string[]): Promise<GrnReportData> {
     const url = new URL(`/api/v1/grn/${grnRef}/report-data`, window.location.origin);
     if (productCodes && productCodes.length > 0) {
       url.searchParams.append('productCodes', JSON.stringify(productCodes));
@@ -121,10 +133,11 @@ export const GrnReportWidget = function GrnReportWidget({
         description: 'GRN report sent to print queue',
       });
     },
-    onError: error => {
+    onError: (error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : 'Print error occurred';
       toast({
         title: 'Error',
-        description: (error as { message: string }).message,
+        description: errorMessage,
         variant: 'destructive',
       });
     },
@@ -210,12 +223,20 @@ export const GrnReportWidget = function GrnReportWidget({
           const reportData = await grnApiClient.getReportData(selectedGrnRef, [materialCode as string]);
           
           if (reportData && !reportData.error) {
-            // Export using existing PDF generation logic
-            await exportGrnReport({
-              ...reportData,
-              uploader_email: userEmail,
-              uploader_name: userEmail.split('@')[0],
-            });
+            // Convert to GrnReportPageData format expected by exportGrnReport
+            const pageData: GrnReportPageData = {
+              grn_ref: selectedGrnRef,
+              user_id: userEmail,
+              material_code: materialCode as string,
+              material_description: (reportData as any).material_description || null,
+              supplier_name: (reportData as any).supplier_name || null,
+              report_date: new Date().toISOString().split('T')[0],
+              records: (reportData as any).records || [],
+              total_gross_weight: 0,
+              total_net_weight: 0,
+              weight_difference: 0,
+            };
+            await exportGrnReport(pageData);
             successCount++;
           }
         } catch (error) {
@@ -248,7 +269,7 @@ export const GrnReportWidget = function GrnReportWidget({
 
       toast({
         title: 'Error',
-        description: error instanceof Error ? (error as { message: string }).message : 'Failed to generate report',
+        description: error instanceof Error ? error.message : 'Failed to generate report',
         variant: 'destructive',
       });
     }
@@ -431,7 +452,7 @@ export const GrnReportWidget = function GrnReportWidget({
         const yText = yPosition - 15;
 
         // Fill table cells with data
-        page.drawText(record.supplier_invoice_number || '', {
+        page.drawText(String(record.supplier_invoice_number) || '', {
           x: 30,
           y: yText,
           size: 9,
@@ -439,7 +460,7 @@ export const GrnReportWidget = function GrnReportWidget({
           color: rgb(0, 0, 0),
         });
 
-        page.drawText(record.date_received || '', {
+        page.drawText(String(record.date_received) || '', {
           x: 155,
           y: yText,
           size: 9,
@@ -479,7 +500,9 @@ export const GrnReportWidget = function GrnReportWidget({
           color: rgb(0, 0, 0),
         });
 
-        const palletWeight = (record.gross_weight || 0) - (record.net_weight || 0);
+        const grossWeight = typeof record.gross_weight === 'number' ? record.gross_weight : 0;
+        const netWeight = typeof record.net_weight === 'number' ? record.net_weight : 0;
+        const palletWeight = grossWeight - netWeight;
         page.drawText(palletWeight.toString(), {
           x: 435,
           y: yText,
@@ -518,12 +541,15 @@ export const GrnReportWidget = function GrnReportWidget({
       // Send to print service
       const pdfBytes = await pdfDoc.save();
       const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-      await printReport(blob, `GRN_${selectedGrnRef}_${materialCodes[0]}`);
+      await printReport(blob, {
+        reportTitle: `GRN_${selectedGrnRef}_${materialCodes[0]}`,
+        generatedAt: new Date().toISOString(),
+      });
     } catch (error) {
       console.error('[GrnReportWidget as string] Print error:', error);
       toast({
         title: 'Error',
-        description: error instanceof Error ? (error as { message: string }).message : 'Failed to print report',
+        description: error instanceof Error ? error.message : 'Failed to print report',
         variant: 'destructive',
       });
     }
@@ -563,7 +589,7 @@ export const GrnReportWidget = function GrnReportWidget({
                 />
               </SelectTrigger>
               <SelectContent className={cn('border-border bg-card')}>
-                {grnRefs.map((ref: any) => (
+                {grnRefs.map((ref: string) => (
                   <SelectItem key={ref} value={ref} className={cn(
                     'text-foreground hover:bg-accent',
                     textClasses['body-small']

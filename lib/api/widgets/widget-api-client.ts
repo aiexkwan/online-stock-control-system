@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
-export interface APIResponse<T = any> {
+export interface APIResponse<T = unknown> {
   data?: T;
   error?: string;
   success: boolean;
@@ -18,10 +18,10 @@ export interface APIResponse<T = any> {
 /**
  * 通用 API 請求方法
  */
-async function makeRequest<T = any>(
+async function makeRequest<T = unknown>(
   endpoint: string,
   options: RequestInit = {},
-  params?: Record<string, any>
+  params?: Record<string, unknown>
 ): Promise<APIResponse<T>> {
   const startTime = Date.now();
   
@@ -97,7 +97,7 @@ export const widgetAPI = {
     startDate?: string;
     endDate?: string;
     limit?: number;
-  }): Promise<APIResponse<any>> {
+  }): Promise<APIResponse<unknown>> {
     return makeRequest('/analysis/void-records', {
       method: 'GET',
     }, params);
@@ -109,7 +109,7 @@ export const widgetAPI = {
   async getStockDistribution(params?: {
     type?: string;
     warehouseId?: string;
-  }): Promise<APIResponse<any>> {
+  }): Promise<APIResponse<unknown>> {
     return makeRequest('/widgets/stock-distribution', {
       method: 'GET',
     }, params);
@@ -121,7 +121,7 @@ export const widgetAPI = {
   async getAcoOrderProgress(params?: {
     startDate?: string;
     endDate?: string;
-  }): Promise<APIResponse<any>> {
+  }): Promise<APIResponse<unknown>> {
     return makeRequest('/analysis/aco-order-progress-chart', {
       method: 'GET',
     }, params);
@@ -134,7 +134,7 @@ export const widgetAPI = {
     stockCodes?: string[];
     idsuppliers?: string[];
     fromACO?: boolean;
-  }): Promise<APIResponse<any>> {
+  }): Promise<APIResponse<unknown>> {
     return makeRequest('/widgets/inventory-ordered-analysis', {
       method: 'GET',
     }, params);
@@ -150,7 +150,7 @@ export const widgetAPI = {
     supplier?: string;
     username?: string;
     actionType?: string;
-  }): Promise<APIResponse<any>> {
+  }): Promise<APIResponse<unknown>> {
     return makeRequest('/widgets/transaction-report', {
       method: 'GET',
     }, params);

@@ -18,8 +18,10 @@ export interface PrintInterfaceConfig {
   description?: string;
   FormComponent: React.ComponentType<{
     data: PrintData;
-    onDataChange: (data: PrintData) => void;
-    onValidationChange: (isValid: boolean, errors: Record<string, string>) => void;
+    errors?: Record<string, string>;
+    onChange?: (field: string, value: unknown) => void;
+    onDataChange?: (data: PrintData) => void;
+    onValidationChange: (isValid: boolean, errors?: Record<string, string>) => void;
   }>;
   defaultOptions?: Partial<PrintOptions>;
 }
@@ -37,6 +39,7 @@ interface PrintFormState {
 
 type PrintFormAction =
   | { type: 'UPDATE_FIELD'; field: string; value: unknown }
+  | { type: 'SET_DATA'; data: PrintData }
   | { type: 'SET_ERRORS'; errors: Record<string, string> }
   | { type: 'RESET_FORM' }
   | { type: 'SET_VALID'; isValid: boolean };
@@ -48,6 +51,11 @@ function printFormReducer(state: PrintFormState, action: PrintFormAction): Print
         ...state,
         data: { ...state.data, [action.field]: action.value },
         errors: { ...state.errors, [action.field]: '' },
+      };
+    case 'SET_DATA':
+      return {
+        ...state,
+        data: action.data,
       };
     case 'SET_ERRORS':
       return { ...state, errors: action.errors, isValid: false };
@@ -73,6 +81,11 @@ export function UnifiedPrintInterface({ config, className }: UnifiedPrintInterfa
   const handleFieldChange = useCallback((field: string, value: unknown) => {
     dispatch({ type: 'UPDATE_FIELD', field, value });
   }, []);
+
+  const handleDataChange = useCallback((data: PrintData) => {
+    formState.data = { ...formState.data, ...data };
+    dispatch({ type: 'SET_DATA', data: formState.data });
+  }, [formState.data]);
 
   const handleValidationChange = useCallback(
     (isValid: boolean, errors?: Record<string, string>) => {
@@ -152,6 +165,7 @@ export function UnifiedPrintInterface({ config, className }: UnifiedPrintInterfa
                 data={formState.data}
                 errors={formState.errors}
                 onChange={handleFieldChange}
+                onDataChange={handleDataChange}
                 onValidationChange={handleValidationChange}
               />
 

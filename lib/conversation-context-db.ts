@@ -74,10 +74,10 @@ export class DatabaseConversationContextManager {
       for (const record of orderedRecords) {
         // 添加到查詢歷史
         queryHistory.push({
-          question: record.query,
-          sql: record.sql_query,
+          question: String(record.query || ''),
+          sql: String(record.sql_query || ''),
           resultCount: record.row_count || 0,
-          timestamp: record.created_at,
+          timestamp: String(record.created_at || ''),
         });
 
         // 從 result_json 提取實體
@@ -118,8 +118,8 @@ export class DatabaseConversationContextManager {
         if (row.product_code) {
           entities.push({
             type: 'product',
-            value: row.product_code,
-            displayName: row.product_name || row.description,
+            value: String(row.product_code),
+            displayName: String(row.product_name || row.description || ''),
             mentionedAt: timestamp,
           });
         }
@@ -132,7 +132,7 @@ export class DatabaseConversationContextManager {
         if (row.order_ref) {
           entities.push({
             type: 'order',
-            value: row.order_ref,
+            value: String(row.order_ref),
             mentionedAt: timestamp,
           });
         }
@@ -145,7 +145,7 @@ export class DatabaseConversationContextManager {
         if (row.plt_num) {
           entities.push({
             type: 'pallet',
-            value: row.plt_num,
+            value: String(row.plt_num),
             mentionedAt: timestamp,
           });
         }
@@ -159,7 +159,7 @@ export class DatabaseConversationContextManager {
         if (row[col]) {
           entities.push({
             type: 'location',
-            value: row[col],
+            value: String(row[col]),
             mentionedAt: timestamp,
           });
         }
@@ -270,25 +270,25 @@ export class DatabaseConversationContextManager {
   }
 
   // 從結果行提取實體
-  private extractEntityFromRow(row: DatabaseRecord): Entity {
+  private extractEntityFromRow(row: any): Entity {
     // 優先級：產品 > 訂單 > 棧板
     if (row.product_code) {
       return {
         type: 'product',
-        value: row.product_code,
-        displayName: row.product_name || row.description,
+        value: String(row.product_code),
+        displayName: String(row.product_name || row.description || ''),
         mentionedAt: new Date().toISOString(),
       };
     } else if (row.order_ref) {
       return {
         type: 'order',
-        value: row.order_ref,
+        value: String(row.order_ref),
         mentionedAt: new Date().toISOString(),
       };
     } else if (row.plt_num) {
       return {
         type: 'pallet',
-        value: row.plt_num,
+        value: String(row.plt_num),
         mentionedAt: new Date().toISOString(),
       };
     }
@@ -402,9 +402,9 @@ export class DatabaseConversationContextManager {
 
       // 反轉順序（從舊到新）
       return (data || []).reverse().map(record => ({
-        question: record.query,
-        sql: record.sql_query,
-        answer: record.answer,
+        question: String(record.query || ''),
+        sql: String(record.sql_query || ''),
+        answer: String(record.answer || ''),
       }));
     } catch (error) {
       console.error('[getSessionHistory] Error:', error);

@@ -32,6 +32,12 @@ import { useInViewport, InViewportPresets } from '@/app/admin/hooks/useInViewpor
 // Note: GraphQL query removed - migrated to REST API
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
+  InventoryAnalysisResponse,
+  InventoryAnalysisMapper,
+  isWidgetApiDataWrapper,
+  StockTypeChangeEvent 
+} from './types/InventoryAnalysisTypes';
+import { 
   brandColors, 
   widgetColors, 
   semanticColors,
@@ -41,33 +47,7 @@ import { textClasses, getTextClass } from '@/lib/design-system/typography';
 import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
 import { cn } from '@/lib/utils';
 
-interface ProductAnalysis {
-  productCode: string;
-  description: string;
-  currentStock: number;
-  orderDemand: number;
-  remainingStock: number;
-  fulfillmentRate: number;
-  isSufficient: boolean;
-}
-
-interface AnalysisSummary {
-  totalStock: number;
-  totalDemand: number;
-  totalRemaining: number;
-  overallSufficient: boolean;
-  insufficientCount: number;
-  sufficientCount: number;
-}
-
-interface InventoryAnalysisResponse {
-  products: ProductAnalysis[];
-  summary: AnalysisSummary;
-  metadata?: {
-    executed_at: string;
-    calculation_time?: string;
-  };
-}
+// Interfaces moved to InventoryAnalysisTypes.ts
 
 interface InventoryOrderedAnalysisWidgetProps extends TraditionalWidgetComponentProps {
   // useGraphQL prop removed - using REST API only
@@ -126,12 +106,17 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
           w => w.widgetId === 'inventory_ordered_analysis'
         );
 
-        if (widgetData?.data?.value) {
-          const analysisResponse = widgetData.data.value as InventoryAnalysisResponse;
-          if (widgetData.data.metadata?.calculationTime) {
-            setQueryTime(widgetData.data.metadata.calculationTime);
+        if (widgetData?.data && isWidgetApiDataWrapper(widgetData.data)) {
+          const analysisResponse = InventoryAnalysisMapper.extractInventoryAnalysisFromWrapper(widgetData.data);
+          const calculationTime = InventoryAnalysisMapper.extractCalculationTime(widgetData.data);
+          
+          if (analysisResponse) {
+            setAnalysisData(analysisResponse);
           }
-          setAnalysisData(analysisResponse);
+          
+          if (calculationTime) {
+            setQueryTime(calculationTime);
+          }
         }
       } catch (error) {
         console.error('Error fetching inventory analysis:', error);
@@ -154,20 +139,27 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
 
   // 監聽 StockTypeSelector 的類型變更事件
   useEffect(() => {
-    const handleTypeChange = (event: CustomEvent) => {
-      console.log('[InventoryOrderedAnalysis as string] Received stockTypeChanged event:', event.detail);
+    const handleTypeChange = (event: Event) => {
+      if (!InventoryAnalysisMapper.validateStockTypeChangeEvent(event)) {
+        console.warn('[InventoryOrderedAnalysis] Invalid stockTypeChanged event format');
+        return;
+      }
+      
+      console.log('[InventoryOrderedAnalysis] Received stockTypeChanged event:', event.detail);
       const { type, data } = event.detail;
       setSelectedType(type);
 
       // 獲取該類型所有產品的代碼
-      const codes = data.map((item: Record<string, unknown>) => item.stock);
+      const codes = data
+        .map((item: Record<string, unknown>) => item.stock)
+        .filter((code): code is string => typeof code === 'string');
       setSelectedProductCodes(codes);
     };
 
-    window.addEventListener('stockTypeChanged', handleTypeChange as EventListener);
+    window.addEventListener('stockTypeChanged', handleTypeChange);
 
     return () => {
-      window.removeEventListener('stockTypeChanged', handleTypeChange as EventListener);
+      window.removeEventListener('stockTypeChanged', handleTypeChange);
     };
   }, []);
 

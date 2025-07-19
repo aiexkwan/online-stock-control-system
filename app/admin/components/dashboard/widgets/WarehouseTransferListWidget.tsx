@@ -22,6 +22,10 @@ import { Clock, Box, User } from 'lucide-react';
 import { DataTable, DataTableColumn } from './common/data-display/DataTable';
 import { useWidgetDateRange } from './common/filters/DateRangeFilter';
 import { useInViewport } from '@/app/admin/hooks/useInViewport';
+import { 
+  WarehouseTransferData,
+  PerformanceMetrics
+} from './types/SupplierWarehouseTypes';
 
 interface TransferRecord {
   tran_date: string;
@@ -85,14 +89,10 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
   });
 
   // State management
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<WarehouseTransferData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [performanceMetrics, setPerformanceMetrics] = useState<{
-    lastFetchTime?: number;
-    mode?: string;
-    optimized?: boolean;
-  }>({});
+  const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetrics>({});
 
   // 準備 API parameters
   const apiParams = useMemo(() => ({
@@ -114,15 +114,16 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
       const result = await warehouseTransferApiClient.getTransferList(apiParams);
       const endTime = performance.now();
 
-      setData(result.transfers);
+      // Strategy 4: unknown + type narrowing - 安全轉換 API 響應數據
+      setData(result.transfers as unknown as WarehouseTransferData[]);
       setPerformanceMetrics({
-        lastFetchTime: Math.round(endTime - startTime),
-        mode: 'REST API',
+        lastOperationTime: Math.round(endTime - startTime), // Strategy 2: DTO - 使用正確的屬性名稱
+        source: 'REST API',
         optimized: true,
       });
     } catch (err) {
-      console.error('[WarehouseTransferListWidget as string] Error fetching data:', err);
-      setError(err instanceof Error ? (err as { message: string }).message : 'Failed to fetch warehouse transfers');
+      console.error('WarehouseTransferListWidget Error fetching data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch warehouse transfers');
     } finally {
       setLoading(false);
     }
@@ -141,10 +142,10 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
   const transfers = useMemo<TransferRecord[]>(() => {
     if (!data || !Array.isArray(data)) return [];
     
-    return data.map((transfer: any) => ({
-      tran_date: transfer.transfer_date || transfer.tran_date || new Date().toISOString(),
-      plt_num: transfer.pallet_ref || transfer.plt_num || 'N/A',
-      operator_name: transfer.transferred_by || transfer.operator_name || 'Unknown Operator',
+    return data.map((transfer: WarehouseTransferData): TransferRecord => ({
+      tran_date: transfer.transfer_date || new Date().toISOString(),
+      plt_num: transfer.from_warehouse || 'N/A',
+      operator_name: transfer.notes || 'Unknown Operator',
     }));
   }, [data]);
 
@@ -157,7 +158,7 @@ export const WarehouseTransferListWidget = React.memo(function WarehouseTransfer
       width: '33%',
       render: (value) => {
         try {
-          return format(parseISO(value), 'HH:mm:ss');
+          return format(parseISO(String(value || '')), 'HH:mm:ss');
         } catch {
           return 'Invalid Date';
         }

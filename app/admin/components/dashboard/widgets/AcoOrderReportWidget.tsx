@@ -60,7 +60,7 @@ const acoApiClient = {
     return data.references || [];
   },
 
-  async getOrdersByDate(orderDate: string): Promise<any[]> {
+  async getOrdersByDate(orderDate: string): Promise<Record<string, unknown>[]> {
     const url = new URL('/api/v1/aco/orders-by-date', window.location.origin);
     url.searchParams.append('orderDate', orderDate);
     
@@ -154,7 +154,7 @@ export function AcoOrderReportWidget({ widget, isEditMode }: WidgetComponentProp
 
       // Transform data for export
       const processedData = processOrderRecords(orderRecords);
-      const orderRef = orderRecords[0]?.aco_ref || 'N/A';
+      const orderRef = String(orderRecords[0]?.aco_ref || 'N/A');
 
       // Export the report
       await exportAcoReport(processedData, orderRef);
@@ -180,13 +180,13 @@ export function AcoOrderReportWidget({ widget, isEditMode }: WidgetComponentProp
     const productMap = new Map<string, AcoProductData>();
 
     records.forEach(record => {
-      const productCode = record.product_code;
+      const productCode = typeof record.product_code === 'string' ? record.product_code : '';
       if (!productCode) return;
 
       if (!productMap.has(productCode)) {
         productMap.set(productCode, {
           product_code: productCode,
-          required_qty: record.product_quantity || 0,
+          required_qty: typeof record.product_quantity === 'number' ? record.product_quantity : 0,
           pallets: [],
           pallet_count: 0,
         });
@@ -197,9 +197,9 @@ export function AcoOrderReportWidget({ widget, isEditMode }: WidgetComponentProp
       // Add pallet info if available
       if (record.plt_num) {
         product.pallets.push({
-          plt_num: record.plt_num,
-          product_qty: record.product_quantity,
-          generate_time: record.created_at,
+          plt_num: String(record.plt_num),
+          product_qty: typeof record.product_quantity === 'number' ? record.product_quantity : null,
+          generate_time: typeof record.created_at === 'string' ? record.created_at : null,
         });
         product.pallet_count = product.pallets.length;
       }

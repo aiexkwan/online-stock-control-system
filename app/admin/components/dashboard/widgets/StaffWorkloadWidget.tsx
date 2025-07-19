@@ -71,10 +71,10 @@ export const StaffWorkloadWidget: React.FC<StaffWorkloadWidgetProps> = ({
   }, [timeFrame]);
 
   // API 狀態管理
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(!isEditMode);
   const [error, setError] = useState<string | null>(null);
-  const [metadata, setMetadata] = useState<any>({});
+  const [metadata, setMetadata] = useState<Record<string, unknown>>({});
 
   useEffect(() => {
     if (isEditMode) return;
@@ -106,23 +106,30 @@ export const StaffWorkloadWidget: React.FC<StaffWorkloadWidgetProps> = ({
         if (result.widgets && result.widgets.length > 0) {
           const widgetData = result.widgets[0];
 
-          if (widgetData.data.error) {
-            console.error('[StaffWorkloadWidget as string] API error:', widgetData.data.error);
-            setError(widgetData.data.error);
+          if (typeof widgetData.data === 'object' && widgetData.data !== null && 'error' in widgetData.data && widgetData.data.error) {
+            const errorMsg = String(widgetData.data.error);
+            console.error('[StaffWorkloadWidget as string] API error:', errorMsg);
+            setError(errorMsg);
             setChartData([]);
             return;
           }
 
-          const workloadData = widgetData.data.value || [];
-          const widgetMetadata = widgetData.data.metadata || {};
+          const workloadData = (typeof widgetData.data === 'object' && widgetData.data !== null && 'value' in widgetData.data) 
+            ? widgetData.data.value 
+            : [];
+          const widgetMetadata = (typeof widgetData.data === 'object' && widgetData.data !== null && 'metadata' in widgetData.data) 
+            ? widgetData.data.metadata 
+            : {};
 
           console.log('[StaffWorkloadWidget as string] API returned data:', workloadData);
           console.log('[StaffWorkloadWidget as string] Metadata:', widgetMetadata);
 
           // 處理數據格式 - 轉換為 Recharts 需要的格式
-          const processedData = processWorkloadData(workloadData);
+          const dataArray = Array.isArray(workloadData) ? workloadData : [];
+          const processedData = processWorkloadData(dataArray);
           setChartData(processedData);
-          setMetadata({ ...widgetMetadata, useGraphQL: false });
+          const safeMetadata = typeof widgetMetadata === 'object' && widgetMetadata !== null ? widgetMetadata : {};
+          setMetadata({ ...safeMetadata, useGraphQL: false });
 
         } else {
           console.warn('[StaffWorkloadWidget as string] No widget data returned from API');
@@ -145,22 +152,24 @@ export const StaffWorkloadWidget: React.FC<StaffWorkloadWidgetProps> = ({
     if (!rawData || rawData.length === 0) return [];
 
     // 按日期分組
-    const dateGroups = new Map<string, any>();
+    const dateGroups = new Map<string, Record<string, unknown>>();
     const staffNames = new Set<string>();
 
     rawData.forEach(item => {
-      const dateKey = format(new Date(item.work_date), 'MMM d');
-      staffNames.add(item.staff_name);
+      const dateKey = format(new Date(String(item.work_date)), 'MMM d');
+      const staffName = String(item.staff_name);
+      staffNames.add(staffName);
       
       if (!dateGroups.has(dateKey)) {
         dateGroups.set(dateKey, { date: dateKey });
       }
       
-      dateGroups.get(dateKey)![item.staff_name] = item.action_count;
+      const dayData = dateGroups.get(dateKey)!;
+      dayData[staffName] = item.action_count;
     });
 
     // 轉換為數組並補充缺失的員工數據
-    const processedData = Array.from(dateGroups.values()).map((dayData: any) => {
+    const processedData = Array.from(dateGroups.values()).map((dayData: Record<string, unknown>) => {
       const completeData = { ...dayData };
       staffNames.forEach(name => {
         if (!(name in completeData)) {
@@ -195,14 +204,14 @@ export const StaffWorkloadWidget: React.FC<StaffWorkloadWidgetProps> = ({
   }, [chartData]);
 
   // 自定義 Tooltip
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ color: string; dataKey: string; value: number }>; label?: string }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-slate-800 border border-slate-600 rounded-lg p-3 shadow-lg">
           <p className="text-white font-medium mb-2">{label}</p>
           {payload.map((item: DatabaseRecord, index: number) => (
-            <p key={index} className="text-sm" style={{ color: item.color }}>
-              {item.dataKey}: <span className="font-semibold">{item.value}</span>
+            <p key={index} className="text-sm" style={{ color: String(item.color || '#000') }}>
+              {String(item.dataKey)}: <span className="font-semibold">{String(item.value)}</span>
             </p>
           ))}
         </div>
@@ -284,9 +293,9 @@ export const StaffWorkloadWidget: React.FC<StaffWorkloadWidgetProps> = ({
               </LineChart>
             </ResponsiveContainer>
             
-            {metadata?.rpcFunction && (
+            {metadata && (metadata as any)?.rpcFunction && typeof (metadata as any).rpcFunction === 'string' && (
               <p className="text-xs text-green-400/70 mt-2 text-center">
-                ✓ REST API optimized ({metadata.rpcFunction})
+                ✓ REST API optimized ({String((metadata as any)?.rpcFunction || '')})
               </p>
             )}
           </div>

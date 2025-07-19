@@ -25,7 +25,7 @@ interface DashboardDataContextValue {
   refetchWidget: (widgetId: string) => Promise<void>;
   
   // 工具方法
-  getWidgetData: <T = any>(widgetId: string) => T | null;
+  getWidgetData: <T = unknown>(widgetId: string) => T | null;
   isWidgetLoading: (widgetId: string) => boolean;
   getWidgetError: (widgetId: string) => Error | null;
 }
@@ -114,9 +114,10 @@ export function DashboardDataProvider({
   // 移除自動刷新功能以簡化系統和減少 API 調用
 
   // 工具方法：獲取特定 widget 數據
-  const getWidgetData = useCallback(<T = any>(widgetId: string): T | null => {
+  const getWidgetData = useCallback(<T = unknown>(widgetId: string): T | null => {
     if (!data) return null;
-    return (data as any)[widgetId as string] || null;
+    const typedData = data as Record<string, unknown>;
+    return (typedData[widgetId] as T) || null;
   }, [data]);
 
   // 工具方法：檢查特定 widget 是否正在加載
@@ -214,7 +215,7 @@ export function useDashboardData() {
 }
 
 // 專門用於單個 widget 的 hook
-export function useWidgetData<T = any>(widgetId: string) {
+export function useWidgetData<T = unknown>(widgetId: string) {
   const { getWidgetData, isWidgetLoading, getWidgetError, refetchWidget } = useDashboardData();
   
   return useMemo(() => ({

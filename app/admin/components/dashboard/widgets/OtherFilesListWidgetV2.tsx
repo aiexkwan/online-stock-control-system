@@ -61,11 +61,17 @@ export const OtherFilesListWidgetV2 = React.memo(function OtherFilesListWidgetV2
 
     const widgetData = result.widgets?.find(w => w.widgetId === 'otherFilesList');
     
-    if (!widgetData || widgetData.data.error) {
-      throw new Error(widgetData?.data.error || 'Failed to load files');
+    if (!widgetData || (typeof widgetData.data === 'object' && widgetData.data !== null && 'error' in widgetData.data && widgetData.data.error)) {
+      const errorMsg = (typeof widgetData?.data === 'object' && widgetData.data !== null && 'error' in widgetData.data) 
+        ? String(widgetData.data.error) 
+        : 'Failed to load files';
+      throw new Error(errorMsg);
     }
 
-    return widgetData.data.value || [];
+    const dataValue = (typeof widgetData.data === 'object' && widgetData.data !== null && 'value' in widgetData.data) 
+      ? widgetData.data.value 
+      : [];
+    return Array.isArray(dataValue) ? dataValue : [];
   }
 
   // API 狀態管理
@@ -140,7 +146,7 @@ export const OtherFilesListWidgetV2 = React.memo(function OtherFilesListWidgetV2
       header: 'Date',
       icon: CalendarIcon,
       width: '20%',
-      render: (value) => format(fromDbTime(value), 'MMM d, HH:mm'),
+      render: (value) => format(fromDbTime(String(value || '')), 'MMM d, HH:mm'),
       className: 'text-slate-300',
     },
     {
@@ -149,11 +155,11 @@ export const OtherFilesListWidgetV2 = React.memo(function OtherFilesListWidgetV2
       icon: DocumentIcon,
       width: '50%',
       render: (value, item) => {
-        const FileIcon = getFileIcon(item.doc_type, value);
+        const FileIcon = getFileIcon(item.doc_type, String(value || ''));
         return (
           <div className="flex items-center gap-2">
             <FileIcon className="h-4 w-4 text-slate-400 flex-shrink-0" />
-            <span className="font-medium text-white truncate">{value}</span>
+            <span className="font-medium text-white truncate">{String(value || '')}</span>
           </div>
         );
       },
@@ -166,7 +172,7 @@ export const OtherFilesListWidgetV2 = React.memo(function OtherFilesListWidgetV2
       render: (value, item) => (
         <div className="flex items-center gap-2">
           <UserIcon className="h-4 w-4 text-slate-400 flex-shrink-0" />
-          <span className="text-slate-300">{value || `User ${item.upload_by}`}</span>
+          <span className="text-slate-300">{String(value || '') || `User ${item.upload_by}`}</span>
         </div>
       ),
     },

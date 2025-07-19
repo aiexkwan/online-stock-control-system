@@ -8,11 +8,19 @@ import { toast } from 'sonner';
 import { COOLDOWN_PERIOD_PROD, COOLDOWN_PERIOD_DEV } from '../../constants';
 import { isProduction } from '@/lib/utils/env';
 
+// 列印事件類型
+interface PrintEvent {
+  type: string;
+  data?: Record<string, unknown>;
+  callback?: () => void;
+  [key: string]: unknown;
+}
+
 interface UseClockConfirmationReturn {
   isClockConfirmOpen: boolean;
   setIsClockConfirmOpen: (open: boolean) => void;
-  printEventToProceed: any;
-  setPrintEventToProceed: (event: any) => void;
+  printEventToProceed: PrintEvent | null;
+  setPrintEventToProceed: (event: PrintEvent | null) => void;
   handleClockNumberCancel: () => void;
   checkCooldownPeriod: () => boolean;
   setCooldownTimer: () => void;
@@ -21,7 +29,7 @@ interface UseClockConfirmationReturn {
 export const useClockConfirmation = (): UseClockConfirmationReturn => {
   // 時鐘編號確認對話框狀態
   const [isClockConfirmOpen, setIsClockConfirmOpen] = useState(false);
-  const [printEventToProceed, setPrintEventToProceed] = useState<any>(null);
+  const [printEventToProceed, setPrintEventToProceed] = useState<PrintEvent | null>(null);
 
   // 冷卻期管理
   const lastConfirmationTimeRef = useRef<number | null>(null);

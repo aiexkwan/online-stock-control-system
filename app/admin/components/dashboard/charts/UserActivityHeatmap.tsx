@@ -7,7 +7,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
 interface UserActivityHeatmapProps {
-  timeFrame?: any;
+  timeFrame?: {
+    start: Date;
+    end: Date;
+  };
 }
 
 const UserActivityHeatmap = React.memo(function UserActivityHeatmap({
@@ -27,17 +30,39 @@ const UserActivityHeatmap = React.memo(function UserActivityHeatmap({
   }, []); // Empty dependency array means dates are calculated only once
 
   // TODO: Replace with REST API call  
-  const { data, loading, error } = { data: null as any, loading: false, error: null };
+  const { data, loading, error } = { data: null as unknown, loading: false, error: null };
 
   const heatmapData = useMemo(() => {
-    if (!data?.historyCollection?.edges) return [];
+    // 類型守衛：檢查 data 是否有預期的結構
+    if (!data || typeof data !== 'object' || !data || 
+        !('historyCollection' in data) || 
+        typeof data.historyCollection !== 'object' || 
+        !data.historyCollection ||
+        !('edges' in data.historyCollection) ||
+        !Array.isArray((data.historyCollection as Record<string, unknown>).edges)) {
+      return [];
+    }
 
     // Process data into hourly buckets for each user
     const activityMap = new Map<string, Map<number, number>>();
+    
+    const historyCollection = data.historyCollection as { edges: Array<{ node: Record<string, unknown> }> };
 
-    data.historyCollection.edges.forEach(({ node }: any) => {
-      const userName = node.data_id?.name || `User ${node.uuid}`;
-      const hour = new Date(node.time).getHours();
+    historyCollection.edges.forEach(({ node }: { node: Record<string, unknown> }) => {
+      const userName = (node.data_id && typeof node.data_id === 'object' && 'name' in node.data_id) 
+        ? String(node.data_id.name) 
+        : `User ${node.uuid || 'Unknown'}`;
+      // Safe date parsing with type guard
+      const timeValue = node.time;
+      let hour = 0;
+      if (typeof timeValue === 'string' || typeof timeValue === 'number' || timeValue instanceof Date) {
+        try {
+          hour = new Date(timeValue).getHours();
+        } catch (error) {
+          console.warn('Invalid date format in user activity data:', timeValue);
+          hour = 0;
+        }
+      }
 
       if (!activityMap.has(userName)) {
         activityMap.set(userName, new Map());
@@ -109,7 +134,7 @@ const UserActivityHeatmap = React.memo(function UserActivityHeatmap({
           <div className='mb-2 flex items-center'>
             <div className='w-32 shrink-0' />
             <div className='flex gap-1'>
-              {hours.map((hour: any) => (
+              {hours.map((hour: number) => (
                 <div key={hour} className='w-6 text-center text-xs text-white/50'>
                   {hour}
                 </div>

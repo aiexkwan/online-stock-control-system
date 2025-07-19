@@ -24,19 +24,19 @@ import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/sp
 import { cn } from '@/lib/utils';
 
 import { widgetAPI } from '@/lib/api/widgets/widget-api-client';
+import { 
+  StockDistributionData,
+  StockChartMapper,
+  isStockApiResponse,
+  StockTooltipProps,
+  StockTreemapContentProps 
+} from './types/StockChartTypes';
+import { 
+  isValidTooltipProps,
+  isValidTreemapContentProps 
+} from './types/ChartWidgetTypes';
 
-export interface StockDistributionData {
-  name: string;
-  size: number;
-  value: number;
-  percentage: number;
-  color: string;
-  fill: string;
-  description: string;
-  type: string;
-  stock: string;
-  stock_level: number;
-}
+// StockDistributionData interface moved to StockChartTypes.ts
 
 interface StockDistributionChartProps extends TraditionalWidgetComponentProps {
   useGraphQL?: boolean;
@@ -71,62 +71,31 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  // 數據處理函數
-  function processStockDistributionData(rawData: Record<string, unknown>[], type: string): StockDistributionData[] {
-    if (!rawData || !Array.isArray(rawData)) return [];
-    
-    // 過濾選定類型
-    let filteredData = rawData;
-    if (type !== 'all' && type !== 'ALL TYPES') {
-      filteredData = rawData.filter((item) => item.type === type);
-    }
-    
-    // 按庫存量排序
-    const sortedData = filteredData
-      .filter(item => item.stock_level > 0)
-      .sort((a, b) => b.stock_level - a.stock_level);
-    
-    const totalStock = sortedData.reduce((sum, item) => sum + item.stock_level, 0);
-    
-    // 設計系統顏色
-    const CHART_COLORS = [
-      widgetColors.charts.primary,
-      widgetColors.charts.secondary,
-      widgetColors.charts.accent,
-      semanticColors.success.DEFAULT,
-      semanticColors.warning.DEFAULT,
-      semanticColors.info.DEFAULT,
-      brandColors.primary[500],
-      brandColors.secondary[500],
-      widgetColors.charts.accent,
-      widgetColors.charts.grid,
-      // 備用顏色
-      '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b',
-      '#06b6d4', '#f97316', '#6366f1', '#84cc16', '#14b8a6',
-      '#a855f7', '#eab308', '#059669', '#2563eb', '#7c3aed',
-    ];
-    
-    return sortedData.map((item, index) => ({
-      name: item.product_code || item.stock || '',
-      size: item.stock_level || 0,
-      value: item.stock_level || 0,
-      percentage: totalStock > 0 ? (item.stock_level / totalStock) * 100 : 0,
-      color: CHART_COLORS[index % CHART_COLORS.length] || '#000000',
-      fill: CHART_COLORS[index % CHART_COLORS.length] || '#000000',
-      description: item.description || '-',
-      type: item.type || '-',
-      stock: item.product_code || item.stock || '',
-      stock_level: item.stock_level || 0,
-    }));
-  }
+  // 設計系統顏色
+  const CHART_COLORS = [
+    widgetColors.charts.primary,
+    widgetColors.charts.secondary,
+    widgetColors.charts.accent,
+    semanticColors.success.DEFAULT,
+    semanticColors.warning.DEFAULT,
+    semanticColors.info.DEFAULT,
+    brandColors.primary[500],
+    brandColors.secondary[500],
+    widgetColors.charts.accent,
+    widgetColors.charts.grid,
+    // 備用顏色
+    '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b',
+    '#06b6d4', '#f97316', '#6366f1', '#84cc16', '#14b8a6',
+    '#a855f7', '#eab308', '#059669', '#2563eb', '#7c3aed',
+  ];
 
   // Extract and process data
-  const rawData = (response && typeof response === 'object' && response !== null && 'success' in response && response.success && 'data' in response && response.data) ? (Array.isArray(response.data) ? response.data : (typeof response.data === 'object' && response.data !== null && 'data' in response.data ? (response.data as any).data : response.data) || []) : [];
-  const chartData = processStockDistributionData(rawData, selectedType);
+  const stockData = StockChartMapper.extractStockDataFromApiResponse(response);
+  const chartData = StockChartMapper.createStockDistributionData(stockData, selectedType || 'stock_level', CHART_COLORS.filter(Boolean) as string[]);
   
   // Performance metrics
   const performanceMetrics = {
-    lastFetchTime: (response && typeof response === 'object' && response !== null && 'responseTime' in response ? (response as any).responseTime : 0) || 0,
+    lastFetchTime: (isStockApiResponse(response) && typeof response.responseTime === 'number') ? response.responseTime : 0,
     optimized: true,
     totalStock: chartData.reduce((sum, item) => sum + item.stock_level, 0),
   };
@@ -142,10 +111,11 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
   // 監聽類型變更事件
   useEffect(() => {
     const handleTypeChange = async (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const { type } = customEvent.detail;
-      setSelectedType(type);
-      // React Query will automatically refetch when selectedType changes
+      const eventDetail = StockChartMapper.validateCustomEvent(event);
+      if (eventDetail) {
+        setSelectedType(eventDetail.type);
+        // React Query will automatically refetch when selectedType changes
+      }
     };
 
     window.addEventListener('stockTypeChanged', handleTypeChange);
@@ -155,42 +125,50 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
   }, []);
 
   // 自定義 Tooltip
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload[0]) {
-      const data = payload[0].payload;
-      return (
-        <div className={cn(
-          'rounded-lg border bg-card p-3 shadow-lg',
-          'border-border'
-        )}>
-          <p className={cn(textClasses['body-small'], 'font-medium text-foreground')}>{data.name}</p>
-          <p className={cn('mt-1', textClasses['label-small'], 'text-muted-foreground')}>
-            Stock:{' '}
-            <span className='font-medium text-foreground'>{(data.value || 0).toLocaleString()}</span>
-          </p>
-          <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>
-            Share:{' '}
-            <span className='font-medium text-foreground'>{(data.percentage || 0).toFixed(1)}%</span>
-          </p>
-          {data.description && (
-            <p className={cn('mt-1', textClasses['label-small'], 'text-muted-foreground')}>
-              Description: <span className='text-foreground'>{data.description}</span>
-            </p>
-          )}
-          {data.type && (
-            <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>
-              Type: <span className='text-foreground'>{data.type}</span>
-            </p>
-          )}
-        </div>
-      );
+  const CustomTooltip = (props: unknown) => {
+    const { isValid, data } = StockChartMapper.safeExtractTooltipData(props);
+    
+    if (!isValid || !data) {
+      return null;
     }
-    return null;
+
+    return (
+      <div className={cn(
+        'rounded-lg border bg-card p-3 shadow-lg',
+        'border-border'
+      )}>
+        <p className={cn(textClasses['body-small'], 'font-medium text-foreground')}>{data.name}</p>
+        <p className={cn('mt-1', textClasses['label-small'], 'text-muted-foreground')}>
+          Stock:{' '}
+          <span className='font-medium text-foreground'>{data.value.toLocaleString()}</span>
+        </p>
+        <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>
+          Share:{' '}
+          <span className='font-medium text-foreground'>{data.percentage.toFixed(1)}%</span>
+        </p>
+        {data.description && (
+          <p className={cn('mt-1', textClasses['label-small'], 'text-muted-foreground')}>
+            Description: <span className='text-foreground'>{data.description}</span>
+          </p>
+        )}
+        {data.type && (
+          <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>
+            Type: <span className='text-foreground'>{data.type}</span>
+          </p>
+        )}
+      </div>
+    );
   };
 
   // 自定義內容渲染
-  const CustomizedContent = (props: any) => {
-    const { x, y, width, height, name, value, percentage } = props;
+  const CustomizedContent = (props: unknown) => {
+    if (!isValidTreemapContentProps(props)) return null;
+    
+    const { x = 0, y = 0, width = 0, height = 0, payload } = props;
+    
+    if (!payload) return null;
+    
+    const { name, value, percentage, fill } = payload;
 
     // 只在有足夠空間時顯示內容
     if (width < 50 || height < 40) return null;
@@ -210,7 +188,7 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
       return brightness < 128 ? 'hsl(var(--foreground))' : 'hsl(var(--foreground) / 0.8)';
     };
 
-    const textColor = props.fill ? getTextColor(props.fill) : 'hsl(var(--foreground) / 0.8)';
+    const textColor = fill ? getTextColor(String(fill)) : 'hsl(var(--foreground) / 0.8)';
 
     return (
       <g>
@@ -219,7 +197,7 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
           y={y}
           width={width}
           height={height}
-          fill={props.fill}
+          fill={String(fill || '#3B82F6')}
           stroke='rgba(0, 0, 0, 0.1)'
           strokeWidth={1}
         />
@@ -245,7 +223,7 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
             >
               {(value || 0).toLocaleString()}
             </text>
-            {percentage >= 1 && (
+            {typeof percentage === 'number' && percentage >= 1 && (
               <text
                 x={x + width / 2}
                 y={y + height / 2 + 25}
@@ -254,7 +232,7 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
                 fontSize={Math.min(width / 12, 12)}
                 opacity={0.6}
               >
-                {percentage.toFixed(1)}%
+                {typeof percentage === 'number' ? percentage.toFixed(1) : '0'}%
               </text>
             )}
           </>
@@ -280,7 +258,7 @@ export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = (
   }
 
   if (isError) {
-    const errorMessage = error instanceof Error ? (error as { message: string }).message : 'Failed to fetch stock distribution data';
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch stock distribution data';
     return (
       <WidgetError 
         message={errorMessage}

@@ -10,19 +10,32 @@ import {
   PerformanceMetric,
   PerformanceAlert,
 } from '../PerformanceMonitor';
-import { SimplePerformanceMonitor } from '../SimplePerformanceMonitor';
+import { 
+  SimplePerformanceMonitor, 
+  PerformanceSummary,
+  type SimpleMetric,
+  type PerformanceAlert as SimpleAlert
+} from '../SimplePerformanceMonitor';
 // import { useFeatureFlag } from '@/lib/feature-flags/hooks/useFeatureFlag'; // Commented out for now
 
-// Use SimplePerformanceMonitor types
-type SimpleAlert = {
-  type: 'warning' | 'critical';
-  message: string;
-  metric: string;
-  value: number;
-  threshold: number;
-  timestamp: number;
-  category: string;
-};
+// 性能監控報告類型
+interface PerformanceMonitorReport {
+  totalMetrics: number;
+  categories: string[];
+  alertCount: number;
+  activeCategories: string[];
+  recentAlerts: number;
+  memoryUsage: number;
+  timestamp: string;
+}
+
+// Hook 返回結果類型
+interface StopMonitoringResult {
+  success: boolean;
+  duration: number;
+  finalReport: PerformanceMonitorReport;
+  metricsCount: number;
+}
 
 export interface UsePerformanceMonitorOptions {
   autoStart?: boolean;
@@ -35,11 +48,11 @@ export interface UsePerformanceMonitorReturn {
   isMonitoring: boolean;
   metrics: PerformanceMetric[];
   alerts: SimpleAlert[];
-  report: any | null;
+  report: PerformanceMonitorReport | null;
 
   // 控制方法
   startMonitoring: () => void;
-  stopMonitoring: () => any;
+  stopMonitoring: () => StopMonitoringResult;
 
   // 測量方法
   measureAsync: <T>(
@@ -64,7 +77,7 @@ export function usePerformanceMonitor(
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [metrics, setMetrics] = useState<PerformanceMetric[]>([]);
   const [alerts, setAlerts] = useState<SimpleAlert[]>([]);
-  const [report, setReport] = useState<any | null>(null);
+  const [report, setReport] = useState<PerformanceMonitorReport | null>(null);
 
   // 檢查 Feature Flag
   const isPerformanceMonitoringEnabled = true; // Hardcoded for now
@@ -78,12 +91,23 @@ export function usePerformanceMonitor(
   }, [isPerformanceMonitoringEnabled]);
 
   // 停止監控
-  const stopMonitoring = useCallback(() => {
-    // const finalReport = performanceMonitor.stopMonitoring(); // Method doesn't exist
-    const finalReport = performanceMonitor.getSummary();
+  const stopMonitoring = useCallback((): StopMonitoringResult => {
+    const endTime = Date.now();
+    const summary = performanceMonitor.getSummary();
+    const finalReport: PerformanceMonitorReport = {
+      ...summary,
+      timestamp: new Date().toISOString()
+    };
+    
     setIsMonitoring(false);
     setReport(finalReport);
-    return finalReport;
+    
+    return {
+      success: true,
+      duration: endTime - Date.now(), // Simplified duration calculation
+      finalReport,
+      metricsCount: summary.totalMetrics
+    };
   }, []);
 
   // 測量異步操作
@@ -175,12 +199,12 @@ export function usePerformanceMonitor(
 
     const handleWarning = (alert: SimpleAlert) => {
       setAlerts(prev => [...prev, alert]);
-      onAlert?.(alert as any);
+      onAlert?.(alert as unknown as PerformanceAlert);
     };
 
     const handleCritical = (alert: SimpleAlert) => {
       setAlerts(prev => [...prev, alert]);
-      onAlert?.(alert as any);
+      onAlert?.(alert as unknown as PerformanceAlert);
 
       // 關鍵警報可以觸發額外操作
       console.error('[Performance Critical]', alert.message);

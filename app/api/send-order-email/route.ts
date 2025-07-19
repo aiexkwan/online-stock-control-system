@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getErrorMessage } from '@/lib/types/error-handling';
+import { safeGet, safeString, safeNumber } from '@/lib/types/supabase-helpers';
 
 interface OrderItem {
   order_ref: number;
@@ -165,12 +167,12 @@ export async function POST(request: Request) {
       });
     }
 
-    // 生成郵件內容
-    const orderRefs = [...new Set(orderData.map((item: Record<string, unknown>) => item.order_ref))];
+    // 生成郵件內容 - 策略 4: 類型安全的郵件數據處理
+    const orderRefs = [...new Set(orderData.map((item: OrderItem) => item.order_ref))];
 
     const orderSummaryHtml = orderData
       .map(
-        item => `
+        (item: OrderItem) => `
       <tr style="border-bottom: 1px solid #ddd;">
         <td style="padding: 12px; text-align: left; font-family: 'Courier New', monospace; background-color: #f8f9fa; font-weight: bold;">${item.product_code}</td>
         <td style="padding: 12px; text-align: left;">${item.product_desc}</td>
@@ -240,7 +242,7 @@ New order has been created and uploaded
 
 Order Details:
 ${orderData
-  .map((item: Record<string, unknown>) => `${item.product_code}: ${item.product_desc} (Qty: ${item.product_qty})`)
+  .map((item: OrderItem) => `${item.product_code}: ${item.product_desc} (Qty: ${item.product_qty})`)
   .join('\n')}
 
 This is an automated notification from the Pennine Stock Control System.
@@ -269,7 +271,7 @@ This is an automated notification from the Pennine Stock Control System.
         cc: emailData.cc,
         subject: emailData.subject,
         hasAttachments: !!emailData.attachments,
-        attachmentCount: emailData.attachments?.length || 0,
+        attachmentCount: (emailData.attachments as any[])?.length || 0,
       });
     }
 

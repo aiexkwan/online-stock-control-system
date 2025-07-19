@@ -104,7 +104,7 @@ export const createTableConfig = (overrides: Partial<AdminWidgetConfig> = {}): A
 });
 
 // Mock hook responses
-export const mockSuccessResponse = (data: Record<string, unknown>) => ({
+export const mockSuccessResponse = (data: Record<string, unknown> | unknown[]) => ({
   data: { default: data },
   isLoading: false,
   error: null,

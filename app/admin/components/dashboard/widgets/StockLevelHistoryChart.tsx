@@ -20,6 +20,11 @@ import { useInViewport } from '@/app/admin/hooks/useInViewport';
 import { ChartContainer } from './common/charts/ChartContainer';
 import { LineChartSkeleton } from './common/charts/ChartSkeleton';
 import { 
+  ChartDataPoint, 
+  StockChartMapper, 
+  isStockWidgetApiWrapper 
+} from './types/StockChartTypes';
+import { 
   brandColors, 
   widgetColors, 
   semanticColors,
@@ -31,11 +36,7 @@ import { cn } from '@/lib/utils';
 
 // GraphQL query removed - using REST API only
 
-interface ChartDataPoint {
-  time: string;
-  timestamp: Date;
-  [key: string]: any; // 動態的產品代碼欄位
-}
+// ChartDataPoint interface moved to StockChartTypes.ts
 
 interface StockData {
   stock: string;
@@ -180,9 +181,15 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
 
         if (result.widgets && result.widgets.length > 0) {
           const widgetData = result.widgets[0];
-          if (!widgetData.data.error) {
-            const historyData = widgetData.data.value || [];
-            return { chartData: historyData, productCodes: limitedProducts };
+          if (isStockWidgetApiWrapper(widgetData.data)) {
+            const errorMessage = StockChartMapper.extractErrorFromWidgetWrapper(widgetData.data);
+            if (!errorMessage) {
+              const historyData = widgetData.data.value;
+              return { 
+                chartData: Array.isArray(historyData) ? historyData as ChartDataPoint[] : [], 
+                productCodes: limitedProducts 
+              };
+            }
           }
         }
         
@@ -196,9 +203,9 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
   );
 
   // State for data fetching
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<{ chartData: ChartDataPoint[]; productCodes: string[] } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   // Fetch data using REST API
   const fetchData = useCallback(async () => {
@@ -224,7 +231,7 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
         setProductCodes(result.productCodes || productCodes);
       }
     } catch (err) {
-      setError(err);
+      setError(err instanceof Error ? err : new Error('Failed to fetch data'));
     } finally {
       setLoading(false);
     }
@@ -252,27 +259,36 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
 
   // 監聽 StockTypeSelector 的類型變更事件
   useEffect(() => {
-    const handleTypeChange = (event: CustomEvent) => {
-      console.log('[StockLevelHistoryChart as string] Received stockTypeChanged event:', event.detail);
-      const { type, data } = event.detail;
+    const handleTypeChange = (event: Event) => {
+      const eventDetail = StockChartMapper.validateCustomEvent(event);
+      if (!eventDetail) {
+        console.warn('[StockLevelHistoryChart] Invalid stockTypeChanged event format');
+        return;
+      }
+      
+      console.log('[StockLevelHistoryChart] Received stockTypeChanged event:', eventDetail);
+      const { type, data } = eventDetail;
       setSelectedType(type);
 
       // 獲取該類型所有產品的代碼（限制最多10個）
-      const codes = data.map((item: Record<string, unknown>) => item.stock).slice(0, 10);
-      console.log('[StockLevelHistoryChart as string] Product codes:', codes);
+      const codes = data
+        .map(item => item.stock)
+        .filter((code): code is string => typeof code === 'string')
+        .slice(0, 10);
+      console.log('[StockLevelHistoryChart] Product codes:', codes);
 
       if (codes.length > 0) {
         setProductCodes(codes);
       } else {
-        console.log('[StockLevelHistoryChart as string] No product codes, clearing data');
+        console.log('[StockLevelHistoryChart] No product codes, clearing data');
         setChartData([]);
         setProductCodes([]);
       }
     };
 
-    window.addEventListener('stockTypeChanged', handleTypeChange as EventListener);
+    window.addEventListener('stockTypeChanged', handleTypeChange);
     return () => {
-      window.removeEventListener('stockTypeChanged', handleTypeChange as EventListener);
+      window.removeEventListener('stockTypeChanged', handleTypeChange);
     };
   }, []);
 
@@ -298,36 +314,43 @@ export const StockLevelHistoryChart: React.FC<StockLevelHistoryChartProps> = ({
   }, [refreshTrigger, productCodes.length, refetch]);
 
   // 自定義 Tooltip
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length > 0) {
-      return (
-        <div className={cn(
-          'rounded-lg border bg-card p-3 shadow-lg',
-          'border-border'
-        )}>
-          <p className={cn('mb-2', textClasses['body-small'], 'font-medium text-foreground')}>{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} className={cn(textClasses['label-small'], 'text-foreground')}>
-              <span style={{ color: entry.color }}>{entry.name}:</span>
-              <span className='ml-2 font-medium'>
-                {(entry.value || 0).toLocaleString()}
-              </span>
-            </p>
-          ))}
-        </div>
-      );
+  const CustomTooltip = (props: unknown) => {
+    const { isValid, entries, label } = StockChartMapper.safeExtractHistoryTooltipData(props);
+    
+    if (!isValid || entries.length === 0) {
+      return null;
     }
-    return null;
+
+    return (
+      <div className={cn(
+        'rounded-lg border bg-card p-3 shadow-lg',
+        'border-border'
+      )}>
+        <p className={cn('mb-2', textClasses['body-small'], 'font-medium text-foreground')}>{label}</p>
+        {entries.map((entry, index) => (
+          <p key={index} className={cn(textClasses['label-small'], 'text-foreground')}>
+            <span style={{ color: entry.color }}>{entry.name}:</span>
+            <span className='ml-2 font-medium'>
+              {entry.value.toLocaleString()}
+            </span>
+          </p>
+        ))}
+      </div>
+    );
   };
 
   // 自定義圖例
-  const renderLegend = (props: any) => {
-    const { payload } = props;
+  const renderLegend = (props: unknown) => {
+    if (!props || typeof props !== 'object') return null;
+    
+    const { payload } = props as { payload?: Array<{ value: string; color: string }> };
+    if (!Array.isArray(payload)) return null;
+    
     return (
       <div className={cn(
         'mt-1 flex flex-wrap justify-center gap-2'
       )}>
-        {payload.map((entry: any, index: number) => (
+        {payload.map((entry, index) => (
           <div key={`legend-${index}`} className={cn('flex items-center gap-2')}>
             <div className='h-2 w-2 rounded-full' style={{ backgroundColor: entry.color }} />
             <span className={cn(textClasses['label-small'], 'text-muted-foreground')}>{entry.value}</span>

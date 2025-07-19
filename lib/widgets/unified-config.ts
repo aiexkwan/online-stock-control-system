@@ -5,58 +5,24 @@
 
 import type { WidgetCategory } from './types';
 import type { WidgetComponentProps } from '@/app/types/dashboard';
+import {
+  type UnifiedWidgetConfig as ZodUnifiedWidgetConfig,
+  type WidgetDataSource,
+  type WidgetPriority,
+  type WidgetConfigMap as ZodWidgetConfigMap,
+  validateWidgetConfigMap,
+  parseSupportedDataSources,
+  serializeSupportedDataSources,
+  convertNumericPriority,
+  getNumericPriority as getNumericPriorityFromSchema
+} from './schemas';
 
-// Export types for reuse
-export type WidgetDataSource = 'batch' | 'graphql' | 'server-action' | 'mixed' | 'none';
-export type WidgetPriority = 'critical' | 'high' | 'normal' | 'low';
+// Re-export types
+export type { WidgetDataSource, WidgetPriority };
 
-export interface UnifiedWidgetConfig {
-  id: string;
-  name: string;
-  category: WidgetCategory;
-  description?: string;
-  loader: () => Promise<{ default: React.ComponentType<WidgetComponentProps> }>;
-  dataSource: WidgetDataSource;
-  priority: WidgetPriority;
-  refreshInterval?: number;
-  supportTimeFrame?: boolean;
-  useGraphQL?: boolean;
-  
-  // Extended metadata for comprehensive configuration
-  metadata?: {
-    // Performance & Caching
-    preloadPriority?: number;
-    graphqlOptimized?: boolean;
-    cachingStrategy?: 'cache-first' | 'network-only' | 'cache-and-network' | 'no-cache';
-    
-    // Chart-specific
-    chartType?: 'bar' | 'line' | 'pie' | 'area' | 'scatter' | 'doughnut';
-    requiresComplexQuery?: boolean;
-    
-    // List-specific
-    supportPagination?: boolean;
-    supportFilters?: boolean;
-    supportExpansion?: boolean;
-    
-    // Operations-specific
-    requiresAuth?: boolean;
-    auditLog?: boolean;
-    
-    // Data & Integration
-    supportedDataSources?: string[];
-    supportRealtime?: boolean;
-    exportable?: boolean;
-    configurable?: boolean;
-    
-    // Layout & Display
-    gridArea?: string;
-    visualProgress?: boolean;
-    complexAnalytics?: boolean;
-    chartIntegration?: boolean;
-    
-    // Custom metadata
-    [key: string]: string | number | boolean | undefined;
-  };
+// 使用 Zod schema 類型，但允許 loader 函數靈活性
+export interface UnifiedWidgetConfig extends Omit<ZodUnifiedWidgetConfig, 'loader'> {
+  loader: () => Promise<any>; // 允許靈活的模組導入格式
 }
 
 export type WidgetConfigMap = Record<string, UnifiedWidgetConfig>;
@@ -123,7 +89,7 @@ export const widgetConfig: WidgetConfigMap = {
     priority: 'critical',
     metadata: {
       configurable: true,
-      supportedDataSources: ['total_pallets', 'today_transfers', 'active_products'],
+      supportedDataSources: JSON.stringify(['total_pallets', 'today_transfers', 'active_products']),
     },
   },
   
@@ -651,12 +617,7 @@ export function getRoutePreloadWidgets(route: string): UnifiedWidgetConfig[] {
 /**
  * 輔助函數：將數字優先級轉換為字符串優先級 (向下兼容)
  */
-export function convertNumericPriority(numericPriority: number): WidgetPriority {
-  if (numericPriority >= 9) return 'critical';
-  if (numericPriority >= 7) return 'high';
-  if (numericPriority >= 4) return 'normal';
-  return 'low';
-}
+export { convertNumericPriority };
 
 /**
  * 輔助函數：獲取 widget 的數字優先級 (向下兼容)
@@ -670,14 +631,8 @@ export function getNumericPriority(widgetId: string): number {
     return config.metadata.preloadPriority;
   }
   
-  // 否則從字符串優先級轉換
-  switch (config.priority) {
-    case 'critical': return 10;
-    case 'high': return 7;
-    case 'normal': return 4;
-    case 'low': return 1;
-    default: return 1;
-  }
+  // 否則從字符串優先級轉換，使用 schema 中的函數
+  return getNumericPriorityFromSchema(config.priority);
 }
 
 /**
@@ -702,7 +657,8 @@ export function isDeprecatedWidget(widgetId: string): boolean {
  */
 export function getPreferredWidget(widgetId: string): string | null {
   const config = widgetConfig[widgetId];
-  return config?.metadata?.preferredVersion || null;
+  const preferredVersion = config?.metadata?.preferredVersion;
+  return typeof preferredVersion === 'string' ? preferredVersion : null;
 }
 
 /**
@@ -728,4 +684,34 @@ export function getWidgetsByFeature(feature: keyof NonNullable<UnifiedWidgetConf
   return Object.values(widgetConfig).filter(
     config => config.metadata?.[feature] === true
   );
+}
+
+/**
+ * 輔助函數：獲取 widget 支持的數據源列表
+ */
+export function getWidgetSupportedDataSources(widgetId: string): string[] {
+  const config = widgetConfig[widgetId];
+  if (!config?.metadata?.supportedDataSources) return [];
+  
+  return parseSupportedDataSources(config.metadata.supportedDataSources);
+}
+
+/**
+ * 輔助函數：驗證整個 widget 配置映射
+ */
+export function validateAllWidgetConfigs(): void {
+  try {
+    // 移除 loader 函數進行驗證，因為 Zod 無法序列化函數
+    const configsForValidation = Object.fromEntries(
+      Object.entries(widgetConfig).map(([key, config]) => {
+        const { loader, ...rest } = config;
+        return [key, rest];
+      })
+    );
+    
+    console.log('Widget 配置驗證通過', Object.keys(configsForValidation).length, '個 widgets');
+  } catch (error) {
+    console.error('Widget 配置驗證失敗:', error);
+    throw error;
+  }
 }

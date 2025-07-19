@@ -71,7 +71,7 @@ export function KeyboardNavigableGrid({
  * 包裝單個 widget 以支援鍵盤導航
  */
 export function makeWidgetKeyboardNavigable<T extends Record<string, unknown>>(WrappedComponent: React.ComponentType<T>) {
-  return React.forwardRef<HTMLDivElement, T>((props, ref) => {
+  const KeyboardNavigableWidget = React.forwardRef<HTMLDivElement, T>((props, ref) => {
     return (
       <div
         ref={ref}
@@ -80,10 +80,14 @@ export function makeWidgetKeyboardNavigable<T extends Record<string, unknown>>(W
         className="focus:outline-none"
         role="gridcell"
       >
-        <WrappedComponent {...props} />
+        <WrappedComponent {...(props as T)} />
       </div>
     );
   });
+  
+  KeyboardNavigableWidget.displayName = `KeyboardNavigable(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
+  
+  return KeyboardNavigableWidget;
 }
 
 export default KeyboardNavigableGrid;

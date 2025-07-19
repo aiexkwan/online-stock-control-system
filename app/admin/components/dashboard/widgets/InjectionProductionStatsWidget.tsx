@@ -20,11 +20,20 @@ import { format, startOfDay, endOfDay } from 'date-fns';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { TraditionalWidgetComponentProps } from '@/app/types/dashboard';
 import { MetricCard } from './common/data-display/MetricCard';
+import { 
+  ProductionStatsData, 
+  ProductionStatsWidgetConfig, 
+  PalletEdge, 
+  WidgetApiMapper,
+  isProductionStatsData 
+} from './types/WidgetApiTypes';
 
 interface InjectionProductionStatsWidgetProps extends TraditionalWidgetComponentProps {
   title?: string;
   metric?: 'pallet_count' | 'quantity_sum';
 }
+
+// Interfaces moved to WidgetApiTypes.ts
 
 export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWidgetProps> = ({ 
   title, 
@@ -35,7 +44,7 @@ export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWi
 }) => {
   // 從 widget config 提取數據
   // 使用類型斷言處理擴展屬性
-  const widgetConfig = widget?.config as any;
+  const widgetConfig = widget?.config as ProductionStatsWidgetConfig;
   const widgetTitle = title || widgetConfig?.title || 'Production Stats';
   const widgetMetric = metric || widgetConfig?.metric || 'pallet_count';
   // 根據 timeFrame 設定查詢時間範圍
@@ -55,7 +64,7 @@ export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWi
   }, [timeFrame]);
 
   // REST API 狀態管理
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<ProductionStatsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -79,7 +88,18 @@ export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWi
       );
 
       if (result.widgets && result.widgets.length > 0) {
-        setData(result.widgets[0].data);
+        const widgetData = result.widgets[0].data;
+        const { data: productionData, error: dataError } = WidgetApiMapper.validateAndExtractData(
+          widgetData,
+          isProductionStatsData,
+          'production-stats'
+        );
+        
+        if (dataError) {
+          throw new Error(dataError.message);
+        }
+        
+        setData(productionData);
       }
     } catch (err) {
       console.error('Error fetching production stats:', err);
@@ -98,18 +118,18 @@ export const InjectionProductionStatsWidget: React.FC<InjectionProductionStatsWi
   }, [fetchProductionStats]);
 
   // 計算統計值
-  const statValue = useMemo(() => {
+  const statValue = useMemo((): number => {
     if (!data?.record_palletinfoCollection?.edges) return 0;
 
     const edges = data.record_palletinfoCollection.edges;
     
     if (widgetMetric === 'pallet_count') {
       // 計算唯一托盤數量
-      const uniquePallets = new Set(edges.map((edge: any) => edge.node.plt_num));
+      const uniquePallets = new Set(edges.map((edge: PalletEdge) => edge.node.plt_num));
       return uniquePallets.size;
     } else {
       // 計算總數量
-      return edges.reduce((sum: number, edge: any) => {
+      return edges.reduce((sum: number, edge: PalletEdge) => {
         return sum + (edge.node.product_qty || 0);
       }, 0);
     }

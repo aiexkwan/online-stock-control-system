@@ -236,7 +236,7 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
       if (!palletsByProduct.has(productCode)) {
         palletsByProduct.set(productCode, []);
       }
-      palletsByProduct.get(productCode)!.push(pallet);
+      palletsByProduct.get(productCode)!.push(pallet as Tables<'record_palletinfo'>);
     });
 
     // 為每個產品代碼生成報表數據
@@ -247,7 +247,7 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
         let formattedDate: string | null = null;
         if (p.generate_time) {
           try {
-            const dateObj = new Date(p.generate_time);
+            const dateObj = new Date(p.generate_time as string);
             if (isValid(dateObj)) {
               formattedDate = format(dateObj, 'dd-MMM-yy');
             } else {
@@ -332,7 +332,7 @@ export async function getUniqueGrnRefs(): Promise<string[]> {
         data
           .map((item: { grn_ref: number }) => item.grn_ref)
           .filter((ref: number) => ref !== null && ref !== undefined && !isNaN(Number(ref)))
-          .map((ref: Record<string, unknown>) => ref.toString())
+          .map((ref: number) => ref.toString())
       )
     ) as string[];
 
@@ -1119,15 +1119,15 @@ export async function getVoidPalletSummary(filters: VoidPalletFilters): Promise<
     // Calculate summary statistics
     const totalVoided = data.length;
     const totalQuantity = data.reduce(
-      (sum: number, item: DatabaseRecord) => sum + (item.record_palletinfo?.product_qty || 0),
+      (sum: number, item: DatabaseRecord) => sum + (Number(item.product_qty) || 0),
       0
     );
     const uniqueProducts = new Set(
-      data.map((item: Record<string, unknown>) => item.record_palletinfo?.product_code).filter(Boolean)
+      data.map((item: Record<string, unknown>) => item.product_code).filter(Boolean)
     ).size;
 
     // Calculate most common reason
-    const reasons = data.map((item: Record<string, unknown>) => extractVoidReason(item.remark));
+    const reasons = data.map((item: Record<string, unknown>) => extractVoidReason(item.remark as string));
     const reasonCounts = new Map<string, number>();
 
     reasons.forEach((reason: string) => {
@@ -1211,8 +1211,8 @@ export async function getVoidReasonStats(filters: VoidPalletFilters): Promise<{
     const reasonStats = new Map<string, { count: number; quantity: number }>();
 
     data.forEach((item: Record<string, unknown>) => {
-      const reason = extractVoidReason(item.remark);
-      const quantity = item.record_palletinfo?.product_qty || 0;
+      const reason = extractVoidReason(item.remark as string);
+      const quantity = Number(item.product_qty) || 0;
 
       if (!reasonStats.has(reason)) {
         reasonStats.set(reason, { count: 0, quantity: 0 });
@@ -1301,15 +1301,15 @@ export async function getVoidPalletDetails(filters: VoidPalletFilters): Promise<
       return { success: true, data: [] };
     }
 
-    const result = data.map((item: Record<string, unknown>) => ({
-      void_date: item.time,
-      plt_num: item.plt_num,
-      product_code: item.record_palletinfo?.product_code || '',
-      product_description: item.data_code?.description || '',
-      quantity: item.record_palletinfo?.product_qty || 0,
-      void_reason: extractVoidReason(item.remark),
-      operator_name: item.data_id?.name || `ID: ${item.id}`,
-      remark: item.remark || '',
+    const result: VoidPalletDetails[] = data.map((item: Record<string, unknown>) => ({
+      void_date: item.time as string || '',
+      plt_num: item.plt_num as string || '',
+      product_code: item.product_code as string || '',
+      product_description: item.description as string || '',
+      quantity: Number(item.product_qty) || 0,
+      void_reason: extractVoidReason(item.remark as string),
+      operator_name: item.name as string || `ID: ${item.id}`,
+      remark: item.remark as string || '',
     }));
 
     return { success: true, data: result };
@@ -1382,12 +1382,12 @@ export async function getVoidProductStats(filters: VoidPalletFilters): Promise<{
     >();
 
     data.forEach((item: Record<string, unknown>) => {
-      const code = item.record_palletinfo?.product_code;
+      const code = item.product_code as string;
       if (!code) return;
 
       if (!productStats.has(code)) {
         productStats.set(code, {
-          description: item.data_code?.description || '',
+          description: item.description as string || '',
           count: 0,
           totalQty: 0,
         });
@@ -1395,7 +1395,7 @@ export async function getVoidProductStats(filters: VoidPalletFilters): Promise<{
 
       const stats = productStats.get(code)!;
       stats.count++;
-      stats.totalQty += item.record_palletinfo?.product_qty || 0;
+      stats.totalQty += Number(item.product_qty) || 0;
     });
 
     const result = Array.from(productStats.entries())
@@ -1948,18 +1948,18 @@ export async function getOrderLoadingSummary(filters: OrderLoadingFilters): Prom
     >();
 
     data.forEach((item: Record<string, unknown>) => {
-      const orderNumber = item.order_number;
+      const orderNumber = item.order_number as string;
       if (!orderMap.has(orderNumber)) {
         orderMap.set(orderNumber, {
           totalQty: 0,
           loadedQty: 0,
-          status: (item as OrderItemWithJoins).data_order?.status || 'pending',
+          status: (item as unknown as OrderItemWithJoins).data_order?.status || 'pending',
         });
       }
 
       const order = orderMap.get(orderNumber)!;
-      order.totalQty += parseInt(item.product_qty || '0');
-      order.loadedQty += parseInt(item.loaded_qty || '0');
+      order.totalQty += parseInt((item.product_qty as string) || '0');
+      order.loadedQty += parseInt((item.loaded_qty as string) || '0');
     });
 
     // Calculate statistics
@@ -2167,9 +2167,9 @@ export async function getLoadingDetails(filters: OrderLoadingFilters): Promise<{
       timestamp: item.created_at,
       order_number: item.order_number,
       product_code: item.product_code,
-      product_description: (item as OrderItemWithJoins).data_code?.description || '',
+      product_description: (item as unknown as OrderItemWithJoins).data_code?.description || '',
       loaded_qty: item.loaded_qty,
-      user_name: (item as OrderItemWithJoins).data_id?.name || `User ${item.user_id}`,
+      user_name: (item as unknown as OrderItemWithJoins).data_id?.name || `User ${item.user_id}`,
       action: item.action || 'Load',
     }));
 
@@ -2261,7 +2261,7 @@ export async function getUserPerformance(filters: OrderLoadingFilters): Promise<
 
       if (!userStats.has(userId)) {
         userStats.set(userId, {
-          user_name: (item as OrderItemWithJoins).data_id?.name || `User ${item.user_id}`,
+          user_name: (item as unknown as OrderItemWithJoins).data_id?.name || `User ${item.user_id}`,
           total_loads: 0,
           total_quantity: 0,
           load_times: [],
@@ -2270,7 +2270,7 @@ export async function getUserPerformance(filters: OrderLoadingFilters): Promise<
 
       const stats = userStats.get(userId)!;
       stats.total_loads++;
-      stats.total_quantity += item.loaded_qty || 0;
+      stats.total_quantity += Number(item.loaded_qty) || 0;
     });
 
     const result = Array.from(userStats.entries())

@@ -92,7 +92,7 @@ function getCachedResult(fileHash: string): OrderAnalysisResult | null {
 }
 
 // 設置緩存
-function setCachedResult(fileHash: string, data: DatabaseRecord[]): void {
+function setCachedResult(fileHash: string, data: OrderAnalysisResult): void {
   fileCache.set(fileHash, {
     data,
     timestamp: Date.now(),
@@ -300,13 +300,13 @@ export async function analyzeOrderPDF(
 
     // 檢查緩存
     const cachedResult = getCachedResult(fileHash);
-    if (cachedResult) {
-      const cachedExtractedData = cachedResult.orderData.products.map((product: Record<string, unknown>) => ({
-        order_ref: cachedResult.orderData.order_ref,
-        account_num: cachedResult.orderData.account_num,
-        delivery_add: cachedResult.orderData.delivery_add,
-        invoice_to: cachedResult.orderData.invoice_to,
-        customer_ref: cachedResult.orderData.customer_ref,
+    if (cachedResult && cachedResult.orderData) {
+      const cachedExtractedData = cachedResult.orderData.products.map((product) => ({
+        order_ref: cachedResult.orderData!.order_ref,
+        account_num: cachedResult.orderData!.account_num,
+        delivery_add: cachedResult.orderData!.delivery_add,
+        invoice_to: cachedResult.orderData!.invoice_to,
+        customer_ref: cachedResult.orderData!.customer_ref,
         product_code: product.product_code,
         product_desc: product.product_desc,
         product_qty: product.product_qty,
@@ -347,7 +347,22 @@ export async function analyzeOrderPDF(
     // 解析結果
     let orderData: EnhancedOrderData;
     try {
-      orderData = assistantService.parseAssistantResponse(result);
+      const parsedData = assistantService.parseAssistantResponse(result);
+      // 確保解析的數據包含必需的字段，為缺失的字段提供默認值
+      orderData = {
+        order_ref: parsedData.order_ref || '',
+        account_num: '', // 從 parsedData 中無法獲取，使用默認值
+        delivery_add: '', // 從 parsedData 中無法獲取，使用默認值
+        invoice_to: '', // 從 parsedData 中無法獲取，使用默認值
+        customer_ref: '', // 從 parsedData 中無法獲取，使用默認值
+        products: parsedData.products.map(product => ({
+          product_code: product.product_code,
+          product_desc: product.description || '',
+          product_qty: product.quantity,
+          weight: 0, // 默認重量
+          unit_price: product.unit_price?.toString() || '0'
+        }))
+      };
     } catch (parseError: unknown) {
       throw new Error(`Failed to parse assistant response: ${getErrorMessage(parseError)}`);
     }
@@ -374,8 +389,8 @@ export async function analyzeOrderPDF(
 
     // 緩存結果
     setCachedResult(fileHash, {
+      success: true,
       orderData,
-      extractedText: result,
     });
 
     // 清理資源

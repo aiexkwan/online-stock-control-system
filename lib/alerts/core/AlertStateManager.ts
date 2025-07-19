@@ -5,7 +5,7 @@
 
 import { Redis } from 'ioredis';
 import { DatabaseRecord } from '@/lib/types/database';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
   Alert,
   AlertState,
@@ -14,12 +14,14 @@ import {
   AlertQuery,
   AlertResponse,
   AlertSuppression,
-  BatchOperationResult
+  BatchOperationResult,
+  SerializedAlert,
+  AlertDatabaseRecord
 } from '../types';
 
 export class AlertStateManager {
   private redis: Redis;
-  private supabase: any;
+  private supabase: SupabaseClient;
   private stateTransitions: Map<string, (alert: Alert) => Promise<void>> = new Map();
   private stateChangeListeners: ((alert: Alert, oldState: AlertState) => void)[] = [];
 
@@ -215,13 +217,13 @@ export class AlertStateManager {
       return {
         success: true,
         message: `Alert state updated to ${newState}`,
-        data: alert
+        data: { alert }
       };
     } catch (error) {
       return {
         success: false,
         message: 'Failed to update alert state',
-        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
+        errors: [error instanceof Error ? error.message : String(error)]
       };
     }
   }
@@ -325,7 +327,7 @@ export class AlertStateManager {
 
       if (error) throw error;
 
-      return data?.map((item: Record<string, unknown>) => this.deserializeAlert(item)) || [];
+      return data?.map((item: AlertDatabaseRecord) => this.deserializeAlert(item)) || [];
     } catch (error) {
       console.error('Failed to query alerts:', error);
       return [];
@@ -408,11 +410,11 @@ export class AlertStateManager {
           processed++;
         } else {
           failed++;
-          errors.push(`${alertId}: ${(result as { message: string }).message}`);
+          errors.push(`${alertId}: ${result.message}`);
         }
       } catch (error) {
         failed++;
-        errors.push(`${alertId}: ${error instanceof Error ? (error as { message: string }).message : String(error)}`);
+        errors.push(`${alertId}: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
@@ -461,13 +463,13 @@ export class AlertStateManager {
       return {
         success: true,
         message: 'Alert suppression created',
-        data: suppression
+        data: { suppression }
       };
     } catch (error) {
       return {
         success: false,
         message: 'Failed to create suppression',
-        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
+        errors: [error instanceof Error ? error.message : String(error)]
       };
     }
   }
@@ -510,13 +512,22 @@ export class AlertStateManager {
       const retentionDays = 30; // 保留 30 天
       const cutoffDate = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
 
+      // 先查詢要刪除的告警數量
+      const { data: toDeleteData, error: countError } = await this.supabase
+        .from('alerts')
+        .select('id')
+        .lt('triggered_at', cutoffDate.toISOString());
+
+      if (countError) throw countError;
+      const deletedCount = toDeleteData?.length || 0;
+
       // 刪除過期告警
-      const { data, error } = await this.supabase
+      const { error: deleteError } = await this.supabase
         .from('alerts')
         .delete()
         .lt('triggered_at', cutoffDate.toISOString());
 
-      if (error) throw error;
+      if (deleteError) throw deleteError;
 
       // 清理 Redis 緩存
       const keys = await this.redis.keys('alert:*');
@@ -526,7 +537,7 @@ export class AlertStateManager {
 
       return {
         success: true,
-        processed: data?.length || 0,
+        processed: deletedCount,
         failed: 0,
         errors: []
       };
@@ -535,7 +546,7 @@ export class AlertStateManager {
         success: false,
         processed: 0,
         failed: 1,
-        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
+        errors: [error instanceof Error ? error.message : String(error)]
       };
     }
   }
@@ -598,14 +609,14 @@ export class AlertStateManager {
   /**
    * 序列化告警
    */
-  private serializeAlert(alert: Alert): any {
+  private serializeAlert(alert: Alert): SerializedAlert {
     return {
       id: alert.id,
       rule_id: alert.ruleId,
       rule_name: alert.ruleName,
       level: alert.level,
       state: alert.state,
-      message: (alert as { message: string }).message,
+      message: alert.message as string,
       value: alert.value,
       threshold: alert.threshold,
       triggered_at: alert.triggeredAt.toISOString(),
@@ -621,23 +632,23 @@ export class AlertStateManager {
   /**
    * 反序列化告警
    */
-  private deserializeAlert(data: DatabaseRecord[]): Alert {
+  private deserializeAlert(data: AlertDatabaseRecord): Alert {
     return {
       id: data.id,
-      ruleId: data.rule_id,
-      ruleName: data.rule_name,
-      level: data.level,
-      state: data.state,
-      message: (data as { message: string }).message,
-      value: data.value,
-      threshold: data.threshold,
-      triggeredAt: new Date(data.triggered_at),
-      resolvedAt: data.resolved_at ? new Date(data.resolved_at) : undefined,
-      acknowledgedAt: data.acknowledged_at ? new Date(data.acknowledged_at) : undefined,
-      acknowledgedBy: data.acknowledged_by,
-      notifications: JSON.parse(data.notifications || '[]'),
-      labels: JSON.parse(data.labels || '{}'),
-      annotations: JSON.parse(data.annotations || '{}')
+      ruleId: data.rule_id as string,
+      ruleName: data.rule_name as string,
+      level: data.level as AlertLevel,
+      state: data.state as AlertState,
+      message: data.message as string,
+      value: data.value as number | string,
+      threshold: data.threshold as number | string,
+      triggeredAt: new Date(data.triggered_at as string),
+      resolvedAt: data.resolved_at ? new Date(data.resolved_at as string) : undefined,
+      acknowledgedAt: data.acknowledged_at ? new Date(data.acknowledged_at as string) : undefined,
+      acknowledgedBy: data.acknowledged_by as string | undefined,
+      notifications: JSON.parse((data.notifications as string) || '[]'),
+      labels: JSON.parse((data.labels as string) || '{}'),
+      annotations: JSON.parse((data.annotations as string) || '{}')
     };
   }
 

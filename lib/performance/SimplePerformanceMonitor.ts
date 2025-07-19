@@ -17,6 +17,29 @@
  * 總代碼減少：1547行 → 400行（減少74%）
  */
 
+// 性能 API 類型定義
+interface PerformanceMemoryInfo {
+  readonly usedJSHeapSize: number;
+  readonly totalJSHeapSize: number;
+  readonly jsHeapSizeLimit: number;
+}
+
+interface PerformanceWithMemory extends Performance {
+  readonly memory?: PerformanceMemoryInfo;
+}
+
+interface WindowWithPerformance extends Window {
+  readonly performance: PerformanceWithMemory;
+}
+
+// Console 類型定義
+interface ConsoleWithLevels {
+  error: (message?: string, ...optionalParams: unknown[]) => void;
+  warn: (message?: string, ...optionalParams: unknown[]) => void;
+  info: (message?: string, ...optionalParams: unknown[]) => void;
+  debug: (message?: string, ...optionalParams: unknown[]) => void;
+}
+
 // 基本性能指標接口
 interface SimpleMetric {
   name: string;
@@ -267,14 +290,7 @@ class SimplePerformanceMonitor {
   /**
    * 獲取監控摘要
    */
-  getSummary(): {
-    totalMetrics: number;
-    categories: string[];
-    alertCount: number;
-    activeCategories: string[];
-    recentAlerts: number;
-    memoryUsage: number;
-  } {
+  getSummary(): PerformanceSummary {
     const activeCategories = new Set<string>();
     let totalMetrics = 0;
     
@@ -303,9 +319,12 @@ class SimplePerformanceMonitor {
    * 獲取內存使用量（MB）
    */
   private getMemoryUsage(): number {
-    if (typeof window !== 'undefined' && (window as any).performance?.memory) {
-      const memory = (window as any).performance.memory;
-      return Math.round(memory.usedJSHeapSize / (1024 * 1024));
+    if (typeof window !== 'undefined') {
+      const windowWithPerf = window as WindowWithPerformance;
+      if (windowWithPerf.performance?.memory) {
+        const memory = windowWithPerf.performance.memory;
+        return Math.round(memory.usedJSHeapSize / (1024 * 1024));
+      }
     }
     return 0;
   }
@@ -346,7 +365,11 @@ class SimplePerformanceMonitor {
     const messageLevel = levels.indexOf(level);
     
     if (messageLevel <= configLevel) {
-      (console as any)[level](`[SimplePerformanceMonitor] ${message}`);
+      const consoleWithLevels = console as ConsoleWithLevels;
+      const logMethod = consoleWithLevels[level as keyof ConsoleWithLevels];
+      if (typeof logMethod === 'function') {
+        logMethod(`[SimplePerformanceMonitor] ${message}`);
+      }
     }
   }
 
@@ -441,11 +464,7 @@ class SimplePerformanceMonitor {
   /**
    * 導出數據（用於調試）
    */
-  exportData(): {
-    metrics: Record<string, SimpleMetric[]>;
-    alerts: PerformanceAlert[];
-    summary: any;
-  } {
+  exportData(): PerformanceExportData {
     const metrics: Record<string, SimpleMetric[]> = {};
     this.metrics.forEach((value, key) => {
       metrics[key] = value;
@@ -534,8 +553,36 @@ class PerformanceTimer {
   }
 }
 
+// 性能摘要類型
+interface PerformanceSummary {
+  totalMetrics: number;
+  categories: string[];
+  alertCount: number;
+  activeCategories: string[];
+  recentAlerts: number;
+  memoryUsage: number;
+}
+
+// 性能導出數據類型
+interface PerformanceExportData {
+  metrics: Record<string, SimpleMetric[]>;
+  alerts: PerformanceAlert[];
+  summary: PerformanceSummary;
+}
+
 // 類型導出
-export type { SimpleMetric, SimpleStats, SimpleConfig, PerformanceAlert };
+export type { 
+  SimpleMetric, 
+  SimpleStats, 
+  SimpleConfig, 
+  PerformanceAlert,
+  PerformanceSummary,
+  PerformanceExportData,
+  PerformanceMemoryInfo,
+  PerformanceWithMemory,
+  WindowWithPerformance,
+  ConsoleWithLevels
+};
 
 // 類導出
 export { PerformanceTimer };

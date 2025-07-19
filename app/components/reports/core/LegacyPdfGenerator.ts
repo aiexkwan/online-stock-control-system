@@ -18,6 +18,20 @@
 
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import {
+  toSafeString,
+  toSafeNumber,
+  toSafeReportData,
+  toSafeDetailData,
+  toSafePageData,
+  toSafeUserData,
+  toSafeProductData,
+  type SafeReportData,
+  type SafeDetailData,
+  type SafePageData,
+  type SafeUserData,
+  type SafeProductData,
+} from '@/lib/types/report-type-guards';
 
 // 擴展 jsPDF 類型
 declare module 'jspdf' {
@@ -184,12 +198,15 @@ export class LegacyVoidPalletPdfGenerator {
     this.doc.autoTable({
       startY: this.currentY,
       head: [['Void Reason', 'Count', 'Total Qty', 'Percentage']],
-      body: reasons.map(r => [
-        r.reason,
-        r.count.toString(),
-        r.quantity.toLocaleString(),
-        `${(r.percentage * 100).toFixed(1)}%`,
-      ]),
+      body: reasons.map(r => {
+        const safeData = toSafeReportData(r);
+        return [
+          toSafeString(r.reason),
+          safeData.count.toString(),
+          safeData.quantity.toLocaleString(),
+          `${(safeData.percentage * 100).toFixed(1)}%`,
+        ];
+      }),
       margin: { left: this.margin, right: this.margin },
       styles: {
         fontSize: 10,
@@ -226,15 +243,18 @@ export class LegacyVoidPalletPdfGenerator {
     }
 
     // 準備表格數據
-    const tableData = details.map(d => [
-      this.formatDate(d.date),
-      d.pltNum,
-      d.productCode,
-      this.truncateText(d.description, 30),
-      d.quantity.toString(),
-      d.reason,
-      d.operator,
-    ]);
+    const tableData = details.map(d => {
+      const safeData = toSafeDetailData(d);
+      return [
+        this.formatDate(toSafeString(d.date)),
+        toSafeString(d.pltNum),
+        toSafeString(d.productCode),
+        this.truncateText(toSafeString(d.description), 30),
+        safeData.loaded_qty.toString(),
+        toSafeString(d.reason),
+        toSafeString(d.operator),
+      ];
+    });
 
     this.doc.autoTable({
       startY: this.currentY,
@@ -260,8 +280,9 @@ export class LegacyVoidPalletPdfGenerator {
         6: { cellWidth: 25 },
       },
       didDrawPage: (data: Record<string, unknown>) => {
+        const safePageData = toSafePageData(data);
         // 在新頁面添加標題
-        if (data.pageNumber > 1) {
+        if (safePageData.pageNumber > 1) {
           this.doc.setFontSize(10);
           this.doc.setFont('helvetica', 'normal');
           this.doc.text('Void Pallet Report (Continued)', this.margin, 10);
@@ -284,13 +305,16 @@ export class LegacyVoidPalletPdfGenerator {
     this.doc.text('Product Analysis', this.margin, this.currentY);
     this.currentY += 8;
 
-    const tableData = products.map(p => [
-      p.productCode,
-      this.truncateText(p.description, 40),
-      p.voidCount.toString(),
-      p.totalQuantity.toLocaleString(),
-      p.avgQuantity.toFixed(1),
-    ]);
+    const tableData = products.map(p => {
+      const safeProduct = toSafeProductData(p);
+      return [
+        safeProduct.productCode,
+        this.truncateText(safeProduct.description, 40),
+        safeProduct.voidCount.toString(),
+        safeProduct.totalQuantity.toLocaleString(),
+        safeProduct.avgQuantity.toFixed(1),
+      ];
+    });
 
     this.doc.autoTable({
       startY: this.currentY,

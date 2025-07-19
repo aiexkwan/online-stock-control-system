@@ -1,10 +1,78 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseRecord } from '@/lib/types/database';
 import { getErrorMessage } from '@/lib/types/error-handling';
+import { safeGet, safeNumber } from '@/lib/types/supabase-helpers';
 import { createClient } from '@/app/utils/supabase/server';
 import { LRUCache } from 'lru-cache';
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+
+// Type definitions for better type safety
+
+// Error classification types (Strategy 4: unknown + type narrowing)
+interface ClassifiedError extends Error {
+  errorType: string;
+  originalError?: Error;
+  sql?: string;
+  severity?: 'low' | 'medium' | 'high';
+  recoverable?: boolean;
+}
+
+// Type guard for classified errors
+function isClassifiedError(error: unknown): error is ClassifiedError {
+  return error instanceof Error && 
+         typeof error === 'object' && 
+         'errorType' in error && 
+         typeof (error as Record<string, unknown>).errorType === 'string';
+}
+
+// SQL execution result types
+interface SqlExecutionResult {
+  data?: unknown[];
+  error?: string;
+  count?: number;
+}
+interface OpenAIMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+interface SupabaseQueryResult {
+  data: Record<string, unknown>[];
+  rowCount: number;
+  executionTime: number;
+}
+
+interface CacheEntry {
+  question: string;
+  sql: string;
+  result: SupabaseQueryResult;
+  answer: string;
+  complexity: 'simple' | 'medium' | 'complex';
+  tokensUsed: number;
+  cached: boolean;
+  timestamp: string;
+  resolvedQuestion?: string;
+  references?: Record<string, unknown>[];
+  performanceAnalysis?: string;
+}
+
+interface QueryRecordData {
+  query: string;
+  answer: string;
+  user: string;
+  token: number;
+  sql_query: string;
+  result_json: SupabaseQueryResult | null;
+  query_hash: string;
+  fuzzy_hash: string;
+  execution_time: number;
+  row_count: number;
+  complexity: string;
+  session_id?: string;
+  created_at?: string;
+  expired_at?: string | null;
+}
 import { enhanceQueryWithTemplate } from '@/lib/query-templates';
 import { optimizeSQL, analyzeQueryWithPlan, generatePerformanceReport } from '@/lib/sql-optimizer';
 import { DatabaseConversationContextManager } from '@/lib/conversation-context-db';
@@ -31,7 +99,7 @@ const openai = new OpenAI({
 });
 
 // 初始化緩存
-const queryCache = new LRUCache<string, any>({
+const queryCache = new LRUCache<string, CacheEntry>({
   max: 1000,
   ttl: 2 * 3600 * 1000, // 2小時
 });
@@ -65,6 +133,13 @@ interface QueryResult {
   resolvedQuestion?: string;
   references?: Record<string, unknown>[];
   performanceAnalysis?: string;
+}
+
+// DTO interface for cache results (Strategy 2: DTO pattern)
+interface CacheResult extends QueryResult {
+  cacheLevel?: string;
+  similarity?: number;
+  responseTime?: number;
 }
 
 isNotProduction() &&
@@ -150,10 +225,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
         if (!error && userHistory && userHistory.length > 0) {
           // 轉換格式以匹配 recentHistory 的結構
-          recentHistory = userHistory.reverse().map((record: Record<string, unknown>) => ({
-            question: record.query,
-            sql: record.sql_query,
-            answer: record.answer,
+          recentHistory = userHistory.reverse().map((record: DatabaseRecord) => ({
+            question: record.query as string,
+            sql: record.sql_query as string,
+            answer: record.answer as string,
           }));
         }
       }
@@ -411,9 +486,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (sqlCacheResult) {
       isNotProduction() && console.log('[Ask Database] 🎯 L3 SQL cache hit');
       queryResult = {
-        data: sqlCacheResult.result?.data || [],
-        rowCount: sqlCacheResult.result?.rowCount || 0,
-        executionTime: sqlCacheResult.executionTime || 0,
+        data: safeGet(sqlCacheResult, 'result.data', []),
+        rowCount: safeNumber(safeGet(sqlCacheResult, 'result.rowCount', 0)),
+        executionTime: safeNumber(safeGet(sqlCacheResult, 'executionTime', 0)),
       };
     } else {
       // 5. 執行 SQL 查詢（帶自動錯誤修復）
@@ -442,23 +517,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           }
           
           // 嘗試自動修復
-          const classificationResult = execError.errorType ? 
-            { errorType: execError.errorType } : 
-            classifyError(execError, sql);
+          const error = execError as Error;
+          const classificationResult = isClassifiedError(error) ? 
+            { errorType: error.errorType } : 
+            classifyError(error, sql);
           const errorType = classificationResult.errorType;
-          const recoveryStrategy = getRecoveryStrategy(errorType);
+          const recoveryStrategy = getRecoveryStrategy(errorType as any);
           
           if (recoveryStrategy.canAutoRecover) {
             try {
               console.log(`[SQL Recovery] Attempting ${recoveryStrategy.strategy}...`);
-              const recoveryResult = await attemptErrorRecovery(errorType, sql, execError);
+              const recoveryResult = await attemptErrorRecovery(errorType as any, sql, error);
               
               if (recoveryResult.fixedSQL) {
                 sql = recoveryResult.fixedSQL;
                 console.log('[SQL Recovery] SQL has been fixed, retrying...');
                 
                 // 記錄成功的恢復
-                await logErrorPattern(errorType, execError, { 
+                await logErrorPattern(errorType as any, error, { 
                   success: true, 
                   fixedSQL: sql 
                 });
@@ -511,7 +587,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     // 5. 使用 OpenAI 生成自然語言回應
     isNotProduction() &&
       console.log('[Ask Database] 📝 Generating natural language response with OpenAI...');
-    const { answer, additionalTokens } = await generateAnswerWithOpenAI(question, sql, queryResult);
+    const { answer, additionalTokens } = await generateAnswerWithOpenAI(question, sql, queryResult!);
     isNotProduction() &&
       console.log('[Ask Database] Natural language response generated');
 
@@ -566,31 +642,35 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       );
     return NextResponse.json(result);
   } catch (error: unknown) {
-    const classificationResult = error.errorType ? 
-      { errorType: error.errorType } : 
-      classifyError(error);
+    const errorObj = error as Error & { errorType?: string; cause?: unknown };
+    const classificationResult = errorObj.errorType ? 
+      { errorType: errorObj.errorType } : 
+      classifyError(errorObj);
     const errorType = classificationResult.errorType;
     
     console.error('[Ask Database] Error details:', {
       message: getErrorMessage(error),
       errorType: errorType,
-      stack: (error as Error).stack,
-      name: (error as Error).name,
-      cause: error.cause,
+      stack: errorObj.stack,
+      name: errorObj.name,
+      cause: errorObj.cause,
       responseTime: Date.now() - startTime,
     });
 
+    // Type guard for ErrorType (Strategy 4: unknown + type narrowing)
+    const safeErrorType = (typeof errorType === 'string' ? errorType : 'UNKNOWN_ERROR') as ErrorType;
+    
     // 記錄錯誤模式（用於改進系統）
-    await logErrorPattern(errorType, error, { 
+    await logErrorPattern(safeErrorType, errorObj, { 
       question, 
       success: false 
     });
 
     // 獲取恢復策略建議
-    const recoveryStrategy = getRecoveryStrategy(errorType);
+    const recoveryStrategy = getRecoveryStrategy(safeErrorType);
 
     // 使用增強的錯誤訊息
-    let errorMessage = enhanceErrorMessage(errorType, getErrorMessage(error));
+    let errorMessage = enhanceErrorMessage(safeErrorType, getErrorMessage(error));
     
     // 如果有恢復建議，添加到錯誤訊息
     if (recoveryStrategy.suggestion) {
@@ -657,7 +737,7 @@ async function generateSQLWithOpenAI(
     }
 
     // 構建對話上下文
-    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    const messages: OpenAIMessage[] = [
       {
         role: 'system',
         content: enhancedPrompt,
@@ -689,7 +769,7 @@ async function generateSQLWithOpenAI(
       console.log('[OpenAI SQL] Sending request to OpenAI...');
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
-      messages: messages as any,
+      messages: messages as ChatCompletionMessageParam[],
       temperature: 0.1,
       max_tokens: 1000,
     });
@@ -844,7 +924,7 @@ async function checkQueryCost(sql: string): Promise<{
 // 執行 SQL 查詢（增加超時控制）
 async function executeSQLQuery(
   sql: string
-): Promise<{ data: Record<string, unknown>[]; rowCount: number; executionTime: number }> {
+): Promise<SupabaseQueryResult> {
   const supabase = await createClient();
   const startTime = Date.now();
   const QUERY_TIMEOUT = 30000; // 30秒超時
@@ -858,7 +938,8 @@ async function executeSQLQuery(
       setTimeout(() => reject(new Error('Query timeout after 30 seconds')), QUERY_TIMEOUT)
     );
 
-    const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+    const queryResponse = await Promise.race([queryPromise, timeoutPromise]) as { data: Record<string, unknown>[] | null; error: string | null };
+    const { data, error } = queryResponse;
 
     const executionTime = Date.now() - startTime;
 
@@ -889,20 +970,22 @@ async function executeSQLQuery(
     const errorType = classificationResult.errorType;
     
     // 記錄錯誤模式
+    const safeErrorTypeForSQL = (typeof errorType === 'string' ? errorType : 'SQL_EXECUTION_ERROR') as ErrorType;
     await logErrorPattern(
-      errorType,
-      error,
+      safeErrorTypeForSQL,
+      error as Error,
       { sql, success: false }
     );
     
     // 增強錯誤訊息  
-    const enhancedMessage = enhanceErrorMessage(errorType, getErrorMessage(error));
+    const enhancedMessage = enhanceErrorMessage(safeErrorTypeForSQL, getErrorMessage(error));
     
     // 為了向上層傳遞錯誤類型，創建新錯誤
-    const enhancedError = new Error(enhancedMessage);
-    (enhancedError as any).errorType = errorType;
-    (enhancedError as any).originalError = error;
-    (enhancedError as any).sql = sql;
+    const enhancedError: ClassifiedError = Object.assign(new Error(enhancedMessage), {
+      errorType: safeErrorTypeForSQL,
+      originalError: error instanceof Error ? error : new Error(String(error)),
+      sql
+    });
     
     throw enhancedError;
   }
@@ -912,10 +995,10 @@ async function executeSQLQuery(
 async function generateAnswerWithOpenAI(
   question: string,
   sql: string,
-  queryResult: any
+  queryResult: SupabaseQueryResult
 ): Promise<{ answer: string; additionalTokens: number }> {
   try {
-    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    const messages: OpenAIMessage[] = [
       {
         role: 'system',
         content: `You are a helpful database assistant for Pennine Manufacturing Industries. 
@@ -948,7 +1031,7 @@ Please provide a natural English response to the user's question based on these 
       console.log('[OpenAI Answer] Generating natural language response...');
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
-      messages: messages as any,
+      messages: messages as ChatCompletionMessageParam[],
       temperature: 0.3,
       max_tokens: 800,
     });
@@ -998,7 +1081,7 @@ async function generateConversationSummary(
   userName: string | null
 ): Promise<{ summary: string; tokensUsed: number }> {
   try {
-    const messages: Array<{ role: 'system' | 'user'; content: string }> = [
+    const messages: Pick<OpenAIMessage, 'role' | 'content'>[] = [
       {
         role: 'system',
         content: `You are a helpful assistant summarizing a database conversation. 
@@ -1041,7 +1124,7 @@ async function generateConversationSummary(
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini', // 使用較快嘅 model
-      messages: messages as any,
+      messages: messages as ChatCompletionMessageParam[],
       temperature: 0.7, // 較高溫度令輸出更自然
       max_tokens: 300,
     });
@@ -1084,9 +1167,9 @@ async function getDailyQueryHistory(
       return [];
     }
 
-    return (data || []).map((record: Record<string, unknown>) => ({
-      question: record.query,
-      answer: record.answer,
+    return (data || []).map((record: DatabaseRecord) => ({
+      question: record.query as string,
+      answer: record.answer as string,
     }));
   } catch (error) {
     console.error('[getDailyQueryHistory as string] Error:', error);
@@ -1228,7 +1311,7 @@ function extractKeywords(query: string): string[] {
 async function checkIntelligentCache(
   question: string,
   userEmail: string | null
-): Promise<any | null> {
+): Promise<CacheResult | null> {
   const supabase = await createClient();
 
   try {
@@ -1262,16 +1345,16 @@ async function checkIntelligentCache(
       };
 
       return {
-        question: record.query,
-        sql: record.sql_query,
+        question: record.query as string,
+        sql: record.sql_query as string,
         result: safeResult,
-        answer: record.answer,
-        complexity: record.complexity || 'simple',
+        answer: record.answer as string,
+        complexity: (record.complexity as 'simple' | 'medium' | 'complex') || 'simple',
         tokensUsed: 0,
         cached: true,
         cacheLevel: 'L1-exact',
         responseTime: 50,
-        timestamp: record.created_at,
+        timestamp: record.created_at as string,
       };
     }
 
@@ -1315,17 +1398,17 @@ async function checkIntelligentCache(
         };
 
         return {
-          question: bestMatch.query,
-          sql: bestMatch.sql_query,
+          question: bestMatch.query as string,
+          sql: bestMatch.sql_query as string,
           result: safeResult,
-          answer: bestMatch.answer,
-          complexity: bestMatch.complexity || 'simple',
+          answer: bestMatch.answer as string,
+          complexity: (bestMatch.complexity as 'simple' | 'medium' | 'complex') || 'simple',
           tokensUsed: 0,
           cached: true,
           cacheLevel: 'L2-fuzzy',
           similarity: bestSimilarity,
           responseTime: 80,
-          timestamp: bestMatch.created_at,
+          timestamp: bestMatch.created_at as string,
         };
       }
     }
@@ -1369,17 +1452,17 @@ async function checkIntelligentCache(
         };
 
         return {
-          question: bestMatch.query,
-          sql: bestMatch.sql_query,
+          question: bestMatch.query as string,
+          sql: bestMatch.sql_query as string,
           result: safeResult,
-          answer: bestMatch.answer,
-          complexity: bestMatch.complexity || 'simple',
+          answer: bestMatch.answer as string,
+          complexity: (bestMatch.complexity as 'simple' | 'medium' | 'complex') || 'simple',
           tokensUsed: 0,
           cached: true,
           cacheLevel: 'L3-semantic',
           similarity: bestSimilarity,
           responseTime: 100,
-          timestamp: bestMatch.created_at,
+          timestamp: bestMatch.created_at as string,
         };
       }
     }
@@ -1404,7 +1487,7 @@ function calculateSimilarity(words1: string[], words2: string[]): number {
   const set2 = new Set(words2);
 
   // 計算交集
-  const intersectionArray = Array.from(set1).filter((x: Record<string, unknown>) => set2.has(x));
+  const intersectionArray = Array.from(set1).filter((x: string) => set2.has(x));
   const intersection = new Set(intersectionArray);
 
   // 計算聯集
@@ -1423,7 +1506,7 @@ function calculateSimilarity(words1: string[], words2: string[]): number {
 }
 
 // 檢查 SQL 結果緩存
-async function checkSQLCache(sql: string): Promise<any | null> {
+async function checkSQLCache(sql: string): Promise<DatabaseRecord | null> {
   const supabase = await createClient();
 
   try {
@@ -1461,7 +1544,7 @@ async function saveQueryRecordEnhanced(
   user: string | null,
   tokenUsage: number = 0,
   sqlQuery: string = '',
-  resultJson: DatabaseRecord = null,
+  resultJson: SupabaseQueryResult | null = null,
   executionTime: number = 0,
   rowCount: number = 0,
   complexity: string = 'simple',
@@ -1552,7 +1635,7 @@ function generateCacheKey(
     conversationHistory && conversationHistory.length > 0
       ? conversationHistory
           .slice(-2)
-          .map((entry: Record<string, unknown>) => `${entry.question}:${entry.sql}`)
+          .map((entry: { question: string; sql: string }) => `${entry.question}:${entry.sql}`)
           .join('|')
       : '';
 

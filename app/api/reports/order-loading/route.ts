@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { orderLoadingDataSources } from '@/app/components/reports/dataSources/OrderLoadingDataSource';
-
+import { safeGet, safeString, safeNumber, toRecordArray } from '@/lib/types/supabase-helpers';
 import { createJsPDF } from '@/lib/services/unified-pdf-service';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -28,7 +28,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'No data found for the specified criteria' }, { status: 404 });
     }
     
-    const records = dataSource.transform ? dataSource.transform(rawData) : rawData;
+    const records = dataSource.transform ? dataSource.transform(rawData) : toRecordArray(rawData);
 
     // 生成報表
     const format = body.format || 'excel';
@@ -42,15 +42,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       doc.text('Order Loading Report', 14, 15);
       doc.text(`Period: ${body.startDate} to ${body.endDate}`, 14, 25);
 
+      // Type guard for record properties (Strategy 4: unknown + type narrowing)
       (doc as any).autoTable({
         head: [['Timestamp', 'Order', 'Product', 'Qty', 'User', 'Action']],
         body: records.map((r: Record<string, unknown>) => [
-          new Date(r.timestamp).toLocaleString(),
-          r.order_number,
-          r.product_code,
-          r.loaded_qty,
-          r.user_name,
-          r.action,
+          new Date(r.timestamp as string).toLocaleString(),
+          r.order_number as string,
+          r.product_code as string,
+          r.loaded_qty as number,
+          r.user_name as string,
+          r.action as string,
         ]),
         startY: 35,
       });
@@ -74,7 +75,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         { header: 'Action', key: 'action', width: 10 },
       ];
 
-      worksheet.addRows(records);
+      worksheet.addRows(toRecordArray(records));
 
       const buffer = await workbook.xlsx.writeBuffer();
       blob = new Blob([buffer], {

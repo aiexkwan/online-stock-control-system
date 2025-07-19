@@ -5,6 +5,13 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/app/utils/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/types/supabase-generated';
+import { getErrorMessage } from '@/lib/types/error-handling';
+import { toRecordArray, safeNumber, safeGet } from '@/lib/types/supabase-helpers';
+
+// Type alias for Supabase client (Strategy 3: Supabase codegen)
+type TypedSupabaseClient = SupabaseClient<Database>;
 
 // 資料庫性能指標介面
 interface DatabaseMetrics {
@@ -77,7 +84,7 @@ interface DatabaseMetricsResponse {
 /**
  * 獲取連接池統計
  */
-async function getConnectionPoolMetrics(supabase: any) {
+async function getConnectionPoolMetrics(supabase: TypedSupabaseClient) {
   try {
     // 模擬連接池統計 (在實際環境中應該從 Supabase 管理 API 獲取)
     const poolStats = {
@@ -106,7 +113,7 @@ async function getConnectionPoolMetrics(supabase: any) {
 /**
  * 獲取查詢性能統計
  */
-async function getQueryPerformanceMetrics(supabase: any) {
+async function getQueryPerformanceMetrics(supabase: TypedSupabaseClient) {
   try {
     // 測試查詢性能
     const queryTests = [
@@ -123,11 +130,14 @@ async function getQueryPerformanceMetrics(supabase: any) {
       const startTime = Date.now();
       
       try {
-        await supabase
-          .from(test.query)
-          .select('count(*)')
-          .limit(1)
-          .single();
+        // 使用 RPC 函數來測試表性能，避免動態表名的類型問題 (Strategy 3: Supabase codegen)
+        const { data, error } = await supabase.rpc('test_table_performance', {
+          table_name: test.query
+        });
+        
+        if (error) {
+          throw error;
+        }
           
         const duration = Date.now() - startTime;
         totalTime += duration;
@@ -149,7 +159,7 @@ async function getQueryPerformanceMetrics(supabase: any) {
     }
 
     const avgQueryTime = totalTime / queryTests.length;
-    const slowQueriesCount = queryResults.filter((r: Record<string, unknown>) => r.duration > 1000).length;
+    const slowQueriesCount = queryResults.filter((r) => safeNumber(safeGet(r, 'duration', 0)) > 1000).length;
     
     return {
       averageQueryTime: avgQueryTime,
@@ -177,7 +187,7 @@ async function getQueryPerformanceMetrics(supabase: any) {
 /**
  * 獲取表統計信息
  */
-async function getTableStatistics(supabase: any) {
+async function getTableStatistics(supabase: TypedSupabaseClient) {
   try {
     // 主要表的統計信息
     const mainTables = [
@@ -197,13 +207,13 @@ async function getTableStatistics(supabase: any) {
 
     for (const tableName of mainTables) {
       try {
-        const { data, error } = await supabase
-          .from(tableName)
-          .select('count(*)')
-          .single();
+        // 使用 RPC 函數獲取表統計，避免動態表名的類型問題 (Strategy 3: Supabase codegen)
+        const { data, error } = await supabase.rpc('get_table_stats', {
+          table_name: tableName
+        });
 
         if (!error && data) {
-          const rowCount = data.count || 0;
+          const rowCount = safeNumber(safeGet(data, 'count', 0));
           totalRows += rowCount;
           
           tableStats.push({
@@ -238,7 +248,7 @@ async function getTableStatistics(supabase: any) {
 /**
  * 獲取 RPC 函數統計
  */
-async function getRpcFunctionMetrics(supabase: any) {
+async function getRpcFunctionMetrics(supabase: TypedSupabaseClient) {
   try {
     // 常用 RPC 函數統計 (實際應該從日誌或監控系統獲取)
     const rpcStats = [
@@ -295,7 +305,7 @@ async function getRpcFunctionMetrics(supabase: any) {
 /**
  * 評估系統健康狀態
  */
-async function getSystemHealthMetrics(supabase: any) {
+async function getSystemHealthMetrics(supabase: TypedSupabaseClient) {
   try {
     // 測試基本連接和響應時間
     const startTime = Date.now();

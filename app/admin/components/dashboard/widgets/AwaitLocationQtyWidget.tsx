@@ -15,12 +15,23 @@ const AwaitLocationQtyWidget: React.FC<BatchQueryWidgetComponentProps> = ({ widg
 
   // 計算等待區總數量
   const awaitQty = React.useMemo(() => {
-    if (!data?.records) return 0;
+    // Type guard for await location data
+    if (!data || typeof data !== 'object') return 0;
     
-    return data.records.reduce((total: number, record: DatabaseRecord) => {
+    const awaitData = data as { records?: DatabaseRecord[]; value?: number };
+    
+    // Try direct value first (preferred)
+    if (typeof awaitData.value === 'number') {
+      return awaitData.value;
+    }
+    
+    // Fall back to calculating from records
+    if (!awaitData.records || !Array.isArray(awaitData.records)) return 0;
+    
+    return awaitData.records.reduce((total: number, record: DatabaseRecord) => {
       // 假設 location 欄位包含 'AWAIT' 表示等待區
-      if (record.location && record.location.includes('AWAIT')) {
-        return total + (record.quantity || 0);
+      if (record.location && typeof record.location === 'string' && record.location.includes('AWAIT')) {
+        return total + (typeof record.quantity === 'number' ? record.quantity : 0);
       }
       return total;
     }, 0);
@@ -34,7 +45,7 @@ const AwaitLocationQtyWidget: React.FC<BatchQueryWidgetComponentProps> = ({ widg
       loading={loading}
       error={error}
       icon={Package}
-      trend={data?.trend}
+      trend={data && typeof data === 'object' && 'trend' in data ? (data as any).trend : undefined}
     />
   );
 };

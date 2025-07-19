@@ -80,7 +80,7 @@ export class ReportEngine {
   /**
    * 獲取報表數據（支援緩存）
    */
-  private async fetchData(filters: FilterValues): Promise<Record<string, any>> {
+  private async fetchData(filters: FilterValues): Promise<Record<string, unknown>> {
     const cache = ReportCache.getInstance();
 
     // 檢查緩存
@@ -89,7 +89,7 @@ export class ReportEngine {
       return cachedData;
     }
 
-    const data: Record<string, any> = {};
+    const data: Record<string, unknown> = {};
 
     // 並行獲取所有數據源
     const fetchPromises = this.config.sections.map(async section => {
@@ -126,7 +126,7 @@ export class ReportEngine {
   /**
    * 處理數據，生成報表所需的結構
    */
-  private processData(rawData: Record<string, any>, filters: FilterValues): ProcessedReportData {
+  private processData(rawData: Record<string, unknown>, filters: FilterValues): ProcessedReportData {
     // 計算總記錄數
     let recordCount = 0;
     for (const sectionId in rawData) {
@@ -150,8 +150,8 @@ export class ReportEngine {
   /**
    * 生成摘要數據
    */
-  private generateSummary(data: Record<string, any>): Record<string, any> {
-    const summary: Record<string, any> = {};
+  private generateSummary(data: Record<string, unknown>): Record<string, unknown> {
+    const summary: Record<string, unknown> = {};
 
     // 根據配置生成摘要
     for (const section of this.config.sections) {
@@ -234,7 +234,7 @@ export class ReportEngine {
   /**
    * 獲取過濾器的動態選項
    */
-  async getFilterOptions(filterId: string): Promise<any[]> {
+  async getFilterOptions(filterId: string): Promise<unknown[]> {
     const filterConfig = this.config.filters.find(f => f.id === filterId);
     if (!filterConfig?.dataSource) {
       return [];

@@ -7,6 +7,14 @@ import { Brain } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
 
+// 錯誤類型定義
+interface ChatError {
+  message: string;
+  code?: string;
+  type?: 'network' | 'validation' | 'server' | 'unknown';
+  details?: Record<string, unknown>;
+}
+
 export interface ChatMessage {
   id: string;
   type: 'user' | 'ai' | 'error';
@@ -21,7 +29,7 @@ export interface ChatMessage {
     references?: Record<string, unknown>[];
     sql?: string;
     data?: Record<string, unknown>[];
-    error?: any;
+    error?: ChatError;
   };
 }
 

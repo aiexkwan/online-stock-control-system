@@ -5,7 +5,7 @@ import { AdminWidgetConfig } from '@/app/admin/components/dashboard/adminDashboa
 import React from 'react';
 
 // Mock 數據生成器
-const createMockData = (type: 'success' | 'loading' | 'error', overrides: DatabaseRecord = {}) => {
+const createMockData = (type: 'success' | 'loading' | 'error', overrides: Partial<DatabaseRecord> = {}) => {
   switch (type) {
     case 'loading':
       return {
@@ -32,7 +32,7 @@ const createMockData = (type: 'success' | 'loading' | 'error', overrides: Databa
             success_rate: 0.95,
             dynamic_metric_1: 567,
             dynamic_metric_2: 89.2,
-            ...overrides.data,
+            ...(overrides?.data && typeof overrides.data === 'object' ? overrides.data : {}),
           },
         },
         isLoading: false,

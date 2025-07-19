@@ -11,9 +11,15 @@ import { DocumentArrowUpIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/app/types/dashboard';
 import { toast } from 'sonner';
 import { GoogleDriveUploadToast } from './GoogleDriveUploadToast';
-import { OrderAnalysisResultDialog } from './OrderAnalysisResultDialog';
+import { OrderAnalysisResultDialog, AnalysisResult } from './OrderAnalysisResultDialog';
 import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';
 import { analyzeOrderPDF, getCurrentUserId } from '@/app/actions/orderUploadActions';
+import { 
+  UploadResponse,
+  FileValidator,
+  ORDER_UPLOAD_CONFIG,
+  SupportedFileType
+} from './types/UploadWidgetTypes';
 
 interface UploadingFile {
   id: string;
@@ -35,7 +41,7 @@ export const UploadOrdersWidgetV2 = React.memo(function UploadOrdersWidgetV2({
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [showAnalysisDialog, setShowAnalysisDialog] = useState(false);
   const [performanceMetrics, setPerformanceMetrics] = useState<{
     lastAnalysisTime?: number;
@@ -88,7 +94,7 @@ export const UploadOrdersWidgetV2 = React.memo(function UploadOrdersWidgetV2({
         // 更新進度
         const updateProgress = (progress: number) => {
           setUploadingFiles(prev =>
-            prev.map((f: any) => (f.id === uploadingFile.id ? { ...f, progress } : f))
+            prev.map((f: UploadingFile) => (f.id === uploadingFile.id ? { ...f, progress } : f))
           );
         };
 
@@ -137,7 +143,7 @@ export const UploadOrdersWidgetV2 = React.memo(function UploadOrdersWidgetV2({
         // 顯示分析結果
         if (result.extractedData && result.extractedData.length > 0) {
           toast.success(`Successfully analyzed ${result.extractedData.length} orders`);
-          setAnalysisResult(result);
+          setAnalysisResult(result as unknown as AnalysisResult);
           setShowAnalysisDialog(true);
 
           // 觸發訂單歷史記錄更新
@@ -230,12 +236,12 @@ export const UploadOrdersWidgetV2 = React.memo(function UploadOrdersWidgetV2({
 
   // 移除已完成的文件
   const handleRemoveFile = (id: string) => {
-    setUploadingFiles(prev => prev.filter((f: any) => f.id !== id));
+    setUploadingFiles(prev => prev.filter((f: UploadingFile) => f.id !== id));
   };
 
   // 關閉上傳提示
   const handleCloseToast = () => {
-    setUploadingFiles(prev => prev.filter((f: any) => (f as { status: string }).status === 'uploading'));
+    setUploadingFiles(prev => prev.filter((f: UploadingFile) => f.status === 'uploading'));
   };
 
   return (

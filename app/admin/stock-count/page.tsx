@@ -38,6 +38,7 @@ interface BatchScanRecord {
   status: 'success' | 'error' | 'pending';
   error?: string;
   current_remain_qty?: number; // 當前剩餘數量
+  [key: string]: unknown; // 添加索引簽名以支持Record<string, unknown>兼容性
 }
 
 export default function AdminStockCountPage() {

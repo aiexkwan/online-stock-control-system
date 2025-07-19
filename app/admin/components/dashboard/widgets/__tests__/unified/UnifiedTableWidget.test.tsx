@@ -31,16 +31,18 @@ jest.mock('../../common/data-display/DataTable', () => ({
         <table>
           <thead>
             <tr>
-              {columns.map((col: Record<string, unknown>) => (
-                <th key={col.key}>{col.header}</th>
+              {columns.map((col: any, colIndex: number) => (
+                <th key={col.key || colIndex}>{col.header || 'Column'}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {data.map((row: DatabaseRecord, idx: number) => (
               <tr key={idx}>
-                {columns.map((col: Record<string, unknown>) => (
-                  <td key={col.key}>{col.render ? col.render(row[col.dataIndex]) : row[col.dataIndex]}</td>
+                {columns.map((col: any, colIndex: number) => (
+                  <td key={col.key || colIndex}>
+                    {col.render ? col.render(row[col.dataIndex]) : (row[col.dataIndex] || '')}
+                  </td>
                 ))}
               </tr>
             ))}

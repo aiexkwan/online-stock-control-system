@@ -5,6 +5,20 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/app/utils/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/types/supabase-generated';
+import { getErrorMessage } from '@/lib/types/error-handling';
+import { toRecordArray, safeNumber, safeGet } from '@/lib/types/supabase-helpers';
+
+// Type alias for Supabase client (Strategy 3: Supabase codegen)
+type TypedSupabaseClient = SupabaseClient<Database>;
+
+// Transfer location stats interface (Strategy 2: DTO/custom type interface)
+interface TransferLocationStat {
+  location_from: string;
+  location_to: string;
+  count: number;
+}
 
 // 業務指標介面
 interface BusinessMetrics {
@@ -79,7 +93,7 @@ interface BusinessMetricsResponse {
 /**
  * 獲取 QC 標籤列印統計
  */
-async function getQcLabelMetrics(supabase: any) {
+async function getQcLabelMetrics(supabase: TypedSupabaseClient) {
   try {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -116,29 +130,31 @@ async function getQcLabelMetrics(supabase: any) {
       .gte('created_at', monthAgo.toISOString())
       .single();
 
-    // 熱門產品統計
-    const { data: topProducts } = await supabase
-      .from('record_palletinfo')
-      .select('product_code, count(*)')
-      .gte('created_at', weekAgo.toISOString())
-      .group('product_code')
-      .order('count', { ascending: false })
-      .limit(10);
+    // 熱門產品統計 - 使用 RPC 函數處理聚合查詢 (Strategy 3: Supabase codegen)
+    const { data: topProducts, error: topProductsError } = await supabase.rpc('get_top_products_week', {
+      week_start: weekAgo.toISOString()
+    });
 
-    const totalProducts = topProducts?.reduce((sum: number, item: Record<string, unknown>) => sum + item.count, 0) || 0;
+    if (topProductsError) {
+      console.error('Error fetching top products:', topProductsError);
+    }
+
+    // 安全處理聚合結果 (Strategy 4: unknown + type narrowing)
+    const topProductsData = toRecordArray(topProducts);
+    const totalProducts = topProductsData.reduce((sum: number, item) => sum + safeNumber(safeGet(item, 'count', 0)), 0);
 
     return {
-      todayCount: todayData?.count || 0,
-      yesterdayCount: yesterdayData?.count || 0,
-      weeklyCount: weeklyData?.count || 0,
-      monthlyCount: monthlyData?.count || 0,
+      todayCount: safeNumber(safeGet(todayData, 'count', 0)),
+      yesterdayCount: safeNumber(safeGet(yesterdayData, 'count', 0)),
+      weeklyCount: safeNumber(safeGet(weeklyData, 'count', 0)),
+      monthlyCount: safeNumber(safeGet(monthlyData, 'count', 0)),
       avgProcessingTime: 2.5, // 秒 - 可以從實際日誌計算
       errorRate: 1.2, // 百分比 - 可以從錯誤日誌計算
-      topProducts: topProducts?.map((item: { product_code: string; count: number }) => ({
-        productCode: item.product_code,
-        count: item.count,
-        percentage: totalProducts > 0 ? (item.count / totalProducts * 100) : 0
-      })) || []
+      topProducts: topProductsData.map((item) => ({
+        productCode: safeGet(item, 'product_code', ''),
+        count: safeNumber(safeGet(item, 'count', 0)),
+        percentage: totalProducts > 0 ? (safeNumber(safeGet(item, 'count', 0)) / totalProducts * 100) : 0
+      }))
     };
   } catch (error) {
     console.error('QC Label metrics error:', error);
@@ -157,7 +173,7 @@ async function getQcLabelMetrics(supabase: any) {
 /**
  * 獲取庫存轉移統計
  */
-async function getStockTransferMetrics(supabase: any) {
+async function getStockTransferMetrics(supabase: TypedSupabaseClient) {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -184,20 +200,22 @@ async function getStockTransferMetrics(supabase: any) {
       .eq('status', 'completed')
       .single();
 
-    // 熱門位置統計
-    const { data: locationStats } = await supabase
-      .from('record_transfer')
-      .select('location_from, location_to, count(*)')
-      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-      .group('location_from, location_to')
-      .order('count', { ascending: false })
-      .limit(10);
+    // 熱門位置統計 - 使用 RPC 函數處理聚合查詢 (Strategy 3: Supabase codegen)
+    const { data: locationStats, error: locationError } = await supabase.rpc('get_transfer_location_stats', {
+      days_back: 7
+    });
 
-    // 彙總位置統計
+    if (locationError) {
+      console.error('Error fetching location stats:', locationError);
+    }
+
+    // 彙總位置統計 (Strategy 4: unknown + type narrowing)
+    const locationStatsData = toRecordArray(locationStats);
     const locationMap = new Map();
-    locationStats?.forEach((stat: any) => {
-      const from = stat.location_from;
-      const to = stat.location_to;
+    locationStatsData.forEach((stat) => {
+      const from = safeGet(stat, 'location_from', '');
+      const to = safeGet(stat, 'location_to', '');
+      const count = safeNumber(safeGet(stat, 'count', 0));
       
       if (!locationMap.has(from)) {
         locationMap.set(from, { location: from, inboundCount: 0, outboundCount: 0 });
@@ -206,14 +224,16 @@ async function getStockTransferMetrics(supabase: any) {
         locationMap.set(to, { location: to, inboundCount: 0, outboundCount: 0 });
       }
       
-      locationMap.get(from).outboundCount += stat.count;
-      locationMap.get(to).inboundCount += stat.count;
+      const fromData = locationMap.get(from);
+      const toData = locationMap.get(to);
+      if (fromData) fromData.outboundCount += count;
+      if (toData) toData.inboundCount += count;
     });
 
     return {
-      todayCount: todayTransfers?.count || 0,
-      pendingCount: pendingTransfers?.count || 0,
-      completedToday: completedTransfers?.count || 0,
+      todayCount: safeNumber(safeGet(todayTransfers, 'count', 0)),
+      pendingCount: safeNumber(safeGet(pendingTransfers, 'count', 0)),
+      completedToday: safeNumber(safeGet(completedTransfers, 'count', 0)),
       avgTransferTime: 15.5, // 分鐘 - 可以從實際數據計算
       topLocations: Array.from(locationMap.values()).slice(0, 10)
     };
@@ -232,7 +252,7 @@ async function getStockTransferMetrics(supabase: any) {
 /**
  * 獲取訂單處理統計
  */
-async function getOrderProcessingMetrics(supabase: any) {
+async function getOrderProcessingMetrics(supabase: TypedSupabaseClient) {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -295,7 +315,7 @@ async function getOrderProcessingMetrics(supabase: any) {
 /**
  * 獲取倉庫操作統計
  */
-async function getWarehouseOperationsMetrics(supabase: any) {
+async function getWarehouseOperationsMetrics(supabase: TypedSupabaseClient) {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -356,7 +376,7 @@ async function getWarehouseOperationsMetrics(supabase: any) {
 /**
  * 獲取系統活動統計
  */
-async function getSystemActivityMetrics(supabase: any) {
+async function getSystemActivityMetrics(supabase: TypedSupabaseClient) {
   try {
     // 總用戶數
     const { data: totalUsers } = await supabase

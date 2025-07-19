@@ -1,25 +1,65 @@
 /**
  * Dynamic Imports Map
  * 為所有 widgets 提供動態導入函數
+ * 
+ * 策略 2: DTO/自定義 type interface - 定義標準化的組件導入類型
  */
 
+import React from 'react';
 import { wrapAllWidgetsWithErrorBoundary } from './error-boundary-wrapper';
 
-// Core Widgets
-export const coreWidgetImports = {
-  'HistoryTree': () => import('@/app/admin/components/dashboard/widgets/HistoryTreeV2').then(module => module.HistoryTreeV2),
-  'HistoryTreeV2': () => import('@/app/admin/components/dashboard/widgets/HistoryTreeV2').then(module => module.HistoryTreeV2),
-  'AdminWidgetRenderer': () => import('@/app/admin/components/dashboard/AdminWidgetRenderer'),
+// 策略 2: 自定義組件導入類型介面
+type ComponentImport = () => Promise<{ default: React.ComponentType<any> }>;
+type ModuleImport = () => Promise<any>;
+
+// 策略 2: 工具函數 - 將命名導出轉換為默認導出格式
+const wrapNamedExport = <T extends React.ComponentType<any>>(
+  importFn: () => Promise<any>,
+  exportName: string
+): ComponentImport => {
+  return () => importFn().then(module => ({ default: module[exportName] || module.default }));
 };
 
-// Stats Widgets
-export const statsWidgetImports = {
-  'AwaitLocationQtyWidget': () => import('@/app/admin/components/dashboard/widgets/AwaitLocationQtyWidget'),
-  'YesterdayTransferCountWidget': () => import('@/app/admin/components/dashboard/widgets/YesterdayTransferCountWidget'),
-  'StillInAwaitWidget': () => import('@/app/admin/components/dashboard/widgets/StillInAwaitWidget'),
-  'StillInAwaitPercentageWidget': () => import('@/app/admin/components/dashboard/widgets/StillInAwaitPercentageWidget'),
-  'WarehouseWorkLevelAreaChart': () => import('@/app/admin/components/dashboard/widgets/WarehouseWorkLevelAreaChart'),
-  'StatsCardWidget': () => import('@/app/admin/components/dashboard/widgets/StatsCardWidget'),
+// 策略 2: 工具函數 - 標準化默認導出
+const wrapDefaultExport = (importFn: () => Promise<{ default: React.ComponentType<any> }>): ComponentImport => {
+  return importFn;
+};
+
+// Core Widgets - 策略 2: 標準化導入格式
+export const coreWidgetImports: Record<string, ComponentImport> = {
+  'HistoryTree': wrapNamedExport(
+    () => import('@/app/admin/components/dashboard/widgets/HistoryTreeV2'),
+    'HistoryTreeV2'
+  ),
+  'HistoryTreeV2': wrapNamedExport(
+    () => import('@/app/admin/components/dashboard/widgets/HistoryTreeV2'), 
+    'HistoryTreeV2'
+  ),
+  'AdminWidgetRenderer': wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/AdminWidgetRenderer')
+  ),
+};
+
+// Stats Widgets - 策略 2: 標準化導入格式
+export const statsWidgetImports: Record<string, ComponentImport> = {
+  'AwaitLocationQtyWidget': wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/AwaitLocationQtyWidget')
+  ),
+  'YesterdayTransferCountWidget': wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/YesterdayTransferCountWidget')
+  ),
+  'StillInAwaitWidget': wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/StillInAwaitWidget')
+  ),
+  'StillInAwaitPercentageWidget': wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/StillInAwaitPercentageWidget')
+  ),
+  'WarehouseWorkLevelAreaChart': wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/WarehouseWorkLevelAreaChart')
+  ),
+  'StatsCardWidget': wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/StatsCardWidget')
+  ),
 };
 
 // Charts Widgets
@@ -104,15 +144,21 @@ export const specialWidgetImports = {
   'PerformanceTestWidget': () => import('@/app/admin/components/dashboard/widgets/PerformanceTestWidget'),
 };
 
-// Unified Widgets - v2.0.3 新增統一組件
-export const unifiedWidgetImports = {
-  'UnifiedStatsWidget': () => import('@/app/admin/components/dashboard/widgets/UnifiedStatsWidgetWithErrorBoundary'),
-  'UnifiedChartWidget': () => import('@/app/admin/components/dashboard/widgets/UnifiedChartWidgetWithErrorBoundary'),
-  'UnifiedTableWidget': () => import('@/app/admin/components/dashboard/widgets/UnifiedTableWidgetWithErrorBoundary'),
+// Unified Widgets - v2.0.3 新增統一組件 - 策略 2: 標準化導入格式
+export const unifiedWidgetImports: Record<string, ComponentImport> = {
+  'UnifiedStatsWidget': wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/UnifiedStatsWidgetWithErrorBoundary')
+  ),
+  'UnifiedChartWidget': wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/UnifiedChartWidgetWithErrorBoundary')
+  ),
+  'UnifiedTableWidget': wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/UnifiedTableWidgetWithErrorBoundary')
+  ),
 };
 
-// 合併所有導入映射 (不包含已有錯誤邊界的統一組件)
-const rawWidgetImports: Record<string, () => Promise<{ default: React.ComponentType }>> = {
+// 合併所有導入映射 (不包含已有錯誤邊界的統一組件) - 策略 2: 統一導入類型
+const rawWidgetImports: Record<string, ComponentImport> = {
   ...coreWidgetImports,
   ...statsWidgetImports,
   ...chartsWidgetImports,
@@ -128,8 +174,8 @@ const rawWidgetImports: Record<string, () => Promise<{ default: React.ComponentT
 // 為所有 widgets 自動添加錯誤邊界保護
 const wrappedWidgetImports = wrapAllWidgetsWithErrorBoundary(rawWidgetImports);
 
-// 合併所有導入映射，包含已有錯誤邊界的統一組件
-export const allWidgetImports: Record<string, () => Promise<{ default: React.ComponentType }>> = {
+// 合併所有導入映射，包含已有錯誤邊界的統一組件 - 策略 2: 統一導入類型
+export const allWidgetImports: Record<string, ComponentImport> = {
   ...wrappedWidgetImports,
   ...unifiedWidgetImports, // 這些已經有錯誤邊界
 };

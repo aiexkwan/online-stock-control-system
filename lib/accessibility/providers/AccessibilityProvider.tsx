@@ -134,6 +134,28 @@ export const AccessibilityProvider: React.FC<AccessibilityProviderProps> = ({
   const [announcementRegion, setAnnouncementRegion] = useState<HTMLElement | null>(null);
 
   /**
+   * 更新偏好設定
+   */
+  const updatePreferences = useCallback((newPrefs: Partial<AccessibilityPreferences>) => {
+    setPreferences(prev => {
+      const updated = { ...prev, ...newPrefs };
+      
+      if (debugMode) {
+        console.log('Accessibility: Updated preferences', { prev, newPrefs, updated });
+      }
+      
+      return updated;
+    });
+  }, [debugMode]);
+
+  /**
+   * 更新螢幕閱讀器配置
+   */
+  const updateScreenReader = useCallback((config: Partial<ScreenReaderSupport>) => {
+    setScreenReader(prev => ({ ...prev, ...config }));
+  }, []);
+
+  /**
    * 自動檢測用戶偏好
    */
   useEffect(() => {
@@ -276,21 +298,6 @@ export const AccessibilityProvider: React.FC<AccessibilityProviderProps> = ({
   }, [preferences, focusConfig, debugMode]);
 
   /**
-   * 更新偏好設定
-   */
-  const updatePreferences = useCallback((newPrefs: Partial<AccessibilityPreferences>) => {
-    setPreferences(prev => {
-      const updated = { ...prev, ...newPrefs };
-      
-      if (debugMode) {
-        console.log('Accessibility: Updated preferences', { prev, newPrefs, updated });
-      }
-      
-      return updated;
-    });
-  }, [debugMode]);
-
-  /**
    * 更新焦點配置
    */
   const updateFocusConfig = useCallback((config: Partial<FocusManagementConfig>) => {
@@ -302,13 +309,6 @@ export const AccessibilityProvider: React.FC<AccessibilityProviderProps> = ({
    */
   const updateKeyboardConfig = useCallback((config: Partial<KeyboardNavigationConfig>) => {
     setKeyboardConfig(prev => ({ ...prev, ...config }));
-  }, []);
-
-  /**
-   * 更新螢幕閱讀器配置
-   */
-  const updateScreenReader = useCallback((config: Partial<ScreenReaderSupport>) => {
-    setScreenReader(prev => ({ ...prev, ...config }));
   }, []);
 
   /**

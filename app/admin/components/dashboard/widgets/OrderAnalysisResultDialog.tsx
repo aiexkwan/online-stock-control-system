@@ -34,7 +34,7 @@ interface ExtractedOrder {
   totalAmount?: number;
 }
 
-interface AnalysisResult {
+export interface AnalysisResult {
   extractedData: ExtractedOrder | ExtractedOrder[];
   success?: boolean;
   recordCount?: number;

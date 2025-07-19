@@ -135,7 +135,7 @@ export const generateChartColors = (count: number) => {
 /**
  * Debounce function for widget refresh
  */
-export const debounce = <T extends (...args: Record<string, unknown>[]) => any>(
+export const debounce = <T extends (...args: Record<string, unknown>[]) => unknown>(
   func: T,
   wait: number
 ): ((...args: Parameters<T>) => void) => {

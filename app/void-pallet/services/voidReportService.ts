@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase';
 import { jsPDF } from 'jspdf';
 import { format } from 'date-fns';
 import { isNotProduction } from '@/lib/utils/env';
+import { getErrorMessage } from '@/lib/types/error-handling';
+import { toRecordArray, safeGet, safeString, safeNumber } from '@/lib/types/supabase-helpers';
 
 // Based on database structure
 export interface VoidRecord {
@@ -195,9 +197,13 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
           historyRecords.forEach(h => {
             if (!userMap.has(h.plt_num)) {
               userMap.set(h.plt_num, {
-                user: h.data_id,
-                loc: h.loc,
-                historyRemark: h.remark,
+                clock_number: safeString(safeGet(h, 'data_id.id', '')),
+                name: safeString(safeGet(h, 'data_id.name', '')),
+                record_history: [{
+                  time: safeString(safeGet(h, 'time', '')),
+                  action: 'Void Pallet',
+                  id: safeNumber(safeGet(h, 'id', 0))
+                }]
               });
             }
           });
@@ -209,33 +215,33 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
         console.warn('Could not fetch history records:', historyError);
     }
 
-    // Step 4: Combine all data
-    let combinedRecords: VoidRecord[] = voidReports.map((voidRecord: Record<string, unknown>) => {
-      const palletInfo = voidRecord.record_palletinfo;
-      const historyInfo = userMap.get(voidRecord.plt_num);
+    // Step 4: Combine all data (Strategy 4: unknown + type narrowing)
+    let combinedRecords: VoidRecord[] = toRecordArray(voidReports).map((voidRecord) => {
+      const palletInfo = safeGet(voidRecord, 'record_palletinfo', {});
+      const historyInfo = userMap.get(safeString(safeGet(voidRecord, 'plt_num', '')));
 
       // Log if palletInfo is missing
-      if (!palletInfo) {
+      if (!palletInfo || Object.keys(palletInfo).length === 0) {
         isNotProduction() &&
           isNotProduction() &&
-          console.warn(`No pallet info found for plt_num: ${voidRecord.plt_num}`);
+          console.warn(`No pallet info found for plt_num: ${safeGet(voidRecord, 'plt_num', '')}`);
       }
 
       return {
-        uuid: voidRecord.uuid,
-        plt_num: voidRecord.plt_num,
-        time: voidRecord.time,
-        reason: voidRecord.reason,
-        damage_qty: voidRecord.damage_qty,
-        product_code: palletInfo?.product_code || 'N/A',
-        product_qty: palletInfo?.product_qty || 0,
-        plt_loc: historyInfo?.loc || 'Voided',
-        user_name: historyInfo?.user?.name || 'System',
-        user_id: historyInfo?.user?.id || 0,
+        uuid: safeString(safeGet(voidRecord, 'uuid', '')),
+        plt_num: safeString(safeGet(voidRecord, 'plt_num', '')),
+        time: safeString(safeGet(voidRecord, 'time', '')),
+        reason: safeString(safeGet(voidRecord, 'reason', '')),
+        damage_qty: safeNumber(safeGet(voidRecord, 'damage_qty', 0)),
+        product_code: safeString(safeGet(palletInfo, 'product_code', 'N/A')),
+        product_qty: safeNumber(safeGet(palletInfo, 'product_qty', 0)),
+        plt_loc: 'Voided', // 默認位置，因為結構已變化
+        user_name: safeString(safeGet(historyInfo, 'name', 'System')),
+        user_id: safeNumber(safeGet(historyInfo, 'clock_number', 0)),
         void_qty:
-          voidRecord.damage_qty !== null && voidRecord.damage_qty > 0
-            ? voidRecord.damage_qty
-            : palletInfo?.product_qty || 0,
+          safeNumber(safeGet(voidRecord, 'damage_qty', 0)) > 0
+            ? safeNumber(safeGet(voidRecord, 'damage_qty', 0))
+            : safeNumber(safeGet(palletInfo, 'product_qty', 0)),
       };
     });
 

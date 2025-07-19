@@ -54,7 +54,7 @@ export default async function AdminThemePage({ params }: AdminThemePageProps) {
   } catch (error) {
     console.error('[SSR as string] Critical widgets prefetch failed, falling back to CSR:', error);
     // Graceful degradation - 如果 SSR 失敗，回退到 CSR
-    prefetchedData = null;
+    prefetchedData = undefined;
     ssrMode = false;
   }
 

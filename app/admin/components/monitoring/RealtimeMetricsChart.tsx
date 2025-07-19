@@ -48,6 +48,7 @@ interface MetricDataPoint {
   value: number;
   label?: string;
   category?: string;
+  [key: string]: unknown; // 添加索引簽名以支持Record<string, unknown>兼容性
 }
 
 interface RealtimeMetricsChartProps {
@@ -100,8 +101,10 @@ export default function RealtimeMetricsChart({
     
     return data.map((item: Record<string, unknown>) => ({
       ...item,
-      timestamp: new Date(item.timestamp).toLocaleTimeString(),
-      time: new Date(item.timestamp).getTime()
+      timestamp: new Date(item.timestamp as string | number | Date).toLocaleTimeString(),
+      time: new Date(item.timestamp as string | number | Date).getTime(),
+      value: Number(item.value || 0),
+      label: String(item.label || ''),
     }));
   }, [data]);
 
@@ -109,8 +112,8 @@ export default function RealtimeMetricsChart({
   const trend = useMemo(() => {
     if (!processedData || processedData.length < 2) return null;
     
-    const firstValue = processedData[0].value;
-    const lastValue = processedData[processedData.length - 1].value;
+    const firstValue = Number(processedData[0].value || 0);
+    const lastValue = Number(processedData[processedData.length - 1].value || 0);
     const change = lastValue - firstValue;
     const percentage = firstValue !== 0 ? (change / firstValue) * 100 : 0;
     

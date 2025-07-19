@@ -6,10 +6,12 @@ import {
   FeatureRule,
   FeatureVariant,
 } from '../types';
+import { safeGet, safeString, safeNumber } from '@/lib/types/supabase-helpers';
 
 /**
  * 基礎 Feature Flag 提供者
  * 提供通用的評估邏輯
+ * 策略 4: unknown + type narrowing - 安全的規則評估
  */
 export abstract class BaseFeatureFlagProvider implements FeatureFlagProvider {
   protected subscribers: Set<(flags: FeatureFlag[]) => void> = new Set();
@@ -187,11 +189,11 @@ export abstract class BaseFeatureFlagProvider implements FeatureFlagProvider {
   }
 
   /**
-   * 評估日期規則
+   * 評估日期規則 - 策略 4: 類型安全的規則評估
    */
   private evaluateDateRule(rule: FeatureRule, context: FeatureContext): boolean {
     const now = context.timestamp || new Date();
-    const targetDate = new Date(rule.value);
+    const targetDate = new Date(safeString(safeGet(rule, 'value', '')));
 
     switch (rule.operator) {
       case 'gt':
@@ -213,22 +215,26 @@ export abstract class BaseFeatureFlagProvider implements FeatureFlagProvider {
   private evaluateCustomRule(rule: FeatureRule, context: FeatureContext): boolean {
     if (!context.customAttributes) return false;
 
-    const attributeValue = context.customAttributes[rule.value.attribute];
+    const ruleValue = safeGet(rule, 'value', {});
+    const attributeName = safeString(safeGet(ruleValue, 'attribute', ''));
+    const expectedValue = safeGet(ruleValue, 'value', '');
+    
+    const attributeValue = context.customAttributes[attributeName];
     if (attributeValue === undefined) return false;
 
     switch (rule.operator) {
       case 'equals':
-        return attributeValue === rule.value.value;
+        return attributeValue === expectedValue;
       case 'contains':
-        return String(attributeValue).includes(rule.value.value);
+        return String(attributeValue).includes(String(expectedValue));
       case 'gt':
-        return Number(attributeValue) > Number(rule.value.value);
+        return Number(attributeValue) > Number(expectedValue);
       case 'lt':
-        return Number(attributeValue) < Number(rule.value.value);
+        return Number(attributeValue) < Number(expectedValue);
       case 'gte':
-        return Number(attributeValue) >= Number(rule.value.value);
+        return Number(attributeValue) >= Number(expectedValue);
       case 'lte':
-        return Number(attributeValue) <= Number(rule.value.value);
+        return Number(attributeValue) <= Number(expectedValue);
       default:
         return false;
     }

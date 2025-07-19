@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 import { errorHandler } from '@/app/components/qc-label-form/services/ErrorHandler';
 import { DataTable, DataTableColumn } from './common/data-display';
 import { useInViewport } from '@/app/admin/hooks/useInViewport';
+import { ReportOrderMapper } from './types/ReportOrderTypes';
 
 // ================================
 // Types
@@ -196,7 +197,7 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
       header: 'Date',
       align: 'left',
       render: (value) => (
-        <span className="text-xs text-cyan-300">{formatTime(value)}</span>
+        <span className="text-xs text-cyan-300">{formatTime(String(value || ''))}</span>
       ),
     },
     {
@@ -209,7 +210,7 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
             e.stopPropagation();
             handleOrderClick(item);
           }}
-          disabled={loadingPdf === value || item.uploader_name === 'Loading...'}
+          disabled={loadingPdf === String(value || '') || String(item.uploader_name || '') === 'Loading...'}
           className={cn(
             'truncate text-center text-xs text-cyan-400',
             'transition-colors hover:text-cyan-300 hover:underline',
@@ -217,18 +218,18 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
             'disabled:cursor-not-allowed disabled:opacity-50'
           )}
           title={
-            loadingPdf === value
+            loadingPdf === String(value || '')
               ? 'Loading PDF...'
-              : item.doc_url
-                ? `Click to open PDF for order ${value}`
-                : `No PDF available for order ${value}`
+              : (item as OrderRecord).doc_url
+                ? `Click to open PDF for order ${String(value || '')}`
+                : `No PDF available for order ${String(value || '')}`
           }
         >
-          {loadingPdf === value && (
+          {loadingPdf === String(value || '') && (
             <Loader2 className='h-3 w-3 animate-spin' />
           )}
-          <span className={loadingPdf === value ? 'opacity-70' : ''}>
-            {value}
+          <span className={loadingPdf === String(value || '') ? 'opacity-70' : ''}>
+            {String(value || '')}
           </span>
         </button>
       ),
@@ -239,7 +240,7 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
       align: 'right',
       render: (value, item) => (
         <span className="truncate text-right text-xs text-cyan-300">
-          {value || item.id || 'Unknown'}
+          {String(value || '') || String((item as OrderRecord).id || '') || 'Unknown'}
         </span>
       ),
     },

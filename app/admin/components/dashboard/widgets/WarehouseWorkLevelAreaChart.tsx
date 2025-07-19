@@ -30,6 +30,11 @@ import {
 import { textClasses, getTextClass } from '@/lib/design-system/typography';
 import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
 import { cn } from '@/lib/utils';
+import { 
+  WarehouseWorkLevelData,
+  WorkLevelStats as ImportedWorkLevelStats,
+  PerformanceMetrics
+} from './types/SupplierWarehouseTypes';
 
 interface WorkLevelData {
   date: string;
@@ -37,7 +42,8 @@ interface WorkLevelData {
   fullDate?: string;
 }
 
-interface WorkLevelStats {
+// 使用從 types 文件導入的類型
+type WorkLevelStats = ImportedWorkLevelStats & {
   dailyStats: WorkLevelData[];
   totalMoves: number;
   uniqueOperators: number;
@@ -45,17 +51,14 @@ interface WorkLevelStats {
   peakDay?: string;
   optimized?: boolean;
   calculationTime?: string;
-}
+};
 
 export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLevelAreaChart({
   widget,
   isEditMode,
   timeFrame,
 }: WidgetComponentProps) {
-  const [performanceMetrics, setPerformanceMetrics] = useState<{
-    fetchTime: number;
-    cacheHit: boolean;
-  } | null>(null);
+  const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetrics | null>(null);
 
   // 根據 timeFrame 設定查詢時間範圍
   const dateRange = useMemo(() => {
@@ -77,6 +80,11 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
 
   // Server Actions fallback
   const [serverActionsData, setServerActionsData] = useState<WorkLevelStats>({
+    peak_hour: '',
+    peak_level: 0,
+    average_level: 0,
+    total_efficiency: 0,
+    busiest_warehouse: '',
     dailyStats: [],
     totalMoves: 0,
     uniqueOperators: 0,
@@ -117,17 +125,27 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
           w => w.widgetId === 'warehouse_work_level'
         );
 
-        if (widgetData && !widgetData.data.error) {
-          const dailyStats = widgetData.data.value || [];
+        if (widgetData && !(typeof widgetData.data === 'object' && widgetData.data !== null && 'error' in widgetData.data && widgetData.data.error)) {
+          const dailyStats = (typeof widgetData.data === 'object' && widgetData.data !== null && 'value' in widgetData.data) 
+            ? widgetData.data.value 
+            : [];
+          const metadata = (typeof widgetData.data === 'object' && widgetData.data !== null && 'metadata' in widgetData.data) 
+            ? widgetData.data.metadata 
+            : {};
 
           setServerActionsData({
-            dailyStats,
-            totalMoves: widgetData.data.metadata?.totalMoves || 0,
-            uniqueOperators: widgetData.data.metadata?.uniqueOperators || 0,
-            avgMovesPerDay: widgetData.data.metadata?.avgMovesPerDay || 0,
-            peakDay: widgetData.data.metadata?.peakDay,
-            optimized: widgetData.data.metadata?.optimized,
-            calculationTime: widgetData.data.metadata?.calculationTime,
+            peak_hour: (typeof metadata === 'object' && metadata !== null && 'peak_hour' in metadata) ? String(metadata.peak_hour || '') : '',
+            peak_level: (typeof metadata === 'object' && metadata !== null && 'peak_level' in metadata && typeof metadata.peak_level === 'number') ? metadata.peak_level : 0,
+            average_level: (typeof metadata === 'object' && metadata !== null && 'average_level' in metadata && typeof metadata.average_level === 'number') ? metadata.average_level : 0,
+            total_efficiency: (typeof metadata === 'object' && metadata !== null && 'total_efficiency' in metadata && typeof metadata.total_efficiency === 'number') ? metadata.total_efficiency : 0,
+            busiest_warehouse: (typeof metadata === 'object' && metadata !== null && 'busiest_warehouse' in metadata) ? String(metadata.busiest_warehouse || '') : '',
+            dailyStats: Array.isArray(dailyStats) ? dailyStats : [],
+            totalMoves: (typeof metadata === 'object' && metadata !== null && 'totalMoves' in metadata && typeof metadata.totalMoves === 'number') ? metadata.totalMoves : 0,
+            uniqueOperators: (typeof metadata === 'object' && metadata !== null && 'uniqueOperators' in metadata && typeof metadata.uniqueOperators === 'number') ? metadata.uniqueOperators : 0,
+            avgMovesPerDay: (typeof metadata === 'object' && metadata !== null && 'avgMovesPerDay' in metadata && typeof metadata.avgMovesPerDay === 'number') ? metadata.avgMovesPerDay : 0,
+            peakDay: (typeof metadata === 'object' && metadata !== null && 'peakDay' in metadata) ? String(metadata.peakDay || '') : undefined,
+            optimized: (typeof metadata === 'object' && metadata !== null && 'optimized' in metadata) ? Boolean(metadata.optimized) : undefined,
+            calculationTime: (typeof metadata === 'object' && metadata !== null && 'calculationTime' in metadata) ? String(metadata.calculationTime || '') : undefined,
           });
 
           setPerformanceMetrics({
@@ -135,7 +153,10 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
             cacheHit: dashboardResult.metadata?.cacheHit || false,
           });
         } else {
-          throw new Error(widgetData?.data.error || 'No data received');
+          const errorMsg = (typeof widgetData?.data === 'object' && widgetData?.data !== null && 'error' in widgetData.data) 
+            ? String(widgetData.data.error) 
+            : 'No data received';
+          throw new Error(errorMsg);
         }
 
         setServerActionsError(null);
@@ -211,7 +232,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
                       color: 'hsl(var(--foreground))',
                     }}
                     labelFormatter={label => `Date: ${label}`}
-                    formatter={(value: unknown, name: any, props: any) => [
+                    formatter={(value: unknown, name: string) => [
                       `${value} moves`,
                       'Total Moves',
                     ]}
@@ -235,7 +256,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
                 )} style={{ color: semanticColors.info.DEFAULT }}>
                   <span>⚡</span>
                   <span>{useGraphQL ? 'GraphQL' : 'Optimized'}</span>
-                  {performanceMetrics && !useGraphQL && (
+                  {performanceMetrics && !useGraphQL && performanceMetrics.fetchTime && (
                     <span className='ml-1'>({performanceMetrics.fetchTime.toFixed(0)}ms)</span>
                   )}
                 </div>

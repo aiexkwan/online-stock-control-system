@@ -27,7 +27,10 @@ import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/sp
 import { cn } from '@/lib/utils';
 
 interface TopProductsInventoryChartProps {
-  timeFrame?: any;
+  timeFrame?: {
+    start: Date;
+    end: Date;
+  };
 }
 
 export default function TopProductsInventoryChart({ timeFrame }: TopProductsInventoryChartProps) {
@@ -82,26 +85,26 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
     // Calculate totals and prepare chart data
     const productTotals = Array.from(productMap.values()).map((item: Record<string, unknown>) => {
       const total =
-        item.await +
-        item.await_grn +
-        item.backcarpark +
-        item.bulk +
-        item.fold +
-        item.injection +
-        item.pipeline +
-        item.prebook +
-        item.damage;
+        Number(item.await || 0) +
+        Number(item.await_grn || 0) +
+        Number(item.backcarpark || 0) +
+        Number(item.bulk || 0) +
+        Number(item.fold || 0) +
+        Number(item.injection || 0) +
+        Number(item.pipeline || 0) +
+        Number(item.prebook || 0) +
+        Number(item.damage || 0);
 
       return {
-        code: item.code,
-        description: item.description,
-        colour: item.colour,
+        code: String(item.code || ''),
+        description: String(item.description || ''),
+        colour: String(item.colour || ''),
         total,
-        await: item.await,
-        bulk: item.bulk,
-        fold: item.fold,
-        damage: item.damage,
-        other: item.await_grn + item.backcarpark + item.injection + item.pipeline + item.prebook,
+        await: Number(item.await || 0),
+        bulk: Number(item.bulk || 0),
+        fold: Number(item.fold || 0),
+        damage: Number(item.damage || 0),
+        other: Number(item.await_grn || 0) + Number(item.backcarpark || 0) + Number(item.injection || 0) + Number(item.pipeline || 0) + Number(item.prebook || 0),
       };
     });
 
@@ -167,7 +170,7 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
             <YAxis dataKey='code' type='category' width={90} tick={{ fontSize: '12px' }} />
             <Tooltip
               content={({ active, payload }) => {
-                if (active && payload && payload[0]) {
+                if (active && Array.isArray(payload) && payload.length > 0 && payload[0]?.payload) {
                   const data = payload[0].payload;
                   return (
                     <div className={cn(

@@ -1,6 +1,4 @@
 import OpenAI from 'openai';
-import { DatabaseRecord } from '@/lib/types/database';
-import { DatabaseRecord } from '@/lib/types/database';
 import { ORDER_ANALYZER_CONFIG, ASSISTANT_RETRY_CONFIG } from '@/lib/openai-assistant-config';
 import { systemLogger } from '@/lib/logger';
 
@@ -69,10 +67,11 @@ export class AssistantService {
 
       return this.assistantId;
     } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       systemLogger.error('[AssistantService] Failed to create assistant', {
-        error: error.message,
+        error: errorMessage,
       });
-      throw new Error(`Failed to create assistant: ${error.message}`);
+      throw new Error(`Failed to create assistant: ${errorMessage}`);
     }
   }
 
@@ -85,10 +84,11 @@ export class AssistantService {
       systemLogger.debug('[AssistantService] Thread created', { threadId: thread.id });
       return thread.id;
     } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       systemLogger.error('[AssistantService] Failed to create thread', {
-        error: error.message,
+        error: errorMessage,
       });
-      throw new Error(`Failed to create thread: ${error.message}`);
+      throw new Error(`Failed to create thread: ${errorMessage}`);
     }
   }
 
@@ -119,10 +119,11 @@ export class AssistantService {
 
       return openaiFile.id;
     } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       systemLogger.error('[AssistantService] Failed to upload file', {
-        error: error.message,
+        error: errorMessage,
       });
-      throw new Error(`Failed to upload file: ${error.message}`);
+      throw new Error(`Failed to upload file: ${errorMessage}`);
     }
   }
 
@@ -131,7 +132,7 @@ export class AssistantService {
    */
   public async sendMessage(threadId: string, content: string, fileId?: string): Promise<void> {
     try {
-      const messageData: DatabaseRecord = {
+      const messageData: any = {
         role: 'user' as const,
         content,
       };
@@ -152,10 +153,11 @@ export class AssistantService {
         hasFile: !!fileId,
       });
     } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       systemLogger.error('[AssistantService] Failed to send message', {
-        error: error.message,
+        error: errorMessage,
       });
-      throw new Error(`Failed to send message: ${error.message}`);
+      throw new Error(`Failed to send message: ${errorMessage}`);
     }
   }
 
@@ -179,8 +181,9 @@ export class AssistantService {
       const result = await this.pollForCompletion(threadId, run.id);
       return result;
     } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       systemLogger.error('[AssistantService] Failed to run assistant', {
-        error: error.message,
+        error: errorMessage,
       });
       throw error;
     }
@@ -257,10 +260,11 @@ export class AssistantService {
 
     if (threadId) {
       promises.push(
-        this.openai.beta.threads.del(threadId).catch(error => {
+        this.openai.beta.threads.del(threadId).then(() => {}).catch(error => {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           systemLogger.warn('[AssistantService] Failed to delete thread', {
             threadId,
-            error: error.message,
+            error: errorMessage,
           });
         })
       );
@@ -268,10 +272,11 @@ export class AssistantService {
 
     if (fileId) {
       promises.push(
-        this.openai.files.del(fileId).catch(error => {
+        this.openai.files.del(fileId).then(() => {}).catch(error => {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           systemLogger.warn('[AssistantService] Failed to delete file', {
             fileId,
-            error: error.message,
+            error: errorMessage,
           });
         })
       );
@@ -314,8 +319,9 @@ export class AssistantService {
 
       return parsed;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       systemLogger.error('[AssistantService] Initial parse failed', {
-        error: error,
+        error: errorMessage,
         responseLength: response.length,
         responseStart: response.substring(0, 500),
         fullResponse: response.length < 2000 ? response : 'Response too long',
@@ -335,9 +341,10 @@ export class AssistantService {
           systemLogger.info('[AssistantService] Successfully extracted JSON from response');
           return extracted;
         } catch (innerError) {
+          const innerErrorMessage = innerError instanceof Error ? innerError.message : 'Unknown error';
           systemLogger.error('[AssistantService] Failed to parse extracted JSON', {
             extractedJson: jsonMatch[0].substring(0, 200),
-            error: innerError,
+            error: innerErrorMessage,
           });
         }
       }

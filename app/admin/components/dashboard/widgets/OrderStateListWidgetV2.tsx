@@ -21,21 +21,13 @@ import { Progress } from '@/components/ui/progress';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { useInViewport, InViewportPresets } from '@/app/admin/hooks/useInViewport';
 import { DataTable, DataTableColumn } from './common/data-display/DataTable';
+import { 
+  OrderProgress, 
+  InventoryAnalysisMapper,
+  isWidgetApiDataWrapper 
+} from './types/InventoryAnalysisTypes';
 
-interface OrderProgress {
-  uuid: string;
-  order_ref: string;
-  account_num: string;
-  product_code: string;
-  product_desc: string;
-  product_qty: number;
-  loaded_qty: number;
-  created_at: string;
-  progress: number;
-  progress_text: string;
-  status: 'pending' | 'in_progress' | 'completed';
-  status_color: 'red' | 'yellow' | 'orange' | 'green';
-}
+// OrderProgress interface moved to InventoryAnalysisTypes.ts
 
 export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2({
   widget,
@@ -48,7 +40,7 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
   const { isInViewport, hasBeenInViewport } = useInViewport(widgetRef, InViewportPresets.chart);
 
   // REST API 狀態管理
-  const [rawData, setRawData] = useState<any>(null);
+  const [rawData, setRawData] = useState<unknown>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [lastFetch, setLastFetch] = useState<number>(0);
@@ -74,11 +66,17 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
       // Extract widget data from dashboard result
       const widgetData = result.widgets?.find(w => w.widgetId === 'statsCard');
 
-      if (!widgetData || widgetData.data.error) {
-        throw new Error(widgetData?.data.error || 'Failed to load orders data');
+      if (!widgetData || !isWidgetApiDataWrapper(widgetData.data)) {
+        throw new Error('Failed to load orders data');
+      }
+      
+      const errorMsg = InventoryAnalysisMapper.extractErrorFromWrapper(widgetData.data);
+      if (errorMsg) {
+        throw new Error(errorMsg);
       }
 
-      setRawData(widgetData.data.value || []);
+      const dataValue = widgetData.data.value || [];
+      setRawData(dataValue);
       setLastFetch(Date.now());
     } catch (err) {
       console.error('Error fetching orders data:', err);
@@ -106,90 +104,9 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
 
   // 處理數據
   const data = useMemo<OrderProgress[]>(() => {
-    if (!rawData) return [];
-    
-    // 處理 REST API 數據 - 如果是數組直接返回，否則從嵌套格式轉換
-    if (Array.isArray(rawData)) {
-      return rawData
-        .map((item: Record<string, unknown>) => {
-          const productQty = item.product_qty || 0;
-          const loadedQty = parseInt(item.loaded_qty || '0', 10);
-          
-          // 計算進度
-          const progress = productQty > 0 ? (loadedQty / productQty) * 100 : 0;
-          
-          // 判斷狀態
-          let status: 'pending' | 'in_progress' | 'completed' = 'pending';
-          let statusColor: 'red' | 'yellow' | 'orange' | 'green' = 'red';
-          
-          if (progress >= 100) {
-            status = 'completed';
-            statusColor = 'green';
-          } else if (progress > 0) {
-            status = 'in_progress';
-            statusColor = progress >= 75 ? 'orange' : 'yellow';
-          }
-
-          return {
-            uuid: item.uuid,
-            order_ref: item.order_ref,
-            account_num: item.account_num,
-            product_code: item.product_code,
-            product_desc: item.product_desc,
-            product_qty: productQty,
-            loaded_qty: loadedQty,
-            created_at: item.created_at,
-            progress,
-            progress_text: `${loadedQty}/${productQty}`,
-            status,
-            status_color: statusColor,
-          };
-        })
-        .filter((order: OrderProgress) => order.status !== 'completed'); // 只顯示未完成訂單
-    }
-    
-    // 處理嵌套格式數據 (fallback)
-// TODO: Replace GraphQL -     // TODO: Replace GraphQL - if (rawData?.data_orderCollection?.edges) {
-// TODO: Replace GraphQL -     //   return rawData.data_orderCollection.edges
-    //     .map((edge: any) => {
-    //       const node = edge.node;
-    //       const productQty = node.product_qty || 0;
-    //       const loadedQty = parseInt(node.loaded_qty || '0', 10);
-    //       
-    //       // 計算進度
-    //       const progress = productQty > 0 ? (loadedQty / productQty) * 100 : 0;
-    //       
-    //       // 判斷狀態
-    //       let status: 'pending' | 'in_progress' | 'completed' = 'pending';
-    //       let statusColor: 'red' | 'yellow' | 'orange' | 'green' = 'red';
-    //       
-    //       if (progress >= 100) {
-    //         status = 'completed';
-    //         statusColor = 'green';
-    //       } else if (progress > 0) {
-    //         status = 'in_progress';
-    //         statusColor = progress >= 75 ? 'orange' : 'yellow';
-    //       }
-    //
-    //       return {
-    //         uuid: node.uuid,
-    //         order_ref: node.order_ref,
-    //         account_num: node.account_num,
-    //         product_code: node.product_code,
-    //         product_desc: node.product_desc,
-    //         product_qty: productQty,
-    //         loaded_qty: loadedQty,
-    //         created_at: node.created_at,
-    //         progress,
-    //         progress_text: `${loadedQty}/${productQty}`,
-    //         status,
-    //         status_color: statusColor,
-    //       };
-    //     })
-    //     .filter((order: OrderProgress) => (order as { status: string }).status !== 'completed'); // 只顯示未完成訂單
-    // }
-    
-    return [];
+    const orders = InventoryAnalysisMapper.extractOrdersFromApiResponse(rawData);
+    // 只顯示未完成訂單
+    return orders.filter(order => order.status !== 'completed');
   }, [rawData]);
 
   // 定義 DataTable columns
@@ -215,7 +132,7 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
                       : 'bg-slate-400'
             )}
           />
-          <span className="font-medium text-white">{value}</span>
+          <span className="font-medium text-white">{String(value || '')}</span>
         </div>
       ),
       className: 'font-medium',
@@ -226,8 +143,8 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
       width: '35%',
       render: (value, item) => (
         <div>
-          <div className="font-medium text-white">{value}</div>
-          <div className="mt-0.5 text-xs text-slate-400 truncate">{item.product_desc}</div>
+          <div className="font-medium text-white">{String(value || '')}</div>
+          <div className="mt-0.5 text-xs text-slate-400 truncate">{String((item as OrderProgress).product_desc || '')}</div>
         </div>
       ),
     },
@@ -238,10 +155,10 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
       render: (value, item) => (
         <div className="space-y-1">
           <div className="flex justify-between text-xs">
-            <span className="text-slate-400">{item.progress_text}</span>
-            <span className="font-medium text-white">{Math.round(value)}%</span>
+            <span className="text-slate-400">{(item as OrderProgress).progress_text}</span>
+            <span className="font-medium text-white">{Math.round(Number(value || 0))}%</span>
           </div>
-          <Progress value={value} className="h-2" />
+          <Progress value={Number(value || 0)} className="h-2" />
         </div>
       ),
     },
@@ -261,7 +178,7 @@ export const OrderStateListWidgetV2 = React.memo(function OrderStateListWidgetV2
               'text-xs font-medium',
               (item as OrderProgress).status_color === 'orange' ? 'text-orange-400' : 'text-yellow-400'
             )}>
-              {item.progress >= 75 ? 'Almost' : 'Loading'}
+              {(item as OrderProgress).progress >= 75 ? 'Almost' : 'Loading'}
             </span>
           )}
           {(item as OrderProgress).status === 'pending' && (

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/app/utils/supabase/server';
+import { safeGet, safeNumber, safeString } from '@/lib/types/supabase-helpers';
 
 /**
  * REST API endpoint for stock levels
@@ -61,23 +62,29 @@ export async function GET(request: NextRequest) {
       throw new Error(`Database query failed: ${(error as { message: string }).message}`);
     }
 
-    // Transform data
-    const items = (products || []).map((product: Record<string, unknown>) => ({
-      productCode: product.product_code,
-      productDesc: product.product_desc || '',
-      warehouse: product.current_plt_loc?.charAt(0) || 'Unknown',
-      location: product.current_plt_loc || 'Unknown',
-      quantity: product.product_qty || 0,
-      value: (product.product_qty || 0) * (product.unit_price || 0),
-      lastUpdated: product.updated_at || product.created_at,
-      palletCount: 1,
-    }));
+    // Transform data - 策略 4: 類型安全的庫存數據處理
+    const items = (products || []).map((product: Record<string, unknown>) => {
+      const location = safeString(safeGet(product, 'current_plt_loc', 'Unknown'));
+      const qty = safeNumber(safeGet(product, 'product_qty', 0));
+      const unitPrice = safeNumber(safeGet(product, 'unit_price', 0));
+      
+      return {
+        productCode: safeString(safeGet(product, 'product_code', '')),
+        productDesc: safeString(safeGet(product, 'product_desc', '')),
+        warehouse: location.charAt(0) || 'Unknown',
+        location: location,
+        quantity: qty,
+        value: qty * unitPrice,
+        lastUpdated: safeString(safeGet(product, 'updated_at', '')) || safeString(safeGet(product, 'created_at', '')),
+        palletCount: 1,
+      };
+    });
 
-    // Calculate aggregates
-    const uniqueProducts = new Set(items.map((i: Record<string, unknown>) => i.productCode));
+    // Calculate aggregates - 策略 4: 類型安全的聚合計算
+    const uniqueProducts = new Set(items.map(i => i.productCode));
     const aggregates = {
-      totalQuantity: items.reduce((sum, item) => sum + item.quantity, 0),
-      totalValue: items.reduce((sum, item) => sum + item.value, 0),
+      totalQuantity: items.reduce((sum, item) => sum + (item.quantity || 0), 0),
+      totalValue: items.reduce((sum, item) => sum + (item.value || 0), 0),
       totalPallets: items.length,
       uniqueProducts: uniqueProducts.size,
     };

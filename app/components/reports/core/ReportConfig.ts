@@ -30,14 +30,14 @@ export interface FilterConfig {
   label: string;
   type: 'date' | 'dateRange' | 'select' | 'multiSelect' | 'text' | 'number';
   required: boolean;
-  defaultValue?: any;
+  defaultValue?: string | number | boolean | string[];
   placeholder?: string;
   options?: SelectOption[];
   // 動態數據源（如從數據庫獲取選項）
   dataSource?: {
     type: 'rpc' | 'table';
     name: string;
-    params?: Record<string, any>;
+    params?: Record<string, string | number | boolean>;
   };
   validation?: {
     min?: number;
@@ -100,7 +100,36 @@ export interface ChartConfig {
   type: 'bar' | 'line' | 'pie' | 'doughnut';
   xAxis: string;
   yAxis: string | string[];
-  options?: Record<string, any>;
+  options?: Record<string, unknown>;
+}
+
+// ExcelJS 樣式接口定義
+export interface ExcelCellStyle {
+  font?: {
+    size?: number;
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
+    color?: { argb?: string; rgb?: string };
+    name?: string;
+  };
+  fill?: {
+    type: 'pattern';
+    pattern: 'solid' | 'darkGray' | 'mediumGray' | 'lightGray';
+    fgColor?: { argb?: string; rgb?: string };
+    bgColor?: { argb?: string; rgb?: string };
+  };
+  alignment?: {
+    horizontal?: 'left' | 'center' | 'right';
+    vertical?: 'top' | 'middle' | 'bottom';
+  };
+  border?: {
+    top?: { style: 'thin' | 'medium' | 'thick'; color?: { argb?: string } };
+    left?: { style: 'thin' | 'medium' | 'thick'; color?: { argb?: string } };
+    bottom?: { style: 'thin' | 'medium' | 'thick'; color?: { argb?: string } };
+    right?: { style: 'thin' | 'medium' | 'thick'; color?: { argb?: string } };
+  };
+  numFmt?: string;
 }
 
 // 樣式覆蓋配置（確保現有報表外觀不變）
@@ -115,14 +144,14 @@ export interface ReportStyleOverrides {
     useLegacyStyles?: boolean;
   };
   excel?: {
-    headerStyle?: Record<string, any>;
-    dataStyle?: Record<string, any>;
-    summaryStyle?: Record<string, any>;
+    headerStyle?: ExcelCellStyle;
+    dataStyle?: ExcelCellStyle;
+    summaryStyle?: ExcelCellStyle;
   };
 }
 
 // 過濾器值
-export type FilterValues = Record<string, any>;
+export type FilterValues = Record<string, string | number | boolean | string[] | Date>;
 
 // 處理後的數據結構
 export interface ProcessedReportData {
@@ -131,15 +160,15 @@ export interface ProcessedReportData {
     filters: FilterValues;
     recordCount: number;
   };
-  sections: Record<string, any>;
-  summary?: Record<string, any>;
+  sections: Record<string, unknown>;
+  summary?: Record<string, unknown>;
 }
 
 // 數據源介面
 export interface ReportDataSource {
   id: string;
-  fetch(filters: FilterValues): Promise<any>;
-  transform?(data: DatabaseRecord[]): any;
+  fetch(filters: FilterValues): Promise<DatabaseRecord[]>;
+  transform?(data: DatabaseRecord[]): unknown;
   validate?(data: DatabaseRecord[]): boolean;
 }
 

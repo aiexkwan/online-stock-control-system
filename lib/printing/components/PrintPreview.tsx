@@ -76,21 +76,28 @@ export function PrintPreview({ type, data, options, className }: PrintPreviewPro
           </div>
         </div>
         ${
-          data.palletIds?.length > 0
+          Array.isArray(data.plt_num) && data.plt_num.length > 0
             ? `
           <div>
-            <p class="text-sm text-gray-600">Pallet IDs</p>
+            <p class="text-sm text-gray-600">Pallet Numbers</p>
             <div class="mt-1 space-y-1">
-              ${data.palletIds
+              ${data.plt_num
                 .slice(0, 3)
                 .map((id: string) => `<p class="font-mono text-sm">${id}</p>`)
                 .join('')}
               ${
-                data.palletIds.length > 3
-                  ? `<p class="text-sm text-gray-500">... and ${data.palletIds.length - 3} more</p>`
+                data.plt_num.length > 3
+                  ? `<p class="text-sm text-gray-500">... and ${data.plt_num.length - 3} more</p>`
                   : ''
               }
             </div>
+          </div>
+        `
+            : data.plt_num
+            ? `
+          <div>
+            <p class="text-sm text-gray-600">Pallet Number</p>
+            <p class="font-mono text-sm">${data.plt_num}</p>
           </div>
         `
             : ''

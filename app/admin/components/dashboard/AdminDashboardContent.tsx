@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { unifiedWidgetRegistry } from '@/lib/widgets/unified-registry';
 import { useWidgetRegistry } from '@/app/hooks/useWidgetRegistry';
 import { KeyboardNavigableGrid } from './KeyboardNavigableGrid';
+import type { DashboardBatchQueryData } from '@/app/admin/types/dashboard';
 
 // 動態導入 theme layouts - 使用 webpack magic comments
 const ThemeLayouts = {
@@ -63,7 +64,7 @@ const ThemeLayouts = {
 const ThemeLoadingSkeleton = () => (
   <div className='h-full w-full space-y-4 p-6'>
     <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
-      {[1, 2, 3, 4, 5, 6].map((i: Record<string, unknown>) => (
+      {[1, 2, 3, 4, 5, 6].map((i) => (
         <div key={i} className='space-y-3'>
           <Skeleton className='h-48 w-full bg-slate-700' />
           <Skeleton className='h-4 w-3/4 bg-slate-700' />
@@ -77,7 +78,7 @@ const ThemeLoadingSkeleton = () => (
 interface AdminDashboardContentProps {
   theme: string;
   timeFrame: TimeFrame;
-  prefetchedData?: any; // SSR 預取數據
+  prefetchedData?: DashboardBatchQueryData | null; // SSR 預取數據
   ssrMode?: boolean; // 是否為 SSR 模式
 }
 

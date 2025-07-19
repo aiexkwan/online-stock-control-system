@@ -2,6 +2,7 @@
  * Performance Dashboard Component
  *
  * 實時顯示系統性能指標
+ * 策略 4: unknown + type narrowing - 安全的性能數據處理
  */
 
 import React, { useMemo } from 'react';
@@ -12,6 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { usePerformanceMonitor } from '../hooks/usePerformanceMonitor';
 import { PerformanceMetric, PerformanceAlert } from '../PerformanceMonitor';
 import { AlertCircle, TrendingUp, TrendingDown, Activity } from 'lucide-react';
+import { safeGet, safeNumber } from '@/lib/types/supabase-helpers';
 
 export function PerformanceDashboard() {
   const { isMonitoring, metrics, alerts, report, startMonitoring, stopMonitoring } =
@@ -233,24 +235,24 @@ export function PerformanceDashboard() {
               <div>
                 <p className='text-sm text-muted-foreground'>Avg Response Time</p>
                 <p className='text-xl font-semibold'>
-                  {report.summary.avgResponseTime.toFixed(0)}ms
+                  {safeNumber(safeGet(report, 'summary.avgResponseTime', 0)).toFixed(0)}ms
                 </p>
               </div>
               <div>
                 <p className='text-sm text-muted-foreground'>P95 Response Time</p>
                 <p className='text-xl font-semibold'>
-                  {report.summary.p95ResponseTime.toFixed(0)}ms
+                  {safeNumber(safeGet(report, 'summary.p95ResponseTime', 0)).toFixed(0)}ms
                 </p>
               </div>
               <div>
                 <p className='text-sm text-muted-foreground'>P99 Response Time</p>
                 <p className='text-xl font-semibold'>
-                  {report.summary.p99ResponseTime.toFixed(0)}ms
+                  {safeNumber(safeGet(report, 'summary.p99ResponseTime', 0)).toFixed(0)}ms
                 </p>
               </div>
               <div>
                 <p className='text-sm text-muted-foreground'>Error Rate</p>
-                <p className='text-xl font-semibold'>{report.summary.errorRate.toFixed(2)}%</p>
+                <p className='text-xl font-semibold'>{safeNumber(safeGet(report, 'summary.errorRate', 0)).toFixed(2)}%</p>
               </div>
             </div>
           </CardContent>

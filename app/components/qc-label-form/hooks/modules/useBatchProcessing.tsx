@@ -5,7 +5,6 @@
 
 import { useState, useCallback } from 'react';
 import { getErrorMessage } from '@/lib/types/error-handling';
-import { getErrorMessage } from '@/lib/types/error-handling';
 import { toast } from 'sonner';
 import { createClient } from '@/app/utils/supabase/client';
 import type { ProductInfo } from '../../types';
@@ -29,12 +28,17 @@ interface BatchProcessingOptions {
   onProgress?: (completed: number, total: number) => void;
 }
 
-interface UseBatchProcessingProps {
-  generatePdfs: (options: Record<string, unknown>) => Promise<any>;
-  generatePalletNumbers: (productCode: string, count: number) => Promise<any>;
-  createQcRecords: (options: Record<string, unknown>) => Promise<any>;
-  updateStockAndWorkLevels: (options: Record<string, unknown>) => Promise<any>;
+// 批量處理方法類型
+interface BatchProcessingMethods {
+  generatePdfs: (options: Record<string, unknown>) => Promise<unknown>;
+  generatePalletNumbers: (productCode: string, count: number) => Promise<unknown>;
+  createQcRecords: (options: Record<string, unknown>) => Promise<unknown>;
+  updateStockAndWorkLevels: (options: Record<string, unknown>) => Promise<unknown>;
   validateForm: (options: Record<string, unknown>) => boolean;
+}
+
+interface UseBatchProcessingProps extends BatchProcessingMethods {
+  // 繼承批量處理方法
 }
 
 export const useBatchProcessing = ({

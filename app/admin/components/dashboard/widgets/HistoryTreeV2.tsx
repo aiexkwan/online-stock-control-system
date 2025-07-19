@@ -50,20 +50,14 @@ import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/
 import { useRestAPI } from '@/app/admin/hooks/useUnifiedAPI';
 import { useInViewport, InViewportPresets } from '@/app/admin/hooks/useInViewport';
 import { WidgetSkeleton } from './common/WidgetStates';
+import { 
+  MergedEvent, 
+  HistoryApiResponse, 
+  WidgetApiMapper,
+  ApiMetadata 
+} from './types/WidgetApiTypes';
 
-interface MergedEvent {
-  id: number;
-  time: string;
-  action: string;
-  plt_num: string | null;
-  loc: string | null;
-  remark: string;
-  user_id: number | null;
-  user_name: string;
-  doc_url: string | null;
-  merged_plt_nums: string[];
-  merged_count: number;
-}
+// MergedEvent interface moved to WidgetApiTypes.ts
 
 
 interface HistoryTreeV2Props extends TraditionalWidgetComponentProps {
@@ -205,7 +199,7 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
     loading,
     error,
     refetch,
-  } = useRestAPI<{ events?: MergedEvent[]; metadata?: any }>('/api/dashboard/widgets/history-tree', 'GET', {
+  } = useRestAPI<HistoryApiResponse>('/api/dashboard/widgets/history-tree', 'GET', {
     variables: { limit: 50, offset: 0 },
     skip: isEditMode || !hasBeenInViewport, // Progressive Loading
     widgetId: 'history-tree-v2',
@@ -216,20 +210,18 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
 
   // 定義 mode 和 performanceMetrics 變數
   const mode = 'rest-api'; // 使用 REST API 模式
-  const performanceMetrics = useMemo(() => ({
-    queryTime: data?.metadata?.queryTime || 0,
-    dataSource: data?.metadata?.dataSource || 'server',
-    optimized: true,
-  }), [data?.metadata]);
+  const performanceMetrics = useMemo((): ApiMetadata => {
+    const metadata = WidgetApiMapper.extractMetadata(data);
+    return {
+      queryTime: metadata.queryTime || 0,
+      dataSource: metadata.dataSource || 'server',
+      optimized: true,
+    };
+  }, [data]);
 
   // 處理 REST API 數據
-  const displayEvents = useMemo(() => {
-    // REST API 返回的數據已經被後端處理過
-    if (data?.events) {
-      return data.events;
-    }
-    
-    return [];
+  const displayEvents = useMemo((): MergedEvent[] => {
+    return WidgetApiMapper.extractEvents(data);
   }, [data]);
   const metadata = data?.metadata || {};
 
@@ -291,7 +283,7 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
           ) : error ? (
             <div className='space-y-2'>
               <WidgetText size='xs' glow='red' className='py-4 text-center'>
-                {(error as { message: string }).message || 'Failed to load history data'}
+                {error instanceof Error ? error.message : 'Failed to load history data'}
               </WidgetText>
               {mode === 'rest-api' && (
                 <WidgetText size='xs' className={cn('text-center', textClasses['body-small'], 'text-muted-foreground')}>

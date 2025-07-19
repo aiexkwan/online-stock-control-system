@@ -17,7 +17,10 @@ import {
   AlertContext,
   AlertTestResult,
   AlertEngineEvent,
-  AlertResponse
+  AlertResponse,
+  UserSession,
+  SerializedRule,
+  SerializedAlert
 } from '../types';
 
 export class AlertRuleEngine {
@@ -64,7 +67,7 @@ export class AlertRuleEngine {
       if (error) throw error;
 
       this.rules.clear();
-      rules?.forEach((rule: AlertRule) => {
+      rules?.forEach((rule: any) => {
         this.rules.set(rule.id, this.deserializeRule(rule));
       });
 
@@ -374,7 +377,8 @@ export class AlertRuleEngine {
         .select('user_id')
         .gte('last_activity', new Date(Date.now() - 5 * 60 * 1000).toISOString());
 
-      return new Set(users?.map((u: any) => u.user_id)).size || 0;
+      const userIds = users?.map((u: any) => u.user_id as string) || [];
+      return new Set(userIds).size || 0;
     } catch (error) {
       return 0;
     }
@@ -522,33 +526,57 @@ export class AlertRuleEngine {
   /**
    * 序列化規則
    */
-  private serializeRule(rule: AlertRule): any {
+  private serializeRule(rule: AlertRule): SerializedRule {
     return {
-      ...rule,
-      notifications: JSON.stringify(rule.notifications),
+      id: rule.id,
+      name: rule.name,
+      description: rule.description,
+      enabled: rule.enabled,
+      level: rule.level,
+      metric: rule.metric,
+      condition: rule.condition,
+      threshold: rule.threshold,
+      time_window: rule.timeWindow,
+      evaluation_interval: rule.evaluationInterval,
       dependencies: JSON.stringify(rule.dependencies || []),
-      tags: JSON.stringify(rule.tags || {})
+      silence_time: rule.silenceTime,
+      notifications: JSON.stringify(rule.notifications),
+      tags: JSON.stringify(rule.tags || {}),
+      created_at: rule.createdAt.toISOString(),
+      updated_at: rule.updatedAt.toISOString(),
+      created_by: rule.createdBy
     };
   }
 
   /**
    * 反序列化規則
    */
-  private deserializeRule(data: DatabaseRecord[]): AlertRule {
+  private deserializeRule(data: any): AlertRule {
     return {
-      ...data,
-      notifications: JSON.parse(data.notifications || '[]'),
-      dependencies: JSON.parse(data.dependencies || '[]'),
-      tags: JSON.parse(data.tags || '{}'),
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at)
+      id: data.id,
+      name: data.name as string,
+      description: data.description as string,
+      enabled: data.enabled as boolean,
+      level: data.level as AlertLevel,
+      metric: data.metric as string,
+      condition: data.condition as AlertCondition,
+      threshold: data.threshold as number | string,
+      timeWindow: data.time_window as number,
+      evaluationInterval: data.evaluation_interval as number,
+      dependencies: JSON.parse((data.dependencies as string) || '[]'),
+      silenceTime: data.silence_time as number | undefined,
+      notifications: JSON.parse((data.notifications as string) || '[]'),
+      tags: JSON.parse((data.tags as string) || '{}'),
+      createdAt: new Date(data.created_at as string),
+      updatedAt: new Date(data.updated_at as string),
+      createdBy: data.created_by as string
     };
   }
 
   /**
    * 序列化告警
    */
-  private serializeAlert(alert: Alert): any {
+  private serializeAlert(alert: Alert): SerializedAlert {
     return {
       id: alert.id,
       rule_id: alert.ruleId,
@@ -571,23 +599,23 @@ export class AlertRuleEngine {
   /**
    * 反序列化告警
    */
-  private deserializeAlert(data: DatabaseRecord[]): Alert {
+  private deserializeAlert(data: any): Alert {
     return {
       id: data.id,
-      ruleId: data.rule_id,
-      ruleName: data.rule_name,
-      level: data.level,
-      state: data.state,
-      message: (data as { message: string }).message,
-      value: data.value,
-      threshold: data.threshold,
-      triggeredAt: new Date(data.triggered_at),
-      resolvedAt: data.resolved_at ? new Date(data.resolved_at) : undefined,
-      acknowledgedAt: data.acknowledged_at ? new Date(data.acknowledged_at) : undefined,
-      acknowledgedBy: data.acknowledged_by,
-      notifications: JSON.parse(data.notifications || '[]'),
-      labels: JSON.parse(data.labels || '{}'),
-      annotations: JSON.parse(data.annotations || '{}')
+      ruleId: data.rule_id as string,
+      ruleName: data.rule_name as string,
+      level: data.level as AlertLevel,
+      state: data.state as AlertState,
+      message: data.message as string,
+      value: data.value as number | string,
+      threshold: data.threshold as number | string,
+      triggeredAt: new Date(data.triggered_at as string),
+      resolvedAt: data.resolved_at ? new Date(data.resolved_at as string) : undefined,
+      acknowledgedAt: data.acknowledged_at ? new Date(data.acknowledged_at as string) : undefined,
+      acknowledgedBy: data.acknowledged_by as string | undefined,
+      notifications: JSON.parse((data.notifications as string) || '[]'),
+      labels: JSON.parse((data.labels as string) || '{}'),
+      annotations: JSON.parse((data.annotations as string) || '{}')
     };
   }
 
@@ -641,7 +669,7 @@ export class AlertRuleEngine {
         success: false,
         message: error instanceof Error ? (error as { message: string }).message : String(error),
         wouldTrigger: false,
-        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
+        errors: [error instanceof Error ? error.message : String(error)]
       };
     }
   }
@@ -694,7 +722,7 @@ export class AlertRuleEngine {
       return {
         success: false,
         message: 'Failed to reload rules',
-        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
+        errors: [error instanceof Error ? error.message : String(error)]
       };
     }
   }

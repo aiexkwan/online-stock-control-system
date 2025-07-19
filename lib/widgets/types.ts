@@ -94,7 +94,7 @@ export interface WidgetLayoutItem {
   maxH?: number;
   metadata?: {
     registryVersion?: string;
-    [key: string]: string | number | boolean | undefined;
+    [key: string]: unknown; // 允許更靈活的metadata值
   };
 }
 

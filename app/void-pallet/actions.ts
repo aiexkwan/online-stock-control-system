@@ -17,6 +17,17 @@ import {
 
 // 移除模塊級別的客戶端實例，改為在每個函數內部創建
 
+// Type guard for Supabase errors
+interface SupabaseError {
+  code: string;
+  message: string;
+  details?: string;
+}
+
+function isSupabaseError(error: unknown): error is SupabaseError {
+  return typeof error === 'object' && error !== null && 'code' in error;
+}
+
 /**
  * Get user ID from data_id table by email
  */
@@ -37,7 +48,7 @@ async function getUserIdFromEmail(email: string): Promise<number | null> {
       console.log(`[getUserIdFromEmail] Query result:`, { data, error });
 
     if (error) {
-      if ((error as any).code === 'PGRST116') {
+      if (isSupabaseError(error) && error.code === 'PGRST116') {
         // No user found with this email
         process.env.NODE_ENV !== 'production' &&
           console.log(`[getUserIdFromEmail] No user found for email: ${email}`);
@@ -121,7 +132,7 @@ async function updateACORecord(
       console.log(`[ACO Update] Query result:`, { acoRecord, findError });
 
     if (findError) {
-      if ((findError as any).code === 'PGRST116') {
+      if (isSupabaseError(findError) && findError.code === 'PGRST116') {
         process.env.NODE_ENV !== 'production' &&
           console.log(`[ACO Update] No record found for ref=${refNumber}, code=${productCode}`);
 
@@ -282,7 +293,7 @@ async function getLatestPalletLocation(plt_num: string): Promise<string | null> 
       .single();
 
     if (error) {
-      if ((error as any).code === 'PGRST116') {
+      if (isSupabaseError(error) && error.code === 'PGRST116') {
         // No history record found, return null
         return null;
       }
@@ -570,7 +581,7 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
         reason: voidReason,
         operator: clockNumber,
       });
-    } catch (voidError: any) {
+    } catch (voidError: unknown) {
       // Rollback pallet remark
       await supabase
         .from('record_palletinfo')
@@ -619,7 +630,7 @@ export async function voidPalletAction(params: Omit<VoidParams, 'userId'>): Prom
           console.log('[Void Pallet] Stock level updated successfully:', stockResult);
         // 不需要記錄 Stock Level Updated，因為會同 Void Pallet 重複
       }
-    } catch (stockUpdateError: any) {
+    } catch (stockUpdateError: unknown) {
       process.env.NODE_ENV !== 'production' &&
         console.warn('[Void Pallet] Stock level update error:', stockUpdateError);
       // 記錄錯誤但不中斷主要流程
@@ -819,12 +830,17 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
 
     // 3. Use TransactionService for damage operation
     const inventoryService = createInventoryService(supabase);
-    const transactionService = (inventoryService as any).transactionService;
+    // Access transaction service with proper typing
+    const hasTransactionService = inventoryService && typeof inventoryService === 'object' && 'transactionService' in inventoryService;
+    if (!hasTransactionService) {
+      throw new Error('Transaction service not available');
+    }
+    const transactionService = (inventoryService as { transactionService: unknown }).transactionService;
 
     try {
       // Execute damage operation within transaction
       const result = await transactionService.executeTransaction(
-        async (client: any) => {
+        async (client: unknown) => {
           // Update inventory
           const inventoryColumn = getInventoryColumn(palletInfo.plt_loc);
           const inventoryUpdate: DatabaseRecord = {
@@ -915,7 +931,7 @@ export async function processDamageAction(params: Omit<VoidParams, 'userId'>): P
           console.log('[Damage Processing] Stock level updated successfully:', stockResult);
         // 不需要記錄 Stock Level Updated，因為會同 Fully Damaged / Partially Damaged 重複
       }
-    } catch (stockUpdateError: any) {
+    } catch (stockUpdateError: unknown) {
       process.env.NODE_ENV !== 'production' &&
         console.warn('[Damage Processing] Stock level update error:', stockUpdateError);
       // 記錄錯誤但不中斷主要流程

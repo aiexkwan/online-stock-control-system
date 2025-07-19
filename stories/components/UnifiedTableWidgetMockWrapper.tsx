@@ -1,13 +1,28 @@
 import React from 'react';
 import { DatabaseRecord } from '@/lib/types/database';
-import { DatabaseRecord } from '@/lib/types/database';
 import { DataTable } from '@/app/admin/components/dashboard/widgets/common/data-display/DataTable';
 import { AdminWidgetConfig } from '@/app/admin/components/dashboard/adminDashboardLayouts';
 
 interface MockData {
-  data: DatabaseRecord[];
+  data: Record<string, unknown> | null;
   isLoading: boolean;
   error: Error | null;
+}
+
+// 定義表格數據的可能結構
+interface TableDataStructure {
+  items?: Record<string, unknown>[];
+  rows?: Record<string, unknown>[];
+  columns?: string[];
+}
+
+// Type guard functions
+function hasItems(data: unknown): data is { items: Record<string, unknown>[]; columns?: string[] } {
+  return typeof data === 'object' && data !== null && 'items' in data && Array.isArray((data as { items: unknown }).items);
+}
+
+function hasRows(data: unknown): data is { rows: Record<string, unknown>[]; columns?: string[] } {
+  return typeof data === 'object' && data !== null && 'rows' in data && Array.isArray((data as { rows: unknown }).rows);
 }
 
 interface UnifiedTableWidgetMockWrapperProps {
@@ -48,7 +63,7 @@ export const UnifiedTableWidgetMockWrapper: React.FC<UnifiedTableWidgetMockWrapp
     }
 
     // 如果數據包含 items 屬性
-    if (sourceData.items && Array.isArray(sourceData.items)) {
+    if (hasItems(sourceData)) {
       return {
         data: sourceData.items,
         columns: sourceData.columns || (sourceData.items.length > 0 ? Object.keys(sourceData.items[0]) : [])
@@ -56,7 +71,7 @@ export const UnifiedTableWidgetMockWrapper: React.FC<UnifiedTableWidgetMockWrapp
     }
 
     // 如果數據包含 rows 屬性
-    if (sourceData.rows && Array.isArray(sourceData.rows)) {
+    if (hasRows(sourceData)) {
       return {
         data: sourceData.rows,
         columns: sourceData.columns || (sourceData.rows.length > 0 ? Object.keys(sourceData.rows[0]) : [])

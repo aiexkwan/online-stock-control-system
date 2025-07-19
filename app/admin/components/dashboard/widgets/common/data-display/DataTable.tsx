@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export interface DataTableColumn<T = any> {
+export interface DataTableColumn<T = Record<string, unknown>> {
   key: string;
   header: string;
   icon?: LucideIcon;
@@ -23,7 +23,7 @@ export interface DataTableColumn<T = any> {
   className?: string;
 }
 
-export interface DataTableProps<T = any> {
+export interface DataTableProps<T = Record<string, unknown>> {
   // Data
   data: T[];
   columns: DataTableColumn<T>[];
@@ -81,7 +81,7 @@ export interface DataTableProps<T = any> {
   };
 }
 
-export function DataTable<T = any>({
+export function DataTable<T = Record<string, unknown>>({
   data = [],
   columns = [],
   keyField = 'id',
@@ -119,7 +119,8 @@ export function DataTable<T = any>({
 
   const getRowKey = (item: T, index: number): string => {
     if (keyField && typeof item === 'object' && item !== null && keyField in item) {
-      return String((item as any)[keyField as string]);
+      const value = (item as Record<string, unknown>)[keyField];
+      return String(value);
     }
     return String(index);
   };
@@ -317,10 +318,12 @@ export function DataTable<T = any>({
                 >
                   <div className={`grid grid-cols-${columns.length} items-center gap-2 text-sm`}>
                     {columns.map((column) => {
-                      const value = (item as any)[column.key];
+                      const value = typeof column.key === 'string' && column.key in (item as object)
+                        ? (item as Record<string, unknown>)[column.key]
+                        : undefined;
                       const content = column.render
                         ? column.render(value, item, index)
-                        : value;
+                        : (value === null || value === undefined ? '' : String(value));
 
                       return (
                         <div

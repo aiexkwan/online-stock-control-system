@@ -9,6 +9,14 @@ import { QuerySuggestions } from '@/components/ask-database/QuerySuggestions';
 import { ErrorDisplay } from '@/components/ask-database/ErrorDisplay';
 import { queryErrorHandler } from '@/lib/ask-database/error-handler';
 
+// 錯誤類型定義
+interface ChatError {
+  message: string;
+  code?: string;
+  type?: 'network' | 'validation' | 'server' | 'unknown';
+  details?: Record<string, unknown>;
+}
+
 export interface ChatMessage {
   id: string;
   type: 'user' | 'ai' | 'error';
@@ -21,7 +29,7 @@ export interface ChatMessage {
     cached?: boolean;
     sql?: string;
     data?: Record<string, unknown>[];
-    error?: any;
+    error?: ChatError;
   };
 }
 

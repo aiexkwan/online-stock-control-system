@@ -45,7 +45,7 @@ const createMockChartData = (chartType: string, dataSize: number = 5) => {
 };
 
 // Mock hook 實現
-const createMockData = (type: 'success' | 'loading' | 'error', chartType: string = 'bar', overrides: DatabaseRecord = {}) => {
+const createMockData = (type: 'success' | 'loading' | 'error', chartType: string = 'bar', overrides: Partial<DatabaseRecord> = {}) => {
   switch (type) {
     case 'loading':
       return {
@@ -68,7 +68,7 @@ const createMockData = (type: 'success' | 'loading' | 'error', chartType: string
           chart_data: createMockChartData(chartType),
           production_stats: createMockChartData('line'),
           distribution_data: createMockChartData('pie'),
-          ...overrides.data,
+          ...(overrides?.data && typeof overrides.data === 'object' ? overrides.data : {}),
         },
         isLoading: false,
         error: null,

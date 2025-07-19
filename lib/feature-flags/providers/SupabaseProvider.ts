@@ -2,6 +2,13 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { DatabaseRecord } from '@/lib/types/database';
 import { BaseFeatureFlagProvider } from './BaseProvider';
 import { FeatureFlag, FeatureFlagStatus } from '../types';
+import {
+  FeatureFlagDbRecord,
+  RealtimePayload,
+  FeatureFlagDbMapper,
+  isValidRealtimePayload,
+  isValidDbRecord,
+} from '../types/SupabaseFeatureFlagTypes';
 
 /**
  * Supabase Feature Flag 提供者
@@ -67,7 +74,7 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
     }
 
     // 更新緩存
-    const flags = this.transformDbRecords(data || []);
+    const flags = FeatureFlagDbMapper.validateAndTransformArray(data || []);
     this.updateCache(flags);
 
     return flags;
@@ -93,7 +100,12 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
       return null;
     }
 
-    const flag = this.transformDbRecord(data);
+    if (!isValidDbRecord(data)) {
+      console.warn('Invalid database record for flag:', key);
+      return null;
+    }
+    
+    const flag = FeatureFlagDbMapper.toFeatureFlag(data);
     this.cache.set(key, flag);
 
     return flag;
@@ -103,7 +115,7 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
    * 更新 Feature Flag
    */
   async updateFlag(key: string, updates: Partial<FeatureFlag>): Promise<void> {
-    const dbRecord = this.transformToDbRecord(key, updates);
+    const dbRecord = FeatureFlagDbMapper.toDbRecord(key, updates);
 
     const { error } = await this.supabase.from(this.tableName).update(dbRecord).eq('key', key);
 
@@ -122,7 +134,7 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
    * 創建新的 Feature Flag
    */
   async createFlag(flag: FeatureFlag): Promise<void> {
-    const dbRecord = this.transformToDbRecord(flag.key, flag);
+    const dbRecord = FeatureFlagDbMapper.toDbRecord(flag.key, flag);
 
     const { error } = await this.supabase.from(this.tableName).insert(dbRecord);
 
@@ -229,20 +241,26 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
   /**
    * 處理實時更新
    */
-  private handleRealtimeUpdate(payload: any): void {
+  private handleRealtimeUpdate(payload: unknown): void {
+    // Strategy 3: Supabase codegen - 使用生成的類型進行驗證
+    if (!isValidRealtimePayload(payload)) {
+      console.warn('Invalid realtime payload received:', payload);
+      return;
+    }
+    
     const { eventType, new: newRecord, old: oldRecord } = payload;
 
     switch (eventType) {
       case 'INSERT':
       case 'UPDATE':
-        if (newRecord) {
-          const flag = this.transformDbRecord(newRecord);
+        if (newRecord && isValidDbRecord(newRecord)) {
+          const flag = FeatureFlagDbMapper.toFeatureFlag(newRecord);
           this.cache.set(flag.key, flag);
         }
         break;
 
       case 'DELETE':
-        if (oldRecord) {
+        if (oldRecord && isValidDbRecord(oldRecord)) {
           this.cache.delete(oldRecord.key);
         }
         break;
@@ -285,56 +303,5 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
     return Date.now() < this.cacheExpiry;
   }
 
-  /**
-   * 轉換數據庫記錄為 FeatureFlag
-   */
-  private transformDbRecord(record: DatabaseRecord): FeatureFlag {
-    return {
-      key: record.key,
-      name: record.name,
-      description: record.description,
-      type: record.type,
-      status: record.status as FeatureFlagStatus,
-      defaultValue: record.default_value,
-      rules: record.rules || [],
-      variants: record.variants || [],
-      rolloutPercentage: record.rollout_percentage,
-      startDate: record.start_date ? new Date(record.start_date) : undefined,
-      endDate: record.end_date ? new Date(record.end_date) : undefined,
-      tags: record.tags || [],
-      metadata: record.metadata || {},
-    };
-  }
-
-  /**
-   * 轉換數據庫記錄數組
-   */
-  private transformDbRecords(records: Record<string, unknown>[]): FeatureFlag[] {
-    return records.map(record => this.transformDbRecord(record));
-  }
-
-  /**
-   * 轉換 FeatureFlag 為數據庫記錄
-   */
-  private transformToDbRecord(key: string, flag: Partial<FeatureFlag>): any {
-    const record: DatabaseRecord = {
-      key,
-      updated_at: new Date().toISOString(),
-    };
-
-    if (flag.name !== undefined) record.name = flag.name;
-    if (flag.description !== undefined) record.description = flag.description;
-    if (flag.type !== undefined) record.type = flag.type;
-    if (flag.status !== undefined) record.status = flag.status;
-    if (flag.defaultValue !== undefined) record.default_value = flag.defaultValue;
-    if (flag.rules !== undefined) record.rules = flag.rules;
-    if (flag.variants !== undefined) record.variants = flag.variants;
-    if (flag.rolloutPercentage !== undefined) record.rollout_percentage = flag.rolloutPercentage;
-    if (flag.startDate !== undefined) record.start_date = flag.startDate?.toISOString();
-    if (flag.endDate !== undefined) record.end_date = flag.endDate?.toISOString();
-    if (flag.tags !== undefined) record.tags = flag.tags;
-    if (flag.metadata !== undefined) record.metadata = flag.metadata;
-
-    return record;
-  }
+  // 數據轉換邏輯已移至 FeatureFlagDbMapper
 }

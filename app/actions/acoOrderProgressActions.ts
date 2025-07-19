@@ -1,6 +1,7 @@
 'use server';
 
 import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { DatabaseRecord } from '@/lib/types/database';
 
 export interface AcoOrder {
   order_ref: number;
@@ -29,6 +30,12 @@ export interface GetAcoOrderProgressVariables {
   orderRef: number;
 }
 
+// 定義 API 響應的數據結構
+interface AcoWidgetData {
+  incomplete_orders?: AcoOrder[];
+  order_progress?: AcoOrderProgress[];
+}
+
 /**
  * Server Action: 獲取未完成的 ACO 訂單列表
  */
@@ -49,7 +56,9 @@ export async function getAcoIncompleteOrdersAction(
 
     if (result.widgets && result.widgets.length > 0) {
       const widgetData = result.widgets[0];
-      return widgetData.data?.incomplete_orders || [];
+      // 將 DatabaseRecord[] 類型轉換為具體的 AcoWidgetData
+      const acoData = widgetData.data as AcoWidgetData;
+      return acoData?.incomplete_orders || [];
     }
 
     return [];
@@ -78,7 +87,9 @@ export async function getAcoOrderProgressAction(
 
     if (result.widgets && result.widgets.length > 0) {
       const widgetData = result.widgets[0];
-      return widgetData.data?.order_progress || [];
+      // 將 DatabaseRecord[] 類型轉換為具體的 AcoWidgetData
+      const acoData = widgetData.data as AcoWidgetData;
+      return acoData?.order_progress || [];
     }
 
     return [];

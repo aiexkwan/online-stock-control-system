@@ -4,7 +4,7 @@
  */
 
 import { Redis } from 'ioredis';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
   Alert,
   AlertRule,
@@ -17,7 +17,9 @@ import {
   SmsConfig,
   AlertTemplate,
   AlertResponse,
-  BatchOperationResult
+  BatchOperationResult,
+  NotificationStats,
+  NotificationResult
 } from '../types';
 
 interface NotificationProvider {
@@ -25,15 +27,10 @@ interface NotificationProvider {
   test(config: Record<string, unknown>): Promise<boolean>;
 }
 
-interface NotificationResult {
-  success: boolean;
-  message: string;
-  error?: string;
-}
 
 export class NotificationService {
   private redis: Redis;
-  private supabase: any;
+  private supabase: SupabaseClient;
   private providers: Map<NotificationChannel, NotificationProvider> = new Map();
   private templates: Map<string, AlertTemplate> = new Map();
   private rateLimiter: Map<string, number> = new Map();
@@ -53,10 +50,10 @@ export class NotificationService {
    * 初始化通知提供者
    */
   private initializeProviders(): void {
-    this.providers.set(NotificationChannel.EMAIL, new EmailProvider());
-    this.providers.set(NotificationChannel.SLACK, new SlackProvider());
-    this.providers.set(NotificationChannel.WEBHOOK, new WebhookProvider());
-    this.providers.set(NotificationChannel.SMS, new SmsProvider());
+    this.providers.set(NotificationChannel.EMAIL, new EmailProvider() as unknown as NotificationProvider);
+    this.providers.set(NotificationChannel.SLACK, new SlackProvider() as unknown as NotificationProvider);
+    this.providers.set(NotificationChannel.WEBHOOK, new WebhookProvider() as unknown as NotificationProvider);
+    this.providers.set(NotificationChannel.SMS, new SmsProvider() as unknown as NotificationProvider);
   }
 
   /**
@@ -71,7 +68,7 @@ export class NotificationService {
       if (error) throw error;
 
       this.templates.clear();
-      templates?.forEach((template: any) => {
+      templates?.forEach((template: AlertTemplate) => {
         this.templates.set(template.id, template);
       });
 
@@ -115,14 +112,14 @@ export class NotificationService {
 
       return {
         success: results.some(r => r.success),
-        message: `Sent ${results.filter((r: Record<string, unknown>) => r.success).length} of ${results.length} notifications`,
-        data: results
+        message: `Sent ${results.filter(r => r.success).length} of ${results.length} notifications`,
+        data: { notifications: results }
       };
     } catch (error) {
       return {
         success: false,
         message: 'Failed to send notifications',
-        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
+        errors: [error instanceof Error ? error.message : String(error)]
       };
     }
   }
@@ -145,7 +142,7 @@ export class NotificationService {
       const content = this.renderTemplate(template, alert);
 
       // 發送通知
-      const result = await provider.send(alert, notification.config, content);
+      const result = await provider.send(alert, notification.config as unknown as Record<string, unknown>, content);
 
       // 重試機制
       if (!result.success) {
@@ -160,7 +157,7 @@ export class NotificationService {
       return {
         success: false,
         message: 'Failed to send notification',
-        error: error instanceof Error ? (error as { message: string }).message : String(error)
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
@@ -188,7 +185,7 @@ export class NotificationService {
       await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
       
       try {
-        const result = await provider.send(alert, notification.config, content);
+        const result = await provider.send(alert, notification.config as unknown as Record<string, unknown>, content);
         if (result.success) {
           return result;
         }
@@ -327,7 +324,7 @@ export class NotificationService {
 Alert: {{alert.ruleName}}
 Level: {{alert.level}}
 State: {{alert.state}}
-Message: {{(alert as { message: string }).message}}
+Message: {{alert.message}}
 Value: {{alert.value}}
 Threshold: {{alert.threshold}}
 Triggered: {{alert.triggeredAt}}
@@ -360,7 +357,7 @@ Resolved: {{alert.resolvedAt}}
       return rendered;
     } catch (error) {
       console.error('Failed to render template:', error);
-      return `Alert: ${alert.ruleName} - ${(alert as { message: string }).message}`;
+      return `Alert: ${alert.ruleName} - ${alert.message as string}`;
     }
   }
 
@@ -392,7 +389,7 @@ Resolved: {{alert.resolvedAt}}
           alert_id: alert.id,
           channel: history.channel,
           sent_at: history.sentAt.toISOString(),
-          status: (history as { status: string }).status,
+          status: history.status,
           error: history.error,
           retry_count: history.retryCount
         });
@@ -415,7 +412,7 @@ Resolved: {{alert.resolvedAt}}
         };
       }
 
-      const success = await provider.test(notification.config);
+      const success = await provider.test(notification.config as unknown as Record<string, unknown>);
       
       return {
         success,
@@ -425,7 +422,7 @@ Resolved: {{alert.resolvedAt}}
       return {
         success: false,
         message: 'Failed to test notification',
-        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
+        errors: [error instanceof Error ? error.message : String(error)]
       };
     }
   }
@@ -448,11 +445,11 @@ Resolved: {{alert.resolvedAt}}
           processed++;
         } else {
           failed++;
-          errors.push(`Alert ${alert.id}: ${(result as { message: string }).message}`);
+          errors.push(`Alert ${alert.id}: ${result.message}`);
         }
       } catch (error) {
         failed++;
-        errors.push(`Alert ${alert.id}: ${error instanceof Error ? (error as { message: string }).message : String(error)}`);
+        errors.push(`Alert ${alert.id}: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
@@ -485,13 +482,16 @@ Resolved: {{alert.resolvedAt}}
       return {
         success: true,
         message: 'Template created successfully',
-        data: newTemplate
+        data: { 
+          alertId: newTemplate.id,
+          timestamp: new Date().toISOString()
+        }
       };
     } catch (error) {
       return {
         success: false,
         message: 'Failed to create template',
-        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
+        errors: [error instanceof Error ? error.message : String(error)]
       };
     }
   }
@@ -499,19 +499,45 @@ Resolved: {{alert.resolvedAt}}
   /**
    * 獲取通知統計
    */
-  public async getNotificationStats(): Promise<any> {
+  public async getNotificationStats(): Promise<NotificationStats> {
     try {
       const { data: stats, error } = await this.supabase
         .from('notification_history')
-        .select('channel, status, count(*)')
-        .groupBy('channel, status');
+        .select('channel, status, count(*) as count');
 
       if (error) throw error;
 
-      return stats;
+      // Handle SQL aggregation result
+      const aggregatedStats = stats as unknown as { channel: string; status: string; count: number }[];
+      
+      const notificationStats: NotificationStats = {
+        total: aggregatedStats.reduce((sum, item) => sum + item.count, 0),
+        sent: aggregatedStats.filter(item => item.status === 'sent').reduce((sum, item) => sum + item.count, 0),
+        failed: aggregatedStats.filter(item => item.status === 'failed').reduce((sum, item) => sum + item.count, 0),
+        pending: aggregatedStats.filter(item => item.status === 'pending').reduce((sum, item) => sum + item.count, 0),
+        byChannel: aggregatedStats.reduce((acc, item) => {
+          acc[item.channel as NotificationChannel] = (acc[item.channel as NotificationChannel] || 0) + item.count;
+          return acc;
+        }, {} as Record<NotificationChannel, number>),
+        byStatus: aggregatedStats.reduce((acc, item) => {
+          acc[item.status] = (acc[item.status] || 0) + item.count;
+          return acc;
+        }, {} as Record<string, number>),
+        avgDeliveryTime: 0
+      };
+      
+      return notificationStats;
     } catch (error) {
       console.error('Failed to get notification stats:', error);
-      return {};
+      return {
+        total: 0,
+        sent: 0,
+        failed: 0,
+        pending: 0,
+        byChannel: {} as Record<NotificationChannel, number>,
+        byStatus: {} as Record<string, number>,
+        avgDeliveryTime: 0
+      };
     }
   }
 
@@ -527,13 +553,14 @@ Resolved: {{alert.resolvedAt}}
  * Email Provider
  */
 class EmailProvider implements NotificationProvider {
-  async send(alert: Alert, config: EmailConfig, template?: string): Promise<NotificationResult> {
+  async send(alert: Alert, config: Record<string, unknown>, template?: string): Promise<NotificationResult> {
+    const emailConfig = config as unknown as EmailConfig;
     try {
       // 這裡應該整合實際的郵件服務 (如 Sendgrid, AWS SES 等)
       console.log('Sending email notification:', {
-        recipients: config.recipients,
-        subject: config.subject || `Alert: ${alert.ruleName}`,
-        content: template || (alert as { message: string }).message
+        recipients: emailConfig.recipients,
+        subject: emailConfig.subject || `Alert: ${alert.ruleName}`,
+        content: template || alert.message as string
       });
 
       return {
@@ -544,15 +571,16 @@ class EmailProvider implements NotificationProvider {
       return {
         success: false,
         message: 'Failed to send email',
-        error: error instanceof Error ? (error as { message: string }).message : String(error)
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
 
-  async test(config: EmailConfig): Promise<boolean> {
+  async test(config: Record<string, unknown>): Promise<boolean> {
+    const emailConfig = config as unknown as EmailConfig;
     try {
       // 發送測試郵件
-      console.log('Testing email configuration:', config);
+      console.log('Testing email configuration:', emailConfig);
       return true;
     } catch (error) {
       console.error('Email test failed:', error);
@@ -565,13 +593,14 @@ class EmailProvider implements NotificationProvider {
  * Slack Provider
  */
 class SlackProvider implements NotificationProvider {
-  async send(alert: Alert, config: SlackConfig, template?: string): Promise<NotificationResult> {
+  async send(alert: Alert, config: Record<string, unknown>, template?: string): Promise<NotificationResult> {
+    const slackConfig = config as unknown as SlackConfig;
     try {
       const payload = {
-        channel: config.channel,
-        username: config.username || 'Alert Bot',
-        icon_emoji: config.iconEmoji || ':warning:',
-        text: template || (alert as { message: string }).message,
+        channel: slackConfig.channel,
+        username: slackConfig.username || 'Alert Bot',
+        icon_emoji: slackConfig.iconEmoji || ':warning:',
+        text: template || alert.message as string,
         attachments: [
           {
             color: this.getColorForLevel(alert.level),
@@ -603,7 +632,7 @@ class SlackProvider implements NotificationProvider {
       };
 
       // 發送到 Slack webhook
-      const response = await fetch(config.webhook, {
+      const response = await fetch(slackConfig.webhook, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -623,21 +652,22 @@ class SlackProvider implements NotificationProvider {
       return {
         success: false,
         message: 'Failed to send Slack notification',
-        error: error instanceof Error ? (error as { message: string }).message : String(error)
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
 
-  async test(config: SlackConfig): Promise<boolean> {
+  async test(config: Record<string, unknown>): Promise<boolean> {
+    const slackConfig = config as unknown as SlackConfig;
     try {
       const payload = {
-        channel: config.channel,
-        username: config.username || 'Alert Bot',
-        icon_emoji: config.iconEmoji || ':warning:',
+        channel: slackConfig.channel,
+        username: slackConfig.username || 'Alert Bot',
+        icon_emoji: slackConfig.iconEmoji || ':warning:',
         text: 'Test notification from Alert System'
       };
 
-      const response = await fetch(config.webhook, {
+      const response = await fetch(slackConfig.webhook, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -667,7 +697,8 @@ class SlackProvider implements NotificationProvider {
  * Webhook Provider
  */
 class WebhookProvider implements NotificationProvider {
-  async send(alert: Alert, config: WebhookConfig, template?: string): Promise<NotificationResult> {
+  async send(alert: Alert, config: Record<string, unknown>, template?: string): Promise<NotificationResult> {
+    const webhookConfig = config as unknown as WebhookConfig;
     try {
       const payload = {
         alert: alert,
@@ -675,14 +706,14 @@ class WebhookProvider implements NotificationProvider {
         timestamp: new Date().toISOString()
       };
 
-      const response = await fetch(config.url, {
-        method: config.method || 'POST',
+      const response = await fetch(webhookConfig.url, {
+        method: webhookConfig.method || 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...config.headers
+          ...webhookConfig.headers
         },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(config.timeout || 10000)
+        signal: AbortSignal.timeout(webhookConfig.timeout || 10000)
       });
 
       if (!response.ok) {
@@ -697,12 +728,13 @@ class WebhookProvider implements NotificationProvider {
       return {
         success: false,
         message: 'Failed to send webhook notification',
-        error: error instanceof Error ? (error as { message: string }).message : String(error)
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
 
-  async test(config: WebhookConfig): Promise<boolean> {
+  async test(config: Record<string, unknown>): Promise<boolean> {
+    const webhookConfig = config as unknown as WebhookConfig;
     try {
       const payload = {
         test: true,
@@ -710,14 +742,14 @@ class WebhookProvider implements NotificationProvider {
         timestamp: new Date().toISOString()
       };
 
-      const response = await fetch(config.url, {
-        method: config.method || 'POST',
+      const response = await fetch(webhookConfig.url, {
+        method: webhookConfig.method || 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...config.headers
+          ...webhookConfig.headers
         },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(config.timeout || 10000)
+        signal: AbortSignal.timeout(webhookConfig.timeout || 10000)
       });
 
       return response.ok;
@@ -732,12 +764,13 @@ class WebhookProvider implements NotificationProvider {
  * SMS Provider
  */
 class SmsProvider implements NotificationProvider {
-  async send(alert: Alert, config: SmsConfig, template?: string): Promise<NotificationResult> {
+  async send(alert: Alert, config: Record<string, unknown>, template?: string): Promise<NotificationResult> {
+    const smsConfig = config as unknown as SmsConfig;
     try {
       // 這裡應該整合實際的短信服務 (如 Twilio, AWS SNS 等)
       console.log('Sending SMS notification:', {
-        recipients: config.recipients,
-        message: template || (alert as { message: string }).message
+        recipients: smsConfig.recipients,
+        message: template || alert.message as string
       });
 
       return {
@@ -748,15 +781,16 @@ class SmsProvider implements NotificationProvider {
       return {
         success: false,
         message: 'Failed to send SMS',
-        error: error instanceof Error ? (error as { message: string }).message : String(error)
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   }
 
-  async test(config: SmsConfig): Promise<boolean> {
+  async test(config: Record<string, unknown>): Promise<boolean> {
+    const smsConfig = config as unknown as SmsConfig;
     try {
       // 發送測試短信
-      console.log('Testing SMS configuration:', config);
+      console.log('Testing SMS configuration:', smsConfig);
       return true;
     } catch (error) {
       console.error('SMS test failed:', error);

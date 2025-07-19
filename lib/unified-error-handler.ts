@@ -1,5 +1,4 @@
-import { DatabaseRecord } from '@/lib/types/database';
-import { DatabaseRecord } from '@/lib/types/database';
+import { DatabaseRecord } from './types/database';
 
 // Unified Error Handler - 整合所有錯誤處理功能
 // 支持客戶端和服務端使用，簡化錯誤分類和恢復策略
@@ -47,6 +46,26 @@ interface ClassificationResult {
     table?: string;
     syntaxIssue?: string;
   };
+}
+
+// 錯誤特徵類型
+interface ErrorFeatures {
+  column?: string;
+  table?: string;
+  syntaxIssue?: string;
+  query?: string;
+  duration?: number;
+  resultSize?: number;
+  [key: string]: unknown;
+}
+
+// 錯誤上下文類型
+interface ErrorContext {
+  component?: string;
+  action?: string;
+  userId?: string;
+  timestamp?: string;
+  [key: string]: unknown;
 }
 
 // 錯誤恢復結果
@@ -97,7 +116,7 @@ const ERROR_PATTERNS = {
 
 // 統一的錯誤分類函數
 export function classifyError(error: unknown, sql?: string): ClassificationResult {
-  const errorMessage = error.message || error.toString();
+  const errorMessage = (error as Error)?.message || String(error);
   
   // 嘗試匹配錯誤模式
   for (const [errorType, patterns] of Object.entries(ERROR_PATTERNS)) {
@@ -179,7 +198,7 @@ export function getErrorSeverity(errorType: ErrorType): ErrorSeverity {
 }
 
 // 生成用戶友好的錯誤消息
-export function generateUserMessage(errorType: ErrorType, features?: any): string {
+export function generateUserMessage(errorType: ErrorType, features?: ErrorFeatures): string {
   const messages: Record<ErrorType, string> = {
     [ErrorType.COLUMN_NOT_EXISTS]: `Column '${features?.column || 'unknown'}' not found. Please check the column name.`,
     [ErrorType.TABLE_NOT_EXISTS]: `Table '${features?.table || 'unknown'}' not found. Please verify the table name.`,
@@ -394,7 +413,7 @@ export function enhanceErrorMessage(errorType: ErrorType, originalMessage: strin
 export async function logErrorPattern(
   errorType: ErrorType,
   error: Error,
-  context?: any
+  context?: ErrorContext
 ): Promise<void> {
   if (process.env.NODE_ENV === 'development') {
     console.log('[Error Pattern]', {

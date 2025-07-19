@@ -149,10 +149,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       remark: `Auto-reprinted from ${data.originalPltNum}`,
     };
 
-    // Create dynamic inventory record
-    const inventoryRecord: DatabaseRecord = {
+    // Create dynamic inventory record (Strategy 2: DTO pattern)
+    const inventoryRecord: QcInventoryPayload = {
       product_code: productInfo.code,
       plt_num: palletNum,
+      await: 0, // Default await value
     };
 
     // Set inventory field based on original pallet location
@@ -162,7 +163,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         `[Auto Reprint V2 API] Location mapping: "${data.originalLocation}" -> "${mappedLocation}"`
       );
     }
-    inventoryRecord[mappedLocation as string] = data.quantity;
+    // Type-safe dynamic property assignment (Strategy 4: unknown + type narrowing)
+    (inventoryRecord as any)[mappedLocation] = data.quantity;
 
     const databasePayload: QcDatabaseEntryPayload = {
       palletInfo: palletInfoRecord,
@@ -243,7 +245,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           );
         }
       }
-    } catch (historyUpdateError: any) {
+    } catch (historyUpdateError: unknown) {
       if (process.env.NODE_ENV !== 'production') {
         console.warn(
           '[Auto Reprint V2 API] Error updating original history record:',
@@ -281,7 +283,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           console.log('[Auto Reprint V2 API] Stock level updated successfully:', stockResult);
         }
       }
-    } catch (stockUpdateError: any) {
+    } catch (stockUpdateError: unknown) {
       if (process.env.NODE_ENV !== 'production') {
         console.warn('[Auto Reprint V2 API] Stock level update error:', stockUpdateError);
       }

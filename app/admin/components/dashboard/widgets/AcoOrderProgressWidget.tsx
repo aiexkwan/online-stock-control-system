@@ -62,6 +62,12 @@ interface AcoOrderProgress {
   completion_percentage: number;
 }
 
+interface ProgressMetadata {
+  orderRef?: number;
+  productCount?: number;
+  [key: string]: unknown;
+}
+
 export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget({
   widget,
   isEditMode,
@@ -69,7 +75,7 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
   const [selectedOrderRef, setSelectedOrderRef] = useState<number | null>(null);
   const [orderProgress, setOrderProgress] = useState<AcoOrderProgress[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [progressMetadata, setProgressMetadata] = useState<any>({});
+  const [progressMetadata, setProgressMetadata] = useState<ProgressMetadata>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { showError } = useWidgetToast();
 
@@ -174,9 +180,9 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
         ];
         setOrderProgress(mockProgress);
         setProgressMetadata({ orderRef, productCount: mockProgress.length });
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('[AcoOrderProgressWidget as string] Error loading order progress:', err);
-        showError('Failed to load order progress', err);
+        showError('Failed to load order progress', err instanceof Error ? err : undefined);
         setOrderProgress([]);
       }
     },

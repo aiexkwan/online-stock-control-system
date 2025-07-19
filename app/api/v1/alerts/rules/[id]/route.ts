@@ -9,6 +9,8 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { AlertRuleEngine } from '@/lib/alerts/core/AlertRuleEngine';
 import { AlertRule, AlertLevel, AlertCondition, NotificationChannel } from '@/lib/alerts/types';
+import { getErrorMessage } from '@/lib/types/error-handling';
+import { toRecord, safeGet, safeString, safeBoolean } from '@/lib/types/supabase-helpers';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -224,26 +226,27 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 }
 
 /**
- * 反序列化規則
+ * 反序列化規則 (Strategy 4: unknown + type narrowing)
  */
-function deserializeRule(data: DatabaseRecord[]): AlertRule {
+function deserializeRule(data: unknown): AlertRule {
+  const record = toRecord(data);
   return {
-    id: data.id,
-    name: data.name,
-    description: data.description,
-    enabled: data.enabled,
-    level: data.level,
-    metric: data.metric,
-    condition: data.condition,
-    threshold: data.threshold,
-    timeWindow: data.time_window,
-    evaluationInterval: data.evaluation_interval,
-    dependencies: JSON.parse(data.dependencies || '[]'),
-    silenceTime: data.silence_time,
-    notifications: JSON.parse(data.notifications || '[]'),
-    tags: JSON.parse(data.tags || '{}'),
-    createdAt: new Date(data.created_at),
-    updatedAt: new Date(data.updated_at),
-    createdBy: data.created_by
+    id: safeString(safeGet(record, 'id', '')),
+    name: safeString(safeGet(record, 'name', '')),
+    description: safeString(safeGet(record, 'description', '')),
+    enabled: safeBoolean(safeGet(record, 'enabled', false)),
+    level: safeString(safeGet(record, 'level', 'low')) as AlertLevel,
+    metric: safeString(safeGet(record, 'metric', '')),
+    condition: safeString(safeGet(record, 'condition', 'gt')) as AlertCondition,
+    threshold: safeGet(record, 'threshold', 0) as number,
+    timeWindow: safeGet(record, 'time_window', 300) as number,
+    evaluationInterval: safeGet(record, 'evaluation_interval', 60) as number,
+    dependencies: JSON.parse(safeString(safeGet(record, 'dependencies', '[]'))),
+    silenceTime: safeGet(record, 'silence_time', 0) as number,
+    notifications: JSON.parse(safeString(safeGet(record, 'notifications', '[]'))),
+    tags: JSON.parse(safeString(safeGet(record, 'tags', '{}'))),
+    createdAt: new Date(safeString(safeGet(record, 'created_at', new Date().toISOString()))),
+    updatedAt: new Date(safeString(safeGet(record, 'updated_at', new Date().toISOString()))),
+    createdBy: safeString(safeGet(record, 'created_by', ''))
   };
 }

@@ -45,8 +45,8 @@ export class ConversationContextManager {
         if (row.product_code) {
           entities.push({
             type: 'product',
-            value: row.product_code,
-            displayName: row.product_name || row.description,
+            value: String(row.product_code),
+            displayName: String(row.product_name || row.description || ''),
             mentionedAt: timestamp,
           });
         }
@@ -59,7 +59,7 @@ export class ConversationContextManager {
         if (row.order_ref) {
           entities.push({
             type: 'order',
-            value: row.order_ref,
+            value: String(row.order_ref),
             mentionedAt: timestamp,
           });
         }
@@ -72,7 +72,7 @@ export class ConversationContextManager {
         if (row.plt_num) {
           entities.push({
             type: 'pallet',
-            value: row.plt_num,
+            value: String(row.plt_num),
             mentionedAt: timestamp,
           });
         }
@@ -86,7 +86,7 @@ export class ConversationContextManager {
         if (row[col]) {
           entities.push({
             type: 'location',
-            value: row[col],
+            value: String(row[col]),
             mentionedAt: timestamp,
           });
         }
@@ -236,25 +236,25 @@ export class ConversationContextManager {
   }
 
   // 從結果行提取實體
-  private extractEntityFromRow(row: DatabaseRecord): Entity {
+  private extractEntityFromRow(row: any): Entity {
     // 優先級：產品 > 訂單 > 棧板
     if (row.product_code) {
       return {
         type: 'product',
-        value: row.product_code,
-        displayName: row.product_name || row.description,
+        value: String(row.product_code),
+        displayName: String(row.product_name || row.description || ''),
         mentionedAt: new Date().toISOString(),
       };
     } else if (row.order_ref) {
       return {
         type: 'order',
-        value: row.order_ref,
+        value: String(row.order_ref),
         mentionedAt: new Date().toISOString(),
       };
     } else if (row.plt_num) {
       return {
         type: 'pallet',
-        value: row.plt_num,
+        value: String(row.plt_num),
         mentionedAt: new Date().toISOString(),
       };
     }

@@ -24,6 +24,14 @@ import {
 } from '@/lib/design-system/colors';
 import { textClasses, getTextClass } from '@/lib/design-system/typography';
 import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
+import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
+
+// Chart component props interface
+interface ChartComponentProps {
+  timeFrame?: TimeFrame;
+  theme?: string;
+  [key: string]: unknown;
+}
 
 // Lazy load chart components for better performance
 // Week 2 Day 3: Progressive Loading for Charts
@@ -42,7 +50,7 @@ interface PageContent {
   title: string;
   subtitle: string;
   icon: React.ElementType;
-  component: React.ComponentType<any>;
+  component: React.ComponentType<ChartComponentProps>;
   color: string;
 }
 
@@ -106,7 +114,7 @@ const pages: PageContent[] = [
 ];
 
 interface AnalysisPagedWidgetV2Props {
-  timeFrame?: any;
+  timeFrame?: TimeFrame;
   theme?: string;
 }
 

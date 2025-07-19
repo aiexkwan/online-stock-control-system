@@ -279,8 +279,17 @@ export class FeatureFlagManager {
    * 清理資源
    */
   dispose(): void {
-    if (this.provider && 'dispose' in this.provider) {
-      (this.provider as any).dispose();
+    // Strategy 2: DTO/自定義 type interface - 定義清晰的型別轉換
+    interface DisposableProvider extends FeatureFlagProvider {
+      dispose(): void;
+    }
+    
+    function isDisposable(provider: FeatureFlagProvider): provider is DisposableProvider {
+      return 'dispose' in provider && typeof (provider as DisposableProvider).dispose === 'function';
+    }
+    
+    if (isDisposable(this.provider)) {
+      this.provider.dispose();
     }
   }
 

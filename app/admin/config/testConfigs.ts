@@ -14,6 +14,46 @@ import {
   Package,
 } from 'lucide-react';
 
+// 定義默認控制的各種類型
+interface ABTestingControls {
+  v2Percentage: number;
+  autoRollback: boolean;
+  performanceThreshold: number;
+  simulationMode: boolean;
+}
+
+interface DualRunControls {
+  parallelRun: boolean;
+  captureMetrics: boolean;
+  compareVisual: boolean;
+}
+
+interface OptimizationControls {
+  enableVirtualization: boolean;
+  enablePreloading: boolean;
+  measureRenderTime: boolean;
+}
+
+interface MigrationControls {
+  showOldVersion: boolean;
+  showNewVersion: boolean;
+  highlightDifferences: boolean;
+}
+
+interface RegistryControls {
+  testLazyLoading: boolean;
+  testPreloading: boolean;
+  useGraphQL: boolean;
+  measureBundleSize: boolean;
+}
+
+type TestControlsUnion = 
+  | ABTestingControls 
+  | DualRunControls 
+  | OptimizationControls 
+  | MigrationControls 
+  | RegistryControls;
+
 export interface TestConfig {
   id: string;
   title: string;
@@ -21,7 +61,7 @@ export interface TestConfig {
   icon: React.ElementType;
   category: 'performance' | 'migration' | 'verification' | 'system';
   features: string[];
-  defaultControls?: any;
+  defaultControls?: TestControlsUnion;
 }
 
 export const testConfigs: Record<string, TestConfig> = {

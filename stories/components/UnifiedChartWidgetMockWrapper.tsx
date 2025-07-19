@@ -23,8 +23,9 @@ import {
   Cell
 } from '@/lib/recharts-dynamic';
 
+// Strategy 2: DTO 模式強化 - 擴展 MockData 類型以支持多種數據結構
 interface MockData {
-  data: DatabaseRecord[];
+  data: DatabaseRecord[] | Record<string, unknown> | null;
   isLoading: boolean;
   error: Error | null;
 }
@@ -55,7 +56,7 @@ export const UnifiedChartWidgetMockWrapper: React.FC<UnifiedChartWidgetMockWrapp
   const processedChartData = React.useMemo(() => {
     if (!data || !config.dataSource) return null;
 
-    const sourceData = data[config.dataSource];
+    const sourceData = Array.isArray(data) ? data : (data && typeof data === 'object' && config.dataSource in data ? (data as any)[config.dataSource] : null);
     if (!sourceData) return null;
 
     // 根據圖表類型處理數據

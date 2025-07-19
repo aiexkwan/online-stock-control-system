@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { DatabaseRecord } from '@/lib/types/database';
+import { safeGet, safeString } from '@/lib/types/supabase-helpers';
 import { NextResponse, type NextRequest } from 'next/server';
 import { isDevelopment, isProduction } from '@/lib/utils/env';
 import { 
@@ -27,7 +28,7 @@ export async function middleware(request: NextRequest) {
   logMiddlewareRequest(request.nextUrl.pathname, request.method, correlationId, {
     env: process.env.NODE_ENV || 'development',
     url: request.url,
-    userAgent: request.headers.get('user-agent'),
+    userAgent: request.headers.get('user-agent') || '',
   });
 
   // 公開路由 - 只有主登入頁面、密碼重設頁面和特定的 API 路由不需要認證
@@ -66,7 +67,7 @@ export async function middleware(request: NextRequest) {
   // API 版本管理處理 (v1.8 新增)
   let processedRequest = request;
   let apiVersion = 'v1'; // 預設版本
-  let versionInfo: DatabaseRecord = undefined;
+  let versionInfo: DatabaseRecord | undefined = undefined;
   
   if (request.nextUrl.pathname.startsWith('/api/')) {
     try {
@@ -80,7 +81,7 @@ export async function middleware(request: NextRequest) {
       
       processedRequest = versioningResult.request;
       apiVersion = versioningResult.version;
-      versionInfo = versioningResult.versionInfo;
+      versionInfo = versioningResult.versionInfo as DatabaseRecord;
       
       // 記錄版本使用
       recordVersionUsage(apiVersion, false);
@@ -113,7 +114,7 @@ export async function middleware(request: NextRequest) {
     
     // 添加 API 版本 headers (v1.8 新增)
     if (processedRequest.nextUrl.pathname.startsWith('/api/')) {
-      response = addVersionHeadersToResponse(response, apiVersion, versionInfo);
+      response = addVersionHeadersToResponse(response, apiVersion, versionInfo as any);
     }
     
     // 記錄請求完成時間
@@ -322,7 +323,7 @@ export async function middleware(request: NextRequest) {
     
     // 添加 API 版本 headers (v1.8 新增)
     if (processedRequest.nextUrl.pathname.startsWith('/api/')) {
-      response = addVersionHeadersToResponse(response, apiVersion, versionInfo);
+      response = addVersionHeadersToResponse(response, apiVersion, versionInfo as any);
     }
     
     // 記錄請求完成
@@ -349,7 +350,7 @@ export async function middleware(request: NextRequest) {
     
     // 添加 API 版本 headers (v1.8 新增)
     if (processedRequest.nextUrl.pathname.startsWith('/api/')) {
-      response = addVersionHeadersToResponse(response, apiVersion, versionInfo);
+      response = addVersionHeadersToResponse(response, apiVersion, versionInfo as any);
     }
     
     return response;

@@ -5,7 +5,7 @@
 
 import { AlertConfigManager } from '../config/AlertConfigManager';
 import { AlertMonitoringService } from '../services/AlertMonitoringService';
-import { AlertResponse } from '../types';
+import { AlertResponse, InitializationConfig } from '../types';
 
 export class AlertSystemInitializer {
   private configManager: AlertConfigManager;
@@ -127,24 +127,36 @@ export class AlertSystemInitializer {
   /**
    * 獲取系統狀態
    */
-  public async getSystemStatus(): Promise<any> {
+  public async getSystemStatus(): Promise<InitializationConfig> {
     try {
       const status = await this.monitoringService.getStatus();
       const config = this.configManager.getConfig();
       const templates = await this.configManager.getTemplates();
 
-      return {
-        monitoring: status,
-        config: config,
-        templatesCount: templates.length,
+      const initConfig: InitializationConfig = {
+        enabledFeatures: ['monitoring', 'notifications', 'templates'],
+        defaultSettings: {
+          monitoring: status,
+          config: config,
+          templatesCount: templates.length
+        },
+        migrations: [],
         lastCheck: new Date().toISOString()
       };
+      
+      return initConfig;
     } catch (error) {
       console.error('Failed to get system status:', error);
-      return {
-        error: error instanceof Error ? (error as { message: string }).message : String(error),
+      const errorConfig: InitializationConfig = {
+        enabledFeatures: [],
+        defaultSettings: {
+          error: error instanceof Error ? (error as { message: string }).message : String(error)
+        },
+        migrations: [],
         lastCheck: new Date().toISOString()
       };
+      
+      return errorConfig;
     }
   }
 }

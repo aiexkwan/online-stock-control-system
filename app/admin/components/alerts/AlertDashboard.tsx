@@ -326,11 +326,11 @@ export function AlertDashboard() {
           { id: 'history', label: 'History' },
           { id: 'notifications', label: 'Notifications' },
           { id: 'settings', label: 'Settings' }
-        ].map((tab: TabOption) => (
+        ].map((tab) => (
           <Button
             key={tab.id}
             variant={activeTab === tab.id ? 'default' : 'outline'}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => setActiveTab(tab.id as typeof activeTab)}
           >
             {tab.label}
           </Button>

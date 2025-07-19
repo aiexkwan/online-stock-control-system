@@ -181,7 +181,8 @@
       "Bash(PLAYWRIGHT_BASE_URL=http://localhost:3002 npx playwright test e2e/admin-themes-quick-test.spec.ts --timeout=60000 --project=chromium)",
       "Bash(ANALYZE=false NODE_ENV=production npm run build)",
       "Bash(tsx scripts/type-refactor-tool.ts:*)",
-      "Bash(tsx scripts/replace-any-with-types.ts:*)"
+      "Bash(tsx scripts/replace-any-with-types.ts:*)",
+      "Bash(supabase gen types:*)"
     ],
     "deny": []
   },

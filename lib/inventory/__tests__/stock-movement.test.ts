@@ -195,8 +195,8 @@ describe('StockMovementService', () => {
       const result = await service.getMovementHistory('PLT12345678', { includeUser: true });
 
       expect(result.success).toBe(true);
-      expect(result.movements![0].users).toBeDefined();
-      expect(result.movements![0].users.full_name).toBe('John Doe');
+      expect((result.movements![0] as any).users).toBeDefined();
+      expect((result.movements![0] as any).users.full_name).toBe('John Doe');
     });
   });
 

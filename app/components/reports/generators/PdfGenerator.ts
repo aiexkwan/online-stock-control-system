@@ -5,7 +5,6 @@
 
 import { jsPDF } from 'jspdf';
 import { DatabaseRecord } from '@/lib/types/database';
-import { DatabaseRecord } from '@/lib/types/database';
 import 'jspdf-autotable';
 import {
   ReportGenerator,
@@ -140,7 +139,7 @@ export class PdfGenerator implements ReportGenerator {
     return doc.output('blob');
   }
 
-  private addHeader(doc: jsPDF, config: ReportConfig, margins: any, y: number): void {
+  private addHeader(doc: jsPDF, config: ReportConfig, margins: { top: number; right: number; bottom: number; left: number }, y: number): void {
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     doc.text(config.name, margins.left, y);
@@ -152,7 +151,7 @@ export class PdfGenerator implements ReportGenerator {
     }
   }
 
-  private addMetadata(doc: jsPDF, data: ProcessedReportData, margins: any, y: number): void {
+  private addMetadata(doc: jsPDF, data: ProcessedReportData, margins: { top: number; right: number; bottom: number; left: number }, y: number): void {
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
 
@@ -171,7 +170,7 @@ export class PdfGenerator implements ReportGenerator {
     }
   }
 
-  private addSummarySection(doc: jsPDF, section: any, data: DatabaseRecord[], margins: any, y: number): number {
+  private addSummarySection(doc: jsPDF, section: import('../core/ReportConfig').SectionConfig, data: DatabaseRecord[], margins: { top: number; right: number; bottom: number; left: number }, y: number): number {
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
 
@@ -190,7 +189,7 @@ export class PdfGenerator implements ReportGenerator {
     return currentY;
   }
 
-  private addTableSection(doc: jsPDF, section: any, data: Record<string, unknown>[], margins: any, y: number): number {
+  private addTableSection(doc: jsPDF, section: import('../core/ReportConfig').SectionConfig, data: Record<string, unknown>[], margins: { top: number; right: number; bottom: number; left: number }, y: number): number {
     if (!Array.isArray(data) || data.length === 0) {
       doc.setFontSize(10);
       doc.text('No data available', margins.left, y);
@@ -253,7 +252,7 @@ export class PdfGenerator implements ReportGenerator {
     }
   }
 
-  private inferColumns(dataItem: any): ColumnConfig[] {
+  private inferColumns(dataItem: Record<string, unknown>): ColumnConfig[] {
     // 自動推斷列配置
     return Object.keys(dataItem).map(key => ({
       id: key,

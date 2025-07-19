@@ -51,10 +51,10 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
   limit = 10,
   widget
 }) => {
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [metadata, setMetadata] = useState<any>({});
+  const [metadata, setMetadata] = useState<Record<string, unknown>>({});
   const dashboardAPI = useMemo(() => createDashboardAPI(), []);
 
   // Lazy loading with viewport detection
@@ -112,21 +112,26 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
       if (result.widgets && result.widgets.length > 0) {
         const widgetData = result.widgets[0];
 
-        if (widgetData.data.error) {
-          console.error('[ProductDistributionChartWidget as string] API error:', widgetData.data.error);
-          setError(widgetData.data.error);
+        if (typeof widgetData.data === 'object' && widgetData.data !== null && 'error' in widgetData.data && widgetData.data.error) {
+          const errorMsg = String(widgetData.data.error);
+          console.error('[ProductDistributionChartWidget as string] API error:', errorMsg);
+          setError(errorMsg);
           setChartData([]);
           return;
         }
 
-        const distributionData = widgetData.data.value || [];
-        const widgetMetadata = widgetData.data.metadata || {};
+        const distributionData = (typeof widgetData.data === 'object' && widgetData.data !== null && 'value' in widgetData.data) 
+          ? widgetData.data.value 
+          : [];
+        const widgetMetadata = (typeof widgetData.data === 'object' && widgetData.data !== null && 'metadata' in widgetData.data) 
+          ? widgetData.data.metadata 
+          : {};
 
         console.log('[ProductDistributionChartWidget as string] API returned data:', distributionData);
         console.log('[ProductDistributionChartWidget as string] Metadata:', widgetMetadata);
 
-        setChartData(distributionData);
-        setMetadata(widgetMetadata);
+        setChartData(Array.isArray(distributionData) ? distributionData : []);
+        setMetadata(typeof widgetMetadata === 'object' && widgetMetadata !== null ? widgetMetadata as Record<string, unknown> : {});
 
       } else {
         console.warn('[ProductDistributionChartWidget as string] No widget data returned from API');
@@ -148,11 +153,11 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
 
   // 計算總數
   const total = useMemo(() => {
-    return chartData.reduce((sum, item) => sum + item.value, 0);
+    return chartData.reduce((sum, item) => sum + (typeof item.value === 'number' ? item.value : 0), 0);
   }, [chartData]);
 
   // 自定義 Tooltip
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; payload: { name: string } }>; label?: string }) => {
     if (active && payload && payload.length) {
       const data = payload[0];
       const percentage = total > 0 ? ((data.value / total) * 100).toFixed(1) : '0';
@@ -186,11 +191,11 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
       label: 'Total Quantity',
       value: total.toLocaleString(),
     },
-    topProduct && {
+    ...(topProduct ? [{
       label: 'Top Product',
-      value: topProduct.name,
-    }
-  ].filter(Boolean);
+      value: String(topProduct.name),
+    }] : [])
+  ];
 
   return (
     <div ref={targetRef} className="h-full">
@@ -209,7 +214,7 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
           source: 'Server',
           optimized: true
         } : undefined}
-        stats={stats as any}
+        stats={stats}
         showFooter={true}
         widgetType={widget?.type?.toUpperCase()}
       >

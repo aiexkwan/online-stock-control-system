@@ -47,8 +47,8 @@ export function PrintQueueMonitor({ className, compact = false }: PrintQueueMoni
         // Update jobs periodically
         updateJobsHandler = async () => {
           try {
-            setActiveJobs(monitor.getActiveStatuses());
-            setCompletedJobs(monitor.getCompletedStatuses(5));
+            setActiveJobs(await monitor.getActiveJobs());
+            setCompletedJobs(await monitor.getCompletedJobs());
             const stats = await monitor.getStatistics();
             setStatistics(stats);
           } catch (err) {
@@ -59,8 +59,10 @@ export function PrintQueueMonitor({ className, compact = false }: PrintQueueMoni
         updateJobsHandler();
         interval = setInterval(updateJobsHandler, 1000);
 
-        // Subscribe to status changes
-        monitor.on('statusUpdate', updateJobsHandler);
+        // Subscribe to status changes if monitor supports events
+        if ('on' in monitor && typeof monitor.on === 'function') {
+          monitor.on('statusUpdate', updateJobsHandler);
+        }
       } catch (err) {
         console.warn('[PrintQueueMonitor] Failed to initialize monitor:', err);
         // Retry after a delay
@@ -72,7 +74,7 @@ export function PrintQueueMonitor({ className, compact = false }: PrintQueueMoni
 
     return () => {
       if (interval) clearInterval(interval);
-      if (monitor && updateJobsHandler) {
+      if (monitor && updateJobsHandler && 'off' in monitor && typeof monitor.off === 'function') {
         // Use the same function reference for removal
         monitor.off('statusUpdate', updateJobsHandler);
       }
@@ -170,9 +172,9 @@ export function PrintQueueMonitor({ className, compact = false }: PrintQueueMoni
           </CardTitle>
           {statistics && (
             <div className='flex items-center gap-4 text-sm text-muted-foreground'>
-              <span>Total: {statistics.total}</span>
-              <span className='text-green-600'>✓ {statistics.completed}</span>
-              <span className='text-red-600'>✗ {statistics.failed}</span>
+              <span>Total: {statistics.totalJobs}</span>
+              <span className='text-green-600'>✓ {statistics.completedJobs}</span>
+              <span className='text-red-600'>✗ {statistics.failedJobs}</span>
             </div>
           )}
         </div>
@@ -190,7 +192,7 @@ export function PrintQueueMonitor({ className, compact = false }: PrintQueueMoni
               <p className='text-sm text-muted-foreground'>Processing</p>
             </div>
             <div className='text-center'>
-              <p className='text-2xl font-bold'>{statistics?.completed || 0}</p>
+              <p className='text-2xl font-bold'>{statistics?.completedJobs || 0}</p>
               <p className='text-sm text-muted-foreground'>Completed</p>
             </div>
           </div>

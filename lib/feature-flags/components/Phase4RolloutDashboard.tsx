@@ -2,6 +2,7 @@
  * Phase 4 Rollout Dashboard
  *
  * 監控測試基礎設施的漸進式發布進度
+ * 策略 4: unknown + type narrowing - 安全的 metadata 訪問
  */
 
 import React, { useState, useEffect } from 'react';
@@ -12,6 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { phase4FeatureFlags, getCurrentCoverageTarget } from '../configs/phase4-rollout';
 import { useFeatureFlags } from '../hooks/useFeatureFlag';
 import { FeatureFlagStatus } from '../types';
+import { safeGet, safeString } from '@/lib/types/supabase-helpers';
 
 interface RolloutMetrics {
   totalUsers: number;
@@ -244,10 +246,13 @@ export function Phase4RolloutDashboard() {
           <AlertDescription>
             Test coverage is below the target of {coverageTarget}%. Continue adding tests to reach
             the milestone by{' '}
-            {
-              phase4FeatureFlags.find(f => f.key === 'jest_unit_tests')?.metadata?.coverage
-                ?.milestones?.[0]?.date
-            }
+            {safeString(
+              safeGet(
+                phase4FeatureFlags.find(f => f.key === 'jest_unit_tests'),
+                'metadata.coverage.milestones[0].date',
+                'TBD'
+              )
+            )}
             .
           </AlertDescription>
         </Alert>

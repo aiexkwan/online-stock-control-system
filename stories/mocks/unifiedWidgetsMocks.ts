@@ -5,7 +5,6 @@
 
 import React from 'react';
 import { DatabaseRecord } from '@/lib/types/database';
-import { DatabaseRecord } from '@/lib/types/database';
 
 // Mock Hook Factory
 export const createMockHook = (mockData: Record<string, unknown>) => {
@@ -223,7 +222,7 @@ export const mockTableData = {
   ],
 };
 
-export const createMockTableData = (dataType: keyof typeof mockTableData, overrides: DatabaseRecord = {}) => ({
+export const createMockTableData = (dataType: keyof typeof mockTableData, overrides: Partial<DatabaseRecord> = {}) => ({
   success: {
     data: {
       table_data: {
@@ -242,7 +241,7 @@ export const createMockTableData = (dataType: keyof typeof mockTableData, overri
       staff_workload: {
         items: mockTableData.staff,
       },
-      ...overrides.data,
+      ...(overrides?.data && typeof overrides.data === 'object' ? overrides.data : {}),
     },
     isLoading: false,
     error: null,

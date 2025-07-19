@@ -46,7 +46,7 @@ export interface ChartContainerProps {
   refreshing?: boolean;
   
   // Metadata for analytics
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   
   // Performance metrics
   performanceMetrics?: {
