@@ -1,89 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseRecord } from '@/lib/types/database';
-import { getErrorMessage } from '@/lib/types/error-handling';
-import { safeGet, safeNumber } from '@/lib/types/supabase-helpers';
+import { DatabaseRecord } from '@/types/database/tables';
+import { getErrorMessage } from '@/types/core/error';
+import { safeGet, safeNumber, toRecordArray } from '@/types/database/helpers';
 import { createClient } from '@/app/utils/supabase/server';
 import { LRUCache } from 'lru-cache';
 import OpenAI from 'openai';
+import type {
+  ClassifiedError,
+  SqlExecutionResult,
+  OpenAIMessage,
+  SupabaseQueryResult,
+  CacheEntry,
+  QueryRecordData,
+  QueryResult,
+  CacheResult,
+  ASK_DATABASE_CONSTANTS,
+} from '@/types/api/ask-database';
+import { isClassifiedError } from '@/types/api/ask-database';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
-
-// Type definitions for better type safety
-
-// Error classification types (Strategy 4: unknown + type narrowing)
-interface ClassifiedError extends Error {
-  errorType: string;
-  originalError?: Error;
-  sql?: string;
-  severity?: 'low' | 'medium' | 'high';
-  recoverable?: boolean;
-}
-
-// Type guard for classified errors
-function isClassifiedError(error: unknown): error is ClassifiedError {
-  return error instanceof Error && 
-         typeof error === 'object' && 
-         'errorType' in error && 
-         typeof (error as Record<string, unknown>).errorType === 'string';
-}
-
-// SQL execution result types
-interface SqlExecutionResult {
-  data?: unknown[];
-  error?: string;
-  count?: number;
-}
-interface OpenAIMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
-
-interface SupabaseQueryResult {
-  data: Record<string, unknown>[];
-  rowCount: number;
-  executionTime: number;
-}
-
-interface CacheEntry {
-  question: string;
-  sql: string;
-  result: SupabaseQueryResult;
-  answer: string;
-  complexity: 'simple' | 'medium' | 'complex';
-  tokensUsed: number;
-  cached: boolean;
-  timestamp: string;
-  resolvedQuestion?: string;
-  references?: Record<string, unknown>[];
-  performanceAnalysis?: string;
-}
-
-interface QueryRecordData {
-  query: string;
-  answer: string;
-  user: string;
-  token: number;
-  sql_query: string;
-  result_json: SupabaseQueryResult | null;
-  query_hash: string;
-  fuzzy_hash: string;
-  execution_time: number;
-  row_count: number;
-  complexity: string;
-  session_id?: string;
-  created_at?: string;
-  expired_at?: string | null;
-}
 import { enhanceQueryWithTemplate } from '@/lib/query-templates';
 import { optimizeSQL, analyzeQueryWithPlan, generatePerformanceReport } from '@/lib/sql-optimizer';
 import { DatabaseConversationContextManager } from '@/lib/conversation-context-db';
-import { 
-  classifyError, 
-  getRecoveryStrategy, 
-  enhanceErrorMessage, 
+import {
+  classifyError,
+  getRecoveryStrategy,
+  enhanceErrorMessage,
   ErrorType,
   logErrorPattern,
   attemptErrorRecovery,
-  generateUserMessage
+  generateUserMessage,
 } from '@/lib/unified-error-handler';
 import { isDevelopment, isNotProduction } from '@/lib/utils/env';
 import * as fs from 'fs';
@@ -117,7 +62,8 @@ const userNameCache = new LRUCache<string, string>({
   ttl: 24 * 60 * 60 * 1000, // 24小時
 });
 
-interface QueryResult {
+// Local QueryResult interface with specific answer field structure
+interface LocalQueryResult {
   question: string;
   sql: string;
   result: {
@@ -136,14 +82,13 @@ interface QueryResult {
 }
 
 // DTO interface for cache results (Strategy 2: DTO pattern)
-interface CacheResult extends QueryResult {
+interface LocalCacheResult extends LocalQueryResult {
   cacheLevel?: string;
   similarity?: number;
   responseTime?: number;
 }
 
-isNotProduction() &&
-  console.log('[Ask Database] 🚀 OpenAI SQL Generation Mode - Build 2025-01-03');
+isNotProduction() && console.log('[Ask Database] 🚀 OpenAI SQL Generation Mode - Build 2025-01-03');
 isNotProduction() &&
   console.log('[Ask Database] ✅ Using OpenAI for SQL generation and natural language responses');
 
@@ -154,8 +99,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   let question: string = '';
 
   try {
-    isNotProduction() &&
-      console.log('[Ask Database] 🚀 OpenAI Mode - Request received');
+    isNotProduction() && console.log('[Ask Database] 🚀 OpenAI Mode - Request received');
 
     const body = await request.json();
     question = body.question;
@@ -204,8 +148,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const isAskingForHistory = conversationHistoryPatterns.some(pattern => pattern.test(question));
 
     if (isAskingForHistory) {
-      isNotProduction() &&
-        console.log('[Ask Database] User asking for conversation history');
+      isNotProduction() && console.log('[Ask Database] User asking for conversation history');
 
       // 先嘗試獲取當前 session 的對話記錄
       let recentHistory = await contextManager.getSessionHistory(10);
@@ -319,13 +262,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const { resolved: resolvedQuestion, references } =
       await contextManager.resolveReferences(question);
     if (references.length > 0) {
-      isNotProduction() &&
-        console.log('[Ask Database] Resolved references:', references);
+      isNotProduction() && console.log('[Ask Database] Resolved references:', references);
     }
 
     // 1. 並行執行權限檢查和會話歷史獲取
-    isNotProduction() &&
-      console.log('[Ask Database] Starting parallel operations...');
+    isNotProduction() && console.log('[Ask Database] Starting parallel operations...');
     const [hasPermission, conversationHistory] = await Promise.all([
       checkUserPermission(),
       contextManager.getSessionHistory(5), // 獲取最近5條對話記錄
@@ -347,8 +288,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       );
 
     // 2. 檢查智能緩存（多層）
-    isNotProduction() &&
-      console.log('[Ask Database] 🔍 Checking intelligent cache system...');
+    isNotProduction() && console.log('[Ask Database] 🔍 Checking intelligent cache system...');
     const cachedResult = await checkIntelligentCache(question, userEmail);
     if (cachedResult) {
       const cacheLevel = cachedResult.cacheLevel || 'L1';
@@ -356,13 +296,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         console.log(`[Ask Database] 🎯 ${cacheLevel} Cache hit - returning cached result`);
 
       // 異步保存聊天記錄（記錄緩存命中）
-      const safeResult = cachedResult.result || {};
+      const safeResult = cachedResult.result || ({} as any);
       const safeData = safeResult.data || [];
       const safeExecutionTime = cachedResult.responseTime || safeResult.executionTime || 0;
 
       saveQueryRecordEnhanced(
         question,
-        cachedResult.answer,
+        cachedResult.answer || '',
         userName,
         0, // 緩存命中不耗費 token
         cachedResult.sql || '',
@@ -386,8 +326,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const lruCacheKey = generateCacheKey(question, conversationHistory);
     const lruCachedResult = queryCache.get(lruCacheKey);
     if (lruCachedResult) {
-      isNotProduction() &&
-        console.log('[Ask Database] 🎯 LRU Cache hit - returning cached result');
+      isNotProduction() && console.log('[Ask Database] 🎯 LRU Cache hit - returning cached result');
 
       saveQueryRecordAsync(
         question,
@@ -408,8 +347,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     isNotProduction() && console.log('[Ask Database] All cache layers missed');
 
     // 3. 使用 OpenAI 生成 SQL 查詢（使用解析後的問題）
-    isNotProduction() &&
-      console.log('[Ask Database] 🧠 Generating SQL with OpenAI...');
+    isNotProduction() && console.log('[Ask Database] 🧠 Generating SQL with OpenAI...');
     const sqlResult = await generateSQLWithOpenAI(
       resolvedQuestion,
       conversationHistory,
@@ -461,9 +399,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     // 檢查查詢成本
     const queryCost = await checkQueryCost(sql);
     if (queryCost.blocked) {
-      isNotProduction() && 
+      isNotProduction() &&
         console.log('[Ask Database] Query blocked due to high cost:', queryCost.estimatedCost);
-      
+
       return NextResponse.json({
         question,
         sql: '',
@@ -473,31 +411,31 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         tokensUsed,
         cached: false,
         timestamp: new Date().toISOString(),
-        blockedReason: 'high_cost'
+        blockedReason: 'high_cost',
       });
     }
 
     // 4. 檢查 SQL 結果緩存 (L3)
-    isNotProduction() &&
-      console.log('[Ask Database] 🔍 Checking SQL cache (L3)...');
+    isNotProduction() && console.log('[Ask Database] 🔍 Checking SQL cache (L3)...');
     const sqlCacheResult = await checkSQLCache(sql);
-    let queryResult: { data: Record<string, unknown>[]; rowCount: number; executionTime: number } | undefined = undefined;
+    let queryResult:
+      | { data: Record<string, unknown>[]; rowCount: number; executionTime: number }
+      | undefined = undefined;
 
     if (sqlCacheResult) {
       isNotProduction() && console.log('[Ask Database] 🎯 L3 SQL cache hit');
       queryResult = {
-        data: safeGet(sqlCacheResult, 'result.data', []),
-        rowCount: safeNumber(safeGet(sqlCacheResult, 'result.rowCount', 0)),
-        executionTime: safeNumber(safeGet(sqlCacheResult, 'executionTime', 0)),
+        data: toRecordArray(safeGet(sqlCacheResult, 'result.data') || []),
+        rowCount: safeNumber(safeGet(sqlCacheResult, 'result.rowCount'), 0),
+        executionTime: safeNumber(safeGet(sqlCacheResult, 'executionTime'), 0),
       };
     } else {
       // 5. 執行 SQL 查詢（帶自動錯誤修復）
-      isNotProduction() &&
-        console.log('[Ask Database] 🚀 Executing SQL query...');
-      
+      isNotProduction() && console.log('[Ask Database] 🚀 Executing SQL query...');
+
       let sqlExecutionAttempts = 0;
       const maxAttempts = 3;
-      
+
       while (sqlExecutionAttempts < maxAttempts) {
         try {
           sqlExecutionAttempts++;
@@ -509,36 +447,39 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             });
           break; // 成功則跳出循環
         } catch (execError: unknown) {
-          console.log(`[SQL Execution] Attempt ${sqlExecutionAttempts} failed:`, getErrorMessage(execError));
-          
+          console.log(
+            `[SQL Execution] Attempt ${sqlExecutionAttempts} failed:`,
+            getErrorMessage(execError)
+          );
+
           // 如果已經是最後一次嘗試，拋出錯誤
           if (sqlExecutionAttempts >= maxAttempts) {
             throw execError;
           }
-          
+
           // 嘗試自動修復
           const error = execError as Error;
-          const classificationResult = isClassifiedError(error) ? 
-            { errorType: error.errorType } : 
-            classifyError(error, sql);
+          const classificationResult = isClassifiedError(error)
+            ? { errorType: error.errorType }
+            : classifyError(error, sql);
           const errorType = classificationResult.errorType;
-          const recoveryStrategy = getRecoveryStrategy(errorType as any);
-          
+          const recoveryStrategy = getRecoveryStrategy(errorType as ErrorType);
+
           if (recoveryStrategy.canAutoRecover) {
             try {
               console.log(`[SQL Recovery] Attempting ${recoveryStrategy.strategy}...`);
-              const recoveryResult = await attemptErrorRecovery(errorType as any, sql, error);
-              
+              const recoveryResult = await attemptErrorRecovery(errorType as ErrorType, sql, error);
+
               if (recoveryResult.fixedSQL) {
                 sql = recoveryResult.fixedSQL;
                 console.log('[SQL Recovery] SQL has been fixed, retrying...');
-                
+
                 // 記錄成功的恢復
-                await logErrorPattern(errorType as any, error, { 
-                  success: true, 
-                  fixedSQL: sql 
+                await logErrorPattern(errorType as ErrorType, error, {
+                  success: true,
+                  fixedSQL: sql,
                 });
-                
+
                 // 如果有建議，記錄在日誌
                 if (recoveryResult.suggestion) {
                   console.log('[SQL Recovery] Suggestion:', recoveryResult.suggestion);
@@ -564,18 +505,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     let performanceAnalysis = null;
     if (isNotProduction() && queryResult) {
       try {
-        isNotProduction() &&
-          console.log('[Ask Database] 📊 Analyzing query performance...');
+        isNotProduction() && console.log('[Ask Database] 📊 Analyzing query performance...');
         const analysis = await analyzeQueryWithPlan(sql, question);
-        
-        if ((analysis.performanceScore && analysis.performanceScore < 70) || 
-            (analysis.bottlenecks && analysis.bottlenecks.length > 0)) {
+
+        if (
+          (analysis.performanceScore && analysis.performanceScore < 70) ||
+          (analysis.bottlenecks && analysis.bottlenecks.length > 0)
+        ) {
           performanceAnalysis = generatePerformanceReport(analysis);
           isNotProduction() &&
             console.log('[Ask Database] Performance issues detected:', {
               score: analysis.performanceScore,
               bottlenecks: analysis.bottlenecks?.length || 0,
-              recommendations: analysis.recommendations?.length || 0
+              recommendations: analysis.recommendations?.length || 0,
             });
         }
       } catch (error) {
@@ -587,14 +529,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     // 5. 使用 OpenAI 生成自然語言回應
     isNotProduction() &&
       console.log('[Ask Database] 📝 Generating natural language response with OpenAI...');
-    const { answer, additionalTokens } = await generateAnswerWithOpenAI(question, sql, queryResult!);
-    isNotProduction() &&
-      console.log('[Ask Database] Natural language response generated');
+    const { answer, additionalTokens } = await generateAnswerWithOpenAI(
+      question,
+      sql,
+      queryResult!
+    );
+    isNotProduction() && console.log('[Ask Database] Natural language response generated');
 
     const totalTokens = tokensUsed + additionalTokens;
     const complexity = determineComplexity(sql, queryResult?.data.length || 0);
 
     const result: QueryResult = {
+      success: true,
+      data: queryResult,
       question,
       sql,
       result: queryResult || { data: [], rowCount: 0, executionTime: 0 },
@@ -603,6 +550,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       tokensUsed: totalTokens,
       cached: false,
       timestamp: new Date().toISOString(),
+      executionTime: Date.now() - startTime,
+      cacheHit: false,
+      source: 'ai_generation',
       resolvedQuestion: resolvedQuestion !== question ? resolvedQuestion : undefined,
       references: references.length > 0 ? references : undefined,
       performanceAnalysis: performanceAnalysis || undefined,
@@ -611,8 +561,27 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     // 6. 並行執行緩存保存、會話歷史保存和聊天記錄保存
     isNotProduction() && console.log('[Ask Database] 💾 Saving results...');
     const finalCacheKey = generateCacheKey(question, conversationHistory);
+
+    // 創建 CacheEntry 對象
+    const cacheEntry: CacheEntry = {
+      question,
+      sql,
+      result: queryResult || { data: [], rowCount: 0, executionTime: 0 },
+      answer,
+      complexity,
+      tokensUsed: totalTokens,
+      cached: false,
+      timestamp: new Date().toISOString(),
+      executionTime: Date.now() - startTime,
+      cacheHits: 0,
+      lastAccessed: Date.now(),
+      resolvedQuestion: resolvedQuestion !== question ? resolvedQuestion : undefined,
+      references: references.length > 0 ? references : undefined,
+      performanceAnalysis: performanceAnalysis || undefined,
+    };
+
     const saveOperations = [
-      Promise.resolve(queryCache.set(finalCacheKey, result)),
+      Promise.resolve(queryCache.set(finalCacheKey, cacheEntry)),
       // 會話歷史已經通過 saveQueryRecordEnhanced 保存到數據庫
       Promise.resolve(),
       saveQueryRecordEnhanced(
@@ -643,11 +612,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json(result);
   } catch (error: unknown) {
     const errorObj = error as Error & { errorType?: string; cause?: unknown };
-    const classificationResult = errorObj.errorType ? 
-      { errorType: errorObj.errorType } : 
-      classifyError(errorObj);
+    const classificationResult = errorObj.errorType
+      ? { errorType: errorObj.errorType }
+      : classifyError(errorObj);
     const errorType = classificationResult.errorType;
-    
+
     console.error('[Ask Database] Error details:', {
       message: getErrorMessage(error),
       errorType: errorType,
@@ -658,12 +627,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     });
 
     // Type guard for ErrorType (Strategy 4: unknown + type narrowing)
-    const safeErrorType = (typeof errorType === 'string' ? errorType : 'UNKNOWN_ERROR') as ErrorType;
-    
+    const safeErrorType = (
+      typeof errorType === 'string' ? errorType : 'UNKNOWN_ERROR'
+    ) as ErrorType;
+
     // 記錄錯誤模式（用於改進系統）
-    await logErrorPattern(safeErrorType, errorObj, { 
-      question, 
-      success: false 
+    await logErrorPattern(safeErrorType, errorObj, {
+      question,
+      success: false,
     });
 
     // 獲取恢復策略建議
@@ -671,7 +642,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     // 使用增強的錯誤訊息
     let errorMessage = enhanceErrorMessage(safeErrorType, getErrorMessage(error));
-    
+
     // 如果有恢復建議，添加到錯誤訊息
     if (recoveryStrategy.suggestion) {
       errorMessage += `. Suggestion: ${recoveryStrategy.suggestion}`;
@@ -765,8 +736,7 @@ async function generateSQLWithOpenAI(
       content: question,
     });
 
-    isNotProduction() &&
-      console.log('[OpenAI SQL] Sending request to OpenAI...');
+    isNotProduction() && console.log('[OpenAI SQL] Sending request to OpenAI...');
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: messages as ChatCompletionMessageParam[],
@@ -852,14 +822,14 @@ async function generateSQLWithOpenAI(
     return { sql, tokensUsed };
   } catch (error: unknown) {
     console.error('[OpenAI SQL] Error:', error);
-    
+
     // 分類錯誤
     const classificationResult = classifyError(error);
     const errorType = classificationResult.errorType;
-    
+
     // 錯誤恢復已經在主要錯誤處理系統中處理
     // 這裡只需要拋出增強的錯誤訊息
-    
+
     // 增強錯誤訊息
     const enhancedMessage = enhanceErrorMessage(errorType, getErrorMessage(error));
     throw new Error(enhancedMessage);
@@ -873,58 +843,56 @@ async function checkQueryCost(sql: string): Promise<{
   suggestion?: string;
 }> {
   const MAX_ALLOWED_COST = 10000; // 最大允許成本
-  
+
   try {
     // 使用 optimizeSQL 中的 estimateQueryCost 函數
     const { estimateQueryCost } = await import('@/lib/sql-optimizer');
     const estimatedCost = estimateQueryCost(sql);
-    
+
     if (estimatedCost > MAX_ALLOWED_COST) {
       // 分析原因並提供建議
       const suggestions = [];
       const sqlLower = sql.toLowerCase();
-      
+
       if (!sqlLower.includes('limit')) {
         suggestions.push('Try adding a LIMIT clause to reduce the result set');
       }
-      
+
       if (!sqlLower.includes('where')) {
         suggestions.push('Add a WHERE clause to filter the data');
       }
-      
+
       if (sqlLower.includes('record_history')) {
         suggestions.push('Consider adding a date range filter for the history table');
       }
-      
+
       if ((sqlLower.match(/join/g) || []).length > 3) {
         suggestions.push('Try to reduce the number of JOINs or break the query into smaller parts');
       }
-      
+
       return {
         estimatedCost,
         blocked: true,
-        suggestion: suggestions.join('. ')
+        suggestion: suggestions.join('. '),
       };
     }
-    
+
     return {
       estimatedCost,
-      blocked: false
+      blocked: false,
     };
   } catch (error) {
     console.error('[checkQueryCost as string] Error:', error);
     // 如果出錯，允許查詢繼續執行
     return {
       estimatedCost: 0,
-      blocked: false
+      blocked: false,
     };
   }
 }
 
 // 執行 SQL 查詢（增加超時控制）
-async function executeSQLQuery(
-  sql: string
-): Promise<SupabaseQueryResult> {
+async function executeSQLQuery(sql: string): Promise<SupabaseQueryResult> {
   const supabase = await createClient();
   const startTime = Date.now();
   const QUERY_TIMEOUT = 30000; // 30秒超時
@@ -934,11 +902,14 @@ async function executeSQLQuery(
 
     // 使用 Promise.race 實現超時控制
     const queryPromise = supabase.rpc('execute_sql_query', { query_text: sql });
-    const timeoutPromise = new Promise((_, reject) => 
+    const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Query timeout after 30 seconds')), QUERY_TIMEOUT)
     );
 
-    const queryResponse = await Promise.race([queryPromise, timeoutPromise]) as { data: Record<string, unknown>[] | null; error: string | null };
+    const queryResponse = (await Promise.race([queryPromise, timeoutPromise])) as {
+      data: Record<string, unknown>[] | null;
+      error: string | null;
+    };
     const { data, error } = queryResponse;
 
     const executionTime = Date.now() - startTime;
@@ -964,29 +935,27 @@ async function executeSQLQuery(
     };
   } catch (error: unknown) {
     console.error('[SQL Execution] Error:', error);
-    
+
     // 分類錯誤
     const classificationResult = classifyError(error, sql);
     const errorType = classificationResult.errorType;
-    
+
     // 記錄錯誤模式
-    const safeErrorTypeForSQL = (typeof errorType === 'string' ? errorType : 'SQL_EXECUTION_ERROR') as ErrorType;
-    await logErrorPattern(
-      safeErrorTypeForSQL,
-      error as Error,
-      { sql, success: false }
-    );
-    
-    // 增強錯誤訊息  
+    const safeErrorTypeForSQL = (
+      typeof errorType === 'string' ? errorType : 'SQL_EXECUTION_ERROR'
+    ) as ErrorType;
+    await logErrorPattern(safeErrorTypeForSQL, error as Error, { sql, success: false });
+
+    // 增強錯誤訊息
     const enhancedMessage = enhanceErrorMessage(safeErrorTypeForSQL, getErrorMessage(error));
-    
+
     // 為了向上層傳遞錯誤類型，創建新錯誤
     const enhancedError: ClassifiedError = Object.assign(new Error(enhancedMessage), {
       errorType: safeErrorTypeForSQL,
       originalError: error instanceof Error ? error : new Error(String(error)),
-      sql
+      sql,
     });
-    
+
     throw enhancedError;
   }
 }
@@ -1001,9 +970,9 @@ async function generateAnswerWithOpenAI(
     const messages: OpenAIMessage[] = [
       {
         role: 'system',
-        content: `You are a helpful database assistant for Pennine Manufacturing Industries. 
+        content: `You are a helpful database assistant for Pennine Manufacturing Industries.
         Your task is to analyze SQL query results and provide clear, natural English responses.
-        
+
         Guidelines:
         - Always respond in English only, regardless of the user's question language
         - Use a friendly, professional tone with slight British style
@@ -1027,8 +996,7 @@ Please provide a natural English response to the user's question based on these 
       },
     ];
 
-    isNotProduction() &&
-      console.log('[OpenAI Answer] Generating natural language response...');
+    isNotProduction() && console.log('[OpenAI Answer] Generating natural language response...');
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: messages as ChatCompletionMessageParam[],
@@ -1084,9 +1052,9 @@ async function generateConversationSummary(
     const messages: Pick<OpenAIMessage, 'role' | 'content'>[] = [
       {
         role: 'system',
-        content: `You are a helpful assistant summarizing a database conversation. 
+        content: `You are a helpful assistant summarizing a database conversation.
         Your task is to create a natural, conversational summary of what the user has been asking about.
-        
+
         Guidelines:
         - Write in a friendly, conversational tone
         - Highlight key insights and findings
@@ -1096,7 +1064,7 @@ async function generateConversationSummary(
         - End with a helpful suggestion or question
         - Do NOT use bullet points or numbered lists
         - Write in flowing paragraphs
-        
+
         The user's name is ${userName || 'there'}.`,
       },
       {
@@ -1190,7 +1158,9 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
 
       if (!user?.email) {
         isNotProduction() &&
-          console.log('[getUserInfo as string] Development mode: No authenticated user, using test user');
+          console.log(
+            '[getUserInfo as string] Development mode: No authenticated user, using test user'
+          );
         const { data: testUser, error } = await supabase
           .from('data_id')
           .select('name, email')
@@ -1201,7 +1171,12 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
           const testEmail =
             testUser.email || `test-user-${testUser.name.toLowerCase()}@pennineindustries.com`;
           isNotProduction() &&
-            console.log('[getUserInfo as string] Using test user:', testUser.name, 'with email:', testEmail);
+            console.log(
+              '[getUserInfo as string] Using test user:',
+              testUser.name,
+              'with email:',
+              testEmail
+            );
           return { email: testEmail, name: testUser.name };
         }
       }
@@ -1212,8 +1187,7 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
     } = await supabase.auth.getUser();
 
     if (!user?.email) {
-      isNotProduction() &&
-        console.log('[getUserInfo as string] No authenticated user found');
+      isNotProduction() && console.log('[getUserInfo as string] No authenticated user found');
       return { email: null, name: null };
     }
 
@@ -1247,8 +1221,7 @@ async function getUserInfo(): Promise<{ email: string | null; name: string | nul
 
     // 緩存用戶名
     userNameCache.set(user.email, userData.name);
-    isNotProduction() &&
-      console.log('[getUserInfo as string] User name cached:', userData.name);
+    isNotProduction() && console.log('[getUserInfo as string] User name cached:', userData.name);
 
     return { email: user.email, name: userData.name };
   } catch (error) {
@@ -1263,15 +1236,11 @@ function generateQueryHash(query: string): string {
   const normalizedQuery = query
     .toLowerCase()
     .trim()
-    .replace(/\s+/g, ' ')  // 多個空格變成一個
+    .replace(/\s+/g, ' ') // 多個空格變成一個
     .replace(/[^a-z0-9 ]/g, ''); // 移除特殊字符
-  
+
   // 使用真正嘅 SHA256 hash
-  return crypto
-    .createHash('sha256')
-    .update(normalizedQuery)
-    .digest('hex')
-    .substring(0, 32);
+  return crypto.createHash('sha256').update(normalizedQuery).digest('hex').substring(0, 32);
 }
 
 // 生成模糊匹配 hash（用於語義相似查詢）
@@ -1279,31 +1248,78 @@ function generateFuzzyHash(query: string): string {
   // 提取關鍵詞
   const keywords = extractKeywords(query);
   const sorted = keywords.sort().join(' ');
-  
-  return crypto
-    .createHash('sha256')
-    .update(sorted)
-    .digest('hex')
-    .substring(0, 16);  // 更短嘅 hash 用於模糊匹配
+
+  return crypto.createHash('sha256').update(sorted).digest('hex').substring(0, 16); // 更短嘅 hash 用於模糊匹配
 }
 
 // 提取查詢關鍵詞
 function extractKeywords(query: string): string[] {
   // 停用詞列表
   const stopWords = new Set([
-    'the', 'is', 'at', 'which', 'on', 'and', 'a', 'an', 'as', 'are', 'was', 'were',
-    'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should',
-    'may', 'might', 'must', 'can', 'of', 'to', 'in', 'for', 'with', 'by', 'from', 'about',
-    'into', 'through', 'during', 'before', 'after', 'above', 'below', 'up', 'down', 'out',
-    'off', 'over', 'under', 'again', 'further', 'then', 'once', 'show', 'list', 'get', 'find'
+    'the',
+    'is',
+    'at',
+    'which',
+    'on',
+    'and',
+    'a',
+    'an',
+    'as',
+    'are',
+    'was',
+    'were',
+    'been',
+    'have',
+    'has',
+    'had',
+    'do',
+    'does',
+    'did',
+    'will',
+    'would',
+    'could',
+    'should',
+    'may',
+    'might',
+    'must',
+    'can',
+    'of',
+    'to',
+    'in',
+    'for',
+    'with',
+    'by',
+    'from',
+    'about',
+    'into',
+    'through',
+    'during',
+    'before',
+    'after',
+    'above',
+    'below',
+    'up',
+    'down',
+    'out',
+    'off',
+    'over',
+    'under',
+    'again',
+    'further',
+    'then',
+    'once',
+    'show',
+    'list',
+    'get',
+    'find',
   ]);
-  
+
   const words = query
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, '')
     .split(/\s+/)
     .filter(word => word.length > 2 && !stopWords.has(word));
-  
+
   return words;
 }
 
@@ -1322,7 +1338,7 @@ async function checkIntelligentCache(
     // L1: 精確匹配緩存（最近24小時）
     const queryHash = generateQueryHash(question);
     const fuzzyHash = generateFuzzyHash(question); // 新增模糊 hash
-    
+
     const exactMatch = await supabase
       .from('query_record')
       .select('*')
@@ -1334,17 +1350,28 @@ async function checkIntelligentCache(
 
     if (exactMatch.data && exactMatch.data.length > 0) {
       const record = exactMatch.data[0];
-      isNotProduction() &&
-        console.log('[checkIntelligentCache as string] L1 exact match found');
+      isNotProduction() && console.log('[checkIntelligentCache as string] L1 exact match found');
 
       // 安全處理 result_json，確保有正確結構
-      const safeResult = record.result_json || {
+      const defaultResult: SupabaseQueryResult = {
         data: [],
         rowCount: 0,
-        executionTime: record.execution_time || 0,
+        executionTime: typeof record.execution_time === 'number' ? record.execution_time : 0,
       };
 
+      let safeResult: SupabaseQueryResult = defaultResult;
+      if (
+        record.result_json &&
+        typeof record.result_json === 'object' &&
+        'data' in record.result_json &&
+        Array.isArray(record.result_json.data)
+      ) {
+        safeResult = record.result_json as unknown as SupabaseQueryResult;
+      }
+
       return {
+        success: true,
+        data: safeResult,
         question: record.query as string,
         sql: record.sql_query as string,
         result: safeResult,
@@ -1355,6 +1382,9 @@ async function checkIntelligentCache(
         cacheLevel: 'L1-exact',
         responseTime: 50,
         timestamp: record.created_at as string,
+        executionTime: 50,
+        cacheHit: true,
+        source: 'cache' as const,
       };
     }
 
@@ -1376,7 +1406,8 @@ async function checkIntelligentCache(
       let bestSimilarity = 0;
 
       for (const record of fuzzyMatches.data) {
-        const recordWords = extractKeywords(record.query);
+        const query = typeof record.query === 'string' ? record.query : String(record.query || '');
+        const recordWords = extractKeywords(query);
         const similarity = calculateSimilarity(questionWords, recordWords);
 
         if (similarity > 0.8 && similarity > bestSimilarity) {
@@ -1384,20 +1415,32 @@ async function checkIntelligentCache(
           bestSimilarity = similarity;
         }
       }
-      
+
       if (bestMatch) {
         isNotProduction() &&
           console.log(
             `[checkIntelligentCache as string] L2 fuzzy match found (${Math.round(bestSimilarity * 100)}% similarity)`
           );
 
-        const safeResult = bestMatch.result_json || {
+        const defaultResult: SupabaseQueryResult = {
           data: [],
           rowCount: 0,
-          executionTime: bestMatch.execution_time || 0,
+          executionTime: safeNumber(bestMatch.execution_time, 0),
         };
 
+        let safeResult: SupabaseQueryResult = defaultResult;
+        if (
+          bestMatch.result_json &&
+          typeof bestMatch.result_json === 'object' &&
+          'data' in bestMatch.result_json &&
+          Array.isArray(bestMatch.result_json.data)
+        ) {
+          safeResult = bestMatch.result_json as unknown as SupabaseQueryResult;
+        }
+
         return {
+          success: true,
+          data: safeResult,
           question: bestMatch.query as string,
           sql: bestMatch.sql_query as string,
           result: safeResult,
@@ -1409,10 +1452,13 @@ async function checkIntelligentCache(
           similarity: bestSimilarity,
           responseTime: 80,
           timestamp: bestMatch.created_at as string,
+          executionTime: 80,
+          cacheHit: true,
+          source: 'cache' as const,
         };
       }
     }
-    
+
     // L3: 語義相似度緩存（最近7天，相似度 > 85%）
     const similarQueries = await supabase
       .from('query_record')
@@ -1429,7 +1475,8 @@ async function checkIntelligentCache(
       let bestSimilarity = 0;
 
       for (const record of similarQueries.data) {
-        const recordWords = extractKeywords(record.query);
+        const query = typeof record.query === 'string' ? record.query : String(record.query || '');
+        const recordWords = extractKeywords(query);
         const similarity = calculateSimilarity(questionWords, recordWords);
 
         if (similarity > 0.85 && similarity > bestSimilarity) {
@@ -1445,13 +1492,25 @@ async function checkIntelligentCache(
           );
 
         // 安全處理 result_json
-        const safeResult = bestMatch.result_json || {
+        const defaultResult: SupabaseQueryResult = {
           data: [],
           rowCount: 0,
-          executionTime: bestMatch.execution_time || 0,
+          executionTime: safeNumber(bestMatch.execution_time, 0),
         };
 
+        let safeResult: SupabaseQueryResult = defaultResult;
+        if (
+          bestMatch.result_json &&
+          typeof bestMatch.result_json === 'object' &&
+          'data' in bestMatch.result_json &&
+          Array.isArray(bestMatch.result_json.data)
+        ) {
+          safeResult = bestMatch.result_json as unknown as SupabaseQueryResult;
+        }
+
         return {
+          success: true,
+          data: safeResult,
           question: bestMatch.query as string,
           sql: bestMatch.sql_query as string,
           result: safeResult,
@@ -1462,6 +1521,9 @@ async function checkIntelligentCache(
           cacheLevel: 'L3-semantic',
           similarity: bestSimilarity,
           responseTime: 100,
+          executionTime: 100,
+          cacheHit: true,
+          source: 'cache' as const,
           timestamp: bestMatch.created_at as string,
         };
       }
@@ -1482,7 +1544,7 @@ function calculateSimilarity(words1: string[], words2: string[]): number {
   if (words1.length === 0 || words2.length === 0) {
     return 0;
   }
-  
+
   const set1 = new Set(words1);
   const set2 = new Set(words2);
 
@@ -1496,12 +1558,12 @@ function calculateSimilarity(words1: string[], words2: string[]): number {
 
   // Jaccard 相似度
   const jaccard = intersection.size / union.size;
-  
+
   // 加權重：如果關鍵詞完全相同，給予更高分數
   if (intersection.size === set1.size && intersection.size === set2.size) {
     return 1.0; // 完全匹配
   }
-  
+
   return jaccard;
 }
 
@@ -1522,9 +1584,26 @@ async function checkSQLCache(sql: string): Promise<DatabaseRecord | null> {
     if (sqlMatch.data && sqlMatch.data.length > 0) {
       const record = sqlMatch.data[0];
       isNotProduction() && console.log('[checkSQLCache as string] L3 SQL cache hit');
+
+      const defaultResult: SupabaseQueryResult = {
+        data: [],
+        rowCount: 0,
+        executionTime: typeof record.execution_time === 'number' ? record.execution_time : 0,
+      };
+
+      let safeResult: SupabaseQueryResult = defaultResult;
+      if (
+        record.result_json &&
+        typeof record.result_json === 'object' &&
+        'data' in record.result_json &&
+        Array.isArray(record.result_json.data)
+      ) {
+        safeResult = record.result_json as unknown as SupabaseQueryResult;
+      }
+
       return {
-        result: record.result_json,
-        executionTime: record.execution_time || 0,
+        result: safeResult,
+        executionTime: typeof record.execution_time === 'number' ? record.execution_time : 0,
         cached: true,
         cacheLevel: 'L3-sql',
       };
@@ -1567,7 +1646,7 @@ async function saveQueryRecordEnhanced(
         user: user || 'Unknown User',
         token: safeTokenUsage,
         sql_query: sqlQuery,
-        result_json: resultJson,
+        result_json: JSON.parse(JSON.stringify(resultJson)), // 確保符合 JSON 型別
         query_hash: queryHash,
         fuzzy_hash: fuzzyHash, // 新增 fuzzy_hash
         execution_time: safeExecutionTime,
@@ -1580,7 +1659,9 @@ async function saveQueryRecordEnhanced(
         console.error('[saveQueryRecordEnhanced as string] Failed to save query record:', error);
       } else {
         isNotProduction() &&
-          console.log('[saveQueryRecordEnhanced as string] Enhanced query record saved successfully');
+          console.log(
+            '[saveQueryRecordEnhanced as string] Enhanced query record saved successfully'
+          );
       }
     } catch (error) {
       console.error('[saveQueryRecordEnhanced as string] Error saving query record:', error);
@@ -1604,7 +1685,9 @@ async function checkUserPermission(): Promise<boolean> {
   // 開發環境下跳過權限檢查
   if (isDevelopment()) {
     isNotProduction() &&
-      console.log('[checkUserPermission as string] Development mode: skipping auth check for debugging');
+      console.log(
+        '[checkUserPermission as string] Development mode: skipping auth check for debugging'
+      );
     return true;
   }
 
@@ -1649,21 +1732,20 @@ function generateCacheKey(
 async function warmFrequentQueries(): Promise<void> {
   try {
     const supabase = await createClient();
-    
+
     // 1. 獲取最常見的查詢（基於 fuzzy_hash）
-    const { data: frequentPatterns } = await supabase
-      .rpc('get_top_query_patterns', {
-        days_back: 30,
-        p_limit: 20
-      });
-      
-    if (!frequentPatterns || frequentPatterns.length === 0) {
+    const { data: frequentPatterns } = await supabase.rpc('get_top_query_patterns', {
+      days_back: 30,
+      p_limit: 20,
+    });
+
+    if (!frequentPatterns || !Array.isArray(frequentPatterns) || frequentPatterns.length === 0) {
       console.log('[CacheWarmer as string] No frequent patterns found');
       return;
     }
-    
+
     console.log(`[CacheWarmer as string] Found ${frequentPatterns.length} frequent query patterns`);
-    
+
     // 2. 預熱每個查詢模式的最新結果
     for (const pattern of frequentPatterns) {
       const { data } = await supabase
@@ -1673,12 +1755,14 @@ async function warmFrequentQueries(): Promise<void> {
         .not('sql_query', 'is', null)
         .order('created_at', { ascending: false })
         .limit(1);
-        
+
       if (data && data.length > 0) {
-        console.log(`[CacheWarmer as string] Warmed pattern: ${pattern.pattern} (${pattern.count} uses)`);
+        console.log(
+          `[CacheWarmer as string] Warmed pattern: ${pattern.pattern} (${pattern.count} uses)`
+        );
       }
     }
-    
+
     // 3. 預熱今日查詢
     const today = new Date().toISOString().split('T')[0];
     const { data: todayQueries } = await supabase
@@ -1688,11 +1772,10 @@ async function warmFrequentQueries(): Promise<void> {
       .not('sql_query', 'is', null)
       .order('created_at', { ascending: false })
       .limit(10);
-      
+
     if (todayQueries && todayQueries.length > 0) {
       console.log(`[CacheWarmer as string] Warmed ${todayQueries.length} queries from today`);
     }
-    
   } catch (error) {
     console.error('[CacheWarmer as string] Error during cache warming:', error);
   }
@@ -1702,42 +1785,44 @@ async function warmFrequentQueries(): Promise<void> {
 async function invalidateCacheByTable(tableName: string): Promise<void> {
   try {
     const supabase = await createClient();
-    
+
     // 定義表與查詢關鍵字的映射
     const tableKeywordMap: Record<string, string[]> = {
-      'record_palletinfo': ['pallet', 'stock', 'inventory', 'product', 'await'],
-      'record_inventory': ['inventory', 'stock', 'location', 'await', 'warehouse'],
-      'record_history': ['history', 'movement', 'alex', 'staff', 'move'],
-      'record_transfer': ['transfer', 'movement', 'warehouse'],
-      'record_aco': ['order', 'aco', 'purchase'],
-      'record_grn': ['grn', 'goods', 'receipt', 'receiving'],
-      'data_code': ['product', 'material', 'code', 'description'],
-      'data_supplier': ['supplier', 'vendor'],
-      'data_id': ['staff', 'user', 'employee', 'alex']
+      record_palletinfo: ['pallet', 'stock', 'inventory', 'product', 'await'],
+      record_inventory: ['inventory', 'stock', 'location', 'await', 'warehouse'],
+      record_history: ['history', 'movement', 'alex', 'staff', 'move'],
+      record_transfer: ['transfer', 'movement', 'warehouse'],
+      record_aco: ['order', 'aco', 'purchase'],
+      record_grn: ['grn', 'goods', 'receipt', 'receiving'],
+      data_code: ['product', 'material', 'code', 'description'],
+      data_supplier: ['supplier', 'vendor'],
+      data_id: ['staff', 'user', 'employee', 'alex'],
     };
-    
+
     const keywords = tableKeywordMap[tableName as string] || [];
     if (keywords.length === 0) {
       console.log(`[CacheInvalidator as string] No keywords mapped for table: ${tableName}`);
       return;
     }
-    
+
     // 標記相關緩存為過期
     const now = new Date().toISOString();
-    
+
     for (const keyword of keywords) {
       const { error } = await supabase
         .from('query_record')
-        .update({ 
+        .update({
           expired_at: now,
-          expired_reason: `Table ${tableName} updated`
+          expired_reason: `Table ${tableName} updated`,
         })
         .ilike('query', `%${keyword}%`)
         .is('expired_at', null)
         .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
-        
+
       if (!error) {
-        console.log(`[CacheInvalidator as string] Invalidated cache entries containing: ${keyword}`);
+        console.log(
+          `[CacheInvalidator as string] Invalidated cache entries containing: ${keyword}`
+        );
       }
     }
   } catch (error) {
@@ -1779,8 +1864,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         };
       }
     } catch (authError) {
-      isNotProduction() &&
-        console.log('[Ask Database Status] Auth check failed:', authError);
+      isNotProduction() && console.log('[Ask Database Status] Auth check failed:', authError);
     }
 
     // 檢查數據庫連接
@@ -1793,8 +1877,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         tablesAccessible: !!data,
       };
     } catch (dbError) {
-      isNotProduction() &&
-        console.log('[Ask Database Status] DB check failed:', dbError);
+      isNotProduction() && console.log('[Ask Database Status] DB check failed:', dbError);
     }
 
     const status = {
@@ -1837,54 +1920,55 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         caching: true,
       },
     };
-    
+
     // 如果請求緩存統計
     if (action === 'cache-stats') {
       const cacheStats = await analyzeCachePerformance();
       return NextResponse.json({
         ...status,
-        cacheStats
+        cacheStats,
       });
     }
-    
+
     // 如果請求預熱緩存
     if (action === 'warm-cache') {
       // 檢查權限
-      if (!userCheck.authenticated || userCheck.email?.includes('warehouse@') || userCheck.email?.includes('production@')) {
+      if (
+        !userCheck.authenticated ||
+        userCheck.email?.includes('warehouse@') ||
+        userCheck.email?.includes('production@')
+      ) {
         return NextResponse.json(
           { error: 'Unauthorized to perform cache warming' },
           { status: 401 }
         );
       }
-      
+
       // 異步執行預熱
       setImmediate(async () => {
         console.log('[Ask Database] Starting cache warming...');
         await warmFrequentQueries();
         console.log('[Ask Database] Cache warming completed');
       });
-      
+
       return NextResponse.json({
         success: true,
         message: 'Cache warming started',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
-    
+
     // 如果請求分析查詢計劃
     if (action === 'analyze-query') {
       const sql = url.searchParams.get('sql');
       if (!sql) {
-        return NextResponse.json(
-          { error: 'SQL query parameter is required' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'SQL query parameter is required' }, { status: 400 });
       }
-      
+
       try {
         const analysis = await analyzeQueryWithPlan(sql);
         const report = generatePerformanceReport(analysis);
-        
+
         return NextResponse.json({
           success: true,
           analysis: {
@@ -1892,10 +1976,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             bottlenecks: analysis.bottlenecks,
             recommendations: analysis.recommendations,
             estimatedImprovement: analysis.estimatedImprovement,
-            optimizedQuery: analysis.optimizedQuery
+            optimizedQuery: analysis.optimizedQuery,
           },
           report,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       } catch (error: unknown) {
         return NextResponse.json(
@@ -1909,7 +1993,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   } catch (error: unknown) {
     console.error('[Ask Database Status] Error:', error);
     return NextResponse.json(
-      { error: 'Status check failed', details: getErrorMessage(error), mode: 'OPENAI_SQL_GENERATION' },
+      {
+        error: 'Status check failed',
+        details: getErrorMessage(error),
+        mode: 'OPENAI_SQL_GENERATION',
+      },
       { status: 500 }
     );
   }
@@ -1925,33 +2013,33 @@ async function analyzeCachePerformance(): Promise<{
 }> {
   try {
     const supabase = await createClient();
-    
+
     // 獲取最近7天的查詢統計
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    
+
     // 總查詢數
     const { count: totalQueries } = await supabase
       .from('query_record')
       .select('id', { count: 'exact', head: true })
       .gte('created_at', sevenDaysAgo);
-      
+
     // 緩存命中數（基於重複的 query_hash 或 fuzzy_hash）
     const { data: hashes } = await supabase
       .from('query_record')
       .select('query_hash, fuzzy_hash')
       .gte('created_at', sevenDaysAgo)
       .not('query_hash', 'is', null);
-      
+
     const hashCounts = new Map<string, number>();
     hashes?.forEach(record => {
-      if (record.query_hash) {
+      if (record.query_hash && typeof record.query_hash === 'string') {
         hashCounts.set(record.query_hash, (hashCounts.get(record.query_hash) || 0) + 1);
       }
-      if (record.fuzzy_hash) {
+      if (record.fuzzy_hash && typeof record.fuzzy_hash === 'string') {
         hashCounts.set(record.fuzzy_hash, (hashCounts.get(record.fuzzy_hash) || 0) + 1);
       }
     });
-    
+
     // 計算緩存命中（重複次數 > 1）
     let cacheHits = 0;
     hashCounts.forEach(count => {
@@ -1959,33 +2047,32 @@ async function analyzeCachePerformance(): Promise<{
         cacheHits += count - 1; // 第一次不算命中
       }
     });
-    
+
     // 平均響應時間
     const { data: timings } = await supabase
       .from('query_record')
       .select('execution_time')
       .gte('created_at', sevenDaysAgo)
       .not('execution_time', 'is', null);
-      
-    const avgResponseTime = timings?.length 
-      ? timings.reduce((sum, record) => sum + (record.execution_time || 0), 0) / timings.length
+
+    const avgResponseTime = timings?.length
+      ? timings.reduce((sum, record) => sum + safeNumber(record.execution_time, 0), 0) /
+        timings.length
       : 0;
-      
+
     // 熱門查詢模式
-    const { data: patterns } = await supabase
-      .rpc('get_top_query_patterns', {
-        days_back: 7,
-        p_limit: 10
-      });
-      
+    const { data: patterns } = await supabase.rpc('get_top_query_patterns', {
+      days_back: 7,
+      p_limit: 10,
+    });
+
     return {
       hitRate: totalQueries ? (cacheHits / totalQueries) * 100 : 0,
       totalQueries: totalQueries || 0,
       cacheHits,
       avgResponseTime: Math.round(avgResponseTime),
-      topPatterns: patterns || []
+      topPatterns: Array.isArray(patterns) ? patterns : [],
     };
-    
   } catch (error) {
     console.error('[analyzeCachePerformance as string] Error:', error);
     return {
@@ -1993,7 +2080,7 @@ async function analyzeCachePerformance(): Promise<{
       totalQueries: 0,
       cacheHits: 0,
       avgResponseTime: 0,
-      topPatterns: []
+      topPatterns: [],
     };
   }
 }

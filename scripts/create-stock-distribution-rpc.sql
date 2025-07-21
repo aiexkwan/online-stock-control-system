@@ -22,7 +22,7 @@ BEGIN
     -- Create temporary table for latest stock levels
     CREATE TEMP TABLE temp_latest_stock AS
     WITH latest_stock AS (
-        SELECT DISTINCT ON (stock) 
+        SELECT DISTINCT ON (stock)
             sl.stock,
             sl.stock_level,
             sl.update_time,
@@ -34,21 +34,21 @@ BEGIN
         ORDER BY sl.stock, sl.update_time DESC
     )
     SELECT * FROM latest_stock;
-    
+
     -- Apply type filter if specified
     IF p_stock_type IS NOT NULL AND p_stock_type != 'all' AND p_stock_type != 'ALL TYPES' THEN
         IF p_stock_type = 'non-material' THEN
-            DELETE FROM temp_latest_stock 
+            DELETE FROM temp_latest_stock
             WHERE type IN ('material', 'Material', 'MATERIAL');
         ELSE
-            DELETE FROM temp_latest_stock 
+            DELETE FROM temp_latest_stock
             WHERE LOWER(type) != LOWER(p_stock_type);
         END IF;
     END IF;
-    
+
     -- Calculate total stock for percentage calculation
     SELECT SUM(stock_level) INTO v_total_stock FROM temp_latest_stock;
-    
+
     -- Generate treemap data with server-side percentage calculation
     SELECT jsonb_build_object(
         'total_stock', COALESCE(v_total_stock, 0),
@@ -69,10 +69,10 @@ BEGIN
         )
     ) INTO v_result
     FROM temp_latest_stock;
-    
+
     -- Clean up
     DROP TABLE temp_latest_stock;
-    
+
     RETURN v_result;
 END;
 $$;
@@ -93,10 +93,10 @@ BEGIN
         )
     ) INTO v_result
     FROM data_code
-    WHERE type IS NOT NULL 
+    WHERE type IS NOT NULL
     AND type != ''
     AND type NOT IN ('-', 'N/A');
-    
+
     RETURN v_result;
 END;
 $$;

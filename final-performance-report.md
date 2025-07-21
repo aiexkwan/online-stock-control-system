@@ -22,7 +22,7 @@
 ## 🔍 技術架構分析
 
 ### 緩存服務架構
-- **主要服務**: `WarehouseCacheService` 
+- **主要服務**: `WarehouseCacheService`
 - **緩存適配器**: `RedisCacheAdapter` (帶回退機制)
 - **基礎適配器**: `BaseCacheAdapter` (抽象層)
 - **日誌系統**: 統一的 `cacheLogger`

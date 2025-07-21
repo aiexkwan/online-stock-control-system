@@ -19,14 +19,14 @@ function formatBytes(bytes) {
 // 檢查 Node.js 進程記憶體使用
 function checkNodeMemory() {
   const usage = process.memoryUsage();
-  
+
   console.log('🔍 Node.js 進程記憶體使用:');
   console.log(`  RSS (Resident Set Size): ${formatBytes(usage.rss)}`);
   console.log(`  Heap Used: ${formatBytes(usage.heapUsed)}`);
   console.log(`  Heap Total: ${formatBytes(usage.heapTotal)}`);
   console.log(`  External: ${formatBytes(usage.external)}`);
   console.log(`  Array Buffers: ${formatBytes(usage.arrayBuffers)}`);
-  
+
   // 檢查是否超過 100MB
   const totalMemoryMB = usage.rss / (1024 * 1024);
   if (totalMemoryMB > 100) {
@@ -42,7 +42,7 @@ function checkSystemMemory() {
   const totalMemory = os.totalmem();
   const freeMemory = os.freemem();
   const usedMemory = totalMemory - freeMemory;
-  
+
   console.log('\n🖥️  系統記憶體使用:');
   console.log(`  總記憶體: ${formatBytes(totalMemory)}`);
   console.log(`  使用中: ${formatBytes(usedMemory)}`);

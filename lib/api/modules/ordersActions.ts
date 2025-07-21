@@ -31,7 +31,7 @@ export async function getPdfUrl(orderRef: string): Promise<string | null> {
       return null;
     }
 
-    return data?.[0]?.doc_url || null;
+    return typeof data?.[0]?.doc_url === 'string' ? data[0].doc_url : null;
   } catch (error) {
     console.error('[OrdersAPI] getPdfUrl error:', error);
     return null;

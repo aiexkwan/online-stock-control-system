@@ -72,7 +72,7 @@ try {
     $grnResponse = Invoke-WebRequest -Uri "http://localhost:$activePort/print-grnlabel" -UseBasicParsing -TimeoutSec 10
     if ($grnResponse.StatusCode -eq 200) {
         Write-Host "  ✅ GRN Label 頁面載入成功 (HTTP $($grnResponse.StatusCode))" -ForegroundColor Green
-        
+
         # 檢查頁面內容是否包含關鍵元素
         $content = $grnResponse.Content
         $keyElements = @(
@@ -82,7 +82,7 @@ try {
             "Package Type",
             "Print GRN Label"
         )
-        
+
         $missingElements = @()
         foreach ($element in $keyElements) {
             if ($content -like "*$element*") {
@@ -92,7 +92,7 @@ try {
                 $missingElements += $element
             }
         }
-        
+
         if ($missingElements.Count -gt 0) {
             Write-Host "  ⚠️  頁面載入但缺少關鍵元素" -ForegroundColor Yellow
         }
@@ -151,7 +151,7 @@ if ($missingFiles.Count -eq 0 -and $activePort -and $grnResponse.StatusCode -eq 
     Write-Host "✅ 開發服務器正常運行" -ForegroundColor Green
     Write-Host "✅ GRN Label 頁面正常載入" -ForegroundColor Green
     Write-Host "✅ 頁面包含所有關鍵元素" -ForegroundColor Green
-    
+
     Write-Host "`n🚀 可以開始測試功能了！" -ForegroundColor Magenta
     Write-Host "訪問: http://localhost:$activePort/print-grnlabel" -ForegroundColor Magenta
 } else {
@@ -159,4 +159,4 @@ if ($missingFiles.Count -eq 0 -and $activePort -and $grnResponse.StatusCode -eq 
     exit 1
 }
 
-Write-Host "`n" -ForegroundColor White 
+Write-Host "`n" -ForegroundColor White

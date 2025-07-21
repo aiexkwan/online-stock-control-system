@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseRecord } from '@/lib/types/database';
+import { DatabaseRecord } from '@/types/database/tables';
 import { createClient } from '@/app/utils/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@/lib/types/supabase-generated';
-import { getErrorMessage } from '@/lib/types/error-handling';
-import { safeGet, toRecordArray } from '@/lib/types/supabase-helpers';
-import { toSupabaseResponse } from '@/lib/types/supabase-helpers';
+import type { Database } from '@/types/database/supabase';
+import { getErrorMessage } from '@/types/core/error';
+import { safeGet, toRecordArray, isRecord, safeNumber } from '@/types/database/helpers';
+import { toSupabaseResponse } from '@/types/database/helpers';
 
 // Type alias for Supabase client (Strategy 3: Supabase codegen)
 type TypedSupabaseClient = SupabaseClient<Database>;
@@ -77,36 +77,36 @@ async function detectStuckPallets(supabase: TypedSupabaseClient) {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const query = `WITH pallet_activities AS (
-  SELECT 
+  SELECT
     p.plt_num,
     p.product_code,
     p.product_qty,
     dc.description as product_name,
     COALESCE(
-      (SELECT MAX(time) 
-       FROM record_history h 
-       WHERE h.plt_num = p.plt_num 
+      (SELECT MAX(time)
+       FROM record_history h
+       WHERE h.plt_num = p.plt_num
          AND h.action IN ('Move', 'Stock Transfer', 'QC Done', 'GRN Received', 'Order Load')
-      ), 
+      ),
       p.created_date
     ) as last_activity,
-    (SELECT loc 
-     FROM record_history h2 
-     WHERE h2.plt_num = p.plt_num 
-     ORDER BY h2.time DESC 
+    (SELECT loc
+     FROM record_history h2
+     WHERE h2.plt_num = p.plt_num
+     ORDER BY h2.time DESC
      LIMIT 1
     ) as current_location
   FROM record_palletinfo p
   LEFT JOIN data_code dc ON p.product_code = dc.code
   WHERE p.plt_num IS NOT NULL
 )
-SELECT 
+SELECT
   plt_num,
   product_code,
   product_qty,
   product_name,
   last_activity,
-  CASE 
+  CASE
     WHEN last_activity IS NULL THEN 999
     ELSE EXTRACT(DAY FROM CURRENT_TIMESTAMP - last_activity)::INTEGER
   END as days_stuck,
@@ -129,7 +129,9 @@ LIMIT 50`;
     // Type guard for array data (Strategy 4: unknown + type narrowing)
     if (data && Array.isArray(data) && data.length > 0) {
       // Convert JSONB result to proper format
-      const formattedData = toRecordArray(data).map((row: DatabaseRecord) => safeGet(row, 'result', row));
+      const formattedData = toRecordArray(data).map(
+        (row: DatabaseRecord) => safeGet(row, 'result') || row
+      );
 
       return {
         type: 'stuck_pallets',
@@ -154,7 +156,7 @@ LIMIT 50`;
 async function detectInventoryMismatch(supabase: TypedSupabaseClient) {
   try {
     const query = `WITH inventory_totals AS (
-  SELECT 
+  SELECT
     p.product_code,
     SUM(p.product_qty) as pallet_total,
     COUNT(DISTINCT p.plt_num) as pallet_count
@@ -165,22 +167,22 @@ async function detectInventoryMismatch(supabase: TypedSupabaseClient) {
   GROUP BY p.product_code
 ),
 mismatches AS (
-  SELECT 
+  SELECT
     it.product_code,
     dc.description as product_name,
     it.pallet_total,
     sl.stock_level,
     ABS(it.pallet_total - sl.stock_level) as difference,
-    CASE 
+    CASE
       WHEN sl.stock_level = 0 THEN 100
-      ELSE ABS(it.pallet_total - sl.stock_level) * 100.0 / sl.stock_level 
+      ELSE ABS(it.pallet_total - sl.stock_level) * 100.0 / sl.stock_level
     END as variance_percentage
   FROM inventory_totals it
   JOIN stock_level sl ON it.product_code = sl.stock
   LEFT JOIN data_code dc ON it.product_code = dc.code
   WHERE ABS(it.pallet_total - sl.stock_level) > 10
     AND (
-      sl.stock_level = 0 OR 
+      sl.stock_level = 0 OR
       ABS(it.pallet_total - sl.stock_level) * 100.0 / sl.stock_level > 5
     )
 )
@@ -200,10 +202,13 @@ LIMIT 20`;
     // Type guard for array data (Strategy 4: unknown + type narrowing)
     if (data && Array.isArray(data) && data.length > 0) {
       // Convert JSONB result to proper format
-      const formattedData = toRecordArray(data).map((row: DatabaseRecord) => safeGet(row, 'result', row));
-      const criticalCount = formattedData.filter(
-        (item: unknown) => safeGet(item, 'variance_percentage', 0) > 20
-      ).length;
+      const formattedData = toRecordArray(data).map(
+        (row: DatabaseRecord) => safeGet(row, 'result') || row
+      );
+      const criticalCount = formattedData.filter((item: unknown) => {
+        if (!isRecord(item)) return false;
+        return safeNumber(safeGet(item, 'variance_percentage'), 0) > 20;
+      }).length;
 
       return {
         type: 'inventory_mismatch',
@@ -231,7 +236,7 @@ async function detectOverdueOrders(supabase: TypedSupabaseClient) {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const query = `SELECT 
+    const query = `SELECT
   o.order_ref,
   o.product_code,
   dc.description as product_name,
@@ -260,8 +265,13 @@ LIMIT 50`;
     // Type guard for array data (Strategy 4: unknown + type narrowing)
     if (data && Array.isArray(data) && data.length > 0) {
       // Convert JSONB result to proper format
-      const formattedData = toRecordArray(data).map((row: DatabaseRecord) => safeGet(row, 'result', row));
-      const criticalOrders = formattedData.filter((order: unknown) => safeGet(order, 'days_overdue', 0) > 14).length;
+      const formattedData = toRecordArray(data).map(
+        (row: DatabaseRecord) => safeGet(row, 'result') || row
+      );
+      const criticalOrders = formattedData.filter((order: unknown) => {
+        if (!isRecord(order)) return false;
+        return safeNumber(safeGet(order, 'days_overdue'), 0) > 14;
+      }).length;
 
       return {
         type: 'overdue_orders',

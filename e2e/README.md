@@ -76,7 +76,7 @@ API_BASE_URL=http://localhost:3000/api
 // pages/example.page.ts
 export class ExamplePage {
   constructor(private page: Page) {}
-  
+
   async doSomething() {
     await this.page.click('[data-testid="button"]');
   }

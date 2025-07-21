@@ -1,6 +1,6 @@
 -- =====================================================
 -- 快速部署腳本 - 修復物化視圖新增托盤追蹤問題
--- 
+--
 -- 使用方法：
 -- 1. 登入 Supabase Dashboard
 -- 2. 進入 SQL Editor
@@ -37,11 +37,11 @@ BEGIN
     SELECT needs_refresh INTO v_needs_refresh
     FROM mv_refresh_tracking
     WHERE mv_name = 'mv_pallet_current_location';
-    
+
     -- 從物化視圖查詢
     IF p_search_type = 'series' THEN
         RETURN QUERY
-        SELECT 
+        SELECT
             mv.plt_num,
             mv.product_code,
             mv.product_qty,
@@ -54,7 +54,7 @@ BEGIN
         WHERE mv.series = p_search_value;
     ELSE
         RETURN QUERY
-        SELECT 
+        SELECT
             mv.plt_num,
             mv.product_code,
             mv.product_qty,
@@ -66,15 +66,15 @@ BEGIN
         FROM mv_pallet_current_location mv
         WHERE mv.plt_num = p_search_value;
     END IF;
-    
+
     GET DIAGNOSTICS v_result_count = ROW_COUNT;
-    
+
     -- 如果沒找到且需要刷新，使用實時查詢
     IF v_result_count = 0 AND v_needs_refresh THEN
         IF p_search_type = 'series' THEN
             RETURN QUERY
             WITH latest_history AS (
-                SELECT DISTINCT ON (h.plt_num) 
+                SELECT DISTINCT ON (h.plt_num)
                     h.plt_num,
                     h.loc as current_location,
                     h.time as last_update
@@ -83,7 +83,7 @@ BEGIN
                 WHERE p.series = p_search_value
                 ORDER BY h.plt_num, h.time DESC
             )
-            SELECT 
+            SELECT
                 p.plt_num,
                 p.product_code,
                 p.product_qty,
@@ -98,7 +98,7 @@ BEGIN
         ELSE
             RETURN QUERY
             WITH latest_history AS (
-                SELECT DISTINCT ON (h.plt_num) 
+                SELECT DISTINCT ON (h.plt_num)
                     h.plt_num,
                     h.loc as current_location,
                     h.time as last_update
@@ -106,7 +106,7 @@ BEGIN
                 WHERE h.plt_num = p_search_value
                 ORDER BY h.plt_num, h.time DESC
             )
-            SELECT 
+            SELECT
                 p.plt_num,
                 p.product_code,
                 p.product_qty,
@@ -131,21 +131,21 @@ DECLARE
     v_last_refresh TIMESTAMP;
     v_minutes_since_refresh INTEGER;
 BEGIN
-    SELECT needs_refresh, last_refresh 
+    SELECT needs_refresh, last_refresh
     INTO v_needs_refresh, v_last_refresh
     FROM mv_refresh_tracking
     WHERE mv_name = 'mv_pallet_current_location';
-    
+
     v_minutes_since_refresh := EXTRACT(EPOCH FROM (NOW() - v_last_refresh)) / 60;
-    
+
     IF v_needs_refresh OR v_minutes_since_refresh > 5 THEN
         REFRESH MATERIALIZED VIEW CONCURRENTLY mv_pallet_current_location;
-        
+
         UPDATE mv_refresh_tracking
         SET needs_refresh = FALSE,
             last_refresh = NOW()
         WHERE mv_name = 'mv_pallet_current_location';
-        
+
         RAISE NOTICE '物化視圖已刷新';
     END IF;
 END;
@@ -156,12 +156,12 @@ CREATE OR REPLACE FUNCTION force_sync_pallet_mv()
 RETURNS TEXT AS $$
 BEGIN
     REFRESH MATERIALIZED VIEW mv_pallet_current_location;
-    
+
     UPDATE mv_refresh_tracking
     SET needs_refresh = FALSE,
         last_refresh = NOW()
     WHERE mv_name = 'mv_pallet_current_location';
-    
+
     RETURN '物化視圖已強制同步完成';
 END;
 $$ LANGUAGE plpgsql;

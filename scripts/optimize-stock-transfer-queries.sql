@@ -10,7 +10,7 @@ DROP MATERIALIZED VIEW IF EXISTS mv_pallet_current_location CASCADE;
 
 CREATE MATERIALIZED VIEW mv_pallet_current_location AS
 WITH latest_history AS (
-    SELECT DISTINCT ON (plt_num) 
+    SELECT DISTINCT ON (plt_num)
         plt_num,
         loc as current_location,
         time as last_update,
@@ -19,7 +19,7 @@ WITH latest_history AS (
     FROM record_history
     ORDER BY plt_num, time DESC
 )
-SELECT 
+SELECT
     p.plt_num,
     p.product_code,
     p.product_qty,
@@ -105,15 +105,15 @@ BEGIN
     -- 檢查是否需要刷新物化視圖
     IF (SELECT needs_refresh FROM mv_refresh_tracking WHERE mv_name = 'mv_pallet_current_location') THEN
         PERFORM refresh_pallet_location_mv();
-        UPDATE mv_refresh_tracking 
+        UPDATE mv_refresh_tracking
         SET needs_refresh = FALSE, last_refresh = CURRENT_TIMESTAMP
         WHERE mv_name = 'mv_pallet_current_location';
     END IF;
-    
+
     -- 根據搜索類型查詢
     IF p_search_type = 'series' THEN
         RETURN QUERY
-        SELECT 
+        SELECT
             mv.plt_num,
             mv.product_code,
             mv.product_qty,
@@ -125,7 +125,7 @@ BEGIN
         WHERE mv.series = p_search_value;
     ELSE
         RETURN QUERY
-        SELECT 
+        SELECT
             mv.plt_num,
             mv.product_code,
             mv.product_qty,
@@ -169,12 +169,12 @@ BEGIN
         current_location TEXT,
         last_update TIMESTAMP
     ) ON COMMIT DROP;
-    
+
     -- 對每個模式進行查詢
     FOREACH pattern IN ARRAY p_patterns
     LOOP
         INSERT INTO temp_batch_results
-        SELECT 
+        SELECT
             mv.plt_num,
             mv.product_code,
             mv.product_qty,
@@ -187,7 +187,7 @@ BEGIN
         ORDER BY mv.last_update DESC
         LIMIT 10;  -- 每個前綴最多返回10個最近的托盤
     END LOOP;
-    
+
     -- 返回去重後的結果
     RETURN QUERY
     SELECT DISTINCT * FROM temp_batch_results;
@@ -209,12 +209,12 @@ BEGIN
     SELECT last_refresh INTO last_refresh_time
     FROM mv_refresh_tracking
     WHERE mv_name = 'mv_pallet_current_location';
-    
+
     -- 如果超過刷新間隔或標記需要刷新，則執行刷新
     IF (CURRENT_TIMESTAMP - last_refresh_time > refresh_interval) OR
        (SELECT needs_refresh FROM mv_refresh_tracking WHERE mv_name = 'mv_pallet_current_location') THEN
         PERFORM refresh_pallet_location_mv();
-        UPDATE mv_refresh_tracking 
+        UPDATE mv_refresh_tracking
         SET needs_refresh = FALSE, last_refresh = CURRENT_TIMESTAMP
         WHERE mv_name = 'mv_pallet_current_location';
     END IF;
@@ -226,19 +226,19 @@ $$ LANGUAGE plpgsql;
 -- ====================================
 
 CREATE OR REPLACE VIEW v_stock_transfer_performance AS
-SELECT 
+SELECT
     'record_palletinfo' as table_name,
     COUNT(*) as row_count,
     pg_size_pretty(pg_total_relation_size('record_palletinfo')) as total_size
 FROM record_palletinfo
 UNION ALL
-SELECT 
+SELECT
     'record_history' as table_name,
     COUNT(*) as row_count,
     pg_size_pretty(pg_total_relation_size('record_history')) as total_size
 FROM record_history
 UNION ALL
-SELECT 
+SELECT
     'mv_pallet_current_location' as table_name,
     COUNT(*) as row_count,
     pg_size_pretty(pg_total_relation_size('mv_pallet_current_location')) as total_size

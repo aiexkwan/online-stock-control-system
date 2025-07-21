@@ -4,6 +4,7 @@
 
 import { ProcessedReportData, ReportConfig } from '../core/ReportConfig';
 import { LegacyOrderLoadingPdfGenerator } from '../core/LegacyOrderLoadingPdfGenerator';
+import { safeGet, safeString, safeNumber, toRecordArray } from '@/types/database/helpers';
 
 export class LegacyOrderLoadingAdapter {
   /**
@@ -14,11 +15,11 @@ export class LegacyOrderLoadingAdapter {
     const dateRange = this.extractDateRange(data.metadata.filters);
     const filters = this.extractFilters(data.metadata.filters);
 
-    // 轉換各區段數據
-    const summary = data.sections.summary || data.summary || {};
-    const orderProgress = data.sections.orderProgress || [];
-    const loadingDetails = data.sections.loadingDetails || [];
-    const userPerformance = data.sections.userPerformance || [];
+    // 轉換各區段數據 - 使用策略4: unknown + type narrowing
+    const summaryData = data.sections.summary ?? data.summary;
+    const orderProgressData = data.sections.orderProgress ?? [];
+    const loadingDetailsData = data.sections.loadingDetails ?? [];
+    const userPerformanceData = data.sections.userPerformance ?? [];
 
     // 使用舊版生成器
     const generator = new LegacyOrderLoadingPdfGenerator();
@@ -26,32 +27,36 @@ export class LegacyOrderLoadingAdapter {
       dateRange,
       filters,
       summary: {
-        totalOrders: summary.totalOrders || 0,
-        completedOrders: summary.completedOrders || 0,
-        totalItemsLoaded: summary.totalItemsLoaded || 0,
-        avgCompletionRate: summary.avgCompletionRate || 0,
+        totalOrders: safeNumber(safeGet(summaryData, 'totalOrders'), 0),
+        completedOrders: safeNumber(safeGet(summaryData, 'completedOrders'), 0),
+        totalItemsLoaded: safeNumber(safeGet(summaryData, 'totalItemsLoaded'), 0),
+        avgCompletionRate: safeNumber(safeGet(summaryData, 'avgCompletionRate'), 0),
       },
-      orderProgress: this.transformOrderProgress(orderProgress),
-      loadingDetails: this.transformLoadingDetails(loadingDetails),
-      userPerformance: this.transformUserPerformance(userPerformance),
+      orderProgress: this.transformOrderProgress(orderProgressData),
+      loadingDetails: this.transformLoadingDetails(loadingDetailsData),
+      userPerformance: this.transformUserPerformance(userPerformanceData),
     });
   }
 
-  private static extractDateRange(filters: any): { start: string; end: string } {
+  private static extractDateRange(filters: Record<string, unknown>): {
+    start: string;
+    end: string;
+  } {
     // 處理 dateRange 過濾器
-    if (filters.dateRange && filters.dateRange.includes('|')) {
-      const [start, end] = filters.dateRange.split('|');
+    const dateRange = filters.dateRange;
+    if (typeof dateRange === 'string' && dateRange.includes('|')) {
+      const [start, end] = dateRange.split('|');
       return { start, end };
     }
 
     // 處理單獨的日期
     return {
-      start: filters.startDate || '',
-      end: filters.endDate || '',
+      start: typeof filters.startDate === 'string' ? filters.startDate : '',
+      end: typeof filters.endDate === 'string' ? filters.endDate : '',
     };
   }
 
-  private static extractFilters(filters: any): any {
+  private static extractFilters(filters: Record<string, unknown>): Record<string, unknown> {
     return {
       orderNumber: filters.orderNumber || undefined,
       productCode: filters.productCode || undefined,
@@ -60,42 +65,81 @@ export class LegacyOrderLoadingAdapter {
     };
   }
 
-  private static transformOrderProgress(data: Record<string, unknown>[]): Record<string, unknown>[] {
+  private static transformOrderProgress(data: unknown): {
+    order_number: string;
+    order_date: string;
+    total_items: number;
+    loaded_items: number;
+    completion_rate: number;
+    status: string;
+  }[] {
     if (!Array.isArray(data)) return [];
 
-    return data.map(item => ({
-      order_number: item.order_number || '',
-      order_date: item.order_date || '',
-      total_items: item.total_items || 0,
-      loaded_items: item.loaded_items || 0,
-      completion_rate: item.completion_rate || 0,
-      status: item.status || 'Pending',
-    }));
+    return toRecordArray(data)
+      .map((item: any) => {
+        if (typeof item !== 'object' || item === null) return null;
+
+        return {
+          order_number: safeString(safeGet(item, 'order_number'), ''),
+          order_date: safeString(safeGet(item, 'order_date'), ''),
+          total_items: safeNumber(safeGet(item, 'total_items'), 0),
+          loaded_items: safeNumber(safeGet(item, 'loaded_items'), 0),
+          completion_rate: safeNumber(safeGet(item, 'completion_rate'), 0),
+          status: safeString(safeGet(item, 'status'), 'Pending'),
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
   }
 
-  private static transformLoadingDetails(data: Record<string, unknown>[]): Record<string, unknown>[] {
+  private static transformLoadingDetails(data: unknown): {
+    timestamp: string;
+    order_number: string;
+    product_code: string;
+    product_description: string;
+    loaded_qty: number;
+    user_name: string;
+    action: string;
+  }[] {
     if (!Array.isArray(data)) return [];
 
-    return data.map(item => ({
-      timestamp: item.timestamp || item.created_at || '',
-      order_number: item.order_number || '',
-      product_code: item.product_code || '',
-      product_description: item.product_description || '',
-      loaded_qty: item.loaded_qty || 0,
-      user_name: item.user_name || '',
-      action: item.action || 'Load',
-    }));
+    return toRecordArray(data)
+      .map((item: any) => {
+        if (typeof item !== 'object' || item === null) return null;
+
+        return {
+          timestamp: safeString(safeGet(item, 'timestamp') || safeGet(item, 'created_at'), ''),
+          order_number: safeString(safeGet(item, 'order_number'), ''),
+          product_code: safeString(safeGet(item, 'product_code'), ''),
+          product_description: safeString(safeGet(item, 'product_description'), ''),
+          loaded_qty: safeNumber(safeGet(item, 'loaded_qty'), 0),
+          user_name: safeString(safeGet(item, 'user_name'), ''),
+          action: safeString(safeGet(item, 'action'), 'Load'),
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
   }
 
-  private static transformUserPerformance(data: Record<string, unknown>[]): Record<string, unknown>[] {
+  private static transformUserPerformance(data: unknown): {
+    user_id: string;
+    user_name: string;
+    total_loads: number;
+    total_quantity: number;
+    avg_load_time: string;
+  }[] {
     if (!Array.isArray(data)) return [];
 
-    return data.map(item => ({
-      user_id: item.user_id || '',
-      user_name: item.user_name || '',
-      total_loads: item.total_loads || 0,
-      total_quantity: item.total_quantity || 0,
-      avg_load_time: item.avg_load_time || 'N/A',
-    }));
+    return toRecordArray(data)
+      .map((item: any) => {
+        if (typeof item !== 'object' || item === null) return null;
+
+        return {
+          user_id: safeString(safeGet(item, 'user_id'), ''),
+          user_name: safeString(safeGet(item, 'user_name'), ''),
+          total_loads: safeNumber(safeGet(item, 'total_loads'), 0),
+          total_quantity: safeNumber(safeGet(item, 'total_quantity'), 0),
+          avg_load_time: safeString(safeGet(item, 'avg_load_time'), 'N/A'),
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
   }
 }

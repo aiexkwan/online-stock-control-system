@@ -11,13 +11,13 @@ BEGIN
     ) THEN
         -- 添加唯一約束
         ALTER TABLE user_dashboard_settings
-        ADD CONSTRAINT user_dashboard_settings_user_id_dashboard_name_key 
+        ADD CONSTRAINT user_dashboard_settings_user_id_dashboard_name_key
         UNIQUE (user_id, dashboard_name);
     END IF;
 END $$;
 
 -- 添加索引以提高查詢性能
-CREATE INDEX IF NOT EXISTS idx_user_dashboard_settings_user_dashboard 
+CREATE INDEX IF NOT EXISTS idx_user_dashboard_settings_user_dashboard
 ON user_dashboard_settings (user_id, dashboard_name);
 
 -- 添加觸發器自動更新 updated_at
@@ -31,7 +31,7 @@ $$ language 'plpgsql';
 
 -- 如果觸發器不存在則創建
 DROP TRIGGER IF EXISTS update_user_dashboard_settings_updated_at ON user_dashboard_settings;
-CREATE TRIGGER update_user_dashboard_settings_updated_at 
-BEFORE UPDATE ON user_dashboard_settings 
-FOR EACH ROW 
+CREATE TRIGGER update_user_dashboard_settings_updated_at
+BEFORE UPDATE ON user_dashboard_settings
+FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();

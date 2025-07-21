@@ -56,21 +56,21 @@ function processFile(filePath) {
   if (modified && importsNeeded.size > 0) {
     // Add imports at the top of the file
     const imports = Array.from(importsNeeded).join('\n');
-    
+
     // Check if file already has imports
     const hasImports = content.includes("import ");
-    
+
     if (hasImports) {
       // Add after the last import
       const lines = content.split('\n');
       let lastImportIndex = -1;
-      
+
       for (let i = 0; i < lines.length; i++) {
         if (lines[i].startsWith('import ')) {
           lastImportIndex = i;
         }
       }
-      
+
       if (lastImportIndex >= 0) {
         lines.splice(lastImportIndex + 1, 0, imports);
         content = lines.join('\n');
@@ -79,7 +79,7 @@ function processFile(filePath) {
       // Add at the beginning
       content = imports + '\n\n' + content;
     }
-    
+
     fs.writeFileSync(filePath, content);
     console.log(`✅ Fixed: ${filePath}`);
   }

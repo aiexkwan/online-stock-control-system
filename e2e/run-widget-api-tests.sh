@@ -30,7 +30,7 @@ start_nestjs_server() {
   npm run start:dev &
   NESTJS_PID=$!
   echo "NestJS PID: $NESTJS_PID"
-  
+
   # 等待服務器啟動
   echo "等待服務器啟動..."
   for i in {1..30}; do
@@ -42,7 +42,7 @@ start_nestjs_server() {
     echo -n "."
     sleep 2
   done
-  
+
   echo -e "${RED}✗ NestJS 服務器啟動失敗${NC}"
   cd ../..
   return 1
@@ -52,12 +52,12 @@ start_nestjs_server() {
 run_tests() {
   echo ""
   echo "=== 運行 Widget API 測試 ==="
-  
+
   # 運行 v1.2.2 Widget API 測試
   echo ""
   echo "1. 運行 v1.2.2 Widget Endpoints 測試..."
   npx playwright test e2e/widgets/nestjs-widgets-api-v122.spec.ts --project=chromium
-  
+
   # 運行性能基準測試
   echo ""
   echo "2. 運行 GraphQL vs REST 性能基準測試..."

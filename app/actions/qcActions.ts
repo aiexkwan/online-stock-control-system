@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
-import { getErrorMessage } from '../../lib/types/error-handling';
+import { getErrorMessage } from '@/types/core/error';
 import { z } from 'zod';
 
 import {
@@ -219,7 +219,10 @@ export async function updatePalletPdfUrl(
     return { success: true };
   } catch (error: unknown) {
     console.error('[qcActions] Unexpected error updating PDF URL:', error);
-    return { success: false, error: `Update PDF URL error: ${getErrorMessage(error) || 'Unknown error'}` };
+    return {
+      success: false,
+      error: `Update PDF URL error: ${getErrorMessage(error) || 'Unknown error'}`,
+    };
   }
 }
 
@@ -355,7 +358,12 @@ export async function createQcDatabaseEntriesWithTransaction(
         .eq('plt_num', payload.palletInfo.plt_num)
         .single();
 
-      if (checkError && typeof checkError === 'object' && 'code' in checkError && checkError.code !== 'PGRST116') {
+      if (
+        checkError &&
+        typeof checkError === 'object' &&
+        'code' in checkError &&
+        checkError.code !== 'PGRST116'
+      ) {
         // console.error('[qcActions] Error checking for duplicate pallet:', checkError); // 保留錯誤日誌供生產環境調試
         throw new Error(`Failed to check for duplicate pallet: ${getErrorMessage(checkError)}`);
       }
@@ -413,7 +421,10 @@ export async function createQcDatabaseEntriesWithTransaction(
       }
 
       // 檢查是否是 API key 相關錯誤
-      if (getErrorMessage(palletInfoError) && getErrorMessage(palletInfoError).toLowerCase().includes('api key')) {
+      if (
+        getErrorMessage(palletInfoError) &&
+        getErrorMessage(palletInfoError).toLowerCase().includes('api key')
+      ) {
         // console.error('[qcActions] 檢測到 API key 錯誤 - 這可能是環境變數問題'); // 保留錯誤日誌供生產環境調試
         return {
           error: `API Key Error: ${getErrorMessage(palletInfoError)}. 請檢查 SUPABASE_SERVICE_ROLE_KEY 環境變數。`,
@@ -490,4 +501,3 @@ export async function createQcDatabaseEntriesWithTransaction(
     return { error: `Transaction failed: ${getErrorMessage(error) || 'Unknown error.'}` };
   }
 }
-

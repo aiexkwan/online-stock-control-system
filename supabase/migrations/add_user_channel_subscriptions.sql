@@ -22,27 +22,27 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
-CREATE TRIGGER update_user_channel_subscriptions_updated_at 
-  BEFORE UPDATE ON user_channel_subscriptions 
-  FOR EACH ROW 
+CREATE TRIGGER update_user_channel_subscriptions_updated_at
+  BEFORE UPDATE ON user_channel_subscriptions
+  FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
 -- 設置 RLS (Row Level Security)
 ALTER TABLE user_channel_subscriptions ENABLE ROW LEVEL SECURITY;
 
 -- 創建 RLS 策略
-CREATE POLICY "Users can view their own channel subscriptions" 
-  ON user_channel_subscriptions FOR SELECT 
+CREATE POLICY "Users can view their own channel subscriptions"
+  ON user_channel_subscriptions FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert their own channel subscriptions" 
-  ON user_channel_subscriptions FOR INSERT 
+CREATE POLICY "Users can insert their own channel subscriptions"
+  ON user_channel_subscriptions FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can update their own channel subscriptions" 
-  ON user_channel_subscriptions FOR UPDATE 
+CREATE POLICY "Users can update their own channel subscriptions"
+  ON user_channel_subscriptions FOR UPDATE
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can delete their own channel subscriptions" 
-  ON user_channel_subscriptions FOR DELETE 
+CREATE POLICY "Users can delete their own channel subscriptions"
+  ON user_channel_subscriptions FOR DELETE
   USING (auth.uid() = user_id);

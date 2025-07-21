@@ -22,7 +22,7 @@ import { DashboardDataProvider } from '@/app/admin/contexts/DashboardDataContext
 
 function AdminDashboard() {
   return (
-    <DashboardDataProvider 
+    <DashboardDataProvider
       initialDateRange={{ startDate: null, endDate: null }}
       autoRefreshInterval={5 * 60 * 1000} // 5 分鐘
     >
@@ -58,11 +58,11 @@ function MyWidget() {
 import { useDashboardData } from '@/app/admin/contexts/DashboardDataContext';
 
 function DashboardControls() {
-  const { 
-    dateRange, 
-    setDateRange, 
+  const {
+    dateRange,
+    setDateRange,
     refetch,
-    getWidgetData 
+    getWidgetData
   } = useDashboardData();
 
   return (
@@ -182,7 +182,7 @@ Context 提供統一的錯誤處理：
 ```tsx
 function ErrorBoundary() {
   const { error } = useDashboardData();
-  
+
   if (error?.type === 'batch') {
     // 批量錯誤
   } else if (error?.type === 'widget') {
@@ -199,7 +199,7 @@ import { render } from '@testing-library/react';
 
 test('widget renders with data', () => {
   const mockData = { statsCard: { totalProducts: 100 } };
-  
+
   render(
     <DashboardDataProvider initialDateRange={...}>
       <MyWidget />

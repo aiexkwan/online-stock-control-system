@@ -10,13 +10,13 @@ import {
   TemplateConfigSchema,
   QcLabelData,
   GrnLabelData,
-  formatPrintData
+  formatPrintData,
 } from '@/lib/schemas/printing';
-import type { Database } from '@/lib/types/supabase-generated';
+import type { Database } from '@/types/database/supabase';
 
 // TODO: 使用更具體的表類型定義，現在使用 any 作為臨時解決方案
 // 未來應該根據具體的列印類型使用對應的表類型
-type DatabaseRecord = any;
+type DatabaseRecord = Record<string, unknown>;
 
 export class PrintTemplateService {
   private templates: Map<PrintType, TemplateConfig> = new Map();
@@ -36,7 +36,10 @@ export class PrintTemplateService {
   /**
    * Apply template to data
    */
-  async applyTemplate(template: TemplateConfig, data: DatabaseRecord[]): Promise<{
+  async applyTemplate(
+    template: TemplateConfig,
+    data: DatabaseRecord[]
+  ): Promise<{
     formattedData: unknown;
     template: string;
     metadata: Record<string, string | number>;
@@ -74,7 +77,7 @@ export class PrintTemplateService {
           return {
             formattedData: data,
             template: template.template,
-            metadata: { type: template.type, timestamp: Date.now() }
+            metadata: { type: template.type, timestamp: Date.now() },
           };
       }
     } catch (error) {
@@ -97,7 +100,7 @@ export class PrintTemplateService {
     metadata: Record<string, string | number>;
   } {
     try {
-      const formattedData = data.map((record) => {
+      const formattedData = data.map(record => {
         // Convert DatabaseRecord to QcLabelData format
         const qcData = {
           plt_num: record.plt_num || '',
@@ -108,7 +111,7 @@ export class PrintTemplateService {
           pdf_url: record.pdf_url || undefined,
           plt_remark: record.plt_remark || undefined,
         };
-        
+
         // Validate using Zod
         return formatPrintData.qcLabel(qcData);
       });
@@ -119,8 +122,8 @@ export class PrintTemplateService {
         metadata: {
           type: 'QC_LABEL',
           count: formattedData.length,
-          generatedAt: Date.now()
-        }
+          generatedAt: Date.now(),
+        },
       };
     } catch (error) {
       console.error('[PrintTemplateService] QC Label formatting error:', error);
@@ -134,7 +137,7 @@ export class PrintTemplateService {
     metadata: Record<string, string | number>;
   } {
     try {
-      const formattedData = data.map((record) => {
+      const formattedData = data.map(record => {
         // Convert DatabaseRecord to GrnLabelData format
         const grnData = {
           grn_ref: Number(record.grn_ref || 0),
@@ -149,7 +152,7 @@ export class PrintTemplateService {
           sup_code: record.sup_code || '',
           creat_time: record.creat_time || new Date().toISOString(),
         };
-        
+
         // Validate using Zod
         return formatPrintData.grnLabel(grnData);
       });
@@ -160,8 +163,8 @@ export class PrintTemplateService {
         metadata: {
           type: 'GRN_LABEL',
           count: formattedData.length,
-          generatedAt: Date.now()
-        }
+          generatedAt: Date.now(),
+        },
       };
     } catch (error) {
       console.error('[PrintTemplateService] GRN Label formatting error:', error);
@@ -182,8 +185,8 @@ export class PrintTemplateService {
         count: data.length,
         generatedAt: Date.now(),
         dateFrom: new Date().toISOString(),
-        dateTo: new Date().toISOString()
-      }
+        dateTo: new Date().toISOString(),
+      },
     };
   }
 
@@ -199,8 +202,8 @@ export class PrintTemplateService {
         type: 'INVENTORY_REPORT',
         count: data.length,
         generatedAt: Date.now(),
-        totalItems: data.length
-      }
+        totalItems: data.length,
+      },
     };
   }
 
@@ -215,8 +218,8 @@ export class PrintTemplateService {
       metadata: {
         type: 'PALLET_LABEL',
         count: data.length,
-        generatedAt: Date.now()
-      }
+        generatedAt: Date.now(),
+      },
     };
   }
 
@@ -231,8 +234,8 @@ export class PrintTemplateService {
       metadata: {
         type: 'TRANSFER_SLIP',
         count: data.length,
-        generatedAt: Date.now()
-      }
+        generatedAt: Date.now(),
+      },
     };
   }
 
@@ -247,8 +250,8 @@ export class PrintTemplateService {
       metadata: {
         type: 'VOID_REPORT',
         count: data.length,
-        generatedAt: Date.now()
-      }
+        generatedAt: Date.now(),
+      },
     };
   }
 

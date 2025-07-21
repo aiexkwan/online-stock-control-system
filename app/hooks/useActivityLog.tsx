@@ -4,7 +4,7 @@ export interface ActivityLogEntry {
   message: string;
   type: 'success' | 'error' | 'info' | 'warning';
   timestamp: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface UseActivityLogOptions {
@@ -41,7 +41,11 @@ export const useActivityLog = (options: UseActivityLogOptions = {}) => {
    * 添加新的活動日誌
    */
   const addActivity = useCallback(
-    (message: string, type: ActivityLogEntry['type'] = 'info', metadata?: Record<string, any>) => {
+    (
+      message: string,
+      type: ActivityLogEntry['type'] = 'info',
+      metadata?: Record<string, unknown>
+    ) => {
       const newEntry: ActivityLogEntry = {
         message,
         type,
@@ -71,7 +75,7 @@ export const useActivityLog = (options: UseActivityLogOptions = {}) => {
    * 添加成功日誌
    */
   const addSuccess = useCallback(
-    (message: string, metadata?: Record<string, any>) => {
+    (message: string, metadata?: Record<string, unknown>) => {
       addActivity(message, 'success', metadata);
     },
     [addActivity]
@@ -81,7 +85,7 @@ export const useActivityLog = (options: UseActivityLogOptions = {}) => {
    * 添加錯誤日誌
    */
   const addError = useCallback(
-    (message: string, metadata?: Record<string, any>) => {
+    (message: string, metadata?: Record<string, unknown>) => {
       addActivity(message, 'error', metadata);
     },
     [addActivity]
@@ -91,7 +95,7 @@ export const useActivityLog = (options: UseActivityLogOptions = {}) => {
    * 添加警告日誌
    */
   const addWarning = useCallback(
-    (message: string, metadata?: Record<string, any>) => {
+    (message: string, metadata?: Record<string, unknown>) => {
       addActivity(message, 'warning', metadata);
     },
     [addActivity]
@@ -101,7 +105,7 @@ export const useActivityLog = (options: UseActivityLogOptions = {}) => {
    * 添加信息日誌
    */
   const addInfo = useCallback(
-    (message: string, metadata?: Record<string, any>) => {
+    (message: string, metadata?: Record<string, unknown>) => {
       addActivity(message, 'info', metadata);
     },
     [addActivity]
@@ -141,7 +145,7 @@ export const useActivityLog = (options: UseActivityLogOptions = {}) => {
       return activityLog.filter(
         entry =>
           entry.message.toLowerCase().includes(lowercaseKeyword) ||
-          JSON.stringify(entry.metadata || {})
+          JSON.stringify(entry.metadata || ({} as any))
             .toLowerCase()
             .includes(lowercaseKeyword)
       );

@@ -1,0 +1,12 @@
+import { Module } from '@nestjs/common';
+import { PalletsController } from './pallets.controller';
+import { PalletsService } from './pallets.service';
+import { SupabaseModule } from '../supabase/supabase.module';
+
+@Module({
+  imports: [SupabaseModule],
+  controllers: [PalletsController],
+  providers: [PalletsService],
+  exports: [PalletsService],
+})
+export class PalletsModule {}

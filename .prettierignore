@@ -55,7 +55,6 @@ API_REFERENCE.md
 migrations/
 
 # Configuration files that need specific formatting
-docker-compose.yml
 *.yml
 *.yaml
 .eslintrc.json

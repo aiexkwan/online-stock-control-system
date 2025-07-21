@@ -60,7 +60,7 @@
 const calculateCognitiveComplexity = (filePath) => {
   const ast = parseFile(filePath);
   let complexity = 0;
-  
+
   traverse(ast, {
     IfStatement: () => complexity++,
     SwitchStatement: () => complexity++,
@@ -68,7 +68,7 @@ const calculateCognitiveComplexity = (filePath) => {
     CatchClause: () => complexity++,
     ConditionalExpression: () => complexity++
   });
-  
+
   return complexity;
 };
 
@@ -81,7 +81,7 @@ const checkFunctionLength = (functions) => {
 const analyzeDependencies = (module) => {
   const imports = extractImports(module);
   const exports = extractExports(module);
-  
+
   return {
     fanIn: imports.length,
     fanOut: exports.length,
@@ -96,13 +96,13 @@ graph TD
     A[前端層] --> B[業務邏輯層]
     B --> C[數據訪問層]
     C --> D[數據庫層]
-    
+
     E[共用組件] --> A
     F[工具函數] --> B
     G[類型定義] --> A
     G --> B
     G --> C
-    
+
     H[測試層] -.-> A
     H -.-> B
     H -.-> C
@@ -124,7 +124,7 @@ class UserController {
     private userService: UserService,
     private logger: Logger
   ) {}
-  
+
   async handleGetUser(req: Request, res: Response) {
     try {
       const user = await this.userService.getUser(req.params.id);
@@ -160,11 +160,11 @@ const withAuth = <P extends object>(
 ) => {
   return (props: P) => {
     const { user } = useAuth();
-    
+
     if (!user) {
       return <LoginForm />;
     }
-    
+
     return <Component {...props} />;
   };
 };
@@ -178,17 +178,17 @@ const withAuth = <P extends object>(
     - 架構決策延遲
     - 模組設計不當
     - 接口設計缺陷
-    
+
   代碼債務:
     - 重複代碼
     - 複雜邏輯
     - 命名不清
-    
+
   測試債務:
     - 測試覆蓋不足
     - 測試質量差
     - 測試維護困難
-    
+
   文檔債務:
     - 文檔過時
     - 文檔缺失
@@ -230,11 +230,11 @@ export class ErrorHandler {
     if (error instanceof ValidationError) {
       return { status: 400, message: error.message };
     }
-    
+
     if (error instanceof NotFoundError) {
       return { status: 404, message: 'Resource not found' };
     }
-    
+
     return { status: 500, message: 'Internal server error' };
   }
 }
@@ -250,7 +250,7 @@ export namespace UserDomain {
     profile: UserProfile;
     permissions: Permission[];
   }
-  
+
   export interface UserRepository {
     findById(id: UserId): Promise<User | null>;
     save(user: User): Promise<void>;
@@ -260,12 +260,12 @@ export namespace UserDomain {
 // 2. 建立事件驅動架構
 export class EventBus {
   private listeners: Map<string, Function[]> = new Map();
-  
+
   emit(event: string, data: any) {
     const handlers = this.listeners.get(event) || [];
     handlers.forEach(handler => handler(data));
   }
-  
+
   on(event: string, handler: Function) {
     const handlers = this.listeners.get(event) || [];
     handlers.push(handler);

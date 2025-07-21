@@ -18,7 +18,7 @@ CREATE INDEX IF NOT EXISTS idx_order_loaded_pallets_pallet_number ON public.orde
 ALTER TABLE public.order_loaded_pallets ENABLE ROW LEVEL SECURITY;
 
 -- Policy for authenticated users to read and insert
-CREATE POLICY "Authenticated users can read and insert order loaded pallets" 
+CREATE POLICY "Authenticated users can read and insert order loaded pallets"
 ON public.order_loaded_pallets
 FOR ALL
 TO authenticated

@@ -13,14 +13,14 @@ function getFormattedDateTime() {
   const hours = String(now.getHours()).padStart(2, '0');
   const minutes = String(now.getMinutes()).padStart(2, '0');
   const seconds = String(now.getSeconds()).padStart(2, '0');
-  
+
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
 // 定義要忽略的目錄和檔案
 const ignoreDirs = [
-  '.git', 
-  'node_modules', 
+  '.git',
+  'node_modules',
   '.next',
   'out',
   'build',
@@ -54,7 +54,7 @@ const watcher = chokidar.watch('.', watchOptions);
 function getExecuteCommand(commitMessage) {
   // 檢查當前作業系統
   const isWindows = os.platform() === 'win32';
-  
+
   if (isWindows) {
     // Windows 系統上的指令，使用 PowerShell 腳本
     return `powershell -Command "& {.\\scripts\\push.ps1 -CommitMessage '${commitMessage}'}"`;
@@ -67,13 +67,13 @@ function getExecuteCommand(commitMessage) {
 // 定義一個處理自動推送的函數
 function handleAutoPush() {
   if (!changesDetected) return;
-  
+
   const commitMessage = `自動提交: ${getFormattedDateTime()}`;
   console.log(`🚀 提交更改: ${commitMessage}`);
-  
+
   // 獲取適合當前作業系統的執行指令
   const executeCommand = getExecuteCommand(commitMessage);
-  
+
   exec(executeCommand, (error, stdout, stderr) => {
     if (error) {
       console.error(`❌ 錯誤: ${error.message}`);
@@ -93,7 +93,7 @@ watcher
   .on('add', filePath => {
     console.log(`➕ 檔案新增: ${filePath}`);
     changesDetected = true;
-    
+
     // 重置定時器
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(handleAutoPush, AUTO_COMMIT_INTERVAL);
@@ -101,7 +101,7 @@ watcher
   .on('change', filePath => {
     console.log(`✏️ 檔案修改: ${filePath}`);
     changesDetected = true;
-    
+
     // 重置定時器
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(handleAutoPush, AUTO_COMMIT_INTERVAL);
@@ -109,7 +109,7 @@ watcher
   .on('unlink', filePath => {
     console.log(`❌ 檔案刪除: ${filePath}`);
     changesDetected = true;
-    
+
     // 重置定時器
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(handleAutoPush, AUTO_COMMIT_INTERVAL);
@@ -123,4 +123,4 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-console.log(`⏱️ 設定每 ${AUTO_COMMIT_INTERVAL/1000/60} 分鐘自動提交已變更檔案`); 
+console.log(`⏱️ 設定每 ${AUTO_COMMIT_INTERVAL/1000/60} 分鐘自動提交已變更檔案`);

@@ -1,0 +1,252 @@
+/**
+ * Orders API
+ * Demonstrates hybrid approach for order management
+ */
+
+import { DataAccessLayer } from '../core/DataAccessStrategy';
+import { createClient } from '@/app/utils/supabase/client';
+import { loadPalletToOrder, undoLoadPallet, getOrderInfo } from '@/app/actions/orderLoadingActions';
+
+// Type definitions
+export interface OrderSearchParams {
+  orderRef?: string;
+  status?: 'pending' | 'in_progress' | 'completed';
+  dateFrom?: string;
+  dateTo?: string;
+  productCode?: string;
+  includeDetails?: boolean;
+}
+
+export interface OrderItem {
+  productCode: string;
+  productDesc: string;
+  orderedQty: number;
+  loadedQty: number;
+  remainingQty: number;
+  completionPercentage: number;
+}
+
+export interface Order {
+  orderRef: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  createdAt: string;
+  updatedAt: string;
+  totalItems: number;
+  completedItems: number;
+  totalQty: number;
+  loadedQty: number;
+  completionPercentage: number;
+  items?: OrderItem[];
+}
+
+export interface OrdersResult {
+  orders: Order[];
+  total: number;
+  summary: {
+    totalOrders: number;
+    pendingOrders: number;
+    inProgressOrders: number;
+    completedOrders: number;
+    avgCompletionRate: number;
+  };
+}
+
+export class OrdersAPI extends DataAccessLayer<OrderSearchParams, OrdersResult> {
+  constructor() {
+    super('orders');
+  }
+
+  /**
+   * Server-side implementation with complex aggregations
+   */
+  async serverFetch(params: OrderSearchParams): Promise<OrdersResult> {
+    const supabase = await createClient();
+
+    // Build query
+    let query = supabase.from('data_order').select('*', { count: 'exact' });
+
+    // Apply filters
+    if (params.orderRef) {
+      query = query.eq('order_ref', params.orderRef);
+    }
+    if (params.productCode) {
+      query = query.eq('product_code', params.productCode);
+    }
+    if (params.dateFrom) {
+      query = query.gte('created_at', params.dateFrom);
+    }
+    if (params.dateTo) {
+      query = query.lte('created_at', params.dateTo);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) throw error;
+
+    // Group by order and calculate aggregates
+    const orderMap = new Map<string, Order>();
+    const orderItemsMap = new Map<string, OrderItem[]>();
+
+    (data || []).forEach(row => {
+      const orderRef = row.order_ref;
+
+      // Initialize order if not exists
+      if (!orderMap.has(orderRef)) {
+        orderMap.set(orderRef, {
+          orderRef,
+          status: 'pending',
+          createdAt: row.created_at,
+          updatedAt: row.created_at,
+          totalItems: 0,
+          completedItems: 0,
+          totalQty: 0,
+          loadedQty: 0,
+          completionPercentage: 0,
+        });
+        orderItemsMap.set(orderRef, []);
+      }
+
+      const order = orderMap.get(orderRef)!;
+      const items = orderItemsMap.get(orderRef)!;
+
+      // Create order item
+      const orderedQty = parseInt(String(row.product_qty || '0'));
+      const loadedQty = parseInt(row.loaded_qty || '0');
+      const item: OrderItem = {
+        productCode: row.product_code,
+        productDesc: row.product_desc || '',
+        orderedQty,
+        loadedQty,
+        remainingQty: orderedQty - loadedQty,
+        completionPercentage: orderedQty > 0 ? (loadedQty / orderedQty) * 100 : 0,
+      };
+
+      items.push(item);
+
+      // Update order aggregates
+      order.totalItems++;
+      order.totalQty += orderedQty;
+      order.loadedQty += loadedQty;
+
+      if (loadedQty >= orderedQty && orderedQty > 0) {
+        order.completedItems++;
+      }
+    });
+
+    // Calculate order status and completion
+    orderMap.forEach((order, orderRef) => {
+      order.completionPercentage =
+        order.totalQty > 0 ? (order.loadedQty / order.totalQty) * 100 : 0;
+
+      // Determine status
+      if (order.completionPercentage === 0) {
+        order.status = 'pending';
+      } else if (order.completionPercentage >= 100) {
+        order.status = 'completed';
+      } else {
+        order.status = 'in_progress';
+      }
+
+      // Add items if requested
+      if (params.includeDetails) {
+        order.items = orderItemsMap.get(orderRef);
+      }
+    });
+
+    // Apply status filter after calculation
+    let orders = Array.from(orderMap.values());
+    if (params.status) {
+      orders = orders.filter(o => o.status === params.status);
+    }
+
+    // Calculate summary
+    const summary = {
+      totalOrders: orders.length,
+      pendingOrders: orders.filter(o => o.status === 'pending').length,
+      inProgressOrders: orders.filter(o => o.status === 'in_progress').length,
+      completedOrders: orders.filter(o => o.status === 'completed').length,
+      avgCompletionRate:
+        orders.length > 0
+          ? orders.reduce((sum, o) => sum + o.completionPercentage, 0) / orders.length
+          : 0,
+    };
+
+    return {
+      orders,
+      total: orders.length,
+      summary,
+    };
+  }
+
+  /**
+   * Client-side implementation
+   */
+  async clientFetch(params: OrderSearchParams): Promise<OrdersResult> {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        queryParams.append(key, String(value));
+      }
+    });
+
+    const response = await fetch(`/api/orders?${queryParams}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch orders');
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Complex queries with aggregations should use server-side
+   */
+  protected isComplexQuery(params: OrderSearchParams): boolean {
+    // Always complex due to aggregations
+    return true;
+  }
+}
+
+/**
+ * Order Loading Operations
+ * These are write operations that should always use Server Actions
+ */
+export class OrderLoadingAPI {
+  /**
+   * Load pallet to order - always server-side
+   */
+  static async loadPallet(orderRef: string, palletInput: string) {
+    // Uses existing Server Action
+    return loadPalletToOrder(orderRef, palletInput);
+  }
+
+  /**
+   * Undo pallet loading - always server-side
+   */
+  static async undoLoad(
+    orderRef: string,
+    palletNum: string,
+    productCode: string,
+    quantity: number
+  ) {
+    // Uses existing Server Action
+    return undoLoadPallet(orderRef, palletNum, productCode, quantity);
+  }
+
+  /**
+   * Get single order info - can use cache
+   */
+  static async getOrderInfo(orderRef: string) {
+    // Uses existing Server Action
+    return getOrderInfo(orderRef);
+  }
+}
+
+// Factory function
+export function createOrdersAPI(): OrdersAPI {
+  return new OrdersAPI();
+}
+
+// Note: React hooks should be defined in separate files or in React components
+// The useOrders hook has been removed from this API file.
+// To use this API in React components, import createOrdersAPI and use it directly
+// or create a custom hook in your component file.

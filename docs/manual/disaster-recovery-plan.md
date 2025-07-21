@@ -201,24 +201,24 @@ db_backup() {
     local backup_date=$(date +%Y%m%d_%H%M%S)
     local backup_dir="/var/backups/database"
     local remote_backup_dir="/mnt/remote-backup/database"
-    
+
     # 創建備份目錄
     mkdir -p "$backup_dir"
     mkdir -p "$remote_backup_dir"
-    
+
     # 完整備份
     pg_dump $DATABASE_URL > "$backup_dir/full_backup_$backup_date.sql"
-    
+
     # 壓縮備份
     gzip "$backup_dir/full_backup_$backup_date.sql"
-    
+
     # 複製到遠程位置
     rsync -av "$backup_dir/full_backup_$backup_date.sql.gz" "$remote_backup_dir/"
-    
+
     # 清理舊備份 (保留 30 天)
     find "$backup_dir" -name "*.sql.gz" -mtime +30 -delete
     find "$remote_backup_dir" -name "*.sql.gz" -mtime +90 -delete
-    
+
     # 驗證備份
     if [ -f "$backup_dir/full_backup_$backup_date.sql.gz" ]; then
         echo "✅ 備份完成: $backup_date"
@@ -241,14 +241,14 @@ app_backup() {
     local backup_date=$(date +%Y%m%d_%H%M%S)
     local app_dir="/var/www/newpennine-wms"
     local backup_dir="/var/backups/application"
-    
+
     # 創建應用備份
     tar -czf "$backup_dir/app_backup_$backup_date.tar.gz" \
         --exclude="node_modules" \
         --exclude=".next" \
         --exclude="*.log" \
         "$app_dir"
-    
+
     # 驗證備份
     if tar -tzf "$backup_dir/app_backup_$backup_date.tar.gz" > /dev/null; then
         echo "✅ 應用備份完成: $backup_date"
@@ -272,33 +272,33 @@ app_backup
 verify_backup() {
     local backup_file="$1"
     local test_db="test_restore_$(date +%s)"
-    
+
     echo "驗證備份: $backup_file"
-    
+
     # 創建測試數據庫
     createdb "$test_db"
-    
+
     # 恢復備份到測試數據庫
     if gunzip -c "$backup_file" | psql "$test_db"; then
         echo "✅ 備份可以成功恢復"
-        
+
         # 驗證關鍵表
         local table_count=$(psql "$test_db" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public';")
-        
+
         if [ "$table_count" -gt 0 ]; then
             echo "✅ 數據表驗證通過: $table_count 個表"
         else
             echo "❌ 數據表驗證失敗"
         fi
-        
+
         # 驗證數據完整性
         local record_count=$(psql "$test_db" -t -c "SELECT COUNT(*) FROM record_palletinfo;")
         echo "📊 棧板記錄數: $record_count"
-        
+
     else
         echo "❌ 備份恢復失敗"
     fi
-    
+
     # 清理測試數據庫
     dropdb "$test_db"
 }
@@ -350,11 +350,11 @@ verify_backup "$LATEST_BACKUP"
 # 核心系統恢復腳本
 restore_core_systems() {
     echo "=== 開始核心系統恢復 $(date) ==="
-    
+
     # 1. 恢復數據庫
     echo "1. 恢復數據庫服務..."
     systemctl start postgresql
-    
+
     # 檢查數據庫狀態
     if psql $DATABASE_URL -c "SELECT 1;" > /dev/null 2>&1; then
         echo "✅ 數據庫恢復成功"
@@ -362,15 +362,15 @@ restore_core_systems() {
         echo "❌ 數據庫恢復失敗，從備份恢復..."
         restore_database_from_backup
     fi
-    
+
     # 2. 恢復緩存服務
     echo "2. 恢復緩存服務..."
     systemctl start redis-server
-    
+
     # 3. 恢復應用程式
     echo "3. 恢復應用程式..."
     systemctl start newpennine-wms
-    
+
     # 4. 驗證核心功能
     echo "4. 驗證核心功能..."
     if curl -s http://localhost:3000/api/v1/health | grep -q "healthy"; then
@@ -393,27 +393,27 @@ restore_core_systems
 # 業務功能恢復腳本
 restore_business_functions() {
     echo "=== 開始業務功能恢復 $(date) ==="
-    
+
     # 1. 恢復告警系統
     echo "1. 恢復告警系統..."
     curl -X POST http://localhost:3000/api/v1/alerts/system/restart
-    
+
     # 2. 恢復文件上傳服務
     echo "2. 恢復文件上傳服務..."
     systemctl start file-upload-service
-    
+
     # 3. 恢復報表服務
     echo "3. 恢復報表服務..."
     systemctl start report-generator
-    
+
     # 4. 恢復監控系統
     echo "4. 恢復監控系統..."
     systemctl start monitoring-agent
-    
+
     # 5. 驗證業務功能
     echo "5. 驗證業務功能..."
     run_business_function_tests
-    
+
     echo "✅ 業務功能恢復完成"
 }
 
@@ -431,33 +431,33 @@ restore_business_functions
 point_in_time_recovery() {
     local target_time="$1"
     local backup_file="$2"
-    
+
     echo "=== 開始點時間恢復到 $target_time ==="
-    
+
     # 1. 停止應用程式
     systemctl stop newpennine-wms
-    
+
     # 2. 創建當前數據庫備份
     pg_dump $DATABASE_URL > "/tmp/pre_recovery_backup_$(date +%Y%m%d_%H%M%S).sql"
-    
+
     # 3. 恢復基礎備份
     echo "恢復基礎備份..."
     dropdb newpennine_wms
     createdb newpennine_wms
     gunzip -c "$backup_file" | psql newpennine_wms
-    
+
     # 4. 應用 WAL 日誌到指定時間
     echo "應用 WAL 日誌到 $target_time..."
     pg_wal_replay --target-time="$target_time" newpennine_wms
-    
+
     # 5. 驗證恢復
     echo "驗證恢復結果..."
     local record_count=$(psql newpennine_wms -t -c "SELECT COUNT(*) FROM record_palletinfo;")
     echo "恢復後記錄數: $record_count"
-    
+
     # 6. 重新啟動應用程式
     systemctl start newpennine-wms
-    
+
     echo "✅ 點時間恢復完成"
 }
 
@@ -600,10 +600,10 @@ NewPennine WMS 系統已完全恢復正常運行：
 disaster_recovery_drill() {
     local drill_type="$1"
     local start_time=$(date)
-    
+
     echo "=== 開始災難恢復演練: $drill_type ==="
     echo "開始時間: $start_time"
-    
+
     case $drill_type in
         "database")
             drill_database_failure
@@ -622,7 +622,7 @@ disaster_recovery_drill() {
             exit 1
             ;;
     esac
-    
+
     local end_time=$(date)
     echo "結束時間: $end_time"
     echo "=== 演練完成 ==="
@@ -632,15 +632,15 @@ disaster_recovery_drill() {
 drill_database_failure() {
     echo "1. 模擬數據庫故障..."
     systemctl stop postgresql
-    
+
     echo "2. 檢測故障..."
     if ! curl -s http://localhost:3000/api/v1/health | grep -q "healthy"; then
         echo "✅ 故障檢測成功"
     fi
-    
+
     echo "3. 執行恢復程序..."
     systemctl start postgresql
-    
+
     echo "4. 驗證恢復..."
     if curl -s http://localhost:3000/api/v1/health | grep -q "healthy"; then
         echo "✅ 恢復成功"

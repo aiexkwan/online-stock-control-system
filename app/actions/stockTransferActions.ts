@@ -71,6 +71,30 @@ export interface TransferHistoryItem {
   remark: string;
 }
 
+// Database record interfaces
+interface ProductCodeRecord {
+  description: string;
+}
+
+interface SearchPalletRPCResult {
+  plt_num: string;
+  product_code: string;
+  product_desc: string;
+  product_qty: number;
+  current_location: string;
+  is_from_mv?: boolean;
+}
+
+interface TransferPalletRPCResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+  from_location?: string;
+  product_code?: string;
+  product_qty?: number;
+  transfer_id?: string;
+}
+
 /**
  * Search for pallet with auto-detection
  */
@@ -125,8 +149,9 @@ export async function searchPallet(searchValue: string): Promise<SearchPalletRes
     }
 
     // For series search, we get an array, need to extract first item
-    const palletInfo = searchType === 'series' && Array.isArray(palletData) ? palletData[0] : palletData;
-    
+    const palletInfo =
+      searchType === 'series' && Array.isArray(palletData) ? palletData[0] : palletData;
+
     if (!palletInfo || Array.isArray(palletInfo)) {
       return {
         success: false,
@@ -137,7 +162,7 @@ export async function searchPallet(searchValue: string): Promise<SearchPalletRes
     // Get product description from data_code
     const { data: productData } = await supabase
       .from('data_code')
-      .select('desc')
+      .select('description')
       .eq('code', palletInfo.product_code)
       .single();
 
@@ -159,7 +184,7 @@ export async function searchPallet(searchValue: string): Promise<SearchPalletRes
       searchType,
       plt_num: palletInfo.plt_num,
       product_code: palletInfo.product_code,
-      currentLocation
+      currentLocation,
     });
 
     return {
@@ -167,7 +192,7 @@ export async function searchPallet(searchValue: string): Promise<SearchPalletRes
       data: {
         plt_num: palletInfo.plt_num,
         product_code: palletInfo.product_code,
-        product_desc: productData?.desc || '',
+        product_desc: (productData as ProductCodeRecord)?.description || '',
         product_qty: palletInfo.product_qty,
         current_plt_loc: currentLocation,
         location: currentLocation,
@@ -201,16 +226,23 @@ export async function searchPalletOptimized(
       p_search_value: searchValue.trim(),
     });
 
-    if (!v2Error && v2Data && v2Data.length > 0) {
+    if (!v2Error && v2Data && Array.isArray(v2Data) && v2Data.length > 0) {
       const result = v2Data[0];
       const queryTime = performance.now() - startTime;
+
+      // Get product description from data_code table
+      const { data: productData } = await supabase
+        .from('data_code')
+        .select('description')
+        .eq('code', result.product_code)
+        .single();
 
       return {
         success: true,
         data: {
           plt_num: result.plt_num,
           product_code: result.product_code,
-          product_desc: result.product_desc || '',
+          product_desc: productData?.description || '',
           product_qty: result.product_qty,
           current_plt_loc: result.current_location || 'Await',
           location: result.current_location || 'Await',
@@ -248,12 +280,19 @@ export async function searchPalletOptimized(
       const result = data[0];
       const queryTime = performance.now() - startTime;
 
+      // Get product description from data_code table
+      const { data: productData } = await supabase
+        .from('data_code')
+        .select('description')
+        .eq('code', result.product_code)
+        .single();
+
       return {
         success: true,
         data: {
           plt_num: result.plt_num,
           product_code: result.product_code,
-          product_desc: result.product_desc || '',
+          product_desc: productData?.description || '',
           product_qty: result.product_qty,
           current_plt_loc: result.current_location || 'Await',
           location: result.current_location || 'Await',
@@ -387,11 +426,12 @@ export async function transferPallet(
       };
     }
 
-    if (!data || !data.success) {
+    const rpcResult = data as unknown as TransferPalletRPCResult;
+    if (!data || !rpcResult.success) {
       return {
         success: false,
-        message: data?.message || 'Transfer failed',
-        error: data?.error,
+        message: rpcResult?.message || 'Transfer failed',
+        error: rpcResult?.error,
       };
     }
 
@@ -401,11 +441,11 @@ export async function transferPallet(
         transactionId,
         {
           palletNumber,
-          fromLocation: data.from_location,
+          fromLocation: rpcResult.from_location,
           toLocation,
-          productCode: data.product_code,
-          productQty: data.product_qty,
-          transferId: data.transfer_id,
+          productCode: rpcResult.product_code,
+          productQty: rpcResult.product_qty,
+          transferId: rpcResult.transfer_id,
         },
         {
           recordsAffected: 1,
@@ -425,12 +465,12 @@ export async function transferPallet(
       message: `Successfully transferred ${palletNumber} to ${toLocation}`,
       data: {
         palletNumber,
-        productCode: data.product_code,
-        productQty: data.product_qty,
-        fromLocation: data.from_location,
+        productCode: rpcResult.product_code || '',
+        productQty: rpcResult.product_qty || 0,
+        fromLocation: rpcResult.from_location || '',
         toLocation,
         timestamp: new Date().toISOString(),
-        transferId: data.transfer_id,
+        transferId: rpcResult.transfer_id || '',
       },
     };
   } catch (error) {
@@ -545,7 +585,7 @@ export async function getTransferHistory(
 
     if (error) throw error;
 
-    return data || [];
+    return (data as TransferHistoryItem[]) || [];
   } catch (error) {
     console.error('[getTransferHistory] Error:', error);
     return [];

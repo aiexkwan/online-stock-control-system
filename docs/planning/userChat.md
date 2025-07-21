@@ -470,17 +470,17 @@ const handleFileUpload = async (files: File[]) => {
   for (const file of files) {
     // 檔案驗證
     if (file.size > 50 * 1024 * 1024) throw new Error('檔案過大');
-    
+
     // 生成唯一檔案名
     const fileName = `${conversationId}/${Date.now()}_${file.name}`;
-    
+
     // 上傳到 Supabase Storage
     const { data, error } = await supabase.storage
       .from('chat-files')
       .upload(fileName, file, {
         onUploadProgress: (progress) => setUploadProgress(progress)
       });
-    
+
     // 生成縮圖（如果是圖片）
     if (file.type.startsWith('image/')) {
       const thumbnail = await generateThumbnail(file);
@@ -488,7 +488,7 @@ const handleFileUpload = async (files: File[]) => {
         .from('chat-files')
         .upload(`${fileName}_thumb`, thumbnail);
     }
-    
+
     // 發送檔案訊息
     await sendFileMessage({
       conversation_id: conversationId,
@@ -509,7 +509,7 @@ const generateDownloadUrl = async (filePath: string) => {
   const { data } = await supabase.storage
     .from('chat-files')
     .createSignedUrl(filePath, 3600); // 1小時有效期
-  
+
   return data.signedUrl;
 };
 
@@ -527,7 +527,7 @@ const downloadFile = async (message: ChatMessage) => {
 ```typescript
 const ImageMessage = ({ message }: { message: ChatMessage }) => {
   const [showLightbox, setShowLightbox] = useState(false);
-  
+
   return (
     <div className="relative">
       <Image
@@ -538,7 +538,7 @@ const ImageMessage = ({ message }: { message: ChatMessage }) => {
         className="rounded-lg cursor-pointer"
         onClick={() => setShowLightbox(true)}
       />
-      
+
       {showLightbox && (
         <Lightbox
           src={message.file_url}

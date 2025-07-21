@@ -1,6 +1,6 @@
 -- 簡化 pallet_number_buffer 表結構（含 series）
 -- 1. 先備份現有數據（如需要）
-CREATE TABLE IF NOT EXISTS pallet_number_buffer_backup AS 
+CREATE TABLE IF NOT EXISTS pallet_number_buffer_backup AS
 SELECT * FROM pallet_number_buffer;
 
 -- 2. 刪除現有表
@@ -54,32 +54,32 @@ BEGIN
     -- 獲取今天的日期格式 (DDMMYY)
     v_date_str := TO_CHAR(CURRENT_DATE, 'DDMMYY');
     v_series_prefix := v_date_str || '-';
-    
+
     -- 清空表
     TRUNCATE TABLE pallet_number_buffer;
-    
+
     -- 插入300條記錄
     FOR i IN 1..300 LOOP
         -- 生成唯一的 series（重試機制以確保唯一性）
         v_retry_count := 0;
         LOOP
             v_series := v_series_prefix || generate_random_alphanumeric(6);
-            
+
             -- 檢查是否已存在
             IF NOT EXISTS (SELECT 1 FROM pallet_number_buffer WHERE series = v_series) THEN
                 EXIT; -- 找到唯一的 series
             END IF;
-            
+
             v_retry_count := v_retry_count + 1;
             IF v_retry_count > v_max_retries THEN
                 RAISE EXCEPTION 'Failed to generate unique series after % attempts', v_max_retries;
             END IF;
         END LOOP;
-        
+
         INSERT INTO pallet_number_buffer (id, pallet_number, series, date_str, used)
         VALUES (i, v_date_str || '/' || i, v_series, v_date_str, 'False');
     END LOOP;
-    
+
     RAISE NOTICE 'Pallet buffer reset completed for date: % with % records', v_date_str, 300;
 END;
 $$;
@@ -98,16 +98,16 @@ DECLARE
 BEGIN
     -- 獲取當前日期
     v_date_str := TO_CHAR(CURRENT_DATE, 'DDMMYY');
-    
+
     -- 檢查是否是新的一天，如果緩衝區日期不匹配則重置
     IF NOT EXISTS (
-        SELECT 1 FROM pallet_number_buffer 
-        WHERE date_str = v_date_str 
+        SELECT 1 FROM pallet_number_buffer
+        WHERE date_str = v_date_str
         LIMIT 1
     ) THEN
         PERFORM reset_daily_pallet_buffer();
     END IF;
-    
+
     -- 返回可用的 pallet numbers 和 series
     RETURN QUERY
     WITH available AS (
@@ -125,7 +125,7 @@ BEGIN
     FROM available a
     WHERE pb.id = a.id
     RETURNING pb.pallet_number, pb.series;
-    
+
     -- 檢查是否獲得足夠的號碼
     IF NOT FOUND THEN
         RAISE EXCEPTION 'No pallet numbers available';
@@ -149,14 +149,14 @@ BEGIN
         updated_at = NOW()
     WHERE pallet_number = ANY(p_pallet_numbers)
     AND used = 'Holded';
-    
+
     GET DIAGNOSTICS v_count = ROW_COUNT;
-    
+
     IF v_count = 0 THEN
         RAISE WARNING 'No pallet numbers were confirmed. They may have already been used or released.';
         RETURN FALSE;
     END IF;
-    
+
     RAISE NOTICE 'Confirmed % pallet numbers as used', v_count;
     RETURN TRUE;
 END;
@@ -178,14 +178,14 @@ BEGIN
         updated_at = NOW()
     WHERE pallet_number = ANY(p_pallet_numbers)
     AND used = 'Holded';
-    
+
     GET DIAGNOSTICS v_count = ROW_COUNT;
-    
+
     IF v_count = 0 THEN
         RAISE WARNING 'No pallet numbers were released. They may have already been used or were not held.';
         RETURN FALSE;
     END IF;
-    
+
     RAISE NOTICE 'Released % pallet numbers', v_count;
     RETURN TRUE;
 END;
@@ -205,13 +205,13 @@ BEGIN
         updated_at = NOW()
     WHERE used = 'Holded'
     AND updated_at < NOW() - INTERVAL '10 minutes';
-    
+
     GET DIAGNOSTICS v_count = ROW_COUNT;
-    
+
     IF v_count > 0 THEN
         RAISE NOTICE 'Released % expired holds', v_count;
     END IF;
-    
+
     RETURN v_count;
 END;
 $$;
@@ -229,7 +229,7 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
     RETURN QUERY
-    SELECT 
+    SELECT
         COUNT(*)::INTEGER as total_count,
         COUNT(CASE WHEN used = 'False' THEN 1 END)::INTEGER as available_count,
         COUNT(CASE WHEN used = 'Holded' THEN 1 END)::INTEGER as holded_count,

@@ -35,27 +35,27 @@ DECLARE
 BEGIN
     -- 獲取清理前的總數
     SELECT COUNT(*) INTO v_total_before FROM pallet_number_buffer;
-    
+
     -- 清理非今日的條目
     DELETE FROM pallet_number_buffer
     WHERE date_str != TO_CHAR(CURRENT_DATE, 'DDMMYY');
     GET DIAGNOSTICS v_deleted_old = ROW_COUNT;
-    
+
     -- 清理已使用超過 2 小時的條目
     DELETE FROM pallet_number_buffer
-    WHERE used = 'True' 
+    WHERE used = 'True'
     AND updated_at < NOW() - INTERVAL '2 hours';
     GET DIAGNOSTICS v_deleted_used = ROW_COUNT;
-    
+
     -- 清理未使用超過 30 分鐘的條目
     DELETE FROM pallet_number_buffer
-    WHERE used = 'False' 
+    WHERE used = 'False'
     AND updated_at < NOW() - INTERVAL '30 minutes';
     GET DIAGNOSTICS v_deleted_unused = ROW_COUNT;
-    
+
     -- 獲取清理後的總數
     SELECT COUNT(*) INTO v_total_after FROM pallet_number_buffer;
-    
+
     -- 返回清理結果
     RETURN json_build_object(
         'success', true,
@@ -85,10 +85,10 @@ RETURNS TABLE(
 BEGIN
     -- 執行清理
     PERFORM auto_cleanup_pallet_buffer();
-    
+
     -- 返回結果
     RETURN QUERY
-    SELECT 
+    SELECT
         'Cleanup completed'::TEXT as status,
         (SELECT COUNT(*)::INTEGER FROM pallet_number_buffer WHERE used = 'True') as deleted_count,
         (SELECT COUNT(*)::INTEGER FROM pallet_number_buffer WHERE used = 'False') as remaining_count;

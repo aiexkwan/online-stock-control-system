@@ -1,0 +1,18 @@
+// Re-export the client creation function from the new central location for client-side Supabase instances.
+// It's recommended to eventually update all imports to use '@/app/utils/supabase/client' directly.
+
+export { createClient } from '@/app/utils/supabase/client';
+
+// Original console logs can be kept if useful for initial load debugging, but ensure they don't expose sensitive keys.
+// It's generally better to initialize and use the client within components/hooks where needed.
+
+// console.log('[Supabase Init] URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Loaded' : 'MISSING!');
+// console.log('[Supabase Init] Anon Key:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Loaded' : 'MISSING!');
+
+// The global supabase instance is no longer exported directly from here.
+// Components should call createClient() to get an instance.
+
+// if (typeof window !== 'undefined') {
+//   // @ts-ignore
+//   // window.supabase = supabase; // Avoid attaching to window for better practice
+// }

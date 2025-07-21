@@ -22,14 +22,14 @@ DECLARE
     v_performance_end TIMESTAMP;
 BEGIN
     v_performance_start := clock_timestamp();
-    
+
     -- Get total and pending counts
-    SELECT 
+    SELECT
         COUNT(*) FILTER (WHERE TRUE) as total_count,
         COUNT(*) FILTER (WHERE COALESCE(loaded_qty, 0) < product_qty AND product_qty > 0) as pending_count
     INTO v_total_count, v_pending_count
     FROM data_order;
-    
+
     -- Fetch pending orders with progress calculation
     SELECT jsonb_agg(order_data ORDER BY created_at DESC)
     INTO v_orders
@@ -43,13 +43,13 @@ BEGIN
             'product_qty', product_qty,
             'loaded_qty', COALESCE(loaded_qty, 0),
             'created_at', created_at,
-            'progress', CASE 
-                WHEN product_qty > 0 THEN 
+            'progress', CASE
+                WHEN product_qty > 0 THEN
                     LEAST(100, GREATEST(0, (COALESCE(loaded_qty, 0)::FLOAT / product_qty::FLOAT) * 100))
-                ELSE 0 
+                ELSE 0
             END,
             'progress_text', COALESCE(loaded_qty, 0) || ' / ' || product_qty,
-            'status', CASE 
+            'status', CASE
                 WHEN product_qty > 0 AND COALESCE(loaded_qty, 0) >= product_qty THEN 'completed'
                 WHEN COALESCE(loaded_qty, 0) > 0 THEN 'in_progress'
                 ELSE 'pending'
@@ -62,20 +62,20 @@ BEGIN
             END
         ) as order_data
         FROM data_order
-        WHERE COALESCE(loaded_qty, 0) < product_qty 
+        WHERE COALESCE(loaded_qty, 0) < product_qty
         AND product_qty > 0
         ORDER BY created_at DESC
         LIMIT p_limit
         OFFSET p_offset
     ) sub;
-    
+
     -- If no orders found
     IF v_orders IS NULL THEN
         v_orders := '[]'::JSONB;
     END IF;
-    
+
     v_performance_end := clock_timestamp();
-    
+
     -- Return result with metadata
     RETURN jsonb_build_object(
         'orders', v_orders,
@@ -85,7 +85,7 @@ BEGIN
         'performance_ms', EXTRACT(MILLISECOND FROM (v_performance_end - v_performance_start)),
         'query_time', now()
     );
-    
+
 EXCEPTION
     WHEN OTHERS THEN
         -- Return error information

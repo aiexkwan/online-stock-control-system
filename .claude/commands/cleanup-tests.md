@@ -66,7 +66,7 @@ describe('UserService', () => {
       name: 'John',
       email: 'john@example.com'
     });
-    
+
     expect(user.id).toBeDefined(); // 不穩定
     expect(user.createdAt).toBe(new Date()); // 時間比較問題
   });
@@ -75,24 +75,24 @@ describe('UserService', () => {
 // 優化後：穩定的測試
 describe('UserService', () => {
   const mockDate = new Date('2024-01-01');
-  
+
   beforeEach(() => {
     jest.useFakeTimers();
     jest.setSystemTime(mockDate);
   });
-  
+
   afterEach(() => {
     jest.useRealTimers();
   });
-  
+
   test('should create user with valid data', async () => {
     const userData = {
       name: 'John Doe',
       email: 'john@example.com'
     };
-    
+
     const user = await userService.createUser(userData);
-    
+
     expect(user).toMatchObject({
       name: userData.name,
       email: userData.email,
@@ -100,7 +100,7 @@ describe('UserService', () => {
     });
     expect(user.id).toMatch(/^[a-f0-9-]{36}$/); // UUID 格式
   });
-  
+
   test('should throw error for invalid email', async () => {
     await expect(userService.createUser({
       name: 'John',
@@ -117,7 +117,7 @@ describe('PalletService Integration', () => {
   beforeEach(async () => {
     // 清理測試數據
     await testDb.cleanup();
-    
+
     // 建立測試數據
     await testDb.seed([
       {
@@ -129,28 +129,28 @@ describe('PalletService Integration', () => {
       }
     ]);
   });
-  
+
   test('should create pallet with valid product', async () => {
     const palletData = {
       product_code: 'TEST001',
       quantity: 100,
       location: 'A1-B2-C3'
     };
-    
+
     const pallet = await palletService.createPallet(palletData);
-    
+
     expect(pallet).toMatchObject({
       product_code: 'TEST001',
       quantity: 100,
       location: 'A1-B2-C3',
       status: 'active'
     });
-    
+
     // 驗證資料庫狀態
     const savedPallet = await testDb.findOne('record_palletinfo', {
       pallet_no: pallet.pallet_no
     });
-    
+
     expect(savedPallet).toBeDefined();
     expect(savedPallet.product_code).toBe('TEST001');
   });
@@ -167,39 +167,39 @@ describe('QC Label Printing E2E', () => {
     await page.fill('[data-testid="email"]', process.env.PUPPETEER_LOGIN);
     await page.fill('[data-testid="password"]', process.env.PUPPETEER_PASSWORD);
     await page.click('[data-testid="login-button"]');
-    
+
     // 等待登入完成
     await page.waitForURL('/dashboard');
-    
+
     // 前往 QC 標籤頁面
     await page.goto('/print-label');
-    
+
     // 填寫表單
     await page.fill('[data-testid="product-code"]', 'TEST001');
     await page.fill('[data-testid="quantity"]', '100');
     await page.selectOption('[data-testid="location"]', 'A1-B2-C3');
-    
+
     // 提交表單
     await page.click('[data-testid="generate-label"]');
-    
+
     // 驗證結果
     await expect(page.locator('[data-testid="success-message"]')).toBeVisible();
     await expect(page.locator('[data-testid="pallet-number"]')).toContainText(/^P\d{9}$/);
-    
+
     // 驗證 PDF 生成
     const downloadPromise = page.waitForEvent('download');
     await page.click('[data-testid="download-pdf"]');
     const download = await downloadPromise;
-    
+
     expect(download.suggestedFilename()).toMatch(/^QC_Label_P\d{9}\.pdf$/);
   });
-  
+
   test('should handle validation errors', async ({ page }) => {
     await page.goto('/print-label');
-    
+
     // 提交空表單
     await page.click('[data-testid="generate-label"]');
-    
+
     // 驗證錯誤訊息
     await expect(page.locator('[data-testid="error-product-code"]')).toBeVisible();
     await expect(page.locator('[data-testid="error-quantity"]')).toBeVisible();
@@ -222,7 +222,7 @@ export class TestDataFactory {
       ...overrides
     };
   }
-  
+
   static createPallet(overrides?: Partial<Pallet>): Pallet {
     return {
       pallet_no: `P${Date.now()}${Math.floor(Math.random() * 1000)}`,
@@ -235,7 +235,7 @@ export class TestDataFactory {
       ...overrides
     };
   }
-  
+
   static async seedDatabase(data: TestSeedData[]): Promise<void> {
     for (const seedData of data) {
       await testDb.insertMany(seedData.table, seedData.data);
@@ -248,29 +248,29 @@ export class TestDatabase {
   async cleanup(): Promise<void> {
     const tables = [
       'record_palletinfo',
-      'record_inventory', 
+      'record_inventory',
       'record_history',
       'data_code'
     ];
-    
+
     for (const table of tables) {
       await supabase.from(table).delete().neq('id', '');
     }
   }
-  
+
   async seed(data: TestSeedData[]): Promise<void> {
     for (const { table, data: tableData } of data) {
       await supabase.from(table).insert(tableData);
     }
   }
-  
+
   async findOne(table: string, where: Record<string, any>): Promise<any> {
     const { data } = await supabase
       .from(table)
       .select('*')
       .match(where)
       .single();
-    
+
     return data;
   }
 }
@@ -286,7 +286,7 @@ describe('Slow Tests', () => {
       id: i,
       value: Math.random()
     }));
-    
+
     const result = await processData(largeData);
     expect(result.length).toBe(10000);
   });
@@ -301,19 +301,19 @@ describe('Fast Tests', () => {
       { id: 2, value: 0.8 },
       { id: 3, value: 0.2 }
     ];
-    
+
     const result = await processData(testData);
-    
+
     expect(result).toHaveLength(3);
     expect(result[0].processed).toBe(true);
   });
-  
+
   test('should handle large datasets', async () => {
     // 模擬大數據集行為
     const mockProcessData = jest.fn().mockResolvedValue(
       Array.from({ length: 10000 }, (_, i) => ({ id: i, processed: true }))
     );
-    
+
     const result = await mockProcessData();
     expect(result).toHaveLength(10000);
   });
@@ -329,11 +329,11 @@ describe('Time-sensitive Tests', () => {
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2024-01-01T00:00:00Z'));
   });
-  
+
   afterEach(() => {
     jest.useRealTimers();
   });
-  
+
   test('should create timestamp correctly', () => {
     const result = createTimestamp();
     expect(result).toBe('2024-01-01T00:00:00.000Z');
@@ -344,12 +344,12 @@ describe('Time-sensitive Tests', () => {
 describe('Async Tests', () => {
   test('should wait for async operation', async () => {
     const promise = asyncOperation();
-    
+
     // 使用 waitFor 等待結果
     await waitFor(() => {
       expect(promise).resolves.toBeDefined();
     });
-    
+
     const result = await promise;
     expect(result.status).toBe('completed');
   });
@@ -361,13 +361,13 @@ describe('Network Tests', () => {
     // 模擬網絡請求
     fetchMock.resetMocks();
   });
-  
+
   test('should handle API response', async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ data: 'test' })
     });
-    
+
     const result = await apiCall();
     expect(result.data).toBe('test');
   });
@@ -402,7 +402,7 @@ export class TestMetrics {
     const coverage = await this.getCoverageReport();
     const stability = await this.getStabilityReport();
     const performance = await this.getPerformanceReport();
-    
+
     return {
       coverage: {
         lines: coverage.lines.pct,
@@ -437,31 +437,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run linting
         run: npm run lint
-      
+
       - name: Run type checking
         run: npm run typecheck
-      
+
       - name: Run unit tests
         run: npm run test:coverage
-      
+
       - name: Run integration tests
         run: npm run test:integration
-      
+
       - name: Run E2E tests
         run: npm run test:e2e
-      
+
       - name: Upload coverage
         uses: codecov/codecov-action@v3
 ```

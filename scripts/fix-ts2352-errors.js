@@ -64,12 +64,12 @@ function scanDirectory(dir) {
   const files = [];
   try {
     const items = fs.readdirSync(dir);
-    
+
     for (const item of items) {
       const fullPath = path.join(dir, item);
       try {
         const stat = fs.statSync(fullPath);
-        
+
         if (stat.isDirectory() && !item.startsWith('.') && item !== 'node_modules') {
           files.push(...scanDirectory(fullPath));
         } else if (item.endsWith('.tsx') || item.endsWith('.ts')) {
@@ -82,7 +82,7 @@ function scanDirectory(dir) {
   } catch (e) {
     // 忽略無法訪問的目錄
   }
-  
+
   return files;
 }
 
@@ -92,7 +92,7 @@ function fixFile(filePath) {
     const content = fs.readFileSync(filePath, 'utf8');
     let modified = content;
     let changed = false;
-    
+
     // 應用所有修復模式
     for (const { pattern, replacement } of fixPatterns) {
       const newContent = modified.replace(pattern, (match, ...args) => {
@@ -114,7 +114,7 @@ function fixFile(filePath) {
       });
       modified = newContent;
     }
-    
+
     if (changed) {
       fs.writeFileSync(filePath, modified);
       return true;
@@ -122,7 +122,7 @@ function fixFile(filePath) {
   } catch (e) {
     console.error(`Error processing ${filePath}:`, e.message);
   }
-  
+
   return false;
 }
 
@@ -130,15 +130,15 @@ function fixFile(filePath) {
 function main() {
   const startDir = process.argv[2] || './app';
   const files = scanDirectory(startDir);
-  
+
   let fixedCount = 0;
-  
+
   for (const file of files) {
     if (fixFile(file)) {
       fixedCount++;
     }
   }
-  
+
   console.log(`Fixed ${fixedCount} files`);
 }
 

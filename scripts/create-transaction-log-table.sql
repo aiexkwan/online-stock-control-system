@@ -15,36 +15,36 @@ $$ LANGUAGE plpgsql;
 CREATE TABLE IF NOT EXISTS transaction_log (
   id SERIAL PRIMARY KEY,
   transaction_id UUID NOT NULL,
-  
+
   -- 事務來源識別
   source_module TEXT NOT NULL, -- 'grn_label', 'qc_label', 'inventory_transfer', etc.
   source_page TEXT NOT NULL,   -- '/print-grnlabel', '/qc-label', etc.
   source_action TEXT NOT NULL, -- 'create_label', 'bulk_process', 'transfer', etc.
-  
+
   -- 事務基本信息
   operation_type TEXT NOT NULL,
   step_name TEXT,
   step_sequence INTEGER,       -- 步驟順序，便於回滾
-  
+
   -- 用戶追蹤
   user_id TEXT NOT NULL,
   user_clock_number TEXT,
   session_id TEXT,
-  
+
   -- 狀態追蹤
   status TEXT DEFAULT 'pending', -- 'pending', 'in_progress', 'completed', 'failed', 'rolled_back'
-  
+
   -- 數據快照
   pre_state JSONB,            -- 操作前狀態
   post_state JSONB,           -- 操作後狀態
   affected_records JSONB,     -- 受影響的記錄 IDs
-  
+
   -- 錯誤處理
   error_code TEXT,
   error_message TEXT,
   error_details JSONB,
   error_stack TEXT,
-  
+
   -- 回滾信息
   rollback_attempted BOOLEAN DEFAULT FALSE,
   rollback_successful BOOLEAN,
@@ -53,23 +53,23 @@ CREATE TABLE IF NOT EXISTS transaction_log (
   rollback_reason TEXT,
   compensation_required BOOLEAN DEFAULT FALSE,
   compensation_actions JSONB,
-  
+
   -- 時間戳
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   completed_at TIMESTAMPTZ,
-  
+
   -- 元數據
   metadata JSONB,             -- 額外的模組特定數據
-  
+
   -- 關聯
   parent_transaction_id UUID, -- 支援嵌套事務
   related_transactions UUID[], -- 相關事務
   report_log_id UUID,         -- 關聯到 report_log 表
-  
+
   -- 外鍵約束
-  CONSTRAINT fk_report_log 
-    FOREIGN KEY (report_log_id) 
+  CONSTRAINT fk_report_log
+    FOREIGN KEY (report_log_id)
     REFERENCES report_log(uuid)
 );
 
@@ -89,7 +89,7 @@ CREATE TRIGGER update_transaction_log_timestamp
 
 -- 創建整合視圖，方便查詢
 CREATE OR REPLACE VIEW v_transaction_report AS
-SELECT 
+SELECT
   t.transaction_id,
   t.source_module,
   t.source_action,

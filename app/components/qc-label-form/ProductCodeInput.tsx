@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { getErrorMessage } from '@/lib/types/error-handling';
+import { getErrorMessage } from '@/types/core/error';
 import { createClient } from '@/app/utils/supabase/client';
 
 interface ProductInfo {
@@ -106,7 +106,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
         return;
       }
 
-      if (error || !data || data.length === 0) {
+      if (error || !data || !Array.isArray(data) || data.length === 0) {
         // 找不到產品
         onProductInfoChange(null);
         setProductError(`Product Code ${trimmedValue} Not Found`);
@@ -114,7 +114,9 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
           console.log('[ProductCodeInput] Product not found:', trimmedValue);
       } else {
         // 找到產品 - get_product_details_by_code 返回數組，取第一個結果
-        const productData = data[0] as ProductInfo;
+        const productData = (
+          Array.isArray(data) && data.length > 0 ? data[0] : ({} as any)
+        ) as ProductInfo;
         onProductInfoChange(productData);
         onChange(productData.code); // 使用資料庫中的標準化代碼
         setProductError(null);

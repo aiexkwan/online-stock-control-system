@@ -197,11 +197,11 @@ Content-Type: application/json
 ```javascript
 const subscription = supabase
   .channel('pallets')
-  .on('postgres_changes', 
-    { 
-      event: '*', 
-      schema: 'public', 
-      table: 'record_palletinfo' 
+  .on('postgres_changes',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'record_palletinfo'
     },
     (payload) => {
       console.log('Change received!', payload)

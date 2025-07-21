@@ -17,8 +17,8 @@
 ```tsx
 import { UniversalContainer } from '@/components/layout/universal';
 
-<UniversalContainer 
-  variant="page" 
+<UniversalContainer
+  variant="page"
   background="starfield"
   padding="lg"
   maxWidth="7xl"
@@ -32,7 +32,7 @@ import { UniversalContainer } from '@/components/layout/universal';
 ```tsx
 import { UniversalGrid } from '@/components/layout/universal';
 
-<UniversalGrid 
+<UniversalGrid
   preset="qcForm"
   gap="lg"
   align="stretch"
@@ -146,7 +146,7 @@ import { useUniversalLayout, useResponsive } from '@/components/layout/universal
 function MyComponent() {
   const { theme, setTheme } = useUniversalLayout();
   const { isMobile, isTablet } = useResponsive();
-  
+
   return (
     <div>
       Current theme: {theme.name}

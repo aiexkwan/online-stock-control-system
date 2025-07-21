@@ -2,7 +2,7 @@
  * Production Details Widget - DataTable Version
  * 顯示生產詳情表格
  * 使用 DataTable 統一顯示邏輯
- * 
+ *
  * REST API Migration:
  * - 使用 REST API 取代 GraphQL
  * - 簡化數據獲取邏輯
@@ -17,7 +17,7 @@ import { format, startOfDay, endOfDay } from 'date-fns';
 import { CardHeader, CardTitle } from '@/components/ui/card';
 import { TableCellsIcon } from '@heroicons/react/24/outline';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
-import { TraditionalWidgetComponentProps } from '@/app/types/dashboard';
+import { TraditionalWidgetComponentProps } from '@/types/components/dashboard';
 // Note: Migrated to REST API - GraphQL hooks removed
 import { DataTable } from './common/data-display/DataTable';
 import type { DataTableColumn } from './common/data-display/DataTable';
@@ -28,12 +28,12 @@ interface ProductionDetailsWidgetProps extends TraditionalWidgetComponentProps {
   // useGraphQL prop removed - using REST API only
 }
 
-export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = ({ 
-  title, 
+export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = ({
+  title,
   timeFrame,
   isEditMode,
   limit = 50,
-  widget
+  widget,
 }) => {
   const dashboardAPI = useMemo(() => createDashboardAPI(), []);
 
@@ -45,7 +45,7 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
-      
+
       return {
         start: today,
         end: tomorrow,
@@ -93,7 +93,12 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
         if (result.widgets && result.widgets.length > 0) {
           const widgetData = result.widgets[0];
 
-          if (typeof widgetData.data === 'object' && widgetData.data !== null && 'error' in widgetData.data && widgetData.data.error) {
+          if (
+            typeof widgetData.data === 'object' &&
+            widgetData.data !== null &&
+            'error' in widgetData.data &&
+            widgetData.data.error
+          ) {
             const errorMsg = String(widgetData.data.error);
             console.error('[ProductionDetailsWidget as string] API error:', errorMsg);
             setError(errorMsg);
@@ -101,20 +106,26 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
             return;
           }
 
-          const detailsData = (typeof widgetData.data === 'object' && widgetData.data !== null && 'value' in widgetData.data) 
-            ? widgetData.data.value 
-            : [];
-          const widgetMetadata = (typeof widgetData.data === 'object' && widgetData.data !== null && 'metadata' in widgetData.data) 
-            ? widgetData.data.metadata 
-            : {};
+          const detailsData =
+            typeof widgetData.data === 'object' &&
+            widgetData.data !== null &&
+            'value' in widgetData.data
+              ? widgetData.data.value
+              : [];
+          const widgetMetadata =
+            typeof widgetData.data === 'object' &&
+            widgetData.data !== null &&
+            'metadata' in widgetData.data
+              ? widgetData.data.metadata
+              : {};
 
           console.log('[ProductionDetailsWidget as string] API returned data:', detailsData);
           console.log('[ProductionDetailsWidget as string] Metadata:', widgetMetadata);
 
           setData(Array.isArray(detailsData) ? detailsData : []);
-          const safeMetadata = typeof widgetMetadata === 'object' && widgetMetadata !== null ? widgetMetadata : {};
+          const safeMetadata =
+            typeof widgetMetadata === 'object' && widgetMetadata !== null ? widgetMetadata : {};
           setMetadata({ ...safeMetadata, useGraphQL: false });
-
         } else {
           console.warn('[ProductionDetailsWidget as string] No widget data returned from API');
           setData([]);
@@ -136,29 +147,31 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
 
   // 定義 DataTable columns
   const columns: DataTableColumn[] = [
-    { 
-      key: 'plt_num', 
-      header: 'Pallet Number'
+    {
+      key: 'plt_num',
+      header: 'Pallet Number',
     },
-    { 
-      key: 'product_code', 
-      header: 'Product Code'
+    {
+      key: 'product_code',
+      header: 'Product Code',
     },
-    { 
-      key: 'product_qty', 
+    {
+      key: 'product_qty',
       header: 'Quantity',
       align: 'right',
-      render: (value: unknown, item: Record<string, unknown>, index: number) => typeof value === 'number' ? value.toLocaleString() : String(value || 'N/A')
+      render: (value: unknown, item: Record<string, unknown>, index: number) =>
+        typeof value === 'number' ? value.toLocaleString() : String(value || 'N/A'),
     },
-    { 
-      key: 'qc_by', 
-      header: 'QC By'
+    {
+      key: 'qc_by',
+      header: 'QC By',
     },
-    { 
-      key: 'generate_time', 
+    {
+      key: 'generate_time',
       header: 'Generate Time',
-      render: (value: unknown, item: Record<string, unknown>, index: number) => value ? format(new Date(String(value)), 'MMM d, HH:mm') : 'N/A'
-    }
+      render: (value: unknown, item: Record<string, unknown>, index: number) =>
+        value ? format(new Date(String(value)), 'dd/MM/yyyy') : 'N/A',
+    },
   ];
 
   return (
@@ -166,29 +179,35 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
-      className="h-full"
+      className='h-full'
     >
       <DataTable
         title={title}
         icon={TableCellsIcon}
-        performanceMetrics={metadata?.rpcFunction ? {
-          source: 'REST API',
-          optimized: true
-        } : {
-          source: 'REST API',
-          optimized: false
-        }}
+        performanceMetrics={
+          metadata?.rpcFunction
+            ? {
+                source: 'REST API',
+                optimized: true,
+              }
+            : {
+                source: 'REST API',
+                optimized: false,
+              }
+        }
         columns={columns}
         data={tableData}
         loading={loading}
         error={error ? new Error(error) : undefined}
-        emptyMessage="No production data available for the selected period"
-        pagination={{ 
+        emptyMessage='No production data available for the selected period'
+        pagination={{
           enabled: false,
           pageSize: limit,
-          hasMore: false
+          hasMore: false,
         }}
       />
     </motion.div>
   );
 };
+
+export default ProductionDetailsWidget;

@@ -23,18 +23,18 @@ SELECT * FROM rpc_get_inventory_ordered_analysis(
 WITH analysis AS (
   SELECT * FROM rpc_get_inventory_ordered_analysis()
 )
-SELECT 
+SELECT
   jsonb_array_elements(analysis->'products') AS product
 FROM analysis
 WHERE (jsonb_array_elements(analysis->'products')->>'is_sufficient')::boolean = false;
 
 -- Test 6: Get summary statistics only
-SELECT 
+SELECT
   analysis->'summary' AS summary_stats
 FROM rpc_get_inventory_ordered_analysis() AS analysis;
 
 -- Test 7: Performance test with execution time
-SELECT 
+SELECT
   analysis->'metadata'->>'execution_time_ms' AS execution_time_ms,
   jsonb_array_length(analysis->'products') AS product_count,
   analysis->'summary'->>'total_stock' AS total_stock,
@@ -49,7 +49,7 @@ products AS (
   SELECT jsonb_array_elements(analysis->'products') AS product
   FROM analysis
 )
-SELECT 
+SELECT
   product->>'product_code' AS product_code,
   product->>'product_description' AS description,
   product->>'current_stock' AS current_stock,
@@ -67,7 +67,7 @@ products AS (
   SELECT jsonb_array_elements(analysis->'products') AS product
   FROM analysis
 )
-SELECT 
+SELECT
   COALESCE(product->>'product_type', 'Unknown') AS product_type,
   COUNT(*) AS product_count,
   SUM((product->>'current_stock')::numeric) AS total_stock,
@@ -80,7 +80,7 @@ ORDER BY insufficient_count DESC;
 
 -- Test 10: Validate data consistency
 WITH stock_check AS (
-  SELECT 
+  SELECT
     sl.stock,
     sl.stock_level,
     COALESCE(SUM(CAST(do.product_qty AS bigint) - CAST(do.loaded_qty AS bigint)), 0) AS order_demand
@@ -91,7 +91,7 @@ WITH stock_check AS (
   GROUP BY sl.stock, sl.stock_level
 ),
 rpc_check AS (
-  SELECT 
+  SELECT
     product->>'product_code' AS product_code,
     (product->>'current_stock')::bigint AS current_stock,
     (product->>'order_demand')::bigint AS order_demand
@@ -102,16 +102,16 @@ rpc_check AS (
     ) AS analysis
   ) AS products
 )
-SELECT 
+SELECT
   sc.stock,
   sc.stock_level AS actual_stock,
   rc.current_stock AS rpc_stock,
   sc.order_demand AS actual_demand,
   rc.order_demand AS rpc_demand,
-  CASE 
-    WHEN sc.stock_level = rc.current_stock AND sc.order_demand = rc.order_demand 
-    THEN 'MATCH' 
-    ELSE 'MISMATCH' 
+  CASE
+    WHEN sc.stock_level = rc.current_stock AND sc.order_demand = rc.order_demand
+    THEN 'MATCH'
+    ELSE 'MISMATCH'
   END AS validation_status
 FROM stock_check sc
 JOIN rpc_check rc ON sc.stock = rc.product_code;

@@ -1,7 +1,7 @@
 /**
  * Unified Widget Configuration
  * 統一的 Widget 配置文件 - 取代所有 8 個 adapter 文件
- * 
+ *
  * This file combines all widget configurations from the 8 adapter files:
  * - operations-widget-adapter.ts
  * - lists-widget-adapter.ts

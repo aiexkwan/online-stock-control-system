@@ -11,7 +11,7 @@ import {
   NotificationChannel,
   AlertConfig,
   AlertTemplate,
-  AlertResponse
+  AlertResponse,
 } from '../types';
 
 export class AlertConfigManager {
@@ -39,7 +39,7 @@ export class AlertConfigManager {
         evaluationInterval: 30,
         maxAlertsPerRule: 50,
         defaultSilenceTime: 300,
-        retentionDays: 30
+        retentionDays: 30,
       },
       notifications: {
         maxRetries: 3,
@@ -48,20 +48,20 @@ export class AlertConfigManager {
         rateLimit: {
           enabled: true,
           maxPerMinute: 10,
-          maxPerHour: 100
-        }
+          maxPerHour: 100,
+        },
       },
       storage: {
         redis: {
           keyPrefix: 'alert:',
-          ttl: 3600
+          ttl: 3600,
         },
         supabase: {
           alertsTable: 'alerts',
           rulesTable: 'alert_rules',
-          notificationsTable: 'notification_history'
-        }
-      }
+          notificationsTable: 'notification_history',
+        },
+      },
     };
   }
 
@@ -71,7 +71,7 @@ export class AlertConfigManager {
   public async initializeDefaultRules(): Promise<AlertResponse> {
     try {
       const defaultRules = this.getDefaultAlertRules();
-      
+
       for (const rule of defaultRules) {
         await this.createRule(rule);
       }
@@ -79,13 +79,13 @@ export class AlertConfigManager {
       return {
         success: true,
         message: `Initialized ${defaultRules.length} default alert rules`,
-        data: { count: defaultRules.length }
+        data: { count: defaultRules.length },
       };
     } catch (error) {
       return {
         success: false,
         message: 'Failed to initialize default rules',
-        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)],
       };
     }
   }
@@ -111,11 +111,11 @@ export class AlertConfigManager {
             enabled: true,
             config: {
               recipients: ['admin@example.com'],
-              subject: 'API Response Time Alert'
-            }
-          }
+              subject: 'API Response Time Alert',
+            },
+          },
         ],
-        tags: { category: 'performance', system: 'api' }
+        tags: { category: 'performance', system: 'api' },
       },
       {
         name: 'Critical API Response Time',
@@ -134,11 +134,11 @@ export class AlertConfigManager {
             config: {
               recipients: ['admin@example.com', 'devops@example.com'],
               subject: 'CRITICAL: API Response Time Alert',
-              priority: 'high'
-            }
-          }
+              priority: 'high',
+            },
+          },
         ],
-        tags: { category: 'performance', system: 'api', priority: 'critical' }
+        tags: { category: 'performance', system: 'api', priority: 'critical' },
       },
       {
         name: 'High Error Rate',
@@ -157,11 +157,11 @@ export class AlertConfigManager {
             config: {
               webhook: process.env.SLACK_WEBHOOK_URL || '',
               channel: '#alerts',
-              username: 'Error Bot'
-            }
-          }
+              username: 'Error Bot',
+            },
+          },
         ],
-        tags: { category: 'reliability', system: 'api' }
+        tags: { category: 'reliability', system: 'api' },
       },
       {
         name: 'Low Active Users',
@@ -179,11 +179,11 @@ export class AlertConfigManager {
             enabled: true,
             config: {
               url: process.env.MONITORING_WEBHOOK_URL || '',
-              method: 'POST'
-            }
-          }
+              method: 'POST',
+            },
+          },
         ],
-        tags: { category: 'business', system: 'users' }
+        tags: { category: 'business', system: 'users' },
       },
       {
         name: 'High Database Connections',
@@ -201,11 +201,11 @@ export class AlertConfigManager {
             enabled: true,
             config: {
               recipients: ['dba@example.com'],
-              subject: 'Database Connection Alert'
-            }
-          }
+              subject: 'Database Connection Alert',
+            },
+          },
         ],
-        tags: { category: 'infrastructure', system: 'database' }
+        tags: { category: 'infrastructure', system: 'database' },
       },
       {
         name: 'Critical Memory Usage',
@@ -224,11 +224,11 @@ export class AlertConfigManager {
             config: {
               recipients: ['devops@example.com'],
               subject: 'CRITICAL: Memory Usage Alert',
-              priority: 'high'
-            }
-          }
+              priority: 'high',
+            },
+          },
         ],
-        tags: { category: 'infrastructure', system: 'server', priority: 'critical' }
+        tags: { category: 'infrastructure', system: 'server', priority: 'critical' },
       },
       {
         name: 'High Disk Usage',
@@ -246,12 +246,12 @@ export class AlertConfigManager {
             enabled: true,
             config: {
               url: process.env.MONITORING_WEBHOOK_URL || '',
-              method: 'POST'
-            }
-          }
+              method: 'POST',
+            },
+          },
         ],
-        tags: { category: 'infrastructure', system: 'storage' }
-      }
+        tags: { category: 'infrastructure', system: 'storage' },
+      },
     ];
   }
 
@@ -287,15 +287,13 @@ export class AlertConfigManager {
         dependencies: ruleData.dependencies || [],
         silenceTime: ruleData.silenceTime,
         notifications: ruleData.notifications || [],
-        tags: ruleData.tags || {},
+        tags: ruleData.tags || ({} as any),
         createdAt: new Date(),
         updatedAt: new Date(),
-        createdBy: 'system'
+        createdBy: 'system',
       };
 
-      const { error } = await this.supabase
-        .from('alert_rules')
-        .insert(this.serializeRule(rule));
+      const { error } = await this.supabase.from('alert_rules').insert(this.serializeRule(rule));
 
       if (error) throw error;
 
@@ -312,7 +310,7 @@ export class AlertConfigManager {
   public async initializeDefaultTemplates(): Promise<AlertResponse> {
     try {
       const defaultTemplates = this.getDefaultTemplates();
-      
+
       for (const template of defaultTemplates) {
         await this.createTemplate(template);
       }
@@ -320,13 +318,13 @@ export class AlertConfigManager {
       return {
         success: true,
         message: `Initialized ${defaultTemplates.length} default templates`,
-        data: { count: defaultTemplates.length }
+        data: { count: defaultTemplates.length },
       };
     } catch (error) {
       return {
         success: false,
         message: 'Failed to initialize default templates',
-        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)],
       };
     }
   }
@@ -357,9 +355,18 @@ export class AlertConfigManager {
 Please take appropriate action if required.`,
         channel: NotificationChannel.EMAIL,
         template: `{{alert.level}} Alert: {{alert.ruleName}}\n\nAlert Details:\n- Rule: {{alert.ruleName}}\n- Level: {{alert.level}}\n- State: {{alert.state}}\n- Message: {{alert.message}}\n- Current Value: {{alert.value}}\n- Threshold: {{alert.threshold}}\n- Triggered: {{alert.triggeredAt}}`,
-        variables: ['alert.ruleName', 'alert.level', 'alert.state', 'alert.message', 'alert.value', 'alert.threshold', 'alert.triggeredAt', 'alert.resolvedAt'],
+        variables: [
+          'alert.ruleName',
+          'alert.level',
+          'alert.state',
+          'alert.message',
+          'alert.value',
+          'alert.threshold',
+          'alert.triggeredAt',
+          'alert.resolvedAt',
+        ],
         enabled: true,
-        defaultValues: {}
+        defaultValues: {},
       },
       {
         id: 'slack-default',
@@ -368,10 +375,19 @@ Please take appropriate action if required.`,
         subject: '{{alert.level}} Alert: {{alert.ruleName}}',
         body: '🚨 *{{alert.level}} Alert*: {{alert.ruleName}}\n\n*Current Value:* {{alert.value}}\n*Threshold:* {{alert.threshold}}\n*Status:* {{alert.state}}\n\n*Message:* {{alert.message}}\n\n*Time:* {{alert.triggeredAt}}',
         channel: NotificationChannel.SLACK,
-        template: '🚨 *{{alert.level}} Alert*: {{alert.ruleName}}\n\n*Current Value:* {{alert.value}}\n*Threshold:* {{alert.threshold}}\n*Status:* {{alert.state}}\n\n*Message:* {{alert.message}}\n\n*Time:* {{alert.triggeredAt}}',
-        variables: ['alert.ruleName', 'alert.level', 'alert.value', 'alert.threshold', 'alert.state', 'alert.message', 'alert.triggeredAt'],
+        template:
+          '🚨 *{{alert.level}} Alert*: {{alert.ruleName}}\n\n*Current Value:* {{alert.value}}\n*Threshold:* {{alert.threshold}}\n*Status:* {{alert.state}}\n\n*Message:* {{alert.message}}\n\n*Time:* {{alert.triggeredAt}}',
+        variables: [
+          'alert.ruleName',
+          'alert.level',
+          'alert.value',
+          'alert.threshold',
+          'alert.state',
+          'alert.message',
+          'alert.triggeredAt',
+        ],
         enabled: true,
-        defaultValues: {}
+        defaultValues: {},
       },
       {
         id: 'webhook-default',
@@ -381,12 +397,23 @@ Please take appropriate action if required.`,
         body: `{"alert": {"id": "{{alert.id}}", "ruleName": "{{alert.ruleName}}", "level": "{{alert.level}}", "state": "{{alert.state}}", "message": "{{alert.message}}", "value": {{alert.value}}, "threshold": {{alert.threshold}}, "triggeredAt": "{{alert.triggeredAt}}", "resolvedAt": {{#if alert.resolvedAt}}"{{alert.resolvedAt}}"{{else}}null{{/if}}}, "timestamp": "{{now}}", "system": "NewPennine Alert System"}`,
         channel: NotificationChannel.WEBHOOK,
         template: `{"alert": {"id": "{{alert.id}}", "ruleName": "{{alert.ruleName}}", "level": "{{alert.level}}", "state": "{{alert.state}}", "message": "{{alert.message}}", "value": {{alert.value}}, "threshold": {{alert.threshold}}, "triggeredAt": "{{alert.triggeredAt}}", "resolvedAt": {{#if alert.resolvedAt}}"{{alert.resolvedAt}}"{{else}}null{{/if}}}, "timestamp": "{{now}}", "system": "NewPennine Alert System"}`,
-        variables: ['alert.id', 'alert.ruleName', 'alert.level', 'alert.state', 'alert.message', 'alert.value', 'alert.threshold', 'alert.triggeredAt', 'alert.resolvedAt', 'now'],
+        variables: [
+          'alert.id',
+          'alert.ruleName',
+          'alert.level',
+          'alert.state',
+          'alert.message',
+          'alert.value',
+          'alert.threshold',
+          'alert.triggeredAt',
+          'alert.resolvedAt',
+          'now',
+        ],
         enabled: true,
         defaultValues: {
-          now: new Date().toISOString()
-        }
-      }
+          now: new Date().toISOString(),
+        },
+      },
     ];
   }
 
@@ -407,9 +434,7 @@ Please take appropriate action if required.`,
         return;
       }
 
-      const { error } = await this.supabase
-        .from('alert_templates')
-        .insert(template);
+      const { error } = await this.supabase.from('alert_templates').insert(template);
 
       if (error) throw error;
 
@@ -426,9 +451,7 @@ Please take appropriate action if required.`,
    */
   private async loadTemplates(): Promise<void> {
     try {
-      const { data: templates, error } = await this.supabase
-        .from('alert_templates')
-        .select('*');
+      const { data: templates, error } = await this.supabase.from('alert_templates').select('*');
 
       if (error) throw error;
 
@@ -498,7 +521,7 @@ Please take appropriate action if required.`,
         this.createNotificationHistoryTable(),
         this.createAlertTemplatesTable(),
         this.createAlertEscalationsTable(),
-        this.createAlertSuppressionsTable()
+        this.createAlertSuppressionsTable(),
       ];
 
       for (const schema of schemas) {
@@ -507,13 +530,13 @@ Please take appropriate action if required.`,
 
       return {
         success: true,
-        message: 'Database schema created successfully'
+        message: 'Database schema created successfully',
       };
     } catch (error) {
       return {
         success: false,
         message: 'Failed to create database schema',
-        errors: [error instanceof Error ? (error as { message: string }).message : String(error)]
+        errors: [error instanceof Error ? (error as { message: string }).message : String(error)],
       };
     }
   }
@@ -541,12 +564,12 @@ Please take appropriate action if required.`,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         created_by TEXT NOT NULL,
-        
+
         CONSTRAINT alert_rules_name_unique UNIQUE (name),
         CONSTRAINT alert_rules_level_check CHECK (level IN ('info', 'warning', 'error', 'critical')),
         CONSTRAINT alert_rules_condition_check CHECK (condition IN ('gt', 'lt', 'eq', 'ne', 'contains', 'regex'))
       );
-      
+
       CREATE INDEX IF NOT EXISTS idx_alert_rules_enabled ON alert_rules(enabled);
       CREATE INDEX IF NOT EXISTS idx_alert_rules_level ON alert_rules(level);
       CREATE INDEX IF NOT EXISTS idx_alert_rules_metric ON alert_rules(metric);
@@ -575,12 +598,12 @@ Please take appropriate action if required.`,
         notifications JSONB DEFAULT '[]',
         labels JSONB DEFAULT '{}',
         annotations JSONB DEFAULT '{}',
-        
+
         CONSTRAINT alerts_rule_id_fkey FOREIGN KEY (rule_id) REFERENCES alert_rules(id) ON DELETE CASCADE,
         CONSTRAINT alerts_level_check CHECK (level IN ('info', 'warning', 'error', 'critical')),
         CONSTRAINT alerts_state_check CHECK (state IN ('active', 'resolved', 'acknowledged', 'silenced'))
       );
-      
+
       CREATE INDEX IF NOT EXISTS idx_alerts_rule_id ON alerts(rule_id);
       CREATE INDEX IF NOT EXISTS idx_alerts_level ON alerts(level);
       CREATE INDEX IF NOT EXISTS idx_alerts_state ON alerts(state);
@@ -602,12 +625,12 @@ Please take appropriate action if required.`,
         status TEXT NOT NULL,
         error TEXT,
         retry_count INTEGER DEFAULT 0,
-        
+
         CONSTRAINT notification_history_alert_id_fkey FOREIGN KEY (alert_id) REFERENCES alerts(id) ON DELETE CASCADE,
         CONSTRAINT notification_history_channel_check CHECK (channel IN ('email', 'slack', 'webhook', 'sms')),
         CONSTRAINT notification_history_status_check CHECK (status IN ('pending', 'sent', 'failed', 'retry'))
       );
-      
+
       CREATE INDEX IF NOT EXISTS idx_notification_history_alert_id ON notification_history(alert_id);
       CREATE INDEX IF NOT EXISTS idx_notification_history_channel ON notification_history(channel);
       CREATE INDEX IF NOT EXISTS idx_notification_history_sent_at ON notification_history(sent_at);
@@ -628,11 +651,11 @@ Please take appropriate action if required.`,
         template TEXT NOT NULL,
         variables JSONB DEFAULT '[]',
         default_values JSONB DEFAULT '{}',
-        
+
         CONSTRAINT alert_templates_name_unique UNIQUE (name),
         CONSTRAINT alert_templates_channel_check CHECK (channel IN ('email', 'slack', 'webhook', 'sms'))
       );
-      
+
       CREATE INDEX IF NOT EXISTS idx_alert_templates_channel ON alert_templates(channel);
     `;
   }
@@ -647,11 +670,11 @@ Please take appropriate action if required.`,
         rule_id TEXT NOT NULL,
         enabled BOOLEAN DEFAULT true,
         levels JSONB NOT NULL,
-        
+
         CONSTRAINT alert_escalations_rule_id_fkey FOREIGN KEY (rule_id) REFERENCES alert_rules(id) ON DELETE CASCADE,
         CONSTRAINT alert_escalations_rule_id_unique UNIQUE (rule_id)
       );
-      
+
       CREATE INDEX IF NOT EXISTS idx_alert_escalations_rule_id ON alert_escalations(rule_id);
       CREATE INDEX IF NOT EXISTS idx_alert_escalations_enabled ON alert_escalations(enabled);
     `;
@@ -670,10 +693,10 @@ Please take appropriate action if required.`,
         suppressed_at TIMESTAMP WITH TIME ZONE NOT NULL,
         expires_at TIMESTAMP WITH TIME ZONE,
         active BOOLEAN DEFAULT true,
-        
+
         CONSTRAINT alert_suppressions_rule_id_fkey FOREIGN KEY (rule_id) REFERENCES alert_rules(id) ON DELETE CASCADE
       );
-      
+
       CREATE INDEX IF NOT EXISTS idx_alert_suppressions_rule_id ON alert_suppressions(rule_id);
       CREATE INDEX IF NOT EXISTS idx_alert_suppressions_active ON alert_suppressions(active);
       CREATE INDEX IF NOT EXISTS idx_alert_suppressions_expires_at ON alert_suppressions(expires_at);
@@ -698,10 +721,10 @@ Please take appropriate action if required.`,
       dependencies: JSON.stringify(rule.dependencies || []),
       silence_time: rule.silenceTime,
       notifications: JSON.stringify(rule.notifications),
-      tags: JSON.stringify(rule.tags || {}),
+      tags: JSON.stringify(rule.tags || ({} as any)),
       created_at: rule.createdAt.toISOString(),
       updated_at: rule.updatedAt.toISOString(),
-      created_by: rule.createdBy
+      created_by: rule.createdBy,
     };
   }
 

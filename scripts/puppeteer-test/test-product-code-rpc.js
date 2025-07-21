@@ -22,23 +22,23 @@ const testCodes = [
 async function runTests() {
   console.log('開始測試 search_product_code RPC 函數...');
   console.log('----------------------------------------');
-  
+
   for (const code of testCodes) {
     console.log(`測試產品代碼: "${code}"`);
-    
+
     try {
       const startTime = performance.now();
       const { data, error } = await supabase.rpc('search_product_code', { p_code: code });
       const endTime = performance.now();
       const duration = (endTime - startTime).toFixed(2);
-      
+
       if (error) {
         console.error(`錯誤: ${error.message}`);
         continue;
       }
-      
+
       console.log(`查詢耗時: ${duration}ms`);
-      
+
       if (data) {
         console.log('結果:');
         console.log(JSON.stringify(data, null, 2));
@@ -48,10 +48,10 @@ async function runTests() {
     } catch (err) {
       console.error(`執行錯誤: ${err.message}`);
     }
-    
+
     console.log('----------------------------------------');
   }
-  
+
   console.log('測試完成');
 }
 
@@ -60,4 +60,4 @@ runTests()
   .catch(err => {
     console.error('測試過程中發生錯誤:', err);
     process.exit(1);
-  }); 
+  });

@@ -11,20 +11,20 @@ AS $$
 DECLARE
     v_result jsonb;
 BEGIN
-    WITH 
+    WITH
     -- Aggregate inventory by product code
     inventory_summary AS (
-        SELECT 
+        SELECT
             product_code,
             SUM(
-                COALESCE(injection, 0) + 
-                COALESCE(pipeline, 0) + 
-                COALESCE(prebook, 0) + 
-                COALESCE(await, 0) + 
-                COALESCE(fold, 0) + 
-                COALESCE(bulk, 0) + 
-                COALESCE(backcarpark, 0) + 
-                COALESCE(damage, 0) + 
+                COALESCE(injection, 0) +
+                COALESCE(pipeline, 0) +
+                COALESCE(prebook, 0) +
+                COALESCE(await, 0) +
+                COALESCE(fold, 0) +
+                COALESCE(bulk, 0) +
+                COALESCE(backcarpark, 0) +
+                COALESCE(damage, 0) +
                 COALESCE(await_grn, 0)
             ) AS total_inventory,
             -- Location breakdown for additional insights
@@ -39,17 +39,17 @@ BEGIN
             SUM(COALESCE(await_grn, 0)) AS qty_await_grn,
             MAX(latest_update) AS last_inventory_update
         FROM record_inventory
-        WHERE product_code IS NOT NULL 
+        WHERE product_code IS NOT NULL
         AND product_code != ''
         GROUP BY product_code
     ),
     -- Aggregate outstanding orders by product code
     order_summary AS (
-        SELECT 
+        SELECT
             product_code,
             COUNT(*) AS total_orders,
             SUM(
-                CASE 
+                CASE
                     -- Handle loaded_qty as text (convert to numeric for comparison)
                     WHEN loaded_qty IS NULL OR loaded_qty = '' OR loaded_qty = '0' THEN product_qty
                     WHEN CAST(loaded_qty AS numeric) < product_qty THEN product_qty - CAST(loaded_qty AS numeric)
@@ -58,19 +58,19 @@ BEGIN
             ) AS total_outstanding_qty,
             SUM(product_qty) AS total_ordered_qty,
             SUM(
-                CASE 
+                CASE
                     WHEN loaded_qty IS NULL OR loaded_qty = '' OR loaded_qty = '0' THEN 0
                     ELSE CAST(loaded_qty AS numeric)
                 END
             ) AS total_loaded_qty
         FROM data_order
-        WHERE product_code IS NOT NULL 
+        WHERE product_code IS NOT NULL
         AND product_code != ''
         GROUP BY product_code
     ),
     -- Combine with product master data
     analysis AS (
-        SELECT 
+        SELECT
             COALESCE(i.product_code, o.product_code, c.code) AS product_code,
             c.description AS product_description,
             c.type AS product_type,
@@ -93,13 +93,13 @@ BEGIN
             COALESCE(o.total_ordered_qty, 0) AS total_ordered_qty,
             COALESCE(o.total_loaded_qty, 0) AS total_loaded_qty,
             -- Analysis metrics
-            CASE 
+            CASE
                 WHEN COALESCE(o.total_outstanding_qty, 0) = 0 THEN 100
                 ELSE ROUND((COALESCE(i.total_inventory, 0)::numeric / o.total_outstanding_qty::numeric) * 100, 2)
             END AS fulfillment_rate,
             COALESCE(i.total_inventory, 0) - COALESCE(o.total_outstanding_qty, 0) AS inventory_gap,
             -- Status classification
-            CASE 
+            CASE
                 WHEN COALESCE(i.total_inventory, 0) = 0 AND COALESCE(o.total_outstanding_qty, 0) > 0 THEN 'Out of Stock'
                 WHEN COALESCE(i.total_inventory, 0) >= COALESCE(o.total_outstanding_qty, 0) THEN 'Sufficient'
                 WHEN COALESCE(i.total_inventory, 0) > 0 AND COALESCE(i.total_inventory, 0) < COALESCE(o.total_outstanding_qty, 0) THEN 'Insufficient'
@@ -108,7 +108,7 @@ BEGIN
         FROM inventory_summary i
         FULL OUTER JOIN order_summary o ON i.product_code = o.product_code
         LEFT JOIN data_code c ON COALESCE(i.product_code, o.product_code) = c.code
-        WHERE 
+        WHERE
             -- Filter by product type if specified
             (p_product_type IS NULL OR c.type = p_product_type)
             -- Include only products with inventory or orders
@@ -120,8 +120,8 @@ BEGIN
             'total_products', COUNT(DISTINCT product_code),
             'total_inventory_value', SUM(total_inventory),
             'total_outstanding_orders_value', SUM(total_outstanding_qty),
-            'overall_fulfillment_rate', 
-                CASE 
+            'overall_fulfillment_rate',
+                CASE
                     WHEN SUM(total_outstanding_qty) = 0 THEN 100
                     ELSE ROUND((SUM(total_inventory)::numeric / SUM(total_outstanding_qty)::numeric) * 100, 2)
                 END,
@@ -162,8 +162,8 @@ BEGIN
                     'inventory_gap', inventory_gap,
                     'status', status
                 )
-            ) ORDER BY 
-                CASE status 
+            ) ORDER BY
+                CASE status
                     WHEN 'Out of Stock' THEN 1
                     WHEN 'Insufficient' THEN 2
                     WHEN 'Sufficient' THEN 3
@@ -174,14 +174,14 @@ BEGIN
         'generated_at', NOW()
     ) INTO v_result
     FROM analysis;
-    
+
     RETURN v_result;
 END;
 $$;
 
 -- Add comment to describe the function
-COMMENT ON FUNCTION rpc_get_inventory_ordered_analysis(text) IS 
-'Analyzes inventory levels against outstanding orders. 
+COMMENT ON FUNCTION rpc_get_inventory_ordered_analysis(text) IS
+'Analyzes inventory levels against outstanding orders.
 Returns inventory summary, order demand, fulfillment rates, and inventory gaps.
 Can filter by product type.';
 

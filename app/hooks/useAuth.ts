@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { getErrorMessage } from '../../lib/types/error-handling';
+import { getErrorMessage } from '@/types/core/error';
 import { createClient } from '@/app/utils/supabase/client';
 import { unifiedAuth } from '@/app/main-login/utils/unified-auth';
 import type { User, PostgrestError } from '@supabase/supabase-js';
@@ -148,10 +148,9 @@ export const getUserRoleFromDatabase = async (email: string): Promise<UserRole |
 
     // 成功查詢後清除重試計數器
     retryCounters.delete(email);
-    
+
     return getUserRoleByDepartmentAndPosition(data.department, data.position);
   } catch (error: unknown) {
-    
     if (getErrorMessage(error) === 'Database query timeout') {
       console.warn(
         `[getUserRoleFromDatabase] Database query timeout for ${email}, falling back to legacy auth`
@@ -159,7 +158,7 @@ export const getUserRoleFromDatabase = async (email: string): Promise<UserRole |
     } else {
       console.error('[getUserRoleFromDatabase] Error:', error);
     }
-    
+
     // 清除重試計數器
     retryCounters.delete(email);
     return null;
@@ -206,7 +205,7 @@ export function useAuth(): AuthState {
   const [hasError, setHasError] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(false);
   const [lastAuthCheck, setLastAuthCheck] = useState<number>(0);
-  
+
   const supabase = useMemo(() => {
     try {
       return createClient();
@@ -220,12 +219,12 @@ export function useAuth(): AuthState {
   // 統一的用戶認證和角色設置函數 - 優化版
   const setAuthenticatedUser = useCallback((user: User) => {
     console.log('[useAuth] Setting authenticated user:', user.email);
-    
+
     // 立即設置認證狀態 - 不等待任何異步操作
     setIsAuthenticated(true);
     setUser(user);
     setLoading(false);
-    
+
     // 完全異步的角色查詢（使用 setTimeout 確保不阻塞主流程）
     setTimeout(() => {
       const loadUserRole = async () => {
@@ -289,7 +288,7 @@ export function useAuth(): AuthState {
       setLastAuthCheck(now);
       try {
         console.log('[useAuth] Initial auth check');
-        
+
         // 使用統一認證系統進行檢查
         const user = await unifiedAuth.getCurrentUser();
 
@@ -312,7 +311,7 @@ export function useAuth(): AuthState {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('[useAuth] Auth state change:', event, !!session?.user);
-      
+
       if (event === 'SIGNED_IN' && session?.user) {
         setAuthenticatedUser(session.user);
       } else if (event === 'SIGNED_OUT') {

@@ -47,7 +47,8 @@ export function useReportGeneration(reportId: string, options: UseReportGenerati
         setProgress(80);
 
         // 生成檔案名
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        const now = new Date();
+        const timestamp = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const filename = `${reportId}_${timestamp}.${format === 'excel' ? 'xlsx' : format}`;
 
         // 自動下載

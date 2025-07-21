@@ -1,8 +1,8 @@
 'use server';
 
 import { createClient } from '@/app/utils/supabase/server';
-import { DatabaseRecord } from '@/lib/types/database';
-import { getErrorMessage } from '@/lib/types/error-handling';
+import { DatabaseRecord } from '@/types/database/tables';
+import { getErrorMessage } from '@/types/core/error';
 import { AssistantService } from '@/lib/services/assistantService';
 import { SYSTEM_PROMPT } from '@/lib/openai-assistant-config';
 import crypto from 'crypto';
@@ -73,6 +73,22 @@ interface EnhancedOrderData {
   }>;
 }
 
+interface OrderInsertRecord {
+  order_ref: string;
+  account_num: string;
+  delivery_add: string;
+  invoice_to: string;
+  product_code: string;
+  product_desc: string;
+  product_qty: number;
+  unit_price: string;
+  uploaded_by: string;
+  token: number;
+  loaded_qty: string;
+  weight?: number;
+  customer_ref?: string;
+}
+
 // 生成文件哈希值
 function generateFileHash(buffer: ArrayBuffer): string {
   const hashBuffer = Buffer.from(buffer);
@@ -134,18 +150,18 @@ async function storeEnhancedOrderData(
   const tokenPerRecord = Math.ceil(tokenUsed / orderData.products.length);
 
   // 準備插入資料
-  const orderRecords = orderData.products.map(product => {
-    const record: DatabaseRecord = {
+  const orderRecords: OrderInsertRecord[] = orderData.products.map(product => {
+    const record: OrderInsertRecord = {
       order_ref: String(orderData.order_ref),
       account_num: orderData.account_num || '-',
       delivery_add: orderData.delivery_add || '-',
       invoice_to: orderData.invoice_to || '-',
       product_code: product.product_code,
       product_desc: product.product_desc,
-      product_qty: String(product.product_qty),
+      product_qty: product.product_qty,
       unit_price: product.unit_price || '-',
       uploaded_by: String(uploadedBy),
-      token: String(tokenPerRecord),
+      token: tokenPerRecord,
       loaded_qty: '0',
     };
 
@@ -160,8 +176,11 @@ async function storeEnhancedOrderData(
     return record;
   });
 
-  // 插入所有記錄
-  const { data, error } = await supabase.from('data_order').insert(orderRecords).select();
+  // 插入所有記錄 - 轉換為 Supabase 預期的類型
+  const { data, error } = await supabase
+    .from('data_order')
+    .insert(orderRecords as unknown as Record<string, unknown>[])
+    .select();
 
   if (error) {
     console.error('[storeEnhancedOrderData] Database insert failed:', error);
@@ -221,7 +240,7 @@ async function uploadToStorageAsync(
     // 寫入 doc_upload 表
     const { error: docError } = await supabase.from('doc_upload').insert({
       doc_name: fileData.name,
-      upload_by: uploadedBy,
+      upload_by: parseInt(uploadedBy),
       doc_type: 'order',
       doc_url: urlData.publicUrl,
       file_size: buffer.length,
@@ -301,7 +320,7 @@ export async function analyzeOrderPDF(
     // 檢查緩存
     const cachedResult = getCachedResult(fileHash);
     if (cachedResult && cachedResult.orderData) {
-      const cachedExtractedData = cachedResult.orderData.products.map((product) => ({
+      const cachedExtractedData = cachedResult.orderData.products.map(product => ({
         order_ref: cachedResult.orderData!.order_ref,
         account_num: cachedResult.orderData!.account_num,
         delivery_add: cachedResult.orderData!.delivery_add,
@@ -360,8 +379,8 @@ export async function analyzeOrderPDF(
           product_desc: product.description || '',
           product_qty: product.quantity,
           weight: 0, // 默認重量
-          unit_price: product.unit_price?.toString() || '0'
-        }))
+          unit_price: product.unit_price?.toString() || '0',
+        })),
       };
     } catch (parseError: unknown) {
       throw new Error(`Failed to parse assistant response: ${getErrorMessage(parseError)}`);
@@ -463,7 +482,7 @@ export async function getCurrentUserId(): Promise<number | null> {
     const { data: userDataByEmail } = await supabase
       .from('data_id')
       .select('id')
-      .eq('email', user.email)
+      .eq('email', user.email || '')
       .single();
 
     return userDataByEmail?.id || null;

@@ -15,7 +15,7 @@ CREATE FUNCTION process_qc_label_unified(
     p_slate_batch_number TEXT DEFAULT NULL,
     p_pdf_urls TEXT[] DEFAULT NULL
 )
-RETURNS JSONB 
+RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
@@ -45,86 +45,86 @@ BEGIN
             'error', 'Invalid count: must be between 1 and 100'
         );
     END IF;
-    
+
     IF p_product_code IS NULL OR TRIM(p_product_code) = '' THEN
         RETURN jsonb_build_object(
             'success', false,
             'error', 'Product code is required'
         );
     END IF;
-    
+
     IF p_product_qty <= 0 THEN
         RETURN jsonb_build_object(
             'success', false,
             'error', 'Product quantity must be greater than 0'
         );
     END IF;
-    
+
     -- Step 2: 查找並驗證用戶
     v_user_id := p_clock_number::INTEGER;
-    
+
     IF NOT EXISTS (SELECT 1 FROM data_id WHERE id = v_user_id) THEN
         RETURN jsonb_build_object(
             'success', false,
             'error', 'Invalid user ID (clock number)'
         );
     END IF;
-    
+
     -- Step 3: 查找產品資訊
-    SELECT code, description, standard_qty, type 
+    SELECT code, description, standard_qty, type
     INTO v_product_data
-    FROM data_code 
+    FROM data_code
     WHERE code = p_product_code
     LIMIT 1;
-    
+
     IF NOT FOUND THEN
         RETURN jsonb_build_object(
             'success', false,
             'error', 'Product code not found'
         );
     END IF;
-    
+
     -- Step 4: 從 pallet_number_buffer 獲取棧板號碼和系列號
     -- 生成 session ID（如果未提供）
     v_session_id := COALESCE(p_session_id, 'qc-' || extract(epoch from now())::bigint::text);
-    
+
     -- 計算總數量
     v_total_quantity := p_count * p_product_qty;
-    
+
     -- 預先分配數組大小
     v_pallet_numbers := ARRAY[]::TEXT[];
     v_series_numbers := ARRAY[]::TEXT[];
     v_pallet_info := ARRAY[]::JSONB[];
-    
+
     -- 從 generate_atomic_pallet_numbers_v6 函數獲取棧板號碼
-    FOR v_pallet_record IN 
+    FOR v_pallet_record IN
         SELECT * FROM generate_atomic_pallet_numbers_v6(p_count, v_session_id)
     LOOP
         -- 添加到數組
         v_pallet_numbers := array_append(v_pallet_numbers, v_pallet_record.pallet_number);
         v_series_numbers := array_append(v_series_numbers, v_pallet_record.series);
-        
+
         -- 構建棧板信息
-        v_pallet_info := array_append(v_pallet_info, 
+        v_pallet_info := array_append(v_pallet_info,
             jsonb_build_object(
                 'pallet_number', v_pallet_record.pallet_number,
                 'series', v_pallet_record.series,
-                'pdf_url', CASE 
-                    WHEN p_pdf_urls IS NOT NULL AND 
-                         array_position(v_pallet_numbers, v_pallet_record.pallet_number) <= array_length(p_pdf_urls, 1) 
-                    THEN p_pdf_urls[array_position(v_pallet_numbers, v_pallet_record.pallet_number)] 
-                    ELSE NULL 
+                'pdf_url', CASE
+                    WHEN p_pdf_urls IS NOT NULL AND
+                         array_position(v_pallet_numbers, v_pallet_record.pallet_number) <= array_length(p_pdf_urls, 1)
+                    THEN p_pdf_urls[array_position(v_pallet_numbers, v_pallet_record.pallet_number)]
+                    ELSE NULL
                 END
             )
         );
     END LOOP;
-    
+
     -- 驗證是否獲得足夠的托盤編號
     IF array_length(v_pallet_numbers, 1) != p_count THEN
-        RAISE EXCEPTION 'Failed to get enough pallet numbers. Got %, expected %', 
+        RAISE EXCEPTION 'Failed to get enough pallet numbers. Got %, expected %',
             array_length(v_pallet_numbers, 1), p_count;
     END IF;
-    
+
     -- Step 5: 批量插入數據
     -- 5.1 插入到 record_palletinfo
     FOR v_idx IN 1..p_count LOOP
@@ -142,15 +142,15 @@ BEGIN
             p_product_code,
             p_product_qty,
             p_plt_remark,
-            CASE 
-                WHEN p_pdf_urls IS NOT NULL AND v_idx <= array_length(p_pdf_urls, 1) 
-                THEN p_pdf_urls[v_idx] 
-                ELSE NULL 
+            CASE
+                WHEN p_pdf_urls IS NOT NULL AND v_idx <= array_length(p_pdf_urls, 1)
+                THEN p_pdf_urls[v_idx]
+                ELSE NULL
             END,
             NOW()
         );
     END LOOP;
-    
+
     -- 5.2 插入到 record_history
     FOR v_idx IN 1..p_count LOOP
         INSERT INTO record_history (
@@ -171,13 +171,13 @@ BEGIN
             p_product_code
         );
     END LOOP;
-    
+
     -- 5.3 更新 record_inventory（增加 injection 數量）
-    UPDATE record_inventory 
+    UPDATE record_inventory
     SET injection = injection + p_count,  -- 每個 pallet 加 1
         latest_update = NOW()
     WHERE product_code = p_product_code;
-    
+
     -- 如果不存在則插入新記錄
     IF NOT FOUND THEN
         INSERT INTO record_inventory (
@@ -210,11 +210,11 @@ BEGIN
             NOW()
         );
     END IF;
-    
+
     -- Step 6: 處理 Slate 批次號（如果提供）
     -- 注意：record_slate 表有很多必填欄位，這裡跳過處理
     -- Slate 相關功能需要單獨處理
-    
+
     -- Step 7: 處理 ACO 訂單詳情記錄（但不更新 finished_qty）
     -- 注意：finished_qty 的更新由獨立的 API 調用處理，避免重複更新
     IF p_aco_order_ref IS NOT NULL AND p_aco_quantity_used IS NOT NULL THEN
@@ -230,7 +230,7 @@ BEGIN
                 NOW()::time
             );
         END LOOP;
-        
+
         -- 設置 ACO 結果信息（但不執行更新）
         v_aco_result := jsonb_build_object(
             'aco_processed', true,
@@ -238,50 +238,50 @@ BEGIN
             'quantity_to_update', p_aco_quantity_used,
             'note', 'ACO order quantity will be updated via separate API call'
         );
-        
+
         -- 添加警告
-        v_warnings := array_append(v_warnings, 
+        v_warnings := array_append(v_warnings,
             'ACO order quantity update pending - will be processed after label printing'
         );
     END IF;
-    
+
     -- Step 8: 更新庫存水平（stock level）
     -- 使用正確的欄位名：stock 而不是 product_code
-    UPDATE stock_level 
+    UPDATE stock_level
     SET stock_level = stock_level + v_total_quantity,
         update_time = NOW()
     WHERE stock = p_product_code;
-    
+
     -- 如果不存在則插入
     IF NOT FOUND THEN
         INSERT INTO stock_level (
             uuid,
-            stock, 
+            stock,
             description,
-            stock_level, 
+            stock_level,
             update_time
         ) VALUES (
             gen_random_uuid(),
             p_product_code,
             v_product_data.description,
-            v_total_quantity, 
+            v_total_quantity,
             NOW()
         );
     END IF;
-    
+
     -- Step 9: 更新工作水平（work level）
     -- 使用正確的欄位名：id 而不是 user_id，qc 而不是 printed_labels
-    UPDATE work_level 
+    UPDATE work_level
     SET qc = qc + p_count,
         latest_update = NOW()
-    WHERE id = v_user_id 
+    WHERE id = v_user_id
       AND DATE(latest_update) = CURRENT_DATE;
-    
+
     -- 如果今天沒有記錄則插入
     IF NOT FOUND THEN
         INSERT INTO work_level (
             uuid,
-            id, 
+            id,
             qc,
             move,
             grn,
@@ -289,7 +289,7 @@ BEGIN
             latest_update
         ) VALUES (
             gen_random_uuid(),
-            v_user_id, 
+            v_user_id,
             p_count,
             0,
             0,
@@ -297,7 +297,7 @@ BEGIN
             NOW()
         );
     END IF;
-    
+
     -- Step 10: 建立統計信息
     v_stats := jsonb_build_object(
         'pallets_created', p_count,
@@ -313,7 +313,7 @@ BEGIN
             'work_level', true
         )
     );
-    
+
     -- Step 11: 返回結果
     RETURN jsonb_build_object(
         'success', true,
@@ -331,12 +331,12 @@ BEGIN
             'aco_info', v_aco_result
         ),
         'statistics', v_stats,
-        'warnings', CASE 
+        'warnings', CASE
             WHEN array_length(v_warnings, 1) > 0 THEN v_warnings
             ELSE NULL
         END
     );
-    
+
 EXCEPTION WHEN OTHERS THEN
     -- 錯誤處理
     RETURN jsonb_build_object(

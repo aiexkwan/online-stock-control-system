@@ -311,9 +311,9 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
   upload: {
     theme: 'upload',
     gridTemplate: `
-      "widget1 widget1 widget1 widget2 widget2 widget2 widget3 widget3 widget7 widget7" 
-      "widget1 widget1 widget1 widget2 widget2 widget2 widget4 widget4 widget7 widget7" 
-      "widget1 widget1 widget1 widget2 widget2 widget2 widget5 widget5 widget7 widget7" 
+      "widget1 widget1 widget1 widget2 widget2 widget2 widget3 widget3 widget7 widget7"
+      "widget1 widget1 widget1 widget2 widget2 widget2 widget4 widget4 widget7 widget7"
+      "widget1 widget1 widget1 widget2 widget2 widget2 widget5 widget5 widget7 widget7"
       "widget1 widget1 widget1 widget2 widget2 widget2 widget6 widget6 widget7 widget7"
     `,
     widgets: [
@@ -367,9 +367,9 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
   update: {
     theme: 'update',
     gridTemplate: `
-      "widget2 widget2 widget2 widget4 widget4 widget4 widget4 widget4 widget1 widget1" 
-      "widget2 widget2 widget2 widget4 widget4 widget4 widget4 widget4 widget1 widget1" 
-      "widget3 widget3 widget3 widget4 widget4 widget4 widget4 widget4 widget1 widget1" 
+      "widget2 widget2 widget2 widget4 widget4 widget4 widget4 widget4 widget1 widget1"
+      "widget2 widget2 widget2 widget4 widget4 widget4 widget4 widget4 widget1 widget1"
+      "widget3 widget3 widget3 widget4 widget4 widget4 widget4 widget4 widget1 widget1"
       "widget3 widget3 widget3 widget5 widget5 widget5 widget5 widget5 widget1 widget1"
     `,
     widgets: [

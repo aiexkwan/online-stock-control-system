@@ -14,7 +14,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 async function runMigration() {
   try {
     console.log('Running user channel subscriptions migration...');
-    
+
     // Execute the migration SQL
     const migrationSQL = `
       -- 創建用戶 channel 訂閱表
@@ -43,11 +43,11 @@ async function runMigration() {
 
       -- 刪除觸發器如果存在
       DROP TRIGGER IF EXISTS update_user_channel_subscriptions_updated_at ON user_channel_subscriptions;
-      
+
       -- 創建觸發器
-      CREATE TRIGGER update_user_channel_subscriptions_updated_at 
-        BEFORE UPDATE ON user_channel_subscriptions 
-        FOR EACH ROW 
+      CREATE TRIGGER update_user_channel_subscriptions_updated_at
+        BEFORE UPDATE ON user_channel_subscriptions
+        FOR EACH ROW
         EXECUTE FUNCTION update_updated_at_column();
 
       -- 設置 RLS (Row Level Security)
@@ -60,33 +60,33 @@ async function runMigration() {
       DROP POLICY IF EXISTS "Users can delete their own channel subscriptions" ON user_channel_subscriptions;
 
       -- 創建 RLS 策略
-      CREATE POLICY "Users can view their own channel subscriptions" 
-        ON user_channel_subscriptions FOR SELECT 
+      CREATE POLICY "Users can view their own channel subscriptions"
+        ON user_channel_subscriptions FOR SELECT
         USING (auth.uid() = user_id);
 
-      CREATE POLICY "Users can insert their own channel subscriptions" 
-        ON user_channel_subscriptions FOR INSERT 
+      CREATE POLICY "Users can insert their own channel subscriptions"
+        ON user_channel_subscriptions FOR INSERT
         WITH CHECK (auth.uid() = user_id);
 
-      CREATE POLICY "Users can update their own channel subscriptions" 
-        ON user_channel_subscriptions FOR UPDATE 
+      CREATE POLICY "Users can update their own channel subscriptions"
+        ON user_channel_subscriptions FOR UPDATE
         USING (auth.uid() = user_id);
 
-      CREATE POLICY "Users can delete their own channel subscriptions" 
-        ON user_channel_subscriptions FOR DELETE 
+      CREATE POLICY "Users can delete their own channel subscriptions"
+        ON user_channel_subscriptions FOR DELETE
         USING (auth.uid() = user_id);
     `;
-    
+
     const { error } = await supabase.rpc('exec_sql', { sql: migrationSQL });
-    
+
     if (error) {
       // If exec_sql doesn't exist, try direct query
       console.log('Trying alternative method...');
-      
+
       // Check if table exists
       const { data: tableExists } = await supabase
         .rpc('to_regclass', { class_name: 'user_channel_subscriptions' });
-      
+
       if (!tableExists) {
         console.error('Could not create table. Please run the migration manually in Supabase dashboard.');
         console.log('\nSQL to run:');
@@ -97,7 +97,7 @@ async function runMigration() {
     } else {
       console.log('Migration completed successfully!');
     }
-    
+
   } catch (error) {
     console.error('Error running migration:', error);
   }

@@ -1,7 +1,7 @@
 -- ================================
 -- RPC Function: rpc_get_pallet_reprint_info
 -- Purpose: Optimized query for ReprintLabelWidget with product description JOIN
--- Author: Phase 3.2.1 Migration  
+-- Author: Phase 3.2.1 Migration
 -- Date: 2025-07-07
 -- ================================
 
@@ -11,7 +11,7 @@ DROP FUNCTION IF EXISTS public.rpc_get_pallet_reprint_info;
 -- Create optimized RPC function for pallet reprint
 CREATE OR REPLACE FUNCTION public.rpc_get_pallet_reprint_info(
   p_pallet_num TEXT
-) 
+)
 RETURNS TABLE (
   plt_num TEXT,
   product_code TEXT,
@@ -22,13 +22,13 @@ RETURNS TABLE (
   series TEXT,
   plt_remark TEXT,
   generate_time TIMESTAMPTZ
-) 
+)
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
   RETURN QUERY
-  SELECT 
+  SELECT
     rp.plt_num,
     rp.product_code,
     COALESCE(dc.description, 'Unknown Product') as product_description,
@@ -46,11 +46,11 @@ END;
 $$;
 
 -- Create index for optimal performance (if not exists)
-CREATE INDEX IF NOT EXISTS idx_record_palletinfo_plt_num 
+CREATE INDEX IF NOT EXISTS idx_record_palletinfo_plt_num
   ON record_palletinfo(plt_num);
 
--- Create index for JOIN optimization  
-CREATE INDEX IF NOT EXISTS idx_data_code_code 
+-- Create index for JOIN optimization
+CREATE INDEX IF NOT EXISTS idx_data_code_code
   ON data_code(code);
 
 -- Grant execute permission
@@ -58,7 +58,7 @@ GRANT EXECUTE ON FUNCTION public.rpc_get_pallet_reprint_info TO authenticated;
 GRANT EXECUTE ON FUNCTION public.rpc_get_pallet_reprint_info TO service_role;
 
 -- Add function comment
-COMMENT ON FUNCTION public.rpc_get_pallet_reprint_info IS 
+COMMENT ON FUNCTION public.rpc_get_pallet_reprint_info IS
 'Optimized function to fetch pallet information for reprint functionality.
 Returns pallet details with product description JOIN for enhanced user experience.
 Used by ReprintLabelWidget for Phase 3.2.1 migration.';

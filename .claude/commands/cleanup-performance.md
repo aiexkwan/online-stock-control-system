@@ -72,8 +72,8 @@ export { specific } from './utils'; // 避免 export *
 ### 🖼️ 圖片優化
 ```javascript
 // WebP 格式使用
-<Image 
-  src="/image.webp" 
+<Image
+  src="/image.webp"
   alt="description"
   width={800}
   height={600}
@@ -95,7 +95,7 @@ const OptimizedComponent = React.memo(({ data }) => {
 });
 
 // useMemo 緩存
-const expensiveValue = useMemo(() => 
+const expensiveValue = useMemo(() =>
   heavyCalculation(data), [data]
 );
 

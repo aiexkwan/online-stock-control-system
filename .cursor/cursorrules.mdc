@@ -91,7 +91,7 @@ npm run auto-push    # 自動 git push (開發用)
 主要表格：
 - `record_palletinfo`: 棧板信息同追蹤
 - `record_history`: 完整審計日誌
-- `record_transfer`: 庫存移動記錄  
+- `record_transfer`: 庫存移動記錄
 - `record_inventory`: 實時庫存水平
 - `record_aco`/`record_grn`: 訂單同收貨管理
 - `data_code`: 產品目錄
@@ -311,7 +311,7 @@ npm run auto-push    # 自動 git push (開發用)
 主要表格：
 - `record_palletinfo`: 棧板信息同追蹤
 - `record_history`: 完整審計日誌
-- `record_transfer`: 庫存移動記錄  
+- `record_transfer`: 庫存移動記錄
 - `record_inventory`: 實時庫存水平
 - `record_aco`/`record_grn`: 訂單同收貨管理
 - `data_code`: 產品目錄

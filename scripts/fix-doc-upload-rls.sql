@@ -37,7 +37,7 @@ CREATE POLICY "Service role can do anything" ON doc_upload
 SELECT COUNT(*) as total_records FROM doc_upload;
 
 -- 查看當前的 RLS 政策
-SELECT 
+SELECT
     schemaname,
     tablename,
     policyname,
@@ -46,5 +46,5 @@ SELECT
     cmd,
     qual,
     with_check
-FROM pg_policies 
+FROM pg_policies
 WHERE tablename = 'doc_upload';

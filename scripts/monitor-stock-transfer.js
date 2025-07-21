@@ -41,7 +41,7 @@ function formatLog(log) {
     minute: '2-digit',
     second: '2-digit'
   });
-  
+
   console.log(`${color}${icon} [${time}] User ${log.user_id}: ${log.error}${colors.reset}`);
   console.log(`   ${colors.cyan}${log.error_info}${colors.reset}`);
   console.log('');
@@ -85,7 +85,7 @@ async function getTransferStats() {
     // Count by location
     const route = `${transfer.f_loc} → ${transfer.t_loc}`;
     stats.byLocation[route] = (stats.byLocation[route] || 0) + 1;
-    
+
     // Count by operator
     stats.byOperator[transfer.operator_id] = (stats.byOperator[transfer.operator_id] || 0) + 1;
   });
@@ -106,7 +106,7 @@ async function displayDashboard() {
     console.log(`${colors.yellow}📊 Last 24 Hours Statistics:${colors.reset}`);
     console.log(`   Total Transfers: ${colors.bright}${stats.total}${colors.reset}`);
     console.log('');
-    
+
     console.log(`${colors.yellow}📍 By Route:${colors.reset}`);
     Object.entries(stats.byLocation)
       .sort((a, b) => b[1] - a[1])
@@ -115,7 +115,7 @@ async function displayDashboard() {
         console.log(`   ${route}: ${colors.bright}${count}${colors.reset}`);
       });
     console.log('');
-    
+
     console.log(`${colors.yellow}👤 By Operator:${colors.reset}`);
     Object.entries(stats.byOperator)
       .sort((a, b) => b[1] - a[1])
@@ -129,10 +129,10 @@ async function displayDashboard() {
   // Get recent logs
   console.log(`${colors.yellow}📋 Recent Transfer Logs:${colors.reset}`);
   console.log('');
-  
+
   const logs = await getRecentLogs();
   logs.forEach(formatLog);
-  
+
   console.log(`${colors.bright}${colors.blue}═══════════════════════════════════════════════════${colors.reset}`);
   console.log(`Press Ctrl+C to exit | Refreshing every 5 seconds...`);
 }

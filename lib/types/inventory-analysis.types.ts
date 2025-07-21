@@ -101,7 +101,9 @@ export type GetProductStatus = (product: InventoryAnalysisProduct) => ProductSuf
  * Constants for inventory analysis
  */
 export const INVENTORY_ANALYSIS_CONSTANTS = {
-  CRITICAL_FULFILLMENT_RATE: 50,
-  WARNING_FULFILLMENT_RATE: 80,
-  REFRESH_INTERVAL: 60000, // 1 minute
+  REFRESH_INTERVAL: 30000, // 30 seconds
+  CRITICAL_FULFILLMENT_RATE: 0.5, // 50%
+  WARNING_FULFILLMENT_RATE: 0.8, // 80%
+  DEFAULT_PAGE_SIZE: 20,
+  MAX_PAGE_SIZE: 100,
 } as const;

@@ -50,7 +50,7 @@ interface ChartElementProps {
 ### 影響的文件
 - **主要修復**: `lib/recharts-dynamic.ts`
 - **受益組件**: `UnifiedChartWidget.tsx`
-- **錯誤消除**: 
+- **錯誤消除**:
   - TS2322: Property 'innerRadius' does not exist (line 244)
   - TS2322: Property 'fillOpacity' does not exist (line 267)
 

@@ -22,7 +22,7 @@ HTTP_CODE=${RESPONSE: -3}
 
 if [ "$HTTP_CODE" -eq 200 ]; then
   echo "Dashboard API responded successfully (HTTP $HTTP_CODE)"
-  
+
   # Check if response has data
   if [ -s /tmp/dashboard_response.json ]; then
     echo "Response contains data"

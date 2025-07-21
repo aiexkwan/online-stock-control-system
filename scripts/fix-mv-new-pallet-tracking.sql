@@ -39,11 +39,11 @@ BEGIN
     SELECT needs_refresh INTO v_needs_refresh
     FROM mv_refresh_tracking
     WHERE mv_name = 'mv_pallet_current_location';
-    
+
     -- 首先嘗試從物化視圖查詢
     IF p_search_type = 'series' THEN
         RETURN QUERY
-        SELECT 
+        SELECT
             mv.plt_num,
             mv.product_code,
             mv.product_qty,
@@ -56,7 +56,7 @@ BEGIN
         WHERE mv.series = p_search_value;
     ELSE
         RETURN QUERY
-        SELECT 
+        SELECT
             mv.plt_num,
             mv.product_code,
             mv.product_qty,
@@ -68,17 +68,17 @@ BEGIN
         FROM mv_pallet_current_location mv
         WHERE mv.plt_num = p_search_value;
     END IF;
-    
+
     -- 檢查是否找到結果
     GET DIAGNOSTICS v_result_count = ROW_COUNT;
-    
+
     -- 如果沒找到結果且物化視圖需要刷新，回退到實時查詢
     IF v_result_count = 0 AND v_needs_refresh THEN
         -- 實時查詢 record_palletinfo
         IF p_search_type = 'series' THEN
             RETURN QUERY
             WITH latest_history AS (
-                SELECT DISTINCT ON (h.plt_num) 
+                SELECT DISTINCT ON (h.plt_num)
                     h.plt_num,
                     h.loc as current_location,
                     h.time as last_update
@@ -87,7 +87,7 @@ BEGIN
                 WHERE p.series = p_search_value
                 ORDER BY h.plt_num, h.time DESC
             )
-            SELECT 
+            SELECT
                 p.plt_num,
                 p.product_code,
                 p.product_qty,
@@ -102,7 +102,7 @@ BEGIN
         ELSE
             RETURN QUERY
             WITH latest_history AS (
-                SELECT DISTINCT ON (h.plt_num) 
+                SELECT DISTINCT ON (h.plt_num)
                     h.plt_num,
                     h.loc as current_location,
                     h.time as last_update
@@ -110,7 +110,7 @@ BEGIN
                 WHERE h.plt_num = p_search_value
                 ORDER BY h.plt_num, h.time DESC
             )
-            SELECT 
+            SELECT
                 p.plt_num,
                 p.product_code,
                 p.product_qty,
@@ -140,25 +140,25 @@ DECLARE
     v_minutes_since_refresh INTEGER;
 BEGIN
     -- 獲取刷新狀態
-    SELECT needs_refresh, last_refresh 
+    SELECT needs_refresh, last_refresh
     INTO v_needs_refresh, v_last_refresh
     FROM mv_refresh_tracking
     WHERE mv_name = 'mv_pallet_current_location';
-    
+
     -- 計算距離上次刷新的時間（分鐘）
     v_minutes_since_refresh := EXTRACT(EPOCH FROM (NOW() - v_last_refresh)) / 60;
-    
+
     -- 如果需要刷新，或者超過5分鐘沒刷新，則執行刷新
     IF v_needs_refresh OR v_minutes_since_refresh > 5 THEN
         -- 刷新物化視圖
         REFRESH MATERIALIZED VIEW CONCURRENTLY mv_pallet_current_location;
-        
+
         -- 更新追蹤記錄
         UPDATE mv_refresh_tracking
         SET needs_refresh = FALSE,
             last_refresh = NOW()
         WHERE mv_name = 'mv_pallet_current_location';
-        
+
         RAISE NOTICE '物化視圖已刷新';
     END IF;
 END;
@@ -175,14 +175,14 @@ BEGIN
     IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
         -- 刪除舊作業
         PERFORM cron.unschedule('refresh-pallet-mv');
-        
+
         -- 創建新作業
         PERFORM cron.schedule(
             'refresh-pallet-mv',
             '* * * * *',  -- 每分鐘
             'SELECT smart_refresh_mv();'
         );
-        
+
         RAISE NOTICE 'pg_cron 作業已創建';
     ELSE
         RAISE NOTICE 'pg_cron 未安裝，請手動定期執行 smart_refresh_mv()';
@@ -199,13 +199,13 @@ RETURNS TEXT AS $$
 BEGIN
     -- 立即刷新物化視圖
     REFRESH MATERIALIZED VIEW mv_pallet_current_location;
-    
+
     -- 重置追蹤狀態
     UPDATE mv_refresh_tracking
     SET needs_refresh = FALSE,
         last_refresh = NOW()
     WHERE mv_name = 'mv_pallet_current_location';
-    
+
     RETURN '物化視圖已強制同步完成';
 END;
 $$ LANGUAGE plpgsql;

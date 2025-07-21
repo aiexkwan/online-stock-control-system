@@ -21,4 +21,4 @@ if ($LASTEXITCODE -ne 0) {
     git push origin master
 }
 
-Write-Host "已成功推送更改到 GitHub!" -ForegroundColor Green 
+Write-Host "已成功推送更改到 GitHub!" -ForegroundColor Green

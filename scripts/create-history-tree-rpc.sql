@@ -25,13 +25,13 @@ DECLARE
     v_performance_end TIMESTAMP;
 BEGIN
     v_performance_start := clock_timestamp();
-    
+
     -- Get total count for pagination
     SELECT COUNT(*) INTO v_total_count FROM record_history;
-    
+
     -- Fetch raw events with user names
     WITH ordered_events AS (
-        SELECT 
+        SELECT
             rh.id,
             rh.time,
             rh.action,
@@ -60,7 +60,7 @@ BEGIN
     )
     INTO v_raw_events
     FROM ordered_events;
-    
+
     -- If no events found
     IF v_raw_events IS NULL THEN
         v_performance_end := clock_timestamp();
@@ -71,20 +71,20 @@ BEGIN
             'performance_ms', EXTRACT(MILLISECOND FROM (v_performance_end - v_performance_start))
         );
     END IF;
-    
+
     -- Merge similar events (within 5 minutes, same action and user)
     v_merge_count := 0;
     v_last_event := NULL;
-    
+
     FOR i IN 0..jsonb_array_length(v_raw_events) - 1 LOOP
         v_current_event := v_raw_events->i;
-        
+
         -- Check if should merge with last event
         IF v_last_event IS NOT NULL AND
            v_current_event->>'action' = v_last_event->>'action' AND
            v_current_event->>'user_id' = v_last_event->>'user_id' AND
            ABS(EXTRACT(EPOCH FROM (
-               (v_current_event->>'time')::TIMESTAMP - 
+               (v_current_event->>'time')::TIMESTAMP -
                (v_last_event->>'time')::TIMESTAMP
            ))) <= 300 -- 5 minutes in seconds
         THEN
@@ -92,7 +92,7 @@ BEGIN
             v_last_event := jsonb_set(
                 v_last_event,
                 '{merged_plt_nums}',
-                COALESCE(v_last_event->'merged_plt_nums', '[]'::JSONB) || 
+                COALESCE(v_last_event->'merged_plt_nums', '[]'::JSONB) ||
                 jsonb_build_array(v_current_event->>'plt_num')
             );
             v_last_event := jsonb_set(
@@ -101,7 +101,7 @@ BEGIN
                 to_jsonb(COALESCE((v_last_event->>'merged_count')::INTEGER, 1) + 1)
             );
             v_merge_count := v_merge_count + 1;
-            
+
             -- Update the last event in the array
             v_merged_events := jsonb_set(
                 v_merged_events,
@@ -123,13 +123,13 @@ BEGIN
             v_merged_events := v_merged_events || v_current_event;
             v_last_event := v_current_event;
         END IF;
-        
+
         -- Stop if we have enough merged events
         IF jsonb_array_length(v_merged_events) >= p_limit THEN
             EXIT;
         END IF;
     END LOOP;
-    
+
     -- Trim to requested limit
     IF jsonb_array_length(v_merged_events) > p_limit THEN
         SELECT jsonb_agg(elem)
@@ -139,9 +139,9 @@ BEGIN
             LIMIT p_limit
         ) sub;
     END IF;
-    
+
     v_performance_end := clock_timestamp();
-    
+
     -- Return result with metadata
     RETURN jsonb_build_object(
         'events', v_merged_events,
@@ -151,7 +151,7 @@ BEGIN
         'performance_ms', EXTRACT(MILLISECOND FROM (v_performance_end - v_performance_start)),
         'query_time', now()
     );
-    
+
 EXCEPTION
     WHEN OTHERS THEN
         -- Return error information

@@ -64,14 +64,14 @@ CREATE INDEX IF NOT EXISTS idx_debug_log_ts ON debug_log(ts DESC);
 \echo ''
 
 -- 顯示更新後的索引數量
-SELECT 
+SELECT
     tablename,
     COUNT(*) as index_count,
     STRING_AGG(indexname, ', ' ORDER BY indexname) as index_names
 FROM pg_indexes
 WHERE schemaname = 'public'
 AND tablename IN (
-    'query_record', 'data_code', 'data_supplier', 
+    'query_record', 'data_code', 'data_supplier',
     'work_level', 'grn_level', 'order_loading_history',
     'record_transfer', 'report_void', 'debug_log'
 )

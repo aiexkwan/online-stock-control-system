@@ -25,7 +25,7 @@
 ### 2. TS2322 類型賦值問題 ✅ **已完成**
 - **原始錯誤**: 68個
 - **修復範圍**: recharts 組件屬性、spacing 配置、React Query 升級
-- **關鍵修復**: 
+- **關鍵修復**:
   - `cacheTime` → `gcTime` (React Query v5)
   - `brandColors.primary` → `brandColors.primary[500]`
   - recharts `className` → `tick`/`opacity` 屬性
@@ -98,7 +98,7 @@
 錯誤統計對比:
 - v1.5.0 起始: 1,587 個錯誤
 - v1.5.3 完成: ~50-60 個錯誤
-- 總體改善率: 96%+ 
+- 總體改善率: 96%+
 - 本階段改善: 89% (從491個→50-60個)
 ```
 

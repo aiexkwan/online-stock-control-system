@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { getErrorMessage } from '@/lib/types/error-handling';
+import { format } from 'date-fns';
+import { getErrorMessage } from '@/types/core/error';
 
 // 創建 service role client 用於清理操作
 const supabase = createClient(
@@ -62,7 +63,7 @@ export async function GET() {
     const { data: bufferStats, error } = await supabase
       .from('pallet_number_buffer')
       .select('used')
-      .eq('date_str', new Date().toISOString().slice(5, 10).replace('-', '').slice(2));
+      .eq('date_str', format(new Date(), 'yyyy-MM-dd'));
 
     if (error) {
       throw error;

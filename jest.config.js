@@ -9,26 +9,26 @@ const createJestConfig = nextJest({
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jest-environment-jsdom',
-  
+
   // 並行測試優化
   maxWorkers: process.env.CI ? 2 : '50%',
   maxConcurrency: 5,
-  
+
   // 測試運行優化
   bail: false,
   verbose: false,
   silent: false,
-  
+
   // 性能優化配置
   testTimeout: 10000, // 10秒超時
   clearMocks: true,
   resetMocks: true,
   restoreMocks: true,
-  
+
   // 緩存配置
   cache: true,
   cacheDirectory: '<rootDir>/.jest-cache',
-  
+
   // 性能監控
   detectOpenHandles: process.env.CI ? false : true,
   forceExit: process.env.CI ? true : false,
@@ -48,7 +48,7 @@ const customJestConfig = {
   ],
   testMatch: ['**/__tests__/**/*.test.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
   transformIgnorePatterns: [
-    'node_modules/(?!(.*\\.mjs$|exceljs|uuid|isows|@supabase/realtime-js|@supabase/ssr|@supabase/supabase-js))'
+    'node_modules/(?!(.*\\.mjs$|exceljs|uuid|isows|@supabase/realtime-js|@supabase/ssr|@supabase/supabase-js))',
   ],
   collectCoverageFrom: [
     'app/**/*.{js,jsx,ts,tsx}',
@@ -82,7 +82,7 @@ const customJestConfig = {
       statements: 50,
     },
   },
-  
+
   // 測試分組配置
   projects: [
     {
@@ -91,7 +91,7 @@ const customJestConfig = {
       testPathIgnorePatterns: ['<rootDir>/__tests__/integration/'],
     },
     {
-      displayName: 'integration', 
+      displayName: 'integration',
       testMatch: ['<rootDir>/__tests__/integration/**/*.test.(js|ts|tsx)'],
       // Integration tests run serially
       maxWorkers: 1,

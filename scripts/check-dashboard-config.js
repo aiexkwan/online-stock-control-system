@@ -4,18 +4,18 @@ require('dotenv').config();
 async function checkDashboardConfig() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  
+
   if (!supabaseUrl || !supabaseKey) {
     console.error('Missing required environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY');
     process.exit(1);
   }
-  
+
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
     // Get the current user
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user) {
       console.log('No user found - need to authenticate first');
       return;
@@ -39,7 +39,7 @@ async function checkDashboardConfig() {
       data.forEach(setting => {
         console.log(`\nBreakpoint: ${setting.breakpoint}`);
         console.log('Layout:', JSON.stringify(setting.layout, null, 2));
-        
+
         // Check each widget
         if (setting.layout && setting.layout.widgets) {
           console.log('\nWidget Analysis:');

@@ -28,7 +28,7 @@ export class FeatureFlagManager {
 
   constructor(config: FeatureFlagConfig) {
     this.config = config;
-    this.defaultContext = config.defaultContext || {};
+    this.defaultContext = config.defaultContext || ({} as any);
 
     // 創建提供者
     this.provider = this.createProvider();
@@ -49,11 +49,14 @@ export class FeatureFlagManager {
       return this.initPromise;
     }
 
-    featureFlagLogger.info({
-      provider: this.config.provider,
-      cacheEnabled: this.config.cacheEnabled,
-      cacheTTL: this.config.cacheTTL,
-    }, 'Initializing feature flag manager');
+    featureFlagLogger.info(
+      {
+        provider: this.config.provider,
+        cacheEnabled: this.config.cacheEnabled,
+        cacheTTL: this.config.cacheTTL,
+      },
+      'Initializing feature flag manager'
+    );
 
     this.initPromise = this.provider
       .initialize()
@@ -79,19 +82,25 @@ export class FeatureFlagManager {
     const startTime = Date.now();
 
     try {
-      featureFlagLogger.debug({
-        flagKey: key,
-        context: mergedContext,
-      }, 'Evaluating feature flag');
+      featureFlagLogger.debug(
+        {
+          flagKey: key,
+          context: mergedContext,
+        },
+        'Evaluating feature flag'
+      );
 
       const result = await this.provider.evaluate(key, mergedContext);
 
-      featureFlagLogger.info({
-        flagKey: key,
-        enabled: result.enabled,
-        variant: result.variant,
-        reason: result.reason,
-      }, 'Feature flag evaluated');
+      featureFlagLogger.info(
+        {
+          flagKey: key,
+          enabled: result.enabled,
+          variant: result.variant,
+          reason: result.reason,
+        },
+        'Feature flag evaluated'
+      );
 
       // 記錄事件
       this.trackEvent({
@@ -124,11 +133,14 @@ export class FeatureFlagManager {
       // 性能監控
       const duration = Date.now() - startTime;
       if (duration > 100) {
-        featureFlagLogger.warn({
-          flagKey: key,
-          duration,
-          threshold: 100,
-        }, 'Feature flag evaluation exceeded performance threshold');
+        featureFlagLogger.warn(
+          {
+            flagKey: key,
+            duration,
+            threshold: 100,
+          },
+          'Feature flag evaluation exceeded performance threshold'
+        );
       }
     }
   }
@@ -171,18 +183,24 @@ export class FeatureFlagManager {
   async updateFlag(key: string, updates: Partial<FeatureFlag>): Promise<void> {
     await this.ensureInitialized();
 
-    featureFlagLogger.info({
-      flagKey: key,
-      updates,
-    }, 'Updating feature flag');
+    featureFlagLogger.info(
+      {
+        flagKey: key,
+        updates,
+      },
+      'Updating feature flag'
+    );
 
     try {
       await this.provider.updateFlag(key, updates);
 
-      featureFlagLogger.info({
-        flagKey: key,
-        updates,
-      }, 'Feature flag updated successfully');
+      featureFlagLogger.info(
+        {
+          flagKey: key,
+          updates,
+        },
+        'Feature flag updated successfully'
+      );
 
       // 記錄事件
       this.trackEvent({
@@ -201,32 +219,47 @@ export class FeatureFlagManager {
    */
   async toggleFlag(key: string): Promise<void> {
     if (isProduction()) {
-      featureFlagLogger.error({
-        flagKey: key,
-        environment: 'production',
-      }, 'Attempted to toggle feature flag in production');
+      featureFlagLogger.error(
+        {
+          flagKey: key,
+          environment: 'production',
+        },
+        'Attempted to toggle feature flag in production'
+      );
       throw new Error('Feature flag toggling is not allowed in production');
     }
 
-    featureFlagLogger.info({
-      flagKey: key,
-    }, 'Toggling feature flag');
+    featureFlagLogger.info(
+      {
+        flagKey: key,
+      },
+      'Toggling feature flag'
+    );
 
     const flag = await this.getFlag(key);
     if (!flag) {
-      featureFlagLogger.error({
-        flagKey: key,
-      }, 'Feature flag not found for toggle');
+      featureFlagLogger.error(
+        {
+          flagKey: key,
+        },
+        'Feature flag not found for toggle'
+      );
       throw new Error(`Feature flag ${key} not found`);
     }
 
-    const newStatus = flag.status === FeatureFlagStatus.ENABLED ? FeatureFlagStatus.DISABLED : FeatureFlagStatus.ENABLED;
-    
-    featureFlagLogger.info({
-      flagKey: key,
-      oldStatus: flag.status,
-      newStatus,
-    }, 'Toggling feature flag status');
+    const newStatus =
+      flag.status === FeatureFlagStatus.ENABLED
+        ? FeatureFlagStatus.DISABLED
+        : FeatureFlagStatus.ENABLED;
+
+    featureFlagLogger.info(
+      {
+        flagKey: key,
+        oldStatus: flag.status,
+        newStatus,
+      },
+      'Toggling feature flag status'
+    );
 
     await this.updateFlag(key, {
       status: newStatus,
@@ -283,11 +316,13 @@ export class FeatureFlagManager {
     interface DisposableProvider extends FeatureFlagProvider {
       dispose(): void;
     }
-    
+
     function isDisposable(provider: FeatureFlagProvider): provider is DisposableProvider {
-      return 'dispose' in provider && typeof (provider as DisposableProvider).dispose === 'function';
+      return (
+        'dispose' in provider && typeof (provider as DisposableProvider).dispose === 'function'
+      );
     }
-    
+
     if (isDisposable(this.provider)) {
       this.provider.dispose();
     }
@@ -341,11 +376,14 @@ export class FeatureFlagManager {
    * 處理錯誤
    */
   private handleError(error: Error): void {
-    featureFlagLogger.error({
-      error: error.message,
-      stack: error.stack,
-      name: error.name,
-    }, 'Feature flag manager error');
+    featureFlagLogger.error(
+      {
+        error: error.message,
+        stack: error.stack,
+        name: error.name,
+      },
+      'Feature flag manager error'
+    );
 
     if (this.config.onError) {
       this.config.onError(error);
@@ -375,10 +413,13 @@ export const featureFlagManager = new FeatureFlagManager(defaultConfig);
 // 自動初始化（在瀏覽器環境）
 if (typeof window !== 'undefined') {
   featureFlagManager.initialize().catch(error => {
-    featureFlagLogger.error({
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      phase: 'auto-initialization',
-    }, 'Failed to auto-initialize feature flag manager');
+    featureFlagLogger.error(
+      {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        phase: 'auto-initialization',
+      },
+      'Failed to auto-initialize feature flag manager'
+    );
   });
 }

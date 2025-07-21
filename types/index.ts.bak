@@ -1,0 +1,164 @@
+/**
+ * 統一類型導出文件
+ * 統一管理整個應用的 TypeScript 類型定義
+ * 使用具名導出避免重複定義衝突
+ */
+
+// 數據庫類型
+export type { Database } from './database/supabase';
+export type {
+  SupabaseResponse,
+  QueryOptions
+} from './database/helpers';
+export {
+  safeGet,
+  safeString,
+  safeNumber,
+  safeBoolean,
+  safeDate,
+  toRecord,
+  isRecord,
+  hasProperty,
+  handleSupabaseError,
+  batchProcess,
+  validateRequired,
+  toRecordArray,
+  toSupabaseResponse,
+  extractCount,
+  isAlertLevel,
+  isAlertCondition,
+  safeAlertLevel,
+  safeAlertCondition
+} from './database/helpers';
+
+// AlertLevel 和 AlertCondition 從 @/lib/alerts/types 導入
+
+// 認證類型
+export type {
+  LoginCredentials,
+  RegisterCredentials,
+  ResetPasswordRequest,
+  UpdatePasswordRequest,
+  User,
+  UserRole,
+  AuthResponse,
+  ApiError,
+  ValidationError,
+  AuthError,
+  Session,
+  TokenPayload
+} from './auth/credentials';
+
+// API 類型
+export type {
+  BaseResponse,
+  ErrorResponse,
+  ValidationErrorResponse,
+  ProductResponse,
+  OrderResponse,
+  StockResponse,
+  ReportResponse,
+  PrintResponse,
+  HealthCheckResponse,
+  AcoOrderUpdateResponse,
+  RpcResponse,
+  MonitoringResponse,
+  WarehouseWorkLevelResponse,
+  WarehouseWorkLevelError,
+  WarehouseWorkLevelResult
+} from './api/response';
+
+// 業務邏輯類型
+export type {
+  VoidReason,
+  VoidRecord,
+  VoidReportFilters
+} from './business/schemas';
+
+// 外部庫類型
+export type {
+  ResponsiveContainerProps,
+  TooltipProps,
+  ChartElementProps,
+  BaseChartProps
+} from './external/recharts';
+
+// 庫存分析類型
+export type {
+  InventoryItem,
+  InventoryAnalysis,
+  CategoryAnalysis,
+  LocationAnalysis,
+  TopProduct,
+  LowStockItem,
+  ExpiringItem,
+  DeadStockItem,
+  TurnoverRate,
+  InventoryMovement,
+  StockLevel,
+  InventoryReport,
+  ABC_Analysis,
+  ABCProduct,
+  InventoryFilters,
+  AlertConfig,
+  InventoryForecast
+} from './external/inventory-analysis';
+
+// 報表類型守衛 - 重新命名避免衝突
+export {
+  isString as isStringType,
+  isNumber as isNumberType,
+  isBoolean as isBooleanType,
+  isDate as isDateType,
+  isArray as isArrayType,
+  isObject as isObjectType,
+  isReportData,
+  isAcoOrderReportItem,
+  isGrnReportItem,
+  isStockReportItem,
+  isTransactionReportItem,
+  isReportFilter,
+  isReportColumn,
+  isReportSorting,
+  isReportPagination,
+  isReportConfig,
+  validateReportData,
+  safeParseNumber,
+  safeParseDate,
+  safeParseString
+} from './external/report-type-guards';
+
+// 未知類型處理器 - 重新命名避免衝突
+export {
+  isNull,
+  isUndefined,
+  isNullish,
+  isPrimitive,
+  isFunction,
+  isSymbol,
+  isBigInt,
+  isPlainObject,
+  isEmptyObject,
+  hasOwnProperty as hasOwnPropertySafe,
+  isNonEmptyArray,
+  isArrayOf,
+  toSafeString,
+  toSafeNumber,
+  toSafeBoolean,
+  toSafeArray,
+  toSafeObject,
+  deepClone,
+  deepEquals,
+  safeExecute,
+  safeAsync,
+  safeJsonParse,
+  safeJsonStringify,
+  safeGet as safeGetProperty,
+  safeSet,
+  unique,
+  groupBy,
+  assertIsString,
+  assertIsNumber,
+  assertIsObject,
+  assertIsArray
+} from './external/unknown-handlers';

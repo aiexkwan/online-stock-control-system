@@ -44,21 +44,21 @@ quick_diagnosis() {
     echo "=== NewPennine WMS 快速診斷 ==="
     echo "時間: $(date)"
     echo
-    
+
     # 1. 服務狀態
     echo "1. 服務狀態檢查:"
     systemctl is-active newpennine-wms
-    
+
     # 2. 健康檢查
     echo "2. 健康檢查:"
     curl -s -o /dev/null -w "Status: %{http_code}, Time: %{time_total}s\n" $HEALTH_CHECK_URL
-    
+
     # 3. 系統資源
     echo "3. 系統資源:"
     echo "CPU: $(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | sed 's/%us,//')"
     echo "記憶體: $(free -h | awk 'NR==2{printf "%.1f%%", $3*100/$2 }')"
     echo "磁碟: $(df -h / | awk 'NR==2{print $5}')"
-    
+
     # 4. 端口檢查
     echo "4. 端口檢查:"
     netstat -tlnp | grep :3000
@@ -319,25 +319,25 @@ sudo systemctl restart newpennine-wms
 # 服務恢復腳本
 service_recovery() {
     echo "開始服務恢復程序..."
-    
+
     # 1. 停止服務
     sudo systemctl stop newpennine-wms
-    
+
     # 2. 清理進程
     sudo pkill -f "node.*newpennine"
-    
+
     # 3. 檢查端口
     if sudo lsof -i :3000; then
         echo "端口仍被佔用，強制釋放..."
         sudo kill -9 $(sudo lsof -ti :3000)
     fi
-    
+
     # 4. 檢查文件系統
     sudo fsck /dev/sda1
-    
+
     # 5. 重新啟動服務
     sudo systemctl start newpennine-wms
-    
+
     # 6. 驗證恢復
     sleep 30
     if curl -s $HEALTH_CHECK_URL | grep -q "healthy"; then
@@ -361,23 +361,23 @@ service_recovery
 # 數據庫恢復腳本
 database_recovery() {
     echo "開始數據庫恢復程序..."
-    
+
     # 1. 停止應用服務
     sudo systemctl stop newpennine-wms
-    
+
     # 2. 創建數據庫備份
     pg_dump $DATABASE_URL > /tmp/recovery_backup_$(date +%Y%m%d_%H%M%S).sql
-    
+
     # 3. 檢查數據庫完整性
     psql $DATABASE_URL -c "SELECT pg_check_integrity();"
-    
+
     # 4. 修復數據庫
     psql $DATABASE_URL -c "REINDEX DATABASE newpennine_wms;"
     psql $DATABASE_URL -c "VACUUM FULL;"
-    
+
     # 5. 重新啟動數據庫
     sudo systemctl restart postgresql
-    
+
     # 6. 驗證連接
     if psql $DATABASE_URL -c "SELECT 1;" > /dev/null 2>&1; then
         echo "數據庫恢復成功！"
@@ -401,25 +401,25 @@ database_recovery
 # 完整系統恢復腳本
 full_system_recovery() {
     echo "開始完整系統恢復程序..."
-    
+
     # 1. 創建恢復日誌
     RECOVERY_LOG="/var/log/newpennine-wms/recovery_$(date +%Y%m%d_%H%M%S).log"
     exec > >(tee -a $RECOVERY_LOG)
     exec 2>&1
-    
+
     # 2. 停止所有服務
     sudo systemctl stop newpennine-wms
     sudo systemctl stop nginx
     sudo systemctl stop redis-server
-    
+
     # 3. 檢查系統資源
     df -h
     free -h
-    
+
     # 4. 清理臨時文件
     sudo find /tmp -name "*newpennine*" -delete
     sudo find /var/log/newpennine-wms -name "*.log" -mtime +7 -delete
-    
+
     # 5. 恢復備份
     LATEST_BACKUP=$(ls -t /var/backups/newpennine-wms | head -1)
     if [ -n "$LATEST_BACKUP" ]; then
@@ -427,12 +427,12 @@ full_system_recovery() {
         sudo rm -rf /var/www/newpennine-wms
         sudo mv /var/www/newpennine-wms-restore /var/www/newpennine-wms
     fi
-    
+
     # 6. 重新啟動服務
     sudo systemctl start redis-server
     sudo systemctl start nginx
     sudo systemctl start newpennine-wms
-    
+
     # 7. 驗證恢復
     sleep 60
     if curl -s $HEALTH_CHECK_URL | grep -q "healthy"; then
@@ -456,10 +456,10 @@ full_system_recovery
 # 緊急停機應對
 emergency_response() {
     echo "🚨 緊急停機應對程序啟動"
-    
+
     # 1. 立即通知
     send_emergency_alert "系統完全停機，正在執行緊急恢復程序"
-    
+
     # 2. 啟動備用系統
     if [ -d "/var/www/newpennine-wms-backup" ]; then
         sudo systemctl stop newpennine-wms
@@ -467,10 +467,10 @@ emergency_response() {
         sudo mv /var/www/newpennine-wms-backup /var/www/newpennine-wms
         sudo systemctl start newpennine-wms
     fi
-    
+
     # 3. 數據完整性檢查
     psql $DATABASE_URL -c "SELECT count(*) FROM record_palletinfo;"
-    
+
     # 4. 通知恢復狀態
     if curl -s $HEALTH_CHECK_URL | grep -q "healthy"; then
         send_emergency_alert "緊急恢復完成，系統已恢復正常運行"
@@ -482,12 +482,12 @@ emergency_response() {
 # 發送緊急通知
 send_emergency_alert() {
     local message="$1"
-    
+
     # Slack 通知
     curl -X POST -H 'Content-type: application/json' \
         --data "{\"text\":\"🚨 NewPennine WMS 緊急通知: $message\"}" \
         $SLACK_WEBHOOK_URL
-    
+
     # 電郵通知
     echo "$message" | mail -s "NewPennine WMS 緊急通知" ops-team@newpennine.com
 }
@@ -499,18 +499,18 @@ send_emergency_alert() {
 # 安全事件應對
 security_incident_response() {
     echo "🔒 安全事件應對程序啟動"
-    
+
     # 1. 立即隔離
     sudo iptables -A INPUT -p tcp --dport 3000 -j DROP
     sudo systemctl stop newpennine-wms
-    
+
     # 2. 收集證據
     sudo cp /var/log/newpennine-wms/access.log /var/security/incident_$(date +%Y%m%d_%H%M%S).log
     sudo netstat -tulnp > /var/security/network_$(date +%Y%m%d_%H%M%S).log
-    
+
     # 3. 通知安全團隊
     send_security_alert "檢測到安全事件，系統已被隔離"
-    
+
     # 4. 等待進一步指示
     echo "系統已隔離，等待安全團隊進一步指示"
 }
@@ -518,7 +518,7 @@ security_incident_response() {
 # 發送安全通知
 send_security_alert() {
     local message="$1"
-    
+
     # 立即通知
     curl -X POST -H 'Content-type: application/json' \
         --data "{\"text\":\"🔒 NewPennine WMS 安全通知: $message\"}" \
@@ -538,10 +538,10 @@ monitoring_daemon() {
     while true; do
         # 健康檢查
         HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" $HEALTH_CHECK_URL)
-        
+
         if [ "$HEALTH_STATUS" -ne 200 ]; then
             echo "$(date): 健康檢查失敗 - 狀態碼: $HEALTH_STATUS"
-            
+
             # 嘗試自動恢復
             if service_recovery; then
                 echo "$(date): 自動恢復成功"
@@ -550,19 +550,19 @@ monitoring_daemon() {
                 send_alert "系統健康檢查失敗，自動恢復失敗"
             fi
         fi
-        
+
         # 檢查資源使用
         MEMORY_USAGE=$(free | grep Mem | awk '{printf "%.0f", $3/$2 * 100.0}')
         DISK_USAGE=$(df -h / | awk 'NR==2{print $5}' | sed 's/%//')
-        
+
         if [ "$MEMORY_USAGE" -gt 90 ]; then
             send_alert "記憶體使用率過高: ${MEMORY_USAGE}%"
         fi
-        
+
         if [ "$DISK_USAGE" -gt 85 ]; then
             send_alert "磁碟使用率過高: ${DISK_USAGE}%"
         fi
-        
+
         sleep 30
     done
 }
@@ -579,23 +579,23 @@ monitoring_daemon
 # 性能監控腳本
 performance_monitoring() {
     echo "=== 性能監控報告 $(date) ==="
-    
+
     # 1. API 響應時間
     API_RESPONSE_TIME=$(curl -w "%{time_total}" -o /dev/null -s $HEALTH_CHECK_URL)
     echo "API 響應時間: ${API_RESPONSE_TIME}s"
-    
+
     # 2. 數據庫連接
     DB_CONNECTIONS=$(psql $DATABASE_URL -t -c "SELECT count(*) FROM pg_stat_activity;")
     echo "數據庫連接數: $DB_CONNECTIONS"
-    
+
     # 3. 記憶體使用
     NODE_MEMORY=$(ps -o pid,ppid,cmd,%mem --sort=-%mem | grep node | head -1 | awk '{print $4}')
     echo "Node.js 記憶體使用: ${NODE_MEMORY}%"
-    
+
     # 4. 錯誤率
     ERROR_COUNT=$(tail -n 1000 /var/log/newpennine-wms/error.log | grep "$(date +'%Y-%m-%d')" | wc -l)
     echo "今日錯誤數: $ERROR_COUNT"
-    
+
     # 5. 用戶活動
     ACTIVE_USERS=$(curl -s $METRICS_URL | grep active_users | awk '{print $2}')
     echo "活躍用戶數: $ACTIVE_USERS"
@@ -613,26 +613,26 @@ performance_monitoring
 # 日常維護腳本
 daily_maintenance() {
     echo "=== 日常維護 $(date) ==="
-    
+
     # 1. 檢查服務狀態
     sudo systemctl status newpennine-wms
-    
+
     # 2. 清理日誌
     sudo find /var/log/newpennine-wms -name "*.log" -mtime +7 -delete
-    
+
     # 3. 檢查磁碟空間
     df -h
-    
+
     # 4. 更新系統
     sudo apt update && sudo apt list --upgradable
-    
+
     # 5. 備份驗證
     if [ -f "/var/backups/newpennine-wms/$(date +%Y%m%d)_backup.tar.gz" ]; then
         echo "✅ 今日備份存在"
     else
         echo "❌ 今日備份不存在"
     fi
-    
+
     # 6. 性能檢查
     curl -s $METRICS_URL | grep -E "(response_time|memory_usage|error_rate)"
 }
@@ -644,26 +644,26 @@ daily_maintenance() {
 # 週期性維護腳本
 weekly_maintenance() {
     echo "=== 週期性維護 $(date) ==="
-    
+
     # 1. 數據庫優化
     psql $DATABASE_URL -c "VACUUM ANALYZE;"
     psql $DATABASE_URL -c "REINDEX DATABASE newpennine_wms;"
-    
+
     # 2. 清理舊備份
     find /var/backups/newpennine-wms -type f -mtime +30 -delete
-    
+
     # 3. 更新依賴
     cd /var/www/newpennine-wms
     npm audit
-    
+
     # 4. 檢查證書
     if command -v certbot &> /dev/null; then
         sudo certbot certificates
     fi
-    
+
     # 5. 系統更新
     sudo apt update && sudo apt upgrade -y
-    
+
     # 6. 重啟服務
     sudo systemctl restart newpennine-wms
 }
@@ -677,19 +677,19 @@ weekly_maintenance() {
 # 錯誤日誌分析腳本
 analyze_error_logs() {
     echo "=== 錯誤日誌分析 $(date) ==="
-    
+
     # 1. 最近的錯誤
     echo "最近 24 小時的錯誤:"
     grep "$(date -d '1 day ago' +'%Y-%m-%d')" /var/log/newpennine-wms/error.log | tail -10
-    
+
     # 2. 錯誤統計
     echo "錯誤統計:"
     grep "ERROR" /var/log/newpennine-wms/error.log | awk '{print $4}' | sort | uniq -c | sort -nr
-    
+
     # 3. 數據庫錯誤
     echo "數據庫錯誤:"
     grep -i "database\|connection" /var/log/newpennine-wms/error.log | tail -5
-    
+
     # 4. 認證錯誤
     echo "認證錯誤:"
     grep -i "auth\|login\|unauthorized" /var/log/newpennine-wms/error.log | tail -5
@@ -702,19 +702,19 @@ analyze_error_logs() {
 # 訪問日誌分析腳本
 analyze_access_logs() {
     echo "=== 訪問日誌分析 $(date) ==="
-    
+
     # 1. 最活躍的 IP
     echo "最活躍的 IP:"
     awk '{print $1}' /var/log/nginx/access.log | sort | uniq -c | sort -nr | head -10
-    
+
     # 2. 最常請求的頁面
     echo "最常請求的頁面:"
     awk '{print $7}' /var/log/nginx/access.log | sort | uniq -c | sort -nr | head -10
-    
+
     # 3. 響應狀態統計
     echo "響應狀態統計:"
     awk '{print $9}' /var/log/nginx/access.log | sort | uniq -c | sort -nr
-    
+
     # 4. 平均響應時間
     echo "平均響應時間:"
     awk '{print $10}' /var/log/nginx/access.log | awk '{sum+=$1; n++} END {print "Average:", sum/n, "ms"}'
@@ -729,23 +729,23 @@ analyze_access_logs() {
 # 系統測試腳本
 system_test() {
     echo "=== 系統測試 $(date) ==="
-    
+
     # 1. 健康檢查測試
     echo "健康檢查測試:"
     curl -s $HEALTH_CHECK_URL | jq '.'
-    
+
     # 2. API 功能測試
     echo "API 功能測試:"
     curl -s -X GET "$HEALTH_CHECK_URL" -H "accept: application/json"
-    
+
     # 3. 數據庫連接測試
     echo "數據庫連接測試:"
     psql $DATABASE_URL -c "SELECT 'Database connection successful';"
-    
+
     # 4. 緩存測試
     echo "緩存測試:"
     curl -s $CACHE_METRICS_URL | jq '.'
-    
+
     # 5. 文件系統測試
     echo "文件系統測試:"
     touch /tmp/test_file_$(date +%s) && echo "文件系統寫入正常" || echo "文件系統寫入失敗"
@@ -758,16 +758,16 @@ system_test() {
 # 負載測試腳本
 load_test() {
     echo "=== 負載測試 $(date) ==="
-    
+
     # 使用 Apache Bench 進行負載測試
     ab -n 100 -c 10 $HEALTH_CHECK_URL
-    
+
     # 使用 curl 進行並發測試
     for i in {1..10}; do
         curl -s $HEALTH_CHECK_URL &
     done
     wait
-    
+
     echo "負載測試完成"
 }
 ```
@@ -791,10 +791,10 @@ Level 4: 緊急事件支援 (+852-1234-5678)
 影響範圍: [用戶數量/功能模組]
 錯誤症狀: 具體描述
 重現步驟: 1. 2. 3.
-系統環境: 
-診斷結果: 
-已嘗試解決方案: 
-聯絡資訊: 
+系統環境:
+診斷結果:
+已嘗試解決方案:
+聯絡資訊:
 ```
 
 ## 文檔版本控制

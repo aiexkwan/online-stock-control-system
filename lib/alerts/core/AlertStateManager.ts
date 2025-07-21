@@ -4,7 +4,7 @@
  */
 
 import { Redis } from 'ioredis';
-import { DatabaseRecord } from '@/lib/types/database';
+import { DatabaseRecord } from '@/types/database/tables';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
   Alert,
@@ -16,7 +16,7 @@ import {
   AlertSuppression,
   BatchOperationResult,
   SerializedAlert,
-  AlertDatabaseRecord
+  AlertDatabaseRecord,
 } from '../types';
 
 export class AlertStateManager {
@@ -51,11 +51,7 @@ export class AlertStateManager {
   private async handleActiveState(alert: Alert): Promise<void> {
     try {
       // 更新 Redis 緩存
-      await this.redis.setex(
-        `alert:active:${alert.id}`,
-        3600,
-        JSON.stringify(alert)
-      );
+      await this.redis.setex(`alert:active:${alert.id}`, 3600, JSON.stringify(alert));
 
       // 添加到活躍告警列表
       await this.redis.sadd('alerts:active', alert.id);
@@ -65,7 +61,7 @@ export class AlertStateManager {
 
       // 更新統計
       await this.updateStats('active', 1);
-      
+
       console.log(`Alert ${alert.id} set to ACTIVE state`);
     } catch (error) {
       console.error(`Failed to handle active state for alert ${alert.id}:`, error);
@@ -120,11 +116,7 @@ export class AlertStateManager {
       alert.acknowledgedAt = new Date();
 
       // 更新 Redis 緩存
-      await this.redis.setex(
-        `alert:acknowledged:${alert.id}`,
-        3600,
-        JSON.stringify(alert)
-      );
+      await this.redis.setex(`alert:acknowledged:${alert.id}`, 3600, JSON.stringify(alert));
 
       // 添加到已確認告警列表
       await this.redis.sadd('alerts:acknowledged', alert.id);
@@ -145,11 +137,7 @@ export class AlertStateManager {
   private async handleSilencedState(alert: Alert): Promise<void> {
     try {
       // 更新 Redis 緩存
-      await this.redis.setex(
-        `alert:silenced:${alert.id}`,
-        3600,
-        JSON.stringify(alert)
-      );
+      await this.redis.setex(`alert:silenced:${alert.id}`, 3600, JSON.stringify(alert));
 
       // 添加到靜默告警列表
       await this.redis.sadd('alerts:silenced', alert.id);
@@ -179,7 +167,7 @@ export class AlertStateManager {
         return {
           success: false,
           message: 'Alert not found',
-          errors: ['Alert not found']
+          errors: ['Alert not found'],
         };
       }
 
@@ -190,7 +178,7 @@ export class AlertStateManager {
         return {
           success: false,
           message: `Invalid state transition from ${oldState} to ${newState}`,
-          errors: [`Invalid state transition from ${oldState} to ${newState}`]
+          errors: [`Invalid state transition from ${oldState} to ${newState}`],
         };
       }
 
@@ -217,13 +205,13 @@ export class AlertStateManager {
       return {
         success: true,
         message: `Alert state updated to ${newState}`,
-        data: { alert }
+        data: { alert },
       };
     } catch (error) {
       return {
         success: false,
         message: 'Failed to update alert state',
-        errors: [error instanceof Error ? error.message : String(error)]
+        errors: [error instanceof Error ? error.message : String(error)],
       };
     }
   }
@@ -236,7 +224,7 @@ export class AlertStateManager {
       [AlertState.ACTIVE]: [AlertState.RESOLVED, AlertState.ACKNOWLEDGED, AlertState.SILENCED],
       [AlertState.RESOLVED]: [AlertState.ACTIVE],
       [AlertState.ACKNOWLEDGED]: [AlertState.RESOLVED, AlertState.SILENCED],
-      [AlertState.SILENCED]: [AlertState.ACTIVE, AlertState.RESOLVED]
+      [AlertState.SILENCED]: [AlertState.ACTIVE, AlertState.RESOLVED],
     };
 
     return validTransitions[from]?.includes(to) || false;
@@ -268,11 +256,7 @@ export class AlertStateManager {
       const alert = this.deserializeAlert(data);
 
       // 緩存到 Redis
-      await this.redis.setex(
-        `alert:${alertId}`,
-        3600,
-        JSON.stringify(alert)
-      );
+      await this.redis.setex(`alert:${alertId}`, 3600, JSON.stringify(alert));
 
       return alert;
     } catch (error) {
@@ -356,17 +340,17 @@ export class AlertStateManager {
           [AlertLevel.INFO]: 0,
           [AlertLevel.WARNING]: 0,
           [AlertLevel.ERROR]: 0,
-          [AlertLevel.CRITICAL]: 0
+          [AlertLevel.CRITICAL]: 0,
         },
         byState: {
           [AlertState.ACTIVE]: parseInt(stats[1] || '0'),
           [AlertState.RESOLVED]: parseInt(stats[2] || '0'),
           [AlertState.ACKNOWLEDGED]: parseInt(stats[3] || '0'),
-          [AlertState.SILENCED]: parseInt(stats[4] || '0')
+          [AlertState.SILENCED]: parseInt(stats[4] || '0'),
         },
         activeCount: parseInt(stats[1] || '0'),
         resolvedCount: parseInt(stats[2] || '0'),
-        avgResolutionTime: parseFloat(stats[5] || '0')
+        avgResolutionTime: parseFloat(stats[5] || '0'),
       };
     } catch (error) {
       console.error('Failed to get alert stats:', error);
@@ -376,17 +360,17 @@ export class AlertStateManager {
           [AlertLevel.INFO]: 0,
           [AlertLevel.WARNING]: 0,
           [AlertLevel.ERROR]: 0,
-          [AlertLevel.CRITICAL]: 0
+          [AlertLevel.CRITICAL]: 0,
         },
         byState: {
           [AlertState.ACTIVE]: 0,
           [AlertState.RESOLVED]: 0,
           [AlertState.ACKNOWLEDGED]: 0,
-          [AlertState.SILENCED]: 0
+          [AlertState.SILENCED]: 0,
         },
         activeCount: 0,
         resolvedCount: 0,
-        avgResolutionTime: 0
+        avgResolutionTime: 0,
       };
     }
   }
@@ -422,7 +406,7 @@ export class AlertStateManager {
       success: failed === 0,
       processed,
       failed,
-      errors
+      errors,
     };
   }
 
@@ -443,13 +427,11 @@ export class AlertStateManager {
         suppressedBy: userId,
         suppressedAt: new Date(),
         expiresAt,
-        active: true
+        active: true,
       };
 
       // 保存抑制配置
-      const { error } = await this.supabase
-        .from('alert_suppressions')
-        .insert(suppression);
+      const { error } = await this.supabase.from('alert_suppressions').insert(suppression);
 
       if (error) throw error;
 
@@ -463,13 +445,13 @@ export class AlertStateManager {
       return {
         success: true,
         message: 'Alert suppression created',
-        data: { suppression }
+        data: { suppression },
       };
     } catch (error) {
       return {
         success: false,
         message: 'Failed to create suppression',
-        errors: [error instanceof Error ? error.message : String(error)]
+        errors: [error instanceof Error ? error.message : String(error)],
       };
     }
   }
@@ -539,14 +521,14 @@ export class AlertStateManager {
         success: true,
         processed: deletedCount,
         failed: 0,
-        errors: []
+        errors: [],
       };
     } catch (error) {
       return {
         success: false,
         processed: 0,
         failed: 1,
-        errors: [error instanceof Error ? error.message : String(error)]
+        errors: [error instanceof Error ? error.message : String(error)],
       };
     }
   }
@@ -588,18 +570,12 @@ export class AlertStateManager {
    */
   private async saveAlert(alert: Alert): Promise<void> {
     try {
-      const { error } = await this.supabase
-        .from('alerts')
-        .upsert(this.serializeAlert(alert));
+      const { error } = await this.supabase.from('alerts').upsert(this.serializeAlert(alert));
 
       if (error) throw error;
 
       // 更新 Redis 緩存
-      await this.redis.setex(
-        `alert:${alert.id}`,
-        3600,
-        JSON.stringify(alert)
-      );
+      await this.redis.setex(`alert:${alert.id}`, 3600, JSON.stringify(alert));
     } catch (error) {
       console.error('Failed to save alert:', error);
       throw error;
@@ -624,8 +600,8 @@ export class AlertStateManager {
       acknowledged_at: alert.acknowledgedAt?.toISOString(),
       acknowledged_by: alert.acknowledgedBy,
       notifications: JSON.stringify(alert.notifications),
-      labels: JSON.stringify(alert.labels || {}),
-      annotations: JSON.stringify(alert.annotations || {})
+      labels: JSON.stringify(alert.labels || ({} as any)),
+      annotations: JSON.stringify(alert.annotations || ({} as any)),
     };
   }
 
@@ -648,7 +624,7 @@ export class AlertStateManager {
       acknowledgedBy: data.acknowledged_by as string | undefined,
       notifications: JSON.parse((data.notifications as string) || '[]'),
       labels: JSON.parse((data.labels as string) || '{}'),
-      annotations: JSON.parse((data.annotations as string) || '{}')
+      annotations: JSON.parse((data.annotations as string) || '{}'),
     };
   }
 

@@ -6,9 +6,16 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/app/utils/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@/lib/types/supabase-generated';
-import { getErrorMessage } from '@/lib/types/error-handling';
-import { toRecordArray, safeNumber, safeGet, extractCount } from '@/lib/types/supabase-helpers';
+import type { Database } from '@/types/database/supabase';
+import { getErrorMessage } from '@/types/core/error';
+import {
+  toRecordArray,
+  safeNumber,
+  safeString,
+  safeGet,
+  extractCount,
+  isRecord,
+} from '@/types/database/helpers';
 
 // Type alias for Supabase client (Strategy 3: Supabase codegen)
 type TypedSupabaseClient = SupabaseClient<Database>;
@@ -131,11 +138,11 @@ async function getQcLabelMetrics(supabase: TypedSupabaseClient) {
       .single();
 
     // 熱門產品統計 - 使用直接查詢避免 RPC 類型問題 (Strategy 4: unknown + type narrowing)
-    const { data: topProducts, error: topProductsError } = await supabase
+    const { data: topProducts, error: topProductsError } = (await supabase
       .from('record_palletinfo')
       .select('product_code, count(*)')
       .gte('created_at', weekAgo.toISOString())
-      .limit(10) as { data: unknown; error: unknown };
+      .limit(10)) as { data: unknown; error: unknown };
 
     if (topProductsError) {
       console.error('Error fetching top products:', topProductsError);
@@ -143,20 +150,24 @@ async function getQcLabelMetrics(supabase: TypedSupabaseClient) {
 
     // 安全處理聚合結果 (Strategy 4: unknown + type narrowing)
     const topProductsData = toRecordArray(topProducts);
-    const totalProducts = topProductsData.reduce((sum: number, item) => sum + safeNumber(safeGet(item, 'count', 0)), 0);
+    const totalProducts = topProductsData.reduce(
+      (sum: number, item) => sum + safeNumber(safeGet(item, 'count'), 0),
+      0
+    );
 
     return {
-      todayCount: safeNumber(safeGet(todayData, 'count', 0)),
-      yesterdayCount: safeNumber(safeGet(yesterdayData, 'count', 0)),
-      weeklyCount: safeNumber(safeGet(weeklyData, 'count', 0)),
-      monthlyCount: safeNumber(safeGet(monthlyData, 'count', 0)),
+      todayCount: safeNumber(safeGet(isRecord(todayData) ? todayData : {}, 'count'), 0),
+      yesterdayCount: safeNumber(safeGet(isRecord(yesterdayData) ? yesterdayData : {}, 'count'), 0),
+      weeklyCount: safeNumber(safeGet(isRecord(weeklyData) ? weeklyData : {}, 'count'), 0),
+      monthlyCount: safeNumber(safeGet(isRecord(monthlyData) ? monthlyData : {}, 'count'), 0),
       avgProcessingTime: 2.5, // 秒 - 可以從實際日誌計算
       errorRate: 1.2, // 百分比 - 可以從錯誤日誌計算
-      topProducts: topProductsData.map((item) => ({
-        productCode: safeGet(item, 'product_code', ''),
-        count: safeNumber(safeGet(item, 'count', 0)),
-        percentage: totalProducts > 0 ? (safeNumber(safeGet(item, 'count', 0)) / totalProducts * 100) : 0
-      }))
+      topProducts: topProductsData.map(item => ({
+        productCode: safeString(safeGet(item, 'product_code'), ''),
+        count: safeNumber(safeGet(item, 'count'), 0),
+        percentage:
+          totalProducts > 0 ? (safeNumber(safeGet(item, 'count'), 0) / totalProducts) * 100 : 0,
+      })),
     };
   } catch (error) {
     console.error('QC Label metrics error:', error);
@@ -167,7 +178,7 @@ async function getQcLabelMetrics(supabase: TypedSupabaseClient) {
       monthlyCount: 0,
       avgProcessingTime: 0,
       errorRate: 0,
-      topProducts: []
+      topProducts: [],
     };
   }
 }
@@ -203,11 +214,11 @@ async function getStockTransferMetrics(supabase: TypedSupabaseClient) {
       .single();
 
     // 熱門位置統計 - 使用直接查詢避免 RPC 類型問題 (Strategy 4: unknown + type narrowing)
-    const { data: locationStats, error: locationError } = await supabase
+    const { data: locationStats, error: locationError } = (await supabase
       .from('record_transfer')
       .select('location_from, location_to, count(*)')
       .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-      .limit(20) as { data: unknown; error: unknown };
+      .limit(20)) as { data: unknown; error: unknown };
 
     if (locationError) {
       console.error('Error fetching location stats:', locationError);
@@ -216,18 +227,18 @@ async function getStockTransferMetrics(supabase: TypedSupabaseClient) {
     // 彙總位置統計 (Strategy 4: unknown + type narrowing)
     const locationStatsData = toRecordArray(locationStats);
     const locationMap = new Map();
-    locationStatsData.forEach((stat) => {
-      const from = safeGet(stat, 'location_from', '');
-      const to = safeGet(stat, 'location_to', '');
-      const count = safeNumber(safeGet(stat, 'count', 0));
-      
+    locationStatsData.forEach(stat => {
+      const from = safeGet(stat, 'location_from') || '';
+      const to = safeGet(stat, 'location_to') || '';
+      const count = safeNumber(safeGet(stat, 'count'), 0);
+
       if (!locationMap.has(from)) {
         locationMap.set(from, { location: from, inboundCount: 0, outboundCount: 0 });
       }
       if (!locationMap.has(to)) {
         locationMap.set(to, { location: to, inboundCount: 0, outboundCount: 0 });
       }
-      
+
       const fromData = locationMap.get(from);
       const toData = locationMap.get(to);
       if (fromData) fromData.outboundCount += count;
@@ -235,11 +246,17 @@ async function getStockTransferMetrics(supabase: TypedSupabaseClient) {
     });
 
     return {
-      todayCount: safeNumber(safeGet(todayTransfers, 'count', 0)),
-      pendingCount: safeNumber(safeGet(pendingTransfers, 'count', 0)),
-      completedToday: safeNumber(safeGet(completedTransfers, 'count', 0)),
+      todayCount: safeNumber(safeGet(isRecord(todayTransfers) ? todayTransfers : {}, 'count'), 0),
+      pendingCount: safeNumber(
+        safeGet(isRecord(pendingTransfers) ? pendingTransfers : {}, 'count'),
+        0
+      ),
+      completedToday: safeNumber(
+        safeGet(isRecord(completedTransfers) ? completedTransfers : {}, 'count'),
+        0
+      ),
       avgTransferTime: 15.5, // 分鐘 - 可以從實際數據計算
-      topLocations: Array.from(locationMap.values()).slice(0, 10)
+      topLocations: Array.from(locationMap.values()).slice(0, 10),
     };
   } catch (error) {
     console.error('Stock transfer metrics error:', error);
@@ -248,7 +265,7 @@ async function getStockTransferMetrics(supabase: TypedSupabaseClient) {
       pendingCount: 0,
       completedToday: 0,
       avgTransferTime: 0,
-      topLocations: []
+      topLocations: [],
     };
   }
 }
@@ -283,11 +300,14 @@ async function getOrderProcessingMetrics(supabase: TypedSupabaseClient) {
       .eq('status', 'completed')
       .single();
 
-    // 訂單狀態分佈 - 使用簡化查詢避免 group 函數問題 (Strategy 4: unknown + type narrowing)  
-    const { data: ordersByStatus } = await supabase
+    // 訂單狀態分佈 - 使用簡化查詢避免 group 函數問題 (Strategy 4: unknown + type narrowing)
+    const { data: ordersByStatus } = (await supabase
       .from('record_aco')
       .select('status')
-      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) as { data: unknown; error: unknown };
+      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())) as {
+      data: unknown;
+      error: unknown;
+    };
 
     // 手動分組和計數
     const statusCounts = new Map<string, number>();
@@ -310,8 +330,8 @@ async function getOrderProcessingMetrics(supabase: TypedSupabaseClient) {
       ordersByStatus: Array.from(statusCounts.entries()).map(([status, count]) => ({
         status,
         count,
-        percentage: totalOrders > 0 ? (count / totalOrders * 100) : 0
-      }))
+        percentage: totalOrders > 0 ? (count / totalOrders) * 100 : 0,
+      })),
     };
   } catch (error) {
     console.error('Order processing metrics error:', error);
@@ -320,7 +340,7 @@ async function getOrderProcessingMetrics(supabase: TypedSupabaseClient) {
       pendingOrders: 0,
       completedOrders: 0,
       avgProcessingTime: 0,
-      ordersByStatus: []
+      ordersByStatus: [],
     };
   }
 }
@@ -355,10 +375,10 @@ async function getWarehouseOperationsMetrics(supabase: TypedSupabaseClient) {
       .single();
 
     // 位置統計 - 使用手動分組避免 group 函數問題 (Strategy 4: unknown + type narrowing)
-    const { data: locationData, error: locationError } = await supabase
+    const { data: locationData, error: locationError } = (await supabase
       .from('record_palletinfo')
       .select('location')
-      .eq('status', 'active') as { data: unknown; error: unknown };
+      .eq('status', 'active')) as { data: unknown; error: unknown };
 
     if (locationError) {
       console.error('Error fetching location data:', locationError);
@@ -380,17 +400,17 @@ async function getWarehouseOperationsMetrics(supabase: TypedSupabaseClient) {
       .map(([location, count]) => ({
         location,
         palletCount: count,
-        utilization: Math.min(95, Math.max(20, count * 2.5 + Math.random() * 20)) // 基於數量計算利用率
+        utilization: Math.min(95, Math.max(20, count * 2.5 + Math.random() * 20)), // 基於數量計算利用率
       }))
       .sort((a, b) => b.palletCount - a.palletCount)
       .slice(0, 10);
 
     return {
-      palletCount: safeNumber(safeGet(totalPallets, 'count', 0)),
-      activePallets: safeNumber(safeGet(activePallets, 'count', 0)),
-      voidedToday: safeNumber(safeGet(voidedPallets, 'count', 0)),
+      palletCount: safeNumber(safeGet(isRecord(totalPallets) ? totalPallets : {}, 'count'), 0),
+      activePallets: safeNumber(safeGet(isRecord(activePallets) ? activePallets : {}, 'count'), 0),
+      voidedToday: safeNumber(safeGet(isRecord(voidedPallets) ? voidedPallets : {}, 'count'), 0),
       avgUtilization: 78.5, // 百分比 - 可以從實際數據計算
-      locationStats
+      locationStats,
     };
   } catch (error) {
     console.error('Warehouse operations metrics error:', error);
@@ -399,7 +419,7 @@ async function getWarehouseOperationsMetrics(supabase: TypedSupabaseClient) {
       activePallets: 0,
       voidedToday: 0,
       avgUtilization: 0,
-      locationStats: []
+      locationStats: [],
     };
   }
 }
@@ -410,19 +430,16 @@ async function getWarehouseOperationsMetrics(supabase: TypedSupabaseClient) {
 async function getSystemActivityMetrics(supabase: TypedSupabaseClient) {
   try {
     // 總用戶數
-    const { data: totalUsers } = await supabase
-      .from('data_id')
-      .select('count(*)')
-      .single();
+    const { data: totalUsers } = await supabase.from('data_id').select('count(*)').single();
 
     // 活躍用戶數 (今日有活動) - 使用手動分組避免 group 函數問題 (Strategy 4: unknown + type narrowing)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
-    const { data: historyData, error: historyError } = await supabase
+
+    const { data: historyData, error: historyError } = (await supabase
       .from('record_history')
       .select('user_id')
-      .gte('created_at', today.toISOString()) as { data: unknown; error: unknown };
+      .gte('created_at', today.toISOString())) as { data: unknown; error: unknown };
 
     if (historyError) {
       console.error('Error fetching user activity:', historyError);
@@ -442,11 +459,11 @@ async function getSystemActivityMetrics(supabase: TypedSupabaseClient) {
     }
 
     return {
-      totalUsers: safeNumber(safeGet(totalUsers, 'count', 0)),
+      totalUsers: safeNumber(safeGet(isRecord(totalUsers) ? totalUsers : {}, 'count'), 0),
       activeUsers: uniqueUserIds.size,
       apiCalls: 12540, // 從 API 監控系統獲取
       errorCount: 23, // 從錯誤日誌獲取
-      avgResponseTime: 185.3 // 毫秒 - 從監控系統獲取
+      avgResponseTime: 185.3, // 毫秒 - 從監控系統獲取
     };
   } catch (error) {
     console.error('System activity metrics error:', error);
@@ -455,7 +472,7 @@ async function getSystemActivityMetrics(supabase: TypedSupabaseClient) {
       activeUsers: 0,
       apiCalls: 0,
       errorCount: 0,
-      avgResponseTime: 0
+      avgResponseTime: 0,
     };
   }
 }
@@ -463,7 +480,9 @@ async function getSystemActivityMetrics(supabase: TypedSupabaseClient) {
 /**
  * 評估系統健康狀態
  */
-function evaluateSystemHealth(metrics: BusinessMetrics): 'optimal' | 'good' | 'degraded' | 'critical' {
+function evaluateSystemHealth(
+  metrics: BusinessMetrics
+): 'optimal' | 'good' | 'degraded' | 'critical' {
   let score = 100;
   const alerts: string[] = [];
 
@@ -511,13 +530,13 @@ export async function GET() {
       stockTransferMetrics,
       orderProcessingMetrics,
       warehouseOperationsMetrics,
-      systemActivityMetrics
+      systemActivityMetrics,
     ] = await Promise.all([
       getQcLabelMetrics(supabase),
       getStockTransferMetrics(supabase),
       getOrderProcessingMetrics(supabase),
       getWarehouseOperationsMetrics(supabase),
-      getSystemActivityMetrics(supabase)
+      getSystemActivityMetrics(supabase),
     ]);
 
     const metrics: BusinessMetrics = {
@@ -525,11 +544,11 @@ export async function GET() {
       stockTransfer: stockTransferMetrics,
       orderProcessing: orderProcessingMetrics,
       warehouseOperations: warehouseOperationsMetrics,
-      systemActivity: systemActivityMetrics
+      systemActivity: systemActivityMetrics,
     };
 
     // 計算總操作數
-    const totalOperations = 
+    const totalOperations =
       metrics.qcLabelPrinting.todayCount +
       metrics.stockTransfer.todayCount +
       metrics.orderProcessing.todayOrders;
@@ -557,34 +576,36 @@ export async function GET() {
       summary: {
         totalOperations,
         systemHealth,
-        alerts
-      }
+        alerts,
+      },
     };
 
     return NextResponse.json(response, {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'API-Version': 'v1',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
+        Pragma: 'no-cache',
+        Expires: '0',
+      },
     });
-
   } catch (error) {
     console.error('Business metrics endpoint failed:', error);
 
-    return NextResponse.json({
-      status: 'error',
-      timestamp: new Date().toISOString(),
-      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
-      message: 'Failed to retrieve business metrics'
-    }, {
-      status: 500,
-      headers: {
-        'Cache-Control': 'no-cache',
-        'API-Version': 'v1'
+    return NextResponse.json(
+      {
+        status: 'error',
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
+        message: 'Failed to retrieve business metrics',
+      },
+      {
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-cache',
+          'API-Version': 'v1',
+        },
       }
-    });
+    );
   }
 }
 
@@ -598,7 +619,7 @@ export async function HEAD() {
       'Content-Type': 'application/json',
       'API-Version': 'v1',
       'X-API-Version': 'v1',
-      'Cache-Control': 'no-cache'
-    }
+      'Cache-Control': 'no-cache',
+    },
   });
 }

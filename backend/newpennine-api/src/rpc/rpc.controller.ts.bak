@@ -1,0 +1,161 @@
+import {
+  Controller,
+  Get,
+  Query,
+  Logger,
+  HttpException,
+  HttpStatus,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RpcService } from './rpc.service';
+import {
+  AwaitLocationCountQueryDto,
+  StockLevelHistoryQueryDto,
+} from './dto/rpc-query.dto';
+import {
+  RpcResponseDto,
+  AwaitLocationCountResponseDto,
+  StockLevelHistoryResponseDto,
+} from './dto/rpc-response.dto';
+
+@ApiTags('RPC')
+@Controller('api/v1/rpc')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
+export class RpcController {
+  private readonly logger = new Logger(RpcController.name);
+
+  constructor(private readonly rpcService: RpcService) {}
+
+  @Get('await-location-count')
+  @ApiOperation({ summary: 'Get await location count' })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved await location count',
+    type: RpcResponseDto<AwaitLocationCountResponseDto>,
+  })
+  @ApiQuery({
+    name: 'location',
+    required: false,
+    description: 'Location filter',
+  })
+  @ApiQuery({
+    name: 'date',
+    required: false,
+    description: 'Date filter (ISO string)',
+  })
+  async getAwaitLocationCount(
+    @Query() query: AwaitLocationCountQueryDto,
+  ): Promise<RpcResponseDto<AwaitLocationCountResponseDto>> {
+    const startTime = Date.now();
+
+    try {
+      this.logger.log('GET /api/v1/rpc/await-location-count called', query);
+
+      const data = await this.rpcService.getAwaitLocationCount(query);
+      const executionTime = Date.now() - startTime;
+
+      return {
+        success: true,
+        data,
+        metadata: {
+          executionTime,
+          functionName: 'await_location_count',
+          count: data.count,
+        },
+      };
+    } catch (error) {
+      this.logger.error('Error in getAwaitLocationCount:', error);
+
+      throw new HttpException(
+        {
+          success: false,
+          error: (error as Error).message || 'Internal server error',
+          metadata: {
+            executionTime: Date.now() - startTime,
+            functionName: 'await_location_count',
+          },
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('stock-level-history')
+  @ApiOperation({ summary: 'Get stock level history' })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved stock level history',
+    type: RpcResponseDto<StockLevelHistoryResponseDto>,
+  })
+  @ApiQuery({
+    name: 'productCode',
+    required: false,
+    description: 'Product code filter',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: 'Start date (ISO string)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'End date (ISO string)',
+  })
+  @ApiQuery({
+    name: 'location',
+    required: false,
+    description: 'Location filter',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Limit results',
+    type: Number,
+  })
+  async getStockLevelHistory(
+    @Query() query: StockLevelHistoryQueryDto,
+  ): Promise<RpcResponseDto<StockLevelHistoryResponseDto>> {
+    const startTime = Date.now();
+
+    try {
+      this.logger.log('GET /api/v1/rpc/stock-level-history called', query);
+
+      const data = await this.rpcService.getStockLevelHistory(query);
+      const executionTime = Date.now() - startTime;
+
+      return {
+        success: true,
+        data,
+        metadata: {
+          executionTime,
+          functionName: 'stock_level_history',
+          count: data.history.length,
+        },
+      };
+    } catch (error) {
+      this.logger.error('Error in getStockLevelHistory:', error);
+
+      throw new HttpException(
+        {
+          success: false,
+          error: (error as Error).message || 'Internal server error',
+          metadata: {
+            executionTime: Date.now() - startTime,
+            functionName: 'stock_level_history',
+          },
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+}

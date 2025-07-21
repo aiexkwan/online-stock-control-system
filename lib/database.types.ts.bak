@@ -1,0 +1,731 @@
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
+export type Database = {
+  public: {
+    Tables: {
+      data_code: {
+        Row: {
+          code: string;
+          colour: string | null;
+          description: string | null;
+          standard_qty: string | null;
+          type: string | null;
+        };
+        Insert: {
+          code: string;
+          colour?: string | null;
+          description?: string | null;
+          standard_qty?: string | null;
+          type?: string | null;
+        };
+        Update: {
+          code?: string;
+          colour?: string | null;
+          description?: string | null;
+          standard_qty?: string | null;
+          type?: string | null;
+        };
+        Relationships: [];
+      };
+      data_id: {
+        Row: {
+          department: string;
+          first_login: boolean;
+          id: number;
+          name: string;
+          password: string | null;
+          qc: boolean;
+          receive: boolean;
+          report: boolean;
+          resume: boolean;
+          uuid: string;
+          view: boolean;
+          void: boolean;
+        };
+        Insert: {
+          department: string;
+          first_login?: boolean;
+          id: number;
+          name: string;
+          password?: string | null;
+          qc?: boolean;
+          receive?: boolean;
+          report?: boolean;
+          resume?: boolean;
+          uuid?: string;
+          view?: boolean;
+          void?: boolean;
+        };
+        Update: {
+          department?: string;
+          first_login?: boolean;
+          id?: number;
+          name?: string;
+          password?: string | null;
+          qc?: boolean;
+          receive?: boolean;
+          report?: boolean;
+          resume?: boolean;
+          uuid?: string;
+          view?: boolean;
+          void?: boolean;
+        };
+        Relationships: [];
+      };
+      data_slateinfo: {
+        Row: {
+          colour: string | null;
+          description: string | null;
+          hole_to_bottom: string | null;
+          length: string | null;
+          product_code: string;
+          shapes: string | null;
+          thickness_bottom: string | null;
+          thickness_top: string | null;
+          tool_num: string | null;
+          weight: string | null;
+          width: string | null;
+        };
+        Insert: {
+          colour?: string | null;
+          description?: string | null;
+          hole_to_bottom?: string | null;
+          length?: string | null;
+          product_code: string;
+          shapes?: string | null;
+          thickness_bottom?: string | null;
+          thickness_top?: string | null;
+          tool_num?: string | null;
+          weight?: string | null;
+          width?: string | null;
+        };
+        Update: {
+          colour?: string | null;
+          description?: string | null;
+          hole_to_bottom?: string | null;
+          length?: string | null;
+          product_code?: string;
+          shapes?: string | null;
+          thickness_bottom?: string | null;
+          thickness_top?: string | null;
+          tool_num?: string | null;
+          weight?: string | null;
+          width?: string | null;
+        };
+        Relationships: [];
+      };
+      data_supplier: {
+        Row: {
+          supplier_code: string;
+          supplier_name: string | null;
+        };
+        Insert: {
+          supplier_code: string;
+          supplier_name?: string | null;
+        };
+        Update: {
+          supplier_code?: string;
+          supplier_name?: string | null;
+        };
+        Relationships: [];
+      };
+      password_reset_requests: {
+        Row: {
+          completed_at: string | null;
+          completed_by: string | null;
+          id: string;
+          requested_at: string;
+          status: string;
+          user_id: number;
+        };
+        Insert: {
+          completed_at?: string | null;
+          completed_by?: string | null;
+          id?: string;
+          requested_at?: string;
+          status?: string;
+          user_id: number;
+        };
+        Update: {
+          completed_at?: string | null;
+          completed_by?: string | null;
+          id?: string;
+          requested_at?: string;
+          status?: string;
+          user_id?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'password_reset_requests_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'data_id';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      record_aco: {
+        Row: {
+          code: string;
+          latest_update: string;
+          order_ref: number;
+          remain_qty: number;
+          required_qty: number;
+          uuid: string;
+        };
+        Insert: {
+          code: string;
+          latest_update?: string;
+          order_ref: number;
+          remain_qty: number;
+          required_qty: number;
+          uuid?: string;
+        };
+        Update: {
+          code?: string;
+          latest_update?: string;
+          order_ref?: number;
+          remain_qty?: number;
+          required_qty?: number;
+          uuid?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'record_aco2_code_fkey';
+            columns: ['code'];
+            isOneToOne: false;
+            referencedRelation: 'data_code';
+            referencedColumns: ['code'];
+          },
+        ];
+      };
+      record_grn: {
+        Row: {
+          grn_ref: number | null;
+          gross_weight: number;
+          material_code: string;
+          net_weight: number;
+          package: string;
+          package_count: number;
+          pallet: string;
+          pallet_count: number;
+          plt_num: string | null;
+          sup_code: string;
+          uuid: string;
+        };
+        Insert: {
+          grn_ref?: number | null;
+          gross_weight: number;
+          material_code: string;
+          net_weight: number;
+          package: string;
+          package_count?: number;
+          pallet: string;
+          pallet_count?: number;
+          plt_num?: string | null;
+          sup_code: string;
+          uuid?: string;
+        };
+        Update: {
+          grn_ref?: number | null;
+          gross_weight?: number;
+          material_code?: string;
+          net_weight?: number;
+          package?: string;
+          package_count?: number;
+          pallet?: string;
+          pallet_count?: number;
+          plt_num?: string | null;
+          sup_code?: string;
+          uuid?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'record_grn_material_code_fkey';
+            columns: ['material_code'];
+            isOneToOne: false;
+            referencedRelation: 'data_code';
+            referencedColumns: ['code'];
+          },
+          {
+            foreignKeyName: 'record_grn_plt_num_fkey';
+            columns: ['plt_num'];
+            isOneToOne: false;
+            referencedRelation: 'record_palletinfo';
+            referencedColumns: ['plt_num'];
+          },
+          {
+            foreignKeyName: 'record_grn_sup_code_fkey';
+            columns: ['sup_code'];
+            isOneToOne: false;
+            referencedRelation: 'data_supplier';
+            referencedColumns: ['supplier_code'];
+          },
+        ];
+      };
+      record_history: {
+        Row: {
+          action: string;
+          id: number;
+          loc: string | null;
+          plt_num: string | null;
+          remark: string;
+          time: string;
+          uuid: string;
+        };
+        Insert: {
+          action: string;
+          id: number;
+          loc?: string | null;
+          plt_num?: string | null;
+          remark: string;
+          time?: string;
+          uuid?: string;
+        };
+        Update: {
+          action?: string;
+          id?: number;
+          loc?: string | null;
+          plt_num?: string | null;
+          remark?: string;
+          time?: string;
+          uuid?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'record_history_op_id_fkey';
+            columns: ['id'];
+            isOneToOne: false;
+            referencedRelation: 'data_id';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'record_history_plt_num_fkey';
+            columns: ['plt_num'];
+            isOneToOne: false;
+            referencedRelation: 'record_palletinfo';
+            referencedColumns: ['plt_num'];
+          },
+        ];
+      };
+      record_inventory: {
+        Row: {
+          await: number | null;
+          await_grn: number | null;
+          backcarpark: number | null;
+          bulk: number | null;
+          fold: number | null;
+          injection: number | null;
+          latest_update: string;
+          pallet_num: string;
+          pipeline: number | null;
+          prebook: number | null;
+          product_code: string;
+          uuid: string;
+        };
+        Insert: {
+          await?: number | null;
+          await_grn?: number | null;
+          backcarpark?: number | null;
+          bulk?: number | null;
+          fold?: number | null;
+          injection?: number | null;
+          latest_update?: string;
+          pallet_num: string;
+          pipeline?: number | null;
+          prebook?: number | null;
+          product_code?: string;
+          uuid?: string;
+        };
+        Update: {
+          await?: number | null;
+          await_grn?: number | null;
+          backcarpark?: number | null;
+          bulk?: number | null;
+          fold?: number | null;
+          injection?: number | null;
+          latest_update?: string;
+          pallet_num?: string;
+          pipeline?: number | null;
+          prebook?: number | null;
+          product_code?: string;
+          uuid?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'record_inventory_pallet_num_fkey';
+            columns: ['pallet_num'];
+            isOneToOne: false;
+            referencedRelation: 'record_palletinfo';
+            referencedColumns: ['plt_num'];
+          },
+          {
+            foreignKeyName: 'record_inventory_product_code_fkey';
+            columns: ['product_code'];
+            isOneToOne: false;
+            referencedRelation: 'data_code';
+            referencedColumns: ['code'];
+          },
+        ];
+      };
+      record_palletinfo: {
+        Row: {
+          generate_time: string;
+          plt_num: string;
+          plt_remark: string | null;
+          product_code: string;
+          product_qty: number;
+          series: string;
+        };
+        Insert: {
+          generate_time?: string;
+          plt_num: string;
+          plt_remark?: string | null;
+          product_code: string;
+          product_qty: number;
+          series: string;
+        };
+        Update: {
+          generate_time?: string;
+          plt_num?: string;
+          plt_remark?: string | null;
+          product_code?: string;
+          product_qty?: number;
+          series?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'record_palletinfo_product_code_fkey';
+            columns: ['product_code'];
+            isOneToOne: false;
+            referencedRelation: 'data_code';
+            referencedColumns: ['code'];
+          },
+        ];
+      };
+      record_slate: {
+        Row: {
+          b_thick: number;
+          batch_num: string;
+          centre_hole: number;
+          code: string;
+          colour: string;
+          first_off: string | null;
+          flame_test: number;
+          length: number;
+          mach_num: string;
+          material: string;
+          plt_num: string;
+          remark: string | null;
+          setter: string;
+          shape: string;
+          t_thick: number;
+          uuid: string;
+          weight: number;
+          width: number;
+        };
+        Insert: {
+          b_thick: number;
+          batch_num?: string;
+          centre_hole: number;
+          code?: string;
+          colour?: string;
+          first_off?: string | null;
+          flame_test: number;
+          length: number;
+          mach_num?: string;
+          material?: string;
+          plt_num?: string;
+          remark?: string | null;
+          setter?: string;
+          shape?: string;
+          t_thick: number;
+          uuid?: string;
+          weight: number;
+          width: number;
+        };
+        Update: {
+          b_thick?: number;
+          batch_num?: string;
+          centre_hole?: number;
+          code?: string;
+          colour?: string;
+          first_off?: string | null;
+          flame_test?: number;
+          length?: number;
+          mach_num?: string;
+          material?: string;
+          plt_num?: string;
+          remark?: string | null;
+          setter?: string;
+          shape?: string;
+          t_thick?: number;
+          uuid?: string;
+          weight?: number;
+          width?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'record_slate_P_Code_fkey';
+            columns: ['code'];
+            isOneToOne: false;
+            referencedRelation: 'data_code';
+            referencedColumns: ['code'];
+          },
+          {
+            foreignKeyName: 'record_slate_P_Num_fkey';
+            columns: ['plt_num'];
+            isOneToOne: false;
+            referencedRelation: 'record_palletinfo';
+            referencedColumns: ['plt_num'];
+          },
+        ];
+      };
+      record_transfer: {
+        Row: {
+          f_loc: string;
+          operator_id: number;
+          plt_num: string;
+          t_loc: string;
+          tran_date: string;
+          uuid: string;
+        };
+        Insert: {
+          f_loc: string;
+          operator_id: number;
+          plt_num: string;
+          t_loc: string;
+          tran_date: string;
+          uuid?: string;
+        };
+        Update: {
+          f_loc?: string;
+          operator_id?: number;
+          plt_num?: string;
+          t_loc?: string;
+          tran_date?: string;
+          uuid?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'record_transfer_plt_num_fkey';
+            columns: ['plt_num'];
+            isOneToOne: false;
+            referencedRelation: 'record_palletinfo';
+            referencedColumns: ['plt_num'];
+          },
+        ];
+      };
+      report_log: {
+        Row: {
+          context: string;
+          error: string;
+          state: boolean;
+          uuid: string;
+        };
+        Insert: {
+          context: string;
+          error: string;
+          state: boolean;
+          uuid?: string;
+        };
+        Update: {
+          context?: string;
+          error?: string;
+          state?: boolean;
+          uuid?: string;
+        };
+        Relationships: [];
+      };
+      stock_level: {
+        Row: {
+          description: string;
+          stock: string;
+          stock_level: number;
+          update_time: string;
+          uuid: string;
+        };
+        Insert: {
+          description: string;
+          stock?: string;
+          stock_level: number;
+          update_time?: string;
+          uuid?: string;
+        };
+        Update: {
+          description?: string;
+          stock?: string;
+          stock_level?: number;
+          update_time?: string;
+          uuid?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'stock_level_stock_fkey';
+            columns: ['stock'];
+            isOneToOne: false;
+            referencedRelation: 'data_code';
+            referencedColumns: ['code'];
+          },
+        ];
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      increment_grn_pallet_counter: {
+        Args: { p_prefix: string };
+        Returns: number;
+      };
+      update_inventory_on_grn_receipt: {
+        Args: { p_product_code: string; p_qty_change: number };
+        Returns: undefined;
+      };
+      update_inventory_stock_transfer: {
+        Args:
+          | {
+              p_plt_num: string;
+              p_product_code: string;
+              p_qty_change: number;
+              p_from_col: string;
+              p_to_col: string;
+              p_latest_update: string;
+            }
+          | {
+              p_product_code: string;
+              p_qty_change: number;
+              p_from_col: string;
+              p_to_col: string;
+              p_latest_update: string;
+            };
+        Returns: Json;
+      };
+      void_pallet_transaction: {
+        Args: {
+          p_user_id: number;
+          p_plt_num: string;
+          p_product_code: string;
+          p_product_qty: number;
+          p_plt_remark: string;
+          p_latest_location: string;
+          p_void_reason: string;
+        };
+        Returns: Json;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
+};
+
+type DefaultSchema = Database[Extract<keyof Database, 'public'>];
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database;
+  }
+    ? keyof (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+      Row: infer R;
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R;
+      }
+      ? R
+      : never
+    : never;
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema['Tables']
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database;
+  }
+    ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+      Insert: infer I;
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I;
+      }
+      ? I
+      : never
+    : never;
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema['Tables']
+    | { schema: keyof Database },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database;
+  }
+    ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+      Update: infer U;
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U;
+      }
+      ? U
+      : never
+    : never;
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums'] | { schema: keyof Database },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof Database;
+  }
+    ? keyof Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
+    : never;
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema['CompositeTypes']
+    | { schema: keyof Database },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof Database;
+  }
+    ? keyof Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+    : never;
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const;

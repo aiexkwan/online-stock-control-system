@@ -73,7 +73,7 @@ online-stock-control-system/
 ├── components/
 │   ├── ui/                     # UI component library
 │   ├── qr-scanner/             # QR code scanning
-│   └── ... 
+│   └── ...
 ├── docs/                      # Comprehensive documentation
 ├── lib/                       # Utility libraries including widgets config
 ├── supabase/                  # Supabase configurations and migrations
@@ -98,7 +98,7 @@ online-stock-control-system/
    ```bash
    # macOS
    brew install graphicsmagick ghostscript
-   
+
    # Ubuntu/Debian
    sudo apt-get install graphicsmagick ghostscript
    ```
@@ -248,4 +248,4 @@ This project is proprietary software developed for Pennine Manufacturing Industr
 - **ESLint**: Code quality and consistency
 - **Prettier**: Code formatting
 - **Tailwind CSS**: Utility-first styling
-- **Framer Motion**: Smooth animations and transitions 
+- **Framer Motion**: Smooth animations and transitions

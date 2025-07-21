@@ -48,7 +48,7 @@ class TreeShakingAnalyzer {
   analyzeFile(filePath) {
     const content = fs.readFileSync(filePath, 'utf-8');
     const relativePath = path.relative(process.cwd(), filePath);
-    
+
     this.stats.totalFiles++;
 
     // 檢查 barrel exports
@@ -168,7 +168,7 @@ class TreeShakingAnalyzer {
     }
 
     const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf-8'));
-    
+
     // 檢查 sideEffects 配置
     if (!packageJson.hasOwnProperty('sideEffects')) {
       this.issues.push({
@@ -199,11 +199,11 @@ class TreeShakingAnalyzer {
     // 獲取所有要分析的文件
     const patterns = CONFIG.extensions.map(ext => `**/*${ext}`);
     const files = [];
-    
+
     for (const pattern of patterns) {
-      const matches = glob.sync(pattern, { 
+      const matches = glob.sync(pattern, {
         ignore: CONFIG.excludePaths,
-        absolute: true 
+        absolute: true
       });
       files.push(...matches);
     }
@@ -289,7 +289,7 @@ class TreeShakingAnalyzer {
     // 退出碼
     const exitCode = errorIssues.length > 0 ? 1 : 0;
     console.log(`\n🏁 Analysis complete. Exit code: ${exitCode}`);
-    
+
     if (exitCode === 0) {
       console.log('✅ No critical tree shaking issues found!');
     } else {

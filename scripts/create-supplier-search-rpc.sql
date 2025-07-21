@@ -39,4 +39,4 @@ COMMENT ON FUNCTION search_supplier_code(TEXT) IS '高效率搜索供應商代�
 -- 授予權限
 GRANT EXECUTE ON FUNCTION search_supplier_code(TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION search_supplier_code(TEXT) TO anon;
-GRANT EXECUTE ON FUNCTION search_supplier_code(TEXT) TO service_role; 
+GRANT EXECUTE ON FUNCTION search_supplier_code(TEXT) TO service_role;

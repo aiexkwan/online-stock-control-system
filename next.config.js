@@ -31,7 +31,7 @@ const nextConfig = {
       if (dev && !isServer) {
         // 減少開發環境的 source map 生成
         config.devtool = 'eval-cheap-module-source-map';
-        
+
         // 減少不必要的錯誤輸出
         config.stats = {
           ...config.stats,
@@ -76,21 +76,21 @@ const nextConfig = {
   // },
   async redirects() {
     const redirects = [];
-    
+
     // 首頁重定向到登入頁面
     redirects.push({
       source: '/',
       destination: '/main-login',
       permanent: true,
     });
-    
+
     // 舊登入頁面始終重定向到新登入頁面
     redirects.push({
       source: '/login',
       destination: '/main-login',
       permanent: true,
     });
-    
+
     return redirects;
   },
   webpack: (config, { isServer, dev }) => {
@@ -110,7 +110,7 @@ const nextConfig = {
       net: false,
       tls: false,
     };
-    
+
     // Note: Removed IgnorePlugin that was potentially causing CSS/JS module conflicts
 
     // 添加 PDF 優化插件
@@ -118,7 +118,7 @@ const nextConfig = {
       const PDFOptimizationPlugin = require('./webpack-pdf-optimization.js');
       config.plugins.push(new PDFOptimizationPlugin());
     }
-    
+
     // 優化 chunk 分割以減少 originalFactory.call 錯誤
     if (!isServer) {
       config.optimization = {
@@ -161,7 +161,7 @@ const nextConfig = {
         aggregateTimeout: 300,
         ignored: ['**/node_modules', '**/.git', '**/.next'],
       };
-      
+
       // 緩存優化 - 減少大字符串序列化問題
       config.cache = {
         type: 'filesystem',
@@ -208,11 +208,11 @@ const nextConfig = {
         assert: false,
         process: false,
       };
-      
+
       // 修復 pdfkit resolution 問題
       config.resolve.alias = {
         ...config.resolve.alias,
-        'pdfkit': require.resolve('./lib/pdf-polyfill.js'),
+        pdfkit: require.resolve('./lib/pdf-polyfill.js'),
       };
     }
 
@@ -236,7 +236,7 @@ const nextConfig = {
     if (!isServer) {
       // 模組解析優化 (優先使用 ES modules)
       config.resolve.mainFields = ['browser', 'module', 'main'];
-      
+
       // 配置 chunk splitting 策略
       config.optimization = {
         ...config.optimization,
@@ -276,7 +276,6 @@ const nextConfig = {
               enforce: true,
               maxSize: 200000, // 200KB 限制
             },
-
 
             // Supabase 數據層
             supabase: {
@@ -324,7 +323,7 @@ const nextConfig = {
               enforce: true,
               reuseExistingChunk: true,
             },
-            
+
             // PDFKit 相關庫
             pdfkit: {
               test: /[\\/]node_modules[\\/](pdfkit|fontkit|png-js|jpeg-js|brotli|@react-pdf)[\\/]/,
@@ -334,7 +333,7 @@ const nextConfig = {
               enforce: true,
               reuseExistingChunk: true,
             },
-            
+
             // Excel 處理
             excel: {
               test: /[\\/]node_modules[\\/]exceljs[\\/]/,
@@ -343,7 +342,7 @@ const nextConfig = {
               priority: 28,
               enforce: true,
             },
-            
+
             // 其他 PDF 庫
             pdfOthers: {
               test: /[\\/]node_modules[\\/](jspdf|pdf-lib|pdf-parse|pdf2pic)[\\/]/,
@@ -399,7 +398,7 @@ const nextConfig = {
           ),
         })
       );
-      
+
       // 解決 pdfkit 問題
       config.plugins.push(
         new ProvidePlugin({

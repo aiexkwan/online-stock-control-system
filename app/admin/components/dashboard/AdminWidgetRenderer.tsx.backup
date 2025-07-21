@@ -12,7 +12,7 @@ import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { createClient } from '@/lib/supabase';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { simpleWidgetRegistry } from '@/lib/widgets/simple-registry';
-import { 
+import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   CubeIcon,
@@ -32,11 +32,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { 
-  getProductByCode, 
-  createProduct, 
+import {
+  getProductByCode,
+  createProduct,
   updateProduct,
-  ProductData 
+  ProductData
 } from '@/app/actions/productActions';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -71,7 +71,7 @@ interface AdminWidgetRendererProps {
 // 主題顏色映射 - 配合 GlowCard 效果
 const THEME_GLOW_COLORS = {
   injection: 'production',
-  pipeline: 'search', 
+  pipeline: 'search',
   warehouse: 'warehouse',
   analysis: 'inventory',
   upload: 'search',
@@ -83,7 +83,7 @@ const THEME_GLOW_COLORS = {
 type ThemeKey = 'production' | 'warehouse' | 'inventory' | 'update' | 'search';
 
 const getThemeGlowColor = (theme?: string): ThemeKey => {
-  return theme && theme in THEME_GLOW_COLORS 
+  return theme && theme in THEME_GLOW_COLORS
     ? THEME_GLOW_COLORS[theme as keyof typeof THEME_GLOW_COLORS] as ThemeKey
     : 'warehouse'; // 默認 warehouse（藍色）
 };
@@ -108,12 +108,12 @@ const UnifiedWidgetWrapper = React.memo<{
 
   if (hasError) {
     return (
-      <SpotlightCard 
+      <SpotlightCard
         className={cn("h-full w-full", className)}
         theme={spotlightTheme}
         disableSpotlight={true}
       >
-        <div 
+        <div
           className="h-full w-full bg-red-900/10 backdrop-blur-sm"
           style={{ ...style, borderRadius: "1rem" }}
         >
@@ -129,7 +129,7 @@ const UnifiedWidgetWrapper = React.memo<{
 
   // 使用 SpotlightCard 提供完整的 spotlight 動畫效果
   return (
-    <SpotlightCard 
+    <SpotlightCard
       className={cn("h-full w-full", className)}
       theme={spotlightTheme}
       spotlightSize={400}
@@ -137,7 +137,7 @@ const UnifiedWidgetWrapper = React.memo<{
       disableSpotlight={false}
       borderRadius="1rem"
     >
-      <div 
+      <div
         className="h-full w-full bg-slate-900/10 backdrop-blur-sm transition-all duration-300"
         style={{ ...style, borderRadius: "1rem" }}
       >
@@ -287,11 +287,11 @@ const VirtualizedWidget = React.memo<{
   const containerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);  // 預設為可見
   const [hasBeenVisible, setHasBeenVisible] = useState(true);  // 預設為已經可見過
-  
+
   useEffect(() => {
     const element = containerRef.current;
     if (!element) return;
-    
+
     // 使用標準 Intersection Observer
     const observer = new IntersectionObserver(
       (entries) => {
@@ -309,27 +309,27 @@ const VirtualizedWidget = React.memo<{
         threshold: 0
       }
     );
-    
+
     observer.observe(element);
-    
+
     return () => {
       observer.unobserve(element);
     };
   }, [widgetId, hasBeenVisible]);
-  
+
   // Widget placeholder
   const renderPlaceholder = () => (
     <div className="h-full w-full animate-pulse">
       <div className="h-full bg-slate-800/50 rounded-xl"></div>
     </div>
   );
-  
+
   // For themes using nth-child CSS, don't set gridArea inline
   // All custom themes use nth-child CSS
-  const finalStyle = isCustomTheme 
-    ? style 
+  const finalStyle = isCustomTheme
+    ? style
     : { ...style, gridArea };
-  
+
   // Theme class mapping
   const THEME_CLASS_MAP = {
     injection: 'custom-theme-item',
@@ -341,12 +341,12 @@ const VirtualizedWidget = React.memo<{
     system: 'system-item',
     analysis: 'analysis-item'
   } as const;
-  
+
   // Add theme-specific class based on theme
   const themeClass = isCustomTheme && theme && theme in THEME_CLASS_MAP
     ? THEME_CLASS_MAP[theme as keyof typeof THEME_CLASS_MAP]
     : '';
-  
+
   return (
     <div
       ref={containerRef}
@@ -376,8 +376,8 @@ const VirtualizedWidget = React.memo<{
 VirtualizedWidget.displayName = 'VirtualizedWidget';
 
 // AdminWidgetRenderer - 使用 React.memo 優化以減少不必要的重新渲染
-const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({ 
-  config, 
+const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
+  config,
   theme,
   timeFrame,
   index = 0,
@@ -388,7 +388,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isDelayed, setIsDelayed] = useState(delay > 0);
   const { refreshTrigger } = useAdminRefresh();
-  
+
   // Helper function to render lazy component from simpleWidgetRegistry.getWidgetComponent - 定義在最前面以避免初始化順序問題
   const renderLazyComponent = useCallback((componentName: string, props: any) => {
     const Component = simpleWidgetRegistry.getWidgetComponent(componentName);
@@ -420,9 +420,9 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       try {
         setLoading(true);
         setError(null);
-        
+
         const supabase = createClient();
-        
+
         // 根據不同的數據源載入真實數據
         switch (config.dataSource) {
           case 'record_palletinfo':
@@ -473,7 +473,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             const mockData = getMockData(config);
             setData(mockData);
         }
-        
+
       } catch (err: any) {
         console.error(`[AdminWidgetRenderer] Error loading ${config.dataSource}:`, err);
         // Handle auth errors specifically
@@ -495,7 +495,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
   const loadPalletData = useCallback(async (supabase: any, timeFrame: TimeFrame) => {
     // 根據 metrics 判斷要載入什麼數據
     const metric = config.metrics?.[0];
-    
+
     if (metric === 'pallet_count') {
       // 載入棧板數量
       const { data: palletData, error } = await supabase
@@ -513,7 +513,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       }
 
       const uniquePallets = new Set(palletData?.map((p: any) => p.plt_num) || []);
-      
+
       setData({
         value: uniquePallets.size,
         label: config.title,
@@ -536,7 +536,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       }
 
       const uniquePallets = new Set(palletData?.map((p: any) => p.plt_num) || []);
-      
+
       setData({
         value: uniquePallets.size,
         label: config.title,
@@ -559,7 +559,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       }
 
       const totalQty = palletData?.reduce((sum: number, p: any) => sum + (p.product_qty || 0), 0) || 0;
-      
+
       setData({
         value: totalQty,
         label: config.title,
@@ -582,7 +582,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       }
 
       const totalQty = palletData?.reduce((sum: number, p: any) => sum + (p.product_qty || 0), 0) || 0;
-      
+
       setData({
         value: totalQty,
         label: config.title,
@@ -591,7 +591,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
     } else if (config.chartType === 'bar') {
       // 判斷是否為 pipeline 數據
       const isPipeline = config.metrics?.[0] === 'pipeline_products';
-      
+
       // 載入 Top 5 產品數據
       const query = supabase
         .from('record_palletinfo')
@@ -599,13 +599,13 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         .ilike('plt_remark', '%finished in production%')
         .gte('generate_time', timeFrame.start.toISOString())
         .lte('generate_time', timeFrame.end.toISOString());
-        
+
       if (isPipeline) {
         query.ilike('product_code', 'U%');
       } else {
         query.not('product_code', 'ilike', 'U%');
       }
-        
+
       const { data: palletData, error } = await query;
 
       if (error) {
@@ -630,7 +630,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
     } else if (config.chartType === 'donut') {
       // 判斷是否為 pipeline 數據
       const isPipeline = config.metrics?.[0] === 'pipeline_products_top10';
-      
+
       // 載入 Top 10 產品數據
       const query = supabase
         .from('record_palletinfo')
@@ -638,13 +638,13 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         .ilike('plt_remark', '%finished in production%')
         .gte('generate_time', timeFrame.start.toISOString())
         .lte('generate_time', timeFrame.end.toISOString());
-        
+
       if (isPipeline) {
         query.ilike('product_code', 'U%');
       } else {
         query.not('product_code', 'ilike', 'U%');
       }
-        
+
       const { data: palletData, error } = await query;
 
       if (error) {
@@ -937,19 +937,19 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
   // 生成每小時數據
   const generateHourlyData = (data: any[], timeField: string) => {
     const hourlyMap = new Map<number, number>();
-    
+
     // 初始化 24 小時
     for (let i = 0; i < 24; i++) {
       hourlyMap.set(i, 0);
     }
-    
+
     // 統計每小時的數據
     data?.forEach(record => {
       const date = new Date(record[timeField]);
       const hour = date.getHours();
       hourlyMap.set(hour, hourlyMap.get(hour)! + 1);
     });
-    
+
     return Array.from(hourlyMap.entries()).map(([hour, count]) => ({
       name: `${hour}:00`,
       value: count
@@ -959,7 +959,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
   // 根據 action 類型返回圖標
   const getActionIcon = (action: string) => {
     const actionLower = action.toLowerCase();
-    
+
     if (actionLower.includes('transfer') || actionLower.includes('move')) {
       return <TruckIcon className="w-4 h-4 text-orange-500" />;
     }
@@ -988,7 +988,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
     }
 
     // 如果是生產統計類型，使用 Server Actions 組件
-    if (config.dataSource === 'record_palletinfo' && 
+    if (config.dataSource === 'record_palletinfo' &&
         (config.metrics?.[0] === 'pallet_count' || config.metrics?.[0] === 'quantity_sum')) {
       return (
         <Suspense fallback={createSuspenseFallback('stats')}>
@@ -1032,7 +1032,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             {label}
           </CardTitle>
         </CardHeader>
-        
+
         <CardContent className="flex-1 flex items-center justify-center">
           <div className="text-center">
             {/* Value */}
@@ -1044,14 +1044,14 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             >
               {(value !== undefined && value !== null) ? value.toLocaleString() : '0'}
             </motion.div>
-            
+
             {/* Trend with Animation */}
             {trend !== undefined && (
               <div className={cn(
                 "flex items-center gap-1 text-sm justify-center",
                 trend > 0 ? "text-green-400" : "text-red-400"
               )}>
-                {trend > 0 ? 
+                {trend > 0 ?
                   <ArrowTrendingUpIcon className="w-4 h-4" /> :
                   <ArrowTrendingDownIcon className="w-4 h-4" />
                 }
@@ -1089,7 +1089,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         </Suspense>
       );
     }
-    
+
     // Top 10 Products Distribution
     if (config.title === 'Top 10 Products Distribution' && config.chartType === 'donut') {
       return (
@@ -1112,7 +1112,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         </Suspense>
       );
     }
-    
+
     // Staff Workload - 使用 Server Actions 版本
     if (config.title === 'Staff Workload' && config.chartType === 'line') {
       return (
@@ -1135,7 +1135,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         </Suspense>
       );
     }
-    
+
     if (loading) {
       return (
         <WidgetSuspenseFallback type="chart" />
@@ -1143,12 +1143,12 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
     }
 
     const chartData = data?.chartData || [];
-    
+
     let ChartComponent = <div />; // Default component
     if (config.chartType === 'line') {
       // Check if this is workload data with multiple users
       const isWorkloadData = data?.userNames && data.userNames.length > 0;
-      
+
       if (isWorkloadData) {
         // 計算最大值以設定 Y 軸範圍
         let maxValue = 0;
@@ -1159,28 +1159,28 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             }
           });
         });
-        
+
         // 增加 20% 的空間避免穿圖
         const yAxisMax = Math.ceil(maxValue * 1.2);
-        
+
         ChartComponent = (
           <LineChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 40 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-            <XAxis 
-              dataKey="date" 
-              stroke="#94a3b8" 
+            <XAxis
+              dataKey="date"
+              stroke="#94a3b8"
               fontSize={10}
               angle={-45}
               textAnchor="end"
             />
-            <YAxis 
-              stroke="#94a3b8" 
+            <YAxis
+              stroke="#94a3b8"
               fontSize={11}
               domain={[0, yAxisMax || 'auto']}
               ticks={Array.from({length: 6}, (_, i) => Math.round(yAxisMax * i / 5))}
             />
-            <Tooltip 
-              contentStyle={{ 
+            <Tooltip
+              contentStyle={{
                 backgroundColor: '#1e293b',
                 border: '1px solid #334155',
                 borderRadius: '8px'
@@ -1188,10 +1188,10 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             />
             {/* Render a line for each user */}
             {data.userNames.map((userName: string, index: number) => (
-              <Line 
+              <Line
                 key={userName}
-                type="natural" 
-                dataKey={userName} 
+                type="natural"
+                dataKey={userName}
                 stroke={CHART_COLORS[index % CHART_COLORS.length]}
                 strokeWidth={2}
                 dot={false}
@@ -1207,17 +1207,17 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
             <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} />
             <YAxis stroke="#94a3b8" fontSize={11} />
-            <Tooltip 
-              contentStyle={{ 
+            <Tooltip
+              contentStyle={{
                 backgroundColor: '#1e293b',
                 border: '1px solid #334155',
                 borderRadius: '8px'
               }}
             />
-            <Line 
-              type="monotone" 
-              dataKey="value" 
-              stroke="#3b82f6" 
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke="#3b82f6"
               strokeWidth={2}
               dot={{ fill: '#3b82f6', r: 3 }}
             />
@@ -1230,8 +1230,8 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
           <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
           <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} angle={-45} textAnchor="end" />
           <YAxis stroke="#94a3b8" fontSize={11} />
-          <Tooltip 
-            contentStyle={{ 
+          <Tooltip
+            contentStyle={{
               backgroundColor: '#1e293b',
               border: '1px solid #334155',
               borderRadius: '8px'
@@ -1265,8 +1265,8 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
               <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip 
-            contentStyle={{ 
+          <Tooltip
+            contentStyle={{
               backgroundColor: '#1e293b',
               border: '1px solid #334155',
               borderRadius: '8px'
@@ -1284,42 +1284,42 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
           <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
           <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} />
           <YAxis stroke="#94a3b8" fontSize={11} />
-          <Tooltip 
-            contentStyle={{ 
+          <Tooltip
+            contentStyle={{
               backgroundColor: '#1e293b',
               border: '1px solid #334155',
               borderRadius: '8px'
             }}
           />
-          <Area 
-            type="monotone" 
-            dataKey="value" 
-            stroke="#3b82f6" 
-            fill="#3b82f6" 
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke="#3b82f6"
+            fill="#3b82f6"
             fillOpacity={0.3}
           />
         </AreaChart>
       );
     }
-    
+
     return (
       <div className="h-full flex flex-col">
-        <ResponsiveContainer 
-          width="100%" 
+        <ResponsiveContainer
+          width="100%"
           height={
-            config.chartType === 'line' && data?.userNames ? "100%" : 
+            config.chartType === 'line' && data?.userNames ? "100%" :
             (data?.legendData || (config.chartType === 'donut' && chartData.length > 0) ? "85%" : "100%")
           }
         >
           {ChartComponent}
         </ResponsiveContainer>
-        
+
         {/* Legend for workload chart - 移除此部分 */}
         {data?.legendData && data.legendData.length > 0 && config.title !== 'Staff Workload' && (
           <div className="flex flex-wrap gap-2 justify-center mt-1">
             {data.legendData.map((item: any, index: number) => (
               <div key={item.value} className="flex items-center gap-1">
-                <div 
+                <div
                   className="w-2 h-2 rounded-full"
                   style={{ backgroundColor: item.color }}
                 />
@@ -1328,13 +1328,13 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             ))}
           </div>
         )}
-        
+
         {/* Legend for donut/pie chart */}
         {(config.chartType === 'donut' || config.chartType === 'pie') && chartData.length > 0 && (
           <div className="flex flex-wrap gap-1 justify-center mt-1 px-1 overflow-y-auto max-h-20">
             {chartData.slice(0, 10).map((item: any, index: number) => (
               <div key={`${item.name}-${index}`} className="flex items-center gap-1">
-                <div 
+                <div
                   className="w-2 h-2 rounded-full flex-shrink-0"
                   style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
                 />
@@ -1404,7 +1404,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         </Suspense>
       );
     }
-    
+
     if (loading) {
       return (
         <WidgetSuspenseFallback type="table" />
@@ -1444,28 +1444,28 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
   // 渲染特殊組件 - 使用 useCallback 優化
   const renderSpecialComponent = useCallback(() => {
     const componentName = config.component || '';
-    
+
     // 優先從增強的 widget registry 獲取組件
     const EnhancedComponent = unifiedWidgetRegistry.getWidgetComponent(componentName, false);
     if (EnhancedComponent) {
       // 使用預先定義的 props 查找對象
       const propsMap = getComponentPropsFactory(config, timeFrame, theme);
       const componentProps = propsMap[componentName] || { widget: config, isEditMode: false };
-      
+
       // EnhancedComponent 已經內建懶加載和 Suspense，不需要再包裝
       return <EnhancedComponent {...componentProps} />;
     }
-    
+
     // 回退到 unifiedWidgetRegistry.getWidgetComponent
     const LazyComponent = unifiedWidgetRegistry.getWidgetComponent[componentName];
     if (LazyComponent) {
       // 使用預先定義的 props 查找對象
       const propsMap = getComponentPropsFactory(config, timeFrame, theme);
       const componentProps = propsMap[componentName] || { widget: config, isEditMode: false };
-      
+
       return <LazyComponent {...componentProps} />;
     }
-    
+
     // 原有的 switch 處理（只保留非懶加載組件）
     switch (config.component) {
       case 'WarehouseHeatmap':
@@ -1500,7 +1500,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         const ProductUpdateWidgetV2 = unifiedWidgetRegistry.getWidgetComponent['ProductUpdateWidgetV2'];
         if (ProductUpdateWidgetV2) {
           return (
-            <ProductUpdateWidgetV2 
+            <ProductUpdateWidgetV2
               widget={{
                 id: 'product-update',
                 type: 'CUSTOM' as any,
@@ -1516,7 +1516,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         const SupplierUpdateWidget = unifiedWidgetRegistry.getWidgetComponent['SupplierUpdateWidget'];
         if (SupplierUpdateWidget) {
           return (
-            <SupplierUpdateWidget 
+            <SupplierUpdateWidget
               widget={{
                 id: 'supplier-update',
                 type: 'CUSTOM' as any,
@@ -1532,7 +1532,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         const VoidPalletWidget = unifiedWidgetRegistry.getWidgetComponent['VoidPalletWidget'];
         if (VoidPalletWidget) {
           return (
-            <VoidPalletWidget 
+            <VoidPalletWidget
               widget={{
                 id: 'void-pallet',
                 type: 'VOID_PALLET' as any,
@@ -1567,9 +1567,9 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-white">Stock Inventory</h3>
               <div className="flex gap-2">
-                <input 
-                  type="text" 
-                  placeholder="Search products..." 
+                <input
+                  type="text"
+                  placeholder="Search products..."
                   className="px-4 py-2 bg-slate-700 rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none text-white text-sm"
                 />
                 <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
@@ -1923,13 +1923,13 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
 
   // Check if this is a custom theme
   const isCustomTheme = theme === 'injection' || theme === 'pipeline' || theme === 'warehouse' || theme === 'upload' || theme === 'update' || theme === 'stock-management' || theme === 'system';
-  
+
   // Special components that need minimal wrapper (like HistoryTree)
   const minimalWrapperComponents = ['HistoryTree'];
-  
+
   // Components that need their own padding
   const paddedComponents = ['UploadFilesWidget', 'UploadOrdersWidget', 'UploadProductSpecWidget', 'UploadPhotoWidget'];
-  
+
   // Determine wrapper class
   let wrapperClass = '';
   if (!isCustomTheme) {
@@ -1937,18 +1937,18 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
   } else if (config.component && paddedComponents.includes(config.component)) {
     wrapperClass = 'p-6';
   }
-  
+
   // Special handling for components that need transparent background
   const transparentComponents = ['HistoryTree'];
   const isTransparent = config.component && transparentComponents.includes(config.component);
-  
+
   // Generate unique widget ID
   const widgetId = `${config.type}-${config.title.replace(/\s+/g, '-')}-${index}`;
-  
+
   // Use unified wrapper for ALL widgets with virtualization
   // Re-enable VirtualizedWidget with data-widget-index support
   const shouldUseVirtualization = true; // Enable virtualization
-  
+
   if (shouldUseVirtualization) {
     // 如果仍在延遲中，顯示佔位符
     if (isDelayed) {
@@ -1959,7 +1959,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         />
       );
     }
-    
+
     return (
       <VirtualizedWidget
         widgetId={widgetId}
@@ -1968,7 +1968,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         isCustomTheme={isCustomTheme}
         index={index}
       >
-        <UnifiedWidgetWrapper 
+        <UnifiedWidgetWrapper
           isCustomTheme={isCustomTheme}
           hasError={!!error}
           theme={theme}
@@ -1982,7 +1982,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
       </VirtualizedWidget>
     );
   }
-  
+
   // Direct rendering without VirtualizedWidget
   // Use the same theme class mapping
   const THEME_CLASS_MAP = {
@@ -1995,18 +1995,18 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
     system: 'system-item',
     analysis: 'analysis-item'
   } as const;
-  
+
   const themeClass = isCustomTheme && theme && theme in THEME_CLASS_MAP
     ? THEME_CLASS_MAP[theme as keyof typeof THEME_CLASS_MAP]
     : '';
-  
+
   return (
     <div
       data-widget-index={index}
       className={themeClass}
       style={isCustomTheme ? undefined : { gridArea: config.gridArea }}
     >
-      <UnifiedWidgetWrapper 
+      <UnifiedWidgetWrapper
         isCustomTheme={isCustomTheme}
         hasError={!!error}
         theme={theme}
@@ -2082,7 +2082,7 @@ function ProductUpdateComponent() {
   const [showForm, setShowForm] = useState(false);
   const [searchedCode, setSearchedCode] = useState('');
   const [statusMessage, setStatusMessage] = useState<StatusMessageType | null>(null);
-  
+
   // 表單狀態
   const [formData, setFormData] = useState<ProductData>({
     code: '',
@@ -2122,10 +2122,10 @@ function ProductUpdateComponent() {
     setIsLoading(true);
     setStatusMessage(null);
     setSearchedCode(code.trim());
-    
+
     try {
       const result = await getProductByCode(code.trim());
-      
+
       if (result.success && result.data) {
         // 搜尋成功 - 顯示產品信息
         setProductData(result.data);
@@ -2197,21 +2197,21 @@ function ProductUpdateComponent() {
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     try {
       let result;
-      
+
       if (isEditing && productData) {
         // 更新現有產品
         const { code: _, ...updateData } = formData;
-        
+
         // 確保數據類型正確
         if (typeof updateData.standard_qty === 'string') {
           updateData.standard_qty = parseInt(updateData.standard_qty as any) || 0;
         }
-        
+
         result = await updateProduct(productData.code, updateData);
-        
+
         if (result.success) {
           setProductData(result.data!);
           setStatusMessage({
@@ -2230,7 +2230,7 @@ function ProductUpdateComponent() {
           });
         }
       }
-      
+
       if (!result.success) {
         setStatusMessage({
           type: 'error',
@@ -2238,12 +2238,12 @@ function ProductUpdateComponent() {
         });
         return;
       }
-      
+
       // 成功後重置狀態
       setIsEditing(false);
       setShowForm(false);
       setShowCreateDialog(false);
-      
+
     } catch (error) {
       console.error('[ProductUpdate] Unexpected error:', error);
       setStatusMessage({
@@ -2361,7 +2361,7 @@ function ProductUpdateComponent() {
                       Product Not Found
                     </h3>
                     <p className="text-slate-300 mb-4">
-                      The product code &quot;{searchedCode}&quot; was not found in the database. 
+                      The product code &quot;{searchedCode}&quot; was not found in the database.
                       Would you like to create a new product with this code?
                     </p>
                     <div className="flex space-x-3">
@@ -2568,7 +2568,7 @@ function SupplierUpdateComponent() {
   const [showForm, setShowForm] = useState(false);
   const [searchedCode, setSearchedCode] = useState('');
   const [statusMessage, setStatusMessage] = useState<StatusMessageType | null>(null);
-  
+
   // 表單狀態
   const [formData, setFormData] = useState<SupplierData>({
     supplier_code: '',
@@ -2604,18 +2604,18 @@ function SupplierUpdateComponent() {
     setIsLoading(true);
     setStatusMessage(null);
     setSearchedCode(code.trim().toUpperCase());
-    
+
     try {
       const { data, error } = await supabase
         .from('data_supplier')
         .select('*')
         .eq('supplier_code', code.trim().toUpperCase())
         .single();
-      
+
       if (error && error.code !== 'PGRST116') {
         throw error;
       }
-      
+
       if (data) {
         // 搜尋成功 - 顯示供應商信息
         setSupplierData(data);
@@ -2685,7 +2685,7 @@ function SupplierUpdateComponent() {
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     try {
       if (isEditing && supplierData) {
         // 更新現有供應商
@@ -2695,9 +2695,9 @@ function SupplierUpdateComponent() {
           .eq('supplier_code', supplierData.supplier_code)
           .select()
           .single();
-        
+
         if (error) throw error;
-        
+
         setSupplierData(data);
         setStatusMessage({
           type: 'success',
@@ -2710,21 +2710,21 @@ function SupplierUpdateComponent() {
           .insert([formData])
           .select()
           .single();
-        
+
         if (error) throw error;
-        
+
         setSupplierData(data);
         setStatusMessage({
           type: 'success',
           message: 'Supplier created successfully!'
         });
       }
-      
+
       // 成功後重置狀態
       setIsEditing(false);
       setShowForm(false);
       setShowCreateDialog(false);
-      
+
     } catch (error: any) {
       console.error('Submit error:', error);
       setStatusMessage({
@@ -2842,7 +2842,7 @@ function SupplierUpdateComponent() {
                       Supplier Not Found
                     </h3>
                     <p className="text-slate-300 mb-4">
-                      The supplier code &quot;{searchedCode}&quot; was not found in the database. 
+                      The supplier code &quot;{searchedCode}&quot; was not found in the database.
                       Would you like to create a new supplier with this code?
                     </p>
                     <div className="flex space-x-3">
@@ -2996,21 +2996,21 @@ export const AdminWidgetRenderer = React.memo(AdminWidgetRendererComponent, (pre
     if (a === b) return true;
     if (a == null || b == null) return false;
     if (typeof a !== typeof b) return false;
-    
+
     if (typeof a === 'object') {
       const keysA = Object.keys(a);
       const keysB = Object.keys(b);
-      
+
       if (keysA.length !== keysB.length) return false;
-      
+
       for (let key of keysA) {
         if (!keysB.includes(key)) return false;
         if (!deepEqual(a[key], b[key])) return false;
       }
-      
+
       return true;
     }
-    
+
     return false;
   };
 

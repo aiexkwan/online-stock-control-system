@@ -34,8 +34,8 @@ jest.setTimeout(30000);
 // 全域測試工具
 global.TestUtils = {
   // 延遲執行
-  delay: (ms) => new Promise(resolve => setTimeout(resolve, ms)),
-  
+  delay: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+
   // 模擬 Supabase 響應
   mockSupabaseResponse: (data, error = null) => ({
     data,
@@ -44,7 +44,7 @@ global.TestUtils = {
     status: error ? 400 : 200,
     statusText: error ? 'Bad Request' : 'OK',
   }),
-  
+
   // 創建模擬的 JWT Token
   createMockJwtToken: (payload = {}) => {
     const header = { alg: 'HS256', typ: 'JWT' };
@@ -55,12 +55,12 @@ global.TestUtils = {
       exp: Math.floor(Date.now() / 1000) + 3600,
       ...payload,
     };
-    
+
     // 簡單的 base64 編碼（僅用於測試）
     const encode = (obj) => Buffer.from(JSON.stringify(obj)).toString('base64');
     return `${encode(header)}.${encode(defaultPayload)}.mock-signature`;
   },
-  
+
   // 模擬 HTTP 請求
   mockRequest: (options = {}) => ({
     user: { id: 'test-user-id', email: 'test@example.com' },
@@ -70,7 +70,7 @@ global.TestUtils = {
     body: {},
     ...options,
   }),
-  
+
   // 模擬 HTTP 響應
   mockResponse: () => {
     const res = {};
@@ -101,5 +101,5 @@ beforeEach(() => {
 // 測試完成後清理
 afterAll(async () => {
   // 清理任何持久化資源
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 100));
 });

@@ -40,16 +40,16 @@ DECLARE
 BEGIN
     -- 記錄開始時間
     v_start_time := clock_timestamp();
-    
+
     -- 驗證日期參數
     IF p_start_date > p_end_date THEN
         RAISE EXCEPTION 'Start date must be before end date';
     END IF;
-    
+
     IF p_end_date > NOW() + INTERVAL '1 day' THEN
         RAISE EXCEPTION 'End date cannot be in the future';
     END IF;
-    
+
     -- 限制查詢範圍（最多 365 天）
     IF p_end_date - p_start_date > INTERVAL '365 days' THEN
         RAISE EXCEPTION 'Date range cannot exceed 365 days';
@@ -57,7 +57,7 @@ BEGIN
 
     -- 創建臨時表以優化計算
     CREATE TEMP TABLE temp_warehouse_moves AS
-    SELECT 
+    SELECT
         DATE(wl.latest_update AT TIME ZONE 'UTC') as work_date,
         di.name as operator,  -- 修正：使用 data_id.name 作為 operator
         COALESCE(wl.move, 0) as move
@@ -68,10 +68,10 @@ BEGIN
         AND wl.latest_update < p_end_date + INTERVAL '1 day'
         AND wl.latest_update IS NOT NULL
         AND wl.move > 0;
-    
+
     -- 創建索引以加速後續查詢
     CREATE INDEX idx_temp_work_date ON temp_warehouse_moves(work_date);
-    
+
     -- 計算日期分組統計
     SELECT jsonb_agg(
         jsonb_build_object(
@@ -82,7 +82,7 @@ BEGIN
         ) ORDER BY daily_stat.work_date
     ) INTO v_daily_stats
     FROM (
-        SELECT 
+        SELECT
             work_date,
             SUM(move) as total_moves,
             COUNT(DISTINCT operator) as operator_count,
@@ -90,18 +90,18 @@ BEGIN
         FROM temp_warehouse_moves
         GROUP BY work_date
     ) daily_stat;
-    
+
     -- 計算總移動數
     SELECT COALESCE(SUM(move), 0)
     INTO v_total_moves
     FROM temp_warehouse_moves;
-    
+
     -- 計算唯一操作員數
     SELECT COUNT(DISTINCT operator)
     INTO v_unique_operators
     FROM temp_warehouse_moves
     WHERE operator IS NOT NULL;
-    
+
     -- 計算平均每日移動數
     WITH daily_totals AS (
         SELECT work_date, SUM(move) as daily_total
@@ -111,10 +111,10 @@ BEGIN
     SELECT ROUND(AVG(daily_total), 2)
     INTO v_avg_moves_per_day
     FROM daily_totals;
-    
+
     -- 找出高峰日期
     WITH daily_peaks AS (
-        SELECT 
+        SELECT
             work_date,
             SUM(move) as total_moves
         FROM temp_warehouse_moves
@@ -125,20 +125,20 @@ BEGIN
     SELECT work_date, total_moves
     INTO v_peak_day
     FROM daily_peaks;
-    
+
     -- 清理臨時表
     DROP TABLE IF EXISTS temp_warehouse_moves;
-    
+
     -- 計算執行時間
     v_calculation_time := clock_timestamp() - v_start_time;
-    
+
     -- 構建返回結果
     v_result := jsonb_build_object(
         'daily_stats', COALESCE(v_daily_stats, '[]'::jsonb),
         'total_moves', COALESCE(v_total_moves, 0),
         'unique_operators', COALESCE(v_unique_operators, 0),
         'avg_moves_per_day', COALESCE(v_avg_moves_per_day, 0),
-        'peak_day', CASE 
+        'peak_day', CASE
             WHEN v_peak_day.work_date IS NOT NULL THEN
                 jsonb_build_object(
                     'date', v_peak_day.work_date,
@@ -157,14 +157,14 @@ BEGIN
             'version', '1.0.1'
         )
     );
-    
+
     RETURN v_result;
 
 EXCEPTION
     WHEN OTHERS THEN
         -- 清理臨時表（如果存在）
         DROP TABLE IF EXISTS temp_warehouse_moves;
-        
+
         -- 返回錯誤信息
         RETURN jsonb_build_object(
             'error', true,
@@ -185,7 +185,7 @@ GRANT EXECUTE ON FUNCTION public.rpc_get_warehouse_work_level(timestamptz, times
 GRANT EXECUTE ON FUNCTION public.rpc_get_warehouse_work_level(timestamptz, timestamptz, text) TO service_role;
 
 -- 添加函數註釋
-COMMENT ON FUNCTION public.rpc_get_warehouse_work_level(timestamptz, timestamptz, text) IS 
+COMMENT ON FUNCTION public.rpc_get_warehouse_work_level(timestamptz, timestamptz, text) IS
 '獲取倉庫部門的工作水平統計數據，包括每日移動數、操作員統計和高峰期分析。
 參數：
 - p_start_date: 開始日期（預設為過去30天）
@@ -267,7 +267,7 @@ ANALYZE work_level;
 ANALYZE data_id;
 
 -- 監控索引使用情況
-SELECT 
+SELECT
     schemaname,
     tablename,
     indexname,
@@ -280,7 +280,7 @@ WHERE schemaname = 'public'
 ORDER BY idx_scan DESC;
 
 -- 檢查表大小和索引大小
-SELECT 
+SELECT
     pg_size_pretty(pg_total_relation_size('work_level')) as table_size,
     pg_size_pretty(pg_indexes_size('work_level')) as indexes_size;
 */

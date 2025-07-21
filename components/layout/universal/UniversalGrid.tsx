@@ -42,7 +42,7 @@ export const UniversalGrid = forwardRef<HTMLDivElement, UniversalGridProps>(
     ref
   ) => {
     // 獲取配置 (預設優先於直接 props)
-    const config = preset ? GRID_PRESETS[preset] : { columns: columns || {}, gap };
+    const config = preset ? GRID_PRESETS[preset] : { columns: columns || ({} as any), gap };
     const finalColumns = columns || config.columns;
     const finalGap = gap || config.gap;
 
@@ -68,7 +68,7 @@ export const UniversalGrid = forwardRef<HTMLDivElement, UniversalGridProps>(
     // 構建響應式網格類名
     const buildResponsiveGridClasses = (): string[] => {
       const classes: string[] = [];
-      const cols = finalColumns as any; // Type assertion for flexibility
+      const cols = finalColumns as Record<string, number>; // Type assertion for flexibility
 
       // 基礎網格 (xs/預設)
       if ('xs' in cols && cols.xs) {

@@ -1,6 +1,6 @@
 /**
  * React Hook for Widget Smart Cache System
- * 
+ *
  * Integrates intelligent caching with widgets:
  * - Date range aware caching
  * - Stale-while-revalidate support
@@ -21,7 +21,13 @@ import {
 } from '@/lib/widgets/smart-cache-strategy';
 import { type WidgetDataSource, type WidgetPriority } from '@/lib/widgets/unified-config';
 import { type WidgetDataMode } from '@/lib/widgets/widget-data-classification';
-import type { QueryParams, HookCacheMetrics, PredictiveConfig, CacheInvalidationOptions, OverallCacheStats } from './types';
+import type {
+  QueryParams,
+  HookCacheMetrics,
+  PredictiveConfig,
+  CacheInvalidationOptions,
+  OverallCacheStats,
+} from './types';
 import type { CacheMetrics } from '@/lib/widgets/smart-cache-strategy';
 
 export interface UseWidgetSmartCacheOptions<T> {
@@ -69,7 +75,7 @@ export function useWidgetSmartCache<T>({
   const accessCountRef = useRef(0);
   const errorRateRef = useRef(0);
   const totalFetchesRef = useRef(0);
-  
+
   // Create cache configuration
   const cacheConfig = useMemo(
     () =>
@@ -81,7 +87,7 @@ export function useWidgetSmartCache<T>({
       }),
     [widgetId, dataSource, dataMode, priority, customCacheConfig]
   );
-  
+
   // Generate cache key
   const cacheKey = useMemo(() => {
     const keyParams: CacheKeyParams = {
@@ -91,7 +97,7 @@ export function useWidgetSmartCache<T>({
     };
     return cacheConfig.generateKey(keyParams);
   }, [widgetId, params, cacheConfig]);
-  
+
   // Calculate dynamic TTL
   const dynamicTTL = useMemo(() => {
     const ttlParams = {
@@ -105,32 +111,32 @@ export function useWidgetSmartCache<T>({
     };
     return SmartTTLManager.calculateTTL(ttlParams);
   }, [cacheConfig.baseTTL, dataSource, priority, params?.dateRange]);
-  
+
   // Enhanced fetch function with caching logic
   const enhancedFetchFn = useCallback(async () => {
     const startTime = Date.now();
     totalFetchesRef.current++;
-    
+
     try {
       // Record cache miss
       cachePerformanceTracker.recordMiss(widgetId);
-      
+
       // Fetch data
-      const data = await fetchFn(params || {});
-      
+      const data = await fetchFn(params || ({} as any));
+
       // Update metrics
       lastUpdateRef.current = new Date();
       accessCountRef.current++;
       cachePerformanceTracker.recordLoadTime(widgetId, Date.now() - startTime);
-      
+
       // Call update callback if provided
       if (onDataUpdate) {
         onDataUpdate(data);
       }
-      
+
       // Reset stale state
       setIsStale(false);
-      
+
       return data;
     } catch (error) {
       errorRateRef.current++;
@@ -138,7 +144,7 @@ export function useWidgetSmartCache<T>({
       throw error;
     }
   }, [widgetId, fetchFn, params, onDataUpdate]);
-  
+
   // Configure React Query
   const queryOptions: UseQueryOptions<T, Error, T, readonly unknown[]> = {
     queryKey: [cacheKey] as readonly unknown[],
@@ -151,18 +157,18 @@ export function useWidgetSmartCache<T>({
     refetchOnWindowFocus: priority === 'critical',
     refetchOnReconnect: true,
     retry: dataMode === 'real-time' ? false : 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   };
-  
+
   const query = useQuery(queryOptions);
-  
+
   // Track cache hits
   useEffect(() => {
     if (query.data && !query.isFetching) {
       cachePerformanceTracker.recordHit(widgetId, isStale);
     }
   }, [widgetId, query.data, query.isFetching, isStale]);
-  
+
   // Handle stale-while-revalidate
   useEffect(() => {
     if (cacheConfig.enableSWR && query.isStale && !query.isFetching) {
@@ -171,13 +177,13 @@ export function useWidgetSmartCache<T>({
       void query.refetch();
     }
   }, [cacheConfig.enableSWR, query.isStale, query.isFetching, query]);
-  
+
   // Setup predictive preloading
   useEffect(() => {
     if (predictiveConfig?.enabled && cacheConfig.enablePreload) {
       const checkPreload = () => {
         const prediction = predictiveConfig.predictor();
-        
+
         if (prediction.probability > 0) {
           predictivePreloader.schedulePreload(
             widgetId,
@@ -193,18 +199,18 @@ export function useWidgetSmartCache<T>({
           cachePerformanceTracker.recordPreload(widgetId);
         }
       };
-      
+
       // Check periodically
       const interval = setInterval(checkPreload, 30000); // Every 30 seconds
       checkPreload(); // Initial check
-      
+
       return () => {
         clearInterval(interval);
         predictivePreloader.cancelPreload(widgetId);
       };
     }
   }, [widgetId, predictiveConfig, cacheConfig.enablePreload, priority, query]);
-  
+
   // Calculate cache metrics
   const cacheMetrics = useMemo(() => {
     const metrics = cachePerformanceTracker.getMetrics(widgetId);
@@ -217,7 +223,7 @@ export function useWidgetSmartCache<T>({
         errorRate: 0,
       };
     }
-    
+
     const totalRequests = metrics.hits + metrics.misses;
     return {
       hitRate: totalRequests > 0 ? metrics.hits / totalRequests : 0,
@@ -227,7 +233,7 @@ export function useWidgetSmartCache<T>({
       errorRate: totalRequests > 0 ? metrics.errors / totalRequests : 0,
     };
   }, [widgetId]);
-  
+
   return {
     data: query.data,
     isLoading: query.isLoading,
@@ -245,20 +251,17 @@ export function useWidgetSmartCache<T>({
  * Hook for batch cache invalidation by date range
  */
 export function useWidgetCacheInvalidation() {
-  const invalidateByDateRange = useCallback(
-    async (options: CacheInvalidationOptions) => {
-      // This would integrate with React Query's invalidation
-      // Implementation depends on your query client setup
-      console.log('Invalidating cache for options:', options);
-    },
-    []
-  );
-  
+  const invalidateByDateRange = useCallback(async (options: CacheInvalidationOptions) => {
+    // This would integrate with React Query's invalidation
+    // Implementation depends on your query client setup
+    console.log('Invalidating cache for options:', options);
+  }, []);
+
   const invalidateAll = useCallback(async () => {
     // Invalidate all widget caches
     console.log('Invalidating all widget caches');
   }, []);
-  
+
   return {
     invalidateByDateRange,
     invalidateAll,
@@ -270,15 +273,15 @@ export function useWidgetCacheInvalidation() {
  */
 export function useCachePerformanceMonitor() {
   const [metrics, setMetrics] = useState<Map<string, CacheMetrics>>(new Map());
-  
+
   useEffect(() => {
     const interval = setInterval(() => {
       setMetrics(new Map(cachePerformanceTracker.getAllMetrics()));
     }, 5000); // Update every 5 seconds
-    
+
     return () => clearInterval(interval);
   }, []);
-  
+
   const overallStats = useMemo((): OverallCacheStats => {
     let totalHits = 0;
     let totalMisses = 0;
@@ -286,7 +289,7 @@ export function useCachePerformanceMonitor() {
     let totalPreloads = 0;
     let avgLoadTime = 0;
     let count = 0;
-    
+
     for (const metric of metrics.values()) {
       totalHits += metric.hits;
       totalMisses += metric.misses;
@@ -295,7 +298,7 @@ export function useCachePerformanceMonitor() {
       avgLoadTime += metric.avgLoadTime;
       count++;
     }
-    
+
     return {
       totalHits,
       totalMisses,
@@ -308,7 +311,7 @@ export function useCachePerformanceMonitor() {
       cacheSize: 0, // Would be calculated from actual cache implementation
     };
   }, [metrics]);
-  
+
   return {
     widgetMetrics: metrics,
     overallStats,

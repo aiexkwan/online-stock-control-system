@@ -22,7 +22,7 @@ async function run() {
   for (const user of users.users) {
     if (!user.email?.endsWith('@pennine.com')) continue;
 
-    const oldMetadata = user.user_metadata || {};
+    const oldMetadata = user.user_metadata || ({} as any);
 
     const updatedMetadata = {
       ...oldMetadata,

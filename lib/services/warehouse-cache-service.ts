@@ -55,56 +55,69 @@ export class WarehouseCacheService {
       // 嘗試從緩存獲取
       const cached = await this.cache.get<WarehouseSummaryData[]>(cacheKey);
       if (cached) {
-        cacheLogger.info({
-          operation: 'getWarehouseSummary',
-          source: 'cache',
-          responseTime: Date.now() - startTime,
-        }, 'Warehouse summary from cache');
-        
+        cacheLogger.info(
+          {
+            operation: 'getWarehouseSummary',
+            source: 'cache',
+            responseTime: Date.now() - startTime,
+          },
+          'Warehouse summary from cache'
+        );
+
         return cached;
       }
 
       // 緩存未命中，使用優化的 RPC 函數
       const supabase = await createClient();
       const { data, error } = await supabase.rpc('get_warehouse_summary', {
-        p_time_period: timeRange || '30 days'
+        p_time_period: timeRange || '30 days',
       });
 
       if (error) {
-        cacheLogger.error({
-          operation: 'getWarehouseSummary',
-          error: error.message,
-        }, 'RPC function error');
+        cacheLogger.error(
+          {
+            operation: 'getWarehouseSummary',
+            error: error.message,
+          },
+          'RPC function error'
+        );
         throw error;
       }
 
       // 轉換數據格式 (Strategy 4: unknown + type narrowing)
-      const summary: WarehouseSummaryData[] = data.summary.map((item: Record<string, unknown>) => ({
-        location: String(item.location || ''),
-        totalQty: Number(item.total_qty) || 0,
-        itemCount: Number(item.item_count) || 0,
-        uniqueProducts: Number(item.unique_products) || 0,
-        lastUpdated: new Date().toISOString(),
-      }));
+      const dataObj = data as any;
+      const summary: WarehouseSummaryData[] =
+        dataObj?.summary?.map((item: Record<string, unknown>) => ({
+          location: String(item.location || ''),
+          totalQty: Number(item.total_qty) || 0,
+          itemCount: Number(item.item_count) || 0,
+          uniqueProducts: Number(item.unique_products) || 0,
+          lastUpdated: new Date().toISOString(),
+        })) || [];
 
       // 存入緩存
       await this.cache.set(cacheKey, summary, this.WAREHOUSE_TTL);
 
-      cacheLogger.info({
-        operation: 'getWarehouseSummary',
-        source: 'database',
-        recordCount: summary.length,
-        responseTime: Date.now() - startTime,
-      }, 'Warehouse summary from database');
+      cacheLogger.info(
+        {
+          operation: 'getWarehouseSummary',
+          source: 'database',
+          recordCount: summary.length,
+          responseTime: Date.now() - startTime,
+        },
+        'Warehouse summary from database'
+      );
 
       return summary;
-
     } catch (error) {
-      cacheLogger.error({
-        operation: 'getWarehouseSummary',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        responseTime: Date.now() - startTime,
-      }, 'Failed to get warehouse summary');
+      cacheLogger.error(
+        {
+          operation: 'getWarehouseSummary',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          responseTime: Date.now() - startTime,
+        },
+        'Failed to get warehouse summary'
+      );
       throw error;
     }
   }
@@ -120,12 +133,15 @@ export class WarehouseCacheService {
       // 嘗試從緩存獲取
       const cached = await this.cache.get<DashboardStatsData>(cacheKey);
       if (cached) {
-        cacheLogger.info({
-          operation: 'getDashboardStats',
-          source: 'cache',
-          responseTime: Date.now() - startTime,
-        }, 'Dashboard stats from cache');
-        
+        cacheLogger.info(
+          {
+            operation: 'getDashboardStats',
+            source: 'cache',
+            responseTime: Date.now() - startTime,
+          },
+          'Dashboard stats from cache'
+        );
+
         return cached;
       }
 
@@ -133,29 +149,33 @@ export class WarehouseCacheService {
       const supabase = await createClient();
       const { data, error } = await supabase.rpc('get_dashboard_stats', {
         p_use_estimated_count: useEstimated,
-        p_include_detailed_stats: true
+        p_include_detailed_stats: true,
       });
 
       if (error) {
-        cacheLogger.error({
-          operation: 'getDashboardStats',
-          error: error.message,
-        }, 'Dashboard stats RPC error');
+        cacheLogger.error(
+          {
+            operation: 'getDashboardStats',
+            error: error.message,
+          },
+          'Dashboard stats RPC error'
+        );
         throw error;
       }
 
       // 獲取緩存統計用於健康監控
       const cacheStats = await this.cache.getStats();
-      
+
       // 安全的類型轉換 (Strategy 4: unknown + type narrowing)
+      const dataObj2 = data as any;
       const stats: DashboardStatsData = {
-        totalPallets: Number(data.total_pallets) || 0,
-        activePallets: Number(data.active_pallets) || 0,
-        uniqueProducts: Number(data.unique_products) || 0,
-        todayTransfers: Number(data.today_transfers) || 0,
-        pendingOrders: Number(data.pending_orders) || 0,
+        totalPallets: Number(dataObj2?.total_pallets) || 0,
+        activePallets: Number(dataObj2?.active_pallets) || 0,
+        uniqueProducts: Number(dataObj2?.unique_products) || 0,
+        todayTransfers: Number(dataObj2?.today_transfers) || 0,
+        pendingOrders: Number(dataObj2?.pending_orders) || 0,
         systemHealth: {
-          dbResponseTime: Number(data.execution_time_ms) || 0,
+          dbResponseTime: Number(dataObj2?.execution_time_ms) || 0,
           cacheHitRate: Number(cacheStats.hitRate) || 0,
           lastUpdated: new Date().toISOString(),
         },
@@ -164,22 +184,27 @@ export class WarehouseCacheService {
       // 存入緩存，較短的 TTL 因為數據更新頻繁
       await this.cache.set(cacheKey, stats, this.DASHBOARD_TTL);
 
-      cacheLogger.info({
-        operation: 'getDashboardStats',
-        source: 'database',
-        useEstimated,
-        dbResponseTime: data.execution_time_ms,
-        responseTime: Date.now() - startTime,
-      }, 'Dashboard stats from database');
+      cacheLogger.info(
+        {
+          operation: 'getDashboardStats',
+          source: 'database',
+          useEstimated,
+          dbResponseTime: dataObj2?.execution_time_ms,
+          responseTime: Date.now() - startTime,
+        },
+        'Dashboard stats from database'
+      );
 
       return stats;
-
     } catch (error) {
-      cacheLogger.error({
-        operation: 'getDashboardStats',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        responseTime: Date.now() - startTime,
-      }, 'Failed to get dashboard stats');
+      cacheLogger.error(
+        {
+          operation: 'getDashboardStats',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          responseTime: Date.now() - startTime,
+        },
+        'Failed to get dashboard stats'
+      );
       throw error;
     }
   }
@@ -195,7 +220,7 @@ export class WarehouseCacheService {
       page = 1,
       limit = 50,
       includeStats = false,
-      timeRange = '30 days'
+      timeRange = '30 days',
     } = params;
 
     const cacheKey = `inventory:optimized:${JSON.stringify(params)}`;
@@ -205,13 +230,16 @@ export class WarehouseCacheService {
       // 嘗試從緩存獲取
       const cached = await this.cache.get(cacheKey);
       if (cached) {
-        cacheLogger.info({
-          operation: 'getOptimizedInventory',
-          source: 'cache',
-          params,
-          responseTime: Date.now() - startTime,
-        }, 'Optimized inventory from cache');
-        
+        cacheLogger.info(
+          {
+            operation: 'getOptimizedInventory',
+            source: 'cache',
+            params,
+            responseTime: Date.now() - startTime,
+          },
+          'Optimized inventory from cache'
+        );
+
         return cached;
       }
 
@@ -219,20 +247,19 @@ export class WarehouseCacheService {
       const supabase = await createClient();
       const { data, error } = await supabase.rpc('get_optimized_inventory_data', {
         p_location: location,
-        p_product_code: productCode,
-        p_min_qty: minQty,
-        p_page: page,
         p_limit: limit,
-        p_include_stats: includeStats,
-        p_time_range: timeRange,
-        p_order_by: 'product_code'
+        p_offset: (page - 1) * limit,
+        p_sort_by: 'product_code',
       });
 
       if (error) {
-        cacheLogger.error({
-          operation: 'getOptimizedInventory',
-          error: error.message,
-        }, 'Optimized inventory RPC error');
+        cacheLogger.error(
+          {
+            operation: 'getOptimizedInventory',
+            error: error.message,
+          },
+          'Optimized inventory RPC error'
+        );
         throw error;
       }
 
@@ -240,23 +267,35 @@ export class WarehouseCacheService {
       const dynamicTTL = location ? this.DEFAULT_TTL : this.WAREHOUSE_TTL;
       await this.cache.set(cacheKey, data, dynamicTTL);
 
-      cacheLogger.info({
-        operation: 'getOptimizedInventory',
-        source: 'database',
-        recordCount: data.inventory?.length || 0,
-        hasStats: data.stats !== null,
-        responseTime: Date.now() - startTime,
-      }, 'Optimized inventory from database');
+      cacheLogger.info(
+        {
+          operation: 'getOptimizedInventory',
+          source: 'database',
+          recordCount:
+            data &&
+            typeof data === 'object' &&
+            'inventory' in data &&
+            Array.isArray((data as any).inventory)
+              ? (data as any).inventory.length
+              : 0,
+          hasStats:
+            data && typeof data === 'object' && 'stats' in data && (data as any).stats !== null,
+          responseTime: Date.now() - startTime,
+        },
+        'Optimized inventory from database'
+      );
 
       return data;
-
     } catch (error) {
-      cacheLogger.error({
-        operation: 'getOptimizedInventory',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        params,
-        responseTime: Date.now() - startTime,
-      }, 'Failed to get optimized inventory');
+      cacheLogger.error(
+        {
+          operation: 'getOptimizedInventory',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          params,
+          responseTime: Date.now() - startTime,
+        },
+        'Failed to get optimized inventory'
+      );
       throw error;
     }
   }
@@ -264,7 +303,9 @@ export class WarehouseCacheService {
   /**
    * 失效相關緩存
    */
-  async invalidateWarehouseCache(type?: 'summary' | 'dashboard' | 'inventory' | 'all'): Promise<void> {
+  async invalidateWarehouseCache(
+    type?: 'summary' | 'dashboard' | 'inventory' | 'all'
+  ): Promise<void> {
     const startTime = Date.now();
 
     try {
@@ -289,20 +330,25 @@ export class WarehouseCacheService {
           break;
       }
 
-      cacheLogger.info({
-        operation: 'invalidateWarehouseCache',
-        type: type || 'all',
-        invalidatedCount,
-        responseTime: Date.now() - startTime,
-      }, 'Cache invalidation completed');
-
+      cacheLogger.info(
+        {
+          operation: 'invalidateWarehouseCache',
+          type: type || 'all',
+          invalidatedCount,
+          responseTime: Date.now() - startTime,
+        },
+        'Cache invalidation completed'
+      );
     } catch (error) {
-      cacheLogger.error({
-        operation: 'invalidateWarehouseCache',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        type,
-        responseTime: Date.now() - startTime,
-      }, 'Failed to invalidate cache');
+      cacheLogger.error(
+        {
+          operation: 'invalidateWarehouseCache',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          type,
+          responseTime: Date.now() - startTime,
+        },
+        'Failed to invalidate cache'
+      );
       throw error;
     }
   }
@@ -323,17 +369,22 @@ export class WarehouseCacheService {
         this.getOptimizedInventory({ limit: 20, includeStats: true }), // 預熱庫存數據
       ]);
 
-      cacheLogger.info({
-        operation: 'preWarmCache',
-        responseTime: Date.now() - startTime,
-      }, 'Cache pre-warming completed');
-
+      cacheLogger.info(
+        {
+          operation: 'preWarmCache',
+          responseTime: Date.now() - startTime,
+        },
+        'Cache pre-warming completed'
+      );
     } catch (error) {
-      cacheLogger.error({
-        operation: 'preWarmCache',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        responseTime: Date.now() - startTime,
-      }, 'Cache pre-warming failed');
+      cacheLogger.error(
+        {
+          operation: 'preWarmCache',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          responseTime: Date.now() - startTime,
+        },
+        'Cache pre-warming failed'
+      );
       // 不拋出錯誤，預熱失敗不應影響正常流程
     }
   }
@@ -345,7 +396,7 @@ export class WarehouseCacheService {
     try {
       const cacheStats = await this.cache.getStats();
       const metrics = this.cache.getMetrics();
-      
+
       return {
         cache: cacheStats,
         performance: metrics,
@@ -355,10 +406,13 @@ export class WarehouseCacheService {
         },
       };
     } catch (error) {
-      cacheLogger.error({
-        operation: 'getCacheMetrics',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }, 'Failed to get cache metrics');
+      cacheLogger.error(
+        {
+          operation: 'getCacheMetrics',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+        'Failed to get cache metrics'
+      );
       return null;
     }
   }

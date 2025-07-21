@@ -103,8 +103,12 @@ export class EnhancedUserBehaviorTracker {
           p_limit: 5,
         });
 
-        if (data && data.length > 0) {
-          return data;
+        if (data && Array.isArray(data) && data.length > 0) {
+          return data.map((item: any) => ({
+            path: item.path,
+            probability: item.probability,
+            visitCount: item.visit_count || item.visitCount || 0,
+          }));
         }
       } catch (error) {
         console.error('Failed to get predictions from database:', error);
@@ -209,7 +213,7 @@ export class EnhancedUserBehaviorTracker {
     const predictions: PredictedPath[] = [];
 
     // 基於轉換模式
-    const patterns = behavior.patterns[currentPath] || {};
+    const patterns = behavior.patterns[currentPath] || ({} as any);
     const totalTransitions = Object.values(patterns).reduce((sum, count) => sum + count, 0);
 
     Object.entries(patterns).forEach(([path, count]) => {
@@ -392,7 +396,11 @@ export class EnhancedUserBehaviorTracker {
   /**
    * 合併歷史數據
    */
-  private mergeHistoryData(userId: string, history: Record<string, unknown>[], stats: Record<string, unknown>[]): void {
+  private mergeHistoryData(
+    userId: string,
+    history: Record<string, unknown>[],
+    stats: Record<string, unknown>[]
+  ): void {
     const behavior = this.memoryCache.get(userId) || {
       currentPath: '',
       visitHistory: [],
@@ -403,19 +411,29 @@ export class EnhancedUserBehaviorTracker {
 
     // 合併頻率數據
     stats.forEach(stat => {
-      behavior.frequency[stat.path] = stat.visit_count;
+      // Strategy 4: unknown + type narrowing - 安全屬性訪問
+      const path = typeof stat.path === 'string' ? stat.path : '';
+      const visitCount = typeof stat.visit_count === 'number' ? stat.visit_count : 0;
+      if (path) {
+        behavior.frequency[path] = visitCount;
+      }
     });
 
     // 分析歷史記錄建立模式
     for (let i = 1; i < history.length; i++) {
-      const from = history[i].path;
-      const to = history[i - 1].path;
+      // Strategy 4: unknown + type narrowing - 安全歷史記錄訪問
+      const fromRecord = history[i];
+      const toRecord = history[i - 1];
+      const from = typeof fromRecord?.path === 'string' ? fromRecord.path : '';
+      const to = typeof toRecord?.path === 'string' ? toRecord.path : '';
 
-      if (from !== to) {
+      if (from && to && from !== to) {
         if (!behavior.patterns[from]) {
           behavior.patterns[from] = {};
         }
-        behavior.patterns[from][to] = (behavior.patterns[from][to] || 0) + 1;
+        const currentCount =
+          typeof behavior.patterns[from][to] === 'number' ? behavior.patterns[from][to] : 0;
+        behavior.patterns[from][to] = currentCount + 1;
       }
     }
 
@@ -463,7 +481,7 @@ export class EnhancedUserBehaviorTracker {
         .order('visit_count', { ascending: false })
         .limit(limit);
 
-      return data?.map(item => item.path) || [];
+      return data?.map(item => String(item.path || '')) || [];
     } catch (error) {
       console.error('Failed to get frequent paths:', error);
       return [];
@@ -495,7 +513,8 @@ export class EnhancedUserBehaviorTracker {
       const hourCounts: Record<number, number> = {};
 
       data.forEach(record => {
-        const hour = new Date(record.visited_at).getHours();
+        const visitedAt = String(record.visited_at || new Date().toISOString());
+        const hour = new Date(visitedAt).getHours();
 
         if (!hourlyPatterns[hour]) {
           hourlyPatterns[hour] = {};
@@ -504,7 +523,8 @@ export class EnhancedUserBehaviorTracker {
           hourCounts[hour] = 0;
         }
 
-        hourlyPatterns[hour][record.path] = (hourlyPatterns[hour][record.path] || 0) + 1;
+        const path = String(record.path || '');
+        hourlyPatterns[hour][path] = (hourlyPatterns[hour][path] || 0) + 1;
         hourCounts[hour]++;
       });
 

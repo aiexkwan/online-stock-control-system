@@ -5,21 +5,24 @@
   "rootDir": ".",
   "testRegex": ".e2e-spec.ts$",
   "transform": {
-    "^.+\\.(t|j)s$": ["ts-jest", {
-      "tsconfig": {
-        "strict": true,
-        "esModuleInterop": true,
-        "allowSyntheticDefaultImports": true,
-        "experimentalDecorators": true,
-        "emitDecoratorMetadata": true,
-        "target": "ES2023",
-        "module": "commonjs",
-        "resolveJsonModule": true,
-        "moduleResolution": "node",
-        "allowJs": true,
-        "isolatedModules": true
+    "^.+\\.(t|j)s$": [
+      "ts-jest",
+      {
+        "tsconfig": {
+          "strict": true,
+          "esModuleInterop": true,
+          "allowSyntheticDefaultImports": true,
+          "experimentalDecorators": true,
+          "emitDecoratorMetadata": true,
+          "target": "ES2023",
+          "module": "commonjs",
+          "resolveJsonModule": true,
+          "moduleResolution": "node",
+          "allowJs": true,
+          "isolatedModules": true
+        }
       }
-    }]
+    ]
   },
   "moduleNameMapper": {
     "^@/(.*)$": "<rootDir>/../src/$1",

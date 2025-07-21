@@ -19,20 +19,20 @@ export interface DialogProps {
   // 基礎配置
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  
+
   // 類型變體
   variant?: 'default' | 'notification' | 'confirmation' | 'form' | 'fullscreen';
-  
+
   // 尺寸
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
-  
+
   // 視覺效果
   animation?: 'fade' | 'slide' | 'scale' | 'none';
   showAnimatedBorder?: boolean;
-  
+
   // 響應式
   mobileFullscreen?: boolean;
-  
+
   // 語義化
   severity?: 'info' | 'success' | 'warning' | 'error';
 }
@@ -49,14 +49,14 @@ export const dialogPresets = {
     animation: 'scale',
     showAnimatedBorder: true,
   },
-  
+
   // 確認類
   confirmation: {
     variant: 'confirmation',
     size: 'sm',
     animation: 'fade',
   },
-  
+
   // 表單類
   form: {
     variant: 'form',
@@ -64,7 +64,7 @@ export const dialogPresets = {
     animation: 'slide',
     mobileFullscreen: true,
   },
-  
+
   // 報表類
   report: {
     variant: 'fullscreen',
@@ -120,11 +120,11 @@ export const dialogPresets = {
 1. **高優先級遷移**（影響用戶體驗）
    - notification-dialogs-animated → NotificationDialog
    - 各種 ConfirmDialog → ConfirmDialog
-   
+
 2. **中優先級遷移**（功能組件）
    - 報表 Dialog → 使用 form preset
    - Admin Dialog → 使用統一組件
-   
+
 3. **低優先級遷移**（穩定組件）
    - 其他業務 Dialog
 
@@ -172,7 +172,7 @@ const dialogAnimations = {
 // 移動端自適應
 const useResponsiveDialog = () => {
   const isMobile = useMediaQuery('(max-width: 768px)');
-  
+
   return {
     size: isMobile ? 'full' : 'md',
     animation: isMobile ? 'slide' : 'fade',

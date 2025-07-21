@@ -1,6 +1,22 @@
 'use client';
 
 import React from 'react';
+
+// Import types from parent component
+interface UndoItem {
+  pallet_num: string;
+  product_code: string;
+  quantity: number;
+  [key: string]: unknown;
+}
+
+interface OrderSummary {
+  percentage: number;
+  completedItems: number;
+  itemCount: number;
+  loadedQty: number;
+  totalQty: number;
+}
 import { MobileButton, MobileInput, MobileCard } from '@/components/ui/mobile';
 import { mobileConfig, cn } from '@/lib/mobile-config';
 import {
@@ -16,6 +32,15 @@ import { UnifiedSearch } from '@/components/ui/unified-search';
 import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
 import { toast } from 'sonner';
 
+// 為了類型安全，複製 SearchResult 接口定義
+interface SearchResult {
+  id: string;
+  title: string;
+  subtitle: string;
+  metadata?: string;
+  data: Array<Record<string, unknown>>;
+}
+
 interface MobileOrderLoadingProps {
   // ID Input
   idNumber: string;
@@ -26,7 +51,7 @@ interface MobileOrderLoadingProps {
 
   // Order Selection
   availableOrders: string[];
-  orderSummaries: Map<string, any>;
+  orderSummaries: Map<string, OrderSummary>;
   selectedOrderRef: string | null;
   orderSearchQuery: string;
   onOrderSearchChange: (query: string) => void;
@@ -41,15 +66,15 @@ interface MobileOrderLoadingProps {
   searchValue: string;
   isSearching: boolean;
   onSearchChange: (value: string) => void;
-  onSearchSelect: (result: Record<string, unknown>) => void;
+  onSearchSelect: (result: SearchResult) => void;
 
   // Recent Loads
   recentLoads: Record<string, unknown>[];
-  onUndoClick: (load: any) => void;
+  onUndoClick: (load: UndoItem) => void;
 
   // Refs
   idInputRef: React.RefObject<HTMLInputElement>;
-  searchInputRef: React.RefObject<any>;
+  searchInputRef: React.RefObject<HTMLInputElement>;
 }
 
 export default function MobileOrderLoading({
@@ -268,31 +293,64 @@ export default function MobileOrderLoading({
               {/* Recent Loads List */}
               {recentLoads.length > 0 && (
                 <div className='max-h-40 space-y-2 overflow-y-auto'>
-                  {recentLoads.slice(0, 5).map(load => (
-                    <div
-                      key={load.uuid}
-                      className='flex items-center justify-between rounded-lg bg-slate-700/30 p-3'
-                    >
-                      <div className='flex-1'>
-                        <span className='font-mono text-cyan-300'>{load.pallet_num}</span>
-                        <span className='mx-2 text-slate-400'>•</span>
-                        <span className='text-green-300'>Qty: {load.quantity}</span>
+                  {recentLoads.slice(0, 5).map((load, index) => {
+                    // 策略4: unknown + type narrowing - 安全獲取屬性值
+                    const uuid = typeof load.uuid === 'string' ? load.uuid : `load-${index}`;
+                    const palletNum =
+                      typeof load.pallet_num === 'string' ? load.pallet_num : 'Unknown';
+                    const quantity =
+                      typeof load.quantity === 'number'
+                        ? load.quantity
+                        : typeof load.quantity === 'string'
+                          ? load.quantity
+                          : 'N/A';
+
+                    return (
+                      <div
+                        key={uuid}
+                        className='flex items-center justify-between rounded-lg bg-slate-700/30 p-3'
+                      >
+                        <div className='flex-1'>
+                          <span className='font-mono text-cyan-300'>{palletNum}</span>
+                          <span className='mx-2 text-slate-400'>•</span>
+                          <span className='text-green-300'>Qty: {quantity}</span>
+                        </div>
+                        <div className='flex items-center space-x-2'>
+                          <span className={cn(mobileConfig.fontSize.bodySmall, 'text-slate-500')}>
+                            {(() => {
+                              // 策略4: unknown + type narrowing - 安全處理時間
+                              const time = load.time;
+                              if (time instanceof Date) return time.toLocaleTimeString();
+                              if (typeof time === 'string' || typeof time === 'number') {
+                                const date = new Date(time);
+                                return isNaN(date.getTime())
+                                  ? 'Invalid time'
+                                  : date.toLocaleTimeString();
+                              }
+                              return 'No time';
+                            })()}
+                          </span>
+                          <MobileButton
+                            variant='ghost'
+                            size='sm'
+                            onClick={() =>
+                              onUndoClick({
+                                ...load,
+                                pallet_num:
+                                  (load as Record<string, unknown>).pallet_num?.toString() || '',
+                                product_code:
+                                  (load as Record<string, unknown>).product_code?.toString() || '',
+                                quantity: Number((load as Record<string, unknown>).quantity || 0),
+                              })
+                            }
+                            className='h-8 w-8 p-0 text-red-400'
+                          >
+                            <XMarkIcon className='h-5 w-5' />
+                          </MobileButton>
+                        </div>
                       </div>
-                      <div className='flex items-center space-x-2'>
-                        <span className={cn(mobileConfig.fontSize.bodySmall, 'text-slate-500')}>
-                          {new Date(load.time).toLocaleTimeString()}
-                        </span>
-                        <MobileButton
-                          variant='ghost'
-                          size='sm'
-                          onClick={() => onUndoClick(load)}
-                          className='h-8 w-8 p-0 text-red-400'
-                        >
-                          <XMarkIcon className='h-5 w-5' />
-                        </MobileButton>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -304,8 +362,13 @@ export default function MobileOrderLoading({
               <h3 className={cn(mobileConfig.fontSize.h3, 'mb-4')}>Order Items</h3>
               <div className='space-y-3'>
                 {orderData.map((order, index) => {
-                  const totalQty = parseInt(order.product_qty || '0');
-                  const loadedQty = parseInt(order.loaded_qty || '0');
+                  // 策略4: unknown + type narrowing - 安全處理數量
+                  const totalQty = parseInt(
+                    typeof order.product_qty === 'string' ? order.product_qty : '0'
+                  );
+                  const loadedQty = parseInt(
+                    typeof order.loaded_qty === 'string' ? order.loaded_qty : '0'
+                  );
                   const percentage = totalQty > 0 ? (loadedQty / totalQty) * 100 : 0;
                   const isComplete = loadedQty >= totalQty;
                   const remainingQty = totalQty - loadedQty;
@@ -340,7 +403,9 @@ export default function MobileOrderLoading({
                               'font-mono text-cyan-300'
                             )}
                           >
-                            {order.product_code}
+                            {typeof order.product_code === 'string'
+                              ? order.product_code
+                              : 'Unknown'}
                           </span>
                           <span
                             className={cn(
@@ -353,7 +418,9 @@ export default function MobileOrderLoading({
                           </span>
                         </div>
                         <p className={cn(mobileConfig.fontSize.body, 'mt-1 text-slate-300')}>
-                          {order.product_desc}
+                          {typeof order.product_desc === 'string'
+                            ? order.product_desc
+                            : 'No description'}
                         </p>
                       </div>
 

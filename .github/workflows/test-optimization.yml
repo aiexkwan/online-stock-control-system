@@ -17,12 +17,12 @@ jobs:
     name: 並行測試執行
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    
+
     strategy:
       matrix:
         test-group: [unit, integration, services]
       fail-fast: false
-    
+
     steps:
       - name: Checkout 程式碼
         uses: actions/checkout@v4
@@ -85,7 +85,7 @@ jobs:
     name: 性能測試
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: Checkout 程式碼
         uses: actions/checkout@v4
@@ -123,7 +123,7 @@ jobs:
     name: E2E 測試
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    
+
     steps:
       - name: Checkout 程式碼
         uses: actions/checkout@v4
@@ -157,7 +157,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test-parallel, performance-test, e2e-test]
     if: always()
-    
+
     steps:
       - name: Checkout 程式碼
         uses: actions/checkout@v4
@@ -170,7 +170,7 @@ jobs:
           echo "# 🧪 測試執行摘要" > test-summary.md
           echo "執行時間: $(date)" >> test-summary.md
           echo "" >> test-summary.md
-          
+
           echo "## 📊 覆蓋率統計" >> test-summary.md
           if [ -d "test-results-unit/coverage" ]; then
             echo "- 單元測試覆蓋率: 已生成" >> test-summary.md
@@ -178,13 +178,13 @@ jobs:
           if [ -d "test-results-services/coverage" ]; then
             echo "- 服務測試覆蓋率: 已生成" >> test-summary.md
           fi
-          
+
           echo "" >> test-summary.md
           echo "## ⚡ 性能指標" >> test-summary.md
           if [ -f "performance-report/performance-report.md" ]; then
             cat performance-report/performance-report.md >> test-summary.md
           fi
-          
+
           echo "" >> test-summary.md
           echo "## 🎭 E2E 測試" >> test-summary.md
           if [ -d "e2e-report" ]; then
@@ -218,7 +218,7 @@ jobs:
     name: 緩存清理
     runs-on: ubuntu-latest
     if: github.event_name == 'schedule'
-    
+
     steps:
       - name: 清理過期緩存
         run: |

@@ -20,17 +20,17 @@ export const yourReportConfig: ReportConfig = {
   category: 'operational',
   formats: ['pdf', 'excel'],
   defaultFormat: 'pdf',
-  
+
   // 過濾器配置
   filters: [
     // 複製現有報表的過濾器
   ],
-  
+
   // 區段配置
   sections: [
     // 定義報表的各個區段
   ],
-  
+
   // 重要：保持現有格式
   styleOverrides: {
     pdf: {
@@ -51,13 +51,13 @@ import { createClient } from '@/app/utils/supabase/server';
 
 export class YourReportSummaryDataSource implements ReportDataSource {
   id = 'yourReportSummary';
-  
+
   async fetch(filters: FilterValues) {
     // 複製現有的數據查詢邏輯
     const supabase = createClient();
     // ... 查詢邏輯
   }
-  
+
   transform(data: any) {
     // 數據轉換邏輯
   }
@@ -96,7 +96,7 @@ export class LegacyYourReportPdfGenerator {
 // LegacyYourReportAdapter.ts
 export class LegacyYourReportAdapter {
   static async generatePdf(
-    data: ProcessedReportData, 
+    data: ProcessedReportData,
     config: ReportConfig
   ): Promise<Blob> {
     // 數據轉換邏輯

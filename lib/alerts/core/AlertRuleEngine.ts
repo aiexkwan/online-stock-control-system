@@ -4,7 +4,7 @@
  */
 
 import { Redis } from 'ioredis';
-import { DatabaseRecord } from '@/lib/types/database';
+import { DatabaseRecord } from '@/types/database/tables';
 import { ApiResponse, ApiRequest, QueryParams } from '@/lib/validation/zod-schemas';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
@@ -20,7 +20,7 @@ import {
   AlertResponse,
   UserSession,
   SerializedRule,
-  SerializedAlert
+  SerializedAlert,
 } from '../types';
 
 export class AlertRuleEngine {
@@ -36,7 +36,7 @@ export class AlertRuleEngine {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
-    
+
     this.initializeEngine();
   }
 
@@ -67,8 +67,8 @@ export class AlertRuleEngine {
       if (error) throw error;
 
       this.rules.clear();
-      rules?.forEach((rule: any) => {
-        this.rules.set(rule.id, this.deserializeRule(rule));
+      rules?.forEach((rule: Record<string, unknown>) => {
+        this.rules.set(rule.id as string, this.deserializeRule(rule));
       });
 
       console.log(`Loaded ${this.rules.size} alert rules`);
@@ -106,7 +106,10 @@ export class AlertRuleEngine {
         this.emitEvent({
           type: 'alert_triggered',
           timestamp: new Date(),
-          data: { ruleId, error: error instanceof Error ? (error as { message: string }).message : String(error) }
+          data: {
+            ruleId,
+            error: error instanceof Error ? (error as { message: string }).message : String(error),
+          },
         });
       }
     }, rule.evaluationInterval * 1000);
@@ -121,21 +124,21 @@ export class AlertRuleEngine {
     try {
       // 獲取指標數據
       const metric = await this.getMetricValue(rule.metric);
-      
+
       // 創建評估上下文
       const context: AlertContext = {
         ruleId,
         metric,
         evaluationTime: new Date(),
-        environment: process.env.NODE_ENV || 'development'
+        environment: process.env.NODE_ENV || 'development',
       };
 
       // 評估條件
       const shouldTrigger = await this.evaluateCondition(rule, context);
-      
+
       // 檢查當前告警狀態
       const currentAlert = await this.getCurrentAlert(ruleId);
-      
+
       if (shouldTrigger) {
         if (!currentAlert || currentAlert.state === AlertState.RESOLVED) {
           await this.triggerAlert(rule, context);
@@ -173,23 +176,23 @@ export class AlertRuleEngine {
     switch (condition) {
       case AlertCondition.GREATER_THAN:
         return Number(value) > Number(threshold);
-      
+
       case AlertCondition.LESS_THAN:
         return Number(value) < Number(threshold);
-      
+
       case AlertCondition.EQUALS:
         return value === threshold;
-      
+
       case AlertCondition.NOT_EQUALS:
         return value !== threshold;
-      
+
       case AlertCondition.CONTAINS:
         return String(value).includes(String(threshold));
-      
+
       case AlertCondition.REGEX:
         const regex = new RegExp(String(threshold));
         return regex.test(String(value));
-      
+
       default:
         throw new Error(`Unknown condition: ${condition}`);
     }
@@ -204,9 +207,7 @@ export class AlertRuleEngine {
         dependencies.map((dep: string) => this.getCurrentAlert(dep))
       );
 
-      return activeAlerts.some(alert => 
-        alert && alert.state === AlertState.ACTIVE
-      );
+      return activeAlerts.some(alert => alert && alert.state === AlertState.ACTIVE);
     } catch (error) {
       console.error('Failed to check dependencies:', error);
       return false;
@@ -229,12 +230,12 @@ export class AlertRuleEngine {
         threshold: rule.threshold,
         triggeredAt: new Date(),
         notifications: [],
-        labels: context.metric.labels || {},
+        labels: context.metric.labels || ({} as any),
         annotations: {
           metric: rule.metric,
           condition: rule.condition,
-          environment: context.environment
-        }
+          environment: context.environment,
+        },
       };
 
       // 保存告警
@@ -247,7 +248,7 @@ export class AlertRuleEngine {
       this.emitEvent({
         type: 'alert_triggered',
         timestamp: new Date(),
-        data: { alert, rule }
+        data: { alert, rule },
       });
 
       console.log(`Alert triggered: ${alert.id} (${rule.name})`);
@@ -280,7 +281,7 @@ export class AlertRuleEngine {
       this.emitEvent({
         type: 'alert_resolved',
         timestamp: new Date(),
-        data: { alert }
+        data: { alert },
       });
 
       console.log(`Alert resolved: ${alertId}`);
@@ -297,12 +298,12 @@ export class AlertRuleEngine {
     try {
       // 根據指標名稱查詢相應的數據源
       const value = await this.queryMetric(metric);
-      
+
       return {
         name: metric,
         value,
         timestamp: new Date(),
-        labels: {}
+        labels: {},
       };
     } catch (error) {
       console.error(`Failed to get metric ${metric}:`, error);
@@ -317,22 +318,22 @@ export class AlertRuleEngine {
     switch (metric) {
       case 'api_response_time':
         return await this.getApiResponseTime();
-      
+
       case 'error_rate':
         return await this.getErrorRate();
-      
+
       case 'active_users':
         return await this.getActiveUsers();
-      
+
       case 'database_connections':
         return await this.getDatabaseConnections();
-      
+
       case 'memory_usage':
         return await this.getMemoryUsage();
-      
+
       case 'disk_usage':
         return await this.getDiskUsage();
-      
+
       default:
         throw new Error(`Unknown metric: ${metric}`);
     }
@@ -377,7 +378,7 @@ export class AlertRuleEngine {
         .select('user_id')
         .gte('last_activity', new Date(Date.now() - 5 * 60 * 1000).toISOString());
 
-      const userIds = users?.map((u: any) => u.user_id as string) || [];
+      const userIds = users?.map((u: Record<string, unknown>) => u.user_id as string) || [];
       return new Set(userIds).size || 0;
     } catch (error) {
       return 0;
@@ -440,18 +441,12 @@ export class AlertRuleEngine {
   private async saveAlert(alert: Alert): Promise<void> {
     try {
       // 保存到數據庫
-      const { error } = await this.supabase
-        .from('alerts')
-        .upsert(this.serializeAlert(alert));
+      const { error } = await this.supabase.from('alerts').upsert(this.serializeAlert(alert));
 
       if (error) throw error;
 
       // 保存到 Redis 緩存
-      await this.redis.setex(
-        `alert:${alert.id}`,
-        3600,
-        JSON.stringify(alert)
-      );
+      await this.redis.setex(`alert:${alert.id}`, 3600, JSON.stringify(alert));
     } catch (error) {
       console.error('Failed to save alert:', error);
       throw error;
@@ -477,7 +472,7 @@ export class AlertRuleEngine {
         .single();
 
       if (error) throw error;
-      
+
       return data ? this.deserializeAlert(data) : null;
     } catch (error) {
       console.error(`Failed to get alert ${alertId}:`, error);
@@ -500,7 +495,7 @@ export class AlertRuleEngine {
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
-      
+
       return data ? this.deserializeAlert(data) : null;
     } catch (error) {
       console.error(`Failed to get current alert for rule ${ruleId}:`, error);
@@ -513,11 +508,7 @@ export class AlertRuleEngine {
    */
   private async updateLastEvaluation(ruleId: string): Promise<void> {
     try {
-      await this.redis.setex(
-        `rule:${ruleId}:last_evaluation`,
-        3600,
-        new Date().toISOString()
-      );
+      await this.redis.setex(`rule:${ruleId}:last_evaluation`, 3600, new Date().toISOString());
     } catch (error) {
       console.error(`Failed to update last evaluation for rule ${ruleId}:`, error);
     }
@@ -541,19 +532,19 @@ export class AlertRuleEngine {
       dependencies: JSON.stringify(rule.dependencies || []),
       silence_time: rule.silenceTime,
       notifications: JSON.stringify(rule.notifications),
-      tags: JSON.stringify(rule.tags || {}),
+      tags: JSON.stringify(rule.tags || ({} as any)),
       created_at: rule.createdAt.toISOString(),
       updated_at: rule.updatedAt.toISOString(),
-      created_by: rule.createdBy
+      created_by: rule.createdBy,
     };
   }
 
   /**
    * 反序列化規則
    */
-  private deserializeRule(data: any): AlertRule {
+  private deserializeRule(data: Record<string, unknown>): AlertRule {
     return {
-      id: data.id,
+      id: data.id as string,
       name: data.name as string,
       description: data.description as string,
       enabled: data.enabled as boolean,
@@ -569,7 +560,7 @@ export class AlertRuleEngine {
       tags: JSON.parse((data.tags as string) || '{}'),
       createdAt: new Date(data.created_at as string),
       updatedAt: new Date(data.updated_at as string),
-      createdBy: data.created_by as string
+      createdBy: data.created_by as string,
     };
   }
 
@@ -591,17 +582,17 @@ export class AlertRuleEngine {
       acknowledged_at: alert.acknowledgedAt?.toISOString(),
       acknowledged_by: alert.acknowledgedBy,
       notifications: JSON.stringify(alert.notifications),
-      labels: JSON.stringify(alert.labels || {}),
-      annotations: JSON.stringify(alert.annotations || {})
+      labels: JSON.stringify(alert.labels || ({} as any)),
+      annotations: JSON.stringify(alert.annotations || ({} as any)),
     };
   }
 
   /**
    * 反序列化告警
    */
-  private deserializeAlert(data: any): Alert {
+  private deserializeAlert(data: Record<string, unknown>): Alert {
     return {
-      id: data.id,
+      id: data.id as string,
       ruleId: data.rule_id as string,
       ruleName: data.rule_name as string,
       level: data.level as AlertLevel,
@@ -615,7 +606,7 @@ export class AlertRuleEngine {
       acknowledgedBy: data.acknowledged_by as string | undefined,
       notifications: JSON.parse((data.notifications as string) || '[]'),
       labels: JSON.parse((data.labels as string) || '{}'),
-      annotations: JSON.parse((data.annotations as string) || '{}')
+      annotations: JSON.parse((data.annotations as string) || '{}'),
     };
   }
 
@@ -643,7 +634,7 @@ export class AlertRuleEngine {
           success: false,
           message: 'Rule not found',
           wouldTrigger: false,
-          errors: ['Rule not found']
+          errors: ['Rule not found'],
         };
       }
 
@@ -652,7 +643,7 @@ export class AlertRuleEngine {
         ruleId,
         metric,
         evaluationTime: new Date(),
-        environment: process.env.NODE_ENV || 'development'
+        environment: process.env.NODE_ENV || 'development',
       };
 
       const wouldTrigger = await this.evaluateCondition(rule, context);
@@ -662,14 +653,14 @@ export class AlertRuleEngine {
         message: wouldTrigger ? 'Alert would trigger' : 'Alert would not trigger',
         value: metric.value,
         wouldTrigger,
-        errors: []
+        errors: [],
       };
     } catch (error) {
       return {
         success: false,
         message: error instanceof Error ? (error as { message: string }).message : String(error),
         wouldTrigger: false,
-        errors: [error instanceof Error ? error.message : String(error)]
+        errors: [error instanceof Error ? error.message : String(error)],
       };
     }
   }
@@ -701,7 +692,7 @@ export class AlertRuleEngine {
 
     // 關閉連接
     await this.redis.quit();
-    
+
     console.log('Alert Rule Engine stopped');
   }
 
@@ -712,17 +703,17 @@ export class AlertRuleEngine {
     try {
       await this.loadRules();
       await this.startEvaluationTimers();
-      
+
       return {
         success: true,
         message: 'Rules reloaded successfully',
-        data: { rulesCount: this.rules.size }
+        data: { rulesCount: this.rules.size },
       };
     } catch (error) {
       return {
         success: false,
         message: 'Failed to reload rules',
-        errors: [error instanceof Error ? error.message : String(error)]
+        errors: [error instanceof Error ? error.message : String(error)],
       };
     }
   }

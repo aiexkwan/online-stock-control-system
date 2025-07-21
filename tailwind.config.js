@@ -3,7 +3,7 @@ module.exports = {
   darkMode: ['class'],
   content: [
     './app/**/*.{js,ts,jsx,tsx,mdx}',
-    './pages/**/*.{js,ts,jsx,tsx,mdx}', 
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
     './lib/**/*.{js,ts,jsx,tsx}',
     './src/**/*.{js,ts,jsx,tsx}',
@@ -16,7 +16,7 @@ module.exports = {
   safelist: [
     // 保留關鍵的動態類名
     'text-green-500',
-    'text-red-500', 
+    'text-red-500',
     'text-yellow-500',
     'bg-green-100',
     'bg-red-100',
@@ -24,11 +24,11 @@ module.exports = {
     // 保留圖表相關類名 - 使用 pattern 物件格式
     {
       pattern: /^text-(chart-[1-5]|primary|secondary|muted)/,
-      variants: ['hover', 'focus']
+      variants: ['hover', 'focus'],
     },
     {
       pattern: /^bg-(chart-[1-5]|primary|secondary|muted)/,
-      variants: ['hover', 'focus']
+      variants: ['hover', 'focus'],
     },
     // 保留響應式類名 - 明確列出需要的 classes
     'sm:block',

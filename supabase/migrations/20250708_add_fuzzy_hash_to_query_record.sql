@@ -3,7 +3,7 @@
 -- Purpose: Support fuzzy matching for cache optimization and cache invalidation
 
 -- 1. Add fuzzy_hash column
-ALTER TABLE query_record 
+ALTER TABLE query_record
 ADD COLUMN IF NOT EXISTS fuzzy_hash VARCHAR(16);
 
 -- 2. Add cache invalidation columns
@@ -12,13 +12,13 @@ ADD COLUMN IF NOT EXISTS expired_at TIMESTAMPTZ,
 ADD COLUMN IF NOT EXISTS expired_reason TEXT;
 
 -- 3. Create index for fuzzy_hash
-CREATE INDEX IF NOT EXISTS idx_query_record_fuzzy_hash 
-ON query_record (fuzzy_hash) 
+CREATE INDEX IF NOT EXISTS idx_query_record_fuzzy_hash
+ON query_record (fuzzy_hash)
 WHERE fuzzy_hash IS NOT NULL;
 
 -- 4. Create composite index for fuzzy_hash with created_at
-CREATE INDEX IF NOT EXISTS idx_query_record_fuzzy_hash_created 
-ON query_record (fuzzy_hash, created_at DESC) 
+CREATE INDEX IF NOT EXISTS idx_query_record_fuzzy_hash_created
+ON query_record (fuzzy_hash, created_at DESC)
 WHERE fuzzy_hash IS NOT NULL;
 
 -- 5. Create index for expired_at

@@ -13,7 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { usePerformanceMonitor } from '../hooks/usePerformanceMonitor';
 import { PerformanceMetric, PerformanceAlert } from '../PerformanceMonitor';
 import { AlertCircle, TrendingUp, TrendingDown, Activity } from 'lucide-react';
-import { safeGet, safeNumber } from '@/lib/types/supabase-helpers';
+import { safeGet, safeNumber } from '@/types/database/helpers';
 
 export function PerformanceDashboard() {
   const { isMonitoring, metrics, alerts, report, startMonitoring, stopMonitoring } =
@@ -235,24 +235,26 @@ export function PerformanceDashboard() {
               <div>
                 <p className='text-sm text-muted-foreground'>Avg Response Time</p>
                 <p className='text-xl font-semibold'>
-                  {safeNumber(safeGet(report, 'summary.avgResponseTime', 0)).toFixed(0)}ms
+                  {safeNumber(safeGet(report, 'summary.avgResponseTime'), 0).toFixed(0)}ms
                 </p>
               </div>
               <div>
                 <p className='text-sm text-muted-foreground'>P95 Response Time</p>
                 <p className='text-xl font-semibold'>
-                  {safeNumber(safeGet(report, 'summary.p95ResponseTime', 0)).toFixed(0)}ms
+                  {safeNumber(safeGet(report, 'summary.p95ResponseTime'), 0).toFixed(0)}ms
                 </p>
               </div>
               <div>
                 <p className='text-sm text-muted-foreground'>P99 Response Time</p>
                 <p className='text-xl font-semibold'>
-                  {safeNumber(safeGet(report, 'summary.p99ResponseTime', 0)).toFixed(0)}ms
+                  {safeNumber(safeGet(report, 'summary.p99ResponseTime')).toFixed(0)}ms
                 </p>
               </div>
               <div>
                 <p className='text-sm text-muted-foreground'>Error Rate</p>
-                <p className='text-xl font-semibold'>{safeNumber(safeGet(report, 'summary.errorRate', 0)).toFixed(2)}%</p>
+                <p className='text-xl font-semibold'>
+                  {safeNumber(safeGet(report, 'summary.errorRate')).toFixed(2)}%
+                </p>
               </div>
             </div>
           </CardContent>
@@ -323,15 +325,16 @@ function MetricRow({ metric }: MetricRowProps) {
   return (
     <div className='flex items-center justify-between rounded px-3 py-2 hover:bg-gray-50'>
       <div className='flex items-center gap-3'>
-        <Badge variant='secondary' className={`text-xs ${categoryColors[metric.category as keyof typeof categoryColors] || ''}`}>
+        <Badge
+          variant='secondary'
+          className={`text-xs ${categoryColors[metric.category as keyof typeof categoryColors] || ''}`}
+        >
           {metric.category}
         </Badge>
         <span className='text-sm'>{metric.name}</span>
       </div>
       <div className='flex items-center gap-4'>
-        <span className='text-sm font-medium'>
-          {metric.value.toFixed(1)} ms
-        </span>
+        <span className='text-sm font-medium'>{metric.value.toFixed(1)} ms</span>
         <span className='text-xs text-muted-foreground'>
           {new Date(metric.timestamp).toLocaleTimeString()}
         </span>

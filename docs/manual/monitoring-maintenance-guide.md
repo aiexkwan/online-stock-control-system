@@ -285,19 +285,19 @@ curl -X DELETE http://localhost:3000/api/v1/alerts/rules/rule-id
 # 獲取應用性能指標
 get_app_metrics() {
     echo "=== 應用性能指標 $(date) ==="
-    
+
     # API 響應時間
     API_RESPONSE_TIME=$(curl -w "%{time_total}" -o /dev/null -s http://localhost:3000/api/v1/health)
     echo "API 響應時間: ${API_RESPONSE_TIME}s"
-    
+
     # 活躍用戶數
     ACTIVE_USERS=$(curl -s http://localhost:3000/api/v1/metrics | jq -r '.active_users')
     echo "活躍用戶數: $ACTIVE_USERS"
-    
+
     # 錯誤率
     ERROR_RATE=$(curl -s http://localhost:3000/api/v1/metrics | jq -r '.error_rate')
     echo "錯誤率: $ERROR_RATE"
-    
+
     # 記憶體使用
     MEMORY_USAGE=$(curl -s http://localhost:3000/api/v1/metrics | jq -r '.memory_usage')
     echo "記憶體使用: $MEMORY_USAGE"
@@ -312,15 +312,15 @@ get_app_metrics
 # 業務指標監控
 get_business_metrics() {
     echo "=== 業務指標 $(date) ==="
-    
+
     # 今日棧板創建數
     TODAY_PALLETS=$(psql $DATABASE_URL -t -c "SELECT COUNT(*) FROM record_palletinfo WHERE DATE(created_at) = CURRENT_DATE;")
     echo "今日新增棧板: $TODAY_PALLETS"
-    
+
     # 庫存轉移次數
     STOCK_TRANSFERS=$(psql $DATABASE_URL -t -c "SELECT COUNT(*) FROM record_transfer WHERE DATE(transfer_time) = CURRENT_DATE;")
     echo "今日庫存轉移: $STOCK_TRANSFERS"
-    
+
     # 訂單處理數
     ORDER_PROCESSED=$(psql $DATABASE_URL -t -c "SELECT COUNT(*) FROM record_aco WHERE DATE(created_date) = CURRENT_DATE;")
     echo "今日訂單處理: $ORDER_PROCESSED"
@@ -339,23 +339,23 @@ get_business_metrics
 # 系統資源監控
 system_resource_monitor() {
     echo "=== 系統資源監控 $(date) ==="
-    
+
     # CPU 使用率
     CPU_USAGE=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | sed 's/%us,//')
     echo "CPU 使用率: $CPU_USAGE"
-    
+
     # 記憶體使用率
     MEMORY_USAGE=$(free | grep Mem | awk '{printf "%.1f%%", $3/$2 * 100.0}')
     echo "記憶體使用率: $MEMORY_USAGE"
-    
+
     # 磁碟使用率
     DISK_USAGE=$(df -h / | awk 'NR==2{print $5}')
     echo "磁碟使用率: $DISK_USAGE"
-    
+
     # 網絡連接數
     NETWORK_CONNECTIONS=$(netstat -an | grep :3000 | wc -l)
     echo "網絡連接數: $NETWORK_CONNECTIONS"
-    
+
     # 負載平均
     LOAD_AVERAGE=$(uptime | awk -F'load average:' '{print $2}')
     echo "負載平均: $LOAD_AVERAGE"
@@ -370,19 +370,19 @@ system_resource_monitor
 # 數據庫監控腳本
 database_monitor() {
     echo "=== 數據庫監控 $(date) ==="
-    
+
     # 連接數
     DB_CONNECTIONS=$(psql $DATABASE_URL -t -c "SELECT count(*) FROM pg_stat_activity;")
     echo "數據庫連接數: $DB_CONNECTIONS"
-    
+
     # 數據庫大小
     DB_SIZE=$(psql $DATABASE_URL -t -c "SELECT pg_size_pretty(pg_database_size(current_database()));")
     echo "數據庫大小: $DB_SIZE"
-    
+
     # 最慢查詢
     SLOW_QUERIES=$(psql $DATABASE_URL -t -c "SELECT count(*) FROM pg_stat_statements WHERE mean_exec_time > 1000;")
     echo "慢查詢數量: $SLOW_QUERIES"
-    
+
     # 鎖等待
     LOCK_WAITS=$(psql $DATABASE_URL -t -c "SELECT count(*) FROM pg_locks WHERE NOT granted;")
     echo "鎖等待數量: $LOCK_WAITS"
@@ -403,11 +403,11 @@ database_monitor
 # 每日維護檢查腳本
 daily_maintenance() {
     echo "=== 每日維護檢查 $(date) ==="
-    
+
     # 1. 檢查服務狀態
     echo "1. 檢查服務狀態:"
     systemctl is-active newpennine-wms
-    
+
     # 2. 健康檢查
     echo "2. 健康檢查:"
     HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/v1/health)
@@ -416,20 +416,20 @@ daily_maintenance() {
     else
         echo "❌ 健康檢查失敗: $HEALTH_STATUS"
     fi
-    
+
     # 3. 磁碟空間檢查
     echo "3. 磁碟空間檢查:"
     df -h | grep -E "(Filesystem|/$|/var|/tmp)"
-    
+
     # 4. 記憶體使用檢查
     echo "4. 記憶體使用檢查:"
     free -h
-    
+
     # 5. 日誌檢查
     echo "5. 日誌檢查:"
     ERROR_COUNT=$(grep -c "ERROR" /var/log/newpennine-wms/error.log 2>/dev/null || echo "0")
     echo "今日錯誤數: $ERROR_COUNT"
-    
+
     # 6. 備份檢查
     echo "6. 備份檢查:"
     BACKUP_DATE=$(date +%Y-%m-%d)
@@ -438,7 +438,7 @@ daily_maintenance() {
     else
         echo "❌ 今日備份不存在"
     fi
-    
+
     # 7. 告警檢查
     echo "7. 告警檢查:"
     ACTIVE_ALERTS=$(curl -s http://localhost:3000/api/v1/alerts/active | jq length)
@@ -458,34 +458,34 @@ daily_maintenance > /var/log/newpennine-wms/daily_maintenance_$(date +%Y%m%d).lo
 # 每週維護腳本
 weekly_maintenance() {
     echo "=== 每週維護 $(date) ==="
-    
+
     # 1. 數據庫優化
     echo "1. 數據庫優化:"
     psql $DATABASE_URL -c "VACUUM ANALYZE;"
     psql $DATABASE_URL -c "REINDEX DATABASE newpennine_wms;"
-    
+
     # 2. 清理舊日誌
     echo "2. 清理舊日誌:"
     find /var/log/newpennine-wms -name "*.log" -mtime +7 -delete
-    
+
     # 3. 清理舊備份
     echo "3. 清理舊備份:"
     find /var/backups/newpennine-wms -name "*.sql" -mtime +30 -delete
-    
+
     # 4. 檢查證書
     echo "4. 檢查 SSL 證書:"
     if command -v certbot &> /dev/null; then
         certbot certificates
     fi
-    
+
     # 5. 系統更新檢查
     echo "5. 系統更新檢查:"
     apt list --upgradable
-    
+
     # 6. 性能分析
     echo "6. 性能分析:"
     curl -s http://localhost:3000/api/v1/metrics > /tmp/weekly_metrics_$(date +%Y%m%d).json
-    
+
     # 7. 告警歷史分析
     echo "7. 告警歷史分析:"
     curl -s http://localhost:3000/api/v1/alerts/history?days=7 | jq '.summary'
@@ -502,27 +502,27 @@ weekly_maintenance > /var/log/newpennine-wms/weekly_maintenance_$(date +%Y%m%d).
 # 每月維護腳本
 monthly_maintenance() {
     echo "=== 每月維護 $(date) ==="
-    
+
     # 1. 完整系統備份
     echo "1. 完整系統備份:"
     tar -czf "/var/backups/newpennine-wms/monthly_backup_$(date +%Y%m).tar.gz" /var/www/newpennine-wms
-    
+
     # 2. 數據庫完整備份
     echo "2. 數據庫完整備份:"
     pg_dump $DATABASE_URL > "/var/backups/newpennine-wms/monthly_db_backup_$(date +%Y%m).sql"
-    
+
     # 3. 性能報告生成
     echo "3. 性能報告生成:"
     npm run test:perf:report
-    
+
     # 4. 安全審計
     echo "4. 安全審計:"
     npm audit
-    
+
     # 5. 依賴更新檢查
     echo "5. 依賴更新檢查:"
     npm outdated
-    
+
     # 6. 系統健康報告
     echo "6. 系統健康報告:"
     curl -s http://localhost:3000/api/v2/health > "/var/reports/health_report_$(date +%Y%m).json"
@@ -553,17 +553,17 @@ open http://localhost:3000/admin/alerts
 # 性能監控腳本
 performance_dashboard() {
     echo "=== 性能監控儀表板 $(date) ==="
-    
+
     # 獲取所有指標
     METRICS=$(curl -s http://localhost:3000/api/v1/metrics)
-    
+
     # 顯示關鍵指標
     echo "API 響應時間: $(echo $METRICS | jq -r '.api_response_time.avg')"
     echo "錯誤率: $(echo $METRICS | jq -r '.error_rate')"
     echo "活躍用戶: $(echo $METRICS | jq -r '.active_users')"
     echo "記憶體使用: $(echo $METRICS | jq -r '.memory_usage')"
     echo "CPU 使用: $(echo $METRICS | jq -r '.cpu_usage')"
-    
+
     # 生成簡單圖表
     echo "=== 過去 24 小時趨勢 ==="
     # 此處可以添加圖表生成邏輯
@@ -583,36 +583,36 @@ performance_dashboard
 # 持續監控守護程序
 monitoring_daemon() {
     echo "啟動監控守護程序 $(date)"
-    
+
     while true; do
         # 健康檢查
         HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/v1/health)
-        
+
         if [ "$HEALTH_STATUS" -ne 200 ]; then
             echo "$(date): 健康檢查失敗 - 狀態碼: $HEALTH_STATUS"
-            
+
             # 發送告警
             send_alert "健康檢查失敗" "HTTP 狀態碼: $HEALTH_STATUS"
-            
+
             # 嘗試重啟服務
             if [ "$HEALTH_STATUS" -eq 000 ]; then
                 echo "$(date): 嘗試重啟服務"
                 systemctl restart newpennine-wms
             fi
         fi
-        
+
         # 檢查資源使用
         MEMORY_USAGE=$(free | grep Mem | awk '{printf "%.0f", $3/$2 * 100.0}')
         DISK_USAGE=$(df -h / | awk 'NR==2{print $5}' | sed 's/%//')
-        
+
         if [ "$MEMORY_USAGE" -gt 90 ]; then
             send_alert "記憶體使用率過高" "當前使用率: ${MEMORY_USAGE}%"
         fi
-        
+
         if [ "$DISK_USAGE" -gt 85 ]; then
             send_alert "磁碟使用率過高" "當前使用率: ${DISK_USAGE}%"
         fi
-        
+
         sleep 30
     done
 }
@@ -621,12 +621,12 @@ monitoring_daemon() {
 send_alert() {
     local subject="$1"
     local message="$2"
-    
+
     # Slack 通知
     curl -X POST -H 'Content-type: application/json' \
         --data "{\"text\":\"🚨 NewPennine WMS 告警: $subject - $message\"}" \
         $SLACK_WEBHOOK_URL
-    
+
     # 電郵通知
     echo "$message" | mail -s "NewPennine WMS 告警: $subject" ops@newpennine.com
 }
@@ -643,15 +643,15 @@ monitoring_daemon &
 # 自動恢復腳本
 auto_recovery() {
     echo "啟動自動恢復系統 $(date)"
-    
+
     # 檢查服務狀態
     if ! systemctl is-active --quiet newpennine-wms; then
         echo "$(date): 服務未運行，嘗試啟動"
         systemctl start newpennine-wms
-        
+
         # 等待服務啟動
         sleep 30
-        
+
         # 驗證啟動
         if curl -s http://localhost:3000/api/v1/health | grep -q "healthy"; then
             echo "$(date): 服務恢復成功"
@@ -661,13 +661,13 @@ auto_recovery() {
             send_alert "服務恢復失敗" "需要手動干預"
         fi
     fi
-    
+
     # 檢查數據庫連接
     if ! psql $DATABASE_URL -c "SELECT 1;" > /dev/null 2>&1; then
         echo "$(date): 數據庫連接失敗，嘗試重連"
         systemctl restart postgresql
         sleep 30
-        
+
         if psql $DATABASE_URL -c "SELECT 1;" > /dev/null 2>&1; then
             echo "$(date): 數據庫連接恢復"
             send_alert "數據庫恢復" "數據庫連接已恢復"
@@ -700,7 +700,7 @@ Critical (關鍵)  → 緊急情況，可能導致服務中斷
 alert_escalation() {
     local alert_level="$1"
     local alert_message="$2"
-    
+
     case $alert_level in
         "info")
             # 記錄到日誌

@@ -69,20 +69,20 @@ export class MyFeatureAPI extends DataAccessLayer<MyParams, MyResult> {
   constructor() {
     super('my-feature');
   }
-  
+
   async serverFetch(params: MyParams): Promise<MyResult> {
     // Server-side 實現（GraphQL、Server Actions）
   }
-  
+
   async clientFetch(params: MyParams): Promise<MyResult> {
     // Client-side 實現（REST API、SWR）
   }
-  
+
   protected isComplexQuery(params: MyParams): boolean {
     // 決定查詢複雜度
     return params.includeAggregations || params.filterCount > 2;
   }
-  
+
   protected isRealTimeRequired(params: MyParams): boolean {
     // 決定是否需要實時更新
     return params.realtime === true;
@@ -97,10 +97,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   const params = parseSearchParams(request.nextUrl.searchParams);
-  
+
   // 實施 client-side 策略的邏輯
   const result = await fetchDataForClient(params);
-  
+
   return NextResponse.json(result, {
     headers: {
       'Cache-Control': 'public, max-age=60, stale-while-revalidate=300'
@@ -121,14 +121,14 @@ function MyComponent() {
 function MyComponent() {
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   useEffect(() => {
     const api = new MyFeatureAPI();
     api.fetch(params, { strategy: 'auto' })
       .then(setData)
       .finally(() => setIsLoading(false));
   }, [params]);
-  
+
   // 或者使用 SWR for real-time
   const { data, isLoading } = useSWR(
     '/api/my-feature',
@@ -141,8 +141,8 @@ function MyComponent() {
 #### Step 4: 標記舊代碼為過時
 ```typescript
 /**
- * @deprecated 
- * This hook has been replaced by MyFeatureAPI. 
+ * @deprecated
+ * This hook has been replaced by MyFeatureAPI.
  * Use `new MyFeatureAPI().fetch()` instead.
  * Migration guide: /lib/api/migration-guide.md
  */
@@ -162,7 +162,7 @@ export function useOldHook(params) {
 // hooks/useStockLevels.ts
 function useStockLevels(warehouse: string) {
   const [data, setData] = useState(null);
-  
+
   useEffect(() => {
     const fetchData = async () => {
       const supabase = createClient();
@@ -174,7 +174,7 @@ function useStockLevels(warehouse: string) {
     };
     fetchData();
   }, [warehouse]);
-  
+
   return { data };
 }
 ```
@@ -188,7 +188,7 @@ function StockDashboard() {
     warehouse: 'A',
     includeZeroStock: false
   });
-  
+
   // 或者直接使用 API
   useEffect(() => {
     api.stockLevels().fetch({ warehouse: 'A' }, { strategy: 'auto' })
@@ -203,7 +203,7 @@ function StockDashboard() {
 ```typescript
 function TransferMonitor() {
   const [movements, setMovements] = useState([]);
-  
+
   useEffect(() => {
     const interval = setInterval(async () => {
       const supabase = createClient();
@@ -214,7 +214,7 @@ function TransferMonitor() {
         .order('time', { ascending: false });
       setMovements(data);
     }, 5000);
-    
+
     return () => clearInterval(interval);
   }, []);
 }
@@ -227,7 +227,7 @@ function TransferMonitor() {
     enableWebSocket: true,
     refreshInterval: 3000
   });
-  
+
   return (
     <div>
       <Badge variant={isRealtime ? "destructive" : "secondary"}>
@@ -247,12 +247,12 @@ function TransferMonitor() {
 ```typescript
 async function generateReport() {
   const supabase = createClient();
-  
+
   // 多個查詢
   const orders = await supabase.from('data_order').select('*');
   const products = await supabase.from('data_product').select('*');
   const movements = await supabase.from('record_history').select('*');
-  
+
   // 客戶端聚合
   const aggregated = processData(orders, products, movements);
   return aggregated;
@@ -267,7 +267,7 @@ async function generateReport() {
     widgetIds: ['orderSummary', 'stockAnalysis', 'movementTrends'],
     dateRange: { start: '2025-01-01', end: '2025-07-07' }
   }, { strategy: 'server' });
-  
+
   return data;
 }
 ```
@@ -294,13 +294,13 @@ async function generateReport() {
 const data = await api.myFeature().fetch(params, { strategy: 'auto' });
 
 // 明確需要實時更新時使用 'client'
-const realTimeData = await api.myFeature().fetch(params, { 
+const realTimeData = await api.myFeature().fetch(params, {
   strategy: 'client',
-  realtime: true 
+  realtime: true
 });
 
 // 複雜聚合使用 'server'
-const complexData = await api.myFeature().fetch(params, { 
+const complexData = await api.myFeature().fetch(params, {
   strategy: 'server',
   cache: { ttl: 300 }
 });
@@ -364,7 +364,7 @@ await revalidateTag('dashboard');
 ## 常見問題
 
 ### Q: 何時使用 server vs client 策略？
-A: 
+A:
 - **Server**: 複雜查詢、大數據聚合、安全敏感操作
 - **Client**: 實時更新、簡單查詢、用戶交互反饋
 

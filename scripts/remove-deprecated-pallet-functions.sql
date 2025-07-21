@@ -1,6 +1,6 @@
 -- 刪除已棄用嘅棧板生成相關函數
 -- 執行日期: 2025-06-26
--- 
+--
 -- 呢個腳本會刪除以下已確認冇使用嘅函數：
 -- 1. generate_atomic_pallet_numbers_v5_with_cleanup - 只存在於 GraphQL schema，冇實際調用
 -- 2. test_atomic_pallet_generation_v2 - 完全冇引用
@@ -32,7 +32,7 @@ BEGIN
         'test_atomic_pallet_generation_v2',
         'monitor_pallet_generation_performance_v2'
     );
-    
+
     IF v_count > 0 THEN
         RAISE EXCEPTION '刪除失敗：仍有 % 個函數未被刪除', v_count;
     ELSE
@@ -43,16 +43,16 @@ END $$;
 COMMIT;
 
 -- 列出剩餘嘅棧板生成相關函數（供參考）
-SELECT 
+SELECT
     p.proname AS function_name,
     pg_get_function_identity_arguments(p.oid) AS arguments,
     obj_description(p.oid, 'pg_proc') AS description
-FROM 
+FROM
     pg_proc p
     JOIN pg_namespace n ON p.pronamespace = n.oid
-WHERE 
+WHERE
     n.nspname = 'public'
     AND p.proname LIKE '%pallet%'
     AND p.prokind = 'f'
-ORDER BY 
+ORDER BY
     p.proname;

@@ -20,11 +20,11 @@ BEGIN
     FROM work_level
     WHERE id = p_user_id
     AND DATE(latest_update) = CURRENT_DATE;
-    
+
     IF FOUND THEN
         -- 更新現有記錄
         UPDATE work_level
-        SET 
+        SET
             qc = qc + p_pallet_count,
             latest_update = NOW()
         WHERE uuid = v_existing_record.uuid;
@@ -49,21 +49,21 @@ BEGIN
             NOW()
         );
     END IF;
-    
+
     -- 如果存在 employee_statistics 表，也更新它
     IF EXISTS (
-        SELECT 1 
-        FROM information_schema.tables 
-        WHERE table_schema = 'public' 
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
         AND table_name = 'employee_statistics'
     ) THEN
         UPDATE employee_statistics
-        SET 
+        SET
             total_qc_pallets = total_qc_pallets + p_pallet_count,
             last_qc_date = CURRENT_DATE,
             updated_at = NOW()
         WHERE user_id = p_user_id;
-        
+
         -- 如果沒有記錄則插入
         IF NOT FOUND THEN
             INSERT INTO employee_statistics (
@@ -82,14 +82,14 @@ BEGIN
             );
         END IF;
     END IF;
-    
+
     v_result := jsonb_build_object(
         'success', true,
         'user_id', p_user_id,
         'pallets_added', p_pallet_count,
         'date', CURRENT_DATE
     );
-    
+
     RETURN v_result;
 EXCEPTION
     WHEN OTHERS THEN
@@ -118,19 +118,19 @@ DECLARE
     v_result JSONB;
 BEGIN
     -- 開始事務
-    
+
     -- Step 1: 更新庫存（使用正確的函數）
     -- 使用 update_stock_level 函數確保按日期正確處理
     PERFORM update_stock_level(p_product_code, p_quantity, COALESCE(p_description, p_product_code));
-    
+
     -- Step 2: 更新工作量
     v_work_result := update_work_level_qc(p_user_id, p_pallet_count);
-    
+
     -- Step 3: 記錄日誌（如果有日誌表）
     IF EXISTS (
-        SELECT 1 
-        FROM information_schema.tables 
-        WHERE table_schema = 'public' 
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
         AND table_name = 'print_label_log'
     ) THEN
         INSERT INTO print_label_log (
@@ -148,7 +148,7 @@ BEGIN
             NOW()
         );
     END IF;
-    
+
     -- 構建返回結果
     v_result := jsonb_build_object(
         'success', true,
@@ -162,9 +162,9 @@ BEGIN
             'pallet_count', p_pallet_count
         )
     );
-    
+
     RETURN v_result;
-    
+
 EXCEPTION
     WHEN OTHERS THEN
         -- 發生錯誤時回滾
@@ -184,14 +184,14 @@ GRANT EXECUTE ON FUNCTION public.handle_print_label_updates(TEXT, INTEGER, INTEG
 GRANT EXECUTE ON FUNCTION public.handle_print_label_updates(TEXT, INTEGER, INTEGER, INTEGER, TEXT) TO service_role;
 
 -- Step 4: 添加函數註釋
-COMMENT ON FUNCTION public.update_work_level_qc(INTEGER, INTEGER) IS 
+COMMENT ON FUNCTION public.update_work_level_qc(INTEGER, INTEGER) IS
 '更新員工的 QC 工作量統計。
 參數：
 - p_user_id: 員工 ID
 - p_pallet_count: 處理的棧板數量
 返回 JSONB 格式的結果';
 
-COMMENT ON FUNCTION public.handle_print_label_updates(TEXT, INTEGER, INTEGER, INTEGER, TEXT) IS 
+COMMENT ON FUNCTION public.handle_print_label_updates(TEXT, INTEGER, INTEGER, INTEGER, TEXT) IS
 '處理打印標籤後的庫存和工作量更新。
 參數：
 - p_product_code: 產品代碼
@@ -214,21 +214,21 @@ BEGIN
         2,
         'Test Product MEP9090150'
     );
-    
+
     IF (v_test_result->>'success')::boolean THEN
         RAISE NOTICE '✅ Test passed: handle_print_label_updates works correctly';
         RAISE NOTICE 'Result: %', v_test_result;
-        
+
         -- 回滾測試數據（避免影響真實數據）
-        UPDATE stock_level 
+        UPDATE stock_level
         SET stock_level = stock_level - 100,
             update_time = NOW()
         WHERE stock = 'MEP9090150';
-        
-        DELETE FROM work_level 
-        WHERE id = 1001 
+
+        DELETE FROM work_level
+        WHERE id = 1001
         AND DATE(latest_update) = CURRENT_DATE;
-        
+
         RAISE NOTICE '✅ Test data rolled back successfully';
     ELSE
         RAISE EXCEPTION '❌ Test failed: %', v_test_result->>'message';

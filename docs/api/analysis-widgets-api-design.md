@@ -67,7 +67,7 @@ interface PaginationMeta {
 
 ### 2. 緩存策略
 - **Redis緩存**: 所有分析數據默認緩存5分鐘
-- **Cache-Control Headers**: 
+- **Cache-Control Headers**:
   - 實時數據: `max-age=60`
   - 歷史數據: `max-age=300`
   - 靜態分析: `max-age=3600`
@@ -142,7 +142,7 @@ CREATE OR REPLACE FUNCTION get_aco_order_progress_summary(
 BEGIN
   RETURN QUERY
   WITH order_stats AS (
-    SELECT 
+    SELECT
       COUNT(*) as total,
       COUNT(*) FILTER (WHERE status = 'pending') as pending,
       COUNT(*) FILTER (WHERE status = 'processing') as processing,
@@ -251,7 +251,7 @@ CREATE OR REPLACE FUNCTION get_stock_level_history(
 ) AS $$
 BEGIN
   RETURN QUERY
-  SELECT 
+  SELECT
     date_trunc(p_interval, created_at) as time_bucket,
     SUM(current_stock) as total_stock,
     SUM(CASE WHEN movement_type = 'IN' THEN quantity ELSE 0 END) as inbound,

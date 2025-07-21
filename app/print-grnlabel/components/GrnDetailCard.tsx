@@ -12,17 +12,12 @@ import {
 } from '../../constants/grnConstants';
 import { PalletTypeSelector } from './PalletTypeSelector';
 import { PackageTypeSelector } from './PackageTypeSelector';
+import { SupplierInfo } from '@/types';
 
 interface FormData {
   grnNumber: string;
   materialSupplier: string;
   productCode: string;
-}
-
-interface SupplierInfo {
-  code: string;
-  name: string;
-  address?: string;
 }
 
 interface ProductInfo {
@@ -59,8 +54,8 @@ interface GrnDetailCardProps {
   palletType: PalletTypeData;
   packageType: PackageTypeData;
   onFormChange: (field: keyof FormData, value: string) => void;
-  onSupplierInfoChange: (supplierInfo: any) => void;
-  onProductInfoChange: (productInfo: any) => void;
+  onSupplierInfoChange: (supplierInfo: SupplierInfo | null) => void;
+  onProductInfoChange: (productInfo: ProductInfo | null) => void;
   onLabelModeChange: (mode: LabelMode) => void;
   onPalletTypeChange: (key: PalletTypeKey, value: string) => void;
   onPackageTypeChange: (key: PackageTypeKey, value: string) => void;

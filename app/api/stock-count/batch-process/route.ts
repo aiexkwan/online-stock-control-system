@@ -111,7 +111,8 @@ export async function POST(request: NextRequest) {
             .single();
 
           if (stockData) {
-            currentRemainQty = stockData.stock_level;
+            currentRemainQty =
+              typeof stockData.stock_level === 'number' ? stockData.stock_level : 0;
 
             // 創建初始記錄
             const { error: initError } = await supabase.from('record_stocktake').insert({
@@ -144,7 +145,8 @@ export async function POST(request: NextRequest) {
             continue;
           }
         } else {
-          currentRemainQty = lastRecords[0].remain_qty;
+          currentRemainQty =
+            typeof lastRecords[0].remain_qty === 'number' ? lastRecords[0].remain_qty : 0;
         }
 
         const newRemainQty = currentRemainQty - scan.counted_qty;

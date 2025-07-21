@@ -83,11 +83,7 @@
           "apiVersion": "v2",
           "isDeprecated": false,
           "supportedUntil": null,
-          "features": [
-            "enhanced-metrics",
-            "detailed-service-status",
-            "performance-monitoring"
-          ]
+          "features": ["enhanced-metrics", "detailed-service-status", "performance-monitoring"]
         }
       }
     },

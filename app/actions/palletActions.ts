@@ -7,8 +7,31 @@ import {
   type GenerationOptions,
 } from '../utils/palletGeneration';
 import { createClient as createServerClient } from '../utils/supabase/server';
-import { getErrorMessage } from '../../lib/types/error-handling';
+import { getErrorMessage } from '@/types/core/error';
 import { z } from 'zod';
+
+// Type definitions for database records
+interface DocUploadRecord {
+  uuid: string;
+  doc_name: string;
+  upload_by: number;
+  doc_type: string;
+  doc_url: string;
+  file_size: number;
+  folder: string;
+  created_at: string;
+  json_txt: string;
+}
+
+interface PalletInfoRecord {
+  plt_num: string;
+  product_code: string;
+  product_qty: number;
+  series: string;
+  plt_remark: string;
+  generate_time: string;
+  pdf_url: string;
+}
 
 /**
  * Server action wrapper for unified pallet generation
@@ -119,7 +142,10 @@ export async function releasePalletReservation(palletNumbers: string[]): Promise
 
 // Validation schema for reprint
 const reprintPalletSchema = z.object({
-  palletNumber: z.string().min(1).transform(val => val.toUpperCase()),
+  palletNumber: z
+    .string()
+    .min(1)
+    .transform(val => val.toUpperCase()),
 });
 
 /**
@@ -129,11 +155,13 @@ const reprintPalletSchema = z.object({
 export async function fetchPalletForReprint(palletNumber: string) {
   try {
     const validatedData = reprintPalletSchema.parse({ palletNumber });
-    
+
     const supabase = await createServerClient();
-    
+
     // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return {
         success: false,
@@ -144,20 +172,17 @@ export async function fetchPalletForReprint(palletNumber: string) {
     // Fetch pallet information
     const { data: palletInfo, error: palletError } = await supabase
       .from('record_palletinfo')
-      .select(`
+      .select(
+        `
         plt_num,
         product_code,
         product_qty,
-        lot_num,
-        expiry_date,
-        grn_num,
-        qc_by,
-        created_at,
-        data_code (
-          description,
-          chinese_description
-        )
-      `)
+        series,
+        plt_remark,
+        generate_time,
+        pdf_url
+      `
+      )
       .eq('plt_num', validatedData.palletNumber)
       .single();
 
@@ -169,16 +194,17 @@ export async function fetchPalletForReprint(palletNumber: string) {
       };
     }
 
-    // Check if PDF exists
+    // Check if PDF exists - using doc_upload table as label_pdf doesn't exist
     const { data: labelData, error: labelError } = await supabase
-      .from('label_pdf')
-      .select('pdf_url, created_at')
-      .eq('plt_num', validatedData.palletNumber)
+      .from('doc_upload')
+      .select('doc_url, created_at')
+      .eq('doc_name', validatedData.palletNumber)
+      .eq('doc_type', 'label')
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
 
-    if (labelError || !labelData?.pdf_url) {
+    if (labelError || !labelData?.doc_url) {
       console.error('[fetchPalletForReprint] No PDF found:', labelError);
       return {
         success: false,
@@ -190,7 +216,7 @@ export async function fetchPalletForReprint(palletNumber: string) {
     const { data: userData } = await supabase
       .from('data_id')
       .select('id')
-      .eq('email', user.email)
+      .eq('email', user.email || '')
       .single();
 
     // Log reprint action to history
@@ -203,37 +229,38 @@ export async function fetchPalletForReprint(palletNumber: string) {
       });
     }
 
+    // Type guard to ensure palletInfo is properly typed
+    if (!palletInfo || typeof palletInfo !== 'object') {
+      return {
+        success: false,
+        error: 'Invalid pallet data received',
+      };
+    }
+
+    const palletData = palletInfo as PalletInfoRecord;
     return {
       success: true,
       data: {
-        plt_num: palletInfo.plt_num,
-        product_code: palletInfo.product_code,
-        product_description: (() => {
-          const dataCode = palletInfo.data_code as { description?: string } | { description?: string }[];
-          if (Array.isArray(dataCode)) {
-            return dataCode[0]?.description || '';
-          }
-          return dataCode?.description || '';
-        })(),
-        product_qty: palletInfo.product_qty,
-        lot_num: palletInfo.lot_num,
-        expiry_date: palletInfo.expiry_date,
-        grn_num: palletInfo.grn_num,
-        qc_by: palletInfo.qc_by,
-        created_at: palletInfo.created_at,
-        pdf_url: labelData.pdf_url,
+        plt_num: palletData.plt_num,
+        product_code: palletData.product_code,
+        product_description: '', // No data_code relation available
+        product_qty: palletData.product_qty,
+        series: palletData.series,
+        plt_remark: palletData.plt_remark,
+        generate_time: palletData.generate_time,
+        pdf_url: labelData.doc_url,
       },
     };
   } catch (error) {
     console.error('[fetchPalletForReprint] Error:', error);
-    
+
     if (error instanceof z.ZodError) {
       return {
         success: false,
         error: 'Invalid pallet number format',
       };
     }
-    
+
     return {
       success: false,
       error: error instanceof Error ? getErrorMessage(error) : 'Failed to fetch pallet information',

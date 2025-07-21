@@ -23,10 +23,10 @@ Error state with retry functionality.
 ```tsx
 import { WidgetError } from './common/WidgetStates';
 
-<WidgetError 
-  message="Failed to load data" 
+<WidgetError
+  message="Failed to load data"
   error={error}
-  onRetry={handleRetry} 
+  onRetry={handleRetry}
 />
 ```
 
@@ -36,7 +36,7 @@ Empty state with optional action button.
 ```tsx
 import { WidgetEmpty } from './common/WidgetStates';
 
-<WidgetEmpty 
+<WidgetEmpty
   message="No data found"
   description="Try adjusting your filters"
   action={{ label: "Add Item", onClick: handleAdd }}
@@ -49,8 +49,8 @@ Loading overlay for async operations.
 ```tsx
 import { WidgetLoadingOverlay } from './common/WidgetStates';
 
-<WidgetLoadingOverlay 
-  isLoading={isProcessing} 
+<WidgetLoadingOverlay
+  isLoading={isProcessing}
   message="Saving changes..."
 />
 ```

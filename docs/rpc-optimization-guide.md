@@ -73,16 +73,16 @@ SELECT get_dashboard_stats(false, true);
 ```typescript
 // 儀表板載入時使用快速模式
 const { data: quickStats } = await supabase
-  .rpc('get_dashboard_stats', { 
-    p_use_estimated_count: true, 
-    p_include_detailed_stats: false 
+  .rpc('get_dashboard_stats', {
+    p_use_estimated_count: true,
+    p_include_detailed_stats: false
   });
 
 // 詳細視圖時使用完整模式
 const { data: detailedStats } = await supabase
-  .rpc('get_dashboard_stats', { 
-    p_use_estimated_count: false, 
-    p_include_detailed_stats: true 
+  .rpc('get_dashboard_stats', {
+    p_use_estimated_count: false,
+    p_include_detailed_stats: true
   });
 ```
 
@@ -197,8 +197,8 @@ SELECT comprehensive_performance_test();
 const useWarehouseSummary = (timePeriod: string) => {
   return useQuery({
     queryKey: ['warehouse-summary', timePeriod],
-    queryFn: () => supabase.rpc('get_warehouse_summary', { 
-      p_time_period: timePeriod 
+    queryFn: () => supabase.rpc('get_warehouse_summary', {
+      p_time_period: timePeriod
     }),
     staleTime: 5 * 60 * 1000, // 5分鐘緩存
     cacheTime: 30 * 60 * 1000, // 30分鐘保存
@@ -224,17 +224,17 @@ interface RPCResponse<T> {
 const handleRPCCall = async <T>(rpcCall: Promise<any>): Promise<T | null> => {
   try {
     const { data, error } = await rpcCall;
-    
+
     if (error) {
       console.error('Supabase RPC Error:', error);
       return null;
     }
-    
+
     if (!data?.success) {
       console.error('RPC Function Error:', data?.error);
       return null;
     }
-    
+
     return data;
   } catch (err) {
     console.error('Network Error:', err);
@@ -248,7 +248,7 @@ const handleRPCCall = async <T>(rpcCall: Promise<any>): Promise<T | null> => {
 基於測試結果，新的 RPC 函數達到以下性能基準：
 
 - **get_warehouse_summary**: ~10ms (Excellent)
-- **get_dashboard_stats**: ~14ms (Excellent) 
+- **get_dashboard_stats**: ~14ms (Excellent)
 - **get_optimized_inventory_data**: ~29ms (Excellent)
 
 **總體改善**:

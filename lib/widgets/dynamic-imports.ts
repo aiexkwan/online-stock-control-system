@@ -1,7 +1,7 @@
 /**
  * Dynamic Imports Map
  * 為所有 widgets 提供動態導入函數
- * 
+ *
  * 策略 2: DTO/自定義 type interface - 定義標準化的組件導入類型
  */
 
@@ -9,150 +9,260 @@ import React from 'react';
 import { wrapAllWidgetsWithErrorBoundary } from './error-boundary-wrapper';
 
 // 策略 2: 自定義組件導入類型介面
-type ComponentImport = () => Promise<{ default: React.ComponentType<any> }>;
-type ModuleImport = () => Promise<any>;
+type ComponentImport = () => Promise<{ default: React.ComponentType<Record<string, unknown>> }>;
+type ModuleImport = () => Promise<Record<string, unknown>>;
 
 // 策略 2: 工具函數 - 將命名導出轉換為默認導出格式
-const wrapNamedExport = <T extends React.ComponentType<any>>(
-  importFn: () => Promise<any>,
+const wrapNamedExport = (
+  importFn: () => Promise<Record<string, unknown>>,
   exportName: string
 ): ComponentImport => {
-  return () => importFn().then(module => ({ default: module[exportName] || module.default }));
+  return () =>
+    importFn().then(module => ({
+      default: (module[exportName] || module.default) as React.ComponentType<
+        Record<string, unknown>
+      >,
+    }));
 };
 
 // 策略 2: 工具函數 - 標準化默認導出
-const wrapDefaultExport = (importFn: () => Promise<{ default: React.ComponentType<any> }>): ComponentImport => {
-  return importFn;
+const wrapDefaultExport = (importFn: () => Promise<Record<string, unknown>>): ComponentImport => {
+  return () =>
+    importFn().then(module => ({
+      default: module.default as React.ComponentType<Record<string, unknown>>,
+    }));
 };
 
 // Core Widgets - 策略 2: 標準化導入格式
 export const coreWidgetImports: Record<string, ComponentImport> = {
-  'HistoryTree': wrapNamedExport(
+  HistoryTree: wrapNamedExport(
     () => import('@/app/admin/components/dashboard/widgets/HistoryTreeV2'),
     'HistoryTreeV2'
   ),
-  'HistoryTreeV2': wrapNamedExport(
-    () => import('@/app/admin/components/dashboard/widgets/HistoryTreeV2'), 
+  HistoryTreeV2: wrapNamedExport(
+    () => import('@/app/admin/components/dashboard/widgets/HistoryTreeV2'),
     'HistoryTreeV2'
   ),
-  'AdminWidgetRenderer': wrapDefaultExport(
-    () => import('@/app/admin/components/dashboard/AdminWidgetRenderer')
+  AdminWidgetRenderer: wrapNamedExport(
+    () => import('@/app/admin/components/dashboard/AdminWidgetRenderer'),
+    'AdminWidgetRenderer'
   ),
 };
 
 // Stats Widgets - 策略 2: 標準化導入格式
 export const statsWidgetImports: Record<string, ComponentImport> = {
-  'AwaitLocationQtyWidget': wrapDefaultExport(
+  AwaitLocationQtyWidget: wrapDefaultExport(
     () => import('@/app/admin/components/dashboard/widgets/AwaitLocationQtyWidget')
   ),
-  'YesterdayTransferCountWidget': wrapDefaultExport(
+  YesterdayTransferCountWidget: wrapDefaultExport(
     () => import('@/app/admin/components/dashboard/widgets/YesterdayTransferCountWidget')
   ),
-  'StillInAwaitWidget': wrapDefaultExport(
+  StillInAwaitWidget: wrapDefaultExport(
     () => import('@/app/admin/components/dashboard/widgets/StillInAwaitWidget')
   ),
-  'StillInAwaitPercentageWidget': wrapDefaultExport(
+  StillInAwaitPercentageWidget: wrapDefaultExport(
     () => import('@/app/admin/components/dashboard/widgets/StillInAwaitPercentageWidget')
   ),
-  'WarehouseWorkLevelAreaChart': wrapDefaultExport(
+  WarehouseWorkLevelAreaChart: wrapDefaultExport(
     () => import('@/app/admin/components/dashboard/widgets/WarehouseWorkLevelAreaChart')
   ),
-  'StatsCardWidget': wrapDefaultExport(
+  StatsCardWidget: wrapDefaultExport(
     () => import('@/app/admin/components/dashboard/widgets/StatsCardWidget')
   ),
 };
 
 // Charts Widgets - 策略 2: 標準化導入格式
 export const chartsWidgetImports: Record<string, ComponentImport> = {
-  'StockDistributionChart': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/StockDistributionChart')),
-  'StockDistributionChartV2': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/StockDistributionChartV2')),
-  'StockLevelHistoryChart': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/StockLevelHistoryChart')),
-  'TransferTimeDistributionWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/TransferTimeDistributionWidget')),
-  'InventoryOrderedAnalysisWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget')),
-  'TopProductsInventoryChart': wrapDefaultExport(() => import('@/app/admin/components/dashboard/charts/TopProductsInventoryChart')),
-  'AcoOrderProgressChart': wrapDefaultExport(() => import('@/app/admin/components/dashboard/charts/AcoOrderProgressChart')),
+  StockDistributionChart: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/StockDistributionChart')
+  ),
+  StockDistributionChartV2: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/StockDistributionChartV2')
+  ),
+  StockLevelHistoryChart: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/StockLevelHistoryChart')
+  ),
+  TransferTimeDistributionWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/TransferTimeDistributionWidget')
+  ),
+  InventoryOrderedAnalysisWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget')
+  ),
+  TopProductsInventoryChart: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/charts/TopProductsInventoryChart')
+  ),
+  AcoOrderProgressChart: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/charts/AcoOrderProgressChart')
+  ),
 };
 
 // Lists Widgets - 策略 2: 標準化導入格式
 export const listsWidgetImports: Record<string, ComponentImport> = {
-  'OrdersListWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/OrdersListWidgetV2')),
-  'OrdersListWidgetV2': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/OrdersListWidgetV2')),
-  'OtherFilesListWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/OtherFilesListWidgetV2')),
-  'OtherFilesListWidgetV2': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/OtherFilesListWidgetV2')),
-  'WarehouseTransferListWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/WarehouseTransferListWidget')),
-  'OrderStateListWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/OrderStateListWidgetV2')),
-  'OrderStateListWidgetV2': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/OrderStateListWidgetV2')),
+  OrdersListWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/OrdersListWidgetV2')
+  ),
+  OrdersListWidgetV2: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/OrdersListWidgetV2')
+  ),
+  OtherFilesListWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/OtherFilesListWidgetV2')
+  ),
+  OtherFilesListWidgetV2: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/OtherFilesListWidgetV2')
+  ),
+  WarehouseTransferListWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/WarehouseTransferListWidget')
+  ),
+  OrderStateListWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/OrderStateListWidgetV2')
+  ),
+  OrderStateListWidgetV2: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/OrderStateListWidgetV2')
+  ),
 };
 
 // Operations Widgets - 策略 2: 標準化導入格式
 export const operationsWidgetImports: Record<string, ComponentImport> = {
-  'VoidPalletWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/VoidPalletWidget')),
-  'ProductUpdateWidgetV2': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/ProductUpdateWidgetV2')),
-  'SupplierUpdateWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/SupplierUpdateWidgetV2')),
-  'SupplierUpdateWidgetV2': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/SupplierUpdateWidgetV2')),
-  'StockTypeSelector': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/StockTypeSelector')),
+  VoidPalletWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/VoidPalletWidget')
+  ),
+  ProductUpdateWidgetV2: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/ProductUpdateWidgetV2')
+  ),
+  SupplierUpdateWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/SupplierUpdateWidgetV2')
+  ),
+  SupplierUpdateWidgetV2: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/SupplierUpdateWidgetV2')
+  ),
+  StockTypeSelector: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/StockTypeSelector')
+  ),
 };
 
 // Uploads Widgets - 策略 2: 標準化導入格式
 export const uploadsWidgetImports: Record<string, ComponentImport> = {
-  'UploadOrdersWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/UploadOrdersWidgetV2')),
-  'UploadOrdersWidgetV2': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/UploadOrdersWidgetV2')),
-  'UploadFilesWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/UploadFilesWidget')),
-  'UploadProductSpecWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/UploadProductSpecWidget')),
-  'UploadPhotoWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/UploadPhotoWidget')),
-  'AvailableSoonWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/AvailableSoonWidget')),
-  'GoogleDriveUploadToast': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/GoogleDriveUploadToast')),
+  UploadOrdersWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/UploadOrdersWidgetV2')
+  ),
+  UploadOrdersWidgetV2: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/UploadOrdersWidgetV2')
+  ),
+  UploadFilesWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/UploadFilesWidget')
+  ),
+  UploadProductSpecWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/UploadProductSpecWidget')
+  ),
+  UploadPhotoWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/UploadPhotoWidget')
+  ),
+  AvailableSoonWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/AvailableSoonWidget')
+  ),
+  GoogleDriveUploadToast: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/GoogleDriveUploadToast')
+  ),
 };
 
 // Reports Widgets - 策略 2: 標準化導入格式
 export const reportsWidgetImports: Record<string, ComponentImport> = {
-  'TransactionReportWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/TransactionReportWidget')),
-  'GrnReportWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/GrnReportWidget')),
-  'GrnReportWidgetV2': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/GrnReportWidgetV2')),
-  'AcoOrderReportWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/AcoOrderReportWidget')),
-  'AcoOrderReportWidgetV2': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/AcoOrderReportWidgetV2')),
-  'ReprintLabelWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/ReprintLabelWidget')),
-  'ReportGeneratorWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2')),
-  'ReportGeneratorWithDialogWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2')),
-  'ReportGeneratorWithDialogWidgetV2': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2')),
+  TransactionReportWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/TransactionReportWidget')
+  ),
+  GrnReportWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/GrnReportWidget')
+  ),
+  GrnReportWidgetV2: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/GrnReportWidgetV2')
+  ),
+  AcoOrderReportWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/AcoOrderReportWidget')
+  ),
+  AcoOrderReportWidgetV2: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/AcoOrderReportWidgetV2')
+  ),
+  ReprintLabelWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/ReprintLabelWidget')
+  ),
+  ReportGeneratorWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2')
+  ),
+  ReportGeneratorWithDialogWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2')
+  ),
+  ReportGeneratorWithDialogWidgetV2: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2')
+  ),
 };
 
 // Analysis Widgets - 策略 2: 標準化導入格式
 export const analysisWidgetImports: Record<string, ComponentImport> = {
-  'AnalysisExpandableCards': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/AnalysisExpandableCards')),
-  'AcoOrderProgressWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/AcoOrderProgressWidget')),
-  'AcoOrderProgressCards': wrapDefaultExport(() => import('@/app/admin/components/dashboard/charts/AcoOrderProgressCards')),
-  'AnalysisPagedWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/AnalysisPagedWidgetV2')),
-  'AnalysisPagedWidgetV2': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/AnalysisPagedWidgetV2')),
+  AnalysisExpandableCards: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/AnalysisExpandableCards')
+  ),
+  AcoOrderProgressWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/AcoOrderProgressWidget')
+  ),
+  AcoOrderProgressCards: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/charts/AcoOrderProgressCards')
+  ),
+  AnalysisPagedWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/AnalysisPagedWidgetV2')
+  ),
+  AnalysisPagedWidgetV2: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/AnalysisPagedWidgetV2')
+  ),
 };
 
 // Production Monitoring Widgets - 策略 2: 標準化導入格式
 export const productionWidgetImports: Record<string, ComponentImport> = {
-  'ProductionDetailsWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/ProductionDetailsWidget')),
-  'ProductionStatsWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/ProductionStatsWidget')),
-  'InjectionProductionStatsWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/InjectionProductionStatsWidget')),
-  'StaffWorkloadWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/StaffWorkloadWidget')),
-  'TopProductsByQuantityWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/TopProductsByQuantityWidget')),
-  'ProductDistributionChartWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/ProductDistributionChartWidget')),
-  'TopProductsDistributionWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/TopProductsDistributionWidget')),
+  ProductionDetailsWidget: wrapNamedExport(
+    () => import('@/app/admin/components/dashboard/widgets/ProductionDetailsWidget'),
+    'ProductionDetailsWidget'
+  ),
+  ProductionStatsWidget: wrapNamedExport(
+    () => import('@/app/admin/components/dashboard/widgets/ProductionStatsWidget'),
+    'ProductionStatsWidget'
+  ),
+  InjectionProductionStatsWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/InjectionProductionStatsWidget')
+  ),
+  StaffWorkloadWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/StaffWorkloadWidget')
+  ),
+  TopProductsByQuantityWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/TopProductsByQuantityWidget')
+  ),
+  ProductDistributionChartWidget: wrapNamedExport(
+    () => import('@/app/admin/components/dashboard/widgets/ProductDistributionChartWidget'),
+    'ProductDistributionChartWidget'
+  ),
+  TopProductsDistributionWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/TopProductsDistributionWidget')
+  ),
 };
 
 // Special Widgets - 策略 2: 標準化導入格式
 export const specialWidgetImports: Record<string, ComponentImport> = {
-  'OrderAnalysisResultDialog': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/OrderAnalysisResultDialog')),
-  'Folder3D': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/Folder3D')),
-  'PerformanceTestWidget': wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/PerformanceTestWidget')),
+  OrderAnalysisResultDialog: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/OrderAnalysisResultDialog')
+  ),
+  Folder3D: wrapDefaultExport(() => import('@/app/admin/components/dashboard/widgets/Folder3D')),
+  PerformanceTestWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/PerformanceTestWidget')
+  ),
 };
 
 // Unified Widgets - v2.0.3 新增統一組件 - 策略 2: 標準化導入格式
 export const unifiedWidgetImports: Record<string, ComponentImport> = {
-  'UnifiedStatsWidget': wrapDefaultExport(
+  UnifiedStatsWidget: wrapDefaultExport(
     () => import('@/app/admin/components/dashboard/widgets/UnifiedStatsWidgetWithErrorBoundary')
   ),
-  'UnifiedChartWidget': wrapDefaultExport(
+  UnifiedChartWidget: wrapDefaultExport(
     () => import('@/app/admin/components/dashboard/widgets/UnifiedChartWidgetWithErrorBoundary')
   ),
-  'UnifiedTableWidget': wrapDefaultExport(
+  UnifiedTableWidget: wrapDefaultExport(
     () => import('@/app/admin/components/dashboard/widgets/UnifiedTableWidgetWithErrorBoundary')
   ),
 };
@@ -181,6 +291,8 @@ export const allWidgetImports: Record<string, ComponentImport> = {
 };
 
 // 根據 widget ID 獲取導入函數
-export function getWidgetImport(widgetId: string): (() => Promise<{ default: React.ComponentType }>) | undefined {
+export function getWidgetImport(
+  widgetId: string
+): (() => Promise<{ default: React.ComponentType }>) | undefined {
   return allWidgetImports[widgetId];
 }

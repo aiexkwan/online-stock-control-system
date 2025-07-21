@@ -223,12 +223,13 @@ export function shouldRunTests(context: {
  */
 export function getCurrentCoverageTarget(): number {
   const flag = phase4FeatureFlags.find(f => f.key === 'jest_unit_tests');
-  const metadata = flag?.metadata as any;
+  const metadata = flag?.metadata as Record<string, unknown>;
 
   if (!metadata?.coverage) return 10;
 
   const today = new Date();
-  const milestones = metadata.coverage.milestones;
+  const coverage = metadata.coverage as Record<string, unknown>;
+  const milestones = coverage?.milestones as Array<{ date: string; percentage: number }>;
 
   for (let i = milestones.length - 1; i >= 0; i--) {
     const milestone = milestones[i];
@@ -237,5 +238,5 @@ export function getCurrentCoverageTarget(): number {
     }
   }
 
-  return metadata.coverage.current;
+  return (coverage?.current as number) || 10;
 }

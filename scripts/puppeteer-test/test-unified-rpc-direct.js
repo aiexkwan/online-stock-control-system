@@ -45,7 +45,7 @@ const testUnifiedRpc = async () => {
       if (result.success) {
         console.log('\n🎯 成功詳情:');
         console.log(`✅ ${result.message}`);
-        
+
         if (result.data) {
           console.log(`🏷️ 生成托盤號碼: ${result.data.pallet_numbers?.join(', ')}`);
           console.log(`🔢 系列號碼: ${result.data.series?.join(', ')}`);
@@ -56,7 +56,7 @@ const testUnifiedRpc = async () => {
           console.log('\n📊 統計信息:');
           console.log(`📦 創建托盤數: ${result.statistics.pallets_created}`);
           console.log(`📋 總數量: ${result.statistics.total_quantity}`);
-          
+
           if (result.statistics.records_created) {
             console.log('📝 創建記錄:');
             console.log(`  - Pallet Info: ${result.statistics.records_created.palletinfo}`);
@@ -146,4 +146,4 @@ const verifyDatabaseRecords = async (palletNumbers) => {
 };
 
 // 執行測試
-testUnifiedRpc().catch(console.error); 
+testUnifiedRpc().catch(console.error);

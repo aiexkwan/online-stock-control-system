@@ -1,0 +1,64 @@
+'use client';
+
+import React from 'react';
+import { cn } from '@/lib/utils';
+
+interface PrintLabelGridProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const PrintLabelGrid: React.FC<PrintLabelGridProps> = ({ children, className }) => {
+  return (
+    <div className={cn('grid h-screen w-full grid-cols-10 grid-rows-7 gap-[10px] p-4', className)}>
+      {children}
+    </div>
+  );
+};
+
+interface GridWidgetProps {
+  children: React.ReactNode;
+  area: 'main' | 'bottom-left' | 'bottom-right';
+  className?: string;
+  borderStyle?: 'none' | 'default' | 'highlight';
+  glow?: boolean;
+}
+
+export const GridWidget: React.FC<GridWidgetProps> = ({
+  children,
+  area,
+  className,
+  borderStyle = 'default',
+  glow = false,
+}) => {
+  const areaClasses = {
+    main: 'col-start-3 col-end-9 row-start-1 row-end-4',
+    'bottom-left': 'col-start-3 col-end-6 row-start-4 row-end-6',
+    'bottom-right': 'col-start-6 col-end-9 row-start-4 row-end-6',
+  };
+
+  const borderClasses = {
+    none: '',
+    default: 'border border-slate-700/50 bg-slate-800/50 backdrop-blur-sm rounded-xl',
+    highlight: 'border border-blue-500/30 bg-slate-800/70 backdrop-blur-sm rounded-xl',
+  };
+
+  const glowClass = glow ? 'shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20' : '';
+
+  return (
+    <div
+      className={cn(
+        areaClasses[area],
+        borderStyle !== 'none' ? borderClasses[borderStyle] : 'bg-transparent',
+        glowClass,
+        'p-6 transition-all duration-300',
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+};
+
+PrintLabelGrid.displayName = 'PrintLabelGrid';
+GridWidget.displayName = 'GridWidget';

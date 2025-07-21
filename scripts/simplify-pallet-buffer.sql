@@ -1,6 +1,6 @@
 -- 簡化 pallet_number_buffer 表結構
 -- 1. 先備份現有數據（如需要）
-CREATE TABLE IF NOT EXISTS pallet_number_buffer_backup AS 
+CREATE TABLE IF NOT EXISTS pallet_number_buffer_backup AS
 SELECT * FROM pallet_number_buffer;
 
 -- 2. 刪除現有表
@@ -30,16 +30,16 @@ DECLARE
 BEGIN
     -- 獲取今天的日期格式 (DDMMYY)
     v_date_str := TO_CHAR(CURRENT_DATE, 'DDMMYY');
-    
+
     -- 清空表
     TRUNCATE TABLE pallet_number_buffer;
-    
+
     -- 插入300條記錄
     FOR i IN 1..300 LOOP
         INSERT INTO pallet_number_buffer (id, pallet_number, date_str, used)
         VALUES (i, v_date_str || '/' || i, v_date_str, 'False');
     END LOOP;
-    
+
     RAISE NOTICE 'Pallet buffer reset completed for date: %', v_date_str;
 END;
 $$;
@@ -73,10 +73,10 @@ BEGIN
         updated_at = NOW()
     WHERE pallet_number = ANY(p_pallet_numbers)
     AND used = 'False';
-    
+
     -- 檢查是否所有號碼都成功保留
-    RETURN (SELECT COUNT(*) FROM pallet_number_buffer 
-            WHERE pallet_number = ANY(p_pallet_numbers) 
+    RETURN (SELECT COUNT(*) FROM pallet_number_buffer
+            WHERE pallet_number = ANY(p_pallet_numbers)
             AND used = 'Holded') = array_length(p_pallet_numbers, 1);
 END;
 $$;
@@ -92,7 +92,7 @@ BEGIN
         updated_at = NOW()
     WHERE pallet_number = ANY(p_pallet_numbers)
     AND used = 'Holded';
-    
+
     RETURN FOUND;
 END;
 $$;
@@ -108,7 +108,7 @@ BEGIN
         updated_at = NOW()
     WHERE pallet_number = ANY(p_pallet_numbers)
     AND used = 'Holded';
-    
+
     RETURN FOUND;
 END;
 $$;

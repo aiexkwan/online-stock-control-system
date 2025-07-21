@@ -40,7 +40,7 @@ BEGIN
     WHERE wl.id = p_operator_id
     AND DATE(wl.latest_update) = CURRENT_DATE;
   END IF;
-  
+
   RETURN COALESCE(result, '[]'::json);
 END;
 $$;
@@ -73,7 +73,7 @@ BEGIN
         LIMIT p_limit
       ) wl
       LEFT JOIN data_id di ON wl.id = di.id;
-      
+
     WHEN 'move' THEN
       SELECT json_agg(
         json_build_object(
@@ -90,7 +90,7 @@ BEGIN
         LIMIT p_limit
       ) wl
       LEFT JOIN data_id di ON wl.id = di.id;
-      
+
     WHEN 'grn' THEN
       SELECT json_agg(
         json_build_object(
@@ -107,7 +107,7 @@ BEGIN
         LIMIT p_limit
       ) wl
       LEFT JOIN data_id di ON wl.id = di.id;
-      
+
     WHEN 'total' THEN
       SELECT json_agg(
         json_build_object(
@@ -124,11 +124,11 @@ BEGIN
         LIMIT p_limit
       ) wl
       LEFT JOIN data_id di ON wl.id = di.id;
-      
+
     ELSE
       RAISE EXCEPTION 'Invalid operation type: %', p_operation_type;
   END CASE;
-  
+
   RETURN COALESCE(result, '[]'::json);
 END;
 $$;
@@ -166,7 +166,7 @@ BEGIN
     'avg_grn_per_operator', ROUND(COALESCE(avg_grn_per_operator, 0))
   ) INTO result
   FROM daily_stats;
-  
+
   RETURN result;
 END;
 $$;
@@ -194,7 +194,7 @@ BEGIN
   FROM grn_level
   WHERE DATE(latest_update) >= p_start_date
   AND DATE(latest_update) <= p_end_date;
-  
+
   RETURN COALESCE(result, '[]'::json);
 END;
 $$;
@@ -216,13 +216,13 @@ BEGIN
       'stock_level', stock_level,
       'is_low', stock_level < p_threshold,
       'last_update', update_time
-    ) ORDER BY 
+    ) ORDER BY
       CASE WHEN stock_level < p_threshold THEN 0 ELSE 1 END,
       stock_level ASC
   ) INTO result
   FROM stock_level
   WHERE stock_level IS NOT NULL;
-  
+
   RETURN COALESCE(result, '[]'::json);
 END;
 $$;

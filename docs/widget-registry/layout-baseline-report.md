@@ -117,4 +117,3 @@ Total widgets: 2
 |-----------|----------|------|----------|
 | HistoryTree | (8,0) | 2x8 | widget1 |
 | AnalysisExpandableCards | (0,0) | 8x8 | widget2 |
-

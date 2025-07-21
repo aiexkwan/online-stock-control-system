@@ -5,6 +5,7 @@
 
 import { ProcessedReportData, ReportConfig } from '../core/ReportConfig';
 import { LegacyVoidPalletPdfGenerator } from '../core/LegacyPdfGenerator';
+import { safeGet, safeString, safeNumber, toRecordArray } from '@/types/database/helpers';
 
 export class LegacyVoidPalletAdapter {
   /**
@@ -17,10 +18,10 @@ export class LegacyVoidPalletAdapter {
     // 轉換摘要數據
     const summary = this.transformSummary(data);
 
-    // 轉換各區段數據
-    const byReason = this.transformReasonStats(data.sections.reasonBreakdown || []);
-    const details = this.transformDetails(data.sections.details || []);
-    const byProduct = this.transformProductStats(data.sections.productAnalysis || []);
+    // 轉換各區段數據 - 使用策略4: unknown + type narrowing
+    const byReason = this.transformReasonStats(data.sections.reasonBreakdown ?? []);
+    const details = this.transformDetails(data.sections.details ?? []);
+    const byProduct = this.transformProductStats(data.sections.productAnalysis ?? []);
 
     // 使用舊版生成器
     const generator = new LegacyVoidPalletPdfGenerator();
@@ -33,73 +34,150 @@ export class LegacyVoidPalletAdapter {
     });
   }
 
-  private static extractDateRange(filters: any): { start: string; end: string } {
+  private static extractDateRange(filters: Record<string, unknown>): {
+    start: string;
+    end: string;
+  } {
     // 處理 dateRange 過濾器
-    if (filters.dateRange && filters.dateRange.includes('|')) {
-      const [start, end] = filters.dateRange.split('|');
+    const dateRange = filters.dateRange;
+    if (typeof dateRange === 'string' && dateRange.includes('|')) {
+      const [start, end] = dateRange.split('|');
       return { start, end };
     }
 
     // 處理單獨的 startDate 和 endDate
     return {
-      start: filters.startDate || filters.start_date || '',
-      end: filters.endDate || filters.end_date || '',
+      start:
+        typeof filters.startDate === 'string'
+          ? filters.startDate
+          : typeof filters.start_date === 'string'
+            ? filters.start_date
+            : '',
+      end:
+        typeof filters.endDate === 'string'
+          ? filters.endDate
+          : typeof filters.end_date === 'string'
+            ? filters.end_date
+            : '',
     };
   }
 
-  private static transformSummary(data: ProcessedReportData): any {
-    const summaryData = data.sections.summary || data.summary || {};
+  private static transformSummary(data: ProcessedReportData): {
+    totalVoided: number;
+    totalQuantity: number;
+    uniqueProducts: number;
+    averagePerDay: number;
+  } {
+    const summaryData = data.sections.summary ?? data.summary;
 
     // 計算平均每天
     const dateRange = this.extractDateRange(data.metadata.filters);
     const daysDiff = this.calculateDaysDifference(dateRange.start, dateRange.end);
-    const totalVoided = summaryData.totalVoided || 0;
+    const totalVoided = safeNumber(safeGet(summaryData, 'totalVoided'), 0);
     const averagePerDay = daysDiff > 0 ? totalVoided / daysDiff : 0;
 
     return {
-      totalVoided: summaryData.totalVoided || 0,
-      totalQuantity: summaryData.totalQuantity || 0,
-      uniqueProducts: summaryData.uniqueProducts || 0,
-      averagePerDay: averagePerDay,
+      totalVoided,
+      totalQuantity: safeNumber(safeGet(summaryData, 'totalQuantity'), 0),
+      uniqueProducts: safeNumber(safeGet(summaryData, 'uniqueProducts'), 0),
+      averagePerDay,
     };
   }
 
-  private static transformReasonStats(reasonData: Record<string, unknown>[]): Record<string, unknown>[] {
+  private static transformReasonStats(
+    reasonData: unknown
+  ): { reason: string; count: number; quantity: number; percentage: number }[] {
     if (!Array.isArray(reasonData)) return [];
 
-    return reasonData.map(item => ({
-      reason: item.void_reason || item.reason || 'Unknown',
-      count: item.count || 0,
-      quantity: item.total_quantity || item.quantity || 0,
-      percentage: item.percentage || 0,
-    }));
+    return toRecordArray(reasonData)
+      .map((item: any) => {
+        if (typeof item !== 'object' || item === null) return null;
+
+        return {
+          reason: safeString(safeGet(item, 'void_reason') || safeGet(item, 'reason'), 'Unknown'),
+          count: safeNumber(safeGet(item, 'count'), 0),
+          quantity: safeNumber(safeGet(item, 'total_quantity') || safeGet(item, 'quantity'), 0),
+          percentage: safeNumber(safeGet(item, 'percentage'), 0),
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
   }
 
-  private static transformDetails(detailsData: Record<string, unknown>[]): Record<string, unknown>[] {
+  private static transformDetails(detailsData: unknown): {
+    date: string;
+    pltNum: string;
+    productCode: string;
+    description: string;
+    quantity: number;
+    reason: string;
+    operator: string;
+    remark: string;
+  }[] {
     if (!Array.isArray(detailsData)) return [];
 
-    return detailsData.map(item => ({
-      date: item.void_date || item.date || item.time,
-      pltNum: item.plt_num || item.palletNum || '',
-      productCode: item.product_code || item.productCode || '',
-      description: item.product_description || item.description || '',
-      quantity: item.quantity || item.qty || 0,
-      reason: item.void_reason || item.reason || 'Unknown',
-      operator: item.operator_name || item.operator || `ID: ${item.operator_id || ''}`,
-      remark: item.remark || '',
-    }));
+    return toRecordArray(detailsData)
+      .map((item: any) => {
+        if (typeof item !== 'object' || item === null) return null;
+
+        return {
+          date: safeString(
+            safeGet(item, 'void_date') || safeGet(item, 'date') || safeGet(item, 'time'),
+            ''
+          ),
+          pltNum: safeString(safeGet(item, 'plt_num') || safeGet(item, 'palletNum'), ''),
+          productCode: safeString(
+            safeGet(item, 'product_code') || safeGet(item, 'productCode'),
+            ''
+          ),
+          description: safeString(
+            safeGet(item, 'product_description') || safeGet(item, 'description'),
+            ''
+          ),
+          quantity: safeNumber(safeGet(item, 'quantity') || safeGet(item, 'qty'), 0),
+          reason: safeString(safeGet(item, 'void_reason') || safeGet(item, 'reason'), 'Unknown'),
+          operator: safeString(
+            safeGet(item, 'operator_name') ||
+              safeGet(item, 'operator') ||
+              `ID: ${safeGet(item, 'operator_id')}`,
+            ''
+          ),
+          remark: safeString(safeGet(item, 'remark'), ''),
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
   }
 
-  private static transformProductStats(productData: Record<string, unknown>[]): Record<string, unknown>[] {
+  private static transformProductStats(productData: unknown): {
+    productCode: string;
+    description: string;
+    voidCount: number;
+    totalQuantity: number;
+    avgQuantity: number;
+  }[] {
     if (!Array.isArray(productData)) return [];
 
-    return productData.map(item => ({
-      productCode: item.product_code || item.productCode || '',
-      description: item.product_description || item.description || '',
-      voidCount: item.void_count || item.count || 0,
-      totalQuantity: item.total_quantity || item.totalQuantity || 0,
-      avgQuantity: item.avg_quantity || item.avgQuantity || 0,
-    }));
+    return toRecordArray(productData)
+      .map((item: any) => {
+        if (typeof item !== 'object' || item === null) return null;
+
+        return {
+          productCode: safeString(
+            safeGet(item, 'product_code') || safeGet(item, 'productCode'),
+            ''
+          ),
+          description: safeString(
+            safeGet(item, 'product_description') || safeGet(item, 'description'),
+            ''
+          ),
+          voidCount: safeNumber(safeGet(item, 'void_count') || safeGet(item, 'count'), 0),
+          totalQuantity: safeNumber(
+            safeGet(item, 'total_quantity') || safeGet(item, 'totalQuantity'),
+            0
+          ),
+          avgQuantity: safeNumber(safeGet(item, 'avg_quantity') || safeGet(item, 'avgQuantity'), 0),
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
   }
 
   private static calculateDaysDifference(startDate: string, endDate: string): number {

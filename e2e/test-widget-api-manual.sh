@@ -53,7 +53,7 @@ for SOURCE in "${DATA_SOURCES[@]}"; do
   echo -n "  - 測試 $SOURCE: "
   RESPONSE=$(curl -s -X GET "${BASE_URL}/widgets/stats-card?dataSource=${SOURCE}" \
     -H "Authorization: Bearer ${TOKEN}")
-  
+
   if [[ $RESPONSE == *"value"* ]] && [[ $RESPONSE == *"label"* ]]; then
     VALUE=$(echo $RESPONSE | sed -n 's/.*"value":\([^,}]*\).*/\1/p')
     LABEL=$(echo $RESPONSE | sed -n 's/.*"label":"\([^"]*\)".*/\1/p')
@@ -119,7 +119,7 @@ for i in {1..10}; do
   curl -s -X GET "${BASE_URL}/widgets/stats-card?dataSource=total_pallets" \
     -H "Authorization: Bearer ${TOKEN}" > /dev/null
   END_TIME=$(date +%s%N)
-  
+
   ELAPSED=$((($END_TIME - $START_TIME) / 1000000))
   TOTAL_TIME=$(($TOTAL_TIME + $ELAPSED))
   echo -n "."

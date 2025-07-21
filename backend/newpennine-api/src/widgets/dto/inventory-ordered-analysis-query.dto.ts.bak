@@ -1,0 +1,44 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, IsArray, IsDateString } from 'class-validator';
+
+export class InventoryOrderedAnalysisQueryDto {
+  @ApiProperty({
+    description: 'Start date for analysis (YYYY-MM-DD)',
+    example: '2025-01-01',
+  })
+  @IsDateString()
+  startDate!: string;
+
+  @ApiProperty({
+    description: 'End date for analysis (YYYY-MM-DD)',
+    example: '2025-01-15',
+  })
+  @IsDateString()
+  endDate!: string;
+
+  @ApiPropertyOptional({
+    description: 'Warehouse filter',
+    example: 'injection',
+  })
+  @IsOptional()
+  @IsString()
+  warehouse?: string;
+
+  @ApiPropertyOptional({
+    description: 'Product type to filter by',
+    example: 'Injection Plastic',
+  })
+  @IsOptional()
+  @IsString()
+  productType?: string;
+
+  @ApiPropertyOptional({
+    description: 'Array of product codes to filter by',
+    example: ['PROD001', 'PROD002'],
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  productCodes?: string[];
+}

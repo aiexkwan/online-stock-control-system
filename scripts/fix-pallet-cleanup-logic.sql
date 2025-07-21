@@ -14,11 +14,11 @@ DECLARE
 BEGIN
     -- 獲取清理前的總數
     SELECT COUNT(*) INTO v_total_before FROM pallet_number_buffer;
-    
+
     -- 批量刪除，但保留當日未使用的號碼
     WITH deleted_counts AS (
         DELETE FROM pallet_number_buffer
-        WHERE 
+        WHERE
             -- 刪除非今日的資料
             date_str != v_current_date_str
             -- 刪除已使用超過 4 小時的資料（延長時間以防止意外清理）
@@ -26,24 +26,24 @@ BEGIN
             -- 刪除處於 'Holded' 狀態超過 1 小時的資料（可能是異常狀況）
             OR (used = 'Holded' AND updated_at < NOW() - INTERVAL '1 hour')
             -- 🔥 重要：不再刪除 used = 'False' 的當日資料，這些是 QC label 需要的可用號碼
-        RETURNING 
-            CASE 
+        RETURNING
+            CASE
                 WHEN date_str != v_current_date_str THEN 'old'
                 WHEN used = 'True' THEN 'used'
                 WHEN used = 'Holded' THEN 'holded'
                 ELSE 'other'
             END as delete_type
     )
-    SELECT 
+    SELECT
         COUNT(*) FILTER (WHERE delete_type = 'old'),
         COUNT(*) FILTER (WHERE delete_type = 'used'),
         COUNT(*) FILTER (WHERE delete_type = 'holded')
     INTO v_deleted_old, v_deleted_used, v_deleted_holded
     FROM deleted_counts;
-    
+
     -- 獲取清理後的總數
     SELECT COUNT(*) INTO v_total_after FROM pallet_number_buffer;
-    
+
     -- 返回詳細的清理結果
     RETURN json_build_object(
         'success', true,
@@ -72,19 +72,19 @@ DECLARE
     v_needs_reset BOOLEAN := false;
 BEGIN
     -- 統計各種狀態的數量
-    SELECT 
+    SELECT
         COUNT(*) FILTER (WHERE used = 'False') as unused,
         COUNT(*) FILTER (WHERE used = 'True') as used,
         COUNT(*) FILTER (WHERE used = 'Holded') as holded,
         COUNT(*) FILTER (WHERE date_str != v_current_date_str) as old_dates
     INTO v_unused_count, v_used_count, v_holded_count, v_old_dates_count
     FROM pallet_number_buffer;
-    
+
     -- 檢查是否需要重置（可用號碼過少）
     IF v_unused_count < 50 THEN
         v_needs_reset := true;
     END IF;
-    
+
     RETURN json_build_object(
         'current_date', v_current_date_str,
         'unused_count', v_unused_count,
@@ -93,7 +93,7 @@ BEGIN
         'old_dates_count', v_old_dates_count,
         'total_count', v_unused_count + v_used_count + v_holded_count + v_old_dates_count,
         'needs_reset', v_needs_reset,
-        'health_status', CASE 
+        'health_status', CASE
             WHEN v_unused_count >= 100 THEN 'healthy'
             WHEN v_unused_count >= 50 THEN 'warning'
             ELSE 'critical'
@@ -114,7 +114,7 @@ BEGIN
     -- 檢查健康狀況
     SELECT check_pallet_buffer_health() INTO v_health_check;
     v_needs_reset := (v_health_check->>'needs_reset')::boolean;
-    
+
     IF v_needs_reset THEN
         -- 執行重置
         PERFORM reset_daily_pallet_buffer();
@@ -131,7 +131,7 @@ BEGIN
             'checked_at', NOW()
         );
     END IF;
-    
+
     RETURN v_result;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -152,15 +152,15 @@ DECLARE
     v_health_result json;
 BEGIN
     RAISE NOTICE '=== 測試修正後的清理邏輯 ===';
-    
+
     -- 執行清理
     SELECT api_cleanup_pallet_buffer() INTO v_cleanup_result;
     RAISE NOTICE '清理結果: %', v_cleanup_result;
-    
+
     -- 檢查健康狀況
     SELECT check_pallet_buffer_health() INTO v_health_result;
     RAISE NOTICE '健康狀況: %', v_health_result;
-    
+
     RAISE NOTICE '✅ 修正完成：現在清理邏輯會保留當日未使用的棧板號碼供 QC label 使用';
 END;
-$$; 
+$$;

@@ -15,28 +15,28 @@ BEGIN
   IF p_start_date > p_end_date THEN
     RAISE EXCEPTION 'Start date cannot be later than end date';
   END IF;
-  
+
   IF p_metric NOT IN ('pallet_count', 'quantity_sum') THEN
     RAISE EXCEPTION 'Invalid metric. Use pallet_count or quantity_sum';
   END IF;
-  
+
   -- Calculate statistics based on metric type
   IF p_metric = 'pallet_count' THEN
     SELECT COUNT(*)
     INTO result
-    FROM record_palletinfo 
+    FROM record_palletinfo
     WHERE plt_remark ILIKE '%finished in production%'
-    AND generate_time >= p_start_date 
+    AND generate_time >= p_start_date
     AND generate_time <= p_end_date;
   ELSE
     SELECT COALESCE(SUM(CAST(product_qty AS BIGINT)), 0)
     INTO result
-    FROM record_palletinfo 
+    FROM record_palletinfo
     WHERE plt_remark ILIKE '%finished in production%'
-    AND generate_time >= p_start_date 
+    AND generate_time >= p_start_date
     AND generate_time <= p_end_date;
   END IF;
-  
+
   RETURN COALESCE(result, 0);
 EXCEPTION
   WHEN OTHERS THEN
@@ -60,18 +60,18 @@ BEGIN
   IF p_start_date > p_end_date THEN
     RAISE EXCEPTION 'Start date cannot be later than end date';
   END IF;
-  
+
   IF p_limit <= 0 OR p_limit > 100 THEN
     RAISE EXCEPTION 'Limit must be between 1 and 100';
   END IF;
-  
+
   RETURN QUERY
-  SELECT 
+  SELECT
     COALESCE(product_code, 'Unknown')::TEXT as name,
     COALESCE(SUM(CAST(product_qty AS BIGINT)), 0) as value
-  FROM record_palletinfo 
+  FROM record_palletinfo
   WHERE plt_remark ILIKE '%finished in production%'
-  AND generate_time >= p_start_date 
+  AND generate_time >= p_start_date
   AND generate_time <= p_end_date
   AND product_code IS NOT NULL
   GROUP BY product_code
@@ -118,13 +118,13 @@ BEGIN
   IF p_start_date > p_end_date THEN
     RAISE EXCEPTION 'Start date cannot be later than end date';
   END IF;
-  
+
   IF p_limit <= 0 OR p_limit > 500 THEN
     RAISE EXCEPTION 'Limit must be between 1 and 500';
   END IF;
-  
+
   RETURN QUERY
-  SELECT 
+  SELECT
     COALESCE(p.plt_num, 'N/A')::TEXT,
     COALESCE(p.product_code, 'N/A')::TEXT,
     COALESCE(CAST(p.product_qty AS INTEGER), 0),
@@ -133,19 +133,19 @@ BEGIN
   FROM record_palletinfo p
   LEFT JOIN (
     -- Get the most recent QC record for each pallet
-    SELECT DISTINCT ON (plt_num) 
-      plt_num, 
-      id, 
+    SELECT DISTINCT ON (plt_num)
+      plt_num,
+      id,
       time
-    FROM record_history 
+    FROM record_history
     WHERE action = 'Finished QC'
-    AND time >= p_start_date 
+    AND time >= p_start_date
     AND time <= p_end_date
     ORDER BY plt_num, time DESC
   ) h ON p.plt_num = h.plt_num
   LEFT JOIN data_id d ON h.id = d.id
   WHERE p.plt_remark ILIKE '%finished in production%'
-  AND p.generate_time >= p_start_date 
+  AND p.generate_time >= p_start_date
   AND p.generate_time <= p_end_date
   ORDER BY p.generate_time DESC
   LIMIT p_limit;
@@ -172,20 +172,20 @@ BEGIN
   IF p_start_date > p_end_date THEN
     RAISE EXCEPTION 'Start date cannot be later than end date';
   END IF;
-  
+
   IF p_department IS NULL OR LENGTH(TRIM(p_department)) = 0 THEN
     RAISE EXCEPTION 'Department cannot be empty';
   END IF;
-  
+
   RETURN QUERY
-  SELECT 
+  SELECT
     h.time::DATE as work_date,
     COALESCE(d.name, 'Unknown')::TEXT as staff_name,
     COUNT(*)::BIGINT as action_count
   FROM record_history h
   JOIN data_id d ON h.id = d.id
   WHERE d.department = p_department
-  AND h.time >= p_start_date 
+  AND h.time >= p_start_date
   AND h.time <= p_end_date
   AND d.name IS NOT NULL
   GROUP BY h.time::DATE, d.name, d.id
@@ -200,14 +200,14 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Create indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_record_palletinfo_production_stats 
-ON record_palletinfo (generate_time, plt_remark) 
+CREATE INDEX IF NOT EXISTS idx_record_palletinfo_production_stats
+ON record_palletinfo (generate_time, plt_remark)
 WHERE plt_remark ILIKE '%finished in production%';
 
-CREATE INDEX IF NOT EXISTS idx_record_history_workload 
+CREATE INDEX IF NOT EXISTS idx_record_history_workload
 ON record_history (time, id, action);
 
-CREATE INDEX IF NOT EXISTS idx_data_id_department 
+CREATE INDEX IF NOT EXISTS idx_data_id_department
 ON data_id (department, name) WHERE department IS NOT NULL;
 
 -- Grant execute permissions to authenticated users

@@ -6,9 +6,9 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/app/utils/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@/lib/types/supabase-generated';
-import { getErrorMessage } from '@/lib/types/error-handling';
-import { toRecordArray, safeNumber, safeGet } from '@/lib/types/supabase-helpers';
+import type { Database } from '@/types/database/supabase';
+import { getErrorMessage } from '@/types/core/error';
+import { toRecordArray, safeNumber, safeGet } from '@/types/database/helpers';
 
 // Type alias for Supabase client (Strategy 3: Supabase codegen)
 type TypedSupabaseClient = SupabaseClient<Database>;
@@ -93,7 +93,7 @@ async function getConnectionPoolMetrics(supabase: TypedSupabaseClient) {
       idleConnections: 7,
       waitingConnections: 0,
       maxConnections: 100,
-      utilizationRate: 18
+      utilizationRate: 18,
     };
 
     return poolStats;
@@ -105,7 +105,7 @@ async function getConnectionPoolMetrics(supabase: TypedSupabaseClient) {
       idleConnections: 0,
       waitingConnections: 0,
       maxConnections: 0,
-      utilizationRate: 0
+      utilizationRate: 0,
     };
   }
 }
@@ -120,7 +120,7 @@ async function getQueryPerformanceMetrics(supabase: TypedSupabaseClient) {
       { name: 'palletinfo_count', query: 'record_palletinfo', expected: 'fast' },
       { name: 'inventory_lookup', query: 'record_inventory', expected: 'fast' },
       { name: 'history_recent', query: 'record_history', expected: 'medium' },
-      { name: 'transfer_analysis', query: 'record_transfer', expected: 'medium' }
+      { name: 'transfer_analysis', query: 'record_transfer', expected: 'medium' },
     ];
 
     const queryResults = [];
@@ -128,49 +128,49 @@ async function getQueryPerformanceMetrics(supabase: TypedSupabaseClient) {
 
     for (const test of queryTests) {
       const startTime = Date.now();
-      
+
       try {
         // 使用簡單查詢測試表性能 (Strategy 4: unknown + type narrowing)
-        const { data, error } = await supabase
-          .from(test.query as any)
+        const { data, error } = (await supabase
+          .from(String(test.query))
           .select('count(*)', { head: true, count: 'exact' })
-          .limit(1) as { data: unknown; error: unknown };
-        
+          .limit(1)) as { data: unknown; error: unknown };
+
         if (error) {
           throw error;
         }
-          
+
         const duration = Date.now() - startTime;
         totalTime += duration;
-        
+
         queryResults.push({
           query: test.name,
           duration,
           timestamp: new Date().toISOString(),
-          table: test.query
+          table: test.query,
         });
       } catch (error) {
         queryResults.push({
           query: test.name,
           duration: 5000, // 標記為慢查詢
           timestamp: new Date().toISOString(),
-          table: test.query
+          table: test.query,
         });
       }
     }
 
     const avgQueryTime = totalTime / queryTests.length;
-    const slowQueriesCount = queryResults.filter((r) => safeNumber(safeGet(r, 'duration', 0)) > 1000).length;
-    
+    const slowQueriesCount = queryResults.filter(
+      r => safeNumber(safeGet(r, 'duration'), 0) > 1000
+    ).length;
+
     return {
       averageQueryTime: avgQueryTime,
       slowQueriesCount,
       queriesPerSecond: 1000 / avgQueryTime, // 估算
       totalQueries: queryTests.length,
       cacheHitRate: 85.5, // 模擬數據，實際應該從監控系統獲取
-      slowestQueries: queryResults
-        .sort((a, b) => b.duration - a.duration)
-        .slice(0, 5)
+      slowestQueries: queryResults.sort((a, b) => b.duration - a.duration).slice(0, 5),
     };
   } catch (error) {
     console.error('Query performance metrics error:', error);
@@ -180,7 +180,7 @@ async function getQueryPerformanceMetrics(supabase: TypedSupabaseClient) {
       queriesPerSecond: 0,
       totalQueries: 0,
       cacheHitRate: 0,
-      slowestQueries: []
+      slowestQueries: [],
     };
   }
 }
@@ -200,7 +200,7 @@ async function getTableStatistics(supabase: TypedSupabaseClient) {
       'record_grn',
       'data_code',
       'data_supplier',
-      'data_id'
+      'data_id',
     ];
 
     const tableStats = [];
@@ -209,20 +209,20 @@ async function getTableStatistics(supabase: TypedSupabaseClient) {
     for (const tableName of mainTables) {
       try {
         // 使用直接查詢獲取表統計 (Strategy 4: unknown + type narrowing)
-        const { data, error, count } = await supabase
-          .from(tableName as any)
+        const { data, error, count } = (await supabase
+          .from(String(tableName))
           .select('*', { head: true, count: 'exact' })
-          .limit(1) as { data: unknown; error: unknown; count: number | null };
+          .limit(1)) as { data: unknown; error: unknown; count: number | null };
 
         if (!error && count !== null) {
           const rowCount = count;
           totalRows += rowCount;
-          
+
           tableStats.push({
             tableName,
             rowCount,
             size: `${Math.round(rowCount * 0.5)}KB`, // 估算大小
-            indexCount: Math.floor(Math.random() * 5) + 1 // 模擬索引數
+            indexCount: Math.floor(Math.random() * 5) + 1, // 模擬索引數
           });
         }
       } catch (error) {
@@ -233,16 +233,14 @@ async function getTableStatistics(supabase: TypedSupabaseClient) {
     return {
       totalTables: mainTables.length,
       totalRows,
-      largestTables: tableStats
-        .sort((a, b) => b.rowCount - a.rowCount)
-        .slice(0, 10)
+      largestTables: tableStats.sort((a, b) => b.rowCount - a.rowCount).slice(0, 10),
     };
   } catch (error) {
     console.error('Table statistics error:', error);
     return {
       totalTables: 0,
       totalRows: 0,
-      largestTables: []
+      largestTables: [],
     };
   }
 }
@@ -258,40 +256,46 @@ async function getRpcFunctionMetrics(supabase: TypedSupabaseClient) {
         functionName: 'get_stock_summary',
         callCount: 1250,
         avgDuration: 45.2,
-        errorRate: 0.8
+        errorRate: 0.8,
       },
       {
         functionName: 'update_inventory_location',
         callCount: 890,
         avgDuration: 23.6,
-        errorRate: 1.2
+        errorRate: 1.2,
       },
       {
         functionName: 'process_transfer_batch',
         callCount: 456,
         avgDuration: 78.9,
-        errorRate: 0.5
+        errorRate: 0.5,
       },
       {
         functionName: 'generate_pallet_report',
         callCount: 234,
         avgDuration: 156.7,
-        errorRate: 2.1
-      }
+        errorRate: 2.1,
+      },
     ];
 
     const totalCalls = rpcStats.reduce((sum, stat) => sum + stat.callCount, 0);
-    const totalDuration = rpcStats.reduce((sum, stat) => sum + (stat.avgDuration * stat.callCount), 0);
+    const totalDuration = rpcStats.reduce(
+      (sum, stat) => sum + stat.avgDuration * stat.callCount,
+      0
+    );
     const avgExecutionTime = totalCalls > 0 ? totalDuration / totalCalls : 0;
-    
-    const totalErrors = rpcStats.reduce((sum, stat) => sum + (stat.callCount * stat.errorRate / 100), 0);
+
+    const totalErrors = rpcStats.reduce(
+      (sum, stat) => sum + (stat.callCount * stat.errorRate) / 100,
+      0
+    );
     const failureRate = totalCalls > 0 ? (totalErrors / totalCalls) * 100 : 0;
 
     return {
       totalCalls,
       averageExecutionTime: avgExecutionTime,
       failureRate,
-      mostCalledFunctions: rpcStats.sort((a, b) => b.callCount - a.callCount)
+      mostCalledFunctions: rpcStats.sort((a, b) => b.callCount - a.callCount),
     };
   } catch (error) {
     console.error('RPC function metrics error:', error);
@@ -299,7 +303,7 @@ async function getRpcFunctionMetrics(supabase: TypedSupabaseClient) {
       totalCalls: 0,
       averageExecutionTime: 0,
       failureRate: 0,
-      mostCalledFunctions: []
+      mostCalledFunctions: [],
     };
   }
 }
@@ -311,28 +315,24 @@ async function getSystemHealthMetrics(supabase: TypedSupabaseClient) {
   try {
     // 測試基本連接和響應時間
     const startTime = Date.now();
-    
+
     try {
-      await supabase
-        .from('data_code')
-        .select('count(*)')
-        .limit(1)
-        .single();
+      await supabase.from('data_code').select('count(*)').limit(1).single();
     } catch (error) {
       // 連接測試失敗
     }
-    
+
     const responseTime = Date.now() - startTime;
-    
+
     // 模擬系統資源使用情況
     const cpu = Math.random() * 100;
     const memory = Math.random() * 100;
     const diskSpace = Math.random() * 100;
     const replicationLag = Math.random() * 1000;
-    
+
     let status: 'optimal' | 'good' | 'degraded' | 'critical' = 'optimal';
     const alerts: string[] = [];
-    
+
     // 評估狀態
     if (responseTime > 2000) {
       status = 'critical';
@@ -343,35 +343,35 @@ async function getSystemHealthMetrics(supabase: TypedSupabaseClient) {
     } else if (responseTime > 500) {
       status = 'good';
     }
-    
+
     if (cpu > 80) {
       status = 'critical';
       alerts.push('High CPU usage detected');
     } else if (cpu > 60) {
       alerts.push('Moderate CPU usage');
     }
-    
+
     if (memory > 85) {
       status = 'critical';
       alerts.push('High memory usage detected');
     } else if (memory > 70) {
       alerts.push('Moderate memory usage');
     }
-    
+
     if (diskSpace > 90) {
       status = 'critical';
       alerts.push('Disk space is running low');
     } else if (diskSpace > 80) {
       alerts.push('Disk space usage is high');
     }
-    
+
     return {
       cpu: Math.round(cpu),
       memory: Math.round(memory),
       diskSpace: Math.round(diskSpace),
       replicationLag: Math.round(replicationLag),
       status,
-      alerts
+      alerts,
     };
   } catch (error) {
     console.error('System health metrics error:', error);
@@ -381,7 +381,7 @@ async function getSystemHealthMetrics(supabase: TypedSupabaseClient) {
       diskSpace: 0,
       replicationLag: 0,
       status: 'critical' as const,
-      alerts: ['Unable to retrieve system health metrics']
+      alerts: ['Unable to retrieve system health metrics'],
     };
   }
 }
@@ -391,39 +391,39 @@ async function getSystemHealthMetrics(supabase: TypedSupabaseClient) {
  */
 function generateRecommendations(metrics: DatabaseMetrics): string[] {
   const recommendations: string[] = [];
-  
+
   // 連接池建議
   if (metrics.connectionPool.utilizationRate > 80) {
     recommendations.push('Consider increasing connection pool size');
   }
-  
+
   // 查詢性能建議
   if (metrics.queryPerformance.averageQueryTime > 500) {
     recommendations.push('Optimize slow queries or add appropriate indexes');
   }
-  
+
   if (metrics.queryPerformance.cacheHitRate < 80) {
     recommendations.push('Consider tuning query cache settings');
   }
-  
+
   // RPC 函數建議
   if (metrics.rpcFunctions.failureRate > 5) {
     recommendations.push('Investigate RPC function failures and implement better error handling');
   }
-  
+
   // 系統健康建議
   if (metrics.systemHealth.cpu > 70) {
     recommendations.push('Monitor CPU usage and consider scaling resources');
   }
-  
+
   if (metrics.systemHealth.memory > 70) {
     recommendations.push('Monitor memory usage and consider increasing available memory');
   }
-  
+
   if (metrics.systemHealth.diskSpace > 80) {
     recommendations.push('Clean up old data or increase disk space');
   }
-  
+
   return recommendations;
 }
 
@@ -436,36 +436,34 @@ export async function GET() {
     const timestamp = new Date().toISOString();
 
     // 並行獲取所有指標
-    const [
-      connectionPool,
-      queryPerformance,
-      tableStatistics,
-      rpcFunctions,
-      systemHealth
-    ] = await Promise.all([
-      getConnectionPoolMetrics(supabase),
-      getQueryPerformanceMetrics(supabase),
-      getTableStatistics(supabase),
-      getRpcFunctionMetrics(supabase),
-      getSystemHealthMetrics(supabase)
-    ]);
+    const [connectionPool, queryPerformance, tableStatistics, rpcFunctions, systemHealth] =
+      await Promise.all([
+        getConnectionPoolMetrics(supabase),
+        getQueryPerformanceMetrics(supabase),
+        getTableStatistics(supabase),
+        getRpcFunctionMetrics(supabase),
+        getSystemHealthMetrics(supabase),
+      ]);
 
     const metrics: DatabaseMetrics = {
       connectionPool,
       queryPerformance,
       tableStatistics,
       rpcFunctions,
-      systemHealth
+      systemHealth,
     };
 
     // 評估整體健康狀態
     let overallHealth: 'optimal' | 'good' | 'degraded' | 'critical' = 'optimal';
     const criticalIssues: string[] = [];
-    
+
     if ((systemHealth as { status: string }).status === 'critical') {
       overallHealth = 'critical';
       criticalIssues.push(...systemHealth.alerts.filter(alert => alert.includes('critical')));
-    } else if ((systemHealth as { status: string }).status === 'degraded' || queryPerformance.averageQueryTime > 1000) {
+    } else if (
+      (systemHealth as { status: string }).status === 'degraded' ||
+      queryPerformance.averageQueryTime > 1000
+    ) {
       overallHealth = 'degraded';
     } else if ((systemHealth as { status: string }).status === 'good') {
       overallHealth = 'good';
@@ -495,34 +493,36 @@ export async function GET() {
       summary: {
         overallHealth,
         criticalIssues,
-        recommendations
-      }
+        recommendations,
+      },
     };
 
     return NextResponse.json(response, {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'API-Version': 'v1',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
+        Pragma: 'no-cache',
+        Expires: '0',
+      },
     });
-
   } catch (error) {
     console.error('Database metrics endpoint failed:', error);
 
-    return NextResponse.json({
-      status: 'error',
-      timestamp: new Date().toISOString(),
-      error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
-      message: 'Failed to retrieve database metrics'
-    }, {
-      status: 500,
-      headers: {
-        'Cache-Control': 'no-cache',
-        'API-Version': 'v1'
+    return NextResponse.json(
+      {
+        status: 'error',
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
+        message: 'Failed to retrieve database metrics',
+      },
+      {
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-cache',
+          'API-Version': 'v1',
+        },
       }
-    });
+    );
   }
 }
 
@@ -536,7 +536,7 @@ export async function HEAD() {
       'Content-Type': 'application/json',
       'API-Version': 'v1',
       'X-API-Version': 'v1',
-      'Cache-Control': 'no-cache'
-    }
+      'Cache-Control': 'no-cache',
+    },
   });
 }

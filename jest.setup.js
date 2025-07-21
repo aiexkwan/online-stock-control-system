@@ -147,11 +147,11 @@ global.URL = class URL {
     this.search = '';
     this.hash = '';
   }
-  
+
   toString() {
     return this.href;
   }
-  
+
   static createObjectURL = jest.fn(() => 'blob:mock-url');
   static revokeObjectURL = jest.fn();
 };
@@ -192,7 +192,7 @@ jest.mock('@supabase/realtime-js', () => ({
 // Mock Next.js cookies
 jest.mock('next/headers', () => ({
   cookies: jest.fn(() => ({
-    get: jest.fn((name) => ({ value: 'mock-cookie-value' })),
+    get: jest.fn(name => ({ value: 'mock-cookie-value' })),
     set: jest.fn(),
     delete: jest.fn(),
     getAll: jest.fn(() => []),
@@ -232,16 +232,16 @@ try {
   // Try to import MSW
   const { setupServer } = require('msw/node');
   const { allHandlers } = require('./__tests__/mocks/handlers');
-  
+
   // Setup MSW Server
   server = setupServer(...allHandlers);
-  
+
   // Start server before all tests
   beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }));
-  
+
   // Reset handlers after each test
   afterEach(() => server.resetHandlers());
-  
+
   // Clean up after all tests
   afterAll(() => server.close());
 } catch (error) {
@@ -251,7 +251,7 @@ try {
     listen: () => {},
     resetHandlers: () => {},
     close: () => {},
-    use: () => {}
+    use: () => {},
   };
 }
 
@@ -302,3 +302,37 @@ afterEach(() => {
 afterEach(() => {
   jest.clearAllMocks();
 });
+
+// Mock Performance API for Widget Performance Monitor
+global.performance = {
+  ...global.performance,
+  now: jest.fn(() => Date.now()),
+  mark: jest.fn(),
+  measure: jest.fn(),
+  getEntriesByType: jest.fn(() => []),
+  getEntriesByName: jest.fn(() => []),
+  clearMarks: jest.fn(),
+  clearMeasures: jest.fn(),
+};
+
+// Mock PerformanceObserver
+global.PerformanceObserver = class PerformanceObserver {
+  constructor(callback) {
+    this.callback = callback;
+  }
+
+  observe() {}
+  disconnect() {}
+
+  static supportedEntryTypes = ['paint', 'navigation', 'resource'];
+};
+
+// Mock MutationObserver
+global.MutationObserver = class MutationObserver {
+  constructor(callback) {
+    this.callback = callback;
+  }
+
+  observe() {}
+  disconnect() {}
+};

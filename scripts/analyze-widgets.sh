@@ -9,22 +9,22 @@ echo "Widget Name,Lines of Code,Import Count,Component Count,Hook Count,Complexi
 analyze_widget() {
     local file=$1
     local filename=$(basename "$file")
-    
+
     # Count lines of code (excluding blank lines and comments)
     local loc=$(grep -v "^[[:space:]]*$" "$file" | grep -v "^[[:space:]]*//" | grep -v "^[[:space:]]*\*" | wc -l)
-    
+
     # Count imports
     local imports=$(grep -c "^import" "$file")
-    
+
     # Count React components (rough estimate)
     local components=$(grep -E "const.*=.*\(|function.*\(" "$file" | grep -E "React\.|<|JSX" | wc -l)
-    
+
     # Count hooks usage
     local hooks=$(grep -E "use[A-Z]" "$file" | wc -l)
-    
+
     # Calculate complexity score (weighted)
     local complexity=$((loc/50 + imports*2 + components*3 + hooks*2))
-    
+
     echo "$filename,$loc,$imports,$components,$hooks,$complexity"
 }
 

@@ -16,10 +16,10 @@ class AuthFlowTester {
 
   async setup() {
     console.log('🚀 啟動 Puppeteer 測試...');
-    
+
     this.browser = await puppeteer.launch({
       headless: false, // 顯示瀏覽器便於觀察
-      devtools: true,  // 開啟開發工具
+      devtools: true, // 開啟開發工具
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -30,10 +30,10 @@ class AuthFlowTester {
     });
 
     this.page = await this.browser.newPage();
-    
+
     // 設置視窗大小
     await this.page.setViewport({ width: 1920, height: 1080 });
-    
+
     // 啟用控制台日誌收集
     this.page.on('console', msg => {
       console.log(`🖥️  [CONSOLE ${msg.type()}]:`, msg.text());
@@ -58,24 +58,24 @@ class AuthFlowTester {
 
   async testAuthFlow() {
     console.log('\n🔐 開始測試認證流程...');
-    
+
     try {
       // Step 1: 導航到主登入頁面
       console.log('📍 Step 1: 導航到登入頁面');
-      await this.page.goto('http://localhost:3000/main-login', { 
+      await this.page.goto('http://localhost:3000/main-login', {
         waitUntil: 'networkidle2',
-        timeout: 10000 
+        timeout: 10000,
       });
-      
+
       // 等待頁面載入並截圖
       await this.page.waitForSelector('form', { timeout: 5000 });
       await this.screenshot('01-login-page');
-      
+
       // 檢查頁面元素
-      const hasEmailInput = await this.page.$('input[type="email"]') !== null;
-      const hasPasswordInput = await this.page.$('input[type="password"]') !== null;
-      const hasSubmitButton = await this.page.$('button[type="submit"]') !== null;
-      
+      const hasEmailInput = (await this.page.$('input[type="email"]')) !== null;
+      const hasPasswordInput = (await this.page.$('input[type="password"]')) !== null;
+      const hasSubmitButton = (await this.page.$('button[type="submit"]')) !== null;
+
       console.log(`📧 Email input exists: ${hasEmailInput}`);
       console.log(`🔑 Password input exists: ${hasPasswordInput}`);
       console.log(`🔘 Submit button exists: ${hasSubmitButton}`);
@@ -88,23 +88,23 @@ class AuthFlowTester {
       console.log('📍 Step 2: 填寫登入資料');
       const testEmail = process.env.SYS_LOGIN || 'test@newpennine.com';
       const testPassword = process.env.SYS_PASSWORD || 'test123';
-      
+
       await this.page.type('input[type="email"]', testEmail, { delay: 50 });
       await this.page.type('input[type="password"]', testPassword, { delay: 50 });
       await this.screenshot('02-form-filled');
 
       // Step 3: 提交登入表單
       console.log('📍 Step 3: 提交登入表單');
-      
+
       // 監聽導航變化
-      const navigationPromise = this.page.waitForNavigation({ 
+      const navigationPromise = this.page.waitForNavigation({
         waitUntil: 'networkidle2',
-        timeout: 15000 
+        timeout: 15000,
       });
-      
+
       await this.page.click('button[type="submit"]');
       console.log('🔄 等待導航...');
-      
+
       try {
         await navigationPromise;
         console.log(`✅ 導航完成，當前 URL: ${this.page.url()}`);
@@ -129,7 +129,6 @@ class AuthFlowTester {
       await this.page.waitForTimeout(3000);
       await this.checkAuthState('after-wait');
       await this.screenshot('05-final-state');
-
     } catch (error) {
       console.error('❌ 測試過程中發生錯誤:', error);
       await this.screenshot('error-state');
@@ -139,13 +138,13 @@ class AuthFlowTester {
 
   async checkAuthState(stage) {
     console.log(`🔍 檢查認證狀態 [${stage}]:`);
-    
+
     try {
       // 檢查 localStorage 中的認證信息
       const authState = await this.page.evaluate(() => {
         const supabaseAuth = localStorage.getItem('sb-bbmkuiplnzvpudszrend-auth-token');
         const sessionData = localStorage.getItem('supabase.auth.token');
-        
+
         return {
           hasSupabaseToken: !!supabaseAuth,
           hasSessionData: !!sessionData,
@@ -166,16 +165,17 @@ class AuthFlowTester {
       const pageContent = await this.page.evaluate(() => {
         const hasLoadingSpinner = !!document.querySelector('[data-testid="loading"]');
         const hasErrorMessage = !!document.querySelector('[data-testid="error"]');
-        const hasMainContent = !!document.querySelector('main') || !!document.querySelector('[role="main"]');
+        const hasMainContent =
+          !!document.querySelector('main') || !!document.querySelector('[role="main"]');
         const pageTitle = document.title;
         const bodyText = document.body.innerText.substring(0, 200);
 
         return {
           hasLoadingSpinner,
-          hasErrorMessage, 
+          hasErrorMessage,
           hasMainContent,
           pageTitle,
-          bodyText
+          bodyText,
         };
       });
 
@@ -189,9 +189,8 @@ class AuthFlowTester {
         stage,
         timestamp: new Date().toISOString(),
         authState,
-        pageContent
+        pageContent,
       });
-
     } catch (error) {
       console.error(`❌ 檢查認證狀態失敗 [${stage}]:`, error);
     }
@@ -201,9 +200,9 @@ class AuthFlowTester {
     try {
       const screenshotPath = path.join(process.cwd(), 'test-results', `auth-test-${filename}.png`);
       await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
-      await this.page.screenshot({ 
+      await this.page.screenshot({
         path: screenshotPath,
-        fullPage: true 
+        fullPage: true,
       });
       console.log(`📸 截圖已保存: ${screenshotPath}`);
     } catch (error) {
@@ -215,7 +214,7 @@ class AuthFlowTester {
     try {
       const resultsPath = path.join(process.cwd(), 'test-results', 'auth-flow-test-results.json');
       await fs.mkdir(path.dirname(resultsPath), { recursive: true });
-      
+
       const report = {
         timestamp: new Date().toISOString(),
         testResults: this.testResults,
@@ -223,7 +222,7 @@ class AuthFlowTester {
           totalStages: this.testResults.length,
           authTokenPresent: this.testResults.map(r => r.authState?.hasSupabaseToken),
           urlChanges: this.testResults.map(r => r.authState?.url),
-        }
+        },
       };
 
       await fs.writeFile(resultsPath, JSON.stringify(report, null, 2));
@@ -244,16 +243,15 @@ class AuthFlowTester {
 // 主函數
 async function runAuthTest() {
   const tester = new AuthFlowTester();
-  
+
   try {
     await tester.setup();
     await tester.testAuthFlow();
     await tester.saveResults();
-    
+
     console.log('\n✅ 認證流程測試完成！');
     console.log('📊 查看測試結果: test-results/auth-flow-test-results.json');
     console.log('📸 查看截圖: test-results/auth-test-*.png');
-    
   } catch (error) {
     console.error('\n❌ 測試失敗:', error);
     process.exit(1);

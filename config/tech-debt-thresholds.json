@@ -1,0 +1,214 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2025-07-20T01:25:00Z",
+  "thresholds": {
+    "typescript": {
+      "maxErrors": {
+        "value": 500,
+        "description": "Maximum allowed TypeScript errors",
+        "level": "error",
+        "actionRequired": "Block PR merge if exceeded"
+      },
+      "maxWarnings": {
+        "value": 50,
+        "description": "Maximum allowed TypeScript warnings",
+        "level": "warning",
+        "actionRequired": "Review required if exceeded"
+      }
+    },
+    "eslint": {
+      "maxErrors": {
+        "value": 100,
+        "description": "Maximum allowed ESLint errors",
+        "level": "error",
+        "actionRequired": "Block PR merge if exceeded"
+      },
+      "maxWarnings": {
+        "value": 200,
+        "description": "Maximum allowed ESLint warnings",
+        "level": "warning",
+        "actionRequired": "Review recommended if exceeded"
+      },
+      "maxFixableIssues": {
+        "value": 50,
+        "description": "Maximum fixable issues before auto-fix required",
+        "level": "info",
+        "actionRequired": "Suggest running eslint --fix"
+      }
+    },
+    "testing": {
+      "minCoverage": {
+        "value": 70,
+        "description": "Minimum test coverage percentage",
+        "level": "warning",
+        "actionRequired": "Review required if below threshold"
+      },
+      "maxFailedTests": {
+        "value": 0,
+        "description": "Maximum allowed failed tests",
+        "level": "error",
+        "actionRequired": "Block PR merge if exceeded"
+      }
+    },
+    "complexity": {
+      "maxFileLines": {
+        "value": 300,
+        "description": "Maximum lines per file",
+        "level": "warning",
+        "actionRequired": "Suggest refactoring if exceeded"
+      },
+      "maxFunctionLines": {
+        "value": 50,
+        "description": "Maximum lines per function",
+        "level": "info",
+        "actionRequired": "Suggest breaking down large functions"
+      },
+      "maxCyclomaticComplexity": {
+        "value": 10,
+        "description": "Maximum cyclomatic complexity",
+        "level": "warning",
+        "actionRequired": "Review complexity if exceeded"
+      }
+    },
+    "security": {
+      "maxSecurityIssues": {
+        "value": 0,
+        "description": "Maximum allowed security issues",
+        "level": "error",
+        "actionRequired": "Block PR merge if exceeded"
+      },
+      "maxHighRiskVulnerabilities": {
+        "value": 0,
+        "description": "Maximum high-risk vulnerabilities",
+        "level": "error",
+        "actionRequired": "Immediate fix required"
+      }
+    },
+    "performance": {
+      "maxBundleSize": {
+        "value": 500,
+        "unit": "KB",
+        "description": "Maximum bundle size in KB",
+        "level": "warning",
+        "actionRequired": "Review bundle optimization if exceeded"
+      },
+      "maxRenderTime": {
+        "value": 16,
+        "unit": "ms",
+        "description": "Maximum component render time",
+        "level": "info",
+        "actionRequired": "Consider memoization if exceeded"
+      }
+    },
+    "codeQuality": {
+      "minHealthScore": {
+        "value": 70,
+        "description": "Minimum overall health score",
+        "level": "warning",
+        "actionRequired": "Review required if below threshold"
+      },
+      "maxTechnicalDebtRatio": {
+        "value": 30,
+        "unit": "%",
+        "description": "Maximum technical debt ratio",
+        "level": "warning",
+        "actionRequired": "Schedule refactoring if exceeded"
+      }
+    }
+  },
+  "environments": {
+    "development": {
+      "strictMode": false,
+      "description": "Relaxed thresholds for development",
+      "modifiers": {
+        "typescript.maxErrors": 1000,
+        "eslint.maxErrors": 200,
+        "codeQuality.minHealthScore": 50
+      }
+    },
+    "staging": {
+      "strictMode": false,
+      "description": "Moderate thresholds for staging",
+      "modifiers": {
+        "typescript.maxErrors": 200,
+        "eslint.maxErrors": 50,
+        "codeQuality.minHealthScore": 60
+      }
+    },
+    "production": {
+      "strictMode": true,
+      "description": "Strict thresholds for production",
+      "modifiers": {
+        "typescript.maxErrors": 0,
+        "eslint.maxErrors": 0,
+        "security.maxSecurityIssues": 0,
+        "testing.maxFailedTests": 0,
+        "codeQuality.minHealthScore": 80
+      }
+    }
+  },
+  "escalationRules": {
+    "criticalIssues": {
+      "conditions": [
+        "security.maxSecurityIssues > 0",
+        "testing.maxFailedTests > 0",
+        "typescript.maxErrors > 1000"
+      ],
+      "actions": [
+        "Block all deployments",
+        "Notify team leads immediately",
+        "Create high-priority issue"
+      ]
+    },
+    "highPriorityIssues": {
+      "conditions": [
+        "typescript.maxErrors > 500",
+        "eslint.maxErrors > 100",
+        "codeQuality.minHealthScore < 50"
+      ],
+      "actions": ["Require senior review", "Schedule tech debt sprint", "Update team dashboard"]
+    },
+    "mediumPriorityIssues": {
+      "conditions": [
+        "typescript.maxErrors > 200",
+        "eslint.maxWarnings > 200",
+        "complexity.maxFileLines > 500"
+      ],
+      "actions": ["Add to tech debt backlog", "Suggest refactoring", "Update metrics dashboard"]
+    }
+  },
+  "notifications": {
+    "slack": {
+      "enabled": false,
+      "webhook": "",
+      "channels": {
+        "critical": "#alerts",
+        "high": "#dev-team",
+        "medium": "#tech-debt"
+      }
+    },
+    "email": {
+      "enabled": false,
+      "recipients": {
+        "critical": ["team-leads@company.com"],
+        "high": ["dev-team@company.com"],
+        "medium": ["dev-team@company.com"]
+      }
+    },
+    "github": {
+      "enabled": true,
+      "createIssues": true,
+      "labelPrefix": "tech-debt",
+      "assignees": []
+    }
+  },
+  "monitoring": {
+    "checkInterval": "15m",
+    "retentionPeriod": "90d",
+    "trendAnalysis": {
+      "enabled": true,
+      "windowSize": "7d",
+      "alertOnRegression": true
+    }
+  }
+}

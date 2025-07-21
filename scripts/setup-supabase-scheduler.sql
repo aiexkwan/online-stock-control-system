@@ -15,7 +15,7 @@ SELECT cron.schedule(
 SELECT * FROM cron.job;
 
 -- 4. 查看排程執行歷史
-SELECT 
+SELECT
     jrd.*,
     j.jobname
 FROM cron.job_run_details jrd
@@ -87,13 +87,13 @@ DECLARE
     v_execution_time INTEGER;
 BEGIN
     v_start_time := clock_timestamp();
-    
+
     -- 執行原本的清理函數
     SELECT api_cleanup_pallet_buffer() INTO v_result;
-    
+
     -- 計算執行時間
     v_execution_time := EXTRACT(MILLISECOND FROM clock_timestamp() - v_start_time)::INTEGER;
-    
+
     -- 記錄到日誌表
     INSERT INTO pallet_buffer_cleanup_log (
         deleted_old_days,
@@ -112,7 +112,7 @@ BEGIN
         (v_result->>'entries_after')::INTEGER,
         v_execution_time
     );
-    
+
     -- 返回結果
     RETURN v_result;
 END;

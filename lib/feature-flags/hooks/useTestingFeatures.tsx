@@ -150,11 +150,11 @@ export function useTestingFeatures(): TestingFeatures {
 
     // 監聽 Jest 測試結果（如果可用）
     if (typeof window !== 'undefined' && (window as any).__JEST_TEST_RESULTS__) {
-      const results = (window as any).__JEST_TEST_RESULTS__;
+      const results = (window as any).__JEST_TEST_RESULTS__ as Record<string, unknown>;
       setTestMetrics({
-        totalTests: results.numTotalTests || 0,
-        passedTests: results.numPassedTests || 0,
-        failedTests: results.numFailedTests || 0,
+        totalTests: (results?.numTotalTests as number) || 0,
+        passedTests: (results?.numPassedTests as number) || 0,
+        failedTests: (results?.numFailedTests as number) || 0,
         averageDuration: 0,
         slowestTest: null,
       });

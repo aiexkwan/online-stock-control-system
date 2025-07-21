@@ -6,12 +6,79 @@ import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf';
 // import { GrnLabelPdf } from '@/components/grn-label-pdf/GrnLabelPdf';
 import type { QcInputData } from '@/lib/pdfUtils';
 import type { GrnLabelData } from '@/app/print-grnlabel/types';
+import type { PrintLabelPdfProps } from '@/components/print-label-pdf/PrintLabelPdf';
+import { UnknownTypeHandler } from '@/types/external/unknown-handlers';
 
 interface UseUnifiedPdfGenerationOptions {
   labelType: 'qc' | 'grn';
   autoUpload?: boolean;
   autoPrint?: boolean;
 }
+
+// 策略2: DTO/自定義 type interface - 類型安全轉換器
+const convertToQcInputData = (data: Record<string, unknown>): QcInputData => {
+  return {
+    productCode: UnknownTypeHandler.toString(data.productCode, ''),
+    productDescription: UnknownTypeHandler.toString(data.productDescription, ''),
+    quantity: UnknownTypeHandler.toNumber(data.quantity, 0),
+    series: UnknownTypeHandler.toString(data.series, ''),
+    palletNum: UnknownTypeHandler.toString(data.palletNum, ''),
+    operatorClockNum: UnknownTypeHandler.toString(data.operatorClockNum, ''),
+    qcClockNum: UnknownTypeHandler.toString(data.qcClockNum, ''),
+    workOrderNumber: data.workOrderNumber
+      ? UnknownTypeHandler.toString(data.workOrderNumber, undefined)
+      : undefined,
+    workOrderName: data.workOrderName
+      ? UnknownTypeHandler.toString(data.workOrderName, undefined)
+      : undefined,
+    productType: data.productType
+      ? UnknownTypeHandler.toString(data.productType, undefined)
+      : undefined,
+  };
+};
+
+const convertToGrnLabelData = (data: Record<string, unknown>): GrnLabelData => {
+  return {
+    palletNumber: UnknownTypeHandler.toString(data.palletNumber || data.palletNum, ''),
+    productCode: UnknownTypeHandler.toString(data.productCode, ''),
+    productDescription: data.productDescription
+      ? UnknownTypeHandler.toString(data.productDescription, undefined)
+      : undefined,
+    quantity: UnknownTypeHandler.toNumber(data.quantity, 0),
+    weight: data.weight ? UnknownTypeHandler.toNumber(data.weight, undefined) : undefined,
+    grnNumber: data.grnNumber ? UnknownTypeHandler.toString(data.grnNumber, undefined) : undefined,
+    batchNumber: data.batchNumber
+      ? UnknownTypeHandler.toString(data.batchNumber, undefined)
+      : undefined,
+    supplierName: data.supplierName
+      ? UnknownTypeHandler.toString(data.supplierName, undefined)
+      : undefined,
+    receivedDate: data.receivedDate
+      ? UnknownTypeHandler.toString(data.receivedDate, undefined)
+      : undefined,
+    location: data.location ? UnknownTypeHandler.toString(data.location, undefined) : undefined,
+    operatorId: data.operatorId
+      ? UnknownTypeHandler.toString(data.operatorId, undefined)
+      : undefined,
+    operatorName: data.operatorName
+      ? UnknownTypeHandler.toString(data.operatorName, undefined)
+      : undefined,
+  };
+};
+
+const convertToPrintLabelPdfProps = (data: GrnLabelData): PrintLabelPdfProps => {
+  return {
+    productCode: data.productCode,
+    description: data.productDescription || '',
+    quantity: data.quantity,
+    date: data.receivedDate || new Date().toISOString().split('T')[0],
+    operatorClockNum: data.operatorId || '',
+    qcClockNum: '', // QC clock number not available in GRN data
+    palletNum: data.palletNumber,
+    grnNumber: data.grnNumber,
+    grnMaterialSupplier: data.supplierName,
+  };
+};
 
 /**
  * Unified PDF generation hook for QC and GRN labels
@@ -81,7 +148,7 @@ export function useUnifiedPdfGeneration(options: UseUnifiedPdfGenerationOptions)
   ) => {
     const components = dataArray.map(data => (
       // <GrnLabelPdf key={data.palletNumber} {...data} />
-      <PrintLabelPdf key={data.palletNumber} {...(data as any /* TODO: Strategy 5 - Replace with proper QcInputData type when GrnLabelPdf component is created. Tracking issue: #ESLINT-CLEANUP-001 */)} />
+      <PrintLabelPdf key={data.palletNumber} {...convertToPrintLabelPdfProps(data)} />
     ));
 
     const filenames = dataArray.map(data => `grn-label-${data.palletNumber.replace(/\//g, '_')}`);
@@ -107,9 +174,11 @@ export function useUnifiedPdfGeneration(options: UseUnifiedPdfGenerationOptions)
     onProgress?: (current: number, total: number) => void
   ) => {
     if (labelType === 'qc') {
-      return generateQcLabels(dataArray as QcInputData[], onProgress);
+      const qcData = dataArray.map(convertToQcInputData);
+      return generateQcLabels(qcData, onProgress);
     } else {
-      return generateGrnLabels(dataArray as GrnLabelData[], onProgress);
+      const grnData = dataArray.map(convertToGrnLabelData);
+      return generateGrnLabels(grnData, onProgress);
     }
   };
 
@@ -120,19 +189,20 @@ export function useUnifiedPdfGeneration(options: UseUnifiedPdfGenerationOptions)
     const component =
       labelType === 'qc' ? (
         <PrintLabelPdf
-          {...(data as QcInputData)}
-          productType={data.productType || undefined}
-          description={data.productDescription}
+          {...convertToQcInputData(data)}
+          productType={UnknownTypeHandler.toString(data.productType, undefined) || undefined}
+          description={UnknownTypeHandler.toString(data.productDescription, '')}
           date={new Date().toISOString().split('T')[0]}
         />
       ) : (
-        <PrintLabelPdf {...(data as any /* TODO: Strategy 5 - Replace with proper GrnLabelData type conversion utility. Requires: 1. Create GrnLabelData to QcInputData mapper, 2. Implement type-safe conversion. Tracking: #ESLINT-CLEANUP-002 */)} />
+        // 策略2: DTO/自定義 type interface - 使用 GRN 數據轉換器
+        <PrintLabelPdf {...convertToPrintLabelPdfProps(convertToGrnLabelData(data))} />
       ); // Temporary: use PrintLabelPdf until GrnLabelPdf is created
 
     const filename =
       labelType === 'qc'
-        ? `qc-label-${data.palletNum?.replace(/\//g, '_')}`
-        : `grn-label-${data.palletNumber?.replace(/\//g, '_')}`;
+        ? `qc-label-${UnknownTypeHandler.toString(data.palletNum, 'unknown').replace(/\//g, '_')}`
+        : `grn-label-${UnknownTypeHandler.toString(data.palletNumber, 'unknown').replace(/\//g, '_')}`;
 
     return pdfGeneration.generateSinglePdf({
       component,

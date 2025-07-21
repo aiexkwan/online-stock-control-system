@@ -1,0 +1,65 @@
+'use client';
+
+import React, { useEffect } from 'react';
+import { X } from 'lucide-react';
+import { mobileConfig, cn } from '@/lib/mobile-config';
+import { MobileButton } from './MobileButton';
+
+interface MobileDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title?: string;
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function MobileDialog({ isOpen, onClose, title, children, className }: MobileDialogProps) {
+  // Prevent body scroll when dialog is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div className={mobileConfig.components.dialog.overlay} onClick={onClose} />
+
+      {/* Dialog */}
+      <div
+        className={cn(
+          mobileConfig.components.dialog.content,
+          'rounded-2xl bg-slate-900 shadow-2xl',
+          className
+        )}
+      >
+        {/* Header */}
+        {title && (
+          <div className='mb-6 flex items-center justify-between'>
+            <h2 className={cn(mobileConfig.fontSize.h3, 'text-white')}>{title}</h2>
+            <MobileButton
+              variant='ghost'
+              size='sm'
+              onClick={onClose}
+              className='!p-2'
+              aria-label='Close dialog'
+            >
+              <X className='h-5 w-5' />
+            </MobileButton>
+          </div>
+        )}
+
+        {/* Content */}
+        <div className={mobileConfig.components.dialog.padding}>{children}</div>
+      </div>
+    </>
+  );
+}

@@ -41,7 +41,7 @@
 **目標**: 解決Playwright E2E測試配置問題
 
 **修復措施**:
-1. **端口配置統一**: 
+1. **端口配置統一**:
    - baseURL: `http://localhost:3001` → `http://localhost:3000`
    - webServer port: 3001 → 3000
 
@@ -80,7 +80,7 @@ typescript: {
 reactStrictMode: true,       // 從 false 改為 true
 ```
 
-**成果**: 
+**成果**:
 - 構建過程現在會在TypeScript錯誤時失敗（正確行為）
 - 強制代碼質量標準
 - 啟用React嚴格模式進一步提升開發體驗

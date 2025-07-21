@@ -22,7 +22,7 @@ BEGIN
     INTO v_total_count
     FROM doc_upload
     WHERE doc_type != 'order' OR doc_type IS NULL;
-    
+
     -- 獲取文件列表並 JOIN 用戶名稱
     SELECT ARRAY(
         SELECT jsonb_build_object(
@@ -42,10 +42,10 @@ BEGIN
         OFFSET p_offset
     )
     INTO v_files;
-    
+
     -- 計算查詢時間
     v_query_time_ms := EXTRACT(MILLISECONDS FROM clock_timestamp() - v_start_time)::INTEGER;
-    
+
     -- 構建返回結果
     v_result := jsonb_build_object(
         'files', COALESCE(v_files, ARRAY[]::JSONB[]),
@@ -62,13 +62,13 @@ BEGIN
             'filters', 1
         )
     );
-    
+
     RETURN v_result;
 END;
 $$;
 
 -- 創建索引以優化查詢
-CREATE INDEX IF NOT EXISTS idx_doc_upload_doc_type_created ON doc_upload(doc_type, created_at DESC) 
+CREATE INDEX IF NOT EXISTS idx_doc_upload_doc_type_created ON doc_upload(doc_type, created_at DESC)
 WHERE doc_type != 'order' OR doc_type IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_doc_upload_upload_by ON doc_upload(upload_by);

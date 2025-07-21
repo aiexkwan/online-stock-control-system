@@ -10,68 +10,68 @@ DECLARE
   yesterday_end TIMESTAMP := CURRENT_DATE - INTERVAL '1 second';
   past_3_days_start TIMESTAMP := CURRENT_DATE - INTERVAL '3 days';
   past_7_days_start TIMESTAMP := CURRENT_DATE - INTERVAL '7 days';
-  
+
   result JSON;
 BEGIN
   WITH pallet_stats AS (
     SELECT
       -- Today's pallets
-      COUNT(CASE 
-        WHEN generate_time >= today_start AND generate_time <= today_end 
+      COUNT(CASE
+        WHEN generate_time >= today_start AND generate_time <= today_end
         AND plt_remark NOT ILIKE '%Material GRN-%'
-        THEN 1 
+        THEN 1
       END) AS today_generated,
-      
+
       -- Yesterday's pallets
-      COUNT(CASE 
-        WHEN generate_time >= yesterday_start AND generate_time < today_start 
+      COUNT(CASE
+        WHEN generate_time >= yesterday_start AND generate_time < today_start
         AND plt_remark NOT ILIKE '%Material GRN-%'
-        THEN 1 
+        THEN 1
       END) AS yesterday_generated,
-      
+
       -- Past 3 days pallets
-      COUNT(CASE 
-        WHEN generate_time >= past_3_days_start 
+      COUNT(CASE
+        WHEN generate_time >= past_3_days_start
         AND plt_remark NOT ILIKE '%Material GRN-%'
-        THEN 1 
+        THEN 1
       END) AS past_3_days_generated,
-      
+
       -- Past 7 days pallets
-      COUNT(CASE 
-        WHEN generate_time >= past_7_days_start 
+      COUNT(CASE
+        WHEN generate_time >= past_7_days_start
         AND plt_remark NOT ILIKE '%Material GRN-%'
-        THEN 1 
+        THEN 1
       END) AS past_7_days_generated
     FROM record_palletinfo
   ),
   transfer_stats AS (
     SELECT
       -- Today's transfers
-      COUNT(DISTINCT CASE 
-        WHEN rt.time >= today_start AND rt.time <= today_end 
+      COUNT(DISTINCT CASE
+        WHEN rt.time >= today_start AND rt.time <= today_end
         AND rp.plt_remark NOT ILIKE '%Material GRN-%'
-        THEN rt.plt_num 
+        THEN rt.plt_num
       END) AS today_transferred,
-      
+
       -- Yesterday's transfers
-      COUNT(DISTINCT CASE 
-        WHEN rt.time >= yesterday_start AND rt.time < today_start 
+      COUNT(DISTINCT CASE
+        WHEN rt.time >= yesterday_start AND rt.time < today_start
         AND rp.plt_remark NOT ILIKE '%Material GRN-%'
-        THEN rt.plt_num 
+        THEN rt.plt_num
       END) AS yesterday_transferred,
-      
+
       -- Past 3 days transfers
-      COUNT(DISTINCT CASE 
-        WHEN rt.time >= past_3_days_start 
+      COUNT(DISTINCT CASE
+        WHEN rt.time >= past_3_days_start
         AND rp.plt_remark NOT ILIKE '%Material GRN-%'
-        THEN rt.plt_num 
+        THEN rt.plt_num
       END) AS past_3_days_transferred,
-      
+
       -- Past 7 days transfers
-      COUNT(DISTINCT CASE 
-        WHEN rt.time >= past_7_days_start 
+      COUNT(DISTINCT CASE
+        WHEN rt.time >= past_7_days_start
         AND rp.plt_remark NOT ILIKE '%Material GRN-%'
-        THEN rt.plt_num 
+        THEN rt.plt_num
       END) AS past_7_days_transferred
     FROM record_transfer rt
     INNER JOIN record_palletinfo rp ON rt.plt_num = rp.plt_num
@@ -87,7 +87,7 @@ BEGIN
     'past7DaysTransferredPallets', ts.past_7_days_transferred
   ) INTO result
   FROM pallet_stats ps, transfer_stats ts;
-  
+
   RETURN result;
 END;
 $$;
@@ -123,13 +123,13 @@ BEGIN
   WITH stats AS (
     SELECT
       COUNT(DISTINCT rp.plt_num) FILTER (
-        WHERE rp.generate_time >= start_time 
-        AND rp.generate_time <= end_time 
+        WHERE rp.generate_time >= start_time
+        AND rp.generate_time <= end_time
         AND rp.plt_remark NOT ILIKE '%Material GRN-%'
       ) AS generated,
       COUNT(DISTINCT rt.plt_num) FILTER (
-        WHERE rt.time >= start_time 
-        AND rt.time <= end_time 
+        WHERE rt.time >= start_time
+        AND rt.time <= end_time
         AND rp.plt_remark NOT ILIKE '%Material GRN-%'
       ) AS transferred
     FROM record_palletinfo rp
@@ -140,7 +140,7 @@ BEGIN
     'transferred', COALESCE(transferred, 0)
   ) INTO result
   FROM stats;
-  
+
   RETURN result;
 END;
 $$;
@@ -157,11 +157,11 @@ DECLARE
   v_description TEXT;
 BEGIN
   -- First check if product exists in stock_level
-  SELECT stock_level, description 
+  SELECT stock_level, description
   INTO v_total, v_description
   FROM stock_level
   WHERE stock = p_product_code;
-  
+
   IF NOT FOUND THEN
     -- Product not found, return zeros
     RETURN json_build_object(
@@ -179,7 +179,7 @@ BEGIN
       'last_updated', NULL
     );
   END IF;
-  
+
   -- Get location breakdown from record_inventory
   SELECT json_build_object(
     'product_code', p_product_code,
@@ -197,7 +197,7 @@ BEGIN
   ) INTO result
   FROM record_inventory
   WHERE product_code = p_product_code;
-  
+
   RETURN result;
 END;
 $$;
@@ -242,14 +242,14 @@ BEGIN
     'pallets', COALESCE(pallets, '[]'::json)
   ) INTO result
   FROM void_stats;
-  
+
   RETURN result;
 END;
 $$;
 
 -- Create materialized view for faster stats
 CREATE MATERIALIZED VIEW IF NOT EXISTS mv_daily_pallet_stats AS
-SELECT 
+SELECT
   DATE(generate_time) as date,
   COUNT(*) FILTER (WHERE plt_remark NOT ILIKE '%Material GRN-%') as pallets_generated,
   COUNT(DISTINCT plt_num) FILTER (WHERE plt_remark NOT ILIKE '%Material GRN-%') as unique_pallets
@@ -258,7 +258,7 @@ GROUP BY DATE(generate_time)
 WITH DATA;
 
 -- Create index for faster queries
-CREATE INDEX IF NOT EXISTS idx_mv_daily_pallet_stats_date 
+CREATE INDEX IF NOT EXISTS idx_mv_daily_pallet_stats_date
 ON mv_daily_pallet_stats(date DESC);
 
 -- Function to refresh materialized view
@@ -288,7 +288,7 @@ BEGIN
   FROM data_code
   WHERE UPPER(code) = UPPER(p_code)
   LIMIT 1;
-  
+
   -- If no exact match, try partial match
   IF result IS NULL THEN
     SELECT json_build_object(
@@ -303,7 +303,7 @@ BEGIN
     ORDER BY code
     LIMIT 1;
   END IF;
-  
+
   RETURN result;
 END;
 $$;

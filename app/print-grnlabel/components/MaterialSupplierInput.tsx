@@ -1,13 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { getErrorMessage } from '@/lib/types/error-handling';
+import { getErrorMessage } from '@/types/core/error';
 import { validateSupplierCode } from '@/app/actions/grnActions';
-
-interface SupplierInfo {
-  supplier_code: string;
-  supplier_name: string;
-}
+import { SupplierInfo, convertDatabaseSupplierInfo } from '@/types';
 
 interface MaterialSupplierInputProps {
   value: string;
@@ -95,11 +91,16 @@ export const MaterialSupplierInput: React.FC<MaterialSupplierInputProps> = ({
       } else {
         // 找到供應商
         const supplierData = result.data;
-        onSupplierInfoChange(supplierData);
-        onChange(supplierData.supplier_code); // 使用資料庫中的標準化代碼
+        // 轉換為統一格式
+        const unifiedSupplierData = convertDatabaseSupplierInfo({
+          supplier_code: supplierData.supplier_code || '',
+          supplier_name: supplierData.supplier_name || '',
+        });
+        onSupplierInfoChange(unifiedSupplierData);
+        onChange(unifiedSupplierData.code); // 使用資料庫中的標準化代碼
         setSupplierError(null);
         (process.env.NODE_ENV as string) !== 'production' &&
-          console.log('[MaterialSupplierInput] Supplier found:', supplierData);
+          console.log('[MaterialSupplierInput] Supplier found:', unifiedSupplierData);
       }
     } catch (error: unknown) {
       // 如果是取消請求，不處理
@@ -112,7 +113,10 @@ export const MaterialSupplierInput: React.FC<MaterialSupplierInputProps> = ({
       console.error('[MaterialSupplierInput] Search error:', error);
       onSupplierInfoChange(null);
 
-      if (getErrorMessage(error)?.includes('timeout') || getErrorMessage(error)?.includes('aborted')) {
+      if (
+        getErrorMessage(error)?.includes('timeout') ||
+        getErrorMessage(error)?.includes('aborted')
+      ) {
         setSupplierError('Search timeout. Please try again.');
       } else {
         setSupplierError('Search failed. Please try again.');

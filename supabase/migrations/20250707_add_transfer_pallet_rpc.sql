@@ -19,14 +19,14 @@ BEGIN
   -- Set current timestamp
   v_current_time := NOW();
   v_transfer_id := gen_random_uuid();
-  
+
   -- Get pallet information with lock
   SELECT product_code, product_qty, current_plt_loc
   INTO v_product_code, v_product_qty, v_from_location
   FROM data_product
   WHERE plt_num = p_pallet_num
   FOR UPDATE;
-  
+
   -- Check if pallet exists
   IF NOT FOUND THEN
     RETURN json_build_object(
@@ -35,7 +35,7 @@ BEGIN
       'error', 'PALLET_NOT_FOUND'
     );
   END IF;
-  
+
   -- Check if already at destination
   IF v_from_location = p_to_location THEN
     RETURN json_build_object(
@@ -44,14 +44,14 @@ BEGIN
       'error', 'ALREADY_AT_LOCATION'
     );
   END IF;
-  
+
   -- Update pallet location
   UPDATE data_product
-  SET 
+  SET
     current_plt_loc = p_to_location,
     plt_remark = 'Transferred to ' || p_to_location || ' by ' || p_user_name || ' at ' || v_current_time::TEXT
   WHERE plt_num = p_pallet_num;
-  
+
   -- Insert transfer history
   INSERT INTO record_history (
     time,
@@ -68,7 +68,7 @@ BEGIN
     p_to_location,
     'Transfer from ' || COALESCE(v_from_location, 'Unknown') || ' to ' || p_to_location || ' by ' || p_user_name
   );
-  
+
   -- Return success response
   RETURN json_build_object(
     'success', true,
@@ -78,7 +78,7 @@ BEGIN
     'from_location', v_from_location,
     'transfer_id', v_transfer_id::TEXT
   );
-  
+
 EXCEPTION
   WHEN OTHERS THEN
     -- Log error and return failure

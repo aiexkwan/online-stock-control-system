@@ -23,7 +23,7 @@ const TEST_CONFIG = {
       count: 3
     },
     {
-      name: 'Test 2 - MEL4545A', 
+      name: 'Test 2 - MEL4545A',
       productCode: 'MEL4545A',
       count: 5
     }
@@ -54,26 +54,26 @@ const takeScreenshot = async (page, name) => {
 const getLatestRecords = async (productCode = null, testName = '') => {
   try {
     console.log('🔍 查詢數據庫記錄...');
-    
+
     // 查詢最近的 record_palletinfo（最近 5 分鐘內的記錄）
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-    
+
     let palletInfoQuery = supabase
       .from('record_palletinfo')
       .select('*')
       .gte('created_at', fiveMinutesAgo)
       .order('created_at', { ascending: false })
       .limit(10);
-    
+
     if (productCode) {
       palletInfoQuery = palletInfoQuery.eq('product_code', productCode);
     }
-    
+
     const { data: palletInfo } = await palletInfoQuery;
-    
+
     const palletNumbers = palletInfo?.map(p => p.plt_num) || [];
-    
-    // 查詢 record_history  
+
+    // 查詢 record_history
     const { data: history } = await supabase
       .from('record_history')
       .select('*')
@@ -120,33 +120,33 @@ const getLatestRecords = async (productCode = null, testName = '') => {
 // 登入函數
 const login = async (page) => {
   console.log('🔐 正在登入...');
-  
+
   await page.goto(`${TEST_CONFIG.baseURL}/main-login`);
   await delay(2000);
 
   // 填寫登入資料
   await page.type('#email', TEST_CONFIG.login.email);
   await page.type('#password', TEST_CONFIG.login.password);
-  
+
   // 點擊登入按鈕
   await page.click('button[type="submit"]');
-  
+
   // 等待登入完成
   await page.waitForNavigation({ waitUntil: 'networkidle0' });
-  
+
   console.log('✅ 登入成功');
 };
 
 // 導航到 QC Label 頁面
 const navigateToQcLabel = async (page) => {
   console.log('🧭 導航到 QC Label 頁面...');
-  
+
   await page.goto(`${TEST_CONFIG.baseURL}/print-label`);
   await delay(3000);
-  
+
   // 確保頁面載入完成
   await waitForSelector(page, 'form', 5000);
-  
+
   console.log('✅ QC Label 頁面載入完成');
 };
 
@@ -155,7 +155,7 @@ const runSingleTest = async (page, testConfig) => {
   console.log(`\n🧪 開始執行 ${testConfig.name}`);
   console.log(`   Product Code: ${testConfig.productCode}`);
   console.log(`   Count: ${testConfig.count}`);
-  
+
   try {
     // 清空表單
     await page.evaluate(() => {
@@ -167,22 +167,22 @@ const runSingleTest = async (page, testConfig) => {
         }
       });
     });
-    
+
     await delay(1000);
 
     // 填寫 Product Code
     console.log('📝 填寫 Product Code...');
     await waitForSelector(page, 'input[type="text"]', 5000);
-    
+
     // 查找所有文本輸入框，通過索引或父級標籤選擇正確的
     const allInputs = await page.$$('input[type="text"]');
-    
+
     if (allInputs.length >= 2) {
       // 第一個應該是 Product Code
       await allInputs[0].click();
       await allInputs[0].type(testConfig.productCode);
       await delay(3000); // 等待產品信息載入
-      
+
       // 第二個應該是 Count (跳過 quantity，因為會自動填入)
       console.log('📝 填寫 Count...');
              // 查找 Count 輸入框 - 通常是第三個輸入框 (product code, quantity, count)
@@ -201,17 +201,17 @@ const runSingleTest = async (page, testConfig) => {
 
     // 點擊 Print Label 按鈕
     console.log('🖨️ 點擊 Print Label...');
-    
+
     // 查找包含 "PRINT" 文字的按鈕
     const printButton = await page.evaluateHandle(() => {
       const buttons = Array.from(document.querySelectorAll('button'));
-      return buttons.find(button => 
-        button.textContent?.includes('PRINT') || 
+      return buttons.find(button =>
+        button.textContent?.includes('PRINT') ||
         button.textContent?.includes('Print') ||
         button.textContent?.includes('列印')
       );
     });
-    
+
     if (printButton && printButton.asElement()) {
       await printButton.asElement().click();
     } else {
@@ -222,28 +222,28 @@ const runSingleTest = async (page, testConfig) => {
 
     // 處理 Clock Number 確認對話框
     console.log('🔢 等待並填寫 Clock Number...');
-    
+
     // 等待對話框出現 - 尋找特定的 id
     const dialogAppeared = await waitForSelector(page, '#clock-number', 10000);
-    
+
     if (dialogAppeared) {
       // 填寫 Clock Number
       await page.type('#clock-number', TEST_CONFIG.clockNumber);
       await delay(1000);
-      
+
       console.log('🔢 查找確認按鈕...');
-      
+
       // 查找確認按鈕
       const confirmButton = await page.evaluateHandle(() => {
         const buttons = Array.from(document.querySelectorAll('button'));
-        return buttons.find(button => 
-          button.textContent?.includes('確認') || 
+        return buttons.find(button =>
+          button.textContent?.includes('確認') ||
           button.textContent?.includes('Confirm') ||
           button.textContent?.includes('Submit') ||
           (button.className && button.className.includes('bg-blue'))
         );
       });
-      
+
       if (confirmButton && confirmButton.asElement()) {
         await confirmButton.asElement().click();
         console.log('✅ 已點擊確認按鈕');
@@ -264,9 +264,9 @@ const runSingleTest = async (page, testConfig) => {
     await takeScreenshot(page, `${testConfig.name.replace(/\s+/g, '-')}-completed`);
 
     console.log(`✅ ${testConfig.name} 執行完成`);
-    
+
     return true;
-    
+
   } catch (error) {
     console.error(`❌ ${testConfig.name} 執行失敗:`, error);
     await takeScreenshot(page, `${testConfig.name.replace(/\s+/g, '-')}-error`);
@@ -277,7 +277,7 @@ const runSingleTest = async (page, testConfig) => {
 // 分析數據庫記錄
 const analyzeRecords = (records, testName) => {
   console.log(`\n📊 ${testName} 數據庫記錄分析:`);
-  
+
   if (!records) {
     console.log('❌ 無法獲取數據庫記錄');
     return false;
@@ -296,7 +296,7 @@ const analyzeRecords = (records, testName) => {
   }
 
   // 檢查統一 RPC 的跡象
-  const hasUnifiedRpcMarkers = records.history.some(h => 
+  const hasUnifiedRpcMarkers = records.history.some(h =>
     h.remark && (h.remark.includes('unified') || h.action === 'Finished QC')
   );
 
@@ -320,7 +320,7 @@ const runTests = async () => {
     });
 
     const page = await browser.newPage();
-    
+
     // 設置 console 事件監聽
     page.on('console', msg => {
       if (msg.text().includes('[UnifiedDB]') || msg.text().includes('process_qc_label_unified')) {
@@ -330,25 +330,25 @@ const runTests = async () => {
 
     // 登入
     await login(page);
-    
+
     // 執行測試
     const testResults = [];
-    
+
     for (const testConfig of TEST_CONFIG.tests) {
       await navigateToQcLabel(page);
-      
+
       const success = await runSingleTest(page, testConfig);
       testResults.push({ test: testConfig.name, success });
-      
+
       if (success) {
         // 等待一些時間確保數據庫更新
         await delay(5000);
-        
+
         // 查詢並分析數據庫記錄
         const records = await getLatestRecords(testConfig.productCode, testConfig.name);
         analyzeRecords(records, testConfig.name);
       }
-      
+
       // 測試間隔
       await delay(3000);
     }
@@ -397,23 +397,23 @@ const testCodes = [
 async function runTests() {
   console.log('開始測試 search_product_code RPC 函數...');
   console.log('----------------------------------------');
-  
+
   for (const code of testCodes) {
     console.log(`測試產品代碼: "${code}"`);
-    
+
     try {
       const startTime = performance.now();
       const { data, error } = await supabase.rpc('search_product_code', { p_code: code });
       const endTime = performance.now();
       const duration = (endTime - startTime).toFixed(2);
-      
+
       if (error) {
         console.error(`錯誤: ${error.message}`);
         continue;
       }
-      
+
       console.log(`查詢耗時: ${duration}ms`);
-      
+
       if (data) {
         console.log('結果:');
         console.log(JSON.stringify(data, null, 2));
@@ -423,10 +423,10 @@ async function runTests() {
     } catch (err) {
       console.error(`執行錯誤: ${err.message}`);
     }
-    
+
     console.log('----------------------------------------');
   }
-  
+
   console.log('測試完成');
 }
 
@@ -435,4 +435,4 @@ runTests()
   .catch(err => {
     console.error('測試過程中發生錯誤:', err);
     process.exit(1);
-  }); 
+  });

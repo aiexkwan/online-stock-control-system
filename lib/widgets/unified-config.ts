@@ -1,10 +1,11 @@
 /**
- * Unified Widget Configuration
+ * Unified Widget Configuration (Legacy Compatible)
  * 單一配置源，集中管理所有 widget 配置
+ * Phase 6B: 增強類型系統兼容性
  */
 
 import type { WidgetCategory } from './types';
-import type { WidgetComponentProps } from '@/app/types/dashboard';
+import type { WidgetComponentProps } from '@/types/components/dashboard';
 import {
   type UnifiedWidgetConfig as ZodUnifiedWidgetConfig,
   type WidgetDataSource,
@@ -14,15 +15,27 @@ import {
   parseSupportedDataSources,
   serializeSupportedDataSources,
   convertNumericPriority,
-  getNumericPriority as getNumericPriorityFromSchema
+  getNumericPriority as getNumericPriorityFromSchema,
 } from './schemas';
+
+// Import enhanced types for better compatibility
+import type {
+  EnhancedWidgetConfig,
+  UnifiedWidgetProps,
+  WidgetImportResult,
+} from './types/enhanced-widget-types';
 
 // Re-export types
 export type { WidgetDataSource, WidgetPriority };
 
-// 使用 Zod schema 類型，但允許 loader 函數靈活性
+// 使用增強的類型系統，保持向後兼容性
 export interface UnifiedWidgetConfig extends Omit<ZodUnifiedWidgetConfig, 'loader'> {
-  loader: () => Promise<any>; // 允許靈活的模組導入格式
+  loader: () => Promise<WidgetImportResult>; // 使用統一的 Widget 導入結果類型
+}
+
+// 兼容性映射類型
+export interface LegacyCompatibleUnifiedWidgetConfig extends UnifiedWidgetConfig {
+  enhanced?: EnhancedWidgetConfig; // 可選的增強配置
 }
 
 export type WidgetConfigMap = Record<string, UnifiedWidgetConfig>;
@@ -44,7 +57,7 @@ export const widgetConfig: WidgetConfigMap = {
     refreshInterval: 60000,
     supportTimeFrame: true,
   },
-  
+
   YesterdayTransferCount: {
     id: 'YesterdayTransferCount',
     name: 'Yesterday Transfer Count',
@@ -56,7 +69,7 @@ export const widgetConfig: WidgetConfigMap = {
     refreshInterval: 300000,
     supportTimeFrame: true,
   },
-  
+
   StillInAwait: {
     id: 'StillInAwait',
     name: 'Still In Await',
@@ -67,7 +80,7 @@ export const widgetConfig: WidgetConfigMap = {
     priority: 'high',
     refreshInterval: 60000,
   },
-  
+
   StillInAwaitPercentage: {
     id: 'StillInAwaitPercentage',
     name: 'Still In Await Percentage',
@@ -78,7 +91,7 @@ export const widgetConfig: WidgetConfigMap = {
     priority: 'normal',
     refreshInterval: 60000,
   },
-  
+
   StatsCard: {
     id: 'StatsCard',
     name: 'Stats Card',
@@ -92,7 +105,7 @@ export const widgetConfig: WidgetConfigMap = {
       supportedDataSources: JSON.stringify(['total_pallets', 'today_transfers', 'active_products']),
     },
   },
-  
+
   InjectionProductionStats: {
     id: 'InjectionProductionStats',
     name: 'Injection Production Stats',
@@ -131,7 +144,7 @@ export const widgetConfig: WidgetConfigMap = {
       exportable: true,
     },
   },
-  
+
   StockLevelHistoryChart: {
     id: 'StockLevelHistoryChart',
     name: 'Stock Level History',
@@ -142,7 +155,7 @@ export const widgetConfig: WidgetConfigMap = {
     priority: 'normal',
     supportTimeFrame: true,
   },
-  
+
   WarehouseWorkLevelAreaChart: {
     id: 'WarehouseWorkLevelAreaChart',
     name: 'Warehouse Work Level',
@@ -153,7 +166,7 @@ export const widgetConfig: WidgetConfigMap = {
     priority: 'high',
     refreshInterval: 180000,
   },
-  
+
   TransferTimeDistribution: {
     id: 'TransferTimeDistribution',
     name: 'Transfer Time Distribution',
@@ -164,7 +177,7 @@ export const widgetConfig: WidgetConfigMap = {
     priority: 'normal',
     supportTimeFrame: true,
   },
-  
+
   ProductDistributionChart: {
     id: 'ProductDistributionChart',
     name: 'Product Distribution',
@@ -174,7 +187,7 @@ export const widgetConfig: WidgetConfigMap = {
     dataSource: 'batch',
     priority: 'high',
   },
-  
+
   TopProductsByQuantity: {
     id: 'TopProductsByQuantity',
     name: 'Top Products by Quantity',
@@ -184,7 +197,7 @@ export const widgetConfig: WidgetConfigMap = {
     dataSource: 'batch',
     priority: 'high',
   },
-  
+
   TopProductsDistribution: {
     id: 'TopProductsDistribution',
     name: 'Top Products Distribution',
@@ -206,7 +219,7 @@ export const widgetConfig: WidgetConfigMap = {
     priority: 'normal',
     useGraphQL: true,
   },
-  
+
   OtherFilesListV2: {
     id: 'OtherFilesListV2',
     name: 'Other Files List',
@@ -217,7 +230,7 @@ export const widgetConfig: WidgetConfigMap = {
     priority: 'normal',
     useGraphQL: true,
   },
-  
+
   WarehouseTransferList: {
     id: 'WarehouseTransferList',
     name: 'Warehouse Transfer List',
@@ -228,7 +241,7 @@ export const widgetConfig: WidgetConfigMap = {
     priority: 'high',
     refreshInterval: 120000,
   },
-  
+
   OrderStateListV2: {
     id: 'OrderStateListV2',
     name: 'Order State List',
@@ -239,7 +252,7 @@ export const widgetConfig: WidgetConfigMap = {
     priority: 'normal',
     useGraphQL: true,
   },
-  
+
   ProductionDetails: {
     id: 'ProductionDetails',
     name: 'Production Details',
@@ -260,8 +273,7 @@ export const widgetConfig: WidgetConfigMap = {
     dataSource: 'server-action',
     priority: 'normal',
   },
-  
-  
+
   ProductUpdateV2: {
     id: 'ProductUpdateV2',
     name: 'Product Update V2',
@@ -271,7 +283,7 @@ export const widgetConfig: WidgetConfigMap = {
     dataSource: 'server-action',
     priority: 'normal',
   },
-  
+
   SupplierUpdateV2: {
     id: 'SupplierUpdateV2',
     name: 'Supplier Update',
@@ -281,7 +293,7 @@ export const widgetConfig: WidgetConfigMap = {
     dataSource: 'server-action',
     priority: 'normal',
   },
-  
+
   ReprintLabel: {
     id: 'ReprintLabel',
     name: 'Reprint Label',
@@ -291,7 +303,7 @@ export const widgetConfig: WidgetConfigMap = {
     dataSource: 'server-action',
     priority: 'normal',
   },
-  
+
   StockTypeSelector: {
     id: 'StockTypeSelector',
     name: 'Stock Type Selector',
@@ -312,7 +324,7 @@ export const widgetConfig: WidgetConfigMap = {
     dataSource: 'server-action',
     priority: 'normal',
   },
-  
+
   UploadFiles: {
     id: 'UploadFiles',
     name: 'Upload Files',
@@ -322,7 +334,7 @@ export const widgetConfig: WidgetConfigMap = {
     dataSource: 'server-action',
     priority: 'normal',
   },
-  
+
   UploadPhoto: {
     id: 'UploadPhoto',
     name: 'Upload Photo',
@@ -332,7 +344,7 @@ export const widgetConfig: WidgetConfigMap = {
     dataSource: 'server-action',
     priority: 'low',
   },
-  
+
   UploadProductSpec: {
     id: 'UploadProductSpec',
     name: 'Upload Product Spec',
@@ -353,7 +365,7 @@ export const widgetConfig: WidgetConfigMap = {
     dataSource: 'mixed',
     priority: 'normal',
   },
-  
+
   GrnReportV2: {
     id: 'GrnReportV2',
     name: 'GRN Report',
@@ -364,7 +376,7 @@ export const widgetConfig: WidgetConfigMap = {
     priority: 'normal',
     useGraphQL: true,
   },
-  
+
   AcoOrderReportV2: {
     id: 'AcoOrderReportV2',
     name: 'ACO Order Report',
@@ -375,13 +387,14 @@ export const widgetConfig: WidgetConfigMap = {
     priority: 'normal',
     useGraphQL: true,
   },
-  
+
   ReportGeneratorWithDialogV2: {
     id: 'ReportGeneratorWithDialogV2',
     name: 'Report Generator',
     category: 'reports',
     description: 'General report generator with dialog',
-    loader: () => import('@/app/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2'),
+    loader: () =>
+      import('@/app/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2'),
     dataSource: 'graphql',
     priority: 'normal',
     useGraphQL: true,
@@ -397,7 +410,7 @@ export const widgetConfig: WidgetConfigMap = {
     dataSource: 'graphql',
     priority: 'normal',
   },
-  
+
   AcoOrderProgress: {
     id: 'AcoOrderProgress',
     name: 'ACO Order Progress',
@@ -407,7 +420,7 @@ export const widgetConfig: WidgetConfigMap = {
     dataSource: 'mixed',
     priority: 'normal',
   },
-  
+
   AnalysisPagedV2: {
     id: 'AnalysisPagedV2',
     name: 'Analysis Paged',
@@ -417,7 +430,7 @@ export const widgetConfig: WidgetConfigMap = {
     dataSource: 'graphql',
     priority: 'normal',
   },
-  
+
   InventoryOrderedAnalysis: {
     id: 'InventoryOrderedAnalysis',
     name: 'Inventory Ordered Analysis',
@@ -435,7 +448,10 @@ export const widgetConfig: WidgetConfigMap = {
     name: 'History Tree',
     category: 'special',
     description: 'Hierarchical history view',
-    loader: () => import('@/app/admin/components/dashboard/widgets/HistoryTreeV2').then(module => module.HistoryTreeV2),
+    loader: () =>
+      import('@/app/admin/components/dashboard/widgets/HistoryTreeV2').then(module => ({
+        default: module.HistoryTreeV2,
+      })),
     dataSource: 'graphql',
     priority: 'critical',
     refreshInterval: 120000,
@@ -449,7 +465,7 @@ export const widgetConfig: WidgetConfigMap = {
       exportable: true,
     },
   },
-  
+
   OrderAnalysisResultDialog: {
     id: 'OrderAnalysisResultDialog',
     name: 'Order Analysis Result',
@@ -459,7 +475,7 @@ export const widgetConfig: WidgetConfigMap = {
     dataSource: 'none',
     priority: 'low',
   },
-  
+
   StaffWorkload: {
     id: 'StaffWorkload',
     name: 'Staff Workload',
@@ -469,7 +485,7 @@ export const widgetConfig: WidgetConfigMap = {
     dataSource: 'server-action',
     priority: 'normal',
   },
-  
+
   PerformanceTest: {
     id: 'PerformanceTest',
     name: 'Performance Test',
@@ -494,7 +510,7 @@ export const widgetConfig: WidgetConfigMap = {
     priority: 'normal',
     refreshInterval: 300000,
   },
-  
+
   UploadOrders: {
     id: 'UploadOrders',
     name: 'Upload Orders (Legacy)',
@@ -513,14 +529,18 @@ export const widgetConfig: WidgetConfigMap = {
 /**
  * 輔助函數：按優先級獲取 widgets
  */
-export function getWidgetsByPriority(priority: UnifiedWidgetConfig['priority']): UnifiedWidgetConfig[] {
+export function getWidgetsByPriority(
+  priority: UnifiedWidgetConfig['priority']
+): UnifiedWidgetConfig[] {
   return Object.values(widgetConfig).filter(config => config.priority === priority);
 }
 
 /**
  * 輔助函數：按數據源獲取 widgets
  */
-export function getWidgetsByDataSource(dataSource: UnifiedWidgetConfig['dataSource']): UnifiedWidgetConfig[] {
+export function getWidgetsByDataSource(
+  dataSource: UnifiedWidgetConfig['dataSource']
+): UnifiedWidgetConfig[] {
   return Object.values(widgetConfig).filter(config => config.dataSource === dataSource);
 }
 
@@ -568,42 +588,22 @@ export const routePreloadMap: Record<string, string[]> = {
     'TopProductsByQuantity',
     'TopProductsDistribution',
   ],
-  '/admin/pipeline': [
-    'HistoryTreeV2',
-    'StatsCard',
-    'ProductionDetails',
-  ],
+  '/admin/pipeline': ['HistoryTreeV2', 'StatsCard', 'ProductionDetails'],
   '/admin/warehouse': [
     'AwaitLocationQty',
     'WarehouseTransferList',
     'YesterdayTransferCount',
     'WarehouseWorkLevelAreaChart',
   ],
-  '/admin/upload': [
-    'UploadOrdersV2',
-    'UploadFiles',
-    'OrdersListV2',
-    'OtherFilesListV2',
-  ],
-  '/admin/update': [
-    'ProductUpdate',
-    'SupplierUpdateV2',
-    'VoidPallet',
-  ],
+  '/admin/upload': ['UploadOrdersV2', 'UploadFiles', 'OrdersListV2', 'OtherFilesListV2'],
+  '/admin/update': ['ProductUpdate', 'SupplierUpdateV2', 'VoidPallet'],
   '/admin/stock-management': [
     'StockDistributionChartV2',
     'StockLevelHistoryChart',
     'InventoryOrderedAnalysis',
   ],
-  '/admin/system': [
-    'ReportGeneratorWithDialogV2',
-    'ReprintLabel',
-    'TransactionReport',
-  ],
-  '/admin/analysis': [
-    'HistoryTreeV2',
-    'AnalysisExpandableCards',
-  ],
+  '/admin/system': ['ReportGeneratorWithDialogV2', 'ReprintLabel', 'TransactionReport'],
+  '/admin/analysis': ['HistoryTreeV2', 'AnalysisExpandableCards'],
 };
 
 /**
@@ -625,12 +625,12 @@ export { convertNumericPriority };
 export function getNumericPriority(widgetId: string): number {
   const config = widgetConfig[widgetId];
   if (!config) return 1;
-  
+
   // 如果有明確的數字優先級，使用它
   if (config.metadata?.preloadPriority) {
     return config.metadata.preloadPriority;
   }
-  
+
   // 否則從字符串優先級轉換，使用 schema 中的函數
   return getNumericPriorityFromSchema(config.priority);
 }
@@ -672,18 +672,16 @@ export function getActiveWidgets(): UnifiedWidgetConfig[] {
  * 輔助函數：根據 grid area 獲取 widgets (Layout 整合)
  */
 export function getWidgetsByGridArea(gridArea: string): UnifiedWidgetConfig[] {
-  return Object.values(widgetConfig).filter(
-    config => config.metadata?.gridArea === gridArea
-  );
+  return Object.values(widgetConfig).filter(config => config.metadata?.gridArea === gridArea);
 }
 
 /**
  * 輔助函數：獲取支持特定功能的 widgets
  */
-export function getWidgetsByFeature(feature: keyof NonNullable<UnifiedWidgetConfig['metadata']>): UnifiedWidgetConfig[] {
-  return Object.values(widgetConfig).filter(
-    config => config.metadata?.[feature] === true
-  );
+export function getWidgetsByFeature(
+  feature: keyof NonNullable<UnifiedWidgetConfig['metadata']>
+): UnifiedWidgetConfig[] {
+  return Object.values(widgetConfig).filter(config => config.metadata?.[feature] === true);
 }
 
 /**
@@ -692,7 +690,7 @@ export function getWidgetsByFeature(feature: keyof NonNullable<UnifiedWidgetConf
 export function getWidgetSupportedDataSources(widgetId: string): string[] {
   const config = widgetConfig[widgetId];
   if (!config?.metadata?.supportedDataSources) return [];
-  
+
   return parseSupportedDataSources(config.metadata.supportedDataSources);
 }
 
@@ -708,7 +706,7 @@ export function validateAllWidgetConfigs(): void {
         return [key, rest];
       })
     );
-    
+
     console.log('Widget 配置驗證通過', Object.keys(configsForValidation).length, '個 widgets');
   } catch (error) {
     console.error('Widget 配置驗證失敗:', error);

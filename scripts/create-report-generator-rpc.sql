@@ -28,7 +28,7 @@ BEGIN
             'allowed_tables', ARRAY['data_order', 'data_grn', 'data_supplier', 'record_transfer']
         );
     END IF;
-    
+
     -- 構建動態查詢
     v_query := format(
         'SELECT ARRAY(
@@ -45,11 +45,11 @@ BEGIN
         p_limit,
         p_offset
     );
-    
+
     BEGIN
         -- 執行動態查詢
         EXECUTE v_query INTO v_references;
-        
+
         -- 獲取總數
         v_query := format(
             'SELECT COUNT(DISTINCT %I) FROM %I WHERE %I IS NOT NULL',
@@ -58,7 +58,7 @@ BEGIN
             p_field_name
         );
         EXECUTE v_query INTO v_total_count;
-        
+
     EXCEPTION WHEN OTHERS THEN
         -- 捕獲錯誤
         v_error_msg := SQLERRM;
@@ -69,7 +69,7 @@ BEGIN
             'field', p_field_name
         );
     END;
-    
+
     -- 構建返回結果
     v_result := jsonb_build_object(
         'references', COALESCE(v_references, ARRAY[]::TEXT[]),
@@ -85,7 +85,7 @@ BEGIN
             'optimized', true
         )
     );
-    
+
     RETURN v_result;
 END;
 $$;

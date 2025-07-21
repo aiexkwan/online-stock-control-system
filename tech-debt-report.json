@@ -1,0 +1,4280 @@
+{
+  "timestamp": "2025-07-21T01:25:02.520Z",
+  "source": "manual",
+  "environment": {
+    "node": "v22.15.0",
+    "platform": "darwin",
+    "ci": false,
+    "project": "NewPennine"
+  },
+  "metrics": {
+    "typescript": {
+      "errorCount": 0,
+      "warningCount": 0,
+      "details": []
+    },
+    "eslint": {
+      "errorCount": 32,
+      "warningCount": 439,
+      "fixableCount": 0,
+      "details": [
+        {
+          "file": "/backend/newpennine-api/src/widgets/widgets.controller.spec.ts",
+          "line": 19,
+          "column": 5,
+          "rule": "@next/next/no-assign-module-variable",
+          "message": "Do not assign to the variable `module`. See: https://nextjs.org/docs/messages/no-assign-module-variable",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/widgets/widgets.service.spec.ts",
+          "line": 33,
+          "column": 5,
+          "rule": "@next/next/no-assign-module-variable",
+          "message": "Do not assign to the variable `module`. See: https://nextjs.org/docs/messages/no-assign-module-variable",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/e2e/fixtures/auth.fixture.ts",
+          "line": 36,
+          "column": 13,
+          "rule": "react-hooks/rules-of-hooks",
+          "message": "React Hook \"use\" is called in function \"authenticatedPage\" that is neither a React function component nor a custom React Hook function. React component names must start with an uppercase letter. React Hook names must start with the word \"use\".",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/stories/Button.stories.tsx",
+          "line": 1,
+          "column": 1,
+          "rule": "storybook/no-renderer-packages",
+          "message": "Do not import renderer package \"@storybook/react\" directly. Use a framework package instead (e.g. @storybook/nextjs, @storybook/react-vite, @storybook/react-webpack5, @storybook/react-native-web-vite, @storybook/experimental-nextjs-vite).",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/stories/Example.vitest.test.tsx",
+          "line": 41,
+          "column": 9,
+          "rule": "@next/next/no-html-link-for-pages",
+          "message": "Do not use an `<a>` element to navigate to `/`. Use `<Link />` from `next/link` instead. See: https://nextjs.org/docs/messages/no-html-link-for-pages",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/stories/Page.tsx",
+          "line": 39,
+          "column": 13,
+          "rule": "react/no-unescaped-entities",
+          "message": "`\"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/stories/Page.tsx",
+          "line": 39,
+          "column": 18,
+          "rule": "react/no-unescaped-entities",
+          "message": "`\"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/stories/SimpleUnifiedWidgets.stories.tsx",
+          "line": 1,
+          "column": 1,
+          "rule": "storybook/no-renderer-packages",
+          "message": "Do not import renderer package \"@storybook/react\" directly. Use a framework package instead (e.g. @storybook/nextjs, @storybook/react-vite, @storybook/react-webpack5, @storybook/react-native-web-vite, @storybook/experimental-nextjs-vite).",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/stories/UnifiedChartWidget.stories.tsx",
+          "line": 1,
+          "column": 1,
+          "rule": "storybook/no-renderer-packages",
+          "message": "Do not import renderer package \"@storybook/react\" directly. Use a framework package instead (e.g. @storybook/nextjs, @storybook/react-vite, @storybook/react-webpack5, @storybook/react-native-web-vite, @storybook/experimental-nextjs-vite).",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/stories/UnifiedStatsWidget.stories.tsx",
+          "line": 1,
+          "column": 1,
+          "rule": "storybook/no-renderer-packages",
+          "message": "Do not import renderer package \"@storybook/react\" directly. Use a framework package instead (e.g. @storybook/nextjs, @storybook/react-vite, @storybook/react-webpack5, @storybook/react-native-web-vite, @storybook/experimental-nextjs-vite).",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/stories/UnifiedTableWidget.stories.tsx",
+          "line": 1,
+          "column": 1,
+          "rule": "storybook/no-renderer-packages",
+          "message": "Do not import renderer package \"@storybook/react\" directly. Use a framework package instead (e.g. @storybook/nextjs, @storybook/react-vite, @storybook/react-webpack5, @storybook/react-native-web-vite, @storybook/experimental-nextjs-vite).",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/stories/mocks/unifiedWidgetsMocks.ts",
+          "line": 272,
+          "column": 10,
+          "rule": "react/display-name",
+          "message": "Component definition is missing display name",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/storybook-static/sb-manager/globals-runtime.js",
+          "line": 7694,
+          "column": 13,
+          "rule": "react-hooks/rules-of-hooks",
+          "message": "React Hook \"Xt.useContext\" cannot be called inside a callback. React Hooks must be called in a React function component or a custom React Hook function.",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/storybook-static/sb-manager/globals-runtime.js",
+          "line": 12541,
+          "column": 9,
+          "rule": "regexp/no-dupe-characters-character-class",
+          "message": "Definition for rule 'regexp/no-dupe-characters-character-class' was not found.",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/storybook-static/sb-manager/globals-runtime.js",
+          "line": 13617,
+          "column": 11,
+          "rule": "regexp/strict",
+          "message": "Definition for rule 'regexp/strict' was not found.",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/storybook-static/sb-manager/globals-runtime.js",
+          "line": 14127,
+          "column": 10,
+          "rule": "react-hooks/rules-of-hooks",
+          "message": "React Hook \"EH.useReducer\" is called in function \"d2e\" that is neither a React function component nor a custom React Hook function. React component names must start with an uppercase letter. React Hook names must start with the word \"use\".",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/storybook-static/sb-manager/globals-runtime.js",
+          "line": 14205,
+          "column": 72,
+          "rule": "react-hooks/rules-of-hooks",
+          "message": "React Hook \"Ga.useMemo\" is called in function \"c\" that is neither a React function component nor a custom React Hook function. React component names must start with an uppercase letter. React Hook names must start with the word \"use\".",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/storybook-static/sb-manager/globals-runtime.js",
+          "line": 14210,
+          "column": 35,
+          "rule": "react-hooks/rules-of-hooks",
+          "message": "React Hook \"Ga.useContext\" is called in function \"d\" that is neither a React function component nor a custom React Hook function. React component names must start with an uppercase letter. React Hook names must start with the word \"use\".",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/storybook-static/sb-manager/globals-runtime.js",
+          "line": 14222,
+          "column": 14,
+          "rule": "react-hooks/rules-of-hooks",
+          "message": "React Hook \"Ga.useMemo\" cannot be called inside a callback. React Hooks must be called in a React function component or a custom React Hook function.",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/storybook-static/sb-manager/globals-runtime.js",
+          "line": 14297,
+          "column": 10,
+          "rule": "react-hooks/rules-of-hooks",
+          "message": "React Hook \"NH.useReducer\" is called in function \"y2e\" that is neither a React function component nor a custom React Hook function. React component names must start with an uppercase letter. React Hook names must start with the word \"use\".",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/storybook-static/sb-manager/globals-runtime.js",
+          "line": 44887,
+          "column": 13,
+          "rule": "react-hooks/rules-of-hooks",
+          "message": "React Hook \"Xn.useContext\" is called in function \"o\" that is neither a React function component nor a custom React Hook function. React component names must start with an uppercase letter. React Hook names must start with the word \"use\".",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/storybook-static/sb-manager/globals-runtime.js",
+          "line": 44906,
+          "column": 37,
+          "rule": "react-hooks/rules-of-hooks",
+          "message": "React Hook \"Xn.useContext\" is called in function \"d\" that is neither a React function component nor a custom React Hook function. React component names must start with an uppercase letter. React Hook names must start with the word \"use\".",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/storybook-static/sb-manager/globals-runtime.js",
+          "line": 44940,
+          "column": 14,
+          "rule": "react-hooks/rules-of-hooks",
+          "message": "React Hook \"Xn.useMemo\" cannot be called inside a callback. React Hooks must be called in a React function component or a custom React Hook function.",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/storybook-static/sb-manager/globals-runtime.js",
+          "line": 44981,
+          "column": 13,
+          "rule": "react-hooks/rules-of-hooks",
+          "message": "React Hook \"Jn.useRef\" is called in function \"gz\" that is neither a React function component nor a custom React Hook function. React component names must start with an uppercase letter. React Hook names must start with the word \"use\".",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/storybook-static/sb-manager/globals-runtime.js",
+          "line": 44982,
+          "column": 5,
+          "rule": "react-hooks/rules-of-hooks",
+          "message": "React Hook \"Jn.useEffect\" is called in function \"gz\" that is neither a React function component nor a custom React Hook function. React component names must start with an uppercase letter. React Hook names must start with the word \"use\".",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/storybook-static/sb-manager/globals-runtime.js",
+          "line": 44990,
+          "column": 11,
+          "rule": "react-hooks/rules-of-hooks",
+          "message": "React Hook \"Jn.useCallback\" is called in function \"gz\" that is neither a React function component nor a custom React Hook function. React component names must start with an uppercase letter. React Hook names must start with the word \"use\".",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/storybook-static/sb-manager/globals-runtime.js",
+          "line": 45136,
+          "column": 3,
+          "rule": "react-hooks/rules-of-hooks",
+          "message": "React Hook \"Rz.useEffect\" is called in function \"xz\" that is neither a React function component nor a custom React Hook function. React component names must start with an uppercase letter. React Hook names must start with the word \"use\".",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/storybook-static/sb-manager/globals-runtime.js",
+          "line": 45510,
+          "column": 3,
+          "rule": "react-hooks/rules-of-hooks",
+          "message": "React Hook \"Fz.useEffect\" is called in function \"jz\" that is neither a React function component nor a custom React Hook function. React component names must start with an uppercase letter. React Hook names must start with the word \"use\".",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/storybook-static/sb-manager/runtime.js",
+          "line": 4004,
+          "column": 69,
+          "rule": "react/no-find-dom-node",
+          "message": "Do not use findDOMNode. It doesn’t work with function components and is deprecated in StrictMode. See https://reactjs.org/docs/react-dom.html#finddomnode",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/storybook-static/sb-manager/runtime.js",
+          "line": 4014,
+          "column": 121,
+          "rule": "react/no-find-dom-node",
+          "message": "Do not use findDOMNode. It doesn’t work with function components and is deprecated in StrictMode. See https://reactjs.org/docs/react-dom.html#finddomnode",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/storybook-static/sb-manager/runtime.js",
+          "line": 4036,
+          "column": 98,
+          "rule": "react/no-find-dom-node",
+          "message": "Do not use findDOMNode. It doesn’t work with function components and is deprecated in StrictMode. See https://reactjs.org/docs/react-dom.html#finddomnode",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/storybook-static/sb-manager/runtime.js",
+          "line": 4069,
+          "column": 63,
+          "rule": "react/no-find-dom-node",
+          "message": "Do not use findDOMNode. It doesn’t work with function components and is deprecated in StrictMode. See https://reactjs.org/docs/react-dom.html#finddomnode",
+          "severity": "error",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/grnActions.ts",
+          "line": 245,
+          "column": 43,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/grnActions.ts",
+          "line": 412,
+          "column": 43,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 1222,
+          "column": 14,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 1222,
+          "column": 36,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 1397,
+          "column": 14,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 1397,
+          "column": 36,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 1545,
+          "column": 49,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 1545,
+          "column": 67,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 1557,
+          "column": 45,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 1557,
+          "column": 63,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 1656,
+          "column": 49,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 1656,
+          "column": 67,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 1668,
+          "column": 45,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 1668,
+          "column": 63,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 1790,
+          "column": 49,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 1790,
+          "column": 67,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 1802,
+          "column": 45,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 1802,
+          "column": 63,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 2028,
+          "column": 14,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 2028,
+          "column": 36,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 2050,
+          "column": 39,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 2052,
+          "column": 35,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 2138,
+          "column": 28,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 2239,
+          "column": 29,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 2239,
+          "column": 47,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 2326,
+          "column": 14,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/actions/reportActions.ts",
+          "line": 2326,
+          "column": 36,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/admin/components/dashboard/charts/AcoOrderProgressChart.tsx",
+          "line": 176,
+          "column": 76,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/admin/components/dashboard/charts/InventoryTurnoverAnalysis.tsx",
+          "line": 87,
+          "column": 76,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/admin/components/dashboard/charts/StocktakeAccuracyTrend.tsx",
+          "line": 168,
+          "column": 76,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/admin/components/dashboard/charts/TopProductsInventoryChart.tsx",
+          "line": 181,
+          "column": 76,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/admin/components/dashboard/charts/VoidRecordsAnalysis.tsx",
+          "line": 203,
+          "column": 80,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/admin/components/dashboard/charts/VoidRecordsAnalysis.tsx",
+          "line": 243,
+          "column": 80,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/admin/components/dashboard/widgets/HistoryTreeV2.tsx",
+          "line": 224,
+          "column": 45,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/admin/components/dashboard/widgets/__tests__/unified/test-utils.tsx",
+          "line": 126,
+          "column": 44,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/admin/hooks/useInventoryAnalysis.ts",
+          "line": 32,
+          "column": 39,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/admin/hooks/useWidgetSmartCache.ts",
+          "line": 125,
+          "column": 51,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/api/ask-database/route.ts",
+          "line": 299,
+          "column": 56,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/api/monitoring/tech-debt/route.ts",
+          "line": 281,
+          "column": 64,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/api/monitoring/tech-debt/route.ts",
+          "line": 355,
+          "column": 48,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/api/tables/route.ts",
+          "line": 15,
+          "column": 48,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/api/v1/alerts/rules/route.ts",
+          "line": 204,
+          "column": 38,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/api/v1/alerts/rules/route.ts",
+          "line": 269,
+          "column": 46,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/components/admin/UniversalChatbot/EnhancedChatInterface.tsx",
+          "line": 263,
+          "column": 91,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/components/analytics/charts/StaffWorkloadChart.tsx",
+          "line": 97,
+          "column": 55,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/components/qc-label-form/ProductCodeInput.tsx",
+          "line": 118,
+          "column": 69,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/components/qc-label-form/hooks/modules/useAcoManagement.tsx",
+          "line": 211,
+          "column": 52,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/components/qc-label-form/hooks/modules/useAcoManagement.tsx",
+          "line": 302,
+          "column": 89,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/components/qc-label-form/hooks/modules/useFormPersistence.tsx",
+          "line": 107,
+          "column": 53,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/components/reports/UnifiedExportAllDataDialog.tsx",
+          "line": 55,
+          "column": 30,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/components/reports/dataSources/TransactionDataSource.ts",
+          "line": 27,
+          "column": 54,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/components/reports/generators/LegacyOrderLoadingAdapter.ts",
+          "line": 79,
+          "column": 19,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/components/reports/generators/LegacyOrderLoadingAdapter.ts",
+          "line": 106,
+          "column": 19,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/components/reports/generators/LegacyOrderLoadingAdapter.ts",
+          "line": 132,
+          "column": 19,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/components/reports/generators/LegacyVoidPalletAdapter.ts",
+          "line": 93,
+          "column": 19,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/components/reports/generators/LegacyVoidPalletAdapter.ts",
+          "line": 119,
+          "column": 19,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/components/reports/generators/LegacyVoidPalletAdapter.ts",
+          "line": 160,
+          "column": 19,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/hooks/useActivityLog.tsx",
+          "line": 148,
+          "column": 51,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/hooks/usePrefetchData.tsx",
+          "line": 50,
+          "column": 43,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/hooks/usePrefetchData.tsx",
+          "line": 67,
+          "column": 84,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/hooks/usePrefetchData.tsx",
+          "line": 83,
+          "column": 66,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/hooks/useStockTransfer.ts",
+          "line": 153,
+          "column": 39,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/order-loading/page.tsx",
+          "line": 321,
+          "column": 38,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/order-loading/page.tsx",
+          "line": 416,
+          "column": 43,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/print-grnlabel/hooks/useSupplierValidation.tsx",
+          "line": 60,
+          "column": 41,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/print-grnlabel/hooks/useSupplierValidation.tsx",
+          "line": 92,
+          "column": 43,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/services/auth.ts",
+          "line": 124,
+          "column": 87,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/services/dashboardSettingsService.ts",
+          "line": 44,
+          "column": 55,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/services/dashboardSettingsService.ts",
+          "line": 81,
+          "column": 57,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/services/dashboardSettingsService.ts",
+          "line": 95,
+          "column": 57,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/services/dashboardSettingsService.ts",
+          "line": 123,
+          "column": 49,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/services/supabaseAuth.ts",
+          "line": 194,
+          "column": 55,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/stock-transfer/page.tsx",
+          "line": 136,
+          "column": 37,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/test-performance/page.tsx",
+          "line": 220,
+          "column": 75,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/void-pallet/actions.ts",
+          "line": 1242,
+          "column": 51,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/void-pallet/components/UnifiedVoidReportDialog.tsx",
+          "line": 70,
+          "column": 46,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/void-pallet/components/UnifiedVoidReportDialog.tsx",
+          "line": 172,
+          "column": 48,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/void-pallet/services/inventoryService.ts",
+          "line": 55,
+          "column": 89,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/void-pallet/services/voidReportService.ts",
+          "line": 250,
+          "column": 80,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/void-pallet/services/voidReportService.ts",
+          "line": 1220,
+          "column": 30,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/app/void-pallet/services/voidReportService.ts",
+          "line": 1220,
+          "column": 55,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/analysis/dto/aco-order-progress-cards-response.dto.d.ts",
+          "line": 18,
+          "column": 31,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/analysis/dto/aco-order-progress-chart-response.dto.d.ts",
+          "line": 5,
+          "column": 31,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/analysis/dto/aco-order-progress-chart-response.dto.d.ts",
+          "line": 27,
+          "column": 34,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/auth/auth.controller.d.ts",
+          "line": 33,
+          "column": 17,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/auth/guards/jwt-auth.guard.d.ts",
+          "line": 7,
+          "column": 24,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/auth/guards/jwt-auth.guard.d.ts",
+          "line": 7,
+          "column": 35,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/auth/guards/jwt-auth.guard.d.ts",
+          "line": 7,
+          "column": 46,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/auth/guards/jwt-auth.guard.d.ts",
+          "line": 7,
+          "column": 79,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/auth/strategies/jwt.strategy.d.ts",
+          "line": 14,
+          "column": 23,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/history/history.controller.d.ts",
+          "line": 21,
+          "column": 25,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/history/history.controller.d.ts",
+          "line": 22,
+          "column": 20,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/history/history.controller.d.ts",
+          "line": 23,
+          "column": 20,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/history/history.service.d.ts",
+          "line": 20,
+          "column": 24,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/history/history.service.d.ts",
+          "line": 21,
+          "column": 19,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/orders/orders.controller.d.ts",
+          "line": 12,
+          "column": 33,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/orders/orders.controller.d.ts",
+          "line": 15,
+          "column": 33,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/orders/orders.service.d.ts",
+          "line": 14,
+          "column": 33,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/orders/orders.service.d.ts",
+          "line": 15,
+          "column": 33,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/rpc/dto/rpc-query.dto.d.ts",
+          "line": 3,
+          "column": 14,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/rpc/dto/rpc-response.dto.d.ts",
+          "line": 1,
+          "column": 41,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/rpc/rpc.service.d.ts",
+          "line": 12,
+          "column": 77,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/widgets/cache/widget-cache.service.d.ts",
+          "line": 21,
+          "column": 44,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/widgets/dto/production-details-response.dto.d.ts",
+          "line": 17,
+          "column": 29,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/widgets/dto/staff-workload-response.dto.d.ts",
+          "line": 18,
+          "column": 29,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/dist/widgets/dto/top-products-by-quantity-response.dto.d.ts",
+          "line": 12,
+          "column": 29,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/analysis/analysis.service.ts",
+          "line": 197,
+          "column": 14,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/analysis/analysis.service.ts",
+          "line": 231,
+          "column": 14,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/analysis/analysis.service.ts",
+          "line": 597,
+          "column": 21,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/analysis/analysis.service.ts",
+          "line": 598,
+          "column": 35,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/analysis/analysis.service.ts",
+          "line": 810,
+          "column": 14,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/analysis/analysis.service.ts",
+          "line": 847,
+          "column": 14,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/analysis/dto/aco-order-progress-cards-response.dto.ts",
+          "line": 19,
+          "column": 29,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/analysis/dto/aco-order-progress-chart-response.dto.ts",
+          "line": 5,
+          "column": 29,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/analysis/dto/aco-order-progress-chart-response.dto.ts",
+          "line": 29,
+          "column": 32,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/auth/guards/jwt-auth.guard.ts",
+          "line": 21,
+          "column": 22,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/auth/guards/jwt-auth.guard.ts",
+          "line": 21,
+          "column": 33,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/auth/guards/jwt-auth.guard.ts",
+          "line": 21,
+          "column": 44,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/grn/grn.service.ts",
+          "line": 227,
+          "column": 63,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/grn/grn.service.ts",
+          "line": 232,
+          "column": 60,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/history/history.controller.ts",
+          "line": 190,
+          "column": 23,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/history/history.controller.ts",
+          "line": 191,
+          "column": 18,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/history/history.controller.ts",
+          "line": 192,
+          "column": 18,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/history/history.service.ts",
+          "line": 230,
+          "column": 22,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/history/history.service.ts",
+          "line": 231,
+          "column": 17,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/inventory/inventory.service.ts",
+          "line": 284,
+          "column": 18,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/inventory/inventory.service.ts",
+          "line": 288,
+          "column": 23,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/inventory/inventory.service.ts",
+          "line": 289,
+          "column": 23,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/inventory/inventory.service.ts",
+          "line": 290,
+          "column": 23,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/inventory/inventory.service.ts",
+          "line": 300,
+          "column": 40,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/inventory/inventory.service.ts",
+          "line": 301,
+          "column": 38,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/inventory/inventory.service.ts",
+          "line": 305,
+          "column": 39,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/orders/orders.controller.ts",
+          "line": 121,
+          "column": 37,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/orders/orders.controller.ts",
+          "line": 215,
+          "column": 37,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/orders/orders.service.ts",
+          "line": 264,
+          "column": 37,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/orders/orders.service.ts",
+          "line": 300,
+          "column": 37,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/rpc/dto/rpc-query.dto.ts",
+          "line": 15,
+          "column": 12,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/rpc/dto/rpc-response.dto.ts",
+          "line": 3,
+          "column": 33,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/rpc/rpc.service.ts",
+          "line": 96,
+          "column": 69,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/rpc/rpc.service.ts",
+          "line": 129,
+          "column": 14,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/transfers/transfers.service.ts",
+          "line": 58,
+          "column": 36,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/transfers/transfers.service.ts",
+          "line": 144,
+          "column": 26,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/transfers/transfers.service.ts",
+          "line": 145,
+          "column": 45,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/transfers/transfers.service.ts",
+          "line": 148,
+          "column": 26,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/transfers/transfers.service.ts",
+          "line": 149,
+          "column": 42,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 33,
+          "column": 16,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 34,
+          "column": 13,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 50,
+          "column": 11,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 74,
+          "column": 49,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 79,
+          "column": 54,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 80,
+          "column": 54,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 81,
+          "column": 57,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 107,
+          "column": 21,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 111,
+          "column": 21,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 115,
+          "column": 21,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 119,
+          "column": 21,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 140,
+          "column": 33,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 142,
+          "column": 21,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 145,
+          "column": 34,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 147,
+          "column": 21,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 179,
+          "column": 23,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 179,
+          "column": 33,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 179,
+          "column": 72,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 203,
+          "column": 23,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 207,
+          "column": 23,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 211,
+          "column": 23,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-transformer.d.ts",
+          "line": 215,
+          "column": 23,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 3,
+          "column": 48,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 4,
+          "column": 50,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 5,
+          "column": 50,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 6,
+          "column": 45,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 7,
+          "column": 56,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 8,
+          "column": 56,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 9,
+          "column": 47,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 10,
+          "column": 52,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 13,
+          "column": 25,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 16,
+          "column": 15,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 17,
+          "column": 25,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 21,
+          "column": 25,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 23,
+          "column": 34,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 23,
+          "column": 49,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 24,
+          "column": 44,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 27,
+          "column": 25,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 29,
+          "column": 39,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 30,
+          "column": 38,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 31,
+          "column": 38,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 32,
+          "column": 36,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 33,
+          "column": 39,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 34,
+          "column": 55,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 35,
+          "column": 55,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 36,
+          "column": 41,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 37,
+          "column": 43,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 38,
+          "column": 36,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 38,
+          "column": 51,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 39,
+          "column": 35,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 40,
+          "column": 36,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 41,
+          "column": 34,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 41,
+          "column": 49,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 42,
+          "column": 36,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 43,
+          "column": 36,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 43,
+          "column": 51,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 45,
+          "column": 14,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 46,
+          "column": 15,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 48,
+          "column": 37,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 49,
+          "column": 38,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 53,
+          "column": 15,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 55,
+          "column": 42,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 56,
+          "column": 40,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 57,
+          "column": 36,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 58,
+          "column": 41,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 59,
+          "column": 41,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 60,
+          "column": 45,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 61,
+          "column": 40,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 62,
+          "column": 43,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 63,
+          "column": 36,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 63,
+          "column": 51,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 64,
+          "column": 36,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 65,
+          "column": 39,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 66,
+          "column": 35,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 67,
+          "column": 41,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 68,
+          "column": 41,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 69,
+          "column": 42,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 69,
+          "column": 57,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 70,
+          "column": 39,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 71,
+          "column": 41,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 72,
+          "column": 45,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 76,
+          "column": 15,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 78,
+          "column": 52,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 79,
+          "column": 52,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 80,
+          "column": 55,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 81,
+          "column": 37,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 82,
+          "column": 38,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 82,
+          "column": 53,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 83,
+          "column": 41,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 83,
+          "column": 56,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 86,
+          "column": 15,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 88,
+          "column": 56,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 89,
+          "column": 40,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 90,
+          "column": 40,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 91,
+          "column": 49,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 92,
+          "column": 49,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 93,
+          "column": 39,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 94,
+          "column": 40,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 95,
+          "column": 41,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 96,
+          "column": 44,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 97,
+          "column": 55,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 98,
+          "column": 36,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 99,
+          "column": 45,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 100,
+          "column": 38,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 101,
+          "column": 35,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 102,
+          "column": 42,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 103,
+          "column": 39,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 104,
+          "column": 35,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 105,
+          "column": 47,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 106,
+          "column": 35,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 107,
+          "column": 36,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 109,
+          "column": 14,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 110,
+          "column": 15,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 112,
+          "column": 36,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 113,
+          "column": 38,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 114,
+          "column": 41,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 115,
+          "column": 40,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 116,
+          "column": 37,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 118,
+          "column": 19,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 119,
+          "column": 15,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 121,
+          "column": 41,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 121,
+          "column": 56,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 122,
+          "column": 39,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 123,
+          "column": 40,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 124,
+          "column": 38,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 125,
+          "column": 46,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 126,
+          "column": 40,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 127,
+          "column": 38,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 128,
+          "column": 42,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 128,
+          "column": 57,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 129,
+          "column": 46,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 130,
+          "column": 46,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 131,
+          "column": 39,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 132,
+          "column": 42,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 135,
+          "column": 15,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 139,
+          "column": 15,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 141,
+          "column": 46,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 142,
+          "column": 42,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 142,
+          "column": 57,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 143,
+          "column": 35,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 144,
+          "column": 39,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 146,
+          "column": 22,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 151,
+          "column": 25,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 154,
+          "column": 16,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 155,
+          "column": 25,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 157,
+          "column": 44,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 158,
+          "column": 45,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 161,
+          "column": 36,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 161,
+          "column": 51,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 161,
+          "column": 65,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 163,
+          "column": 13,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 164,
+          "column": 15,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 166,
+          "column": 44,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 166,
+          "column": 59,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 167,
+          "column": 42,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 171,
+          "column": 14,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 173,
+          "column": 13,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 174,
+          "column": 19,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 176,
+          "column": 16,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/types/class-validator.d.ts",
+          "line": 186,
+          "column": 55,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/widgets/cache/widget-cache.service.ts",
+          "line": 11,
+          "column": 41,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/widgets/cache/widget-cache.service.ts",
+          "line": 105,
+          "column": 42,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/widgets/dto/production-details-response.dto.ts",
+          "line": 88,
+          "column": 28,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/widgets/dto/staff-workload-response.dto.ts",
+          "line": 84,
+          "column": 28,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/widgets/dto/top-products-by-quantity-response.dto.ts",
+          "line": 60,
+          "column": 28,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/widgets/widgets.service.ts",
+          "line": 790,
+          "column": 44,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/widgets/widgets.service.ts",
+          "line": 812,
+          "column": 40,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/src/widgets/widgets.service.ts",
+          "line": 828,
+          "column": 42,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/test/test-helpers.ts",
+          "line": 25,
+          "column": 55,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/backend/newpennine-api/test/widgets/transaction-report.e2e-spec.ts",
+          "line": 94,
+          "column": 56,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/components/layout/universal/UniversalGrid.tsx",
+          "line": 45,
+          "column": 81,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/components/print-label-pdf/PrintLabelPdf.tsx",
+          "line": 236,
+          "column": 9,
+          "rule": "jsx-a11y/alt-text",
+          "message": "Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/components/ui/dynamic-action-bar/index.tsx",
+          "line": 98,
+          "column": 31,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/e2e/a11y/utils/a11y-helpers.ts",
+          "line": 165,
+          "column": 22,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/e2e/a11y/utils/a11y-helpers.ts",
+          "line": 166,
+          "column": 20,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/e2e/a11y/utils/a11y-helpers.ts",
+          "line": 257,
+          "column": 14,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/e2e/a11y/utils/a11y-helpers.ts",
+          "line": 273,
+          "column": 46,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/e2e/a11y/utils/a11y-helpers.ts",
+          "line": 274,
+          "column": 55,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/e2e/a11y/utils/a11y-helpers.ts",
+          "line": 280,
+          "column": 43,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/e2e/a11y/utils/a11y-helpers.ts",
+          "line": 298,
+          "column": 44,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/e2e/a11y/utils/a11y-helpers.ts",
+          "line": 303,
+          "column": 42,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/e2e/a11y/utils/a11y-helpers.ts",
+          "line": 304,
+          "column": 39,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/e2e/a11y/utils/a11y-helpers.ts",
+          "line": 305,
+          "column": 45,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/e2e/a11y/utils/a11y-helpers.ts",
+          "line": 307,
+          "column": 37,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/e2e/pages/inventory.page.ts",
+          "line": 47,
+          "column": 37,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/e2e/utils/test-data.ts",
+          "line": 50,
+          "column": 43,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/e2e/utils/test-data.ts",
+          "line": 123,
+          "column": 29,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/e2e/utils/test-data.ts",
+          "line": 130,
+          "column": 30,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/e2e/utils/test-data.ts",
+          "line": 140,
+          "column": 35,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/jest-dom.d.ts",
+          "line": 16,
+          "column": 45,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/jest-dom.d.ts",
+          "line": 19,
+          "column": 47,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/jest-dom.d.ts",
+          "line": 20,
+          "column": 48,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/alerts/config/AlertConfigManager.ts",
+          "line": 290,
+          "column": 39,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/alerts/config/AlertConfigManager.ts",
+          "line": 724,
+          "column": 48,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/alerts/core/AlertRuleEngine.ts",
+          "line": 233,
+          "column": 49,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/alerts/core/AlertRuleEngine.ts",
+          "line": 535,
+          "column": 48,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/alerts/core/AlertRuleEngine.ts",
+          "line": 585,
+          "column": 53,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/alerts/core/AlertRuleEngine.ts",
+          "line": 586,
+          "column": 63,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/alerts/core/AlertStateManager.ts",
+          "line": 603,
+          "column": 53,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/alerts/core/AlertStateManager.ts",
+          "line": 604,
+          "column": 63,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/alerts/services/AlertMonitoringService.ts",
+          "line": 683,
+          "column": 36,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/api/index.ts",
+          "line": 101,
+          "column": 83,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/api/index.ts",
+          "line": 104,
+          "column": 79,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/api/inventory/InventoryAnalysisAPI.ts",
+          "line": 38,
+          "column": 12,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/api/print/PrintLabelAPI.ts",
+          "line": 147,
+          "column": 43,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/api/print/PrintLabelAPI.ts",
+          "line": 166,
+          "column": 43,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/conversation-context-db.ts",
+          "line": 220,
+          "column": 34,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/conversation-context-db.ts",
+          "line": 221,
+          "column": 30,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/conversation-context-db.ts",
+          "line": 226,
+          "column": 67,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/conversation-context-manager.ts",
+          "line": 184,
+          "column": 34,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/conversation-context-manager.ts",
+          "line": 185,
+          "column": 30,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/conversation-context-manager.ts",
+          "line": 190,
+          "column": 67,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/error-handling/hooks/useError.ts",
+          "line": 333,
+          "column": 24,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/error-handling/index.tsx",
+          "line": 111,
+          "column": 66,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/exportReport.ts",
+          "line": 550,
+          "column": 48,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/feature-flags/FeatureFlagManager.ts",
+          "line": 31,
+          "column": 59,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/feature-flags/hooks/useTestingFeatures.tsx",
+          "line": 152,
+          "column": 53,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/feature-flags/hooks/useTestingFeatures.tsx",
+          "line": 153,
+          "column": 34,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/feature-flags/types/SupabaseFeatureFlagTypes.ts",
+          "line": 160,
+          "column": 43,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/navigation/behavior-tracker.ts",
+          "line": 107,
+          "column": 34,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/navigation/behavior-tracker.ts",
+          "line": 216,
+          "column": 63,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/services/assistantService.ts",
+          "line": 135,
+          "column": 26,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/services/warehouse-cache-service.ts",
+          "line": 88,
+          "column": 31,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/services/warehouse-cache-service.ts",
+          "line": 170,
+          "column": 32,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/services/warehouse-cache-service.ts",
+          "line": 278,
+          "column": 36,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/services/warehouse-cache-service.ts",
+          "line": 279,
+          "column": 26,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/services/warehouse-cache-service.ts",
+          "line": 282,
+          "column": 77,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/types/rpc-supplier-types.ts",
+          "line": 48,
+          "column": 51,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/types/rpc-supplier-types.ts",
+          "line": 63,
+          "column": 53,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/types/rpc-supplier-types.ts",
+          "line": 79,
+          "column": 9,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/types/rpc-supplier-types.ts",
+          "line": 93,
+          "column": 9,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/types/unknown-handlers.ts",
+          "line": 24,
+          "column": 31,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/lib/widgets/types/enhanced-widget-types.ts",
+          "line": 131,
+          "column": 26,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/middleware.ts",
+          "line": 126,
+          "column": 83,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/middleware.ts",
+          "line": 353,
+          "column": 83,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/middleware.ts",
+          "line": 386,
+          "column": 83,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/scripts/batchAddPasswordChangeFlag.ts",
+          "line": 25,
+          "column": 54,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/scripts/capture-layout-baseline.ts",
+          "line": 85,
+          "column": 40,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/scripts/check-order-status.ts",
+          "line": 46,
+          "column": 21,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/scripts/check-order-status.ts",
+          "line": 76,
+          "column": 44,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/scripts/fix-syntax-errors.ts",
+          "line": 69,
+          "column": 35,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/scripts/fix-unknown-errors.ts",
+          "line": 120,
+          "column": 93,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/scripts/fix-unknown-errors.ts",
+          "line": 123,
+          "column": 69,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/scripts/list-tables.ts",
+          "line": 75,
+          "column": 26,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/scripts/list-tables.ts",
+          "line": 85,
+          "column": 26,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/scripts/list-tables.ts",
+          "line": 95,
+          "column": 26,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/scripts/list-tables.ts",
+          "line": 104,
+          "column": 49,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/scripts/test-phase-1-2.ts",
+          "line": 9,
+          "column": 13,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/scripts/test-phase-1-2.ts",
+          "line": 48,
+          "column": 72,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/scripts/test-phase-1-2.ts",
+          "line": 155,
+          "column": 48,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/stories/SimpleUnifiedWidgets.stories.tsx",
+          "line": 175,
+          "column": 30,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/stories/UnifiedTableWidget.stories.tsx",
+          "line": 12,
+          "column": 50,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/stories/UnifiedTableWidget.stories.tsx",
+          "line": 110,
+          "column": 56,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/stories/components/UnifiedChartWidgetMockWrapper.tsx",
+          "line": 62,
+          "column": 20,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/stories/components/UnifiedChartWidgetMockWrapper.tsx",
+          "line": 134,
+          "column": 54,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/stories/components/UnifiedChartWidgetMockWrapper.tsx",
+          "line": 183,
+          "column": 35,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/stories/components/UnifiedStatsWidgetMockWrapper.tsx",
+          "line": 8,
+          "column": 46,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/stories/components/UnifiedStatsWidgetMockWrapper.tsx",
+          "line": 51,
+          "column": 20,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/stories/mocks/unifiedWidgetsMocks.ts",
+          "line": 266,
+          "column": 51,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/stories/mocks/unifiedWidgetsMocks.ts",
+          "line": 272,
+          "column": 18,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/stories/mocks/unifiedWidgetsMocks.ts",
+          "line": 272,
+          "column": 32,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/stories/mocks/unifiedWidgetsMocks.ts",
+          "line": 416,
+          "column": 1,
+          "rule": "import/no-anonymous-default-export",
+          "message": "Assign object to a variable before exporting as module default",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/supabase/functions/send-aco-completion-email/index.ts",
+          "line": 155,
+          "column": 20,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/tests/performance/widget-optimization.perf.ts",
+          "line": 188,
+          "column": 78,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/tests/performance/widget-optimization.perf.ts",
+          "line": 194,
+          "column": 71,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/tests/performance/widget-optimization.perf.ts",
+          "line": 209,
+          "column": 44,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/tests/performance/widget-optimization.perf.ts",
+          "line": 262,
+          "column": 14,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/tests/performance/widget-optimization.perf.ts",
+          "line": 438,
+          "column": 26,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/tests/performance/widget-optimization.perf.ts",
+          "line": 446,
+          "column": 24,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/tests/performance/widget-optimization.perf.ts",
+          "line": 470,
+          "column": 26,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/tests/performance/widget-optimization.perf.ts",
+          "line": 478,
+          "column": 24,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/tests/performance/widget-optimization.perf.ts",
+          "line": 530,
+          "column": 65,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/tests/performance/widget-optimization.perf.ts",
+          "line": 531,
+          "column": 32,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/tests/performance/widget-optimization.perf.ts",
+          "line": 545,
+          "column": 22,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/tests/performance/widget-optimization.perf.ts",
+          "line": 546,
+          "column": 20,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/tests/performance/widget-optimization.perf.ts",
+          "line": 554,
+          "column": 65,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/tests/performance/widget-optimization.perf.ts",
+          "line": 555,
+          "column": 32,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/types/business/supplier.ts",
+          "line": 118,
+          "column": 51,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/types/business/supplier.ts",
+          "line": 133,
+          "column": 53,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/types/business/supplier.ts",
+          "line": 165,
+          "column": 9,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/types/business/supplier.ts",
+          "line": 179,
+          "column": 9,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/types/core/error.ts",
+          "line": 53,
+          "column": 22,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/types/database/helpers.ts",
+          "line": 33,
+          "column": 43,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/types/database/helpers.ts",
+          "line": 104,
+          "column": 29,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/types/database/tables.ts",
+          "line": 14,
+          "column": 15,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/types/database/tables.ts",
+          "line": 15,
+          "column": 19,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/types/database/tables.ts",
+          "line": 16,
+          "column": 13,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/types/external/unknown-handlers.ts",
+          "line": 25,
+          "column": 31,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/types/external/unknown-handlers.ts",
+          "line": 295,
+          "column": 40,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/types/external/unknown-handlers.ts",
+          "line": 308,
+          "column": 46,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/types/external/unknown-handlers.ts",
+          "line": 348,
+          "column": 16,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/vitest.setup.ts",
+          "line": 5,
+          "column": 16,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/vitest.setup.ts",
+          "line": 23,
+          "column": 17,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        },
+        {
+          "file": "/vitest.setup.ts",
+          "line": 46,
+          "column": 12,
+          "rule": "@typescript-eslint/no-explicit-any",
+          "message": "Unexpected any. Specify a different type.",
+          "severity": "warning",
+          "fixable": false
+        }
+      ]
+    },
+    "testing": {
+      "totalTests": 0,
+      "passedTests": 0,
+      "failedTests": 0,
+      "skipped": true
+    },
+    "build": {
+      "status": "skipped",
+      "skipped": true
+    }
+  },
+  "summary": {
+    "totalIssues": 32,
+    "totalWarnings": 439,
+    "testPassRate": 100,
+    "buildStatus": "skipped",
+    "healthScore": 0
+  }
+}

@@ -19,8 +19,8 @@ BEGIN
       'grn_count', wl.grn,
       'total_operations', wl.qc + wl.move + wl.grn,
       'last_update', wl.latest_update,
-      'productivity_score', 
-        CASE 
+      'productivity_score',
+        CASE
           WHEN (wl.qc + wl.move + wl.grn) >= 100 THEN 'High'
           WHEN (wl.qc + wl.move + wl.grn) >= 50 THEN 'Medium'
           ELSE 'Low'
@@ -30,7 +30,7 @@ BEGIN
   FROM work_level wl
   LEFT JOIN data_id di ON wl.id = di.id
   WHERE DATE(wl.latest_update) = p_date;
-  
+
   RETURN COALESCE(result, '[]'::json);
 END;
 $$;
@@ -50,7 +50,7 @@ BEGIN
   IF p_employee_id IS NULL THEN
     -- Get all employees' summary
     WITH daily_work AS (
-      SELECT 
+      SELECT
         id,
         DATE(latest_update) as work_date,
         qc,
@@ -60,7 +60,7 @@ BEGIN
       WHERE DATE(latest_update) BETWEEN p_start_date AND p_end_date
     ),
     employee_summary AS (
-      SELECT 
+      SELECT
         dw.id,
         di.name,
         COUNT(DISTINCT work_date) as days_worked,
@@ -101,7 +101,7 @@ BEGIN
     WHERE wl.id = p_employee_id
     AND DATE(wl.latest_update) BETWEEN p_start_date AND p_end_date;
   END IF;
-  
+
   RETURN COALESCE(result, '[]'::json);
 END;
 $$;
@@ -135,8 +135,8 @@ BEGIN
     'avg_operations_per_employee', ROUND(COALESCE(avg_operations_per_employee, 0), 2),
     'max_operations', COALESCE(max_operations, 0),
     'min_operations', COALESCE(min_operations, 0),
-    'efficiency_score', 
-      CASE 
+    'efficiency_score',
+      CASE
         WHEN COALESCE(avg_operations_per_employee, 0) >= 80 THEN 'Excellent'
         WHEN COALESCE(avg_operations_per_employee, 0) >= 60 THEN 'Good'
         WHEN COALESCE(avg_operations_per_employee, 0) >= 40 THEN 'Average'
@@ -144,7 +144,7 @@ BEGIN
       END
   ) INTO result
   FROM current_stats;
-  
+
   RETURN result;
 END;
 $$;
@@ -184,7 +184,7 @@ BEGIN
     )
   ) INTO result
   FROM operation_stats;
-  
+
   RETURN COALESCE(result, '[]'::json);
 END;
 $$;

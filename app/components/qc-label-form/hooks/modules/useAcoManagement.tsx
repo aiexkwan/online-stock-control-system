@@ -35,7 +35,7 @@ export const useAcoManagement = ({
   const createClientSupabase = useCallback(() => {
     return createClient();
   }, []);
-  
+
   // Debounce timer for auto search
   const autoSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -58,9 +58,13 @@ export const useAcoManagement = ({
         console.error('Error fetching ACO order refs:', error);
         toast.error('Error fetching historical ACO order refs.');
         setFormData(prev => ({ ...prev, availableAcoOrderRefs: [] }));
-      } else if (data?.success && data.available_orders) {
+      } else if (
+        (data as { success?: boolean; available_orders?: number[] })?.success &&
+        (data as { success?: boolean; available_orders?: number[] }).available_orders
+      ) {
         // RPC 返回的是 JSONB array，直接使用
-        const orderRefs = data.available_orders as number[];
+        const orderRefs = (data as { success?: boolean; available_orders?: number[] })
+          .available_orders as number[];
         setFormData(prev => ({ ...prev, availableAcoOrderRefs: orderRefs }));
       } else {
         setFormData(prev => ({ ...prev, availableAcoOrderRefs: [] }));
@@ -115,124 +119,140 @@ export const useAcoManagement = ({
   ]);
 
   // ACO 搜索邏輯 - 使用 RPC function (支援手動和自動調用)
-  const handleAcoSearch = useCallback(async (orderRef?: string) => {
-    const searchOrderRef = orderRef || formData.acoOrderRef.trim();
-    
-    if (
-      !searchOrderRef ||
-      searchOrderRef.length < MIN_ACO_ORDER_REF_LENGTH
-    ) {
-      // 對於自動調用，不顯示錯誤toast，只對手動調用顯示
-      if (!orderRef) {
-        toast.error(`ACO Order Ref must be at least ${MIN_ACO_ORDER_REF_LENGTH} characters.`);
-      }
-      return;
-    }
+  const handleAcoSearch = useCallback(
+    async (orderRef?: string) => {
+      const searchOrderRef = orderRef || formData.acoOrderRef.trim();
 
-    if (!productInfo?.code) {
-      toast.error('Please select a product first before searching ACO order.');
-      return;
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      acoSearchLoading: true,
-      acoNewRef: false,
-      acoOrderDetails: [],
-      acoOrderDetailErrors: [],
-    }));
-
-    try {
-
-      // 使用傳統方法
-      const supabaseClient = createClientSupabase();
-
-      // 使用新的 RPC function - 獲取訂單詳情
-      const { data, error } = await supabaseClient.rpc('get_aco_order_details', {
-        p_product_code: productInfo.code,
-        p_order_ref: searchOrderRef,
-      });
-
-      if (error) {
-        console.error('Error searching ACO order:', error);
-        toast.error('Error searching ACO order.');
-        setFormData(prev => ({ ...prev, acoRemain: null }));
+      if (!searchOrderRef || searchOrderRef.length < MIN_ACO_ORDER_REF_LENGTH) {
+        // 對於自動調用，不顯示錯誤toast，只對手動調用顯示
+        if (!orderRef) {
+          toast.error(`ACO Order Ref must be at least ${MIN_ACO_ORDER_REF_LENGTH} characters.`);
+        }
         return;
       }
 
-      if (!data?.success) {
-        toast.error(data?.error || 'Error searching ACO order.');
-        setFormData(prev => ({ ...prev, acoRemain: null }));
+      if (!productInfo?.code) {
+        toast.error('Please select a product first before searching ACO order.');
         return;
       }
 
-      // 更新可用訂單列表（如果有）
-      if (data.available_orders) {
-        setFormData(prev => ({
-          ...prev,
-          availableAcoOrderRefs: data.available_orders as number[],
-        }));
-      }
+      setFormData(prev => ({
+        ...prev,
+        acoSearchLoading: true,
+        acoNewRef: false,
+        acoOrderDetails: [],
+        acoOrderDetailErrors: [],
+      }));
 
-      // 處理訂單詳情
-      if (data.order_details) {
-        const details = data.order_details;
+      try {
+        // 使用傳統方法
+        const supabaseClient = createClientSupabase();
 
-        if (!details.exists) {
-          // 訂單不存在
+        // 使用新的 RPC function - 獲取訂單詳情
+        const { data, error } = await supabaseClient.rpc('get_aco_order_details', {
+          p_product_code: productInfo.code,
+          p_order_ref: searchOrderRef,
+        });
+
+        if (error) {
+          console.error('Error searching ACO order:', error);
+          toast.error('Error searching ACO order.');
+          setFormData(prev => ({ ...prev, acoRemain: null }));
+          return;
+        }
+
+        interface AcoSearchResult {
+          success?: boolean;
+          error?: string;
+          available_orders?: number[];
+          order_details?: {
+            order_ref: number;
+            supplier_item_code: string;
+            material_description: string;
+            supplier: string;
+          };
+        }
+
+        const result = data as AcoSearchResult;
+        if (!result?.success) {
+          toast.error(result?.error || 'Error searching ACO order.');
+          setFormData(prev => ({ ...prev, acoRemain: null }));
+          return;
+        }
+
+        // 更新可用訂單列表（如果有）
+        if (data && result.available_orders) {
           setFormData(prev => ({
             ...prev,
-            acoNewRef: false,
-            acoRemain: details.message,
+            availableAcoOrderRefs: result.available_orders || [],
           }));
-          toast.warning(details.message);
-        } else {
-          // 訂單存在 - 顯示狀態
-          setFormData(prev => ({
-            ...prev,
-            acoRemain: details.message,
-          }));
+        }
 
-          if (details.status === 'fulfilled') {
-            toast.warning('This order has already been fulfilled.');
+        // 處理訂單詳情
+        if (data && result.order_details) {
+          const details = result.order_details;
+
+          if (!details || !('order_ref' in details)) {
+            // 訂單不存在
+            setFormData(prev => ({
+              ...prev,
+              acoNewRef: false,
+              acoRemain: 'Order not found',
+            }));
+            toast.warning('Order not found');
+          } else {
+            // 訂單存在 - 顯示狀態
+            setFormData(prev => ({
+              ...prev,
+              acoRemain: `Order ${details.order_ref} found`,
+            }));
+
+            // 檢查訂單狀態（如果有相關屬性）
+            if ('status' in details && (details as any).status === 'fulfilled') {
+              toast.warning('This order has already been fulfilled.');
+            }
           }
         }
+      } catch (error) {
+        console.error('Error searching ACO order:', error);
+        // 對於自動調用，減少錯誤toast的干擾
+        if (!orderRef) {
+          toast.error('Error searching ACO order.');
+        }
+        setFormData(prev => ({ ...prev, acoRemain: null }));
+      } finally {
+        setFormData(prev => ({ ...prev, acoSearchLoading: false }));
       }
-    } catch (error) {
-      console.error('Error searching ACO order:', error);
-      // 對於自動調用，減少錯誤toast的干擾
-      if (!orderRef) {
-        toast.error('Error searching ACO order.');
-      }
-      setFormData(prev => ({ ...prev, acoRemain: null }));
-    } finally {
-      setFormData(prev => ({ ...prev, acoSearchLoading: false }));
-    }
-  }, [formData.acoOrderRef, productInfo, createClientSupabase, setFormData]);
-  
+    },
+    [formData.acoOrderRef, productInfo, createClientSupabase, setFormData]
+  );
+
   // 新增：自動 ACO 確認函數 (選擇訂單後自動觸發搜索)
-  const handleAutoAcoConfirm = useCallback(async (selectedOrderRef: string) => {
-    // Clear any existing timeout
-    if (autoSearchTimeoutRef.current) {
-      clearTimeout(autoSearchTimeoutRef.current);
-    }
-    
-    // Update the form data first
-    setFormData(prev => ({ 
-      ...prev, 
-      acoOrderRef: selectedOrderRef,
-      acoNewRef: false,
-      acoRemain: null 
-    }));
-    
-    // Auto-trigger search with debounce to avoid excessive calls
-    if (selectedOrderRef && selectedOrderRef.length >= MIN_ACO_ORDER_REF_LENGTH) {
-      autoSearchTimeoutRef.current = setTimeout(async () => {
-        await handleAcoSearch(selectedOrderRef);
-      }, 300); // 300ms debounce
-    }
-  }, [handleAcoSearch, setFormData]);
-  
+  const handleAutoAcoConfirm = useCallback(
+    async (selectedOrderRef: string) => {
+      // Clear any existing timeout
+      if (autoSearchTimeoutRef.current) {
+        clearTimeout(autoSearchTimeoutRef.current);
+      }
+
+      // Update the form data first
+      setFormData(prev => ({
+        ...prev,
+        acoOrderRef: selectedOrderRef,
+        acoNewRef: false,
+        acoRemain: null,
+      }));
+
+      // Auto-trigger search with debounce to avoid excessive calls
+      if (selectedOrderRef && selectedOrderRef.length >= MIN_ACO_ORDER_REF_LENGTH) {
+        autoSearchTimeoutRef.current = setTimeout(async () => {
+          await handleAcoSearch(selectedOrderRef);
+        }, 300); // 300ms debounce
+      }
+    },
+    [handleAcoSearch, setFormData]
+  );
+
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
@@ -272,14 +292,14 @@ export const useAcoManagement = ({
           p_code: code.trim(),
         });
 
-        if (error || !data || data.length === 0) {
+        if (error || !data || !Array.isArray(data) || data.length === 0) {
           setFormData(prev => {
             const newErrors = [...prev.acoOrderDetailErrors];
             newErrors[idx] = `Product code ${code} not found.`;
             return { ...prev, acoOrderDetailErrors: newErrors };
           });
         } else {
-          const productData = data[0];
+          const productData = Array.isArray(data) && data.length > 0 ? data[0] : ({} as any);
 
           // 檢查產品類型是否為 ACO
           if (productData.type !== 'ACO') {

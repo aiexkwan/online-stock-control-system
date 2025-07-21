@@ -16,12 +16,12 @@ export type WidgetCategory =
   | 'special'; // 特殊類
 
 // 導入必要的類型
-import { 
-  DashboardWidget, 
-  WidgetConfig, 
-  WidgetBaseConfig, 
-  WidgetComponentProps 
-} from '@/app/types/dashboard';
+import {
+  DashboardWidget,
+  WidgetConfig,
+  WidgetBaseConfig,
+  WidgetComponentProps,
+} from '@/types/components/dashboard';
 
 // 重新導出 WidgetComponentProps 以保持兼容性
 export type { WidgetComponentProps };

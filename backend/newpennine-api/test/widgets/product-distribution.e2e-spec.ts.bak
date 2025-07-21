@@ -1,0 +1,114 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
+import request from 'supertest';
+import { AppModule } from '../../src/app.module';
+import { TestHelpers } from '../test-helpers';
+
+describe('Product Distribution Widget Endpoint (e2e)', () => {
+  let app: INestApplication;
+  let authToken: string;
+
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    await app.init();
+
+    // Get valid JWT token for testing using real login
+    authToken = await TestHelpers.loginAndGetToken(app);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  describe('/widgets/product-distribution (GET)', () => {
+    it('should return product distribution data with default limit', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/widgets/product-distribution')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('value');
+      expect(response.body).toHaveProperty('timestamp');
+      expect(Array.isArray(response.body.value)).toBe(true);
+
+      if (response.body.value.length > 0) {
+        const firstItem = response.body.value[0];
+        expect(firstItem).toHaveProperty('name');
+        expect(firstItem).toHaveProperty('value');
+        expect(typeof firstItem.value).toBe('number');
+
+        // Check if percentage is calculated
+        if (firstItem.percentage !== undefined) {
+          expect(typeof firstItem.percentage).toBe('number');
+          expect(firstItem.percentage).toBeGreaterThanOrEqual(0);
+          expect(firstItem.percentage).toBeLessThanOrEqual(100);
+        }
+      }
+    });
+
+    it('should respect limit parameter', async () => {
+      const limit = 5;
+      const response = await request(app.getHttpServer())
+        .get(`/widgets/product-distribution?limit=${limit}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.value.length).toBeLessThanOrEqual(limit);
+    });
+
+    it('should handle invalid limit parameter', async () => {
+      await request(app.getHttpServer())
+        .get('/widgets/product-distribution?limit=invalid')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400);
+    });
+
+    it('should return 401 without authentication', async () => {
+      await request(app.getHttpServer())
+        .get('/widgets/product-distribution')
+        .expect(401);
+    });
+
+    it('should include metadata when available', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/widgets/product-distribution')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      if (response.body.metadata) {
+        expect(response.body.metadata).toHaveProperty('executed_at');
+        expect(response.body.metadata).toHaveProperty('calculation_time');
+
+        // Check if RPC function was used
+        if (response.body.metadata.rpcFunction !== undefined) {
+          expect(typeof response.body.metadata.rpcFunction).toBe('boolean');
+
+          if (response.body.metadata.rpcFunction) {
+            expect(response.body.metadata).toHaveProperty('rpcName');
+            expect(response.body.metadata.rpcName).toBe(
+              'get_product_distribution',
+            );
+          }
+        }
+      }
+    });
+
+    it('should return data sorted by quantity in descending order', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/widgets/product-distribution')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      const values = response.body.value;
+      if (values.length > 1) {
+        for (let i = 1; i < values.length; i++) {
+          expect(values[i - 1].value).toBeGreaterThanOrEqual(values[i].value);
+        }
+      }
+    });
+  });
+});

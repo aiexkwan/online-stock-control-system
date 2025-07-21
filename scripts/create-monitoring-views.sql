@@ -10,7 +10,7 @@ DROP VIEW IF EXISTS v_missing_indexes;
 
 -- 創建索引使用監控視圖
 CREATE OR REPLACE VIEW v_index_usage AS
-SELECT 
+SELECT
     schemaname,
     tablename,
     indexname,
@@ -24,13 +24,13 @@ ORDER BY idx_scan DESC;
 
 -- 創建缺失索引識別視圖（簡化版）
 CREATE OR REPLACE VIEW v_missing_indexes AS
-SELECT 
+SELECT
     schemaname,
     tablename,
     seq_scan,
     seq_tup_read,
     idx_scan,
-    CASE 
+    CASE
         WHEN (idx_scan + seq_scan) = 0 THEN 0
         ELSE ROUND((seq_scan * 100.0) / (idx_scan + seq_scan), 2)
     END as seq_scan_percentage
@@ -42,7 +42,7 @@ ORDER BY seq_scan DESC;
 
 -- 創建表大小監控視圖
 CREATE OR REPLACE VIEW v_table_sizes AS
-SELECT 
+SELECT
     tablename,
     pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS total_size,
     pg_size_pretty(pg_relation_size(schemaname||'.'||tablename)) AS table_size,
@@ -54,6 +54,6 @@ WHERE schemaname = 'public'
 ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
 
 -- 驗證視圖創建
-SELECT viewname FROM pg_views 
-WHERE schemaname = 'public' 
+SELECT viewname FROM pg_views
+WHERE schemaname = 'public'
 AND viewname IN ('v_index_usage', 'v_missing_indexes', 'v_table_sizes');

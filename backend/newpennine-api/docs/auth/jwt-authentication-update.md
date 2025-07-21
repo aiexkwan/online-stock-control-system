@@ -12,14 +12,14 @@
 
 #### 1.1 history.controller.ts
 - **路徑**: `/src/history/history.controller.ts`
-- **更改**: 
+- **更改**:
   - 取消註釋 `import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';`
   - 取消註釋 `@UseGuards(JwtAuthGuard)`
   - 保留 `@ApiBearerAuth()` 裝飾器
 
 #### 1.2 transfers.controller.ts
 - **路徑**: `/src/transfers/transfers.controller.ts`
-- **更改**: 
+- **更改**:
   - 添加 `UseGuards` 到 NestJS 導入
   - 添加 `ApiBearerAuth` 到 Swagger 導入
   - 導入 `JwtAuthGuard`
@@ -27,7 +27,7 @@
 
 #### 1.3 pallets.controller.ts
 - **路徑**: `/src/pallets/pallets.controller.ts`
-- **更改**: 
+- **更改**:
   - 添加 `UseGuards` 到 NestJS 導入
   - 添加 Swagger 裝飾器導入
   - 導入 `JwtAuthGuard`
@@ -35,7 +35,7 @@
 
 #### 1.4 inventory.controller.ts
 - **路徑**: `/src/inventory/inventory.controller.ts`
-- **更改**: 
+- **更改**:
   - 添加 `UseGuards` 到 NestJS 導入
   - 添加 Swagger 裝飾器導入
   - 導入 `JwtAuthGuard`
@@ -43,7 +43,7 @@
 
 #### 1.5 orders.controller.ts
 - **路徑**: `/src/orders/orders.controller.ts`
-- **更改**: 
+- **更改**:
   - 添加 `UseGuards` 到 NestJS 導入
   - 添加 `ApiBearerAuth` 到 Swagger 導入
   - 導入 `JwtAuthGuard`
@@ -51,7 +51,7 @@
 
 #### 1.6 rpc.controller.ts
 - **路徑**: `/src/rpc/rpc.controller.ts`
-- **更改**: 
+- **更改**:
   - 添加 `UseGuards` 到 NestJS 導入
   - 添加 `ApiBearerAuth` 到 Swagger 導入
   - 導入 `JwtAuthGuard`
@@ -59,7 +59,7 @@
 
 #### 1.7 widgets.controller.ts
 - **路徑**: `/src/widgets/widgets.controller.ts`
-- **更改**: 
+- **更改**:
   - 添加 `UseGuards` 到 NestJS 導入
   - 添加 Swagger 裝飾器導入
   - 導入 `JwtAuthGuard`

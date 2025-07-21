@@ -1,0 +1,117 @@
+# Pre-commit hooks 配置
+# 這些 hooks 將在每次 git commit 之前自動運行
+
+repos:
+  # 本地 hooks
+  - repo: local
+    hooks:
+      # TypeScript 類型檢查 (提示模式 - 不阻塞提交)
+      - id: typescript-check
+        name: TypeScript Check
+        entry: bash -c 'npx tsc --noEmit || echo "⚠️ TypeScript errors found. Please fix when possible."'
+        language: system
+        files: \.(ts|tsx)$
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+
+      # ESLint 檢查（只檢查暫存的文件）
+      - id: eslint-check
+        name: ESLint Check
+        entry: npx eslint --fix
+        language: system
+        files: \.(js|jsx|ts|tsx)$
+        stages: [pre-commit]
+
+      # Prettier 格式化
+      - id: prettier-format
+        name: Prettier Format
+        entry: npx prettier --write
+        language: system
+        files: \.(js|jsx|ts|tsx|json|md|yml|yaml)$
+        stages: [pre-commit]
+
+      # 快速技術債務檢查
+      - id: tech-debt-check
+        name: Tech Debt Check
+        entry: npm run tech-debt:collect:fast
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+
+      # 禁止提交 TODO/FIXME （可選 - 暫時禁用）
+      # - id: no-todos
+      #   name: No TODOs
+      #   entry: bash -c 'if grep -r "TODO\|FIXME\|XXX" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" .; then echo "❌ Found TODO/FIXME comments. Please resolve before committing."; exit 1; fi'
+      #   language: system
+      #   pass_filenames: false
+      #   stages: [pre-commit]
+      #   verbose: true
+
+      # 檢查大文件
+      - id: check-large-files
+        name: Check Large Files
+        entry: bash -c 'find . -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.jsx" | xargs wc -l | awk "\$1 > 500 {print \$2 \" has \" \$1 \" lines (>500)\"}" | grep . && echo "❌ Found files with >500 lines. Consider refactoring." && exit 1 || true'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
+  # 通用 hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      # 檢查文件大小
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+
+      # 檢查合併衝突標記
+      - id: check-merge-conflict
+
+      # 檢查 YAML 語法
+      - id: check-yaml
+        args: ['--unsafe']
+
+      # 檢查 JSON 語法
+      - id: check-json
+
+      # 移除尾隨空白
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+
+      # 確保文件以換行符結尾
+      - id: end-of-file-fixer
+
+      # 檢查私鑰
+      - id: detect-private-key
+
+      # 檢查 AWS 憑證
+      - id: detect-aws-credentials
+        args: ['--allow-missing-credentials']
+
+  # 安全檢查 (暫時禁用 - baseline 配置問題)
+  # - repo: https://github.com/Yelp/detect-secrets
+  #   rev: v1.4.0
+  #   hooks:
+  #     - id: detect-secrets
+  #       args: ['--baseline', '.secrets.baseline']
+  #       exclude: package-lock.json
+
+# 配置選項
+default_stages: [pre-commit]
+fail_fast: false  # 不要在第一個失敗時停止
+minimum_pre_commit_version: '2.18.0'
+
+# 排除的文件和目錄
+exclude: |
+  (?x)^(
+    node_modules/.*|
+    \.next/.*|
+    dist/.*|
+    build/.*|
+    coverage/.*|
+    \.git/.*|
+    .*\.min\.(js|css)$|
+    package-lock\.json$|
+    .*\.lock$
+  )$

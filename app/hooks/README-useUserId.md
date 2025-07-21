@@ -21,9 +21,9 @@ import { useUserId } from '@/app/hooks/useUserId';
 
 function MyComponent() {
   const { userId, isLoading } = useUserId();
-  
+
   if (isLoading) return <div>Loading...</div>;
-  
+
   return <div>User ID: {userId}</div>;
 }
 ```
@@ -33,10 +33,10 @@ function MyComponent() {
 ```tsx
 function UserProfile() {
   const { userDetails, isLoading, error } = useUserId();
-  
+
   if (isLoading) return <Spinner />;
   if (error) return <div>Error: {error.message}</div>;
-  
+
   return (
     <div>
       <h2>Welcome, {userDetails?.name}</h2>
@@ -52,11 +52,11 @@ function UserProfile() {
 ```tsx
 function OperatorVerification() {
   const { verifyUserId } = useUserId();
-  
+
   const handleVerify = async (inputId: string) => {
     const numericId = parseInt(inputId, 10);
     const isValid = await verifyUserId(numericId);
-    
+
     if (isValid) {
       console.log('Valid operator ID');
     } else {
@@ -74,12 +74,12 @@ interface UseUserIdReturn {
   userId: string | null;           // Clock number (例如: "1234")
   userNumericId: number | null;    // data_id 表的數字 ID
   userDetails: UserDetails | null;  // 完整用戶詳情
-  
+
   // 狀態
   isLoading: boolean;              // 加載中
   error: Error | null;             // 錯誤信息
   isAuthenticated: boolean;        // 是否已認證
-  
+
   // 操作
   refreshUser: () => Promise<void>;                    // 刷新用戶數據
   verifyUserId: (userId: number) => Promise<boolean>;  // 驗證用戶 ID
@@ -176,9 +176,9 @@ Hook 內建錯誤處理，會自動：
 // App.tsx
 function App() {
   const { userId, isLoading } = useUserId();
-  
+
   if (isLoading) return <LoadingScreen />;
-  
+
   return <RouterProvider userId={userId} />;
 }
 ```
@@ -190,7 +190,7 @@ const UserContext = createContext<UseUserIdReturn | null>(null);
 
 function AppProvider({ children }) {
   const userIdData = useUserId();
-  
+
   return (
     <UserContext.Provider value={userIdData}>
       {children}
@@ -204,11 +204,11 @@ function AppProvider({ children }) {
 ```tsx
 function Component() {
   const { userId, isLoading, error } = useUserId();
-  
+
   if (isLoading) return <Skeleton />;
   if (error) return <ErrorBoundary error={error} />;
   if (!userId) return <LoginPrompt />;
-  
+
   return <MainContent userId={userId} />;
 }
 ```

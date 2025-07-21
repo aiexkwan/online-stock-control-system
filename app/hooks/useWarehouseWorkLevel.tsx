@@ -9,7 +9,7 @@ import {
   isWarehouseWorkLevelError,
   formatDateForRPC,
   getDefaultDateRange,
-} from '@/app/types/warehouse-work-level';
+} from '@/types/api/response';
 
 interface UseWarehouseWorkLevelOptions {
   autoFetch?: boolean;
@@ -89,7 +89,7 @@ export function useWarehouseWorkLevel(
           throw new Error(`RPC Error: ${rpcError.message}`);
         }
 
-        const typedResult = result as WarehouseWorkLevelResult;
+        const typedResult = result as unknown as WarehouseWorkLevelResult;
 
         // Check if result is an error
         if (isWarehouseWorkLevelError(typedResult)) {
@@ -178,7 +178,7 @@ export function useWarehouseWorkLevelThisWeek(options?: UseWarehouseWorkLevelOpt
 
 export function useWarehouseWorkLevelThisMonth(options?: UseWarehouseWorkLevelOptions) {
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfMonth = new Date();
 
   return useWarehouseWorkLevel(
     {

@@ -36,7 +36,7 @@
 
 ### 錯誤分佈
 - **語法錯誤**: 17個 (TS1005, TS1128, TS1109)
-- **主要文件**: 
+- **主要文件**:
   - `RealTimeInventoryMap.tsx`: 6個錯誤
   - `StocktakeAccuracyTrend.tsx`: 3個錯誤
   - `TopProductsInventoryChart.tsx`: 3個錯誤

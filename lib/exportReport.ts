@@ -1,6 +1,5 @@
-
 import { saveAs } from 'file-saver';
-import { DatabaseRecord } from '@/lib/types/database';
+import { DatabaseRecord } from '@/types/database/tables';
 import {
   AcoProductData,
   GrnReportPageData,
@@ -34,8 +33,8 @@ export async function exportAcoReport(reportData: AcoProductData[], orderRef: st
     return;
   }
 
-    // Dynamic import ExcelJS
-    const ExcelJS = await import('exceljs');
+  // Dynamic import ExcelJS
+  const ExcelJS = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('ACO Report');
 
@@ -157,7 +156,7 @@ export async function exportAcoReport(reportData: AcoProductData[], orderRef: st
       };
       if (r >= 7) {
         cell.font = { size: 16 };
-        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.alignment = { vertical: 'middle' as const, horizontal: 'center' as const };
       }
     }
   }
@@ -211,34 +210,35 @@ export async function exportGrnReport(data: GrnReportPageData) {
     return;
   }
 
-    // Dynamic import ExcelJS
-    const ExcelJS = await import('exceljs');
+  // Dynamic import ExcelJS
+  const ExcelJS = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('GRN Report');
 
   // Define styles
-  const center: Partial<any> = {
-    horizontal: 'center',
-    vertical: 'middle',
+  const center = {
+    horizontal: 'center' as const,
+    vertical: 'middle' as const,
     wrapText: true,
   };
-  const right: Partial<any> = { horizontal: 'right', vertical: 'middle' };
-  const grayFill: DatabaseRecord = {
-    type: 'pattern',
-    pattern: 'solid',
+  const right = { horizontal: 'right' as const, vertical: 'middle' as const };
+  // Strategy 2: DTO/自定義 type interface - 修復 ExcelJS Fill 類型定義
+  const grayFill = {
+    type: 'pattern' as const,
+    pattern: 'solid' as const,
     fgColor: { argb: 'FFDCDCDC' },
   };
-  const thinBorder: Partial<any> = {
-    top: { style: 'thin' },
-    bottom: { style: 'thin' },
-    left: { style: 'thin' },
-    right: { style: 'thin' },
+  const thinBorder = {
+    top: { style: 'thin' as const },
+    bottom: { style: 'thin' as const },
+    left: { style: 'thin' as const },
+    right: { style: 'thin' as const },
   };
-  const thickBorder: Partial<any> = {
-    top: { style: 'thick' },
-    bottom: { style: 'thick' },
-    left: { style: 'thick' },
-    right: { style: 'thick' },
+  const thickBorder = {
+    top: { style: 'thick' as const },
+    bottom: { style: 'thick' as const },
+    left: { style: 'thick' as const },
+    right: { style: 'thick' as const },
   };
 
   // === Row heights
@@ -308,7 +308,7 @@ export async function exportGrnReport(data: GrnReportPageData) {
     sheet.getCell(`C${i}`).font = { size: 14, bold: true };
     sheet.mergeCells(`D${i}:J${i}`);
     const cell = sheet.getCell(`D${i}`);
-    cell.border = { bottom: { style: 'thin' } };
+    cell.border = { bottom: { style: 'thin' as const } };
     cell.alignment = center;
     cell.font = { size: i === 3 ? 12 : 14 };
   }
@@ -316,7 +316,7 @@ export async function exportGrnReport(data: GrnReportPageData) {
   for (let i = 4; i <= 6; i++) {
     sheet.mergeCells(`S${i}:T${i}`);
     const cell = sheet.getCell(`S${i}`);
-    cell.border = { bottom: { style: 'thin' } };
+    cell.border = { bottom: { style: 'thin' as const } };
     cell.alignment = center;
     cell.font = { size: 16 };
   }
@@ -367,7 +367,7 @@ export async function exportGrnReport(data: GrnReportPageData) {
     const cell = sheet.getCell(`L${row}`);
     cell.value = label;
     cell.font = { bold: true };
-    cell.alignment = { horizontal: 'right', vertical: 'middle' };
+    cell.alignment = { horizontal: 'right' as const, vertical: 'middle' as const };
     for (let c = 14; c <= 20; c++) {
       sheet.getCell(row, c).border = thickBorder;
     }
@@ -397,7 +397,7 @@ export async function exportGrnReport(data: GrnReportPageData) {
         // Check individual border sides if necessary for more complex scenarios
         let applyThin = true;
         if (cell.border) {
-          const currentBorder = cell.border as any;
+          const currentBorder = cell.border as Record<string, Record<string, unknown>>;
           if (
             currentBorder.top?.style === 'thick' &&
             currentBorder.bottom?.style === 'thick' &&
@@ -547,7 +547,7 @@ export async function exportGrnReport(data: GrnReportPageData) {
   // Sheet Font
   sheet.eachRow(row => {
     row.eachCell(cell => {
-      const originalFont = cell.font || {};
+      const originalFont = cell.font || ({} as any);
       cell.font = {
         ...originalFont,
         name: 'Aptos Narrow',
@@ -665,8 +665,8 @@ function getPackageColumn(packageType: string | null): string | null {
 // ... existing code ...
 
 export async function buildTransactionReport(reportData?: TransactionReportData): Promise<Buffer> {
-    // Dynamic import ExcelJS
-    const ExcelJS = await import('exceljs');
+  // Dynamic import ExcelJS
+  const ExcelJS = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Transaction Report');
 
@@ -678,7 +678,7 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
     for (let col = 1; col <= 34; col++) {
       const cell = excelRow.getCell(col);
       cell.font = { name: 'Arial', size: 16 };
-      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.alignment = { vertical: 'middle' as const, horizontal: 'center' as const };
     }
   }
 
@@ -710,10 +710,10 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
     const cell = worksheet.getCell(addr);
     cell.font = { size: 20, bold: true };
     cell.border = {
-      top: { style: 'thin' },
-      left: { style: 'thin' },
-      right: { style: 'thin' },
-      bottom: { style: 'thin' },
+      top: { style: 'thin' as const },
+      left: { style: 'thin' as const },
+      right: { style: 'thin' as const },
+      bottom: { style: 'thin' as const },
     };
   });
 
@@ -731,10 +731,10 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
         const cell = worksheet.getRow(4).getCell(col);
         cell.alignment = { textRotation: 90, vertical: 'bottom' };
         cell.border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          right: { style: 'thin' },
-          bottom: { style: 'thin' },
+          top: { style: 'thin' as const },
+          left: { style: 'thin' as const },
+          right: { style: 'thin' as const },
+          bottom: { style: 'thin' as const },
         };
       }
     } else {
@@ -800,7 +800,7 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
     });
 
     // 🆕 去重並填充數據
-    const uniqueTransfers = new Map<string, any>();
+    const uniqueTransfers = new Map<string, Record<string, unknown>>();
 
     reportData.transfers.forEach(transfer => {
       // 🆕 處理 f_loc 為 "Await" 或 "await_grn" 的特殊條件
@@ -829,7 +829,7 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
       const row = worksheet.getRow(currentRow);
 
       // 根據處理後的 from_location 在 B-L 欄位標記（藍色 ✓）
-      const fromIndex = locations.indexOf(transfer.actualFromLocation);
+      const fromIndex = locations.indexOf(transfer.actualFromLocation as string);
       if (fromIndex >= 0) {
         const fromCol = 2 + fromIndex * 2; // B, D, F, H, J, L
         row.getCell(fromCol).value = '✓';
@@ -839,11 +839,11 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
       // 根據 to_location 在 N-X 欄位標記（綠色 ✓）
       // 處理 PipeLine -> Pipe Extrusion 的映射
       let actualToLocation = transfer.to_location;
-      if (transfer.to_location.toLowerCase() === 'pipeline') {
+      if ((transfer.to_location as string).toLowerCase() === 'pipeline') {
         actualToLocation = 'Pipe Extrusion';
       }
 
-      const toIndex = locations.indexOf(actualToLocation);
+      const toIndex = locations.indexOf(actualToLocation as string);
       if (toIndex >= 0) {
         const toCol = 14 + toIndex * 2; // N, P, R, T, V, X
         row.getCell(toCol).value = '✓';
@@ -851,10 +851,10 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
       }
 
       // 填充產品資訊
-      row.getCell('Z').value = transfer.product_code; // Product Code
-      row.getCell('AB').value = transfer.quantity; // Qty
+      row.getCell('Z').value = String(transfer.product_code); // Product Code
+      row.getCell('AB').value = Number(transfer.quantity); // Qty
       row.getCell('AB').font = { size: 14 };
-      row.getCell('AD').value = transfer.totalPallets; // 🆕 相同條件的總板數
+      row.getCell('AD').value = Number(transfer.totalPallets); // 🆕 相同條件的總板數
       row.getCell('AD').font = { size: 14 };
       // AF 欄位留空（Pallet Reference No）
 
@@ -896,10 +896,10 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
     cols.forEach(letter => {
       const cell = worksheet.getCell(`${letter}${i}`);
       cell.border = {
-        top: { style: 'thin' },
-        left: { style: 'thin' },
-        right: { style: 'thin' },
-        bottom: { style: 'thin' },
+        top: { style: 'thin' as const },
+        left: { style: 'thin' as const },
+        right: { style: 'thin' as const },
+        bottom: { style: 'thin' as const },
       };
     });
   }

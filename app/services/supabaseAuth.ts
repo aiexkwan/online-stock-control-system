@@ -6,7 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'; // 只導入類型
 import { createClient as createServerSupabaseClient } from '@/app/utils/supabase/server'; // 新的服務器客戶端
 
 import bcrypt from 'bcryptjs';
-import { getErrorMessage } from '../../lib/types/error-handling';
+import { getErrorMessage } from '@/types/core/error';
 import { UserData } from './auth';
 import { clockNumberToEmail, emailToClockNumber } from '../utils/authUtils';
 
@@ -111,14 +111,20 @@ export async function migrateUserToSupabaseAuth(
     });
 
     if (createError) {
-      return { success: false, error: `Failed to create auth user: ${getErrorMessage(createError)}` };
+      return {
+        success: false,
+        error: `Failed to create auth user: ${getErrorMessage(createError)}`,
+      };
     }
     if (!authData || !authData.user) {
       return { success: false, error: 'User creation response did not include user data' };
     }
     return { success: true };
   } catch (error: unknown) {
-    return { success: false, error: `Migration failed: ${getErrorMessage(error) || 'Unknown error'}` };
+    return {
+      success: false,
+      error: `Migration failed: ${getErrorMessage(error) || 'Unknown error'}`,
+    };
   }
 }
 
@@ -185,7 +191,7 @@ export async function signInWithSupabaseAuth(
     }
 
     const { user: authUser, session } = data;
-    const metadata = authUser.user_metadata || {};
+    const metadata = authUser.user_metadata || ({} as any);
 
     (process.env.NODE_ENV as string) !== 'production' &&
       (process.env.NODE_ENV as string) !== 'production' &&
@@ -227,11 +233,23 @@ export async function signInWithSupabaseAuth(
       return { success: false, error: 'Failed to establish session' };
     }
 
+    // 策略2: DTO/自定義 type interface - 轉換 Session 格式
+    const sessionInfo = sessionData.session
+      ? {
+          access_token: sessionData.session.access_token,
+          refresh_token: sessionData.session.refresh_token,
+          expires_in: sessionData.session.expires_in,
+          expires_at: sessionData.session.expires_at,
+          token_type: sessionData.session.token_type,
+          user: userData,
+        }
+      : undefined;
+
     return {
       success: true,
       user: userData,
       isFirstLogin: needsPasswordChange,
-      session: sessionData.session,
+      session: sessionInfo,
     };
   } catch (error: unknown) {
     console.error('[signInWithSupabaseAuth] Unexpected error:', error);
@@ -325,7 +343,7 @@ export async function updatePasswordWithSupabaseAuth(
  * If a SupabaseClient instance is provided, it will be used; otherwise, a new server client is created.
  */
 export async function signOut(supabaseInstance?: SupabaseClient): Promise<void> {
-  const supabase = supabaseInstance || await createServerSupabaseClient();
+  const supabase = supabaseInstance || (await createServerSupabaseClient());
   const { error } = await supabase.auth.signOut();
   if (error) {
     console.error('[signOut] Error signing out:', error);

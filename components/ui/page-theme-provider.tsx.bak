@@ -1,0 +1,123 @@
+/**
+ * Page Theme Provider
+ * 統一主題提供者組件，為普通頁面提供一致嘅主題體驗
+ */
+
+'use client';
+
+import React, { createContext, useContext, useMemo } from 'react';
+import {
+  PAGE_THEME,
+  PageType,
+  getPageTheme,
+  getPageColors,
+  generateCSSVariables,
+} from '@/config/page-theme';
+
+interface PageThemeContextValue {
+  pageType: PageType;
+  theme: (typeof PAGE_THEME.pages)[PageType];
+  colors: ReturnType<typeof getPageColors>;
+  spotlightEnabled: boolean;
+  enableSpotlight: (enabled: boolean) => void;
+}
+
+const PageThemeContext = createContext<PageThemeContextValue | undefined>(undefined);
+
+interface PageThemeProviderProps {
+  children: React.ReactNode;
+  pageType: PageType;
+  enableSpotlight?: boolean;
+}
+
+export function PageThemeProvider({
+  children,
+  pageType,
+  enableSpotlight: initialSpotlight = false,
+}: PageThemeProviderProps) {
+  const [spotlightEnabled, setSpotlightEnabled] = React.useState(initialSpotlight);
+
+  const theme = useMemo(() => getPageTheme(pageType), [pageType]);
+  const colors = useMemo(() => getPageColors(pageType), [pageType]);
+  const cssVariables = useMemo(() => generateCSSVariables(pageType), [pageType]);
+
+  const value = useMemo(
+    () => ({
+      pageType,
+      theme,
+      colors,
+      spotlightEnabled,
+      enableSpotlight: setSpotlightEnabled,
+    }),
+    [pageType, theme, colors, spotlightEnabled]
+  );
+
+  return (
+    <PageThemeContext.Provider value={value}>
+      <div
+        style={cssVariables}
+        className='min-h-screen bg-[var(--color-bg-primary)] text-[var(--color-text-primary)]'
+      >
+        {children}
+      </div>
+    </PageThemeContext.Provider>
+  );
+}
+
+export function usePageTheme() {
+  const context = useContext(PageThemeContext);
+  if (context === undefined) {
+    throw new Error('usePageTheme must be used within a PageThemeProvider');
+  }
+  return context;
+}
+
+// 便利 Hook - 獲取當前頁面嘅 spotlight 配置
+export function useSpotlightConfig() {
+  const { theme, spotlightEnabled } = usePageTheme();
+
+  return {
+    enabled: spotlightEnabled && PAGE_THEME.effects.spotlight.enabled,
+    color: theme.spotlightColor,
+    intensity: PAGE_THEME.effects.spotlight.intensity,
+    size: PAGE_THEME.effects.spotlight.size,
+  };
+}
+
+// Themed Card Component - 整合主題嘅 Card 組件
+interface ThemedCardProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: 'default' | 'highlight' | 'error' | 'success' | 'warning';
+  spotlight?: boolean;
+  children: React.ReactNode;
+}
+
+export function ThemedCard({
+  variant = 'default',
+  spotlight: forceSpotlight,
+  className = '',
+  children,
+  ...props
+}: ThemedCardProps) {
+  const { colors, theme } = usePageTheme();
+  const spotlightConfig = useSpotlightConfig();
+
+  const shouldUseSpotlight = forceSpotlight ?? spotlightConfig.enabled;
+
+  const variantStyles = {
+    default: 'bg-[var(--color-bg-secondary)] border-[var(--color-border-default)]',
+    highlight: `bg-${theme.primaryColor}/10 border-${theme.primaryColor}`,
+    error: 'bg-red-500/10 border-red-500',
+    success: 'bg-green-500/10 border-green-500',
+    warning: 'bg-amber-500/10 border-amber-500',
+  };
+
+  return (
+    <div
+      className={`rounded-xl border ${variantStyles[variant]} ${className}`}
+      data-spotlight={shouldUseSpotlight ? theme.spotlightColor : undefined}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}

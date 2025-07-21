@@ -9,7 +9,7 @@ jest.mock('../FeatureFlagManager', () => ({
   featureFlagManager: {
     evaluate: jest.fn(),
     evaluateAll: jest.fn(),
-    getMergedContext: jest.fn((context) => context || {}),
+    getMergedContext: jest.fn((context) => context || ({} as any)),
     subscribe: jest.fn(() => () => {}),
     toggleFlag: jest.fn()
   }
@@ -21,7 +21,7 @@ describe('Feature Flag Hooks', () => {
     // Reset the evaluate mock to prevent infinite loops
     (featureFlagManager.evaluate as jest.Mock).mockReset();
     (featureFlagManager.evaluateAll as jest.Mock).mockReset();
-    (featureFlagManager.getMergedContext as jest.Mock).mockImplementation((context) => context || {});
+    (featureFlagManager.getMergedContext as jest.Mock).mockImplementation((context) => context || ({} as any));
     (featureFlagManager.subscribe as jest.Mock).mockImplementation(() => jest.fn());
   });
 
@@ -67,7 +67,7 @@ describe('Feature Flag Hooks', () => {
 
     it('should use provided context', async () => {
       const context = { userId: 'user123', userGroups: ['beta'] };
-      
+
       renderHook(() => useFeatureFlag('test-flag', context));
 
       await waitFor(() => {
@@ -133,7 +133,7 @@ describe('Feature Flag Hooks', () => {
           return Promise.resolve(mockEvaluations[key as keyof typeof mockEvaluations]);
         });
 
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useFeatureFlags(['flag1', 'flag2'])
       );
 
@@ -149,7 +149,7 @@ describe('Feature Flag Hooks', () => {
       // Skip this test for now as it has dependency loop issues
       const error = new Error('Flag not found');
       let callCount = 0;
-      
+
       (featureFlagManager.evaluate as jest.Mock)
         .mockImplementation(() => {
           callCount++;
@@ -160,7 +160,7 @@ describe('Feature Flag Hooks', () => {
           }
         });
 
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useFeatureFlags(['flag1', 'flag2'])
       );
 
@@ -197,7 +197,7 @@ describe('Feature Flag Hooks', () => {
 
     it('should use provided context', async () => {
       const context = { environment: 'staging' as const };
-      
+
       renderHook(() => useAllFeatureFlags(context));
 
       await waitFor(() => {

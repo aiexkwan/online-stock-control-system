@@ -1,5 +1,5 @@
 import { createClient } from '@/app/utils/supabase/client';
-import { getErrorMessage } from '../../lib/types/error-handling';
+import { getErrorMessage } from '@/types/core/error';
 import { toast } from 'sonner';
 
 // 統一的托盤信息類型

@@ -1,0 +1,250 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
+import request from 'supertest';
+import { AppModule } from '../../src/app.module';
+import { TestHelpers } from '../test-helpers';
+
+describe('New Widgets Endpoints (E2E)', () => {
+  let app: INestApplication;
+  let authToken: string;
+
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+
+    // Apply same configuration as main.ts
+    app.setGlobalPrefix('api/v1');
+    app.enableCors({
+      origin: '*',
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+    });
+
+    await app.init();
+
+    // Get valid JWT token for testing using real login
+    authToken = await TestHelpers.loginAndGetToken(app);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  describe('Top Products By Quantity Endpoint', () => {
+    it('should return top products by quantity with default params', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/widgets/top-products-by-quantity')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('products');
+      expect(response.body).toHaveProperty('metadata');
+      expect(response.body).toHaveProperty('timestamp');
+      expect(Array.isArray(response.body.products)).toBe(true);
+      expect(response.body.metadata).toHaveProperty('total_products');
+      expect(response.body.metadata).toHaveProperty('execution_time_ms');
+    });
+
+    it('should accept limit parameter', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/widgets/top-products-by-quantity')
+        .query({ limit: 5 })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.products.length).toBeLessThanOrEqual(5);
+      expect(response.body.metadata.filters).toEqual({});
+    });
+
+    it('should accept sortBy parameter', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/widgets/top-products-by-quantity')
+        .query({ sortBy: 'quantity' })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.metadata.sort_by).toBe('quantity');
+    });
+
+    it('should validate limit parameter', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/widgets/top-products-by-quantity')
+        .query({ limit: 101 })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400);
+    });
+
+    it('should require authentication', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/widgets/top-products-by-quantity')
+        .expect(401);
+    });
+  });
+
+  describe('Production Details Endpoint', () => {
+    const startDate = '2025-07-01T00:00:00Z';
+    const endDate = '2025-07-16T23:59:59Z';
+
+    it('should return production details with date range', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/widgets/production-details')
+        .query({ startDate, endDate })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('details');
+      expect(response.body).toHaveProperty('metadata');
+      expect(response.body).toHaveProperty('timestamp');
+      expect(Array.isArray(response.body.details)).toBe(true);
+      expect(response.body.metadata).toHaveProperty('total_records');
+      expect(response.body.metadata).toHaveProperty('unique_products');
+      expect(response.body.metadata).toHaveProperty('total_quantity');
+    });
+
+    it('should accept limit parameter', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/widgets/production-details')
+        .query({ startDate, endDate, limit: 10 })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.details.length).toBeLessThanOrEqual(10);
+    });
+
+    it('should accept warehouse filter', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/widgets/production-details')
+        .query({ startDate, endDate, warehouse: 'injection' })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.metadata.filters).toHaveProperty('warehouse');
+      expect(response.body.metadata.filters.warehouse).toBe('injection');
+    });
+
+    it('should require start date', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/widgets/production-details')
+        .query({ endDate })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400);
+    });
+
+    it('should require end date', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/widgets/production-details')
+        .query({ startDate })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400);
+    });
+
+    it('should require authentication', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/widgets/production-details')
+        .query({ startDate, endDate })
+        .expect(401);
+    });
+  });
+
+  describe('Staff Workload Endpoint', () => {
+    const startDate = '2025-07-01T00:00:00Z';
+    const endDate = '2025-07-16T23:59:59Z';
+
+    it('should return staff workload analysis', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/widgets/staff-workload')
+        .query({ startDate, endDate })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('workload');
+      expect(response.body).toHaveProperty('summary');
+      expect(response.body).toHaveProperty('metadata');
+      expect(response.body).toHaveProperty('timestamp');
+      expect(Array.isArray(response.body.workload)).toBe(true);
+      expect(response.body.summary).toHaveProperty('total_tasks');
+      expect(response.body.summary).toHaveProperty('avg_tasks_per_day');
+      expect(response.body.summary).toHaveProperty('active_staff_count');
+    });
+
+    it('should accept department filter', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/widgets/staff-workload')
+        .query({ startDate, endDate, department: 'injection' })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.metadata.filters).toHaveProperty('department');
+      expect(response.body.metadata.filters.department).toBe('injection');
+    });
+
+    it('should accept userId filter', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/widgets/staff-workload')
+        .query({ startDate, endDate, userId: 'any-user' })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.metadata.filters).toHaveProperty('userId');
+      expect(response.body.metadata.filters.userId).toBe('any-user');
+      // Should return data even if user doesn't exist (empty array is valid)
+      expect(Array.isArray(response.body.workload)).toBe(true);
+    });
+
+    it('should accept actionType filter', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/widgets/staff-workload')
+        .query({ startDate, endDate, actionType: 'QC passed' })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.metadata.filters).toHaveProperty('actionType');
+      expect(response.body.metadata.filters.actionType).toBe('QC passed');
+    });
+
+    it('should require start date', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/widgets/staff-workload')
+        .query({ endDate })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400);
+    });
+
+    it('should require end date', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/widgets/staff-workload')
+        .query({ startDate })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400);
+    });
+
+    it('should require authentication', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/widgets/staff-workload')
+        .query({ startDate, endDate })
+        .expect(401);
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle invalid date formats in production details', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/widgets/production-details')
+        .query({ startDate: 'invalid-date', endDate: '2025-07-16T23:59:59Z' })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(500); // API returns 500 for invalid dates (database error)
+    });
+
+    it('should handle invalid date formats in staff workload', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/widgets/staff-workload')
+        .query({ startDate: 'invalid-date', endDate: '2025-07-16T23:59:59Z' })
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(500); // API returns 500 for invalid dates (database error)
+    });
+  });
+});

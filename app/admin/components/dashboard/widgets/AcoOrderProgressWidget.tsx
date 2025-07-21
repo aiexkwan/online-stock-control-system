@@ -14,7 +14,7 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { ClipboardDocumentListIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
-import { WidgetComponentProps } from '@/app/types/dashboard';
+import { WidgetComponentProps } from '@/types/components/dashboard';
 import { useWidgetToast } from '@/app/admin/hooks/useWidgetToast';
 import { WidgetStyles } from '@/app/utils/widgetStyles';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -84,15 +84,15 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
     const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
     const response = await fetch(url, {
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
     });
-    
+
     if (!response.ok) {
       throw new Error(`API Error: ${response.status}`);
     }
-    
+
     return response.json();
   };
 
@@ -101,16 +101,16 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
     data: cardsData,
     error,
     isLoading,
-    mutate
+    mutate,
   } = useSWR<AcoOrderProgressResponse>(
     !isEditMode ? '/api/v1/analysis/aco-order-progress-cards' : null,
     fetcher,
     {
       refreshInterval: 300000, // 5 minutes
       revalidateOnFocus: false,
-      onError: (error) => {
+      onError: error => {
         showError('Failed to load ACO order progress', error);
-      }
+      },
     }
   );
 
@@ -122,7 +122,7 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
 
   // Create mock incomplete orders for dropdown (this should come from a separate endpoint)
   const incompleteOrders = useMemo(() => {
-    // This is temporary mock data - in a real implementation, 
+    // This is temporary mock data - in a real implementation,
     // this would come from a separate endpoint like /api/v1/orders/aco?status=incomplete
     return [
       {
@@ -132,7 +132,7 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
         total_finished: 375,
         total_remaining: 125,
         product_count: 5,
-        completion_percentage: 75
+        completion_percentage: 75,
       },
       {
         order_ref: 1002,
@@ -141,11 +141,10 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
         total_finished: 180,
         total_remaining: 120,
         product_count: 3,
-        completion_percentage: 60
-      }
+        completion_percentage: 60,
+      },
     ];
   }, []);
-
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -202,7 +201,7 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
       const interval = setInterval(() => {
         mutate();
       }, 300000); // 5 minutes
-      
+
       return () => clearInterval(interval);
     }
   }, [isEditMode, isLoading, error, mutate]);
@@ -293,9 +292,11 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <WidgetSkeleton type="stats" />
+          <WidgetSkeleton type='stats' />
         ) : error ? (
-          <div className='text-sm text-red-400'>{typeof error === 'string' ? error : 'Failed to load data'}</div>
+          <div className='text-sm text-red-400'>
+            {typeof error === 'string' ? error : 'Failed to load data'}
+          </div>
         ) : progressCards.length === 0 ? (
           <div className='py-12 text-center'>
             <ClipboardDocumentListIcon className='mx-auto mb-4 h-16 w-16 text-slate-600' />
@@ -316,11 +317,17 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
                       {card.value}
                     </span>
                     {card.trend && (
-                      <span className={`text-xs ${
-                        card.trend === 'up' ? 'text-green-400' : 
-                        card.trend === 'down' ? 'text-red-400' : 'text-gray-400'
-                      }`}>
-                        {card.percentageChange !== undefined && `${card.percentageChange > 0 ? '+' : ''}${card.percentageChange.toFixed(1)}%`}
+                      <span
+                        className={`text-xs ${
+                          card.trend === 'up'
+                            ? 'text-green-400'
+                            : card.trend === 'down'
+                              ? 'text-red-400'
+                              : 'text-gray-400'
+                        }`}
+                      >
+                        {card.percentageChange !== undefined &&
+                          `${card.percentageChange > 0 ? '+' : ''}${card.percentageChange.toFixed(1)}%`}
                       </span>
                     )}
                   </div>
@@ -328,10 +335,15 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
                 {card.previousValue !== undefined && (
                   <div className='flex items-center justify-between text-xs text-slate-400'>
                     <span>Previous: {card.previousValue}</span>
-                    <span className={`${
-                      card.trend === 'up' ? 'text-green-400' : 
-                      card.trend === 'down' ? 'text-red-400' : 'text-gray-400'
-                    }`}>
+                    <span
+                      className={`${
+                        card.trend === 'up'
+                          ? 'text-green-400'
+                          : card.trend === 'down'
+                            ? 'text-red-400'
+                            : 'text-gray-400'
+                      }`}
+                    >
                       {card.trend === 'up' ? '↗' : card.trend === 'down' ? '↘' : '→'}
                     </span>
                   </div>
@@ -339,9 +351,9 @@ export const AcoOrderProgressWidget = React.memo(function AcoOrderProgressWidget
               </div>
             ))}
             {cardsData?.metadata && (
-              <div className='mt-4 pt-4 border-t border-slate-600/30'>
+              <div className='mt-4 border-t border-slate-600/30 pt-4'>
                 <WidgetLabel size='xs' glow='subtle' className='text-[10px]'>
-                  Last updated: {format(new Date(cardsData.lastUpdated), 'MMM dd, HH:mm')} • {cardsData.dateRange}
+                  Last updated: {format(new Date(), 'HH:mm')} • {cardsData.dateRange}
                 </WidgetLabel>
               </div>
             )}

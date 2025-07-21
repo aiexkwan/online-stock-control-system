@@ -14,7 +14,7 @@ SELECT get_aco_order_details('', NULL);
 SELECT get_aco_order_details('YOUR_PRODUCT_CODE_HERE', '99999');
 
 -- Example to check actual data in record_aco table
--- SELECT order_ref, code, finished_qty, required_qty 
--- FROM record_aco 
+-- SELECT order_ref, code, finished_qty, required_qty
+-- FROM record_aco
 -- WHERE code = 'YOUR_PRODUCT_CODE_HERE'
 -- ORDER BY order_ref;

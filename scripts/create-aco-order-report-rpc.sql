@@ -17,10 +17,10 @@ DECLARE
     v_start_time TIMESTAMP;
 BEGIN
     v_start_time := clock_timestamp();
-    
+
     -- Step 1: Get products and required quantities from record_aco
     WITH aco_products AS (
-        SELECT DISTINCT 
+        SELECT DISTINCT
             code AS product_code,
             FIRST_VALUE(required_qty) OVER (PARTITION BY code ORDER BY latest_update DESC) AS required_qty
         FROM record_aco
@@ -30,7 +30,7 @@ BEGIN
     ),
     -- Step 2: Get pallet information for each product
     product_pallets AS (
-        SELECT 
+        SELECT
             ap.product_code,
             ap.required_qty,
             COALESCE(
@@ -65,7 +65,7 @@ BEGIN
     FROM product_pallets
     LIMIT p_limit
     OFFSET p_offset;
-    
+
     -- Build metadata
     v_metadata := jsonb_build_object(
         'orderRef', p_order_ref,
@@ -85,13 +85,13 @@ BEGIN
         'performanceMs', EXTRACT(MILLISECONDS FROM (clock_timestamp() - v_start_time))::INTEGER,
         'optimized', true
     );
-    
+
     -- Build final result
     v_result := jsonb_build_object(
         'products', COALESCE(v_products, '[]'::jsonb),
         'metadata', v_metadata
     );
-    
+
     RETURN v_result;
 END;
 $$;
@@ -119,7 +119,7 @@ DECLARE
     v_start_time TIMESTAMP;
 BEGIN
     v_start_time := clock_timestamp();
-    
+
     -- Get unique order refs
     WITH unique_refs AS (
         SELECT DISTINCT order_ref
@@ -131,7 +131,7 @@ BEGIN
     )
     SELECT jsonb_agg(order_ref::TEXT ORDER BY order_ref DESC) INTO v_refs
     FROM unique_refs;
-    
+
     -- Build metadata
     v_metadata := jsonb_build_object(
         'totalCount', (SELECT COUNT(DISTINCT order_ref) FROM record_aco WHERE order_ref IS NOT NULL),
@@ -142,13 +142,13 @@ BEGIN
         'performanceMs', EXTRACT(MILLISECONDS FROM (clock_timestamp() - v_start_time))::INTEGER,
         'optimized', true
     );
-    
+
     -- Build final result
     v_result := jsonb_build_object(
         'orderRefs', COALESCE(v_refs, '[]'::jsonb),
         'metadata', v_metadata
     );
-    
+
     RETURN v_result;
 END;
 $$;

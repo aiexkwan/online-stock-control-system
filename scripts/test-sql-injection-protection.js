@@ -3,7 +3,7 @@
 /**
  * SQL Injection Protection Test Script
  * 測試 execute_sql_query RPC 函數的 SQL 注入保護機制
- * 
+ *
  * 這個腳本會測試多種 SQL 注入攻擊向量來確保安全措施有效
  */
 
@@ -26,7 +26,7 @@ const supabase = createClient(
 // 測試用例類型
 const TEST_CATEGORIES = {
   DML_INJECTION: 'DML Statement Injection',
-  DDL_INJECTION: 'DDL Statement Injection', 
+  DDL_INJECTION: 'DDL Statement Injection',
   SYSTEM_ACCESS: 'System Table Access',
   MULTIPLE_STATEMENTS: 'Multiple Statement Execution',
   COMMENT_BYPASS: 'Comment Bypass Attempts',
@@ -220,7 +220,7 @@ const LEGITIMATE_TEST_CASES = [
   {
     name: '窗口函數查詢',
     query: `
-      SELECT 
+      SELECT
         plt_num,
         product_code,
         ROW_NUMBER() OVER (PARTITION BY product_code ORDER BY latest_update DESC) as rn
@@ -236,7 +236,7 @@ const LEGITIMATE_TEST_CASES = [
  */
 async function runTestCase(testCase, isLegitimate = false) {
   const startTime = Date.now();
-  
+
   try {
     const { data, error } = await supabase.rpc('execute_sql_query', {
       query_text: testCase.query
@@ -257,14 +257,14 @@ async function runTestCase(testCase, isLegitimate = false) {
       // 惡意查詢測試
       const blocked = !!error;
       const correctlyBlocked = testCase.expectedBlocked ? blocked : !blocked;
-      
+
       return {
         ...testCase,
         blocked,
         correctlyBlocked,
         actualError: error?.message || null,
         expectedError: testCase.expectedError,
-        errorMatch: testCase.expectedError ? 
+        errorMatch: testCase.expectedError ?
           (error?.message?.includes(testCase.expectedError) || false) : true,
         executionTime,
         securityStatus: correctlyBlocked ? '✅ SECURE' : '❌ VULNERABLE'
@@ -287,7 +287,7 @@ async function runTestCase(testCase, isLegitimate = false) {
  */
 async function runMaliciousTests() {
   console.log('🔒 開始 SQL 注入保護測試...\n');
-  
+
   const results = {};
   let totalTests = 0;
   let passedTests = 0;
@@ -297,15 +297,15 @@ async function runMaliciousTests() {
   for (const category of Object.values(TEST_CATEGORIES)) {
     const categoryTests = MALICIOUS_TEST_CASES.filter(test => test.category === category);
     results[category] = [];
-    
+
     console.log(`📂 ${category}:`);
     console.log('─'.repeat(60));
-    
+
     for (const testCase of categoryTests) {
       const result = await runTestCase(testCase);
       results[category].push(result);
       totalTests++;
-      
+
       if (result.correctlyBlocked) {
         passedTests++;
         console.log(`  ✅ ${result.name}: ${result.securityStatus}`);
@@ -318,11 +318,11 @@ async function runMaliciousTests() {
         }
         vulnerabilities.push(result);
       }
-      
+
       // 延遲避免過於頻繁的請求
       await new Promise(resolve => setTimeout(resolve, 100));
     }
-    
+
     console.log('');
   }
 
@@ -334,7 +334,7 @@ async function runMaliciousTests() {
  */
 async function runLegitimateTests() {
   console.log('✅ 測試合法查詢（確保不會誤判）...\n');
-  
+
   const results = [];
   let totalTests = 0;
   let passedTests = 0;
@@ -343,7 +343,7 @@ async function runLegitimateTests() {
     const result = await runTestCase(testCase, true);
     results.push(result);
     totalTests++;
-    
+
     if (result.passed) {
       passedTests++;
       console.log(`  ✅ ${result.name}: 通過 (${result.executionTime}ms)`);
@@ -356,7 +356,7 @@ async function runLegitimateTests() {
         console.log(`     錯誤: ${result.error}`);
       }
     }
-    
+
     await new Promise(resolve => setTimeout(resolve, 100));
   }
 
@@ -370,19 +370,19 @@ async function runLegitimateTests() {
 function generateReport(maliciousResults, legitimateResults) {
   console.log('📊 SQL 注入保護測試報告');
   console.log('='.repeat(80));
-  
+
   // 總體安全分數
   const totalSecurityTests = maliciousResults.totalTests;
   const passedSecurityTests = maliciousResults.passedTests;
   const securityScore = ((passedSecurityTests / totalSecurityTests) * 100).toFixed(1);
-  
+
   const totalLegitimateTests = legitimateResults.totalTests;
   const passedLegitimateTests = legitimateResults.passedTests;
   const functionalityScore = ((passedLegitimateTests / totalLegitimateTests) * 100).toFixed(1);
-  
+
   console.log(`\n🛡️ 安全性評分: ${securityScore}% (${passedSecurityTests}/${totalSecurityTests} 通過)`);
   console.log(`⚡ 功能性評分: ${functionalityScore}% (${passedLegitimateTests}/${totalLegitimateTests} 通過)`);
-  
+
   // 漏洞詳情
   if (maliciousResults.vulnerabilities.length > 0) {
     console.log('\n❌ 發現的安全漏洞:');
@@ -396,11 +396,11 @@ function generateReport(maliciousResults, legitimateResults) {
   } else {
     console.log('\n🎉 未發現安全漏洞！');
   }
-  
+
   // 建議
   console.log('\n💡 安全建議:');
   console.log('─'.repeat(40));
-  
+
   if (securityScore < 100) {
     console.log('⚠️ 建議加強以下安全措施:');
     console.log('   1. 檢查 execute_sql_query 函數的關鍵字過濾');
@@ -409,13 +409,13 @@ function generateReport(maliciousResults, legitimateResults) {
   } else {
     console.log('✅ SQL 注入保護機制運作良好');
   }
-  
+
   if (functionalityScore < 100) {
     console.log('⚠️ 某些合法查詢被誤判，建議:');
     console.log('   1. 檢查安全規則是否過於嚴格');
     console.log('   2. 優化關鍵字檢測邏輯');
   }
-  
+
   console.log('\n📋 測試完成時間:', new Date().toISOString());
 }
 
@@ -432,13 +432,13 @@ async function main() {
   try {
     // 運行惡意查詢測試
     const maliciousResults = await runMaliciousTests();
-    
+
     // 運行合法查詢測試
     const legitimateResults = await runLegitimateTests();
-    
+
     // 生成報告
     generateReport(maliciousResults, legitimateResults);
-    
+
   } catch (error) {
     console.error('❌ 測試執行失敗:', error.message);
     console.error('請檢查:');

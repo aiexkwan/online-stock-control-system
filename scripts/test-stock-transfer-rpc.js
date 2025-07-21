@@ -20,7 +20,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 async function testSearchPallet() {
   console.log('\n📦 Testing search_pallet_info RPC...');
-  
+
   try {
     const { data, error } = await supabase.rpc('search_pallet_info', {
       p_search_type: 'pallet_num',
@@ -47,7 +47,7 @@ async function testSearchPallet() {
 
 async function testStockTransfer() {
   console.log('\n🚀 Testing execute_stock_transfer RPC...');
-  
+
   try {
     // 先搜尋托盤資訊
     const searchResult = await supabase.rpc('search_pallet_info', {
@@ -93,7 +93,7 @@ async function testStockTransfer() {
 
 async function checkReportLog() {
   console.log('\n📊 Checking report_log...');
-  
+
   try {
     const { data, error } = await supabase
       .from('report_log')
@@ -113,7 +113,7 @@ async function checkReportLog() {
       console.log(`${icon} ${log.error}: ${log.error_info}`);
       console.log(`   User: ${log.user_id}, Time: ${new Date(log.time).toLocaleString()}`);
     });
-    
+
     return true;
   } catch (err) {
     console.error('❌ Exception:', err);
@@ -124,7 +124,7 @@ async function checkReportLog() {
 async function runTests() {
   console.log('🧪 Starting Stock Transfer RPC Tests...');
   console.log('================================');
-  
+
   let allPassed = true;
 
   // Test 1: Search Pallet

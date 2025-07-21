@@ -31,7 +31,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const { data: userData, error: userError } = await supabase
       .from('data_id')
       .select('id, name')
-      .eq('email', user.email)
+      .eq('email', user.email || '')
       .single();
 
     if (userError || !userData) {
@@ -106,9 +106,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             { status: 404 }
           );
         }
-        finalStockLevel = latestStock[0].stock_level;
+        finalStockLevel =
+          typeof latestStock[0].stock_level === 'number' ? latestStock[0].stock_level : 0;
       } else {
-        finalStockLevel = stockData[0].stock_level;
+        finalStockLevel =
+          typeof stockData[0].stock_level === 'number' ? stockData[0].stock_level : 0;
       }
 
       remain_qty = finalStockLevel;
@@ -143,7 +145,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         if (insertError) {
           console.error('Failed to create initial record:', insertError);
           return NextResponse.json(
-            { success: false, error: `Failed to create initial record: ${(insertError as { message: string }).message}` },
+            {
+              success: false,
+              error: `Failed to create initial record: ${(insertError as { message: string }).message}`,
+            },
             { status: 500 }
           );
         }
@@ -177,7 +182,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       if (insertError) {
         console.error('Failed to create count record:', insertError);
         return NextResponse.json(
-          { success: false, error: `Failed to create count record: ${(insertError as { message: string }).message}` },
+          {
+            success: false,
+            error: `Failed to create count record: ${(insertError as { message: string }).message}`,
+          },
           { status: 500 }
         );
       }
@@ -232,7 +240,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
       // 獲取最新的 remain_qty
       const latestRecord = existingRecords[0];
-      remain_qty = latestRecord.remain_qty - counted_qty;
+      const currentRemainQty =
+        typeof latestRecord.remain_qty === 'number' ? latestRecord.remain_qty : 0;
+      remain_qty = currentRemainQty - counted_qty;
 
       // 創建新的盤點記錄
       const { error: insertError } = await supabase.from('record_stocktake').insert({

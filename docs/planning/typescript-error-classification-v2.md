@@ -55,7 +55,7 @@
   - ✅ 添加 `Array.isArray()` 類型保護函數
   - ✅ 使用 Strategy 4 (unknown + type narrowing)
 
-- **ask-database/route.ts** (8 錯誤) ✅ **已修復** 
+- **ask-database/route.ts** (8 錯誤) ✅ **已修復**
   - ✅ 創建 `CacheResult` DTO 接口擴展 `QueryResult`
   - ✅ 修復 `ErrorType` 類型斷言，添加安全類型保護
   - ✅ 統一返回對象結構，確保包含 `data`, `executionTime` 屬性
@@ -130,30 +130,30 @@
 #### 🏗️ 建議負責角色：QA 專家 + 代碼品質專家
 - **warehouse/summary test** (1 錯誤) ✅ **已修復**
   - ✅ 修復 `item.location` 索引類型問題：使用 `as string` 類型斷言
-  
+
 - **ErrorBoundary test** (2 錯誤) ✅ **已修復**
   - ✅ 修復 `DatabaseRecord` null 賦值：改為 `DatabaseRecord | null`
   - ✅ 修復 ReactNode 類型：使用安全屬性訪問 `(obj as any)?.nonExistent`
-  
+
 - **layout-compatibility test** (12 錯誤) ✅ **已修復**
   - ✅ 修復 `WidgetLayoutItem` metadata 類型：將 `[key: string]: string | number | boolean` 改為 `unknown`
   - ✅ 解決 `originalConfig` 複雜對象兼容性問題
-  
+
 - **printer-service test** (4 錯誤) ✅ **已修復**
   - ✅ 修復 `job.data` unknown 類型訪問：使用 `(job.data as any).pdfBlob`
   - ✅ 修復 mock 對象屬性訪問問題
-  
+
 - **stock-movement test** (25 錯誤) ✅ **已修復**
   - ✅ 修復 `createMockSupabaseChain` 類型簽名：支持 `DatabaseRecord | DatabaseRecord[]`
   - ✅ 修復 `result.movements[0].users` 類型訪問：使用 `as any` 類型斷言
   - ✅ 修復測試 helper 函數類型兼容性
-  
+
 - **print-template-service test** (43 錯誤) ✅ **已修復**
   - ✅ 修復 `applyTemplate` 參數類型：使用 Strategy 5 (any + 註解)
   - ✅ 修復 `formatted` 對象屬性訪問：統一使用 `(formatted as any).property`
   - ✅ 修復 `PrintType` 枚舉使用：替換為字符串字面量
   - ✅ 批量修復類型不匹配問題，添加 TODO 標記便於未來清理
-  
+
 - **unified-printing-service test** (37 錯誤) ✅ **已修復**
   - ✅ 修復 Mock 對象類型：`mockHAL`, `mockHistoryService`, `mockTemplateService` 使用 `any` 類型
   - ✅ 修復 `PrintType` 枚舉：全部替換為字符串字面量 + `as any` 斷言
@@ -275,7 +275,7 @@ interface FlexibleRecord extends Record<string, unknown> {
 ### 🔧 本次修復使用的策略統計
 #### 核心業務組件修復 (2025-07-19):
 - **Strategy 2 (DTO 模式強化)**: 3 個類型接口擴展
-  - `WorkLevelStats` → 添加基礎屬性 
+  - `WorkLevelStats` → 添加基礎屬性
   - `PerformanceMetrics` → 添加 `fetchTime` 屬性
   - `AdminDashboardContentProps` → 統一 `DashboardBatchQueryData` 類型
 

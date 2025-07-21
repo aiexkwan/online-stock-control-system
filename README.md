@@ -77,7 +77,7 @@ online-stock-control-system/
 ├── components/
 │   ├── ui/                     # UI component library
 │   ├── qr-scanner/             # QR code scanning
-│   └── ... 
+│   └── ...
 ├── docs/                      # Comprehensive documentation
 ├── lib/                       # Utility libraries including widgets config
 ├── supabase/                  # Supabase configurations and migrations
@@ -102,7 +102,7 @@ online-stock-control-system/
    ```bash
    # macOS
    brew install graphicsmagick ghostscript
-   
+
    # Ubuntu/Debian
    sudo apt-get install graphicsmagick ghostscript
    ```
@@ -291,7 +291,7 @@ online-stock-control-system/
 ├── components/
 │   ├── ui/                     # UI組件庫
 │   ├── qr-scanner/             # QR碼掃描
-│   └── ... 
+│   └── ...
 ├── docs/                      # 綜合文檔
 ├── lib/                       # 工具庫包括小部件配置
 ├── supabase/                  # Supabase配置和遷移
@@ -316,7 +316,7 @@ online-stock-control-system/
    ```bash
    # macOS
    brew install graphicsmagick ghostscript
-   
+
    # Ubuntu/Debian
    sudo apt-get install graphicsmagick ghostscript
    ```

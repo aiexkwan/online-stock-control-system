@@ -108,8 +108,8 @@ const { data, error } = await supabase
 ### Filter by product type
 ```typescript
 const { data, error } = await supabase
-  .rpc('rpc_get_inventory_ordered_analysis', { 
-    p_product_type: 'Type A' 
+  .rpc('rpc_get_inventory_ordered_analysis', {
+    p_product_type: 'Type A'
   })
 ```
 

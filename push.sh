@@ -18,4 +18,4 @@ git pull --rebase origin main
 # 推送到 GitHub
 git push origin main || git push origin master
 
-echo "✅ 已成功推送更改到 GitHub!" 
+echo "✅ 已成功推送更改到 GitHub!"

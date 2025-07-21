@@ -9,7 +9,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 async function listTables() {
   try {
     console.log('查詢 Supabase 所有表名稱...\n');
-    
+
     const { data, error } = await supabase
       .from('information_schema.tables')
       .select('table_name')
@@ -20,14 +20,14 @@ async function listTables() {
       // 如果上面的方法失敗，試用 RPC
       console.log('使用 RPC 方法查詢...');
       const { data: rpcData, error: rpcError } = await supabase.rpc('get_all_tables');
-      
+
       if (rpcError) {
         console.error('RPC 錯誤:', rpcError);
         // 最後嘗試直接查詢已知的表
         console.log('\n列出已知的表：');
         const knownTables = [
           'users',
-          'products', 
+          'products',
           'suppliers',
           'purchase_order',
           'purchase_order_items',
@@ -56,13 +56,13 @@ async function listTables() {
           'quality_checks',
           'product_categories'
         ];
-        
+
         knownTables.sort().forEach(table => {
           console.log(`- ${table}`);
         });
         return;
       }
-      
+
       console.log('Supabase 表名稱：');
       rpcData.forEach(row => {
         console.log(`- ${row.table_name}`);
@@ -74,7 +74,7 @@ async function listTables() {
     data.forEach(row => {
       console.log(`- ${row.table_name}`);
     });
-    
+
   } catch (err) {
     console.error('錯誤:', err);
   }

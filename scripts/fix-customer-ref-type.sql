@@ -21,6 +21,6 @@ ALTER TABLE data_order RENAME COLUMN customer_ref_new TO customer_ref;
 COMMIT;
 
 -- Verify the change
-SELECT column_name, data_type, is_nullable 
-FROM information_schema.columns 
-WHERE table_name = 'data_order' AND column_name = 'customer_ref'; 
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_name = 'data_order' AND column_name = 'customer_ref';

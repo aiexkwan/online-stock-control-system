@@ -88,15 +88,15 @@ export class OrdersAPI extends DataAccessLayer<OrderSearchParams, OrdersResult> 
     const orderItemsMap = new Map<string, OrderItem[]>();
 
     (data || []).forEach(row => {
-      const orderRef = row.order_ref;
+      const orderRef = String(row.order_ref);
 
       // Initialize order if not exists
       if (!orderMap.has(orderRef)) {
         orderMap.set(orderRef, {
           orderRef,
           status: 'pending',
-          createdAt: row.created_at,
-          updatedAt: row.updated_at || row.created_at,
+          createdAt: String(row.created_at || ''),
+          updatedAt: String(row.created_at || ''),
           totalItems: 0,
           completedItems: 0,
           totalQty: 0,
@@ -110,11 +110,11 @@ export class OrdersAPI extends DataAccessLayer<OrderSearchParams, OrdersResult> 
       const items = orderItemsMap.get(orderRef)!;
 
       // Create order item
-      const orderedQty = parseInt(row.product_qty || '0');
-      const loadedQty = parseInt(row.loaded_qty || '0');
+      const orderedQty = parseInt(String(row.product_qty || '0'));
+      const loadedQty = parseInt(String(row.loaded_qty || '0'));
       const item: OrderItem = {
-        productCode: row.product_code,
-        productDesc: row.product_desc || '',
+        productCode: String(row.product_code || ''),
+        productDesc: String(row.product_desc || ''),
         orderedQty,
         loadedQty,
         remainingQty: orderedQty - loadedQty,

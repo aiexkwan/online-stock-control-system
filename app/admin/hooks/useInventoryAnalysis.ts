@@ -28,7 +28,9 @@ export function useInventoryAnalysis(
   const [data, setData] = useState<InventoryOrderedAnalysisResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [filters, setFilters] = useState<InventoryAnalysisFilters>(options?.initialFilters || {});
+  const [filters, setFilters] = useState<InventoryAnalysisFilters>(
+    options?.initialFilters || ({} as any)
+  );
   const [sortBy, setSortBy] = useState<InventoryAnalysisSortBy>(
     options?.initialSortBy || 'fulfillment_rate'
   );

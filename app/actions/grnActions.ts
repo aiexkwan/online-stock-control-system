@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
-import { getErrorMessage } from '../../lib/types/error-handling';
+import { getErrorMessage } from '@/types/core/error';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import {
@@ -10,6 +10,7 @@ import {
   TransactionOperation,
   TransactionLogEntry,
 } from '@/app/services/transactionLog.service';
+import { SupplierInfo, DatabaseSupplierInfo, convertDatabaseSupplierInfo } from '@/types';
 
 // V6 includes series generation, no need for separate series utils
 
@@ -241,7 +242,7 @@ export async function createGrnDatabaseEntries(
       console.log('[grnActions] 統一 GRN RPC 處理成功:', rpcResult);
 
     // 提取棧板號碼和系列號
-    const data = rpcResult.data || {};
+    const data = rpcResult.data || ({} as any);
     const palletNumber = data.pallet_numbers?.[0] || '';
     const series = data.series?.[0] || '';
 
@@ -391,7 +392,10 @@ export async function createGrnDatabaseEntriesBatch(
 
     if (rpcError) {
       console.error('[grnActions] 統一批量 GRN RPC 調用失敗:', rpcError);
-      return { success: false, error: `Failed to process GRN labels: ${getErrorMessage(rpcError)}` };
+      return {
+        success: false,
+        error: `Failed to process GRN labels: ${getErrorMessage(rpcError)}`,
+      };
     }
 
     if (!rpcResult || !rpcResult.success) {
@@ -405,7 +409,7 @@ export async function createGrnDatabaseEntriesBatch(
 
     // 從 RPC 結果提取數據
     // RPC 返回嘅數據結構係 { success: true, data: { pallet_numbers: [...], series: [...] } }
-    const data = rpcResult.data || {};
+    const data = rpcResult.data || ({} as any);
     const palletNumbers = data.pallet_numbers || [];
     const series = data.series || [];
 
@@ -636,7 +640,10 @@ export async function updatePalletPdfUrl(
     return { success: true };
   } catch (error: unknown) {
     console.error('[grnActions] Unexpected error updating PDF URL:', error);
-    return { success: false, error: `Update PDF URL error: ${getErrorMessage(error) || 'Unknown error'}` };
+    return {
+      success: false,
+      error: `Update PDF URL error: ${getErrorMessage(error) || 'Unknown error'}`,
+    };
   }
 }
 
@@ -681,7 +688,10 @@ export async function uploadPdfToStorage(
       console.error('[grnActions] Supabase Upload Error:', uploadError);
 
       // 檢查是否是 API key 相關錯誤
-      if (getErrorMessage(uploadError) && getErrorMessage(uploadError).toLowerCase().includes('api key')) {
+      if (
+        getErrorMessage(uploadError) &&
+        getErrorMessage(uploadError).toLowerCase().includes('api key')
+      ) {
         console.error('[grnActions] 檢測到 API key 錯誤 - 這可能是環境變數問題');
         return {
           error: `API Key Error: ${getErrorMessage(uploadError)}. 請檢查 SUPABASE_SERVICE_ROLE_KEY 環境變數。`,
@@ -719,12 +729,13 @@ export async function uploadPdfToStorage(
 
 // ===== Supplier Validation Functions =====
 
-export interface SupplierInfo {
+// Legacy interface for backward compatibility
+export interface LegacySupplierInfo {
   supplier_code: string;
   supplier_name: string;
 }
 
-export interface SupplierSuggestion extends SupplierInfo {
+export interface SupplierSuggestion extends LegacySupplierInfo {
   match_type: 'code' | 'name';
   match_score?: number;
 }
@@ -760,9 +771,15 @@ export async function validateSupplierCode(code: string): Promise<{
       };
     }
 
+    // 轉換為統一的 SupplierInfo 格式
+    const supplierInfo = convertDatabaseSupplierInfo({
+      supplier_code: data.supplier_code,
+      supplier_name: data.supplier_name,
+    });
+
     return {
       success: true,
-      data,
+      data: supplierInfo,
     };
   } catch (error) {
     console.error('[grnActions] Error validating supplier:', error);

@@ -1,11 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { DatabaseRecord } from '@/lib/types/database';
+import { DatabaseRecord } from '@/types/database/tables';
 import { UnifiedTableWidgetMockWrapper } from './components/UnifiedTableWidgetMockWrapper';
 import { AdminWidgetConfig } from '@/app/admin/components/dashboard/adminDashboardLayouts';
 import React from 'react';
 
 // Mock 表格數據生成器
-const createMockTableData = (type: 'orders' | 'inventory' | 'transfers' | 'staff' | 'custom', count: number = 5) => {
+const createMockTableData = (
+  type: 'orders' | 'inventory' | 'transfers' | 'staff' | 'custom',
+  count: number = 5
+) => {
   const generateData = (count: number, template: any) => {
     return Array.from({ length: count }, (_, index) => {
       const data = { ...template };
@@ -25,11 +28,11 @@ const createMockTableData = (type: 'orders' | 'inventory' | 'transfers' | 'staff
         order_number: (i: number) => `2025-${String(i + 100)}`,
         customer: (i: number) => `Customer ${String.fromCharCode(65 + (i % 26))}`,
         status: (i: number) => ['Pending', 'Processing', 'Shipped', 'Delivered'][i % 4],
-        date: (i: number) => new Date(2025, 0, i + 1).toISOString().split('T')[0],
+        date: (i: number) => new Date().toISOString(),
         items: (i: number) => Math.floor(Math.random() * 20) + 1,
         total_amount: (i: number) => Math.floor(Math.random() * 5000) + 500,
       });
-      
+
     case 'inventory':
       return generateData(count, {
         id: (i: number) => `ITM-${String(i + 1).padStart(4, '0')}`,
@@ -38,9 +41,9 @@ const createMockTableData = (type: 'orders' | 'inventory' | 'transfers' | 'staff
         category: (i: number) => ['Electronics', 'Machinery', 'Tools', 'Materials'][i % 4],
         quantity: (i: number) => Math.floor(Math.random() * 1000) + 10,
         location: (i: number) => `A${Math.floor(i / 3) + 1}-${(i % 3) + 1}`,
-        last_updated: (i: number) => new Date(2025, 0, 18 - i).toISOString(),
+        last_updated: (i: number) => new Date(),
       });
-      
+
     case 'transfers':
       return generateData(count, {
         id: (i: number) => `TRF-${String(i + 1).padStart(4, '0')}`,
@@ -49,22 +52,24 @@ const createMockTableData = (type: 'orders' | 'inventory' | 'transfers' | 'staff
         product_code: (i: number) => `P${String(i + 2000)}`,
         quantity: (i: number) => Math.floor(Math.random() * 100) + 1,
         status: (i: number) => ['Pending', 'In Progress', 'Completed'][i % 3],
-        created_at: (i: number) => new Date(2025, 0, 18 - i).toISOString(),
+        created_at: (i: number) => new Date(),
         staff_name: (i: number) => `Staff ${String.fromCharCode(65 + (i % 10))}`,
       });
-      
+
     case 'staff':
       return generateData(count, {
         id: (i: number) => `STF-${String(i + 1).padStart(3, '0')}`,
-        staff_name: (i: number) => `${['John', 'Jane', 'Bob', 'Alice', 'Charlie'][i % 5]} ${['Doe', 'Smith', 'Johnson', 'Williams', 'Brown'][Math.floor(i / 5) % 5]}`,
-        department: (i: number) => ['Production', 'Quality Control', 'Warehouse', 'Management'][i % 4],
+        staff_name: (i: number) =>
+          `${['John', 'Jane', 'Bob', 'Alice', 'Charlie'][i % 5]} ${['Doe', 'Smith', 'Johnson', 'Williams', 'Brown'][Math.floor(i / 5) % 5]}`,
+        department: (i: number) =>
+          ['Production', 'Quality Control', 'Warehouse', 'Management'][i % 4],
         shift: (i: number) => ['Morning', 'Afternoon', 'Night'][i % 3],
         tasks_completed: (i: number) => Math.floor(Math.random() * 50) + 10,
         tasks_pending: (i: number) => Math.floor(Math.random() * 20),
         efficiency: (i: number) => Math.floor(Math.random() * 30) + 70,
-        last_active: (i: number) => new Date(Date.now() - (i * 1800000)).toISOString(),
+        last_active: (i: number) => new Date(Date.now() - i * 1800000).toISOString(),
       });
-      
+
     case 'custom':
     default:
       return generateData(count, {
@@ -73,13 +78,18 @@ const createMockTableData = (type: 'orders' | 'inventory' | 'transfers' | 'staff
         value: (i: number) => Math.floor(Math.random() * 1000) + 1,
         category: (i: number) => `Category ${String.fromCharCode(65 + (i % 5))}`,
         active: (i: number) => i % 3 !== 0,
-        created_date: (i: number) => new Date(2025, 0, i + 1).toISOString().split('T')[0],
+        created_date: (i: number) => new Date().toISOString(),
       });
   }
 };
 
 // Mock hook 實現
-const createMockData = (type: 'success' | 'loading' | 'error', dataType: string = 'orders', dataCount: number = 10, overrides: DatabaseRecord = {}) => {
+const createMockData = (
+  type: 'success' | 'loading' | 'error',
+  dataType: string = 'orders',
+  dataCount: number = 10,
+  overrides: DatabaseRecord = {}
+) => {
   switch (type) {
     case 'loading':
       return {
@@ -117,7 +127,9 @@ const createMockData = (type: 'success' | 'loading' | 'error', dataType: string 
             items: createMockTableData('staff', dataCount),
           },
           // Strategy 4: unknown + type narrowing - 安全的對象展開
-          ...(overrides.data && typeof overrides.data === 'object' ? overrides.data as Record<string, unknown> : {}),
+          ...(overrides.data && typeof overrides.data === 'object'
+            ? (overrides.data as Record<string, unknown>)
+            : {}),
         },
         isLoading: false,
         error: null,
@@ -164,8 +176,8 @@ const meta: Meta<typeof UnifiedTableWidgetMockWrapper> = {
     },
   },
   decorators: [
-    (Story) => (
-      <div className="w-[800px] h-[600px] p-4">
+    Story => (
+      <div className='h-[600px] w-[800px] p-4'>
         <Story />
       </div>
     ),
@@ -306,7 +318,8 @@ export const ComplexData: Story = {
               array_field: ['Item 1', 'Item 2', 'Item 3'],
               boolean_field: true,
               date_field: '2025-01-18',
-              long_text: 'This is a very long text field that should be truncated when displayed in the table to ensure good user experience',
+              long_text:
+                'This is a very long text field that should be truncated when displayed in the table to ensure good user experience',
               null_field: null,
               undefined_field: undefined,
             },
@@ -339,9 +352,27 @@ export const NumericFormatting: Story = {
       data: {
         numeric_data: {
           items: [
-            { id: 1, small_number: 42, large_number: 1234567, million_number: 15678234, percentage: 0.856 },
-            { id: 2, small_number: 789, large_number: 9876543, million_number: 87654321, percentage: 0.234 },
-            { id: 3, small_number: 123, large_number: 5555555, million_number: 99999999, percentage: 0.987 },
+            {
+              id: 1,
+              small_number: 42,
+              large_number: 1234567,
+              million_number: 15678234,
+              percentage: 0.856,
+            },
+            {
+              id: 2,
+              small_number: 789,
+              large_number: 9876543,
+              million_number: 87654321,
+              percentage: 0.234,
+            },
+            {
+              id: 3,
+              small_number: 123,
+              large_number: 5555555,
+              million_number: 99999999,
+              percentage: 0.987,
+            },
           ],
         },
       },
@@ -361,9 +392,24 @@ export const DateFormatting: Story = {
       data: {
         date_data: {
           items: [
-            { id: 1, created_date: '2025-01-18', updated_time: 1737139200000, last_accessed: new Date().toISOString() },
-            { id: 2, created_date: '2025-01-17', updated_time: 1737052800000, last_accessed: new Date(Date.now() - 86400000).toISOString() },
-            { id: 3, created_date: '2025-01-16', updated_time: 1736966400000, last_accessed: new Date(Date.now() - 172800000).toISOString() },
+            {
+              id: 1,
+              created_date: '2025-01-18',
+              updated_time: 1737139200000,
+              last_accessed: new Date().toISOString(),
+            },
+            {
+              id: 2,
+              created_date: '2025-01-17',
+              updated_time: 1737052800000,
+              last_accessed: new Date(Date.now() - 86400000).toISOString(),
+            },
+            {
+              id: 3,
+              created_date: '2025-01-16',
+              updated_time: 1736966400000,
+              last_accessed: new Date(Date.now() - 172800000).toISOString(),
+            },
           ],
         },
       },

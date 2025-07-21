@@ -1,11 +1,11 @@
 /**
  * Widget Registry System - Main Entry Point
  * 版本 2.0 - 無破壞性升級
- * 
+ *
  * 策略 4: unknown + type narrowing - 類型安全的統計數據處理
  */
 
-import { safeGet, safeNumber, safeString } from '@/lib/types/supabase-helpers';
+import { safeGet, safeNumber, safeString } from '@/types/database/helpers';
 
 // 導出所有類型
 export * from './types';
@@ -20,7 +20,7 @@ export {
   getGraphQLVersion,
   getPreloadPriority,
   getRoutePreloadWidgets,
-  ROUTE_PRELOAD_MAP as routePreloadMap
+  ROUTE_PRELOAD_MAP as routePreloadMap,
 } from './unified-widget-config';
 
 // 導出布局快照工具
@@ -30,18 +30,18 @@ export {
   validateLayoutSnapshot,
   generateLayoutReport,
   saveLayoutSnapshot,
-  loadLayoutSnapshot
+  loadLayoutSnapshot,
 } from './layout-snapshot';
 
 // 初始化函數
 export async function initializeWidgetRegistry(): Promise<void> {
   console.log('[WidgetRegistry] Initializing Widget Registry System v2.0...');
-  
+
   try {
     // 1. 確保 widget registry 初始化
     const { widgetRegistry } = await import('./unified-registry');
     // autoRegisterWidgets 已移除 - 系統自動從配置初始化
-    
+
     // 2. 載入布局基準（如果存在）
     if (typeof window !== 'undefined') {
       const baselineStr = localStorage.getItem('widget_layout_baseline');
@@ -53,9 +53,9 @@ export async function initializeWidgetRegistry(): Promise<void> {
         }
       }
     }
-    
+
     // 3. 配置雙重加載已移除
-    
+
     console.log('[WidgetRegistry] Initialization completed successfully');
   } catch (error) {
     console.error('[WidgetRegistry] Initialization failed:', error);
@@ -69,13 +69,13 @@ import { useEffect, useState } from 'react';
 export function useWidgetRegistry() {
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  
+
   useEffect(() => {
     initializeWidgetRegistry()
       .then(() => setIsReady(true))
       .catch(setError);
   }, []);
-  
+
   return { isReady, error };
 }
 
@@ -90,7 +90,7 @@ interface WidgetStats {
 
 export function useWidgetPerformance(widgetId?: string) {
   const [stats, setStats] = useState<WidgetStats | null>(null);
-  
+
   useEffect(() => {
     import('./unified-registry').then(({ widgetRegistry }) => {
       const updateStats = () => {
@@ -100,8 +100,8 @@ export function useWidgetPerformance(widgetId?: string) {
           // 策略 4: 類型安全轉換 - 將 WidgetRegistryItem 轉換為 WidgetStats
           if (widgetStat) {
             setStats({
-              loadStatus: safeString(safeGet(widgetStat, 'loadStatus', '')),
-              loadTime: safeNumber(safeGet(widgetStat, 'loadTime', 0))
+              loadStatus: safeString(safeGet(widgetStat, 'loadStatus')),
+              loadTime: safeNumber(safeGet(widgetStat, 'loadTime')),
             });
           } else {
             setStats(null);
@@ -111,24 +111,24 @@ export function useWidgetPerformance(widgetId?: string) {
           const statsArray = Array.from(allStats.values());
           const summary = {
             totalWidgets: allStats.size,
-            loadedWidgets: statsArray.filter((s) => 
-              safeString(safeGet(s, 'loadStatus', '')) === 'loaded'
-            ).length,
-            avgLoadTime: statsArray
-              .filter((s) => safeNumber(safeGet(s, 'loadTime', 0)) > 0)
-              .reduce((sum, s) => sum + safeNumber(safeGet(s, 'loadTime', 0)), 0) / 
-              Math.max(statsArray.length, 1)
+            loadedWidgets: statsArray.filter(s => safeString(safeGet(s, 'loadStatus')) === 'loaded')
+              .length,
+            avgLoadTime:
+              statsArray
+                .filter(s => safeNumber(safeGet(s, 'loadTime')) > 0)
+                .reduce((sum, s) => sum + safeNumber(safeGet(s, 'loadTime')), 0) /
+              Math.max(statsArray.length, 1),
           };
           setStats(summary);
         }
       };
-      
+
       updateStats();
       const interval = setInterval(updateStats, 5000);
-      
+
       return () => clearInterval(interval);
     });
   }, [widgetId]);
-  
+
   return stats;
 }

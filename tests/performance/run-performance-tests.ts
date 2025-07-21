@@ -27,14 +27,28 @@ interface BundleAnalysis {
 interface PerformanceReport {
   timestamp: string;
   bundleAnalysis?: BundleAnalysis;
-  performanceMetrics?: any;
+  performanceMetrics?: {
+    loadTime?: number;
+    renderTime?: number;
+    bundleSize?: number;
+    memoryUsage?: number;
+    summary?: {
+      keyMetrics?: {
+        fcpImprovement?: number;
+        networkRequestsReduction?: number;
+        [key: string]: unknown;
+      };
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
   recommendations: string[];
 }
 
 class PerformanceTestRunner {
   private report: PerformanceReport = {
     timestamp: new Date().toISOString(),
-    recommendations: []
+    recommendations: [],
   };
 
   async run() {
@@ -59,7 +73,6 @@ class PerformanceTestRunner {
       console.log(chalk.gray('  - test-results/performance-report.md'));
       console.log(chalk.gray('  - test-results/bundle-analysis.json'));
       console.log(chalk.gray('  - test-results/comprehensive-performance-report.html\n'));
-
     } catch (error) {
       console.error(chalk.red.bold('\n❌ Performance tests failed:'), error);
       process.exit(1);
@@ -72,11 +85,11 @@ class PerformanceTestRunner {
     try {
       // Clean and build with analysis
       execSync('npm run clean', { stdio: 'inherit' });
-      
+
       // Run analyze command and capture output
-      const output = execSync('ANALYZE=true npm run build', { 
+      const output = execSync('ANALYZE=true npm run build', {
         encoding: 'utf-8',
-        stdio: 'pipe'
+        stdio: 'pipe',
       });
 
       // Parse webpack-bundle-analyzer output
@@ -84,7 +97,9 @@ class PerformanceTestRunner {
       this.report.bundleAnalysis = analysis;
 
       console.log(chalk.green('✓ Bundle analysis completed'));
-      console.log(chalk.gray(`  Total bundle size: ${(analysis.totalSize / 1024 / 1024).toFixed(2)} MB`));
+      console.log(
+        chalk.gray(`  Total bundle size: ${(analysis.totalSize / 1024 / 1024).toFixed(2)} MB`)
+      );
 
       // Add recommendations based on bundle size
       if (analysis.totalSize > 5 * 1024 * 1024) {
@@ -94,10 +109,11 @@ class PerformanceTestRunner {
       // Check for large chunks
       analysis.largestChunks.forEach(chunk => {
         if (chunk.percentage > 20) {
-          this.report.recommendations.push(`Optimize ${chunk.name} - it represents ${chunk.percentage.toFixed(1)}% of total bundle`);
+          this.report.recommendations.push(
+            `Optimize ${chunk.name} - it represents ${chunk.percentage.toFixed(1)}% of total bundle`
+          );
         }
       });
-
     } catch (error) {
       console.error(chalk.red('Bundle analysis failed:'), error);
       throw error;
@@ -108,7 +124,7 @@ class PerformanceTestRunner {
     // 模擬解析 bundle analyzer 輸出
     // 實際實現需要解析 webpack-bundle-analyzer 生成嘅 stats.json
     const statsPath = path.join(process.cwd(), '.next/analyze/client.html');
-    
+
     try {
       // 讀取並解析 bundle stats
       // 呢度簡化處理，實際需要解析 HTML 或 JSON
@@ -117,20 +133,20 @@ class PerformanceTestRunner {
         chunks: [
           { name: 'main', size: 1.2 * 1024 * 1024, modules: 245 },
           { name: 'vendor', size: 2.1 * 1024 * 1024, modules: 89 },
-          { name: 'widgets', size: 0.9 * 1024 * 1024, modules: 67 }
+          { name: 'widgets', size: 0.9 * 1024 * 1024, modules: 67 },
         ],
         largestChunks: [
           { name: 'vendor', size: 2.1 * 1024 * 1024, percentage: 50 },
           { name: 'main', size: 1.2 * 1024 * 1024, percentage: 28.6 },
-          { name: 'widgets', size: 0.9 * 1024 * 1024, percentage: 21.4 }
-        ]
+          { name: 'widgets', size: 0.9 * 1024 * 1024, percentage: 21.4 },
+        ],
       };
     } catch (error) {
       console.warn(chalk.yellow('Could not parse bundle stats, using mock data'));
       return {
         totalSize: 0,
         chunks: [],
-        largestChunks: []
+        largestChunks: [],
       };
     }
   }
@@ -141,17 +157,17 @@ class PerformanceTestRunner {
     try {
       // Check if server is running
       const response = await fetch('http://localhost:3000/api/health').catch(() => null);
-      
+
       if (!response || !response.ok) {
         console.log(chalk.yellow('Starting development server...'));
-        
+
         // Start dev server in background
         const { spawn } = await import('child_process');
         const devServer = spawn('npm', ['run', 'dev'], {
           detached: true,
-          stdio: 'ignore'
+          stdio: 'ignore',
         });
-        
+
         devServer.unref();
 
         // Wait for server to be ready
@@ -187,8 +203,8 @@ class PerformanceTestRunner {
         stdio: 'inherit',
         env: {
           ...process.env,
-          FORCE_COLOR: '1'
-        }
+          FORCE_COLOR: '1',
+        },
       });
 
       // Read generated performance report
@@ -201,14 +217,23 @@ class PerformanceTestRunner {
       // Add recommendations based on metrics
       const summary = this.report.performanceMetrics?.summary;
       if (summary?.keyMetrics) {
-        if (summary.keyMetrics.fcpImprovement < 15) {
-          this.report.recommendations.push('FCP improvement is below target (15%), consider server-side rendering optimizations');
+        if (
+          summary.keyMetrics.fcpImprovement !== undefined &&
+          summary.keyMetrics.fcpImprovement < 15
+        ) {
+          this.report.recommendations.push(
+            'FCP improvement is below target (15%), consider server-side rendering optimizations'
+          );
         }
-        if (summary.keyMetrics.networkRequestsReduction < 40) {
-          this.report.recommendations.push('Network request reduction is below target (40%), implement more aggressive batching');
+        if (
+          summary.keyMetrics.networkRequestsReduction !== undefined &&
+          summary.keyMetrics.networkRequestsReduction < 40
+        ) {
+          this.report.recommendations.push(
+            'Network request reduction is below target (40%), implement more aggressive batching'
+          );
         }
       }
-
     } catch (error) {
       console.error(chalk.red('Performance tests failed:'), error);
       throw error;
@@ -219,8 +244,11 @@ class PerformanceTestRunner {
     console.log(chalk.cyan('📝 Generating comprehensive report...'));
 
     const htmlReport = this.generateHTMLReport();
-    const reportPath = path.join(process.cwd(), 'test-results/comprehensive-performance-report.html');
-    
+    const reportPath = path.join(
+      process.cwd(),
+      'test-results/comprehensive-performance-report.html'
+    );
+
     await fs.mkdir(path.dirname(reportPath), { recursive: true });
     await fs.writeFile(reportPath, htmlReport);
 
@@ -360,39 +388,45 @@ class PerformanceTestRunner {
         <p>Generated on ${new Date().toLocaleString()}</p>
     </div>
 
-    ${summary ? `
+    ${
+      summary
+        ? `
     <div class="section">
         <h2>🎯 Performance Summary</h2>
         <div class="metric-grid">
             <div class="metric-card">
                 <h3>First Contentful Paint</h3>
-                <div class="metric-value">${summary.keyMetrics.fcpImprovement.toFixed(1)}%</div>
+                <div class="metric-value">${summary.keyMetrics?.fcpImprovement?.toFixed(1) ?? 'N/A'}%</div>
                 <div class="metric-improvement">improvement</div>
             </div>
             <div class="metric-card">
                 <h3>Largest Contentful Paint</h3>
-                <div class="metric-value">${summary.keyMetrics.lcpImprovement.toFixed(1)}%</div>
+                <div class="metric-value">${typeof summary.keyMetrics?.lcpImprovement === 'number' ? summary.keyMetrics.lcpImprovement.toFixed(1) : 'N/A'}%</div>
                 <div class="metric-improvement">improvement</div>
             </div>
             <div class="metric-card">
                 <h3>Time to Interactive</h3>
-                <div class="metric-value">${summary.keyMetrics.ttiImprovement.toFixed(1)}%</div>
+                <div class="metric-value">${typeof summary.keyMetrics?.ttiImprovement === 'number' ? summary.keyMetrics.ttiImprovement.toFixed(1) : 'N/A'}%</div>
                 <div class="metric-improvement">improvement</div>
             </div>
             <div class="metric-card">
                 <h3>Network Requests</h3>
-                <div class="metric-value">${summary.keyMetrics.networkRequestsReduction.toFixed(1)}%</div>
+                <div class="metric-value">${summary.keyMetrics?.networkRequestsReduction?.toFixed(1) ?? 'N/A'}%</div>
                 <div class="metric-improvement">reduction</div>
             </div>
         </div>
     </div>
-    ` : ''}
+    `
+        : ''
+    }
 
-    ${bundleAnalysis ? `
+    ${
+      bundleAnalysis
+        ? `
     <div class="section">
         <h2>📦 Bundle Analysis</h2>
         <p>Total bundle size: <strong>${(bundleAnalysis.totalSize / 1024 / 1024).toFixed(2)} MB</strong></p>
-        
+
         <h3>Chunk Breakdown</h3>
         <table>
             <thead>
@@ -404,20 +438,28 @@ class PerformanceTestRunner {
                 </tr>
             </thead>
             <tbody>
-                ${bundleAnalysis.chunks.map(chunk => `
+                ${bundleAnalysis.chunks
+                  .map(
+                    chunk => `
                 <tr>
                     <td>${chunk.name}</td>
                     <td>${(chunk.size / 1024 / 1024).toFixed(2)} MB</td>
                     <td>${chunk.modules}</td>
                     <td>${((chunk.size / bundleAnalysis.totalSize) * 100).toFixed(1)}%</td>
                 </tr>
-                `).join('')}
+                `
+                  )
+                  .join('')}
             </tbody>
         </table>
     </div>
-    ` : ''}
+    `
+        : ''
+    }
 
-    ${recommendations.length > 0 ? `
+    ${
+      recommendations.length > 0
+        ? `
     <div class="section">
         <h2>💡 Recommendations</h2>
         <div class="recommendations">
@@ -427,7 +469,9 @@ class PerformanceTestRunner {
             </ul>
         </div>
     </div>
-    ` : ''}
+    `
+        : ''
+    }
 
     <div class="section">
         <h2>🚀 Optimization Techniques Applied</h2>

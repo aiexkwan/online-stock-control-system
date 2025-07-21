@@ -1,0 +1,289 @@
+/**
+ * 統一嘅 Dialog 組件
+ * 基於 Radix UI 同設計系統 tokens 建立
+ */
+
+'use client';
+
+import * as React from 'react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { designTokens } from '@/lib/design-system/tokens';
+import { useMediaQuery } from '@/hooks/use-media-query';
+
+// Dialog 動畫變體
+const dialogAnimationVariants = cva('fixed inset-0 z-50 flex items-center justify-center', {
+  variants: {
+    animation: {
+      fade: 'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+      slide:
+        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom-4 data-[state=open]:slide-in-from-bottom-4',
+      scale:
+        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+      none: '',
+    },
+  },
+  defaultVariants: {
+    animation: 'fade',
+  },
+});
+
+// Dialog 內容變體
+const dialogContentVariants = cva(
+  'relative w-full bg-background-secondary border border-border-default shadow-xl',
+  {
+    variants: {
+      size: {
+        sm: 'max-w-md',
+        md: 'max-w-lg',
+        lg: 'max-w-2xl',
+        xl: 'max-w-4xl',
+        full: 'max-w-[95vw] h-[95vh]',
+      },
+      variant: {
+        default: 'rounded-lg',
+        notification: 'rounded-xl border-2',
+        confirmation: 'rounded-lg',
+        form: 'rounded-lg',
+        fullscreen: 'rounded-none w-screen h-screen max-w-none',
+      },
+    },
+    defaultVariants: {
+      size: 'md',
+      variant: 'default',
+    },
+  }
+);
+
+// Dialog Context
+interface DialogContextValue {
+  variant?: DialogContentProps['variant'];
+  size?: DialogContentProps['size'];
+  severity?: 'info' | 'success' | 'warning' | 'error';
+}
+
+const DialogContext = React.createContext<DialogContextValue>({});
+
+// Dialog Root
+export interface DialogProps extends DialogPrimitive.DialogProps {
+  variant?: DialogContentProps['variant'];
+  size?: DialogContentProps['size'];
+  severity?: 'info' | 'success' | 'warning' | 'error';
+}
+
+export const Dialog = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Root>, DialogProps>(
+  ({ children, variant, size, severity, ...props }, ref) => {
+    const contextValue = React.useMemo(
+      () => ({ variant, size, severity }),
+      [variant, size, severity]
+    );
+
+    return (
+      <DialogContext.Provider value={contextValue}>
+        <DialogPrimitive.Root {...props}>{children}</DialogPrimitive.Root>
+      </DialogContext.Provider>
+    );
+  }
+);
+
+Dialog.displayName = 'Dialog';
+
+// Dialog Trigger
+export const DialogTrigger = DialogPrimitive.Trigger;
+
+// Dialog Portal
+export const DialogPortal = DialogPrimitive.Portal;
+
+// Dialog Close
+export const DialogClose = DialogPrimitive.Close;
+
+// Dialog Overlay
+export const DialogOverlay = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Overlay>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
+>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Overlay
+    ref={ref}
+    className={cn(
+      'fixed inset-0 z-50 bg-black/80 backdrop-blur-sm',
+      'data-[state=open]:animate-in data-[state=closed]:animate-out',
+      'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+      className
+    )}
+    {...props}
+  />
+));
+
+DialogOverlay.displayName = 'DialogOverlay';
+
+// Dialog Content
+export interface DialogContentProps
+  extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>,
+    VariantProps<typeof dialogContentVariants> {
+  animation?: 'fade' | 'slide' | 'scale' | 'none';
+  showAnimatedBorder?: boolean;
+  showCloseButton?: boolean;
+  mobileFullscreen?: boolean;
+}
+
+export const DialogContent = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Content>,
+  DialogContentProps
+>(
+  (
+    {
+      className,
+      children,
+      size: sizeProp,
+      variant: variantProp,
+      animation = 'fade',
+      showAnimatedBorder = false,
+      showCloseButton = true,
+      mobileFullscreen = false,
+      ...props
+    },
+    ref
+  ) => {
+    const context = React.useContext(DialogContext);
+    const isMobile = useMediaQuery('(max-width: 768px)');
+
+    const size = sizeProp ?? context.size ?? 'md';
+    const variant = variantProp ?? context.variant ?? 'default';
+
+    // 移動端全屏處理
+    const effectiveSize = isMobile && mobileFullscreen ? 'full' : size;
+    const effectiveVariant = isMobile && mobileFullscreen ? 'fullscreen' : variant;
+
+    return (
+      <DialogPortal>
+        <DialogOverlay />
+        <div className={dialogAnimationVariants({ animation })}>
+          <DialogPrimitive.Content
+            ref={ref}
+            className={cn(
+              dialogContentVariants({ size: effectiveSize, variant: effectiveVariant }),
+              'p-6',
+              showAnimatedBorder && 'relative overflow-hidden',
+              showAnimatedBorder &&
+                `before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent`,
+              className
+            )}
+            {...props}
+          >
+            {children}
+            {showCloseButton && (
+              <DialogPrimitive.Close
+                className={cn(
+                  'absolute right-4 top-4 rounded-sm opacity-70',
+                  'ring-offset-background transition-opacity',
+                  'hover:opacity-100',
+                  'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+                  'disabled:pointer-events-none',
+                  'data-[state=open]:bg-accent data-[state=open]:text-muted-foreground'
+                )}
+              >
+                <X className='h-4 w-4' />
+                <span className='sr-only'>關閉</span>
+              </DialogPrimitive.Close>
+            )}
+          </DialogPrimitive.Content>
+        </div>
+      </DialogPortal>
+    );
+  }
+);
+
+DialogContent.displayName = 'DialogContent';
+
+// Dialog Header
+export const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => {
+  const { severity } = React.useContext(DialogContext);
+
+  return (
+    <div
+      className={cn(
+        'flex flex-col space-y-1.5 text-center sm:text-left',
+        severity && 'pb-2',
+        className
+      )}
+      {...props}
+    />
+  );
+};
+
+DialogHeader.displayName = 'DialogHeader';
+
+// Dialog Title
+export const DialogTitle = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Title>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title> & {
+    icon?: React.ReactNode;
+  }
+>(({ className, children, icon, ...props }, ref) => {
+  const { severity } = React.useContext(DialogContext);
+
+  // 語義化顏色
+  const severityColors = {
+    info: 'text-blue-500',
+    success: 'text-green-500',
+    warning: 'text-yellow-500',
+    error: 'text-red-500',
+  };
+
+  return (
+    <DialogPrimitive.Title
+      ref={ref}
+      className={cn(
+        'text-lg font-semibold leading-none tracking-tight',
+        'flex items-center gap-2',
+        className
+      )}
+      {...props}
+    >
+      {icon && <span className={cn(severity && severityColors[severity])}>{icon}</span>}
+      {children}
+    </DialogPrimitive.Title>
+  );
+});
+
+DialogTitle.displayName = 'DialogTitle';
+
+// Dialog Description
+export const DialogDescription = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Description>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
+>(({ className, ...props }, ref) => (
+  <DialogPrimitive.Description
+    ref={ref}
+    className={cn('text-sm text-muted-foreground', className)}
+    {...props}
+  />
+));
+
+DialogDescription.displayName = 'DialogDescription';
+
+// Dialog Body (新增)
+export const DialogBody = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div className={cn('flex-1 overflow-y-auto py-4', className)} {...props} />
+);
+
+DialogBody.displayName = 'DialogBody';
+
+// Dialog Footer
+export const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    className={cn(
+      'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2',
+      'pt-4',
+      className
+    )}
+    {...props}
+  />
+);
+
+DialogFooter.displayName = 'DialogFooter';
+
+// 導出所有組件
+export { DialogContext, dialogContentVariants, dialogAnimationVariants };

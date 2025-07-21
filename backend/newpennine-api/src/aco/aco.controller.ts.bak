@@ -1,0 +1,51 @@
+import {
+  Controller,
+  Get,
+  Query,
+  UseGuards,
+  Logger,
+  HttpStatus,
+  HttpCode,
+} from '@nestjs/common';
+import { AcoService } from './aco.service';
+import { AcoByDateQueryDto } from './dto/aco-by-date-query.dto';
+import { AcoReferencesQueryDto } from './dto/aco-references-query.dto';
+import {
+  AcoByDateResponseDto,
+  AcoReferencesResponseDto,
+} from './dto/aco-responses.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
+@Controller('aco')
+@UseGuards(JwtAuthGuard)
+export class AcoController {
+  private readonly logger = new Logger(AcoController.name);
+
+  constructor(private readonly acoService: AcoService) {}
+
+  /**
+   * 按日期獲取 ACO 訂單
+   * GET /api/v1/aco/orders-by-date
+   */
+  @Get('orders-by-date')
+  @HttpCode(HttpStatus.OK)
+  async getAcoByDate(
+    @Query() query: AcoByDateQueryDto,
+  ): Promise<AcoByDateResponseDto> {
+    this.logger.log('Fetching ACO orders by date', { query });
+    return this.acoService.getAcoByDate(query);
+  }
+
+  /**
+   * 獲取所有 ACO 參考號
+   * GET /api/v1/aco/references
+   */
+  @Get('references')
+  @HttpCode(HttpStatus.OK)
+  async getAcoReferences(
+    @Query() query: AcoReferencesQueryDto,
+  ): Promise<AcoReferencesResponseDto> {
+    this.logger.log('Fetching ACO references', { query });
+    return this.acoService.getAcoReferences(query);
+  }
+}

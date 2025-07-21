@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/app/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { safeString } from '@/types/database/helpers';
 
 // Validation schemas
 const uploadFileSchema = z.object({
@@ -63,7 +64,7 @@ export async function uploadFile(formData: FormData) {
     // Validate file extension
     const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
     const allowedExtensions = fileValidation[validatedData.folder];
-    
+
     if (!allowedExtensions.includes(fileExtension)) {
       throw new Error(
         `Invalid file format for ${validatedData.folder}. Allowed: ${allowedExtensions.join(', ')}`
@@ -77,7 +78,9 @@ export async function uploadFile(formData: FormData) {
 
     // Get current user for audit
     const supabase = await createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       throw new Error('User not authenticated');
@@ -87,7 +90,7 @@ export async function uploadFile(formData: FormData) {
     const { data: userDataByEmail } = await supabase
       .from('data_id')
       .select('id')
-      .eq('email', user.email)
+      .eq('email', user.email || '')
       .single();
 
     const actualUploadBy = userDataByEmail?.id || uploadBy;
@@ -101,7 +104,7 @@ export async function uploadFile(formData: FormData) {
 
     // Upload to Supabase Storage
     const filePath = `${validatedData.folder}/${validatedData.fileName}`;
-    
+
     const { data, error } = await supabaseAdmin.storage
       .from('documents')
       .upload(filePath, uint8Array, {
@@ -116,9 +119,7 @@ export async function uploadFile(formData: FormData) {
     }
 
     // Get public URL
-    const { data: urlData } = supabaseAdmin.storage
-      .from('documents')
-      .getPublicUrl(filePath);
+    const { data: urlData } = supabaseAdmin.storage.from('documents').getPublicUrl(filePath);
 
     if (!urlData?.publicUrl) {
       throw new Error('Failed to get public URL');
@@ -174,7 +175,7 @@ export async function uploadFile(formData: FormData) {
 
     // Revalidate relevant paths
     revalidatePath('/admin');
-    
+
     return {
       success: true,
       data: {
@@ -189,14 +190,14 @@ export async function uploadFile(formData: FormData) {
     };
   } catch (error) {
     console.error('[uploadFile] Error:', error);
-    
+
     if (error instanceof z.ZodError) {
       return {
         success: false,
         error: 'Invalid input: ' + error.errors.map(e => e.message).join(', '),
       };
     }
-    
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Upload failed',
@@ -211,7 +212,7 @@ export async function uploadFile(formData: FormData) {
 export async function deleteFile(fileId: string) {
   try {
     const supabase = await createServerClient();
-    
+
     // Get file details
     const { data: fileData, error: fetchError } = await supabase
       .from('doc_upload')
@@ -224,7 +225,9 @@ export async function deleteFile(fileId: string) {
     }
 
     // Check permissions
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       throw new Error('User not authenticated');
     }
@@ -234,9 +237,7 @@ export async function deleteFile(fileId: string) {
 
     // Delete from storage
     const filePath = `${fileData.folder}/${fileData.doc_name}`;
-    const { error: deleteError } = await supabaseAdmin.storage
-      .from('documents')
-      .remove([filePath]);
+    const { error: deleteError } = await supabaseAdmin.storage.from('documents').remove([filePath]);
 
     if (deleteError) {
       console.error('[deleteFile] Storage delete error:', deleteError);
@@ -244,10 +245,7 @@ export async function deleteFile(fileId: string) {
     }
 
     // Delete from database
-    const { error: dbError } = await supabase
-      .from('doc_upload')
-      .delete()
-      .eq('uuid', fileId);
+    const { error: dbError } = await supabase.from('doc_upload').delete().eq('uuid', fileId);
 
     if (dbError) {
       console.error('[deleteFile] Database delete error:', dbError);
@@ -257,13 +255,13 @@ export async function deleteFile(fileId: string) {
     // Insert history record
     await supabase.from('record_history').insert({
       action: 'Delete file',
-      remark: `Deleted ${fileData.doc_name} from ${fileData.folder}`,
-      who: fileData.upload_by.toString(),
+      remark: `Deleted ${safeString(fileData.doc_name)} from ${safeString(fileData.folder)}`,
+      who: safeString(fileData.upload_by),
     });
 
     // Revalidate paths
     revalidatePath('/admin');
-    
+
     return {
       success: true,
       message: 'File deleted successfully',

@@ -1,0 +1,87 @@
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  ValidationPipe,
+  HttpException,
+  HttpStatus,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PalletsService } from './pallets.service';
+import { PalletsQueryDto } from './dto/pallets-query.dto';
+import {
+  PalletsResponseDto,
+  PalletDetailResponseDto,
+} from './dto/pallet-response.dto';
+
+@ApiTags('pallets')
+@Controller('pallets')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
+export class PalletsController {
+  constructor(private readonly palletsService: PalletsService) {}
+
+  @Get()
+  async getPallets(
+    @Query(ValidationPipe) query: PalletsQueryDto,
+  ): Promise<PalletsResponseDto> {
+    try {
+      const limit = query.limit ? parseInt(query.limit, 10) : 50;
+      const offset = query.offset ? parseInt(query.offset, 10) : 0;
+
+      return await this.palletsService.getPallets(
+        query.warehouse,
+        query.productCode,
+        query.series,
+        limit,
+        offset,
+      );
+    } catch (error) {
+      throw new HttpException(
+        {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          error: 'Failed to fetch pallets',
+          message: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get(':id')
+  async getPalletById(
+    @Param('id') id: string,
+  ): Promise<PalletDetailResponseDto> {
+    try {
+      return await this.palletsService.getPalletById(id);
+    } catch (error) {
+      if ((error as Error).message === 'Pallet not found') {
+        throw new HttpException(
+          {
+            status: HttpStatus.NOT_FOUND,
+            error: 'Pallet not found',
+            message: `Pallet with ID ${id} not found`,
+          },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      throw new HttpException(
+        {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          error: 'Failed to fetch pallet',
+          message: (error as Error).message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+}

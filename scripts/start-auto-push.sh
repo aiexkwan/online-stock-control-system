@@ -13,4 +13,4 @@ npm install
 
 # 啟動自動推送功能
 echo -e "\033[0;32m啟動自動推送功能...\033[0m"
-npm run auto-push 
+npm run auto-push

@@ -213,7 +213,7 @@ interface StatsWidgetProps extends BaseWidgetProps {
 ```typescript
 // 實施類型守衛函數
 function isValidWidgetData(data: unknown): data is DatabaseRecord[] {
-  return Array.isArray(data) && data.every(item => 
+  return Array.isArray(data) && data.every(item =>
     typeof item === 'object' && item !== null
   );
 }
@@ -236,10 +236,10 @@ find stories/ -name "*.stories.tsx" -exec sed -i '' 's/data: null/data: [] as Da
 #### 類型導入統一
 ```typescript
 // 在每個 Widget 文件頂部統一導入
-import type { 
+import type {
   WidgetComponentProps,
   DatabaseRecord,
-  WidgetConfig 
+  WidgetConfig
 } from '@/lib/widgets/types';
 ```
 

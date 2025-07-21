@@ -20,30 +20,30 @@ BEGIN
     IF NOT (TRIM(UPPER(query_text)) LIKE 'SELECT%') THEN
         RAISE EXCEPTION 'Only SELECT queries are allowed';
     END IF;
-    
+
     -- 🔥 修復：使用更精確的單詞邊界檢查危險關鍵字
     -- 避免 COUNT 被誤判為 CREATE 的一部分
     IF UPPER(query_text) ~ '\b(DROP|DELETE|UPDATE|INSERT|ALTER|CREATE|TRUNCATE|GRANT|REVOKE)\b' THEN
         RAISE EXCEPTION 'Query contains prohibited modification keywords';
     END IF;
-    
+
     -- 檢查是否包含多個語句（防止 SQL 注入）
     IF query_text ~ ';\s*[^;]+' THEN
         RAISE EXCEPTION 'Multiple statements are not allowed';
     END IF;
-    
+
     -- 執行查詢並收集結果
     FOR rec IN EXECUTE query_text LOOP
         temp_result := to_jsonb(rec);
         result_array := result_array || temp_result;
     END LOOP;
-    
+
     -- 返回結果數組中的每個元素
     FOR temp_result IN SELECT jsonb_array_elements(result_array) LOOP
         result := temp_result;
         RETURN NEXT;
     END LOOP;
-    
+
     RETURN;
 EXCEPTION
     WHEN OTHERS THEN
@@ -63,19 +63,19 @@ BEGIN
     -- 測試基本查詢
     PERFORM public.execute_sql_query('SELECT 1 as test_value');
     RAISE NOTICE '✅ 基本查詢測試通過';
-    
+
     -- 測試日期函數
     PERFORM public.execute_sql_query('SELECT CURRENT_DATE as today');
     RAISE NOTICE '✅ 日期函數測試通過';
-    
+
     -- 測試聚合函數和日期組合（原始問題查詢）
     PERFORM public.execute_sql_query('SELECT COUNT(*) AS grn_receipts_today FROM grn_level WHERE DATE(latest_update) = CURRENT_DATE');
     RAISE NOTICE '✅ 原始問題查詢測試通過';
-    
+
     -- 測試 COUNT 函數不會被誤判
     PERFORM public.execute_sql_query('SELECT COUNT(*) as count_test FROM data_code LIMIT 1');
     RAISE NOTICE '✅ COUNT 函數測試通過';
-    
+
     RAISE NOTICE '🎉 execute_sql_query 函數修復完成！';
 EXCEPTION
     WHEN OTHERS THEN
@@ -84,11 +84,11 @@ END;
 $$;
 
 -- 顯示函數資訊
-SELECT 
+SELECT
     routine_name,
     routine_type,
     security_type,
     is_deterministic
-FROM information_schema.routines 
+FROM information_schema.routines
 WHERE routine_name = 'execute_sql_query'
-AND routine_schema = 'public'; 
+AND routine_schema = 'public';

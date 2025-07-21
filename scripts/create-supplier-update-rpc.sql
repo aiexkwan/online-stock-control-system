@@ -16,12 +16,12 @@ DECLARE
 BEGIN
     -- Normalize supplier code (uppercase, trim)
     v_normalized_code := UPPER(TRIM(p_supplier_code));
-    
+
     -- Check if supplier exists
     SELECT * INTO v_supplier
     FROM data_supplier
     WHERE supplier_code = v_normalized_code;
-    
+
     IF FOUND THEN
         v_result := jsonb_build_object(
             'exists', true,
@@ -36,7 +36,7 @@ BEGIN
             'normalized_code', v_normalized_code
         );
     END IF;
-    
+
     RETURN v_result;
 END;
 $$;
@@ -58,7 +58,7 @@ DECLARE
 BEGIN
     -- Normalize supplier code
     v_normalized_code := UPPER(TRIM(p_supplier_code));
-    
+
     -- Check if already exists
     IF EXISTS (SELECT 1 FROM data_supplier WHERE supplier_code = v_normalized_code) THEN
         RETURN jsonb_build_object(
@@ -66,12 +66,12 @@ BEGIN
             'error', 'Supplier already exists'
         );
     END IF;
-    
+
     -- Insert supplier
     INSERT INTO data_supplier (supplier_code, supplier_name)
     VALUES (v_normalized_code, p_supplier_name)
     RETURNING * INTO v_supplier;
-    
+
     -- Record history
     INSERT INTO record_history (time, id, action, plt_num, loc, remark)
     VALUES (
@@ -82,7 +82,7 @@ BEGIN
         NULL,
         v_normalized_code
     );
-    
+
     v_result := jsonb_build_object(
         'success', true,
         'supplier', jsonb_build_object(
@@ -90,7 +90,7 @@ BEGIN
             'supplier_name', v_supplier.supplier_name
         )
     );
-    
+
     RETURN v_result;
 END;
 $$;
@@ -112,20 +112,20 @@ DECLARE
 BEGIN
     -- Normalize supplier code
     v_normalized_code := UPPER(TRIM(p_supplier_code));
-    
+
     -- Update supplier
     UPDATE data_supplier
     SET supplier_name = p_supplier_name
     WHERE supplier_code = v_normalized_code
     RETURNING * INTO v_supplier;
-    
+
     IF NOT FOUND THEN
         RETURN jsonb_build_object(
             'success', false,
             'error', 'Supplier not found'
         );
     END IF;
-    
+
     -- Record history
     INSERT INTO record_history (time, id, action, plt_num, loc, remark)
     VALUES (
@@ -136,7 +136,7 @@ BEGIN
         NULL,
         v_normalized_code
     );
-    
+
     v_result := jsonb_build_object(
         'success', true,
         'supplier', jsonb_build_object(
@@ -144,7 +144,7 @@ BEGIN
             'supplier_name', v_supplier.supplier_name
         )
     );
-    
+
     RETURN v_result;
 END;
 $$;
@@ -165,7 +165,7 @@ BEGIN
     WHERE LOWER(email) = LOWER(p_email)
     ORDER BY id
     LIMIT 1;
-    
+
     -- Return 999 if user not found (consistent with original logic)
     RETURN COALESCE(v_user_id, 999);
 END;

@@ -6,7 +6,7 @@
 -- ====================================
 
 -- 查看 record_palletinfo 表的索引
-SELECT 
+SELECT
     schemaname,
     tablename,
     indexname,
@@ -16,7 +16,7 @@ WHERE tablename = 'record_palletinfo'
 ORDER BY indexname;
 
 -- 查看 record_history 表的索引
-SELECT 
+SELECT
     schemaname,
     tablename,
     indexname,
@@ -26,7 +26,7 @@ WHERE tablename = 'record_history'
 ORDER BY indexname;
 
 -- 查看 record_transfer 表的索引
-SELECT 
+SELECT
     schemaname,
     tablename,
     indexname,
@@ -36,7 +36,7 @@ WHERE tablename = 'record_transfer'
 ORDER BY indexname;
 
 -- 查看 record_inventory 表的索引
-SELECT 
+SELECT
     schemaname,
     tablename,
     indexname,
@@ -46,7 +46,7 @@ WHERE tablename = 'record_inventory'
 ORDER BY indexname;
 
 -- 查看 data_id 表的索引
-SELECT 
+SELECT
     schemaname,
     tablename,
     indexname,
@@ -72,12 +72,12 @@ ORDER BY indexname;
 
 -- 3.1 record_palletinfo 表索引
 -- 托盤號查詢索引（如果不存在）
-CREATE INDEX IF NOT EXISTS idx_palletinfo_plt_num 
+CREATE INDEX IF NOT EXISTS idx_palletinfo_plt_num
 ON record_palletinfo(plt_num);
 
 -- 系列號查詢索引（如果不存在）
-CREATE INDEX IF NOT EXISTS idx_palletinfo_series 
-ON record_palletinfo(series) 
+CREATE INDEX IF NOT EXISTS idx_palletinfo_series
+ON record_palletinfo(series)
 WHERE series IS NOT NULL;
 
 -- 複合索引：用於同時獲取托盤信息
@@ -130,7 +130,7 @@ ON data_id(id);
 -- ====================================
 
 -- 查看索引使用統計
-SELECT 
+SELECT
     schemaname,
     tablename,
     indexname,
@@ -146,7 +146,7 @@ ORDER BY tablename, idx_scan DESC;
 -- ====================================
 
 -- 分析托盤號查詢
-EXPLAIN (ANALYZE, BUFFERS) 
+EXPLAIN (ANALYZE, BUFFERS)
 SELECT plt_num, product_code, product_qty, plt_remark, series
 FROM record_palletinfo
 WHERE plt_num = 'PM-20240315-001';
@@ -177,7 +177,7 @@ ANALYZE record_inventory;
 ANALYZE data_id;
 
 -- 查看表大小和索引大小
-SELECT 
+SELECT
     schemaname,
     tablename,
     pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS total_size,

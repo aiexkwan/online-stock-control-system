@@ -1,5 +1,5 @@
 import { createClient } from './supabase/client';
-import { getErrorMessage } from '../../lib/types/error-handling';
+import { getErrorMessage } from '@/types/core/error';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { isNotProduction } from '../../lib/utils/env';
 
@@ -36,8 +36,7 @@ export async function generateOptimizedPalletNumbersV6(
   }
 
   try {
-    isNotProduction() &&
-      console.log('[PalletGenerationV6] Requesting', count, 'pallet numbers');
+    isNotProduction() && console.log('[PalletGenerationV6] Requesting', count, 'pallet numbers');
 
     // 調用 v6 RPC 函數，返回 pallet_number 和 series
     const { data, error } = await supabase.rpc('generate_atomic_pallet_numbers_v6', {
@@ -103,8 +102,7 @@ export async function confirmPalletUsage(
   supabase?: SupabaseClient
 ): Promise<boolean> {
   if (!palletNumbers || palletNumbers.length === 0) {
-    isNotProduction() &&
-      console.warn('[PalletGenerationV6] No pallet numbers to confirm');
+    isNotProduction() && console.warn('[PalletGenerationV6] No pallet numbers to confirm');
     return true;
   }
 
@@ -113,8 +111,7 @@ export async function confirmPalletUsage(
   }
 
   try {
-    isNotProduction() &&
-      console.log('[PalletGenerationV6] Confirming usage for:', palletNumbers);
+    isNotProduction() && console.log('[PalletGenerationV6] Confirming usage for:', palletNumbers);
 
     const { data, error } = await supabase.rpc('confirm_pallet_usage', {
       p_pallet_numbers: palletNumbers,
@@ -125,8 +122,7 @@ export async function confirmPalletUsage(
       return false;
     }
 
-    isNotProduction() &&
-      console.log('[PalletGenerationV6] Successfully confirmed usage');
+    isNotProduction() && console.log('[PalletGenerationV6] Successfully confirmed usage');
     return true;
   } catch (error) {
     console.error('[PalletGenerationV6] Exception confirming usage:', error);
@@ -142,8 +138,7 @@ export async function releasePalletReservation(
   supabase?: SupabaseClient
 ): Promise<boolean> {
   if (!palletNumbers || palletNumbers.length === 0) {
-    isNotProduction() &&
-      console.warn('[PalletGenerationV6] No pallet numbers to release');
+    isNotProduction() && console.warn('[PalletGenerationV6] No pallet numbers to release');
     return true;
   }
 
@@ -164,8 +159,7 @@ export async function releasePalletReservation(
       return false;
     }
 
-    isNotProduction() &&
-      console.log('[PalletGenerationV6] Successfully released reservation');
+    isNotProduction() && console.log('[PalletGenerationV6] Successfully released reservation');
     return true;
   } catch (error) {
     console.error('[PalletGenerationV6] Exception releasing reservation:', error);

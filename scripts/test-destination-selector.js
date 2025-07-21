@@ -31,7 +31,7 @@ const LOCATION_DESTINATIONS = {
 async function testLocationMappings() {
   console.log('\n📍 Testing location destination mappings...');
   console.log('==========================================');
-  
+
   for (const [fromLocation, destinations] of Object.entries(LOCATION_DESTINATIONS)) {
     console.log(`\nFrom: ${fromLocation}`);
     if (destinations.length === 0) {
@@ -48,7 +48,7 @@ async function testLocationMappings() {
 async function testTransferScenarios() {
   console.log('\n\n🧪 Testing transfer scenarios...');
   console.log('================================');
-  
+
   const testCases = [
     { from: 'Await', to: 'Fold Mill', expected: true },
     { from: 'Await', to: 'Production', expected: true },
@@ -58,12 +58,12 @@ async function testTransferScenarios() {
     { from: 'Voided', to: 'Anywhere', expected: false },
     { from: 'Damage', to: 'Anywhere', expected: false }
   ];
-  
+
   for (const testCase of testCases) {
     const destinations = LOCATION_DESTINATIONS[testCase.from] || [];
     const canTransfer = testCase.expected ? destinations.includes(testCase.to) : destinations.length === 0;
     const icon = canTransfer === testCase.expected ? '✅' : '❌';
-    
+
     console.log(`${icon} ${testCase.from} → ${testCase.to}: ${canTransfer ? 'Allowed' : 'Blocked'}`);
   }
 }
@@ -71,35 +71,35 @@ async function testTransferScenarios() {
 async function testRealTransfer() {
   console.log('\n\n🚀 Testing real transfer with new UI...');
   console.log('=====================================');
-  
+
   try {
     // 搵一個真實嘅托盤
     const { data: palletData } = await supabase.rpc('search_pallet_info', {
       p_search_type: 'pallet_num',
       p_search_value: '140625/6'
     });
-    
+
     if (!palletData?.success) {
       console.log('❌ Cannot find test pallet');
       return;
     }
-    
+
     const pallet = palletData.data;
     console.log(`\n📦 Pallet: ${pallet.plt_num}`);
     console.log(`📍 Current Location: ${pallet.current_plt_loc}`);
-    
+
     // 獲取可用目標
     const availableDestinations = LOCATION_DESTINATIONS[pallet.current_plt_loc] || [];
     console.log(`\n🎯 Available destinations:`);
     availableDestinations.forEach((dest, index) => {
       console.log(`   ${index + 1}. ${dest} ${index === 0 ? '(Default)' : ''}`);
     });
-    
+
     // 模擬選擇默認目標（第一個）
     if (availableDestinations.length > 0) {
       const defaultDestination = availableDestinations[0];
       console.log(`\n✅ Would select: ${defaultDestination} (default)`);
-      
+
       // 執行轉移
       const { data: transferResult } = await supabase.rpc('execute_stock_transfer', {
         p_plt_num: pallet.plt_num,
@@ -109,14 +109,14 @@ async function testRealTransfer() {
         p_to_location: defaultDestination,
         p_operator_id: 1
       });
-      
+
       if (transferResult?.success) {
         console.log(`✅ Transfer successful: ${pallet.plt_num} moved to ${defaultDestination}`);
       } else {
         console.log(`❌ Transfer failed: ${transferResult?.message}`);
       }
     }
-    
+
   } catch (error) {
     console.error('❌ Error:', error);
   }
@@ -125,11 +125,11 @@ async function testRealTransfer() {
 async function runTests() {
   console.log('🎯 Testing New Destination Selector Feature');
   console.log('==========================================');
-  
+
   await testLocationMappings();
   await testTransferScenarios();
   await testRealTransfer();
-  
+
   console.log('\n\n✅ All tests completed!');
 }
 

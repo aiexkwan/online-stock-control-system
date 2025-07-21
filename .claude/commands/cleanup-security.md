@@ -70,8 +70,8 @@ CREATE POLICY "users_own_data" ON user_data
 CREATE POLICY "role_based_access" ON admin_data
   FOR SELECT USING (
     EXISTS (
-      SELECT 1 FROM user_roles 
-      WHERE user_id = auth.uid() 
+      SELECT 1 FROM user_roles
+      WHERE user_id = auth.uid()
       AND role = 'admin'
     )
   );
@@ -83,13 +83,13 @@ CREATE POLICY "role_based_access" ON admin_data
 const validateInput = (input: string): boolean => {
   // 防止 XSS
   const sanitized = DOMPurify.sanitize(input);
-  
+
   // 防止 SQL 注入
   const sqlPattern = /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION)\b)/i;
   if (sqlPattern.test(input)) {
     throw new Error('Invalid input detected');
   }
-  
+
   return true;
 };
 
@@ -97,15 +97,15 @@ const validateInput = (input: string): boolean => {
 const validateFileUpload = (file: File): boolean => {
   const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
   const maxSize = 10 * 1024 * 1024; // 10MB
-  
+
   if (!allowedTypes.includes(file.type)) {
     throw new Error('File type not allowed');
   }
-  
+
   if (file.size > maxSize) {
     throw new Error('File size exceeds limit');
   }
-  
+
   return true;
 };
 ```
@@ -128,9 +128,9 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- 解密查詢
-SELECT 
+SELECT
   id,
-  pgp_sym_decrypt(encrypted_field, current_setting('app.encryption_key')) 
+  pgp_sym_decrypt(encrypted_field, current_setting('app.encryption_key'))
   AS decrypted_data
 FROM sensitive_table;
 ```
@@ -193,12 +193,12 @@ CREATE TABLE security_audit_log (
 
 -- 異常活動監控
 CREATE VIEW security_alerts AS
-SELECT 
+SELECT
   user_id,
   COUNT(*) as failed_attempts,
   array_agg(DISTINCT ip_address) as ip_addresses
 FROM security_audit_log
-WHERE success = false 
+WHERE success = false
   AND created_at > NOW() - INTERVAL '1 hour'
 GROUP BY user_id
 HAVING COUNT(*) > 5;

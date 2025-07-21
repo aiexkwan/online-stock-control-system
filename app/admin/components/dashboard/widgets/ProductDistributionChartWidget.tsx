@@ -7,19 +7,17 @@
 'use client';
 
 import React, { useMemo, useEffect, useState, useCallback } from 'react';
-import { 
-  PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend 
-} from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { ChartPieIcon } from '@heroicons/react/24/outline';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
-import { TraditionalWidgetComponentProps } from '@/app/types/dashboard';
+import { TraditionalWidgetComponentProps } from '@/types/components/dashboard';
 import { ChartContainer } from './common/charts/ChartContainer';
 import { useInViewport } from '@/app/admin/hooks/useInViewport';
-import { 
-  brandColors, 
-  widgetColors, 
+import {
+  brandColors,
+  widgetColors,
   semanticColors,
-  getWidgetCategoryColor 
+  getWidgetCategoryColor,
 } from '@/lib/design-system/colors';
 import { textClasses, getTextClass } from '@/lib/design-system/typography';
 import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
@@ -41,15 +39,15 @@ const COLORS = [
   String(brandColors.secondary) || '#8B5CF6',
   String(widgetColors.charts.grid) || '#6B7280',
   String(widgetColors.charts.accent) || '#EC4899',
-  String(brandColors.primary) || '#3B82F6'
+  String(brandColors.primary) || '#3B82F6',
 ];
 
-export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWidgetProps> = ({ 
-  title, 
+export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWidgetProps> = ({
+  title,
   timeFrame,
   isEditMode,
   limit = 10,
-  widget
+  widget,
 }) => {
   const [chartData, setChartData] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +60,7 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
   const { isInViewport, hasBeenInViewport } = useInViewport(targetRef, {
     threshold: 0.1,
     rootMargin: '50px',
-    triggerOnce: true
+    triggerOnce: true,
   });
 
   // 根據 timeFrame 設定查詢時間範圍
@@ -73,7 +71,7 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
-      
+
       return {
         start: today,
         end: tomorrow,
@@ -112,7 +110,12 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
       if (result.widgets && result.widgets.length > 0) {
         const widgetData = result.widgets[0];
 
-        if (typeof widgetData.data === 'object' && widgetData.data !== null && 'error' in widgetData.data && widgetData.data.error) {
+        if (
+          typeof widgetData.data === 'object' &&
+          widgetData.data !== null &&
+          'error' in widgetData.data &&
+          widgetData.data.error
+        ) {
           const errorMsg = String(widgetData.data.error);
           console.error('[ProductDistributionChartWidget as string] API error:', errorMsg);
           setError(errorMsg);
@@ -120,25 +123,40 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
           return;
         }
 
-        const distributionData = (typeof widgetData.data === 'object' && widgetData.data !== null && 'value' in widgetData.data) 
-          ? widgetData.data.value 
-          : [];
-        const widgetMetadata = (typeof widgetData.data === 'object' && widgetData.data !== null && 'metadata' in widgetData.data) 
-          ? widgetData.data.metadata 
-          : {};
+        const distributionData =
+          typeof widgetData.data === 'object' &&
+          widgetData.data !== null &&
+          'value' in widgetData.data
+            ? widgetData.data.value
+            : [];
+        const widgetMetadata =
+          typeof widgetData.data === 'object' &&
+          widgetData.data !== null &&
+          'metadata' in widgetData.data
+            ? widgetData.data.metadata
+            : {};
 
-        console.log('[ProductDistributionChartWidget as string] API returned data:', distributionData);
+        console.log(
+          '[ProductDistributionChartWidget as string] API returned data:',
+          distributionData
+        );
         console.log('[ProductDistributionChartWidget as string] Metadata:', widgetMetadata);
 
         setChartData(Array.isArray(distributionData) ? distributionData : []);
-        setMetadata(typeof widgetMetadata === 'object' && widgetMetadata !== null ? widgetMetadata as Record<string, unknown> : {});
-
+        setMetadata(
+          typeof widgetMetadata === 'object' && widgetMetadata !== null
+            ? (widgetMetadata as Record<string, unknown>)
+            : {}
+        );
       } else {
         console.warn('[ProductDistributionChartWidget as string] No widget data returned from API');
         setChartData([]);
       }
     } catch (err) {
-      console.error('[ProductDistributionChartWidget as string] Error fetching data from API:', err);
+      console.error(
+        '[ProductDistributionChartWidget as string] Error fetching data from API:',
+        err
+      );
       setError(err instanceof Error ? (err as { message: string }).message : 'Unknown error');
       setChartData([]);
     } finally {
@@ -153,24 +171,41 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
 
   // 計算總數
   const total = useMemo(() => {
-    return chartData.reduce((sum, item) => sum + (typeof item.value === 'number' ? item.value : 0), 0);
+    return chartData.reduce(
+      (sum, item) => sum + (typeof item.value === 'number' ? item.value : 0),
+      0
+    );
   }, [chartData]);
 
   // 自定義 Tooltip
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number; payload: { name: string } }>; label?: string }) => {
+  const CustomTooltip = ({
+    active,
+    payload,
+    label,
+  }: {
+    active?: boolean;
+    payload?: Array<{ value: number; payload: { name: string } }>;
+    label?: string;
+  }) => {
     if (active && payload && payload.length) {
       const data = payload[0];
       const percentage = total > 0 ? ((data.value / total) * 100).toFixed(1) : '0';
       return (
-        <div className={cn(
-          'bg-card border border-border rounded-lg p-3 shadow-lg'
-        )}>
-          <p className={cn(textClasses['body-small'], 'font-medium text-foreground')}>{data.payload.name}</p>
-          <p className={cn(textClasses['label-small'])} style={{ color: widgetColors.charts.primary }}>
-            Quantity: <span className="font-semibold">{data.value.toLocaleString()}</span>
+        <div className={cn('rounded-lg border border-border bg-card p-3 shadow-lg')}>
+          <p className={cn(textClasses['body-small'], 'font-medium text-foreground')}>
+            {data.payload.name}
           </p>
-          <p className={cn(textClasses['label-small'])} style={{ color: semanticColors.success.DEFAULT }}>
-            Percentage: <span className="font-semibold">{percentage}%</span>
+          <p
+            className={cn(textClasses['label-small'])}
+            style={{ color: widgetColors.charts.primary }}
+          >
+            Quantity: <span className='font-semibold'>{data.value.toLocaleString()}</span>
+          </p>
+          <p
+            className={cn(textClasses['label-small'])}
+            style={{ color: semanticColors.success.DEFAULT }}
+          >
+            Percentage: <span className='font-semibold'>{percentage}%</span>
           </p>
         </div>
       );
@@ -191,67 +226,75 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
       label: 'Total Quantity',
       value: total.toLocaleString(),
     },
-    ...(topProduct ? [{
-      label: 'Top Product',
-      value: String(topProduct.name),
-    }] : [])
+    ...(topProduct
+      ? [
+          {
+            label: 'Top Product',
+            value: String(topProduct.name),
+          },
+        ]
+      : []),
   ];
 
   return (
-    <div ref={targetRef} className="h-full">
+    <div ref={targetRef} className='h-full'>
       <ChartContainer
         title={title}
         icon={ChartPieIcon}
-        iconColor="from-purple-500 to-pink-500"
+        iconColor='from-purple-500 to-pink-500'
         dateRange={dateRange}
         loading={loading && hasBeenInViewport}
         error={error ? new Error(error) : null}
         onRetry={fetchData}
         onRefresh={fetchData}
-        height="100%"
-        chartType="pie"
-        performanceMetrics={metadata.rpcFunction ? {
-          source: 'Server',
-          optimized: true
-        } : undefined}
+        height='100%'
+        chartType='pie'
+        performanceMetrics={
+          metadata.rpcFunction
+            ? {
+                source: 'Server',
+                optimized: true,
+              }
+            : undefined
+        }
         stats={stats}
         showFooter={true}
         widgetType={widget?.type?.toUpperCase()}
       >
         {chartData.length === 0 ? (
-          <div className={cn(
-            'text-center h-full flex items-center justify-center',
-            textClasses['body-small'],
-            'text-muted-foreground'
-          )}>
+          <div
+            className={cn(
+              'flex h-full items-center justify-center text-center',
+              textClasses['body-small'],
+              'text-muted-foreground'
+            )}
+          >
             No data available for the selected period
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width='100%' height='100%'>
             <PieChart>
               <Pie
                 data={chartData}
-                cx="50%"
-                cy="50%"
+                cx='50%'
+                cy='50%'
                 innerRadius={40}
                 outerRadius={80}
                 paddingAngle={2}
-                dataKey="value"
+                dataKey='value'
               >
                 {chartData.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={COLORS[index % COLORS.length]} 
-                  />
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
               <Tooltip content={<CustomTooltip />} />
-              <Legend 
-                verticalAlign="bottom" 
+              <Legend
+                verticalAlign='bottom'
                 height={36}
                 formatter={(value, entry) => (
                   <span className={cn(textClasses['label-small'], 'text-muted-foreground')}>
-                    {value} ({entry?.payload ? ((entry.payload.value / total) * 100).toFixed(1) : '0'}%)
+                    {value} (
+                    {entry?.payload ? ((entry.payload.value / total) * 100).toFixed(1) : '0'}%)
                   </span>
                 )}
               />
@@ -262,3 +305,5 @@ export const ProductDistributionChartWidget: React.FC<ProductDistributionChartWi
     </div>
   );
 };
+
+export default ProductDistributionChartWidget;

@@ -70,7 +70,7 @@ const palletResult = await createPalletRecord(data);
 1. **Zod Schema 定義** (策略 1)
    ```typescript
    import { z } from 'zod';
-   
+
    const VoidRecordSchema = z.object({
      plt_num: z.string(),
      void_reason: z.string(),
@@ -79,7 +79,7 @@ const palletResult = await createPalletRecord(data);
      quantity: z.number(),
      user_id: z.string()
    });
-   
+
    type VoidRecord = z.infer<typeof VoidRecordSchema>;
    ```
 
@@ -91,7 +91,7 @@ const palletResult = await createPalletRecord(data);
      transaction_id: string;
      updated_quantity: number;
    }
-   
+
    const result = await supabase
      .rpc<InventoryRPCResult>('process_inventory_transaction', params);
    ```
@@ -99,15 +99,15 @@ const palletResult = await createPalletRecord(data);
 3. **類型守衛實施** (策略 4)
    ```typescript
    function isValidPalletResult(result: unknown): result is PalletRecord {
-     return typeof result === 'object' && 
-            result !== null && 
+     return typeof result === 'object' &&
+            result !== null &&
             'plt_num' in result;
    }
    ```
 
 #### **實施計劃 A**
 - **Week 1**: Zod schemas 定義 (Backend工程師)
-- **Week 2**: RPC 函數類型化 (Backend工程師) 
+- **Week 2**: RPC 函數類型化 (Backend工程師)
 - **Week 3**: 類型守衛實施 (代碼品質專家)
 - **Week 4**: 測試驗證 (QA專家)
 
@@ -150,7 +150,7 @@ const records = dataSource.transform ? dataSource.transform(rawData) : rawData;
      success: boolean;
      metadata?: Record<string, unknown>;
    }
-   
+
    interface MetricsResponse {
      business_metrics: BusinessMetric[];
      database_metrics: DatabaseMetric[];
@@ -182,7 +182,7 @@ const records = dataSource.transform ? dataSource.transform(rawData) : rawData;
        private validator: (data: unknown) => data is T,
        private transformer: (data: T) => R
      ) {}
-     
+
      process(rawData: unknown): R[] {
        if (!Array.isArray(rawData)) throw new Error('Invalid data format');
        return rawData
@@ -237,13 +237,13 @@ const error: ChatError = new ErrorResponse(); // 類型不匹配
      label?: string;
      color?: string;
    }
-   
+
    interface ChartConfig {
      type: 'line' | 'bar' | 'pie' | 'area';
      data: ChartDataPoint[];
      options: ChartOptions;
    }
-   
+
    // 類型安全的動態導入
    type ChartComponent<T = any> = React.ComponentType<{
      data: ChartDataPoint[];
@@ -261,8 +261,8 @@ const error: ChatError = new ErrorResponse(); // 類型不匹配
        return { default: module.default };
      });
    };
-   
-   const LineChart = createChartLoader(() => 
+
+   const LineChart = createChartLoader(() =>
      import('recharts').then(m => ({ default: m.LineChart }))
    );
    ```
@@ -276,7 +276,7 @@ const error: ChatError = new ErrorResponse(); // 類型不匹配
      suggestions?: string[];
      timestamp: Date;
    }
-   
+
    class UIErrorHandler {
      static normalize(error: unknown): UIError {
        // 統一錯誤格式化邏輯
@@ -286,7 +286,7 @@ const error: ChatError = new ErrorResponse(); // 類型不匹配
 
 #### **實施計劃 C**  
 - **Week 1**: 圖表類型庫設計 (架構專家)
-- **Week 2**: 動態導入重構 (代碼品質專家) 
+- **Week 2**: 動態導入重構 (代碼品質專家)
 - **Week 3**: 錯誤處理統一 (代碼品質專家)
 - **Week 4**: UI 測試驗證 (QA專家)
 
@@ -332,7 +332,7 @@ const config = require('./config.json');
        backup: boolean;
      };
    }
-   
+
    interface FixResult {
      file: string;
      line: number;
@@ -346,7 +346,7 @@ const config = require('./config.json');
    // 添加測試類型定義
    /// <reference types="jest" />
    /// <reference types="node" />
-   
+
    declare module '*.json' {
      const content: Record<string, unknown>;
      export default content;
@@ -356,7 +356,7 @@ const config = require('./config.json');
 3. **配置文件類型安全** (策略 1)
    ```typescript
    import { z } from 'zod';
-   
+
    const ConfigSchema = z.object({
      database: z.object({
        host: z.string(),
@@ -365,7 +365,7 @@ const config = require('./config.json');
      }),
      features: z.record(z.boolean())
    });
-   
+
    type Config = z.infer<typeof ConfigSchema>;
    ```
 
@@ -421,14 +421,14 @@ worksheet.getCell('A1').style = {
        data: Array<Record<string, string | number>>;
      }
    }
-   
+
    // ExcelJS 類型簡化
    interface SimpleCellStyle {
      font?: { bold?: boolean; color?: string };
      fill?: { color: string };
      border?: boolean;
    }
-   
+
    function applyCellStyle(cell: ExcelJS.Cell, style: SimpleCellStyle) {
      // 類型安全的樣式應用
    }
@@ -443,7 +443,7 @@ worksheet.getCell('A1').style = {
        return <LineChart data={normalizeData(data)} {...config} />;
      }
    }
-   
+
    class TypeSafePDF {
      static addTable(doc: jsPDF, headers: string[], data: any[][]) {
        // 類型安全的表格添加
@@ -459,7 +459,7 @@ worksheet.getCell('A1').style = {
      instance: T;
      safeCall<R>(method: string, ...args: any[]): R | null;
    }
-   
+
    class GradualTypeImprovement {
      // 記錄類型使用情況，逐步改進
      static track(library: string, method: string, types: string[]) {

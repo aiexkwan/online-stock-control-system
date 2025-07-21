@@ -1,6 +1,15 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { safeString } from '@/types/database/helpers';
+
+interface OrderSummary {
+  percentage: number;
+  completedItems: number;
+  itemCount: number;
+  loadedQty: number;
+  totalQty: number;
+}
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { UnifiedSearch } from '../../components/ui/unified-search';
@@ -25,6 +34,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { loadPalletToOrder, undoLoadPallet, getOrderInfo } from '@/app/actions/orderLoadingActions';
+import { safeNumber } from '@/lib/widgets/types/enhanced-widget-types';
 import MobileOrderLoading from './components/MobileOrderLoading';
 import { VirtualizedOrderList, virtualScrollStyles } from './components/VirtualizedOrderList';
 import { useOrderDataCache, useOrderSummariesCache } from './hooks/useOrderCache';
@@ -32,12 +42,39 @@ import { useSoundFeedback, useSoundSettings } from '@/app/hooks/useSoundFeedback
 import { SoundSettingsToggle } from './components/SoundSettingsToggle';
 import { LoadingProgressChart } from './components/LoadingProgressChart';
 
+// 為了類型安全，複製 SearchResult 接口定義
+interface SearchResult {
+  id: string;
+  title: string;
+  subtitle: string;
+  metadata?: string;
+  data: Array<Record<string, unknown>>;
+}
+
 interface OrderData {
   order_ref: string;
   product_code: string;
   product_desc: string;
   product_qty: string;
   loaded_qty: string;
+}
+
+interface RecentLoad {
+  uuid?: string;
+  pallet_num?: string;
+  product_code: string;
+  quantity: number;
+  action_time: string;
+  [key: string]: unknown; // 允許其他屬性以保持兼容性
+}
+
+interface UndoItem {
+  pallet_num: string;
+  product_code: string;
+  quantity: number;
+  action_time?: string;
+  action_by?: string;
+  [key: string]: unknown; // 允許其他屬性以保持兼容性
 }
 
 interface OrderSummary {
@@ -63,11 +100,11 @@ export default function OrderLoadingPage() {
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [recentLoads, setRecentLoads] = useState<any[]>([]);
+  const [recentLoads, setRecentLoads] = useState<RecentLoad[]>([]);
   const [showRecentLoads, setShowRecentLoads] = useState(true);
   const [orderSearchQuery, setOrderSearchQuery] = useState('');
   const [showUndoDialog, setShowUndoDialog] = useState(false);
-  const [undoItem, setUndoItem] = useState<any>(null);
+  const [undoItem, setUndoItem] = useState<UndoItem | null>(null);
 
   // Cache hooks
   const orderDataCache = useOrderDataCache();
@@ -82,7 +119,7 @@ export default function OrderLoadingPage() {
 
   // Refs
   const idInputRef = useRef<HTMLInputElement>(null);
-  const searchInputRef = useRef<any>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Auto focus on ID input when page loads and check saved ID
   useEffect(() => {
@@ -133,7 +170,11 @@ export default function OrderLoadingPage() {
     setIsCheckingId(true);
 
     try {
-      const { data, error } = await supabase.from('data_id').select('id').eq('id', id).single();
+      const { data, error } = await supabase
+        .from('data_id')
+        .select('id')
+        .eq('id', parseInt(id))
+        .single();
 
       if (error || !data) {
         setIsIdValid(false);
@@ -161,7 +202,9 @@ export default function OrderLoadingPage() {
     try {
       // Check cache first
       const cacheKey = 'order-summaries-all';
-      const cachedSummaries = orderSummariesCache.get(cacheKey);
+      const cachedSummaries = orderSummariesCache.get(cacheKey) as
+        | Map<string, OrderSummary>
+        | undefined;
 
       if (cachedSummaries) {
         (process.env.NODE_ENV as string) !== 'production' &&
@@ -196,7 +239,7 @@ export default function OrderLoadingPage() {
       // Group by order_ref and calculate completion
       const orderMap = new Map<string, OrderSummary>();
       data.forEach(item => {
-        const ref = item.order_ref;
+        const ref = safeString(item.order_ref);
         if (!orderMap.has(ref)) {
           orderMap.set(ref, {
             orderRef: ref,
@@ -208,8 +251,8 @@ export default function OrderLoadingPage() {
           });
         }
         const order = orderMap.get(ref)!;
-        const itemQty = parseInt(item.product_qty || '0');
-        const itemLoaded = parseInt(item.loaded_qty || '0');
+        const itemQty = parseInt(String(item.product_qty || '0'));
+        const itemLoaded = parseInt(safeString(item.loaded_qty) || '0');
 
         order.totalQty += itemQty;
         order.loadedQty += itemLoaded;
@@ -243,7 +286,7 @@ export default function OrderLoadingPage() {
     try {
       // Check cache first
       const cacheKey = `order-data-${orderRef}`;
-      const cachedData = orderDataCache.get(cacheKey);
+      const cachedData = orderDataCache.get(cacheKey) as OrderData[] | undefined;
 
       if (cachedData) {
         (process.env.NODE_ENV as string) !== 'production' &&
@@ -275,7 +318,7 @@ export default function OrderLoadingPage() {
       }
 
       const orderDataArray = data || [];
-      setOrderData(orderDataArray);
+      setOrderData(orderDataArray as any);
 
       // Cache the order data
       orderDataCache.set(cacheKey, orderDataArray);
@@ -370,7 +413,7 @@ export default function OrderLoadingPage() {
             action_time: item.time,
           };
         });
-        setRecentLoads(transformedData);
+        setRecentLoads(transformedData as any);
       }
     } catch (error) {
       console.error('Error fetching recent loads:', error);
@@ -378,7 +421,7 @@ export default function OrderLoadingPage() {
   };
 
   // Open undo confirmation dialog
-  const handleUndoClick = (load: any) => {
+  const handleUndoClick = (load: UndoItem) => {
     setUndoItem(load);
     setShowUndoDialog(true);
   };
@@ -431,7 +474,7 @@ export default function OrderLoadingPage() {
   };
 
   // Handle search selection (same as stock-transfer)
-  const handleSearchSelect = async (result: Record<string, unknown>) => {
+  const handleSearchSelect = async (result: SearchResult) => {
     if (!selectedOrderRef) {
       toast.error('Please select an order first');
       return;
@@ -440,7 +483,14 @@ export default function OrderLoadingPage() {
     setIsSearching(true);
     try {
       // 使用 server action 裝載棧板
-      const response = await loadPalletToOrder(selectedOrderRef, result.data.value);
+      // 策略4: unknown + type narrowing - 安全獲取 input 值
+      const inputValue =
+        Array.isArray(result.data) && result.data.length > 0
+          ? typeof result.data[0]?.value === 'string'
+            ? result.data[0].value
+            : result.title
+          : (result.title ?? '');
+      const response = await loadPalletToOrder(selectedOrderRef, inputValue);
 
       if (response.success) {
         // Play success sound
@@ -558,7 +608,7 @@ export default function OrderLoadingPage() {
               onOrderSearchChange={setOrderSearchQuery}
               onOrderSelect={handleOrderSelect}
               onChangeUser={() => {}} // Keep empty function to avoid prop errors
-              orderData={orderData}
+              orderData={orderData as unknown as Record<string, unknown>[]}
               isLoadingOrders={isLoadingOrders}
               searchValue={searchValue}
               isSearching={isSearching}
@@ -809,7 +859,14 @@ export default function OrderLoadingPage() {
                                       <Button
                                         variant='ghost'
                                         size='sm'
-                                        onClick={() => handleUndoClick(load)}
+                                        onClick={() =>
+                                          handleUndoClick({
+                                            ...load,
+                                            pallet_num: load.pallet_num || '',
+                                            product_code: load.product_code,
+                                            quantity: load.quantity,
+                                          })
+                                        }
                                         className='h-6 w-6 p-0 hover:bg-red-500/20 hover:text-red-400'
                                         title='Undo this load'
                                       >
@@ -857,11 +914,15 @@ export default function OrderLoadingPage() {
               </div>
               <div className='flex justify-between'>
                 <span className='text-slate-500'>Loaded at:</span>
-                <span>{new Date(undoItem.action_time).toLocaleString()}</span>
+                <span>
+                  {undoItem.action_time
+                    ? new Date(undoItem.action_time).toLocaleString()
+                    : 'Unknown'}
+                </span>
               </div>
               <div className='flex justify-between'>
                 <span className='text-slate-500'>Loaded by:</span>
-                <span>{undoItem.action_by}</span>
+                <span>{undoItem.action_by || 'Unknown'}</span>
               </div>
             </div>
           )}

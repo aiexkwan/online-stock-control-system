@@ -179,7 +179,7 @@ interface OutlookMailService {
   // 認證
   authenticate(userId: string): Promise<void>
   refreshToken(userId: string): Promise<void>
-  
+
   // 郵件操作
   sendMail(options: {
     to: string[]
@@ -187,10 +187,10 @@ interface OutlookMailService {
     body: string
     attachments?: File[]
   }): Promise<string>
-  
+
   getMails(folder: string, filter?: MailFilter): Promise<Mail[]>
   moveMail(mailId: string, targetFolder: string): Promise<void>
-  
+
   // 聯絡人
   getContacts(filter?: ContactFilter): Promise<Contact[]>
   createContact(contact: ContactData): Promise<string>
@@ -226,10 +226,10 @@ interface OutlookCalendarService {
     isAllDay?: boolean
     recurrence?: RecurrencePattern
   }): Promise<string>
-  
+
   updateEvent(eventId: string, updates: Partial<Event>): Promise<void>
   deleteEvent(eventId: string): Promise<void>
-  
+
   // 查詢
   getEvents(start: Date, end: Date): Promise<Event[]>
   getUpcomingReminders(): Promise<Reminder[]>
@@ -270,19 +270,19 @@ interface OneDriveService {
   downloadFile(fileId: string): Promise<Blob>
   deleteFile(fileId: string): Promise<void>
   moveFile(fileId: string, targetPath: string): Promise<void>
-  
+
   // 資料夾操作
   createFolder(path: string): Promise<string>
   listFiles(folderId: string): Promise<DriveItem[]>
   watchFolder(folderId: string, callback: (changes: DriveItemChange[]) => void): Promise<void>
-  
+
   // 分享
   createShareLink(fileId: string, options: {
     type: 'view' | 'edit'
     expirationDateTime?: Date
     password?: string
   }): Promise<string>
-  
+
   // 搜尋
   searchFiles(query: string): Promise<DriveItem[]>
 }
@@ -292,12 +292,12 @@ interface OrderPdfMonitorService {
   // 監控設定
   setWatchFolder(userId: string, folderPath: string): Promise<void>
   getWatchFolders(userId: string): Promise<WatchFolder[]>
-  
+
   // 自動處理
   startMonitoring(): Promise<void>
   stopMonitoring(): Promise<void>
   processNewPdf(driveItem: DriveItem): Promise<OrderProcessResult>
-  
+
   // 狀態管理
   getProcessingStatus(fileId: string): Promise<ProcessingStatus>
   retryFailedFile(fileId: string): Promise<void>
@@ -646,26 +646,26 @@ graph TD
 // /app/services/orderPdfMonitor.ts
 export class OrderPdfMonitor {
   private pollInterval: NodeJS.Timer | null = null;
-  
+
   async startMonitoring(userId: string) {
     // 每 3 分鐘檢查一次
     this.pollInterval = setInterval(async () => {
       await this.checkForNewOrders(userId);
     }, 3 * 60 * 1000);
   }
-  
+
   async checkForNewOrders(userId: string) {
     try {
       // 1. 獲取監控文件夾嘅新文件
       const watchFolder = await this.getWatchFolder(userId);
       const newFiles = await this.oneDriveService.listFiles(watchFolder.folder_id);
-      
+
       // 2. 過濾出未處理嘅 PDF
-      const pdfFiles = newFiles.filter(file => 
-        file.name.endsWith('.pdf') && 
+      const pdfFiles = newFiles.filter(file =>
+        file.name.endsWith('.pdf') &&
         !await this.isProcessed(file.id)
       );
-      
+
       // 3. 處理每個 PDF
       for (const pdf of pdfFiles) {
         await this.processPdf(pdf);
@@ -674,22 +674,22 @@ export class OrderPdfMonitor {
       console.error('Error checking for new orders:', error);
     }
   }
-  
+
   async processPdf(driveItem: DriveItem) {
     try {
       // 1. 下載文件
       const fileBlob = await this.oneDriveService.downloadFile(driveItem.id);
       const file = new File([fileBlob], driveItem.name, { type: 'application/pdf' });
-      
+
       // 2. 調用現有嘅 PDF 分析 API
       const formData = new FormData();
       formData.append('file', file);
-      
+
       const response = await fetch('/api/analyze-order-pdf-assistant', {
         method: 'POST',
         body: formData
       });
-      
+
       if (response.ok) {
         // 3. 成功：移動到已處理文件夾
         await this.moveToProcessedFolder(driveItem.id);

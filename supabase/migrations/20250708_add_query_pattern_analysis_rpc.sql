@@ -13,7 +13,7 @@ RETURNS TABLE(
 ) AS $$
 BEGIN
   RETURN QUERY
-  SELECT 
+  SELECT
     COALESCE(fuzzy_hash, SUBSTRING(query_hash, 1, 16)) as pattern,
     COUNT(*)::BIGINT as count
   FROM query_record

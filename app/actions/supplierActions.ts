@@ -1,6 +1,6 @@
 /**
  * Supplier Server Actions
- * 
+ *
  * 處理所有供應商相關的服務器端操作
  * 包括搜索、創建和更新供應商
  */
@@ -10,6 +10,10 @@
 import { createClient } from '@/app/utils/supabase/server';
 import { errorHandler } from '@/app/components/qc-label-form/services/ErrorHandler';
 import { z } from 'zod';
+import type {
+  RpcSearchSupplierResponse,
+  RpcSupplierMutationResponse,
+} from '@/lib/types/rpc-supplier-types';
 
 // Type definitions
 interface SupplierData {
@@ -30,17 +34,32 @@ interface MutationResult {
 
 // Validation schemas
 const searchSupplierSchema = z.object({
-  code: z.string().min(1).transform(val => val.trim().toUpperCase()),
+  code: z
+    .string()
+    .min(1)
+    .transform(val => val.trim().toUpperCase()),
 });
 
 const createSupplierSchema = z.object({
-  code: z.string().min(1).transform(val => val.trim().toUpperCase()),
-  name: z.string().min(1).transform(val => val.trim()),
+  code: z
+    .string()
+    .min(1)
+    .transform(val => val.trim().toUpperCase()),
+  name: z
+    .string()
+    .min(1)
+    .transform(val => val.trim()),
 });
 
 const updateSupplierSchema = z.object({
-  code: z.string().min(1).transform(val => val.trim().toUpperCase()),
-  name: z.string().min(1).transform(val => val.trim()),
+  code: z
+    .string()
+    .min(1)
+    .transform(val => val.trim().toUpperCase()),
+  name: z
+    .string()
+    .min(1)
+    .transform(val => val.trim()),
 });
 
 /**
@@ -48,11 +67,13 @@ const updateSupplierSchema = z.object({
  */
 async function getCurrentUserId(): Promise<number> {
   const supabase = await createClient();
-  
+
   try {
     // Get current user info
-    const { data: { user } } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (!user?.email) {
       console.error('[supplierActions] No authenticated user found');
       return 999;
@@ -68,7 +89,7 @@ async function getCurrentUserId(): Promise<number> {
       return 999;
     }
 
-    return data || 999;
+    return typeof data === 'number' ? data : 999;
   } catch (error) {
     console.error('[supplierActions] Unexpected error getting user ID:', error);
     return 999;
@@ -77,19 +98,19 @@ async function getCurrentUserId(): Promise<number> {
 
 /**
  * 搜索供應商
- * 
+ *
  * @param code - 供應商代碼
  * @returns 搜索結果，包含是否存在和供應商資料
  */
 export async function searchSupplier(code: string): Promise<SearchSupplierResult> {
   const supabase = await createClient();
-  
+
   try {
     // Validate input
     const { code: validatedCode } = searchSupplierSchema.parse({ code });
-    
+
     const startTime = performance.now();
-    
+
     // Call RPC function
     const { data, error } = await supabase.rpc('rpc_search_supplier', {
       p_supplier_code: validatedCode,
@@ -107,19 +128,23 @@ export async function searchSupplier(code: string): Promise<SearchSupplierResult
       throw error;
     }
 
-    if (data && data.exists && data.supplier) {
+    if (
+      data &&
+      (data as unknown as RpcSearchSupplierResponse).exists &&
+      (data as unknown as RpcSearchSupplierResponse).supplier
+    ) {
       return {
         exists: true,
-        supplier: data.supplier,
+        supplier: (data as unknown as RpcSearchSupplierResponse).supplier,
       };
     }
-    
+
     return { exists: false };
   } catch (error) {
     if (error instanceof z.ZodError) {
       throw new Error('Invalid supplier code format');
     }
-    
+
     errorHandler.handleApiError(
       error as Error,
       { component: 'supplierActions', action: 'search_supplier' },
@@ -131,23 +156,23 @@ export async function searchSupplier(code: string): Promise<SearchSupplierResult
 
 /**
  * 創建新供應商
- * 
+ *
  * @param code - 供應商代碼
  * @param name - 供應商名稱
  * @returns 創建結果
  */
 export async function createSupplier(code: string, name: string): Promise<MutationResult> {
   const supabase = await createClient();
-  
+
   try {
     // Validate input
     const validated = createSupplierSchema.parse({ code, name });
-    
+
     // Get current user ID
     const userId = await getCurrentUserId();
-    
+
     const startTime = performance.now();
-    
+
     // Call RPC function
     const { data, error } = await supabase.rpc('rpc_create_supplier', {
       p_supplier_code: validated.code,
@@ -161,24 +186,25 @@ export async function createSupplier(code: string, name: string): Promise<Mutati
     if (error) {
       errorHandler.handleApiError(
         error,
-        { 
-          component: 'supplierActions', 
+        {
+          component: 'supplierActions',
           action: 'create_supplier',
-          additionalData: { supplierCode: validated.code }
+          additionalData: { supplierCode: validated.code },
         },
         'Failed to create supplier'
       );
       throw error;
     }
 
-    if (!data?.success) {
-      const errorMessage = data?.error || 'Failed to create supplier';
+    if (!(data as unknown as RpcSupplierMutationResponse)?.success) {
+      const errorMessage =
+        (data as unknown as RpcSupplierMutationResponse)?.error || 'Failed to create supplier';
       throw new Error(errorMessage);
     }
 
     return {
       success: true,
-      supplier: data.supplier,
+      supplier: (data as unknown as RpcSupplierMutationResponse).supplier,
     };
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -187,13 +213,13 @@ export async function createSupplier(code: string, name: string): Promise<Mutati
         error: 'Invalid supplier data format',
       };
     }
-    
+
     errorHandler.handleApiError(
       error as Error,
       { component: 'supplierActions', action: 'create_supplier' },
       'Unexpected error creating supplier'
     );
-    
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unexpected error',
@@ -203,23 +229,23 @@ export async function createSupplier(code: string, name: string): Promise<Mutati
 
 /**
  * 更新供應商
- * 
+ *
  * @param code - 供應商代碼
  * @param name - 新的供應商名稱
  * @returns 更新結果
  */
 export async function updateSupplier(code: string, name: string): Promise<MutationResult> {
   const supabase = await createClient();
-  
+
   try {
     // Validate input
     const validated = updateSupplierSchema.parse({ code, name });
-    
+
     // Get current user ID
     const userId = await getCurrentUserId();
-    
+
     const startTime = performance.now();
-    
+
     // Call RPC function
     const { data, error } = await supabase.rpc('rpc_update_supplier', {
       p_supplier_code: validated.code,
@@ -233,24 +259,25 @@ export async function updateSupplier(code: string, name: string): Promise<Mutati
     if (error) {
       errorHandler.handleApiError(
         error,
-        { 
-          component: 'supplierActions', 
+        {
+          component: 'supplierActions',
           action: 'update_supplier',
-          additionalData: { supplierCode: validated.code }
+          additionalData: { supplierCode: validated.code },
         },
         'Failed to update supplier'
       );
       throw error;
     }
 
-    if (!data?.success) {
-      const errorMessage = data?.error || 'Failed to update supplier';
+    if (!(data as unknown as RpcSupplierMutationResponse)?.success) {
+      const errorMessage =
+        (data as unknown as RpcSupplierMutationResponse)?.error || 'Failed to update supplier';
       throw new Error(errorMessage);
     }
 
     return {
       success: true,
-      supplier: data.supplier,
+      supplier: (data as unknown as RpcSupplierMutationResponse).supplier,
     };
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -259,13 +286,13 @@ export async function updateSupplier(code: string, name: string): Promise<Mutati
         error: 'Invalid supplier data format',
       };
     }
-    
+
     errorHandler.handleApiError(
       error as Error,
       { component: 'supplierActions', action: 'update_supplier' },
       'Unexpected error updating supplier'
     );
-    
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unexpected error',

@@ -118,9 +118,13 @@ export function useSupplierValidation(
           return null;
         }
 
-        setSupplierInfo(data);
+        const supplierInfo = {
+          supplier_code: data.supplier_code,
+          supplier_name: data.supplier_name || '',
+        };
+        setSupplierInfo(supplierInfo);
         setError(null);
-        return data;
+        return supplierInfo;
       } catch (err) {
         console.error('[useSupplierValidation] Error validating supplier:', err);
         setSupplierInfo(null);
@@ -177,7 +181,7 @@ export function useSupplierValidation(
           // Score and sort suggestions
           const scoredSuggestions: SupplierSuggestion[] = data.map(supplier => {
             const codeMatch = supplier.supplier_code.includes(upperSearchTerm);
-            const nameMatch = supplier.supplier_name
+            const nameMatch = (supplier.supplier_name || '')
               .toLowerCase()
               .includes(searchTerm.toLowerCase());
 
@@ -186,13 +190,16 @@ export function useSupplierValidation(
             if (supplier.supplier_code === upperSearchTerm) score = 100;
             else if (supplier.supplier_code.startsWith(upperSearchTerm)) score = 80;
             else if (codeMatch) score = 60;
-            else if (supplier.supplier_name.toLowerCase().startsWith(searchTerm.toLowerCase()))
+            else if (
+              (supplier.supplier_name || '').toLowerCase().startsWith(searchTerm.toLowerCase())
+            )
               score = 40;
             else if (nameMatch) score = 20;
 
             return {
-              ...supplier,
-              match_type: codeMatch ? 'code' : 'name',
+              supplier_code: supplier.supplier_code,
+              supplier_name: supplier.supplier_name || '',
+              match_type: codeMatch ? ('code' as const) : ('name' as const),
               match_score: score,
             };
           });
@@ -208,8 +215,8 @@ export function useSupplierValidation(
 
         setSuggestions([]);
         return [];
-      } catch (err: any) {
-        if (err.name !== 'AbortError') {
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name !== 'AbortError') {
           console.error('[useSupplierValidation] Error searching suppliers:', err);
         }
         setSuggestions([]);

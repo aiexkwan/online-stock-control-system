@@ -1,0 +1,26 @@
+export class AcoOrderRecordDto {
+  aco_ref?: string;
+  order_date?: string;
+  product_description?: string;
+  product_code?: string;
+  product_quantity?: number;
+  supplier_name?: string;
+  status?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export class AcoByDateResponseDto {
+  orderDate!: string;
+  records!: AcoOrderRecordDto[];
+  total_records!: number;
+  offset!: number;
+  limit!: number;
+}
+
+export class AcoReferencesResponseDto {
+  references!: string[];
+  total!: number;
+  offset!: number;
+  limit!: number;
+}

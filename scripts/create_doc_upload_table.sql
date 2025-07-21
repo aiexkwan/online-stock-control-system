@@ -8,40 +8,40 @@
 CREATE TABLE IF NOT EXISTS doc_upload (
     -- Primary key using UUID for better distributed systems compatibility
     uuid UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    
+
     -- Auto-incrementing ID for easier reference
     id SERIAL UNIQUE NOT NULL,
-    
+
     -- Document name (required)
     doc_name VARCHAR(255) NOT NULL,
-    
+
     -- Who uploaded the document (foreign key to data_id table)
     upload_by INTEGER NOT NULL,
-    
+
     -- Document type: 'image' for stock pictures, 'spec' for product specs, 'order' for order PDFs
     doc_type VARCHAR(50) NOT NULL CHECK (doc_type IN ('image', 'spec', 'order')),
-    
+
     -- Full public URL of the document
     doc_url TEXT,
-    
+
     -- File size in bytes
     file_size BIGINT,
-    
+
     -- Storage folder/bucket path
     folder VARCHAR(100),
-    
+
     -- Timestamp when the document was uploaded
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    
+
     -- Optional: Last updated timestamp
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    
+
     -- Optional: Soft delete flag
     is_deleted BOOLEAN DEFAULT FALSE,
-    
+
     -- Optional: Additional metadata as JSON
     metadata JSONB DEFAULT '{}'::jsonb,
-    
+
     -- Foreign key constraint (assuming data_id table exists)
     CONSTRAINT fk_upload_by FOREIGN KEY (upload_by) REFERENCES data_id(id) ON DELETE RESTRICT
 );
@@ -79,9 +79,9 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
-CREATE TRIGGER update_doc_upload_updated_at 
-    BEFORE UPDATE ON doc_upload 
-    FOR EACH ROW 
+CREATE TRIGGER update_doc_upload_updated_at
+    BEFORE UPDATE ON doc_upload
+    FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
 -- Grant permissions (adjust based on your needs)
@@ -113,7 +113,7 @@ CREATE TRIGGER update_doc_upload_updated_at
 
 -- Sample insert for testing (comment out in production)
 -- INSERT INTO doc_upload (doc_name, upload_by, doc_type, doc_url, file_size, folder)
--- VALUES 
+-- VALUES
 --     ('test-product-spec.pdf', 1, 'spec', 'https://example.com/test.pdf', 1024000, 'productSpec'),
 --     ('stock-image-001.jpg', 1, 'image', 'https://example.com/image.jpg', 512000, 'stockPic'),
 --     ('order-12345.pdf', 1, 'order', 'https://example.com/order.pdf', 2048000, 'orderpdf');

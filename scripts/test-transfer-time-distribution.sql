@@ -86,7 +86,7 @@ SELECT jsonb_pretty(
 -- Test 9: 檢查實際數據分布
 -- 顯示最近7天每天的 transfer 數量，用於驗證函數結果
 WITH daily_transfers AS (
-  SELECT 
+  SELECT
     DATE(tran_date) as transfer_date,
     COUNT(*) as transfer_count
   FROM record_transfer
@@ -94,7 +94,7 @@ WITH daily_transfers AS (
   GROUP BY DATE(tran_date)
   ORDER BY transfer_date DESC
 )
-SELECT 
+SELECT
   transfer_date,
   transfer_count,
   to_char(transfer_date, 'Day') as day_name
@@ -110,7 +110,7 @@ SELECT rpc_get_transfer_time_distribution(
 
 -- Test 11: 驗證索引使用情況
 EXPLAIN (ANALYZE, BUFFERS)
-SELECT COUNT(*) 
+SELECT COUNT(*)
 FROM record_transfer
 WHERE tran_date >= CURRENT_DATE - INTERVAL '7 days'
   AND tran_date < CURRENT_DATE;

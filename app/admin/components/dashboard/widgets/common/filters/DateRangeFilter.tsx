@@ -30,7 +30,7 @@ export const getYesterdayRange = (): TimeFrame => {
   yesterday.setDate(yesterday.getDate() - 1);
   const endOfYesterday = new Date(yesterday);
   endOfYesterday.setHours(23, 59, 59, 999);
-  
+
   return {
     start: yesterday,
     end: endOfYesterday,
@@ -41,7 +41,7 @@ export const getTodayRange = (): TimeFrame => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const now = new Date();
-  
+
   return {
     start: today,
     end: now,
@@ -53,7 +53,7 @@ export const getWeekRange = (): TimeFrame => {
   const startOfWeek = new Date(today);
   startOfWeek.setDate(today.getDate() - today.getDay());
   startOfWeek.setHours(0, 0, 0, 0);
-  
+
   return {
     start: startOfWeek,
     end: new Date(),
@@ -62,8 +62,8 @@ export const getWeekRange = (): TimeFrame => {
 
 export const getMonthRange = (): TimeFrame => {
   const today = new Date();
-  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  
+  const startOfMonth = new Date();
+
   return {
     start: startOfMonth,
     end: new Date(),
@@ -83,7 +83,7 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
   // Calculate initial date range
   const initialRange = useMemo(() => {
     if (dateRange) return dateRange;
-    
+
     switch (defaultRange) {
       case 'yesterday':
         return getYesterdayRange();
@@ -101,21 +101,24 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
   // Format date range for display
   const displayText = useMemo(() => {
     if (!initialRange) return 'Select date range';
-    
+
     const startStr = format(initialRange.start, dateFormat);
     const endStr = format(initialRange.end, dateFormat);
-    
+
     if (startStr === endStr) {
       return startStr;
     }
-    
+
     return `${startStr} - ${endStr}`;
   }, [initialRange, dateFormat]);
 
   // Quick option handlers
-  const handleQuickOption = useCallback((range: TimeFrame) => {
-    onDateRangeChange?.(range);
-  }, [onDateRangeChange]);
+  const handleQuickOption = useCallback(
+    (range: TimeFrame) => {
+      onDateRangeChange?.(range);
+    },
+    [onDateRangeChange]
+  );
 
   const sizeClasses = {
     sm: 'h-7 px-2 text-xs',
@@ -130,7 +133,7 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
         size={size === 'md' ? 'default' : size}
         className={cn('flex items-center gap-2', className)}
       >
-        <Calendar className="h-4 w-4" />
+        <Calendar className='h-4 w-4' />
         <span>{displayText}</span>
       </Button>
     );
@@ -138,10 +141,10 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
-      <div className="flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-900/50 p-1">
+      <div className='flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-900/50 p-1'>
         <Button
-          variant="ghost"
-          size="sm"
+          variant='ghost'
+          size='sm'
           onClick={() => handleQuickOption(getYesterdayRange())}
           className={cn(
             'h-7 px-2 text-xs',
@@ -151,8 +154,8 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
           Yesterday
         </Button>
         <Button
-          variant="ghost"
-          size="sm"
+          variant='ghost'
+          size='sm'
           onClick={() => handleQuickOption(getTodayRange())}
           className={cn(
             'h-7 px-2 text-xs',
@@ -162,8 +165,8 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
           Today
         </Button>
         <Button
-          variant="ghost"
-          size="sm"
+          variant='ghost'
+          size='sm'
           onClick={() => handleQuickOption(getWeekRange())}
           className={cn(
             'h-7 px-2 text-xs',
@@ -173,8 +176,8 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
           Week
         </Button>
         <Button
-          variant="ghost"
-          size="sm"
+          variant='ghost'
+          size='sm'
           onClick={() => handleQuickOption(getMonthRange())}
           className={cn(
             'h-7 px-2 text-xs',
@@ -184,10 +187,8 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
           Month
         </Button>
       </div>
-      
-      <div className="text-xs text-slate-400">
-        {displayText}
-      </div>
+
+      <div className='text-xs text-slate-400'>{displayText}</div>
     </div>
   );
 };
@@ -201,7 +202,7 @@ export const useWidgetDateRange = (
     if (timeFrame) {
       return timeFrame;
     }
-    
+
     switch (defaultRange) {
       case 'yesterday':
         return getYesterdayRange();

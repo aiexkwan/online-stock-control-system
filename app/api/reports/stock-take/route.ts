@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
 
-
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = await createClient();
@@ -49,38 +48,42 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     // 添加數據
     data?.forEach(record => {
-      const variance = (record.actual_qty || 0) - (record.expected_qty || 0);
-      const variancePct = record.expected_qty
-        ? (variance / record.expected_qty * 100).toFixed(2) + '%'
-        : 'N/A';
+      const countedQty = typeof record.counted_qty === 'number' ? record.counted_qty : 0;
+      const remainQty = typeof record.remain_qty === 'number' ? record.remain_qty : 0;
+      const variance = countedQty - remainQty;
+      const variancePct = remainQty ? ((variance / remainQty) * 100).toFixed(2) + '%' : 'N/A';
 
       const row = worksheet.addRow({
-        stocktake_date: record.stocktake_date
-          ? new Date(record.stocktake_date).toLocaleDateString()
-          : '',
-        location: record.location || '',
+        stocktake_date:
+          record.created_at &&
+          (typeof record.created_at === 'string' || typeof record.created_at === 'number')
+            ? new Date(record.created_at).toLocaleDateString()
+            : '',
+        location: record.plt_num || '',
         product_code: record.product_code,
-        product_des: record.product_des,
-        expected_qty: record.expected_qty || 0,
-        actual_qty: record.actual_qty || 0,
+        product_desc: record.product_desc,
+        expected_qty: record.remain_qty || 0,
+        actual_qty: record.counted_qty || 0,
         variance: variance,
         variance_pct: variancePct,
-        status: (record.status as string) || 'Pending',
-        counted_by: record.counted_by || '',
-        verified_by: record.verified_by || '',
-        notes: record.notes || '',
+        status: 'Completed',
+        counted_by: record.counted_name || '',
+        verified_by: '',
+        notes: '',
       });
 
       // 高亮顯示差異行
       if (variance !== 0) {
         row.getCell('variance').font = { color: { argb: variance > 0 ? 'FF008000' : 'FFFF0000' } };
-        row.getCell('variance_pct').font = { color: { argb: variance > 0 ? 'FF008000' : 'FFFF0000' } };
+        row.getCell('variance_pct').font = {
+          color: { argb: variance > 0 ? 'FF008000' : 'FFFF0000' },
+        };
       }
     });
 
     // 添加邊框
     worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-      row.eachCell({ includeEmpty: false }, (cell) => {
+      row.eachCell({ includeEmpty: false }, cell => {
         cell.border = {
           top: { style: 'thin' },
           left: { style: 'thin' },

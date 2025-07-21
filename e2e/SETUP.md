@@ -20,7 +20,7 @@ E2E_ADMIN_EMAIL=testadmin@pennineindustries.com
 E2E_ADMIN_PASSWORD=your_admin_password
 ```
 
-**Important:** 
+**Important:**
 - Email addresses MUST end with `@pennineindustries.com`
 - The test users must exist in your database with valid credentials
 
@@ -72,7 +72,7 @@ npx playwright test --debug
 ### Timeout Errors
 If you encounter timeout errors when running multiple tests:
 
-1. **Reduce parallel workers**: 
+1. **Reduce parallel workers**:
    ```bash
    npx playwright test --workers=1
    ```

@@ -17,6 +17,54 @@ interface ChatError {
   details?: Record<string, unknown>;
 }
 
+// 策略 2: DTO/自定義 type interface - 錯誤顯示轉換器
+interface ErrorDisplayData {
+  message: string;
+  details?: string;
+  suggestions?: string[];
+  alternatives?: string[];
+  showSchema?: boolean;
+  showExamples?: boolean;
+  showHelp?: boolean;
+}
+
+// 策略 4: unknown + type narrowing - 安全的錯誤轉換
+function convertChatErrorToDisplayError(
+  error: ChatError | Record<string, unknown>
+): ErrorDisplayData {
+  if (!error || typeof error !== 'object') {
+    return {
+      message: 'Unknown error occurred',
+      details: 'No error details available',
+    };
+  }
+
+  // 安全轉換為 Record<string, unknown> 以訪問動態屬性
+  const errorRecord = error as Record<string, unknown>;
+
+  // 從 ChatError 或 unknown 對象安全提取屬性
+  const message = typeof errorRecord.message === 'string' ? errorRecord.message : 'Unknown error';
+  const details = errorRecord.details
+    ? typeof errorRecord.details === 'string'
+      ? errorRecord.details
+      : JSON.stringify(errorRecord.details, null, 2)
+    : undefined;
+
+  return {
+    message,
+    details,
+    suggestions: Array.isArray(errorRecord.suggestions)
+      ? errorRecord.suggestions.filter((s): s is string => typeof s === 'string')
+      : undefined,
+    alternatives: Array.isArray(errorRecord.alternatives)
+      ? errorRecord.alternatives.filter((a): a is string => typeof a === 'string')
+      : undefined,
+    showSchema: typeof errorRecord.showSchema === 'boolean' ? errorRecord.showSchema : false,
+    showExamples: typeof errorRecord.showExamples === 'boolean' ? errorRecord.showExamples : false,
+    showHelp: typeof errorRecord.showHelp === 'boolean' ? errorRecord.showHelp : false,
+  };
+}
+
 export interface ChatMessage {
   id: string;
   type: 'user' | 'ai' | 'error';
@@ -150,9 +198,10 @@ export default function EnhancedChatInterface({ onNewMessage }: ChatInterfacePro
       const chatError: ChatError = {
         message: errorResponse.message,
         type: 'server',
-        details: errorResponse.details && typeof errorResponse.details === 'string' 
-          ? { details: errorResponse.details }
-          : undefined,
+        details:
+          errorResponse.details && typeof errorResponse.details === 'string'
+            ? { details: errorResponse.details }
+            : undefined,
       };
 
       const errorMessage: ChatMessage = {
@@ -211,7 +260,7 @@ export default function EnhancedChatInterface({ onNewMessage }: ChatInterfacePro
               return (
                 <ErrorDisplay
                   key={message.id}
-                  error={message.metadata?.error || {}}
+                  error={convertChatErrorToDisplayError(message.metadata?.error || ({} as any))}
                   onRetry={handleRetry}
                   onShowSchema={() => console.log('Show schema')}
                   onShowExamples={() => setShowSuggestions(true)}
@@ -274,10 +323,15 @@ function DataTable({ data }: { data: Record<string, unknown>[] }) {
     return <p className='text-slate-400'>No data to display</p>;
   }
 
-  // Unwrap data if it's wrapped in result objects
-  let actualData = data;
+  // Unwrap data if it's wrapped in result objects (策略 4: unknown + type narrowing)
+  let actualData: Record<string, unknown>[] = data;
   if (data[0] && data[0].result) {
-    actualData = data.map(item => item.result);
+    actualData = data
+      .map(item => item.result)
+      .filter(
+        (item): item is Record<string, unknown> =>
+          item !== null && typeof item === 'object' && !Array.isArray(item)
+      );
   }
 
   // Get columns from the first row

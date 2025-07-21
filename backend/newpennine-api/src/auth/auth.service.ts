@@ -5,7 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { DatabaseRecord } from '@/lib/types/database';
+import { DatabaseRecord } from '@/types/database/tables';
 import { ConfigService } from '@nestjs/config';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AuthLoginDto } from './dto/auth-login.dto';
@@ -334,7 +334,12 @@ export class AuthService {
     return uuidRegex.test(str);
   }
 
-  private async mapAuthUserToDto(authUser: any): Promise<UserDto> {
+  private async mapAuthUserToDto(authUser: {
+    id: string;
+    email: string;
+    user_metadata?: { name?: string };
+    [key: string]: unknown;
+  }): Promise<UserDto> {
     // Optionally get additional user info from data_id table for display name
     let displayName = authUser.user_metadata?.name || null;
     let role = 'user';
@@ -390,7 +395,14 @@ export class AuthService {
     return result;
   }
 
-  private mapDbUserToDto(dbUser: any): UserDto {
+  private mapDbUserToDto(dbUser: {
+    id: string;
+    email: string;
+    name?: string;
+    position?: string;
+    department?: string;
+    [key: string]: unknown;
+  }): UserDto {
     const result: Record<string, unknown> = {
       id: dbUser.id,
       email: dbUser.email,
@@ -421,7 +433,12 @@ export class AuthService {
     }
   }
 
-  private async getUserProfile(userId: string): Promise<any> {
+  private async getUserProfile(userId: string): Promise<{
+    name?: string;
+    role?: string;
+    department?: string;
+    position?: string;
+  } | null> {
     try {
       const { data, error } = await this.supabaseService
         .getClient()
@@ -437,14 +454,23 @@ export class AuthService {
         return null;
       }
 
-      return data;
+      return data
+        ? {
+            name: data.name,
+            role: data.position === 'Admin' ? 'admin' : 'user',
+            department: data.department,
+            position: data.position,
+          }
+        : null;
     } catch (error) {
       this.logger.error(`Get user profile error: ${(error as Error).message}`);
       return null;
     }
   }
 
-  async getUserProfileByEmail(email: string): Promise<{ data: DatabaseRecord[] }> {
+  async getUserProfileByEmail(
+    email: string,
+  ): Promise<{ data: DatabaseRecord[] }> {
     try {
       const { data, error } = await this.supabaseService
         .getClient()
@@ -457,22 +483,24 @@ export class AuthService {
         this.logger.warn(
           `User profile not found for email ${email}: ${error.message}`,
         );
-        return { data: null };
+        return { data: [] };
       }
 
       return {
-        data: {
-          name: data.name,
-          role: data.position === 'Admin' ? 'admin' : 'user',
-          department: data.department,
-          position: data.position,
-        },
+        data: [
+          {
+            name: data.name,
+            role: data.position === 'Admin' ? 'admin' : 'user',
+            department: data.department,
+            position: data.position,
+          },
+        ],
       };
     } catch (error) {
       this.logger.error(
         `Get user profile by email error: ${(error as Error).message}`,
       );
-      return { data: null };
+      return { data: [] };
     }
   }
 }

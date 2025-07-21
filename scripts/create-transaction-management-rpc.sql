@@ -44,7 +44,7 @@ BEGIN
     p_metadata,
     'in_progress'
   ) RETURNING id INTO v_log_id;
-  
+
   RETURN p_transaction_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -70,7 +70,7 @@ BEGIN
     operation_type,
     user_id
   )
-  SELECT 
+  SELECT
     p_transaction_id,
     p_step_name,
     p_step_sequence,
@@ -97,7 +97,7 @@ CREATE OR REPLACE FUNCTION complete_transaction(
 RETURNS VOID AS $$
 BEGIN
   UPDATE transaction_log
-  SET 
+  SET
     status = 'completed',
     completed_at = NOW(),
     post_state = p_post_state,
@@ -122,7 +122,7 @@ DECLARE
   v_source_info JSONB;
 BEGIN
   -- 獲取用戶信息和來源信息
-  SELECT user_id, 
+  SELECT user_id,
          jsonb_build_object(
            'source_module', source_module,
            'source_action', source_action,
@@ -132,7 +132,7 @@ BEGIN
   WHERE transaction_id = p_transaction_id
     AND step_name IS NULL
   LIMIT 1;
-  
+
   -- 寫入 report_log 表（長期保存）
   INSERT INTO report_log (
     error,
@@ -152,10 +152,10 @@ BEGIN
     false,
     v_user_id::INTEGER
   ) RETURNING uuid INTO v_report_log_id;
-  
+
   -- 更新 transaction_log
   UPDATE transaction_log
-  SET 
+  SET
     status = 'failed',
     error_code = p_error_code,
     error_message = p_error_message,
@@ -163,7 +163,7 @@ BEGIN
     error_stack = p_error_stack,
     report_log_id = v_report_log_id
   WHERE transaction_id = p_transaction_id;
-  
+
   RETURN v_report_log_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -183,15 +183,15 @@ DECLARE
 BEGIN
   -- 標記開始回滾
   UPDATE transaction_log
-  SET 
+  SET
     rollback_attempted = true,
     rollback_timestamp = NOW(),
     rollback_by = p_rollback_by,
     rollback_reason = p_rollback_reason
   WHERE transaction_id = p_transaction_id;
-  
+
   -- 獲取所有步驟，按相反順序回滾
-  FOR v_step IN 
+  FOR v_step IN
     SELECT * FROM transaction_log
     WHERE transaction_id = p_transaction_id
       AND step_name IS NOT NULL
@@ -207,30 +207,30 @@ BEGIN
               ARRAY(SELECT jsonb_array_elements_text(v_step.pre_state->'palletNumbers'))
             );
           END IF;
-          
+
         WHEN 'database_records' THEN
           -- 刪除創建的記錄
           IF v_step.pre_state->>'recordIds' IS NOT NULL THEN
             -- 這裡需要根據具體表結構實現刪除邏輯
             NULL; -- placeholder
           END IF;
-          
+
         ELSE
           -- 其他步驟的通用回滾邏輯
           NULL;
       END CASE;
-      
-      v_rollback_results := array_append(v_rollback_results, 
+
+      v_rollback_results := array_append(v_rollback_results,
         jsonb_build_object(
           'step', v_step.step_name,
           'success', true
         )
       );
-      
+
     EXCEPTION WHEN OTHERS THEN
       v_rollback_success := false;
       v_error_count := v_error_count + 1;
-      v_rollback_results := array_append(v_rollback_results, 
+      v_rollback_results := array_append(v_rollback_results,
         jsonb_build_object(
           'step', v_step.step_name,
           'success', false,
@@ -239,15 +239,15 @@ BEGIN
       );
     END;
   END LOOP;
-  
+
   -- 更新回滾結果
   UPDATE transaction_log
-  SET 
+  SET
     rollback_successful = v_rollback_success,
     status = CASE WHEN v_rollback_success THEN 'rolled_back' ELSE 'rollback_failed' END
   WHERE transaction_id = p_transaction_id
     AND step_name IS NULL;
-  
+
   RETURN jsonb_build_object(
     'success', v_rollback_success,
     'rolled_back_steps', array_length(v_rollback_results, 1),
@@ -284,7 +284,7 @@ DECLARE
 BEGIN
   -- 生成事務 ID
   v_transaction_id := gen_random_uuid();
-  
+
   -- 開始事務記錄
   PERFORM start_transaction(
     v_transaction_id,
@@ -302,7 +302,7 @@ BEGIN
       'count', p_count
     )
   );
-  
+
   BEGIN
     -- 調用原有的處理邏輯
     SELECT process_grn_label_unified(
@@ -311,7 +311,7 @@ BEGIN
       p_net_weights, p_quantities, p_pallet_count, p_package_count,
       p_pallet_type, p_package_type, p_pdf_urls
     ) INTO v_result;
-    
+
     -- 如果成功，完成事務
     IF v_result->>'success' = 'true' THEN
       PERFORM complete_transaction(
@@ -327,7 +327,7 @@ BEGIN
         v_result->>'message',
         v_result
       );
-      
+
       -- 執行回滾
       PERFORM rollback_transaction(
         v_transaction_id,
@@ -335,12 +335,12 @@ BEGIN
         'Processing failed'
       );
     END IF;
-    
+
     -- 添加事務 ID 到結果
     v_result := jsonb_set(v_result, '{transaction_id}', to_jsonb(v_transaction_id));
-    
+
     RETURN v_result;
-    
+
   EXCEPTION WHEN OTHERS THEN
     -- 記錄異常錯誤
     v_error_log_id := record_transaction_error(
@@ -349,14 +349,14 @@ BEGIN
       SQLERRM,
       jsonb_build_object('error_detail', SQLSTATE)
     );
-    
+
     -- 嘗試回滾
     PERFORM rollback_transaction(
       v_transaction_id,
       p_clock_number,
       'Exception occurred: ' || SQLERRM
     );
-    
+
     RETURN jsonb_build_object(
       'success', false,
       'message', SQLERRM,

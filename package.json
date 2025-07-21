@@ -61,11 +61,22 @@
     "vitest:coverage": "vitest --coverage",
     "vitest:run": "vitest run",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "tech-debt:collect": "node scripts/collect-tech-debt-metrics.js",
+    "tech-debt:collect:fast": "SKIP_TESTS=true SKIP_BUILD=true node scripts/collect-tech-debt-metrics.js",
+    "tech-debt:collect:verbose": "VERBOSE=true node scripts/collect-tech-debt-metrics.js",
+    "tech-debt:push": "node scripts/push-tech-debt-metrics.js",
+    "tech-debt:collect-and-push": "npm run tech-debt:collect:fast && npm run tech-debt:push",
+    "tech-debt:check": "node scripts/apply-tech-debt-thresholds.js check",
+    "tech-debt:report": "node scripts/apply-tech-debt-thresholds.js report",
+    "tech-debt:check:staging": "TECH_DEBT_ENV=staging npm run tech-debt:check",
+    "tech-debt:check:production": "TECH_DEBT_ENV=production npm run tech-debt:check",
+    "pre-commit:install": "bash scripts/setup-pre-commit.sh",
+    "pre-commit:run": "pre-commit run --all-files",
+    "pre-commit:skip": "SKIP=tech-debt-check git commit"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.40.1",
-    "@axe-core/playwright": "^4.10.2",
     "@fontsource/lato": "^5.2.6",
     "@formatjs/intl-localematcher": "^0.5.9",
     "@heroicons/react": "^2.2.0",
@@ -182,6 +193,7 @@
     "zustand": "^5.0.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
     "@chromatic-com/storybook": "^4.0.1",
     "@faker-js/faker": "^9.9.0",
     "@jest/globals": "^29.7.0",

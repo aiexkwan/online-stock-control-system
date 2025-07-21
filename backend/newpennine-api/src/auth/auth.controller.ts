@@ -9,6 +9,7 @@ import {
   Get,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -131,7 +132,9 @@ export class AuthController {
     description: 'Unauthorized',
     type: AuthErrorDto,
   })
-  async getProfile(@Request() req: any) {
+  async getProfile(
+    @Request() req: ExpressRequest & { user?: { sub: string; email: string } },
+  ) {
     const user = await this.authService.validateUser(req.user.userId);
     if (!user) {
       throw new UnauthorizedException('User not found');
@@ -159,7 +162,9 @@ export class AuthController {
     description: 'Unauthorized',
     type: AuthErrorDto,
   })
-  async logout(@Request() req: any) {
+  async logout(
+    @Request() req: ExpressRequest & { user?: { sub: string; email: string } },
+  ) {
     await this.authService.logout(req.user.userId);
     return { message: 'Logout successful' };
   }
@@ -185,7 +190,9 @@ export class AuthController {
     description: 'Invalid token',
     type: AuthErrorDto,
   })
-  async verifyToken(@Request() req: any) {
+  async verifyToken(
+    @Request() req: ExpressRequest & { user?: { sub: string; email: string } },
+  ) {
     return {
       valid: true,
       userId: req.user.userId,

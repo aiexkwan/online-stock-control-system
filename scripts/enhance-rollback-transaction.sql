@@ -19,15 +19,15 @@ DECLARE
 BEGIN
   -- 標記開始回滾
   UPDATE transaction_log
-  SET 
+  SET
     rollback_attempted = true,
     rollback_timestamp = NOW(),
     rollback_by = p_rollback_by,
     rollback_reason = p_rollback_reason
   WHERE transaction_id = p_transaction_id;
-  
+
   -- 獲取所有步驟，按相反順序回滾
-  FOR v_step IN 
+  FOR v_step IN
     SELECT * FROM transaction_log
     WHERE transaction_id = p_transaction_id
       AND step_name IS NOT NULL
@@ -36,18 +36,18 @@ BEGIN
     BEGIN
       -- 根據步驟類型執行相應的回滾操作
       CASE v_step.step_name
-        
+
         -- 1. 回滾 PDF 生成（目前只記錄，實際 PDF 文件可能需要從 storage 刪除）
         WHEN 'pdf_generation' THEN
           -- 記錄 PDF 回滾（實際刪除需要調用 storage API）
-          v_rollback_results := array_append(v_rollback_results, 
+          v_rollback_results := array_append(v_rollback_results,
             jsonb_build_object(
               'step', v_step.step_name,
               'success', true,
               'message', 'PDF generation rollback recorded (manual cleanup may be required)'
             )
           );
-          
+
         -- 2. 回滾數據庫記錄
         WHEN 'database_records' THEN
           -- 獲取棧板號碼列表
@@ -55,40 +55,40 @@ BEGIN
             v_pallet_numbers := ARRAY(
               SELECT jsonb_array_elements_text(v_step.pre_state->'palletNumbers')
             );
-            
+
             -- 刪除 record_inventory 記錄
-            DELETE FROM record_inventory 
+            DELETE FROM record_inventory
             WHERE plt_num = ANY(v_pallet_numbers);
             GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
-            
+
             -- 刪除 record_history 記錄（只刪除 GRN Receiving 動作）
-            DELETE FROM record_history 
+            DELETE FROM record_history
             WHERE plt_num = ANY(v_pallet_numbers)
               AND action = 'GRN Receiving';
             GET DIAGNOSTICS v_deleted_count = v_deleted_count + ROW_COUNT;
-            
+
             -- 刪除 record_grn 記錄
-            DELETE FROM record_grn 
+            DELETE FROM record_grn
             WHERE plt_num = ANY(v_pallet_numbers);
             GET DIAGNOSTICS v_deleted_count = v_deleted_count + ROW_COUNT;
-            
+
             -- 刪除 record_palletinfo 記錄
-            DELETE FROM record_palletinfo 
+            DELETE FROM record_palletinfo
             WHERE plt_num = ANY(v_pallet_numbers);
             GET DIAGNOSTICS v_deleted_count = v_deleted_count + ROW_COUNT;
-            
+
             -- 添加回滾歷史記錄
             INSERT INTO record_history (time, id, action, plt_num, loc, remark)
-            SELECT 
-              NOW(), 
-              p_rollback_by::INTEGER, 
-              'GRN Rollback', 
+            SELECT
+              NOW(),
+              p_rollback_by::INTEGER,
+              'GRN Rollback',
               unnest(v_pallet_numbers),
               'System',
               format('Transaction %s rolled back: %s', p_transaction_id, p_rollback_reason)
             ;
-            
-            v_rollback_results := array_append(v_rollback_results, 
+
+            v_rollback_results := array_append(v_rollback_results,
               jsonb_build_object(
                 'step', v_step.step_name,
                 'success', true,
@@ -97,7 +97,7 @@ BEGIN
               )
             );
           END IF;
-          
+
         -- 3. 回滾棧板號碼分配
         WHEN 'pallet_allocation' THEN
           -- 釋放棧板號碼
@@ -105,17 +105,17 @@ BEGIN
             v_pallet_numbers := ARRAY(
               SELECT jsonb_array_elements_text(v_step.pre_state->'palletNumbers')
             );
-            
+
             -- 調用釋放函數
             PERFORM release_pallet_reservation(v_pallet_numbers);
-            
+
             -- 驗證釋放是否成功
             SELECT COUNT(*) INTO v_updated_count
             FROM pallet_number_buffer
             WHERE pallet_number = ANY(v_pallet_numbers)
               AND status = 'False';
-            
-            v_rollback_results := array_append(v_rollback_results, 
+
+            v_rollback_results := array_append(v_rollback_results,
               jsonb_build_object(
                 'step', v_step.step_name,
                 'success', v_updated_count = array_length(v_pallet_numbers, 1),
@@ -124,11 +124,11 @@ BEGIN
               )
             );
           END IF;
-          
+
         -- 4. 處理其他步驟類型
         ELSE
           -- 通用回滾邏輯（可根據需要擴展）
-          v_rollback_results := array_append(v_rollback_results, 
+          v_rollback_results := array_append(v_rollback_results,
             jsonb_build_object(
               'step', v_step.step_name,
               'success', true,
@@ -136,11 +136,11 @@ BEGIN
             )
           );
       END CASE;
-      
+
     EXCEPTION WHEN OTHERS THEN
       v_rollback_success := false;
       v_error_count := v_error_count + 1;
-      v_rollback_results := array_append(v_rollback_results, 
+      v_rollback_results := array_append(v_rollback_results,
         jsonb_build_object(
           'step', v_step.step_name,
           'success', false,
@@ -150,16 +150,16 @@ BEGIN
       );
     END;
   END LOOP;
-  
+
   -- 更新回滾結果
   UPDATE transaction_log
-  SET 
+  SET
     rollback_successful = v_rollback_success,
     status = CASE WHEN v_rollback_success THEN 'rolled_back' ELSE 'rollback_failed' END,
     compensation_actions = to_jsonb(v_rollback_results)
   WHERE transaction_id = p_transaction_id
     AND step_name IS NULL;
-  
+
   RETURN jsonb_build_object(
     'success', v_rollback_success,
     'rolled_back_steps', array_length(v_rollback_results, 1),
@@ -185,29 +185,29 @@ BEGIN
   -- 開始事務
   BEGIN
     -- 1. 刪除庫存記錄
-    DELETE FROM record_inventory 
+    DELETE FROM record_inventory
     WHERE plt_num = ANY(p_pallet_numbers);
     GET DIAGNOSTICS v_deleted_inventory = ROW_COUNT;
-    
+
     -- 2. 刪除歷史記錄（只刪除 GRN 相關）
-    DELETE FROM record_history 
+    DELETE FROM record_history
     WHERE plt_num = ANY(p_pallet_numbers)
       AND action IN ('GRN Receiving', 'GRN Label Printed');
     GET DIAGNOSTICS v_deleted_history = ROW_COUNT;
-    
+
     -- 3. 刪除 GRN 記錄
-    DELETE FROM record_grn 
+    DELETE FROM record_grn
     WHERE plt_num = ANY(p_pallet_numbers);
     GET DIAGNOSTICS v_deleted_grn = ROW_COUNT;
-    
+
     -- 4. 刪除棧板信息
-    DELETE FROM record_palletinfo 
+    DELETE FROM record_palletinfo
     WHERE plt_num = ANY(p_pallet_numbers);
     GET DIAGNOSTICS v_deleted_palletinfo = ROW_COUNT;
-    
+
     -- 5. 釋放棧板號碼
     PERFORM release_pallet_reservation(p_pallet_numbers);
-    
+
     v_result := jsonb_build_object(
       'success', true,
       'deleted', jsonb_build_object(
@@ -219,9 +219,9 @@ BEGIN
       'pallet_numbers', p_pallet_numbers,
       'total_deleted', v_deleted_palletinfo + v_deleted_grn + v_deleted_inventory + v_deleted_history
     );
-    
+
     RETURN v_result;
-    
+
   EXCEPTION WHEN OTHERS THEN
     -- 如果出錯，返回錯誤信息
     RETURN jsonb_build_object(
@@ -244,7 +244,7 @@ DECLARE
   v_steps JSONB[];
 BEGIN
   -- 獲取主事務記錄
-  SELECT 
+  SELECT
     transaction_id,
     source_module,
     source_action,
@@ -261,14 +261,14 @@ BEGIN
   WHERE transaction_id = p_transaction_id
     AND step_name IS NULL
   LIMIT 1;
-  
+
   IF NOT FOUND THEN
     RETURN jsonb_build_object(
       'success', false,
       'error', 'Transaction not found'
     );
   END IF;
-  
+
   -- 獲取所有步驟
   SELECT array_agg(
     jsonb_build_object(
@@ -281,7 +281,7 @@ BEGIN
   FROM transaction_log
   WHERE transaction_id = p_transaction_id
     AND step_name IS NOT NULL;
-  
+
   -- 構建結果
   v_result := jsonb_build_object(
     'success', true,
@@ -302,7 +302,7 @@ BEGIN
     ),
     'steps', v_steps
   );
-  
+
   RETURN v_result;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

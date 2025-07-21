@@ -30,7 +30,7 @@ const PERFORMANCE_TARGETS = {
 // 測量 Web Vitals
 async function measureWebVitals(page, url) {
   console.log(`\n📊 測量 ${url} 的性能指標...`);
-  
+
   const metrics = await page.evaluate(() => {
     return new Promise((resolve) => {
       const metrics = {
@@ -120,10 +120,10 @@ async function measureWebVitals(page, url) {
 // 運行單個頁面測試
 async function testPage(browser, pageConfig) {
   const page = await browser.newPage();
-  
+
   // 設置視口大小
   await page.setViewport({ width: 1920, height: 1080 });
-  
+
   // 啟用 CPU 和網絡節流
   const client = await page.target().createCDPSession();
   await client.send('Network.enable');
@@ -133,18 +133,18 @@ async function testPage(browser, pageConfig) {
     uploadThroughput: 750 * 1024 / 8,          // 750 Kbps
     latency: 40,
   });
-  
+
   await client.send('Emulation.setCPUThrottlingRate', { rate: 4 });
-  
+
   const url = `${TEST_URL}${pageConfig.path}`;
-  
+
   try {
     // 導航到頁面
     await page.goto(url, { waitUntil: 'networkidle0', timeout: 30000 });
-    
+
     // 測量性能指標
     const metrics = await measureWebVitals(page, url);
-    
+
     // 獲取導航時間
     const navigationTiming = await page.evaluate(() => {
       const timing = performance.getEntriesByType('navigation')[0];
@@ -153,20 +153,20 @@ async function testPage(browser, pageConfig) {
         loadComplete: timing.loadEventEnd - timing.fetchStart,
       };
     });
-    
+
     // 計算 bundle 大小
     const coverage = await page.coverage.startJSCoverage();
     await page.reload({ waitUntil: 'networkidle0' });
     const jsCoverage = await page.coverage.stopJSCoverage();
-    
+
     const totalBundleSize = jsCoverage.reduce((acc, entry) => acc + entry.text.length, 0);
     const usedBundleSize = jsCoverage.reduce((acc, entry) => {
       const usedLength = entry.ranges.reduce((sum, range) => sum + (range.end - range.start), 0);
       return acc + usedLength;
     }, 0);
-    
+
     await page.close();
-    
+
     return {
       name: pageConfig.name,
       path: pageConfig.path,
@@ -210,7 +210,7 @@ function generateReport(results) {
       if (result.error) {
         return result;
       }
-      
+
       const { metrics } = result;
       const scores = {
         FCP: calculateScore(metrics.FCP, PERFORMANCE_TARGETS.FCP),
@@ -218,9 +218,9 @@ function generateReport(results) {
         TTI: calculateScore(metrics.TTI, PERFORMANCE_TARGETS.TTI),
         CLS: calculateScore(metrics.CLS, PERFORMANCE_TARGETS.CLS, true),
       };
-      
+
       const overallScore = (scores.FCP + scores.LCP + scores.TTI + scores.CLS) / 4;
-      
+
       return {
         ...result,
         scores,
@@ -234,7 +234,7 @@ function generateReport(results) {
       recommendations: [],
     },
   };
-  
+
   // 計算平均分數
   const validResults = results.filter(r => !r.error);
   if (validResults.length > 0) {
@@ -245,7 +245,7 @@ function generateReport(results) {
       CLS: (validResults.reduce((sum, r) => sum + r.scores.CLS, 0) / validResults.length).toFixed(1),
       overall: (validResults.reduce((sum, r) => sum + parseFloat(r.overallScore), 0) / validResults.length).toFixed(1),
     };
-    
+
     // 生成建議
     if (report.summary.averageScores.FCP < 70) {
       report.summary.recommendations.push('🎯 First Contentful Paint 需要優化，考慮減少初始 bundle 大小');
@@ -260,7 +260,7 @@ function generateReport(results) {
       report.summary.recommendations.push('📐 Cumulative Layout Shift 需要優化，確保元素有固定尺寸');
     }
   }
-  
+
   return report;
 }
 
@@ -269,42 +269,42 @@ async function main() {
   console.log('🚀 開始 Lighthouse 性能測試...');
   console.log(`📍 測試 URL: ${TEST_URL}`);
   console.log(`📝 測試頁面數: ${TEST_PAGES.length}`);
-  
+
   const browser = await puppeteer.launch({
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
-  
+
   const results = [];
-  
+
   for (const pageConfig of TEST_PAGES) {
     const result = await testPage(browser, pageConfig);
     results.push(result);
-    
+
     if (!result.error) {
       console.log(`✓ ${result.name}: 總分 ${result.overallScore} ${result.status}`);
     }
   }
-  
+
   await browser.close();
-  
+
   // 生成報告
   const report = generateReport(results);
-  
+
   // 保存 JSON 報告
   const reportDir = path.join(__dirname, '..', 'performance-reports');
   if (!fs.existsSync(reportDir)) {
     fs.mkdirSync(reportDir, { recursive: true });
   }
-  
+
   const jsonPath = path.join(reportDir, `lighthouse-report-${Date.now()}.json`);
   fs.writeFileSync(jsonPath, JSON.stringify(report, null, 2));
-  
+
   // 打印摘要
   console.log('\n📊 性能測試摘要');
   console.log('================');
   console.log(`總體評分: ${report.summary.averageScores.overall}/100 ${
-    report.summary.averageScores.overall >= 90 ? '✅ 優秀' : 
+    report.summary.averageScores.overall >= 90 ? '✅ 優秀' :
     report.summary.averageScores.overall >= 70 ? '⚠️ 需要改進' : '❌ 較差'
   }`);
   console.log(`\n各項指標平均分:`);
@@ -312,14 +312,14 @@ async function main() {
   console.log(`- LCP: ${report.summary.averageScores.LCP}/100`);
   console.log(`- TTI: ${report.summary.averageScores.TTI}/100`);
   console.log(`- CLS: ${report.summary.averageScores.CLS}/100`);
-  
+
   if (report.summary.recommendations.length > 0) {
     console.log(`\n優化建議:`);
     report.summary.recommendations.forEach(rec => console.log(rec));
   }
-  
+
   console.log(`\n📄 詳細報告已保存到: ${jsonPath}`);
-  
+
   // 更新性能基準文檔
   updatePerformanceDoc(report);
 }
@@ -327,7 +327,7 @@ async function main() {
 // 更新性能文檔
 function updatePerformanceDoc(report) {
   const docPath = path.join(__dirname, '..', 'docs', 'performance-test-results.md');
-  
+
   const content = `# Lighthouse 性能測試結果
 
 ## 測試時間: ${report.timestamp}
@@ -370,7 +370,7 @@ ${report.summary.recommendations.length > 0 ? report.summary.recommendations.joi
 - CPU: 4x 節流
 - 視口: 1920x1080
 `;
-  
+
   fs.writeFileSync(docPath, content);
   console.log(`\n📝 性能文檔已更新: ${docPath}`);
 }

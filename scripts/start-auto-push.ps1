@@ -8,4 +8,4 @@ Write-Host "正在安裝必要的套件..." -ForegroundColor Green
 npm install
 
 Write-Host "啟動自動推送功能..." -ForegroundColor Green
-npm run auto-push 
+npm run auto-push

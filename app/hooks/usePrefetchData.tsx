@@ -7,7 +7,7 @@ interface PrefetchOptions {
   queries?: Array<{
     table: string;
     select: string;
-    filter?: any;
+    filter?: Record<string, unknown>;
     limit?: number;
   }>;
   refreshInterval?: number;
@@ -38,7 +38,7 @@ export const usePrefetchData = (options: PrefetchOptions = {}) => {
   const { enabled = true, tables = [], queries = [], refreshInterval = 0 } = options;
 
   const supabase = createClient();
-  const prefetchedData = useRef<Map<string, any>>(new Map());
+  const prefetchedData = useRef<Map<string, unknown>>(new Map());
   const refreshTimer = useRef<NodeJS.Timeout>();
 
   // 預取資料
@@ -47,7 +47,7 @@ export const usePrefetchData = (options: PrefetchOptions = {}) => {
 
     const promises = queries.map(async query => {
       try {
-        const queryBuilder = supabase.from(query.table).select(query.select);
+        const queryBuilder = (supabase as any).from(query.table).select(query.select);
 
         // 應用過濾條件
         if (query.filter) {
@@ -64,7 +64,7 @@ export const usePrefetchData = (options: PrefetchOptions = {}) => {
         const { data, error } = await queryBuilder;
 
         if (!error && data) {
-          const cacheKey = `${query.table}-${JSON.stringify(query.filter || {})}`;
+          const cacheKey = `${query.table}-${JSON.stringify(query.filter || ({} as any))}`;
           prefetchedData.current.set(cacheKey, data);
           (process.env.NODE_ENV as string) !== 'production' &&
             (process.env.NODE_ENV as string) !== 'production' &&
@@ -79,8 +79,8 @@ export const usePrefetchData = (options: PrefetchOptions = {}) => {
   }, [enabled, queries, supabase]);
 
   // 獲取預取的資料
-  const getPrefetchedData = useCallback((table: string, filter?: any) => {
-    const cacheKey = `${table}-${JSON.stringify(filter || {})}`;
+  const getPrefetchedData = useCallback((table: string, filter?: Record<string, unknown>) => {
+    const cacheKey = `${table}-${JSON.stringify(filter || ({} as any))}`;
     return prefetchedData.current.get(cacheKey);
   }, []);
 

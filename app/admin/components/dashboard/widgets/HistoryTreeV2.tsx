@@ -1,7 +1,7 @@
 /**
  * 統一歷史記錄組件 V2 - Enhanced Version with Progressive Loading
  * 顯示系統全局歷史記錄
- * 
+ *
  * Features:
  * - 使用 useUnifiedAPI hook 統一數據獲取
  * - Progressive Loading with useInViewport
@@ -24,7 +24,7 @@ import {
   ArrowRightIcon,
 } from '@heroicons/react/24/outline';
 import { DocumentArrowDownIcon, ClipboardDocumentListIcon } from '@heroicons/react/24/outline';
-import { TraditionalWidgetComponentProps } from '@/app/types/dashboard';
+import { TraditionalWidgetComponentProps } from '@/types/components/dashboard';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UniversalWidgetCard as WidgetCard } from '../UniversalWidgetCard';
 import { Timeline } from '@/components/ui/timeline';
@@ -38,11 +38,11 @@ import {
   GlowStyles,
 } from '../WidgetTypography';
 import { cn } from '@/lib/utils';
-import { 
-  brandColors, 
-  widgetColors, 
+import {
+  brandColors,
+  widgetColors,
   semanticColors,
-  getWidgetCategoryColor 
+  getWidgetCategoryColor,
 } from '@/lib/design-system/colors';
 import { textClasses, getTextClass } from '@/lib/design-system/typography';
 import { spacing, widgetSpacing } from '@/lib/design-system/spacing';
@@ -50,15 +50,14 @@ import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/
 import { useRestAPI } from '@/app/admin/hooks/useUnifiedAPI';
 import { useInViewport, InViewportPresets } from '@/app/admin/hooks/useInViewport';
 import { WidgetSkeleton } from './common/WidgetStates';
-import { 
-  MergedEvent, 
-  HistoryApiResponse, 
+import {
+  MergedEvent,
+  HistoryApiResponse,
   WidgetApiMapper,
-  ApiMetadata 
+  ApiMetadata,
 } from './types/WidgetApiTypes';
 
 // MergedEvent interface moved to WidgetApiTypes.ts
-
 
 interface HistoryTreeV2Props extends TraditionalWidgetComponentProps {
   useGraphQL?: boolean;
@@ -189,24 +188,23 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
   useGraphQL,
 }: HistoryTreeV2Props) {
   const widgetRef = useRef<HTMLDivElement>(null);
-  
+
   // Progressive Loading - 檢測 widget 是否在視窗內
   const { isInViewport, hasBeenInViewport } = useInViewport(widgetRef, InViewportPresets.chart);
-  
+
   // Use REST API directly
-  const {
-    data,
-    loading,
-    error,
-    refetch,
-  } = useRestAPI<HistoryApiResponse>('/api/dashboard/widgets/history-tree', 'GET', {
-    variables: { limit: 50, offset: 0 },
-    skip: isEditMode || !hasBeenInViewport, // Progressive Loading
-    widgetId: 'history-tree-v2',
-    onError: (err) => {
-      console.error('History tree error:', err);
-    },
-  });
+  const { data, loading, error, refetch } = useRestAPI<HistoryApiResponse>(
+    '/api/dashboard/widgets/history-tree',
+    'GET',
+    {
+      variables: { limit: 50, offset: 0 },
+      skip: isEditMode || !hasBeenInViewport, // Progressive Loading
+      widgetId: 'history-tree-v2',
+      onError: err => {
+        console.error('History tree error:', err);
+      },
+    }
+  );
 
   // 定義 mode 和 performanceMetrics 變數
   const mode = 'rest-api'; // 使用 REST API 模式
@@ -223,7 +221,7 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
   const displayEvents = useMemo((): MergedEvent[] => {
     return WidgetApiMapper.extractEvents(data);
   }, [data]);
-  const metadata = data?.metadata || {};
+  const metadata = data?.metadata || ({} as any);
 
   // 將事件轉換為 Timeline 組件需要的格式
   const timelineItems = useMemo(() => {
@@ -238,7 +236,12 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
   // Progressive Loading - 如果還未進入視窗，顯示 skeleton
   if (!hasBeenInViewport && !isEditMode) {
     return (
-      <motion.div ref={widgetRef} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className='h-full'>
+      <motion.div
+        ref={widgetRef}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className='h-full'
+      >
         <WidgetCard widgetType='custom'>
           <CardHeader className='pb-3'>
             <CardTitle>History Tree</CardTitle>
@@ -252,21 +255,22 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
   }
 
   return (
-    <motion.div ref={widgetRef} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className='h-full'>
+    <motion.div
+      ref={widgetRef}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className='h-full'
+    >
       <WidgetCard widgetType='custom' isEditMode={isEditMode}>
         <CardHeader className='pb-4'>
           <CardTitle className='flex items-center justify-between'>
             <span>History Tree</span>
             <div className='flex items-center gap-2'>
               {mode === 'rest-api' && (
-                <span className={cn(textClasses['label-small'], 'text-primary')}>
-                  🚀 REST API
-                </span>
+                <span className={cn(textClasses['label-small'], 'text-primary')}>🚀 REST API</span>
               )}
               {performanceMetrics.optimized && (
-                <span className={cn(textClasses['label-small'], 'text-success')}>
-                  ⚡ Optimized
-                </span>
+                <span className={cn(textClasses['label-small'], 'text-success')}>⚡ Optimized</span>
               )}
               {!isEditMode && performanceMetrics?.queryTime && (
                 <span className={cn(textClasses['label-small'], 'text-muted-foreground')}>
@@ -286,7 +290,10 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
                 {error instanceof Error ? error.message : 'Failed to load history data'}
               </WidgetText>
               {mode === 'rest-api' && (
-                <WidgetText size='xs' className={cn('text-center', textClasses['body-small'], 'text-muted-foreground')}>
+                <WidgetText
+                  size='xs'
+                  className={cn('text-center', textClasses['body-small'], 'text-muted-foreground')}
+                >
                   REST API connection failed. Please try again.
                 </WidgetText>
               )}
@@ -322,7 +329,7 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
                     onClick={() => refetch()}
                     className={cn(
                       textClasses['label-base'],
-                      'text-primary hover:text-primary/80 transition-colors'
+                      'text-primary transition-colors hover:text-primary/80'
                     )}
                   >
                     Load more events

@@ -1,0 +1,211 @@
+'use client';
+
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { QrCodeIcon, CameraIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
+
+interface ScanToStartProps {
+  onScanSuccess: (qrCode: string) => void;
+  isLoading?: boolean;
+}
+
+export default function ScanToStart({ onScanSuccess, isLoading = false }: ScanToStartProps) {
+  const [showScanner, setShowScanner] = useState(false);
+  const [showManualInput, setShowManualInput] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+  const [error, setError] = useState('');
+
+  // Handle scan results
+  const handleScan = (result: string) => {
+    setShowScanner(false);
+    onScanSuccess(result);
+  };
+
+  // Close scanner
+  const handleCloseScanner = () => {
+    setShowScanner(false);
+  };
+
+  // Handle manual input submit
+  const handleManualSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!inputValue.trim()) {
+      setError('Please enter pallet number');
+      return;
+    }
+
+    setError('');
+    onScanSuccess(inputValue.trim());
+    setInputValue('');
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value);
+    if (error) setError('');
+  };
+
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className='rounded-2xl border border-slate-700/50 bg-slate-800/50 p-8 shadow-xl backdrop-blur-xl'
+      >
+        {!showManualInput ? (
+          <div className='flex flex-col items-center'>
+            {/* Icon and Title */}
+            <div className='mb-6'>
+              <h2 className='bg-gradient-to-r from-blue-300 via-purple-300 to-cyan-300 bg-clip-text text-center text-2xl font-bold text-transparent'>
+                Scan To Start
+              </h2>
+            </div>
+
+            {/* Description */}
+            <div className='mb-8 max-w-md text-center'>
+              <p className='mb-2 text-lg text-slate-300'>
+                Scan the QR code on the pallet label to begin counting
+              </p>
+              <p className='text-sm text-slate-400'>
+                Position the QR code within the camera viewfinder
+              </p>
+            </div>
+
+            {/* Buttons */}
+            <div className='flex w-full max-w-md flex-col gap-4 sm:flex-row'>
+              {/* Scan Button */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowScanner(true)}
+                disabled={isLoading}
+                className='flex flex-1 items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 font-semibold text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-purple-700 disabled:cursor-not-allowed disabled:from-gray-600 disabled:to-gray-700'
+              >
+                {isLoading ? (
+                  <>
+                    <div className='h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent' />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <CameraIcon className='h-6 w-6' />
+                    Start Scanning
+                  </>
+                )}
+              </motion.button>
+
+              {/* Manual Input Button */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowManualInput(true)}
+                disabled={isLoading}
+                className='flex flex-1 items-center justify-center gap-3 rounded-xl bg-green-600 px-6 py-4 font-semibold text-white shadow-lg transition-all duration-200 hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-600'
+              >
+                <PencilSquareIcon className='h-6 w-6' />
+                Manual Input
+              </motion.button>
+            </div>
+          </div>
+        ) : (
+          /* Manual Input Form */
+          <div>
+            <div className='mb-6 flex items-center justify-between'>
+              <div className='flex items-center'>
+                <PencilSquareIcon className='mr-3 h-8 w-8 text-green-400' />
+                <h2 className='text-xl font-bold text-white'>Manual Pallet Number Input</h2>
+              </div>
+              <button
+                onClick={() => {
+                  setShowManualInput(false);
+                  setInputValue('');
+                  setError('');
+                }}
+                className='text-slate-400 transition-colors hover:text-white'
+              >
+                <svg className='h-6 w-6' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M6 18L18 6M6 6l12 12'
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleManualSubmit} className='space-y-4'>
+              <div>
+                <label htmlFor='qr-input' className='mb-2 block text-sm font-medium text-gray-300'>
+                  Enter Pallet Number:
+                </label>
+                <input
+                  id='qr-input'
+                  type='text'
+                  value={inputValue}
+                  onChange={handleInputChange}
+                  placeholder='e.g.: 241224/01'
+                  className='w-full rounded-lg border border-slate-600/50 bg-slate-700/50 px-4 py-3 text-white placeholder-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500'
+                  disabled={isLoading}
+                  autoFocus
+                />
+                {error && <p className='mt-2 text-sm text-red-400'>{error}</p>}
+              </div>
+
+              <div className='flex gap-4'>
+                <button
+                  type='submit'
+                  disabled={isLoading || !inputValue.trim()}
+                  className='flex flex-1 items-center justify-center rounded-lg bg-green-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-green-700 disabled:bg-gray-600'
+                >
+                  {isLoading ? (
+                    <>
+                      <div className='mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-white'></div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <QrCodeIcon className='mr-2 h-5 w-5' />
+                      Submit Pallet Number
+                    </>
+                  )}
+                </button>
+                <button
+                  type='button'
+                  onClick={() => {
+                    setShowManualInput(false);
+                    setInputValue('');
+                    setError('');
+                  }}
+                  className='rounded-lg bg-slate-700 px-6 py-3 font-semibold text-white transition-colors hover:bg-slate-600'
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+
+            {/* 說明 */}
+            <div className='mt-4 rounded-lg border border-blue-700/30 bg-blue-900/20 p-3'>
+              <p className='text-sm text-blue-200'>
+                💡 Manual input only accepts pallet numbers. Series can only be read by scanning QR
+                codes.
+              </p>
+            </div>
+          </div>
+        )}
+      </motion.div>
+
+      {/* QR Scanner */}
+      {showScanner && (
+        <SimpleQRScanner
+          open={showScanner}
+          onClose={handleCloseScanner}
+          onScan={handleScan}
+          title='Scan Pallet QR Code'
+        />
+      )}
+    </>
+  );
+}

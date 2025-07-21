@@ -1,0 +1,158 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { HttpException } from '@nestjs/common';
+import { WidgetsController } from './widgets.controller';
+import { WidgetsService } from './widgets.service';
+import { StatsQueryDto, InventoryQueryDto } from './dto/query.dto';
+
+describe('WidgetsController', () => {
+  let controller: WidgetsController;
+  let service: WidgetsService;
+
+  const mockWidgetsService = {
+    getStats: jest.fn(),
+    getInventory: jest.fn(),
+    getDashboardStats: jest.fn(),
+    getInventoryAnalysis: jest.fn(),
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [WidgetsController],
+      providers: [
+        {
+          provide: WidgetsService,
+          useValue: mockWidgetsService,
+        },
+      ],
+    }).compile();
+
+    controller = module.get(WidgetsController);
+    service = module.get(WidgetsService);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('getStats', () => {
+    it('should return stats data successfully', async () => {
+      const query: StatsQueryDto = {};
+      const mockStats = {
+        totalPallets: 100,
+        activeTransfers: 25,
+        todayGRN: 5,
+        pendingOrders: 10,
+        timestamp: new Date().toISOString(),
+      };
+
+      mockWidgetsService.getStats.mockResolvedValue(mockStats);
+
+      const result = await controller.getStats(query);
+
+      expect(result).toEqual(mockStats);
+      expect(service.getStats).toHaveBeenCalledWith(undefined, undefined);
+    });
+
+    it('should handle service errors', async () => {
+      const query: StatsQueryDto = {};
+      const error = new Error('Database error');
+
+      mockWidgetsService.getStats.mockRejectedValue(error);
+
+      await expect(controller.getStats(query)).rejects.toThrow(HttpException);
+    });
+  });
+
+  describe('getInventory', () => {
+    it('should return inventory data successfully', async () => {
+      const query: InventoryQueryDto = {
+        warehouse: 'W001',
+        limit: '50',
+        offset: '0',
+      };
+
+      const mockInventory = {
+        data: [],
+        total: 0,
+        limit: 50,
+        offset: 0,
+      };
+
+      mockWidgetsService.getInventory.mockResolvedValue(mockInventory);
+
+      const result = await controller.getInventory(query);
+
+      expect(result).toEqual(mockInventory);
+      expect(service.getInventory).toHaveBeenCalledWith('W001', 50, 0);
+    });
+
+    it('should use default values when params are missing', async () => {
+      const query: InventoryQueryDto = {};
+
+      mockWidgetsService.getInventory.mockResolvedValue({
+        data: [],
+        total: 0,
+        limit: 100,
+        offset: 0,
+      });
+
+      await controller.getInventory(query);
+
+      expect(service.getInventory).toHaveBeenCalledWith(undefined, 100, 0);
+    });
+  });
+
+  describe('getDashboardStats', () => {
+    it('should call getDashboardStats service method', async () => {
+      const query: StatsQueryDto = {};
+      const mockStats = {
+        totalPallets: 150,
+        activeTransfers: 30,
+        todayGRN: 8,
+        pendingOrders: 12,
+        timestamp: new Date().toISOString(),
+      };
+
+      mockWidgetsService.getDashboardStats.mockResolvedValue(mockStats);
+
+      const result = await controller.getDashboardStats(query);
+
+      expect(result).toEqual(mockStats);
+      expect(service.getDashboardStats).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+      );
+    });
+  });
+
+  describe('getInventoryAnalysis', () => {
+    it('should call getInventoryAnalysis service method', async () => {
+      const query: InventoryQueryDto = { warehouse: 'W001' };
+      const mockAnalysis = {
+        summary: {
+          totalProducts: 50,
+          totalQuantity: 5000,
+          totalPallets: 100,
+          totalWarehouses: 3,
+          lastUpdate: new Date().toISOString(),
+        },
+        productAnalysis: [],
+        warehouseAnalysis: [],
+        turnoverAnalysis: [],
+        alerts: {
+          lowStock: [],
+          overstock: [],
+          slowMoving: [],
+        },
+        timestamp: new Date().toISOString(),
+      };
+
+      mockWidgetsService.getInventoryAnalysis.mockResolvedValue(mockAnalysis);
+
+      const result = await controller.getInventoryAnalysis(query);
+
+      expect(result).toEqual(mockAnalysis);
+      expect(service.getInventoryAnalysis).toHaveBeenCalledWith('W001');
+    });
+  });
+});

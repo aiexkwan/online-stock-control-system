@@ -94,7 +94,7 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
       const { summary, timeline } = processStaffWorkloadData(workData || [], timeRange);
 
       // Extract staff names for timeline
-      const names = Object.keys(timeline[0] || {})
+      const names = Object.keys(timeline[0] || ({} as any))
         .filter(key => key !== 'date')
         .slice(0, 5);
 
@@ -120,23 +120,52 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
     padding: '8px 12px',
   };
 
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string; [key: string]: unknown }[]; label?: string }) => {
+  const CustomTooltip = ({
+    active,
+    payload,
+    label,
+  }: {
+    active?: boolean;
+    payload?: { name: string; value: number; color: string; [key: string]: unknown }[];
+    label?: string;
+  }) => {
     if (active && payload && payload.length) {
       return (
         <div style={tooltipStyle}>
           <p className='mb-2 font-medium text-slate-300'>{label}</p>
-          {payload.map((entry: { name: string; value: number; color: string; [key: string]: unknown }, index: number) => (
-            <p key={index} className='text-sm' style={{ color: entry.color }}>
-              {entry.name}: {entry.value} operations
-            </p>
-          ))}
+          {payload.map(
+            (
+              entry: { name: string; value: number; color: string; [key: string]: unknown },
+              index: number
+            ) => (
+              <p key={index} className='text-sm' style={{ color: entry.color }}>
+                {entry.name}: {entry.value} operations
+              </p>
+            )
+          )}
         </div>
       );
     }
     return null;
   };
 
-  const CustomPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: { cx: number; cy: number; midAngle: number; innerRadius: number; outerRadius: number; percent: number; name: string }) => {
+  const CustomPieLabel = ({
+    cx,
+    cy,
+    midAngle,
+    innerRadius,
+    outerRadius,
+    percent,
+    name,
+  }: {
+    cx: number;
+    cy: number;
+    midAngle: number;
+    innerRadius: number;
+    outerRadius: number;
+    percent: number;
+    name: string;
+  }) => {
     const RADIAN = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -261,10 +290,7 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
                 <Legend
                   verticalAlign='bottom'
                   height={36}
-                  formatter={(value: any, entry: any) => {
-                    const percentage = entry?.payload?.percentage || 0;
-                    return `${value} (${percentage}%)`;
-                  }}
+                  formatter={(value: unknown) => `${value}`}
                 />
               </PieChart>
             </ResponsiveContainer>

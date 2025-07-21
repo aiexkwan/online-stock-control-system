@@ -2,8 +2,8 @@ import { createClient } from '@/lib/supabase';
 import { jsPDF } from 'jspdf';
 import { format } from 'date-fns';
 import { isNotProduction } from '@/lib/utils/env';
-import { getErrorMessage } from '@/lib/types/error-handling';
-import { toRecordArray, safeGet, safeString, safeNumber } from '@/lib/types/supabase-helpers';
+import { getErrorMessage } from '@/types/core/error';
+import { toRecordArray, safeGet, safeString, safeNumber, isRecord } from '@/types/database/helpers';
 import {
   VoidRecord as ZodVoidRecord,
   VoidReportFilters as ZodVoidReportFilters,
@@ -15,8 +15,8 @@ import {
   VoidRecordSchema,
   ReportVoidRecordSchema,
   PalletInfoSchema,
-  HistoryRecordSchema
-} from '@/lib/types/business-schemas';
+  HistoryRecordSchema,
+} from '@/types/business/schemas';
 
 // Re-export types from business schemas for backward compatibility
 export type VoidRecord = ZodVoidRecord;
@@ -119,9 +119,7 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
       isNotProduction() &&
         isNotProduction() &&
         console.log('No void records found with current filters');
-      isNotProduction() &&
-        isNotProduction() &&
-        console.log('Filters applied:', filters);
+      isNotProduction() && isNotProduction() && console.log('Filters applied:', filters);
 
       // Check if there are any records without filters
       const { data: allRecords, count } = await supabase
@@ -133,9 +131,7 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
         isNotProduction() &&
         console.log('Total records in report_void (without filters):', count);
       if (allRecords && allRecords.length > 0) {
-        isNotProduction() &&
-          isNotProduction() &&
-          console.log('Sample record:', allRecords[0]);
+        isNotProduction() && isNotProduction() && console.log('Sample record:', allRecords[0]);
       }
 
       return [];
@@ -149,23 +145,32 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
       console.log('Sample void record:', JSON.stringify(voidReports[0], null, 2));
 
     // Step 2: Get unique pallet numbers for user lookup (Strategy 4: unknown + type narrowing)
-    const palletNumbers = [...new Set(voidReports.map(v => {
-      if (typeof v === 'object' && v !== null && 'plt_num' in v) {
-        return String(v.plt_num);
-      }
-      return '';
-    }).filter(Boolean))];
+    const palletNumbers = [
+      ...new Set(
+        voidReports
+          .map(v => {
+            if (typeof v === 'object' && v !== null && 'plt_num' in v) {
+              return String(v.plt_num);
+            }
+            return '';
+          })
+          .filter(Boolean)
+      ),
+    ];
 
     // Step 3: Try to get user information from record_history (Strategy 2: Type-safe Map)
-    const userMap = new Map<string, {
-      clock_number: string;
-      name: string;
-      record_history: Array<{
-        time: string;
-        action: string;
-        id: number;
-      }>;
-    }>();
+    const userMap = new Map<
+      string,
+      {
+        clock_number: string;
+        name: string;
+        record_history: Array<{
+          time: string;
+          action: string;
+          id: number;
+        }>;
+      }
+    >();
 
     try {
       if (palletNumbers.length > 0) {
@@ -192,12 +197,12 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
           isNotProduction() &&
             isNotProduction() &&
             console.log(`Found ${historyRecords.length} history records`);
-          
+
           // Strategy 4: unknown + type narrowing with validation
           historyRecords.forEach(h => {
             // Try to validate using Zod schema
             const parseResult = BusinessSchemaValidator.safeParseArray([h], HistoryRecordSchema);
-            
+
             if (parseResult.success && parseResult.data.length > 0) {
               const historyRecord = parseResult.data[0];
               if (!userMap.has(historyRecord.plt_num)) {
@@ -205,25 +210,29 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
                 userMap.set(historyRecord.plt_num, {
                   clock_number: dataId ? String(dataId.id) : '0',
                   name: dataId ? dataId.name : 'Unknown',
-                  record_history: [{
-                    time: historyRecord.time,
-                    action: 'Void Pallet',
-                    id: historyRecord.id
-                  }]
+                  record_history: [
+                    {
+                      time: historyRecord.time,
+                      action: 'Void Pallet',
+                      id: historyRecord.id,
+                    },
+                  ],
                 });
               }
             } else {
               // Fallback for invalid records using safe accessors
-              const pltNum = safeString(safeGet(h, 'plt_num', ''));
+              const pltNum = safeString(safeGet(h, 'plt_num'), '');
               if (pltNum && !userMap.has(pltNum)) {
                 userMap.set(pltNum, {
-                  clock_number: safeString(safeGet(h, 'data_id.id', '0')),
-                  name: safeString(safeGet(h, 'data_id.name', 'Unknown')),
-                  record_history: [{
-                    time: safeString(safeGet(h, 'time', '')),
-                    action: 'Void Pallet',
-                    id: safeNumber(safeGet(h, 'id', 0))
-                  }]
+                  clock_number: safeString(safeGet(h, 'data_id.id'), '0'),
+                  name: safeString(safeGet(h, 'data_id.name'), 'Unknown'),
+                  record_history: [
+                    {
+                      time: safeString(safeGet(h, 'time'), ''),
+                      action: 'Void Pallet',
+                      id: safeNumber(safeGet(h, 'id'), 0),
+                    },
+                  ],
                 });
               }
             }
@@ -237,9 +246,10 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
     }
 
     // Step 4: Combine all data (Strategy 1: Zod validation with type narrowing)
-    let combinedRecords: VoidRecord[] = toRecordArray(voidReports).map((voidRecord) => {
-      const palletInfo = safeGet(voidRecord, 'record_palletinfo', {});
-      const pltNum = safeString(safeGet(voidRecord, 'plt_num', ''));
+    let combinedRecords: VoidRecord[] = toRecordArray(voidReports).map(voidRecord => {
+      const palletInfoRaw = safeGet(voidRecord, 'record_palletinfo') || ({} as any);
+      const palletInfo = isRecord(palletInfoRaw) ? palletInfoRaw : {};
+      const pltNum = safeString(safeGet(voidRecord, 'plt_num'), '');
       const historyInfo = userMap.get(pltNum);
 
       // Validate pallet info using type guards
@@ -250,10 +260,10 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
         // Try to construct valid pallet info from available data
         const constructedInfo = {
           plt_num: pltNum,
-          product_code: safeString(safeGet(palletInfo, 'product_code', 'N/A')),
-          product_qty: safeNumber(safeGet(palletInfo, 'product_qty', 0))
+          product_code: safeString(safeGet(palletInfo, 'product_code'), 'N/A'),
+          product_qty: safeNumber(safeGet(palletInfo, 'product_qty'), 0),
         };
-        
+
         if (BusinessTypeGuards.isPalletInfo(constructedInfo)) {
           validatedPalletInfo = constructedInfo;
         }
@@ -266,22 +276,38 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
           console.warn(`No valid pallet info found for plt_num: ${pltNum}`);
       }
 
-      const damageQty = safeNumber(safeGet(voidRecord, 'damage_qty', 0));
-      const voidQty = damageQty > 0 ? damageQty : (validatedPalletInfo?.product_qty || 0);
+      const damageQty = safeNumber(safeGet(voidRecord, 'damage_qty'), 0);
+      const voidQty = damageQty > 0 ? damageQty : validatedPalletInfo?.product_qty || 0;
 
       // Create final validated record
       const finalRecord: VoidRecord = {
-        uuid: safeString(safeGet(voidRecord, 'uuid', '')),
+        uuid: safeString(safeGet(voidRecord, 'uuid'), ''),
         plt_num: pltNum,
-        time: safeString(safeGet(voidRecord, 'time', '')),
-        reason: safeString(safeGet(voidRecord, 'reason', '')),
-        damage_qty: safeGet(voidRecord, 'damage_qty', null) as number | null,
+        time: safeString(safeGet(voidRecord, 'time'), ''),
+        reason: (() => {
+          // 策略4: unknown + type narrowing - 確保 reason 符合枚舉值
+          const rawReason = safeString(safeGet(voidRecord, 'reason'), '');
+          const validReasons = [
+            'damage',
+            'expired',
+            'quality',
+            'contamination',
+            'shortage',
+            'overstock',
+            'mislabel',
+            'other',
+          ] as const;
+          return validReasons.includes(rawReason as (typeof validReasons)[number])
+            ? (rawReason as (typeof validReasons)[number])
+            : 'other';
+        })(),
+        damage_qty: safeGet(voidRecord, 'damage_qty') as number | null,
         product_code: validatedPalletInfo?.product_code || 'N/A',
         product_qty: validatedPalletInfo?.product_qty || 0,
         plt_loc: 'Voided',
         user_name: historyInfo?.name || 'System',
         user_id: historyInfo ? parseInt(historyInfo.clock_number) || 0 : 0,
-        void_qty: voidQty
+        void_qty: voidQty,
       };
 
       // Final validation using Zod
@@ -301,7 +327,7 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
           plt_loc: 'Voided',
           user_name: 'System',
           user_id: 0,
-          void_qty: 0
+          void_qty: 0,
         };
       }
     });
@@ -539,11 +565,14 @@ export function generateVoidReportPDF(records: VoidRecord[], filters: VoidReport
   }
 }
 
-export async function generateVoidReportExcel(records: VoidRecord[], filters: VoidReportFilters): Promise<Blob> {
+export async function generateVoidReportExcel(
+  records: VoidRecord[],
+  filters: VoidReportFilters
+): Promise<Blob> {
   try {
     // Dynamic import ExcelJS
     const ExcelJS = await import('exceljs');
-    
+
     // Create workbook
     const wb = new ExcelJS.Workbook();
 
@@ -701,7 +730,7 @@ export async function generateVoidReportExcel(records: VoidRecord[], filters: Vo
         productAnalysisSheet.getCell(rowIndex + 1, colIndex + 1).value = cell;
       });
     });
-    
+
     // Set column widths
     productAnalysisSheet.getColumn(1).width = 20; // Product Code
     productAnalysisSheet.getColumn(2).width = 12; // Total Voids
@@ -807,7 +836,7 @@ export async function generateVoidReportExcel(records: VoidRecord[], filters: Vo
         dailyAnalysisSheet.getCell(rowIndex + 1, colIndex + 1).value = cell;
       });
     });
-    
+
     // Set column widths
     dailyAnalysisSheet.getColumn(1).width = 15; // Date
     dailyAnalysisSheet.getColumn(2).width = 12; // Total Voids
@@ -912,9 +941,7 @@ export async function fetchVoidRecordsAlternative(
     }
 
     if (!voidReports || voidReports.length === 0) {
-      isNotProduction() &&
-        isNotProduction() &&
-        console.log('No void records found');
+      isNotProduction() && isNotProduction() && console.log('No void records found');
       return [];
     }
 
@@ -923,12 +950,18 @@ export async function fetchVoidRecordsAlternative(
       console.log(`Found ${voidReports.length} void records`);
 
     // Step 2: Get pallet info separately
-    const palletNumbers = [...new Set(voidReports.map(v => {
-      if (typeof v === 'object' && v !== null && 'plt_num' in v) {
-        return String(v.plt_num);
-      }
-      return '';
-    }).filter(Boolean))];
+    const palletNumbers = [
+      ...new Set(
+        voidReports
+          .map(v => {
+            if (typeof v === 'object' && v !== null && 'plt_num' in v) {
+              return String(v.plt_num);
+            }
+            return '';
+          })
+          .filter(Boolean)
+      ),
+    ];
     isNotProduction() &&
       isNotProduction() &&
       console.log(`Fetching info for ${palletNumbers.length} unique pallets`);
@@ -949,15 +982,18 @@ export async function fetchVoidRecordsAlternative(
     }
 
     // Step 3: Get history info for users and locations
-    let userMap = new Map<string, {
-      clock_number?: string;
-      name?: string;
-      record_history?: Array<{
-        time: string;
-        action: string;
-        id?: number;
-      }>;
-    }>();
+    let userMap = new Map<
+      string,
+      {
+        clock_number?: string;
+        name?: string;
+        record_history?: Array<{
+          time: string;
+          action: string;
+          id?: number;
+        }>;
+      }
+    >();
     try {
       const { data: historyRecords } = await supabase
         .from('record_history')
@@ -979,14 +1015,30 @@ export async function fetchVoidRecordsAlternative(
         .order('time', { ascending: false });
 
       if (historyRecords) {
-        historyRecords.forEach(h => {
-          if (!userMap.has(h.plt_num)) {
-            userMap.set(h.plt_num, {
-              user: h.data_id,
-              loc: h.loc,
-              historyRemark: h.remark,
-            });
-          }
+        historyRecords.forEach((hRaw: unknown) => {
+          // 策略4: unknown + type narrowing - 安全屬性訪問
+          if (!hRaw || typeof hRaw !== 'object') return;
+          const h = hRaw as Record<string, unknown>;
+
+          const pltNum = typeof h.plt_num === 'string' ? h.plt_num : '';
+          if (!pltNum || userMap.has(pltNum)) return;
+
+          const dataId =
+            h.data_id && typeof h.data_id === 'object'
+              ? (h.data_id as Record<string, unknown>)
+              : null;
+
+          userMap.set(pltNum, {
+            clock_number: dataId && typeof dataId.id === 'string' ? dataId.id : undefined,
+            name: dataId && typeof dataId.name === 'string' ? dataId.name : undefined,
+            record_history: [
+              {
+                time: typeof h.time === 'string' ? h.time : '',
+                action: typeof h.action === 'string' ? h.action : '',
+                id: typeof h.id === 'number' ? h.id : undefined,
+              },
+            ],
+          });
         });
       }
     } catch (historyError) {
@@ -998,20 +1050,36 @@ export async function fetchVoidRecordsAlternative(
     // Step 4: Combine all data (Strategy 1: Zod validation with type safety)
     let combinedRecords: VoidRecord[] = voidReports.map(voidRecord => {
       // Safely extract basic fields
-      const uuid = String(safeGet(voidRecord, 'uuid', ''));
-      const plt_num = String(safeGet(voidRecord, 'plt_num', ''));
-      const time = String(safeGet(voidRecord, 'time', ''));
-      const reason = String(safeGet(voidRecord, 'reason', ''));
-      const damage_qty = typeof voidRecord === 'object' && voidRecord !== null && 'damage_qty' in voidRecord 
-        ? (voidRecord.damage_qty as number | null) 
-        : null;
+      const uuid = String(safeGet(voidRecord, 'uuid'));
+      const plt_num = String(safeGet(voidRecord, 'plt_num'));
+      const time = String(safeGet(voidRecord, 'time'));
+      const reason = (() => {
+        // 策略4: unknown + type narrowing - 確保 reason 符合枚舉值
+        const rawReason = String(safeGet(voidRecord, 'reason'));
+        const validReasons = [
+          'damage',
+          'expired',
+          'quality',
+          'contamination',
+          'shortage',
+          'overstock',
+          'mislabel',
+          'other',
+        ] as const;
+        return validReasons.includes(rawReason as (typeof validReasons)[number])
+          ? (rawReason as (typeof validReasons)[number])
+          : 'other';
+      })();
+      const damage_qty =
+        typeof voidRecord === 'object' && voidRecord !== null && 'damage_qty' in voidRecord
+          ? (voidRecord.damage_qty as number | null)
+          : null;
 
       const palletInfo = palletInfoMap.get(plt_num);
       const historyInfo = userMap.get(plt_num);
 
-      const voidQty = damage_qty !== null && damage_qty > 0
-        ? damage_qty
-        : palletInfo?.product_qty || 0;
+      const voidQty =
+        damage_qty !== null && damage_qty > 0 ? damage_qty : palletInfo?.product_qty || 0;
 
       // Create record with proper typing
       const record: VoidRecord = {
@@ -1022,10 +1090,10 @@ export async function fetchVoidRecordsAlternative(
         damage_qty,
         product_code: palletInfo?.product_code || 'N/A',
         product_qty: palletInfo?.product_qty || 0,
-        plt_loc: historyInfo?.loc || 'Voided',
-        user_name: historyInfo?.user?.name || 'System',
-        user_id: historyInfo?.user?.id || 0,
-        void_qty: voidQty
+        plt_loc: 'Voided', // Use fixed value as loc is not available in new structure
+        user_name: historyInfo?.name || 'System',
+        user_id: historyInfo?.clock_number ? parseInt(historyInfo.clock_number) || 0 : 0,
+        void_qty: voidQty,
       };
 
       // Validate with Zod before returning
@@ -1045,7 +1113,7 @@ export async function fetchVoidRecordsAlternative(
           plt_loc: 'Voided',
           user_name: 'System',
           user_id: 0,
-          void_qty: 0
+          void_qty: 0,
         };
       }
     });
@@ -1078,9 +1146,7 @@ export async function debugVoidReportIssue(): Promise<void> {
   const supabase = await createClient();
 
   try {
-    isNotProduction() &&
-      isNotProduction() &&
-      console.log('=== DEBUGGING VOID REPORT ISSUE ===');
+    isNotProduction() && isNotProduction() && console.log('=== DEBUGGING VOID REPORT ISSUE ===');
 
     // 1. Check if report_void table has data
     const {
@@ -1089,42 +1155,26 @@ export async function debugVoidReportIssue(): Promise<void> {
       count,
     } = await supabase.from('report_void').select('*', { count: 'exact' }).limit(5);
 
-    isNotProduction() &&
-      isNotProduction() &&
-      console.log('Report void table:');
-    isNotProduction() &&
-      isNotProduction() &&
-      console.log('- Total count:', count);
-    isNotProduction() &&
-      isNotProduction() &&
-      console.log('- Sample data:', voidSample);
-    isNotProduction() &&
-      isNotProduction() &&
-      console.log('- Error:', voidError);
+    isNotProduction() && isNotProduction() && console.log('Report void table:');
+    isNotProduction() && isNotProduction() && console.log('- Total count:', count);
+    isNotProduction() && isNotProduction() && console.log('- Sample data:', voidSample);
+    isNotProduction() && isNotProduction() && console.log('- Error:', voidError);
 
     if (voidSample && voidSample.length > 0) {
       // 2. Check if corresponding pallet info exists
-      const samplePltNum = voidSample[0].plt_num;
+      const samplePltNum = safeString(voidSample[0].plt_num);
       const { data: palletInfo, error: palletError } = await supabase
         .from('record_palletinfo')
         .select('*')
         .eq('plt_num', samplePltNum)
         .single();
 
-      isNotProduction() &&
-        isNotProduction() &&
-        console.log(`\nPallet info for ${samplePltNum}:`);
-      isNotProduction() &&
-        isNotProduction() &&
-        console.log('- Data:', palletInfo);
-      isNotProduction() &&
-        isNotProduction() &&
-        console.log('- Error:', palletError);
+      isNotProduction() && isNotProduction() && console.log(`\nPallet info for ${samplePltNum}:`);
+      isNotProduction() && isNotProduction() && console.log('- Data:', palletInfo);
+      isNotProduction() && isNotProduction() && console.log('- Error:', palletError);
 
       // 3. Test the join query
-      isNotProduction() &&
-        isNotProduction() &&
-        console.log('\nTesting join query:');
+      isNotProduction() && isNotProduction() && console.log('\nTesting join query:');
       const { data: joinTest, error: joinError } = await supabase
         .from('report_void')
         .select(
@@ -1140,17 +1190,11 @@ export async function debugVoidReportIssue(): Promise<void> {
         .eq('plt_num', samplePltNum)
         .single();
 
-      isNotProduction() &&
-        isNotProduction() &&
-        console.log('- Join result:', joinTest);
-      isNotProduction() &&
-        isNotProduction() &&
-        console.log('- Join error:', joinError);
+      isNotProduction() && isNotProduction() && console.log('- Join result:', joinTest);
+      isNotProduction() && isNotProduction() && console.log('- Join error:', joinError);
     }
 
-    isNotProduction() &&
-      isNotProduction() &&
-      console.log('\n=== END DEBUG ===');
+    isNotProduction() && isNotProduction() && console.log('\n=== END DEBUG ===');
   } catch (error) {
     console.error('Debug error:', error);
   }
@@ -1172,7 +1216,10 @@ export async function generateBatchVoidSummary(batchId: string): Promise<string>
 
   // Generate summary
   const totalItems = records.length;
-  const totalQty = records.reduce((sum, r) => sum + (r.damage_qty || r.product_qty || 0), 0);
+  const totalQty = records.reduce(
+    (sum, r) => sum + ((r as any).damage_qty || (r as any).product_qty || 0),
+    0
+  );
   const voidReason = records[0].remark || 'Unknown';
   const voidBy = 'System';
   const voidTime = format(new Date(records[0].time), 'dd/MM/yyyy HH:mm');

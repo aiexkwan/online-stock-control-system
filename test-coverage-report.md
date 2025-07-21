@@ -11,7 +11,7 @@
 - **UnifiedTableWidget 測試套件**: 包含數據處理和格式化測試
 
 ### 2. 測試工具和基礎設施 ✅
-- **共享測試工具**: `unified-widget-test-utils.ts` 
+- **共享測試工具**: `unified-widget-test-utils.ts`
 - **模擬數據生成器**: 支持多種數據場景
 - **整合測試框架**: 跨組件協作測試
 - **性能測試**: 內存管理和渲染性能
@@ -58,7 +58,7 @@
 // 針對統一組件設定更高覆蓋率標準
 './app/admin/components/dashboard/widgets/**/*.tsx': {
   branches: 80,
-  functions: 80, 
+  functions: 80,
   lines: 80,
   statements: 80,
 }

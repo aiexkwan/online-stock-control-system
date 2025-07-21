@@ -15,7 +15,7 @@
 
 #### 1. 舊版本函數（7個）
 - `generate_atomic_pallet_numbers_v3`
-- `generate_atomic_pallet_numbers_v4` 
+- `generate_atomic_pallet_numbers_v4`
 - `generate_atomic_pallet_numbers_v5`
 - `monitor_pallet_generation_v4`
 - `test_atomic_pallet_generation`

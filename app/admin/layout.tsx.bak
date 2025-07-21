@@ -1,0 +1,18 @@
+/**
+ * Admin Layout
+ * 為 Admin 頁面提供 Dialog Context 和 Upload Refresh Context
+ */
+
+'use client';
+
+import { DialogProvider } from '@/app/contexts/DialogContext';
+import { UploadRefreshProvider } from './contexts/UploadRefreshContext';
+import './styles/page-flip-animation.css';
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <DialogProvider>
+      <UploadRefreshProvider>{children}</UploadRefreshProvider>
+    </DialogProvider>
+  );
+}

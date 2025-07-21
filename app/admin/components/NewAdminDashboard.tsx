@@ -75,26 +75,29 @@ interface NewAdminDashboardProps {
   ssrMode?: boolean; // 是否為 SSR 模式
 }
 
-export function NewAdminDashboard({ 
-  prefetchedData, 
-  ssrMode = false 
+export function NewAdminDashboard({
+  prefetchedData,
+  ssrMode = false,
 }: NewAdminDashboardProps = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, loading } = useAuth();
   const [isDashboardLoading, setIsDashboardLoading] = useState(false);
   const [timeFrame, setTimeFrame] = useState<TimeFrame>({
-    label: format(new Date(), 'MMM d, yyyy'),
+    label: format(new Date(), 'MMM dd, yyyy'),
     value: 'custom',
     start: startOfDay(new Date()),
     end: endOfDay(new Date()),
   });
 
   // Memoize dateRange to prevent infinite re-renders
-  const memoizedDateRange = useMemo(() => ({
-    startDate: timeFrame.start,
-    endDate: timeFrame.end
-  }), [timeFrame.start, timeFrame.end]);
+  const memoizedDateRange = useMemo(
+    () => ({
+      startDate: timeFrame.start,
+      endDate: timeFrame.end,
+    }),
+    [timeFrame.start, timeFrame.end]
+  );
 
   // 從路徑判斷當前主題
   const pathParts = pathname.split('/').filter(Boolean);
@@ -164,9 +167,7 @@ export function NewAdminDashboard({
               <div
                 className={
                   // v2.0.2: 更新為新主題名
-                  currentTheme === 'operations-monitoring'
-                    ? ''
-                    : 'h-full'
+                  currentTheme === 'operations-monitoring' ? '' : 'h-full'
                 }
                 style={
                   // v2.0.2: 更新為新主題名
@@ -175,14 +176,14 @@ export function NewAdminDashboard({
                     : { minHeight: 'calc(100vh - 260px)' }
                 }
               >
-                <DashboardDataProvider 
+                <DashboardDataProvider
                   initialDateRange={memoizedDateRange}
                   autoRefreshInterval={0}
                   prefetchedData={prefetchedData as DashboardBatchQueryData | null}
                   ssrMode={ssrMode}
                 >
-                  <AdminDashboardContent 
-                    theme={currentTheme} 
+                  <AdminDashboardContent
+                    theme={currentTheme}
                     timeFrame={timeFrame}
                     prefetchedData={prefetchedData as DashboardBatchQueryData | null}
                     ssrMode={ssrMode}

@@ -95,11 +95,11 @@ BEGIN
   BEGIN
     -- 3.1 插入歷史記錄
     INSERT INTO record_history (
-      id, 
-      action, 
-      plt_num, 
-      loc, 
-      remark, 
+      id,
+      action,
+      plt_num,
+      loc,
+      remark,
       time
     ) VALUES (
       p_operator_id,
@@ -112,7 +112,7 @@ BEGIN
 
     -- 3.2 插入轉移記錄
     -- 統一處理 Await_grn 為 Await（業務邏輯要求）
-    v_normalized_from_loc := CASE 
+    v_normalized_from_loc := CASE
       WHEN p_from_location = 'Await_grn' THEN 'Await'
       ELSE p_from_location
     END;
@@ -134,7 +134,7 @@ BEGIN
     -- 3.3 更新庫存記錄
     -- 使用動態 SQL 處理欄位名稱
     EXECUTE format(
-      'INSERT INTO record_inventory (product_code, plt_num, %I, %I, latest_update) 
+      'INSERT INTO record_inventory (product_code, plt_num, %I, %I, latest_update)
        VALUES ($1, $2, $3, $4, $5)',
       v_from_column, v_to_column
     ) USING p_product_code, p_plt_num, -p_product_qty, p_product_qty, CURRENT_TIMESTAMP;
@@ -161,7 +161,7 @@ BEGIN
     -- 成功返回
     v_result := jsonb_build_object(
       'success', true,
-      'message', format('Pallet %s successfully moved from %s to %s', 
+      'message', format('Pallet %s successfully moved from %s to %s',
                        p_plt_num, p_from_location, p_to_location),
       'data', jsonb_build_object(
         'plt_num', p_plt_num,
@@ -175,7 +175,7 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN
     -- 捕獲任何錯誤並回滾
     v_error_msg := SQLERRM;
-    
+
     -- 記錄到 report_log (失敗)
     BEGIN
       INSERT INTO report_log (
@@ -195,7 +195,7 @@ BEGIN
       -- 如果連記錄日誌都失敗，繼續處理
       NULL;
     END;
-    
+
     v_result := jsonb_build_object(
       'success', false,
       'message', format('Stock transfer failed: %s', v_error_msg),
@@ -212,7 +212,7 @@ $$;
 GRANT EXECUTE ON FUNCTION execute_stock_transfer TO authenticated;
 
 -- 為函數添加註解
-COMMENT ON FUNCTION execute_stock_transfer IS 
+COMMENT ON FUNCTION execute_stock_transfer IS
 'Atomic stock transfer function that handles all aspects of moving a pallet between locations';
 
 -- =============================================
@@ -254,8 +254,8 @@ BEGIN
   IF NOT FOUND THEN
     v_result := jsonb_build_object(
       'success', false,
-      'message', format('%s %s not found', 
-        CASE p_search_type 
+      'message', format('%s %s not found',
+        CASE p_search_type
           WHEN 'series' THEN 'Series'
           ELSE 'Pallet'
         END,
@@ -297,5 +297,5 @@ $$;
 GRANT EXECUTE ON FUNCTION search_pallet_info TO authenticated;
 
 -- 添加註解
-COMMENT ON FUNCTION search_pallet_info IS 
+COMMENT ON FUNCTION search_pallet_info IS
 'Search for pallet information by pallet number or series with current location';

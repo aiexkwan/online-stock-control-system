@@ -56,7 +56,7 @@
 ### 🔍 性能分析
 ```sql
 -- 慢查詢分析
-SELECT 
+SELECT
   query,
   calls,
   total_exec_time,
@@ -68,7 +68,7 @@ ORDER BY total_exec_time DESC
 LIMIT 10;
 
 -- 索引使用情況
-SELECT 
+SELECT
   schemaname,
   tablename,
   indexname,
@@ -80,7 +80,7 @@ WHERE idx_scan = 0
 ORDER BY schemaname, tablename;
 
 -- 表大小分析
-SELECT 
+SELECT
   tablename,
   pg_size_pretty(pg_total_relation_size(tablename::regclass)) as size,
   pg_total_relation_size(tablename::regclass) as raw_size
@@ -89,7 +89,7 @@ WHERE schemaname = 'public'
 ORDER BY raw_size DESC;
 
 -- 鎖分析
-SELECT 
+SELECT
   pid,
   usename,
   query,
@@ -106,7 +106,7 @@ ORDER BY query_start;
 ### 📊 數據完整性
 ```sql
 -- 外鍵約束檢查
-SELECT 
+SELECT
   tc.table_name,
   kcu.column_name,
   ccu.table_name AS foreign_table_name,
@@ -119,11 +119,11 @@ JOIN information_schema.constraint_column_usage ccu
 WHERE tc.constraint_type = 'FOREIGN KEY';
 
 -- 重複數據檢查
-SELECT 
+SELECT
   column_name,
   COUNT(*) as duplicate_count
 FROM (
-  SELECT 
+  SELECT
     product_code,
     pallet_no,
     COUNT(*) as cnt
@@ -134,7 +134,7 @@ FROM (
 GROUP BY column_name;
 
 -- 空值分析
-SELECT 
+SELECT
   column_name,
   COUNT(*) as null_count,
   COUNT(*) * 100.0 / (SELECT COUNT(*) FROM record_palletinfo) as null_percentage
@@ -149,23 +149,23 @@ GROUP BY column_name;
 ### 🎯 索引建議
 ```sql
 -- 常用查詢索引
-CREATE INDEX CONCURRENTLY idx_palletinfo_product_code 
+CREATE INDEX CONCURRENTLY idx_palletinfo_product_code
 ON record_palletinfo(product_code);
 
-CREATE INDEX CONCURRENTLY idx_palletinfo_created_at 
+CREATE INDEX CONCURRENTLY idx_palletinfo_created_at
 ON record_palletinfo(created_at DESC);
 
 -- 複合索引
-CREATE INDEX CONCURRENTLY idx_palletinfo_product_date 
+CREATE INDEX CONCURRENTLY idx_palletinfo_product_date
 ON record_palletinfo(product_code, created_at DESC);
 
 -- 部分索引
-CREATE INDEX CONCURRENTLY idx_palletinfo_active 
-ON record_palletinfo(product_code) 
+CREATE INDEX CONCURRENTLY idx_palletinfo_active
+ON record_palletinfo(product_code)
 WHERE status = 'active';
 
 -- 函數索引
-CREATE INDEX CONCURRENTLY idx_palletinfo_upper_code 
+CREATE INDEX CONCURRENTLY idx_palletinfo_upper_code
 ON record_palletinfo(UPPER(product_code));
 ```
 
@@ -195,7 +195,7 @@ CREATE OR REPLACE FUNCTION get_pallet_info_slow(p_product_code TEXT)
 RETURNS TABLE(pallet_no TEXT, quantity INTEGER, location TEXT) AS $$
 BEGIN
   RETURN QUERY
-  SELECT 
+  SELECT
     rp.pallet_no,
     rp.quantity,
     rp.location
@@ -210,10 +210,10 @@ CREATE OR REPLACE FUNCTION get_pallet_info_fast(p_product_code TEXT)
 RETURNS TABLE(pallet_no TEXT, quantity INTEGER, location TEXT) AS $$
 BEGIN
   -- 使用預準備語句
-  RETURN QUERY EXECUTE 
-  'SELECT pallet_no, quantity, location 
-   FROM record_palletinfo 
-   WHERE product_code = $1 
+  RETURN QUERY EXECUTE
+  'SELECT pallet_no, quantity, location
+   FROM record_palletinfo
+   WHERE product_code = $1
    ORDER BY created_at DESC
    LIMIT 100'
   USING p_product_code;
@@ -229,20 +229,20 @@ DECLARE
 BEGIN
   -- 使用 UNNEST 批量更新
   WITH updates AS (
-    SELECT 
+    SELECT
       (value->>'pallet_no')::TEXT as pallet_no,
       (value->>'quantity')::INTEGER as quantity,
       (value->>'location')::TEXT as location
     FROM jsonb_array_elements(p_updates) AS value
   )
   UPDATE record_palletinfo rp
-  SET 
+  SET
     quantity = u.quantity,
     location = u.location,
     updated_at = NOW()
   FROM updates u
   WHERE rp.pallet_no = u.pallet_no;
-  
+
   GET DIAGNOSTICS affected_rows = ROW_COUNT;
   RETURN affected_rows;
 END;
@@ -254,10 +254,10 @@ $$ LANGUAGE plpgsql;
 ```sql
 -- 清理重複數據
 WITH duplicates AS (
-  SELECT 
+  SELECT
     id,
     ROW_NUMBER() OVER (
-      PARTITION BY product_code, pallet_no 
+      PARTITION BY product_code, pallet_no
       ORDER BY created_at DESC
     ) as rn
   FROM record_palletinfo
@@ -272,8 +272,8 @@ DELETE FROM record_history
 WHERE created_at < NOW() - INTERVAL '2 years';
 
 -- 清理空值數據
-UPDATE record_palletinfo 
-SET location = 'UNKNOWN' 
+UPDATE record_palletinfo
+SET location = 'UNKNOWN'
 WHERE location IS NULL OR location = '';
 
 -- 數據歸檔
@@ -288,7 +288,7 @@ WHERE created_at < NOW() - INTERVAL '1 year';
 ### 📊 數據質量檢查
 ```sql
 -- 數據一致性檢查
-SELECT 
+SELECT
   'record_palletinfo' as table_name,
   COUNT(*) as total_records,
   COUNT(DISTINCT product_code) as unique_products,
@@ -297,7 +297,7 @@ SELECT
   COUNT(*) FILTER (WHERE location IS NULL) as null_locations
 FROM record_palletinfo
 UNION ALL
-SELECT 
+SELECT
   'record_inventory' as table_name,
   COUNT(*) as total_records,
   COUNT(DISTINCT product_code) as unique_products,
@@ -312,19 +312,19 @@ FROM record_inventory;
 ```sql
 -- 創建性能監控視圖
 CREATE VIEW db_performance_summary AS
-SELECT 
+SELECT
   'slow_queries' as metric,
   COUNT(*) as value
 FROM pg_stat_statements
 WHERE total_exec_time / calls > 100
 UNION ALL
-SELECT 
+SELECT
   'unused_indexes' as metric,
   COUNT(*) as value
 FROM pg_stat_user_indexes
 WHERE idx_scan = 0
 UNION ALL
-SELECT 
+SELECT
   'table_bloat' as metric,
   COUNT(*) as value
 FROM pg_stat_user_tables
@@ -336,13 +336,13 @@ RETURNS VOID AS $$
 BEGIN
   -- 更新統計信息
   ANALYZE;
-  
+
   -- 清理膨脹
   VACUUM (ANALYZE, VERBOSE);
-  
+
   -- 重建索引 (如果需要)
   IF EXISTS (
-    SELECT 1 FROM pg_stat_user_indexes 
+    SELECT 1 FROM pg_stat_user_indexes
     WHERE idx_scan = 0 AND schemaname = 'public'
   ) THEN
     RAISE NOTICE 'Found unused indexes, consider dropping them';

@@ -138,8 +138,8 @@ BEGIN
         1,
         CASE WHEN p_enabled THEN 1 ELSE 0 END,
         CASE WHEN NOT p_enabled THEN 1 ELSE 0 END,
-        CASE 
-            WHEN p_variant IS NOT NULL 
+        CASE
+            WHEN p_variant IS NOT NULL
             THEN jsonb_build_object(p_variant, 1)
             ELSE '{}'::jsonb
         END
@@ -176,13 +176,13 @@ RETURNS TABLE (
 ) AS $$
 BEGIN
     RETURN QUERY
-    SELECT 
+    SELECT
         s.date,
         SUM(s.evaluations)::BIGINT as total_evaluations,
         SUM(s.enabled_count)::BIGINT as total_enabled,
         SUM(s.disabled_count)::BIGINT as total_disabled,
-        CASE 
-            WHEN SUM(s.evaluations) > 0 
+        CASE
+            WHEN SUM(s.evaluations) > 0
             THEN ROUND((SUM(s.enabled_count)::NUMERIC / SUM(s.evaluations)::NUMERIC) * 100, 2)
             ELSE 0
         END as enable_rate,
@@ -190,10 +190,10 @@ BEGIN
             variant_key,
             variant_count
         ) FILTER (WHERE variant_key IS NOT NULL) as variant_distribution
-    FROM 
+    FROM
         public.feature_flags_stats s,
         LATERAL jsonb_each_text(s.variant_distribution) as v(variant_key, variant_count)
-    WHERE 
+    WHERE
         s.flag_key = p_flag_key
         AND s.date BETWEEN p_start_date AND p_end_date
     GROUP BY s.date

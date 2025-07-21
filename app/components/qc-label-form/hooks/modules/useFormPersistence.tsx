@@ -62,7 +62,8 @@ export const useFormPersistence = ({
 
   // 使用防抖來自動保存
   const debouncedSave = useMemo(
-    () => debounce(saveFormData, autoSaveDelay),
+    () =>
+      debounce(saveFormData as (data: unknown) => void, autoSaveDelay) as (data: FormData) => void,
     [saveFormData, autoSaveDelay]
   );
 
@@ -103,7 +104,7 @@ export const useFormPersistence = ({
         ...parsedData.data,
         slateDetail: {
           ...prevData.slateDetail,
-          ...(parsedData.data.slateDetail || {}),
+          ...(parsedData.data.slateDetail || ({} as any)),
         },
       }));
 

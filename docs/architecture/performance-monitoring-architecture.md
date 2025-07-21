@@ -83,16 +83,16 @@ interface IAlertManager {
 class MetricsCollector implements IMetricsCollector {
   private observers: IMetricsObserver[] = [];
   private strategy: ICollectionStrategy;
-  
+
   constructor(strategy: ICollectionStrategy) {
     this.strategy = strategy;
   }
-  
+
   async collect(metric: MetricData): Promise<void> {
     const processedMetric = await this.strategy.process(metric);
     this.notifyObservers(processedMetric);
   }
-  
+
   private notifyObservers(metric: MetricData): void {
     this.observers.forEach(observer => observer.onMetricCollected(metric));
   }
@@ -105,12 +105,12 @@ class MetricsCollector implements IMetricsCollector {
 class WebVitalsMonitor implements IMetricsCollector {
   private coreVitalsCollector: CoreWebVitalsCollector;
   private additionalMetricsCollector: AdditionalMetricsCollector;
-  
+
   constructor() {
     this.coreVitalsCollector = new CoreWebVitalsCollector();
     this.additionalMetricsCollector = new AdditionalMetricsCollector();
   }
-  
+
   async collect(metric: MetricData): Promise<void> {
     if (this.isCoreVital(metric)) {
       await this.coreVitalsCollector.collect(metric);
@@ -118,7 +118,7 @@ class WebVitalsMonitor implements IMetricsCollector {
       await this.additionalMetricsCollector.collect(metric);
     }
   }
-  
+
   private isCoreVital(metric: MetricData): boolean {
     return ['LCP', 'FID', 'CLS'].includes(metric.name);
   }
@@ -129,13 +129,13 @@ class CoreWebVitalsCollector {
   private lcpCollector: LCPCollector;
   private fidCollector: FIDCollector;
   private clsCollector: CLSCollector;
-  
+
   constructor() {
     this.lcpCollector = new LCPCollector();
     this.fidCollector = new FIDCollector();
     this.clsCollector = new CLSCollector();
   }
-  
+
   async collect(metric: MetricData): Promise<void> {
     switch (metric.name) {
       case 'LCP':
@@ -158,25 +158,25 @@ class CoreWebVitalsCollector {
 class PerformanceBudgetValidator {
   private budgetConfiguration: BudgetConfiguration;
   private validationEngine: ValidationEngine;
-  
+
   constructor(config: BudgetConfiguration) {
     this.budgetConfiguration = config;
     this.validationEngine = new ValidationEngine();
   }
-  
+
   async validate(metrics: MetricData[]): Promise<ValidationResult> {
     const budgets = await this.budgetConfiguration.getBudgets();
     const results = await Promise.all(
       budgets.map(budget => this.validationEngine.validate(budget, metrics))
     );
-    
+
     return this.aggregateResults(results);
   }
-  
+
   private aggregateResults(results: BudgetValidationResult[]): ValidationResult {
     const failed = results.filter(r => !r.passed);
     const passed = results.filter(r => r.passed);
-    
+
     return {
       overall: failed.length === 0,
       passed: passed.length,
@@ -189,15 +189,15 @@ class PerformanceBudgetValidator {
 // 預算配置管理
 class BudgetConfiguration {
   private budgets: Map<string, Budget> = new Map();
-  
+
   addBudget(name: string, budget: Budget): void {
     this.budgets.set(name, budget);
   }
-  
+
   getBudget(name: string): Budget | undefined {
     return this.budgets.get(name);
   }
-  
+
   getAllBudgets(): Budget[] {
     return Array.from(this.budgets.values());
   }
@@ -210,24 +210,24 @@ class BudgetConfiguration {
 class AlertManager implements IAlertManager {
   private rules: AlertRule[] = [];
   private notifiers: INotifier[] = [];
-  
+
   addRule(rule: AlertRule): void {
     this.rules.push(rule);
   }
-  
+
   evaluateRules(metrics: MetricData[]): Alert[] {
     const alerts: Alert[] = [];
-    
+
     for (const rule of this.rules) {
       const evaluation = rule.evaluate(metrics);
       if (evaluation.triggered) {
         alerts.push(evaluation.alert);
       }
     }
-    
+
     return alerts;
   }
-  
+
   async notify(alert: Alert): Promise<void> {
     await Promise.all(
       this.notifiers.map(notifier => notifier.notify(alert))
@@ -242,7 +242,7 @@ abstract class AlertRule {
     public threshold: number,
     public severity: AlertSeverity
   ) {}
-  
+
   abstract evaluate(metrics: MetricData[]): RuleEvaluation;
 }
 
@@ -255,13 +255,13 @@ class ThresholdRule extends AlertRule {
   ) {
     super(name, threshold, severity);
   }
-  
+
   evaluate(metrics: MetricData[]): RuleEvaluation {
     const relevantMetrics = metrics.filter(m => m.name === this.metricName);
     const latestValue = relevantMetrics[relevantMetrics.length - 1]?.value;
-    
+
     const triggered = latestValue > this.threshold;
-    
+
     return {
       triggered,
       alert: triggered ? new Alert(
@@ -292,18 +292,18 @@ Browser APIs → Web Vitals → MetricsCollector → EventBus → Processing Pip
 ```typescript
 class MetricsProcessingPipeline {
   private stages: IProcessingStage[] = [];
-  
+
   addStage(stage: IProcessingStage): void {
     this.stages.push(stage);
   }
-  
+
   async process(metrics: MetricData[]): Promise<MetricData[]> {
     let result = metrics;
-    
+
     for (const stage of this.stages) {
       result = await stage.process(result);
     }
-    
+
     return result;
   }
 }
@@ -318,7 +318,7 @@ class DataCleaningStage implements IProcessingStage {
   async process(metrics: MetricData[]): Promise<MetricData[]> {
     return metrics.filter(metric => this.isValid(metric));
   }
-  
+
   private isValid(metric: MetricData): boolean {
     return metric.value >= 0 && metric.timestamp > 0;
   }
@@ -331,7 +331,7 @@ class DataAggregationStage implements IProcessingStage {
     const aggregated = this.aggregateByTimeWindow(metrics, 60000); // 1分鐘
     return aggregated;
   }
-  
+
   private aggregateByTimeWindow(metrics: MetricData[], windowMs: number): MetricData[] {
     // 實現時間窗口聚合邏輯
     return metrics; // 簡化實現
@@ -346,11 +346,11 @@ class DataAggregationStage implements IProcessingStage {
 // 與 Widget 系統整合
 class WidgetPerformanceIntegration {
   private performanceMonitor: PerformanceMonitor;
-  
+
   constructor(monitor: PerformanceMonitor) {
     this.performanceMonitor = monitor;
   }
-  
+
   instrumentWidget(widgetId: string): WidgetInstrumentation {
     return new WidgetInstrumentation(widgetId, this.performanceMonitor);
   }
@@ -358,24 +358,24 @@ class WidgetPerformanceIntegration {
 
 class WidgetInstrumentation {
   private timer: PerformanceTimer;
-  
+
   constructor(
     private widgetId: string,
     private monitor: PerformanceMonitor
   ) {}
-  
+
   startMonitoring(): void {
     this.timer = this.monitor.startTimer(this.widgetId);
   }
-  
+
   recordLoadTime(): void {
     this.timer.recordLoadTime();
   }
-  
+
   recordRenderTime(): void {
     this.timer.recordRenderTime();
   }
-  
+
   complete(): void {
     this.timer.complete();
   }
@@ -388,22 +388,22 @@ class WidgetInstrumentation {
 @Controller('/api/performance')
 class PerformanceController {
   constructor(private performanceService: PerformanceService) {}
-  
+
   @Get('/metrics')
   async getMetrics(@Query() query: MetricsQuery): Promise<MetricData[]> {
     return await this.performanceService.getMetrics(query);
   }
-  
+
   @Post('/metrics')
   async recordMetric(@Body() metric: MetricData): Promise<void> {
     await this.performanceService.recordMetric(metric);
   }
-  
+
   @Get('/stats/:metricName')
   async getStats(@Param('metricName') metricName: string): Promise<StatisticsResult> {
     return await this.performanceService.getStatistics(metricName);
   }
-  
+
   @Get('/alerts')
   async getAlerts(): Promise<Alert[]> {
     return await this.performanceService.getAlerts();
@@ -414,7 +414,7 @@ class PerformanceController {
 @Resolver(Metric)
 class MetricResolver {
   constructor(private performanceService: PerformanceService) {}
-  
+
   @Query(() => [Metric])
   async metrics(
     @Args('filter') filter: MetricFilter,
@@ -422,7 +422,7 @@ class MetricResolver {
   ): Promise<Metric[]> {
     return await this.performanceService.getMetrics(filter, timeRange);
   }
-  
+
   @Mutation(() => Boolean)
   async recordMetric(@Args('metric') metric: MetricInput): Promise<boolean> {
     await this.performanceService.recordMetric(metric);
@@ -435,7 +435,7 @@ class MetricResolver {
 
 ### 1. 微服務架構
 ```yaml
-# docker-compose.yml
+# docker-compose.yml (示例架構，系統已移除 Docker 支援)
 version: '3.8'
 services:
   performance-collector:
@@ -489,20 +489,20 @@ class HealthCheckService {
     private alertManager: AlertManager,
     private database: DatabaseService
   ) {}
-  
+
   async checkHealth(): Promise<HealthStatus> {
     const checks = await Promise.all([
       this.checkMetricsCollector(),
       this.checkAlertManager(),
       this.checkDatabase()
     ]);
-    
+
     return {
       overall: checks.every(check => check.healthy),
       components: checks
     };
   }
-  
+
   private async checkMetricsCollector(): Promise<ComponentHealth> {
     try {
       const isResponding = await this.metricsCollector.ping();
@@ -548,19 +548,19 @@ interface PerformanceConfig {
 
 class ConfigManager {
   private config: PerformanceConfig;
-  
+
   constructor(configPath: string) {
     this.loadConfig(configPath);
   }
-  
+
   private loadConfig(path: string): void {
     // 載入配置邏輯
   }
-  
+
   getConfig(): PerformanceConfig {
     return this.config;
   }
-  
+
   updateConfig(updates: Partial<PerformanceConfig>): void {
     this.config = { ...this.config, ...updates };
     this.notifyConfigChange();
@@ -575,11 +575,11 @@ class ConfigManager {
 // 採樣策略
 class SamplingStrategy {
   private sampleRate: number = 0.1; // 10% 採樣率
-  
+
   shouldSample(metric: MetricData): boolean {
     return Math.random() < this.sampleRate;
   }
-  
+
   setSampleRate(rate: number): void {
     this.sampleRate = Math.max(0, Math.min(1, rate));
   }
@@ -589,24 +589,24 @@ class SamplingStrategy {
 class MetricsAggregator {
   private buffer: MetricData[] = [];
   private flushInterval: number = 60000; // 1分鐘
-  
+
   constructor() {
     setInterval(() => this.flush(), this.flushInterval);
   }
-  
+
   add(metric: MetricData): void {
     this.buffer.push(metric);
   }
-  
+
   private async flush(): Promise<void> {
     if (this.buffer.length === 0) return;
-    
+
     const aggregated = this.aggregate(this.buffer);
     await this.store(aggregated);
-    
+
     this.buffer = [];
   }
-  
+
   private aggregate(metrics: MetricData[]): AggregatedMetric[] {
     // 實現數據聚合邏輯
     return [];
@@ -620,19 +620,19 @@ class MetricsAggregator {
 class CacheManager {
   private cache: Map<string, CacheEntry> = new Map();
   private ttl: number = 300000; // 5分鐘
-  
+
   get<T>(key: string): T | null {
     const entry = this.cache.get(key);
     if (!entry) return null;
-    
+
     if (Date.now() - entry.timestamp > this.ttl) {
       this.cache.delete(key);
       return null;
     }
-    
+
     return entry.value as T;
   }
-  
+
   set<T>(key: string, value: T): void {
     this.cache.set(key, {
       value,
@@ -649,11 +649,11 @@ class CacheManager {
 // 向後兼容的適配器
 class LegacyPerformanceAdapter {
   private newMonitor: PerformanceMonitor;
-  
+
   constructor(monitor: PerformanceMonitor) {
     this.newMonitor = monitor;
   }
-  
+
   // 保持舊 API 兼容
   recordMetric(name: string, value: number, category?: string): void {
     this.newMonitor.collect({
@@ -664,7 +664,7 @@ class LegacyPerformanceAdapter {
       tags: {}
     });
   }
-  
+
   getBasicStats(metricName: string): SimpleStats | null {
     // 轉換新 API 結果為舊格式
     const stats = this.newMonitor.getStatistics(metricName);
@@ -678,15 +678,15 @@ class LegacyPerformanceAdapter {
 // 特性開關
 class FeatureToggle {
   private features: Map<string, boolean> = new Map();
-  
+
   isEnabled(feature: string): boolean {
     return this.features.get(feature) || false;
   }
-  
+
   enable(feature: string): void {
     this.features.set(feature, true);
   }
-  
+
   disable(feature: string): void {
     this.features.set(feature, false);
   }
@@ -697,7 +697,7 @@ class HybridPerformanceMonitor {
   private legacyMonitor: SimplePerformanceMonitor;
   private newMonitor: PerformanceMonitor;
   private featureToggle: FeatureToggle;
-  
+
   constructor(
     legacyMonitor: SimplePerformanceMonitor,
     newMonitor: PerformanceMonitor,
@@ -707,7 +707,7 @@ class HybridPerformanceMonitor {
     this.newMonitor = newMonitor;
     this.featureToggle = featureToggle;
   }
-  
+
   recordMetric(name: string, value: number, category?: string): void {
     if (this.featureToggle.isEnabled('new-monitoring')) {
       this.newMonitor.collect({

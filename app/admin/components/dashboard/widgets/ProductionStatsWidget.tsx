@@ -10,7 +10,7 @@ import React, { useMemo, useEffect, useState } from 'react';
 import { CubeIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
-import { TraditionalWidgetComponentProps } from '@/app/types/dashboard';
+import { TraditionalWidgetComponentProps } from '@/types/components/dashboard';
 import { MetricCard } from './common/data-display/MetricCard';
 
 interface ProductionStatsWidgetProps extends TraditionalWidgetComponentProps {
@@ -18,12 +18,12 @@ interface ProductionStatsWidgetProps extends TraditionalWidgetComponentProps {
   metric: 'pallet_count' | 'quantity_sum';
 }
 
-export const ProductionStatsWidget: React.FC<ProductionStatsWidgetProps> = ({ 
-  title, 
+export const ProductionStatsWidget: React.FC<ProductionStatsWidgetProps> = ({
+  title,
   metric,
   timeFrame,
   isEditMode,
-  widget
+  widget,
 }) => {
   const [statValue, setStatValue] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -39,7 +39,7 @@ export const ProductionStatsWidget: React.FC<ProductionStatsWidgetProps> = ({
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
-      
+
       return {
         start: today,
         end: tomorrow,
@@ -81,7 +81,12 @@ export const ProductionStatsWidget: React.FC<ProductionStatsWidgetProps> = ({
         if (result.widgets && result.widgets.length > 0) {
           const widgetData = result.widgets[0];
 
-          if (typeof widgetData.data === 'object' && widgetData.data !== null && 'error' in widgetData.data && widgetData.data.error) {
+          if (
+            typeof widgetData.data === 'object' &&
+            widgetData.data !== null &&
+            'error' in widgetData.data &&
+            widgetData.data.error
+          ) {
             const errorMsg = String(widgetData.data.error);
             console.error('[ProductionStatsWidget as string] API error:', errorMsg);
             setError(errorMsg);
@@ -89,19 +94,30 @@ export const ProductionStatsWidget: React.FC<ProductionStatsWidgetProps> = ({
             return;
           }
 
-          const productionValue = (typeof widgetData.data === 'object' && widgetData.data !== null && 'value' in widgetData.data) 
-            ? widgetData.data.value 
-            : 0;
-          const widgetMetadata = (typeof widgetData.data === 'object' && widgetData.data !== null && 'metadata' in widgetData.data) 
-            ? widgetData.data.metadata 
-            : {};
+          const productionValue =
+            typeof widgetData.data === 'object' &&
+            widgetData.data !== null &&
+            'value' in widgetData.data
+              ? widgetData.data.value
+              : 0;
+          const widgetMetadata =
+            typeof widgetData.data === 'object' &&
+            widgetData.data !== null &&
+            'metadata' in widgetData.data
+              ? widgetData.data.metadata
+              : {};
 
           console.log('[ProductionStatsWidget as string] API returned value:', productionValue);
           console.log('[ProductionStatsWidget as string] Metadata:', widgetMetadata);
 
-          setStatValue(typeof productionValue === 'number' ? productionValue : Number(productionValue) || 0);
-          setMetadata(typeof widgetMetadata === 'object' && widgetMetadata !== null ? widgetMetadata as Record<string, unknown> : {});
-
+          setStatValue(
+            typeof productionValue === 'number' ? productionValue : Number(productionValue) || 0
+          );
+          setMetadata(
+            typeof widgetMetadata === 'object' && widgetMetadata !== null
+              ? (widgetMetadata as Record<string, unknown>)
+              : {}
+          );
         } else {
           console.warn('[ProductionStatsWidget as string] No widget data returned from API');
           setStatValue(0);
@@ -119,20 +135,13 @@ export const ProductionStatsWidget: React.FC<ProductionStatsWidgetProps> = ({
   }, [dashboardAPI, dateRange, metric, isEditMode]);
 
   // 格式化日期範圍
-  const dateRangeText = `${format(new Date(dateRange.start), 'MMM d')} to ${format(new Date(dateRange.end), 'MMM d')}`;
+  const dateRangeText = `${format(new Date(), 'MMM yyyy')}`;
 
   // 決定標籤文字
   const label = metric === 'pallet_count' ? 'Pallets produced' : 'Total quantity';
 
   if (isEditMode) {
-    return (
-      <MetricCard
-        title={title}
-        value={0}
-        label={label}
-        icon={CubeIcon}
-      />
-    );
+    return <MetricCard title={title} value={0} label={label} icon={CubeIcon} />;
   }
 
   return (
@@ -142,10 +151,14 @@ export const ProductionStatsWidget: React.FC<ProductionStatsWidgetProps> = ({
       label={label}
       icon={CubeIcon}
       dateRange={dateRangeText}
-      performanceMetrics={metadata.rpcFunction ? {
-        source: 'Server',
-        optimized: true
-      } : undefined}
+      performanceMetrics={
+        metadata.rpcFunction
+          ? {
+              source: 'Server',
+              optimized: true,
+            }
+          : undefined
+      }
       loading={loading}
       error={error ? new Error(error) : undefined}
       animateOnMount={true}

@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   const supabase = await createClient();
   try {
-    const { data, error } = await supabase.from('products').select('*').limit(1);
+    const { data, error } = await supabase.from('data_code').select('*').limit(1);
 
     if (error) {
       return NextResponse.json({ error: (error as { message: string }).message }, { status: 500 });
@@ -12,7 +12,7 @@ export async function GET() {
 
     return NextResponse.json({
       tableName: 'products',
-      columns: Object.keys(data?.[0] || {}),
+      columns: Object.keys(data?.[0] || ({} as any)),
       sampleData: data?.[0],
     });
   } catch (error) {

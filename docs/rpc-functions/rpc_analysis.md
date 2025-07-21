@@ -13,7 +13,7 @@
   - `p_count` (integer): 需要生成的數量
   - `p_session_id` (text, optional): 會話標識符
 - **返回**: `TABLE(pallet_number text, series text)`
-- **使用位置**: 
+- **使用位置**:
   - `/app/utils/optimizedPalletGenerationV6.ts:40`
   - `/app/actions/grnActions.ts:299`
 - **應用度**: 高 - 核心功能，每次生成棧板都使用
@@ -55,7 +55,7 @@
   - `p_product_code` (text): 產品代碼
   - `p_quantity` (bigint): 數量
   - `p_operation` (text): 'void' 或 'damage'
-- **使用位置**: 
+- **使用位置**:
   - `/app/void-pallet/actions.ts:592,845`
   - `/app/void-pallet/services/inventoryService.ts:102`
 - **應用度**: 高 - 庫存調整核心功能
@@ -65,7 +65,7 @@
 - **參數**:
   - `p_user_id` (integer): 操作員ID
   - `p_move_count` (integer): 移動次數
-- **使用位置**: 
+- **使用位置**:
   - `/app/hooks/useStockMovement.tsx:366`
   - `/app/hooks/useStockTransfer.tsx:176`
 - **應用度**: 中 - 工作量統計
@@ -125,7 +125,7 @@
 #### execute_sql_query
 - **用途**: 執行自定義SQL查詢（用於Ask Database功能）
 - **參數**: `query_text` (text): SQL查詢語句
-- **使用位置**: 
+- **使用位置**:
   - `/app/api/ask-database/route.ts:691`
   - `/app/api/anomaly-detection/route.ts:99,168,224`
 - **應用度**: 高 - 數據分析功能
@@ -137,7 +137,7 @@
 
 #### api_cleanup_pallet_buffer
 - **用途**: 清理過期的棧板號碼緩衝區
-- **使用位置**: 
+- **使用位置**:
   - `/app/api/cleanup-pallet-buffer/route.ts:27`
   - `/supabase/functions/cleanup-pallet-buffer/index.ts:25`
 - **應用度**: 低 - 定期維護任務

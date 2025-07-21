@@ -7,9 +7,10 @@ import { createClient } from '@/app/utils/supabase/server'; // NEW: Using @supab
 import { getUserIdFromEmail } from '@/lib/utils/getUserId'; // 統一的用戶 ID 獲取函數
 import { format, isValid } from 'date-fns'; // 用於日期格式化
 import { isDevelopment } from '@/lib/utils/env';
-import { DatabaseRecord, convertToReportItem } from '@/lib/types/database-types';
-import { getErrorMessage } from '@/lib/types/error-handling';
-import { Tables } from '@/lib/types/supabase-generated';
+import { DatabaseRecord, convertToReportItem } from '@/types/database/tables';
+import { isRecord } from '@/types/database/helpers';
+import { getErrorMessage } from '@/types/core/error';
+import { Tables } from '@/types/database/supabase';
 // Database record types
 interface AcoOrderRecord {
   order_ref: number;
@@ -44,10 +45,18 @@ interface SupplierRecord {
   supplier_name: string;
 }
 
-
 interface OperatorRecord {
   id: number;
   name: string;
+}
+
+interface OrderLoadingRecord {
+  order_ref: string;
+  product_code: string;
+  quantity: number;
+  action_type: string;
+  action_by: string;
+  action_time: string | null;
 }
 
 // 擴展類型定義用於複雜查詢
@@ -102,8 +111,7 @@ export async function getUniqueAcoOrderRefs(): Promise<string[]> {
     }
 
     if (!data || data.length === 0) {
-      isDevelopment() &&
-        console.log('No ACO order references found in database.');
+      isDevelopment() && console.log('No ACO order references found in database.');
       return [];
     }
 
@@ -183,8 +191,7 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
     }
 
     if (!acoCodesData || acoCodesData.length === 0) {
-      isDevelopment() &&
-        console.log(`No product codes found for orderRef ${orderRefNum}.`);
+      isDevelopment() && console.log(`No product codes found for orderRef ${orderRefNum}.`);
       return [];
     }
 
@@ -320,9 +327,7 @@ export async function getUniqueGrnRefs(): Promise<string[]> {
     }
 
     if (!data || data.length === 0) {
-      isDevelopment() &&
-        isDevelopment() &&
-        console.log('No GRN references found in database.');
+      isDevelopment() && isDevelopment() && console.log('No GRN references found in database.');
       return [];
     }
 
@@ -740,9 +745,7 @@ export async function getTransactionReportData(
         console.log(`No transfer records found for date range ${startDate} to ${endDate}`);
 
       // 🆕 嘗試更寬鬆的日期查詢，以防日期格式問題
-      isDevelopment() &&
-        isDevelopment() &&
-        console.log(`[DEBUG] Trying broader date search...`);
+      isDevelopment() && isDevelopment() && console.log(`[DEBUG] Trying broader date search...`);
       const { data: allRecords, error: allError } = await supabase
         .from('record_transfer')
         .select('tran_date')
@@ -880,7 +883,7 @@ import {
   isWarehouseWorkLevelError,
   formatDateForRPC,
   getDefaultDateRange,
-} from '@/app/types/warehouse-work-level';
+} from '@/types/api/response';
 
 /**
  * Get warehouse work level data
@@ -911,7 +914,7 @@ export async function getWarehouseWorkLevel(params?: WarehouseWorkLevelParams): 
       throw new Error(`RPC Error: ${rpcError.message}`);
     }
 
-    const typedResult = result as WarehouseWorkLevelResponse;
+    const typedResult = result as unknown as WarehouseWorkLevelResponse;
 
     // Check if result is an error
     if (isWarehouseWorkLevelError(typedResult)) {
@@ -1009,12 +1012,12 @@ interface VoidPalletRecord {
   record_palletinfo: {
     product_code: string;
     product_qty: number;
+    data_code?: {
+      description: string;
+    };
   };
   data_id?: {
     name: string;
-  };
-  data_code?: {
-    description: string;
   };
 }
 
@@ -1113,7 +1116,10 @@ export async function getVoidPalletSummary(filters: VoidPalletFilters): Promise<
     }
 
     if (!data) {
-      return { success: true, data: { totalVoided: 0, totalQuantity: 0, uniqueProducts: 0, topReason: 'Unknown' } };
+      return {
+        success: true,
+        data: { totalVoided: 0, totalQuantity: 0, uniqueProducts: 0, topReason: 'Unknown' },
+      };
     }
 
     // Calculate summary statistics
@@ -1127,7 +1133,9 @@ export async function getVoidPalletSummary(filters: VoidPalletFilters): Promise<
     ).size;
 
     // Calculate most common reason
-    const reasons = data.map((item: Record<string, unknown>) => extractVoidReason(item.remark as string));
+    const reasons = data.map((item: Record<string, unknown>) =>
+      extractVoidReason(item.remark as string)
+    );
     const reasonCounts = new Map<string, number>();
 
     reasons.forEach((reason: string) => {
@@ -1210,9 +1218,13 @@ export async function getVoidReasonStats(filters: VoidPalletFilters): Promise<{
     // Calculate reason statistics
     const reasonStats = new Map<string, { count: number; quantity: number }>();
 
-    data.forEach((item: Record<string, unknown>) => {
-      const reason = extractVoidReason(item.remark as string);
-      const quantity = Number(item.product_qty) || 0;
+    // 安全地處理數據，檢查 record_palletinfo 是否為有效對象
+    (data as any[]).forEach((item: any) => {
+      if (!isRecord(item)) return;
+
+      const reason = extractVoidReason(String(item.remark || ''));
+      const palletInfo = isRecord(item.record_palletinfo) ? item.record_palletinfo : {};
+      const quantity = Number(palletInfo.product_qty) || 0;
 
       if (!reasonStats.has(reason)) {
         reasonStats.set(reason, { count: 0, quantity: 0 });
@@ -1302,14 +1314,14 @@ export async function getVoidPalletDetails(filters: VoidPalletFilters): Promise<
     }
 
     const result: VoidPalletDetails[] = data.map((item: Record<string, unknown>) => ({
-      void_date: item.time as string || '',
-      plt_num: item.plt_num as string || '',
-      product_code: item.product_code as string || '',
-      product_description: item.description as string || '',
+      void_date: (item.time as string) || '',
+      plt_num: (item.plt_num as string) || '',
+      product_code: (item.product_code as string) || '',
+      product_description: (item.description as string) || '',
       quantity: Number(item.product_qty) || 0,
       void_reason: extractVoidReason(item.remark as string),
-      operator_name: item.name as string || `ID: ${item.id}`,
-      remark: item.remark as string || '',
+      operator_name: (item.name as string) || `ID: ${item.id}`,
+      remark: (item.remark as string) || '',
     }));
 
     return { success: true, data: result };
@@ -1341,10 +1353,10 @@ export async function getVoidProductStats(filters: VoidPalletFilters): Promise<{
         id,
         record_palletinfo!inner(
           product_code,
-          product_qty
-        ),
-        data_code!inner(
-          description
+          product_qty,
+          data_code(
+            description
+          )
         )
       `
       )
@@ -1381,13 +1393,19 @@ export async function getVoidProductStats(filters: VoidPalletFilters): Promise<{
       }
     >();
 
-    data.forEach((item: Record<string, unknown>) => {
-      const code = item.product_code as string;
+    // 安全地處理產品統計數據
+    (data as any[]).forEach((item: any) => {
+      if (!isRecord(item)) return;
+
+      const palletInfo = isRecord(item.record_palletinfo) ? item.record_palletinfo : {};
+      const code = String(palletInfo.product_code || '');
       if (!code) return;
 
       if (!productStats.has(code)) {
         productStats.set(code, {
-          description: item.description as string || '',
+          description: String(
+            (isRecord(palletInfo.data_code) ? palletInfo.data_code.description : '') || ''
+          ),
           count: 0,
           totalQty: 0,
         });
@@ -1395,7 +1413,7 @@ export async function getVoidProductStats(filters: VoidPalletFilters): Promise<{
 
       const stats = productStats.get(code)!;
       stats.count++;
-      stats.totalQty += Number(item.product_qty) || 0;
+      stats.totalQty += Number(palletInfo.product_qty) || 0;
     });
 
     const result = Array.from(productStats.entries())
@@ -1426,11 +1444,15 @@ export interface StockTakeFilters {
 }
 
 interface StockTakeRecord {
-  count_time: string;
+  uuid: string;
   product_code: string;
-  plt_num: string;
-  system_qty: string;
-  counted_qty: string;
+  plt_num: string | null;
+  product_desc: string;
+  remain_qty: number | null;
+  counted_qty: number | null;
+  counted_id: number | null;
+  counted_name: string | null;
+  created_at: string | null;
 }
 
 interface StockLevelRecord {
@@ -1487,8 +1509,8 @@ export async function getStockTakeSummary(filters: StockTakeFilters): Promise<{
     const { data: stockTakeData, error: stockTakeError } = await supabase
       .from('record_stocktake')
       .select('*')
-      .gte('count_time', stockTakeDate)
-      .lt('count_time', `${stockTakeDate}T23:59:59`);
+      .gte('created_at', stockTakeDate)
+      .lt('created_at', `${stockTakeDate}T23:59:59`);
 
     if (stockTakeError) {
       console.error('Error fetching stock take data:', stockTakeError.message);
@@ -1506,12 +1528,41 @@ export async function getStockTakeSummary(filters: StockTakeFilters): Promise<{
     }
 
     if (!stockTakeData || !stockLevels) {
-      return { success: true, data: { totalProducts: 0, countedProducts: 0, completionRate: 0, completionPercentage: 0, totalVariance: 0, highVarianceCount: 0 } };
+      return {
+        success: true,
+        data: {
+          totalProducts: 0,
+          countedProducts: 0,
+          completionRate: 0,
+          completionPercentage: 0,
+          totalVariance: 0,
+          highVarianceCount: 0,
+        },
+      };
     }
 
+    // 安全轉換數據類型
+    const safeStockTakeData = (stockTakeData as any[]).map((item: any) => ({
+      uuid: String(item.uuid || ''),
+      product_code: String(item.product_code || ''),
+      plt_num: item.plt_num ? String(item.plt_num) : null,
+      product_desc: String(item.product_desc || ''),
+      remain_qty: Number(item.remain_qty) || null,
+      counted_qty: Number(item.counted_qty) || null,
+      counted_id: Number(item.counted_id) || null,
+      counted_name: item.counted_name ? String(item.counted_name) : null,
+      created_at: item.created_at ? String(item.created_at) : null,
+    })) as StockTakeRecord[];
+
+    const safeStockLevels = (stockLevels as any[]).map((item: any) => ({
+      stock: String(item.stock || ''),
+      stock_level: Number(item.stock_level) || 0,
+      description: String(item.description || ''),
+    })) as StockLevelRecord[];
+
     // Group stock take data by product
-    const productGroups = groupStockTakeByProduct(stockTakeData);
-    const stockMap = new Map(stockLevels.map((item: StockLevelRecord) => [item.stock, item]));
+    const productGroups = groupStockTakeByProduct(safeStockTakeData);
+    const stockMap = new Map(safeStockLevels.map(item => [item.stock, item]));
 
     let totalProducts = stockMap.size;
     let countedProducts = 0;
@@ -1532,7 +1583,8 @@ export async function getStockTakeSummary(filters: StockTakeFilters): Promise<{
 
       totalVariance += variance;
 
-      if (variancePercentage > 0.1) { // 10% variance
+      if (variancePercentage > 0.1) {
+        // 10% variance
         highVarianceCount++;
       }
     });
@@ -1578,8 +1630,8 @@ export async function getStockTakeDetails(filters: StockTakeFilters): Promise<{
     const { data: stockTakeData, error: stockTakeError } = await supabase
       .from('record_stocktake')
       .select('*')
-      .gte('count_time', stockTakeDate)
-      .lt('count_time', `${stockTakeDate}T23:59:59`);
+      .gte('created_at', stockTakeDate)
+      .lt('created_at', `${stockTakeDate}T23:59:59`);
 
     if (stockTakeError) {
       console.error('Error fetching stock take data:', stockTakeError.message);
@@ -1600,9 +1652,28 @@ export async function getStockTakeDetails(filters: StockTakeFilters): Promise<{
       return { success: true, data: [] };
     }
 
+    // 安全轉換數據類型
+    const safeStockTakeData = (stockTakeData as any[]).map((item: any) => ({
+      uuid: String(item.uuid || ''),
+      product_code: String(item.product_code || ''),
+      plt_num: item.plt_num ? String(item.plt_num) : null,
+      product_desc: String(item.product_desc || ''),
+      remain_qty: Number(item.remain_qty) || null,
+      counted_qty: Number(item.counted_qty) || null,
+      counted_id: Number(item.counted_id) || null,
+      counted_name: item.counted_name ? String(item.counted_name) : null,
+      created_at: item.created_at ? String(item.created_at) : null,
+    })) as StockTakeRecord[];
+
+    const safeStockLevels = (stockLevels as any[]).map((item: any) => ({
+      stock: String(item.stock || ''),
+      stock_level: Number(item.stock_level) || 0,
+      description: String(item.description || ''),
+    })) as StockLevelRecord[];
+
     // Group stock take data by product
-    const productGroups = groupStockTakeByProduct(stockTakeData);
-    const stockMap = new Map(stockLevels.map((item: StockLevelRecord) => [item.stock, item]));
+    const productGroups = groupStockTakeByProduct(safeStockTakeData);
+    const stockMap = new Map(safeStockLevels.map(item => [item.stock, item]));
 
     const results: StockTakeDetails[] = [];
 
@@ -1615,7 +1686,9 @@ export async function getStockTakeDetails(filters: StockTakeFilters): Promise<{
       const variancePercentage = systemStock > 0 ? (variance / systemStock) * 100 : 0;
 
       // Apply filters
-      if (shouldIncludeStockTakeItem(productCode, variance, variancePercentage, countedQty, filters)) {
+      if (
+        shouldIncludeStockTakeItem(productCode, variance, variancePercentage, countedQty, filters)
+      ) {
         results.push({
           product_code: productCode,
           description: stockInfo?.description || '',
@@ -1625,16 +1698,22 @@ export async function getStockTakeDetails(filters: StockTakeFilters): Promise<{
           variance_percentage: variancePercentage,
           pallet_count: items.filter(item => item.plt_num && item.plt_num !== '').length,
           status: countedQty > 0 ? 'Counted' : 'Not Counted',
-          last_updated: items[0]?.count_time || null,
+          last_updated: items[0]?.created_at || null,
         });
       }
     });
 
     // Add not counted products if needed
-    if (!filters.countStatus || filters.countStatus === null || filters.countStatus === 'not_counted') {
-      stockLevels.forEach((stockItem: StockLevelRecord) => {
+    if (
+      !filters.countStatus ||
+      filters.countStatus === null ||
+      filters.countStatus === 'not_counted'
+    ) {
+      safeStockLevels.forEach((stockItem: StockLevelRecord) => {
         if (!productGroups.has(stockItem.stock) && stockItem.stock_level > 0) {
-          if (shouldIncludeStockTakeItem(stockItem.stock, -stockItem.stock_level, -100, 0, filters)) {
+          if (
+            shouldIncludeStockTakeItem(stockItem.stock, -stockItem.stock_level, -100, 0, filters)
+          ) {
             results.push({
               product_code: stockItem.stock,
               description: stockItem.description || '',
@@ -1685,8 +1764,8 @@ export async function getNotCountedItems(filters: StockTakeFilters): Promise<{
     const { data: stockTakeData, error: stockTakeError } = await supabase
       .from('record_stocktake')
       .select('*')
-      .gte('count_time', stockTakeDate)
-      .lt('count_time', `${stockTakeDate}T23:59:59`);
+      .gte('created_at', stockTakeDate)
+      .lt('created_at', `${stockTakeDate}T23:59:59`);
 
     if (stockTakeError) {
       console.error('Error fetching stock take data:', stockTakeError.message);
@@ -1707,11 +1786,32 @@ export async function getNotCountedItems(filters: StockTakeFilters): Promise<{
       return { success: true, data: [] };
     }
 
+    // 安全轉換數據類型
+    const safeStockTakeData = (stockTakeData as any[]).map((item: any) => ({
+      uuid: String(item.uuid || ''),
+      product_code: String(item.product_code || ''),
+      plt_num: item.plt_num ? String(item.plt_num) : null,
+      product_desc: String(item.product_desc || ''),
+      remain_qty: Number(item.remain_qty) || null,
+      counted_qty: Number(item.counted_qty) || null,
+      counted_id: Number(item.counted_id) || null,
+      counted_name: item.counted_name ? String(item.counted_name) : null,
+      created_at: item.created_at ? String(item.created_at) : null,
+    })) as StockTakeRecord[];
+
+    const safeStockLevels = (stockLevels as any[]).map((item: any) => ({
+      stock: String(item.stock || ''),
+      stock_level: Number(item.stock_level) || 0,
+      description: String(item.description || ''),
+    })) as StockLevelRecord[];
+
     // Get counted products
-    const countedProducts = new Set(stockTakeData.map((item: StockTakeRecord) => item.product_code));
+    const countedProducts = new Set(
+      safeStockTakeData.map((item: StockTakeRecord) => item.product_code)
+    );
 
     // Find not counted products
-    const notCountedItems = stockLevels
+    const notCountedItems = safeStockLevels
       .filter((item: StockLevelRecord) => !countedProducts.has(item.stock) && item.stock_level > 0)
       .map((item: StockLevelRecord) => ({
         product_code: item.stock,
@@ -1752,9 +1852,9 @@ function calculateStockTakeTotalQty(items: StockTakeRecord[]): number {
   return items.reduce((sum, item) => {
     // Handle initial records (without pallet number)
     if (!item.plt_num || item.plt_num === '') {
-      return sum + (parseInt(item.system_qty || '0') || 0);
+      return sum + (Number(item.remain_qty) || 0);
     }
-    return sum + (parseInt(item.counted_qty || '0') || 0);
+    return sum + (Number(item.counted_qty) || 0);
   }, 0);
 }
 
@@ -1802,34 +1902,14 @@ export interface OrderLoadingFilters {
   userId?: number;
 }
 
-interface OrderLoadingRecord {
-  order_number: string;
-  product_code: string;
-  product_qty: string;
-  loaded_qty: string;
-  user_id: number;
-  created_at: string;
-  updated_at: string;
-  data_order: {
-    order_date: string;
-    status: string;
-  };
-}
-
 interface OrderLoadingHistoryRecord {
-  id: number;
-  order_number: string;
+  uuid: string;
+  order_ref: string;
   product_code: string;
-  loaded_qty: number;
-  action: string;
-  user_id: number;
-  created_at: string;
-  data_id: {
-    name: string;
-  };
-  data_code: {
-    description: string;
-  };
+  quantity: number;
+  action_type: string;
+  action_by: string;
+  action_time: string | null;
 }
 
 interface OrderLoadingSummary {
@@ -1894,28 +1974,23 @@ export async function getOrderLoadingSummary(filters: OrderLoadingFilters): Prom
     }
 
     let query = supabase
-      .from('record_order_loading')
+      .from('order_loading_history')
       .select(
         `
-        order_number,
+        order_ref,
         product_code,
-        product_qty,
-        loaded_qty,
-        user_id,
-        created_at,
-        updated_at,
-        data_order!inner(
-          order_date,
-          status
-        )
+        quantity,
+        action_type,
+        action_by,
+        action_time
       `
       )
-      .gte('created_at', startDate)
-      .lte('created_at', endDate + 'T23:59:59');
+      .gte('action_time', startDate)
+      .lte('action_time', endDate + 'T23:59:59');
 
     // Apply filters
     if (filters.orderNumber) {
-      query = query.eq('order_number', filters.orderNumber);
+      query = query.eq('order_ref', filters.orderNumber);
     }
 
     if (filters.productCode) {
@@ -1923,7 +1998,7 @@ export async function getOrderLoadingSummary(filters: OrderLoadingFilters): Prom
     }
 
     if (filters.userId) {
-      query = query.eq('user_id', filters.userId);
+      query = query.eq('action_by', filters.userId.toString());
     }
 
     const { data, error } = await query;
@@ -1934,7 +2009,10 @@ export async function getOrderLoadingSummary(filters: OrderLoadingFilters): Prom
     }
 
     if (!data) {
-      return { success: true, data: { totalOrders: 0, completedOrders: 0, totalItemsLoaded: 0, avgCompletionRate: 0 } };
+      return {
+        success: true,
+        data: { totalOrders: 0, completedOrders: 0, totalItemsLoaded: 0, avgCompletionRate: 0 },
+      };
     }
 
     // Group by order to calculate statistics
@@ -1947,19 +2025,21 @@ export async function getOrderLoadingSummary(filters: OrderLoadingFilters): Prom
       }
     >();
 
-    data.forEach((item: Record<string, unknown>) => {
-      const orderNumber = item.order_number as string;
-      if (!orderMap.has(orderNumber)) {
-        orderMap.set(orderNumber, {
+    (data as any[]).forEach((item: any) => {
+      const orderRef = item.order_ref;
+      if (!orderMap.has(orderRef)) {
+        orderMap.set(orderRef, {
           totalQty: 0,
           loadedQty: 0,
-          status: (item as unknown as OrderItemWithJoins).data_order?.status || 'pending',
+          status: 'pending',
         });
       }
 
-      const order = orderMap.get(orderNumber)!;
-      order.totalQty += parseInt((item.product_qty as string) || '0');
-      order.loadedQty += parseInt((item.loaded_qty as string) || '0');
+      const order = orderMap.get(orderRef)!;
+      if (item.action_type === 'load') {
+        order.loadedQty += item.quantity || 0;
+      }
+      order.totalQty += item.quantity || 0;
     });
 
     // Calculate statistics
@@ -1967,7 +2047,9 @@ export async function getOrderLoadingSummary(filters: OrderLoadingFilters): Prom
       order => order.loadedQty >= order.totalQty
     ).length;
 
-    const totalItemsLoaded = data.reduce((sum, item) => sum + parseInt(item.loaded_qty || '0'), 0);
+    const totalItemsLoaded = (data as any[])
+      .filter(item => item.action_type === 'load')
+      .reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
 
     const completionRates = Array.from(orderMap.values()).map(order =>
       order.totalQty > 0 ? order.loadedQty / order.totalQty : 0
@@ -2012,28 +2094,23 @@ export async function getOrderProgress(filters: OrderLoadingFilters): Promise<{
     }
 
     let query = supabase
-      .from('record_order_loading')
+      .from('order_loading_history')
       .select(
         `
-        order_number,
+        order_ref,
         product_code,
-        product_qty,
-        loaded_qty,
-        user_id,
-        created_at,
-        updated_at,
-        data_order!inner(
-          order_date,
-          status
-        )
+        quantity,
+        action_type,
+        action_by,
+        action_time
       `
       )
-      .gte('created_at', startDate)
-      .lte('created_at', endDate + 'T23:59:59');
+      .gte('action_time', startDate)
+      .lte('action_time', endDate + 'T23:59:59');
 
     // Apply filters
     if (filters.orderNumber) {
-      query = query.eq('order_number', filters.orderNumber);
+      query = query.eq('order_ref', filters.orderNumber);
     }
 
     if (filters.productCode) {
@@ -2041,7 +2118,7 @@ export async function getOrderProgress(filters: OrderLoadingFilters): Promise<{
     }
 
     if (filters.userId) {
-      query = query.eq('user_id', filters.userId);
+      query = query.eq('action_by', filters.userId.toString());
     }
 
     const { data: rawData, error } = await query;
@@ -2058,21 +2135,23 @@ export async function getOrderProgress(filters: OrderLoadingFilters): Promise<{
     // Group by order
     const orderMap = new Map<string, OrderDetails>();
 
-    rawData.forEach(item => {
-      const orderNumber = item.order_number;
-      if (!orderMap.has(orderNumber)) {
-        orderMap.set(orderNumber, {
-          order_number: orderNumber,
-          order_date: (item as OrderItemWithJoins).data_order?.order_date,
+    rawData.forEach((item: any) => {
+      const orderRef = item.order_ref;
+      if (!orderMap.has(orderRef)) {
+        orderMap.set(orderRef, {
+          order_number: orderRef,
+          order_date: undefined,
           total_qty: 0,
           loaded_qty: 0,
           products: new Set(),
         });
       }
 
-      const order = orderMap.get(orderNumber)!;
-      order.total_qty += parseInt(item.product_qty || '0');
-      order.loaded_qty += parseInt(item.loaded_qty || '0');
+      const order = orderMap.get(orderRef)!;
+      if (item.action_type === 'load') {
+        order.loaded_qty += item.quantity || 0;
+      }
+      order.total_qty += item.quantity || 0;
       order.products.add(item.product_code);
     });
 
@@ -2117,31 +2196,25 @@ export async function getLoadingDetails(filters: OrderLoadingFilters): Promise<{
     }
 
     let query = supabase
-      .from('record_order_loading_history')
+      .from('order_loading_history')
       .select(
         `
-        id,
-        order_number,
+        uuid,
+        order_ref,
         product_code,
-        loaded_qty,
-        action,
-        user_id,
-        created_at,
-        data_id!inner(
-          name
-        ),
-        data_code!inner(
-          description
-        )
+        quantity,
+        action_type,
+        action_by,
+        action_time
       `
       )
-      .gte('created_at', startDate)
-      .lte('created_at', endDate + 'T23:59:59')
-      .order('created_at', { ascending: false });
+      .gte('action_time', startDate)
+      .lte('action_time', endDate + 'T23:59:59')
+      .order('action_time', { ascending: false });
 
     // Apply filters
     if (filters.orderNumber) {
-      query = query.eq('order_number', filters.orderNumber);
+      query = query.eq('order_ref', filters.orderNumber);
     }
 
     if (filters.productCode) {
@@ -2149,7 +2222,7 @@ export async function getLoadingDetails(filters: OrderLoadingFilters): Promise<{
     }
 
     if (filters.userId) {
-      query = query.eq('user_id', filters.userId);
+      query = query.eq('action_by', filters.userId.toString());
     }
 
     const { data, error } = await query;
@@ -2163,14 +2236,14 @@ export async function getLoadingDetails(filters: OrderLoadingFilters): Promise<{
       return { success: true, data: [] };
     }
 
-    const result = data.map(item => ({
-      timestamp: item.created_at,
-      order_number: item.order_number,
+    const result = (data as any[]).map((item: any) => ({
+      timestamp: item.action_time || '',
+      order_number: item.order_ref,
       product_code: item.product_code,
-      product_description: (item as unknown as OrderItemWithJoins).data_code?.description || '',
-      loaded_qty: item.loaded_qty,
-      user_name: (item as unknown as OrderItemWithJoins).data_id?.name || `User ${item.user_id}`,
-      action: item.action || 'Load',
+      product_description: '', // No longer available without JOIN
+      loaded_qty: item.quantity,
+      user_name: `User ${item.action_by}`,
+      action: item.action_type,
     }));
 
     return { success: true, data: result };
@@ -2199,31 +2272,25 @@ export async function getUserPerformance(filters: OrderLoadingFilters): Promise<
     }
 
     let query = supabase
-      .from('record_order_loading_history')
+      .from('order_loading_history')
       .select(
         `
-        id,
-        order_number,
+        uuid,
+        order_ref,
         product_code,
-        loaded_qty,
-        action,
-        user_id,
-        created_at,
-        data_id!inner(
-          name
-        ),
-        data_code!inner(
-          description
-        )
+        quantity,
+        action_type,
+        action_by,
+        action_time
       `
       )
-      .gte('created_at', startDate)
-      .lte('created_at', endDate + 'T23:59:59')
-      .order('created_at', { ascending: true });
+      .gte('action_time', startDate)
+      .lte('action_time', endDate + 'T23:59:59')
+      .order('action_time', { ascending: true });
 
     // Apply filters
     if (filters.orderNumber) {
-      query = query.eq('order_number', filters.orderNumber);
+      query = query.eq('order_ref', filters.orderNumber);
     }
 
     if (filters.productCode) {
@@ -2231,7 +2298,7 @@ export async function getUserPerformance(filters: OrderLoadingFilters): Promise<
     }
 
     if (filters.userId) {
-      query = query.eq('user_id', filters.userId);
+      query = query.eq('action_by', filters.userId.toString());
     }
 
     const { data, error } = await query;
@@ -2256,12 +2323,12 @@ export async function getUserPerformance(filters: OrderLoadingFilters): Promise<
       }
     >();
 
-    data.forEach((item: Record<string, unknown>) => {
-      const userId = item.user_id?.toString() || 'unknown';
+    (data as any[]).forEach((item: any) => {
+      const userId = item.action_by || 'unknown';
 
       if (!userStats.has(userId)) {
         userStats.set(userId, {
-          user_name: (item as unknown as OrderItemWithJoins).data_id?.name || `User ${item.user_id}`,
+          user_name: `User ${item.action_by}`,
           total_loads: 0,
           total_quantity: 0,
           load_times: [],
@@ -2269,8 +2336,10 @@ export async function getUserPerformance(filters: OrderLoadingFilters): Promise<
       }
 
       const stats = userStats.get(userId)!;
-      stats.total_loads++;
-      stats.total_quantity += Number(item.loaded_qty) || 0;
+      if (item.action_type === 'load') {
+        stats.total_loads++;
+        stats.total_quantity += Number(item.quantity) || 0;
+      }
     });
 
     const result = Array.from(userStats.entries())

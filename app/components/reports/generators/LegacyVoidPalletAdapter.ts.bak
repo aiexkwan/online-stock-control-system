@@ -1,0 +1,235 @@
+/**
+ * 適配器：將統一框架數據轉換為舊版 PDF 生成器格式
+ * 確保新框架能夠生成與現有完全一致的報表
+ */
+
+import { ProcessedReportData, ReportConfig } from '../core/ReportConfig';
+import { LegacyVoidPalletPdfGenerator } from '../core/LegacyPdfGenerator';
+import { UnknownTypeHandler } from '@/lib/types/unknown-handlers';
+
+export class LegacyVoidPalletAdapter {
+  /**
+   * 將統一框架數據轉換為舊版格式並生成 PDF
+   */
+  static async generatePdf(data: ProcessedReportData, config: ReportConfig): Promise<Blob> {
+    // 從 metadata 中提取日期範圍
+    const dateRange = this.extractDateRange(data.metadata.filters);
+
+    // 轉換摘要數據
+    const summary = this.transformSummary(data);
+
+    // 轉換各區段數據 - 使用策略4: unknown + type narrowing
+    const byReason = this.transformReasonStats(data.sections.reasonBreakdown ?? []);
+    const details = this.transformDetails(data.sections.details ?? []);
+    const byProduct = this.transformProductStats(data.sections.productAnalysis ?? []);
+
+    // 使用舊版生成器
+    const generator = new LegacyVoidPalletPdfGenerator();
+    return generator.generate({
+      dateRange,
+      summary,
+      byReason,
+      details,
+      byProduct,
+    });
+  }
+
+  private static extractDateRange(filters: Record<string, unknown>): {
+    start: string;
+    end: string;
+  } {
+    // 處理 dateRange 過濾器
+    const dateRange = filters.dateRange;
+    if (typeof dateRange === 'string' && dateRange.includes('|')) {
+      const [start, end] = dateRange.split('|');
+      return { start, end };
+    }
+
+    // 處理單獨的 startDate 和 endDate
+    return {
+      start:
+        typeof filters.startDate === 'string'
+          ? filters.startDate
+          : typeof filters.start_date === 'string'
+            ? filters.start_date
+            : '',
+      end:
+        typeof filters.endDate === 'string'
+          ? filters.endDate
+          : typeof filters.end_date === 'string'
+            ? filters.end_date
+            : '',
+    };
+  }
+
+  private static transformSummary(data: ProcessedReportData): {
+    totalVoided: number;
+    totalQuantity: number;
+    uniqueProducts: number;
+    averagePerDay: number;
+  } {
+    const summaryData = data.sections.summary ?? data.summary;
+
+    // 計算平均每天
+    const dateRange = this.extractDateRange(data.metadata.filters);
+    const daysDiff = this.calculateDaysDifference(dateRange.start, dateRange.end);
+    const totalVoided = UnknownTypeHandler.toNumber(
+      UnknownTypeHandler.safeGet(summaryData, 'totalVoided', 0),
+      0
+    );
+    const averagePerDay = daysDiff > 0 ? totalVoided / daysDiff : 0;
+
+    return {
+      totalVoided,
+      totalQuantity: UnknownTypeHandler.toNumber(
+        UnknownTypeHandler.safeGet(summaryData, 'totalQuantity', 0),
+        0
+      ),
+      uniqueProducts: UnknownTypeHandler.toNumber(
+        UnknownTypeHandler.safeGet(summaryData, 'uniqueProducts', 0),
+        0
+      ),
+      averagePerDay,
+    };
+  }
+
+  private static transformReasonStats(
+    reasonData: unknown
+  ): { reason: string; count: number; quantity: number; percentage: number }[] {
+    if (!Array.isArray(reasonData)) return [];
+
+    return UnknownTypeHandler.transformUnknownArray(reasonData, item => {
+      if (typeof item !== 'object' || item === null) return null;
+
+      return {
+        reason: UnknownTypeHandler.toString(
+          UnknownTypeHandler.safeGet(item, 'void_reason', '') ||
+            UnknownTypeHandler.safeGet(item, 'reason', ''),
+          'Unknown'
+        ),
+        count: UnknownTypeHandler.toNumber(UnknownTypeHandler.safeGet(item, 'count', 0), 0),
+        quantity: UnknownTypeHandler.toNumber(
+          UnknownTypeHandler.safeGet(item, 'total_quantity', '') ||
+            UnknownTypeHandler.safeGet(item, 'quantity', ''),
+          0
+        ),
+        percentage: UnknownTypeHandler.toNumber(
+          UnknownTypeHandler.safeGet(item, 'percentage', 0),
+          0
+        ),
+      };
+    });
+  }
+
+  private static transformDetails(detailsData: unknown): {
+    date: string;
+    pltNum: string;
+    productCode: string;
+    description: string;
+    quantity: number;
+    reason: string;
+    operator: string;
+    remark: string;
+  }[] {
+    if (!Array.isArray(detailsData)) return [];
+
+    return UnknownTypeHandler.transformUnknownArray(detailsData, item => {
+      if (typeof item !== 'object' || item === null) return null;
+
+      return {
+        date: UnknownTypeHandler.toString(
+          UnknownTypeHandler.safeGet(item, 'void_date', '') ||
+            UnknownTypeHandler.safeGet(item, 'date', '') ||
+            UnknownTypeHandler.safeGet(item, 'time', ''),
+          ''
+        ),
+        pltNum: UnknownTypeHandler.toString(
+          UnknownTypeHandler.safeGet(item, 'plt_num', '') ||
+            UnknownTypeHandler.safeGet(item, 'palletNum', ''),
+          ''
+        ),
+        productCode: UnknownTypeHandler.toString(
+          UnknownTypeHandler.safeGet(item, 'product_code', '') ||
+            UnknownTypeHandler.safeGet(item, 'productCode', ''),
+          ''
+        ),
+        description: UnknownTypeHandler.toString(
+          UnknownTypeHandler.safeGet(item, 'product_description', '') ||
+            UnknownTypeHandler.safeGet(item, 'description', ''),
+          ''
+        ),
+        quantity: UnknownTypeHandler.toNumber(
+          UnknownTypeHandler.safeGet(item, 'quantity', '') ||
+            UnknownTypeHandler.safeGet(item, 'qty', ''),
+          0
+        ),
+        reason: UnknownTypeHandler.toString(
+          UnknownTypeHandler.safeGet(item, 'void_reason', '') ||
+            UnknownTypeHandler.safeGet(item, 'reason', ''),
+          'Unknown'
+        ),
+        operator: UnknownTypeHandler.toString(
+          UnknownTypeHandler.safeGet(item, 'operator_name', '') ||
+            UnknownTypeHandler.safeGet(item, 'operator', '') ||
+            `ID: ${UnknownTypeHandler.safeGet(item, 'operator_id', '')}`,
+          ''
+        ),
+        remark: UnknownTypeHandler.toString(UnknownTypeHandler.safeGet(item, 'remark', ''), ''),
+      };
+    });
+  }
+
+  private static transformProductStats(productData: unknown): {
+    productCode: string;
+    description: string;
+    voidCount: number;
+    totalQuantity: number;
+    avgQuantity: number;
+  }[] {
+    if (!Array.isArray(productData)) return [];
+
+    return UnknownTypeHandler.transformUnknownArray(productData, item => {
+      if (typeof item !== 'object' || item === null) return null;
+
+      return {
+        productCode: UnknownTypeHandler.toString(
+          UnknownTypeHandler.safeGet(item, 'product_code', '') ||
+            UnknownTypeHandler.safeGet(item, 'productCode', ''),
+          ''
+        ),
+        description: UnknownTypeHandler.toString(
+          UnknownTypeHandler.safeGet(item, 'product_description', '') ||
+            UnknownTypeHandler.safeGet(item, 'description', ''),
+          ''
+        ),
+        voidCount: UnknownTypeHandler.toNumber(
+          UnknownTypeHandler.safeGet(item, 'void_count', '') ||
+            UnknownTypeHandler.safeGet(item, 'count', ''),
+          0
+        ),
+        totalQuantity: UnknownTypeHandler.toNumber(
+          UnknownTypeHandler.safeGet(item, 'total_quantity', '') ||
+            UnknownTypeHandler.safeGet(item, 'totalQuantity', ''),
+          0
+        ),
+        avgQuantity: UnknownTypeHandler.toNumber(
+          UnknownTypeHandler.safeGet(item, 'avg_quantity', '') ||
+            UnknownTypeHandler.safeGet(item, 'avgQuantity', ''),
+          0
+        ),
+      };
+    });
+  }
+
+  private static calculateDaysDifference(startDate: string, endDate: string): number {
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays || 1; // 至少返回 1 天
+    } catch {
+      return 1;
+    }
+  }
+}

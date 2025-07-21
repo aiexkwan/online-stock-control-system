@@ -16,17 +16,17 @@ readonly MAX_RETRY_ATTEMPTS=3
 send_success_notification() {
     local message="$1"
     local deployment_info="$2"
-    
+
     log_info "Sending success notification..."
-    
+
     local notification_data=$(create_notification_payload "success" "$message" "$deployment_info")
-    
+
     # 發送到各個通知渠道
     send_to_slack "$notification_data" "success"
     send_to_email "$notification_data" "success"
     send_to_webhook "$notification_data" "success"
     send_to_teams "$notification_data" "success"
-    
+
     log_success "Success notification sent"
 }
 
@@ -35,17 +35,17 @@ send_failure_notification() {
     local message="$1"
     local deployment_info="$2"
     local error_details="$3"
-    
+
     log_info "Sending failure notification..."
-    
+
     local notification_data=$(create_notification_payload "failure" "$message" "$deployment_info" "$error_details")
-    
+
     # 發送到各個通知渠道
     send_to_slack "$notification_data" "failure"
     send_to_email "$notification_data" "failure"
     send_to_webhook "$notification_data" "failure"
     send_to_teams "$notification_data" "failure"
-    
+
     log_success "Failure notification sent"
 }
 
@@ -53,16 +53,16 @@ send_failure_notification() {
 send_warning_notification() {
     local message="$1"
     local warning_details="$2"
-    
+
     log_info "Sending warning notification..."
-    
+
     local notification_data=$(create_notification_payload "warning" "$message" "" "$warning_details")
-    
+
     # 發送到各個通知渠道
     send_to_slack "$notification_data" "warning"
     send_to_email "$notification_data" "warning"
     send_to_webhook "$notification_data" "warning"
-    
+
     log_success "Warning notification sent"
 }
 
@@ -72,10 +72,10 @@ create_notification_payload() {
     local message="$2"
     local deployment_info="$3"
     local details="$4"
-    
+
     local git_info=$(get_git_info)
     local deployment_duration=$(calculate_duration)
-    
+
     jq -n \
         --arg status "$status" \
         --arg message "$message" \
@@ -109,18 +109,18 @@ create_notification_payload() {
 send_to_slack() {
     local notification_data="$1"
     local status="$2"
-    
+
     # 檢查 Slack 配置
     local slack_webhook=$(get_notification_config "slack.webhook_url")
     local slack_channel=$(get_notification_config "slack.channel")
-    
+
     if [[ -z "$slack_webhook" ]] || [[ "$slack_webhook" == "null" ]]; then
         log_info "Slack webhook not configured, skipping Slack notification"
         return 0
     fi
-    
+
     log_info "Sending Slack notification..."
-    
+
     local color
     local emoji
     case "$status" in
@@ -141,7 +141,7 @@ send_to_slack() {
             emoji=":information_source:"
             ;;
     esac
-    
+
     local message=$(echo "$notification_data" | jq -r '.message')
     local environment=$(echo "$notification_data" | jq -r '.environment')
     local version=$(echo "$notification_data" | jq -r '.version')
@@ -149,7 +149,7 @@ send_to_slack() {
     local duration=$(echo "$notification_data" | jq -r '.duration')
     local git_branch=$(echo "$notification_data" | jq -r '.git.branch')
     local git_commit=$(echo "$notification_data" | jq -r '.git.short_commit')
-    
+
     local slack_payload=$(jq -n \
         --arg channel "$slack_channel" \
         --arg color "$color" \
@@ -207,7 +207,7 @@ send_to_slack() {
                 }
             ]
         }')
-    
+
     # 發送到 Slack
     if curl -X POST \
         -H "Content-Type: application/json" \
@@ -224,16 +224,16 @@ send_to_slack() {
 send_to_teams() {
     local notification_data="$1"
     local status="$2"
-    
+
     local teams_webhook=$(get_notification_config "teams.webhook_url")
-    
+
     if [[ -z "$teams_webhook" ]] || [[ "$teams_webhook" == "null" ]]; then
         log_info "Teams webhook not configured, skipping Teams notification"
         return 0
     fi
-    
+
     log_info "Sending Teams notification..."
-    
+
     local theme_color
     case "$status" in
         success) theme_color="00FF00" ;;
@@ -241,13 +241,13 @@ send_to_teams() {
         warning) theme_color="FFA500" ;;
         *) theme_color="0078D4" ;;
     esac
-    
+
     local message=$(echo "$notification_data" | jq -r '.message')
     local environment=$(echo "$notification_data" | jq -r '.environment')
     local version=$(echo "$notification_data" | jq -r '.version')
     local target_color=$(echo "$notification_data" | jq -r '.target_color')
     local duration=$(echo "$notification_data" | jq -r '.duration')
-    
+
     local teams_payload=$(jq -n \
         --arg theme_color "$theme_color" \
         --arg message "$message" \
@@ -285,7 +285,7 @@ send_to_teams() {
                 }
             ]
         }')
-    
+
     if curl -X POST \
         -H "Content-Type: application/json" \
         -d "$teams_payload" \
@@ -301,7 +301,7 @@ send_to_teams() {
 send_to_email() {
     local notification_data="$1"
     local status="$2"
-    
+
     local email_config=$(get_notification_config "email")
     local smtp_server=$(echo "$email_config" | jq -r '.smtp_server // empty')
     local smtp_port=$(echo "$email_config" | jq -r '.smtp_port // empty')
@@ -309,19 +309,19 @@ send_to_email() {
     local to_emails=$(echo "$email_config" | jq -r '.to_emails[] // empty')
     local smtp_username=$(echo "$email_config" | jq -r '.smtp_username // empty')
     local smtp_password=$(echo "$email_config" | jq -r '.smtp_password // empty')
-    
+
     if [[ -z "$smtp_server" ]] || [[ -z "$from_email" ]] || [[ -z "$to_emails" ]]; then
         log_info "Email configuration not complete, skipping email notification"
         return 0
     fi
-    
+
     log_info "Sending email notification..."
-    
+
     local subject
     local message=$(echo "$notification_data" | jq -r '.message')
     local environment=$(echo "$notification_data" | jq -r '.environment')
     local version=$(echo "$notification_data" | jq -r '.version')
-    
+
     case "$status" in
         success)
             subject="✅ NewPennine Deployment Success - $environment v$version"
@@ -336,10 +336,10 @@ send_to_email() {
             subject="ℹ️ NewPennine Deployment Notification - $environment v$version"
             ;;
     esac
-    
+
     # 創建郵件內容
     local email_content=$(create_email_content "$notification_data" "$status")
-    
+
     # 使用 sendmail 或 mutt 發送郵件
     if command -v sendmail &> /dev/null; then
         echo -e "To: $to_emails\nSubject: $subject\nContent-Type: text/html\n\n$email_content" | sendmail "$to_emails"
@@ -356,7 +356,7 @@ send_to_email() {
 create_email_content() {
     local notification_data="$1"
     local status="$2"
-    
+
     local message=$(echo "$notification_data" | jq -r '.message')
     local environment=$(echo "$notification_data" | jq -r '.environment')
     local version=$(echo "$notification_data" | jq -r '.version')
@@ -367,7 +367,7 @@ create_email_content() {
     local git_branch=$(echo "$notification_data" | jq -r '.git.branch')
     local git_commit=$(echo "$notification_data" | jq -r '.git.commit')
     local git_author=$(echo "$notification_data" | jq -r '.git.author')
-    
+
     local status_color
     case "$status" in
         success) status_color="#28a745" ;;
@@ -375,7 +375,7 @@ create_email_content() {
         warning) status_color="#ffc107" ;;
         *) status_color="#007bff" ;;
     esac
-    
+
     cat << EOF
 <!DOCTYPE html>
 <html>
@@ -389,12 +389,12 @@ create_email_content() {
             <h1 style="color: $status_color; margin: 0; font-size: 24px;">NewPennine WMS Deployment</h1>
             <p style="color: #6c757d; margin: 5px 0 0 0; font-size: 14px;">$timestamp</p>
         </div>
-        
+
         <div style="padding: 20px;">
             <div style="background-color: #f8f9fa; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
                 <h2 style="color: $status_color; margin: 0 0 10px 0; font-size: 18px;">$message</h2>
             </div>
-            
+
             <table style="width: 100%; border-collapse: collapse;">
                 <tr>
                     <td style="padding: 8px; border-bottom: 1px solid #e9ecef; font-weight: bold; color: #495057;">Environment:</td>
@@ -430,7 +430,7 @@ create_email_content() {
                 </tr>
             </table>
         </div>
-        
+
         <div style="padding: 20px; background-color: #f8f9fa; border-top: 1px solid #e9ecef; text-align: center;">
             <p style="color: #6c757d; margin: 0; font-size: 12px;">
                 NewPennine WMS Automated Deployment System<br>
@@ -447,27 +447,27 @@ EOF
 send_to_webhook() {
     local notification_data="$1"
     local status="$2"
-    
+
     local webhook_url=$(get_notification_config "webhook.url")
     local webhook_secret=$(get_notification_config "webhook.secret")
-    
+
     if [[ -z "$webhook_url" ]] || [[ "$webhook_url" == "null" ]]; then
         log_info "Webhook URL not configured, skipping webhook notification"
         return 0
     fi
-    
+
     log_info "Sending webhook notification..."
-    
+
     local headers=("-H" "Content-Type: application/json")
-    
+
     if [[ -n "$webhook_secret" ]] && [[ "$webhook_secret" != "null" ]]; then
         headers+=("-H" "Authorization: Bearer $webhook_secret")
     fi
-    
+
     # 添加署名
     local signature=$(echo -n "$notification_data" | openssl dgst -sha256 -hmac "$webhook_secret" -binary | base64)
     headers+=("-H" "X-Signature: sha256=$signature")
-    
+
     if curl -X POST \
         "${headers[@]}" \
         -d "$notification_data" \
@@ -482,7 +482,7 @@ send_to_webhook() {
 # 獲取通知配置
 get_notification_config() {
     local config_path="$1"
-    
+
     if [[ -f "$NOTIFICATION_CONFIG" ]]; then
         jq -r ".$config_path // empty" "$NOTIFICATION_CONFIG" 2>/dev/null
     else
@@ -494,9 +494,9 @@ get_notification_config() {
 create_notification_config() {
     local config_dir=$(dirname "$NOTIFICATION_CONFIG")
     mkdir -p "$config_dir"
-    
+
     log_info "Creating notification configuration template..."
-    
+
     cat > "$NOTIFICATION_CONFIG" << EOF
 {
     "slack": {
@@ -528,7 +528,7 @@ create_notification_config() {
     }
 }
 EOF
-    
+
     log_success "Notification configuration template created: $NOTIFICATION_CONFIG"
     log_info "Please edit the configuration file to add your notification settings"
 }
@@ -536,18 +536,18 @@ EOF
 # 測試通知配置
 test_notification_config() {
     log_info "Testing notification configuration..."
-    
+
     if [[ ! -f "$NOTIFICATION_CONFIG" ]]; then
         log_warn "Notification configuration file not found: $NOTIFICATION_CONFIG"
         return 1
     fi
-    
+
     # 測試 JSON 格式
     if ! jq empty "$NOTIFICATION_CONFIG" &>/dev/null; then
         log_error "Invalid JSON in notification configuration"
         return 1
     fi
-    
+
     # 發送測試通知
     local test_data=$(jq -n \
         --arg message "Test notification from NewPennine deployment system" \
@@ -567,12 +567,12 @@ test_notification_config() {
             timestamp: $timestamp,
             duration: $duration
         }')
-    
+
     send_to_slack "$test_data" "success"
     send_to_teams "$test_data" "success"
     send_to_email "$test_data" "success"
     send_to_webhook "$test_data" "success"
-    
+
     log_success "Test notifications sent"
 }
 
@@ -580,15 +580,15 @@ test_notification_config() {
 send_deployment_start_notification() {
     local message="Deployment started for $ENVIRONMENT v$VERSION"
     local deployment_info="Starting deployment to $TARGET_COLOR environment"
-    
+
     log_info "Sending deployment start notification..."
-    
+
     local notification_data=$(create_notification_payload "info" "$message" "$deployment_info")
-    
+
     send_to_slack "$notification_data" "info"
     send_to_teams "$notification_data" "info"
     send_to_webhook "$notification_data" "info"
-    
+
     log_success "Deployment start notification sent"
 }
 
@@ -596,21 +596,21 @@ send_deployment_start_notification() {
 send_deployment_progress_notification() {
     local step="$1"
     local message="$2"
-    
+
     log_info "Sending deployment progress notification: $step"
-    
+
     local notification_data=$(create_notification_payload "progress" "$message" "Step: $step")
-    
+
     # 只發送到 webhook 以避免過多通知
     send_to_webhook "$notification_data" "progress"
-    
+
     log_success "Deployment progress notification sent"
 }
 
 # 獲取通知統計
 get_notification_stats() {
     local stats_file="$LOGS_DIR/notification_stats.json"
-    
+
     if [[ -f "$stats_file" ]]; then
         cat "$stats_file"
     else
@@ -622,14 +622,14 @@ get_notification_stats() {
 update_notification_stats() {
     local status="$1"
     local result="$2"  # sent/failed
-    
+
     local stats_file="$LOGS_DIR/notification_stats.json"
     local current_stats=$(get_notification_stats)
-    
+
     local updated_stats=$(echo "$current_stats" | jq \
         --arg status "$status" \
         --arg result "$result" \
         '.[$result] += 1 | .[$status] += 1')
-    
+
     echo "$updated_stats" > "$stats_file"
 }

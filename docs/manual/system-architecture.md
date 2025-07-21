@@ -77,7 +77,7 @@ NewPennine 倉庫管理系統（WMS）是一個現代化的企業級倉庫管理
 ### 1. 前端技術棧
 
 #### 核心框架
-- **Next.js 14**: 
+- **Next.js 14**:
   - App Router 架構
   - Server-Side Rendering (SSR)
   - Static Site Generation (SSG)
@@ -96,7 +96,7 @@ NewPennine 倉庫管理系統（WMS）是一個現代化的企業級倉庫管理
   - 編譯時錯誤檢測
 
 #### UI 和樣式
-- **Tailwind CSS**: 
+- **Tailwind CSS**:
   - 原子化 CSS
   - 響應式設計
   - 深色模式支援
@@ -278,7 +278,7 @@ CREATE TABLE record_history (
 #### 庫存總覽視圖
 ```sql
 CREATE VIEW stock_level AS
-SELECT 
+SELECT
     p.product_code,
     c.description,
     SUM(i.injection + i.pipeline + i.await + i.fold + i.bulk) as total_qty,
@@ -441,7 +441,7 @@ interface PerformanceMetrics {
   fid: number; // First Input Delay
   cls: number; // Cumulative Layout Shift
   ttfb: number; // Time to First Byte
-  
+
   // 自定義指標
   apiResponseTime: number;
   databaseQueryTime: number;
@@ -460,7 +460,7 @@ upstream newpennine_backend {
     server app1.newpennine.com:3000 weight=3;
     server app2.newpennine.com:3000 weight=2;
     server app3.newpennine.com:3000 weight=1;
-    
+
     # 健康檢查
     health_check interval=30s fails=3 passes=2;
 }
@@ -561,23 +561,8 @@ FOR VALUES IN ('HK', 'TW', 'SG', 'MY');
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-#### 容器化部署
-```dockerfile
-# 多階段構建
-FROM node:18-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-RUN npm run build
-
-FROM node:18-alpine AS runner
-WORKDIR /app
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-EXPOSE 3000
-CMD ["node", "server.js"]
-```
+#### 原生部署
+系統支持標準 Node.js 部署方式，無需容器化。
 
 ### 2. 高可用架構
 
@@ -681,7 +666,7 @@ CMD ["node", "server.js"]
 #### ADR-001: 選擇 Next.js 14
 **背景**: 需要現代化前端框架  
 **決策**: 選擇 Next.js 14 App Router  
-**理由**: 
+**理由**:
 - 優秀的性能和開發體驗
 - 內建 SSR 和 SSG 支援
 - 強大的生態系統

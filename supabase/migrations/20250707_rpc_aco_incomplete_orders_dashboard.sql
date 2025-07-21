@@ -1,13 +1,13 @@
 /**
  * RPC Function: Get ACO Incomplete Orders for Dashboard
  * 用於 AcoOrderProgressWidget 的優化查詢
- * 
+ *
  * 功能：
  * - 獲取所有未完成的 ACO 訂單列表
  * - 服務器端聚合和計算
  * - 為每個訂單計算總需求量、完成量和剩餘量
  * - 支持分頁和排序
- * 
+ *
  * 返回：包含未完成訂單列表和統計信息的JSON對象
  */
 
@@ -30,12 +30,12 @@ BEGIN
     SELECT COUNT(DISTINCT order_ref)
     INTO v_total_count
     FROM record_aco
-    WHERE finished_qty IS NULL 
+    WHERE finished_qty IS NULL
        OR finished_qty < required_qty;
-    
+
     -- 獲取未完成訂單列表，按訂單參考號分組並計算統計
     WITH incomplete_orders AS (
-        SELECT 
+        SELECT
             order_ref,
             MAX(latest_update) as latest_update,
             SUM(required_qty) as total_required,
@@ -43,7 +43,7 @@ BEGIN
             SUM(GREATEST(0, required_qty - COALESCE(finished_qty, 0))) as total_remaining,
             COUNT(*) as product_count
         FROM record_aco
-        WHERE finished_qty IS NULL 
+        WHERE finished_qty IS NULL
            OR finished_qty < required_qty
         GROUP BY order_ref
         HAVING SUM(GREATEST(0, required_qty - COALESCE(finished_qty, 0))) > 0
@@ -59,19 +59,19 @@ BEGIN
             'total_finished', total_finished,
             'total_remaining', total_remaining,
             'product_count', product_count,
-            'completion_percentage', CASE 
-                WHEN total_required > 0 THEN 
+            'completion_percentage', CASE
+                WHEN total_required > 0 THEN
                     ROUND((total_finished::NUMERIC / total_required::NUMERIC) * 100, 1)
-                ELSE 0 
+                ELSE 0
             END
         )
     )
     INTO v_orders
     FROM incomplete_orders;
-    
+
     -- 計算執行時間
     v_calculation_time := ROUND(EXTRACT(EPOCH FROM (clock_timestamp() - v_execution_start)) * 1000, 2)::TEXT || 'ms';
-    
+
     -- 構建最終結果
     RETURN jsonb_build_object(
         'success', true,
@@ -91,13 +91,13 @@ BEGIN
             )
         )
     );
-    
+
 EXCEPTION WHEN OTHERS THEN
     -- 錯誤處理
     v_calculation_time := ROUND(EXTRACT(EPOCH FROM (clock_timestamp() - v_execution_start)) * 1000, 2)::TEXT || 'ms';
-    
+
     RAISE NOTICE 'Error in rpc_get_aco_incomplete_orders_dashboard: %', SQLERRM;
-    
+
     RETURN jsonb_build_object(
         'success', false,
         'error', SQLERRM,
@@ -109,7 +109,7 @@ END;
 $$;
 
 -- 添加函數註釋
-COMMENT ON FUNCTION rpc_get_aco_incomplete_orders_dashboard IS 
+COMMENT ON FUNCTION rpc_get_aco_incomplete_orders_dashboard IS
 'Get list of incomplete ACO orders with aggregated statistics. Optimized for AcoOrderProgressWidget with server-side calculation and aggregation.';
 
 -- 設置函數權限
@@ -117,18 +117,18 @@ GRANT EXECUTE ON FUNCTION rpc_get_aco_incomplete_orders_dashboard TO authenticat
 GRANT EXECUTE ON FUNCTION rpc_get_aco_incomplete_orders_dashboard TO service_role;
 
 -- 創建優化索引（如果不存在）
-CREATE INDEX IF NOT EXISTS idx_record_aco_incomplete_orders 
-ON record_aco(order_ref, finished_qty, required_qty) 
+CREATE INDEX IF NOT EXISTS idx_record_aco_incomplete_orders
+ON record_aco(order_ref, finished_qty, required_qty)
 WHERE finished_qty IS NULL OR finished_qty < required_qty;
 
-CREATE INDEX IF NOT EXISTS idx_record_aco_order_ref_latest_update 
-ON record_aco(order_ref, latest_update DESC) 
+CREATE INDEX IF NOT EXISTS idx_record_aco_order_ref_latest_update
+ON record_aco(order_ref, latest_update DESC)
 WHERE latest_update IS NOT NULL;
 
 -- 複合索引優化聚合查詢
-CREATE INDEX IF NOT EXISTS idx_record_aco_dashboard_optimized 
-ON record_aco(order_ref, required_qty, finished_qty, latest_update) 
+CREATE INDEX IF NOT EXISTS idx_record_aco_dashboard_optimized
+ON record_aco(order_ref, required_qty, finished_qty, latest_update)
 WHERE finished_qty IS NULL OR finished_qty < required_qty;
 
-COMMENT ON INDEX idx_record_aco_dashboard_optimized IS 
+COMMENT ON INDEX idx_record_aco_dashboard_optimized IS
 'Optimized compound index for ACO incomplete orders dashboard queries with aggregation';

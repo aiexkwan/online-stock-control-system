@@ -34,8 +34,6 @@
 - **PostgreSQL**: 15.x 或以上（如果使用本地數據庫）
 
 #### 可選軟件
-- **Docker**: 24.x 或以上
-- **Docker Compose**: 2.x 或以上
 - **Nginx**: 1.20 或以上
 - **Redis**: 7.x 或以上（用於緩存）
 
@@ -208,14 +206,14 @@ HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$GREEN_P
 
 if [ "$HEALTH_STATUS" -eq 200 ]; then
     echo "Health check passed. Switching traffic..."
-    
+
     # 3. 切換流量
     sudo nginx -s reload
-    
+
     # 4. 停止藍色環境
     echo "Stopping Blue environment..."
     sudo systemctl stop newpennine-wms-blue
-    
+
     echo "Deployment completed successfully!"
 else
     echo "Health check failed. Rolling back..."
@@ -235,106 +233,20 @@ upstream newpennine_backend {
 server {
     listen 80;
     server_name your-domain.com;
-    
+
     location / {
         proxy_pass http://newpennine_backend;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
-    
+
     location /api/v1/health {
         proxy_pass http://newpennine_backend;
         proxy_connect_timeout 5s;
         proxy_read_timeout 10s;
     }
 }
-```
-
-## Docker 部署
-
-### 1. Dockerfile
-
-```dockerfile
-# 多階段構建
-FROM node:18-alpine AS builder
-
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-
-COPY . .
-RUN npm run build
-
-# 生產鏡像
-FROM node:18-alpine AS runner
-
-WORKDIR /app
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-
-USER nextjs
-
-EXPOSE 3000
-
-ENV PORT 3000
-ENV NODE_ENV production
-
-CMD ["node", "server.js"]
-```
-
-### 2. Docker Compose
-
-```yaml
-version: '3.8'
-
-services:
-  newpennine-wms:
-    build: .
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=${DATABASE_URL}
-      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
-    depends_on:
-      - redis
-    networks:
-      - newpennine-network
-    
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    networks:
-      - newpennine-network
-    
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./ssl:/etc/nginx/ssl
-    depends_on:
-      - newpennine-wms
-    networks:
-      - newpennine-network
-
-volumes:
-  redis-data:
-
-networks:
-  newpennine-network:
-    driver: bridge
 ```
 
 ## 監控和健康檢查
@@ -370,13 +282,13 @@ ALERT_URL="https://hooks.slack.com/services/..."
 
 check_health() {
     HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/v1/health)
-    
+
     if [ "$HEALTH_STATUS" -ne 200 ]; then
         echo "$(date): Health check failed - Status: $HEALTH_STATUS" >> $LOG_FILE
         send_alert "Health check failed"
         return 1
     fi
-    
+
     return 0
 }
 
@@ -394,7 +306,7 @@ while true; do
         sudo systemctl restart newpennine-wms
         sleep 60
     fi
-    
+
     sleep 30
 done
 ```
@@ -468,22 +380,22 @@ fi
 # 自動回滾腳本
 rollback() {
     echo "Starting rollback process..."
-    
+
     # 停止當前服務
     sudo systemctl stop newpennine-wms
-    
+
     # 恢復備份
     LATEST_BACKUP=$(ls -t /var/backups/newpennine-wms | head -1)
     sudo rm -rf /var/www/newpennine-wms
     sudo cp -r "/var/backups/newpennine-wms/$LATEST_BACKUP" /var/www/newpennine-wms
-    
+
     # 重啟服務
     sudo systemctl start newpennine-wms
-    
+
     # 驗證回滾
     sleep 30
     HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/v1/health)
-    
+
     if [ "$HEALTH_STATUS" -eq 200 ]; then
         echo "Rollback completed successfully!"
     else
@@ -538,11 +450,11 @@ pm2 startup
 // next.config.js
 module.exports = {
   output: 'standalone',
-  
+
   // 生產環境優化
   swcMinify: true,
   compress: true,
-  
+
   // 緩存配置
   headers: async () => [
     {

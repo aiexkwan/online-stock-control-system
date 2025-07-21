@@ -26,11 +26,11 @@ async function testSupplierSearch() {
 
   for (const code of testSupplierCodes) {
     console.log(`測試供應商代碼: "${code}"`);
-    
+
     try {
       console.time('查詢耗時');
-      const { data, error } = await supabase.rpc('search_supplier_code', { 
-        p_code: code 
+      const { data, error } = await supabase.rpc('search_supplier_code', {
+        p_code: code
       });
       console.timeEnd('查詢耗時');
 
@@ -43,30 +43,30 @@ async function testSupplierSearch() {
     } catch (err) {
       console.error('執行錯誤:', err);
     }
-    
+
     console.log('-'.repeat(50));
   }
 
   // 性能測試 - 多次查詢同一個供應商
   console.log('\n性能測試 - 重複查詢 10 次:');
-  
+
   const testCode = 'BSWF';
   console.time('總耗時');
-  
+
   for (let i = 0; i < 10; i++) {
     try {
       const start = performance.now();
-      const { data, error } = await supabase.rpc('search_supplier_code', { 
-        p_code: testCode 
+      const { data, error } = await supabase.rpc('search_supplier_code', {
+        p_code: testCode
       });
       const end = performance.now();
-      
+
       console.log(`查詢 #${i+1}: ${Math.round(end - start)}ms`, error ? '失敗' : '成功');
     } catch (err) {
       console.error(`查詢 #${i+1} 錯誤:`, err);
     }
   }
-  
+
   console.timeEnd('總耗時');
 }
 
@@ -78,4 +78,4 @@ testSupplierSearch()
   })
   .finally(() => {
     console.log('\n測試完成');
-  }); 
+  });

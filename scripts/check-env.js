@@ -9,7 +9,7 @@ if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   console.log('Service Role Key 長度:', key.length);
   console.log('Service Role Key 開頭:', key.substring(0, 20) + '...');
-  
+
   // 嘗試解碼 JWT
   try {
     const parts = key.split('.');
@@ -26,4 +26,4 @@ if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
   }
 }
 
-console.log('=== 檢查完成 ==='); 
+console.log('=== 檢查完成 ===');

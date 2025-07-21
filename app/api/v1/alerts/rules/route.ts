@@ -4,13 +4,30 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseRecord } from '@/lib/types/database';
+import { DatabaseRecord } from '@/types/database/tables';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { AlertRuleEngine } from '@/lib/alerts/core/AlertRuleEngine';
-import { AlertRule, AlertLevel, AlertCondition, NotificationChannel, NotificationConfig, EmailConfig, SlackConfig, WebhookConfig, SmsConfig } from '@/lib/alerts/types';
-import { getErrorMessage } from '@/lib/types/error-handling';
-import { toRecord, safeGet, safeString, safeBoolean } from '@/lib/types/supabase-helpers';
+import {
+  AlertRule,
+  AlertLevel,
+  AlertCondition,
+  NotificationChannel,
+  NotificationConfig,
+  EmailConfig,
+  SlackConfig,
+  WebhookConfig,
+  SmsConfig,
+} from '@/lib/alerts/types';
+import { getErrorMessage } from '@/types/core/error';
+import {
+  toRecord,
+  safeGet,
+  safeString,
+  safeBoolean,
+  safeAlertLevel,
+  safeAlertCondition,
+} from '@/types/database/helpers';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -40,23 +57,31 @@ const CreateAlertRuleSchema = z.object({
   evaluationInterval: z.number().min(1),
   dependencies: z.array(z.string()).optional(),
   silenceTime: z.number().min(0).optional(),
-  notifications: z.array(z.object({
-    id: z.string(),
-    channel: z.nativeEnum(NotificationChannel),
-    enabled: z.boolean(),
-    config: z.record(z.any()),
-    conditions: z.object({
-      levels: z.array(z.nativeEnum(AlertLevel)).optional(),
-      timeRanges: z.array(z.object({
-        start: z.string(),
-        end: z.string(),
-        timezone: z.string().optional(),
-        daysOfWeek: z.array(z.number().min(0).max(6)).optional()
-      })).optional()
-    }).optional(),
-    template: z.string().optional()
-  })),
-  tags: z.record(z.string()).optional()
+  notifications: z.array(
+    z.object({
+      id: z.string(),
+      channel: z.nativeEnum(NotificationChannel),
+      enabled: z.boolean(),
+      config: z.record(z.unknown()),
+      conditions: z
+        .object({
+          levels: z.array(z.nativeEnum(AlertLevel)).optional(),
+          timeRanges: z
+            .array(
+              z.object({
+                start: z.string(),
+                end: z.string(),
+                timezone: z.string().optional(),
+                daysOfWeek: z.array(z.number().min(0).max(6)).optional(),
+              })
+            )
+            .optional(),
+        })
+        .optional(),
+      template: z.string().optional(),
+    })
+  ),
+  tags: z.record(z.string()).optional(),
 });
 
 // 更新告警規則的 Schema
@@ -71,7 +96,7 @@ const QueryAlertRulesSchema = z.object({
   limit: z.number().min(1).max(1000).default(100),
   offset: z.number().min(0).default(0),
   sortBy: z.enum(['name', 'created_at', 'updated_at']).default('created_at'),
-  sortOrder: z.enum(['asc', 'desc']).default('desc')
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
 
 /**
@@ -82,7 +107,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   try {
     const { searchParams } = new URL(request.url);
     const queryParams = Object.fromEntries(searchParams);
-    
+
     // 解析查詢參數
     const query = QueryAlertRulesSchema.parse({
       enabled: queryParams.enabled ? queryParams.enabled === 'true' : undefined,
@@ -92,7 +117,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       limit: queryParams.limit ? parseInt(queryParams.limit) : undefined,
       offset: queryParams.offset ? parseInt(queryParams.offset) : undefined,
       sortBy: queryParams.sortBy,
-      sortOrder: queryParams.sortOrder
+      sortOrder: queryParams.sortOrder,
     });
 
     // 構建查詢
@@ -128,15 +153,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       pagination: {
         total: count,
         limit: query.limit,
-        offset: query.offset
-      }
+        offset: query.offset,
+      },
     });
   } catch (error) {
     console.error('Failed to get alert rules:', error);
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? (error as { message: string }).message : 'Internal server error'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          error instanceof Error ? (error as { message: string }).message : 'Internal server error',
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -170,18 +199,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       silenceTime: validated.silenceTime,
       notifications: validated.notifications.map((n: Record<string, unknown>) => ({
         ...n,
-        config: n.config as EmailConfig | SlackConfig | WebhookConfig | SmsConfig
+        config: n.config as EmailConfig | SlackConfig | WebhookConfig | SmsConfig,
       })) as NotificationConfig[],
-      tags: validated.tags || {},
+      tags: validated.tags || ({} as any),
       createdAt: new Date(),
       updatedAt: new Date(),
-      createdBy: userId
+      createdBy: userId,
     };
 
     // 保存到數據庫
-    const { error } = await supabase
-      .from('alert_rules')
-      .insert(serializeRule(rule));
+    const { error } = await supabase.from('alert_rules').insert(serializeRule(rule));
 
     if (error) {
       throw error;
@@ -194,30 +221,37 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({
       success: true,
       data: rule,
-      message: 'Alert rule created successfully'
+      message: 'Alert rule created successfully',
     });
   } catch (error) {
     console.error('Failed to create alert rule:', error);
-    
+
     if (error instanceof z.ZodError) {
-      return NextResponse.json({
-        success: false,
-        error: 'Validation error',
-        details: error.errors
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Validation error',
+          details: error.errors,
+        },
+        { status: 400 }
+      );
     }
 
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? (error as { message: string }).message : 'Internal server error'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          error instanceof Error ? (error as { message: string }).message : 'Internal server error',
+      },
+      { status: 500 }
+    );
   }
 }
 
 /**
  * 序列化規則
  */
-function serializeRule(rule: AlertRule): any {
+function serializeRule(rule: AlertRule): Record<string, unknown> {
   return {
     id: rule.id,
     name: rule.name,
@@ -232,10 +266,10 @@ function serializeRule(rule: AlertRule): any {
     dependencies: JSON.stringify(rule.dependencies || []),
     silence_time: rule.silenceTime,
     notifications: JSON.stringify(rule.notifications),
-    tags: JSON.stringify(rule.tags || {}),
+    tags: JSON.stringify(rule.tags || ({} as any)),
     created_at: rule.createdAt.toISOString(),
     updated_at: rule.updatedAt.toISOString(),
-    created_by: rule.createdBy
+    created_by: rule.createdBy,
   };
 }
 
@@ -245,23 +279,23 @@ function serializeRule(rule: AlertRule): any {
 function deserializeRule(data: unknown): AlertRule {
   const record = toRecord(data);
   return {
-    id: safeString(safeGet(record, 'id', '')),
-    name: safeString(safeGet(record, 'name', '')),
-    description: safeString(safeGet(record, 'description', '')),
-    enabled: safeBoolean(safeGet(record, 'enabled', false)),
-    level: safeString(safeGet(record, 'level', 'low')) as AlertLevel,
-    metric: safeString(safeGet(record, 'metric', '')),
-    condition: safeString(safeGet(record, 'condition', 'gt')) as AlertCondition,
-    threshold: safeGet(record, 'threshold', 0) as number,
-    timeWindow: safeGet(record, 'time_window', 300) as number,
-    evaluationInterval: safeGet(record, 'evaluation_interval', 60) as number,
-    dependencies: JSON.parse(safeString(safeGet(record, 'dependencies', '[]'))),
-    silenceTime: safeGet(record, 'silence_time', 0) as number,
-    notifications: JSON.parse(safeString(safeGet(record, 'notifications', '[]'))),
-    tags: JSON.parse(safeString(safeGet(record, 'tags', '{}'))),
-    createdAt: new Date(safeString(safeGet(record, 'created_at', new Date().toISOString()))),
-    updatedAt: new Date(safeString(safeGet(record, 'updated_at', new Date().toISOString()))),
-    createdBy: safeString(safeGet(record, 'created_by', ''))
+    id: safeString(safeGet(record, 'id')) || '',
+    name: safeString(safeGet(record, 'name')) || '',
+    description: safeString(safeGet(record, 'description')) || '',
+    enabled: safeBoolean(safeGet(record, 'enabled')) || false,
+    level: safeAlertLevel(safeGet(record, 'level'), AlertLevel.INFO),
+    metric: safeString(safeGet(record, 'metric')) || '',
+    condition: safeAlertCondition(safeGet(record, 'condition'), AlertCondition.GREATER_THAN),
+    threshold: safeGet(record, 'threshold') || (0 as number),
+    timeWindow: safeGet(record, 'time_window') || (300 as number),
+    evaluationInterval: safeGet(record, 'evaluation_interval') || (60 as number),
+    dependencies: JSON.parse(safeString(safeGet(record, 'dependencies')) || '[]'),
+    silenceTime: safeGet(record, 'silence_time') || (0 as number),
+    notifications: JSON.parse(safeString(safeGet(record, 'notifications')) || '[]'),
+    tags: JSON.parse(safeString(safeGet(record, 'tags')) || '{}'),
+    createdAt: new Date(safeString(safeGet(record, 'created_at')) || new Date().toISOString()),
+    updatedAt: new Date(safeString(safeGet(record, 'updated_at')) || new Date().toISOString()),
+    createdBy: safeString(safeGet(record, 'created_by')) || '',
   };
 }
 

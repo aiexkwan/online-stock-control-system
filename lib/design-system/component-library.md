@@ -132,13 +132,13 @@ import { spacingUtilities } from '@/lib/design-system';
 ```tsx
 import { widgetColors, widgetSpacing, textClasses } from '@/lib/design-system';
 
-const WidgetContainer: React.FC<{ title: string; category: string }> = ({ 
-  title, 
-  category, 
-  children 
+const WidgetContainer: React.FC<{ title: string; category: string }> = ({
+  title,
+  category,
+  children
 }) => {
   const gradient = getWidgetCategoryColor(category, 'gradient');
-  
+
   return (
     <div className="rounded-lg bg-slate-800/50 p-4">
       {/* Header */}
@@ -148,7 +148,7 @@ const WidgetContainer: React.FC<{ title: string; category: string }> = ({
         </div>
         <h3 className={textClasses['widget-title']}>{title}</h3>
       </div>
-      
+
       {/* Content */}
       <div className="space-y-4">
         {children}
@@ -161,9 +161,9 @@ const WidgetContainer: React.FC<{ title: string; category: string }> = ({
 ### 統計卡片
 
 ```tsx
-const StatCard: React.FC<{ label: string; value: number }> = ({ 
-  label, 
-  value 
+const StatCard: React.FC<{ label: string; value: number }> = ({
+  label,
+  value
 }) => {
   return (
     <div className="bg-slate-900/50 rounded-lg p-4">
@@ -253,7 +253,7 @@ import { backgrounds, textColors } from '@/lib/design-system';
    ```tsx
    // 舊代碼
    <div className="bg-blue-600">
-   
+
    // 新代碼
    <div className={`bg-gradient-to-br ${widgetColors.stats.gradient}`}>
    ```
@@ -262,7 +262,7 @@ import { backgrounds, textColors } from '@/lib/design-system';
    ```tsx
    // 舊代碼
    <h3 className="text-lg font-semibold">
-   
+
    // 新代碼
    <h3 className={textClasses['widget-title']}>
    ```
@@ -271,7 +271,7 @@ import { backgrounds, textColors } from '@/lib/design-system';
    ```tsx
    // 舊代碼
    <div className="p-3 mb-5">
-   
+
    // 新代碼
    <div className="p-4 mb-6"> {/* 使用 8px 倍數 */}
    ```
@@ -295,11 +295,11 @@ import { backgrounds, textColors } from '@/lib/design-system';
 ## 10. 工具函數
 
 ```typescript
-import { 
+import {
   getSpacing,
   calculateGridSpacing,
   combineTextClasses,
-  getResponsiveSpacing 
+  getResponsiveSpacing
 } from '@/lib/design-system';
 
 // 計算間距

@@ -70,21 +70,25 @@ class OrdersAPI {
         }
 
         // Extract total count from first record (if exists)
-        const totalCount = data?.[0]?.total_count || 0;
+        const firstRecord = data && Array.isArray(data) && data.length > 0 ? data[0] : null;
+        const totalCount =
+          firstRecord && typeof firstRecord.total_count === 'number' ? firstRecord.total_count : 0;
         const hasMore = offset + limit < totalCount;
 
         // Transform data to match interface
-        const orders: OrderRecord[] = (data || []).map((record: Record<string, unknown>) => ({
-          uuid: record.uuid,
-          time: record.time,
-          id: record.id,
-          action: record.action,
-          plt_num: record.plt_num,
-          loc: record.loc,
-          remark: record.remark,
-          uploader_name: record.uploader_name,
-          doc_url: record.doc_url,
-        }));
+        const orders: OrderRecord[] = (Array.isArray(data) ? data : []).map(
+          (record: Record<string, unknown>) => ({
+            uuid: String(record.uuid || ''),
+            time: String(record.time || ''),
+            id: typeof record.id === 'number' ? record.id : null,
+            action: String(record.action || ''),
+            plt_num: typeof record.plt_num === 'string' ? record.plt_num : null,
+            loc: typeof record.loc === 'string' ? record.loc : null,
+            remark: String(record.remark || ''),
+            uploader_name: String(record.uploader_name || ''),
+            doc_url: typeof record.doc_url === 'string' ? record.doc_url : null,
+          })
+        );
 
         const queryTime = `${(performance.now() - startTime).toFixed(2)}ms`;
 
@@ -120,7 +124,7 @@ class OrdersAPI {
    * Subscribe to real-time order updates
    * Returns a channel that can be used to listen for new orders
    */
-  subscribeToOrderUpdates(onNewOrder: (order: any) => void) {
+  subscribeToOrderUpdates(onNewOrder: (order: OrderRecord) => void) {
     const supabase = createClient();
 
     const channel = supabase.channel('orders-realtime').on(
@@ -133,7 +137,7 @@ class OrdersAPI {
       },
       payload => {
         console.log('[OrdersAPI] New order received:', payload);
-        onNewOrder(payload.new);
+        onNewOrder(payload.new as OrderRecord);
       }
     );
 

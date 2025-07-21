@@ -14,7 +14,7 @@ DECLARE
   v_end_time timestamp;
 BEGIN
   v_start_time := clock_timestamp();
-  
+
   -- Create temporary table for analysis
   CREATE TEMP TABLE IF NOT EXISTS temp_inventory_analysis ON COMMIT DROP AS
   WITH latest_stock AS (
@@ -35,7 +35,7 @@ BEGIN
   ),
   order_demand AS (
     -- Calculate order demand (product_qty - loaded_qty)
-    SELECT 
+    SELECT
       product_code,
       SUM(CAST(product_qty AS bigint) - CAST(loaded_qty AS bigint)) as order_demand
     FROM data_order
@@ -55,7 +55,7 @@ BEGIN
       COALESCE(ls.current_stock, 0) as current_stock,
       COALESCE(od.order_demand, 0) as order_demand,
       COALESCE(ls.current_stock, 0) - COALESCE(od.order_demand, 0) as remaining_stock,
-      CASE 
+      CASE
         WHEN COALESCE(od.order_demand, 0) = 0 THEN 100
         WHEN COALESCE(ls.current_stock, 0) = 0 THEN 0
         ELSE ROUND((COALESCE(ls.current_stock, 0)::numeric / COALESCE(od.order_demand, 0)::numeric) * 100, 2)
@@ -66,7 +66,7 @@ BEGIN
     INNER JOIN order_demand od ON ls.product_code = od.product_code
   )
   SELECT * FROM analysis;
-  
+
   -- Build result JSON
   WITH products_array AS (
     SELECT jsonb_agg(
@@ -81,7 +81,7 @@ BEGIN
         'fulfillment_rate', fulfillment_rate,
         'is_sufficient', is_sufficient,
         'last_updated', update_time
-      ) ORDER BY 
+      ) ORDER BY
         is_sufficient ASC,  -- Show insufficient items first
         fulfillment_rate ASC,  -- Then by lowest fulfillment rate
         order_demand DESC  -- Then by highest demand
@@ -97,7 +97,7 @@ BEGIN
       COALESCE(SUM(CASE WHEN is_sufficient THEN 1 ELSE 0 END), 0) as sufficient_count,
       COALESCE(SUM(CASE WHEN NOT is_sufficient THEN 1 ELSE 0 END), 0) as insufficient_count,
       COALESCE(SUM(remaining_stock), 0) >= 0 as overall_sufficient,
-      CASE 
+      CASE
         WHEN COALESCE(SUM(order_demand), 0) = 0 THEN 100
         ELSE ROUND((COALESCE(SUM(current_stock), 0)::numeric / COALESCE(SUM(order_demand), 0)::numeric) * 100, 2)
       END as overall_fulfillment_rate
@@ -125,9 +125,9 @@ BEGIN
     )
   ) INTO v_result
   FROM products_array, summary_stats;
-  
+
   RETURN v_result;
-  
+
 EXCEPTION
   WHEN OTHERS THEN
     -- Return error response
@@ -163,6 +163,6 @@ CREATE INDEX IF NOT EXISTS idx_data_order_qty_loaded ON data_order((CAST(product
 CREATE INDEX IF NOT EXISTS idx_data_code_type ON data_code(type);
 
 -- Add comment
-COMMENT ON FUNCTION rpc_get_inventory_ordered_analysis(text[], text) IS 
-'Analyzes inventory levels against order demands. Returns products with demand, their current stock levels, 
+COMMENT ON FUNCTION rpc_get_inventory_ordered_analysis(text[], text) IS
+'Analyzes inventory levels against order demands. Returns products with demand, their current stock levels,
 fulfillment rates, and whether stock is sufficient. Includes comprehensive summary statistics.';

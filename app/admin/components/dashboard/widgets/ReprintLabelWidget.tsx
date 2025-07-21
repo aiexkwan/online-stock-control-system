@@ -13,11 +13,11 @@ import {
   TransactionOperation,
 } from '@/app/services/transactionLog.service';
 import { ErrorHandler } from '@/app/components/qc-label-form/services/ErrorHandler';
-import { 
-  brandColors, 
-  widgetColors, 
+import {
+  brandColors,
+  widgetColors,
   semanticColors,
-  getWidgetCategoryColor 
+  getWidgetCategoryColor,
 } from '@/lib/design-system/colors';
 import { textClasses, getTextClass } from '@/lib/design-system/typography';
 import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
@@ -100,7 +100,7 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
         },
       });
 
-      await printPDF(palletData.pdf_url);
+      await printPDF(typeof palletData.pdf_url === 'string' ? palletData.pdf_url : '');
 
       // Complete transaction
       await transactionLog.completeTransaction(transactionId, {
@@ -167,14 +167,13 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
   };
 
   return (
-    <div className={cn(
-      'flex h-full w-full flex-col overflow-hidden rounded-lg border backdrop-blur-sm',
-      'border-border bg-card/40'
-    )}>
-      <div className={cn(
-        'flex-shrink-0 border-b px-3 py-2',
-        'border-border'
-      )}>
+    <div
+      className={cn(
+        'flex h-full w-full flex-col overflow-hidden rounded-lg border backdrop-blur-sm',
+        'border-border bg-card/40'
+      )}
+    >
+      <div className={cn('flex-shrink-0 border-b px-3 py-2', 'border-border')}>
         <h3 className={cn(textClasses['body-small'], 'font-semibold text-foreground')}>{title}</h3>
       </div>
       <div className={cn('min-h-0 flex-1 overflow-auto', widgetSpacing.container)}>

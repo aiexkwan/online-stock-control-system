@@ -16,12 +16,12 @@ DECLARE
   v_result JSON;
 BEGIN
   -- Get total pallets generated in the time range
-  SELECT COUNT(*) 
+  SELECT COUNT(*)
   INTO v_total_pallets
-  FROM record_palletinfo 
-  WHERE generate_time >= p_start_date 
+  FROM record_palletinfo
+  WHERE generate_time >= p_start_date
     AND generate_time <= p_end_date;
-  
+
   -- If no pallets, return zero stats
   IF v_total_pallets = 0 THEN
     SELECT json_build_object(
@@ -34,33 +34,33 @@ BEGIN
         'end', p_end_date
       )
     ) INTO v_result;
-    
+
     RETURN v_result;
   END IF;
-  
+
   -- Calculate pallets still in await using optimized query
   WITH pallet_latest_locations AS (
-    SELECT DISTINCT ON (rh.plt_num) 
+    SELECT DISTINCT ON (rh.plt_num)
       rh.plt_num,
       rh.loc as latest_location
     FROM record_history rh
     INNER JOIN record_palletinfo rpi ON rh.plt_num = rpi.plt_num
-    WHERE rpi.generate_time >= p_start_date 
+    WHERE rpi.generate_time >= p_start_date
       AND rpi.generate_time <= p_end_date
     ORDER BY rh.plt_num, rh.time DESC
   )
-  SELECT COUNT(*) 
+  SELECT COUNT(*)
   INTO v_still_await
-  FROM pallet_latest_locations 
+  FROM pallet_latest_locations
   WHERE latest_location IN ('Await', 'Awaiting');
-  
+
   -- Calculate percentage
-  v_percentage := CASE 
-    WHEN v_total_pallets > 0 THEN 
+  v_percentage := CASE
+    WHEN v_total_pallets > 0 THEN
       ROUND((v_still_await::NUMERIC / v_total_pallets::NUMERIC) * 100, 2)
-    ELSE 0 
+    ELSE 0
   END;
-  
+
   -- Build result JSON
   SELECT json_build_object(
     'total_pallets', v_total_pallets,
@@ -77,9 +77,9 @@ BEGIN
       'server_calculated', true
     )
   ) INTO v_result;
-  
+
   RETURN v_result;
-  
+
 EXCEPTION WHEN OTHERS THEN
   -- Return error information
   SELECT json_build_object(
@@ -89,7 +89,7 @@ EXCEPTION WHEN OTHERS THEN
     'still_await', 0,
     'percentage', 0
   ) INTO v_result;
-  
+
   RETURN v_result;
 END;
 $$;

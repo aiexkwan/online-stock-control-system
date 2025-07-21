@@ -63,7 +63,7 @@ return React.createElement(
 
 // 修復後
 {data?.warehouseData?.map((warehouse: any) => (
-<AdminDashboardContent 
+<AdminDashboardContent
   theme="production"
   timeFrame="7d"
 />

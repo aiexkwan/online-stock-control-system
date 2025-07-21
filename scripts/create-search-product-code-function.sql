@@ -23,7 +23,7 @@ BEGIN
   FROM data_code
   WHERE UPPER(code) = UPPER(p_code)
   LIMIT 1;
-  
+
   -- If no exact match, try partial match
   IF result IS NULL THEN
     SELECT json_build_object(
@@ -38,7 +38,7 @@ BEGIN
     ORDER BY code
     LIMIT 1;
   END IF;
-  
+
   RETURN result;
 END;
 $$;
@@ -49,4 +49,4 @@ COMMENT ON FUNCTION search_product_code(TEXT) IS '高效率搜索產品代碼，
 -- Grant execute permissions
 GRANT EXECUTE ON FUNCTION search_product_code TO authenticated;
 GRANT EXECUTE ON FUNCTION search_product_code TO anon;
-GRANT EXECUTE ON FUNCTION search_product_code TO service_role; 
+GRANT EXECUTE ON FUNCTION search_product_code TO service_role;

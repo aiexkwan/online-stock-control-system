@@ -24,8 +24,8 @@ BEGIN
             'product_qty', product_qty::INTEGER,
             'loaded_qty', loaded_qty::INTEGER,
             'remaining_qty', (product_qty::INTEGER - loaded_qty::INTEGER),
-            'completion_percentage', 
-                CASE 
+            'completion_percentage',
+                CASE
                     WHEN product_qty::INTEGER = 0 THEN 100
                     ELSE ROUND((loaded_qty::NUMERIC / product_qty::NUMERIC) * 100, 2)
                 END,
@@ -46,8 +46,8 @@ BEGIN
         'completed_items', COUNT(*) FILTER (WHERE loaded_qty::INTEGER >= product_qty::INTEGER),
         'total_qty', SUM(product_qty::INTEGER),
         'loaded_qty', SUM(loaded_qty::INTEGER),
-        'overall_percentage', 
-            CASE 
+        'overall_percentage',
+            CASE
                 WHEN SUM(product_qty::INTEGER) = 0 THEN 100
                 ELSE ROUND((SUM(loaded_qty::NUMERIC) / SUM(product_qty::NUMERIC)) * 100, 2)
             END
@@ -78,7 +78,7 @@ BEGIN
 
     -- 獲取用戶統計
     WITH user_stats AS (
-        SELECT 
+        SELECT
             h.id,
             d.name,
             COUNT(*) as load_count,
@@ -111,8 +111,8 @@ BEGIN
                 FROM record_palletinfo p
                 WHERE p.product_code = sl.stock
                 AND p.plt_num NOT IN (
-                    SELECT plt_num FROM record_history 
-                    WHERE action = 'Order Load' 
+                    SELECT plt_num FROM record_history
+                    WHERE action = 'Order Load'
                     AND plt_num IS NOT NULL
                 )
             )
@@ -120,8 +120,8 @@ BEGIN
     ) INTO v_inventory_status
     FROM stock_level sl
     WHERE sl.stock IN (
-        SELECT DISTINCT product_code 
-        FROM data_order 
+        SELECT DISTINCT product_code
+        FROM data_order
         WHERE order_ref = p_order_ref
     );
 
@@ -135,7 +135,7 @@ BEGIN
         'inventory_status', COALESCE(v_inventory_status, '[]'::json),
         'query_time', NOW()
     );
-    
+
 EXCEPTION
     WHEN OTHERS THEN
         RETURN json_build_object(
@@ -160,20 +160,20 @@ BEGIN
             'product_code', (pallet_info->>'product_code'),
             'quantity', (pallet_info->>'product_qty')::INTEGER,
             'is_loaded', EXISTS(
-                SELECT 1 FROM record_history 
+                SELECT 1 FROM record_history
                 WHERE plt_num = (pallet_info->>'plt_num')
                 AND action = 'Order Load'
             ),
             'location', (
-                SELECT loc FROM record_history 
+                SELECT loc FROM record_history
                 WHERE plt_num = (pallet_info->>'plt_num')
-                ORDER BY time DESC 
+                ORDER BY time DESC
                 LIMIT 1
             )
         )
     ) INTO v_results
     FROM (
-        SELECT 
+        SELECT
             unnest(p_pallet_inputs) as input_val,
             (
                 SELECT row_to_json(p.*)
@@ -232,17 +232,17 @@ BEGIN
             'product_code', p.product_code,
             'quantity', p.product_qty::INTEGER,
             'matches_order', (p.product_code IN (
-                SELECT product_code FROM data_order 
+                SELECT product_code FROM data_order
                 WHERE order_ref = p_order_ref
             )),
             'already_loaded', EXISTS(
-                SELECT 1 FROM record_history 
-                WHERE plt_num = p.plt_num 
+                SELECT 1 FROM record_history
+                WHERE plt_num = p.plt_num
                 AND action = 'Order Load'
             )
         ) as validation
         FROM (
-            SELECT 
+            SELECT
                 unnest(p_pallet_inputs) as input_val,
                 rp.*
             FROM record_palletinfo rp
@@ -253,7 +253,7 @@ BEGIN
 
     -- 檢查潛在衝突
     WITH load_summary AS (
-        SELECT 
+        SELECT
             product_code,
             SUM(product_qty::INTEGER) as total_to_load
         FROM record_palletinfo
@@ -266,8 +266,8 @@ BEGIN
             'to_load', ls.total_to_load,
             'required', (o.product_qty::INTEGER - o.loaded_qty::INTEGER),
             'excess', ls.total_to_load - (o.product_qty::INTEGER - o.loaded_qty::INTEGER),
-            'warning', CASE 
-                WHEN ls.total_to_load > (o.product_qty::INTEGER - o.loaded_qty::INTEGER) 
+            'warning', CASE
+                WHEN ls.total_to_load > (o.product_qty::INTEGER - o.loaded_qty::INTEGER)
                 THEN 'Will exceed order quantity'
                 ELSE NULL
             END

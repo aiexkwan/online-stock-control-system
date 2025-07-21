@@ -40,7 +40,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <LoadingProvider 
+        <LoadingProvider
           enablePerformanceAware={true}
           enableAutoCleanup={true}
         >
@@ -59,11 +59,11 @@ export default function RootLayout({ children }) {
 import { useLoading } from '@/lib/loading';
 
 function MyComponent() {
-  const { 
-    isLoading, 
-    startLoading, 
-    stopLoading, 
-    updateProgress 
+  const {
+    isLoading,
+    startLoading,
+    stopLoading,
+    updateProgress
   } = useLoading({
     id: 'my-component-loading',
     type: 'component'
@@ -222,7 +222,7 @@ import { ProgressIndicator } from '@/lib/loading';
 />
 
 // 圓形進度條
-<CircularProgress 
+<CircularProgress
   progress={progress}
   circularSize={120}
   showPercentage={true}
@@ -414,8 +414,8 @@ function DataComponent() {
   }, [loading, startLoading]);
 
   return (
-    <AdaptiveSkeletonLoader 
-      type="card" 
+    <AdaptiveSkeletonLoader
+      type="card"
       isLoading={loading}
       enablePerformanceAware={true}
     />
@@ -430,17 +430,17 @@ function DataComponent() {
 import { useWidgetLoading } from '@/lib/loading';
 
 function InventoryWidget({ widgetId }) {
-  const { 
-    isLoading, 
-    startLoading, 
-    stopLoading 
+  const {
+    isLoading,
+    startLoading,
+    stopLoading
   } = useWidgetLoading(widgetId, 'medium');
 
   // Widget 載入邏輯...
 
   return (
     <div className="widget-container">
-      <AdaptiveSkeletonLoader 
+      <AdaptiveSkeletonLoader
         type="chart"
         isLoading={isLoading}
         enablePerformanceAware={true}
@@ -458,10 +458,10 @@ function InventoryWidget({ widgetId }) {
 import { useSmartLoading } from '@/lib/loading';
 
 function MonitoredComponent() {
-  const { 
-    performanceMetrics, 
+  const {
+    performanceMetrics,
     estimatedLoadTime,
-    adaptiveConfig 
+    adaptiveConfig
   } = useSmartLoading({
     id: 'monitored-component',
     enablePerformanceAware: true,

@@ -77,7 +77,7 @@ export interface UpdateFeatureFlagDto extends Partial<CreateFeatureFlagDto> {
 // 類型保護函數
 export function isValidDbRecord(record: unknown): record is FeatureFlagDbRecord {
   if (!record || typeof record !== 'object') return false;
-  
+
   const r = record as Record<string, unknown>;
   return (
     typeof r.id === 'string' &&
@@ -92,7 +92,7 @@ export function isValidDbRecord(record: unknown): record is FeatureFlagDbRecord 
 
 export function isValidRealtimePayload(payload: unknown): payload is RealtimePayload {
   if (!payload || typeof payload !== 'object') return false;
-  
+
   const p = payload as Record<string, unknown>;
   return (
     typeof p.eventType === 'string' &&
@@ -111,18 +111,60 @@ export class FeatureFlagDbMapper {
       description: record.description,
       type: record.type,
       status: record.status,
-      defaultValue: record.default_value,
-      rules: record.rules || [],
+      // Strategy 4: unknown + type narrowing - 安全類型轉換 default_value 和 rules
+      defaultValue: (() => {
+        const value = record.default_value;
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+          return value;
+        }
+        return false; // 默認為 boolean false
+      })(),
+      rules: (() => {
+        const rawRules = record.rules || [];
+        if (Array.isArray(rawRules)) {
+          return rawRules.map((rule: unknown): import('./index').FeatureRule => {
+            if (rule && typeof rule === 'object' && 'type' in rule && 'value' in rule) {
+              const ruleObj = rule as Record<string, unknown>;
+              const ruleType = typeof ruleObj.type === 'string' ? ruleObj.type : 'all';
+
+              // 驗證 FeatureRuleType
+              const validRuleTypes = ['all', 'percentage', 'user', 'group', 'custom'] as const;
+              const validType = validRuleTypes.includes(ruleType as (typeof validRuleTypes)[number])
+                ? (ruleType as import('./index').FeatureRuleType)
+                : 'all';
+
+              // 驗證 operator 類型
+              const validOperators = ['equals', 'contains', 'gt', 'lt', 'gte', 'lte'] as const;
+              const operator =
+                typeof ruleObj.operator === 'string' &&
+                validOperators.includes(ruleObj.operator as (typeof validOperators)[number])
+                  ? (ruleObj.operator as (typeof validOperators)[number])
+                  : undefined;
+
+              return {
+                type: validType,
+                value: ruleObj.value,
+                operator,
+              };
+            }
+            return { type: 'all', value: true };
+          });
+        }
+        return [];
+      })(),
       variants: record.variants || [],
       rolloutPercentage: record.rollout_percentage,
       startDate: record.start_date ? new Date(record.start_date) : undefined,
       endDate: record.end_date ? new Date(record.end_date) : undefined,
       tags: record.tags || [],
-      metadata: record.metadata || {},
+      metadata: record.metadata || ({} as any),
     };
   }
 
-  static toDbRecord(key: string, flag: Partial<import('./index').FeatureFlag>): UpdateFeatureFlagDto {
+  static toDbRecord(
+    key: string,
+    flag: Partial<import('./index').FeatureFlag>
+  ): UpdateFeatureFlagDto {
     const record: UpdateFeatureFlagDto = {
       key,
       updated_at: new Date().toISOString(),
@@ -145,8 +187,6 @@ export class FeatureFlagDbMapper {
   }
 
   static validateAndTransformArray(records: unknown[]): import('./index').FeatureFlag[] {
-    return records
-      .filter(isValidDbRecord)
-      .map(this.toFeatureFlag);
+    return records.filter(isValidDbRecord).map(this.toFeatureFlag);
   }
 }

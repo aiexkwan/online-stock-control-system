@@ -31,7 +31,7 @@ class EmergencyAnyFixer {
       { from: /\.map\(\(stat: any\) => /g, to: '.map((stat: Record<string, unknown>) => ' },
       { from: /\.map\(\(result: any\) => /g, to: '.map((result: Record<string, unknown>) => ' },
       { from: /\.map\(\(i: any\) => /g, to: '.map((i: Record<string, unknown>) => ' },
-      
+
       // 過濾器
       { from: /\.filter\(\(item: any\) => /g, to: '.filter((item: Record<string, unknown>) => ' },
       { from: /\.filter\(\(col: any\) => /g, to: '.filter((col: Record<string, unknown>) => ' },
@@ -39,22 +39,22 @@ class EmergencyAnyFixer {
       { from: /\.filter\(\(p: any\) => /g, to: '.filter((p: Record<string, unknown>) => ' },
       { from: /\.filter\(\(s: any\) => /g, to: '.filter((s: Record<string, unknown>) => ' },
       { from: /\.filter\(\(d: any\) => /g, to: '.filter((d: Record<string, unknown>) => ' },
-      
+
       // 累加器
       { from: /\.reduce\(\(acc: any, item: any\) => /g, to: '.reduce((acc: Record<string, unknown>, item: Record<string, unknown>) => ' },
       { from: /\.reduce\(\(total, entry: any\) => /g, to: '.reduce((total, entry: Record<string, unknown>) => ' },
       { from: /\.reduce\(\(sum: number, item: any\) => /g, to: '.reduce((sum: number, item: Record<string, unknown>) => ' },
       { from: /\.reduce\(\(sum: number, record: any\) => /g, to: '.reduce((sum: number, record: Record<string, unknown>) => ' },
-      
+
       // 屬性聲明
       { from: /data\?: any\[\]/g, to: 'data?: Record<string, unknown>[]' },
       { from: /: any\[\]/g, to: ': Record<string, unknown>[]' },
-      
+
       // 變量聲明
       { from: /const emailData: any = /g, to: 'const emailData: Record<string, unknown> = ' },
       { from: /let result: any;/g, to: 'let result: Record<string, unknown>;' },
       { from: /const result: any = /g, to: 'const result: Record<string, unknown> = ' },
-      
+
       // 函數參數
       { from: /\(result: any\) => /g, to: '(result: Record<string, unknown>) => ' },
       { from: /\(response: any\) => /g, to: '(response: Record<string, unknown>) => ' },
@@ -64,18 +64,18 @@ class EmergencyAnyFixer {
 
   async fixAllFiles() {
     console.log('🚨 緊急 any 類型修復開始');
-    
+
     const files = await glob('**/*.{ts,tsx}', {
       ignore: ['node_modules/**', '.next/**', 'dist/**', 'build/**'],
       cwd: process.cwd()
     });
-    
+
     console.log(`📁 找到 ${files.length} 個文件`);
-    
+
     for (const file of files) {
       await this.fixFile(file);
     }
-    
+
     console.log(`✅ 修復完成！共修復 ${this.fixedCount} 個 any 類型`);
   }
 

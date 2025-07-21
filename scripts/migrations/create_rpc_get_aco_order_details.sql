@@ -30,7 +30,7 @@ BEGIN
 
     -- Get all available ACO orders for this product
     -- Group by order_ref to handle multiple records per order
-    SELECT jsonb_agg(DISTINCT order_ref ORDER BY order_ref) 
+    SELECT jsonb_agg(DISTINCT order_ref ORDER BY order_ref)
     INTO v_available_orders
     FROM record_aco
     WHERE code = p_product_code
@@ -57,16 +57,16 @@ BEGIN
 
     -- Get order details for specific order
     -- Sum all records for the same order_ref and product code
-    SELECT 
+    SELECT
         COALESCE(SUM(finished_qty), 0) AS total_finished,
         COALESCE(SUM(required_qty), 0) AS total_required,
         COALESCE(SUM(required_qty - finished_qty), 0) AS total_outstanding
-    INTO 
+    INTO
         v_finished_qty,
         v_required_qty,
         v_outstanding_qty
     FROM record_aco
-    WHERE order_ref = v_order_ref_bigint 
+    WHERE order_ref = v_order_ref_bigint
         AND code = p_product_code;
 
     -- Check if order exists (no records found)
@@ -92,7 +92,7 @@ BEGIN
             'finished_qty', v_finished_qty,
             'required_qty', v_required_qty,
             'outstanding_qty', 0,
-            'message', format('Order Already Fulfilled for %s (Finished: %s, Required: %s)', 
+            'message', format('Order Already Fulfilled for %s (Finished: %s, Required: %s)',
                 p_product_code, v_finished_qty, v_required_qty)
         );
     ELSE
@@ -105,7 +105,7 @@ BEGIN
             'finished_qty', v_finished_qty,
             'required_qty', v_required_qty,
             'outstanding_qty', v_outstanding_qty,
-            'message', format('Order Outstanding Qty for %s: %s (Current: %s/%s)', 
+            'message', format('Order Outstanding Qty for %s: %s (Current: %s/%s)',
                 p_product_code, v_outstanding_qty, v_finished_qty, v_required_qty)
         );
     END IF;

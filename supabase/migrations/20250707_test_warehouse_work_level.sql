@@ -5,7 +5,7 @@
 /*
 -- 插入測試 data_id 記錄
 INSERT INTO data_id (id, department, description)
-VALUES 
+VALUES
     ('TEST001', 'Warehouse', 'Test Product 1'),
     ('TEST002', 'Warehouse', 'Test Product 2'),
     ('TEST003', 'Office', 'Test Product 3')
@@ -13,7 +13,7 @@ ON CONFLICT (id) DO NOTHING;
 
 -- 插入測試 work_level 記錄
 INSERT INTO work_level (id, operator, move, latest_update)
-VALUES 
+VALUES
     ('TEST001', 'John Doe', 50, NOW() - INTERVAL '1 day'),
     ('TEST001', 'Jane Smith', 30, NOW() - INTERVAL '1 day'),
     ('TEST002', 'John Doe', 40, NOW() - INTERVAL '2 days'),
@@ -81,7 +81,7 @@ WITH result AS (
         NOW()
     ) as data
 )
-SELECT 
+SELECT
     jsonb_typeof(data) as result_type,
     jsonb_object_keys(data) as keys,
     jsonb_typeof(data->'daily_stats') as daily_stats_type,
@@ -94,7 +94,7 @@ FROM result;
 
 -- 11. 檢查索引使用情況
 SELECT '測試 10: 檢查相關索引' as test_name;
-SELECT 
+SELECT
     schemaname,
     tablename,
     indexname,

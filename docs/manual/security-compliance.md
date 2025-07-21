@@ -169,7 +169,7 @@ server {
     ssl_session_cache shared:SSL:50m;
     ssl_stapling on;
     ssl_stapling_verify on;
-    
+
     # 安全標頭
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     add_header X-Frame-Options DENY;
@@ -187,14 +187,14 @@ import { createCipher, createDecipher } from 'crypto';
 class DataEncryption {
   private static readonly algorithm = 'aes-256-cbc';
   private static readonly key = process.env.ENCRYPTION_KEY!;
-  
+
   static encrypt(text: string): string {
     const cipher = createCipher(this.algorithm, this.key);
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
     return encrypted;
   }
-  
+
   static decrypt(encryptedText: string): string {
     const decipher = createDecipher(this.algorithm, this.key);
     let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
@@ -267,11 +267,11 @@ class DataMasking {
     const maskedLocal = local.charAt(0) + '*'.repeat(local.length - 2) + local.slice(-1);
     return `${maskedLocal}@${domain}`;
   }
-  
+
   static maskPhone(phone: string): string {
     return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
   }
-  
+
   static maskCreditCard(cardNumber: string): string {
     return cardNumber.replace(/\d(?=\d{4})/g, '*');
   }
@@ -290,23 +290,23 @@ class DataMasking {
 setup_firewall() {
     # 重置防火牆
     ufw --force reset
-    
+
     # 預設政策
     ufw default deny incoming
     ufw default allow outgoing
-    
+
     # 允許的連接
     ufw allow ssh
     ufw allow 'Nginx Full'
     ufw allow from 10.0.0.0/8 to any port 5432  # 數據庫訪問
     ufw allow from 10.0.0.0/8 to any port 6379  # Redis 訪問
-    
+
     # 限制 SSH 連接
     ufw limit ssh
-    
+
     # 啟用防火牆
     ufw --force enable
-    
+
     # 記錄設置
     ufw logging on
 }
@@ -363,20 +363,20 @@ http {
     limit_req_zone $binary_remote_addr zone=login:10m rate=1r/s;
     limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
     limit_req_zone $binary_remote_addr zone=global:10m rate=20r/s;
-    
+
     # 限制連接數
     limit_conn_zone $binary_remote_addr zone=conn_limit_per_ip:10m;
-    
+
     server {
         # 全局限制
         limit_req zone=global burst=50 nodelay;
         limit_conn conn_limit_per_ip 20;
-        
+
         # 登錄端點限制
         location /auth/login {
             limit_req zone=login burst=5 nodelay;
         }
-        
+
         # API 端點限制
         location /api/ {
             limit_req zone=api burst=20 nodelay;
@@ -418,18 +418,18 @@ const getPalletsByProduct = async (productCode: string) => {
     .from('record_palletinfo')
     .select('*')
     .eq('product_code', productCode); // 自動參數化
-  
+
   return data;
 };
 
 // RPC 調用參數化
 const executeSafeQuery = async (query: string, params: any[]) => {
   const { data, error } = await supabase
-    .rpc('execute_safe_query', { 
+    .rpc('execute_safe_query', {
       query_text: query,
-      query_params: params 
+      query_params: params
     });
-  
+
   return data;
 };
 ```
@@ -476,15 +476,15 @@ class JWTManager {
   private static readonly secret = process.env.JWT_SECRET!;
   private static readonly expiresIn = '1h';
   private static readonly refreshExpiresIn = '7d';
-  
+
   static generateAccessToken(payload: any): string {
     return jwt.sign(payload, this.secret, { expiresIn: this.expiresIn });
   }
-  
+
   static generateRefreshToken(payload: any): string {
     return jwt.sign(payload, this.secret, { expiresIn: this.refreshExpiresIn });
   }
-  
+
   static verifyToken(token: string): any {
     try {
       return jwt.verify(token, this.secret);
@@ -492,7 +492,7 @@ class JWTManager {
       throw new Error('Invalid token');
     }
   }
-  
+
   static refreshAccessToken(refreshToken: string): string {
     const payload = this.verifyToken(refreshToken);
     return this.generateAccessToken({ userId: payload.userId });
@@ -528,15 +528,15 @@ class DataSubjectRights {
       .from('data_id')
       .select('*')
       .eq('user_id', userId);
-    
+
     return userData;
   }
-  
+
   static async requestDataDeletion(userId: string): Promise<void> {
     // 匿名化而非刪除以保持數據完整性
     await supabase
       .from('data_id')
-      .update({ 
+      .update({
         username: 'deleted_user_' + Date.now(),
         email: 'deleted@example.com',
         deleted_at: new Date()
@@ -562,13 +562,13 @@ const iso27001Controls = {
     '9.2.5': 'access_rights_review',
     '9.2.6': 'access_rights_removal'
   },
-  
+
   // 密碼學
   A10: {
     '10.1.1': 'cryptographic_policy',
     '10.1.2': 'key_management'
   },
-  
+
   // 運營安全
   A12: {
     '12.1.1': 'operational_procedures',
@@ -593,23 +593,23 @@ class SecurityMonitoring {
       .select('*')
       .eq('user_id', userId)
       .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000));
-    
+
     // 檢查地理位置異常
     const isGeoAnomalous = await this.checkGeolocationAnomaly(ipAddress, recentLogins);
-    
+
     // 檢查時間異常
     const isTimeAnomalous = await this.checkTimeAnomaly(recentLogins);
-    
+
     return isGeoAnomalous || isTimeAnomalous;
   }
-  
+
   static async detectBruteForce(ipAddress: string): Promise<boolean> {
     const failedAttempts = await supabase
       .from('failed_login_attempts')
       .select('count')
       .eq('ip_address', ipAddress)
       .gte('created_at', new Date(Date.now() - 15 * 60 * 1000));
-    
+
     return failedAttempts.length > 5;
   }
 }
@@ -650,18 +650,18 @@ class IncidentResponse {
         await this.notifyEmergencyTeam();
         await this.activateBackupSystems();
         break;
-        
+
       case SecurityIncidentLevel.HIGH:
         await this.blockSuspiciousIPs();
         await this.notifySecurityTeam();
         await this.increaseMonitoring();
         break;
-        
+
       case SecurityIncidentLevel.MEDIUM:
         await this.logIncident();
         await this.notifyOperationsTeam();
         break;
-        
+
       case SecurityIncidentLevel.LOW:
         await this.logIncident();
         break;
@@ -697,7 +697,7 @@ interface AuditLog {
 ```typescript
 export const auditMiddleware = async (req: NextRequest, res: NextResponse) => {
   const startTime = Date.now();
-  
+
   // 記錄請求開始
   const auditLog: Partial<AuditLog> = {
     timestamp: new Date(),
@@ -707,25 +707,25 @@ export const auditMiddleware = async (req: NextRequest, res: NextResponse) => {
     user_agent: req.headers.get('user-agent') || 'unknown',
     session_id: req.headers.get('session-id') || 'unknown'
   };
-  
+
   try {
     // 執行請求
     const response = await res;
-    
+
     // 記錄成功
     auditLog.success = true;
     auditLog.new_value = response.data;
-    
+
     await logAuditEvent(auditLog as AuditLog);
-    
+
     return response;
   } catch (error) {
     // 記錄失敗
     auditLog.success = false;
     auditLog.error_message = error.message;
-    
+
     await logAuditEvent(auditLog as AuditLog);
-    
+
     throw error;
   }
 };
@@ -745,10 +745,10 @@ class Logger {
       service: 'newpennine-wms',
       version: process.env.APP_VERSION || 'unknown'
     };
-    
+
     console.log(JSON.stringify(logEntry));
   }
-  
+
   static security(event: string, details: any): void {
     const logEntry = {
       level: 'security',
@@ -758,9 +758,9 @@ class Logger {
       service: 'newpennine-wms',
       source: 'security-monitor'
     };
-    
+
     console.log(JSON.stringify(logEntry));
-    
+
     // 同時發送到 SIEM 系統
     this.sendToSIEM(logEntry);
   }
@@ -778,23 +778,23 @@ class Logger {
 # 自動化安全掃描腳本
 security_scan() {
     echo "=== 開始安全掃描 $(date) ==="
-    
+
     # 依賴漏洞掃描
     echo "1. 依賴漏洞掃描:"
     npm audit --audit-level=moderate
-    
+
     # 端口掃描
     echo "2. 端口掃描:"
     nmap -sS -O localhost
-    
+
     # Web 應用掃描
     echo "3. Web 應用掃描:"
     nikto -h http://localhost:3000
-    
+
     # SSL/TLS 檢查
     echo "4. SSL/TLS 檢查:"
     sslscan localhost:443
-    
+
     # 生成報告
     echo "=== 掃描完成 $(date) ==="
 }
@@ -812,19 +812,19 @@ security_scan > /var/log/security/scan_$(date +%Y%m%d).log 2>&1
 # 滲透測試腳本
 penetration_test() {
     echo "=== 滲透測試 $(date) ==="
-    
+
     # SQL 注入測試
     echo "1. SQL 注入測試:"
     sqlmap -u "http://localhost:3000/api/v1/pallets?id=1" --batch
-    
+
     # XSS 測試
     echo "2. XSS 測試:"
     # 使用 OWASP ZAP 進行測試
-    
+
     # 身份驗證測試
     echo "3. 身份驗證測試:"
     # 測試弱密碼、會話管理等
-    
+
     # 授權測試
     echo "4. 授權測試:"
     # 測試垂直和水平權限提升

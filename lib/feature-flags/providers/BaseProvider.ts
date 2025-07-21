@@ -6,7 +6,7 @@ import {
   FeatureRule,
   FeatureVariant,
 } from '../types';
-import { safeGet, safeString, safeNumber } from '@/lib/types/supabase-helpers';
+import { safeGet, safeString, safeNumber } from '@/types/database/helpers';
 
 /**
  * 基礎 Feature Flag 提供者
@@ -193,7 +193,7 @@ export abstract class BaseFeatureFlagProvider implements FeatureFlagProvider {
    */
   private evaluateDateRule(rule: FeatureRule, context: FeatureContext): boolean {
     const now = context.timestamp || new Date();
-    const targetDate = new Date(safeString(safeGet(rule, 'value', '')));
+    const targetDate = new Date(safeString(safeGet(rule, 'value')));
 
     switch (rule.operator) {
       case 'gt':
@@ -215,10 +215,10 @@ export abstract class BaseFeatureFlagProvider implements FeatureFlagProvider {
   private evaluateCustomRule(rule: FeatureRule, context: FeatureContext): boolean {
     if (!context.customAttributes) return false;
 
-    const ruleValue = safeGet(rule, 'value', {});
-    const attributeName = safeString(safeGet(ruleValue, 'attribute', ''));
-    const expectedValue = safeGet(ruleValue, 'value', '');
-    
+    const ruleValue = safeGet(rule, 'value');
+    const attributeName = safeString(safeGet(ruleValue, 'attribute'));
+    const expectedValue = safeGet(ruleValue, 'value');
+
     const attributeValue = context.customAttributes[attributeName];
     if (attributeValue === undefined) return false;
 

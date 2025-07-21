@@ -277,19 +277,19 @@ graph TD
     A[前端層] --> B[API層]
     B --> C[業務邏輯層]
     C --> D[數據庫層]
-    
+
     A1[React/Next.js] --> A
     A2[UI組件庫] --> A
     A3[狀態管理] --> A
-    
+
     B1[REST API] --> B
     B2[GraphQL] --> B
     B3[RPC Functions] --> B
-    
+
     C1[業務服務] --> C
     C2[數據處理] --> C
     C3[權限控制] --> C
-    
+
     D1[PostgreSQL] --> D
     D2[Redis緩存] --> D
     D3[檔案存儲] --> D
@@ -302,7 +302,7 @@ sequenceDiagram
     participant F as 前端
     participant A as API
     participant D as 數據庫
-    
+
     U->>F: 用戶操作
     F->>A: API請求
     A->>D: 數據查詢
@@ -355,11 +355,11 @@ graph LR
     B --> C[用戶模組]
     C --> D[業務模組]
     D --> E[報表模組]
-    
+
     F[檔案模組] --> D
     G[通知模組] --> D
     H[日誌模組] --> D
-    
+
     I[緩存模組] --> D
     J[搜索模組] --> D
 ```
