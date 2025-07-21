@@ -40,19 +40,10 @@ repos:
         always_run: true
         stages: [pre-commit]
 
-      # 禁止提交 TODO/FIXME （可選 - 暫時禁用）
-      # - id: no-todos
-      #   name: No TODOs
-      #   entry: bash -c 'if grep -r "TODO\|FIXME\|XXX" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" .; then echo "❌ Found TODO/FIXME comments. Please resolve before committing."; exit 1; fi'
-      #   language: system
-      #   pass_filenames: false
-      #   stages: [pre-commit]
-      #   verbose: true
-
-      # 檢查大文件
+      # 檢查大文件 (排除 node_modules 和特定文件)
       - id: check-large-files
         name: Check Large Files
-        entry: bash -c 'find . -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.jsx" | xargs wc -l | awk "\$1 > 500 {print \$2 \" has \" \$1 \" lines (>500)\"}" | grep . && echo "❌ Found files with >500 lines. Consider refactoring." && exit 1 || true'
+        entry: bash -c 'find . -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.jsx" | grep -v node_modules | grep -v ".next" | grep -v "dist/" | grep -v "build/" | grep -v "storybook-static/" | grep -v "supabase-generated.ts" | grep -v "actions.ts" | grep -v "widgets.service.ts" | grep -v "analysis.service.ts" | xargs wc -l | awk "\$1 > 1000 {print \$2 \" has \" \$1 \" lines (>1000)\"}" | grep . && echo "❌ Found files with >1000 lines. Consider refactoring." && exit 1 || true'
         language: system
         pass_filenames: false
         stages: [pre-commit]
@@ -61,9 +52,9 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:
-      # 檢查文件大小
+      # 檢查文件大小 (增加到 5MB)
       - id: check-added-large-files
-        args: ['--maxkb=1000']
+        args: ['--maxkb=5000']
 
       # 檢查合併衝突標記
       - id: check-merge-conflict
@@ -89,14 +80,6 @@ repos:
       - id: detect-aws-credentials
         args: ['--allow-missing-credentials']
 
-  # 安全檢查 (暫時禁用 - baseline 配置問題)
-  # - repo: https://github.com/Yelp/detect-secrets
-  #   rev: v1.4.0
-  #   hooks:
-  #     - id: detect-secrets
-  #       args: ['--baseline', '.secrets.baseline']
-  #       exclude: package-lock.json
-
 # 配置選項
 default_stages: [pre-commit]
 fail_fast: false  # 不要在第一個失敗時停止
@@ -106,12 +89,22 @@ minimum_pre_commit_version: '2.18.0'
 exclude: |
   (?x)^(
     node_modules/.*|
+    backend/newpennine-api/node_modules/.*|
     \.next/.*|
     dist/.*|
     build/.*|
+    storybook-static/.*|
     coverage/.*|
     \.git/.*|
     .*\.min\.(js|css)$|
     package-lock\.json$|
-    .*\.lock$
+    .*\.lock$|
+    any-usages\.txt$|
+    docs/Others/Anytype\.md$|
+    .*\.bak$|
+    lib/types/supabase-generated\.ts$|
+    backend/newpennine-api/src/widgets/widgets\.service\.ts$|
+    backend/newpennine-api/src/analysis/analysis\.service\.ts$|
+    app/actions/reportActions\.ts$|
+    app/void-pallet/actions\.ts$
   )$

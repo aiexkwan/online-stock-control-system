@@ -80,3 +80,7 @@ backend/**/node_modules/
 
 # MCP Server node_modules
 mcp-servers/**/node_modules/
+
+# Large files to ignore
+any-usages.txt
+docs/Others/Anytype.md
