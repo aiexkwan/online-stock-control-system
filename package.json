@@ -73,7 +73,9 @@
     "tech-debt:check:production": "TECH_DEBT_ENV=production npm run tech-debt:check",
     "pre-commit:install": "bash scripts/setup-pre-commit.sh",
     "pre-commit:run": "pre-commit run --all-files",
-    "pre-commit:skip": "SKIP=tech-debt-check git commit"
+    "pre-commit:skip": "SKIP=tech-debt-check git commit",
+    "scan:todo": "node scripts/todo-scanner.js",
+    "scan:todo:watch": "nodemon --watch app --watch lib --watch components --ext ts,tsx --exec 'npm run scan:todo'"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.40.1",
@@ -240,8 +242,10 @@
     "jest-environment-jsdom": "^29.7.0",
     "jsdom": "^26.1.0",
     "madge": "^8.0.0",
+    "minimist": "^1.2.8",
     "msw": "^2.10.3",
     "next-test-api-route-handler": "^4.0.16",
+    "nodemon": "^3.1.10",
     "playwright": "^1.54.1",
     "postcss": "^8.4.49",
     "prettier": "^3.4.2",

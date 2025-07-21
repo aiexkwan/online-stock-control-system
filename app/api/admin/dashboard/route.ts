@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createDashboardAPI } from '@/lib/api/admin/DashboardAPI';
+import { createDashboardAPI, type DashboardResult } from '@/lib/api/admin/DashboardAPI';
+import { ApiResult, successResult, errorResult, handleAsync } from '@/lib/types/api';
 
 // Track API calls for debugging
 let requestCounter = 0;
-const requestLog: Array<{
+
+interface RequestLogEntry {
   id: number;
   timestamp: string;
   widgets: string[];
@@ -11,13 +13,15 @@ const requestLog: Array<{
   referer?: string;
   ip?: string;
   duration?: number;
-}> = [];
+}
 
-export async function GET(request: NextRequest) {
+const requestLog: RequestLogEntry[] = [];
+
+export async function GET(request: NextRequest): Promise<NextResponse<ApiResult<DashboardResult>>> {
   const startTime = Date.now();
   const requestId = ++requestCounter;
 
-  try {
+  const result = await handleAsync(async (): Promise<DashboardResult> => {
     const searchParams = request.nextUrl.searchParams;
     const widgets = searchParams.get('widgets')?.split(',') || [];
     const warehouse = searchParams.get('warehouse');
@@ -27,15 +31,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
 
     // Log request details for debugging
-    const logEntry: {
-      id: number;
-      timestamp: string;
-      widgets: string[];
-      userAgent?: string;
-      referer?: string;
-      ip?: string;
-      duration?: number;
-    } = {
+    const logEntry: RequestLogEntry = {
       id: requestId,
       timestamp: new Date().toISOString(),
       widgets,
@@ -49,7 +45,7 @@ export async function GET(request: NextRequest) {
     // Use existing DashboardAPI instead of duplicating logic
     const dashboardAPI = createDashboardAPI();
 
-    const result = await dashboardAPI.serverFetch({
+    const dashboardResult = await dashboardAPI.serverFetch({
       widgetIds: widgets,
       warehouse: warehouse || undefined,
       dateRange: startDate && endDate ? { start: startDate, end: endDate } : undefined,
@@ -73,17 +69,16 @@ export async function GET(request: NextRequest) {
     console.log(`✅ API CALL #${requestId} completed in ${duration}ms`);
     console.log(`📊 Total requests since restart: ${requestCounter}`);
 
-    return NextResponse.json(result, {
-      headers: {
-        'Cache-Control': 'public, max-age=300, stale-while-revalidate=900', // Increased cache time
-        'Content-Type': 'application/json',
-        'X-Request-Id': requestId.toString(),
-        'X-Total-Requests': requestCounter.toString(),
-      },
-    });
-  } catch (error) {
-    const duration = Date.now() - startTime;
-    console.error(`❌ Dashboard API error for request #${requestId} (${duration}ms):`, error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+    return dashboardResult;
+  }, 'Dashboard API failed');
+
+  return NextResponse.json(result, {
+    headers: {
+      'Cache-Control': 'public, max-age=300, stale-while-revalidate=900',
+      'Content-Type': 'application/json',
+      'X-Request-Id': requestId.toString(),
+      'X-Total-Requests': requestCounter.toString(),
+    },
+    status: result.success ? 200 : 500,
+  });
 }

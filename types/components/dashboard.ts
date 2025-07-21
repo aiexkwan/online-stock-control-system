@@ -304,3 +304,30 @@ export interface WidgetPerformance {
   refreshCount: number;
   lastRefresh: string;
 }
+
+// 批量查詢相關類型
+export interface DashboardDateRange {
+  start: Date;
+  end: Date;
+}
+
+export interface DashboardBatchQueryError {
+  widgetId: string;
+  error: Error;
+  timestamp: Date;
+}
+
+export interface DashboardBatchQueryOptions {
+  parallel?: boolean;
+  timeout?: number;
+  retryCount?: number;
+  cacheStrategy?: 'none' | 'memory' | 'persistent';
+}
+
+// Widget Props 類型（用於組件）
+export interface WidgetProps extends BaseWidgetComponentProps {
+  widget: DashboardWidget | WidgetConfig;
+}
+
+// DashboardWidgetConfig 類型別名
+export type DashboardWidgetConfig = WidgetConfig;

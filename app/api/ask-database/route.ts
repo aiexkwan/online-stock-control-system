@@ -296,7 +296,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         console.log(`[Ask Database] 🎯 ${cacheLevel} Cache hit - returning cached result`);
 
       // 異步保存聊天記錄（記錄緩存命中）
-      const safeResult = cachedResult.result || ({} as any);
+      const safeResult = cachedResult.result || { data: [], rowCount: 0, executionTime: 0 };
       const safeData = safeResult.data || [];
       const safeExecutionTime = cachedResult.responseTime || safeResult.executionTime || 0;
 

@@ -4,6 +4,9 @@
  * 使用具名導出避免重複定義衝突
  */
 
+// 核心類型 - 優先導出避免循環依賴
+export * from './core';
+
 // 數據庫類型
 export type { Database } from './database/supabase';
 export type { SupabaseResponse, QueryOptions } from './database/helpers';
@@ -37,7 +40,6 @@ export type {
   ResetPasswordRequest,
   UpdatePasswordRequest,
   User,
-  UserRole,
   AuthResponse,
   ApiError,
   ValidationError,

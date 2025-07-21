@@ -15,6 +15,7 @@ import {
   WebhookConfig,
   SmsConfig,
 } from '@/lib/alerts/types';
+import type { ApiResult } from '@/lib/types/api';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -35,7 +36,7 @@ async function getNotificationService() {
 const NotificationConfigSchema = z.object({
   channel: z.nativeEnum(NotificationChannel),
   enabled: z.boolean(),
-  config: z.record(z.any()),
+  config: z.record(z.unknown()),
   conditions: z
     .object({
       levels: z.array(z.string()).optional(),
@@ -57,7 +58,7 @@ const NotificationConfigSchema = z.object({
 // 測試通知 Schema
 const TestNotificationSchema = z.object({
   channel: z.nativeEnum(NotificationChannel),
-  config: z.record(z.any()),
+  config: z.record(z.unknown()),
   testMessage: z.string().optional(),
 });
 
@@ -65,7 +66,7 @@ const TestNotificationSchema = z.object({
  * GET /api/v1/alerts/notifications
  * 獲取通知統計
  */
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<NextResponse<ApiResult<unknown>>> {
   try {
     const service = await getNotificationService();
     const stats = await service.getNotificationStats();
@@ -91,7 +92,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
  * POST /api/v1/alerts/notifications/test
  * 測試通知配置
  */
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<NextResponse<ApiResult<unknown>>> {
   try {
     const body = await request.json();
     const validated = TestNotificationSchema.parse(body);
@@ -103,7 +104,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       id: 'test',
       channel: validated.channel,
       enabled: true,
-      config: validated.config as EmailConfig | SlackConfig | WebhookConfig | SmsConfig,
+      config: validated.config as unknown as EmailConfig | SlackConfig | WebhookConfig | SmsConfig,
       template: validated.testMessage,
     };
 

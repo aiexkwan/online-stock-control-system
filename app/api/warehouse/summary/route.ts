@@ -1,15 +1,39 @@
 import { getWarehouseCacheService } from '@/lib/services/warehouse-cache-service';
 import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
+import { ApiResult, successResult, errorResult, handleAsync } from '@/lib/types/api';
+
+interface WarehouseSummaryItem {
+  warehouseId: string;
+  warehouseName: string;
+  totalQty: number;
+  itemCount: number;
+  utilization: number;
+  lastUpdated: string;
+}
+
+interface WarehouseSummaryResponse {
+  data: WarehouseSummaryItem[];
+  metadata: {
+    totalLocations: number;
+    totalQty: number;
+    totalItems: number;
+    timeRange: string;
+    responseTime: string;
+    timestamp: string;
+    cacheOptimized: boolean;
+    version: string;
+  };
+}
 
 /**
  * 優化的倉庫摘要 API - v1.8 性能優化
  * 使用 Redis 緩存 + RPC 函數實現 85%+ 性能提升
  */
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request): Promise<NextResponse<ApiResult<WarehouseSummaryResponse>>> {
   const startTime = Date.now();
 
-  try {
+  const result = await handleAsync(async (): Promise<WarehouseSummaryResponse> => {
     const warehouseService = getWarehouseCacheService();
 
     // 獲取查詢參數
@@ -27,54 +51,41 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const responseTime = Date.now() - startTime;
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: summary,
-        metadata: {
-          totalLocations: summary.length,
-          totalQty: summary.reduce((sum, item) => sum + item.totalQty, 0),
-          totalItems: summary.reduce((sum, item) => sum + item.itemCount, 0),
-          timeRange,
-          responseTime: `${responseTime}ms`,
-          timestamp: new Date().toISOString(),
-          cacheOptimized: true,
-          version: 'v1.8-optimized',
-        },
-      },
-      {
-        headers: {
-          // 優化的緩存控制
-          'Cache-Control': 'public, max-age=300, stale-while-revalidate=900',
-          'X-Response-Time': `${responseTime}ms`,
-          'X-Optimized': 'redis-cache-rpc',
-          Vary: 'Accept-Encoding',
-        },
-      }
-    );
-  } catch (error) {
-    const responseTime = Date.now() - startTime;
-    console.error('Optimized warehouse summary API error:', error);
+    // Transform data to match WarehouseSummaryItem interface
+    const transformedData: WarehouseSummaryItem[] = summary.map(item => ({
+      warehouseId: item.location,
+      warehouseName: item.location,
+      totalQty: item.totalQty,
+      itemCount: item.itemCount,
+      utilization: Math.min(100, Math.max(0, (item.itemCount / 1000) * 100)), // Calculate utilization percentage
+      lastUpdated: item.lastUpdated,
+    }));
 
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Failed to fetch warehouse summary',
-        message:
-          error instanceof Error ? (error as { message: string }).message : 'Internal server error',
-        metadata: {
-          responseTime: `${responseTime}ms`,
-          timestamp: new Date().toISOString(),
-          version: 'v1.8-optimized',
-        },
+    return {
+      data: transformedData,
+      metadata: {
+        totalLocations: summary.length,
+        totalQty: summary.reduce((sum, item) => sum + item.totalQty, 0),
+        totalItems: summary.reduce((sum, item) => sum + item.itemCount, 0),
+        timeRange,
+        responseTime: `${responseTime}ms`,
+        timestamp: new Date().toISOString(),
+        cacheOptimized: true,
+        version: 'v1.8-optimized',
       },
-      {
-        status: 500,
-        headers: {
-          'X-Response-Time': `${responseTime}ms`,
-          'X-Error': 'optimization-failed',
-        },
-      }
-    );
-  }
+    };
+  }, 'Failed to fetch warehouse summary');
+
+  const responseTime = Date.now() - startTime;
+
+  return NextResponse.json(result, {
+    headers: {
+      'Cache-Control': 'public, max-age=300, stale-while-revalidate=900',
+      'X-Response-Time': `${responseTime}ms`,
+      'X-Optimized': 'redis-cache-rpc',
+      Vary: 'Accept-Encoding',
+      ...(result.success ? {} : { 'X-Error': 'optimization-failed' }),
+    },
+    status: result.success ? 200 : 500,
+  });
 }

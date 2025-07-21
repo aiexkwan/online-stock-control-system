@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { getErrorMessage } from '@/types/core/error';
 import { createClient } from '@/app/utils/supabase/client';

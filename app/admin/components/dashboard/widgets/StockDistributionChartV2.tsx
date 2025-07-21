@@ -36,13 +36,11 @@ import { isValidTooltipProps, isValidTreemapContentProps } from './types/ChartWi
 // StockDistributionData interface moved to StockChartTypes.ts
 
 interface StockDistributionChartProps extends TraditionalWidgetComponentProps {
-  useGraphQL?: boolean;
 }
 
 export const StockDistributionChartV2: React.FC<StockDistributionChartProps> = ({
   widget,
   isEditMode,
-  useGraphQL,
 }) => {
   // 完全使用 NestJS REST API with React Query
   const [selectedType, setSelectedType] = useState<string>('all');

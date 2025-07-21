@@ -32,12 +32,10 @@ interface AcoOrderProgressCardsResponse {
 
 interface AcoOrderProgressCardsProps {
   timeFrame?: TimeFrame;
-  useGraphQL?: boolean;
 }
 
 export default function AcoOrderProgressCards({
   timeFrame,
-  useGraphQL = false,
 }: AcoOrderProgressCardsProps) {
   const [data, setData] = useState<AcoOrderProgressCardsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);

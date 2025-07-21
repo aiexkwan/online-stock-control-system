@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { DatabaseRecord } from '@/types/database/tables';
 import { createClient } from '@/app/utils/supabase/client';
@@ -148,6 +150,7 @@ export function useStockTransfer(options: UseStockTransferOptions = {}) {
         // Increase to location
         inventoryUpdate[toDbColumn] = palletInfo.product_qty;
 
+        // @types-migration:todo(phase3) [P2] 修復 DatabaseRecord 動態屬性類型 - Target: 2025-08 - Owner: @frontend-team
         const { error: inventoryError } = await supabase
           .from('record_inventory')
           .insert([inventoryUpdate as any]);

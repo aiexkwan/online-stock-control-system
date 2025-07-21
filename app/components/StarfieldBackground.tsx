@@ -52,13 +52,25 @@ export const StarfieldBackground: React.FC = () => {
   const animationRef = useRef<number>();
 
   useEffect(() => {
+    // 只在客戶端執行，避免 SSR 問題
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     const canvas = canvasRef.current;
     if (!canvas) {
       return;
     }
 
     // Add safety check for WebGL support
-    const glContext = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    let glContext: WebGLRenderingContext | null = null;
+    try {
+      glContext = (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null;
+    } catch (error) {
+      console.warn('WebGL context creation failed:', error);
+      return;
+    }
+
     if (!glContext) {
       console.warn('WebGL not supported, falling back to CSS background');
       return;

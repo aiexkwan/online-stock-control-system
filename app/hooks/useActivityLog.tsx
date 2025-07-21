@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useCallback } from 'react';
 
 export interface ActivityLogEntry {
@@ -145,7 +147,7 @@ export const useActivityLog = (options: UseActivityLogOptions = {}) => {
       return activityLog.filter(
         entry =>
           entry.message.toLowerCase().includes(lowercaseKeyword) ||
-          JSON.stringify(entry.metadata || ({} as any))
+          JSON.stringify(entry.metadata || {})
             .toLowerCase()
             .includes(lowercaseKeyword)
       );

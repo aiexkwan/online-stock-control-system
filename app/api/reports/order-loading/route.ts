@@ -2,11 +2,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import { orderLoadingDataSources } from '@/app/components/reports/dataSources/OrderLoadingDataSource';
 import { safeGet, safeString, safeNumber, toRecordArray } from '@/types/database/helpers';
 import { createJsPDF } from '@/lib/services/unified-pdf-service';
+import { ApiResult, successResult, errorResult, handleAsync } from '@/lib/types/api';
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    // 解析請求參數
-    const body = await request.json();
+interface OrderLoadingReportRequest {
+  startDate: string;
+  endDate: string;
+  orderRef?: string;
+  productCode?: string;
+  actionBy?: string;
+  format: 'excel' | 'pdf';
+}
+
+interface LoadingRecord {
+  timestamp: string;
+  order_number: string;
+  product_code: string;
+  loaded_qty: number;
+  user_name: string;
+  action: string;
+}
+
+export async function POST(request: Request): Promise<NextResponse> {
+  // 解析請求參數
+  const body: OrderLoadingReportRequest = await request.json();
+
+  const result = await handleAsync(async (): Promise<ArrayBuffer> => {
 
     // 使用新的 DataSource 架構
     const dataSource = orderLoadingDataSources.get('loading-details');
@@ -14,21 +34,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       throw new Error('Loading details data source not found');
     }
 
-    const filters = {
+    const filters: Record<string, string | number | boolean | Date | string[]> = {
       dateRange: `${body.startDate}|${body.endDate}`,
-      orderNumber: body.orderRef,
-      productCode: body.productCode,
-      userId: body.actionBy,
+      ...(body.orderRef && { orderNumber: body.orderRef }),
+      ...(body.productCode && { productCode: body.productCode }),
+      ...(body.actionBy && { userId: body.actionBy }),
     };
 
     // 獲取報表數據
     const rawData = await dataSource.fetch(filters);
 
     if (!rawData) {
-      return NextResponse.json(
-        { error: 'No data found for the specified criteria' },
-        { status: 404 }
-      );
+      throw new Error('No data found for the specified criteria');
     }
 
     // Strategy 4: unknown + type narrowing for records transformation
@@ -100,17 +117,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     // 轉換 Blob 為 Buffer
-    const buffer = Buffer.from(await blob.arrayBuffer());
+    return await blob.arrayBuffer();
+  }, 'Failed to generate order loading report');
 
-    // 返回文件
-    return new NextResponse(buffer, {
-      headers: {
-        'Content-Type': contentType,
-        'Content-Disposition': `attachment; filename="order-loading-report-${new Date().toISOString().split('T')[0]}.${extension}"`,
-      },
-    });
-  } catch (error) {
-    console.error('Error generating order loading report:', error);
-    return NextResponse.json({ error: 'Failed to generate report' }, { status: 500 });
+  if (!result.success) {
+    return NextResponse.json(result, { status: 500 });
   }
+
+  const format = body.format || 'excel';
+  const extension = format === 'pdf' ? 'pdf' : 'xlsx';
+  const contentType = format === 'pdf' 
+    ? 'application/pdf' 
+    : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+  // 返回文件
+  return new NextResponse(result.data, {
+    headers: {
+      'Content-Type': contentType,
+      'Content-Disposition': `attachment; filename="order-loading-report-${new Date().toISOString().split('T')[0]}.${extension}"`,
+    },
+  });
 }

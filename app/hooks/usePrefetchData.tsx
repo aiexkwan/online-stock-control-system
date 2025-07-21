@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/app/utils/supabase/client';
 
@@ -47,12 +49,14 @@ export const usePrefetchData = (options: PrefetchOptions = {}) => {
 
     const promises = queries.map(async query => {
       try {
-        const queryBuilder = (supabase as any).from(query.table).select(query.select);
+        // @types-migration:todo(phase3) [P2] 使用 Supabase 客戶端類型替代 any - Target: 2025-08 - Owner: @frontend-team
+        const queryBuilder = supabase.from(query.table).select(query.select);
 
         // 應用過濾條件
         if (query.filter) {
           Object.entries(query.filter).forEach(([key, value]) => {
-            queryBuilder.eq(key, value);
+            // @types-migration:todo(phase3) [P2] 改進 filter 類型定義以避免 unknown - Target: 2025-08 - Owner: @frontend-team
+            queryBuilder.eq(key, value as Parameters<typeof queryBuilder.eq>[1]);
           });
         }
 
@@ -64,7 +68,7 @@ export const usePrefetchData = (options: PrefetchOptions = {}) => {
         const { data, error } = await queryBuilder;
 
         if (!error && data) {
-          const cacheKey = `${query.table}-${JSON.stringify(query.filter || ({} as any))}`;
+          const cacheKey = `${query.table}-${JSON.stringify(query.filter || {})}`;
           prefetchedData.current.set(cacheKey, data);
           (process.env.NODE_ENV as string) !== 'production' &&
             (process.env.NODE_ENV as string) !== 'production' &&
@@ -80,7 +84,7 @@ export const usePrefetchData = (options: PrefetchOptions = {}) => {
 
   // 獲取預取的資料
   const getPrefetchedData = useCallback((table: string, filter?: Record<string, unknown>) => {
-    const cacheKey = `${table}-${JSON.stringify(filter || ({} as any))}`;
+    const cacheKey = `${table}-${JSON.stringify(filter || {})}`;
     return prefetchedData.current.get(cacheKey);
   }, []);
 

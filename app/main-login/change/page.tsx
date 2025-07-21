@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ChangePasswordForm from '../components/ChangePasswordForm';
-import { mainLoginAuth } from '../utils/supabase';
+import { unifiedAuth } from '../utils/unified-auth';
 import type { User } from '@supabase/supabase-js';
 
 export default function ChangePasswordPage() {
@@ -18,7 +18,7 @@ export default function ChangePasswordPage() {
     // 檢查用戶是否已登入
     const checkUser = async () => {
       try {
-        const currentUser = await mainLoginAuth.getCurrentUser();
+        const currentUser = await unifiedAuth.getCurrentUser();
         if (!currentUser) {
           router.push('/main-login');
           return;
@@ -36,9 +36,9 @@ export default function ChangePasswordPage() {
     setSuccess(true);
     setError(null);
 
-    // 3秒後跳轉到 access 頁面
+    // 3秒後跳轉到 admin/analysis 頁面
     setTimeout(() => {
-      router.push('/access');
+      router.push('/admin/analysis');
     }, 3000);
   };
 
@@ -83,15 +83,15 @@ export default function ChangePasswordPage() {
                 Password Changed Successfully!
               </h2>
               <p className='text-gray-400'>
-                Your password has been updated. You will be redirected to the access page shortly.
+                Your password has been updated. You will be redirected to the dashboard shortly.
               </p>
             </div>
 
             <Link
-              href='/access'
+              href='/admin/analysis'
               className='inline-block rounded-md bg-blue-600 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700'
             >
-              Go to Access Page
+              Go to Dashboard
             </Link>
           </div>
         </div>
@@ -135,10 +135,10 @@ export default function ChangePasswordPage() {
           {/* Links */}
           <div className='mt-6 text-center'>
             <Link
-              href='/access'
+              href='/admin/analysis'
               className='text-sm text-gray-400 transition-colors hover:text-gray-300'
             >
-              ← Back to Access Page
+              ← Back to Dashboard
             </Link>
           </div>
         </div>

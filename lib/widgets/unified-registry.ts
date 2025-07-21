@@ -25,7 +25,6 @@ import {
   toWidgetDefinition,
   getWidgetsByCategory,
   getWidgetsByPriority,
-  getGraphQLWidgets,
 } from './unified-widget-config';
 
 // 定義 WidgetComponent 類型
@@ -311,10 +310,6 @@ class UnifiedWidgetRegistry implements IWidgetRegistry {
     return stats;
   }
 
-  // GraphQL 支援的 widgets
-  getGraphQLWidgets(): WidgetDefinition[] {
-    return getGraphQLWidgets().map(config => toWidgetDefinition(config) as WidgetDefinition);
-  }
 }
 
 // 導出統一實例

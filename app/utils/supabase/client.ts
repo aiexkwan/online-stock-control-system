@@ -14,6 +14,9 @@ export function createClient() {
   }
 
   return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      flowType: 'pkce',
+    },
     cookies: {
       get(name: string) {
         if (typeof document !== 'undefined') {

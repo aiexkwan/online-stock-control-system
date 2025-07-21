@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import EmailValidator from './EmailValidator';
 import PasswordValidator from './PasswordValidator';
-import { mainLoginAuth } from '../utils/supabase';
+import { unifiedAuth } from '../utils/unified-auth';
 
 interface ResetFormProps {
   step: 'request' | 'reset';
@@ -90,7 +90,7 @@ export default function ResetForm({
 
     try {
       // 使用 Supabase Auth 發送密碼重設 email
-      await mainLoginAuth.resetPassword(requestData.email);
+      await unifiedAuth.resetPassword(requestData.email);
 
       // 發送成功
       onSuccess();
@@ -120,7 +120,7 @@ export default function ResetForm({
 
     try {
       // 使用 Supabase Auth 更新密碼
-      await mainLoginAuth.updatePassword(resetData.password);
+      await unifiedAuth.updatePassword(resetData.password);
 
       // 密碼重設成功
       onSuccess();

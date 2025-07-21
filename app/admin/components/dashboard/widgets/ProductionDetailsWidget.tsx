@@ -125,7 +125,7 @@ export const ProductionDetailsWidget: React.FC<ProductionDetailsWidgetProps> = (
           setData(Array.isArray(detailsData) ? detailsData : []);
           const safeMetadata =
             typeof widgetMetadata === 'object' && widgetMetadata !== null ? widgetMetadata : {};
-          setMetadata({ ...safeMetadata, useGraphQL: false });
+          setMetadata({ ...safeMetadata });
         } else {
           console.warn('[ProductionDetailsWidget as string] No widget data returned from API');
           setData([]);

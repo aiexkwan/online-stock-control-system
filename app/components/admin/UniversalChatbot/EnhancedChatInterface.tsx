@@ -260,7 +260,7 @@ export default function EnhancedChatInterface({ onNewMessage }: ChatInterfacePro
               return (
                 <ErrorDisplay
                   key={message.id}
-                  error={convertChatErrorToDisplayError(message.metadata?.error || ({} as any))}
+                  error={convertChatErrorToDisplayError(message.metadata?.error || {})}
                   onRetry={handleRetry}
                   onShowSchema={() => console.log('Show schema')}
                   onShowExamples={() => setShowSuggestions(true)}

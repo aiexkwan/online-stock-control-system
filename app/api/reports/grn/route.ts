@@ -24,9 +24,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     // Get material codes for the selected grn_ref
-    const materialCodes = await getMaterialCodesForGrnRef(reference);
+    const materialCodesResult = await getMaterialCodesForGrnRef(reference);
 
-    if (materialCodes.length === 0) {
+    if (!materialCodesResult.success) {
+      return NextResponse.json(
+        { error: materialCodesResult.error || 'Failed to fetch material codes' },
+        { status: 500 }
+      );
+    }
+
+    const materialCodes = materialCodesResult.data;
+    if (!materialCodes || materialCodes.length === 0) {
       return NextResponse.json(
         { error: 'No materials found for the selected GRN reference' },
         { status: 404 }
@@ -38,11 +46,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const allReports = [];
 
     for (const materialCode of materialCodes) {
-      const reportData = await getGrnReportData(reference, materialCode, user.email);
-      if (reportData) {
+      const reportResult = await getGrnReportData(reference, materialCode, user.email);
+      if (reportResult.success && reportResult.data) {
         allReports.push({
           materialCode,
-          data: reportData,
+          data: reportResult.data,
         });
       }
     }

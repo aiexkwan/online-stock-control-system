@@ -94,7 +94,7 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
       const { summary, timeline } = processStaffWorkloadData(workData || [], timeRange);
 
       // Extract staff names for timeline
-      const names = Object.keys(timeline[0] || ({} as any))
+      const names = Object.keys(timeline[0] || {})
         .filter(key => key !== 'date')
         .slice(0, 5);
 

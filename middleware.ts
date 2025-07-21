@@ -334,7 +334,6 @@ export async function middleware(request: NextRequest) {
       const shouldLogAuth =
         isDevelopment() &&
         (request.nextUrl.pathname === '/admin' ||
-          request.nextUrl.pathname === '/access' ||
           !request.headers.get('referer')); // 首次訪問（沒有 referer）
 
       if (shouldLogAuth) {

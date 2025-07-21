@@ -1,8 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
+import { ApiResult, successResult, errorResult, handleAsync } from '@/lib/types/api';
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  try {
+interface StockTakeRecord {
+  created_at: string | number;
+  plt_num: string;
+  product_code: string;
+  product_desc: string;
+  remain_qty: number;
+  counted_qty: number;
+  counted_name: string;
+}
+
+interface StockTakeRowData {
+  stocktake_date: string;
+  location: string;
+  product_code: string;
+  product_desc: string;
+  expected_qty: number;
+  actual_qty: number;
+  variance: number;
+  variance_pct: string;
+  status: string;
+  counted_by: string;
+  verified_by: string;
+  notes: string;
+}
+
+export async function POST(request: Request): Promise<NextResponse> {
+  const result = await handleAsync(async (): Promise<ArrayBuffer> => {
     const supabase = await createClient();
 
     // 查詢盤點記錄
@@ -47,30 +73,33 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     };
 
     // 添加數據
-    data?.forEach(record => {
-      const countedQty = typeof record.counted_qty === 'number' ? record.counted_qty : 0;
-      const remainQty = typeof record.remain_qty === 'number' ? record.remain_qty : 0;
+    data?.forEach((record: Record<string, unknown>) => {
+      const typedRecord = record as unknown as StockTakeRecord;
+      const countedQty = typeof typedRecord.counted_qty === 'number' ? typedRecord.counted_qty : 0;
+      const remainQty = typeof typedRecord.remain_qty === 'number' ? typedRecord.remain_qty : 0;
       const variance = countedQty - remainQty;
       const variancePct = remainQty ? ((variance / remainQty) * 100).toFixed(2) + '%' : 'N/A';
 
-      const row = worksheet.addRow({
+      const rowData: StockTakeRowData = {
         stocktake_date:
-          record.created_at &&
-          (typeof record.created_at === 'string' || typeof record.created_at === 'number')
-            ? new Date(record.created_at).toLocaleDateString()
+          typedRecord.created_at &&
+          (typeof typedRecord.created_at === 'string' || typeof typedRecord.created_at === 'number')
+            ? new Date(typedRecord.created_at).toLocaleDateString()
             : '',
-        location: record.plt_num || '',
-        product_code: record.product_code,
-        product_desc: record.product_desc,
-        expected_qty: record.remain_qty || 0,
-        actual_qty: record.counted_qty || 0,
+        location: typedRecord.plt_num || '',
+        product_code: typedRecord.product_code,
+        product_desc: typedRecord.product_desc,
+        expected_qty: typedRecord.remain_qty || 0,
+        actual_qty: typedRecord.counted_qty || 0,
         variance: variance,
         variance_pct: variancePct,
         status: 'Completed',
-        counted_by: record.counted_name || '',
+        counted_by: typedRecord.counted_name || '',
         verified_by: '',
         notes: '',
-      });
+      };
+
+      const row = worksheet.addRow(rowData);
 
       // 高亮顯示差異行
       if (variance !== 0) {
@@ -95,16 +124,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     // 生成 Excel 文件
     const buffer = await workbook.xlsx.writeBuffer();
+    return buffer;
+  }, 'Failed to generate stock take report');
 
-    // 返回文件
-    return new NextResponse(buffer, {
-      headers: {
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="stock-take-report-${new Date().toISOString().split('T')[0]}.xlsx"`,
-      },
-    });
-  } catch (error) {
-    console.error('Error generating stock take report:', error);
-    return NextResponse.json({ error: 'Failed to generate report' }, { status: 500 });
+  if (!result.success) {
+    return NextResponse.json(result, { status: 500 });
   }
+
+  // 返回文件
+  return new NextResponse(result.data, {
+    headers: {
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="stock-take-report-${new Date().toISOString().split('T')[0]}.xlsx"`,
+    },
+  });
 }

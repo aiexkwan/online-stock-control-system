@@ -1052,7 +1052,7 @@
         }
       },
       {
-        "i": "ProductUpdateWidget",
+        "i": "ProductUpdateWidgetV2",
         "x": 0,
         "y": 0,
         "w": 3,
@@ -1069,7 +1069,7 @@
             "title": "Product Update",
             "gridArea": "widget2",
             "dataSource": "products",
-            "component": "ProductUpdateWidget"
+            "component": "ProductUpdateWidgetV2"
           },
           "theme": "update",
           "gridArea": "widget2",
@@ -1253,7 +1253,7 @@
         }
       },
       {
-        "i": "StockDistributionChart",
+        "i": "StockDistributionChartV2",
         "x": 5,
         "y": 2,
         "w": 3,
@@ -1271,7 +1271,7 @@
             "gridArea": "widget5",
             "dataSource": "stock_level",
             "chartType": "pie",
-            "component": "StockDistributionChart"
+            "component": "StockDistributionChartV2"
           },
           "theme": "stock-management",
           "gridArea": "widget5",

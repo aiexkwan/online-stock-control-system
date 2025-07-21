@@ -10,6 +10,7 @@ import { createClient } from '@/app/utils/supabase/server';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { z } from 'zod';
+import type { ApiResult } from '@/lib/types/api';
 
 const execAsync = promisify(exec);
 
@@ -258,7 +259,17 @@ async function collectBuildMetrics() {
 /**
  * GET: 獲取最新的技術債務指標
  */
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse<ApiResult<{
+  current: TechDebtMetrics | null;
+  historical: TechDebtMetrics[];
+  summary: {
+    totalRecords: number;
+    dateRange: {
+      start: string;
+      end: string;
+    };
+  };
+}>>> {
   try {
     const { searchParams } = new URL(request.url);
     const range = searchParams.get('range') || '7d'; // 7d, 30d, 90d
@@ -278,7 +289,7 @@ export async function GET(request: NextRequest) {
     const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
 
     // 從數據庫查詢歷史數據 (注意：監控表可能尚未建立)
-    const { data: historicalData, error } = await (supabase as any)
+    const { data: historicalData, error } = await supabase
       .from('monitoring_tech_debt')
       .select('*')
       .gte('timestamp', startDate.toISOString())
@@ -303,7 +314,7 @@ export async function GET(request: NextRequest) {
 
       currentMetrics = {
         timestamp: new Date().toISOString(),
-        source: 'manual',
+        source: 'manual' as const,
         metrics: {
           typescript,
           eslint,
@@ -316,8 +327,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        current: currentMetrics,
-        historical: historicalData || [],
+        // @types-migration:todo(phase3) [P2] 重構API響應結構匹配TechDebtMetrics接口 - Target: 2025-08 - Owner: @backend-team
+        current: currentMetrics as any,
+        historical: (historicalData || []) as any,
         summary: {
           totalRecords: historicalData?.length || 0,
           dateRange: {
@@ -326,7 +338,17 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-    });
+    } satisfies ApiResult<{
+      current: TechDebtMetrics | null;
+      historical: TechDebtMetrics[];
+      summary: {
+        totalRecords: number;
+        dateRange: {
+          start: string;
+          end: string;
+        };
+      };
+    }>);
   } catch (error) {
     console.error('Tech debt monitoring API error:', error);
     return NextResponse.json(
@@ -342,7 +364,7 @@ export async function GET(request: NextRequest) {
 /**
  * POST: 提交新的技術債務指標
  */
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse<ApiResult<unknown>>> {
   try {
     const body = await request.json();
 
@@ -352,7 +374,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
 
     // 儲存到數據庫 (注意：監控表可能尚未建立)
-    const { data, error } = await (supabase as any).from('monitoring_tech_debt').insert([
+    const { data, error } = await supabase.from('monitoring_tech_debt').insert([
       {
         timestamp: validatedData.timestamp,
         source: validatedData.source,

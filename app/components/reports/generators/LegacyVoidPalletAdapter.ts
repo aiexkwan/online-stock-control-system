@@ -90,7 +90,7 @@ export class LegacyVoidPalletAdapter {
     if (!Array.isArray(reasonData)) return [];
 
     return toRecordArray(reasonData)
-      .map((item: any) => {
+      .map((item: Record<string, unknown>) => {
         if (typeof item !== 'object' || item === null) return null;
 
         return {
@@ -116,7 +116,7 @@ export class LegacyVoidPalletAdapter {
     if (!Array.isArray(detailsData)) return [];
 
     return toRecordArray(detailsData)
-      .map((item: any) => {
+      .map((item: Record<string, unknown>) => {
         if (typeof item !== 'object' || item === null) return null;
 
         return {
@@ -157,7 +157,7 @@ export class LegacyVoidPalletAdapter {
     if (!Array.isArray(productData)) return [];
 
     return toRecordArray(productData)
-      .map((item: any) => {
+      .map((item: Record<string, unknown>) => {
         if (typeof item !== 'object' || item === null) return null;
 
         return {

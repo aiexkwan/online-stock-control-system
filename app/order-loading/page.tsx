@@ -318,7 +318,8 @@ export default function OrderLoadingPage() {
       }
 
       const orderDataArray = data || [];
-      setOrderData(orderDataArray as any);
+      // @types-migration:todo(phase3) [P2] 驗證 Supabase 查詢返回類型匹配 OrderData[] - Target: 2025-08 - Owner: @frontend-team
+      setOrderData(orderDataArray as OrderData[]);
 
       // Cache the order data
       orderDataCache.set(cacheKey, orderDataArray);
@@ -405,7 +406,7 @@ export default function OrderLoadingPage() {
           return {
             uuid: item.uuid,
             order_ref: orderMatch ? orderMatch[1] : orderRef,
-            pallet_num: item.plt_num,
+            pallet_num: item.plt_num || undefined,
             product_code: productMatch ? productMatch[1] : '',
             quantity: qtyMatch ? parseInt(qtyMatch[1]) : 0,
             action_type: 'load',
@@ -413,7 +414,8 @@ export default function OrderLoadingPage() {
             action_time: item.time,
           };
         });
-        setRecentLoads(transformedData as any);
+        // @types-migration:todo(phase3) [P2] 調整 transformedData 結構匹配 RecentLoad 接口 - Target: 2025-08 - Owner: @frontend-team
+        setRecentLoads(transformedData);
       }
     } catch (error) {
       console.error('Error fetching recent loads:', error);

@@ -80,8 +80,7 @@ describe('GET /api/warehouse/summary', () => {
       });
 
       const mockRequest = new Request('http://localhost:3000/api/warehouse/summary');
-      const mockParams = Promise.resolve({ id: 'test' });
-      const response = await GET(mockRequest, { params: mockParams });
+      const response = await GET(mockRequest);
 
       expect(response.status).toBe(200);
 
@@ -124,8 +123,7 @@ describe('GET /api/warehouse/summary', () => {
       });
 
       const mockRequest = new Request('http://localhost:3000/api/warehouse/summary');
-      const mockParams = Promise.resolve({ id: 'test' });
-      const response = await GET(mockRequest, { params: mockParams });
+      const response = await GET(mockRequest);
       const data = await response.json();
 
       // Should only include injection since it's the only one with quantity > 0
@@ -141,8 +139,7 @@ describe('GET /api/warehouse/summary', () => {
       });
 
       const mockRequest = new Request('http://localhost:3000/api/warehouse/summary');
-      const mockParams = Promise.resolve({ id: 'test' });
-      const response = await GET(mockRequest, { params: mockParams });
+      const response = await GET(mockRequest);
       const data = await response.json();
 
       expect(data.success).toBe(true);
@@ -171,8 +168,7 @@ describe('GET /api/warehouse/summary', () => {
       });
 
       const mockRequest = new Request('http://localhost:3000/api/warehouse/summary');
-      const mockParams = Promise.resolve({ id: 'test' });
-      const response = await GET(mockRequest, { params: mockParams });
+      const response = await GET(mockRequest);
       const data = await response.json();
 
       const locations = data.data.map((item: Record<string, unknown>) => item.location).sort();
@@ -199,8 +195,7 @@ describe('GET /api/warehouse/summary', () => {
       });
 
       const mockRequest = new Request('http://localhost:3000/api/warehouse/summary');
-      const mockParams = Promise.resolve({ id: 'test' });
-      const response = await GET(mockRequest, { params: mockParams });
+      const response = await GET(mockRequest);
 
       expect(response.status).toBe(500);
 
@@ -215,8 +210,7 @@ describe('GET /api/warehouse/summary', () => {
       });
 
       const mockRequest = new Request('http://localhost:3000/api/warehouse/summary');
-      const mockParams = Promise.resolve({ id: 'test' });
-      const response = await GET(mockRequest, { params: mockParams });
+      const response = await GET(mockRequest);
 
       expect(response.status).toBe(500);
 
@@ -247,8 +241,7 @@ describe('GET /api/warehouse/summary', () => {
       });
 
       const mockRequest = new Request('http://localhost:3000/api/warehouse/summary');
-      const mockParams = Promise.resolve({ id: 'test' });
-      const response = await GET(mockRequest, { params: mockParams });
+      const response = await GET(mockRequest);
       const data = await response.json();
 
       expect(data).toHaveProperty('success');
@@ -267,8 +260,7 @@ describe('GET /api/warehouse/summary', () => {
       });
 
       const mockRequest = new Request('http://localhost:3000/api/warehouse/summary');
-      const mockParams = Promise.resolve({ id: 'test' });
-      const response = await GET(mockRequest, { params: mockParams });
+      const response = await GET(mockRequest);
       const data = await response.json();
 
       // Check if timestamp is valid ISO string
@@ -301,8 +293,7 @@ describe('GET /api/warehouse/summary', () => {
       });
 
       const mockRequest = new Request('http://localhost:3000/api/warehouse/summary');
-      const mockParams = Promise.resolve({ id: 'test' });
-      const response = await GET(mockRequest, { params: mockParams });
+      const response = await GET(mockRequest);
       const data = await response.json();
 
       // Should only include prebook and bulk (non-zero values)
@@ -332,8 +323,7 @@ describe('GET /api/warehouse/summary', () => {
 
       const start = Date.now();
       const mockRequest = new Request('http://localhost:3000/api/warehouse/summary');
-      const mockParams = Promise.resolve({ id: 'test' });
-      const response = await GET(mockRequest, { params: mockParams });
+      const response = await GET(mockRequest);
       const end = Date.now();
 
       const responseTime = end - start;

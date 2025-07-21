@@ -19,7 +19,6 @@ const publicPaths = [
 
 // 定義受保護路由列表 - 除了公開路由外的所有頁面都需要認證
 const protectedPaths = [
-  '/access',
   '/dashboard',
   '/productUpdate',
   '/stock-transfer',

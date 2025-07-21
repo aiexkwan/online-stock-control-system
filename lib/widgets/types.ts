@@ -42,10 +42,6 @@ export interface WidgetDefinition {
     h: number;
   };
 
-  // GraphQL 支援
-  graphqlQuery?: string;
-  useGraphQL?: boolean;
-  graphqlVersion?: string; // 對應的 GraphQL widget ID
 
   // 性能配置
   lazyLoad?: boolean;
@@ -111,11 +107,6 @@ export interface IWidgetRegistry {
   getDefinition(widgetId: string): WidgetDefinition | undefined;
   getComponent(widgetId: string): React.ComponentType<WidgetComponentProps> | undefined;
 
-  // GraphQL 版本切換
-  getWidgetComponent(
-    widgetId: string,
-    enableGraphQL: boolean
-  ): React.ComponentType<WidgetComponentProps> | undefined;
 
   // 批量操作
   getAllDefinitions(): Map<string, WidgetDefinition>;
@@ -136,10 +127,6 @@ export interface WidgetMapping {
     [widgetId: string]: WidgetCategory;
   };
 
-  // GraphQL 版本映射
-  graphqlVersionMap: {
-    [standardWidgetId: string]: string; // standard -> GraphQL version ID
-  };
 
   // 預加載優先級映射
   preloadPriorityMap: {
@@ -163,7 +150,6 @@ export type WidgetLoader = () => Promise<{ default: React.ComponentType<WidgetCo
 // Widget 渲染器 Props
 export interface WidgetRendererProps {
   widgetId: string;
-  enableGraphQL?: boolean;
   fallback?: ReactElement;
   onLoad?: () => void;
   onError?: (error: Error) => void;

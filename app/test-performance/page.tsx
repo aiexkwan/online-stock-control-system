@@ -231,8 +231,8 @@ export default function TestPerformancePage() {
           <Link href='/admin/injection' className='block text-blue-400 hover:underline'>
             Test Admin Dashboard (Injection)
           </Link>
-          <Link href='/access' className='block text-blue-400 hover:underline'>
-            Test Access Page
+          <Link href='/admin/analysis' className='block text-blue-400 hover:underline'>
+            Test Admin Dashboard (Analysis)
           </Link>
         </div>
       </div>

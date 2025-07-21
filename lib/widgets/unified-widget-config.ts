@@ -15,7 +15,6 @@ export interface UnifiedWidgetConfig {
   description?: string;
   lazyLoad: boolean;
   preloadPriority: number;
-  graphqlVersion?: string;
   metadata: {
     dataSource?: string;
     refreshInterval?: number;
@@ -23,7 +22,6 @@ export interface UnifiedWidgetConfig {
     chartType?: string;
     exportFormats?: string[];
     requiresAuth?: boolean;
-    supportsGraphQL?: boolean;
     cacheEnabled?: boolean;
     realtimeUpdates?: boolean;
     supportDateRange?: boolean;
@@ -35,22 +33,6 @@ export interface UnifiedWidgetConfig {
  */
 export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
   // Core Widgets
-  HistoryTree: {
-    id: 'HistoryTree',
-    name: 'History Tree',
-    category: 'core',
-    description: 'Hierarchical display of system history',
-    lazyLoad: true,
-    preloadPriority: 9,
-    metadata: {
-      dataSource: 'record_history',
-      refreshInterval: 30000,
-      supportsFilters: true,
-      supportDateRange: true,
-      cacheEnabled: true,
-    },
-  },
-
   HistoryTreeV2: {
     id: 'HistoryTreeV2',
     name: 'History Tree V2',
@@ -148,22 +130,6 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
   },
 
   // Chart Widgets
-  StockDistributionChart: {
-    id: 'StockDistributionChart',
-    name: 'Stock Distribution Chart',
-    category: 'charts',
-    description: 'Visual distribution of stock levels',
-    lazyLoad: true,
-    preloadPriority: 7,
-    metadata: {
-      dataSource: 'record_inventory',
-      chartType: 'pie',
-      exportFormats: ['png', 'pdf'],
-      refreshInterval: 30000,
-      supportDateRange: true,
-    },
-  },
-
   StockDistributionChartV2: {
     id: 'StockDistributionChartV2',
     name: 'Stock Distribution Chart V2',
@@ -531,11 +497,6 @@ export function getPreloadPriority(widgetId: string): number {
   return config?.preloadPriority || 1;
 }
 
-// 獲取 GraphQL 版本
-export function getGraphQLVersion(widgetId: string): string | undefined {
-  const config = UNIFIED_WIDGET_CONFIG[widgetId];
-  return config?.graphqlVersion;
-}
 
 // 獲取路由的預加載 widgets
 export function getRoutePreloadWidgets(route: string): string[] {
@@ -554,10 +515,6 @@ export function getWidgetsByPriority(minPriority: number): UnifiedWidgetConfig[]
   );
 }
 
-// 獲取支持 GraphQL 的 widgets
-export function getGraphQLWidgets(): UnifiedWidgetConfig[] {
-  return Object.values(UNIFIED_WIDGET_CONFIG).filter(config => config.metadata.supportsGraphQL);
-}
 
 // 轉換為 WidgetDefinition 格式（向後兼容）
 export function toWidgetDefinition(config: UnifiedWidgetConfig): Partial<WidgetDefinition> {

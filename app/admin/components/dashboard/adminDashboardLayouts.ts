@@ -19,7 +19,6 @@ export interface AdminWidgetConfig {
   selectLabel?: string;
   dataTable?: string;
   referenceField?: string;
-  useGraphQL?: boolean; // 是否使用 GraphQL 優化版本
   department?: 'injection' | 'pipeline' | 'warehouse' | 'all'; // 部門過濾支援
   uploadTypes?: string[]; // 統一上傳組件支援的文件類型
   columns?: string[]; // 表格組件的列配置
@@ -84,7 +83,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         type: 'history-tree',
         title: '',
         gridArea: 'widget1',
-        component: 'HistoryTree',
+        component: 'HistoryTreeV2',
       },
       {
         type: 'stats',
@@ -123,7 +122,6 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         dataSource: 'record_palletinfo',
         chartType: 'bar',
         component: 'UnifiedChartWidget', // 統一圖表組件
-        useGraphQL: true,
       },
       {
         type: 'chart',
@@ -132,7 +130,6 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         dataSource: 'record_palletinfo',
         chartType: 'donut',
         component: 'UnifiedChartWidget', // 統一圖表組件
-        useGraphQL: true,
       },
       {
         type: 'available-soon',
@@ -146,7 +143,6 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'widget9',
         dataSource: 'unified_operations',
         component: 'UnifiedTableWidget', // 統一表格組件
-        useGraphQL: true,
       },
       {
         type: 'chart',
@@ -155,7 +151,6 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         dataSource: 'work_level',
         chartType: 'line',
         component: 'UnifiedChartWidget', // 統一圖表組件
-        useGraphQL: true,
       },
     ],
   },
@@ -175,7 +170,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         type: 'history-tree',
         title: '',
         gridArea: 'history-tree',
-        component: 'HistoryTree',
+        component: 'HistoryTreeV2',
       },
       // Upload 功能區域
       {
@@ -183,7 +178,6 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         title: 'Order Upload History',
         gridArea: 'upload-history',
         component: 'OrdersListWidgetV2',
-        useGraphQL: true,
         description: 'View and manage order upload history',
       },
       {
@@ -191,7 +185,6 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         title: 'File Upload History',
         gridArea: 'file-history',
         component: 'OtherFilesListWidgetV2',
-        useGraphQL: true,
         description: 'View and manage file upload history',
       },
       {
@@ -265,7 +258,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         type: 'history-tree',
         title: '',
         gridArea: 'history-tree',
-        component: 'HistoryTree',
+        component: 'HistoryTreeV2',
       },
       // 主要分析儀表板 (來自 analysis)
       {
@@ -274,7 +267,6 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'analysis-dashboard',
         component: 'AnalysisExpandableCards',
         description: 'Interactive analysis charts and advanced metrics visualization',
-        useGraphQL: true,
       },
       // 關鍵統計組件 (來自 analysis-full，優化版)
       {
@@ -339,7 +331,6 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         dataSource: 'trend_analysis',
         chartType: 'line',
         component: 'UnifiedChartWidget',
-        useGraphQL: true,
         description: 'Multi-dimensional trend analysis',
       },
       {
@@ -349,7 +340,6 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         dataSource: 'distribution_analysis',
         chartType: 'donut',
         component: 'UnifiedChartWidget',
-        useGraphQL: true,
         description: 'Data distribution visualization',
       },
       {
@@ -359,7 +349,6 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         dataSource: 'predictive_analysis',
         chartType: 'area',
         component: 'UnifiedChartWidget',
-        useGraphQL: true,
         description: 'AI-powered predictions and forecasts',
       },
       // 系統性能和健康監控

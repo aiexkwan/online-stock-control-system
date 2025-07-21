@@ -26,7 +26,6 @@ const CONFIG = {
     namespaceImports: /import\s+\*\s+as\s+\w+\s+from ['"][^'"]+['"]/g,
     sideEffectImports: /import ['"][^'"]+['"]/g,
     rechartsImports: /import.*from ['"]recharts['"]/g,
-    apolloImports: /import.*from ['"]@apollo\/client['"]/g,
   }
 };
 
@@ -38,7 +37,6 @@ class TreeShakingAnalyzer {
       barrelExports: 0,
       problematicImports: 0,
       rechartsUsage: 0,
-      apolloUsage: 0
     };
   }
 
@@ -86,12 +84,6 @@ class TreeShakingAnalyzer {
       this.analyzeRechartsUsage(content, relativePath);
     }
 
-    // 檢查 Apollo Client 使用
-    const apolloMatches = content.match(CONFIG.checkPatterns.apolloImports);
-    if (apolloMatches) {
-      this.stats.apolloUsage++;
-      this.analyzeApolloUsage(content, relativePath);
-    }
   }
 
   /**
@@ -129,19 +121,6 @@ class TreeShakingAnalyzer {
     }
   }
 
-  /**
-   * 分析 Apollo Client 使用情況
-   */
-  analyzeApolloUsage(content, filePath) {
-    if (content.includes('* as Apollo') || content.includes('* as apollo')) {
-      this.issues.push({
-        type: 'apollo-namespace',
-        file: filePath,
-        message: 'Import entire Apollo Client - consider named imports',
-        severity: 'error'
-      });
-    }
-  }
 
   /**
    * 獲取行號

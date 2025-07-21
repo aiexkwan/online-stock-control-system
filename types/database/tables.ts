@@ -3,6 +3,8 @@
  * 基於實際業務邏輯的表格類型
  */
 
+import { UserRole } from '@/types/core/enums';
+
 // 通用記錄類型 (從 lib/types/database.ts 遷移)
 export interface DatabaseRecord {
   [key: string]: unknown;
@@ -160,12 +162,8 @@ export interface User {
   updatedAt: string;
 }
 
-export enum UserRole {
-  ADMIN = 'admin',
-  MANAGER = 'manager',
-  OPERATOR = 'operator',
-  VIEWER = 'viewer',
-}
+// @types-migration:todo(phase1) [P0] UserRole 已遷移到 core/enums.ts - Completed: 2025-07
+// 已從 types/index.ts 統一導出
 
 // === 向後兼容的數據項類型 (從 lib/types/database-types.ts 遷移) ===
 

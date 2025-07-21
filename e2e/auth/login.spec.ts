@@ -44,8 +44,8 @@ test.describe('Authentication Flow', () => {
     // 執行登入
     await loginPage.login(credentials.email, credentials.password);
 
-    // 驗證成功登入 - 應該跳轉到 /access 而非 /dashboard
-    await expect(page).toHaveURL(/\/access/);
+    // 驗證成功登入 - 應該跳轉到 /admin 頁面
+    await expect(page).toHaveURL(/\/admin/);
   });
 
   test('should show error with invalid credentials', async () => {
@@ -98,12 +98,8 @@ test.describe('Authentication Flow', () => {
     // 登入
     await loginPage.login(credentials.email, credentials.password);
 
-    // 應該先到 /access 頁面
-    await expect(page).toHaveURL(/\/access/);
-
-    // 然後手動導航到原本要訪問的頁面
-    await page.goto('/inventory');
-    await expect(page).toHaveURL(/\/inventory/);
+    // 應該重定向到 /admin 頁面（因為 redirect 邏輯已簡化）
+    await expect(page).toHaveURL(/\/admin/);
   });
 
   test('should maintain session across page reloads', async ({ page, context }) => {
@@ -119,13 +115,13 @@ test.describe('Authentication Flow', () => {
     await loginPage.login(credentials.email, credentials.password);
 
     // 等待登入完成
-    await page.waitForURL(/\/access/);
+    await page.waitForURL(/\/admin/);
 
     // 重新載入頁面
     await page.reload();
 
     // 應該仍然保持登入狀態
-    await expect(page).toHaveURL(/\/access/);
+    await expect(page).toHaveURL(/\/admin/);
 
     // 檢查 cookies
     const cookies = await context.cookies();
@@ -144,7 +140,7 @@ test.describe('Authentication Flow', () => {
 
     // 先登入
     await loginPage.login(credentials.email, credentials.password);
-    await page.waitForURL(/\/access/);
+    await page.waitForURL(/\/admin/);
 
     // 執行登出
     await loginPage.logout();
@@ -153,7 +149,7 @@ test.describe('Authentication Flow', () => {
     await expect(page).toHaveURL(/\/main-login/);
 
     // 嘗試訪問需要認證的頁面
-    await page.goto('/access');
+    await page.goto('/admin');
 
     // 應訪被重定向回登入頁
     await expect(page).toHaveURL(/\/main-login/);

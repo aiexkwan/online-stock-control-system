@@ -41,7 +41,7 @@ export interface StockDistributionData {
 
 /**
  * Server Action 獲取庫存分佈數據
- * 用作 GraphQL 查詢的 fallback
+ * REST API Server Action 實現
  */
 export async function getStockDistributionAction(
   selectedType?: string

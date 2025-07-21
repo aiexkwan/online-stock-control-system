@@ -28,12 +28,6 @@ import { WidgetSuspenseFallback } from './widgets/common/WidgetStates';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  getProductByCode,
-  createProduct,
-  updateProduct,
-  ProductData,
-} from '@/app/actions/productActions';
 
 interface AlertData {
   message: string;
@@ -315,8 +309,10 @@ function renderCoreWidget(
       return renderLazyComponent('UploadZone', getComponentProps(data));
 
     case 'ProductUpdateWidget':
+      console.warn('[Deprecated] ProductUpdateWidget is deprecated, use ProductUpdateWidgetV2');
+      // fallthrough
     case 'ProductUpdateWidgetV2':
-      return <ProductUpdateWidget config={config} timeFrame={timeFrame} theme={theme} />;
+      return renderLazyComponent('ProductUpdateWidgetV2', getComponentProps(data));
 
     case 'SupplierUpdateWidget':
       return <SupplierUpdateWidget config={config} timeFrame={timeFrame} theme={theme} />;
@@ -352,67 +348,6 @@ function renderCoreWidget(
   }
 }
 
-// 簡化的產品更新 Widget
-const ProductUpdateWidget: React.FC<{
-  config: AdminWidgetConfig;
-  timeFrame: TimeFrame;
-  theme: string;
-}> = ({ config, timeFrame, theme }) => {
-  const [productCode, setProductCode] = useState('');
-  const [productData, setProductData] = useState<ProductData | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const handleSearch = async () => {
-    if (!productCode.trim()) return;
-
-    setLoading(true);
-    try {
-      const result = await getProductByCode(productCode);
-      if (result && typeof result === 'object' && 'code' in result && 'description' in result) {
-        // Transform result to match ProductData interface
-        const productData: ProductData = {
-          code: (result as unknown as ProductData).code,
-          description: (result as unknown as ProductData).description,
-          colour: (result as unknown as ProductData).colour || '',
-          standard_qty: (result as unknown as ProductData).standard_qty || 0,
-          type: (result as unknown as ProductData).type || '',
-        };
-        setProductData(productData);
-      } else {
-        console.error('Invalid product data received:', result);
-        setProductData(null);
-      }
-    } catch (error) {
-      console.error('Product search error:', error);
-      setProductData(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className='space-y-4'>
-      <div className='flex space-x-2'>
-        <Input
-          placeholder='輸入產品代碼'
-          value={productCode}
-          onChange={e => setProductCode(e.target.value)}
-          onKeyPress={e => e.key === 'Enter' && handleSearch()}
-        />
-        <Button onClick={handleSearch} disabled={loading}>
-          <MagnifyingGlassIcon className='h-4 w-4' />
-        </Button>
-      </div>
-
-      {productData && (
-        <div className='rounded-lg bg-gray-50 p-3'>
-          <h4 className='font-medium'>{productData.code}</h4>
-          <p className='text-sm text-gray-600'>{productData.description}</p>
-        </div>
-      )}
-    </div>
-  );
-};
 
 // 簡化的供應商更新 Widget
 const SupplierUpdateWidget: React.FC<{

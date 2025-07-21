@@ -68,10 +68,9 @@ async function testStatsWidgetMigration() {
       const hasTimeFrame = config?.metadata?.supportDateRange || false;
       console.log(`   Supports TimeFrame: ${hasTimeFrame ? 'Yes' : 'No'}`);
 
-      // 檢查 GraphQL 支援
-      if (config?.metadata?.supportsGraphQL) {
-        console.log(`   Uses GraphQL: Yes`);
-      }
+      // 檢查 API 架構
+      const apiSource = config?.metadata?.dataSource || 'unknown';
+      console.log(`   API Source: ${apiSource}`);
 
       successCount++;
     }

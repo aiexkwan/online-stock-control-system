@@ -57,7 +57,7 @@ describe('useWidgetSmartCache', () => {
       () =>
         useWidgetSmartCache({
           widgetId: 'test-widget',
-          dataSource: 'graphql',
+          dataSource: 'batch',
           dataMode: 'read-only',
           priority: 'normal',
           fetchFn,
@@ -157,7 +157,7 @@ describe('useWidgetSmartCache', () => {
       () =>
         useWidgetSmartCache({
           widgetId: 'test-widget',
-          dataSource: 'graphql',
+          dataSource: 'batch',
           dataMode: 'read-only',
           priority: 'normal',
           fetchFn,
@@ -181,7 +181,7 @@ describe('useWidgetSmartCache', () => {
       () =>
         useWidgetSmartCache({
           widgetId: 'test-widget',
-          dataSource: 'graphql',
+          dataSource: 'batch',
           dataMode: 'read-only',
           priority: 'normal',
           fetchFn,
@@ -222,7 +222,7 @@ describe('useWidgetSmartCache', () => {
       () =>
         useWidgetSmartCache({
           widgetId: 'test-widget',
-          dataSource: 'graphql',
+          dataSource: 'batch',
           dataMode: 'read-only',
           priority: 'normal',
           fetchFn,

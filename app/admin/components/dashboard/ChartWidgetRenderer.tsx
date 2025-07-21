@@ -62,6 +62,8 @@ export const ChartWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
   try {
     switch (config.type) {
       case 'StockDistributionChart':
+        console.warn('[Deprecated] StockDistributionChart is deprecated, use StockDistributionChartV2');
+        // fallthrough
       case 'StockDistributionChartV2':
         return renderLazyComponent('StockDistributionChartV2', createWidgetProps(data));
 

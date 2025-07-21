@@ -94,15 +94,6 @@ function getSkipLinksForPath(pathname: string): SkipLinkConfig[] {
     ];
   }
 
-  // Access 頁面
-  if (pathname === '/access') {
-    return [
-      { href: '#main-content', label: 'Skip to main content' },
-      { href: '#location-form', label: 'Skip to location form' },
-      { href: '#navigation-bar', label: 'Skip to navigation' },
-    ];
-  }
-
   // 預設跳轉連結
   return [
     { href: '#main-content', label: 'Skip to main content' },

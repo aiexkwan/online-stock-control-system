@@ -165,6 +165,7 @@ export default function StocktakeAccuracyTrend({ timeFrame }: StocktakeAccuracyT
               }}
             />
             <Tooltip
+              // @types-migration:todo(phase3) [P2] 使用 recharts TooltipProps 完整接口 - Target: 2025-08 - Owner: @frontend-team
               content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
                 if (active && Array.isArray(payload) && payload.length > 0 && payload[0]?.payload) {
                   const payloadData = payload[0].payload;

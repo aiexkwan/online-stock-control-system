@@ -35,10 +35,6 @@ const wrapDefaultExport = (importFn: () => Promise<Record<string, unknown>>): Co
 
 // Core Widgets - 策略 2: 標準化導入格式
 export const coreWidgetImports: Record<string, ComponentImport> = {
-  HistoryTree: wrapNamedExport(
-    () => import('@/app/admin/components/dashboard/widgets/HistoryTreeV2'),
-    'HistoryTreeV2'
-  ),
   HistoryTreeV2: wrapNamedExport(
     () => import('@/app/admin/components/dashboard/widgets/HistoryTreeV2'),
     'HistoryTreeV2'
@@ -73,9 +69,6 @@ export const statsWidgetImports: Record<string, ComponentImport> = {
 
 // Charts Widgets - 策略 2: 標準化導入格式
 export const chartsWidgetImports: Record<string, ComponentImport> = {
-  StockDistributionChart: wrapDefaultExport(
-    () => import('@/app/admin/components/dashboard/widgets/StockDistributionChart')
-  ),
   StockDistributionChartV2: wrapDefaultExport(
     () => import('@/app/admin/components/dashboard/widgets/StockDistributionChartV2')
   ),

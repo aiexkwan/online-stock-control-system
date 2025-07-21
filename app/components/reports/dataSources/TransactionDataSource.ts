@@ -24,7 +24,7 @@ const transactionDataSource: ReportDataSource = {
 
   async fetch(filters: Record<string, unknown>) {
     const supabase = createClient();
-    const { startDate, endDate } = filters || ({} as any);
+    const { startDate, endDate } = filters || ({} as Record<string, unknown>);
 
     if (!startDate || !endDate) {
       throw new Error('Date range is required');

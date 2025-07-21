@@ -99,7 +99,6 @@ export const getComponentPropsFactory = (
 // Widget 類型分類
 export const WIDGET_CATEGORIES = {
   CHART: [
-    'StockDistributionChart',
     'StockDistributionChartV2',
     'StockLevelHistoryChart',
     'TransferTimeDistributionWidget',

@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { createClient } from '@/app/utils/supabase/client';
+// 移除 motion 依賴避免 webpack 錯誤
+import { unifiedAuth } from '../utils/unified-auth';
+import { getUserRoleFromDatabase } from '@/app/hooks/useAuth';
 
 export default function SimpleLoginForm() {
   const router = useRouter();
@@ -29,18 +30,33 @@ export default function SimpleLoginForm() {
     setError('');
 
     try {
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { user } = await unifiedAuth.signIn(email, password);
 
-      if (error) throw error;
+      if (!user) throw new Error('Login failed');
 
-      console.log('[SimpleLoginForm] Sign in successful:', data.user?.email);
+      console.log('[SimpleLoginForm] Sign in successful:', user?.email);
 
+      // 獲取用戶角色並直接跳轉到相應頁面
+      let redirectPath = '/admin/analysis'; // 預設路徑
+      
+      if (user?.email) {
+        try {
+          const userRole = await getUserRoleFromDatabase(user.email);
+          if (userRole) {
+            redirectPath = userRole.defaultPath;
+            console.log('[SimpleLoginForm] User role determined, redirecting to:', redirectPath);
+          } else {
+            console.warn('[SimpleLoginForm] Could not determine user role, using default path');
+          }
+        } catch (roleError) {
+          console.error('[SimpleLoginForm] Error getting user role:', roleError);
+          // 使用預設路徑
+        }
+      }
+
+      // 短暫延遲以確保 session 完全建立
       await new Promise(resolve => setTimeout(resolve, 500));
-      router.push('/access');
+      router.push(redirectPath);
     } catch (err: unknown) {
       console.error('[SimpleLoginForm] Sign in failed:', err);
       setError(err instanceof Error ? err.message : 'Login failed');
@@ -53,22 +69,14 @@ export default function SimpleLoginForm() {
     <div>
       {/* 錯誤訊息 */}
       {error && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className='mb-4 rounded-lg border border-red-500/50 bg-red-900/50 p-3'
-        >
+        <div className='mb-4 rounded-lg border border-red-500/50 bg-red-900/50 p-3 animate-pulse'>
           <p className='text-sm text-red-300'>✗ {error}</p>
-        </motion.div>
+        </div>
       )}
 
       <form onSubmit={handleSubmit} className='space-y-4'>
         {/* Email */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-        >
+        <div className='opacity-100 transition-all duration-300'>
           <label htmlFor='email' className='mb-1 block text-sm font-medium text-slate-300'>
             Email Address
           </label>
@@ -81,14 +89,10 @@ export default function SimpleLoginForm() {
             placeholder='your.name@pennineindustries.com'
             disabled={isLoading}
           />
-        </motion.div>
+        </div>
 
         {/* Password */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-        >
+        <div className='opacity-100 transition-all duration-300'>
           <label htmlFor='password' className='mb-1 block text-sm font-medium text-slate-300'>
             Password
           </label>
@@ -101,13 +105,10 @@ export default function SimpleLoginForm() {
             placeholder='Enter your password'
             disabled={isLoading}
           />
-        </motion.div>
+        </div>
 
         {/* Submit Button */}
-        <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.3 }}
+        <button
           type='submit'
           disabled={isLoading}
           className='w-full rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 font-medium text-white transition-all duration-200 hover:from-blue-700 hover:to-blue-800 disabled:cursor-not-allowed disabled:from-blue-800 disabled:to-blue-900'
@@ -120,7 +121,7 @@ export default function SimpleLoginForm() {
           ) : (
             'Sign In'
           )}
-        </motion.button>
+        </button>
       </form>
     </div>
   );

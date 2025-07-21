@@ -8,12 +8,157 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 專案概述
 NewPennine 倉庫管理系統 - 基於 Next.js 14、TypeScript 同 Supabase 嘅現代化 WMS。企業級倉庫管理解決方案，支援完整供應鏈管理，包括 QC/GRN 標籤列印、庫存轉移、AI 訂單分析同管理儀表板。
 
-**最新狀態 (2025-07-20)**: TypeScript 錯誤修復重大進展 ✅ 74.9% 完成  
+**最新狀態 (2025-07-21)**: TypeScript 錯誤修復重大進展 ✅ 74.9% 完成  
 - TypeScript 錯誤從 271 個減少至 68 個 (203 個錯誤已修復)
 - Storybook 配置和可訪問性組件完成，jest-axe 測試框架建立
 - 監控系統類型完整，Widget 枚舉使用統一  
 - 35+ REST API 端點已實施並經過測試
 - 前端 widgets 完全遷移到 REST API 架構
+- **Phase 3.2 完成**: any 警告從 81 降至 72 個，建立統一 Hook 類型系統
+- **CI/CD TODO 掃描整合完成**: GitHub Actions 自動追蹤技術債務
+
+**🔄 Widget 系統清理完成 (2025-07-21)**:
+- ✅ HistoryTree → HistoryTreeV2 統一遷移完成
+- ✅ 移除所有重定向配置和重複定義
+- ✅ 47個 Widget 組件統一管理
+- ✅ 配置一致性和性能優化提升
+
+**🔧 Next.js 15 Children 問題修復 (2025-07-21)**:
+- ✅ 所有 Layout 組件修復 children undefined 問題
+- ✅ 主 layout.tsx、admin/layout.tsx、print-*/layout.tsx 完成修復
+- ✅ 系統性解決 "Cannot read properties of undefined (reading 'call')" 錯誤
+
+**📋 CI/CD TODO 掃描系統 (2025-07-21)**:
+- ✅ GitHub Actions 工作流程配置完成
+- ✅ TODO Scanner 支援 5 種標記模式（TypeScript、標準、技術債、安全、性能）
+- ✅ 自動 PR 評論、週報生成、趨勢分析
+- ✅ 初步掃描發現 52 個 TODO（31 個 TypeScript 遷移相關）
+
+---
+
+# 🎯 錯誤診斷知識庫
+
+## 奧卡姆剃刀原則 (Occam's Razor)
+**核心原則**: 簡單問題應該用簡單解決方案
+- 🔍 **先檢查最明顯既可能性**，然後才考慮複雜架構問題
+- 📍 **錯誤指向邊一行就先檢查嗰一行**，唔好被堆疊訊息誤導
+- 🎯 **一步一步診斷**：語法 → 類型 → 邏輯 → 架構
+
+## 已知錯誤模式庫
+
+### 1. Next.js 15 Children Undefined 問題
+**錯誤特徵**:
+- `Cannot read properties of undefined (reading 'call')`
+- 錯誤指向 `{children}` 位置
+- Webpack runtime.js 錯誤堆疊
+
+**診斷步驟**:
+1. 🔍 檢查錯誤指向既確切行數
+2. 👀 查看是否涉及 `{children}` 參數
+3. 🛠️ 添加 `children?: React.ReactNode` + null check
+4. ✅ 清理 .next 緩存重啟
+
+**修復模板**:
+```typescript
+// 錯誤寫法
+function Layout({ children }: { children: React.ReactNode }) {
+  return <div>{children}</div>;
+}
+
+// 正確寫法
+function Layout({ children }: { children?: React.ReactNode }) {
+  const safeChildren = children || null;
+  return <div>{safeChildren}</div>;
+}
+```
+
+### 2. Radix UI 模組載入錯誤 (誤診案例)
+**錯誤特徵**:
+- 錯誤堆疊包含 `radix-ui-node_modules`
+- `options.factory` 錯誤
+- Webpack chunk 載入失敗
+
+**常見誤診**:
+❌ 以為係 Radix UI 版本問題 → 複雜既 webpack 配置修改
+✅ 實際上通常係 `children` undefined 問題 → 簡單既 null check
+
+### 3. TypeScript 類型錯誤診斷順序
+**診斷優先級**:
+1. 🥇 **語法錯誤** (缺少 import, 拼寫錯誤)
+2. 🥈 **Interface 不匹配** (參數類型, 返回類型)  
+3. 🥉 **泛型問題** (Generic constraints)
+4. 🏅 **複雜類型推斷** (Utility types, 條件類型)
+
+## 診斷工作流程
+
+### Phase 1: 快速檢查 (2分鐘內)
+```bash
+# 檢查清單
+□ 錯誤訊息指向邊一行？
+□ 係咪語法問題 (缺少 import, 拼寫)？
+□ 係咪 Next.js children 問題？
+□ 係咪簡單既 TypeScript 類型問題？
+```
+
+### Phase 2: 系統診斷 (5分鐘內)  
+```bash
+# 如果 Phase 1 無法解決
+□ npm run typecheck (檢查 TS 錯誤)
+□ 檢查相關 import 係咪存在
+□ 檢查 interface 定義係咪正確
+□ 查看係咪有循環依賴
+```
+
+### Phase 3: 深度分析 (10分鐘+)
+```bash
+# 複雜問題先至進行
+□ 架構層面問題
+□ 第三方庫兼容性
+□ Webpack/Next.js 配置
+□ 性能優化相關
+```
+
+## 錯誤記錄模板
+
+當發生診斷錯誤時，記錄以下信息：
+```markdown
+### 錯誤案例 #{日期}
+**錯誤描述**: [簡要描述]
+**錯誤特徵**: [關鍵錯誤訊息]
+**誤診路徑**: [我最初既錯誤判斷]
+**正確解決方案**: [實際既簡單解決方案]
+**學習點**: [從呢次錯誤學到咩]
+**檢查清單更新**: [需要加入診斷流程既項目]
+```
+
+## 實際錯誤案例
+
+### 錯誤案例 #2025-07-21
+**錯誤描述**: Next.js 15 登入頁面 webpack 模組載入失敗
+**錯誤特徵**: 
+- `Cannot read properties of undefined (reading 'call')`
+- 錯誤指向 `{children}` 位置
+- 錯誤堆疊包含 `radix-ui-node_modules`
+
+**誤診路徑**: 
+1. ❌ 以為係 Radix UI 版本兼容性問題
+2. ❌ 修改 next.config.js 既 chunk 分割配置
+3. ❌ 創建複雜既 ClientLayoutEmergency 組件
+4. ❌ 嘗試禁用 framer-motion 同 Radix UI 組件
+
+**正確解決方案**: 
+✅ 簡單添加 `children?: React.ReactNode` + null check 到所有 layout 組件
+
+**學習點**: 
+- 錯誤訊息明確指向 `{children}` 應該係第一診斷重點
+- 堆疊訊息既第三方庫名稱經常係誤導性既
+- Next.js 15 既 children 可能係 undefined 係已知問題
+- 奧卡姆剃刀原則：最簡單既解釋通常係正確既
+
+**檢查清單更新**:
+- ✅ 遇到 webpack `options.factory` 錯誤先檢查 children
+- ✅ Layout 組件錯誤優先檢查 props 類型定義
+- ✅ 唔好被錯誤堆疊既第三方庫名稱誤導
 
 ---
 
@@ -326,6 +471,7 @@ graph TD
 
 ## 必須遵守事項
 - **遵從"KISS"原則**: 系統、設計、程式碼、流程——只要可以簡單實現，無需複雜化
+- **錯誤診斷奧卡姆剃刀**: 簡單問題應該用簡單解決方案，先檢查最明顯既可能性
 - **長駐開啟 ultrathink 模式**
 - **優先編輯現有文件而非創建新文件，減少冗碼**
 - **只在用戶明確要求時創建文檔文件**
@@ -334,6 +480,7 @@ graph TD
 - **所有 UI 文字必須使用英文**
 - **保持代碼整潔，減少冗餘**
 - **專家討論必須記錄結果同決策理據**
+- **錯誤診斷必須遵循 Phase 1→2→3 流程，唔好跳級**
 
 ## 工具使用
 所有命令都可使用：

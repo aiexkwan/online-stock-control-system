@@ -75,8 +75,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
     };
   }, [timeFrame]);
 
-  // GraphQL 已遷移到 REST API - 使用 Server Actions
-  const useGraphQL = false; // 禁用 GraphQL
+  // Using REST API only - GraphQL removed
 
   // Server Actions fallback
   const [serverActionsData, setServerActionsData] = useState<WorkLevelStats>({
@@ -90,11 +89,11 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
     uniqueOperators: 0,
     avgMovesPerDay: 0,
   });
-  const [serverActionsLoading, setServerActionsLoading] = useState(!useGraphQL);
+  const [serverActionsLoading, setServerActionsLoading] = useState(true);
   const [serverActionsError, setServerActionsError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (useGraphQL || isEditMode) return;
+    if (isEditMode) return;
 
     const fetchData = async () => {
       setServerActionsLoading(true);
@@ -239,7 +238,7 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
     };
 
     fetchData();
-  }, [dateRange, useGraphQL, isEditMode]);
+  }, [dateRange, isEditMode]);
 
   // 使用 Server Actions 數據 (GraphQL 已移除)
   const data = serverActionsData;
@@ -341,8 +340,8 @@ export const WarehouseWorkLevelAreaChart = React.memo(function WarehouseWorkLeve
                   style={{ color: semanticColors.info.DEFAULT }}
                 >
                   <span>⚡</span>
-                  <span>{useGraphQL ? 'GraphQL' : 'Optimized'}</span>
-                  {performanceMetrics && !useGraphQL && performanceMetrics.fetchTime && (
+                  <span>Optimized</span>
+                  {performanceMetrics && performanceMetrics.fetchTime && (
                     <span className='ml-1'>({performanceMetrics.fetchTime.toFixed(0)}ms)</span>
                   )}
                 </div>

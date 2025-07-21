@@ -1,0 +1,151 @@
+/**
+ * @fileoverview Health Check API Endpoint
+ * Phase 2: 使用新的統一 API 類型系統
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/app/utils/supabase/server';
+import { 
+  ApiResult, 
+  HealthCheckResult,
+  createSuccessResponse,
+  createErrorResponse,
+  ApiErrorCode,
+  getHttpStatusFromErrorCode
+} from '@/types/api';
+
+/**
+ * GET /api/health
+ * 系統健康檢查端點
+ */
+export async function GET(request: NextRequest): Promise<NextResponse<ApiResult<HealthCheckResult>>> {
+  const startTime = Date.now();
+  
+  try {
+    // 初始化 Supabase 客戶端
+    const supabase = createClient();
+    
+    // 檢查各個組件的健康狀態
+    const components: HealthCheckResult['components'] = {};
+    
+    // 1. 檢查數據庫連接
+    try {
+      const dbStart = Date.now();
+      const { error } = await supabase.from('products').select('count').limit(1);
+      
+      components.database = {
+        status: error ? 'unhealthy' : 'healthy',
+        message: error ? error.message : 'Database is responsive',
+        responseTime: Date.now() - dbStart,
+      };
+    } catch (error) {
+      components.database = {
+        status: 'unhealthy',
+        message: 'Database connection failed',
+      };
+    }
+    
+    // 2. 檢查認證服務
+    try {
+      const authStart = Date.now();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      components.auth = {
+        status: 'healthy',
+        message: user ? 'Authenticated' : 'Anonymous',
+        responseTime: Date.now() - authStart,
+      };
+    } catch (error) {
+      components.auth = {
+        status: 'degraded',
+        message: 'Auth service check failed',
+      };
+    }
+    
+    // 3. 檢查存儲服務
+    try {
+      const storageStart = Date.now();
+      const { data, error } = await supabase.storage.listBuckets();
+      
+      components.storage = {
+        status: error ? 'degraded' : 'healthy',
+        message: error ? error.message : `${data?.length || 0} buckets available`,
+        responseTime: Date.now() - storageStart,
+      };
+    } catch (error) {
+      components.storage = {
+        status: 'degraded',
+        message: 'Storage service check failed',
+      };
+    }
+    
+    // 計算整體狀態
+    const unhealthyCount = Object.values(components).filter(c => c.status === 'unhealthy').length;
+    const degradedCount = Object.values(components).filter(c => c.status === 'degraded').length;
+    
+    let overallStatus: HealthCheckResult['status'] = 'healthy';
+    if (unhealthyCount > 0) {
+      overallStatus = 'unhealthy';
+    } else if (degradedCount > 0) {
+      overallStatus = 'degraded';
+    }
+    
+    // 構建健康檢查結果
+    const healthResult: HealthCheckResult = {
+      status: overallStatus,
+      version: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
+      uptime: process.uptime(),
+      components,
+    };
+    
+    // 返回成功響應
+    const response = createSuccessResponse(healthResult, {
+      responseTime: Date.now() - startTime,
+    });
+    
+    return NextResponse.json(response, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+      },
+    });
+    
+  } catch (error) {
+    // 返回錯誤響應
+    const errorResponse = createErrorResponse(
+      {
+        code: ApiErrorCode.SYSTEM_INTERNAL_ERROR,
+        message: 'Health check failed',
+        details: [{
+          code: 'HEALTH_CHECK_ERROR',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        }],
+      },
+      {
+        responseTime: Date.now() - startTime,
+      }
+    );
+    
+    return NextResponse.json(
+      errorResponse,
+      { 
+        status: getHttpStatusFromErrorCode(ApiErrorCode.SYSTEM_INTERNAL_ERROR) 
+      }
+    );
+  }
+}
+
+/**
+ * 其他 HTTP 方法不支持
+ */
+export async function POST(): Promise<NextResponse<ApiResult<never>>> {
+  const response = createErrorResponse({
+    code: ApiErrorCode.REQUEST_METHOD_NOT_ALLOWED,
+    message: 'Method not allowed',
+  });
+  
+  return NextResponse.json(
+    response,
+    { status: getHttpStatusFromErrorCode(ApiErrorCode.REQUEST_METHOD_NOT_ALLOWED) }
+  );
+}
