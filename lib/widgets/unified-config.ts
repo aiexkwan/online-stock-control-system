@@ -76,7 +76,7 @@ export const widgetConfig: WidgetConfigMap = {
     category: 'stats',
     description: 'Displays items still in await status',
     loader: () => import('@/app/admin/components/dashboard/widgets/StillInAwaitWidget'),
-    dataSource: 'graphql',
+    dataSource: 'batch',
     priority: 'high',
     refreshInterval: 60000,
   },
@@ -87,7 +87,7 @@ export const widgetConfig: WidgetConfigMap = {
     category: 'stats',
     description: 'Shows percentage of items in await status',
     loader: () => import('@/app/admin/components/dashboard/widgets/StillInAwaitPercentageWidget'),
-    dataSource: 'graphql',
+    dataSource: 'batch',
     priority: 'normal',
     refreshInterval: 60000,
   },
@@ -112,11 +112,10 @@ export const widgetConfig: WidgetConfigMap = {
     category: 'stats',
     description: 'GraphQL-optimized production stats for injection route',
     loader: () => import('@/app/admin/components/dashboard/widgets/InjectionProductionStatsWidget'),
-    dataSource: 'graphql',
+    dataSource: 'batch',
     priority: 'critical',
     refreshInterval: 300000,
     supportTimeFrame: true,
-    useGraphQL: true,
     metadata: {
       preloadPriority: 10,
       graphqlOptimized: true,
@@ -151,7 +150,7 @@ export const widgetConfig: WidgetConfigMap = {
     category: 'charts',
     description: 'Shows historical stock levels over time',
     loader: () => import('@/app/admin/components/dashboard/widgets/StockLevelHistoryChart'),
-    dataSource: 'graphql',
+    dataSource: 'batch',
     priority: 'normal',
     supportTimeFrame: true,
   },
@@ -173,7 +172,7 @@ export const widgetConfig: WidgetConfigMap = {
     category: 'charts',
     description: 'Distribution of transfer processing times',
     loader: () => import('@/app/admin/components/dashboard/widgets/TransferTimeDistributionWidget'),
-    dataSource: 'graphql',
+    dataSource: 'batch',
     priority: 'normal',
     supportTimeFrame: true,
   },
@@ -215,9 +214,8 @@ export const widgetConfig: WidgetConfigMap = {
     category: 'lists',
     description: 'List of recent orders',
     loader: () => import('@/app/admin/components/dashboard/widgets/OrdersListWidgetV2'),
-    dataSource: 'graphql',
+    dataSource: 'batch',
     priority: 'normal',
-    useGraphQL: true,
   },
 
   OtherFilesListV2: {
@@ -226,9 +224,8 @@ export const widgetConfig: WidgetConfigMap = {
     category: 'lists',
     description: 'List of uploaded files',
     loader: () => import('@/app/admin/components/dashboard/widgets/OtherFilesListWidgetV2'),
-    dataSource: 'graphql',
+    dataSource: 'batch',
     priority: 'normal',
-    useGraphQL: true,
   },
 
   WarehouseTransferList: {
@@ -248,9 +245,8 @@ export const widgetConfig: WidgetConfigMap = {
     category: 'lists',
     description: 'Orders grouped by state',
     loader: () => import('@/app/admin/components/dashboard/widgets/OrderStateListWidgetV2'),
-    dataSource: 'graphql',
+    dataSource: 'batch',
     priority: 'normal',
-    useGraphQL: true,
   },
 
   ProductionDetails: {
@@ -374,7 +370,6 @@ export const widgetConfig: WidgetConfigMap = {
     loader: () => import('@/app/admin/components/dashboard/widgets/GrnReportWidgetV2'),
     dataSource: 'mixed',
     priority: 'normal',
-    useGraphQL: true,
   },
 
   AcoOrderReportV2: {
@@ -383,9 +378,8 @@ export const widgetConfig: WidgetConfigMap = {
     category: 'reports',
     description: 'ACO order reports',
     loader: () => import('@/app/admin/components/dashboard/widgets/AcoOrderReportWidgetV2'),
-    dataSource: 'graphql',
+    dataSource: 'batch',
     priority: 'normal',
-    useGraphQL: true,
   },
 
   ReportGeneratorWithDialogV2: {
@@ -395,9 +389,8 @@ export const widgetConfig: WidgetConfigMap = {
     description: 'General report generator with dialog',
     loader: () =>
       import('@/app/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2'),
-    dataSource: 'graphql',
+    dataSource: 'batch',
     priority: 'normal',
-    useGraphQL: true,
   },
 
   // ===== Analysis Widgets =====
@@ -407,7 +400,7 @@ export const widgetConfig: WidgetConfigMap = {
     category: 'analysis',
     description: 'Expandable analysis cards',
     loader: () => import('@/app/admin/components/dashboard/widgets/AnalysisExpandableCards'),
-    dataSource: 'graphql',
+    dataSource: 'batch',
     priority: 'normal',
   },
 
@@ -427,7 +420,7 @@ export const widgetConfig: WidgetConfigMap = {
     category: 'analysis',
     description: 'Paged analysis view',
     loader: () => import('@/app/admin/components/dashboard/widgets/AnalysisPagedWidgetV2'),
-    dataSource: 'graphql',
+    dataSource: 'batch',
     priority: 'normal',
   },
 
@@ -437,7 +430,7 @@ export const widgetConfig: WidgetConfigMap = {
     category: 'analysis',
     description: 'Analysis of ordered inventory',
     loader: () => import('@/app/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget'),
-    dataSource: 'graphql',
+    dataSource: 'batch',
     priority: 'normal',
     supportTimeFrame: true,
   },
@@ -452,7 +445,7 @@ export const widgetConfig: WidgetConfigMap = {
       import('@/app/admin/components/dashboard/widgets/HistoryTreeV2').then(module => ({
         default: module.HistoryTreeV2,
       })),
-    dataSource: 'graphql',
+    dataSource: 'batch',
     priority: 'critical',
     refreshInterval: 120000,
     metadata: {
@@ -568,11 +561,11 @@ export function getTimeFrameWidgets(): UnifiedWidgetConfig[] {
 }
 
 /**
- * 輔助函數：獲取使用 GraphQL 的 widgets
+ * 輔助函數：獲取使用批量查詢的 widgets
  */
-export function getGraphQLWidgets(): UnifiedWidgetConfig[] {
+export function getBatchWidgets(): UnifiedWidgetConfig[] {
   return Object.values(widgetConfig).filter(
-    config => config.dataSource === 'graphql' || config.useGraphQL === true
+    config => config.dataSource === 'batch'
   );
 }
 

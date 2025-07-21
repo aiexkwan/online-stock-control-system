@@ -29,6 +29,7 @@ export function useInventoryAnalysis(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [filters, setFilters] = useState<InventoryAnalysisFilters>(
+    // @types-migration:todo(phase3) [P2] 定義明確的 InventoryAnalysisFilters 默認值 - Target: 2025-08 - Owner: @frontend-team
     options?.initialFilters || ({} as any)
   );
   const [sortBy, setSortBy] = useState<InventoryAnalysisSortBy>(

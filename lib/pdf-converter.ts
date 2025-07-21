@@ -50,8 +50,8 @@ export async function convertToPDF({ html, outputPath }: ConvertToPDFOptions): P
       },
     });
 
-    if (outputPath) {
-      // 使用靜態導入避免 webpack originalFactory.call 錯誤
+    if (outputPath && typeof process !== 'undefined' && process.versions?.node) {
+      // 只在 Node.js 環境中動態載入 fs 模組
       const fs = await import('fs');
       await fs.promises.writeFile(outputPath, pdf);
     }

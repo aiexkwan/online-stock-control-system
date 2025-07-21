@@ -104,7 +104,7 @@ export const useFormPersistence = ({
         ...parsedData.data,
         slateDetail: {
           ...prevData.slateDetail,
-          ...(parsedData.data.slateDetail || ({} as any)),
+          ...(parsedData.data.slateDetail || { batchNumber: '' }),
         },
       }));
 

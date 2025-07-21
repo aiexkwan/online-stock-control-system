@@ -2,6 +2,10 @@
  * 用戶相關類型定義
  */
 
+import { UserRole } from './enums';
+
+// @types-migration:todo(phase1) [P0] UserRole 已遷移到 enums.ts - Completed: 2025-07
+
 export interface User {
   id: string;
   email: string;
@@ -11,13 +15,6 @@ export interface User {
   permissions: Permission[];
   createdAt: string;
   updatedAt: string;
-}
-
-export enum UserRole {
-  ADMIN = 'admin',
-  MANAGER = 'manager',
-  OPERATOR = 'operator',
-  VIEWER = 'viewer',
 }
 
 export interface Permission {

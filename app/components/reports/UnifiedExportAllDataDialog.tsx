@@ -52,7 +52,7 @@ export function UnifiedExportAllDataDialog({ isOpen, onClose }: UnifiedExportAll
     requiresDateRange: boolean
   ) => {
     const supabase = createClient();
-    let query = (supabase as any).from(tableName).select('*');
+    let query = supabase.from(tableName).select('*');
 
     // Apply date range filter if required
     if (requiresDateRange) {

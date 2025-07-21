@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import EmailValidator from './EmailValidator';
 import PasswordValidator from './PasswordValidator';
-import { mainLoginAuth } from '../utils/supabase';
+import { unifiedAuth } from '../utils/unified-auth';
 
 interface RegisterFormProps {
   onSuccess: () => void;
@@ -110,11 +110,7 @@ export default function RegisterForm({
 
     try {
       // 使用 Supabase Auth 進行註冊
-      await mainLoginAuth.signUp(formData.email, formData.password, {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        department: formData.department,
-      });
+      await unifiedAuth.signUp(formData.email, formData.password);
 
       // 註冊成功
       onSuccess();

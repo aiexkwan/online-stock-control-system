@@ -1,4 +1,6 @@
-export default function HtmlPreviewLayout({ children }: { children: React.ReactNode }) {
+export default function HtmlPreviewLayout({ children }: { children?: React.ReactNode }) {
+  const safeChildren = children || null;
+  
   return (
     <html lang='en'>
       <head>
@@ -6,7 +8,7 @@ export default function HtmlPreviewLayout({ children }: { children: React.ReactN
         <meta name='viewport' content='width=device-width, initial-scale=1' />
         <title>Pallet Label Preview</title>
       </head>
-      <body>{children}</body>
+      <body>{safeChildren}</body>
     </html>
   );
 }

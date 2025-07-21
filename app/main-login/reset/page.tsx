@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { simpleAuth } from '../utils/simple-supabase';
+import { unifiedAuth } from '../utils/unified-auth';
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState('');

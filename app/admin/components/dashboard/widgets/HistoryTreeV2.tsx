@@ -60,7 +60,6 @@ import {
 // MergedEvent interface moved to WidgetApiTypes.ts
 
 interface HistoryTreeV2Props extends TraditionalWidgetComponentProps {
-  useGraphQL?: boolean;
 }
 
 // 根據 action 類型返回對應的圖標
@@ -185,7 +184,6 @@ const formatEventDescription = (event: MergedEvent): string => {
 export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
   widget,
   isEditMode,
-  useGraphQL,
 }: HistoryTreeV2Props) {
   const widgetRef = useRef<HTMLDivElement>(null);
 
@@ -221,7 +219,8 @@ export const HistoryTreeV2 = React.memo(function HistoryTreeV2({
   const displayEvents = useMemo((): MergedEvent[] => {
     return WidgetApiMapper.extractEvents(data);
   }, [data]);
-  const metadata = data?.metadata || ({} as any);
+  // @types-migration:todo(phase3) [P2] 定義 WidgetMetadata 接口替代 Record<string, unknown> - Target: 2025-08 - Owner: @frontend-team
+  const metadata = data?.metadata || ({} as Record<string, unknown>);
 
   // 將事件轉換為 Timeline 組件需要的格式
   const timelineItems = useMemo(() => {

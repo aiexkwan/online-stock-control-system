@@ -115,7 +115,14 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
       } else {
         // 找到產品 - get_product_details_by_code 返回數組，取第一個結果
         const productData = (
-          Array.isArray(data) && data.length > 0 ? data[0] : ({} as any)
+          Array.isArray(data) && data.length > 0 
+            ? data[0] 
+            : {
+                code: '',
+                description: '',
+                standard_qty: '',
+                type: ''
+              }
         ) as ProductInfo;
         onProductInfoChange(productData);
         onChange(productData.code); // 使用資料庫中的標準化代碼

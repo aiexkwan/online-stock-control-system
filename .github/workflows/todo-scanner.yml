@@ -1,0 +1,266 @@
+name: TODO Scanner
+description: Automatically scan and track TODO markers for TypeScript migration and technical debt
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  push:
+    branches:
+      - main
+      - develop
+      - 'feature/typescript-*'
+  schedule:
+    # Run weekly on Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      report_format:
+        description: 'Report format'
+        required: false
+        default: 'markdown'
+        type: choice
+        options:
+          - markdown
+          - json
+          - html
+
+env:
+  NODE_VERSION: '18.x'
+
+jobs:
+  scan-todos:
+    name: Scan TODO Markers
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run TODO Scanner
+        id: todo-scan
+        run: |
+          echo "🔍 Scanning for TODO markers..."
+          npm run scan:todo -- --format=json > todo-report.json
+          
+          # Count TODOs by category
+          TODO_COUNT=$(jq '.todos | length' todo-report.json)
+          P1_COUNT=$(jq '[.todos[] | select(.priority == "P1")] | length' todo-report.json)
+          P2_COUNT=$(jq '[.todos[] | select(.priority == "P2")] | length' todo-report.json)
+          P3_COUNT=$(jq '[.todos[] | select(.priority == "P3")] | length' todo-report.json)
+          
+          echo "📊 TODO Summary:"
+          echo "- Total TODOs: $TODO_COUNT"
+          echo "- P1 (Critical): $P1_COUNT"
+          echo "- P2 (Important): $P2_COUNT"
+          echo "- P3 (Nice to have): $P3_COUNT"
+          
+          # Set outputs for later steps
+          echo "todo_count=$TODO_COUNT" >> $GITHUB_OUTPUT
+          echo "p1_count=$P1_COUNT" >> $GITHUB_OUTPUT
+          echo "p2_count=$P2_COUNT" >> $GITHUB_OUTPUT
+          echo "p3_count=$P3_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Generate Markdown Report
+        if: always()
+        run: |
+          npm run scan:todo -- --format=markdown > todo-report.md
+          
+          # Add summary header
+          cat > todo-summary.md << EOF
+          # 📋 TODO Scanner Report
+          
+          **Generated**: $(date -u +"%Y-%m-%d %H:%M UTC")
+          **Branch**: ${{ github.ref_name }}
+          **Commit**: ${{ github.sha }}
+          
+          ## 📊 Summary
+          
+          | Priority | Count | Description |
+          |----------|-------|-------------|
+          | P1 🔴 | ${{ steps.todo-scan.outputs.p1_count }} | Critical - Must fix ASAP |
+          | P2 🟡 | ${{ steps.todo-scan.outputs.p2_count }} | Important - Plan to fix |
+          | P3 🟢 | ${{ steps.todo-scan.outputs.p3_count }} | Nice to have - Future improvement |
+          | **Total** | **${{ steps.todo-scan.outputs.todo_count }}** | |
+          
+          ## 📝 Detailed Report
+          
+          EOF
+          
+          cat todo-report.md >> todo-summary.md
+          mv todo-summary.md todo-report.md
+
+      - name: Upload TODO Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: todo-report-${{ github.run_id }}
+          path: |
+            todo-report.json
+            todo-report.md
+
+      - name: Comment on Pull Request
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('todo-report.md', 'utf8');
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('📋 TODO Scanner Report')
+            );
+            
+            const commentBody = report.substring(0, 65000); // GitHub comment limit
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+            }
+
+      - name: Check TODO Thresholds
+        if: github.event_name == 'pull_request'
+        run: |
+          # Define thresholds
+          P1_THRESHOLD=5
+          TOTAL_THRESHOLD=100
+          
+          if [ ${{ steps.todo-scan.outputs.p1_count }} -gt $P1_THRESHOLD ]; then
+            echo "❌ Too many P1 TODOs: ${{ steps.todo-scan.outputs.p1_count }} (threshold: $P1_THRESHOLD)"
+            echo "Please address critical TODOs before merging."
+            exit 1
+          fi
+          
+          if [ ${{ steps.todo-scan.outputs.todo_count }} -gt $TOTAL_THRESHOLD ]; then
+            echo "⚠️ Warning: High number of TODOs: ${{ steps.todo-scan.outputs.todo_count }} (threshold: $TOTAL_THRESHOLD)"
+            echo "Consider addressing some TODOs to improve code quality."
+          fi
+
+      - name: Create TODO Tracking Issue (Weekly)
+        if: github.event.schedule == '0 9 * * 1' && github.ref == 'refs/heads/main'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('todo-report.md', 'utf8');
+            
+            const issueTitle = `📋 Weekly TODO Report - ${new Date().toISOString().split('T')[0]}`;
+            const issueBody = `${report}\n\n---\n\n🤖 *This issue was automatically created by the TODO Scanner workflow.*`;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: issueTitle,
+              body: issueBody,
+              labels: ['technical-debt', 'todo-tracking', 'automated']
+            });
+
+  analyze-trends:
+    name: Analyze TODO Trends
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: scan-todos
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 50  # Get recent history for trend analysis
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Analyze TODO Trends
+        run: |
+          echo "📈 Analyzing TODO trends over recent commits..."
+          
+          # Create trend analysis script
+          cat > analyze-trends.js << 'EOF'
+          const { execSync } = require('child_process');
+          const fs = require('fs');
+          
+          // Get recent commits
+          const commits = execSync('git log --pretty=format:"%H %s" -n 10')
+            .toString()
+            .trim()
+            .split('\n');
+          
+          console.log('📊 TODO Trend Analysis\n');
+          console.log('Commit | TODOs | Change');
+          console.log('-------|-------|--------');
+          
+          let previousCount = null;
+          commits.forEach((commit, index) => {
+            const [hash, ...messageParts] = commit.split(' ');
+            const message = messageParts.join(' ').substring(0, 40);
+            
+            try {
+              // Checkout commit
+              execSync(`git checkout ${hash} --quiet`, { stdio: 'ignore' });
+              
+              // Count TODOs (simple grep approach)
+              const todoCount = execSync('grep -r "@types-migration:todo" --include="*.ts" --include="*.tsx" . | wc -l')
+                .toString()
+                .trim();
+              
+              const count = parseInt(todoCount);
+              const change = previousCount !== null ? count - previousCount : 0;
+              const changeStr = change > 0 ? `+${change}` : change.toString();
+              
+              console.log(`${hash.substring(0, 7)} | ${count} | ${changeStr}`);
+              
+              previousCount = count;
+            } catch (e) {
+              // Ignore errors
+            }
+          });
+          
+          // Return to original branch
+          execSync('git checkout - --quiet', { stdio: 'ignore' });
+          EOF
+          
+          node analyze-trends.js > trend-analysis.txt
+          cat trend-analysis.txt
+
+      - name: Save Trend Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: todo-trend-analysis-${{ github.run_id }}
+          path: trend-analysis.txt

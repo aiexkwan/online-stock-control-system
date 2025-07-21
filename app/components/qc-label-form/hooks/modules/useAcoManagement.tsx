@@ -208,7 +208,7 @@ export const useAcoManagement = ({
             }));
 
             // 檢查訂單狀態（如果有相關屬性）
-            if ('status' in details && (details as any).status === 'fulfilled') {
+            if ('status' in details && (details as { status?: string }).status === 'fulfilled') {
               toast.warning('This order has already been fulfilled.');
             }
           }
@@ -299,7 +299,14 @@ export const useAcoManagement = ({
             return { ...prev, acoOrderDetailErrors: newErrors };
           });
         } else {
-          const productData = Array.isArray(data) && data.length > 0 ? data[0] : ({} as any);
+          const productData = Array.isArray(data) && data.length > 0 
+            ? data[0] 
+            : {
+                code: '',
+                description: '',
+                standard_qty: '',
+                type: ''
+              };
 
           // 檢查產品類型是否為 ACO
           if (productData.type !== 'ACO') {

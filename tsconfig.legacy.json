@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "strict": false,
+    "noImplicitAny": false,
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": [
+    "app/legacy/**/*",
+    "pages/**/*"
+  ]
+}

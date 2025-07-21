@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Loader2, AlertCircle, RefreshCw, Download, LucideIcon } from 'lucide-react';
+import { Loader2, AlertCircle, RefreshCw, LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -34,8 +34,6 @@ export interface ChartContainerProps {
   className?: string;
 
   // Features
-  exportable?: boolean;
-  onExport?: () => void;
   onRefresh?: () => void;
   refreshing?: boolean;
 
@@ -82,8 +80,6 @@ export const ChartContainer: React.FC<ChartContainerProps> = ({
   showHeader = true,
   showFooter = false,
   className,
-  exportable = false,
-  onExport,
   onRefresh,
   refreshing = false,
   metadata,
@@ -99,14 +95,6 @@ export const ChartContainer: React.FC<ChartContainerProps> = ({
     return `From ${format(dateRange.start, 'MMM d')} to ${format(dateRange.end, 'MMM d')}`;
   };
 
-  // Handle export
-  const handleExport = () => {
-    if (!onExport) {
-      console.warn('Export function not provided');
-      return;
-    }
-    onExport();
-  };
 
   // Loading state
   if (loading) {
@@ -232,11 +220,6 @@ export const ChartContainer: React.FC<ChartContainerProps> = ({
                   ⚡ {performanceMetrics.source || 'Optimized'}
                 </span>
               )}
-              {exportable && onExport && (
-                <Button variant='ghost' size='sm' onClick={handleExport} className='h-7 px-2'>
-                  <Download className='h-4 w-4' />
-                </Button>
-              )}
               {onRefresh && (
                 <Button
                   variant='ghost'
@@ -308,25 +291,4 @@ export const ChartContainer: React.FC<ChartContainerProps> = ({
       </CardContent>
     </Card>
   );
-};
-
-// Export utility function for charts
-export const exportChartAsImage = async (chartElement: HTMLElement, filename: string = 'chart') => {
-  try {
-    // Dynamic import to avoid loading html2canvas unless needed
-    const html2canvas = (await import('html2canvas')).default;
-
-    const canvas = await html2canvas(chartElement, {
-      backgroundColor: '#0f172a', // Slate 900
-      scale: 2, // Higher quality
-    });
-
-    const link = document.createElement('a');
-    link.download = `${filename}-${format(new Date(), 'yyyy-MM-dd-HHmmss')}.png`;
-    link.href = canvas.toDataURL();
-    link.click();
-  } catch (error) {
-    console.error('Error exporting chart:', error);
-    throw error;
-  }
 };

@@ -123,7 +123,8 @@ export const mockLoadingResponse = () => ({
 });
 
 export const mockErrorResponse = (errorMessage = 'Test error') => {
-  const error = new Error(errorMessage) as any;
+  // @types-migration:todo(phase3) [P2] 定義 BatchError 接口替代類型斷言 - Target: 2025-08 - Owner: @frontend-team
+  const error = new Error(errorMessage) as Error & { type: "batch" | "widget"; timestamp: Date };
   error.type = 'batch';
   error.timestamp = new Date();
 

@@ -148,7 +148,7 @@ export const StaffWorkloadWidget: React.FC<StaffWorkloadWidgetProps> = ({
           setChartData(processedData);
           const safeMetadata =
             typeof widgetMetadata === 'object' && widgetMetadata !== null ? widgetMetadata : {};
-          setMetadata({ ...safeMetadata, useGraphQL: false });
+          setMetadata({ ...safeMetadata });
         } else {
           console.warn('[StaffWorkloadWidget as string] No widget data returned from API');
           setChartData([]);

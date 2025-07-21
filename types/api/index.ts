@@ -1,6 +1,10 @@
 /**
  * API 類型統一導出
+ * Phase 2: 加入核心類型導出
  */
+
+// 核心類型 (優先導出)
+export * from './core';
 
 // API 端點類型
 export * from './endpoints';

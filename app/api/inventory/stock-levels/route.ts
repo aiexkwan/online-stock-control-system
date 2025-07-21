@@ -1,17 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/app/utils/supabase/server';
 import { safeGet, safeNumber, safeString } from '@/types/database/helpers';
+import { ApiResult, successResult, errorResult, handleAsync } from '@/lib/types/api';
+
+interface StockItem {
+  productCode: string;
+  productDesc: string;
+  warehouse: string;
+  location: string;
+  quantity: number;
+  value: number;
+  lastUpdated: string;
+  palletCount: number;
+}
+
+interface StockAggregates {
+  totalQuantity: number;
+  totalValue: number;
+  totalPallets: number;
+  uniqueProducts: number;
+}
+
+interface StockLevelsResponse {
+  items: StockItem[];
+  total: number;
+  aggregates: StockAggregates;
+}
+
+interface QueryParams {
+  warehouse?: string;
+  productCode?: string;
+  minQty?: number;
+  maxQty?: number;
+  includeZeroStock: boolean;
+  sortBy?: 'quantity' | 'value' | 'location';
+  limit: number;
+  offset: number;
+}
 
 /**
  * REST API endpoint for stock levels
  * Supports the client-side strategy of DataAccessLayer
  */
-export async function GET(request: NextRequest) {
-  try {
+export async function GET(request: NextRequest): Promise<NextResponse<ApiResult<StockLevelsResponse>>> {
+  const result = await handleAsync(async (): Promise<StockLevelsResponse> => {
     const searchParams = request.nextUrl.searchParams;
 
     // Parse query parameters
-    const params = {
+    const params: QueryParams = {
       warehouse: searchParams.get('warehouse') || undefined,
       productCode: searchParams.get('productCode') || undefined,
       minQty: searchParams.get('minQty') ? parseInt(searchParams.get('minQty')!) : undefined,
@@ -59,11 +95,11 @@ export async function GET(request: NextRequest) {
     const { data: products, error, count } = await query;
 
     if (error) {
-      throw new Error(`Database query failed: ${(error as { message: string }).message}`);
+      throw new Error(`Database query failed: ${error.message}`);
     }
 
     // Transform data - 策略 4: 類型安全的庫存數據處理
-    const items = (products || []).map((product: Record<string, unknown>) => {
+    const items: StockItem[] = (products || []).map((product: Record<string, unknown>) => {
       const location = safeString(safeGet(product, 'location'), 'Unknown');
       const qty = safeNumber(safeGet(product, 'product_qty'), 0);
       const unitPrice = safeNumber(safeGet(product, 'unit_price'), 0);
@@ -84,35 +120,24 @@ export async function GET(request: NextRequest) {
 
     // Calculate aggregates - 策略 4: 類型安全的聚合計算
     const uniqueProducts = new Set(items.map(i => i.productCode));
-    const aggregates = {
+    const aggregates: StockAggregates = {
       totalQuantity: items.reduce((sum, item) => sum + (item.quantity || 0), 0),
       totalValue: items.reduce((sum, item) => sum + (item.value || 0), 0),
       totalPallets: items.length,
       uniqueProducts: uniqueProducts.size,
     };
 
-    // Return response with cache headers
-    return NextResponse.json(
-      {
-        items,
-        total: count || 0,
-        aggregates,
-      },
-      {
-        headers: {
-          'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
-        },
-      }
-    );
-  } catch (error) {
-    console.error('[API as string] Stock levels error:', error);
+    return {
+      items,
+      total: count || 0,
+      aggregates,
+    };
+  }, 'Failed to fetch stock levels');
 
-    return NextResponse.json(
-      {
-        error: 'Failed to fetch stock levels',
-        message: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
-      },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(result, {
+    headers: {
+      'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
+    },
+    status: result.success ? 200 : 500,
+  });
 }

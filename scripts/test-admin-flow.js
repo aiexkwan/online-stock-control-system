@@ -52,7 +52,7 @@ const testReport = {
   success: false,
   pages: {
     login: { success: false, errors: [] },
-    access: { success: false, errors: [] },
+    admin: { success: false, errors: [] },
     adminAnalysis: { success: false, errors: [] },
     subPages: []
   }
@@ -210,7 +210,7 @@ async function runAdminFlowTest() {
     log('Step 3: 等待登入成功', 'step');
     testReport.steps.push('Wait for login success');
 
-    // 等待重定向到 /access 頁面
+    // 等待重定向到 /admin 頁面
     try {
       await page.waitForNavigation({
         waitUntil: 'networkidle2',
@@ -220,9 +220,9 @@ async function runAdminFlowTest() {
       const currentUrl = page.url();
       log(`Current URL after login: ${currentUrl}`, 'info');
 
-      if (currentUrl.includes('/access')) {
-        testReport.pages.access.success = true;
-        log('Successfully redirected to /access page', 'success');
+      if (currentUrl.includes('/admin')) {
+        testReport.pages.admin.success = true;
+        log('Successfully redirected to /admin page', 'success');
       } else if (currentUrl.includes('main-login')) {
         throw new Error('Login failed - still on login page');
       }
@@ -389,7 +389,7 @@ async function generateReport() {
     <div class="section">
         <h2>Page Tests</h2>
         <p><strong>Login:</strong> <span class="${testReport.pages.login.success ? 'success' : 'error'}">${testReport.pages.login.success ? 'PASS' : 'FAIL'}</span></p>
-        <p><strong>Access:</strong> <span class="${testReport.pages.access.success ? 'success' : 'error'}">${testReport.pages.access.success ? 'PASS' : 'FAIL'}</span></p>
+        <p><strong>Admin:</strong> <span class="${testReport.pages.admin.success ? 'success' : 'error'}">${testReport.pages.admin.success ? 'PASS' : 'FAIL'}</span></p>
         <p><strong>Admin Analysis:</strong> <span class="${testReport.pages.adminAnalysis.success ? 'success' : 'error'}">${testReport.pages.adminAnalysis.success ? 'PASS' : 'FAIL'}</span></p>
         <p><strong>Sub-pages Tested:</strong> ${testReport.pages.subPages.length}</p>
         <p><strong>Sub-pages Successful:</strong> ${testReport.pages.subPages.filter(p => p.success).length}</p>

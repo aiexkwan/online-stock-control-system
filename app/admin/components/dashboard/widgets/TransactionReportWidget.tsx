@@ -108,8 +108,13 @@ export const TransactionReportWidget = function TransactionReportWidget({
 
       console.log('Generating report for date range:', { startDate, endDate });
 
-      const reportData = await getTransactionReportData(startDate, endDate);
+      const reportResult = await getTransactionReportData(startDate, endDate);
 
+      if (!reportResult.success) {
+        throw new Error(reportResult.error || 'Failed to fetch transaction data');
+      }
+
+      const reportData = reportResult.data;
       if (!reportData) {
         throw new Error('No transaction data found for the selected date range');
       }
@@ -296,7 +301,10 @@ export const TransactionReportWidget = function TransactionReportWidget({
                   const endDate = format(endOfDay(toDate), 'yyyy-MM-dd');
 
                   try {
-                    const reportData = await getTransactionReportData(startDate, endDate);
+                    const reportResult = await getTransactionReportData(startDate, endDate);
+                    if (!reportResult.success) throw new Error(reportResult.error || 'Failed to fetch data');
+                    
+                    const reportData = reportResult.data;
                     if (!reportData) throw new Error('No data found');
 
                     const buffer = await buildTransactionReport(reportData);

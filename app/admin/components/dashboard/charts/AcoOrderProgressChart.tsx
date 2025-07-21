@@ -173,6 +173,7 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
               domain={[0, 100]}
             />
             <Tooltip
+              // @types-migration:todo(phase3) [P2] 使用 recharts TooltipProps 類型替代 any[] - Target: 2025-08 - Owner: @frontend-team
               content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
                 if (active && Array.isArray(payload) && payload.length > 0 && payload[0]?.payload) {
                   const payloadData = payload[0].payload;

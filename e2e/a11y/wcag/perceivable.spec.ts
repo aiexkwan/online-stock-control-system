@@ -25,7 +25,6 @@ const TEST_URLS = [
   '/admin/injection',
   '/admin/pipeline',
   '/admin/warehouse',
-  '/access',
   '/print-label',
   '/test-performance',
 ];

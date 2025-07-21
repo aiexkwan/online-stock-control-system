@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import EmailValidator from './EmailValidator';
-import { mainLoginAuth } from '../utils/supabase';
+import { unifiedAuth } from '../utils/unified-auth';
 
 interface LoginFormProps {
   onSuccess: () => void;
@@ -60,7 +60,7 @@ export default function LoginForm({ onSuccess, onError, isLoading, setIsLoading 
 
     try {
       // 使用 Supabase Auth 進行登入
-      await mainLoginAuth.signIn(formData.email, formData.password);
+      await unifiedAuth.signIn(formData.email, formData.password);
 
       // 登入成功，跳轉到 access 頁面
       onSuccess();

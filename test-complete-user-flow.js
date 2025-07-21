@@ -23,7 +23,7 @@ function loadEnvVariables() {
 async function testCompleteUserFlow() {
   console.log('🚀 Starting Complete User Flow Test...');
   console.log(
-    '📋 Test Coverage: /main-login → /access → /admin/analysis → /admin/injection → /admin/warehouse'
+    '📋 Test Coverage: /main-login → /admin → /admin/analysis → /admin/injection → /admin/warehouse'
   );
 
   // 載入環境變數
@@ -172,7 +172,7 @@ async function testCompleteUserFlow() {
     console.log('📍 Step 1.3: Submitting login form...');
     await page.click('button[type="submit"]');
 
-    // 等待登入完成，登入成功後會重定向到 /access
+    // 等待登入完成，登入成功後會重定向到 /admin
     try {
       await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 20000 });
     } catch (navError) {
@@ -180,9 +180,9 @@ async function testCompleteUserFlow() {
       const currentUrl = page.url();
       console.log(`Current URL: ${currentUrl}`);
 
-      // 如果已經重定向到 /access，則繼續
-      if (currentUrl.includes('/access')) {
-        console.log('✅ Login successful, redirected to access page');
+      // 如果已經重定向到 /admin，則繼續
+      if (currentUrl.includes('/admin')) {
+        console.log('✅ Login successful, redirected to admin page');
       } else {
         // 等待一段時間後再檢查
         await page.waitForTimeout(3000);
@@ -202,20 +202,16 @@ async function testCompleteUserFlow() {
       return isLoggedIn;
     });
 
-    // ==================== 第二階段：Access 頁面 ====================
-    console.log('\n🔑 Phase 2: Access Page Testing');
+    // ==================== 第二階段：Admin 頁面 ====================
+    console.log('\n🔑 Phase 2: Admin Page Testing');
     console.log('='.repeat(50));
 
-    console.log('📍 Step 2.1: Navigating to access page...');
-    await page.goto('http://localhost:3000/access', {
-      waitUntil: 'networkidle2',
-      timeout: 30000,
-    });
-
-    const accessPageTitle = await page.title();
-    runTest('Access page loads without errors', () => {
+    console.log('📍 Step 2.1: Admin page should already be loaded...');
+    // 不需要手動導航，登入後已經在 admin 頁面
+    const adminPageTitle = await page.title();
+    runTest('Admin page loads without errors', () => {
       return (
-        accessPageTitle && !accessPageTitle.includes('404') && !accessPageTitle.includes('Error')
+        adminPageTitle && !adminPageTitle.includes('404') && !adminPageTitle.includes('Error')
       );
     });
 
@@ -467,7 +463,6 @@ async function testCompleteUserFlow() {
       { path: '/admin/analysis', name: 'Analysis' },
       { path: '/admin/injection', name: 'Injection' },
       { path: '/admin/warehouse', name: 'Warehouse' },
-      { path: '/access', name: 'Access' },
     ];
 
     for (const route of routes) {

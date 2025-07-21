@@ -35,11 +35,6 @@ export class LocalFeatureFlagProvider extends BaseFeatureFlagProvider {
    * 初始化
    */
   async initialize(): Promise<void> {
-    // 如果指定了配置文件路徑，從文件加載
-    if (this.configPath && typeof window === 'undefined') {
-      await this.loadFromFile();
-    }
-
     // 設置默認 flags
     this.setupDefaultFlags();
 
@@ -286,33 +281,4 @@ export class LocalFeatureFlagProvider extends BaseFeatureFlagProvider {
     }
   }
 
-  /**
-   * 從文件加載（Node.js 環境）
-   */
-  private async loadFromFile(): Promise<void> {
-    if (!this.configPath || typeof window !== 'undefined') return;
-
-    try {
-      const fs = await import('fs/promises');
-      const content = await fs.readFile(this.configPath, 'utf-8');
-      await this.importConfig(content);
-    } catch (error) {
-      console.error('Failed to load feature flags from file:', error);
-    }
-  }
-
-  /**
-   * 保存到文件（Node.js 環境）
-   */
-  async saveToFile(): Promise<void> {
-    if (!this.configPath || typeof window !== 'undefined') return;
-
-    try {
-      const fs = await import('fs/promises');
-      const content = await this.exportConfig();
-      await fs.writeFile(this.configPath, content, 'utf-8');
-    } catch (error) {
-      console.error('Failed to save feature flags to file:', error);
-    }
-  }
 }

@@ -8,7 +8,6 @@ import { z } from 'zod';
 // Widget 數據源枚舉
 export const WidgetDataSourceSchema = z.enum([
   'batch',
-  'graphql',
   'server-action',
   'mixed',
   'none',
@@ -89,7 +88,6 @@ export const UnifiedWidgetConfigSchema = z.object({
   priority: WidgetPrioritySchema,
   refreshInterval: z.number().positive().optional(),
   supportTimeFrame: z.boolean().optional(),
-  useGraphQL: z.boolean().optional(),
   metadata: WidgetMetadataSchema.optional(),
 });
 

@@ -3,6 +3,10 @@
  * 統一管理認證、登錄、註冊相關類型
  */
 
+import { UserRole } from '@/types/core/enums';
+
+// @types-migration:todo(phase1) [P0] UserRole 已遷移到 core/enums.ts - Completed: 2025-07
+
 // 基本認證類型
 export interface LoginCredentials {
   email: string;
@@ -36,14 +40,6 @@ export interface ChangePasswordRequest {
   confirmPassword: string;
 }
 
-// 用戶角色和權限
-export enum UserRole {
-  ADMIN = 'admin',
-  MANAGER = 'manager',
-  OPERATOR = 'operator',
-  VIEWER = 'viewer',
-  GUEST = 'guest',
-}
 
 export interface User {
   id: string;

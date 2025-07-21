@@ -247,7 +247,7 @@ export async function fetchVoidRecords(filters: VoidReportFilters): Promise<Void
 
     // Step 4: Combine all data (Strategy 1: Zod validation with type narrowing)
     let combinedRecords: VoidRecord[] = toRecordArray(voidReports).map(voidRecord => {
-      const palletInfoRaw = safeGet(voidRecord, 'record_palletinfo') || ({} as any);
+      const palletInfoRaw = safeGet(voidRecord, 'record_palletinfo') || {};
       const palletInfo = isRecord(palletInfoRaw) ? palletInfoRaw : {};
       const pltNum = safeString(safeGet(voidRecord, 'plt_num'), '');
       const historyInfo = userMap.get(pltNum);

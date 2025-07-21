@@ -42,7 +42,8 @@ export class LoginPage {
 
   async isLoggedIn(): Promise<boolean> {
     try {
-      await this.page.waitForURL('**/access', { timeout: 5000 });
+      // 檢查是否重定向到 admin 頁面（成功登入的主要頁面）
+      await this.page.waitForURL('**/admin/**', { timeout: 5000 });
       return true;
     } catch {
       return false;

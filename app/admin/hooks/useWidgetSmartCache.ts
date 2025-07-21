@@ -122,7 +122,8 @@ export function useWidgetSmartCache<T>({
       cachePerformanceTracker.recordMiss(widgetId);
 
       // Fetch data
-      const data = await fetchFn(params || ({} as any));
+      // @types-migration:todo(phase3) [P2] 使用泛型約束 TParams 替代 Record<string, unknown> - Target: 2025-08 - Owner: @frontend-team
+      const data = await fetchFn(params || ({} as Record<string, unknown>));
 
       // Update metrics
       lastUpdateRef.current = new Date();

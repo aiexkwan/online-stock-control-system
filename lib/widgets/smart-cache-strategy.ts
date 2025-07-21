@@ -352,8 +352,8 @@ export function getRecommendedCacheStrategy(
     return 'STATIC';
   }
 
-  // Batch and GraphQL sources can use standard caching
-  if (dataSource === 'batch' || dataSource === 'graphql') {
+  // Batch sources can use standard caching
+  if (dataSource === 'batch') {
     return priority === 'high' ? 'DYNAMIC' : 'STANDARD';
   }
 

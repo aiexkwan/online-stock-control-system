@@ -43,7 +43,6 @@ interface MigrationControls {
 interface RegistryControls {
   testLazyLoading: boolean;
   testPreloading: boolean;
-  useGraphQL: boolean;
   measureBundleSize: boolean;
 }
 
@@ -152,7 +151,6 @@ export const testConfigs: Record<string, TestConfig> = {
     defaultControls: {
       testLazyLoading: true,
       testPreloading: true,
-      useGraphQL: false,
       measureBundleSize: true,
     },
   },

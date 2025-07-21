@@ -17,7 +17,6 @@ export { layoutCompatibilityManager } from './layout-compatibility';
 // 導出工具函數
 export {
   getWidgetCategory,
-  getGraphQLVersion,
   getPreloadPriority,
   getRoutePreloadWidgets,
   ROUTE_PRELOAD_MAP as routePreloadMap,

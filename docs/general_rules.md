@@ -403,6 +403,7 @@ Round 3: 實施計劃與監控
 ## 📐 編碼原則與技巧
 
 ### 核心原則
+- **Occam's Razor** - Entities must not be multiplied beyond necessity
 - **KISS** - Keep It Simple, Stupid
 - **YAGNI** - You Aren't Gonna Need It
 - **Open/Closed Principle**

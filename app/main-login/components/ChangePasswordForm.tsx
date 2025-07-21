@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import PasswordValidator from './PasswordValidator';
-import { mainLoginAuth } from '../utils/supabase';
+import { unifiedAuth } from '../utils/unified-auth';
 
 interface ChangePasswordFormProps {
   onSuccess: () => void;
@@ -81,16 +81,16 @@ export default function ChangePasswordForm({
 
     try {
       // 首先驗證當前密碼（通過重新登入）
-      const user = await mainLoginAuth.getCurrentUser();
+      const user = await unifiedAuth.getCurrentUser();
       if (!user?.email) {
         throw new Error('User not found');
       }
 
       // 嘗試用當前密碼登入來驗證
-      await mainLoginAuth.signIn(user.email, formData.currentPassword);
+      await unifiedAuth.signIn(user.email, formData.currentPassword);
 
       // 如果驗證成功，更新密碼
-      await mainLoginAuth.updatePassword(formData.newPassword);
+      await unifiedAuth.updatePassword(formData.newPassword);
 
       // 密碼修改成功
       onSuccess();

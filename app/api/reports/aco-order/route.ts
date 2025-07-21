@@ -22,8 +22,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     // Get ACO report data using the existing action
-    const reportData = await getAcoReportData(reference);
+    const reportResult = await getAcoReportData(reference);
 
+    if (!reportResult.success) {
+      return NextResponse.json(
+        { error: reportResult.error || 'Failed to fetch ACO order data' },
+        { status: 500 }
+      );
+    }
+
+    const reportData = reportResult.data;
     if (!reportData || reportData.length === 0) {
       return NextResponse.json(
         { error: 'No data found for the selected ACO order' },

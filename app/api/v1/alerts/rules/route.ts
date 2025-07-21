@@ -28,6 +28,7 @@ import {
   safeAlertLevel,
   safeAlertCondition,
 } from '@/types/database/helpers';
+import type { ApiResult } from '@/lib/types/api';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -103,7 +104,7 @@ const QueryAlertRulesSchema = z.object({
  * GET /api/v1/alerts/rules
  * 查詢告警規則
  */
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<NextResponse<ApiResult<{ data: AlertRule[]; pagination: { total: number | null; limit: number; offset: number } }>>> {
   try {
     const { searchParams } = new URL(request.url);
     const queryParams = Object.fromEntries(searchParams);
@@ -149,11 +150,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     return NextResponse.json({
       success: true,
-      data: data?.map(deserializeRule) || [],
-      pagination: {
-        total: count,
-        limit: query.limit,
-        offset: query.offset,
+      data: {
+        data: data?.map(deserializeRule) || [],
+        pagination: {
+          total: count,
+          limit: query.limit,
+          offset: query.offset,
+        },
       },
     });
   } catch (error) {
@@ -173,7 +176,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
  * POST /api/v1/alerts/rules
  * 創建告警規則
  */
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<NextResponse<ApiResult<AlertRule>>> {
   try {
     const body = await request.json();
     const validated = CreateAlertRuleSchema.parse(body);
@@ -201,7 +204,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         ...n,
         config: n.config as EmailConfig | SlackConfig | WebhookConfig | SmsConfig,
       })) as NotificationConfig[],
-      tags: validated.tags || ({} as any),
+      tags: validated.tags || {},
       createdAt: new Date(),
       updatedAt: new Date(),
       createdBy: userId,
@@ -266,7 +269,7 @@ function serializeRule(rule: AlertRule): Record<string, unknown> {
     dependencies: JSON.stringify(rule.dependencies || []),
     silence_time: rule.silenceTime,
     notifications: JSON.stringify(rule.notifications),
-    tags: JSON.stringify(rule.tags || ({} as any)),
+    tags: JSON.stringify(rule.tags || {}),
     created_at: rule.createdAt.toISOString(),
     updated_at: rule.updatedAt.toISOString(),
     created_by: rule.createdBy,

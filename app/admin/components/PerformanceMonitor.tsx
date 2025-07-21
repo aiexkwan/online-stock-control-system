@@ -15,6 +15,8 @@ import {
 } from '@/app/admin/utils/performance-test';
 import { CheckCircle2, AlertCircle, TrendingUp, Zap } from 'lucide-react';
 
+// @types-migration:todo(phase2) [P1] 定義正確的 comparison result 類型 - Owner: @frontend-team
+
 export const PerformanceMonitor: React.FC = () => {
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [report, setReport] = useState<string>('');
@@ -36,7 +38,8 @@ export const PerformanceMonitor: React.FC = () => {
     }
   }, [isMonitoring, report]);
 
-  const comparison = comparePerformance();
+  // @types-migration:todo(phase2) [P1] 傳入正確的 PerformanceResult[] 參數 - Owner: @frontend-team
+  const comparison = comparePerformance([]);
 
   return (
     <div className='space-y-4'>
@@ -70,7 +73,8 @@ export const PerformanceMonitor: React.FC = () => {
             {/* 性能比較 */}
             {showComparison && (
               <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-                {comparison.map((result, index) => (
+                {/* @types-migration:todo(phase2) [P1] 修復 comparison 不是陣列的問題 - Owner: @frontend-team */}
+                {(comparison as any).improved?.map((result: any, index: number) => (
                   <div key={index} className='space-y-2 rounded-lg bg-slate-700/50 p-4'>
                     <div className='flex items-center justify-between'>
                       <span className='text-sm text-slate-400'>{result.metric}</span>

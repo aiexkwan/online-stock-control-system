@@ -191,7 +191,7 @@ export async function signInWithSupabaseAuth(
     }
 
     const { user: authUser, session } = data;
-    const metadata = authUser.user_metadata || ({} as any);
+    const metadata = authUser.user_metadata || ({} as Record<string, unknown>);
 
     (process.env.NODE_ENV as string) !== 'production' &&
       (process.env.NODE_ENV as string) !== 'production' &&

@@ -47,13 +47,13 @@ test.describe('Simple Login and Error Check', () => {
 
     // Step 3: Wait for successful login
     console.log('📍 Waiting for login redirect');
-    await page.waitForURL(/\/access/, { timeout: 30000 });
-    console.log('✅ Successfully logged in and redirected to /access');
+    await page.waitForURL(/\/admin/, { timeout: 30000 });
+    console.log('✅ Successfully logged in and redirected to /admin');
 
-    // Step 4: Take screenshot of access page
-    console.log('📍 Taking screenshot of access page');
+    // Step 4: Take screenshot of admin page
+    console.log('📍 Taking screenshot of admin page');
     await page.screenshot({
-      path: 'test-results/access-page.png',
+      path: 'test-results/admin-page.png',
       fullPage: true,
     });
 

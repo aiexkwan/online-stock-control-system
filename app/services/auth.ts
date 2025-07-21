@@ -121,7 +121,7 @@ export async function authenticateUser(
         }
         // --- End of parsing ---
 
-        const { data: pendingRequest, error: requestCheckError } = await (supabase as any)
+        const { data: pendingRequest, error: requestCheckError } = await supabase
           .from('password_reset_requests')
           .select('id')
           .eq('user_id', userIdInt) // Use the integer userId for the query

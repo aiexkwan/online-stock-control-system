@@ -76,7 +76,7 @@ export class LegacyOrderLoadingAdapter {
     if (!Array.isArray(data)) return [];
 
     return toRecordArray(data)
-      .map((item: any) => {
+      .map((item: Record<string, unknown>) => {
         if (typeof item !== 'object' || item === null) return null;
 
         return {
@@ -103,7 +103,7 @@ export class LegacyOrderLoadingAdapter {
     if (!Array.isArray(data)) return [];
 
     return toRecordArray(data)
-      .map((item: any) => {
+      .map((item: Record<string, unknown>) => {
         if (typeof item !== 'object' || item === null) return null;
 
         return {
@@ -129,7 +129,7 @@ export class LegacyOrderLoadingAdapter {
     if (!Array.isArray(data)) return [];
 
     return toRecordArray(data)
-      .map((item: any) => {
+      .map((item: Record<string, unknown>) => {
         if (typeof item !== 'object' || item === null) return null;
 
         return {

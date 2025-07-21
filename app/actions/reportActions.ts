@@ -11,6 +11,7 @@ import { DatabaseRecord, convertToReportItem } from '@/types/database/tables';
 import { isRecord } from '@/types/database/helpers';
 import { getErrorMessage } from '@/types/core/error';
 import { Tables } from '@/types/database/supabase';
+import type { ActionResult } from '@/lib/types/api';
 // Database record types
 interface AcoOrderRecord {
   order_ref: number;
@@ -99,7 +100,7 @@ interface UserStats {
  * @returns A promise that resolves to an array of unique order reference strings, sorted numerically.
  *          Returns an empty array if an error occurs or no data is found.
  */
-export async function getUniqueAcoOrderRefs(): Promise<string[]> {
+export async function getUniqueAcoOrderRefs(): Promise<ActionResult<string[]>> {
   const supabase = await createClient();
 
   try {
@@ -107,12 +108,12 @@ export async function getUniqueAcoOrderRefs(): Promise<string[]> {
 
     if (error) {
       console.error('Error fetching aco_order_refs:', error.message);
-      return [];
+      return { success: false, error: `Error fetching aco_order_refs: ${error.message}` };
     }
 
     if (!data || data.length === 0) {
       isDevelopment() && console.log('No ACO order references found in database.');
-      return [];
+      return { success: true, data: [] };
     }
 
     // 正確處理 number 到 string 的轉換，並過濾無效值
@@ -126,11 +127,11 @@ export async function getUniqueAcoOrderRefs(): Promise<string[]> {
     ) as string[];
 
     // 按數字大小排序而非字母順序
-    return uniqueRefs.sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+    return { success: true, data: uniqueRefs.sort((a, b) => parseInt(a, 10) - parseInt(b, 10)) };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error('Unexpected error in getUniqueAcoOrderRefs:', errorMessage);
-    return [];
+    return { success: false, error: `Unexpected error: ${errorMessage}` };
   }
 }
 
@@ -153,24 +154,24 @@ export interface AcoProductData {
  * @param orderRef The ACO order reference to fetch data for.
  * @returns A promise that resolves to an array of AcoProductData.
  */
-export async function getAcoReportData(orderRef: string): Promise<AcoProductData[]> {
+export async function getAcoReportData(orderRef: string): Promise<ActionResult<AcoProductData[]>> {
   // 加強輸入驗證
   if (!orderRef || typeof orderRef !== 'string') {
     console.error('getAcoReportData: orderRef is required and must be a string');
-    return [];
+    return { success: false, error: 'orderRef is required and must be a string' };
   }
 
   const trimmedOrderRef = orderRef.trim();
   if (trimmedOrderRef === '') {
     console.error('getAcoReportData: orderRef cannot be empty');
-    return [];
+    return { success: false, error: 'orderRef cannot be empty' };
   }
 
   // 驗證 orderRef 是否為有效數字
   const orderRefNum = parseInt(trimmedOrderRef, 10);
   if (isNaN(orderRefNum) || orderRefNum <= 0) {
     console.error('getAcoReportData: orderRef must be a valid positive number');
-    return [];
+    return { success: false, error: 'orderRef must be a valid positive number' };
   }
 
   const supabase = await createClient();
@@ -187,12 +188,12 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
         `Error fetching product codes for orderRef ${orderRefNum}:`,
         acoCodesError.message
       );
-      return [];
+      return { success: false, error: `Error fetching product codes: ${acoCodesError.message}` };
     }
 
     if (!acoCodesData || acoCodesData.length === 0) {
       isDevelopment() && console.log(`No product codes found for orderRef ${orderRefNum}.`);
-      return [];
+      return { success: true, data: [] };
     }
 
     // 創建產品代碼到 required_qty 的映射
@@ -216,7 +217,7 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
       isDevelopment() &&
         isDevelopment() &&
         console.log(`No valid product codes extracted for orderRef ${orderRefNum}.`);
-      return [];
+      return { success: true, data: [] };
     }
 
     // 步驟 2: 使用批量查詢優化性能 - 一次性獲取所有產品的棧板資訊
@@ -230,7 +231,7 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
 
     if (palletError) {
       console.error(`Error fetching pallet info for orderRef ${orderRefNum}:`, palletError.message);
-      return [];
+      return { success: false, error: `Error fetching pallet info: ${palletError.message}` };
     }
 
     // 步驟 3: 按產品代碼分組處理數據
@@ -304,18 +305,18 @@ export async function getAcoReportData(orderRef: string): Promise<AcoProductData
       console.log(
         `Successfully fetched ACO report data for orderRef ${orderRefNum}: ${reportData.length} products, ${reportData.reduce((sum, p) => sum + p.pallets.length, 0)} pallets`
       );
-    return reportData;
+    return { success: true, data: reportData };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error(
       `Unexpected error in getAcoReportData for orderRef ${orderRefNum}:`,
       errorMessage
     );
-    return [];
+    return { success: false, error: `Unexpected error: ${errorMessage}` };
   }
 }
 
-export async function getUniqueGrnRefs(): Promise<string[]> {
+export async function getUniqueGrnRefs(): Promise<ActionResult<string[]>> {
   const supabase = await createClient();
 
   try {
@@ -323,12 +324,12 @@ export async function getUniqueGrnRefs(): Promise<string[]> {
 
     if (error) {
       console.error('Error fetching GRN refs:', error.message);
-      throw new Error('Could not fetch GRN references. ' + error.message);
+      return { success: false, error: `Could not fetch GRN references: ${error.message}` };
     }
 
     if (!data || data.length === 0) {
       isDevelopment() && isDevelopment() && console.log('No GRN references found in database.');
-      return [];
+      return { success: true, data: [] };
     }
 
     // 正確處理 number 到 string 的轉換，並過濾無效值
@@ -342,32 +343,32 @@ export async function getUniqueGrnRefs(): Promise<string[]> {
     ) as string[];
 
     // 按數字大小排序
-    return uniqueRefs.sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+    return { success: true, data: uniqueRefs.sort((a, b) => parseInt(a, 10) - parseInt(b, 10)) };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error('Unexpected error in getUniqueGrnRefs:', errorMessage);
-    throw error; // 重新拋出錯誤，因為原函數設計為拋出錯誤
+    return { success: false, error: `Unexpected error: ${errorMessage}` };
   }
 }
 
-export async function getMaterialCodesForGrnRef(grnRef: string): Promise<string[]> {
+export async function getMaterialCodesForGrnRef(grnRef: string): Promise<ActionResult<string[]>> {
   // 加強輸入驗證
   if (!grnRef || typeof grnRef !== 'string') {
     console.error('getMaterialCodesForGrnRef: grnRef is required and must be a string');
-    return [];
+    return { success: false, error: 'grnRef is required and must be a string' };
   }
 
   const trimmedGrnRef = grnRef.trim();
   if (trimmedGrnRef === '') {
     console.error('getMaterialCodesForGrnRef: grnRef cannot be empty');
-    return [];
+    return { success: false, error: 'grnRef cannot be empty' };
   }
 
   // 驗證 grnRef 是否為有效數字
   const grnRefNum = parseInt(trimmedGrnRef, 10);
   if (isNaN(grnRefNum)) {
     console.error('getMaterialCodesForGrnRef: grnRef must be a valid number');
-    return [];
+    return { success: false, error: 'grnRef must be a valid number' };
   }
 
   const supabase = await createClient();
@@ -380,14 +381,14 @@ export async function getMaterialCodesForGrnRef(grnRef: string): Promise<string[
 
     if (error) {
       console.error(`Error fetching material codes for grnRef ${grnRefNum}:`, error.message);
-      return [];
+      return { success: false, error: `Error fetching material codes: ${error.message}` };
     }
 
     if (!data || data.length === 0) {
       isDevelopment() &&
         isDevelopment() &&
         console.log(`No material codes found for grnRef ${grnRefNum}.`);
-      return [];
+      return { success: true, data: [] };
     }
 
     const uniqueMaterialCodes = Array.from(
@@ -398,14 +399,14 @@ export async function getMaterialCodesForGrnRef(grnRef: string): Promise<string[
       )
     ) as string[];
 
-    return uniqueMaterialCodes.sort();
+    return { success: true, data: uniqueMaterialCodes.sort() };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error(
       `Unexpected error in getMaterialCodesForGrnRef for grnRef ${grnRefNum}:`,
       errorMessage
     );
-    return [];
+    return { success: false, error: `Unexpected error: ${errorMessage}` };
   }
 }
 
@@ -437,21 +438,21 @@ export async function getGrnReportData(
   grnRef: string,
   materialCode: string,
   userEmail: string
-): Promise<GrnReportPageData | null> {
+): Promise<ActionResult<GrnReportPageData>> {
   // 加強輸入驗證
   if (!grnRef || typeof grnRef !== 'string') {
     console.error('getGrnReportData: grnRef is required and must be a string');
-    return null;
+    return { success: false, error: 'grnRef is required and must be a string' };
   }
 
   if (!materialCode || typeof materialCode !== 'string') {
     console.error('getGrnReportData: materialCode is required and must be a string');
-    return null;
+    return { success: false, error: 'materialCode is required and must be a string' };
   }
 
   if (!userEmail || typeof userEmail !== 'string') {
     console.error('getGrnReportData: userEmail is required and must be a string');
-    return null;
+    return { success: false, error: 'userEmail is required and must be a string' };
   }
 
   const trimmedGrnRef = grnRef.trim();
@@ -460,14 +461,14 @@ export async function getGrnReportData(
 
   if (trimmedGrnRef === '' || trimmedMaterialCode === '' || trimmedUserEmail === '') {
     console.error('getGrnReportData: grnRef, materialCode, and userEmail cannot be empty');
-    return null;
+    return { success: false, error: 'grnRef, materialCode, and userEmail cannot be empty' };
   }
 
   // 驗證 grnRef 是否為有效數字
   const grnRefNum = parseInt(trimmedGrnRef, 10);
   if (isNaN(grnRefNum)) {
     console.error('getGrnReportData: grnRef must be a valid number');
-    return null;
+    return { success: false, error: 'grnRef must be a valid number' };
   }
 
   const supabase = await createClient();
@@ -480,7 +481,7 @@ export async function getGrnReportData(
 
     if (!userIdResult) {
       console.error(`No user ID found for email ${trimmedUserEmail}`);
-      return null;
+      return { success: false, error: `No user ID found for email ${trimmedUserEmail}` };
     }
 
     userId = userIdResult.toString();
@@ -502,7 +503,7 @@ export async function getGrnReportData(
         `Error fetching GRN records for grnRef ${grnRefNum} and materialCode ${trimmedMaterialCode}:`,
         grnError.message
       );
-      return null;
+      return { success: false, error: `Error fetching GRN records: ${grnError.message}` };
     }
 
     if (!grnRecords || grnRecords.length === 0) {
@@ -511,7 +512,7 @@ export async function getGrnReportData(
         console.log(
           `No GRN records found for grnRef ${grnRefNum} and materialCode ${trimmedMaterialCode}.`
         );
-      return null;
+      return { success: false, error: `No GRN records found for grnRef ${grnRefNum} and materialCode ${trimmedMaterialCode}` };
     }
 
     // Store supplier code from the first record to fetch supplier name later
@@ -620,14 +621,14 @@ export async function getGrnReportData(
       console.log(
         `Successfully generated GRN report data for grnRef ${grnRefNum}, materialCode ${trimmedMaterialCode}, userId ${userId}: ${recordsDetails.length} records`
       );
-    return result;
+    return { success: true, data: result };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error(
       `Unexpected error in getGrnReportData for grnRef ${grnRefNum}, materialCode ${trimmedMaterialCode}:`,
       errorMessage
     );
-    return null;
+    return { success: false, error: `Unexpected error: ${errorMessage}` };
   }
 }
 
@@ -672,11 +673,11 @@ export interface TransactionReportData {
 export async function getTransactionReportData(
   startDate: string,
   endDate: string
-): Promise<TransactionReportData | null> {
+): Promise<ActionResult<TransactionReportData>> {
   // 輸入驗證
   if (!startDate || !endDate) {
     console.error('getTransactionReportData: startDate and endDate are required');
-    return null;
+    return { success: false, error: 'startDate and endDate are required' };
   }
 
   // 驗證日期格式
@@ -685,12 +686,12 @@ export async function getTransactionReportData(
 
   if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
     console.error('getTransactionReportData: Invalid date format');
-    return null;
+    return { success: false, error: 'Invalid date format' };
   }
 
   if (startDateObj > endDateObj) {
     console.error('getTransactionReportData: Start date cannot be after end date');
-    return null;
+    return { success: false, error: 'Start date cannot be after end date' };
   }
 
   const supabase = await createClient();
@@ -735,7 +736,7 @@ export async function getTransactionReportData(
 
     if (transferError) {
       console.error('Error fetching transfer records:', transferError.message);
-      return null;
+      return { success: false, error: `Error fetching transfer records: ${transferError.message}` };
     }
 
     // 如果沒有轉移記錄，返回空數據結構
@@ -762,11 +763,14 @@ export async function getTransactionReportData(
       }
 
       return {
-        date_range: { start_date: startDate, end_date: endDate },
-        transfers: [],
-        summary: {},
-        total_transfers: 0,
-        total_pallets: 0,
+        success: true,
+        data: {
+          date_range: { start_date: startDate, end_date: endDate },
+          transfers: [],
+          summary: {},
+          total_transfers: 0,
+          total_pallets: 0,
+        }
       };
     }
 
@@ -867,11 +871,11 @@ export async function getTransactionReportData(
       console.log(
         `Successfully fetched transaction report data: ${transfers.length} transfers, ${palletNumbers.length} unique pallets`
       );
-    return result;
+    return { success: true, data: result };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error('Unexpected error in getTransactionReportData:', errorMessage);
-    return null;
+    return { success: false, error: `Unexpected error: ${errorMessage}` };
   }
 }
 
@@ -889,11 +893,7 @@ import {
  * Get warehouse work level data
  * Server Action for fetching warehouse work level analytics
  */
-export async function getWarehouseWorkLevel(params?: WarehouseWorkLevelParams): Promise<{
-  success: boolean;
-  data?: WarehouseWorkLevelResponse;
-  error?: string;
-}> {
+export async function getWarehouseWorkLevel(params?: WarehouseWorkLevelParams): Promise<ActionResult<WarehouseWorkLevelResponse>> {
   try {
     const supabase = await createClient();
 
@@ -941,11 +941,7 @@ export async function getWarehouseWorkLevel(params?: WarehouseWorkLevelParams): 
  * Get today's warehouse work level
  * Convenience Server Action for today's data
  */
-export async function getTodayWarehouseWorkLevel(): Promise<{
-  success: boolean;
-  data?: WarehouseWorkLevelResponse;
-  error?: string;
-}> {
+export async function getTodayWarehouseWorkLevel(): Promise<ActionResult<WarehouseWorkLevelResponse>> {
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -960,11 +956,7 @@ export async function getTodayWarehouseWorkLevel(): Promise<{
  * Get this week's warehouse work level
  * Convenience Server Action for this week's data
  */
-export async function getThisWeekWarehouseWorkLevel(): Promise<{
-  success: boolean;
-  data?: WarehouseWorkLevelResponse;
-  error?: string;
-}> {
+export async function getThisWeekWarehouseWorkLevel(): Promise<ActionResult<WarehouseWorkLevelResponse>> {
   const now = new Date();
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - now.getDay());
@@ -980,11 +972,7 @@ export async function getThisWeekWarehouseWorkLevel(): Promise<{
  * Get this month's warehouse work level
  * Convenience Server Action for this month's data
  */
-export async function getThisMonthWarehouseWorkLevel(): Promise<{
-  success: boolean;
-  data?: WarehouseWorkLevelResponse;
-  error?: string;
-}> {
+export async function getThisMonthWarehouseWorkLevel(): Promise<ActionResult<WarehouseWorkLevelResponse>> {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -1075,11 +1063,7 @@ function extractVoidReason(remark: string): string {
 /**
  * Get void pallet summary statistics
  */
-export async function getVoidPalletSummary(filters: VoidPalletFilters): Promise<{
-  success: boolean;
-  data?: VoidPalletSummary;
-  error?: string;
-}> {
+export async function getVoidPalletSummary(filters: VoidPalletFilters): Promise<ActionResult<VoidPalletSummary>> {
   const supabase = await createClient();
 
   try {
@@ -1171,11 +1155,7 @@ export async function getVoidPalletSummary(filters: VoidPalletFilters): Promise<
 /**
  * Get void reason statistics
  */
-export async function getVoidReasonStats(filters: VoidPalletFilters): Promise<{
-  success: boolean;
-  data?: VoidReasonStats[];
-  error?: string;
-}> {
+export async function getVoidReasonStats(filters: VoidPalletFilters): Promise<ActionResult<VoidReasonStats[]>> {
   const supabase = await createClient();
 
   try {
@@ -1219,7 +1199,7 @@ export async function getVoidReasonStats(filters: VoidPalletFilters): Promise<{
     const reasonStats = new Map<string, { count: number; quantity: number }>();
 
     // 安全地處理數據，檢查 record_palletinfo 是否為有效對象
-    (data as any[]).forEach((item: any) => {
+    (data as DatabaseRecord[]).forEach((item: DatabaseRecord) => {
       if (!isRecord(item)) return;
 
       const reason = extractVoidReason(String(item.remark || ''));
@@ -1257,11 +1237,7 @@ export async function getVoidReasonStats(filters: VoidPalletFilters): Promise<{
 /**
  * Get void pallet details
  */
-export async function getVoidPalletDetails(filters: VoidPalletFilters): Promise<{
-  success: boolean;
-  data?: VoidPalletDetails[];
-  error?: string;
-}> {
+export async function getVoidPalletDetails(filters: VoidPalletFilters): Promise<ActionResult<VoidPalletDetails[]>> {
   const supabase = await createClient();
 
   try {
@@ -1335,11 +1311,7 @@ export async function getVoidPalletDetails(filters: VoidPalletFilters): Promise<
 /**
  * Get void product statistics
  */
-export async function getVoidProductStats(filters: VoidPalletFilters): Promise<{
-  success: boolean;
-  data?: VoidProductStats[];
-  error?: string;
-}> {
+export async function getVoidProductStats(filters: VoidPalletFilters): Promise<ActionResult<VoidProductStats[]>> {
   const supabase = await createClient();
 
   try {
@@ -1394,7 +1366,7 @@ export async function getVoidProductStats(filters: VoidPalletFilters): Promise<{
     >();
 
     // 安全地處理產品統計數據
-    (data as any[]).forEach((item: any) => {
+    (data as DatabaseRecord[]).forEach((item: DatabaseRecord) => {
       if (!isRecord(item)) return;
 
       const palletInfo = isRecord(item.record_palletinfo) ? item.record_palletinfo : {};
@@ -1491,11 +1463,7 @@ interface NotCountedItem {
 /**
  * Get stock take summary statistics
  */
-export async function getStockTakeSummary(filters: StockTakeFilters): Promise<{
-  success: boolean;
-  data?: StockTakeSummary;
-  error?: string;
-}> {
+export async function getStockTakeSummary(filters: StockTakeFilters): Promise<ActionResult<StockTakeSummary>> {
   const supabase = await createClient();
 
   try {
@@ -1542,7 +1510,7 @@ export async function getStockTakeSummary(filters: StockTakeFilters): Promise<{
     }
 
     // 安全轉換數據類型
-    const safeStockTakeData = (stockTakeData as any[]).map((item: any) => ({
+    const safeStockTakeData = (stockTakeData as DatabaseRecord[]).map((item: DatabaseRecord) => ({
       uuid: String(item.uuid || ''),
       product_code: String(item.product_code || ''),
       plt_num: item.plt_num ? String(item.plt_num) : null,
@@ -1554,7 +1522,7 @@ export async function getStockTakeSummary(filters: StockTakeFilters): Promise<{
       created_at: item.created_at ? String(item.created_at) : null,
     })) as StockTakeRecord[];
 
-    const safeStockLevels = (stockLevels as any[]).map((item: any) => ({
+    const safeStockLevels = (stockLevels as DatabaseRecord[]).map((item: DatabaseRecord) => ({
       stock: String(item.stock || ''),
       stock_level: Number(item.stock_level) || 0,
       description: String(item.description || ''),
@@ -1612,11 +1580,7 @@ export async function getStockTakeSummary(filters: StockTakeFilters): Promise<{
 /**
  * Get stock take details
  */
-export async function getStockTakeDetails(filters: StockTakeFilters): Promise<{
-  success: boolean;
-  data?: StockTakeDetails[];
-  error?: string;
-}> {
+export async function getStockTakeDetails(filters: StockTakeFilters): Promise<ActionResult<StockTakeDetails[]>> {
   const supabase = await createClient();
 
   try {
@@ -1653,7 +1617,7 @@ export async function getStockTakeDetails(filters: StockTakeFilters): Promise<{
     }
 
     // 安全轉換數據類型
-    const safeStockTakeData = (stockTakeData as any[]).map((item: any) => ({
+    const safeStockTakeData = (stockTakeData as DatabaseRecord[]).map((item: DatabaseRecord) => ({
       uuid: String(item.uuid || ''),
       product_code: String(item.product_code || ''),
       plt_num: item.plt_num ? String(item.plt_num) : null,
@@ -1665,7 +1629,7 @@ export async function getStockTakeDetails(filters: StockTakeFilters): Promise<{
       created_at: item.created_at ? String(item.created_at) : null,
     })) as StockTakeRecord[];
 
-    const safeStockLevels = (stockLevels as any[]).map((item: any) => ({
+    const safeStockLevels = (stockLevels as DatabaseRecord[]).map((item: DatabaseRecord) => ({
       stock: String(item.stock || ''),
       stock_level: Number(item.stock_level) || 0,
       description: String(item.description || ''),
@@ -1746,11 +1710,7 @@ export async function getStockTakeDetails(filters: StockTakeFilters): Promise<{
 /**
  * Get not counted items
  */
-export async function getNotCountedItems(filters: StockTakeFilters): Promise<{
-  success: boolean;
-  data?: NotCountedItem[];
-  error?: string;
-}> {
+export async function getNotCountedItems(filters: StockTakeFilters): Promise<ActionResult<NotCountedItem[]>> {
   const supabase = await createClient();
 
   try {
@@ -1787,7 +1747,7 @@ export async function getNotCountedItems(filters: StockTakeFilters): Promise<{
     }
 
     // 安全轉換數據類型
-    const safeStockTakeData = (stockTakeData as any[]).map((item: any) => ({
+    const safeStockTakeData = (stockTakeData as DatabaseRecord[]).map((item: DatabaseRecord) => ({
       uuid: String(item.uuid || ''),
       product_code: String(item.product_code || ''),
       plt_num: item.plt_num ? String(item.plt_num) : null,
@@ -1799,7 +1759,7 @@ export async function getNotCountedItems(filters: StockTakeFilters): Promise<{
       created_at: item.created_at ? String(item.created_at) : null,
     })) as StockTakeRecord[];
 
-    const safeStockLevels = (stockLevels as any[]).map((item: any) => ({
+    const safeStockLevels = (stockLevels as DatabaseRecord[]).map((item: DatabaseRecord) => ({
       stock: String(item.stock || ''),
       stock_level: Number(item.stock_level) || 0,
       description: String(item.description || ''),
@@ -1959,11 +1919,7 @@ function parseDateRange(dateRange: string): [string, string] {
 /**
  * Get order loading summary statistics
  */
-export async function getOrderLoadingSummary(filters: OrderLoadingFilters): Promise<{
-  success: boolean;
-  data?: OrderLoadingSummary;
-  error?: string;
-}> {
+export async function getOrderLoadingSummary(filters: OrderLoadingFilters): Promise<ActionResult<OrderLoadingSummary>> {
   const supabase = await createClient();
 
   try {
@@ -2025,8 +1981,8 @@ export async function getOrderLoadingSummary(filters: OrderLoadingFilters): Prom
       }
     >();
 
-    (data as any[]).forEach((item: any) => {
-      const orderRef = item.order_ref;
+    (data as DatabaseRecord[]).forEach((item: DatabaseRecord) => {
+      const orderRef = String(item.order_ref || '');
       if (!orderMap.has(orderRef)) {
         orderMap.set(orderRef, {
           totalQty: 0,
@@ -2036,10 +1992,11 @@ export async function getOrderLoadingSummary(filters: OrderLoadingFilters): Prom
       }
 
       const order = orderMap.get(orderRef)!;
-      if (item.action_type === 'load') {
-        order.loadedQty += item.quantity || 0;
+      const quantity = Number(item.quantity || 0);
+      if (String(item.action_type) === 'load') {
+        order.loadedQty += quantity;
       }
-      order.totalQty += item.quantity || 0;
+      order.totalQty += quantity;
     });
 
     // Calculate statistics
@@ -2047,9 +2004,9 @@ export async function getOrderLoadingSummary(filters: OrderLoadingFilters): Prom
       order => order.loadedQty >= order.totalQty
     ).length;
 
-    const totalItemsLoaded = (data as any[])
-      .filter(item => item.action_type === 'load')
-      .reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+    const totalItemsLoaded = (data as DatabaseRecord[])
+      .filter(item => String(item.action_type) === 'load')
+      .reduce((sum: number, item: DatabaseRecord) => sum + Number(item.quantity || 0), 0);
 
     const completionRates = Array.from(orderMap.values()).map(order =>
       order.totalQty > 0 ? order.loadedQty / order.totalQty : 0
@@ -2079,11 +2036,7 @@ export async function getOrderLoadingSummary(filters: OrderLoadingFilters): Prom
 /**
  * Get order progress data
  */
-export async function getOrderProgress(filters: OrderLoadingFilters): Promise<{
-  success: boolean;
-  data?: OrderProgress[];
-  error?: string;
-}> {
+export async function getOrderProgress(filters: OrderLoadingFilters): Promise<ActionResult<OrderProgress[]>> {
   const supabase = await createClient();
 
   try {
@@ -2135,8 +2088,8 @@ export async function getOrderProgress(filters: OrderLoadingFilters): Promise<{
     // Group by order
     const orderMap = new Map<string, OrderDetails>();
 
-    rawData.forEach((item: any) => {
-      const orderRef = item.order_ref;
+    rawData.forEach((item: DatabaseRecord) => {
+      const orderRef = String(item.order_ref || '');
       if (!orderMap.has(orderRef)) {
         orderMap.set(orderRef, {
           order_number: orderRef,
@@ -2148,11 +2101,12 @@ export async function getOrderProgress(filters: OrderLoadingFilters): Promise<{
       }
 
       const order = orderMap.get(orderRef)!;
-      if (item.action_type === 'load') {
-        order.loaded_qty += item.quantity || 0;
+      const quantity = Number(item.quantity || 0);
+      if (String(item.action_type) === 'load') {
+        order.loaded_qty += quantity;
       }
-      order.total_qty += item.quantity || 0;
-      order.products.add(item.product_code);
+      order.total_qty += quantity;
+      order.products.add(String(item.product_code || ''));
     });
 
     const result = Array.from(orderMap.values())
@@ -2181,11 +2135,7 @@ export async function getOrderProgress(filters: OrderLoadingFilters): Promise<{
 /**
  * Get loading details history
  */
-export async function getLoadingDetails(filters: OrderLoadingFilters): Promise<{
-  success: boolean;
-  data?: LoadingDetails[];
-  error?: string;
-}> {
+export async function getLoadingDetails(filters: OrderLoadingFilters): Promise<ActionResult<LoadingDetails[]>> {
   const supabase = await createClient();
 
   try {
@@ -2236,14 +2186,14 @@ export async function getLoadingDetails(filters: OrderLoadingFilters): Promise<{
       return { success: true, data: [] };
     }
 
-    const result = (data as any[]).map((item: any) => ({
-      timestamp: item.action_time || '',
-      order_number: item.order_ref,
-      product_code: item.product_code,
+    const result = (data as DatabaseRecord[]).map((item: DatabaseRecord) => ({
+      timestamp: String(item.action_time || ''),
+      order_number: String(item.order_ref || ''),
+      product_code: String(item.product_code || ''),
       product_description: '', // No longer available without JOIN
-      loaded_qty: item.quantity,
+      loaded_qty: Number(item.quantity || 0),
       user_name: `User ${item.action_by}`,
-      action: item.action_type,
+      action: String(item.action_type || ''),
     }));
 
     return { success: true, data: result };
@@ -2257,11 +2207,7 @@ export async function getLoadingDetails(filters: OrderLoadingFilters): Promise<{
 /**
  * Get user performance statistics
  */
-export async function getUserPerformance(filters: OrderLoadingFilters): Promise<{
-  success: boolean;
-  data?: UserPerformance[];
-  error?: string;
-}> {
+export async function getUserPerformance(filters: OrderLoadingFilters): Promise<ActionResult<UserPerformance[]>> {
   const supabase = await createClient();
 
   try {
@@ -2323,12 +2269,12 @@ export async function getUserPerformance(filters: OrderLoadingFilters): Promise<
       }
     >();
 
-    (data as any[]).forEach((item: any) => {
-      const userId = item.action_by || 'unknown';
+    (data as DatabaseRecord[]).forEach((item: DatabaseRecord) => {
+      const userId = String(item.action_by || 'unknown');
 
       if (!userStats.has(userId)) {
         userStats.set(userId, {
-          user_name: `User ${item.action_by}`,
+          user_name: `User ${String(item.action_by || 'unknown')}`,
           total_loads: 0,
           total_quantity: 0,
           load_times: [],
