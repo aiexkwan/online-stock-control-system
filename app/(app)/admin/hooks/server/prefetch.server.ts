@@ -12,6 +12,15 @@ export async function prefetchCriticalWidgetsData(options?: {
 }): Promise<Partial<DashboardBatchQueryData>> {
   try {
     const supabase = await createClient();
+    
+    // 🔥 添加認證檢查 - 修復 "Invalid Refresh Token: Session Expired" 錯誤
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      console.warn('[SSR] User not authenticated, skipping prefetch:', userError?.message);
+      return {}; // 優雅降級到客戶端渲染
+    }
+    
     const results: Partial<DashboardBatchQueryData> = {};
 
     // Critical widgets 並行查詢
@@ -99,6 +108,15 @@ export async function prefetchDashboardData(dateRange?: {
 }): Promise<Partial<DashboardBatchQueryData>> {
   try {
     const supabase = await createClient();
+    
+    // 🔥 添加認證檢查 - 修復 "Invalid Refresh Token: Session Expired" 錯誤
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    if (userError || !user) {
+      console.warn('[SSR] User not authenticated, skipping dashboard prefetch:', userError?.message);
+      return {}; // 優雅降級到客戶端渲染
+    }
+    
     const results: Partial<DashboardBatchQueryData> = {};
 
     // 獲取日期範圍

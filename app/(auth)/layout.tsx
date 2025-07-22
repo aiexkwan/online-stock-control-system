@@ -1,8 +1,7 @@
 import React from 'react';
-import { MinimalBackground } from '@/app/components/MinimalBackground';
+import { UniversalBackground } from '@/app/components/UniversalBackground';
 
-// 極簡 Auth Layout - 只有背景，無任何其他 Provider
-// 修正：不重新定義 html/body，只提供內容包裝
+// Auth Layout - 使用統一星空背景系統，確保視覺一致性
 export default function AuthLayout({
   children,
 }: {
@@ -11,9 +10,8 @@ export default function AuthLayout({
   const safeChildren = children || null;
   
   return (
-    <>
-      <MinimalBackground />
+    <UniversalBackground>
       {safeChildren}
-    </>
+    </UniversalBackground>
   );
 }

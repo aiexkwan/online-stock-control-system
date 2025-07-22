@@ -141,7 +141,7 @@
 | 12 | 流程優化專家 | 業務流程、效率提升 | 流程分析、用戶體驗 | `docs/role_play/ProcessOptimizer.md` |
 | 13 | 數據分析師 | 商業智能、數據洞察 | 數據驅動、業務分析 | `docs/role_play/DataAnalyst.md` |
 | 14 | AI/ML工程師 | AI模型、智能化推動 | 技術創新、模式識別 | `docs/role_play/AI-ML-Engineer.md` |
-| 15 | 文檔整理專家 | 知識管理專家、文檔架構師、信息組織者 | 技術創新、模式識別 | `docs/role_play/AI-ML-Engineer.md` |
+| 15 | 文檔整理專家 | 知識管理專家、文檔架構師、信息組織者 | 會議書記、文檔專家 | `docs/role_play/AI-ML-Engineer.md` |
 
 
 ### 🎬 場景化專家組合（加強討論版）
@@ -428,36 +428,6 @@ Round 3: 實施計劃與監控
 | **前端測試** | Playwright | E2E測試 |
 | **單元測試** | Vitest | 快速測試 |
 | **元件開發** | Storybook | 元件開發與測試 |
-
----
-
-## 📁 文檔管理系統
-
-### 文檔格式
-- **編碼**：UTF-8
-- **儲存規則**：必須放入對應文檔庫，不可任意儲存
-
-### 文檔分類與用途
-
-| 文檔類型 | 用途說明 | 儲存路徑 |
-|----------|----------|----------|
-| **計劃文檔** | 擬定/未來計劃（不含完成度） | `docs/planning/{相關計劃}.md` |
-| **TodoList文檔** | 每日任務規劃（不含未來計劃） | `docs/Today_Todo/{當天日期}.md` |
-| **進度檢查報告** | 追蹤進度（不含未來計劃） | `docs/progress-check/{進度檢查報告}.md` |
-| **評核紀錄** | 完成項目的審核記錄 | `docs/audit/{相關審查工作}.md` |
-| **專家討論記錄** | 專家會議討論記錄 | `docs/expert-discussions/{討論主題}-{日期}.md` |
-
-### 專門文檔庫
-
-| 文檔庫 | 路徑 | 內容 |
-|--------|------|------|
-| **錯誤記錄庫** | `docs/issue-library/{問題類型}.md` | 系統錯誤與問題 |
-| **RPC文檔庫** | `docs/rpc-functions/` | RPC函數文檔 |
-| **SQL文檔庫** | `docs/SQL-Library/` | SQL查詢語句 |
-| **資料庫結構** | `docs/databaseSchema/` | 資料庫架構文檔 |
-| **身分文檔庫** | `docs/role_play/` | 角色定位文檔 |
-| **專家討論庫** | `docs/expert-discussions/` | 專家協作討論記錄 |
-| **無法歸類** | `docs/Others/` | 其他文檔 |
 
 ---
 
