@@ -1,0 +1,247 @@
+/**
+ * Enhanced search type detection for void pallet functionality
+ * Provides more accurate detection with confidence scoring
+ */
+
+export type SearchType = 'series' | 'pallet_num' | 'unknown';
+
+export interface DetectionResult {
+  type: SearchType;
+  confidence: number; // 0-100
+  pattern: string; // 描述檢測到的模式
+  suggestions?: string[]; // 建議的格式
+}
+
+/**
+ * Enhanced search type detection with confidence scoring
+ */
+export function detectSearchType(input: string): DetectionResult {
+  const trimmedInput = input.trim();
+
+  if (!trimmedInput) {
+    return {
+      type: 'unknown',
+      confidence: 0,
+      pattern: 'Empty input',
+    };
+  }
+
+  // Series patterns (high confidence)
+  // Format: DDMMYY-XXXXXX (date followed by hyphen and alphanumeric)
+  const seriesPattern = /^(\d{6})-([A-Z0-9]{6})$/i;
+  if (seriesPattern.test(trimmedInput)) {
+    return {
+      type: 'series',
+      confidence: 100,
+      pattern: 'Standard series format (DDMMYY-XXXXXX)',
+    };
+  }
+
+  // Pallet number patterns (high confidence)
+  // Format: DDMMYY/XX or DDMMYY/XXX (date followed by slash and 1-3 digits)
+  const palletPattern = /^(\d{6})\/(\d{1,3})$/;
+  if (palletPattern.test(trimmedInput)) {
+    return {
+      type: 'pallet_num',
+      confidence: 100,
+      pattern: 'Standard pallet format (DDMMYY/XX)',
+    };
+  }
+
+  // Contains hyphen - likely series (medium-high confidence)
+  if (trimmedInput.includes('-')) {
+    // Check if it follows partial series pattern
+    const partialSeriesPattern = /^\d+-[A-Z0-9]+$/i;
+    if (partialSeriesPattern.test(trimmedInput)) {
+      return {
+        type: 'series',
+        confidence: 85,
+        pattern: 'Contains hyphen with alphanumeric',
+        suggestions: ['Ensure format is DDMMYY-XXXXXX'],
+      };
+    }
+
+    return {
+      type: 'series',
+      confidence: 70,
+      pattern: 'Contains hyphen',
+      suggestions: ['Expected format: DDMMYY-XXXXXX'],
+    };
+  }
+
+  // Contains slash - likely pallet number (medium-high confidence)
+  if (trimmedInput.includes('/')) {
+    // Check if it follows partial pallet pattern
+    const partialPalletPattern = /^\d+\/\d+$/;
+    if (partialPalletPattern.test(trimmedInput)) {
+      return {
+        type: 'pallet_num',
+        confidence: 85,
+        pattern: 'Contains slash with numbers',
+        suggestions: ['Ensure format is DDMMYY/XX'],
+      };
+    }
+
+    return {
+      type: 'pallet_num',
+      confidence: 70,
+      pattern: 'Contains slash',
+      suggestions: ['Expected format: DDMMYY/XX'],
+    };
+  }
+
+  // Date prefix check (6 digits at start)
+  const datePrefix = /^(\d{6})(.*)$/;
+  const dateMatch = trimmedInput.match(datePrefix);
+  if (dateMatch) {
+    const [, dateStr, remainder] = dateMatch;
+
+    // Validate date format (DDMMYY)
+    const day = parseInt(dateStr.substring(0, 2));
+    const month = parseInt(dateStr.substring(2, 4));
+    const year = parseInt(dateStr.substring(4, 6));
+
+    const isValidDate = day >= 1 && day <= 31 && month >= 1 && month <= 12;
+
+    if (isValidDate) {
+      if (!remainder) {
+        // Just date, could be incomplete
+        return {
+          type: 'unknown',
+          confidence: 40,
+          pattern: 'Date prefix only',
+          suggestions: [
+            'For pallet: Add /XX (e.g., ' + trimmedInput + '/01)',
+            'For series: Add -XXXXXX (e.g., ' + trimmedInput + '-ABC123)',
+          ],
+        };
+      }
+
+      // Has remainder but no clear separator
+      return {
+        type: 'unknown',
+        confidence: 30,
+        pattern: 'Date prefix with unclear suffix',
+        suggestions: ['For pallet: Use format DDMMYY/XX', 'For series: Use format DDMMYY-XXXXXX'],
+      };
+    }
+  }
+
+  // Check for alphanumeric patterns
+  const hasLetters = /[A-Za-z]/.test(trimmedInput);
+  const hasNumbers = /\d/.test(trimmedInput);
+
+  if (hasLetters && hasNumbers && trimmedInput.length > 8) {
+    // Long alphanumeric, possibly series
+    return {
+      type: 'series',
+      confidence: 50,
+      pattern: 'Long alphanumeric string',
+      suggestions: ['Series format should be DDMMYY-XXXXXX'],
+    };
+  }
+
+  if (/^\d+$/.test(trimmedInput)) {
+    // All numeric
+    if (trimmedInput.length === 6) {
+      // Possibly date prefix
+      return {
+        type: 'unknown',
+        confidence: 40,
+        pattern: '6-digit number (possible date)',
+        suggestions: ['For pallet: Add /XX', 'For series: Add -XXXXXX'],
+      };
+    }
+
+    if (trimmedInput.length < 6) {
+      return {
+        type: 'unknown',
+        confidence: 20,
+        pattern: 'Short numeric string',
+        suggestions: ['Too short to determine type'],
+      };
+    }
+  }
+
+  // Default unknown
+  return {
+    type: 'unknown',
+    confidence: 10,
+    pattern: 'Unrecognized format',
+    suggestions: [
+      'Pallet format: DDMMYY/XX (e.g., 241224/01)',
+      'Series format: DDMMYY-XXXXXX (e.g., 241224-ABC123)',
+    ],
+  };
+}
+
+/**
+ * Format validation
+ */
+export function validateSearchFormat(
+  input: string,
+  expectedType: SearchType
+): {
+  isValid: boolean;
+  error?: string;
+} {
+  const trimmedInput = input.trim();
+
+  if (!trimmedInput) {
+    return { isValid: false, error: 'Input cannot be empty' };
+  }
+
+  if (expectedType === 'series') {
+    const seriesPattern = /^(\d{6})-([A-Z0-9]{6})$/i;
+    if (!seriesPattern.test(trimmedInput)) {
+      return {
+        isValid: false,
+        error: 'Invalid series format. Expected: DDMMYY-XXXXXX (e.g., 241224-ABC123)',
+      };
+    }
+  } else if (expectedType === 'pallet_num') {
+    const palletPattern = /^(\d{6})\/(\d{1,3})$/;
+    if (!palletPattern.test(trimmedInput)) {
+      return {
+        isValid: false,
+        error: 'Invalid pallet format. Expected: DDMMYY/XX (e.g., 241224/01)',
+      };
+    }
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Get search type display name
+ */
+export function getSearchTypeDisplayName(type: SearchType): string {
+  switch (type) {
+    case 'series':
+      return 'Series Number';
+    case 'pallet_num':
+      return 'Pallet Number';
+    default:
+      return 'Unknown Type';
+  }
+}
+
+/**
+ * Format search input for display
+ */
+export function formatSearchInput(input: string, type: SearchType): string {
+  const trimmedInput = input.trim().toUpperCase();
+
+  // Add formatting hints
+  if (type === 'series' && !trimmedInput.includes('-')) {
+    if (trimmedInput.length === 6) {
+      return trimmedInput + '-';
+    }
+  } else if (type === 'pallet_num' && !trimmedInput.includes('/')) {
+    if (trimmedInput.length === 6) {
+      return trimmedInput + '/';
+    }
+  }
+
+  return trimmedInput;
+}

@@ -4,7 +4,7 @@
  */
 
 // Active themes constant
-export type ActiveTheme = 'operations-monitoring' | 'data-management' | 'analytics';
+export type ActiveTheme = 'operations' | 'data-management' | 'analytics';
 
 // Theme mapping type
 export type ThemeMapping = Record<string, string>;

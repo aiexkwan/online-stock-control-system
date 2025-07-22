@@ -1,11 +1,11 @@
 /**
- * E2E Test: 最終驗證 operations-monitoring 修復
+ * E2E Test: 最終驗證 operations 修復
  * 檢查 HistoryTreeV2 警告是否消失
  */
 
 import { test, expect } from '@playwright/test';
 
-test.describe('最終驗證 operations-monitoring 修復', () => {
+test.describe('最終驗證 operations 修復', () => {
   test('檢查 HistoryTreeV2 警告是否消失並驗證頁面正常', async ({ page }) => {
     console.log('🔍 開始最終驗證...');
 
@@ -27,7 +27,7 @@ test.describe('最終驗證 operations-monitoring 修復', () => {
 
     console.log('🚀 訪問頁面...');
 
-    await page.goto('http://localhost:3000/admin/operations-monitoring', {
+    await page.goto('http://localhost:3000/admin/operations', {
       waitUntil: 'networkidle',
       timeout: 30000,
     });

@@ -6,8 +6,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { UnifiedVoidReportDialog } from '@/app/void-pallet/components/UnifiedVoidReportDialog';
-import { UnifiedLoadingReportDialog } from '@/app/order-loading/components/UnifiedLoadingReportDialog';
+import { UnifiedVoidReportDialog } from '@/app/(app)/void-pallet/components/UnifiedVoidReportDialog';
+import { UnifiedLoadingReportDialog } from '@/app/(app)/order-loading/components/UnifiedLoadingReportDialog';
 // ACO Report now integrated directly into system page widget
 // GRN Report now integrated directly into system page widget
 // Transaction Report now integrated directly into system page widget

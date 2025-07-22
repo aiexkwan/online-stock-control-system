@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Zap } from 'lucide-react';
-import { enhancedBehaviorTracker } from '@/lib/navigation/behavior-tracker';
+import { getFrequentPaths } from '@/lib/constants/navigation-paths';
 import { getNavigationInfo } from '@/config/navigation-map';
 import { cn } from '@/lib/utils';
 
@@ -29,7 +29,7 @@ export function QuickAccess({ userId, className }: QuickAccessProps) {
   useEffect(() => {
     const loadFrequentPaths = async () => {
       try {
-        const paths = await enhancedBehaviorTracker.getFrequentPaths(userId, 3);
+        const paths = getFrequentPaths(3);
 
         // Map paths to navigation items
         const items: QuickAccessItem[] = paths.map(path => {

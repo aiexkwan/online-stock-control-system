@@ -33,8 +33,8 @@ import { ReportRegistry } from '@/app/components/reports/core/ReportRegistry';
 import { RegisteredReport } from '@/app/components/reports/core/ReportConfig';
 
 // Report Dialogs
-import { UnifiedVoidReportDialog } from '@/app/void-pallet/components/UnifiedVoidReportDialog';
-import { UnifiedLoadingReportDialog } from '@/app/order-loading/components/UnifiedLoadingReportDialog';
+import { UnifiedVoidReportDialog } from '@/app/(app)/void-pallet/components/UnifiedVoidReportDialog';
+import { UnifiedLoadingReportDialog } from '@/app/(app)/order-loading/components/UnifiedLoadingReportDialog';
 // import { UnifiedStockTakeReportDialog } from '@/app/stock-take/components/UnifiedStockTakeReportDialog'; // Component not found
 // ACO Report now integrated directly into system page widget
 // import { UnifiedGrnReportDialog } from '@/app/components/reports/UnifiedGrnReportDialog'; // Component not found

@@ -3,7 +3,7 @@
  * 測試 grid template 解析邏輯
  */
 
-import { adminDashboardLayouts } from '../app/admin/components/dashboard/adminDashboardLayouts';
+import { adminDashboardLayouts } from '../app/(app)/admin/components/dashboard/adminDashboardLayouts';
 import { captureThemeLayout } from '../lib/widgets/layout-snapshot';
 
 console.log('🧪 Testing Grid Template Parser...\n');

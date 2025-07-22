@@ -5,7 +5,7 @@ import { getUserIdFromEmail } from '@/lib/utils/getUserId';
 import {
   checkOperationAnomaly,
   logFailedScan,
-} from '@/app/order-loading/services/anomalyDetectionService';
+} from '@/app/(app)/order-loading/services/anomalyDetectionService';
 
 export interface LoadPalletResult {
   success: boolean;

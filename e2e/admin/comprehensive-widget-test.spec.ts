@@ -22,7 +22,6 @@ test.describe('Admin Sub-pages - Comprehensive Widget Testing', () => {
     '/admin/users',
     '/admin/settings',
     '/admin/stock-count',
-    '/admin/product-update-demo',
   ];
 
   test.beforeEach(async ({ page }) => {

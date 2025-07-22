@@ -1,7 +1,7 @@
 import React from 'react';
 import { DatabaseRecord } from '@/types/database/tables';
 import { Box, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
-import { MetricCard } from '@/app/admin/components/dashboard/widgets/common/data-display/MetricCard';
+import { MetricCard } from '@/app/(app)/admin/components/dashboard/widgets/common/data-display/MetricCard';
 import { AdminWidgetConfig } from '@/types/components/dashboard';
 
 interface MockData {

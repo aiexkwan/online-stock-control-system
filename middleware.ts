@@ -37,7 +37,6 @@ export async function middleware(request: NextRequest) {
     '/main-login', // 登入頁面
     '/change-password', // 密碼更新頁面需要公開，用戶通過電郵連結訪問
     '/new-password', // 密碼重設頁面需要公開，用戶通過電郵連結訪問
-    '/print-label/html-preview', // HTML 標籤預覽頁面（用於測試和預覽）
     '/api/health', // Health check API
     '/api/v1/health', // v1 健康檢查 API (v1.8 新增)
     '/api/v2/health', // v2 健康檢查 API (v1.8 新增)

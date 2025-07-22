@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Theme Merge Verification', () => {
-  test('Test new operations-monitoring theme', async ({ page }) => {
+  test('Test new operations theme', async ({ page }) => {
     // Go to login page
     await page.goto('http://localhost:3000/main-login');
 
@@ -17,8 +17,8 @@ test.describe('Theme Merge Verification', () => {
     const url = page.url();
     expect(url).toContain('/admin');
 
-    // Try to access operations-monitoring theme
-    await page.goto('http://localhost:3000/admin/operations-monitoring');
+    // Try to access operations theme
+    await page.goto('http://localhost:3000/admin/operations');
 
     // Wait for page to load
     await page.waitForLoadState('networkidle');
@@ -37,7 +37,7 @@ test.describe('Theme Merge Verification', () => {
     // Take screenshot
     await page.screenshot({ path: 'test-theme-merge-screenshot.png' });
 
-    console.log('✓ Operations-monitoring theme accessible');
+    console.log('✓ Operations theme accessible');
 
     // Test backward compatibility - injection theme
     await page.goto('http://localhost:3000/admin/injection');

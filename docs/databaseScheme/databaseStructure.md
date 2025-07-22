@@ -192,10 +192,6 @@
 - **`report_log`**: 錯誤報告日誌
 - **`debug_log`**: 除錯日誌
 
-### 使用者行為分析
-- **`user_navigation_history`**: 用戶導航歷史
-- **`user_navigation_stats`**: 導航統計
-- **`user_navigation_patterns`**: 導航模式分析
 
 ### 其他業務表格
 - **`report_void`**: 損壞分類帳

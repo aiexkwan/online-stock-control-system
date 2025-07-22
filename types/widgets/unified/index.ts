@@ -100,7 +100,7 @@ export type {
   DashboardBatchQueryError as AdminDashboardBatchQueryError,
   DashboardWidgetConfig as AdminDashboardWidgetConfig,
   DashboardBatchQueryOptions as AdminDashboardBatchQueryOptions,
-} from '@/app/admin/types/dashboard';
+} from '@/app/(app)/admin/types/dashboard';
 
 /**
  * Widget 類型映射表

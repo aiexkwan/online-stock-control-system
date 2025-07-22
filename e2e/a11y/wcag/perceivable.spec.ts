@@ -26,7 +26,6 @@ const TEST_URLS = [
   '/admin/pipeline',
   '/admin/warehouse',
   '/print-label',
-  '/test-performance',
 ];
 
 const CRITICAL_COMPONENTS = [

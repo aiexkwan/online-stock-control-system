@@ -7,13 +7,13 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Operations Monitoring 核心修復驗證', () => {
   test('驗證核心修復：頁面不再空白，顯示正確登入介面', async ({ page }) => {
-    console.log('🧪 開始測試：未登入用戶訪問 operations-monitoring');
+    console.log('🧪 開始測試：未登入用戶訪問 operations');
 
     // 核心測試：訪問頁面
-    await page.goto('/admin/operations-monitoring', { waitUntil: 'domcontentloaded' });
+    await page.goto('/admin/operations', { waitUntil: 'domcontentloaded' });
 
     // 1. 驗證 URL 沒有被重定向到 main-login
-    expect(page.url()).toContain('/admin/operations-monitoring');
+    expect(page.url()).toContain('/admin/operations');
     console.log('✅ URL 驗證通過：無重定向到 main-login');
 
     // 2. 驗證頁面不是空白 - 應該有內容
@@ -63,7 +63,7 @@ test.describe('Operations Monitoring 核心修復驗證', () => {
     console.log('🧪 開始測試：HTTP 響應狀態');
 
     // 測試 HTTP 回應
-    const response = await page.goto('/admin/operations-monitoring');
+    const response = await page.goto('/admin/operations');
 
     // 驗證狀態碼
     expect(response?.status()).toBe(200);
@@ -99,7 +99,7 @@ test.describe('Operations Monitoring 核心修復驗證', () => {
     });
 
     // 訪問頁面
-    await page.goto('/admin/operations-monitoring');
+    await page.goto('/admin/operations');
     await page.waitForTimeout(3000);
 
     // 檢查是否有關鍵錯誤
@@ -126,7 +126,7 @@ test.describe('Operations Monitoring 核心修復驗證', () => {
   test('驗證頁面基本可用性', async ({ page }) => {
     console.log('🧪 開始測試：頁面基本可用性');
 
-    await page.goto('/admin/operations-monitoring');
+    await page.goto('/admin/operations');
 
     // 檢查頁面是否有基本的 HTML 結構
     const hasHtml = await page.locator('html').isVisible();

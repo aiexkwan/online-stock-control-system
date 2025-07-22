@@ -1,6 +1,6 @@
 /**
  * E2E Test: Operations Monitoring 頁面修復驗證
- * 測試目標：確認 /admin/operations-monitoring 頁面不再空白，能正常顯示登入介面
+ * 測試目標：確認 /admin/operations 頁面不再空白，能正常顯示登入介面
  */
 
 import { test, expect, Page } from '@playwright/test';
@@ -10,12 +10,12 @@ const SYS_LOGIN = process.env.SYS_LOGIN || 'akwan@pennineindustries.com';
 const SYS_PASSWORD = process.env.SYS_PASSWORD || 'X315Y316';
 
 test.describe('Operations Monitoring 頁面修復驗證', () => {
-  test('未登入用戶訪問 operations-monitoring 應顯示登入介面而非空白頁面', async ({ page }) => {
+  test('未登入用戶訪問 operations 應顯示登入介面而非空白頁面', async ({ page }) => {
     // 測試 1: 確保頁面能正常加載，無重定向到 main-login
-    await page.goto('/admin/operations-monitoring');
+    await page.goto('/admin/operations');
 
     // 驗證頁面 URL 沒有被重定向
-    expect(page.url()).toContain('/admin/operations-monitoring');
+    expect(page.url()).toContain('/admin/operations');
 
     // 驗證頁面不是空白 - 應該顯示登入介面
     await expect(page.locator('text=Admin Dashboard')).toBeVisible();
@@ -23,12 +23,12 @@ test.describe('Operations Monitoring 頁面修復驗證', () => {
     await expect(page.locator('text=Login to Dashboard')).toBeVisible();
 
     // 驗證主題標識顯示
-    await expect(page.locator('text=Operations Monitoring')).toBeVisible();
+    await expect(page.locator('text=Operations')).toBeVisible();
 
     console.log('✅ 未登入用戶測試通過：顯示正確的登入介面');
   });
 
-  test('登入後用戶能正常訪問 operations-monitoring 儀表板', async ({ page }) => {
+  test('登入後用戶能正常訪問 operations 儀表板', async ({ page }) => {
     // 測試 2: 登入流程和儀表板訪問
     await page.goto('/main-login');
 
@@ -40,11 +40,11 @@ test.describe('Operations Monitoring 頁面修復驗證', () => {
     // 等待登入完成
     await page.waitForLoadState('networkidle');
 
-    // 訪問 operations-monitoring 頁面
-    await page.goto('/admin/operations-monitoring');
+    // 訪問 operations 頁面
+    await page.goto('/admin/operations');
 
     // 驗證頁面正常加載
-    expect(page.url()).toContain('/admin/operations-monitoring');
+    expect(page.url()).toContain('/admin/operations');
 
     // 驗證儀表板組件正常顯示
     await expect(page.locator('[data-widget-focusable="true"]')).toBeVisible({ timeout: 10000 });
@@ -78,7 +78,7 @@ test.describe('Operations Monitoring 頁面修復驗證', () => {
 
   test('驗證頁面響應頭正確設置', async ({ page }) => {
     // 測試 3: 驗證中間件修復後的響應頭
-    const response = await page.goto('/admin/operations-monitoring');
+    const response = await page.goto('/admin/operations');
 
     if (response) {
       // 驗證 HTTP 狀態碼是 200，不是重定向
@@ -103,8 +103,8 @@ test.describe('Operations Monitoring 頁面修復驗證', () => {
     await page.click('button[type="submit"]');
     await page.waitForLoadState('networkidle');
 
-    // 訪問 operations-monitoring
-    await page.goto('/admin/operations-monitoring');
+    // 訪問 operations
+    await page.goto('/admin/operations');
     await page.waitForTimeout(5000); // 等待 widgets 加載
 
     // 驗證 Grid 容器存在
@@ -125,7 +125,7 @@ test.describe('Operations Monitoring 頁面修復驗證', () => {
     // 測試 5: 驗證修復後的性能表現
     const startTime = Date.now();
 
-    await page.goto('/admin/operations-monitoring');
+    await page.goto('/admin/operations');
 
     // 等待關鍵元素出現
     await expect(page.locator('text=Admin Dashboard')).toBeVisible();

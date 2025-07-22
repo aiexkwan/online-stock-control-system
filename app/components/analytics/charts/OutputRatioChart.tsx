@@ -1,6 +1,7 @@
 /**
  * Output vs Booked Out Ratio Chart
  * Shows production output compared to booked out quantities
+ * Updated to use Analytics API instead of direct database queries
  */
 
 'use client';
@@ -19,22 +20,15 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Loader2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase';
 import { dialogStyles } from '@/app/utils/dialogStyles';
-import {
-  getStartDate,
-  getEndDate,
-  processOutputRatioData,
-  HourlyData,
-  DailyData,
-} from '@/app/utils/analyticsDataProcessors';
+import { AnalyticsApiClient, type OutputRatioData } from '@/lib/analytics/api-client';
 
 interface OutputRatioChartProps {
   timeRange: string;
 }
 
 export function OutputRatioChart({ timeRange }: OutputRatioChartProps) {
-  const [data, setData] = useState<(HourlyData | DailyData)[]>([]);
+  const [data, setData] = useState<OutputRatioData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,71 +42,25 @@ export function OutputRatioChart({ timeRange }: OutputRatioChartProps) {
     setError(null);
 
     try {
-      const supabase = createClient();
-      const startDate = getStartDate(timeRange);
-      const endDate = getEndDate();
-
-      (process.env.NODE_ENV as string) !== 'production' &&
-        (process.env.NODE_ENV as string) !== 'production' &&
-        console.log('Loading data for time range:', timeRange);
-      (process.env.NODE_ENV as string) !== 'production' &&
-        (process.env.NODE_ENV as string) !== 'production' &&
-        console.log('Start date:', startDate.toISOString());
-      (process.env.NODE_ENV as string) !== 'production' &&
-        (process.env.NODE_ENV as string) !== 'production' &&
-        console.log('End date:', endDate.toISOString());
-
-      // Fetch output data (pallets generated)
-      const { data: outputData, error: outputError } = await supabase
-        .from('record_palletinfo')
-        .select('generate_time')
-        .gte('generate_time', startDate.toISOString())
-        .lte('generate_time', endDate.toISOString())
-        .not('plt_remark', 'ilike', '%Material GRN-%');
-
-      if (outputError) {
-        console.error('Output query error:', outputError);
-        throw outputError;
+      // Validate time range
+      if (!AnalyticsApiClient.validateTimeRange(timeRange)) {
+        throw new Error(`Invalid time range: ${timeRange}`);
       }
 
-      (process.env.NODE_ENV as string) !== 'production' &&
-        (process.env.NODE_ENV as string) !== 'production' &&
-        console.log('Output data count:', outputData?.length || 0);
-
-      // Fetch transfer data (pallets booked out)
-      const { data: transferData, error: transferError } = await supabase
-        .from('record_transfer')
-        .select('tran_date, plt_num')
-        .gte('tran_date', startDate.toISOString())
-        .lte('tran_date', endDate.toISOString());
-
-      if (transferError) {
-        console.error('Transfer query error:', transferError);
-        throw transferError;
-      }
-
-      (process.env.NODE_ENV as string) !== 'production' &&
-        (process.env.NODE_ENV as string) !== 'production' &&
-        console.log('Transfer data count:', transferData?.length || 0);
-
-      // Process data
-      const processedData = processOutputRatioData(outputData || [], transferData || [], timeRange);
-
-      (process.env.NODE_ENV as string) !== 'production' &&
-        (process.env.NODE_ENV as string) !== 'production' &&
-        console.log('Processed data:', processedData);
-
-      setData(processedData);
+      // Use Analytics API client instead of direct database queries
+      const result = await AnalyticsApiClient.getOutputRatio(timeRange);
+      setData(result);
     } catch (err: unknown) {
       console.error('Error loading output ratio data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load data');
+      setError(err instanceof Error ? err.message : 'Failed to load chart data. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  const chartData = timeRange === '1d' ? data?.hourlyData : data?.dailyData;
   const chartProps = {
-    data,
+    data: chartData,
     margin: { top: 20, right: 30, left: 20, bottom: 60 },
   };
 
@@ -172,11 +120,33 @@ export function OutputRatioChart({ timeRange }: OutputRatioChartProps) {
     );
   }
 
+  if (!chartData || chartData.length === 0) {
+    return (
+      <div className={dialogStyles.card}>
+        <div className='flex h-[400px] items-center justify-center'>
+          <p className='text-slate-400'>No output ratio data available for this period</p>
+        </div>
+      </div>
+    );
+  }
+
   // Use bar chart for 1 day, line chart for others
   if (timeRange === '1d') {
     return (
       <div className={dialogStyles.card}>
-        <h3 className='mb-4 text-lg font-semibold text-white'>Hourly Output vs Booked Out Ratio</h3>
+        <div className='mb-4 flex items-center justify-between'>
+          <h3 className='text-lg font-semibold text-white'>Hourly Output vs Booked Out Ratio</h3>
+          {data?.summary && (
+            <div className='text-sm text-slate-400'>
+              Efficiency: <span className={
+                data.summary.efficiency === 'High' ? 'text-green-400' :
+                data.summary.efficiency === 'Medium' ? 'text-yellow-400' : 'text-red-400'
+              }>
+                {data.summary.efficiency}
+              </span>
+            </div>
+          )}
+        </div>
         <ResponsiveContainer width='100%' height={400}>
           <BarChart {...chartProps}>
             <CartesianGrid strokeDasharray='3 3' stroke='#374151' />
@@ -189,13 +159,32 @@ export function OutputRatioChart({ timeRange }: OutputRatioChartProps) {
             <Bar dataKey='ratio' fill='#F59E0B' name='Ratio' radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
+        {data?.summary && (
+          <div className='mt-4 flex justify-between text-sm text-slate-400'>
+            <span>Total Output: {data.summary.totalOutput}</span>
+            <span>Total Booked Out: {data.summary.totalBookedOut}</span>
+            <span>Average Ratio: {data.summary.averageRatio}%</span>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <div className={dialogStyles.card}>
-      <h3 className='mb-4 text-lg font-semibold text-white'>Daily Output vs Booked Out Ratio</h3>
+      <div className='mb-4 flex items-center justify-between'>
+        <h3 className='text-lg font-semibold text-white'>Daily Output vs Booked Out Ratio</h3>
+        {data?.summary && (
+          <div className='text-sm text-slate-400'>
+            Efficiency: <span className={
+              data.summary.efficiency === 'High' ? 'text-green-400' :
+              data.summary.efficiency === 'Medium' ? 'text-yellow-400' : 'text-red-400'
+            }>
+              {data.summary.efficiency}
+            </span>
+          </div>
+        )}
+      </div>
       <ResponsiveContainer width='100%' height={400}>
         <LineChart {...chartProps}>
           <CartesianGrid strokeDasharray='3 3' stroke='#374151' />
@@ -232,8 +221,13 @@ export function OutputRatioChart({ timeRange }: OutputRatioChartProps) {
           />
         </LineChart>
       </ResponsiveContainer>
-      <div className='mt-4 text-sm text-slate-400'>
-        <p>Ratio = (Booked Out / Output) × 100%</p>
+      <div className='mt-4 space-y-2'>
+        <div className='flex justify-between text-sm text-slate-400'>
+          <span>Total Output: {data?.summary.totalOutput}</span>
+          <span>Total Booked Out: {data?.summary.totalBookedOut}</span>
+          <span>Average Ratio: {data?.summary.averageRatio}%</span>
+        </div>
+        <p className='text-xs text-slate-500'>Ratio = (Booked Out / Output) × 100%</p>
       </div>
     </div>
   );

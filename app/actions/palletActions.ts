@@ -6,7 +6,7 @@ import {
   releasePalletReservation as releasePalletReservationClient,
   type GenerationOptions,
 } from '../utils/palletGeneration';
-import { createClient as createServerClient } from '../utils/supabase/server';
+import { createClient as createServerClient } from '@/app/utils/supabase/server';
 import { getErrorMessage } from '@/types/core/error';
 import { z } from 'zod';
 

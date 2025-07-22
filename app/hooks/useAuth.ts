@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { getErrorMessage } from '@/types/core/error';
 import { createClient } from '@/app/utils/supabase/client';
-import { unifiedAuth } from '@/app/main-login/utils/unified-auth';
+import { unifiedAuth } from '@/app/(auth)/main-login/utils/unified-auth';
 import type { User, PostgrestError } from '@supabase/supabase-js';
 
 import { AuthState, UserRole } from '@/types/hooks/auth';
@@ -185,6 +185,15 @@ export const getUserRole = (email: string): UserRole => {
   }
 };
 
+// 定義公開路由（不需要認證檢查）
+const PUBLIC_ROUTES = [
+  '/main-login',
+  '/main-login/register', 
+  '/main-login/reset',
+  '/main-login/simple',
+  '/main-login/change',
+];
+
 export function useAuth(): AuthState {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -261,6 +270,13 @@ export function useAuth(): AuthState {
   useEffect(() => {
     // Skip auth operations if supabase client failed to initialize
     if (hasError || !supabase) {
+      setLoading(false);
+      return;
+    }
+
+    // 檢查是否在公開路由 - 如果是，跳過認證檢查
+    if (typeof window !== 'undefined' && PUBLIC_ROUTES.includes(window.location.pathname)) {
+      console.log('[useAuth] Skipping auth check for public route:', window.location.pathname);
       setLoading(false);
       return;
     }

@@ -1,9 +1,43 @@
 /* Font imports moved to next/font in layout.tsx to avoid CSS being treated as JS */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-@import './admin/styles/glowEffects.css';
+@import './(app)/admin/styles/glowEffects.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Visual System Animations */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes pulse-border {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
 
 /* Admin Widget 統一樣式 */
 @layer components {

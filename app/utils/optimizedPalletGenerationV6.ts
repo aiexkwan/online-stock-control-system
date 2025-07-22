@@ -1,7 +1,7 @@
 import { createClient } from './supabase/client';
 import { getErrorMessage } from '@/types/core/error';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { isNotProduction } from '../../lib/utils/env';
+import { isNotProduction } from '@/lib/utils/env';
 
 export interface GenerationOptions {
   count: number;

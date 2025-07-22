@@ -3,7 +3,7 @@
  * 捕獲當前所有布局配置作為測試基準
  */
 
-import { adminDashboardLayouts } from '../app/admin/components/dashboard/adminDashboardLayouts';
+import { adminDashboardLayouts } from '../app/(app)/admin/components/dashboard/adminDashboardLayouts';
 import {
   captureAllLayouts,
   generateLayoutReport,

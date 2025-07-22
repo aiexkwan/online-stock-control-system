@@ -4,7 +4,7 @@
  */
 
 import { NavigationItem } from '@/config/navigation';
-import { enhancedBehaviorTracker } from './behavior-tracker';
+import { FREQUENT_PATHS } from '@/lib/constants/navigation-paths';
 
 interface PredictedAction {
   path: string;
@@ -123,7 +123,7 @@ class LegacyUserBehaviorTracker {
 
     // 基於時間的常見模式 - v2.0.2: 更新為新主題
     const timePatterns: Record<string, string[]> = {
-      morning: ['/admin/operations-monitoring', '/stock-transfer'], // 早上常訪問的頁面
+      morning: ['/admin/operations', '/stock-transfer'], // 早上常訪問的頁面
       afternoon: ['/order-loading', '/admin/analytics'], // 下午常訪問的頁面
       evening: ['/admin/data-management', '/admin/stock-count'], // 晚上常訪問的頁面
     };
@@ -171,25 +171,22 @@ export class NavigationPreloader {
       ? Math.floor((Date.now() - this.pathStartTime) / 1000)
       : undefined;
 
-    // 使用增強版行為追蹤器記錄導航
-    await enhancedBehaviorTracker.trackNavigation(userId, currentPath, timeSpent);
+    // 簡單記錄導航（僅用於調試）
+    console.debug(`Navigation: ${userId} -> ${currentPath} (${timeSpent}s)`);
 
     // 更新當前路徑和時間
     this.lastPath = currentPath;
     this.pathStartTime = Date.now();
 
-    // 獲取預測
-    const predictions = await enhancedBehaviorTracker.predictNextPaths(userId);
+    // 使用預定義的常用路徑進行預加載
+    // 排除當前路徑，預加載前3個最常用的路徑
+    const pathsToPreload = FREQUENT_PATHS
+      .filter(path => path !== currentPath)
+      .slice(0, 3);
 
-    // 根據概率預加載
-    for (const prediction of predictions) {
-      if (prediction.probability > 0.7) {
-        // 立即預加載高概率資源
-        this.preloadResource(prediction.path);
-      } else if (prediction.probability > 0.3) {
-        // 加入隊列等待預加載
-        this.queuePreload(prediction.path);
-      }
+    // 預加載常用路徑
+    for (const path of pathsToPreload) {
+      this.preloadResource(path);
     }
 
     // 處理預加載隊列
@@ -235,7 +232,7 @@ export class NavigationPreloader {
   private async prefetchApiData(path: string): Promise<void> {
     // 根據路徑預加載相關 API 數據 - v2.0.2: 更新為新主題
     const apiEndpoints: Record<string, string[]> = {
-      '/admin/operations-monitoring': ['/api/warehouse/summary', '/api/warehouse/recent'],
+      '/admin/operations': ['/api/warehouse/summary', '/api/warehouse/recent'],
       '/admin/analytics': ['/api/analytics/overview', '/api/analytics/trends'],
       '/admin/data-management': ['/api/reports/export-all', '/api/upload/status'],
       '/stock-transfer': ['/api/stock/locations', '/api/stock/available'],
@@ -308,30 +305,17 @@ export class NavigationPreloader {
   getStats(): {
     cacheSize: number;
     queueLength: number;
-    behaviorStats?: {
-      totalPageviews: number;
-      uniquePaths: number;
-      averageTimeSpent: number;
-      commonTransitions: Array<{ from: string; to: string; count: number }>;
-    };
   } {
-    // Strategy 4: unknown + type narrowing - 修復返回類型
-    const behaviorStats = enhancedBehaviorTracker.getStats();
     return {
       cacheSize: this.preloadCache.size,
       queueLength: this.preloadQueue.length,
-      behaviorStats: {
-        totalPageviews: 0,
-        uniquePaths: 0,
-        averageTimeSpent: 0,
-        commonTransitions: [],
-      },
     };
   }
 
-  // 預加載用戶歷史數據
+  // 預加載用戶數據（簡化版 - 無操作）
   async preloadUserData(userId: string): Promise<void> {
-    await enhancedBehaviorTracker.preloadUserHistory(userId);
+    // 簡化版：不需要預加載用戶歷史
+    console.debug(`User data preload skipped for: ${userId}`);
   }
 }
 

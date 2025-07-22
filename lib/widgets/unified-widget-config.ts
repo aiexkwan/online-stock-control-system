@@ -42,7 +42,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     lazyLoad: true,
     preloadPriority: 10,
     loader: () =>
-      import('@/app/admin/components/dashboard/widgets/HistoryTreeV2').then(module => ({
+      import('@/app/(app)/admin/components/dashboard/widgets/HistoryTreeV2').then(module => ({
         default: module.HistoryTreeV2,
       })),
     metadata: {

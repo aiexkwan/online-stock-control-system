@@ -1,7 +1,8 @@
 {
   "extends": [
     "next/core-web-vitals",
-    "plugin:storybook/recommended"
+    "plugin:storybook/recommended",
+    "./.eslintrc.layout-check.js"
   ],
   "parser": "@typescript-eslint/parser",
   "plugins": ["@typescript-eslint"],

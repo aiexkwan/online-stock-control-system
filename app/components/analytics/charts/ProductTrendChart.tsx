@@ -1,6 +1,7 @@
 /**
  * Order Trend Chart
  * Shows trends of orders by product over time
+ * Updated to use Analytics API instead of direct database queries
  */
 
 'use client';
@@ -19,14 +20,8 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Loader2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase';
 import { dialogStyles } from '@/app/utils/dialogStyles';
-import {
-  getStartDate,
-  getEndDate,
-  processOrderTrendData,
-  ProductTrendData,
-} from '@/app/utils/analyticsDataProcessors';
+import { AnalyticsApiClient, type ProductTrendsData } from '@/lib/analytics/api-client';
 
 interface ProductTrendChartProps {
   timeRange: string;
@@ -47,9 +42,7 @@ const PRODUCT_COLORS = [
 ];
 
 export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
-  const [data, setData] = useState<ProductTrendData[]>([]);
-  const [summaryData, setSummaryData] = useState<{ date: string; count: number }[]>([]);
-  const [productCodes, setProductCodes] = useState<string[]>([]);
+  const [data, setData] = useState<ProductTrendsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<'summary' | 'detail'>('summary');
@@ -64,68 +57,27 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
     setError(null);
 
     try {
-      const supabase = createClient();
-      const startDate = getStartDate(timeRange);
-      const endDate = getEndDate();
+      // Validate time range
+      if (!AnalyticsApiClient.validateTimeRange(timeRange)) {
+        throw new Error(`Invalid time range: ${timeRange}`);
+      }
 
-      // Fetch order data
-      const { data: orderData, error: orderError } = await supabase
-        .from('data_order')
-        .select('product_code, created_at')
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString())
-        .order('created_at');
-
-      if (orderError) throw orderError;
-
-      // Process data for both views - 確保數據是正確格式
-      const safeOrderData = Array.isArray(orderData)
-        ? (orderData.filter(record => record && typeof record === 'object') as Record<
-            string,
-            unknown
-          >[])
-        : [];
-
-      const { detail, summary } = processOrderTrendData(safeOrderData, timeRange);
-
-      // Extract product codes (top 10 by order count)
-      const productTotals = new Map<string, number>();
-      safeOrderData.forEach(record => {
-        const productCode = record.product_code;
-        if (typeof productCode === 'string' && productCode) {
-          productTotals.set(productCode, (productTotals.get(productCode) || 0) + 1);
-        }
-      });
-
-      const topProducts = Array.from(productTotals.entries())
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 10)
-        .map(([code]) => code);
-
-      setProductCodes(topProducts);
-
-      // 策略 4: unknown + type narrowing - 安全的數據轉換
-      const validatedData = detail.filter((item): item is ProductTrendData => {
-        return (
-          typeof item === 'object' &&
-          item !== null &&
-          typeof item.date === 'string' &&
-          item.date.length > 0
-        );
-      });
-
-      setData(validatedData);
-      setSummaryData(summary as { date: string; count: number }[]);
+      // Use Analytics API client instead of direct database queries
+      const result = await AnalyticsApiClient.getProductTrends(timeRange);
+      setData(result);
     } catch (err: unknown) {
-      console.error('Error loading order trend data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load data');
+      console.error('Error loading product trends data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load chart data. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  const chartData = view === 'summary' ? data?.summary : data?.detail;
+  const productCodes = data?.productCodes || [];
+  
   const chartProps = {
-    data,
+    data: chartData,
     margin: { top: 20, right: 30, left: 20, bottom: 60 },
   };
 
@@ -188,7 +140,7 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
     );
   }
 
-  if (data.length === 0 && summaryData.length === 0) {
+  if (!data || (!data.summary.length && !data.detail.length)) {
     return (
       <div className={dialogStyles.card}>
         <div className='flex h-[400px] items-center justify-center'>
@@ -233,7 +185,7 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
         <>
           <ResponsiveContainer width='100%' height={400}>
             {timeRange === '1d' ? (
-              <BarChart data={summaryData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+              <BarChart data={data.summary} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray='3 3' stroke='#374151' />
                 <XAxis dataKey='date' stroke='#9CA3AF' angle={-45} textAnchor='end' height={80} />
                 <YAxis stroke='#9CA3AF' />
@@ -245,7 +197,7 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
                 <Bar dataKey='count' fill='#3B82F6' name='Orders' radius={[4, 4, 0, 0]} />
               </BarChart>
             ) : (
-              <LineChart data={summaryData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+              <LineChart data={data.summary} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray='3 3' stroke='#374151' />
                 <XAxis dataKey='date' stroke='#9CA3AF' angle={-45} textAnchor='end' height={80} />
                 <YAxis stroke='#9CA3AF' />
@@ -266,8 +218,9 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
               </LineChart>
             )}
           </ResponsiveContainer>
-          <div className='mt-4 text-sm text-slate-400'>
-            <p>Total orders created per {timeRange === '1d' ? 'hour' : 'day'}</p>
+          <div className='mt-4 flex justify-between text-sm text-slate-400'>
+            <span>Total orders created per {timeRange === '1d' ? 'hour' : 'day'}</span>
+            <span>Total Orders: {data.totalOrders}</span>
           </div>
         </>
       ) : (
@@ -275,7 +228,7 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
         <>
           <ResponsiveContainer width='100%' height={400}>
             {timeRange === '1d' ? (
-              <BarChart {...chartProps}>
+              <BarChart data={data.detail} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray='3 3' stroke='#374151' />
                 <XAxis dataKey='date' stroke='#9CA3AF' angle={-45} textAnchor='end' height={80} />
                 <YAxis stroke='#9CA3AF' />
@@ -292,7 +245,7 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
                 ))}
               </BarChart>
             ) : (
-              <LineChart {...chartProps}>
+              <LineChart data={data.detail} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray='3 3' stroke='#374151' />
                 <XAxis dataKey='date' stroke='#9CA3AF' angle={-45} textAnchor='end' height={80} />
                 <YAxis stroke='#9CA3AF' />
@@ -312,8 +265,9 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
               </LineChart>
             )}
           </ResponsiveContainer>
-          <div className='mt-4 text-sm text-slate-400'>
-            <p>Top 10 products by order count</p>
+          <div className='mt-4 flex justify-between text-sm text-slate-400'>
+            <span>Top {productCodes.length} products by order count</span>
+            <span>Total Orders: {data.totalOrders}</span>
           </div>
         </>
       )}

@@ -48,7 +48,7 @@ export type {
   ErrorHandler,
   AdminHookOptions,
   TimeRangeConfig,
-} from '@/app/admin/hooks/types';
+} from '@/app/(app)/admin/hooks/types';
 
 // Additional types specific to hooks
 export interface WidgetErrorOptions {
@@ -139,4 +139,4 @@ export interface UseUnifiedAPIResult<TData> {
 export type {
   UseWidgetSmartCacheOptions,
   UseWidgetSmartCacheResult,
-} from '@/app/admin/hooks/useWidgetSmartCache';
+} from '@/app/(app)/admin/hooks/useWidgetSmartCache';

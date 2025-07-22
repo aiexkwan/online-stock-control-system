@@ -1,6 +1,6 @@
 import React from 'react';
 import { DatabaseRecord } from '@/types/database/tables';
-import { DataTable } from '@/app/admin/components/dashboard/widgets/common/data-display/DataTable';
+import { DataTable } from '@/app/(app)/admin/components/dashboard/widgets/common/data-display/DataTable';
 import { AdminWidgetConfig } from '@/types/components/dashboard';
 
 interface MockData {

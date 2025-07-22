@@ -23,7 +23,7 @@ function getSkipLinksForPath(pathname: string): SkipLinkConfig[] {
   if (pathname.startsWith('/admin')) {
     // Admin Dashboard 特定跳轉
     if (
-      pathname.includes('/operations-monitoring') ||
+      pathname.includes('/operations') ||
       pathname.includes('/data-management') ||
       pathname.includes('/analytics')
     ) {

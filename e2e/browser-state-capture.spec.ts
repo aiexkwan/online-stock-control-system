@@ -72,7 +72,7 @@ test.describe('瀏覽器狀態完整捕獲', () => {
     console.log('🚀 訪問頁面...');
 
     // 使用和用戶完全相同的方式訪問頁面
-    await page.goto('http://localhost:3000/admin/operations-monitoring', {
+    await page.goto('http://localhost:3000/admin/operations', {
       waitUntil: 'networkidle',
       timeout: 30000,
     });

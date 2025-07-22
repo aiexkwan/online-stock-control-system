@@ -1,6 +1,7 @@
 /**
  * Staff Workload Chart
  * Shows staff productivity and workload distribution
+ * Updated to use Analytics API instead of direct database queries
  */
 
 'use client';
@@ -22,15 +23,8 @@ import {
   Cell,
 } from 'recharts';
 import { Loader2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase';
 import { dialogStyles } from '@/app/utils/dialogStyles';
-import {
-  getStartDate,
-  getEndDate,
-  processStaffWorkloadData,
-  StaffWorkloadData,
-  StaffWorkloadTimeData,
-} from '@/app/utils/analyticsDataProcessors';
+import { AnalyticsApiClient, type StaffWorkloadData } from '@/lib/analytics/api-client';
 
 interface StaffWorkloadChartProps {
   timeRange: string;
@@ -51,9 +45,7 @@ const STAFF_COLORS = [
 ];
 
 export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
-  const [summaryData, setSummaryData] = useState<StaffWorkloadData[]>([]);
-  const [timelineData, setTimelineData] = useState<StaffWorkloadTimeData[]>([]);
-  const [staffNames, setStaffNames] = useState<string[]>([]);
+  const [data, setData] = useState<StaffWorkloadData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<'summary' | 'timeline'>('summary');
@@ -68,42 +60,17 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
     setError(null);
 
     try {
-      const supabase = createClient();
-      const startDate = getStartDate(timeRange);
-      const endDate = getEndDate();
+      // Validate time range
+      if (!AnalyticsApiClient.validateTimeRange(timeRange)) {
+        throw new Error(`Invalid time range: ${timeRange}`);
+      }
 
-      // Fetch work level data with staff names
-      const { data: workData, error: workError } = await supabase
-        .from('work_level')
-        .select(
-          `
-          id,
-          qc,
-          move,
-          grn,
-          latest_update,
-          data_id!inner(name)
-        `
-        )
-        .gte('latest_update', startDate.toISOString())
-        .lte('latest_update', endDate.toISOString());
-
-      if (workError) throw workError;
-
-      // Process data
-      const { summary, timeline } = processStaffWorkloadData(workData || [], timeRange);
-
-      // Extract staff names for timeline
-      const names = Object.keys(timeline[0] || {})
-        .filter(key => key !== 'date')
-        .slice(0, 5);
-
-      setSummaryData(summary);
-      setTimelineData(timeline);
-      setStaffNames(names);
+      // Use Analytics API client instead of direct database queries
+      const result = await AnalyticsApiClient.getStaffWorkload(timeRange);
+      setData(result);
     } catch (err: unknown) {
       console.error('Error loading staff workload data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load data');
+      setError(err instanceof Error ? err.message : 'Failed to load chart data. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -207,11 +174,11 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
     );
   }
 
-  if (summaryData.length === 0) {
+  if (!data || data.summary.length === 0) {
     return (
       <div className={dialogStyles.card}>
         <div className='flex h-[400px] items-center justify-center'>
-          <p className='text-slate-400'>No staff data available for this period</p>
+          <p className='text-slate-400'>No staff workload data available for this period</p>
         </div>
       </div>
     );
@@ -251,7 +218,7 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
           <div>
             <h4 className='mb-2 text-sm font-medium text-slate-400'>Top Performers</h4>
             <ResponsiveContainer width='100%' height={350}>
-              <BarChart data={summaryData.slice(0, 10)} {...chartProps}>
+              <BarChart data={data.summary.slice(0, 10)} {...chartProps}>
                 <CartesianGrid strokeDasharray='3 3' stroke='#374151' />
                 <XAxis dataKey='name' stroke='#9CA3AF' angle={-45} textAnchor='end' height={80} />
                 <YAxis stroke='#9CA3AF' />
@@ -270,7 +237,7 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
             <ResponsiveContainer width='100%' height={350}>
               <PieChart>
                 <Pie
-                  data={summaryData.slice(0, 8)}
+                  data={data.summary.slice(0, 8)}
                   cx='50%'
                   cy='50%'
                   labelLine={false}
@@ -279,7 +246,7 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
                   fill='#8884d8'
                   dataKey='pallets'
                 >
-                  {summaryData.slice(0, 8).map((entry, index) => (
+                  {data.summary.slice(0, 8).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={STAFF_COLORS[index % STAFF_COLORS.length]} />
                   ))}
                 </Pie>
@@ -303,13 +270,13 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
           </h4>
           <ResponsiveContainer width='100%' height={400}>
             {timeRange === '1d' ? (
-              <BarChart data={timelineData} {...chartProps}>
+              <BarChart data={data.timeline} {...chartProps}>
                 <CartesianGrid strokeDasharray='3 3' stroke='#374151' />
                 <XAxis dataKey='date' stroke='#9CA3AF' angle={-45} textAnchor='end' height={80} />
                 <YAxis stroke='#9CA3AF' />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend wrapperStyle={{ paddingTop: '20px' }} iconType='rect' />
-                {staffNames.map((name, index) => (
+                {data.staffNames.map((name, index) => (
                   <Bar
                     key={name}
                     dataKey={name}
@@ -319,13 +286,13 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
                 ))}
               </BarChart>
             ) : (
-              <LineChart data={timelineData} {...chartProps}>
+              <LineChart data={data.timeline} {...chartProps}>
                 <CartesianGrid strokeDasharray='3 3' stroke='#374151' />
                 <XAxis dataKey='date' stroke='#9CA3AF' angle={-45} textAnchor='end' height={80} />
                 <YAxis stroke='#9CA3AF' />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend wrapperStyle={{ paddingTop: '20px' }} iconType='line' />
-                {staffNames.map((name, index) => (
+                {data.staffNames.map((name, index) => (
                   <Line
                     key={name}
                     type='monotone'
@@ -342,8 +309,10 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
         </div>
       )}
 
-      <div className='mt-4 text-sm text-slate-400'>
-        <p>Total operations: {summaryData.reduce((sum, staff) => sum + staff.pallets, 0)}</p>
+      <div className='mt-4 flex justify-between text-sm text-slate-400'>
+        <span>Total Operations: {data.totalOperations}</span>
+        <span>Active Staff: {data.totalStaff}</span>
+        <span>Top Performers: {data.staffNames.length}</span>
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import { usePdfGeneration } from './usePdfGeneration';
 import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf';
 // import { GrnLabelPdf } from '@/components/grn-label-pdf/GrnLabelPdf';
 import type { QcInputData } from '@/lib/pdfUtils';
-import type { GrnLabelData } from '@/app/print-grnlabel/types';
+import type { GrnLabelData } from '@/app/(app)/print-grnlabel/types';
 import type { PrintLabelPdfProps } from '@/components/print-label-pdf/PrintLabelPdf';
 import { UnknownTypeHandler } from '@/types/external/unknown-handlers';
 

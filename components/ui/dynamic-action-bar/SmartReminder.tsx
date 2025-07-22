@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Bell, X, Clock, TrendingUp } from 'lucide-react';
-import { enhancedBehaviorTracker } from '@/lib/navigation/behavior-tracker';
+import { getTimeBasedSuggestion } from '@/lib/constants/navigation-paths';
 import { getNavigationInfo } from '@/config/navigation-map';
 import { cn } from '@/lib/utils';
 
@@ -33,12 +33,12 @@ export function SmartReminder({ userId, className }: SmartReminderProps) {
     const currentHour = new Date().getHours();
     const currentMinute = new Date().getMinutes();
 
-    // Get user patterns
-    const patterns = await enhancedBehaviorTracker.getTimeBasedPatterns(userId);
+    // Get time-based suggestion
+    const suggestion = getTimeBasedSuggestion();
 
-    // Check if current hour is one of the most active hours
-    if (patterns.mostActiveHours.includes(currentHour)) {
-      const suggestedPaths = patterns.hourlyPatterns[currentHour] || [];
+    // Check if current hour matches suggestion
+    if (suggestion && suggestion.mostActiveHours.includes(currentHour)) {
+      const suggestedPaths = suggestion.paths;
 
       if (suggestedPaths.length > 0) {
         const topPath = suggestedPaths[0];
@@ -67,17 +67,17 @@ export function SmartReminder({ userId, className }: SmartReminderProps) {
 
     // Special morning reminder (9:00 AM)
     if (currentHour === 9 && currentMinute < 5) {
-      const morningPaths = patterns.hourlyPatterns[9] || [];
-      if (morningPaths.includes('/admin/warehouse')) {
+      const morningPaths = suggestion?.paths || [];
+      if (morningPaths.includes('/admin/operations')) {
         const reminderId = 'morning-warehouse';
         if (!dismissed.has(reminderId)) {
           setReminder({
             id: reminderId,
             type: 'time-based',
-            message: 'Good morning! Ready to check warehouse status?',
+            message: 'Good morning! Ready to check operations status?',
             action: {
-              label: 'Open Warehouse',
-              path: '/admin/warehouse',
+              label: 'Open Operations',
+              path: '/admin/operations',
             },
             icon: TrendingUp,
           });

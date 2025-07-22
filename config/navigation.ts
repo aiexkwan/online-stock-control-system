@@ -71,9 +71,9 @@ export const MAIN_NAVIGATION: NavigationItem[] = [
     children: [
       // v2.0.2: 簡化為3個主要主題
       {
-        id: 'operations-monitoring',
+        id: 'operations',
         label: 'Operations & Production',
-        href: '/admin/operations-monitoring',
+        href: '/admin/operations',
         description: 'Monitor production, warehouse operations, and inventory levels',
       },
       {

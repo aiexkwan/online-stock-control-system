@@ -119,6 +119,7 @@ export const widgetColors = {
     gradient: 'from-blue-500 to-cyan-500',
     icon: brandColors.secondary[500],
     text: brandColors.secondary[600],
+    accent: '#06b6d4',
     bg: 'bg-blue-500/10',
     border: 'border-blue-500/30',
   },
@@ -126,6 +127,7 @@ export const widgetColors = {
     gradient: 'from-purple-500 to-pink-500',
     icon: '#a855f7',
     text: '#9333ea',
+    accent: '#c084fc',
     bg: 'bg-purple-500/10',
     border: 'border-purple-500/30',
   },
@@ -133,6 +135,7 @@ export const widgetColors = {
     gradient: 'from-green-500 to-emerald-500',
     icon: semanticColors.success.DEFAULT,
     text: semanticColors.success.dark,
+    accent: '#34d399',
     bg: 'bg-green-500/10',
     border: 'border-green-500/30',
   },
@@ -140,6 +143,7 @@ export const widgetColors = {
     gradient: 'from-orange-500 to-red-500',
     icon: brandColors.primary[500],
     text: brandColors.primary[600],
+    accent: '#f97316',
     bg: 'bg-orange-500/10',
     border: 'border-orange-500/30',
   },
@@ -154,10 +158,19 @@ export const widgetColors = {
     accent: '#a855f7',
     grid: '#475569', // 添加 grid 屬性
   },
+  analysis: {
+    gradient: 'from-teal-500 to-cyan-500',
+    icon: '#14b8a6',
+    text: '#0f766e',
+    accent: '#06b6d4',
+    bg: 'bg-teal-500/10',
+    border: 'border-teal-500/30',
+  },
   operations: {
     gradient: 'from-yellow-500 to-orange-500',
     icon: semanticColors.warning.DEFAULT,
     text: semanticColors.warning.dark,
+    accent: '#facc15',
     bg: 'bg-yellow-500/10',
     border: 'border-yellow-500/30',
   },
@@ -304,7 +317,14 @@ export function getWidgetCategoryColor(
   category: keyof typeof widgetColors,
   property: keyof typeof widgetColors.stats = 'gradient'
 ): string {
-  return widgetColors[category][property] || '';
+  // 添加安全檢查
+  const categoryColors = widgetColors[category];
+  if (!categoryColors) {
+    console.warn(`[getWidgetCategoryColor] Unknown category: ${category}`);
+    return widgetColors.stats[property] || ''; // 回退到 stats 默認值
+  }
+  
+  return categoryColors[property] || '';
 }
 
 /**

@@ -45,12 +45,12 @@ test.describe('Operations Monitoring 真實錯誤診斷', () => {
       console.log('💥 Page Error:', errorMsg);
     });
 
-    console.log('🚀 正在訪問 operations-monitoring 頁面...');
+    console.log('🚀 正在訪問 operations 頁面...');
 
     // 訪問頁面 - 檢查兩個可能的 port
     let finalUrl = '';
     try {
-      await page.goto('http://localhost:3001/admin/operations-monitoring', {
+      await page.goto('http://localhost:3001/admin/operations', {
         waitUntil: 'domcontentloaded',
         timeout: 10000,
       });
@@ -59,7 +59,7 @@ test.describe('Operations Monitoring 真實錯誤診斷', () => {
     } catch (error) {
       console.log('❌ Port 3001 失敗，嘗試 port 3000...');
       try {
-        await page.goto('http://localhost:3000/admin/operations-monitoring', {
+        await page.goto('http://localhost:3000/admin/operations', {
           waitUntil: 'domcontentloaded',
           timeout: 10000,
         });
@@ -226,6 +226,6 @@ test.describe('Operations Monitoring 真實錯誤診斷', () => {
     }
 
     // 最基本的測試 - 確保我們能連接到頁面
-    expect(finalUrl).toContain('/admin/operations-monitoring');
+    expect(finalUrl).toContain('/admin/operations');
   });
 });

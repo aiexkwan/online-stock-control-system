@@ -141,6 +141,8 @@
 | 12 | 流程優化專家 | 業務流程、效率提升 | 流程分析、用戶體驗 | `docs/role_play/ProcessOptimizer.md` |
 | 13 | 數據分析師 | 商業智能、數據洞察 | 數據驅動、業務分析 | `docs/role_play/DataAnalyst.md` |
 | 14 | AI/ML工程師 | AI模型、智能化推動 | 技術創新、模式識別 | `docs/role_play/AI-ML-Engineer.md` |
+| 15 | 文檔整理專家 | 知識管理專家、文檔架構師、信息組織者 | 技術創新、模式識別 | `docs/role_play/AI-ML-Engineer.md` |
+
 
 ### 🎬 場景化專家組合（加強討論版）
 

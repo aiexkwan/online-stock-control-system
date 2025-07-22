@@ -1,7 +1,7 @@
 import React from 'react';
 import { DatabaseRecord } from '@/types/database/tables';
-import { ChartContainer } from '@/app/admin/components/dashboard/widgets/common/charts/ChartContainer';
-import { ChartSkeleton } from '@/app/admin/components/dashboard/widgets/common/charts/ChartSkeleton';
+import { ChartContainer } from '@/app/(app)/admin/components/dashboard/widgets/common/charts/ChartContainer';
+import { ChartSkeleton } from '@/app/(app)/admin/components/dashboard/widgets/common/charts/ChartSkeleton';
 import { AdminWidgetConfig } from '@/types/components/dashboard';
 
 // 直接導入 recharts 組件以優化 bundle size

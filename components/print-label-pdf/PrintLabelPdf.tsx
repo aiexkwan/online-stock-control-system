@@ -225,13 +225,11 @@ function LabelBlock(props: PrintLabelPdfProps) {
   return (
     <View style={styles.label}>
       {/* Logo */}
-      {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
       <Image
         src={LOGO_URL}
         style={{ position: 'absolute', top: 14, left: 14, width: 180, height: 48 }}
       />
       {/* QR Code */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       {qrCodeDataUrl && (
         <Image
           src={qrCodeDataUrl}

@@ -26,7 +26,7 @@ test.describe('Widget 載入詳細診斷', () => {
       }
     });
 
-    await page.goto('http://localhost:3000/admin/operations-monitoring', {
+    await page.goto('http://localhost:3000/admin/operations', {
       waitUntil: 'networkidle',
       timeout: 30000,
     });
