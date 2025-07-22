@@ -1,6 +1,7 @@
 import './globals.css';
 import React from 'react';
 import type { Metadata } from 'next';
+import { AccessibilityProvider } from '@/lib/accessibility';
 
 export const metadata: Metadata = {
   title: 'Pennine Stock Control System',
@@ -10,11 +11,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ 
-  children 
-}: { 
-  children?: React.ReactNode 
-}) {
+export default function RootLayout({ children }: { children?: React.ReactNode }) {
+  const safeChildren = children || null;
+
   return (
     <html lang='en'>
       <head>
@@ -26,9 +25,9 @@ export default function RootLayout({
         />
       </head>
       <body className='font-lato'>
-        <div className="min-h-screen bg-slate-900">
-          {children}
-        </div>
+        <AccessibilityProvider>
+          <div className='min-h-screen bg-slate-900'>{safeChildren}</div>
+        </AccessibilityProvider>
       </body>
     </html>
   );

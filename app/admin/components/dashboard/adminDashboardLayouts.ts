@@ -3,32 +3,7 @@
  * 定義每個主題的固定佈局和 widget 配置
  */
 
-export interface AdminWidgetConfig {
-  type: string;
-  title: string;
-  gridArea: string;
-  dataSource?: string;
-  chartType?: 'line' | 'bar' | 'pie' | 'donut' | 'area';
-  metrics?: string[];
-  component?: string; // 特殊組件名稱
-  reportType?: string;
-  apiEndpoint?: string;
-  description?: string;
-  dialogTitle?: string;
-  dialogDescription?: string;
-  selectLabel?: string;
-  dataTable?: string;
-  referenceField?: string;
-  department?: 'injection' | 'pipeline' | 'warehouse' | 'all'; // 部門過濾支援
-  uploadTypes?: string[]; // 統一上傳組件支援的文件類型
-  columns?: string[]; // 表格組件的列配置
-}
-
-export interface AdminDashboardLayout {
-  theme: string;
-  gridTemplate: string;
-  widgets: AdminWidgetConfig[];
-}
+import { AdminWidgetConfig, AdminDashboardLayout } from '@/types/components/dashboard';
 
 // Default/overview layout for fallback
 const defaultLayout: AdminDashboardLayout = {
@@ -77,18 +52,20 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
   // 統一營運監控主題 (整合 injection, pipeline, warehouse, stock-management)
   'operations-monitoring': {
     theme: 'operations-monitoring',
-    gridTemplate: `"widget2 widget2 widget3 widget3 widget4 widget4 widget5 widget5 widget1 widget1" "widget2 widget2 widget3 widget3 widget4 widget4 widget5 widget5 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget1 widget1" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget1 widget1"`,
+    gridTemplate: `
+      "stats-1 stats-1 stats-2 stats-2 stats-3 stats-3 stats-4 stats-4 history history history history"
+      "stats-1 stats-1 stats-2 stats-2 stats-3 stats-3 stats-4 stats-4 history history history history"
+      "table-1 table-1 table-1 table-1 chart chart chart chart history history history history"
+      "table-1 table-1 table-1 table-1 chart chart chart chart history history history history"
+      "table-1 table-1 table-1 table-1 chart chart chart chart history history history history"
+      "table-2 table-2 table-2 table-2 chart-2 chart-2 chart-2 chart-2 history history history history"
+      "table-2 table-2 table-2 table-2 chart-2 chart-2 chart-2 chart-2 history history history history"
+    `,
     widgets: [
-      {
-        type: 'history-tree',
-        title: '',
-        gridArea: 'widget1',
-        component: 'HistoryTreeV2',
-      },
       {
         type: 'stats',
         title: 'Primary Metric',
-        gridArea: 'widget2',
+        gridArea: 'stats-1',
         dataSource: 'record_palletinfo',
         metrics: ['dynamic_metric_1'],
         component: 'UnifiedStatsWidget', // 統一統計組件
@@ -96,29 +73,37 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
       {
         type: 'stats',
         title: 'Secondary Metric',
-        gridArea: 'widget3',
+        gridArea: 'stats-2',
         dataSource: 'record_palletinfo',
         metrics: ['dynamic_metric_2'],
         component: 'UnifiedStatsWidget', // 統一統計組件
       },
       {
-        type: 'department-selector',
-        title: 'Department',
-        gridArea: 'widget4',
-        component: 'DepartmentSelectorWidget', // 部門選擇器
-      },
-      {
         type: 'stats',
         title: 'Tertiary Metric',
-        gridArea: 'widget5',
+        gridArea: 'stats-3',
         dataSource: 'record_inventory',
         metrics: ['dynamic_metric_3'],
         component: 'UnifiedStatsWidget',
       },
       {
+        type: 'stats',
+        title: 'Department',
+        gridArea: 'stats-4',
+        component: 'DepartmentSelectorWidget', // 部門選擇器
+        dataSource: 'system_status',
+        metrics: ['department_selection'],
+      },
+      {
+        type: 'history-tree',
+        title: '',
+        gridArea: 'history',
+        component: 'HistoryTreeV2',
+      },
+      {
         type: 'chart',
         title: 'Performance Chart',
-        gridArea: 'widget6',
+        gridArea: 'table-1',
         dataSource: 'record_palletinfo',
         chartType: 'bar',
         component: 'UnifiedChartWidget', // 統一圖表組件
@@ -126,28 +111,22 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
       {
         type: 'chart',
         title: 'Distribution Chart',
-        gridArea: 'widget7',
+        gridArea: 'chart',
         dataSource: 'record_palletinfo',
         chartType: 'donut',
         component: 'UnifiedChartWidget', // 統一圖表組件
       },
       {
-        type: 'available-soon',
-        title: 'Coming Soon',
-        gridArea: 'widget8',
-        component: 'AvailableSoonWidget',
-      },
-      {
         type: 'table',
         title: 'Operations Details',
-        gridArea: 'widget9',
+        gridArea: 'table-2',
         dataSource: 'unified_operations',
         component: 'UnifiedTableWidget', // 統一表格組件
       },
       {
         type: 'chart',
         title: 'Staff Workload',
-        gridArea: 'widget10',
+        gridArea: 'chart-2',
         dataSource: 'work_level',
         chartType: 'line',
         component: 'UnifiedChartWidget', // 統一圖表組件
@@ -159,19 +138,13 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
   'data-management': {
     theme: 'data-management',
     gridTemplate: `
-      "upload-history upload-history file-history file-history upload-actions upload-actions history-tree history-tree"
-      "upload-history upload-history file-history file-history upload-actions upload-actions history-tree history-tree"
-      "product-update supplier-update void-pallet void-pallet upload-stats statistics history-tree history-tree"
-      "product-update supplier-update void-pallet void-pallet upload-stats statistics history-tree history-tree"
-      "product-update supplier-update void-pallet void-pallet upload-stats statistics history-tree history-tree"
+      "upload-history upload-history file-history file-history upload-actions upload-actions"
+      "upload-history upload-history file-history file-history upload-actions upload-actions"
+      "product-update supplier-update void-pallet void-pallet upload-stats statistics"
+      "product-update supplier-update void-pallet void-pallet upload-stats statistics"
+      "product-update supplier-update void-pallet void-pallet upload-stats statistics"
     `,
     widgets: [
-      {
-        type: 'history-tree',
-        title: '',
-        gridArea: 'history-tree',
-        component: 'HistoryTreeV2',
-      },
       // Upload 功能區域
       {
         type: 'orders-list',
@@ -246,20 +219,14 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
   analytics: {
     theme: 'analytics',
     gridTemplate: `
-      "analysis-dashboard analysis-dashboard analysis-dashboard analysis-dashboard analysis-dashboard analysis-dashboard history-tree history-tree"
-      "analysis-dashboard analysis-dashboard analysis-dashboard analysis-dashboard analysis-dashboard analysis-dashboard history-tree history-tree"
-      "stats1 stats1 stats2 stats2 stats3 stats3 history-tree history-tree"
-      "stats4 stats4 stats5 stats5 stats6 stats6 history-tree history-tree"
-      "stats7 stats7 stats8 stats8 stats9 stats9 history-tree history-tree"
-      "performance-metrics performance-metrics performance-metrics system-health system-health system-health history-tree history-tree"
+      "analysis-dashboard analysis-dashboard analysis-dashboard analysis-dashboard analysis-dashboard analysis-dashboard"
+      "analysis-dashboard analysis-dashboard analysis-dashboard analysis-dashboard analysis-dashboard analysis-dashboard"
+      "stats1 stats1 stats2 stats2 stats3 stats3"
+      "stats4 stats4 stats5 stats5 stats6 stats6"
+      "stats7 stats7 stats8 stats8 stats9 stats9"
+      "performance-metrics performance-metrics performance-metrics system-health system-health system-health"
     `,
     widgets: [
-      {
-        type: 'history-tree',
-        title: '',
-        gridArea: 'history-tree',
-        component: 'HistoryTreeV2',
-      },
       // 主要分析儀表板 (來自 analysis)
       {
         type: 'analysis',

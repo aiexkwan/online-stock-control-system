@@ -15,6 +15,7 @@ export interface UnifiedWidgetConfig {
   description?: string;
   lazyLoad: boolean;
   preloadPriority: number;
+  loader?: () => Promise<{ default: React.ComponentType<any> }>;
   metadata: {
     dataSource?: string;
     refreshInterval?: number;
@@ -40,6 +41,10 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     description: 'Enhanced hierarchical display of system history',
     lazyLoad: true,
     preloadPriority: 10,
+    loader: () =>
+      import('@/app/admin/components/dashboard/widgets/HistoryTreeV2').then(module => ({
+        default: module.HistoryTreeV2,
+      })),
     metadata: {
       dataSource: 'record_history',
       refreshInterval: 30000,
@@ -47,16 +52,6 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
       supportDateRange: true,
       cacheEnabled: true,
     },
-  },
-
-  AvailableSoonWidget: {
-    id: 'AvailableSoonWidget',
-    name: 'Available Soon Widget',
-    category: 'core',
-    description: 'Display upcoming features',
-    lazyLoad: false,
-    preloadPriority: 1,
-    metadata: {},
   },
 
   // Stats Widgets
@@ -497,7 +492,6 @@ export function getPreloadPriority(widgetId: string): number {
   return config?.preloadPriority || 1;
 }
 
-
 // 獲取路由的預加載 widgets
 export function getRoutePreloadWidgets(route: string): string[] {
   return ROUTE_PRELOAD_MAP[route] || [];
@@ -514,7 +508,6 @@ export function getWidgetsByPriority(minPriority: number): UnifiedWidgetConfig[]
     config => config.preloadPriority >= minPriority
   );
 }
-
 
 // 轉換為 WidgetDefinition 格式（向後兼容）
 export function toWidgetDefinition(config: UnifiedWidgetConfig): Partial<WidgetDefinition> {

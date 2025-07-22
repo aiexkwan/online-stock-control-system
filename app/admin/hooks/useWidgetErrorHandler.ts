@@ -17,14 +17,8 @@ import type {
   ErrorHandleResult,
   FormSubmissionData,
   FileOperationDetails,
-} from './types';
-
-export interface WidgetErrorOptions {
-  showToast?: boolean;
-  logToDatabase?: boolean;
-  transactionId?: string;
-  customMessage?: string;
-}
+  WidgetErrorOptions,
+} from '@/types/hooks/admin';
 
 export function useWidgetErrorHandler(widgetName: string, userId?: string) {
   const transactionLog = useRef(new TransactionLogService());

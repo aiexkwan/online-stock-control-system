@@ -2,8 +2,8 @@
 
 **調查日期**: 2025-07-21  
 **調查範圍**: 系統所有 Widget 分類與架構  
-**文檔版本**: v1.5  
-**最後更新**: 2025-07-21 - 補充遺漏的 /admin/analytics 路由文檔
+**文檔版本**: v1.7  
+**最後更新**: 2025-07-21 - 移除所有自動刷新間隔配置
 
 ## 🎯 調查摘要
 
@@ -13,7 +13,10 @@
 - 已完成 HistoryTree → HistoryTreeV2 統一遷移，移除重複配置和重定向  
 - 移除 ProductUpdateWidget 舊版本，統一使用 ProductUpdateWidgetV2  
 - 移除 StockDistributionChart 舊版本，統一使用 StockDistributionChartV2  
+- 移除 AvailableSoonWidget 組件，系統配置改用 ComingSoonPlaceholder
+- ✅ **移除所有自動刷新間隔配置**，改為用戶主動控制更新
 - ✅ **GraphQL → REST API 完全遷移完成**，所有 Widget 現使用統一的 REST API 架構
+- ✅ **優化佈局配置**: 從 `/admin/data-management` 和 `/admin/analytics` 移除 HistoryTreeV2，採用更緊湊的 6 列網格佈局
 - 系統一致性和代碼清潔度進一步提升
 
 ## 📊 系統概覽統計
@@ -21,7 +24,7 @@
 - **總 Widget 數量**: 45個 (移除 2 個廢棄組件)
 - **分類類型**: 9個
 - **架構模式**: REST API + Server Actions + Mixed Strategy
-- **支援功能**: REST API、實時更新、緩存、懶加載
+- **支援功能**: REST API、手動刷新、緩存、懶加載
 
 ## 🗂️ Widget 分類系統架構
 
@@ -44,7 +47,6 @@
 - **HistoryTreeV2** - 增強版系統歷史樹狀圖 ⭐ 高優先級 (Priority: 10)
   - 路徑: `app/admin/components/dashboard/widgets/HistoryTreeV2.tsx`
   - 數據源: `record_history`
-  - 刷新間隔: 30秒
   - 支援: 過濾器、日期範圍、緩存
   - 狀態: ✅ 現役版本 (已取代 HistoryTree)
   - 特性: Progressive Loading、REST API、事件合併、動畫效果
@@ -53,26 +55,18 @@
 - **AwaitLocationQty** - 等待分配位置數量
   - 路徑: `app/admin/components/dashboard/widgets/AwaitLocationQtyWidget.tsx`
   - 數據源: `record_palletinfo`
-  - 刷新間隔: 5秒
-  - 支援: 實時更新
 - **YesterdayTransferCount** - 昨日轉移數量
   - 路徑: `app/admin/components/dashboard/widgets/YesterdayTransferCountWidget.tsx`
   - 數據源: `record_transfer`
-  - 刷新間隔: 60秒
   - 支援: 緩存
 - **StillInAwait** - 仍在等待項目
   - 路徑: `app/admin/components/dashboard/widgets/StillInAwaitWidget.tsx`
   - 數據源: `record_palletinfo`
-  - 刷新間隔: 10秒
-  - 支援: 實時更新
 - **StillInAwaitPercentage** - 仍在等待百分比
   - 路徑: `app/admin/components/dashboard/widgets/StillInAwaitPercentageWidget.tsx`
   - 數據源: `record_palletinfo`
-  - 刷新間隔: 10秒
-  - 支援: 實時更新
 - **StatsCard** - 通用統計卡片
   - 路徑: `app/admin/components/dashboard/widgets/StatsCardWidget.tsx`
-  - 刷新間隔: 30秒
   - 支援: 緩存
 - **InjectionProductionStats** - 注塑生產統計
   - 路徑: `app/admin/components/dashboard/widgets/InjectionProductionStatsWidget.tsx`
@@ -83,60 +77,49 @@
   - 路徑: `app/admin/components/dashboard/widgets/StockDistributionChartV2.tsx`
   - 數據源: `record_inventory` 通過統一 widgetAPI
   - 架構: React Query + REST API
-  - 刷新間隔: 30秒
   - 狀態: ✅ 現役版本 (已取代 StockDistributionChart)
   - 特性: 智能緩存、自動重試、背景更新、統一錯誤處理
   - 支援: 日期範圍、庫存類型過濾、響應式設計
 - **StockLevelHistoryChart** - 庫存水平歷史圖表 (線圖)
   - 路徑: `app/admin/components/dashboard/widgets/StockLevelHistoryChart.tsx`
   - 數據源: `record_inventory`
-  - 刷新間隔: 60秒
   - 支援: 日期範圍
 - **WarehouseWorkLevelAreaChart** - 倉庫工作水平區域圖 (區域圖)
   - 路徑: `app/admin/components/dashboard/widgets/WarehouseWorkLevelAreaChart.tsx`
   - 數據源: `work_level`
-  - 刷新間隔: 30秒
   - 支援: 日期範圍
 - **TransferTimeDistribution** - 轉移時間分布 (直方圖)
   - 路徑: `app/admin/components/dashboard/widgets/TransferTimeDistributionWidget.tsx`
   - 數據源: `record_transfer`
-  - 刷新間隔: 60秒
   - 支援: 日期範圍
 - **ProductDistributionChart** - 產品分布圖表 (條形圖)
   - 路徑: `app/admin/components/dashboard/widgets/ProductDistributionChartWidget.tsx`
   - 數據源: `data_code`
-  - 刷新間隔: 120秒
   - 支援: 日期範圍
 - **TopProductsByQuantity** - 按數量排序熱門產品 (條形圖)
   - 路徑: `app/admin/components/dashboard/widgets/TopProductsByQuantityWidget.tsx`
   - 數據源: `record_inventory`
-  - 刷新間隔: 60秒
   - 支援: 日期範圍
 - **TopProductsDistribution** - 熱門產品分布 (甜甜圈圖)
   - 路徑: `app/admin/components/dashboard/widgets/TopProductsDistributionWidget.tsx`
   - 數據源: `record_inventory`
-  - 刷新間隔: 60秒
   - 支援: 日期範圍
 
 ### 📋 Lists (列表類) - 5個
 - **OrdersListV2** - 增強版訂單列表
   - 路徑: `app/admin/components/dashboard/widgets/OrdersListWidgetV2.tsx`
   - 數據源: `data_order`
-  - 刷新間隔: 30秒
   - 支援: 過濾器、日期範圍
 - **OtherFilesListV2** - 增強版其他文件列表
   - 路徑: `app/admin/components/dashboard/widgets/OtherFilesListWidgetV2.tsx`
-  - 刷新間隔: 60秒
   - 支援: 過濾器
 - **WarehouseTransferList** - 倉庫轉移列表
   - 路徑: `app/admin/components/dashboard/widgets/WarehouseTransferListWidget.tsx`
   - 數據源: `record_transfer`
-  - 刷新間隔: 15秒
-  - 支援: 過濾器、日期範圍、實時更新
+  - 支援: 過濾器、日期範圍
 - **OrderStateListV2** - 增強版訂單狀態列表
   - 路徑: `app/admin/components/dashboard/widgets/OrderStateListWidgetV2.tsx`
   - 數據源: `data_order`
-  - 刷新間隔: 30秒
   - 支援: 過濾器、日期範圍
 - **ProductionDetails** - 生產詳情
   - 路徑: `app/admin/components/dashboard/widgets/ProductionDetailsWidget.tsx`
@@ -185,7 +168,6 @@
 ### 🔍 Analysis (分析類) - 4個
 - **AnalysisExpandableCards** - 可擴展分析卡片
   - 路徑: `app/admin/components/dashboard/widgets/AnalysisExpandableCards.tsx`
-  - 刷新間隔: 120秒
   - 支援: 日期範圍
 - **AnalysisPagedV2** - 增強版分頁分析
   - 路徑: `app/admin/components/dashboard/widgets/AnalysisPagedWidgetV2.tsx`
@@ -193,7 +175,6 @@
 - **InventoryOrderedAnalysis** - 已訂購庫存分析
   - 路徑: `app/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget.tsx`
   - 數據源: `record_inventory`
-  - 刷新間隔: 60秒
   - 支援: 日期範圍
 - **StockTypeSelector** - 庫存類型選擇器
   - 路徑: `app/admin/components/dashboard/widgets/StockTypeSelector.tsx`
@@ -269,7 +250,26 @@
 - **預加載優先級**: 1-10級 (10最高)
 - **懶加載**: 大部分 Widget 支援
 - **緩存策略**: aggressive, normal, minimal
-- **實時更新**: 關鍵業務 Widget 支援
+- **手動刷新**: 用戶主動控制更新時機
+
+### 🔄 Widget 刷新策略
+**核心原則**: Widget 數據更新完全由用戶控制，避免自動刷新造成不必要嘅資源消耗同用戶干擾。
+
+**刷新觸發條件**:
+1. **頁面重新載入** - 用戶刷新瀏覽器頁面
+2. **手動刷新按鈕** - 用戶點擊 Widget 或頁面上嘅刷新控件
+3. **路由切換** - 用戶導航到不同頁面時重新載入相關 Widget
+
+**已移除功能**:
+- ❌ 自動定時刷新 (5秒、10秒、30秒、60秒、120秒間隔)
+- ❌ 背景自動更新
+- ❌ 實時數據推送 (除非用戶主動觸發)
+
+**用戶體驗優勢**:
+- 🔋 減少不必要嘅 API 呼叫，節省系統資源
+- ⚡ 避免數據更新干擾用戶操作
+- 🎯 用戶完全控制數據更新時機
+- 💾 更好嘅緩存利用率
 
 ## 🗺️ 路由預加載映射
 
@@ -285,7 +285,7 @@
 | `/admin/analysis` | HistoryTreeV2, AnalysisExpandableCards | 數據分析 |
 | `/admin/analytics` | UnifiedAnalyticsDashboard, UnifiedStatsWidget (9個), HistoryTreeV2, PerformanceMetrics | 綜合分析中心 |
 
-🏭 /admin/operations-monitoring (10個 Widgets)
+🏭 /admin/operations-monitoring (8個 Widgets)
 
   佈局: 10x7 網格，右側固定 HistoryTree
 
@@ -298,47 +298,44 @@
   | 5      | UnifiedStatsWidget       | Tertiary Metric - 第三指標           | widget5        |
   | 6      | UnifiedChartWidget       | Performance Chart - 性能圖表 (條形圖)   | widget6        |
   | 7      | UnifiedChartWidget       | Distribution Chart - 分布圖表 (甜甜圈圖) | widget7        |
-  | 8      | AvailableSoonWidget      | Coming Soon - 即將推出功能             | widget8        |
-  | 9      | UnifiedTableWidget       | Operations Details - 營運詳情表格      | widget9        |
-  | 10     | UnifiedChartWidget       | Staff Workload - 員工工作量 (線圖)      | widget10       |
+  | 8      | UnifiedTableWidget       | Operations Details - 營運詳情表格      | widget9        |
+  | 9      | UnifiedChartWidget       | Staff Workload - 員工工作量 (線圖)      | widget10       |
 
   ---
   📊 /admin/data-management (8個 Widgets)
 
-  佈局: 8x5 網格，右側固定 HistoryTree
+  佈局: 6x5 網格，緊湊型數據管理界面
 
   | Widget | 組件名稱                   | 功能描述                          | 網格位置            |
   |--------|------------------------|-------------------------------|-----------------|
-  | 1      | HistoryTreeV2          | 系統歷史樹狀圖                       | history-tree    |
-  | 2      | OrdersListWidgetV2     | Order Upload History - 訂單上傳歷史 | upload-history  |
-  | 3      | OtherFilesListWidgetV2 | File Upload History - 文件上傳歷史  | file-history    |
-  | 4      | UnifiedUploadWidget    | Upload Center - 統一上傳中心        | upload-actions  |
-  | 5      | ProductUpdateWidgetV2  | Product Management - 產品管理     | product-update  |
-  | 6      | SupplierUpdateWidgetV2 | Supplier Management - 供應商管理   | supplier-update |
-  | 7      | VoidPalletWidget       | Pallet Management - 廢棄棧板管理    | void-pallet     |
-  | 8      | UnifiedStatsWidget     | Upload Statistics - 上傳統計      | upload-stats    |
-  | 9      | UnifiedStatsWidget     | Update Statistics - 更新統計      | statistics      |
+  | 1      | OrdersListWidgetV2     | Order Upload History - 訂單上傳歷史 | upload-history  |
+  | 2      | OtherFilesListWidgetV2 | File Upload History - 文件上傳歷史  | file-history    |
+  | 3      | UnifiedUploadWidget    | Upload Center - 統一上傳中心        | upload-actions  |
+  | 4      | ProductUpdateWidgetV2  | Product Management - 產品管理     | product-update  |
+  | 5      | SupplierUpdateWidgetV2 | Supplier Management - 供應商管理   | supplier-update |
+  | 6      | VoidPalletWidget       | Pallet Management - 廢棄棧板管理    | void-pallet     |
+  | 7      | UnifiedStatsWidget     | Upload Statistics - 上傳統計      | upload-stats    |
+  | 8      | UnifiedStatsWidget     | Update Statistics - 更新統計      | statistics      |
 
   ---
   📈 /admin/analytics (12個 Widgets)
 
-  佈局: 8x6 網格，右側固定 HistoryTree，最大網格配置
+  佈局: 6x6 網格，緊湊型分析界面
 
   | Widget | 組件名稱                    | 功能描述                                | 網格位置                |
   |--------|-------------------------|-------------------------------------|---------------------|
-  | 1      | HistoryTreeV2           | 系統歷史樹狀圖                             | history-tree        |
-  | 2      | AnalysisExpandableCards | Comprehensive Analytics Dashboard   | analysis-dashboard  |
-  | 3      | UnifiedStatsWidget      | Production Overview - 生產總覽          | stats1              |
-  | 4      | UnifiedStatsWidget      | Inventory Status - 庫存狀態             | stats2              |
-  | 5      | UnifiedStatsWidget      | Transfer Activity - 轉移活動            | stats3              |
-  | 6      | UnifiedStatsWidget      | Quality Metrics - 質量指標              | stats4              |
-  | 7      | UnifiedStatsWidget      | Efficiency Score - 效率分數             | stats5              |
-  | 8      | UnifiedStatsWidget      | User Activity - 用戶活動                | stats6              |
-  | 9      | UnifiedChartWidget      | Trend Analysis - 趨勢分析 (線圖)          | stats7              |
-  | 10     | UnifiedChartWidget      | Distribution Analysis - 分布分析 (甜甜圈圖) | stats8              |
-  | 11     | UnifiedChartWidget      | Predictive Analytics - 預測分析 (區域圖)   | stats9              |
-  | 12     | UnifiedStatsWidget      | Performance Metrics - 性能指標          | performance-metrics |
-  | 13     | UnifiedStatsWidget      | System Health - 系統健康                | system-health       |
+  | 1      | AnalysisExpandableCards | Comprehensive Analytics Dashboard   | analysis-dashboard  |
+  | 2      | UnifiedStatsWidget      | Production Overview - 生產總覽          | stats1              |
+  | 3      | UnifiedStatsWidget      | Inventory Status - 庫存狀態             | stats2              |
+  | 4      | UnifiedStatsWidget      | Transfer Activity - 轉移活動            | stats3              |
+  | 5      | UnifiedStatsWidget      | Quality Metrics - 質量指標              | stats4              |
+  | 6      | UnifiedStatsWidget      | Efficiency Score - 效率分數             | stats5              |
+  | 7      | UnifiedStatsWidget      | User Activity - 用戶活動                | stats6              |
+  | 8      | UnifiedChartWidget      | Trend Analysis - 趨勢分析 (線圖)          | stats7              |
+  | 9      | UnifiedChartWidget      | Distribution Analysis - 分布分析 (甜甜圈圖) | stats8              |
+  | 10     | UnifiedChartWidget      | Predictive Analytics - 預測分析 (區域圖)   | stats9              |
+  | 11     | UnifiedStatsWidget      | Performance Metrics - 性能指標          | performance-metrics |
+  | 12     | UnifiedStatsWidget      | System Health - 系統健康                | system-health       |
 
 
 ## 📊 統一組件系統功能詳解
@@ -451,12 +448,12 @@
 
 ### `/admin/analytics` - 綜合分析中心
 - **定位**: 企業級分析儀表板，統一分析主題
-- **特色**: 
+- **特色**:
   - 專用 6x8 網格佈局，包含 12 個統一組件實例
   - 大型綜合分析儀表板 (Comprehensive Analytics Dashboard)
   - 實時性能監控 (Performance Metrics) 和系統健康狀況
   - 統一組件系統 (UnifiedStatsWidget × 8, UnifiedChartWidget × 3)
-- **主要組件**: 
+- **主要組件**:
   - Production Overview, Inventory Status, Transfer Activity
   - Quality Metrics, Efficiency Score, User Activity
   - Trend Analysis, Distribution Analysis, Predictive Analytics
@@ -492,7 +489,7 @@
 
 ### 支援功能
 - ✅ REST API 完全遷移 (所有 Widget)
-- ✅ 實時更新 (Supabase Realtime)
+- ✅ 手動刷新 (頁面刷新 & 刷新按鈕)
 - ✅ 緩存策略 (多級緩存)
 - ✅ 懶加載 (性能優化)
 - ✅ 路由預加載 (用戶體驗)
@@ -507,7 +504,7 @@
 2. **性能優化**: 智能預加載和緩存策略
 3. **擴展性**: 模組化設計，易於添加新 Widget
 4. **維護性**: 清晰的分類和文檔
-5. **用戶體驗**: 響應式設計和實時更新
+5. **用戶體驗**: 響應式設計和手動控制更新
 
 ## 📈 統計摘要
 
@@ -539,7 +536,7 @@ Mixed Strategy: 7個 (15.2%)
 
 ### 中期規劃
 1. **API 優化**: REST API 性能提升與批量請求
-2. **實時功能**: 擴展實時更新範圍
+2. **刷新機制**: 優化手動刷新體驗和用戶控制
 3. **緩存優化**: 智能緩存策略升級
 
 ### 長期發展
@@ -643,3 +640,5 @@ lib/widgets/
 - v1.3 (2025-07-21): 更新 API 架構描述，確認 GraphQL → REST API 完全遷移
 - v1.4 (2025-07-21): 移除 StockDistributionChart，統一使用 V2，更新至 45 個 Widget
 - v1.5 (2025-07-21): 補充遺漏的 /admin/analytics 路由，添加 Analytics vs Analysis 功能區別說明
+- v1.7 (2025-07-21): 移除所有自動刷新間隔配置，實施用戶主動控制更新策略
+- v1.8 (2025-07-21): 從 `/admin/data-management` 和 `/admin/analytics` 移除 HistoryTreeV2，優化為 6 列緊湊佈局

@@ -73,11 +73,13 @@ const DASHBOARD_THEMES = [
 interface NewAdminDashboardProps {
   prefetchedData?: Partial<DashboardBatchQueryData> | null; // SSR 預取數據
   ssrMode?: boolean; // 是否為 SSR 模式
+  theme?: string; // 映射後的主題
 }
 
 export function NewAdminDashboard({
   prefetchedData,
   ssrMode = false,
+  theme: propTheme,
 }: NewAdminDashboardProps = {}) {
   const router = useRouter();
   const pathname = usePathname();
@@ -99,12 +101,13 @@ export function NewAdminDashboard({
     [timeFrame.start, timeFrame.end]
   );
 
-  // 從路徑判斷當前主題
+  // 從路徑判斷當前主題，但優先使用 props 傳入的主題
   const pathParts = pathname.split('/').filter(Boolean);
   const lastPart = pathParts[pathParts.length - 1];
-  // If on /admin root, redirect to injection theme
+  // 使用映射後的主題，或從路徑判斷
   const currentTheme =
-    pathParts.length === 1 && lastPart === 'admin' ? 'injection' : lastPart || 'injection';
+    propTheme ||
+    (pathParts.length === 1 && lastPart === 'admin' ? 'analytics' : lastPart || 'analytics');
 
   // Navigation menu items grouped by category
 
@@ -128,19 +131,24 @@ export function NewAdminDashboard({
     );
   }
 
-  // Not authenticated
+  // Not authenticated - 顯示友好的登入介面而非空白頁面
   if (!isAuthenticated) {
     return (
-      <div className='min-h-screen'>
+      <div className='min-h-screen bg-slate-900'>
         <div className='relative z-10 flex min-h-screen flex-col items-center justify-center p-4 text-white'>
-          <h1 className='mb-4 text-3xl font-bold text-orange-500'>Authentication Required</h1>
-          <p className='mb-6 text-lg'>Please log in to access the Admin Dashboard.</p>
-          <button
-            onClick={() => router.push('/main-login')}
-            className='rounded-lg bg-orange-500 px-6 py-3 text-white transition-colors hover:bg-orange-600'
-          >
-            Go to Login
-          </button>
+          <div className='w-full max-w-md rounded-lg border border-slate-600 bg-slate-800 p-8 text-center shadow-xl'>
+            <h1 className='mb-4 text-2xl font-bold text-orange-500'>Admin Dashboard</h1>
+            <p className='mb-6 text-slate-300'>Please log in to access the dashboard</p>
+            <button
+              onClick={() => router.push('/main-login')}
+              className='w-full rounded-lg bg-orange-500 px-6 py-3 font-medium text-white transition-colors hover:bg-orange-600 focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-slate-800'
+            >
+              Login to Dashboard
+            </button>
+            <p className='mt-4 text-xs text-slate-500'>
+              Operations Monitoring • Data Management • Analytics
+            </p>
+          </div>
         </div>
       </div>
     );

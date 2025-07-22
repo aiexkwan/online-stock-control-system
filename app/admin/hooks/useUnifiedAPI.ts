@@ -12,52 +12,12 @@ import { createClient } from '@/app/utils/supabase/client';
 import { DashboardDataContext } from '../contexts/DashboardDataContext';
 import { useWidgetErrorHandler } from './useWidgetErrorHandler';
 import { logger } from '@/lib/logger';
-
-// API 參數基礎類型
-type APIVariables = Record<string, string | number | boolean | string[] | null | undefined>;
-
-// API 響應基礎類型
-interface APIResponseBase {
-  data?: unknown;
-  error?: string | null;
-  meta?: {
-    total?: number;
-    page?: number;
-    hasMore?: boolean;
-  };
-}
-
-export interface UseUnifiedAPIOptions<TData, TVariables extends APIVariables = APIVariables> {
-  // REST API 配置
-  restEndpoint: string;
-  restMethod?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-
-  // 通用選項
-  variables?: TVariables;
-  skip?: boolean;
-  onCompleted?: (data: TData) => void;
-  onError?: (error: Error) => void;
-  extractFromContext?: (contextData: APIResponseBase) => TData | null;
-  widgetId?: string;
-
-  // 快取和重試
-  cacheTime?: number;
-  staleTime?: number;
-  retryCount?: number;
-}
-
-export interface UseUnifiedAPIResult<TData> {
-  data: TData | undefined;
-  loading: boolean;
-  error: Error | undefined;
-  refetch: () => Promise<void>;
-  apiType: 'rest' | 'context';
-  performanceMetrics?: {
-    queryTime: number;
-    dataSource: 'context' | 'rest' | 'cache';
-    fallbackUsed: boolean;
-  };
-}
+import type {
+  APIVariables,
+  APIResponseBase,
+  UseUnifiedAPIOptions,
+  UseUnifiedAPIResult,
+} from '@/types/hooks/admin';
 
 /**
  * 統一 REST API Hook

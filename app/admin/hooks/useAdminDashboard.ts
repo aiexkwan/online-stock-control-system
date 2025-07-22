@@ -4,12 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { DatabaseRecord } from '@/types/database/tables';
 import { createClient } from '@/lib/supabase';
 import { toast } from 'sonner';
-import {
-  adminDataService,
-  DashboardStats,
-  AcoOrderProgress,
-  InventorySearchResult,
-} from '../services/AdminDataService';
+import { adminDataService } from '../services/AdminDataService';
+import { DashboardStats, AcoOrderProgress, InventorySearchResult } from '@/types/services/admin';
 import { isNotProduction } from '@/lib/utils/env';
 import type { AcoOrder } from '@/app/actions/acoOrderProgressActions';
 

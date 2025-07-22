@@ -11,7 +11,8 @@ import { DocumentArrowUpIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { WidgetComponentProps } from '@/types/components/dashboard';
 import { toast } from 'sonner';
 import { GoogleDriveUploadToast } from './GoogleDriveUploadToast';
-import { OrderAnalysisResultDialog, AnalysisResult } from './OrderAnalysisResultDialog';
+import { OrderAnalysisResultDialog } from './OrderAnalysisResultDialog';
+import { AnalysisResult } from '@/types/components/dashboard';
 import { useUploadRefresh } from '@/app/admin/contexts/UploadRefreshContext';
 import { analyzeOrderPDF, getCurrentUserId } from '@/app/actions/orderUploadActions';
 import {

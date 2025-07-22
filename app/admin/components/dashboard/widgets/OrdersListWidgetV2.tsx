@@ -17,6 +17,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { DocumentArrowUpIcon, WifiIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { TraditionalWidgetComponentProps } from '@/types/components/dashboard';
+import type { WidgetComponentProps } from '@/types/components/widgets';
 import { format } from 'date-fns';
 import { fromDbTime } from '@/app/utils/timezone';
 import { ordersAPI, OrdersListResponse, OrderRecord } from '@/lib/api/modules/OrdersAPI';

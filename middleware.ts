@@ -290,25 +290,45 @@ export async function middleware(request: NextRequest) {
     if (userError) {
       logMiddlewareAuth(correlationId, false, undefined, userError.message);
 
-      // 處理獲取用戶時的錯誤，但不要重定向公開路由
-      // 只有在非公開路由且不在登入頁面時才重定向
-      if (!isPublicRoute && request.nextUrl.pathname !== '/main-login') {
-        const redirectUrl = new URL('/main-login', request.url);
-        redirectUrl.searchParams.set('from', request.nextUrl.pathname);
-        redirectUrl.searchParams.set('error', 'user_fetch_failed');
+      // 優雅處理用戶獲取錯誤 - 讓應用自行處理身份驗證
+      // 只對非公開路由記錄錯誤，但不強制重定向
+      if (!isPublicRoute) {
+        middlewareLogger.warn(
+          {
+            correlationId,
+            path: request.nextUrl.pathname,
+            error: userError.message,
+            action: 'continue',
+            reason: 'allow_app_auth_handling',
+          },
+          'User fetch failed, allowing app to handle authentication'
+        );
 
-        logMiddlewareRouting(correlationId, request.nextUrl.pathname, false, '/main-login');
-
-        const redirectResponse = NextResponse.redirect(redirectUrl);
-        redirectResponse.headers.set('x-correlation-id', correlationId);
-        return redirectResponse;
+        // 添加錯誤標頭讓應用層處理
+        response.headers.set('X-Auth-Error', userError.message);
+        response.headers.set('X-User-Logged', 'false');
       }
     }
 
     if (!user) {
-      // 除了公開路由外，所有其他路由都需要認證
-      // 如果不在 /main-login 頁面且不是公開路由，則重定向到登入頁面
-      if (request.nextUrl.pathname !== '/main-login' && !isPublicRoute) {
+      // 對於 admin 路由，讓應用層處理身份驗證而非強制重定向
+      if (request.nextUrl.pathname.startsWith('/admin/')) {
+        middlewareLogger.info(
+          {
+            correlationId,
+            path: request.nextUrl.pathname,
+            action: 'continue',
+            reason: 'admin_route_app_auth',
+          },
+          'Admin route without user, allowing app to handle authentication'
+        );
+
+        // 設置標頭讓應用知道用戶未認證
+        response.headers.set('X-User-Logged', 'false');
+        response.headers.set('X-Auth-Required', 'true');
+      }
+      // 對於其他非公開路由，保持原有重定向邏輯
+      else if (request.nextUrl.pathname !== '/main-login' && !isPublicRoute) {
         middlewareLogger.warn(
           {
             correlationId,
@@ -333,8 +353,7 @@ export async function middleware(request: NextRequest) {
       // 用戶已認證 - 只在首次訪問或重要頁面時記錄
       const shouldLogAuth =
         isDevelopment() &&
-        (request.nextUrl.pathname === '/admin' ||
-          !request.headers.get('referer')); // 首次訪問（沒有 referer）
+        (request.nextUrl.pathname === '/admin' || !request.headers.get('referer')); // 首次訪問（沒有 referer）
 
       if (shouldLogAuth) {
         logMiddlewareAuth(correlationId, true, user.id);

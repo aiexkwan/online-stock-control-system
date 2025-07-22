@@ -38,12 +38,9 @@ export class AdminErrorBoundary extends React.Component<Props, State> {
     ) {
       console.warn('Dynamic import error detected - likely a lazy loading issue');
 
-      // Add a small delay before auto-refresh to prevent rapid reload loops
-      setTimeout(() => {
-        if (typeof window !== 'undefined') {
-          window.location.reload();
-        }
-      }, 2000);
+      // 移除自動重新載入以防止無限循環
+      // 用戶可以手動點擊 "Refresh Page" 按鈕
+      console.warn('Auto-reload disabled to prevent infinite refresh loop');
     }
   }
 
@@ -70,7 +67,7 @@ export class AdminErrorBoundary extends React.Component<Props, State> {
             </p>
             {isDynamicImportError && (
               <div className='mb-4 text-sm text-yellow-400'>
-                <p>Auto-refreshing in 2 seconds...</p>
+                <p>Please click "Refresh Page" to reload the components.</p>
               </div>
             )}
             <div className='space-y-2'>

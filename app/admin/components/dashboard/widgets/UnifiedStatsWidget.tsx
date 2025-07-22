@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Box, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
 import { MetricCard } from './common/data-display/MetricCard';
 import { useDashboardConcurrentQuery } from '@/app/admin/hooks/useDashboardConcurrentQuery';
-import { AdminWidgetConfig } from '../adminDashboardLayouts';
+import { AdminWidgetConfig } from '@/types/components/dashboard';
 
 interface UnifiedStatsWidgetProps {
   config: AdminWidgetConfig;

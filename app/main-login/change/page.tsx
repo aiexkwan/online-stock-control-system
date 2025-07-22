@@ -36,9 +36,9 @@ export default function ChangePasswordPage() {
     setSuccess(true);
     setError(null);
 
-    // 3秒後跳轉到 admin/analysis 頁面
+    // 3秒後跳轉到 admin/analytics 頁面
     setTimeout(() => {
-      router.push('/admin/analysis');
+      router.push('/admin/analytics');
     }, 3000);
   };
 
@@ -88,7 +88,7 @@ export default function ChangePasswordPage() {
             </div>
 
             <Link
-              href='/admin/analysis'
+              href='/admin/analytics'
               className='inline-block rounded-md bg-blue-600 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700'
             >
               Go to Dashboard
@@ -135,7 +135,7 @@ export default function ChangePasswordPage() {
           {/* Links */}
           <div className='mt-6 text-center'>
             <Link
-              href='/admin/analysis'
+              href='/admin/analytics'
               className='text-sm text-gray-400 transition-colors hover:text-gray-300'
             >
               ← Back to Dashboard

@@ -209,22 +209,31 @@ export const AdminDashboardContent: React.FC<AdminDashboardContentProps> = ({
   }
 
   // 默認佈局（如果沒有特定的 Layout 組件）
+  // 動態計算 grid dimensions 基於 gridTemplate
+  const gridTemplateLines = layout.gridTemplate
+    .trim()
+    .split('\n')
+    .filter(line => line.trim());
+  const numRows = gridTemplateLines.length;
+  const numCols = gridTemplateLines[0] ? gridTemplateLines[0].trim().split(/\s+/).length : 14;
+
   return (
     <KeyboardNavigableGrid
       className='h-full w-full'
-      gridColumns={8}
+      gridColumns={numCols}
       aria-label={`${theme} dashboard widgets`}
     >
       <div
         className='h-full w-full'
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(8, 1fr)',
-          gridTemplateRows: '200px 300px 200px',
+          gridTemplateColumns: `repeat(${numCols}, 1fr)`,
+          gridTemplateRows: `repeat(${numRows}, minmax(120px, auto))`,
           gap: '16px',
           gridTemplateAreas: layout.gridTemplate,
           height: '100%',
           width: '100%',
+          padding: '20px',
         }}
       >
         {renderWidgets()}

@@ -331,3 +331,147 @@ export interface WidgetProps extends BaseWidgetComponentProps {
 
 // DashboardWidgetConfig 類型別名
 export type DashboardWidgetConfig = WidgetConfig;
+
+// Admin Dashboard 相關類型 (從 app/admin/components/dashboard/adminDashboardLayouts.ts 遷移)
+export interface AdminWidgetConfig {
+  type: string;
+  title: string;
+  gridArea: string;
+  dataSource?: string;
+  chartType?: 'line' | 'bar' | 'pie' | 'donut' | 'area';
+  metrics?: string[];
+  component?: string; // 特殊組件名稱
+  reportType?: string;
+  apiEndpoint?: string;
+  description?: string;
+  dialogTitle?: string;
+  dialogDescription?: string;
+  selectLabel?: string;
+  dataTable?: string;
+  referenceField?: string;
+  department?: 'injection' | 'pipeline' | 'warehouse' | 'all'; // 部門過濾支援
+  uploadTypes?: string[]; // 統一上傳組件支援的文件類型
+  columns?: string[]; // 表格組件的列配置
+}
+
+export interface AdminDashboardLayout {
+  theme: string;
+  gridTemplate: string;
+  widgets: AdminWidgetConfig[];
+}
+
+// Shared widget renderer types
+export interface WidgetData {
+  [key: string]: unknown;
+}
+
+export type ThemeKey = 'production' | 'warehouse' | 'inventory' | 'update' | 'search';
+
+export type WidgetCategoryType = 'stats' | 'chart' | 'table' | 'list' | 'core' | 'special';
+
+// Error handling types
+export interface WidgetError {
+  type: 'loading' | 'data' | 'render' | 'network';
+  message: string;
+  timestamp: Date;
+  retryable: boolean;
+}
+
+export type WidgetErrorType = WidgetError['type'];
+
+// Base widget state for common usage
+export interface BaseWidgetState {
+  loading: boolean;
+  error: string | null;
+  data: unknown;
+  lastUpdated: Date | null;
+}
+
+// Base widget config for reusability
+export interface BaseWidgetConfig {
+  refreshInterval?: number;
+  dataSource?: string;
+  displayOptions?: Record<string, unknown>;
+  timeRange?: string;
+  [key: string]: unknown;
+}
+
+// Order Analysis Types
+export interface OrderItem {
+  productCode?: string;
+  product_code?: string;
+  quantity?: number;
+  product_qty?: number;
+  unitPrice?: number;
+  unit_price?: string;
+}
+
+export interface ExtractedOrder {
+  order_ref?: string;
+  account_num?: string;
+  delivery_add?: string;
+  invoice_to?: string;
+  customer_ref?: string;
+  product_code?: string;
+  product_desc?: string;
+  product_qty?: number;
+  unit_price?: string;
+  weight?: number;
+  totalAmount?: number;
+  items?: OrderItem[]; // Support for multiple items
+}
+
+export interface AnalysisResult {
+  success: boolean;
+  extractedData?: ExtractedOrder[];
+  error?: string;
+  message?: string;
+}
+
+export interface OrderAnalysisResultDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  data: AnalysisResult | null;
+}
+
+// Widget Typography Types
+export interface WidgetTitleProps {
+  children: React.ReactNode;
+  size?: 'large' | 'medium' | 'small' | 'xs';
+  glow?: string;
+  className?: string;
+}
+
+export interface WidgetTextProps {
+  children: React.ReactNode;
+  size?: 'large' | 'medium' | 'small' | 'xs';
+  glow?: string;
+  className?: string;
+}
+
+export interface WidgetLabelProps {
+  children: React.ReactNode;
+  size?: 'large' | 'medium' | 'small' | 'xs';
+  glow?: string;
+  className?: string;
+}
+
+export interface WidgetValueProps {
+  children: React.ReactNode;
+  size?: 'xxl' | 'xl' | 'large' | 'medium' | 'small';
+  glow?: string;
+  className?: string;
+}
+
+// Additional widget renderer types
+export interface BaseWidgetRendererProps {
+  config: AdminWidgetConfig;
+  theme: string;
+  data?: unknown;
+  loading?: boolean;
+  error?: string | null;
+}
+
+export interface ComponentProps {
+  [key: string]: unknown;
+}

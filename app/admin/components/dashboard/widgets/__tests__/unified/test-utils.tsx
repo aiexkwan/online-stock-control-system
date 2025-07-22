@@ -6,7 +6,7 @@ import React from 'react';
 import { DatabaseRecord } from '@/types/database/tables';
 import { render as rtlRender, RenderOptions } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AdminWidgetConfig } from '../../../adminDashboardLayouts';
+import { AdminWidgetConfig } from '@/types/components/dashboard';
 
 // Mock providers wrapper
 const createTestQueryClient = () =>

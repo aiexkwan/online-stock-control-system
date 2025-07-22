@@ -4,29 +4,16 @@
  */
 
 import { simplePerformanceMonitor } from '@/lib/performance/SimplePerformanceMonitor';
+import type {
+  PerformanceTestResult,
+  ComparisonResult,
+  PerformanceTestConfig,
+  PerformanceStats,
+  BatchTestResult,
+} from '@/types/utils/performance';
 
-interface PerformanceTestResult {
-  testName: string;
-  duration: number;
-  requestCount: number;
-  avgRequestTime: number;
-  maxRequestTime: number;
-  minRequestTime: number;
-  networkBytes?: number;
-  cacheHitRate?: number;
-  timestamp: Date;
-}
-
-export interface ComparisonResult {
-  concurrentQuery: PerformanceTestResult;
-  individualQueries: PerformanceTestResult;
-  improvement: {
-    timeSaved: number;
-    timeSavedPercentage: number;
-    requestsReduced: number;
-    requestsReducedPercentage: number;
-  };
-}
+// Re-export for backwards compatibility
+export type { ComparisonResult, PerformanceTestResult } from '@/types/utils/performance';
 
 class ConcurrentQueryPerformanceTester {
   private results: PerformanceTestResult[] = [];

@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { ChartContainer } from './common/charts/ChartContainer';
 import { ChartSkeleton } from './common/charts/ChartSkeleton';
 import { useDashboardConcurrentQuery } from '@/app/admin/hooks/useDashboardConcurrentQuery';
-import { AdminWidgetConfig } from '../adminDashboardLayouts';
+import { AdminWidgetConfig } from '@/types/components/dashboard';
 import {
   WidgetErrorBoundary,
   useErrorHandler,

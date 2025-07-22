@@ -1,47 +1,12 @@
 import { createClient } from '@/lib/supabase';
 import bcrypt from 'bcryptjs'; // Import bcryptjs
 
-export interface UserData {
-  id: string;
-  name: string;
-  department: string;
-  // password?: string; // REMOVE: Password should not be part of UserData returned to client
-  permissions: {
-    qc: boolean;
-    receive: boolean;
-    void: boolean;
-    view: boolean;
-    resume: boolean;
-    report: boolean;
-  };
-}
-
-// Define the structure of the raw user data fetched from Supabase
-interface RawUserDataFromDB {
-  id: string;
-  name: string;
-  department: string;
-  password?: string | null;
-  first_login?: boolean | null;
-  // Individual permission fields as they are in the data_id table
-  qc?: boolean | null;
-  receive?: boolean | null;
-  void?: boolean | null;
-  view?: boolean | null;
-  resume?: boolean | null;
-  report?: boolean | null;
-}
+import { UserData, RawUserDataFromDB, AuthenticateResult } from '@/types/services/auth';
 
 export async function authenticateUser(
   userId: string,
   passwordInput: string
-): Promise<{
-  success: boolean;
-  user?: UserData;
-  isFirstLogin?: boolean;
-  isTemporaryLogin?: boolean; // Add new flag for temporary login
-  error?: string;
-}> {
+): Promise<AuthenticateResult> {
   const supabase = await createClient();
   try {
     const { data: rawUserData, error: userFetchError } = await supabase

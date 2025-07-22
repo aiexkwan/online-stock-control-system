@@ -12,95 +12,18 @@ import { Loader2, AlertCircle, RefreshCw, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-// ================================
-// Types
-// ================================
-
-export type SkeletonType =
-  | 'default' // Default rows skeleton
-  | 'timeline' // Timeline with circles and bars
-  | 'chart-bar' // Bar chart skeleton
-  | 'chart-pie' // Pie/circular chart skeleton
-  | 'chart-area' // Area chart skeleton
-  | 'list' // List rows skeleton
-  | 'stats' // Stats card skeleton
-  | 'table' // Table skeleton
-  | 'spinner' // Simple spinner
-  | 'custom'; // Custom skeleton
-
-export interface WidgetSkeletonProps {
-  /** Type of skeleton to display */
-  type?: SkeletonType;
-  /** Number of skeleton rows to display (for default/list/table types) */
-  rows?: number;
-  /** Additional CSS classes */
-  className?: string;
-  /** Show header skeleton */
-  showHeader?: boolean;
-  /** Custom skeleton content */
-  children?: React.ReactNode;
-  /** Height for chart skeletons */
-  height?: number;
-  /** Number of columns for table skeleton */
-  columns?: number;
-}
-
-export type ErrorSeverity = 'info' | 'warning' | 'error' | 'critical';
-export type ErrorDisplay = 'inline' | 'full' | 'compact';
-
-export interface WidgetErrorProps {
-  /** Error message to display */
-  message?: string;
-  /** Error severity level */
-  severity?: ErrorSeverity;
-  /** Display mode */
-  display?: ErrorDisplay;
-  /** Error code for tracking */
-  code?: string;
-  /** Retry callback function */
-  onRetry?: () => void;
-  /** Additional action buttons */
-  actions?: Array<{
-    label: string;
-    onClick: () => void;
-    variant?: 'primary' | 'secondary' | 'ghost';
-  }>;
-  /** Additional CSS classes */
-  className?: string;
-  /** Show detailed error in development */
-  error?: Error | null;
-  /** Custom error icon */
-  icon?: React.ReactNode;
-  /** Hide icon completely */
-  hideIcon?: boolean;
-}
-
-export interface WidgetEmptyProps {
-  /** Empty state message */
-  message?: string;
-  /** Additional description */
-  description?: string;
-  /** Action button configuration */
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
-  /** Additional CSS classes */
-  className?: string;
-  /** Custom empty icon */
-  icon?: React.ReactNode;
-}
-
-export interface WidgetLoadingOverlayProps {
-  /** Show overlay */
-  isLoading: boolean;
-  /** Loading message */
-  message?: string;
-  /** Additional CSS classes */
-  className?: string;
-  /** Blur background */
-  blur?: boolean;
-}
+// Import types from centralized location
+import type {
+  SkeletonType,
+  WidgetSkeletonProps,
+  ErrorSeverity,
+  ErrorDisplay,
+  WidgetErrorProps,
+  WidgetEmptyProps,
+  WidgetLoadingOverlayProps,
+  WidgetStateWrapperProps,
+  WidgetSuspenseFallbackProps,
+} from '@/types/components/widgets/states';
 
 // ================================
 // Components
@@ -586,22 +509,6 @@ export const WidgetLoadingOverlay = React.memo(function WidgetLoadingOverlay({
  * WidgetStateWrapper - 統一狀態處理包裝組件
  * 根據狀態自動顯示對應的 UI
  */
-export interface WidgetStateWrapperProps {
-  loading?: boolean;
-  error?: Error | string | null;
-  empty?: boolean;
-  onRetry?: () => void;
-  emptyMessage?: string;
-  emptyDescription?: string;
-  errorMessage?: string;
-  skeletonType?: SkeletonType;
-  skeletonRows?: number;
-  skeletonHeight?: number;
-  skeletonColumns?: number;
-  showHeaderSkeleton?: boolean;
-  children: React.ReactNode;
-  className?: string;
-}
 
 export const WidgetStateWrapper = React.memo(function WidgetStateWrapper({
   loading = false,
@@ -665,15 +572,6 @@ export const WidgetStateWrapper = React.memo(function WidgetStateWrapper({
 // ================================
 // Unified Suspense Fallback Component
 // ================================
-
-export interface WidgetSuspenseFallbackProps {
-  /** Type of widget being loaded */
-  type?: 'default' | 'stats' | 'chart' | 'table' | 'list';
-  /** Additional CSS classes */
-  className?: string;
-  /** Height for the fallback */
-  height?: string;
-}
 
 /**
  * WidgetSuspenseFallback - 統一的 Suspense fallback 組件

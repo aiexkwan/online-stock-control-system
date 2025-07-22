@@ -17,27 +17,59 @@ const wrapNamedExport = (
   importFn: () => Promise<Record<string, unknown>>,
   exportName: string
 ): ComponentImport => {
-  return () =>
-    importFn().then(module => ({
-      default: (module[exportName] || module.default) as React.ComponentType<
+  return async () => {
+    try {
+      const module = await importFn();
+
+      if (!module || typeof module !== 'object') {
+        throw new Error(`Module import failed: received ${typeof module}`);
+      }
+
+      const component = (module[exportName] || module.default) as React.ComponentType<
         Record<string, unknown>
-      >,
-    }));
+      >;
+
+      if (!component || typeof component !== 'function') {
+        throw new Error(`Component "${exportName}" not found or is not a function`);
+      }
+
+      return { default: component };
+    } catch (error) {
+      console.error(`[wrapNamedExport] Failed to import ${exportName}:`, error);
+      throw error;
+    }
+  };
 };
 
 // 策略 2: 工具函數 - 標準化默認導出
 const wrapDefaultExport = (importFn: () => Promise<Record<string, unknown>>): ComponentImport => {
-  return () =>
-    importFn().then(module => ({
-      default: module.default as React.ComponentType<Record<string, unknown>>,
-    }));
+  return async () => {
+    try {
+      const module = await importFn();
+
+      if (!module || typeof module !== 'object') {
+        throw new Error(`Module import failed: received ${typeof module}`);
+      }
+
+      const component = module.default as React.ComponentType<Record<string, unknown>>;
+
+      if (!component || typeof component !== 'function') {
+        throw new Error(`Default export is not a function: received ${typeof component}`);
+      }
+
+      return { default: component };
+    } catch (error) {
+      console.error(`[wrapDefaultExport] Failed to import default export:`, error);
+      throw error;
+    }
+  };
 };
 
 // Core Widgets - 策略 2: 標準化導入格式
 export const coreWidgetImports: Record<string, ComponentImport> = {
-  HistoryTreeV2: wrapNamedExport(
-    () => import('@/app/admin/components/dashboard/widgets/HistoryTreeV2'),
-    'HistoryTreeV2'
+  // HistoryTreeV2 使用靜態導入避免 originalFactory.call 錯誤
+  HistoryTreeV2: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/HistoryTreeV2')
   ),
   AdminWidgetRenderer: wrapNamedExport(
     () => import('@/app/admin/components/dashboard/AdminWidgetRenderer'),
@@ -131,6 +163,9 @@ export const operationsWidgetImports: Record<string, ComponentImport> = {
   StockTypeSelector: wrapDefaultExport(
     () => import('@/app/admin/components/dashboard/widgets/StockTypeSelector')
   ),
+  DepartmentSelectorWidget: wrapDefaultExport(
+    () => import('@/app/admin/components/dashboard/widgets/DepartmentSelectorWidget')
+  ),
 };
 
 // Uploads Widgets - 策略 2: 標準化導入格式
@@ -149,9 +184,6 @@ export const uploadsWidgetImports: Record<string, ComponentImport> = {
   ),
   UploadPhotoWidget: wrapDefaultExport(
     () => import('@/app/admin/components/dashboard/widgets/UploadPhotoWidget')
-  ),
-  AvailableSoonWidget: wrapDefaultExport(
-    () => import('@/app/admin/components/dashboard/widgets/AvailableSoonWidget')
   ),
   GoogleDriveUploadToast: wrapDefaultExport(
     () => import('@/app/admin/components/dashboard/widgets/GoogleDriveUploadToast')

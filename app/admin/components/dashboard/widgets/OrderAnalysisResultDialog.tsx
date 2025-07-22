@@ -8,45 +8,12 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CheckCircleIcon } from '@heroicons/react/24/outline';
-
-// Define proper types for the order data
-interface OrderItem {
-  productCode?: string;
-  product_code?: string;
-  quantity?: number;
-  product_qty?: number;
-  unitPrice?: number;
-  unit_price?: string;
-}
-
-interface ExtractedOrder {
-  order_ref?: string;
-  account_num?: string;
-  delivery_add?: string;
-  invoice_to?: string;
-  customer_ref?: string;
-  product_code?: string;
-  product_desc?: string;
-  product_qty?: number;
-  weight?: number;
-  unit_price?: string;
-  items?: OrderItem[];
-  totalAmount?: number;
-}
-
-export interface AnalysisResult {
-  extractedData: ExtractedOrder | ExtractedOrder[];
-  success?: boolean;
-  recordCount?: number;
-  processingTime?: number;
-  extractedCount?: number;
-}
-
-interface OrderAnalysisResultDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  data: AnalysisResult | null;
-}
+import type {
+  AnalysisResult,
+  OrderAnalysisResultDialogProps,
+  OrderItem,
+  ExtractedOrder,
+} from '@/types/components/dashboard';
 
 export const OrderAnalysisResultDialog = React.memo<OrderAnalysisResultDialogProps>(
   ({ isOpen, onClose, data }) => {

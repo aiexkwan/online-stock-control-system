@@ -156,6 +156,12 @@ export const StatsWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
           </div>
         );
 
+      case 'performance-monitor':
+        return renderLazyComponent('UnifiedStatsWidget', createWidgetProps(data));
+
+      case 'system-health':
+        return renderLazyComponent('UnifiedStatsWidget', createWidgetProps(data));
+
       default:
         return createErrorFallback(`Unknown stats type: ${config.type}`);
     }

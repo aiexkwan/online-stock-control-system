@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { DataTable } from './common/data-display/DataTable';
 import { useDashboardConcurrentQuery } from '@/app/admin/hooks/useDashboardConcurrentQuery';
-import { AdminWidgetConfig } from '../adminDashboardLayouts';
+import { AdminWidgetConfig } from '@/types/components/dashboard';
 
 interface UnifiedTableWidgetProps {
   config: AdminWidgetConfig;

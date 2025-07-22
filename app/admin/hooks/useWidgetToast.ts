@@ -2,38 +2,7 @@
 
 import { useCallback } from 'react';
 import { toast } from 'sonner';
-
-export interface WidgetToastOptions {
-  duration?: number;
-  position?:
-    | 'top-left'
-    | 'top-center'
-    | 'top-right'
-    | 'bottom-left'
-    | 'bottom-center'
-    | 'bottom-right';
-  dismissible?: boolean;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
-}
-
-export interface UseWidgetToastReturn {
-  showSuccess: (message: string, options?: WidgetToastOptions) => void;
-  showError: (message: string, error?: Error, options?: WidgetToastOptions) => void;
-  showInfo: (message: string, options?: WidgetToastOptions) => void;
-  showWarning: (message: string, options?: WidgetToastOptions) => void;
-  showLoading: (message: string, options?: WidgetToastOptions) => () => void;
-  showPromise: <T>(
-    promise: Promise<T>,
-    options: {
-      loading: string;
-      success: string | ((data: T) => string);
-      error: string | ((error: Error) => string);
-    }
-  ) => Promise<T>;
-}
+import type { WidgetToastOptions, UseWidgetToastReturn } from '@/types/hooks/admin';
 
 /**
  * Widget 專用的 Toast Hook

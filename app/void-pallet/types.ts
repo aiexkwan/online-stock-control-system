@@ -1,119 +1,33 @@
-// Void Pallet System Type Definitions
+/**
+ * Void Pallet System Type Definitions
+ *
+ * Types migrated to @/types/domains/void-pallet for better organization
+ * This file now re-exports from the centralized location
+ */
 
-export interface PalletInfo {
-  plt_num: string;
-  product_code: string;
-  product_qty: number;
-  series?: string;
-  plt_remark: string | null;
-  plt_loc: string | null;
-  creation_date?: string;
-  user_id?: number;
-}
+// 重新導出類型，保持向後兼容的同時實現類型統一管理
+export type {
+  PalletInfo,
+  SearchParams,
+  SearchResult,
+  VoidParams,
+  VoidResult,
+  ReprintInfo,
+  ReprintInfoInput,
+  VoidReasonConfig,
+  ErrorState,
+  VoidPalletState,
+  HistoryRecord,
+  AutoReprintParams,
+  AutoReprintResult,
+  SearchType,
+  ErrorType,
+} from '@/types/domains/void-pallet';
 
-export interface SearchParams {
-  searchValue: string;
-  searchType: 'qr' | 'pallet_num';
-}
+// 保留原有的常量定義在本地，導入類型避免重複定義
+import type { VoidReasonConfig } from '@/types/domains/void-pallet';
 
-export interface SearchResult {
-  success: boolean;
-  data?: PalletInfo;
-  error?: string;
-}
-
-export interface VoidParams {
-  palletInfo: PalletInfo;
-  voidReason: string;
-  password: string;
-  damageQuantity?: number;
-}
-
-export interface VoidResult {
-  success: boolean;
-  message?: string;
-  error?: string;
-  remainingQty?: number;
-  actual_original_location?: string | null;
-  requiresReprint?: boolean;
-  reprintInfo?: ReprintInfo;
-}
-
-export interface ReprintInfo {
-  product_code: string;
-  quantity: number;
-  original_plt_num: string;
-  source_action: string;
-  target_location?: string | null;
-  reason: string;
-}
-
-export interface ReprintInfoInput {
-  type: 'damage' | 'wrong_qty' | 'wrong_code' | 'wrong_label';
-  originalPalletInfo: PalletInfo;
-  remainingQuantity?: number;
-  correctedQuantity?: number;
-  correctedProductCode?: string;
-}
-
-export interface VoidReason {
-  value: string;
-  label: string;
-  allowsReprint: boolean;
-  requiresDamageQty: boolean;
-}
-
-export interface ErrorState {
-  type: 'search' | 'void' | 'system' | 'validation';
-  message: string;
-  details?: string;
-  isBlocking: boolean;
-  timestamp: Date;
-}
-
-export interface VoidPalletState {
-  // Search state
-  searchInput: string;
-  searchType: 'qr' | 'pallet_num';
-  isSearching: boolean;
-
-  // Pallet information
-  foundPallet: PalletInfo | null;
-
-  // Void process
-  voidReason: string;
-  damageQuantity: number;
-  password: string;
-  isProcessing: boolean;
-
-  // Error handling
-  error: ErrorState | null;
-
-  // UI state
-  showScanner: boolean;
-  showConfirmDialog: boolean;
-  showReprintDialog: boolean;
-  isInputDisabled: boolean;
-
-  // UI state flags
-  isAutoReprinting: boolean;
-
-  // Reprint flow
-  reprintInfo?: ReprintInfoInput | null;
-  showReprintInfoDialog: boolean;
-}
-
-export interface HistoryRecord {
-  time: string;
-  id: number;
-  action: string;
-  plt_num: string | null;
-  loc: string | null;
-  remark: string | null;
-}
-
-// Constants definition
-export const VOID_REASONS: VoidReason[] = [
+export const VOID_REASONS: VoidReasonConfig[] = [
   {
     value: 'Print Extra Label',
     label: 'Print Extra Label',
@@ -170,27 +84,4 @@ export const ERROR_TYPES = {
   VALIDATION: 'validation' as const,
 } as const;
 
-export interface AutoReprintParams {
-  productCode: string;
-  quantity: number;
-  originalPltNum: string;
-  sourceAction: string;
-  targetLocation?: string;
-  reason: string;
-  operatorClockNum: string;
-  // Auto-generated fields
-  description?: string;
-  date: string;
-  qcClockNum: string;
-  workOrderNumber: string;
-  palletNum: string;
-  qrValue: string;
-}
-
-export interface AutoReprintResult {
-  success: boolean;
-  message?: string;
-  error?: string;
-  pdfUrl?: string;
-  newPalletNum?: string;
-}
+// AutoReprint interfaces 已遷移到 @/types/domains/void-pallet

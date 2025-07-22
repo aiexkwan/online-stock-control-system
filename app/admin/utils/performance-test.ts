@@ -3,24 +3,12 @@
  * @types-migration:todo(phase2) [P1] 完善性能測試工具的類型定義 - Owner: @performance-team
  */
 
-export interface PerformanceResult {
-  name: string;
-  duration: number;
-  memory?: number;
-  status: 'success' | 'warning' | 'error';
-}
-
-export interface PerformanceReport {
-  timestamp: number;
-  results: PerformanceResult[];
-  summary: {
-    total: number;
-    success: number;
-    warning: number;
-    error: number;
-    averageDuration: number;
-  };
-}
+// 導入性能測試類型 (已遷移到 @/types/utils/performance)
+import type {
+  PerformanceResult,
+  PerformanceReport,
+  PerformanceComparison,
+} from '@/types/utils/performance';
 
 class PerformanceTest {
   private results: PerformanceResult[] = [];
@@ -38,8 +26,9 @@ class PerformanceTest {
         success: this.results.filter(r => r.status === 'success').length,
         warning: this.results.filter(r => r.status === 'warning').length,
         error: this.results.filter(r => r.status === 'error').length,
-        averageDuration: this.results.reduce((sum, r) => sum + r.duration, 0) / this.results.length || 0
-      }
+        averageDuration:
+          this.results.reduce((sum, r) => sum + r.duration, 0) / this.results.length || 0,
+      },
     };
 
     return JSON.stringify(report, null, 2);
@@ -57,15 +46,11 @@ export function runPerformanceTest(): void {
   console.log('Performance test started...');
 }
 
-export function comparePerformance(results: PerformanceResult[]): {
-  improved: PerformanceResult[];
-  degraded: PerformanceResult[];
-  unchanged: PerformanceResult[];
-} {
+export function comparePerformance(results: PerformanceResult[]): PerformanceComparison {
   // @types-migration:todo(phase2) [P1] 實現性能比較邏輯 - Target: 2025-02
   return {
     improved: [],
     degraded: [],
-    unchanged: results
+    unchanged: results,
   };
 }

@@ -493,16 +493,6 @@ export const widgetConfig: WidgetConfigMap = {
   },
 
   // ===== Missing Legacy Widgets =====
-  AvailableSoon: {
-    id: 'AvailableSoon',
-    name: 'Available Soon',
-    category: 'stats',
-    description: 'Shows items available soon',
-    loader: () => import('@/app/admin/components/dashboard/widgets/AvailableSoonWidget'),
-    dataSource: 'batch',
-    priority: 'normal',
-    refreshInterval: 300000,
-  },
 
   UploadOrders: {
     id: 'UploadOrders',
@@ -564,9 +554,7 @@ export function getTimeFrameWidgets(): UnifiedWidgetConfig[] {
  * 輔助函數：獲取使用批量查詢的 widgets
  */
 export function getBatchWidgets(): UnifiedWidgetConfig[] {
-  return Object.values(widgetConfig).filter(
-    config => config.dataSource === 'batch'
-  );
+  return Object.values(widgetConfig).filter(config => config.dataSource === 'batch');
 }
 
 /**

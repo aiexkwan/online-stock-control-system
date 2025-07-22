@@ -5,6 +5,12 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
+import type {
+  WidgetTitleProps,
+  WidgetTextProps,
+  WidgetLabelProps,
+  WidgetValueProps,
+} from '@/types/components/dashboard';
 
 // 定義不同層級的字體樣式
 export const WidgetTextStyles = {
@@ -80,14 +86,6 @@ export const GlowStyles: Record<string, string> = {
     'text-white [text-shadow:_0_0_15px_rgba(255,255,255,0.6),_0_0_30px_rgba(255,255,255,0.4)]',
 };
 
-// Widget 標題組件
-interface WidgetTitleProps {
-  children: React.ReactNode;
-  size?: 'large' | 'medium' | 'small' | 'xs';
-  glow?: keyof typeof GlowStyles;
-  className?: string;
-}
-
 export function WidgetTitle({
   children,
   size = 'medium',
@@ -103,14 +101,6 @@ export function WidgetTitle({
   );
 }
 
-// Widget 文字組件
-interface WidgetTextProps {
-  children: React.ReactNode;
-  size?: 'large' | 'medium' | 'small' | 'xs';
-  glow?: keyof typeof GlowStyles;
-  className?: string;
-}
-
 export function WidgetText({
   children,
   size = 'medium',
@@ -122,14 +112,6 @@ export function WidgetText({
       {children}
     </p>
   );
-}
-
-// Widget 標籤組件
-interface WidgetLabelProps {
-  children: React.ReactNode;
-  size?: 'large' | 'medium' | 'small' | 'xs';
-  glow?: keyof typeof GlowStyles;
-  className?: string;
 }
 
 export function WidgetLabel({
@@ -145,14 +127,6 @@ export function WidgetLabel({
       {children}
     </span>
   );
-}
-
-// Widget 數值組件
-interface WidgetValueProps {
-  children: React.ReactNode;
-  size?: 'xxl' | 'xl' | 'large' | 'medium' | 'small';
-  glow?: keyof typeof GlowStyles;
-  className?: string;
 }
 
 export function WidgetValue({

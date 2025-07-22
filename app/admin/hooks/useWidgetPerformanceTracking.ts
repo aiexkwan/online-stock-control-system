@@ -25,33 +25,12 @@ import type {
   ABTestConfiguration,
   PerformanceContext,
   RealtimeMetrics,
-} from './types';
+  UseWidgetPerformanceTrackingOptions,
+  UseWidgetPerformanceTrackingResult,
+  ErrorType,
+} from '@/types/hooks/performance-tracking';
 
-export interface UseWidgetPerformanceTrackingOptions {
-  widgetId: string;
-  variant?: 'v2' | 'legacy';
-  enableAutoTracking?: boolean;
-  abTest?: ABTestConfiguration;
-  customMetrics?: Record<string, unknown>;
-}
-
-export interface UseWidgetPerformanceTrackingResult {
-  // Performance tracking
-  startTracking: () => void;
-  stopTracking: () => void;
-  trackRender: () => void;
-  trackDataFetch: (fetchFn: () => Promise<unknown>) => Promise<unknown>;
-
-  // Error tracking
-  trackError: (error: Error, errorType?: ErrorMetrics['errorType']) => void;
-
-  // Metrics
-  getMetrics: () => PerformanceMetrics;
-
-  // A/B testing
-  isTestVariant: boolean;
-  trackConversion: (conversionType: string) => void;
-}
+// Hook 接口已遷移到 @/types/hooks/performance-tracking
 
 /**
  * Performance tracking hook for widgets
@@ -106,7 +85,7 @@ export function useWidgetPerformanceTracking({
 
   // Track errors
   const trackError = useCallback(
-    (error: Error, errorType: ErrorMetrics['errorType'] = 'runtime') => {
+    (error: Error, errorType: ErrorType = 'runtime') => {
       errorCountRef.current++;
 
       const errorMetric: ErrorMetrics = {
@@ -331,10 +310,7 @@ function generateSessionId(): string {
   return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
-function determineSeverity(
-  error: Error,
-  errorType: ErrorMetrics['errorType']
-): ErrorMetrics['severity'] {
+function determineSeverity(error: Error, errorType: ErrorType): ErrorMetrics['severity'] {
   // Critical errors
   if (error.message.includes('Cannot read') || error.message.includes('undefined')) {
     return 'critical';

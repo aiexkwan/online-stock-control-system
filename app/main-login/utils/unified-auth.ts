@@ -12,16 +12,26 @@ class UnifiedAuth {
       return this.supabaseClient;
     }
 
+    // 確保只在客戶端環境中執行
+    if (typeof window === 'undefined') {
+      throw new Error('UnifiedAuth should only be used on client side');
+    }
+
     // 只在瀏覽器環境中檢查並清理舊版認證數據
-    if (typeof window !== 'undefined' && shouldCleanupLegacyAuth()) {
+    if (shouldCleanupLegacyAuth()) {
       process.env.NODE_ENV !== 'production' &&
         console.log('[UnifiedAuth] Detected legacy auth data, cleaning up...');
       cleanupLegacyAuth();
     }
 
     // 使用統一的 Supabase 客戶端（已啟用 PKCE）
-    this.supabaseClient = createClient();
-    return this.supabaseClient;
+    try {
+      this.supabaseClient = createClient();
+      return this.supabaseClient;
+    } catch (error) {
+      console.error('[UnifiedAuth] Failed to create Supabase client:', error);
+      throw error;
+    }
   }
 
   async signIn(email: string, password: string) {
@@ -92,7 +102,7 @@ class UnifiedAuth {
     }
 
     const supabase = this.getSupabaseClient();
-    
+
     // 設置正確的重定向 URL
     const redirectTo =
       typeof window !== 'undefined'

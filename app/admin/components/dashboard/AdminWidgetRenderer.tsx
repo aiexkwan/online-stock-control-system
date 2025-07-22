@@ -9,11 +9,13 @@ import React, { useState, useEffect, Suspense, useCallback, useMemo } from 'reac
 import { DatabaseRecord } from '@/types/database/tables';
 import { Database } from '@/types/database/supabase';
 import { motion } from 'framer-motion';
-import { AdminWidgetConfig } from './adminDashboardLayouts';
+import { AdminWidgetConfig } from '@/types/components/dashboard';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { createClient } from '@/lib/supabase';
 import { useAdminRefresh } from '@/app/admin/contexts/AdminRefreshContext';
 import { unifiedWidgetRegistry } from '@/lib/widgets/unified-registry';
+// 直接靜態導入 HistoryTreeV2 避免 originalFactory.call 錯誤
+import HistoryTreeV2 from './widgets/HistoryTreeV2';
 import {
   getWidgetCategory,
   getThemeGlowColor,
@@ -67,7 +69,9 @@ const UnifiedWidgetWrapper = React.memo<{
   isEditMode?: boolean;
   onUpdate?: () => void;
   onRemove?: () => void;
-}>(({ children, theme, title, isEditMode, onUpdate, onRemove }) => {
+  gridArea?: string; // 新增 gridArea 支援
+  style?: React.CSSProperties;
+}>(({ children, theme, title, isEditMode, onUpdate, onRemove, gridArea, style }) => {
   const glowColor = getThemeGlowColor(theme);
 
   return (
@@ -80,6 +84,10 @@ const UnifiedWidgetWrapper = React.memo<{
         `glow-${glowColor}`,
         'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
       )}
+      style={{
+        ...style,
+        gridArea: gridArea, // 應用 gridArea 樣式
+      }}
       data-widget-focusable='true'
       tabIndex={-1}
       role='region'
@@ -126,21 +134,62 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
 
   // Helper function to render lazy component from unifiedWidgetRegistry
   const renderLazyComponent = useCallback((componentName: string, props: WidgetComponentProps) => {
-    const Component = unifiedWidgetRegistry.getWidgetComponent(componentName);
-    if (!Component) {
-      console.error(
-        `Component ${componentName} not found in unifiedWidgetRegistry.getWidgetComponent`
+    try {
+      console.log(`[renderLazyComponent] Attempting to render component: ${componentName}`);
+
+      // 特殊處理 HistoryTreeV2 - 使用靜態導入版本
+      if (componentName === 'HistoryTreeV2') {
+        console.log(`[renderLazyComponent] Using static import for HistoryTreeV2`);
+        return <HistoryTreeV2 {...props} />;
+      }
+
+      const Component = unifiedWidgetRegistry.getWidgetComponent(componentName);
+      if (!Component) {
+        console.error(
+          `[renderLazyComponent] Component ${componentName} not found in unifiedWidgetRegistry.getWidgetComponent`
+        );
+        return <div>Component {componentName} not found</div>;
+      }
+
+      console.log(`[renderLazyComponent] Component ${componentName} found, creating element`);
+
+      // Convert props to support unified registry's expected interface
+      const unifiedProps = {
+        ...props,
+        widgetId: componentName, // Add required widgetId for BatchQueryWidgetComponentProps
+      };
+
+      // Use React.createElement with error handling to catch originalFactory.call errors
+      try {
+        return React.createElement(Component, unifiedProps);
+      } catch (createElementError) {
+        console.error(
+          `[renderLazyComponent] React.createElement failed for ${componentName}:`,
+          createElementError
+        );
+        return (
+          <div className='rounded border border-red-300 bg-red-50 p-4 text-red-500'>
+            <h4 className='font-semibold'>React Element Creation Failed</h4>
+            <p className='mt-1 text-sm'>Component: {componentName}</p>
+            <p className='mt-2 text-xs text-gray-600'>
+              Error:{' '}
+              {createElementError instanceof Error ? createElementError.message : 'Unknown error'}
+            </p>
+          </div>
+        );
+      }
+    } catch (outerError) {
+      console.error(`[renderLazyComponent] Outer error for ${componentName}:`, outerError);
+      return (
+        <div className='rounded border border-red-300 bg-red-50 p-4 text-red-500'>
+          <h4 className='font-semibold'>Widget Loading Failed</h4>
+          <p className='mt-1 text-sm'>Component: {componentName}</p>
+          <p className='mt-2 text-xs text-gray-600'>
+            Error: {outerError instanceof Error ? outerError.message : 'Unknown error'}
+          </p>
+        </div>
       );
-      return <div>Component {componentName} not found</div>;
     }
-
-    // Convert props to support unified registry's expected interface
-    const unifiedProps = {
-      ...props,
-      widgetId: componentName, // Add required widgetId for BatchQueryWidgetComponentProps
-    };
-
-    return <Component {...unifiedProps} />;
   }, []);
 
   // 處理延遲加載
@@ -267,7 +316,11 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
   }
 
   return (
-    <UnifiedWidgetWrapper theme={theme} title={config.title}>
+    <UnifiedWidgetWrapper
+      theme={theme}
+      title={config.title}
+      gridArea={config.gridArea} // 傳遞 gridArea 屬性
+    >
       <Suspense
         fallback={createSuspenseFallback(
           widgetCategory as 'default' | 'stats' | 'chart' | 'table' | 'list'
@@ -310,7 +363,7 @@ function renderCoreWidget(
 
     case 'ProductUpdateWidget':
       console.warn('[Deprecated] ProductUpdateWidget is deprecated, use ProductUpdateWidgetV2');
-      // fallthrough
+    // fallthrough
     case 'ProductUpdateWidgetV2':
       return renderLazyComponent('ProductUpdateWidgetV2', getComponentProps(data));
 
@@ -319,9 +372,6 @@ function renderCoreWidget(
 
     case 'VoidPalletWidget':
       return renderLazyComponent('VoidPalletWidget', getComponentProps(data));
-
-    case 'AvailableSoonWidget':
-      return renderLazyComponent('AvailableSoonWidget', getComponentProps(data));
 
     case 'alerts':
       return <AlertsWidget data={data} />;
@@ -343,11 +393,14 @@ function renderCoreWidget(
         </div>
       );
 
+    case 'history-tree':
+      // 直接使用靜態導入的 HistoryTreeV2 避免 originalFactory.call 錯誤
+      return <HistoryTreeV2 {...getComponentProps(data)} />;
+
     default:
       return createErrorFallback(`Unknown core widget type: ${config.type}`);
   }
 }
-
 
 // 簡化的供應商更新 Widget
 const SupplierUpdateWidget: React.FC<{

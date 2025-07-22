@@ -1,26 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { getErrorMessage } from '@/types/core/error';
 import { createClient } from '@/app/utils/supabase/client';
 import { unifiedAuth } from '@/app/main-login/utils/unified-auth';
 import type { User, PostgrestError } from '@supabase/supabase-js';
 
-export interface AuthState {
-  user: User | null;
-  loading: boolean;
-  isAuthenticated: boolean;
-  userRole: UserRole | null;
-}
-
-export interface UserRole {
-  type: 'admin' | 'user';
-  department: string;
-  position: string;
-  allowedPaths: string[];
-  defaultPath: string;
-  navigationRestricted: boolean;
-}
+import { AuthState, UserRole } from '@/types/hooks/auth';
 
 // 基於 department 和 position 的用戶角色映射
 const USER_ROUTING_MAP: Record<
@@ -44,7 +30,7 @@ const USER_ROUTING_MAP: Record<
     navigationRestricted: false,
   },
   System_Admin: {
-    defaultPath: '/admin/analysis',
+    defaultPath: '/admin/analytics',
     allowedPaths: [],
     navigationRestricted: false,
   },
@@ -93,8 +79,8 @@ export const getUserRoleByDepartmentAndPosition = (
       type: 'user',
       department,
       position,
-      allowedPaths: ['/admin/analysis'],
-      defaultPath: '/admin/analysis',
+      allowedPaths: ['/admin/analytics'],
+      defaultPath: '/admin/analytics',
       navigationRestricted: true,
     };
   }
@@ -193,7 +179,7 @@ export const getUserRole = (email: string): UserRole => {
       department: 'System',
       position: 'Admin',
       allowedPaths: [],
-      defaultPath: '/admin/analysis',
+      defaultPath: '/admin/analytics',
       navigationRestricted: false,
     };
   }
@@ -205,10 +191,15 @@ export function useAuth(): AuthState {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [hasError, setHasError] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(false);
-  const [lastAuthCheck, setLastAuthCheck] = useState<number>(0);
+  const lastAuthCheckRef = useRef<number>(0);
+  const isCheckingAuthRef = useRef<boolean>(false);
 
   const supabase = useMemo(() => {
+    // 只在客戶端創建 Supabase client
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
     try {
       return createClient();
     } catch (error) {
@@ -264,7 +255,7 @@ export function useAuth(): AuthState {
     setUser(null);
     setUserRole(null);
     setLoading(false);
-    setIsCheckingAuth(false);
+    isCheckingAuthRef.current = false;
   }, []);
 
   useEffect(() => {
@@ -275,19 +266,19 @@ export function useAuth(): AuthState {
     }
 
     // 防止多次同時檢查認證
-    if (isCheckingAuth) {
+    if (isCheckingAuthRef.current) {
       return;
     }
 
-    // 防止過於頻繁的認證檢查（最少間隔 1 秒）
+    // 防止過於頻繁的認證檢查（最少間隔 5 秒）
     const now = Date.now();
-    if (now - lastAuthCheck < 1000) {
+    if (now - lastAuthCheckRef.current < 5000) {
       return;
     }
 
     const checkAuth = async () => {
-      setIsCheckingAuth(true);
-      setLastAuthCheck(now);
+      isCheckingAuthRef.current = true;
+      lastAuthCheckRef.current = now;
       try {
         console.log('[useAuth] Initial auth check');
 
@@ -303,26 +294,29 @@ export function useAuth(): AuthState {
         console.error('[useAuth] Error checking authentication:', error);
         clearAuthState();
       } finally {
-        setIsCheckingAuth(false);
+        isCheckingAuthRef.current = false;
       }
     };
 
     checkAuth();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[useAuth] Auth state change:', event, !!session?.user);
+    // 只在客戶端設置認證狀態監聽
+    if (supabase) {
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((event, session) => {
+        console.log('[useAuth] Auth state change:', event, !!session?.user);
 
-      if (event === 'SIGNED_IN' && session?.user) {
-        setAuthenticatedUser(session.user);
-      } else if (event === 'SIGNED_OUT') {
-        clearAuthState();
-      }
-    });
+        if (event === 'SIGNED_IN' && session?.user) {
+          setAuthenticatedUser(session.user);
+        } else if (event === 'SIGNED_OUT') {
+          clearAuthState();
+        }
+      });
 
-    return () => subscription.unsubscribe();
-  }, [hasError, supabase, isCheckingAuth, lastAuthCheck, setAuthenticatedUser, clearAuthState]);
+      return () => subscription.unsubscribe();
+    }
+  }, [hasError, supabase]);
 
   return {
     user,

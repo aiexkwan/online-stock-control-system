@@ -20,11 +20,8 @@ interface AdminThemePageProps {
 export default async function AdminThemePage({ params }: AdminThemePageProps) {
   const { theme } = await params;
 
-  // v2.0.2: 檢查是否需要重定向到新主題
-  if (!isActiveTheme(theme)) {
-    const mappedTheme = getMappedTheme(theme);
-    redirect(`/admin/${mappedTheme}`);
-  }
+  // 使用映射後的主題
+  const finalTheme = getMappedTheme(theme);
 
   // Server-side data prefetching for Critical Path Widgets
   // 服務器端預取 Critical Path Widgets 數據
@@ -36,8 +33,8 @@ export default async function AdminThemePage({ params }: AdminThemePageProps) {
     // v2.0.2: 更新為使用新主題名
     const criticalThemes = ['operations-monitoring'];
 
-    if (criticalThemes.includes(theme)) {
-      console.log(`[SSR as string] Prefetching critical widgets data for theme: ${theme}`);
+    if (criticalThemes.includes(finalTheme)) {
+      console.log(`[SSR as string] Prefetching critical widgets data for theme: ${finalTheme}`);
 
       prefetchedData = await prefetchCriticalWidgetsData({
         dateRange: {
@@ -63,7 +60,7 @@ export default async function AdminThemePage({ params }: AdminThemePageProps) {
   return (
     <AdminErrorBoundary>
       <AdminRefreshProvider>
-        <NewAdminDashboard prefetchedData={prefetchedData} ssrMode={ssrMode} />
+        <NewAdminDashboard prefetchedData={prefetchedData} ssrMode={ssrMode} theme={finalTheme} />
       </AdminRefreshProvider>
     </AdminErrorBoundary>
   );

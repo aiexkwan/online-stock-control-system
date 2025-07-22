@@ -7,7 +7,7 @@ import { createClient as createServerSupabaseClient } from '@/app/utils/supabase
 
 import bcrypt from 'bcryptjs';
 import { getErrorMessage } from '@/types/core/error';
-import { UserData } from './auth';
+import { UserData } from '@/types/services/auth';
 import { clockNumberToEmail, emailToClockNumber } from '../utils/authUtils';
 
 // Admin client 保持不變，它用於特殊權限操作，不依賴用戶會話

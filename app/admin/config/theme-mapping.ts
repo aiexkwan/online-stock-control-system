@@ -23,7 +23,7 @@ export const THEME_MAPPING: Record<string, string> = {
 
 export const ACTIVE_THEMES = ['operations-monitoring', 'data-management', 'analytics'] as const;
 
-export type ActiveTheme = (typeof ACTIVE_THEMES)[number];
+import type { ActiveTheme } from '@/types/config/theme';
 
 export const THEME_DISPLAY_NAMES: Record<ActiveTheme, string> = {
   'operations-monitoring': 'Operations & Production',

@@ -4,16 +4,18 @@
  */
 
 import React from 'react';
-import { AdminWidgetConfig } from './adminDashboardLayouts';
+import { AdminWidgetConfig } from '@/types/components/dashboard';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 
-// Widget 數據基礎類型定義
-export interface WidgetData {
-  [key: string]: unknown;
-}
+// 導入 Widget 類型 (已遷移到 @/types/components/dashboard)
+import type { WidgetData, ThemeKey, WidgetCategoryType } from '@/types/components/dashboard';
+
+// Re-export WidgetData for backward compatibility
+export type { WidgetData };
 
 // 組件 Props 類型定義 (與統一系統兼容)
-export interface WidgetComponentProps {
+// Note: Using local interface to avoid conflicts with centralized widget types
+export interface LocalWidgetComponentProps {
   config: AdminWidgetConfig;
   timeFrame: TimeFrame;
   theme: string;
@@ -23,6 +25,9 @@ export interface WidgetComponentProps {
   widgetId?: string; // 支持統一 Widget Registry
   [key: string]: unknown;
 }
+
+// Export with both names for backward compatibility
+export interface WidgetComponentProps extends LocalWidgetComponentProps {}
 
 // 主題顏色映射
 export const THEME_GLOW_COLORS = {
@@ -36,7 +41,7 @@ export const THEME_GLOW_COLORS = {
   system: 'update',
 } as const;
 
-export type ThemeKey = 'production' | 'warehouse' | 'inventory' | 'update' | 'search';
+// ThemeKey 已遷移到 @/types/components/dashboard
 
 export const getThemeGlowColor = (theme?: string): ThemeKey => {
   return theme && theme in THEME_GLOW_COLORS
@@ -71,7 +76,7 @@ export interface BaseWidgetRendererProps {
   data?: WidgetData;
   loading?: boolean;
   error?: string | null;
-  renderLazyComponent: (componentName: string, props: WidgetComponentProps) => JSX.Element;
+  renderLazyComponent: (componentName: string, props: LocalWidgetComponentProps) => JSX.Element;
 }
 
 // Component Props Factory 類型
@@ -106,6 +111,8 @@ export const WIDGET_CATEGORIES = {
     'WarehouseHeatmap',
     'PipelineFlowDiagram',
     'chart',
+    'advanced-chart',
+    'predictive-chart',
   ],
   STATS: [
     'AwaitLocationQtyWidget',
@@ -119,6 +126,8 @@ export const WIDGET_CATEGORIES = {
     'pipeline_work_level',
     'system_status',
     'stats',
+    'performance-monitor',
+    'system-health',
   ],
   LIST: [
     'OrderStateListWidget',
@@ -129,6 +138,8 @@ export const WIDGET_CATEGORIES = {
     'activity-feed',
     'table',
     'list',
+    'analysis',
+    'history-tree',
   ],
 } as const;
 
@@ -138,7 +149,7 @@ type StatsWidgetType = (typeof WIDGET_CATEGORIES.STATS)[number];
 type ListWidgetType = (typeof WIDGET_CATEGORIES.LIST)[number];
 
 // 判斷 Widget 類型的工具函數
-export const getWidgetCategory = (widgetType: string): 'chart' | 'stats' | 'list' | 'core' => {
+export const getWidgetCategory = (widgetType: string): WidgetCategoryType => {
   if (WIDGET_CATEGORIES.CHART.includes(widgetType as ChartWidgetType)) return 'chart';
   if (WIDGET_CATEGORIES.STATS.includes(widgetType as StatsWidgetType)) return 'stats';
   if (WIDGET_CATEGORIES.LIST.includes(widgetType as ListWidgetType)) return 'list';

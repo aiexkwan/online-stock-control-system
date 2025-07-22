@@ -2,6 +2,13 @@ import { createBrowserClient } from '@supabase/ssr';
 import type { Database } from '@/types/database/supabase';
 
 export function createClient() {
+  // 添加安全檢查避免 webpack 載入時崩潰
+  if (typeof window === 'undefined') {
+    // 服務器端渲染時返回簡化版本
+    console.warn('[createClient] SSR detected, skipping client creation');
+    throw new Error('Supabase client should only be used on client side');
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 

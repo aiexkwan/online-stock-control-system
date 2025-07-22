@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { DatabaseRecord } from '@/types/database/tables';
 import { UnifiedChartWidgetMockWrapper } from './components/UnifiedChartWidgetMockWrapper';
-import { AdminWidgetConfig } from '@/app/admin/components/dashboard/adminDashboardLayouts';
+import { AdminWidgetConfig } from '@/types/components/dashboard';
 import React from 'react';
 
 // Mock 圖表數據生成器

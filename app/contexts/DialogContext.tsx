@@ -6,40 +6,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
-
-// 定義所有對話框類型
-export type DialogType =
-  | 'askDatabase'
-  | 'loadStock'
-  | 'stockTransfer'
-  | 'exportData'
-  | 'uploadFiles';
-
-// 對話框數據類型
-interface DialogData {
-  reprintData?: unknown;
-  [key: string]: unknown;
-}
-
-// Context 類型定義
-interface DialogContextType {
-  // 對話框開啟狀態
-  dialogs: Record<DialogType, boolean>;
-  // 對話框相關數據
-  dialogData: DialogData;
-  // 開啟對話框
-  openDialog: (dialog: DialogType, data?: unknown) => void;
-  // 關閉對話框
-  closeDialog: (dialog: DialogType) => void;
-  // 切換對話框
-  toggleDialog: (dialog: DialogType) => void;
-  // 檢查對話框是否開啟
-  isDialogOpen: (dialog: DialogType) => boolean;
-  // 設置對話框數據
-  setDialogData: (data: DialogData) => void;
-  // 清除對話框數據
-  clearDialogData: () => void;
-}
+import type { DialogType, DialogData, DialogContextType } from '@/types/contexts/dialog';
 
 // 創建 Context
 const DialogContext = createContext<DialogContextType | undefined>(undefined);

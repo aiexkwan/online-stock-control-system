@@ -216,6 +216,12 @@ export const ListWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
           </div>
         );
 
+      case 'history-tree':
+        return renderLazyComponent('HistoryTreeV2', createWidgetProps(data));
+
+      case 'analysis':
+        return renderLazyComponent('AnalysisExpandableCards', createWidgetProps(data));
+
       default:
         return createErrorFallback(`Unknown list type: ${config.type}`);
     }

@@ -1,5 +1,3 @@
-import { DatabaseRecord } from '@/types/database/tables';
-
 /**
  * Common types and utilities for dashboard widgets
  * 統一的 dashboard widget 類型和工具函數
@@ -8,8 +6,15 @@ import { DatabaseRecord } from '@/types/database/tables';
  * to reduce code duplication and improve maintainability.
  */
 
-// Re-export commonly used types
-export type { WidgetComponentProps } from '@/types/components/dashboard';
+import { DatabaseRecord } from '@/types/database/tables';
+
+// Re-export commonly used types (已遷移到 @/types/components/dashboard)
+export type {
+  WidgetComponentProps,
+  BaseWidgetConfig,
+  BaseWidgetState,
+  WidgetErrorType,
+} from '@/types/components/dashboard';
 
 // Re-export commonly used UI components and utilities
 export { cn } from '@/lib/utils';
@@ -49,37 +54,7 @@ export { toast } from 'sonner';
 // Date utilities
 export { format, isValid, parseISO, startOfDay, endOfDay, subDays, addDays } from 'date-fns';
 
-/**
- * Common widget configuration interface
- * 通用 widget 配置接口
- */
-export interface BaseWidgetConfig {
-  id: string;
-  title: string;
-  description?: string;
-  refreshInterval?: number;
-  showRefreshButton?: boolean;
-  showDownloadButton?: boolean;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-  className?: string;
-}
-
-/**
- * Common widget state interface
- * 通用 widget 狀態接口
- */
-export interface BaseWidgetState {
-  loading: boolean;
-  error: string | null;
-  lastUpdated: Date | null;
-  data: DatabaseRecord[];
-}
-
-/**
- * Common widget error types
- * 通用 widget 錯誤類型
- */
-export type WidgetErrorType = 'NETWORK_ERROR' | 'DATA_ERROR' | 'PERMISSION_ERROR' | 'UNKNOWN_ERROR';
+// Widget 配置和狀態類型已遷移到 @/types/components/dashboard
 
 /**
  * Widget size mappings for consistent layouts

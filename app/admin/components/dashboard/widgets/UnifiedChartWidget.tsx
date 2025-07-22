@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { ChartContainer } from './common/charts/ChartContainer';
 import { ChartSkeleton } from './common/charts/ChartSkeleton';
 import { useDashboardConcurrentQuery } from '@/app/admin/hooks/useDashboardConcurrentQuery';
-import { AdminWidgetConfig } from '../adminDashboardLayouts';
+import { AdminWidgetConfig } from '@/types/components/dashboard';
 import { ChartDataPoint, ChartProcessedData } from './types/ChartWidgetTypes';
 
 // 直接導入 recharts 組件以優化 bundle size

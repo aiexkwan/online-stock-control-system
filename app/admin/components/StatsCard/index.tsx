@@ -4,7 +4,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ClockIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useTimeRange } from '../../hooks/useAdminDashboard';
-import { DashboardStats } from '../../services/AdminDataService';
+import { DashboardStats } from '@/types/services/admin';
 import { cn } from '@/lib/utils';
 
 interface StatsCardProps {

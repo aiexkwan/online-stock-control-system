@@ -3,10 +3,7 @@
  * 捕獲和記錄當前布局配置，建立兼容性測試基準
  */
 
-import {
-  AdminDashboardLayout,
-  AdminWidgetConfig,
-} from '@/app/admin/components/dashboard/adminDashboardLayouts';
+import { AdminDashboardLayout, AdminWidgetConfig } from '@/types/components/dashboard';
 import { WidgetLayoutItem } from './types';
 
 // 將 grid area 字符串轉換為 x, y, w, h 座標

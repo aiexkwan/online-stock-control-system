@@ -37,8 +37,8 @@ export default function SimpleLoginForm() {
       console.log('[SimpleLoginForm] Sign in successful:', user?.email);
 
       // 獲取用戶角色並直接跳轉到相應頁面
-      let redirectPath = '/admin/analysis'; // 預設路徑
-      
+      let redirectPath = '/admin/analytics'; // 預設路徑
+
       if (user?.email) {
         try {
           const userRole = await getUserRoleFromDatabase(user.email);
@@ -69,7 +69,7 @@ export default function SimpleLoginForm() {
     <div>
       {/* 錯誤訊息 */}
       {error && (
-        <div className='mb-4 rounded-lg border border-red-500/50 bg-red-900/50 p-3 animate-pulse'>
+        <div className='mb-4 animate-pulse rounded-lg border border-red-500/50 bg-red-900/50 p-3'>
           <p className='text-sm text-red-300'>✗ {error}</p>
         </div>
       )}

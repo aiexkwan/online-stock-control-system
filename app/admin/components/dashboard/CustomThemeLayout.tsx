@@ -4,6 +4,7 @@ import React from 'react';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { motion } from 'framer-motion';
 import { useLayoutVirtualization } from '@/app/hooks/useLayoutVirtualization';
+import { adminDashboardLayouts } from './adminDashboardLayouts';
 import '../../styles/custom-layout.css';
 
 interface CustomThemeLayoutProps {
@@ -27,25 +28,19 @@ export const CustomThemeLayout: React.FC<CustomThemeLayoutProps> = ({
     threshold: 100,
   });
 
-  // Get the layout configuration from adminDashboardLayouts
-  const layoutConfig =
-    theme === 'injection' || theme === 'pipeline'
-      ? {
-          gridTemplate: `"widget2 widget2 widget3 widget3 widget4 widget4 widget5 widget5 widget1 widget1" "widget2 widget2 widget3 widget3 widget4 widget4 widget5 widget5 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget1 widget1" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget1 widget1" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget1 widget1"`,
-        }
-      : {
-          gridTemplate: `"widget1 widget1 widget2 widget2 widget3 widget3 widget4 widget4 widget5 widget5" "widget1 widget1 widget2 widget2 widget3 widget3 widget4 widget4 widget5 widget5" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget5 widget5" "widget6 widget6 widget6 widget7 widget7 widget7 widget8 widget8 widget5 widget5" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget5 widget5" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget5 widget5" "widget9 widget9 widget9 widget9 widget10 widget10 widget10 widget10 widget5 widget5"`,
-        };
+  // Get the layout configuration from adminDashboardLayouts - 使用統一配置
+  const layout = adminDashboardLayouts[theme];
+  const layoutConfig = layout || adminDashboardLayouts['operations-monitoring']; // Fallback
 
-  // Container styles with dynamic grid template
+  // Container styles with dynamic grid template - 使用統一配置
   const containerStyle: React.CSSProperties = {
     display: 'grid',
-    gridTemplateColumns: 'repeat(10, 1fr)',
-    gridTemplateRows: 'repeat(7, 100px)',
-    gap: '10px',
+    gridTemplateColumns: 'repeat(14, 1fr)', // 修正為 14 列
+    gridTemplateRows: 'repeat(10, minmax(80px, auto))', // 修正為 10 行
+    gap: '16px',
     gridTemplateAreas: layoutConfig.gridTemplate,
     width: '100%',
-    minHeight: '800px',
+    minHeight: '900px',
     padding: '20px',
   };
 

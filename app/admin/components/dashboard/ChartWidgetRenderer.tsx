@@ -62,8 +62,10 @@ export const ChartWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
   try {
     switch (config.type) {
       case 'StockDistributionChart':
-        console.warn('[Deprecated] StockDistributionChart is deprecated, use StockDistributionChartV2');
-        // fallthrough
+        console.warn(
+          '[Deprecated] StockDistributionChart is deprecated, use StockDistributionChartV2'
+        );
+      // fallthrough
       case 'StockDistributionChartV2':
         return renderLazyComponent('StockDistributionChartV2', createWidgetProps(data));
 
@@ -127,6 +129,12 @@ export const ChartWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
             </ResponsiveContainer>
           </div>
         );
+
+      case 'advanced-chart':
+        return renderLazyComponent('UnifiedChartWidget', createWidgetProps(data));
+
+      case 'predictive-chart':
+        return renderLazyComponent('UnifiedChartWidget', createWidgetProps(data));
 
       default:
         return createErrorFallback(`Unknown chart type: ${config.type}`);

@@ -57,10 +57,9 @@ export const PACKAGE_TYPE_OPTIONS = [
   { key: 'notIncluded', label: 'Not Included', weight: PACKAGE_WEIGHTS.notIncluded },
 ] as const;
 
-// 類型定義
-export type PalletTypeKey = keyof typeof PALLET_WEIGHTS;
-export type PackageTypeKey = keyof typeof PACKAGE_WEIGHTS;
-export type LabelMode = (typeof LABEL_MODES)[keyof typeof LABEL_MODES];
+// 類型定義 (已遷移到 @/types/constants/grn)
+import type { PalletTypeKey, PackageTypeKey, LabelMode } from '@/types/constants/grn';
+export type { PalletTypeKey, PackageTypeKey, LabelMode };
 
 // 輔助函數
 export const getPalletLabel = (index: number): string => {

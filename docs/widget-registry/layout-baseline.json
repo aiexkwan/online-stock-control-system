@@ -195,7 +195,7 @@
             "type": "available-soon",
             "title": "Coming Soon",
             "gridArea": "widget4",
-            "component": "AvailableSoonWidget"
+            "component": "ComingSoonPlaceholder"
           },
           "theme": "injection",
           "gridArea": "widget4",
@@ -219,7 +219,7 @@
             "type": "available-soon",
             "title": "Coming Soon",
             "gridArea": "widget5",
-            "component": "AvailableSoonWidget"
+            "component": "ComingSoonPlaceholder"
           },
           "theme": "injection",
           "gridArea": "widget5",
@@ -293,7 +293,7 @@
             "type": "available-soon",
             "title": "Coming Soon",
             "gridArea": "widget8",
-            "component": "AvailableSoonWidget"
+            "component": "ComingSoonPlaceholder"
           },
           "theme": "injection",
           "gridArea": "widget8",
@@ -442,7 +442,7 @@
             "type": "available-soon",
             "title": "Coming Soon",
             "gridArea": "widget4",
-            "component": "AvailableSoonWidget"
+            "component": "ComingSoonPlaceholder"
           },
           "theme": "pipeline",
           "gridArea": "widget4",
@@ -466,7 +466,7 @@
             "type": "available-soon",
             "title": "Coming Soon",
             "gridArea": "widget5",
-            "component": "AvailableSoonWidget"
+            "component": "ComingSoonPlaceholder"
           },
           "theme": "pipeline",
           "gridArea": "widget5",
@@ -490,7 +490,7 @@
             "type": "available-soon",
             "title": "Coming Soon",
             "gridArea": "widget6",
-            "component": "AvailableSoonWidget"
+            "component": "ComingSoonPlaceholder"
           },
           "theme": "pipeline",
           "gridArea": "widget6",
@@ -797,7 +797,7 @@
             "type": "available-soon",
             "title": "Coming Soon",
             "gridArea": "widget8",
-            "component": "AvailableSoonWidget"
+            "component": "ComingSoonPlaceholder"
           },
           "theme": "warehouse",
           "gridArea": "widget8",
