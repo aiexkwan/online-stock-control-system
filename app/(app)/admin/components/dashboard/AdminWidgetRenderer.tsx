@@ -16,6 +16,7 @@ import { useAdminRefresh } from '@/app/(app)/admin/contexts/AdminRefreshContext'
 import { unifiedWidgetRegistry } from '@/lib/widgets/unified-registry';
 // 直接靜態導入 HistoryTreeV2 避免 originalFactory.call 錯誤
 import HistoryTreeV2 from './widgets/HistoryTreeV2';
+import { requestDeduplicator } from '@/lib/utils/request-deduplicator';
 import {
   getWidgetCategory,
   getThemeGlowColor,
@@ -208,14 +209,66 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
     return `${config.dataSource}-${config.title}-${config.type}-${JSON.stringify(config.metrics)}`;
   }, [config.dataSource, config.title, config.type, config.metrics]);
 
-  // 🛑 緊急修復：完全禁用數據載入，立即停止循環
+  // 穩定的數據載入函數
+  const fetchData = useCallback(async () => {
+    // 防止重複載入
+    if (!config.dataSource || loading) {
+      return;
+    }
+
+    const requestKey = `widget-${config.dataSource}-${timeFrame.start}-${timeFrame.end}`;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // 使用請求去重器
+      const result = await requestDeduplicator.dedupe(requestKey, async () => {
+        console.log(`[AdminWidgetRenderer] Fetching data for widget: ${config.dataSource}`);
+        
+        // 使用 REST API 獲取數據
+        const response = await fetch(
+          `/api/admin/dashboard?widgets=${config.dataSource}&startDate=${timeFrame.start}&endDate=${timeFrame.end}`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch data: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        return data[config.dataSource] || null;
+      });
+      
+      setData(result);
+    } catch (err) {
+      console.error(`[AdminWidgetRenderer] Error fetching data:`, err);
+      setError(err instanceof Error ? err.message : 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  }, [config.dataSource, timeFrame.start, timeFrame.end]); // 移除 loading 依賴，避免循環
+
+  // 數據載入邏輯 - 只在手動刷新或時間範圍改變時載入
   useEffect(() => {
-    // 立即設置空數據和結束載入狀態
-    setData(null);
-    setLoading(false);
-    setError(null);
-    console.log(`[AdminWidgetRenderer] Widget ${config.dataSource} - EMERGENCY STOP - Loading disabled`);
-  }, []); // 🔧 空依賴數組 - 只執行一次，防止循環
+    // 首次載入不自動獲取數據，等待用戶手動刷新
+    if (refreshTrigger > 0) {
+      fetchData();
+    }
+  }, [refreshTrigger, fetchData]);
+
+  // 時間範圍改變時自動載入
+  useEffect(() => {
+    // 只在已經有過刷新後才自動載入
+    if (refreshTrigger > 0) {
+      fetchData();
+    }
+  }, [timeFrame, fetchData]);
 
   // 移除 isDelayed 檢查和旋轉動畫 - 直接渲染 widgets
 

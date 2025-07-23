@@ -18,8 +18,8 @@ const RefreshContext = createContext<RefreshContextType>({
 });
 
 export function AdminRefreshProvider({ children }: { children?: React.ReactNode }) {
-  // Start with 1 to trigger initial load
-  const [refreshTrigger, setRefreshTrigger] = useState(1);
+  // Start with 0 to prevent auto-triggering on mount
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const triggerRefresh = useCallback(() => {
     setRefreshTrigger(prev => prev + 1);
