@@ -348,7 +348,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
             />
             {state.isSearching && (
               <div className='absolute right-3 top-1/2 -translate-y-1/2 transform'>
-                <Loader2 className='h-4 w-4 animate-spin text-primary' />
+                <div className='h-1 w-4 bg-primary rounded-full opacity-75' />
               </div>
             )}
           </div>
@@ -590,7 +590,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
         >
           {state.isProcessing || batchState.isProcessing ? (
             <>
-              <Loader2 className='h-4 w-4 animate-spin' />
+              <div className='h-1 w-4 bg-slate-400 rounded-full opacity-75' />
               <span>Processing...</span>
             </>
           ) : (

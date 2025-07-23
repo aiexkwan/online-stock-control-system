@@ -1,9 +1,10 @@
 /**
- * 倉庫緩存服務 - 整合 Redis 緩存和 RPC 函數
- * v1.8 系統優化 - 高性能倉庫數據管理
+ * 倉庫緩存服務 - 智能緩存適配器整合
+ * Phase 2.1 更新 - 支援 Redis → Memory 緩存切換
+ * 專家優化：高性能倉庫數據管理
  */
 
-import { getRedisCacheAdapter } from '../cache/redis-cache-adapter';
+import { getCacheAdapter } from '../cache/cache-factory';
 import { createClient } from '@/app/utils/supabase/server';
 import { cacheLogger } from '../logger';
 
@@ -39,7 +40,7 @@ export interface InventoryQueryParams {
 }
 
 export class WarehouseCacheService {
-  private cache = getRedisCacheAdapter();
+  private cache = getCacheAdapter(); // Phase 2.1: 智能緩存切換
   private readonly DEFAULT_TTL = 300; // 5 分鐘
   private readonly WAREHOUSE_TTL = 600; // 10 分鐘
   private readonly DASHBOARD_TTL = 180; // 3 分鐘

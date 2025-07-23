@@ -319,20 +319,21 @@ export function recordAPIError(
   apiMonitor.recordError(apiType, endpoint, responseTime, error, userId, metadata);
 }
 
-// 自動清理舊指標 (每小時)
-if (typeof window !== 'undefined') {
-  setInterval(
-    () => {
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-      const currentMetrics = apiMonitor.exportMetrics();
-      const recentMetrics = currentMetrics.filter(m => m.timestamp > oneHourAgo);
+// 🛑 完全禁用自動清理：按用戶要求，取消所有自動更新機制
+// 自動清理舊指標 (每小時) - 已禁用
+// if (typeof window !== 'undefined') {
+//   setInterval(
+//     () => {
+//       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+//       const currentMetrics = apiMonitor.exportMetrics();
+//       const recentMetrics = currentMetrics.filter(m => m.timestamp > oneHourAgo);
 
-      if (recentMetrics.length < currentMetrics.length) {
-        apiMonitor.clearMetrics();
-        recentMetrics.forEach(metric => apiMonitor.recordMetric(metric));
-        logger.info('Old API metrics cleaned up');
-      }
-    },
-    60 * 60 * 1000
-  ); // 每小時執行
-}
+//       if (recentMetrics.length < currentMetrics.length) {
+//         apiMonitor.clearMetrics();
+//         recentMetrics.forEach(metric => apiMonitor.recordMetric(metric));
+//         logger.info('Old API metrics cleaned up');
+//       }
+//     },
+//     60 * 60 * 1000
+//   ); // 每小時執行 - 已禁用
+// }

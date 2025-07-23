@@ -283,32 +283,143 @@
   grid-area: widget9;
 }
 
-/* Analysis Layout Styles */
+/* Analysis Layout Styles - Phase 2.1 優化：14×10 簡化網格系統 */
 .analysis-container {
   display: grid;
-  grid-template-areas:
-    "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-    "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-    "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-    "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-    "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-    "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-    "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1"
-    "widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget2 widget1 widget1";
-  grid-template-columns: repeat(10, 1fr);
-  grid-template-rows: repeat(8, 100px);
-  gap: 10px 10px;
+  grid-template-columns: repeat(14, 1fr);
+  grid-template-rows: repeat(10, 1fr);
+  gap: 10px;
   width: 100%;
+  height: 100%;
   min-height: 800px;
   padding: 20px;
 }
 
-.analysis-item[data-widget-index='0'] {
-  /* HistoryTree - widget1 */
-  grid-area: widget1;
+/* Tab-specific widget positioning - Phase 2.1 優化 */
+
+/* 總覽 Tab - 大型展示區域 */
+.analysis-container .overview-widget-0 {
+  grid-column: 4 / 14;
+  grid-row: 2 / 10;
 }
 
-.analysis-item[data-widget-index='1'] {
-  /* AnalysisExpandableCards - widget2 */
-  grid-area: widget2;
+.analysis-container .overview-widget-1 {
+  grid-column: 2 / 4;
+  grid-row: 2 / 5;
+}
+
+.analysis-container .overview-widget-2 {
+  grid-column: 2 / 4;
+  grid-row: 5 / 8;
+}
+
+.analysis-container .overview-widget-3 {
+  grid-column: 2 / 4;
+  grid-row: 8 / 10;
+}
+
+/* 庫存分析 Tab - 平均分配 */
+.analysis-container .inventory-widget-0 {
+  grid-column: 2 / 8;
+  grid-row: 2 / 6;
+}
+
+.analysis-container .inventory-widget-1 {
+  grid-column: 8 / 14;
+  grid-row: 2 / 6;
+}
+
+.analysis-container .inventory-widget-2 {
+  grid-column: 2 / 8;
+  grid-row: 6 / 10;
+}
+
+.analysis-container .inventory-widget-3 {
+  grid-column: 8 / 14;
+  grid-row: 6 / 10;
+}
+
+/* 訂單分析 Tab - 混合佈局 */
+.analysis-container .orders-widget-0 {
+  grid-column: 2 / 10;
+  grid-row: 2 / 6;
+}
+
+.analysis-container .orders-widget-1 {
+  grid-column: 10 / 14;
+  grid-row: 2 / 6;
+}
+
+.analysis-container .orders-widget-2 {
+  grid-column: 2 / 8;
+  grid-row: 6 / 10;
+}
+
+.analysis-container .orders-widget-3 {
+  grid-column: 8 / 14;
+  grid-row: 6 / 10;
+}
+
+/* 系統監控 Tab - 監控版面 */
+.analysis-container .monitoring-widget-0 {
+  grid-column: 2 / 14;
+  grid-row: 2 / 5;
+}
+
+.analysis-container .monitoring-widget-1 {
+  grid-column: 2 / 8;
+  grid-row: 5 / 8;
+}
+
+.analysis-container .monitoring-widget-2 {
+  grid-column: 8 / 14;
+  grid-row: 5 / 8;
+}
+
+.analysis-container .monitoring-widget-3 {
+  grid-column: 2 / 14;
+  grid-row: 8 / 10;
+}
+
+/* Fallback 通用樣式 */
+.analysis-container > * {
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 200px;
+}
+
+/* 響應式設計 - 較小螢幕 */
+@media (max-width: 1200px) {
+  .analysis-container {
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(12, 1fr);
+  }
+  
+  /* 調整 widget 位置以適應小螢幕 */
+  .analysis-container .overview-widget-0 {
+    grid-column: 1 / 9;
+    grid-row: 4 / 12;
+  }
+  
+  .analysis-container .overview-widget-1,
+  .analysis-container .overview-widget-2,
+  .analysis-container .overview-widget-3 {
+    grid-column: 1 / 9;
+    grid-row: auto;
+    height: 150px;
+  }
+}
+
+@media (max-width: 768px) {
+  .analysis-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(20, auto);
+    gap: 15px;
+  }
+  
+  .analysis-container > * {
+    grid-column: 1;
+    grid-row: auto;
+    min-height: 250px;
+  }
 }

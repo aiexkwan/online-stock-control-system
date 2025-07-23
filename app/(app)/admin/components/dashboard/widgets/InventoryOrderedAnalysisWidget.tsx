@@ -102,7 +102,7 @@ export const InventoryOrderedAnalysisWidget: React.FC<InventoryOrderedAnalysisWi
           }
         );
 
-        const widgetData = dashboardResult.widgets.find(
+        const widgetData = dashboardResult.widgets?.find(
           w => w.widgetId === 'inventory_ordered_analysis'
         );
 

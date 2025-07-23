@@ -414,7 +414,7 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
         <div className='relative'>
           <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3'>
             {isLoading ? (
-              <Loader2 className='h-4 w-4 animate-spin text-gray-400' />
+              <div className='h-1 w-4 bg-gray-400 rounded-full opacity-75' />
             ) : (
               <Search className='h-4 w-4 text-gray-400' />
             )}

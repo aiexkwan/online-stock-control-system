@@ -108,7 +108,7 @@ export function StockMovementLayout({
           >
             <CardContent className='flex items-center justify-center py-8'>
               <div className='flex items-center space-x-3'>
-                <div className='h-6 w-6 animate-spin rounded-full border-b-2 border-yellow-400'></div>
+                <div className='h-1.5 w-6 bg-yellow-400 rounded-full opacity-75'></div>
                 <span className='font-medium text-yellow-400'>{loadingText}</span>
               </div>
             </CardContent>

@@ -116,7 +116,7 @@ export function AnomalyDetectionButton({ onResultsReady, className }: AnomalyDet
     >
       {isLoading ? (
         <>
-          <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+          <div className='mr-2 h-1 w-4 bg-current rounded-full opacity-75' />
           Detecting Anomalies...
         </>
       ) : (

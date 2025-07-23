@@ -40,8 +40,15 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
   const { user, userRole } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const supabase = createClient();
+  const [supabase, setSupabase] = useState<any>(null);
   const navigationRef = useRef<HTMLDivElement>(null);
+
+  // 延遲初始化 Supabase client 確保只在客戶端執行
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setSupabase(createClient());
+    }
+  }, []);
 
   // Get greeting based on time
   const getGreeting = () => {
@@ -61,7 +68,7 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
   // 優化用戶數據獲取
   useEffect(() => {
     const fetchUserData = async () => {
-      if (!user?.email || !user?.id) {
+      if (!user?.email || !user?.id || !supabase) {
         setIsLoading(false);
         return;
       }
@@ -131,6 +138,11 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
         navigationCacheManager.clearUserCache(user.id);
       }
       navigationPreloader.clearCache();
+
+      if (!supabase) {
+        toast.error('Auth client not available');
+        return;
+      }
 
       const { error } = await supabase.auth.signOut();
       if (!error) {

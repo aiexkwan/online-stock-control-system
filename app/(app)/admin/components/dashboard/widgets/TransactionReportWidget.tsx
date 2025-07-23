@@ -319,7 +319,7 @@ export const TransactionReportWidget = function TransactionReportWidget({
                 size='sm'
               >
                 {isPrinting ? (
-                  <Loader2 className='h-4 w-4 animate-spin' />
+                  <div className='h-1 w-6 bg-slate-400 rounded-full' />
                 ) : (
                   <Printer className='h-4 w-4' />
                 )}
@@ -339,7 +339,7 @@ export const TransactionReportWidget = function TransactionReportWidget({
               size='sm'
             >
               {downloadStatus === 'idle' && <Download className='h-4 w-4' />}
-              {downloadStatus === 'downloading' && <Loader2 className='h-4 w-4 animate-spin' />}
+              {downloadStatus === 'downloading' && <div className='h-1.5 w-6 bg-slate-300 rounded-full opacity-75' />}
               {downloadStatus === 'downloaded' && <CheckCircle className='h-4 w-4' />}
               {downloadStatus === 'complete' && <Download className='h-4 w-4' />}
               {downloadStatus === 'downloading' && (

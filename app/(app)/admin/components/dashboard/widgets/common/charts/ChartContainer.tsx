@@ -228,7 +228,11 @@ export const ChartContainer: React.FC<ChartContainerProps> = ({
                   disabled={refreshing}
                   className='h-7 px-2'
                 >
-                  <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
+                  {refreshing ? (
+                    <div className='h-1 w-8 bg-slate-400 rounded-full opacity-75' />
+                  ) : (
+                    <RefreshCw className='h-4 w-4' />
+                  )}
                 </Button>
               )}
             </div>

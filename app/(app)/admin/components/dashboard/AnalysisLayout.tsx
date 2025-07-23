@@ -3,6 +3,7 @@
 import React, { Suspense } from 'react';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { useLayoutVirtualization } from '@/app/hooks/useLayoutVirtualization';
+import { AnalyticsTabSystem } from './AnalyticsTabSystem';
 
 interface AnalysisLayoutProps {
   theme: string;
@@ -60,21 +61,19 @@ export const AnalysisLayout: React.FC<AnalysisLayoutProps> = ({ theme, timeFrame
   // 確保 children 是數組
   const childrenArray = React.Children.toArray(children);
 
-  // 使用虛擬化 hook
-  const containerRef = useLayoutVirtualization({
-    widgetCount: childrenArray.length,
-    theme,
-    threshold: 100,
-  });
+  // 將 children 包裝在錯誤邊界中
+  const wrappedChildren = childrenArray.map((child, index) => (
+    <WidgetErrorBoundary key={index} index={index}>
+      <Suspense fallback={<WidgetLoadingFallback />}>{child}</Suspense>
+    </WidgetErrorBoundary>
+  ));
 
-  // 讓 CSS 類別處理所有佈局，不需要 inline styles
+  // Phase 3.0 重構：AnalyticsTabSystem 不再需要 widgets prop
+  // 現在它內部使用 AnalysisDisplayContainer 和 UnifiedWidget 系統
   return (
-    <div ref={containerRef} className='analysis-container'>
-      {childrenArray.map((child, index) => (
-        <WidgetErrorBoundary key={index} index={index}>
-          <Suspense fallback={<WidgetLoadingFallback />}>{child}</Suspense>
-        </WidgetErrorBoundary>
-      ))}
-    </div>
+    <AnalyticsTabSystem 
+      theme={theme} 
+      timeFrame={timeFrame}
+    />
   );
 };

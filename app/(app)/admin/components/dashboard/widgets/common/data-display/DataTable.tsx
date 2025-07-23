@@ -189,7 +189,7 @@ export function DataTable<T = Record<string, unknown>>({
             {onRefresh && (
               <Button variant='outline' size='sm' onClick={handleRefresh} disabled={isRefreshing}>
                 {isRefreshing ? (
-                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                  <div className='mr-2 h-1 w-8 bg-slate-400 rounded-full opacity-75' />
                 ) : (
                   <RefreshCw className='mr-2 h-4 w-4' />
                 )}
@@ -229,7 +229,11 @@ export function DataTable<T = Record<string, unknown>>({
               </div>
               {showRefreshButton && onRefresh && (
                 <Button variant='ghost' size='sm' onClick={handleRefresh} disabled={isRefreshing}>
-                  <RefreshCw className={cn('h-4 w-4', isRefreshing && 'animate-spin')} />
+                  {isRefreshing ? (
+                    <div className='h-1 w-8 bg-slate-400 rounded-full opacity-75' />
+                  ) : (
+                    <RefreshCw className='h-4 w-4' />
+                  )}
                 </Button>
               )}
             </CardTitle>
@@ -287,9 +291,11 @@ export function DataTable<T = Record<string, unknown>>({
                   onClick={handleRefresh}
                   disabled={isRefreshing || loading}
                 >
-                  <RefreshCw
-                    className={cn('h-4 w-4', (isRefreshing || loading) && 'animate-spin')}
-                  />
+                  {(isRefreshing || loading) ? (
+                    <div className='h-1 w-8 bg-slate-400 rounded-full opacity-75' />
+                  ) : (
+                    <RefreshCw className='h-4 w-4' />
+                  )}
                 </Button>
               )}
             </div>
@@ -387,7 +393,7 @@ export function DataTable<T = Record<string, unknown>>({
               >
                 {pagination.loadingMore ? (
                   <span className='flex items-center justify-center gap-2'>
-                    <Loader2 className='h-4 w-4 animate-spin' />
+                    <div className='h-1 w-8 bg-slate-400 rounded-full opacity-75' />
                     Loading more...
                   </span>
                 ) : (

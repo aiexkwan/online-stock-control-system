@@ -129,11 +129,12 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
     const startTimeout = setTimeout(() => {
       updateQueueStatus();
 
-      // Update every 2 seconds
-      const interval = setInterval(updateQueueStatus, 2000);
+      // 🛑 完全禁用自動更新：按用戶要求，不使用任何定時器
+      // const interval = setInterval(updateQueueStatus, 2000); // 完全禁用
+      // 只在初始載入時檢查一次，不再定時更新
 
-      // Store interval in ref for cleanup
-      intervalRef.current = interval;
+      // 無需存儲 interval，因為已完全禁用定時器
+      intervalRef.current = null;
     }, 1000);
 
     return () => {

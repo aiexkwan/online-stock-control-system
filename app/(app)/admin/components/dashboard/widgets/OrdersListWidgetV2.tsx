@@ -230,7 +230,7 @@ export const OrdersListWidgetV2 = React.memo(function OrdersListWidgetV2({
                 : `No PDF available for order ${String(value || '')}`
           }
         >
-          {loadingPdf === String(value || '') && <Loader2 className='h-3 w-3 animate-spin' />}
+          {loadingPdf === String(value || '') && <div className='h-1.5 w-6 bg-slate-600 rounded-full opacity-75' />}
           <span className={loadingPdf === String(value || '') ? 'opacity-70' : ''}>
             {String(value || '')}
           </span>

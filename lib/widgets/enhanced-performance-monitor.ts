@@ -645,9 +645,10 @@ export class EnhancedPerformanceMonitor {
       this.notifyReport(report);
     };
 
-    // Schedule reports (simplified - in production use proper scheduling)
-    this.reportSchedules.set('daily', setInterval(dailyReport, 24 * 60 * 60 * 1000));
-    this.reportSchedules.set('weekly', setInterval(weeklyReport, 7 * 24 * 60 * 60 * 1000));
+    // 🛑 完全禁用自動報告排程：按用戶要求，取消所有自動更新機制
+    // Schedule reports (simplified - in production use proper scheduling) - 已禁用
+    // this.reportSchedules.set('daily', setInterval(dailyReport, 24 * 60 * 60 * 1000));
+    // this.reportSchedules.set('weekly', setInterval(weeklyReport, 7 * 24 * 60 * 60 * 1000));
   }
 
   /**

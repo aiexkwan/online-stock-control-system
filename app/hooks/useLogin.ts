@@ -113,6 +113,43 @@ export function useLogin() {
       // Perform login
       await unifiedAuth.signIn(email, password);
       
+      // 🔧 修復異步競爭條件：等待 Supabase session 完全建立
+      // 最多等待 3 秒，檢查 session 是否可用
+      const maxRetries = 6; // 6 * 500ms = 3 秒
+      let retryCount = 0;
+      let sessionReady = false;
+      
+      while (retryCount < maxRetries && !sessionReady) {
+        try {
+          // 檢查 session 是否已經建立
+          const currentUser = await unifiedAuth.getCurrentUser();
+          
+          if (currentUser) {
+            // 進一步確認 session 可用性
+            const { createClient } = await import('@/app/utils/supabase/client');
+            const supabase = createClient();
+            const { data: { session }, error } = await supabase.auth.getSession();
+            
+            if (!error && session) {
+              sessionReady = true;
+              console.log('[useLogin] Session confirmed, proceeding with redirect');
+              break;
+            }
+          }
+        } catch (sessionError) {
+          console.warn('[useLogin] Session check failed:', sessionError);
+        }
+        
+        // 等待 500ms 後重試
+        await new Promise(resolve => setTimeout(resolve, 500));
+        retryCount++;
+        console.log(`[useLogin] Waiting for session (${retryCount}/${maxRetries})...`);
+      }
+      
+      if (!sessionReady) {
+        console.warn('[useLogin] Session not ready after 3 seconds, proceeding anyway');
+      }
+      
       // Get redirect path based on user role
       const redirectPath = await getUserRedirectPath(email);
       

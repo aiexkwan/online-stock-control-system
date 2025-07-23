@@ -28,7 +28,7 @@ export const LoadingButton: React.FC<LoadingButtonProps> = ({
     <Button disabled={isLoading || disabled} className={cn(className)} {...props}>
       {isLoading ? (
         <>
-          <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+          <div className='mr-2 h-1 w-4 bg-current rounded-full opacity-75' />
           {loadingText || children}
         </>
       ) : (

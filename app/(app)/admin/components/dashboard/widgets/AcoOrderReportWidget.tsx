@@ -320,7 +320,7 @@ export function AcoOrderReportWidget({ widget, isEditMode }: WidgetComponentProp
               >
                 {isGenerating ? (
                   <>
-                    <div className='h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent' />
+                    <div className='h-1 w-4 bg-current rounded-full opacity-75' />
                     Generating...
                   </>
                 ) : (

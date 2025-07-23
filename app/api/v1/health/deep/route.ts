@@ -1,12 +1,12 @@
 /**
- * 深度健康檢查端點 - 詳細服務狀態監控
- * v1.8 系統優化 - 企業級監控解決方案
+ * 深度健康檢查端點 - 智能緩存適配器支援
+ * Phase 2.1 更新 - 支援 Redis/Memory 緩存切換
+ * 企業級監控解決方案
  */
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/app/utils/supabase/server';
-import { testRedisConnection } from '@/lib/redis';
-import { getRedisCacheAdapter } from '@/lib/cache/redis-cache-adapter';
+import { getCacheAdapter, getCurrentCacheType } from '@/lib/cache/cache-factory';
 
 // 健康檢查結果介面
 interface HealthCheckResult {
@@ -27,7 +27,7 @@ interface DeepHealthResponse {
   services: {
     database: HealthCheckResult;
     supabase: HealthCheckResult;
-    redis: HealthCheckResult;
+    cache: HealthCheckResult; // Phase 2.1: 從 redis 改為 cache (智能緩存)
     system: HealthCheckResult;
   };
   summary: {
@@ -139,24 +139,15 @@ async function testDatabaseHealth(): Promise<HealthCheckResult> {
 }
 
 /**
- * 測試 Redis 連接和性能
+ * 測試緩存適配器連接和性能 (智能緩存支援)
+ * Phase 2.1: 支援 Redis 和 Memory 緩存
  */
-async function testRedisHealth(): Promise<HealthCheckResult> {
+async function testCacheHealth(): Promise<HealthCheckResult> {
   const startTime = Date.now();
 
   try {
-    const isConnected = await testRedisConnection();
-
-    if (!isConnected) {
-      return {
-        service: 'redis',
-        status: 'unhealthy',
-        responseTime: Date.now() - startTime,
-        error: 'Redis connection failed',
-      };
-    }
-
-    const cacheAdapter = getRedisCacheAdapter();
+    const cacheAdapter = getCacheAdapter();
+    const cacheType = getCurrentCacheType();
 
     // 測試基本操作
     const testKey = 'health_check_test';
@@ -168,24 +159,53 @@ async function testRedisHealth(): Promise<HealthCheckResult> {
 
     const responseTime = Date.now() - startTime;
     const stats = await cacheAdapter.getStats();
+    const isConnected = await cacheAdapter.ping();
+
+    if (!isConnected) {
+      return {
+        service: 'cache',
+        status: 'degraded',
+        responseTime,
+        error: `${cacheType} cache connection issues - system continues with degraded performance`,
+        details: {
+          cacheType,
+          fallbackMode: true,
+          note: 'Cache unavailable but system operational'
+        }
+      };
+    }
+
+    // Phase 2.1: 根據緩存類型調整性能標準
+    const responseTimeThreshold = cacheType === 'memory' ? 10 : 500; // 內存緩存應更快
+    const status = responseTime < responseTimeThreshold ? 'healthy' : 'degraded';
 
     return {
-      service: 'redis',
-      status: responseTime < 500 ? 'healthy' : 'degraded',
+      service: 'cache',
+      status,
       responseTime,
       details: {
+        cacheType,
         operationTest: retrievedValue !== null,
         memoryUsage: stats.memory,
         connections: stats.connections,
-        hitRate: stats.hitRate,
+        hitRate: stats.hitRate || 0,
+        expectedResponseTime: `< ${responseTimeThreshold}ms`,
+        phase: 'Phase 2.1 - Adaptive Cache'
       },
     };
   } catch (error) {
+    const cacheType = getCurrentCacheType();
+    
     return {
-      service: 'redis',
-      status: 'unhealthy',
+      service: 'cache',
+      status: 'degraded', // Phase 2.1: 緩存錯誤不影響系統核心功能
       responseTime: Date.now() - startTime,
       error: error instanceof Error ? (error as { message: string }).message : 'Unknown error',
+      details: {
+        cacheType,
+        fallbackAvailable: true,
+        note: 'System continues to operate without cache'
+      }
     };
   }
 }
@@ -251,16 +271,16 @@ export async function GET() {
     const timestamp = new Date().toISOString();
     const uptime = process.uptime();
 
-    // 並行執行所有健康檢查
-    const [databaseResult, supabaseResult, redisResult, systemResult] = await Promise.all([
+    // 並行執行所有健康檢查 (Phase 2.1: 智能緩存支援)
+    const [databaseResult, supabaseResult, cacheResult, systemResult] = await Promise.all([
       testDatabaseHealth(),
       testSupabaseConnection(),
-      testRedisHealth(),
+      testCacheHealth(), // Phase 2.1: 使用智能緩存健康檢查
       checkSystemResources(),
     ]);
 
     // 計算總結 (Strategy 4: unknown + type narrowing)
-    const services = [databaseResult, supabaseResult, redisResult, systemResult];
+    const services = [databaseResult, supabaseResult, cacheResult, systemResult];
     const healthyServices = services.filter(
       s => s && typeof s === 'object' && 'status' in s && s.status === 'healthy'
     ).length;
@@ -282,7 +302,7 @@ export async function GET() {
 
     const response: DeepHealthResponse = {
       status: overallStatus,
-      version: 'v1',
+      version: 'v2.1-phase2-adaptive', // Phase 2.1: 版本更新
       timestamp,
       uptime: `${Math.floor(uptime)}s`,
       environment: process.env.NODE_ENV || 'development',
@@ -290,7 +310,7 @@ export async function GET() {
       services: {
         database: databaseResult,
         supabase: supabaseResult,
-        redis: redisResult,
+        cache: cacheResult, // Phase 2.1: 使用智能緩存結果
         system: systemResult,
       },
       summary: {
@@ -335,24 +355,28 @@ export async function GET() {
 }
 
 /**
- * 支援 HEAD 請求用於快速檢查
+ * 支援 HEAD 請求用於快速檢查 (智能緩存適配器)
  */
 export async function HEAD() {
   try {
-    // 簡化的健康檢查，只測試基本連接
-    const [dbTest, redisTest] = await Promise.all([testSupabaseConnection(), testRedisHealth()]);
+    // Phase 2.1: 智能緩存健康檢查，緩存為可選服務
+    const [dbTest, cacheTest] = await Promise.all([testSupabaseConnection(), testCacheHealth()]);
 
-    const isHealthy =
-      (dbTest as { status: string }).status !== 'unhealthy' &&
-      (redisTest as { status: string }).status !== 'unhealthy';
+    // 系統健康判斷：只有核心服務 (DB) unhealthy 才返回 503
+    // 緩存 degraded 不影響系統可用性
+    const isCriticalFailure = (dbTest as { status: string }).status === 'unhealthy';
+    const cacheType = getCurrentCacheType();
 
     return new Response(null, {
-      status: isHealthy ? 200 : 503,
+      status: isCriticalFailure ? 503 : 200,
       headers: {
         'Content-Type': 'application/json',
-        'API-Version': 'v1',
-        'X-API-Version': 'v1',
+        'API-Version': 'v2.1-phase2-adaptive', // Phase 2.1 版本
+        'X-API-Version': 'v2.1-phase2-adaptive',
         'Cache-Control': 'no-cache',
+        'X-Cache-Type': cacheType, // Phase 2.1: 顯示緩存類型
+        'X-Cache-Status': (cacheTest as { status: string }).status,
+        'X-Database-Status': (dbTest as { status: string }).status,
       },
     });
   } catch (error) {
@@ -360,9 +384,10 @@ export async function HEAD() {
       status: 503,
       headers: {
         'Content-Type': 'application/json',
-        'API-Version': 'v1',
-        'X-API-Version': 'v1',
+        'API-Version': 'v2.1-phase2-adaptive',
+        'X-API-Version': 'v2.1-phase2-adaptive',
         'Cache-Control': 'no-cache',
+        'X-Error': 'Health check failed',
       },
     });
   }

@@ -13,6 +13,7 @@ export interface CacheAdapter {
   getStats(): Promise<CacheStats>;
   ping(): Promise<boolean>;
   disconnect(): Promise<void>;
+  getMetrics(): CacheMetrics & { hitRate: number; totalRequests: number }; // Phase 2.1: 添加 getMetrics 方法
   acquireLock?(lockKey: string, ttlSeconds?: number): Promise<string | null>;
   releaseLock?(lockKey: string, lockValue: string): Promise<boolean>;
   mget?<T>(keys: string[]): Promise<(T | null)[]>;

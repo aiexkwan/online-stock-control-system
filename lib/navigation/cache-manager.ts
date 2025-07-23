@@ -144,10 +144,11 @@ export class NavigationCacheManager {
   }
 
   private startCacheCleanup(): void {
-    // 每分鐘清理一次過期緩存
-    setInterval(() => {
-      this.cleanupExpiredCache();
-    }, 60 * 1000);
+    // 🛑 完全禁用自動緩存清理：按用戶要求，取消所有自動更新機制
+    // 每分鐘清理一次過期緩存 - 已禁用
+    // setInterval(() => {
+    //   this.cleanupExpiredCache();
+    // }, 60 * 1000);
   }
 
   private cleanupExpiredCache(): void {

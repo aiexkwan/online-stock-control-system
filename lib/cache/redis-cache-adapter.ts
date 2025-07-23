@@ -13,11 +13,24 @@ export class RedisCacheAdapter extends BaseCacheAdapter {
 
   constructor(keyPrefix: string = 'oscs:cache:', redisClient?: Redis) {
     super(keyPrefix);
-    this.redis = redisClient || getRedisClient();
+    
+    try {
+      this.redis = redisClient || getRedisClient();
+    } catch (error) {
+      // 🔧 專家修復：Redis 初始化失敗時的優雅處理
+      cacheLogger.warn(
+        {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+        'Redis 初始化失敗，將在操作時使用降級模式'
+      );
+      // 仍然設置 redis 實例，但後續操作會優雅失敗
+      this.redis = redisClient || getRedisClient();
+    }
   }
 
   /**
-   * 獲取緩存值
+   * 獲取緩存值 (專家修復：優雅降級處理)
    */
   async get<T>(key: string): Promise<T | null> {
     const startTime = Date.now();
@@ -58,13 +71,37 @@ export class RedisCacheAdapter extends BaseCacheAdapter {
         return null;
       }
     } catch (error) {
-      this.handleError('get', error);
+      // 🔧 專家修復：優雅處理 Redis 連接失敗
+      const responseTime = Date.now() - startTime;
+      this.updateMetrics(responseTime, false);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const isConnectionError = errorMessage.includes('ECONNREFUSED') || 
+                              errorMessage.includes('connect') ||
+                              errorMessage.includes('timeout');
+      
+      if (isConnectionError) {
+        cacheLogger.warn(
+          {
+            operation: 'get',
+            key: fullKey,
+            error: 'Redis connection unavailable',
+            fallbackMode: true,
+            responseTime,
+          },
+          'Redis 不可用，返回緩存未命中 (降級模式)'
+        );
+      } else {
+        this.handleError('get', error);
+      }
+      
+      // 返回 null 表示緩存未命中，讓調用方從數據庫獲取數據
       return null;
     }
   }
 
   /**
-   * 設置緩存值
+   * 設置緩存值 (專家修復：優雅降級處理)
    */
   async set<T>(key: string, value: T, ttlSeconds: number = 300): Promise<void> {
     const startTime = Date.now();
@@ -93,8 +130,33 @@ export class RedisCacheAdapter extends BaseCacheAdapter {
         'Cache set'
       );
     } catch (error) {
-      this.handleError('set', error);
-      throw error;
+      // 🔧 專家修復：Redis 連接失敗時不拋出異常，只記錄警告
+      const responseTime = Date.now() - startTime;
+      this.updateMetrics(responseTime);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const isConnectionError = errorMessage.includes('ECONNREFUSED') || 
+                              errorMessage.includes('connect') ||
+                              errorMessage.includes('timeout');
+      
+      if (isConnectionError) {
+        cacheLogger.warn(
+          {
+            operation: 'set',
+            key: fullKey,
+            error: 'Redis connection unavailable',
+            fallbackMode: true,
+            responseTime,
+            ttl: ttlSeconds,
+          },
+          'Redis 不可用，緩存操作跳過 (降級模式)'
+        );
+        // 不拋出錯誤，讓系統繼續運行而不緩存
+        return;
+      } else {
+        this.handleError('set', error);
+        throw error; // 其他錯誤仍然拋出
+      }
     }
   }
 

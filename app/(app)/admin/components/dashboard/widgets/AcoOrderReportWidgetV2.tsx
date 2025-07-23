@@ -293,7 +293,7 @@ export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentPr
               >
                 {isGenerating ? (
                   <>
-                    <span className='mr-2 h-3 w-3 animate-spin rounded-full border-b-2 border-white' />
+                    <span className='mr-2 h-1 w-6 bg-white/60 rounded-full inline-block' />
                     Generating...
                   </>
                 ) : (

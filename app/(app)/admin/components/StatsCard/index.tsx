@@ -121,7 +121,7 @@ export function StatsCard({
 
             <div className='flex flex-1 items-center justify-center'>
               {loading ? (
-                <div className='h-8 w-8 animate-spin rounded-full border-2 border-green-500 border-t-transparent'></div>
+                <div className='h-2 w-16 bg-green-500 rounded-full opacity-75'></div>
               ) : (
                 <div className='text-5xl font-bold text-white'>{value}</div>
               )}

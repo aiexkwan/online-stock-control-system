@@ -124,7 +124,7 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
     return (
       <div className={dialogStyles.card}>
         <div className='flex h-[400px] items-center justify-center'>
-          <Loader2 className='h-8 w-8 animate-spin text-blue-500' />
+          <div className='h-2 w-16 bg-slate-600 rounded-full opacity-75' />
         </div>
       </div>
     );

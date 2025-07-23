@@ -18,7 +18,7 @@ export interface UnifiedWidgetConfig {
   loader?: () => Promise<{ default: React.ComponentType<any> }>;
   metadata: {
     dataSource?: string;
-    refreshInterval?: number;
+    refreshInterval?: number | false;
     supportsFilters?: boolean;
     chartType?: string;
     exportFormats?: string[];
@@ -47,7 +47,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
       })),
     metadata: {
       dataSource: 'record_history',
-      refreshInterval: 30000,
+      refreshInterval: false, // 🛑 禁用自動刷新
       supportsFilters: true,
       supportDateRange: true,
       cacheEnabled: true,
@@ -64,7 +64,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     preloadPriority: 8,
     metadata: {
       dataSource: 'record_palletinfo',
-      refreshInterval: 5000,
+      refreshInterval: false, // 🛑 禁用自動刷新 // 🛑 緊急修復：從5秒改為60秒 (1分鐘)
       realtimeUpdates: true,
     },
   },
@@ -78,7 +78,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     preloadPriority: 7,
     metadata: {
       dataSource: 'record_transfer',
-      refreshInterval: 60000,
+      refreshInterval: false, // 🛑 禁用自動刷新
       cacheEnabled: true,
     },
   },
@@ -92,7 +92,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     preloadPriority: 8,
     metadata: {
       dataSource: 'record_palletinfo',
-      refreshInterval: 10000,
+      refreshInterval: false, // 🛑 禁用自動刷新 // 🛑 修復：從10秒改為60秒
       realtimeUpdates: true,
     },
   },
@@ -106,7 +106,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     preloadPriority: 7,
     metadata: {
       dataSource: 'record_palletinfo',
-      refreshInterval: 10000,
+      refreshInterval: false, // 🛑 禁用自動刷新
       realtimeUpdates: true,
     },
   },
@@ -119,7 +119,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     lazyLoad: true,
     preloadPriority: 6,
     metadata: {
-      refreshInterval: 30000,
+      refreshInterval: false, // 🛑 禁用自動刷新
       cacheEnabled: true,
     },
   },
@@ -132,11 +132,15 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     description: 'Enhanced stock distribution visualization',
     lazyLoad: true,
     preloadPriority: 8,
+    loader: () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/StockDistributionChartV2').then(module => ({
+        default: module.default || module.StockDistributionChartV2,
+      })),
     metadata: {
       dataSource: 'record_inventory',
       chartType: 'pie',
       exportFormats: ['png', 'pdf'],
-      refreshInterval: 30000,
+      refreshInterval: false, // 🛑 禁用自動刷新
       supportDateRange: true,
     },
   },
@@ -152,7 +156,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
       dataSource: 'record_inventory',
       chartType: 'line',
       exportFormats: ['png', 'pdf'],
-      refreshInterval: 60000,
+      refreshInterval: false, // 🛑 禁用自動刷新
       supportDateRange: true,
     },
   },
@@ -168,7 +172,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
       dataSource: 'work_level',
       chartType: 'area',
       exportFormats: ['png', 'pdf'],
-      refreshInterval: 30000,
+      refreshInterval: false, // 🛑 禁用自動刷新
       supportDateRange: true,
     },
   },
@@ -184,7 +188,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
       dataSource: 'record_transfer',
       chartType: 'histogram',
       exportFormats: ['png', 'pdf'],
-      refreshInterval: 60000,
+      refreshInterval: false, // 🛑 禁用自動刷新
       supportDateRange: true,
     },
   },
@@ -200,7 +204,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
       dataSource: 'data_code',
       chartType: 'bar',
       exportFormats: ['png', 'pdf'],
-      refreshInterval: 120000,
+      refreshInterval: false, // 🛑 禁用自動刷新
     },
   },
 
@@ -211,11 +215,15 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     description: 'Top products ranked by quantity',
     lazyLoad: true,
     preloadPriority: 7,
+    loader: () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/TopProductsByQuantityWidget').then(module => ({
+        default: module.default || module.TopProductsByQuantityWidget,
+      })),
     metadata: {
       dataSource: 'record_inventory',
       chartType: 'bar',
       exportFormats: ['png', 'pdf'],
-      refreshInterval: 60000,
+      refreshInterval: false, // 🛑 禁用自動刷新
       supportDateRange: true,
     },
   },
@@ -231,7 +239,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
       dataSource: 'record_inventory',
       chartType: 'doughnut',
       exportFormats: ['png', 'pdf'],
-      refreshInterval: 60000,
+      refreshInterval: false, // 🛑 禁用自動刷新
       supportDateRange: true,
     },
   },
@@ -246,7 +254,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     preloadPriority: 8,
     metadata: {
       dataSource: 'data_order',
-      refreshInterval: 30000,
+      refreshInterval: false, // 🛑 禁用自動刷新
       supportsFilters: true,
       supportDateRange: true,
       exportFormats: ['csv', 'excel'],
@@ -261,7 +269,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     lazyLoad: true,
     preloadPriority: 6,
     metadata: {
-      refreshInterval: 60000,
+      refreshInterval: false, // 🛑 禁用自動刷新
       supportsFilters: true,
       exportFormats: ['csv'],
     },
@@ -276,7 +284,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     preloadPriority: 8,
     metadata: {
       dataSource: 'record_transfer',
-      refreshInterval: 15000,
+      refreshInterval: false, // 🛑 禁用自動刷新
       supportsFilters: true,
       supportDateRange: true,
       exportFormats: ['csv', 'excel'],
@@ -293,7 +301,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     preloadPriority: 8,
     metadata: {
       dataSource: 'data_order',
-      refreshInterval: 30000,
+      refreshInterval: false, // 🛑 禁用自動刷新
       supportsFilters: true,
       supportDateRange: true,
       exportFormats: ['csv'],
@@ -311,7 +319,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     metadata: {
       dataSource: 'record_palletinfo',
       requiresAuth: true,
-      refreshInterval: 30000,
+      refreshInterval: false, // 🛑 禁用自動刷新
     },
   },
 
@@ -325,7 +333,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     metadata: {
       dataSource: 'data_code',
       requiresAuth: true,
-      refreshInterval: 60000,
+      refreshInterval: false, // 🛑 禁用自動刷新
     },
   },
 
@@ -339,7 +347,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     metadata: {
       dataSource: 'data_supplier',
       requiresAuth: true,
-      refreshInterval: 120000,
+      refreshInterval: false, // 🛑 禁用自動刷新
     },
   },
 
@@ -388,8 +396,12 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     description: 'Expandable cards for analysis data',
     lazyLoad: true,
     preloadPriority: 6,
+    loader: () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/AnalysisExpandableCards').then(module => ({
+        default: module.default || module.AnalysisExpandableCards,
+      })),
     metadata: {
-      refreshInterval: 120000,
+      refreshInterval: false, // 🛑 禁用自動刷新
       supportDateRange: true,
       exportFormats: ['pdf'],
     },
@@ -402,9 +414,13 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     description: 'Analysis of ordered inventory',
     lazyLoad: true,
     preloadPriority: 7,
+    loader: () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget').then(module => ({
+        default: module.default || module.InventoryOrderedAnalysisWidget,
+      })),
     metadata: {
       dataSource: 'record_inventory',
-      refreshInterval: 60000,
+      refreshInterval: false, // 🛑 禁用自動刷新
       supportDateRange: true,
       exportFormats: ['csv', 'excel', 'pdf'],
     },

@@ -139,7 +139,7 @@ export function SmartLoadingSpinner({
       case 'default':
       default:
         if (!animationConfig.useMotion) {
-          return <Loader2 className={cn(spinnerClass, 'animate-spin')} />;
+          return <div className={cn('h-2 w-16 bg-slate-600 rounded-full opacity-75', spinnerClass)} />;
         }
 
         return (

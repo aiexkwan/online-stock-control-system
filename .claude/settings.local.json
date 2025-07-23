@@ -183,7 +183,9 @@
       "Bash(tsx scripts/type-refactor-tool.ts:*)",
       "Bash(tsx scripts/replace-any-with-types.ts:*)",
       "Bash(supabase gen types:*)",
-      "mcp__supabase__list_migrations"
+      "mcp__supabase__list_migrations",
+      "Bash(osascript:*)",
+      "Bash(open:*)"
     ],
     "deny": []
   },

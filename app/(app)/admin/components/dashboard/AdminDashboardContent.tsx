@@ -58,6 +58,11 @@ const ThemeLayouts = {
       default: m.AnalysisLayout,
     }))
   ),
+  analytics: lazy(() =>
+    import(/* webpackChunkName: "theme-analytics" */ './AnalysisLayout').then(m => ({
+      default: m.AnalysisLayout,
+    }))
+  ),
 };
 
 // Theme loading skeleton

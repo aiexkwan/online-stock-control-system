@@ -79,7 +79,7 @@ const UnifiedWidgetWrapper = React.memo<{
     <GlassmorphicCard
       variant="default"
       hover={true}
-      borderGlow={true}
+      borderGlow={false}
       padding="none"
       className={cn(
         'h-full w-full',
@@ -208,58 +208,14 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
     return `${config.dataSource}-${config.title}-${config.type}-${JSON.stringify(config.metrics)}`;
   }, [config.dataSource, config.title, config.type, config.metrics]);
 
-  // 根據數據源載入數據
+  // 🛑 緊急修復：完全禁用數據載入，立即停止循環
   useEffect(() => {
-    // 移除 isDelayed 檢查 - 立即加載所有 widgets
-
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // 確保只在客戶端環境下創建 Supabase client
-        if (typeof window === 'undefined') {
-          console.warn('[AdminWidgetRenderer] Skipping data load on server side');
-          setLoading(false);
-          return;
-        }
-
-        const supabase = createClient();
-
-        // 根據不同的數據源載入真實數據
-        switch (config.dataSource) {
-          case 'record_palletinfo':
-          case 'record_inventory':
-          case 'record_transfer':
-          case 'stock_level':
-          case 'record_history':
-          case 'production_summary':
-          case 'production_details':
-          case 'work_level':
-          case 'pipeline_production_details':
-          case 'pipeline_work_level':
-          case 'data_order':
-          case 'system_status':
-          case 'coming_soon':
-            // Data loading logic removed - loadWidgetData method not available
-            // Using null data for these widget types as they don't require data loading
-            setData(null);
-            break;
-
-          default:
-            // 默認的假數據
-            setData(null);
-        }
-      } catch (err) {
-        console.error('Data loading error:', err);
-        setError(err instanceof Error ? (err as { message: string }).message : 'Unknown error');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [config.dataSource, stableConfigKey, timeFrame, refreshTrigger]);
+    // 立即設置空數據和結束載入狀態
+    setData(null);
+    setLoading(false);
+    setError(null);
+    console.log(`[AdminWidgetRenderer] Widget ${config.dataSource} - EMERGENCY STOP - Loading disabled`);
+  }, []); // 🔧 空依賴數組 - 只執行一次，防止循環
 
   // 移除 isDelayed 檢查和旋轉動畫 - 直接渲染 widgets
 

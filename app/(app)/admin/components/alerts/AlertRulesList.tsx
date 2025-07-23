@@ -177,7 +177,7 @@ export function AlertRulesList({ onRuleChange }: AlertRulesListProps) {
   if (loading) {
     return (
       <div className='flex items-center justify-center py-8'>
-        <div className='h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500'></div>
+        <div className='h-2 w-8 bg-blue-500 rounded-full opacity-75'></div>
       </div>
     );
   }
