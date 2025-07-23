@@ -17,6 +17,12 @@ import { unifiedWidgetRegistry } from '@/lib/widgets/unified-registry';
 // 直接靜態導入 HistoryTreeV2 避免 originalFactory.call 錯誤
 import HistoryTreeV2 from './widgets/HistoryTreeV2';
 import { requestDeduplicator } from '@/lib/utils/request-deduplicator';
+import { StatsCard } from './cards/StatsCard';
+import { 
+  isStatsWidget, 
+  convertWidgetConfigToStatsCard,
+  STATS_MIGRATION_FLAGS 
+} from '@/lib/widgets/stats-migration-config';
 import {
   getWidgetCategory,
   getThemeGlowColor,
@@ -294,6 +300,27 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         break;
 
       case 'stats':
+        // 檢查是否應該使用新的 StatsCard
+        if (STATS_MIGRATION_FLAGS.enableStatsCard && isStatsWidget(config.type)) {
+          const { statTypes } = convertWidgetConfigToStatsCard([config.type]);
+          if (statTypes.length > 0) {
+            renderedContent = (
+              <StatsCard
+                statTypes={statTypes}
+                columns={1}
+                dateRange={timeFrame ? {
+                  start: new Date(timeFrame.start),
+                  end: new Date(timeFrame.end)
+                } : undefined}
+                showTrend={true}
+                showComparison={true}
+                isEditMode={false}
+              />
+            );
+            break;
+          }
+        }
+        // 否則使用原有的 StatsWidgetRenderer
         renderedContent = <StatsWidgetRenderer {...baseProps} />;
         break;
 
@@ -370,10 +397,10 @@ function renderCoreWidget(
       return renderLazyComponent('UploadZone', getComponentProps(data));
 
     case 'ProductUpdateWidget':
-      console.warn('[Deprecated] ProductUpdateWidget is deprecated, use ProductUpdateWidgetV2');
-    // fallthrough
-    case 'ProductUpdateWidgetV2':
-      return renderLazyComponent('ProductUpdateWidgetV2', getComponentProps(data));
+      return renderLazyComponent('ProductUpdateWidget', getComponentProps(data));
+
+    case 'ProductUpdateWidgetV2': // 向後兼容
+      return renderLazyComponent('ProductUpdateWidget', getComponentProps(data));
 
     case 'SupplierUpdateWidget':
       return <SupplierUpdateWidget config={config} timeFrame={timeFrame} theme={theme} />;

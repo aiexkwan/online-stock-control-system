@@ -1,7 +1,7 @@
 /**
- * ACO Order Report Widget
- * 遷移至 REST API 架構，移除版本號
- * 使用 NestJS ACO API 端點進行數據獲取
+ * ACO Order Report Widget V2
+ * 使用 DashboardAPI + 服務器端優化
+ * 遷移自原 AcoOrderReportWidget
  */
 
 'use client';
@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select-radix';
 import { DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 import { useToast } from '@/components/ui/use-toast';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { exportAcoReport } from '@/lib/exportReport';
 import { cn } from '@/lib/utils';
 import { WidgetComponentProps } from '@/types/components/dashboard';
@@ -42,45 +43,7 @@ interface AcoProductData {
   pallet_count: number;
 }
 
-// REST API client for ACO endpoints
-const acoApiClient = {
-  async getReferences(): Promise<string[]> {
-    const response = await fetch('/api/v1/aco/references', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ACO references: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.references || [];
-  },
-
-  async getOrdersByDate(orderDate: string): Promise<Record<string, unknown>[]> {
-    const url = new URL('/api/v1/aco/orders-by-date', window.location.origin);
-    url.searchParams.append('orderDate', orderDate);
-
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ACO orders: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.records || [];
-  },
-};
-
-export function AcoOrderReportWidget({ widget, isEditMode }: WidgetComponentProps) {
+export function AcoOrderReportWidgetV2({ widget, isEditMode }: WidgetComponentProps) {
   const { toast } = useToast();
   const [acoOrders, setAcoOrders] = useState<string[]>([]);
   const [selectedAcoOrder, setSelectedAcoOrder] = useState<string>('');
@@ -97,42 +60,69 @@ export function AcoOrderReportWidget({ widget, isEditMode }: WidgetComponentProp
     setLoading(true);
     try {
       const startTime = performance.now();
+      const api = createDashboardAPI();
 
-      const refs = await acoApiClient.getReferences();
-      const endTime = performance.now();
-
-      setPerformanceMetrics({
-        apiResponseTime: Math.round(endTime - startTime),
-        optimized: true,
+      const result = await api.fetch({
+        widgetIds: ['aco_order_refs'],
+        params: {
+          limit: 100,
+          offset: 0,
+        },
       });
 
-      setAcoOrders(refs);
+      const endTime = performance.now();
+      setPerformanceMetrics({
+        apiResponseTime: Math.round(endTime - startTime),
+        optimized: false, // metadata doesn't have optimized property
+      });
 
-      // Set default selection to first available order
-      if (refs.length > 0 && !selectedAcoOrder) {
-        setSelectedAcoOrder(refs[0]);
+      // Check if widget data contains error
+      const widgetData = result.widgets?.[0]?.data;
+      if (
+        widgetData &&
+        typeof widgetData === 'object' &&
+        'error' in widgetData &&
+        widgetData.error
+      ) {
+        throw new Error(String(widgetData.error));
+      }
+
+      const widgetResultData = result.widgets?.[0]?.data;
+      const orderRefs =
+        (widgetResultData && typeof widgetResultData === 'object' && 'value' in widgetResultData
+          ? (widgetResultData.value as string[])
+          : []) || [];
+      setAcoOrders(orderRefs);
+
+      // Set default selection
+      if (orderRefs.length > 0 && !selectedAcoOrder) {
+        setSelectedAcoOrder(orderRefs[0]);
       }
     } catch (error) {
-      console.error('[AcoOrderReportWidget as string] Error fetching ACO orders:', error);
+      console.error('[AcoOrderReportWidgetV2] Error fetching ACO orders:', error);
       toast({
         title: 'Error',
-        description: 'Failed to fetch ACO order references',
+        description: 'Failed to fetch ACO orders',
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
-  }, [isEditMode, selectedAcoOrder, toast]);
+  }, [toast, selectedAcoOrder, isEditMode]);
 
+  // Fetch ACO orders on mount
   useEffect(() => {
-    fetchAcoOrders();
-  }, [fetchAcoOrders]);
+    if (!isEditMode) {
+      fetchAcoOrders();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode]);
 
   const handleGenerateReport = async () => {
     if (!selectedAcoOrder) {
       toast({
         title: 'No Order Selected',
-        description: 'Please select an ACO order date',
+        description: 'Please select an ACO order',
         variant: 'destructive',
       });
       return;
@@ -140,31 +130,57 @@ export function AcoOrderReportWidget({ widget, isEditMode }: WidgetComponentProp
 
     setIsGenerating(true);
     try {
-      // Get ACO orders for the selected date
-      const orderRecords = await acoApiClient.getOrdersByDate(selectedAcoOrder);
+      const startTime = performance.now();
+      const api = createDashboardAPI();
 
-      if (!orderRecords || orderRecords.length === 0) {
-        toast({
-          title: 'No Data',
-          description: 'No ACO order data found for the selected date',
-          variant: 'destructive',
-        });
-        return;
+      // Get report data from server
+      const result = await api.fetch({
+        widgetIds: ['aco_order_report'],
+        params: {
+          // Use a generic param or extend DashboardParams type
+          staticValue: parseInt(selectedAcoOrder, 10),
+          dataSource: 'aco_order_report',
+        },
+      });
+
+      const endTime = performance.now();
+      console.log(
+        `[AcoOrderReportWidgetV2] Server fetch time: ${Math.round(endTime - startTime)}ms`
+      );
+
+      // Check if widget data contains error
+      const fetchWidgetData = result.widgets?.[0]?.data;
+      if (
+        fetchWidgetData &&
+        typeof fetchWidgetData === 'object' &&
+        'error' in fetchWidgetData &&
+        fetchWidgetData.error
+      ) {
+        throw new Error(String(fetchWidgetData.error));
       }
 
-      // Transform data for export
-      const processedData = processOrderRecords(orderRecords);
-      const orderRef = String(orderRecords[0]?.aco_ref || 'N/A');
+      const reportWidgetData = result.widgets?.[0]?.data;
+      const reportData =
+        reportWidgetData && typeof reportWidgetData === 'object' && 'value' in reportWidgetData
+          ? (reportWidgetData.value as AcoProductData[])
+          : [];
 
-      // Export the report
-      await exportAcoReport(processedData, orderRef);
+      // Generate Excel report
+      await exportAcoReport(reportData, selectedAcoOrder);
 
       toast({
         title: 'Success',
-        description: 'ACO order report generated successfully',
+        description: `ACO order ${selectedAcoOrder} report generated successfully`,
       });
+
+      // Log performance metrics
+      if (result.metadata?.processingTime) {
+        console.log(
+          `[AcoOrderReportWidgetV2] Server-side processing: ${result.metadata.processingTime}ms`
+        );
+      }
     } catch (error) {
-      console.error('[AcoOrderReportWidget as string] Error generating report:', error);
+      console.error('[AcoOrderReportWidgetV2] Error generating report:', error);
       toast({
         title: 'Error',
         description:
@@ -178,110 +194,75 @@ export function AcoOrderReportWidget({ widget, isEditMode }: WidgetComponentProp
     }
   };
 
-  // Process order records to group by product code
-  const processOrderRecords = (records: Record<string, unknown>[]): AcoProductData[] => {
-    const productMap = new Map<string, AcoProductData>();
-
-    records.forEach(record => {
-      const productCode = typeof record.product_code === 'string' ? record.product_code : '';
-      if (!productCode) return;
-
-      if (!productMap.has(productCode)) {
-        productMap.set(productCode, {
-          product_code: productCode,
-          required_qty: typeof record.product_quantity === 'number' ? record.product_quantity : 0,
-          pallets: [],
-          pallet_count: 0,
-        });
-      }
-
-      const product = productMap.get(productCode)!;
-
-      // Add pallet info if available
-      if (record.plt_num) {
-        product.pallets.push({
-          plt_num: String(record.plt_num),
-          product_qty: typeof record.product_quantity === 'number' ? record.product_quantity : null,
-          generate_time: typeof record.created_at === 'string' ? record.created_at : null,
-        });
-        product.pallet_count = product.pallets.length;
-      }
-    });
-
-    return Array.from(productMap.values());
-  };
-
-  if (isEditMode) {
-    return (
-      <Card className={cn('h-full w-full', 'border-border bg-card/40')}>
-        <CardContent
-          className={cn('flex h-full items-center justify-center', widgetSpacing.container)}
-        >
-          <div className='text-center'>
-            <h3 className={cn(textClasses['body-medium'], 'font-semibold text-foreground')}>
-              ACO Order Report
-            </h3>
-            <p className={cn(textClasses['body-small'], 'text-muted-foreground')}>
-              Generate ACO order reports
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card className={cn('h-full w-full border-border bg-card/40')}>
-      <CardContent className={cn('h-full', widgetSpacing.container)}>
+    <Card
+      className={cn(
+        'h-full bg-card/50 backdrop-blur-xl',
+        'border border-border',
+        'shadow-[0_0_30px_rgba(0,0,0,0.3)]',
+        'transition-all duration-300',
+        'hover:shadow-[0_0_40px_rgba(0,0,0,0.4)]',
+        'overflow-visible'
+      )}
+    >
+      <CardContent className='flex h-full flex-col p-4'>
         <div className='flex h-full flex-col'>
-          {/* Header */}
-          <div className='flex-shrink-0 pb-4'>
-            <h3 className={cn(textClasses['body-small'], 'font-semibold text-foreground')}>
-              ACO Order Report
-            </h3>
-            <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>
-              Generate and download ACO order reports
-            </p>
+          {/* Title */}
+          <div className='mb-3 flex items-center justify-between'>
+            <div className={cn('flex items-center gap-2')}>
+              <DocumentArrowDownIcon
+                className='h-5 w-5'
+                style={{ color: semanticColors.info.DEFAULT }}
+              />
+              <h3 className={cn(textClasses['body-small'], 'font-semibold text-foreground')}>
+                ACO Order Report
+              </h3>
+            </div>
+            {performanceMetrics.apiResponseTime && (
+              <span className={cn(textClasses['label-small'], 'text-muted-foreground')}>
+                {performanceMetrics.apiResponseTime}ms
+                {performanceMetrics.optimized && ' (optimized)'}
+              </span>
+            )}
           </div>
 
-          {/* Main Content */}
-          <div className='flex flex-1 flex-col justify-between'>
-            {/* Order Selection */}
-            <div className='space-y-4'>
-              <div className='space-y-2'>
-                <Label className={cn(textClasses['label-medium'], 'text-foreground')}>
-                  Order Date
+          {/* Content */}
+          <div className='flex flex-1 items-center'>
+            <div className='flex w-full items-center gap-3'>
+              {/* ACO Order Selector */}
+              <div className='flex-1'>
+                <Label htmlFor='aco-order' className='sr-only'>
+                  ACO Order
                 </Label>
                 <Select
                   value={selectedAcoOrder}
                   onValueChange={value => setSelectedAcoOrder(value)}
-                  disabled={loading || acoOrders.length === 0}
+                  disabled={isEditMode || loading || acoOrders.length === 0}
                 >
                   <SelectTrigger
+                    id='aco-order'
                     className={cn(
-                      'w-full',
-                      'bg-background/50 hover:bg-background/70',
-                      'border-border hover:border-border/80',
-                      'text-foreground',
-                      textClasses['body-small']
+                      'h-9 w-full border-input bg-background',
+                      textClasses['body-small'],
+                      'text-foreground'
                     )}
                   >
                     <SelectValue
                       placeholder={
                         loading
-                          ? 'Loading orders...'
+                          ? 'Loading...'
                           : acoOrders.length === 0
-                            ? 'No orders available'
-                            : 'Select order date'
+                            ? 'No ACO orders'
+                            : 'Select ACO order'
                       }
                     />
                   </SelectTrigger>
-                  <SelectContent className='border-border bg-card'>
-                    {acoOrders.map(order => (
+                  <SelectContent className={cn('border-border bg-card')}>
+                    {acoOrders.map((order: string) => (
                       <SelectItem
                         key={order}
                         value={order}
-                        className={cn('text-foreground hover:bg-accent', textClasses['body-small'])}
+                        className={cn(textClasses['body-small'], 'text-foreground hover:bg-accent')}
                       >
                         {order}
                       </SelectItem>
@@ -290,62 +271,58 @@ export function AcoOrderReportWidget({ widget, isEditMode }: WidgetComponentProp
                 </Select>
               </div>
 
-              {loading && (
-                <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>
-                  Loading ACO orders...
-                </p>
-              )}
-
-              {!loading && acoOrders.length === 0 && (
-                <p className={cn(textClasses['label-small'], 'text-muted-foreground')}>
-                  No ACO orders found
-                </p>
-              )}
-            </div>
-
-            {/* Action Button */}
-            <div className='flex-shrink-0 pt-4'>
+              {/* Generate Button */}
               <Button
                 onClick={handleGenerateReport}
-                disabled={!selectedAcoOrder || isGenerating || loading}
-                size='sm'
+                disabled={
+                  isEditMode ||
+                  loading ||
+                  isGenerating ||
+                  acoOrders.length === 0 ||
+                  !selectedAcoOrder
+                }
                 className={cn(
-                  'w-full gap-2',
-                  'bg-gradient-to-r',
+                  'h-9 px-3',
                   getWidgetCategoryColor('reports', 'gradient'),
+                  textClasses['body-small'],
                   'font-medium text-primary-foreground',
+                  'border-0',
                   'transition-all duration-200',
-                  textClasses['body-small']
+                  'disabled:bg-muted disabled:text-muted-foreground'
                 )}
               >
                 {isGenerating ? (
                   <>
-                    <div className='h-1 w-4 bg-current rounded-full opacity-75' />
+                    <span className='mr-2 h-1 w-6 bg-white/60 rounded-full inline-block' />
                     Generating...
                   </>
                 ) : (
-                  <>
-                    <DocumentArrowDownIcon className='h-4 w-4' />
-                    Generate Report
-                  </>
+                  'Generate Report'
                 )}
               </Button>
             </div>
-
-            {/* Performance Indicator */}
-            {performanceMetrics.optimized && performanceMetrics.apiResponseTime && (
-              <div
-                className={cn('mt-2 text-right', textClasses['label-small'])}
-                style={{ color: semanticColors.success.DEFAULT }}
-              >
-                ✓ REST API optimized ({performanceMetrics.apiResponseTime}ms)
-              </div>
-            )}
           </div>
+
+          {/* Helper Text */}
+          {acoOrders.length === 0 && !loading && (
+            <p className={cn('mt-2', textClasses['label-small'], 'text-muted-foreground')}>
+              No ACO order data available
+            </p>
+          )}
+
+          {/* Performance indicator */}
+          {performanceMetrics.optimized && (
+            <div
+              className={cn('mt-2 text-center', textClasses['label-small'])}
+              style={{ color: semanticColors.success.DEFAULT }}
+            >
+              ✓ Server-side optimized
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
   );
 }
 
-export default AcoOrderReportWidget;
+export default AcoOrderReportWidgetV2;

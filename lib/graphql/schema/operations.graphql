@@ -1,0 +1,435 @@
+# Operations GraphQL Schema
+# 操作相關類型定義（轉移、訂單、歷史記錄等）
+
+# 轉移記錄類型 (from record_transfer)
+type Transfer {
+  # 基本資料
+  id: ID!
+  transferNumber: String!
+  pltNum: String!
+  pallet: Pallet!
+  
+  # 轉移詳情
+  fromLocation: Location!
+  toLocation: Location!
+  quantity: Int!
+  status: TransferStatus!
+  
+  # 時間資料
+  requestedAt: DateTime!
+  startedAt: DateTime
+  completedAt: DateTime
+  estimatedDuration: Int
+  actualDuration: Int
+  
+  # 人員資料
+  requestedBy: User!
+  executedBy: User
+  approvedBy: User
+  
+  # 元數據
+  reason: String
+  notes: String
+  priority: TransferPriority
+}
+
+enum TransferPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+# 訂單類型 (from data_order)
+type Order {
+  # 基本資料
+  id: ID!
+  orderNumber: String!
+  customerCode: String!
+  customer: Customer!
+  
+  # 訂單詳情
+  items: [OrderItem!]!
+  totalItems: Int!
+  totalQuantity: Int!
+  totalValue: Float!
+  
+  # 狀態
+  status: OrderStatus!
+  paymentStatus: PaymentStatus
+  shippingStatus: ShippingStatus
+  
+  # 日期
+  orderDate: DateTime!
+  requiredDate: DateTime
+  shippedDate: DateTime
+  deliveredDate: DateTime
+  
+  # 配送資料
+  shippingAddress: Address!
+  billingAddress: Address
+  trackingNumber: String
+  
+  # 元數據
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  createdBy: User!
+}
+
+type OrderItem {
+  productCode: String!
+  product: Product!
+  quantity: Int!
+  unitPrice: Float!
+  totalPrice: Float!
+  allocatedPallets: [Pallet!]
+  status: OrderItemStatus!
+}
+
+enum OrderItemStatus {
+  PENDING
+  ALLOCATED
+  PICKING
+  PACKED
+  SHIPPED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  PARTIAL
+  REFUNDED
+  CANCELLED
+}
+
+enum ShippingStatus {
+  PENDING
+  PREPARING
+  READY
+  SHIPPED
+  IN_TRANSIT
+  DELIVERED
+  RETURNED
+}
+
+# 客戶類型
+type Customer {
+  id: ID!
+  code: String!
+  name: String!
+  contact: String
+  email: String
+  phone: String
+  creditLimit: Float
+  currentBalance: Float
+  orders: [Order!]
+}
+
+# 地址類型
+type Address {
+  street: String!
+  city: String!
+  state: String
+  postalCode: String!
+  country: String!
+}
+
+# 歷史記錄類型 (from record_history)
+type HistoryRecord {
+  id: ID!
+  recordType: HistoryType!
+  action: String!
+  
+  # 相關實體
+  entityType: String!
+  entityId: String!
+  entityData: JSON
+  
+  # 變更資料
+  previousValue: JSON
+  newValue: JSON
+  changes: [FieldChange!]
+  
+  # 元數據
+  timestamp: DateTime!
+  performedBy: User!
+  ipAddress: String
+  userAgent: String
+  notes: String
+}
+
+type FieldChange {
+  field: String!
+  oldValue: JSON
+  newValue: JSON
+}
+
+enum HistoryType {
+  PRODUCT
+  PALLET
+  INVENTORY
+  TRANSFER
+  ORDER
+  GRN
+  USER
+  SYSTEM
+}
+
+# 工作量類型 (from work_level)
+type WorkLevel {
+  # 基本資料
+  userId: ID!
+  user: User!
+  date: DateTime!
+  
+  # 工作統計
+  totalTransfers: Int!
+  totalPalletsHandled: Int!
+  totalQuantityMoved: Int!
+  averageTransferTime: Float!
+  
+  # 效率指標
+  efficiency: Float!
+  productivityScore: Float!
+  errorRate: Float!
+  
+  # 詳細分解
+  transfersByHour: [HourlyBreakdown!]!
+  transfersByLocation: [LocationBreakdown!]!
+}
+
+type HourlyBreakdown {
+  hour: Int!
+  count: Int!
+  quantity: Int!
+}
+
+type LocationBreakdown {
+  location: Location!
+  count: Int!
+  quantity: Int!
+}
+
+# 用戶類型
+type User {
+  id: ID!
+  email: String!
+  name: String!
+  role: UserRole!
+  department: String
+  isActive: Boolean!
+  lastLogin: DateTime
+  createdAt: DateTime!
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  SUPERVISOR
+  OPERATOR
+  VIEWER
+}
+
+# 連接類型（分頁）
+type TransferConnection {
+  edges: [TransferEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type TransferEdge {
+  cursor: String!
+  node: Transfer!
+}
+
+type OrderConnection {
+  edges: [OrderEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type OrderEdge {
+  cursor: String!
+  node: Order!
+}
+
+# 過濾輸入
+input TransferFilterInput {
+  transferNumber: String
+  pltNum: String
+  fromLocation: String
+  toLocation: String
+  status: TransferStatus
+  dateRange: DateRangeInput
+  executedBy: ID
+}
+
+input OrderFilterInput {
+  orderNumber: String
+  customerCode: String
+  status: OrderStatus
+  dateRange: DateRangeInput
+  minValue: Float
+  maxValue: Float
+}
+
+input HistoryFilterInput {
+  recordType: HistoryType
+  entityType: String
+  entityId: String
+  performedBy: ID
+  dateRange: DateRangeInput
+  action: String
+}
+
+# 統一操作數據類型
+type UnifiedOperationsData implements WidgetData {
+  transfers: [Transfer!]!
+  orders: [Order!]!
+  pallets: [Pallet!]!
+  workLevels: [WorkLevel!]!
+  
+  # 統計摘要
+  summary: OperationsSummary!
+  
+  # Widget 元數據
+  lastUpdated: DateTime!
+  refreshInterval: Int
+  dataSource: String!
+}
+
+type OperationsSummary {
+  totalTransfers: Int!
+  totalOrders: Int!
+  totalPallets: Int!
+  activeUsers: Int!
+  averageEfficiency: Float!
+}
+
+# 查詢
+extend type Query {
+  # 轉移查詢
+  transfer(id: ID!): Transfer
+  transfers(
+    filter: TransferFilterInput
+    pagination: PaginationInput
+    sort: SortInput
+  ): TransferConnection!
+  
+  # 訂單查詢
+  order(orderNumber: String!): Order
+  orders(
+    filter: OrderFilterInput
+    pagination: PaginationInput
+    sort: SortInput
+  ): OrderConnection!
+  
+  # 歷史查詢
+  historyRecords(
+    filter: HistoryFilterInput
+    pagination: PaginationInput
+  ): [HistoryRecord!]!
+  
+  # 工作量查詢
+  workLevel(
+    userId: ID!
+    date: DateTime!
+  ): WorkLevel
+  
+  workLevels(
+    dateRange: DateRangeInput
+    userIds: [ID!]
+  ): [WorkLevel!]!
+  
+  # 統一操作數據
+  unifiedOperations(
+    warehouse: String
+    dateRange: DateRangeInput
+  ): UnifiedOperationsData!
+  
+  # 客戶查詢
+  customer(code: String!): Customer
+  customers(
+    filter: CustomerFilterInput
+    pagination: PaginationInput
+  ): [Customer!]!
+}
+
+# 變更
+extend type Mutation {
+  # 轉移操作
+  createTransfer(input: CreateTransferInput!): Transfer!
+  updateTransferStatus(
+    id: ID!
+    status: TransferStatus!
+    notes: String
+  ): Transfer!
+  cancelTransfer(id: ID!, reason: String!): Transfer!
+  
+  # 訂單操作
+  createOrder(input: CreateOrderInput!): Order!
+  updateOrderStatus(
+    orderNumber: String!
+    status: OrderStatus!
+  ): Order!
+  allocateOrderItems(
+    orderNumber: String!
+    allocations: [OrderAllocationInput!]!
+  ): Order!
+  shipOrder(
+    orderNumber: String!
+    trackingNumber: String!
+  ): Order!
+  
+  # 批量操作
+  batchTransfer(
+    pallets: [String!]!
+    toLocation: String!
+    reason: String
+  ): BatchResult!
+}
+
+# 輸入類型
+input CreateTransferInput {
+  pltNum: String!
+  toLocation: String!
+  quantity: Int!
+  reason: String
+  priority: TransferPriority
+}
+
+input CreateOrderInput {
+  customerCode: String!
+  items: [OrderItemInput!]!
+  requiredDate: DateTime
+  shippingAddress: AddressInput!
+  billingAddress: AddressInput
+  notes: String
+}
+
+input OrderItemInput {
+  productCode: String!
+  quantity: Int!
+  unitPrice: Float!
+}
+
+input AddressInput {
+  street: String!
+  city: String!
+  state: String
+  postalCode: String!
+  country: String!
+}
+
+input OrderAllocationInput {
+  productCode: String!
+  palletNumbers: [String!]!
+  quantities: [Int!]!
+}
+
+input CustomerFilterInput {
+  code: String
+  name: String
+  minBalance: Float
+  maxBalance: Float
+}

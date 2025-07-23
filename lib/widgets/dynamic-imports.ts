@@ -71,6 +71,10 @@ export const coreWidgetImports: Record<string, ComponentImport> = {
   HistoryTreeV2: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/HistoryTreeV2')
   ),
+  // GraphQL Version - Phase 2 Migration
+  HistoryTreeV2GraphQL: wrapDefaultExport(
+    () => import('@/app/(app)/admin/components/dashboard/widgets/HistoryTreeV2GraphQL')
+  ),
   AdminWidgetRenderer: wrapNamedExport(
     () => import('@/app/(app)/admin/components/dashboard/AdminWidgetRenderer'),
     'AdminWidgetRenderer'
@@ -101,8 +105,8 @@ export const statsWidgetImports: Record<string, ComponentImport> = {
 
 // Charts Widgets - 策略 2: 標準化導入格式
 export const chartsWidgetImports: Record<string, ComponentImport> = {
-  StockDistributionChartV2: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/StockDistributionChartV2')
+  StockDistributionChart: wrapDefaultExport(
+    () => import('@/app/(app)/admin/components/dashboard/widgets/StockDistributionChart')
   ),
   StockLevelHistoryChart: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/StockLevelHistoryChart')
@@ -112,6 +116,9 @@ export const chartsWidgetImports: Record<string, ComponentImport> = {
   ),
   InventoryOrderedAnalysisWidget: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget')
+  ),
+  InventoryOrderedAnalysisWidgetGraphQL: wrapDefaultExport(
+    () => import('@/app/(app)/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidgetGraphQL')
   ),
   TopProductsInventoryChart: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/charts/TopProductsInventoryChart')
@@ -124,25 +131,19 @@ export const chartsWidgetImports: Record<string, ComponentImport> = {
 // Lists Widgets - 策略 2: 標準化導入格式
 export const listsWidgetImports: Record<string, ComponentImport> = {
   OrdersListWidget: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/OrdersListWidgetV2')
+    () => import('@/app/(app)/admin/components/dashboard/widgets/OrdersListWidget')
   ),
-  OrdersListWidgetV2: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/OrdersListWidgetV2')
+  OrdersListWidget: wrapDefaultExport(
+    () => import('@/app/(app)/admin/components/dashboard/widgets/OrdersListWidget')
   ),
   OtherFilesListWidget: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/OtherFilesListWidgetV2')
-  ),
-  OtherFilesListWidgetV2: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/OtherFilesListWidgetV2')
+    () => import('@/app/(app)/admin/components/dashboard/widgets/OtherFilesListWidget')
   ),
   WarehouseTransferListWidget: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/WarehouseTransferListWidget')
   ),
   OrderStateListWidget: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/OrderStateListWidgetV2')
-  ),
-  OrderStateListWidgetV2: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/OrderStateListWidgetV2')
+    () => import('@/app/(app)/admin/components/dashboard/widgets/OrderStateListWidget')
   ),
 };
 
@@ -151,14 +152,11 @@ export const operationsWidgetImports: Record<string, ComponentImport> = {
   VoidPalletWidget: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/VoidPalletWidget')
   ),
-  ProductUpdateWidgetV2: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/ProductUpdateWidgetV2')
+  ProductUpdateWidget: wrapDefaultExport(
+    () => import('@/app/(app)/admin/components/dashboard/widgets/ProductUpdateWidget')
   ),
   SupplierUpdateWidget: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/SupplierUpdateWidgetV2')
-  ),
-  SupplierUpdateWidgetV2: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/SupplierUpdateWidgetV2')
+    () => import('@/app/(app)/admin/components/dashboard/widgets/SupplierUpdateWidget')
   ),
   StockTypeSelector: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/StockTypeSelector')
@@ -171,10 +169,7 @@ export const operationsWidgetImports: Record<string, ComponentImport> = {
 // Uploads Widgets - 策略 2: 標準化導入格式
 export const uploadsWidgetImports: Record<string, ComponentImport> = {
   UploadOrdersWidget: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/UploadOrdersWidgetV2')
-  ),
-  UploadOrdersWidgetV2: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/UploadOrdersWidgetV2')
+    () => import('@/app/(app)/admin/components/dashboard/widgets/UploadOrdersWidget')
   ),
   UploadFilesWidget: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/UploadFilesWidget')
@@ -198,26 +193,17 @@ export const reportsWidgetImports: Record<string, ComponentImport> = {
   GrnReportWidget: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/GrnReportWidget')
   ),
-  GrnReportWidgetV2: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/GrnReportWidgetV2')
-  ),
   AcoOrderReportWidget: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/AcoOrderReportWidget')
-  ),
-  AcoOrderReportWidgetV2: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/AcoOrderReportWidgetV2')
   ),
   ReprintLabelWidget: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/ReprintLabelWidget')
   ),
   ReportGeneratorWidget: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2')
+    () => import('@/app/(app)/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidget')
   ),
   ReportGeneratorWithDialogWidget: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2')
-  ),
-  ReportGeneratorWithDialogWidgetV2: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidgetV2')
+    () => import('@/app/(app)/admin/components/dashboard/widgets/ReportGeneratorWithDialogWidget')
   ),
 };
 
@@ -233,10 +219,7 @@ export const analysisWidgetImports: Record<string, ComponentImport> = {
     () => import('@/app/(app)/admin/components/dashboard/charts/AcoOrderProgressCards')
   ),
   AnalysisPagedWidget: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/AnalysisPagedWidgetV2')
-  ),
-  AnalysisPagedWidgetV2: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/AnalysisPagedWidgetV2')
+    () => import('@/app/(app)/admin/components/dashboard/widgets/AnalysisPagedWidget')
   ),
 };
 
@@ -258,6 +241,10 @@ export const productionWidgetImports: Record<string, ComponentImport> = {
   ),
   TopProductsByQuantityWidget: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/TopProductsByQuantityWidget')
+  ),
+  // GraphQL Version - Phase 2 Migration
+  TopProductsByQuantityWidgetGraphQL: wrapDefaultExport(
+    () => import('@/app/(app)/admin/components/dashboard/widgets/TopProductsByQuantityWidgetGraphQL')
   ),
   ProductDistributionChartWidget: wrapNamedExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/ProductDistributionChartWidget'),

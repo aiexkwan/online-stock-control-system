@@ -1,0 +1,164 @@
+# Main GraphQL Schema
+# NewPennine Warehouse Management System
+# This file combines all schema modules
+
+# Import all schema modules
+# Note: In production, use GraphQL schema stitching or federation
+# For now, we'll combine them programmatically
+
+# Root Query Type
+type Query {
+  # Health check
+  health: SystemStatus!
+  
+  # Widget data sources - unified entry point
+  widgetData(
+    dataSource: String!
+    params: JSON
+    timeFrame: DateRangeInput
+  ): JSON!
+  
+  # Batch widget data fetch
+  batchWidgetData(
+    requests: [WidgetDataRequest!]!
+  ): [WidgetDataResponse!]!
+}
+
+# Root Mutation Type
+type Mutation {
+  # System operations
+  refreshCache(dataSource: String!): Boolean!
+  clearCache: Boolean!
+  
+  # Batch operations
+  batchOperation(
+    operations: [BatchOperationInput!]!
+  ): BatchOperationResult!
+}
+
+# Root Subscription Type (for future real-time features)
+type Subscription {
+  # Real-time inventory updates
+  inventoryUpdated(productCodes: [String!]): Inventory!
+  
+  # Real-time transfer status
+  transferStatusChanged(transferIds: [ID!]): Transfer!
+  
+  # Real-time order updates
+  orderStatusChanged(orderNumbers: [String!]): Order!
+  
+  # System alerts
+  systemAlert(severity: AlertSeverity): SystemAlert!
+}
+
+# Widget data request/response types
+input WidgetDataRequest {
+  widgetId: String!
+  dataSource: String!
+  params: JSON
+  timeFrame: DateRangeInput
+}
+
+type WidgetDataResponse {
+  widgetId: String!
+  data: JSON
+  error: Error
+  source: DataSourceType!
+  executionTime: Float!
+  cached: Boolean!
+}
+
+enum DataSourceType {
+  REST
+  GRAPHQL
+  CACHE
+  AUTO
+}
+
+# Batch operation types
+input BatchOperationInput {
+  operationType: OperationType!
+  entityType: String!
+  entityIds: [ID!]!
+  data: JSON!
+}
+
+type BatchOperationResult {
+  successful: [OperationResult!]!
+  failed: [OperationResult!]!
+  totalProcessed: Int!
+  totalSucceeded: Int!
+  totalFailed: Int!
+}
+
+type OperationResult {
+  entityId: ID!
+  success: Boolean!
+  error: Error
+  data: JSON
+}
+
+enum OperationType {
+  CREATE
+  UPDATE
+  DELETE
+  TRANSFER
+  ADJUST
+  VOID
+}
+
+# System alert types
+type SystemAlert {
+  id: ID!
+  severity: AlertSeverity!
+  type: AlertType!
+  message: String!
+  details: JSON
+  timestamp: DateTime!
+  acknowledged: Boolean!
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+enum AlertType {
+  INVENTORY_LOW
+  TRANSFER_DELAYED
+  QUALITY_ISSUE
+  SYSTEM_ERROR
+  PERFORMANCE_DEGRADATION
+  SECURITY_ALERT
+}
+
+# Schema directives
+directive @auth(
+  requires: UserRole = VIEWER
+) on FIELD_DEFINITION
+
+directive @rateLimit(
+  max: Int!
+  window: String!
+) on FIELD_DEFINITION
+
+directive @cache(
+  ttl: Int!
+  scope: CacheScope = PUBLIC
+) on FIELD_DEFINITION
+
+enum CacheScope {
+  PUBLIC
+  PRIVATE
+  USER
+}
+
+# Export schema modules (for code generation)
+# Include all type definitions from:
+# - base.graphql
+# - product.graphql
+# - inventory.graphql
+# - operations.graphql
+# - analytics.graphql

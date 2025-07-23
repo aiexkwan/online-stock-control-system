@@ -54,6 +54,31 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     },
   },
 
+  // GraphQL Version - Phase 2 Migration
+  HistoryTreeV2GraphQL: {
+    id: 'HistoryTreeV2GraphQL',
+    name: 'History Tree V2 (GraphQL)',
+    category: 'core',
+    description: 'System operations history with hierarchical structure using GraphQL - optimized performance',
+    lazyLoad: true,
+    preloadPriority: 9, // Higher priority than REST version
+    loader: () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/HistoryTreeV2GraphQL').then(module => ({
+        default: module.default,
+      })),
+    metadata: {
+      dataSource: 'history_tree', // GraphQL data source
+      refreshInterval: false, // 🛑 禁用自動刷新
+      supportsFilters: true,
+      supportDateRange: true,
+      cacheEnabled: true,
+      realtimeUpdates: true,
+      graphqlQuery: true, // Flag to indicate GraphQL usage
+      migrationPhase: 'phase2', // Track migration status
+      originalWidget: 'HistoryTreeV2', // Reference to original
+    },
+  },
+
   // Stats Widgets
   AwaitLocationQtyWidget: {
     id: 'AwaitLocationQtyWidget',
@@ -125,16 +150,16 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
   },
 
   // Chart Widgets
-  StockDistributionChartV2: {
-    id: 'StockDistributionChartV2',
-    name: 'Stock Distribution Chart V2',
+  StockDistributionChart: {
+    id: 'StockDistributionChart',
+    name: 'Stock Distribution Chart',
     category: 'charts',
     description: 'Enhanced stock distribution visualization',
     lazyLoad: true,
     preloadPriority: 8,
     loader: () =>
-      import('@/app/(app)/admin/components/dashboard/widgets/StockDistributionChartV2').then(module => ({
-        default: module.default || module.StockDistributionChartV2,
+      import('@/app/(app)/admin/components/dashboard/widgets/StockDistributionChart').then(module => ({
+        default: module.default || module.StockDistributionChart,
       })),
     metadata: {
       dataSource: 'record_inventory',
@@ -228,6 +253,33 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     },
   },
 
+  // GraphQL Version - Phase 2 Migration
+  TopProductsByQuantityWidgetGraphQL: {
+    id: 'TopProductsByQuantityWidgetGraphQL',
+    name: 'Top Products By Quantity (GraphQL)',
+    category: 'charts',
+    description: 'Top products ranked by quantity using GraphQL - optimized performance with DataLoader batching',
+    lazyLoad: true,
+    preloadPriority: 6, // Higher priority than REST version
+    loader: () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/TopProductsByQuantityWidgetGraphQL').then(module => ({
+        default: module.default,
+      })),
+    metadata: {
+      dataSource: 'top_products_by_quantity', // GraphQL data source
+      chartType: 'bar',
+      exportFormats: ['png', 'pdf'],
+      refreshInterval: false, // 🛑 禁用自動刷新
+      supportDateRange: true,
+      supportsFilters: true,
+      cacheEnabled: true,
+      realtimeUpdates: false,
+      graphqlQuery: true, // Flag to indicate GraphQL usage
+      migrationPhase: 'phase2', // Track migration status
+      originalWidget: 'TopProductsByQuantityWidget', // Reference to original
+    },
+  },
+
   TopProductsDistributionWidget: {
     id: 'TopProductsDistributionWidget',
     name: 'Top Products Distribution',
@@ -245,9 +297,9 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
   },
 
   // List Widgets
-  OrdersListWidgetV2: {
-    id: 'OrdersListWidgetV2',
-    name: 'Orders List V2',
+  OrdersListWidget: {
+    id: 'OrdersListWidget',
+    name: 'Orders List',
     category: 'lists',
     description: 'Enhanced orders listing',
     lazyLoad: true,
@@ -261,9 +313,9 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     },
   },
 
-  OtherFilesListWidgetV2: {
-    id: 'OtherFilesListWidgetV2',
-    name: 'Other Files List V2',
+  OtherFilesListWidget: {
+    id: 'OtherFilesListWidget',
+    name: 'Other Files List',
     category: 'lists',
     description: 'Enhanced other files listing',
     lazyLoad: true,
@@ -292,9 +344,9 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     },
   },
 
-  OrderStateListWidgetV2: {
-    id: 'OrderStateListWidgetV2',
-    name: 'Order State List V2',
+  OrderStateListWidget: {
+    id: 'OrderStateListWidget',
+    name: 'Order State List',
     category: 'lists',
     description: 'Enhanced order state listing',
     lazyLoad: true,
@@ -323,9 +375,9 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     },
   },
 
-  ProductUpdateWidgetV2: {
-    id: 'ProductUpdateWidgetV2',
-    name: 'Product Update Widget V2',
+  ProductUpdateWidget: {
+    id: 'ProductUpdateWidget',
+    name: 'Product Update Widget',
     category: 'operations',
     description: 'Enhanced product updating interface',
     lazyLoad: true,
@@ -337,9 +389,9 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     },
   },
 
-  SupplierUpdateWidgetV2: {
-    id: 'SupplierUpdateWidgetV2',
-    name: 'Supplier Update Widget V2',
+  SupplierUpdateWidget: {
+    id: 'SupplierUpdateWidget',
+    name: 'Supplier Update Widget',
     category: 'operations',
     description: 'Enhanced supplier updating interface',
     lazyLoad: true,
@@ -364,9 +416,9 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
   },
 
   // Upload Widgets
-  UploadOrdersWidgetV2: {
-    id: 'UploadOrdersWidgetV2',
-    name: 'Upload Orders Widget V2',
+  UploadOrdersWidget: {
+    id: 'UploadOrdersWidget',
+    name: 'Upload Orders Widget',
     category: 'operations',
     description: 'Enhanced orders upload interface',
     lazyLoad: true,
@@ -426,10 +478,33 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     },
   },
 
+  // GraphQL Version - Phase 2 Migration
+  InventoryOrderedAnalysisWidgetGraphQL: {
+    id: 'InventoryOrderedAnalysisWidgetGraphQL',
+    name: 'Inventory Ordered Analysis (GraphQL)',
+    category: 'analysis',
+    description: 'Analysis of ordered inventory using GraphQL - optimized performance',
+    lazyLoad: true,
+    preloadPriority: 6, // Higher priority than REST version
+    loader: () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidgetGraphQL').then(module => ({
+        default: module.default,
+      })),
+    metadata: {
+      dataSource: 'inventory_ordered_analysis', // GraphQL data source
+      refreshInterval: false, // 🛑 禁用自動刷新
+      supportDateRange: true,
+      exportFormats: ['csv', 'excel', 'pdf'],
+      graphqlQuery: true, // Flag to indicate GraphQL usage
+      migrationPhase: 'phase2', // Track migration status
+      originalWidget: 'InventoryOrderedAnalysisWidget', // Reference to original
+    },
+  },
+
   // Reports Widgets
-  ReportGeneratorWithDialogWidgetV2: {
-    id: 'ReportGeneratorWithDialogWidgetV2',
-    name: 'Report Generator With Dialog V2',
+  ReportGeneratorWithDialogWidget: {
+    id: 'ReportGeneratorWithDialogWidget',
+    name: 'Report Generator With Dialog',
     category: 'reports',
     description: 'Enhanced report generator with dialog',
     lazyLoad: true,
@@ -454,6 +529,41 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
       exportFormats: ['pdf', 'excel'],
     },
   },
+
+  // GraphQL POC Widget
+  StockLevelPOCWidget: {
+    id: 'StockLevelPOCWidget',
+    name: 'Stock Level POC (GraphQL)',
+    category: 'stats',
+    description: 'Proof of Concept for GraphQL migration using UnifiedDataLayer',
+    lazyLoad: true,
+    preloadPriority: 8,
+    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/StockLevelPOCWidget'),
+    metadata: {
+      dataSource: 'stock_levels',
+      refreshInterval: false,
+      supportsFilters: true,
+      supportDateRange: true,
+      requiresAuth: true,
+      cacheEnabled: true,
+    },
+  },
+
+  // Data Source Monitoring Widget
+  DataSourceMonitorWidget: {
+    id: 'DataSourceMonitorWidget',
+    name: 'Data Source Monitor',
+    category: 'operations',
+    description: 'Monitor REST and GraphQL API performance and switching strategies',
+    lazyLoad: true,
+    preloadPriority: 5,
+    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/DataSourceMonitorWidget'),
+    metadata: {
+      refreshInterval: false, // 內部自動刷新
+      requiresAuth: true,
+      cacheEnabled: false, // 即時數據
+    },
+  },
 };
 
 /**
@@ -463,29 +573,29 @@ export const ROUTE_PRELOAD_MAP: Record<string, string[]> = {
   '/admin/warehouse': [
     'AwaitLocationQtyWidget',
     'WarehouseTransferListWidget',
-    'StockDistributionChartV2',
+    'StockDistributionChart',
     'StillInAwaitWidget',
   ],
   '/admin/injection': ['HistoryTreeV2', 'StatsCardWidget', 'ProductDistributionChartWidget'],
   '/admin/pipeline': [
     'WarehouseWorkLevelAreaChart',
-    'OrdersListWidgetV2',
-    'OrderStateListWidgetV2',
+    'OrdersListWidget',
+    'OrderStateListWidget',
   ],
   '/admin/upload': [
-    'UploadOrdersWidgetV2',
+    'UploadOrdersWidget',
     'UploadFilesWidget',
-    'OrdersListWidgetV2',
-    'OtherFilesListWidgetV2',
+    'OrdersListWidget',
+    'OtherFilesListWidget',
   ],
-  '/admin/update': ['ProductUpdateWidgetV2', 'SupplierUpdateWidgetV2', 'VoidPalletWidget'],
+  '/admin/update': ['ProductUpdateWidget', 'SupplierUpdateWidget', 'VoidPalletWidget'],
   '/admin/stock-management': [
-    'StockDistributionChartV2',
+    'StockDistributionChart',
     'StockLevelHistoryChart',
     'InventoryOrderedAnalysisWidget',
   ],
   '/admin/system': [
-    'ReportGeneratorWithDialogWidgetV2',
+    'ReportGeneratorWithDialogWidget',
     'ReprintLabelWidget',
     'TransactionReportWidget',
   ],

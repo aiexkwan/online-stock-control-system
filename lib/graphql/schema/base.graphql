@@ -1,0 +1,133 @@
+# Base GraphQL Schema - Core Types
+# NewPennine Warehouse Management System
+
+scalar DateTime
+scalar JSON
+
+# 基礎枚舉類型
+enum LocationType {
+  INJECTION
+  PIPELINE
+  PREBOOK
+  AWAIT
+  FOLD
+  BULK
+  BACKCARPARK
+  DAMAGE
+}
+
+enum TransferStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderStatus {
+  DRAFT
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+# 分頁相關類型
+input PaginationInput {
+  page: Int = 1
+  limit: Int = 20
+  offset: Int
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  totalCount: Int!
+  totalPages: Int!
+  currentPage: Int!
+}
+
+# 日期範圍輸入
+input DateRangeInput {
+  start: DateTime!
+  end: DateTime!
+}
+
+# 排序輸入
+input SortInput {
+  field: String!
+  direction: SortDirection!
+}
+
+enum SortDirection {
+  ASC
+  DESC
+}
+
+# 通用過濾輸入
+input FilterInput {
+  field: String!
+  operator: FilterOperator!
+  value: JSON!
+}
+
+enum FilterOperator {
+  EQ
+  NEQ
+  GT
+  GTE
+  LT
+  LTE
+  IN
+  NOT_IN
+  CONTAINS
+  NOT_CONTAINS
+  BETWEEN
+  IS_NULL
+  IS_NOT_NULL
+}
+
+# 統計相關類型
+type StatMetric {
+  name: String!
+  value: Float!
+  unit: String
+  change: Float
+  changeType: ChangeType
+}
+
+enum ChangeType {
+  INCREASE
+  DECREASE
+  STABLE
+}
+
+# Widget 數據源類型
+interface WidgetData {
+  lastUpdated: DateTime!
+  refreshInterval: Int
+  dataSource: String!
+}
+
+# 錯誤處理
+type Error {
+  message: String!
+  code: String
+  field: String
+}
+
+# 批量操作結果
+type BatchResult {
+  success: Int!
+  failed: Int!
+  errors: [Error!]
+}
+
+# 系統狀態
+type SystemStatus {
+  healthy: Boolean!
+  version: String!
+  uptime: Int!
+  activeUsers: Int!
+  lastBackup: DateTime
+}

@@ -2,236 +2,192 @@
 
 ## 📋 文檔概覽
 
-歡迎來到 NewPennine 倉庫管理系統嘅文檔中心。呢個索引為您提供完整嘅文檔導航，包括功能說明、改進計劃同系統架構。
+歡迎來到 NewPennine 倉庫管理系統嘅文檔中心。呢個索引為您提供完整嘅文檔導航，包括開發指南、專家討論、問題庫同系統架構。
 
-### 📊 文檔統計
-- **功能文檔**: 14 個主要功能模組
-- **改進計劃**: 14 個模組改進方案
-- **系統文檔**: 11 個核心系統文檔
-- **總計**: 39 個詳細文檔
+## 📁 文件夾結構與用途
 
----
+### 🔧 **[role_play/](./role_play/)** - 專家角色定義
+用途：專業角色扮演文檔，定義各個技術專家嘅職責同技能範圍
 
-## 🎯 核心功能文檔
+### 🚨 **[issue-library/](./issue-library/)** - 問題解決庫
+用途：常見問題同解決方案集合，包含詳細嘅診斷步驟
+**📄 [README.md](./issue-library/README.md)** - 問題庫總覽
 
-### [📁 Function_Document/](./Function_Document/)
-完整嘅功能說明文檔，涵蓋系統所有主要模組：
 
-#### 🏭 生產管理
-- **[管理面板系統](./Function_Document/admin_panel.md)** - 8個主題式儀表板（Injection、Pipeline、Warehouse等）
-- **[注塑生產分析](./Function_Document/admin_injection.md)** - 注塑車間生產監控與分析
-- **[倉庫管理](./Function_Document/admin_warehouse.md)** - 倉庫操作監控與轉移管理
-- **[數據分析](./Function_Document/admin_analysis.md)** - 生產數據深度分析與報表
+### 🎓 **[expert-discussions/](./expert-discussions/)** - 專家討論記錄
+用途：技術專家討論會議記錄同架構決策文檔
+**📄 [README.md](./expert-discussions/README.md)** - 專家討論總覽
 
-#### 📦 庫存與轉移
-- **[庫存轉移系統](./Function_Document/stock_transfer.md)** - 棧板轉移、轉移碼系統、緩存優化
-- **[庫存盤點](./Function_Document/stock_count.md)** - QR掃描、批量模式、移動優化
-- **[作廢棧板](./Function_Document/void_pallet.md)** - 單個/批量作廢、報表生成
 
-#### 🎫 標籤打印
-- **[GRN標籤打印](./Function_Document/print_GRN_Label.md)** - 收貨標籤、重量計算、PDF生成
-- **[QC標籤打印](./Function_Document/print_QC_Label.md)** - 質量控制標籤、Buffer Pool、ACO/Slate處理
+### 📋 **[planning/](./planning/)** - 規劃文檔
+用途：系統規劃、發展計劃同核心原則文檔
+**📄 [README.md](./planning/README.md)** - 規劃文檔總覽
 
-#### 📋 訂單與上傳
-- **[訂單裝載](./Function_Document/order_loading.md)** - 移動優化、批量處理、異常檢測
-- **[文件上傳](./Function_Document/admin_upload.md)** - 3D UI、訂單PDF分析、文件管理
 
-#### 🤖 AI與系統
-- **[Ask Database](./Function_Document/ask_database.md)** - AI驅動智能查詢、自然語言轉SQL
-- **[導航系統](./Function_Document/navigation_system.md)** - 動態操作欄、移動適配
-- **[用戶管理](./Function_Document/user_management.md)** - 認證授權、角色管理
+### ✅ **[Today_Todo/](./Today_Todo/)** - 每日任務
+用途：當前進行中嘅任務同待辦事項
+**📄 [README.md](./Today_Todo/README.md)** - 今日任務概覽同優先級
 
----
 
-## 🚀 改進計劃文檔
+### 🔍 **[audit/](./audit/)** - 審計文檔
+用途：系統審計、測試策略同實施總結
+**📄 [README.md](./audit/README.md)** - 審計文檔總覽
 
-### [📁 Improvement_Plan/](./Improvement_Plan/)
-每個功能模組嘅詳細改進計劃，包括技術方案、時間表同成功指標：
 
-#### 🔥 高優先級改進
-- **[庫存轉移改進](./Improvement_Plan/stock_transfer.md)** - 批量轉移、計時器模式、效率提升4倍
-- **[管理面板優化](./Improvement_Plan/admin_panel.md)** - 架構清理、GraphQL穩定化、性能監控
-- **[系統UI統一](./Improvement_Plan/systemUI.md)** - 虛擬滾動、響應式表格、移動適配
+### 🗄️ **[databaseScheme/](./databaseScheme/)** - 資料庫架構
+用途：資料庫結構設計同架構文檔
+**📄 [README.md](./databaseScheme/README.md)** - 資料庫架構總覽
 
-#### 📋 中優先級改進  
-- **[Ask Database增強](./Improvement_Plan/ask_database.md)** - 語義緩存、查詢優化、可視化
-- **[打印系統優化](./Improvement_Plan/print_GRN_Label.md)** - 隊列管理、性能提升、模板緩存
-- **[QC標籤改進](./Improvement_Plan/print_QC_Label.md)** - Buffer Pool優化、實時協作
-- **[庫存盤點升級](./Improvement_Plan/stock_count.md)** - 離線支援、RFID整合、ML分析
 
-#### 🎯 專項改進
-- **[注塑生產優化](./Improvement_Plan/admin_injection.md)** - 預測分析、設備整合、自動化
-- **[倉庫管理升級](./Improvement_Plan/admin_warehouse.md)** - 智能調度、路徑優化、IoT整合
-- **[數據分析深化](./Improvement_Plan/admin_analysis.md)** - ML模型、預測算法、商業智能
-- **[訂單系統改進](./Improvement_Plan/order_loading.md)** - 智能分配、異常檢測、自動化
-- **[導航系統升級](./Improvement_Plan/navigation_system.md)** - AI助手、語音控制、手勢操作
-- **[用戶管理強化](./Improvement_Plan/user_management.md)** - SSO整合、細粒度權限、安全加強
-- **[作廢流程優化](./Improvement_Plan/void_pallet.md)** - 工作流引擎、自動化決策、損失分析
+### 🔗 **[integration/](./integration/)** - 系統整合
+用途：系統整合指南
+**📄 [README.md](./integration/README.md)** - 系統整合總覽
+
+
+### 📚 **[HistoryRecord/](./HistoryRecord/)** - 歷史記錄
+用途：專案歷史記錄同變更日誌
+
+
+### 🗃️ **[RPC-Library/](./RPC-Library/)** - RPC 函數庫
+用途：遠程過程調用函數庫文檔
+**📄 [README.md](./RPC-Library/README.md)** - RPC 函數庫總覽
+
+
+### 💾 **[SQL-Library/](./SQL-Library/)** - SQL 查詢庫
+用途：SQL 查詢模板同分析文檔
+**📄 [README.md](./SQL-Library/README.md)** - SQL 查詢庫總覽
+
+
+### 📝 **[Others/](./Others/)** - 其他文檔
+用途：雜項文檔同臨時筆記
+
 
 ---
 
-## 📚 系統架構文檔
 
-### 核心系統說明
-- **[CLAUDE.md](./CLAUDE.md)** - 專案設定、技術棧、開發規範
-- **[databaseStructure.md](./databaseStructure.md)** - 資料庫結構、表關係、索引設計
-- **[improvement-plans-status-summary.md](./improvement-plans-status-summary.md)** - 改進計劃狀態總結
+## 📄 核心文檔文件
 
-### GraphQL 與API
-- **[GraphQLanalysis.md](./GraphQLanalysis.md)** - GraphQL架構分析
-- **[graphql-flicker-fix.md](./graphql-flicker-fix.md)** - GraphQL閃爍問題解決方案
-- **[rpc_library.md](./rpc_library.md)** - RPC函數庫文檔
+### 🎯 **系統核心文檔**
+- **[CLAUDE.md](./CLAUDE.md)** - Claude AI 助手設定同專案配置
+- **[general_rules.md](./general_rules.md)** - 一般開發規則同指導原則
 
-### 開發工具與AI
-- **[openAIprompt](./openAIprompt)** - OpenAI系統提示配置
-- **[openAI_pdf_prompt](./openAI_pdf_prompt)** - PDF分析提示
-- **[userChat.md](./userChat.md)** - 用戶聊天功能文檔
+### 🤖 **AI 提示配置**
+- **[openAIprompt](./Others/openAIprompt)** - OpenAI 系統提示配置
+- **[openAI_pdf_prompt](./Others/openAI_pdf_prompt)** - PDF 分析提示
+- **[openAI_pdf_vision_prompt](./Others/openAI_pdf_vision_prompt)** - PDF 視覺分析提示
 
-### 數據庫與查詢
-- **[sql_library.md](./sql_library.md)** - SQL查詢庫
-- **[sql_query_library.md](./sql_query_library.md)** - 查詢模板庫
-
-### 未來規劃
-- **[Future_Plan/crmSystemPlan.md](./Future_Plan/crmSystemPlan.md)** - CRM系統發展計劃
+### 🔧 **重構與類型**
+- **[type-refactor-plan.json](./type-refactor-plan.json)** (30KB) - 類型重構計劃 JSON 配置
 
 ---
 
-## 🛠️ 快速導航
+## 🗂️ 文檔分類導航
 
-### 按功能分類
-
-#### 🏭 **生產管理**
+### 🔥 **立即需要**
 ```
-管理面板 → 注塑分析 → 倉庫管理 → 數據分析
+Today_Todo/ → issue-library/ → general_rules.md
 ```
 
-#### 📦 **庫存操作**  
+### 👨‍💻 **開發相關**
 ```
-庫存轉移 → 庫存盤點 → 作廢棧板
-```
-
-#### 🎫 **標籤系統**
-```
-GRN標籤 → QC標籤 → 打印隊列
+role_play/ → databaseScheme/ → integration/ → SQL-Library/
 ```
 
-#### 📋 **訂單處理**
+### 📊 **規劃決策**
 ```
-訂單裝載 → 文件上傳 → PDF分析
-```
-
-#### 🤖 **智能功能**
-```
-Ask Database → AI助手 → 自動化工作流
+planning/ → expert-discussions/ → audit/
 ```
 
-### 按開發階段
+### 🤖 **AI 配置**
+```
+CLAUDE.md → openAIprompt → openAI_pdf_prompt
+```
 
-#### ✅ **已完成** (90-100%)
-- Ask Database 安全性修復
-- System UI 統一化  
-- Admin Panel 架構清理
-- 基礎功能完整性
-
-#### 🔄 **進行中** (50-90%)
-- Stock Transfer 批量轉移
-- GraphQL 穩定化遷移
-- 打印系統隊列管理
-
-#### 📅 **計劃中** (0-50%)
-- 離線支援實施
-- RFID 硬體整合
-- ML 智能分析
-- MES 系統整合
+### 🔍 **問題解決**
+```
+issue-library/ → Others/ → HistoryRecord/
+```
 
 ---
 
-## 🎯 重點改進優先級
+## 📋 各文件夾 README.md 功能
 
-### 🔥 **立即實施** (本週)
-1. **[Stock Transfer 批量轉移](./Improvement_Plan/stock_transfer.md)** - 解決每日500+次低效操作
-2. **[Print Label 隊列管理](./Improvement_Plan/print_GRN_Label.md)** - 提升打印可靠性
-3. **[QC Label Buffer 優化](./Improvement_Plan/print_QC_Label.md)** - 立即性能提升
+### 📖 **有完整 README.md 嘅文件夾**
+- **[issue-library/README.md](./issue-library/README.md)** - 問題庫使用指南 (8.9KB)
+- **[expert-discussions/README.md](./expert-discussions/README.md)** - 專家討論索引 (2.4KB)
+- **[planning/README.md](./planning/README.md)** - 規劃文檔導航 (4.7KB)
+- **[Today_Todo/README.md](./Today_Todo/README.md)** - 任務管理指南 (7.9KB)
+- **[audit/README.md](./audit/README.md)** - 審計文檔導航 (13KB)
+- **[databaseScheme/README.md](./databaseScheme/README.md)** - 資料庫文檔索引 (6.4KB)
+- **[integration/README.md](./integration/README.md)** - 整合指南索引 (7.1KB)
 
-### 📋 **短期實施** (2-4週)
-1. **[Ask Database 語義緩存](./Improvement_Plan/ask_database.md)** - 性能提升60%
-2. **[System UI 虛擬滾動](./Improvement_Plan/systemUI.md)** - 大型表格優化  
-3. **[Stock Count 離線支援](./Improvement_Plan/stock_count.md)** - 效率4倍提升
+### 📝 **文件夾用途說明**
 
-### 🎯 **中期實施** (1-3個月)
-1. **實時協作功能** - 跨模組協作增強
-2. **移動UI深度優化** - 手勢支援、響應式表格
-3. **性能全面優化** - Worker池、緩存策略
+#### 🎯 **高頻使用文件夾**
+- `Today_Todo/` - 每日工作指引
+- `issue-library/` - 緊急問題解決
+- `role_play/` - 角色定義參考
 
-### 🌟 **長期實施** (3-6個月)
-1. **RFID 整合** - 硬體投資，效率10倍提升
-2. **ML 智能分析** - 預測算法、異常檢測
-3. **MES/ERP 整合** - 企業系統一體化
+#### 📚 **規劃參考文件夾**
+- `planning/` - 長期規劃參考
+- `expert-discussions/` - 決策記錄查詢
+- `audit/` - 品質檢查標準
 
----
-
-## 📖 閱讀建議
-
-### 🆕 **新用戶入門**
-1. 先閱讀 [CLAUDE.md](./CLAUDE.md) 了解專案概況
-2. 瀏覽 [管理面板系統](./Function_Document/admin_panel.md) 掌握核心架構
-3. 根據需要查看具體功能文檔
-
-### 👨‍💻 **開發人員**  
-1. 重點關注 [改進計劃](./Improvement_Plan/) 了解技術方向
-2. 查閱 [databaseStructure.md](./databaseStructure.md) 掌握數據架構
-3. 參考 [GraphQL 文檔](./GraphQLanalysis.md) 了解API設計
-
-### 📊 **產品經理**
-1. 查看 [狀態總結](./improvement-plans-status-summary.md) 了解整體進度
-2. 重點關注高優先級改進計劃
-3. 參考功能文檔了解用戶體驗
-
-### 🔧 **運維人員**
-1. 關注 [系統架構文檔](#系統架構文檔)
-2. 重點查看性能優化相關改進計劃
-3. 了解監控和維護要求
+#### 🔧 **技術支援文件夾**
+- `databaseScheme/` - 資料庫設計參考
+- `integration/` - 系統整合指南
+- `SQL-Library/` - 查詢模板庫
 
 ---
 
-## 🔄 文檔維護
+## 🚀 快速開始指南
 
-### 更新頻率
-- **功能文檔**: 功能變更時更新
-- **改進計劃**: 每週檢討，每月更新
-- **狀態總結**: 每兩週更新一次
-- **系統文檔**: 架構變更時更新
+### 🆕 **新團隊成員**
+1. 閱讀 `general_rules.md` 了解開發規範
+2. 查看 `role_play/` 中對應角色定義
+3. 瀏覽 `Today_Todo/README.md` 了解當前任務
 
-### 維護責任
-- **技術文檔**: 開發團隊維護
-- **功能說明**: 產品團隊維護  
-- **改進計劃**: 項目經理維護
-- **狀態追蹤**: 全團隊協作維護
+### 🐛 **遇到問題時**
+1. 先查 `issue-library/README.md` 尋找類似問題
+2. 參考對應嘅解決方案文檔
+3. 如無相關問題，在 `Others/notepad.md` 記錄新問題
 
-### 質量控制
-- 所有文檔更新需要 Code Review
-- 重要文檔變更需要團隊確認
-- 定期檢查文檔準確性和時效性
-- 保持文檔間的一致性
+### 📋 **規劃新功能**
+1. 參考 `planning/README.md` 了解現有規劃
+2. 查看 `expert-discussions/` 中相關討論
+3. 根據 `audit/` 標準制定實施計劃
 
----
-
-## 📞 支援與聯絡
-
-### 文檔問題
-- 發現錯誤或過時信息請及時反饋
-- 建議改進或新增內容歡迎提出
-- 技術問題可聯絡開發團隊
-
-### 功能建議  
-- 新功能需求請提交到改進計劃
-- 優先級調整需要項目經理審批
-- 重大變更需要技術架構評審
+### 🔧 **技術開發**
+1. 檢查 `databaseScheme/` 了解資料結構
+2. 參考 `integration/` 了解系統整合方式
+3. 使用 `SQL-Library/` 中嘅查詢模板
 
 ---
 
-**最後更新**: 2025-06-26  
-**文檔版本**: v2.1  
+## 🔄 文檔維護規範
+
+### 📅 **更新頻率**
+- **Today_Todo/**: 每日更新
+- **issue-library/**: 問題解決後即時更新
+- **planning/**: 每週檢討更新
+- **expert-discussions/**: 會議後即時記錄
+- **audit/**: 每月檢討更新
+
+### 👥 **維護責任**
+- **role_play/**: 各角色專家自行維護
+- **issue-library/**: 全團隊協作維護
+- **planning/**: 產品經理主導維護
+- **technical docs**: 開發團隊維護
+
+### ✅ **質量控制**
+- 新增文檔需要對應 README.md 更新
+- 重要變更需要團隊 review
+- 保持文檔結構一致性
+- 定期清理過時文檔
+
+
+**最後更新**: 2025-07-23  
+**文檔版本**: v3.0  
 **維護團隊**: NewPennine 開發團隊
 
-> 💡 **提示**: 建議將呢個頁面加入書籤，作為日常開發工作嘅快速導航入口。文檔會持續更新，請定期查看最新內容。
+> 💡 **提示**: 建議將呢個頁面加入書籤，作為文檔導航嘅主要入口。各文件夾都有自己嘅 README.md 提供更詳細嘅導航信息。

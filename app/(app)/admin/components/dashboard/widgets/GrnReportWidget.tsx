@@ -1,7 +1,8 @@
 /**
- * GRN Report Widget
- * 遷移至 REST API 架構，移除版本號
- * 使用 NestJS GRN API 端點進行數據獲取
+ * GRN Report Widget V2
+ * 使用 RPC 函數和 DashboardAPI 優化數據獲取
+ * PDF 生成邏輯保留在客戶端
+ * 遷移自原 GrnReportWidget
  */
 
 'use client';
@@ -13,9 +14,10 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 import { exportGrnReport } from '@/lib/exportReport';
+import { createDashboardAPIClient as createDashboardAPI } from '@/lib/api/admin/DashboardAPI.client';
 import { useReportPrinting } from '@/app/(app)/admin/hooks/useReportPrinting';
 import { WidgetSkeleton } from './common/WidgetStates';
-import { GrnReportExportData } from './types/GrnReportTypes';
+import { GrnDataMapper, GrnReportExportData, isGrnReportData } from './types/GrnReportTypes';
 import { GrnReportPageData } from '@/app/actions/reportActions';
 import {
   Select,
@@ -40,72 +42,7 @@ interface GrnReportWidgetProps {
   apiEndpoint?: string;
 }
 
-// GRN Report Data interface
-interface GrnReportData {
-  material_description?: string;
-  supplier_name?: string;
-  report_date?: string;
-  records?: DatabaseRecord[];
-  error?: string;
-  [key: string]: unknown;
-}
-
-// REST API client for GRN endpoints
-const grnApiClient = {
-  async getReferences(): Promise<string[]> {
-    const response = await fetch('/api/v1/grn/references', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch GRN references: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.references || [];
-  },
-
-  async getMaterialCodes(grnRef: string): Promise<string[]> {
-    const response = await fetch(`/api/v1/grn/${grnRef}/material-codes`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch material codes: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return data.materialCodes || [];
-  },
-
-  async getReportData(grnRef: string, productCodes?: string[]): Promise<GrnReportData> {
-    const url = new URL(`/api/v1/grn/${grnRef}/report-data`, window.location.origin);
-    if (productCodes && productCodes.length > 0) {
-      url.searchParams.append('productCodes', JSON.stringify(productCodes));
-    }
-
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch report data: ${response.statusText}`);
-    }
-
-    return await response.json();
-  },
-};
-
-export const GrnReportWidget = function GrnReportWidget({
+export const GrnReportWidgetV2 = function GrnReportWidgetV2({
   title,
   reportType,
   description,
@@ -123,6 +60,8 @@ export const GrnReportWidget = function GrnReportWidget({
     lastFetchTime?: number;
     optimized?: boolean;
   }>({});
+
+  const api = createDashboardAPI();
 
   // Use unified printing hook
   const { printReport, isPrinting, isServiceAvailable } = useReportPrinting({
@@ -145,34 +84,60 @@ export const GrnReportWidget = function GrnReportWidget({
 
   const fetchGrnRefs = useCallback(async () => {
     try {
-      setLoading(true);
       const startTime = performance.now();
 
-      const refs = await grnApiClient.getReferences();
+      const result = await api.fetch({
+        widgetIds: ['grn_references'],
+        params: {
+          dataSource: 'grn_references',
+          limit: 1000,
+          offset: 0,
+        },
+      });
+
       const endTime = performance.now();
 
-      setGrnRefs(refs);
+      if (result.widgets && result.widgets.length > 0) {
+        const widgetData = result.widgets[0];
 
-      // Set default selection
-      if (refs.length > 0 && !selectedGrnRef) {
-        setSelectedGrnRef(refs[0]);
+        const grnWidgetData = widgetData.data;
+        if (
+          grnWidgetData &&
+          typeof grnWidgetData === 'object' &&
+          'error' in grnWidgetData &&
+          grnWidgetData.error
+        ) {
+          console.error('[GrnReportWidgetV2] Error:', grnWidgetData.error);
+          toast({
+            title: 'Error',
+            description: 'Failed to fetch GRN references',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        const refs = GrnDataMapper.extractStringArrayFromApiResponse(grnWidgetData);
+        setGrnRefs(refs);
+
+        // Set default selection
+        if (Array.isArray(refs) && refs.length > 0 && !selectedGrnRef) {
+          setSelectedGrnRef(refs[0]);
+        }
+
+        setPerformanceMetrics({
+          lastFetchTime: Math.round(endTime - startTime),
+          optimized: true,
+        });
       }
-
-      setPerformanceMetrics({
-        lastFetchTime: Math.round(endTime - startTime),
-        optimized: true,
-      });
     } catch (error) {
-      console.error('[GrnReportWidget as string] Error fetching GRN references:', error);
+      console.error('[GrnReportWidgetV2] Error:', error);
       toast({
         title: 'Error',
         description: 'Failed to fetch GRN references',
         variant: 'destructive',
       });
-    } finally {
-      setLoading(false);
     }
-  }, [selectedGrnRef, toast]);
+  }, [api, toast, selectedGrnRef]);
 
   // Fetch GRN references when component mounts
   useEffect(() => {
@@ -199,10 +164,24 @@ export const GrnReportWidget = function GrnReportWidget({
 
     try {
       // User authentication is handled in the export function
+      // Using default email for now - this should be provided by the server
       const userEmail = 'report@system.local';
 
-      // Get material codes for the selected grn_ref
-      const materialCodes = await grnApiClient.getMaterialCodes(selectedGrnRef);
+      // Get material codes for the selected grn_ref using RPC
+      const materialResult = await api.fetch({
+        widgetIds: ['grn_material_codes'],
+        params: {
+          dataSource: 'grn_material_codes',
+          staticValue: selectedGrnRef,
+        },
+      });
+
+      if (!materialResult.widgets || materialResult.widgets.length === 0) {
+        throw new Error('Failed to fetch material codes');
+      }
+
+      const materialWidgetData = materialResult.widgets[0].data;
+      const materialCodes = GrnDataMapper.extractStringArrayFromApiResponse(materialWidgetData);
 
       if (materialCodes.length === 0) {
         throw new Error('No materials found for the selected GRN reference');
@@ -211,24 +190,44 @@ export const GrnReportWidget = function GrnReportWidget({
       // Generate report for each material code
       let successCount = 0;
       for (const materialCode of materialCodes) {
-        try {
-          const reportData = await grnApiClient.getReportData(selectedGrnRef, [
-            materialCode as string,
-          ]);
+        // Fetch report data using RPC
+        const reportResult = await api.fetch({
+          widgetIds: ['grn_report_data'],
+          params: {
+            dataSource: 'grn_report_data',
+            staticValue: selectedGrnRef,
+            productCodes: [materialCode as string],
+          },
+        });
 
-          if (reportData && !reportData.error) {
+        if (reportResult.widgets && reportResult.widgets.length > 0) {
+          const reportWidgetData = reportResult.widgets[0].data;
+          const reportData = GrnDataMapper.extractGrnDataFromApiResponse(reportWidgetData);
+          const errorMessage = GrnDataMapper.validateErrorResponse(reportWidgetData);
+
+          if (reportData && !errorMessage) {
             // Convert to GrnReportPageData format expected by exportGrnReport
-            // Type-safe access to report data properties
-            const data = reportData as Record<string, unknown>;
             const pageData: GrnReportPageData = {
               grn_ref: selectedGrnRef,
               user_id: userEmail,
               material_code: materialCode as string,
-              material_description:
-                typeof data.material_description === 'string' ? data.material_description : null,
-              supplier_name: typeof data.supplier_name === 'string' ? data.supplier_name : null,
-              report_date: new Date().toISOString().split('T')[0],
-              records: Array.isArray(data.records) ? data.records : [],
+              material_description: reportData.material_description || null,
+              supplier_name: reportData.supplier_name || null,
+              report_date: reportData.report_date || new Date().toISOString().split('T')[0],
+              records: Array.isArray(reportData.records)
+                ? reportData.records.map((record: DatabaseRecord) => ({
+                    gross_weight:
+                      typeof record.gross_weight === 'number' ? record.gross_weight : null,
+                    net_weight: typeof record.net_weight === 'number' ? record.net_weight : null,
+                    pallet: typeof record.pallet === 'string' ? record.pallet : null,
+                    package_type:
+                      typeof record.package_type === 'string' ? record.package_type : null,
+                    pallet_count:
+                      typeof record.pallet_count === 'number' ? record.pallet_count : null,
+                    package_count:
+                      typeof record.package_count === 'number' ? record.package_count : null,
+                  }))
+                : [],
               total_gross_weight: 0,
               total_net_weight: 0,
               weight_difference: 0,
@@ -236,8 +235,6 @@ export const GrnReportWidget = function GrnReportWidget({
             await exportGrnReport(pageData);
             successCount++;
           }
-        } catch (error) {
-          console.error(`Error generating report for material ${materialCode}:`, error);
         }
       }
 
@@ -258,7 +255,7 @@ export const GrnReportWidget = function GrnReportWidget({
         }, 500);
       }, 2000);
     } catch (error) {
-      console.error('[GrnReportWidget as string] Download failed:', error);
+      console.error('[GrnReportWidgetV2] Download failed:', error);
       setDownloadStatus('idle');
       setProgress(0);
 
@@ -281,29 +278,62 @@ export const GrnReportWidget = function GrnReportWidget({
     }
 
     try {
-      // Get material codes
-      const materialCodes = await grnApiClient.getMaterialCodes(selectedGrnRef);
+      // Get material codes using RPC
+      const materialResult = await api.fetch({
+        widgetIds: ['grn_material_codes'],
+        params: {
+          dataSource: 'grn_material_codes',
+          staticValue: selectedGrnRef,
+        },
+      });
+
+      if (!materialResult.widgets || materialResult.widgets.length === 0) {
+        throw new Error('Failed to fetch material codes');
+      }
+
+      const printWidgetData = materialResult.widgets[0].data;
+      const materialCodes = GrnDataMapper.extractStringArrayFromApiResponse(printWidgetData);
 
       if (!materialCodes || materialCodes.length === 0) {
         throw new Error('No material codes found for this GRN reference');
       }
 
-      // For printing, we'll print the first material code
-      const reportData = await grnApiClient.getReportData(selectedGrnRef, [materialCodes[0]]);
+      // User authentication is handled in the print service
+      const userEmail = 'report@system.local';
 
-      if (!reportData || reportData.error) {
-        throw new Error(reportData?.error || 'Failed to get report data');
+      // For printing, we'll just print the first material code
+      // Fetch report data using RPC
+      const reportResult = await api.fetch({
+        widgetIds: ['grn_report_data'],
+        params: {
+          dataSource: 'grn_report_data',
+          staticValue: selectedGrnRef,
+          productCodes: [materialCodes[0]],
+        },
+      });
+
+      if (!reportResult.widgets || reportResult.widgets.length === 0) {
+        throw new Error('Failed to get report data');
       }
 
-      console.log('[GrnReportWidget as string] Report data received:', reportData);
+      const reportWidgetData2 = reportResult.widgets[0].data;
+      const reportData = GrnDataMapper.extractGrnDataFromApiResponse(reportWidgetData2);
+      const errorMessage = GrnDataMapper.validateErrorResponse(reportWidgetData2);
 
-      // Generate PDF using pdf-lib
-      const { PDFDocument, rgb, StandardFonts } = await import('pdf-lib');
+      if (!reportData || errorMessage) {
+        throw new Error(errorMessage || 'Failed to get report data');
+      }
+
+      console.log('[GrnReportWidgetV2] Report data received:', reportData);
+
+      // Generate a proper PDF from the GRN report data
+      const pdfLib = await import('@/lib/services/unified-pdf-service');
+      const { PDFDocument, rgb, StandardFonts } = await pdfLib.getPDFLib();
       const pdfDoc = await PDFDocument.create();
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-      // Create a landscape page for the GRN report
+      // Create a landscape page for the GRN report (Excel style)
       const page = pdfDoc.addPage([842, 595]); // A4 Landscape
       const { width, height } = page.getSize();
       let yPosition = height - 40;
@@ -367,6 +397,10 @@ export const GrnReportWidget = function GrnReportWidget({
 
       // Left side - Material info
       yPosition = height - 60;
+      if (!isGrnReportData(reportData)) {
+        throw new Error('Invalid report data format');
+      }
+
       const leftLabels = [
         { label: 'Code:', value: materialCodes[0] },
         { label: 'Description:', value: reportData.material_description || 'N/A' },
@@ -446,7 +480,7 @@ export const GrnReportWidget = function GrnReportWidget({
 
         const yText = yPosition - 15;
 
-        // Fill table cells with data
+        // Supplier Invoice No
         page.drawText(String(record.supplier_invoice_number) || '', {
           x: 30,
           y: yText,
@@ -455,6 +489,7 @@ export const GrnReportWidget = function GrnReportWidget({
           color: rgb(0, 0, 0),
         });
 
+        // Date
         page.drawText(String(record.date_received) || '', {
           x: 155,
           y: yText,
@@ -463,6 +498,7 @@ export const GrnReportWidget = function GrnReportWidget({
           color: rgb(0, 0, 0),
         });
 
+        // Package (with Y for Yes)
         page.drawText('Y', {
           x: 215,
           y: yText,
@@ -471,6 +507,7 @@ export const GrnReportWidget = function GrnReportWidget({
           color: rgb(0, 0.4, 0),
         });
 
+        // Qty of Package
         page.drawText((record.package_count || 0).toString(), {
           x: 275,
           y: yText,
@@ -479,6 +516,7 @@ export const GrnReportWidget = function GrnReportWidget({
           color: rgb(0, 0, 0),
         });
 
+        // Gross Weight
         page.drawText((record.gross_weight || 0).toString(), {
           x: 325,
           y: yText,
@@ -487,6 +525,7 @@ export const GrnReportWidget = function GrnReportWidget({
           color: rgb(0, 0, 0),
         });
 
+        // Net Weight
         page.drawText((record.net_weight || 0).toString(), {
           x: 380,
           y: yText,
@@ -495,6 +534,7 @@ export const GrnReportWidget = function GrnReportWidget({
           color: rgb(0, 0, 0),
         });
 
+        // Calculate pallet weight (gross - net)
         const grossWeight = typeof record.gross_weight === 'number' ? record.gross_weight : 0;
         const netWeight = typeof record.net_weight === 'number' ? record.net_weight : 0;
         const palletWeight = grossWeight - netWeight;
@@ -506,6 +546,7 @@ export const GrnReportWidget = function GrnReportWidget({
           color: rgb(0, 0, 0),
         });
 
+        // Labels Check (Y for Yes)
         page.drawText('Y', {
           x: 555,
           y: yText,
@@ -514,7 +555,7 @@ export const GrnReportWidget = function GrnReportWidget({
           color: rgb(0, 0.4, 0),
         });
 
-        // Passed column with gray background
+        // Passed column (with Y in gray area)
         page.drawRectangle({
           x: 705,
           y: yPosition - rowHeight,
@@ -541,7 +582,7 @@ export const GrnReportWidget = function GrnReportWidget({
         generatedAt: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('[GrnReportWidget as string] Print error:', error);
+      console.error('[GrnReportWidgetV2] Print error:', error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to print report',
@@ -569,7 +610,7 @@ export const GrnReportWidget = function GrnReportWidget({
             <Select
               value={selectedGrnRef}
               onValueChange={value => setSelectedGrnRef(value)}
-              disabled={loading || grnRefs.length === 0}
+              disabled={grnRefs.length === 0}
             >
               <SelectTrigger
                 className={cn(
@@ -581,13 +622,7 @@ export const GrnReportWidget = function GrnReportWidget({
                 )}
               >
                 <SelectValue
-                  placeholder={
-                    loading
-                      ? 'Loading...'
-                      : grnRefs.length === 0
-                        ? 'No GRN references'
-                        : 'Select GRN reference'
-                  }
+                  placeholder={grnRefs.length === 0 ? 'Loading...' : 'Select GRN reference'}
                 />
               </SelectTrigger>
               <SelectContent className={cn('border-border bg-card')}>
@@ -602,12 +637,7 @@ export const GrnReportWidget = function GrnReportWidget({
                 ))}
               </SelectContent>
             </Select>
-            {loading && (
-              <p className={cn('mt-1', textClasses['label-small'], 'text-muted-foreground')}>
-                Loading GRN references...
-              </p>
-            )}
-            {!loading && grnRefs.length === 0 && (
+            {grnRefs.length === 0 && (
               <p className={cn('mt-1', textClasses['label-small'], 'text-muted-foreground')}>
                 No GRN references found
               </p>
@@ -621,7 +651,7 @@ export const GrnReportWidget = function GrnReportWidget({
                 onClick={handlePrint}
                 size='sm'
                 variant='outline'
-                disabled={!selectedGrnRef || isPrinting || loading}
+                disabled={!selectedGrnRef || isPrinting}
                 className={cn(
                   'h-9 gap-2 px-3',
                   'bg-background/50 hover:bg-background/70',
@@ -644,7 +674,7 @@ export const GrnReportWidget = function GrnReportWidget({
             <Button
               onClick={handleDownload}
               size='sm'
-              disabled={downloadStatus !== 'idle' || !selectedGrnRef || loading}
+              disabled={downloadStatus !== 'idle' || !selectedGrnRef}
               className={cn(
                 'h-9 gap-2 px-4',
                 'bg-gradient-to-r',
@@ -693,7 +723,7 @@ export const GrnReportWidget = function GrnReportWidget({
             className={cn('mt-2 text-right', textClasses['label-small'])}
             style={{ color: semanticColors.success.DEFAULT }}
           >
-            ✓ REST API optimized ({performanceMetrics.lastFetchTime}ms)
+            ✓ Server-optimized ({performanceMetrics.lastFetchTime}ms)
           </div>
         )}
       </div>
@@ -701,4 +731,4 @@ export const GrnReportWidget = function GrnReportWidget({
   );
 };
 
-export default GrnReportWidget;
+export default GrnReportWidgetV2;

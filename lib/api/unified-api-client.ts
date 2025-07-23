@@ -201,8 +201,41 @@ export class UnifiedAPIClient {
     }
 
     try {
-      // GraphQL support has been completely removed
-      throw new Error('GraphQL support has been removed');
+      const url = new URL('/api/graphql', 'http://localhost:3001');
+
+      const fetchOptions: RequestInit = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...request.headers,
+        },
+        body: JSON.stringify({
+          query: request.query,
+          variables: request.variables,
+          operationName: request.operationName,
+        }),
+        signal: AbortSignal.timeout(this.config.timeout!),
+      };
+
+      const response = await fetch(url.toString(), fetchOptions);
+      const responseTime = Date.now() - startTime;
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.errors && result.errors.length > 0) {
+        throw new Error(result.errors[0].message || 'GraphQL query failed');
+      }
+
+      return {
+        data: result.data,
+        success: true,
+        apiType: 'graphql',
+        responseTime,
+      };
     } catch (error) {
       const responseTime = Date.now() - startTime;
       const errorMessage = error instanceof Error ? error.message : 'GraphQL error';

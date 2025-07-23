@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-// 使用新版本的 GrnLabelFormV2 組件（使用 useReducer 統一管理狀態）
-import GrnLabelFormV2 from './components/GrnLabelFormV2';
+// 使用新版本的 GrnLabelForm 組件（使用 useReducer 統一管理狀態）
+import GrnLabelForm from './components/GrnLabelForm';
 import FloatingInstructions from '@/components/ui/floating-instructions';
 import GrnErrorStats from './components/ErrorStats';
 import { PrintQueueMonitor } from '@/lib/printing';
@@ -49,7 +49,7 @@ export default function PrintGrnLabelPage() {
         </div>
 
         {/* 表單區域 - 獨立卡片佈局 */}
-        <GrnLabelFormV2 />
+        <GrnLabelForm />
       </div>
 
       {/* 錯誤統計組件 - 僅在開發環境顯示 */}

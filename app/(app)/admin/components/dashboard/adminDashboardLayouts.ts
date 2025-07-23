@@ -238,12 +238,11 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
       // 關鍵統計組件 (來自 analysis-full，優化版)
       {
         type: 'stats',
-        title: 'Production Overview',
+        title: 'Stock Levels (GraphQL POC)',
         gridArea: 'stats1',
-        dataSource: 'record_palletinfo',
-        metrics: ['total_products', 'today_production'],
-        component: 'UnifiedStatsWidget',
-        description: 'Production statistics and trends',
+        dataSource: 'stock_levels',
+        component: 'StockLevelPOCWidget',
+        description: 'GraphQL POC - Stock level monitoring with UnifiedDataLayer',
       },
       {
         type: 'stats',
