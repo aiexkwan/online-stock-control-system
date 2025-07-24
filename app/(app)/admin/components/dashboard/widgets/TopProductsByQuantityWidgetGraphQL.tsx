@@ -101,10 +101,16 @@ interface TopProduct {
 }
 
 export default function TopProductsByQuantityWidgetGraphQL({
-  id,
-  config,
-  className,
+  widget,
+  isEditMode,
+  onUpdate,
+  onRemove,
+  timeFrame,
 }: TraditionalWidgetComponentProps) {
+  // Extract config from widget object
+  const config = widget?.config || {};
+  const id = widget?.id;
+  const className = '';
   // State
   const [productType, setProductType] = useState<string>('');
   const [limit, setLimit] = useState<number>(10);

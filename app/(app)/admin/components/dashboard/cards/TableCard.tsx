@@ -19,6 +19,7 @@ import {
   ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
+import { ensureString } from '@/utils/graphql-types';
 import {
   TableDataInput,
   TableCardData,
@@ -346,7 +347,7 @@ export const TableCard: React.FC<TableCardProps> = ({
                   column.align === ColumnAlign.Center && 'text-center',
                   column.align === ColumnAlign.Right && 'text-right'
                 )}
-                style={{ width: column.width }}
+                style={{ width: ensureString(column.width ?? null) || undefined }}
                 onClick={() => column.sortable && handleSort(column.key)}
               >
                 <div className="flex items-center space-x-1">

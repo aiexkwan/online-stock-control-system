@@ -148,10 +148,10 @@
   transition: all 0.3s ease;
 }
 
-/* Dark theme adjustments */
+/* Dark theme adjustments - 統一文字顏色標準化 */
 body {
   background-color: #16161a;
-  color: #eaeaea;
+  color: #ffffff; /* ✅ 統一為純白色，提升對比度和可讀性 */
 }
 
 /* Scrollbar styling */

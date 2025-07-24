@@ -1,0 +1,606 @@
+# List GraphQL Schema
+# ListCard 組件相關類型定義
+# 支援統一的列表數據查詢和管理
+
+# 基礎 ListData interface
+interface ListData {
+  id: ID!
+  listType: ListType!
+  title: String!
+  description: String
+  totalCount: Int!
+  filteredCount: Int!
+  lastUpdated: DateTime!
+  dataSource: String!
+  refreshInterval: Int
+}
+
+# List 類型枚舉
+enum ListType {
+  ORDER_STATE
+  ORDER_RECORD
+  WAREHOUSE_TRANSFER
+  OTHER_FILES
+}
+
+# 訂單狀態列表 (OrderState Lists)
+type OrderStateList implements ListData {
+  id: ID!
+  listType: ListType!
+  title: String!
+  description: String
+  totalCount: Int!
+  filteredCount: Int!
+  lastUpdated: DateTime!
+  dataSource: String!
+  refreshInterval: Int
+  
+  # 訂單狀態特定數據
+  orders: OrderStateConnection!
+  statusSummary: [OrderStatusSummary!]!
+  progressMetrics: OrderProgressMetrics!
+}
+
+type OrderStatusSummary {
+  status: OrderStatus!
+  count: Int!
+  percentage: Float!
+  averageProcessingTime: Int # minutes
+  urgentCount: Int
+}
+
+type OrderProgressMetrics {
+  totalInProgress: Int!
+  averageCompletionRate: Float!
+  bottleneckStage: OrderStatus
+  predictedCompletionTime: DateTime
+}
+
+type OrderStateConnection {
+  edges: [OrderStateEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type OrderStateEdge {
+  cursor: String!
+  node: OrderState!
+}
+
+type OrderState {
+  order: Order!
+  currentStage: OrderStatus!
+  progress: Float! # 0-100
+  stageHistory: [OrderStageHistory!]!
+  estimatedCompletion: DateTime
+  actualCompletion: DateTime
+  isUrgent: Boolean!
+  bottlenecks: [String!]
+  nextActions: [String!]
+}
+
+type OrderStageHistory {
+  stage: OrderStatus!
+  enteredAt: DateTime!
+  exitedAt: DateTime
+  duration: Int # minutes
+  performedBy: User
+  notes: String
+}
+
+# 訂單記錄列表 (OrderRecord Lists)
+type OrderRecordList implements ListData {
+  id: ID!
+  listType: ListType!
+  title: String!
+  description: String
+  totalCount: Int!
+  filteredCount: Int!
+  lastUpdated: DateTime!
+  dataSource: String!
+  refreshInterval: Int
+  
+  # 訂單記錄特定數據
+  records: OrderRecordConnection!
+  timeline: [OrderTimelineEvent!]!
+  analytics: OrderRecordAnalytics!
+}
+
+type OrderRecordConnection {
+  edges: [OrderRecordEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type OrderRecordEdge {
+  cursor: String!
+  node: OrderRecord!
+}
+
+type OrderRecord {
+  order: Order!
+  recordType: OrderRecordType!
+  timestamp: DateTime!
+  performedBy: User!
+  details: JSON!
+  impact: OrderRecordImpact
+  relatedRecords: [OrderRecord!]
+}
+
+enum OrderRecordType {
+  CREATED
+  MODIFIED
+  STATUS_CHANGED
+  ALLOCATED
+  PICKED
+  PACKED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+  EXCEPTION
+}
+
+type OrderRecordImpact {
+  delayMinutes: Int
+  costImpact: Float
+  customerSatisfaction: OrderRecordImpactLevel
+  operationalComplexity: OrderRecordImpactLevel
+}
+
+enum OrderRecordImpactLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+type OrderTimelineEvent {
+  timestamp: DateTime!
+  event: String!
+  description: String!
+  actor: String!
+  category: OrderRecordType!
+}
+
+type OrderRecordAnalytics {
+  averageOrderCycle: Int! # minutes
+  commonBottlenecks: [String!]!
+  performanceMetrics: JSON!
+  trendData: [OrderTrendPoint!]!
+}
+
+type OrderTrendPoint {
+  date: DateTime!
+  orderCount: Int!
+  averageCycleTime: Int!
+  completionRate: Float!
+}
+
+# 倉庫轉移列表 (WarehouseTransfer Lists)
+type WarehouseTransferList implements ListData {
+  id: ID!
+  listType: ListType!
+  title: String!
+  description: String
+  totalCount: Int!
+  filteredCount: Int!
+  lastUpdated: DateTime!
+  dataSource: String!
+  refreshInterval: Int
+  
+  # 轉移記錄特定數據
+  transfers: TransferConnection!
+  statusDistribution: [TransferStatusDistribution!]!
+  performanceMetrics: TransferPerformanceMetrics!
+  locationAnalysis: [LocationTransferAnalysis!]!
+}
+
+type TransferStatusDistribution {
+  status: TransferStatus!
+  count: Int!
+  percentage: Float!
+  averageDuration: Int # minutes
+}
+
+type TransferPerformanceMetrics {
+  averageTransferTime: Int! # minutes
+  onTimePercentage: Float!
+  delayedCount: Int!
+  efficiencyScore: Float!
+  resourceUtilization: Float!
+}
+
+type LocationTransferAnalysis {
+  location: Location!
+  incomingCount: Int!
+  outgoingCount: Int!
+  netFlow: Int!
+  averageWaitTime: Int! # minutes
+  congestionLevel: CongestionLevel!
+}
+
+enum CongestionLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+# 其他文件列表 (OtherFiles Lists)
+type OtherFilesList implements ListData {
+  id: ID!
+  listType: ListType!
+  title: String!
+  description: String
+  totalCount: Int!
+  filteredCount: Int!
+  lastUpdated: DateTime!
+  dataSource: String!
+  refreshInterval: Int
+  
+  # 文件列表特定數據
+  files: FileRecordConnection!
+  categorySummary: [FileCategorySummary!]!
+  storageMetrics: FileStorageMetrics!
+}
+
+type FileRecordConnection {
+  edges: [FileRecordEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type FileRecordEdge {
+  cursor: String!
+  node: FileRecord!
+}
+
+type FileRecord {
+  id: ID!
+  fileName: String!
+  fileType: FileType!
+  fileCategory: FileCategory!
+  size: Int! # bytes
+  mimeType: String!
+  url: String!
+  thumbnailUrl: String
+  
+  # 元數據
+  uploadedAt: DateTime!
+  uploadedBy: User!
+  lastModified: DateTime!
+  version: String!
+  
+  # 狀態和標籤
+  status: FileStatus!
+  tags: [String!]!
+  accessibility: FileAccessibility!
+  
+  # 關聯數據
+  relatedEntity: FileRelatedEntity
+  permissions: [FilePermission!]!
+  downloadCount: Int!
+  lastAccessed: DateTime
+}
+
+enum FileType {
+  DOCUMENT
+  IMAGE
+  SPREADSHEET
+  PDF
+  ARCHIVE
+  VIDEO
+  AUDIO
+  OTHER
+}
+
+enum FileCategory {
+  QC_REPORT
+  GRN_DOCUMENT
+  SHIPPING_LABEL
+  INVOICE
+  CERTIFICATE
+  PHOTO
+  MANUAL
+  TEMPLATE
+  BACKUP
+  LOG
+  OTHER
+}
+
+enum FileStatus {
+  ACTIVE
+  ARCHIVED
+  PENDING_REVIEW
+  EXPIRED
+  DELETED
+}
+
+enum FileAccessibility {
+  PUBLIC
+  INTERNAL
+  RESTRICTED
+  CONFIDENTIAL
+}
+
+type FileRelatedEntity {
+  entityType: String!
+  entityId: String!
+  relationship: String!
+}
+
+type FilePermission {
+  user: User!
+  permission: FilePermissionType!
+  grantedAt: DateTime!
+  grantedBy: User!
+}
+
+enum FilePermissionType {
+  READ
+  WRITE
+  DELETE
+  SHARE
+  ADMIN
+}
+
+type FileCategorySummary {
+  category: FileCategory!
+  count: Int!
+  totalSize: Int! # bytes
+  averageSize: Int! # bytes
+  recentCount: Int! # files added in last 7 days
+}
+
+type FileStorageMetrics {
+  totalSize: Int! # bytes
+  totalFiles: Int!
+  averageFileSize: Int! # bytes
+  storageUtilization: Float! # percentage
+  growthRate: Float! # bytes per day
+  topCategories: [FileCategorySummary!]!
+}
+
+# Union type for different list data types
+union ListDataUnion = OrderStateList | OrderRecordList | WarehouseTransferList | OtherFilesList
+
+# List 輸入參數
+input ListCardInput {
+  listType: ListType!
+  filters: ListFilters
+  pagination: PaginationInput
+  sort: SortInput
+  dateRange: DateRangeInput
+  includeMetrics: Boolean = true
+}
+
+input ListFilters {
+  # 通用過濾器
+  search: String
+  status: [String!]
+  category: [String!]
+  tags: [String!]
+  userId: ID
+  
+  # 特定類型過濾器
+  orderFilters: OrderListFilters
+  transferFilters: TransferListFilters
+  fileFilters: FileListFilters
+}
+
+input OrderListFilters {
+  orderNumbers: [String!]
+  customerCodes: [String!]
+  statuses: [OrderStatus!]
+  priorities: [OrderPriority!]
+  isUrgent: Boolean
+  valueRange: FloatRangeInput
+}
+
+input TransferListFilters {
+  transferNumbers: [String!]
+  palletNumbers: [String!]
+  fromLocations: [String!]
+  toLocations: [String!]
+  statuses: [TransferStatus!]
+  priorities: [TransferPriority!]
+}
+
+input FileListFilters {
+  fileTypes: [FileType!]
+  categories: [FileCategory!]
+  statuses: [FileStatus!]
+  accessibility: [FileAccessibility!]
+  sizeRange: IntRangeInput
+  hasPermissions: [FilePermissionType!]
+}
+
+input FloatRangeInput {
+  min: Float
+  max: Float
+}
+
+input IntRangeInput {
+  min: Int
+  max: Int
+}
+
+enum OrderPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+  CRITICAL
+}
+
+# 統計和分析輸入
+input ListAnalyticsInput {
+  listType: ListType!
+  dateRange: DateRangeInput!
+  groupBy: AnalyticsGroupBy
+  metrics: [AnalyticsMetric!]
+}
+
+enum AnalyticsGroupBy {
+  HOUR
+  DAY
+  WEEK
+  MONTH
+  STATUS
+  CATEGORY
+  USER
+  LOCATION
+}
+
+enum AnalyticsMetric {
+  COUNT
+  AVERAGE_DURATION
+  SUCCESS_RATE
+  THROUGHPUT
+  EFFICIENCY
+  UTILIZATION
+}
+
+# 查詢擴展
+extend type Query {
+  # 單一 List 查詢
+  listCardData(input: ListCardInput!): ListDataUnion!
+  
+  # 批量 List 查詢
+  batchListCardData(inputs: [ListCardInput!]!): [ListDataUnion!]!
+  
+  # List 分析數據
+  listAnalytics(input: ListAnalyticsInput!): JSON!
+  
+  # List 元數據
+  listMetadata(listType: ListType!): ListMetadata!
+}
+
+type ListMetadata {
+  listType: ListType!
+  availableFilters: [FilterMetadata!]!
+  availableSorts: [SortMetadata!]!
+  defaultPageSize: Int!
+  maxPageSize: Int!
+  supportedFormats: [ExportFormat!]!
+}
+
+type FilterMetadata {
+  field: String!
+  type: FilterFieldType!
+  options: [String!]
+  required: Boolean!
+}
+
+enum FilterFieldType {
+  STRING
+  NUMBER
+  DATE
+  BOOLEAN
+  ENUM
+  ARRAY
+}
+
+type SortMetadata {
+  field: String!
+  displayName: String!
+  defaultDirection: SortDirection!
+}
+
+enum ExportFormat {
+  CSV
+  EXCEL
+  PDF
+  JSON
+}
+
+# 變更操作擴展
+extend type Mutation {
+  # 文件操作
+  uploadFile(input: FileUploadInput!): FileRecord!
+  deleteFile(id: ID!): Boolean!
+  updateFileMetadata(id: ID!, input: FileMetadataInput!): FileRecord!
+  
+  # 批量文件操作
+  batchFileOperation(input: BatchFileOperationInput!): BatchResult!
+  
+  # List 配置
+  saveListConfiguration(input: ListConfigurationInput!): Boolean!
+  deleteListConfiguration(id: ID!): Boolean!
+}
+
+input FileUploadInput {
+  fileName: String!
+  fileType: FileType!
+  category: FileCategory!
+  data: String! # Base64 encoded
+  relatedEntity: FileRelatedEntityInput
+  tags: [String!]
+  accessibility: FileAccessibility
+}
+
+input FileRelatedEntityInput {
+  entityType: String!
+  entityId: String!
+  relationship: String!
+}
+
+input FileMetadataInput {
+  fileName: String
+  category: FileCategory
+  tags: [String!]
+  accessibility: FileAccessibility
+  status: FileStatus
+}
+
+input BatchFileOperationInput {
+  operation: FileOperation!
+  fileIds: [ID!]!
+  metadata: FileMetadataInput
+}
+
+enum FileOperation {
+  DELETE
+  ARCHIVE
+  UPDATE_CATEGORY
+  UPDATE_TAGS
+  CHANGE_ACCESSIBILITY
+}
+
+input ListConfigurationInput {
+  listType: ListType!
+  name: String!
+  filters: ListFilters!
+  sort: SortInput!
+  isDefault: Boolean!
+  isPublic: Boolean!
+}
+
+# 訂閱擴展（實時更新）
+extend type Subscription {
+  # List 數據實時更新
+  listDataUpdated(listType: ListType!): ListDataUnion!
+  
+  # 文件狀態變更
+  fileStatusChanged(fileIds: [ID!]): FileRecord!
+  
+  # 轉移狀態實時更新
+  transferListUpdated(transferIds: [ID!]): WarehouseTransferList!
+  
+  # 訂單狀態實時更新
+  orderListUpdated(orderNumbers: [String!]): OrderStateList!
+}
+
+# 權限和緩存指令應用
+extend type Query {
+  listCardData(input: ListCardInput!): ListDataUnion! 
+    @auth(requires: VIEWER)
+    @rateLimit(max: 100, window: "1m")
+    @cache(ttl: 300, scope: USER)
+    
+  batchListCardData(inputs: [ListCardInput!]!): [ListDataUnion!]!
+    @auth(requires: VIEWER)
+    @rateLimit(max: 50, window: "1m")
+    @cache(ttl: 300, scope: USER)
+}

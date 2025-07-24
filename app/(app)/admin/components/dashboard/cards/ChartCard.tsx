@@ -36,11 +36,14 @@ import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 import {
   ChartType,
+  AggregationType,
+  TimeGranularity,
   type ChartCardData,
   type ChartQueryInput,
   type ChartDataset,
   type ChartConfig,
 } from '@/types/generated/graphql';
+import { ensureString } from '@/utils/graphql-types';
 
 // GraphQL 查詢
 const CHART_CARD_QUERY = gql`
@@ -144,10 +147,10 @@ export interface ChartCardProps {
   };
 
   // 時間粒度
-  timeGranularity?: 'MINUTE' | 'HOUR' | 'DAY' | 'WEEK' | 'MONTH' | 'QUARTER' | 'YEAR';
+  timeGranularity?: TimeGranularity;
 
   // 聚合類型
-  aggregationType?: 'SUM' | 'AVERAGE' | 'MIN' | 'MAX' | 'COUNT' | 'MEDIAN' | 'PERCENTILE';
+  aggregationType?: AggregationType;
 
   // 分組
   groupBy?: string[];
@@ -178,8 +181,8 @@ export const ChartCard: React.FC<ChartCardProps> = ({
   chartTypes,
   dataSources,
   dateRange,
-  timeGranularity = 'DAY',
-  aggregationType = 'SUM',
+  timeGranularity = TimeGranularity.Day,
+  aggregationType = AggregationType.Sum,
   groupBy,
   filters,
   limit,
@@ -265,9 +268,9 @@ export const ChartCard: React.FC<ChartCardProps> = ({
                 type="monotone"
                 dataKey="value"
                 name={dataset.label}
-                stroke={dataset.borderColor || DEFAULT_COLORS[idx % DEFAULT_COLORS.length]}
-                fill={dataset.backgroundColor || DEFAULT_COLORS[idx % DEFAULT_COLORS.length]}
-                stackId={dataset.stack}
+                stroke={ensureString(dataset.borderColor ?? null) || DEFAULT_COLORS[idx % DEFAULT_COLORS.length]}
+                fill={ensureString(dataset.backgroundColor ?? null) || DEFAULT_COLORS[idx % DEFAULT_COLORS.length]}
+                stackId={ensureString(dataset.stack ?? null)}
               />
             ))}
           </AreaChart>
@@ -286,8 +289,8 @@ export const ChartCard: React.FC<ChartCardProps> = ({
                 key={dataset.id}
                 dataKey="value"
                 name={dataset.label}
-                fill={dataset.backgroundColor || DEFAULT_COLORS[idx % DEFAULT_COLORS.length]}
-                stackId={dataset.stack}
+                fill={ensureString(dataset.backgroundColor ?? null) || DEFAULT_COLORS[idx % DEFAULT_COLORS.length]}
+                stackId={ensureString(dataset.stack ?? null)}
               />
             ))}
           </BarChart>

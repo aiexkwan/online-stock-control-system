@@ -22,6 +22,29 @@ type Query {
   batchWidgetData(
     requests: [WidgetDataRequest!]!
   ): [WidgetDataResponse!]!
+  
+  # ListCard data sources - unified list entry point
+  listCardData(input: ListCardInput!): ListDataUnion!
+    @auth(requires: VIEWER)
+    @rateLimit(max: 100, window: "1m")
+    @cache(ttl: 300, scope: USER)
+  
+  # Batch ListCard data fetch
+  batchListCardData(inputs: [ListCardInput!]!): [ListDataUnion!]!
+    @auth(requires: VIEWER)
+    @rateLimit(max: 50, window: "1m")
+    @cache(ttl: 300, scope: USER)
+  
+  # List analytics data
+  listAnalytics(input: ListAnalyticsInput!): JSON!
+    @auth(requires: VIEWER)
+    @rateLimit(max: 20, window: "1m")
+    @cache(ttl: 600, scope: USER)
+  
+  # List metadata
+  listMetadata(listType: ListType!): ListMetadata!
+    @auth(requires: VIEWER)
+    @cache(ttl: 3600, scope: PUBLIC)
 }
 
 # Root Mutation Type
@@ -34,6 +57,33 @@ type Mutation {
   batchOperation(
     operations: [BatchOperationInput!]!
   ): BatchOperationResult!
+  
+  # ListCard file operations
+  uploadFile(input: FileUploadInput!): FileRecord!
+    @auth(requires: OPERATOR)
+    @rateLimit(max: 10, window: "1m")
+    
+  deleteFile(id: ID!): Boolean!
+    @auth(requires: OPERATOR)
+    @rateLimit(max: 20, window: "1m")
+    
+  updateFileMetadata(id: ID!, input: FileMetadataInput!): FileRecord!
+    @auth(requires: OPERATOR)
+    @rateLimit(max: 30, window: "1m")
+  
+  # Batch file operations
+  batchFileOperation(input: BatchFileOperationInput!): BatchResult!
+    @auth(requires: SUPERVISOR)
+    @rateLimit(max: 5, window: "1m")
+  
+  # List configuration
+  saveListConfiguration(input: ListConfigurationInput!): Boolean!
+    @auth(requires: VIEWER)
+    @rateLimit(max: 10, window: "1m")
+    
+  deleteListConfiguration(id: ID!): Boolean!
+    @auth(requires: VIEWER)
+    @rateLimit(max: 20, window: "1m")
 }
 
 # Root Subscription Type (for future real-time features)
@@ -49,6 +99,22 @@ type Subscription {
   
   # System alerts
   systemAlert(severity: AlertSeverity): SystemAlert!
+  
+  # ListCard real-time updates
+  listDataUpdated(listType: ListType!): ListDataUnion!
+    @auth(requires: VIEWER)
+  
+  # File status updates
+  fileStatusChanged(fileIds: [ID!]): FileRecord!
+    @auth(requires: VIEWER)
+  
+  # Transfer list updates
+  transferListUpdated(transferIds: [ID!]): WarehouseTransferList!
+    @auth(requires: VIEWER)
+  
+  # Order list updates
+  orderListUpdated(orderNumbers: [String!]): OrderStateList!
+    @auth(requires: VIEWER)
 }
 
 # Widget data request/response types
@@ -162,3 +228,5 @@ enum CacheScope {
 # - inventory.graphql
 # - operations.graphql
 # - analytics.graphql
+# - list.graphql (ListCard support)
+# - form.graphql (FormCard support)

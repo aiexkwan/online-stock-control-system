@@ -58,7 +58,7 @@ export function WidgetWrapper({
         {(title || headerAction) && (
           <div className='widget-header flex items-center justify-between border-b border-[#23232A]/30 px-4 py-3'>
             <div>
-              {title && <h3 className='text-sm font-medium text-[#EAEAEA]'>{title}</h3>}
+              {title && <h3 className='text-sm font-medium text-[#ffffff]'>{title}</h3>}
               {subtitle && <p className='mt-0.5 text-xs text-[#8E8EA0]'>{subtitle}</p>}
             </div>
             {headerAction && <div className='flex items-center gap-2'>{headerAction}</div>}

@@ -18,6 +18,14 @@ import { unifiedWidgetRegistry } from '@/lib/widgets/unified-registry';
 import HistoryTreeV2 from './widgets/HistoryTreeV2';
 import { requestDeduplicator } from '@/lib/utils/request-deduplicator';
 import { StatsCard } from './cards/StatsCard';
+import { ChartCard } from './cards/ChartCard';
+import { TableCard } from './cards/TableCard';
+import { AnalysisCard } from './cards/AnalysisCard';
+import { ListCard } from './cards/ListCard';
+import { FormCard, FormType as FormCardType } from './cards/FormCard';
+import { ListType, AnalysisType } from '@/types/generated/graphql';
+import { DepartmentSelectorCard } from './cards/DepartmentSelectorCard';
+import { HistoryTreeCard } from './cards/HistoryTreeCard';
 import { 
   isStatsWidget, 
   convertWidgetConfigToStatsCard,
@@ -248,7 +256,7 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
         }
 
         const data = await response.json();
-        return data[config.dataSource] || null;
+        return data[config.dataSource || 'default'] || null;
       });
       
       setData(result);
@@ -291,17 +299,47 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
     renderLazyComponent,
   };
 
-  let renderedContent: JSX.Element;
+  let renderedContent: JSX.Element = createErrorFallback('Unknown widget type');
 
   try {
     switch (widgetCategory) {
       case 'chart':
-        renderedContent = <ChartWidgetRenderer {...baseProps} />;
+        // 檢查是否為新的 ChartCard 類型
+        if (config.type === 'chart-card' || config.type === 'chart') {
+          renderedContent = (
+            <ChartCard
+              chartTypes={[config.chartType as any || 'line']}
+              dataSources={[config.dataSource || 'default']}
+              dateRange={timeFrame ? {
+                start: new Date(timeFrame.start),
+                end: new Date(timeFrame.end)
+              } : undefined}
+              isEditMode={false}
+            />
+          );
+        } else {
+          renderedContent = <ChartWidgetRenderer {...baseProps} />;
+        }
         break;
 
       case 'stats':
-        // 檢查是否應該使用新的 StatsCard
-        if (STATS_MIGRATION_FLAGS.enableStatsCard && isStatsWidget(config.type)) {
+        // 檢查是否為新的 StatsCard 類型
+        if (config.type === 'stats-card' || config.type === 'stats') {
+          renderedContent = (
+            <StatsCard
+              statTypes={config.metrics?.map(metric => ({ type: metric } as any)) || []}
+              columns={1}
+              dateRange={timeFrame ? {
+                start: new Date(timeFrame.start),
+                end: new Date(timeFrame.end)
+              } : undefined}
+              showTrend={true}
+              showComparison={true}
+              isEditMode={false}
+            />
+          );
+        } else if (STATS_MIGRATION_FLAGS.enableStatsCard && isStatsWidget(config.type)) {
+          // 舊版 StatsCard 遷移邏輯
           const { statTypes } = convertWidgetConfigToStatsCard([config.type]);
           if (statTypes.length > 0) {
             renderedContent = (
@@ -319,27 +357,253 @@ const AdminWidgetRendererComponent: React.FC<AdminWidgetRendererProps> = ({
             );
             break;
           }
+        } else {
+          // 使用原有的 StatsWidgetRenderer
+          renderedContent = <StatsWidgetRenderer {...baseProps} />;
         }
-        // 否則使用原有的 StatsWidgetRenderer
-        renderedContent = <StatsWidgetRenderer {...baseProps} />;
         break;
 
       case 'list':
-        renderedContent = <ListWidgetRenderer {...baseProps} />;
+        // 檢查是否為新的 Card 類型
+        if (config.type === 'table-card') {
+          renderedContent = (
+            <TableCard
+              dataSource={config.dataSource || 'default'}
+              dateRange={timeFrame ? {
+                start: new Date(timeFrame.start),
+                end: new Date(timeFrame.end)
+              } : undefined}
+              isEditMode={false}
+            />
+          );
+        } else if (config.type === 'list-card') {
+          // 處理 ListCard 類型
+          // 使用 dataSource 來確定 listType，並從 description 中解析額外配置
+          let listType = ListType.OrderState; // 默認值
+          let pageSize = 50; // 默認值
+          
+          // 根據 dataSource 或 description 映射到正確的 ListType
+          const sourceType = config.dataSource || config.description;
+          switch (sourceType) {
+            case 'ORDER_STATE':
+            case 'order-state':
+            case 'order_state':
+              listType = ListType.OrderState;
+              break;
+            case 'ORDER_RECORD':
+            case 'order-record':
+            case 'order_record':
+              listType = ListType.OrderRecord;
+              break;
+            case 'WAREHOUSE_TRANSFER':
+            case 'warehouse-transfer':
+            case 'warehouse_transfer':
+              listType = ListType.WarehouseTransfer;
+              break;
+            case 'OTHER_FILES':
+            case 'other-files':
+            case 'other_files':
+              listType = ListType.OtherFiles;
+              break;
+            default:
+              // 嘗試從 component 名稱推斷
+              if (config.component) {
+                if (config.component.toLowerCase().includes('order') && config.component.toLowerCase().includes('state')) {
+                  listType = ListType.OrderState;
+                } else if (config.component.toLowerCase().includes('order') && config.component.toLowerCase().includes('record')) {
+                  listType = ListType.OrderRecord;
+                } else if (config.component.toLowerCase().includes('transfer')) {
+                  listType = ListType.WarehouseTransfer;
+                } else if (config.component.toLowerCase().includes('file')) {
+                  listType = ListType.OtherFiles;
+                }
+              }
+          }
+          
+          // 嘗試從 metrics 中解析 pageSize
+          if (config.metrics && config.metrics.length > 0) {
+            const pageSizeMetric = config.metrics.find(m => m.startsWith('pageSize:'));
+            if (pageSizeMetric) {
+              const size = parseInt(pageSizeMetric.split(':')[1]);
+              if (!isNaN(size)) {
+                pageSize = size;
+              }
+            }
+          }
+          
+          renderedContent = (
+            <ListCard
+              listType={listType}
+              pageSize={pageSize}
+              dateRange={timeFrame ? {
+                start: new Date(timeFrame.start),
+                end: new Date(timeFrame.end)
+              } : undefined}
+              showHeader={true}
+              showMetrics={true}
+              showRefreshButton={true}
+              isEditMode={false}
+            />
+          );
+        } else if (config.type === 'analysis-card') {
+          renderedContent = (
+            <AnalysisCard
+              analysisType={AnalysisType.TrendForecasting}
+              dateRange={timeFrame ? {
+                start: new Date(timeFrame.start),
+                end: new Date(timeFrame.end)
+              } : undefined}
+              isEditMode={false}
+            />
+          );
+        } else if (config.type === 'form-card') {
+          // 處理 FormCard 類型
+          // 使用 dataSource 來確定 formType，並從 config 中解析額外配置
+          let formType = FormCardType.PRODUCT_EDIT; // 默認值
+          let entityId: string | undefined = undefined;
+          let prefilledData: Record<string, any> = {};
+          
+          // 根據 dataSource 或 description 映射到正確的 FormType
+          const sourceType = config.dataSource || config.description || config.component;
+          switch (sourceType) {
+            case 'PRODUCT_EDIT':
+            case 'product-edit':
+            case 'product_edit':
+              formType = FormCardType.PRODUCT_EDIT;
+              break;
+            case 'USER_REGISTRATION':
+            case 'user-registration':
+            case 'user_registration':
+              formType = FormCardType.USER_REGISTRATION;
+              break;
+            case 'ORDER_CREATE':
+            case 'order-create':
+            case 'order_create':
+              formType = FormCardType.ORDER_CREATE;
+              break;
+            case 'WAREHOUSE_TRANSFER':
+            case 'warehouse-transfer':
+            case 'warehouse_transfer':
+              formType = FormCardType.WAREHOUSE_TRANSFER;
+              break;
+            case 'QUALITY_CHECK':
+            case 'quality-check':
+            case 'quality_check':
+              formType = FormCardType.QUALITY_CHECK;
+              break;
+            case 'INVENTORY_ADJUST':
+            case 'inventory-adjust':
+            case 'inventory_adjust':
+              formType = FormCardType.INVENTORY_ADJUST;
+              break;
+            default:
+              // 嘗試從 component 名稱推斷
+              if (config.component) {
+                if (config.component.toLowerCase().includes('product') && config.component.toLowerCase().includes('edit')) {
+                  formType = FormCardType.PRODUCT_EDIT;
+                } else if (config.component.toLowerCase().includes('user') && config.component.toLowerCase().includes('registration')) {
+                  formType = FormCardType.USER_REGISTRATION;
+                } else if (config.component.toLowerCase().includes('order') && config.component.toLowerCase().includes('create')) {
+                  formType = FormCardType.ORDER_CREATE;
+                } else if (config.component.toLowerCase().includes('warehouse') && config.component.toLowerCase().includes('transfer')) {
+                  formType = FormCardType.WAREHOUSE_TRANSFER;
+                }
+              }
+          }
+          
+          // 嘗試從 metrics 中解析 entityId 和其他配置
+          if (config.metrics && config.metrics.length > 0) {
+            config.metrics.forEach(metric => {
+              if (metric.startsWith('entityId:')) {
+                entityId = metric.split(':')[1];
+              } else if (metric.startsWith('prefilled:')) {
+                try {
+                  const prefilledJson = metric.substring('prefilled:'.length);
+                  prefilledData = JSON.parse(prefilledJson);
+                } catch (e) {
+                  console.warn('Failed to parse prefilled data:', e);
+                }
+              }
+            });
+          }
+          
+          // 從 config.config 中解析額外配置
+          if (config.config) {
+            if (config.config.entityId) {
+              entityId = config.config.entityId;
+            }
+            if (config.config.prefilledData) {
+              prefilledData = { ...prefilledData, ...config.config.prefilledData };
+            }
+          }
+          
+          renderedContent = (
+            <FormCard
+              formType={formType}
+              entityId={entityId}
+              prefilledData={prefilledData}
+              showHeader={true}
+              showProgress={true}
+              showValidationSummary={false}
+              isEditMode={false}
+              onSubmitSuccess={(data) => {
+                console.log('Form submitted successfully:', data);
+                // 可以在這裡添加成功處理邏輯
+              }}
+              onSubmitError={(error) => {
+                console.error('Form submission error:', error);
+                // 可以在這裡添加錯誤處理邏輯
+              }}
+              onCancel={() => {
+                console.log('Form cancelled');
+                // 可以在這裡添加取消處理邏輯
+              }}
+              onFieldChange={(fieldName, value) => {
+                console.log('Field changed:', fieldName, value);
+                // 可以在這裡添加字段變更處理邏輯
+              }}
+            />
+          );
+        } else {
+          renderedContent = <ListWidgetRenderer {...baseProps} />;
+        }
         break;
 
       case 'core':
       default:
-        // 處理核心 widgets (上傳、產品更新等)
-        renderedContent = renderCoreWidget(
-          config,
-          theme,
-          timeFrame,
-          data || [],
-          loading,
-          error,
-          renderLazyComponent
-        );
+        // 處理新的 Operations Cards
+        if (config.type === 'department-selector') {
+          renderedContent = (
+            <DepartmentSelectorCard
+              config={{
+                defaultDepartment: 'All',
+                showIcons: true,
+                style: 'full'
+              }}
+              onDepartmentChange={(department) => {
+                console.log('Department changed:', department);
+              }}
+            />
+          );
+        } else if (config.type === 'history-tree') {
+          renderedContent = (
+            <HistoryTreeCard
+              gridArea={config.gridArea}
+              maxEntries={20}
+            />
+          );
+        } else {
+          // 處理核心 widgets (上傳、產品更新等)
+          renderedContent = renderCoreWidget(
+            config,
+            theme,
+            timeFrame,
+            data || [],
+            loading,
+            error,
+            renderLazyComponent
+          );
+        }
         break;
     }
   } catch (err) {

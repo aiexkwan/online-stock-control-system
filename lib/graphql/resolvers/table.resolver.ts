@@ -24,6 +24,7 @@ import {
 } from '@/types/generated/graphql';
 import { startOfDay, endOfDay, subDays, format, isValid, parseISO } from 'date-fns';
 import DataLoader from 'dataloader';
+import { ensureNumber, ensureInputValue, DEFAULT_PAGINATION } from '@/utils/graphql-types';
 
 // 表格數據源配置映射
 const TABLE_CONFIG_MAP: Record<string, TableDataSourceConfig> = {
@@ -437,7 +438,8 @@ function applySorting(query: any, sorting?: TableSorting): any {
 
 // 應用分頁
 function applyPagination(query: any, pagination: TablePagination): any {
-  const { limit, offset } = pagination;
+  const limit = ensureNumber(pagination.limit, DEFAULT_PAGINATION.limit);
+  const offset = ensureNumber(pagination.offset, DEFAULT_PAGINATION.offset);
   return query.range(offset, offset + limit - 1);
 }
 
@@ -466,16 +468,20 @@ async function fetchTableData(
   }
   
   // 應用篩選
-  query = applyFilters(query, input.filters);
+  if (input.filters) {
+    query = applyFilters(query, ensureInputValue(input.filters, {} as TableFilters));
+  }
   
   // 應用排序
-  query = applySorting(query, input.sorting);
+  if (input.sorting) {
+    query = applySorting(query, ensureInputValue(input.sorting, {} as TableSorting));
+  }
   
   // 獲取總數（不含分頁）
-  const countQuery = applyFilters(
-    supabase.from(config.baseQuery).select('*', { count: 'exact', head: true }),
-    input.filters
-  );
+  let countQuery = supabase.from(config.baseQuery).select('*', { count: 'exact', head: true });
+  if (input.filters) {
+    countQuery = applyFilters(countQuery, ensureInputValue(input.filters, {} as TableFilters));
+  }
   
   // 應用分頁
   query = applyPagination(query, input.pagination);
@@ -491,8 +497,10 @@ async function fetchTableData(
   
   const queryTime = Date.now() - startTime;
   const totalCount = count || 0;
-  const currentPage = Math.floor(input.pagination.offset / input.pagination.limit) + 1;
-  const totalPages = Math.ceil(totalCount / input.pagination.limit);
+  const offset = ensureNumber(input.pagination.offset, DEFAULT_PAGINATION.offset);
+  const limit = ensureNumber(input.pagination.limit, DEFAULT_PAGINATION.limit);
+  const currentPage = Math.floor(offset / limit) + 1;
+  const totalPages = Math.ceil(totalCount / limit);
   
   // 生成列配置
   const columns = generateTableColumns(dataSource, data || []);
@@ -513,11 +521,11 @@ async function fetchTableData(
     data: data || [],
     columns,
     totalCount,
-    hasNextPage: input.pagination.offset + input.pagination.limit < totalCount,
-    hasPreviousPage: input.pagination.offset > 0,
+    hasNextPage: offset + limit < totalCount,
+    hasPreviousPage: offset > 0,
     currentPage,
     totalPages,
-    filters: input.filters || null,
+    filters: null, // TODO: Convert TableFilters to AppliedTableFilters format
     sorting: input.sorting || null,
     metadata,
     lastUpdated: new Date().toISOString(),

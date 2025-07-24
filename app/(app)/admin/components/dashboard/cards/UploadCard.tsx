@@ -23,20 +23,21 @@ import {
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import type {
+import {
   UploadType,
   UploadFolder,
   SupportedFileType,
   UploadStatus,
-  UploadCardInput,
-  SingleFileUploadInput,
-  UploadCardData,
-  UploadConfig,
-  FileInfo,
-  UploadProgress,
-  SingleUploadResult,
-  OrderAnalysisResult,
+  type UploadCardInput,
+  type SingleFileUploadInput,
+  type UploadCardData,
+  type UploadConfig,
+  type FileInfo,
+  type UploadProgress,
+  type SingleUploadResult,
+  type OrderAnalysisResult,
 } from '@/types/generated/graphql';
+import { ensureNumber } from '@/utils/graphql-types';
 
 // GraphQL 查詢
 const UPLOAD_CARD_QUERY = gql`
@@ -321,7 +322,7 @@ export const UploadCard: React.FC<UploadCardProps> = ({
 
       // 限制文件數量
       const limitedFiles = config.allowMultiple 
-        ? fileArray.slice(0, config.maxFiles)
+        ? fileArray.slice(0, ensureNumber(config.maxFiles ?? null, 10))
         : [fileArray[0]];
 
       onFileSelect?.(limitedFiles);

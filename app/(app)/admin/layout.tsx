@@ -1,6 +1,7 @@
 /**
  * Admin Layout
  * 為 Admin 頁面提供 Dialog Context、Upload Refresh Context 和 QueryClient
+ * Updated: 添加統一背景系統確保視覺一致性
  */
 
 'use client';
@@ -9,6 +10,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DialogProvider } from '@/app/contexts/DialogContext';
 import { UploadRefreshProvider } from './contexts/UploadRefreshContext';
 import { ApolloProvider } from '@/lib/graphql/apollo-provider';
+import { UnifiedBackground } from '@/app/components/visual-system/core/UnifiedBackground';
 import './styles/page-flip-animation.css';
 
 const queryClient = new QueryClient({
@@ -36,12 +38,20 @@ export default function AdminLayout({ children }: { children?: React.ReactNode }
   );
 
   return (
-    <ApolloProvider>
-      <QueryClientProvider client={queryClient}>
-        <DialogProvider>
-          <UploadRefreshProvider>{safeChildren}</UploadRefreshProvider>
-        </DialogProvider>
-      </QueryClientProvider>
-    </ApolloProvider>
+    <>
+      {/* 🎯 統一背景系統 - 確保Admin區域視覺一致性 */}
+      <UnifiedBackground />
+      
+      {/* Admin Provider 結構 */}
+      <div className="relative z-10 min-h-screen">
+        <ApolloProvider>
+          <QueryClientProvider client={queryClient}>
+            <DialogProvider>
+              <UploadRefreshProvider>{safeChildren}</UploadRefreshProvider>
+            </DialogProvider>
+          </QueryClientProvider>
+        </ApolloProvider>
+      </div>
+    </>
   );
 }

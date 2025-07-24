@@ -143,10 +143,16 @@ interface HistoryTreeFilters {
 }
 
 export default function HistoryTreeV2GraphQL({
-  id,
-  config,
-  className,
+  widget,
+  isEditMode,
+  onUpdate,
+  onRemove,
+  timeFrame,
 }: TraditionalWidgetComponentProps) {
+  // Extract config from widget object
+  const config = widget?.config || {};
+  const id = widget?.id;
+  const className = '';
   // State
   const [filters, setFilters] = useState<HistoryTreeFilters>({});
   const [searchTerm, setSearchTerm] = useState('');

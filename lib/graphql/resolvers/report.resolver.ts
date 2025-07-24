@@ -28,7 +28,7 @@ import {
   ReportOperation,
   AggregationFunction,
 } from '@/types/generated/graphql';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/app/utils/supabase/server';
 
 // 報表類型配置映射
 const REPORT_CONFIGS: Record<ReportType, ReportConfig> = {

@@ -18,6 +18,11 @@ import type { DashboardBatchQueryData } from '@/app/(app)/admin/types/dashboard'
 
 // 動態導入 theme layouts - 使用 webpack magic comments
 const ThemeLayouts = {
+  operations: lazy(() =>
+    import(/* webpackChunkName: "theme-operations" */ './OperationsGridLayout').then(m => ({
+      default: m.OperationsGridLayout,
+    }))
+  ),
   injection: lazy(() =>
     import(/* webpackChunkName: "theme-injection" */ './CustomThemeLayout').then(m => ({
       default: m.CustomThemeLayout,

@@ -1,0 +1,626 @@
+# Form GraphQL Schema
+# FormCard 統一表單系統
+# NewPennine Warehouse Management System
+
+# ==========================================
+# 核心表單類型枚舉
+# ==========================================
+
+enum FormType {
+  # 產品相關表單
+  PRODUCT_EDIT         # 產品編輯表單 (基於 ProductEditForm)
+  PRODUCT_CREATE       # 產品創建表單
+  PRODUCT_BULK_EDIT    # 產品批量編輯
+  
+  # 文件相關表單
+  FILE_UPLOAD          # 文件上傳表單
+  FILE_METADATA_EDIT   # 文件元數據編輯
+  DOCUMENT_UPLOAD      # 文檔上傳表單
+  
+  # 操作確認表單
+  VOID_CONFIRMATION    # 作廢確認表單
+  DELETE_CONFIRMATION  # 刪除確認表單
+  TRANSFER_CONFIRMATION # 轉移確認表單
+  
+  # 庫存相關表單
+  INVENTORY_ADJUST     # 庫存調整表單
+  INVENTORY_TRANSFER   # 庫存轉移表單
+  STOCK_COUNT         # 盤點表單
+  
+  # 訂單相關表單
+  ORDER_CREATE        # 訂單創建表單
+  ORDER_EDIT          # 訂單編輯表單
+  GRN_CREATE          # GRN 創建表單
+  
+  # 系統配置表單
+  USER_PROFILE        # 用戶配置表單
+  SYSTEM_CONFIG       # 系統配置表單
+  NOTIFICATION_CONFIG # 通知配置表單
+}
+
+# ==========================================
+# 表單字段類型
+# ==========================================
+
+enum FormFieldType {
+  # 基本輸入類型
+  TEXT                # 文字輸入
+  EMAIL               # 電子郵件輸入
+  PASSWORD            # 密碼輸入
+  NUMBER              # 數字輸入
+  DECIMAL             # 小數輸入
+  DATE                # 日期選擇
+  DATETIME            # 日期時間選擇
+  TIME                # 時間選擇
+  
+  # 選擇類型
+  SELECT              # 下拉選擇
+  MULTI_SELECT        # 多重選擇
+  RADIO               # 單選按鈕
+  CHECKBOX            # 復選框
+  TOGGLE              # 開關切換
+  
+  # 複雜類型
+  TEXTAREA            # 多行文字
+  RICH_TEXT           # 富文本編輯器
+  FILE_UPLOAD         # 文件上傳
+  IMAGE_UPLOAD        # 圖片上傳
+  COLOR_PICKER        # 顏色選擇器
+  
+  # 自定義類型
+  PRODUCT_SELECTOR    # 產品選擇器
+  LOCATION_SELECTOR   # 位置選擇器
+  USER_SELECTOR       # 用戶選擇器
+  BARCODE_SCANNER     # 條碼掃描器
+}
+
+# ==========================================
+# 驗證規則類型
+# ==========================================
+
+type ValidationRule {
+  type: ValidationRuleType!
+  value: JSON
+  message: String!
+  errorCode: String
+}
+
+enum ValidationRuleType {
+  REQUIRED            # 必填
+  MIN_LENGTH          # 最小長度
+  MAX_LENGTH          # 最大長度
+  MIN_VALUE           # 最小值
+  MAX_VALUE           # 最大值
+  PATTERN             # 正則表達式
+  EMAIL               # 電子郵件格式
+  URL                 # URL 格式
+  CUSTOM              # 自定義驗證
+  UNIQUE              # 唯一性驗證
+  EXISTS              # 存在性驗證
+}
+
+# ==========================================
+# 表單字段定義
+# ==========================================
+
+type FormField {
+  id: ID!
+  name: String!                    # 字段名稱
+  label: String!                   # 顯示標籤
+  type: FormFieldType!             # 字段類型
+  placeholder: String              # 占位符文字
+  helpText: String                 # 幫助文字
+  defaultValue: JSON               # 默認值
+  
+  # 驗證配置
+  validationRules: [ValidationRule!]! # 驗證規則
+  isRequired: Boolean!             # 是否必填
+  isDisabled: Boolean!             # 是否禁用
+  isReadOnly: Boolean!             # 是否只讀
+  isHidden: Boolean!               # 是否隱藏
+  
+  # 選項配置（用於 SELECT, RADIO, CHECKBOX 等）
+  options: [FormFieldOption!]      # 靜態選項
+  optionsSource: FormFieldOptionsSource # 動態選項來源
+  
+  # 佈局配置
+  order: Int!                      # 顯示順序
+  gridCols: Int                    # 網格列數 (1-12)
+  width: FormFieldWidth            # 字段寬度
+  
+  # 條件顯示
+  showConditions: [FormFieldCondition!] # 顯示條件
+  hideConditions: [FormFieldCondition!] # 隱藏條件
+  
+  # 元數據
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+# 表單字段選項
+type FormFieldOption {
+  value: String!
+  label: String!
+  description: String
+  isDefault: Boolean!
+  isDisabled: Boolean!
+  group: String                    # 選項分組
+  icon: String                     # 圖標
+  color: String                    # 顏色
+}
+
+# 動態選項來源
+type FormFieldOptionsSource {
+  type: OptionsSourceType!
+  query: String!                   # GraphQL 查詢或 API 端點
+  valueField: String!              # 值字段名
+  labelField: String!              # 標籤字段名
+  filters: JSON                    # 過濾條件
+  cacheTimeout: Int                # 緩存超時 (秒)
+}
+
+enum OptionsSourceType {
+  GRAPHQL_QUERY      # GraphQL 查詢
+  REST_API           # REST API
+  STATIC_DATA        # 靜態數據
+  COMPUTED           # 計算生成
+}
+
+# 字段寬度枚舉
+enum FormFieldWidth {
+  FULL               # 100%
+  HALF               # 50%
+  THIRD              # 33.33%
+  QUARTER            # 25%
+  AUTO               # 自動
+}
+
+# 條件顯示規則
+type FormFieldCondition {
+  fieldName: String!               # 依賴字段名
+  operator: ConditionOperator!     # 操作符
+  value: JSON!                     # 比較值
+  logicalOperator: LogicalOperator # 邏輯操作符 (AND/OR)
+}
+
+enum ConditionOperator {
+  EQUALS
+  NOT_EQUALS
+  GREATER_THAN
+  LESS_THAN
+  CONTAINS
+  IN
+  NOT_IN
+  IS_EMPTY
+  IS_NOT_EMPTY
+}
+
+enum LogicalOperator {
+  AND
+  OR
+}
+
+# ==========================================
+# 表單配置類型
+# ==========================================
+
+type FormConfig {
+  id: ID!
+  type: FormType!                  # 表單類型
+  name: String!                    # 表單名稱
+  title: String!                   # 表單標題
+  description: String              # 表單描述
+  
+  # 表單字段
+  fields: [FormField!]!            # 表單字段列表
+  fieldGroups: [FormFieldGroup!]   # 字段分組
+  
+  # 表單配置
+  submitButtonText: String         # 提交按鈕文字
+  cancelButtonText: String         # 取消按鈕文字
+  successMessage: String           # 成功消息
+  errorMessage: String             # 錯誤消息
+  
+  # 佈局配置
+  layout: FormLayout!              # 表單佈局
+  gridColumns: Int                 # 網格列數
+  spacing: FormSpacing             # 間距配置
+  
+  # 行為配置
+  autoSave: Boolean!               # 自動保存
+  autoSaveInterval: Int            # 自動保存間隔 (秒)
+  validateOnChange: Boolean!       # 實時驗證
+  resetOnSubmit: Boolean!          # 提交後重置
+  
+  # 權限配置
+  requiredPermissions: [String!]   # 所需權限
+  readOnlyMode: Boolean!           # 只讀模式
+  
+  # 元數據
+  version: String!                 # 配置版本
+  createdBy: String!               # 創建者
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  isActive: Boolean!               # 是否啟用
+}
+
+# 表單字段分組
+type FormFieldGroup {
+  id: ID!
+  name: String!
+  title: String!
+  description: String
+  order: Int!
+  isCollapsible: Boolean!
+  isCollapsed: Boolean!
+  fields: [String!]!               # 字段名稱列表
+}
+
+# 表單佈局枚舉
+enum FormLayout {
+  VERTICAL           # 垂直佈局
+  HORIZONTAL         # 水平佈局
+  GRID               # 網格佈局
+  WIZARD             # 嚮導式佈局
+  TABS               # 標籤頁佈局
+}
+
+# 間距配置
+type FormSpacing {
+  fieldSpacing: String             # 字段間距
+  groupSpacing: String             # 分組間距
+  padding: String                  # 內邊距
+  margin: String                   # 外邊距
+}
+
+# ==========================================
+# 表單數據類型
+# ==========================================
+
+type FormData {
+  formType: FormType!
+  formConfigId: ID!
+  data: JSON!                      # 表單數據
+  submittedAt: DateTime!
+  submittedBy: String!
+  validation: FormValidationResult # 驗證結果
+}
+
+type FormValidationResult {
+  isValid: Boolean!
+  errors: [FormFieldError!]!
+  warnings: [FormFieldWarning!]!
+}
+
+type FormFieldError {
+  fieldName: String!
+  message: String!
+  errorCode: String!
+  value: JSON
+}
+
+type FormFieldWarning {
+  fieldName: String!
+  message: String!
+  warningCode: String!
+  value: JSON
+}
+
+# ==========================================
+# 表單選項數據
+# ==========================================
+
+# 產品相關選項
+type ProductFormOptions {
+  colours: [FormFieldOption!]!
+  types: [FormFieldOption!]!
+  units: [FormFieldOption!]!
+  suppliers: [FormFieldOption!]!
+}
+
+# 庫存相關選項
+type InventoryFormOptions {
+  locations: [FormFieldOption!]!
+  locationTypes: [FormFieldOption!]!
+  transferReasons: [FormFieldOption!]!
+  adjustmentReasons: [FormFieldOption!]!
+}
+
+# 用戶相關選項
+type UserFormOptions {
+  roles: [FormFieldOption!]!
+  departments: [FormFieldOption!]!
+  permissions: [FormFieldOption!]!
+}
+
+# ==========================================
+# Query 擴展
+# ==========================================
+
+extend type Query {
+  # 表單配置查詢
+  formConfig(type: FormType!): FormConfig
+    @auth(requires: VIEWER)
+    @cache(ttl: 3600, scope: PUBLIC)
+    
+  formConfigs(types: [FormType!]): [FormConfig!]!
+    @auth(requires: VIEWER)
+    @cache(ttl: 3600, scope: PUBLIC)
+  
+  # 表單選項數據查詢
+  formFieldOptions(
+    fieldName: String!
+    formType: FormType!
+    filters: JSON
+  ): [FormFieldOption!]!
+    @auth(requires: VIEWER)
+    @cache(ttl: 1800, scope: USER)
+  
+  # 批量表單選項查詢
+  batchFormFieldOptions(
+    requests: [FormFieldOptionsRequest!]!
+  ): [FormFieldOptionsResponse!]!
+    @auth(requires: VIEWER)
+    @cache(ttl: 1800, scope: USER)
+  
+  # 產品表單選項
+  productFormOptions: ProductFormOptions!
+    @auth(requires: VIEWER)
+    @cache(ttl: 3600, scope: PUBLIC)
+  
+  # 庫存表單選項
+  inventoryFormOptions: InventoryFormOptions!
+    @auth(requires: VIEWER)
+    @cache(ttl: 1800, scope: PUBLIC)
+  
+  # 用戶表單選項
+  userFormOptions: UserFormOptions!
+    @auth(requires: ADMIN)
+    @cache(ttl: 3600, scope: PUBLIC)
+  
+  # 表單驗證
+  validateFormData(
+    formType: FormType!
+    data: JSON!
+  ): FormValidationResult!
+    @auth(requires: VIEWER)
+    @rateLimit(max: 100, window: "1m")
+  
+  # 表單預填數據
+  formPrefillData(
+    formType: FormType!
+    entityId: ID
+    params: JSON
+  ): JSON
+    @auth(requires: VIEWER)
+    @rateLimit(max: 50, window: "1m")
+}
+
+# ==========================================
+# Mutation 擴展
+# ==========================================
+
+extend type Mutation {
+  # 表單數據提交
+  submitForm(input: FormSubmissionInput!): FormSubmissionResult!
+    @auth(requires: OPERATOR)
+    @rateLimit(max: 30, window: "1m")
+  
+  # 批量表單提交
+  batchSubmitForms(inputs: [FormSubmissionInput!]!): BatchFormSubmissionResult!
+    @auth(requires: OPERATOR)
+    @rateLimit(max: 10, window: "1m")
+  
+  # 表單草稿保存
+  saveFormDraft(input: FormDraftInput!): FormDraft!
+    @auth(requires: VIEWER)
+    @rateLimit(max: 100, window: "1m")
+  
+  # 表單配置管理 (管理員功能)
+  createFormConfig(input: CreateFormConfigInput!): FormConfig!
+    @auth(requires: ADMIN)
+  
+  updateFormConfig(id: ID!, input: UpdateFormConfigInput!): FormConfig!
+    @auth(requires: ADMIN)
+  
+  deleteFormConfig(id: ID!): Boolean!
+    @auth(requires: ADMIN)
+  
+  # 表單字段管理
+  addFormField(configId: ID!, input: CreateFormFieldInput!): FormField!
+    @auth(requires: ADMIN)
+  
+  updateFormField(fieldId: ID!, input: UpdateFormFieldInput!): FormField!
+    @auth(requires: ADMIN)
+  
+  removeFormField(fieldId: ID!): Boolean!
+    @auth(requires: ADMIN)
+  
+  reorderFormFields(configId: ID!, fieldOrders: [FieldOrderInput!]!): Boolean!
+    @auth(requires: ADMIN)
+}
+
+# ==========================================
+# 輸入類型
+# ==========================================
+
+# 表單提交輸入
+input FormSubmissionInput {
+  formType: FormType!
+  formConfigId: ID
+  data: JSON!
+  entityId: ID                     # 關聯實體 ID (用於編輯)
+  submitMode: FormSubmitMode!      # 提交模式
+  validateOnly: Boolean            # 僅驗證，不提交
+}
+
+enum FormSubmitMode {
+  CREATE
+  UPDATE
+  UPSERT
+  DELETE
+}
+
+# 表單提交結果
+type FormSubmissionResult {
+  success: Boolean!
+  entityId: ID                     # 操作後的實體 ID
+  data: JSON                       # 返回數據
+  validation: FormValidationResult # 驗證結果
+  error: Error                     # 錯誤信息
+}
+
+# 批量表單提交結果
+type BatchFormSubmissionResult {
+  successful: [FormSubmissionResult!]!
+  failed: [FormSubmissionResult!]!
+  totalProcessed: Int!
+  totalSucceeded: Int!
+  totalFailed: Int!
+}
+
+# 表單草稿輸入
+input FormDraftInput {
+  formType: FormType!
+  formConfigId: ID
+  data: JSON!
+  name: String                     # 草稿名稱
+  autoSave: Boolean                # 是否自動保存
+}
+
+type FormDraft {
+  id: ID!
+  formType: FormType!
+  data: JSON!
+  name: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  expiresAt: DateTime              # 過期時間
+}
+
+# 表單選項請求
+input FormFieldOptionsRequest {
+  fieldName: String!
+  formType: FormType!
+  filters: JSON
+}
+
+type FormFieldOptionsResponse {
+  fieldName: String!
+  options: [FormFieldOption!]!
+  error: Error
+}
+
+# 表單配置創建輸入
+input CreateFormConfigInput {
+  type: FormType!
+  name: String!
+  title: String!
+  description: String
+  fields: [CreateFormFieldInput!]!
+  layout: FormLayout!
+  autoSave: Boolean = false
+  validateOnChange: Boolean = true
+  resetOnSubmit: Boolean = false
+}
+
+input UpdateFormConfigInput {
+  name: String
+  title: String
+  description: String
+  layout: FormLayout
+  autoSave: Boolean
+  validateOnChange: Boolean
+  resetOnSubmit: Boolean
+  isActive: Boolean
+}
+
+# 表單字段創建輸入
+input CreateFormFieldInput {
+  name: String!
+  label: String!
+  type: FormFieldType!
+  placeholder: String
+  helpText: String
+  defaultValue: JSON
+  validationRules: [ValidationRuleInput!]!
+  isRequired: Boolean = false
+  isDisabled: Boolean = false
+  isReadOnly: Boolean = false
+  isHidden: Boolean = false
+  options: [FormFieldOptionInput!]
+  optionsSource: FormFieldOptionsSourceInput
+  order: Int!
+  gridCols: Int
+  width: FormFieldWidth
+}
+
+input UpdateFormFieldInput {
+  label: String
+  placeholder: String
+  helpText: String
+  defaultValue: JSON
+  validationRules: [ValidationRuleInput!]
+  isRequired: Boolean
+  isDisabled: Boolean
+  isReadOnly: Boolean
+  isHidden: Boolean
+  options: [FormFieldOptionInput!]
+  optionsSource: FormFieldOptionsSourceInput
+  gridCols: Int
+  width: FormFieldWidth
+}
+
+# 驗證規則輸入
+input ValidationRuleInput {
+  type: ValidationRuleType!
+  value: JSON
+  message: String!
+  errorCode: String
+}
+
+# 表單字段選項輸入
+input FormFieldOptionInput {
+  value: String!
+  label: String!
+  description: String
+  isDefault: Boolean = false
+  isDisabled: Boolean = false
+  group: String
+  icon: String
+  color: String
+}
+
+# 動態選項來源輸入
+input FormFieldOptionsSourceInput {
+  type: OptionsSourceType!
+  query: String!
+  valueField: String!
+  labelField: String!
+  filters: JSON
+  cacheTimeout: Int = 1800
+}
+
+# 字段排序輸入
+input FieldOrderInput {
+  fieldId: ID!
+  order: Int!
+}
+
+# ==========================================
+# Subscription 擴展
+# ==========================================
+
+extend type Subscription {
+  # 表單配置更新
+  formConfigUpdated(formType: FormType!): FormConfig!
+    @auth(requires: VIEWER)
+  
+  # 表單提交狀態
+  formSubmissionStatus(submissionId: ID!): FormSubmissionResult!
+    @auth(requires: VIEWER)
+  
+  # 表單選項更新
+  formOptionsUpdated(formType: FormType!, fieldName: String): [FormFieldOption!]!
+    @auth(requires: VIEWER)
+}

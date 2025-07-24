@@ -1,0 +1,42 @@
+{
+  "timestamp": "2025-07-23T21:03:19.471Z",
+  "success": false,
+  "error": "Converting circular structure to JSON\n    --> starting at object with constructor 'Policies'\n    |     property 'config' -> object with constructor 'Object'\n    |     property 'cache' -> object with constructor 'InMemoryCache'\n    --- property 'policies' closes the circle\nJSON.stringify (<anonymous>)",
+  "url": "http://localhost:3001/admin/operations",
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+    "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+    "[GraphQL error]: Message: Variable \"$input\" got invalid value \"active_users\" at \"input.types[0]\"; Value \"active_users\" does not exist in \"StatsType\" enum., Location: [object Object], Path: undefined",
+    "[GraphQL error]: Message: Variable \"$input\" got invalid value \"completion_rate\" at \"input.types[1]\"; Value \"completion_rate\" does not exist in \"StatsType\" enum., Location: [object Object], Path: undefined",
+    "[GraphQL error]: Message: Variable \"$input\" got invalid value \"error_rate\" at \"input.types[2]\"; Value \"error_rate\" does not exist in \"StatsType\" enum., Location: [object Object], Path: undefined",
+    "[Network error]: ServerError: Response not successful: Received status code 400",
+    "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+    "[GraphQL error]: Message: Variable \"$input\" got invalid value \"transfer_count\" at \"input.types[0]\"; Value \"transfer_count\" does not exist in \"StatsType\" enum., Location: [object Object], Path: undefined",
+    "[GraphQL error]: Message: Variable \"$input\" got invalid value \"inventory_level\" at \"input.types[1]\"; Value \"inventory_level\" does not exist in \"StatsType\" enum., Location: [object Object], Path: undefined",
+    "[GraphQL error]: Message: Variable \"$input\" got invalid value \"pending_tasks\" at \"input.types[2]\"; Value \"pending_tasks\" does not exist in \"StatsType\" enum., Location: [object Object], Path: undefined",
+    "[Network error]: ServerError: Response not successful: Received status code 400",
+    "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+    "[GraphQL error]: Message: Variable \"$input\" got invalid value { dateRange: { start: \"2025-07-22T23:00:00.000Z\", end: \"2025-07-23T22:59:59.999Z\" }, timeGranularity: \"DAY\", aggregationType: \"SUM\", includeComparison: false }; Field \"chartTypes\" of required type \"[ChartType!]!\" was not provided., Location: [object Object], Path: undefined",
+    "[Network error]: ServerError: Response not successful: Received status code 400",
+    "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+    "[GraphQL error]: Message: Variable \"$input\" got invalid value \"pallet_count\" at \"input.types[0]\"; Value \"pallet_count\" does not exist in \"StatsType\" enum., Location: [object Object], Path: undefined",
+    "[GraphQL error]: Message: Variable \"$input\" got invalid value \"quality_score\" at \"input.types[1]\"; Value \"quality_score\" does not exist in \"StatsType\" enum., Location: [object Object], Path: undefined",
+    "[GraphQL error]: Message: Variable \"$input\" got invalid value \"efficiency_rate\" at \"input.types[2]\"; Value \"efficiency_rate\" does not exist in \"StatsType\" enum., Location: [object Object], Path: undefined",
+    "[Network error]: ServerError: Response not successful: Received status code 400",
+    "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+    "[GraphQL error]: Message: Variable \"$input\" got invalid value { pagination: { limit: 20, offset: 0, loadMore: false }, dateRange: { start: \"2025-07-22T23:00:00.000Z\", end: \"2025-07-23T22:59:59.999Z\" }, includeMetadata: true }; Field \"dataSource\" of required type \"String!\" was not provided., Location: [object Object], Path: undefined",
+    "[Network error]: ServerError: Response not successful: Received status code 400",
+    "[GraphQL error]: Message: Failed to fetch analysis data: Unknown error, Location: [object Object], Path: analysisCardData"
+  ],
+  "networkErrors": [
+    "307 http://localhost:3001/",
+    "404 http://localhost:3001/qc-label",
+    "500 http://localhost:3001/order-loading",
+    "400 http://localhost:3001/api/graphql",
+    "400 http://localhost:3001/api/graphql",
+    "400 http://localhost:3001/api/graphql",
+    "400 http://localhost:3001/api/graphql",
+    "400 http://localhost:3001/api/graphql"
+  ]
+}

@@ -352,6 +352,7 @@ export interface AdminWidgetConfig {
   department?: 'injection' | 'pipeline' | 'warehouse' | 'all'; // 部門過濾支援
   uploadTypes?: string[]; // 統一上傳組件支援的文件類型
   columns?: string[]; // 表格組件的列配置
+  config?: Record<string, any>; // 支援各種類型的 Card 配置（StatsCard、ChartCard、TableCard、ListCard 等）
 }
 
 export interface AdminDashboardLayout {

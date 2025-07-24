@@ -235,6 +235,26 @@ export type AnalysisVisualization = {
   type: Scalars['String']['output'];
 };
 
+export enum AnalyticsGroupBy {
+  Category = 'CATEGORY',
+  Day = 'DAY',
+  Hour = 'HOUR',
+  Location = 'LOCATION',
+  Month = 'MONTH',
+  Status = 'STATUS',
+  User = 'USER',
+  Week = 'WEEK',
+}
+
+export enum AnalyticsMetric {
+  AverageDuration = 'AVERAGE_DURATION',
+  Count = 'COUNT',
+  Efficiency = 'EFFICIENCY',
+  SuccessRate = 'SUCCESS_RATE',
+  Throughput = 'THROUGHPUT',
+  Utilization = 'UTILIZATION',
+}
+
 export type AppliedArrayFilter = {
   __typename?: 'AppliedArrayFilter';
   field: Scalars['String']['output'];
@@ -302,6 +322,12 @@ export enum ArrayOperator {
   In = 'IN',
   NotIn = 'NOT_IN',
 }
+
+export type BatchFileOperationInput = {
+  fileIds: Array<Scalars['ID']['input']>;
+  metadata?: InputMaybe<FileMetadataInput>;
+  operation: FileOperation;
+};
 
 export type BatchOperationInput = {
   data: Scalars['JSON']['input'];
@@ -515,6 +541,13 @@ export type ComparisonData = {
   previousValue: Scalars['Float']['output'];
 };
 
+export enum CongestionLevel {
+  Critical = 'CRITICAL',
+  High = 'HIGH',
+  Low = 'LOW',
+  Medium = 'MEDIUM',
+}
+
 export type Correlation = {
   __typename?: 'Correlation';
   coefficient: Scalars['Float']['output'];
@@ -719,6 +752,36 @@ export type FieldChange = {
   oldValue?: Maybe<Scalars['JSON']['output']>;
 };
 
+export enum FileAccessibility {
+  Confidential = 'CONFIDENTIAL',
+  Internal = 'INTERNAL',
+  Public = 'PUBLIC',
+  Restricted = 'RESTRICTED',
+}
+
+export enum FileCategory {
+  Backup = 'BACKUP',
+  Certificate = 'CERTIFICATE',
+  GrnDocument = 'GRN_DOCUMENT',
+  Invoice = 'INVOICE',
+  Log = 'LOG',
+  Manual = 'MANUAL',
+  Other = 'OTHER',
+  Photo = 'PHOTO',
+  QcReport = 'QC_REPORT',
+  ShippingLabel = 'SHIPPING_LABEL',
+  Template = 'TEMPLATE',
+}
+
+export type FileCategorySummary = {
+  __typename?: 'FileCategorySummary';
+  averageSize: Scalars['Int']['output'];
+  category: FileCategory;
+  count: Scalars['Int']['output'];
+  recentCount: Scalars['Int']['output'];
+  totalSize: Scalars['Int']['output'];
+};
+
 export type FileInfo = {
   __typename?: 'FileInfo';
   checksum?: Maybe<Scalars['String']['output']>;
@@ -733,6 +796,96 @@ export type FileInfo = {
   uploadedAt: Scalars['DateTime']['output'];
   uploadedBy: Scalars['String']['output'];
   url?: Maybe<Scalars['String']['output']>;
+};
+
+export type FileListFilters = {
+  accessibility?: InputMaybe<Array<FileAccessibility>>;
+  categories?: InputMaybe<Array<FileCategory>>;
+  fileTypes?: InputMaybe<Array<FileType>>;
+  hasPermissions?: InputMaybe<Array<FilePermissionType>>;
+  sizeRange?: InputMaybe<IntRangeInput>;
+  statuses?: InputMaybe<Array<FileStatus>>;
+};
+
+export type FileMetadataInput = {
+  accessibility?: InputMaybe<FileAccessibility>;
+  category?: InputMaybe<FileCategory>;
+  fileName?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<FileStatus>;
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export enum FileOperation {
+  Archive = 'ARCHIVE',
+  ChangeAccessibility = 'CHANGE_ACCESSIBILITY',
+  Delete = 'DELETE',
+  UpdateCategory = 'UPDATE_CATEGORY',
+  UpdateTags = 'UPDATE_TAGS',
+}
+
+export type FilePermission = {
+  __typename?: 'FilePermission';
+  grantedAt: Scalars['DateTime']['output'];
+  grantedBy: User;
+  permission: FilePermissionType;
+  user: User;
+};
+
+export enum FilePermissionType {
+  Admin = 'ADMIN',
+  Delete = 'DELETE',
+  Read = 'READ',
+  Share = 'SHARE',
+  Write = 'WRITE',
+}
+
+export type FileRecord = {
+  __typename?: 'FileRecord';
+  accessibility: FileAccessibility;
+  downloadCount: Scalars['Int']['output'];
+  fileCategory: FileCategory;
+  fileName: Scalars['String']['output'];
+  fileType: FileType;
+  id: Scalars['ID']['output'];
+  lastAccessed?: Maybe<Scalars['DateTime']['output']>;
+  lastModified: Scalars['DateTime']['output'];
+  mimeType: Scalars['String']['output'];
+  permissions: Array<FilePermission>;
+  relatedEntity?: Maybe<FileRelatedEntity>;
+  size: Scalars['Int']['output'];
+  status: FileStatus;
+  tags: Array<Scalars['String']['output']>;
+  thumbnailUrl?: Maybe<Scalars['String']['output']>;
+  uploadedAt: Scalars['DateTime']['output'];
+  uploadedBy: User;
+  url: Scalars['String']['output'];
+  version: Scalars['String']['output'];
+};
+
+export type FileRecordConnection = {
+  __typename?: 'FileRecordConnection';
+  edges: Array<FileRecordEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type FileRecordEdge = {
+  __typename?: 'FileRecordEdge';
+  cursor: Scalars['String']['output'];
+  node: FileRecord;
+};
+
+export type FileRelatedEntity = {
+  __typename?: 'FileRelatedEntity';
+  entityId: Scalars['String']['output'];
+  entityType: Scalars['String']['output'];
+  relationship: Scalars['String']['output'];
+};
+
+export type FileRelatedEntityInput = {
+  entityId: Scalars['String']['input'];
+  entityType: Scalars['String']['input'];
+  relationship: Scalars['String']['input'];
 };
 
 export type FileSearchInput = {
@@ -752,6 +905,35 @@ export type FileSearchResult = {
   totalCount: Scalars['Int']['output'];
 };
 
+export enum FileStatus {
+  Active = 'ACTIVE',
+  Archived = 'ARCHIVED',
+  Deleted = 'DELETED',
+  Expired = 'EXPIRED',
+  PendingReview = 'PENDING_REVIEW',
+}
+
+export type FileStorageMetrics = {
+  __typename?: 'FileStorageMetrics';
+  averageFileSize: Scalars['Int']['output'];
+  growthRate: Scalars['Float']['output'];
+  storageUtilization: Scalars['Float']['output'];
+  topCategories: Array<FileCategorySummary>;
+  totalFiles: Scalars['Int']['output'];
+  totalSize: Scalars['Int']['output'];
+};
+
+export enum FileType {
+  Archive = 'ARCHIVE',
+  Audio = 'AUDIO',
+  Document = 'DOCUMENT',
+  Image = 'IMAGE',
+  Other = 'OTHER',
+  Pdf = 'PDF',
+  Spreadsheet = 'SPREADSHEET',
+  Video = 'VIDEO',
+}
+
 export type FileTypeStats = {
   __typename?: 'FileTypeStats';
   count: Scalars['Int']['output'];
@@ -759,10 +941,37 @@ export type FileTypeStats = {
   type: SupportedFileType;
 };
 
+export type FileUploadInput = {
+  accessibility?: InputMaybe<FileAccessibility>;
+  category: FileCategory;
+  data: Scalars['String']['input'];
+  fileName: Scalars['String']['input'];
+  fileType: FileType;
+  relatedEntity?: InputMaybe<FileRelatedEntityInput>;
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export enum FilterFieldType {
+  Array = 'ARRAY',
+  Boolean = 'BOOLEAN',
+  Date = 'DATE',
+  Enum = 'ENUM',
+  Number = 'NUMBER',
+  String = 'STRING',
+}
+
 export type FilterInput = {
   field: Scalars['String']['input'];
   operator: FilterOperator;
   value: Scalars['JSON']['input'];
+};
+
+export type FilterMetadata = {
+  __typename?: 'FilterMetadata';
+  field: Scalars['String']['output'];
+  options?: Maybe<Array<Scalars['String']['output']>>;
+  required: Scalars['Boolean']['output'];
+  type: FilterFieldType;
 };
 
 export enum FilterOperator {
@@ -780,6 +989,11 @@ export enum FilterOperator {
   NotContains = 'NOT_CONTAINS',
   NotIn = 'NOT_IN',
 }
+
+export type FloatRangeInput = {
+  max?: InputMaybe<Scalars['Float']['input']>;
+  min?: InputMaybe<Scalars['Float']['input']>;
+};
 
 export enum FormatterType {
   Badge = 'BADGE',
@@ -1021,6 +1235,11 @@ export enum InsightType {
   TrendAnalysis = 'TREND_ANALYSIS',
 }
 
+export type IntRangeInput = {
+  max?: InputMaybe<Scalars['Int']['input']>;
+  min?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export type Inventory = {
   __typename?: 'Inventory';
   availableQuantity: Scalars['Int']['output'];
@@ -1124,6 +1343,77 @@ export type KeyMetric = {
   value: Scalars['String']['output'];
 };
 
+export type ListAnalyticsInput = {
+  dateRange: DateRangeInput;
+  groupBy?: InputMaybe<AnalyticsGroupBy>;
+  listType: ListType;
+  metrics?: InputMaybe<Array<AnalyticsMetric>>;
+};
+
+export type ListCardInput = {
+  dateRange?: InputMaybe<DateRangeInput>;
+  filters?: InputMaybe<ListFilters>;
+  includeMetrics?: InputMaybe<Scalars['Boolean']['input']>;
+  listType: ListType;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<SortInput>;
+};
+
+export type ListConfigurationInput = {
+  filters: ListFilters;
+  isDefault: Scalars['Boolean']['input'];
+  isPublic: Scalars['Boolean']['input'];
+  listType: ListType;
+  name: Scalars['String']['input'];
+  sort: SortInput;
+};
+
+export type ListData = {
+  dataSource: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  filteredCount: Scalars['Int']['output'];
+  id: Scalars['ID']['output'];
+  lastUpdated: Scalars['DateTime']['output'];
+  listType: ListType;
+  refreshInterval?: Maybe<Scalars['Int']['output']>;
+  title: Scalars['String']['output'];
+  totalCount: Scalars['Int']['output'];
+};
+
+export type ListDataUnion =
+  | OrderRecordList
+  | OrderStateList
+  | OtherFilesList
+  | WarehouseTransferList;
+
+export type ListFilters = {
+  category?: InputMaybe<Array<Scalars['String']['input']>>;
+  fileFilters?: InputMaybe<FileListFilters>;
+  orderFilters?: InputMaybe<OrderListFilters>;
+  search?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<Array<Scalars['String']['input']>>;
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
+  transferFilters?: InputMaybe<TransferListFilters>;
+  userId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type ListMetadata = {
+  __typename?: 'ListMetadata';
+  availableFilters: Array<FilterMetadata>;
+  availableSorts: Array<SortMetadata>;
+  defaultPageSize: Scalars['Int']['output'];
+  listType: ListType;
+  maxPageSize: Scalars['Int']['output'];
+  supportedFormats: Array<ExportFormat>;
+};
+
+export enum ListType {
+  OrderRecord = 'ORDER_RECORD',
+  OrderState = 'ORDER_STATE',
+  OtherFiles = 'OTHER_FILES',
+  WarehouseTransfer = 'WAREHOUSE_TRANSFER',
+}
+
 export type Location = {
   __typename?: 'Location';
   capacity?: Maybe<Scalars['Int']['output']>;
@@ -1162,6 +1452,16 @@ export type LocationInventory = {
   injection: Scalars['Int']['output'];
   pipeline: Scalars['Int']['output'];
   prebook: Scalars['Int']['output'];
+};
+
+export type LocationTransferAnalysis = {
+  __typename?: 'LocationTransferAnalysis';
+  averageWaitTime: Scalars['Int']['output'];
+  congestionLevel: CongestionLevel;
+  incomingCount: Scalars['Int']['output'];
+  location: Location;
+  netFlow: Scalars['Int']['output'];
+  outgoingCount: Scalars['Int']['output'];
 };
 
 export enum LocationType {
@@ -1496,6 +1796,160 @@ export enum OrderItemStatus {
   Shipped = 'SHIPPED',
 }
 
+export type OrderListFilters = {
+  customerCodes?: InputMaybe<Array<Scalars['String']['input']>>;
+  isUrgent?: InputMaybe<Scalars['Boolean']['input']>;
+  orderNumbers?: InputMaybe<Array<Scalars['String']['input']>>;
+  priorities?: InputMaybe<Array<OrderPriority>>;
+  statuses?: InputMaybe<Array<OrderStatus>>;
+  valueRange?: InputMaybe<FloatRangeInput>;
+};
+
+export enum OrderPriority {
+  Critical = 'CRITICAL',
+  High = 'HIGH',
+  Low = 'LOW',
+  Normal = 'NORMAL',
+  Urgent = 'URGENT',
+}
+
+export type OrderProgressMetrics = {
+  __typename?: 'OrderProgressMetrics';
+  averageCompletionRate: Scalars['Float']['output'];
+  bottleneckStage?: Maybe<OrderStatus>;
+  predictedCompletionTime?: Maybe<Scalars['DateTime']['output']>;
+  totalInProgress: Scalars['Int']['output'];
+};
+
+export type OrderRecord = {
+  __typename?: 'OrderRecord';
+  details: Scalars['JSON']['output'];
+  impact?: Maybe<OrderRecordImpact>;
+  order: Order;
+  performedBy: User;
+  recordType: OrderRecordType;
+  relatedRecords?: Maybe<Array<OrderRecord>>;
+  timestamp: Scalars['DateTime']['output'];
+};
+
+export type OrderRecordAnalytics = {
+  __typename?: 'OrderRecordAnalytics';
+  averageOrderCycle: Scalars['Int']['output'];
+  commonBottlenecks: Array<Scalars['String']['output']>;
+  performanceMetrics: Scalars['JSON']['output'];
+  trendData: Array<OrderTrendPoint>;
+};
+
+export type OrderRecordConnection = {
+  __typename?: 'OrderRecordConnection';
+  edges: Array<OrderRecordEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type OrderRecordEdge = {
+  __typename?: 'OrderRecordEdge';
+  cursor: Scalars['String']['output'];
+  node: OrderRecord;
+};
+
+export type OrderRecordImpact = {
+  __typename?: 'OrderRecordImpact';
+  costImpact?: Maybe<Scalars['Float']['output']>;
+  customerSatisfaction?: Maybe<OrderRecordImpactLevel>;
+  delayMinutes?: Maybe<Scalars['Int']['output']>;
+  operationalComplexity?: Maybe<OrderRecordImpactLevel>;
+};
+
+export enum OrderRecordImpactLevel {
+  Critical = 'CRITICAL',
+  High = 'HIGH',
+  Low = 'LOW',
+  Medium = 'MEDIUM',
+}
+
+export type OrderRecordList = ListData & {
+  __typename?: 'OrderRecordList';
+  analytics: OrderRecordAnalytics;
+  dataSource: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  filteredCount: Scalars['Int']['output'];
+  id: Scalars['ID']['output'];
+  lastUpdated: Scalars['DateTime']['output'];
+  listType: ListType;
+  records: OrderRecordConnection;
+  refreshInterval?: Maybe<Scalars['Int']['output']>;
+  timeline: Array<OrderTimelineEvent>;
+  title: Scalars['String']['output'];
+  totalCount: Scalars['Int']['output'];
+};
+
+export enum OrderRecordType {
+  Allocated = 'ALLOCATED',
+  Cancelled = 'CANCELLED',
+  Created = 'CREATED',
+  Delivered = 'DELIVERED',
+  Exception = 'EXCEPTION',
+  Modified = 'MODIFIED',
+  Packed = 'PACKED',
+  Picked = 'PICKED',
+  Refunded = 'REFUNDED',
+  Shipped = 'SHIPPED',
+  StatusChanged = 'STATUS_CHANGED',
+}
+
+export type OrderStageHistory = {
+  __typename?: 'OrderStageHistory';
+  duration?: Maybe<Scalars['Int']['output']>;
+  enteredAt: Scalars['DateTime']['output'];
+  exitedAt?: Maybe<Scalars['DateTime']['output']>;
+  notes?: Maybe<Scalars['String']['output']>;
+  performedBy?: Maybe<User>;
+  stage: OrderStatus;
+};
+
+export type OrderState = {
+  __typename?: 'OrderState';
+  actualCompletion?: Maybe<Scalars['DateTime']['output']>;
+  bottlenecks?: Maybe<Array<Scalars['String']['output']>>;
+  currentStage: OrderStatus;
+  estimatedCompletion?: Maybe<Scalars['DateTime']['output']>;
+  isUrgent: Scalars['Boolean']['output'];
+  nextActions?: Maybe<Array<Scalars['String']['output']>>;
+  order: Order;
+  progress: Scalars['Float']['output'];
+  stageHistory: Array<OrderStageHistory>;
+};
+
+export type OrderStateConnection = {
+  __typename?: 'OrderStateConnection';
+  edges: Array<OrderStateEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type OrderStateEdge = {
+  __typename?: 'OrderStateEdge';
+  cursor: Scalars['String']['output'];
+  node: OrderState;
+};
+
+export type OrderStateList = ListData & {
+  __typename?: 'OrderStateList';
+  dataSource: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  filteredCount: Scalars['Int']['output'];
+  id: Scalars['ID']['output'];
+  lastUpdated: Scalars['DateTime']['output'];
+  listType: ListType;
+  orders: OrderStateConnection;
+  progressMetrics: OrderProgressMetrics;
+  refreshInterval?: Maybe<Scalars['Int']['output']>;
+  statusSummary: Array<OrderStatusSummary>;
+  title: Scalars['String']['output'];
+  totalCount: Scalars['Int']['output'];
+};
+
 export enum OrderStatus {
   Cancelled = 'CANCELLED',
   Confirmed = 'CONFIRMED',
@@ -1504,6 +1958,48 @@ export enum OrderStatus {
   Processing = 'PROCESSING',
   Shipped = 'SHIPPED',
 }
+
+export type OrderStatusSummary = {
+  __typename?: 'OrderStatusSummary';
+  averageProcessingTime?: Maybe<Scalars['Int']['output']>;
+  count: Scalars['Int']['output'];
+  percentage: Scalars['Float']['output'];
+  status: OrderStatus;
+  urgentCount?: Maybe<Scalars['Int']['output']>;
+};
+
+export type OrderTimelineEvent = {
+  __typename?: 'OrderTimelineEvent';
+  actor: Scalars['String']['output'];
+  category: OrderRecordType;
+  description: Scalars['String']['output'];
+  event: Scalars['String']['output'];
+  timestamp: Scalars['DateTime']['output'];
+};
+
+export type OrderTrendPoint = {
+  __typename?: 'OrderTrendPoint';
+  averageCycleTime: Scalars['Int']['output'];
+  completionRate: Scalars['Float']['output'];
+  date: Scalars['DateTime']['output'];
+  orderCount: Scalars['Int']['output'];
+};
+
+export type OtherFilesList = ListData & {
+  __typename?: 'OtherFilesList';
+  categorySummary: Array<FileCategorySummary>;
+  dataSource: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  files: FileRecordConnection;
+  filteredCount: Scalars['Int']['output'];
+  id: Scalars['ID']['output'];
+  lastUpdated: Scalars['DateTime']['output'];
+  listType: ListType;
+  refreshInterval?: Maybe<Scalars['Int']['output']>;
+  storageMetrics: FileStorageMetrics;
+  title: Scalars['String']['output'];
+  totalCount: Scalars['Int']['output'];
+};
 
 export type PageInfo = {
   __typename?: 'PageInfo';
@@ -2309,6 +2805,13 @@ export type SortInput = {
   field: Scalars['String']['input'];
 };
 
+export type SortMetadata = {
+  __typename?: 'SortMetadata';
+  defaultDirection: SortDirection;
+  displayName: Scalars['String']['output'];
+  field: Scalars['String']['output'];
+};
+
 export type StatMetric = {
   __typename?: 'StatMetric';
   change?: Maybe<Scalars['Float']['output']>;
@@ -2360,13 +2863,22 @@ export type StatsQueryInput = {
 };
 
 export enum StatsType {
+  ActiveUsers = 'ACTIVE_USERS',
   AwaitLocationQty = 'AWAIT_LOCATION_QTY',
+  CompletionRate = 'COMPLETION_RATE',
+  EfficiencyRate = 'EFFICIENCY_RATE',
+  ErrorRate = 'ERROR_RATE',
   InjectionProductionStats = 'INJECTION_PRODUCTION_STATS',
+  InventoryLevel = 'INVENTORY_LEVEL',
+  PalletCount = 'PALLET_COUNT',
+  PendingTasks = 'PENDING_TASKS',
   ProductionStats = 'PRODUCTION_STATS',
+  QualityScore = 'QUALITY_SCORE',
   StaffWorkload = 'STAFF_WORKLOAD',
   StillInAwait = 'STILL_IN_AWAIT',
   StillInAwaitPercentage = 'STILL_IN_AWAIT_PERCENTAGE',
   StockLevelHistory = 'STOCK_LEVEL_HISTORY',
+  TransferCount = 'TRANSFER_COUNT',
   TransferTimeDistribution = 'TRANSFER_TIME_DISTRIBUTION',
   WarehouseWorkLevel = 'WAREHOUSE_WORK_LEVEL',
   YesterdayTransferCount = 'YESTERDAY_TRANSFER_COUNT',
@@ -2804,6 +3316,24 @@ export type TransferFilterInput = {
   transferNumber?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type TransferListFilters = {
+  fromLocations?: InputMaybe<Array<Scalars['String']['input']>>;
+  palletNumbers?: InputMaybe<Array<Scalars['String']['input']>>;
+  priorities?: InputMaybe<Array<TransferPriority>>;
+  statuses?: InputMaybe<Array<TransferStatus>>;
+  toLocations?: InputMaybe<Array<Scalars['String']['input']>>;
+  transferNumbers?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type TransferPerformanceMetrics = {
+  __typename?: 'TransferPerformanceMetrics';
+  averageTransferTime: Scalars['Int']['output'];
+  delayedCount: Scalars['Int']['output'];
+  efficiencyScore: Scalars['Float']['output'];
+  onTimePercentage: Scalars['Float']['output'];
+  resourceUtilization: Scalars['Float']['output'];
+};
+
 export enum TransferPriority {
   High = 'HIGH',
   Low = 'LOW',
@@ -2817,6 +3347,14 @@ export enum TransferStatus {
   InProgress = 'IN_PROGRESS',
   Pending = 'PENDING',
 }
+
+export type TransferStatusDistribution = {
+  __typename?: 'TransferStatusDistribution';
+  averageDuration?: Maybe<Scalars['Int']['output']>;
+  count: Scalars['Int']['output'];
+  percentage: Scalars['Float']['output'];
+  status: TransferStatus;
+};
 
 export type TrendData = {
   __typename?: 'TrendData';
@@ -3069,6 +3607,23 @@ export type Warehouse = {
   name: Scalars['String']['output'];
   occupancyRate: Scalars['Float']['output'];
   totalCapacity: Scalars['Int']['output'];
+};
+
+export type WarehouseTransferList = ListData & {
+  __typename?: 'WarehouseTransferList';
+  dataSource: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  filteredCount: Scalars['Int']['output'];
+  id: Scalars['ID']['output'];
+  lastUpdated: Scalars['DateTime']['output'];
+  listType: ListType;
+  locationAnalysis: Array<LocationTransferAnalysis>;
+  performanceMetrics: TransferPerformanceMetrics;
+  refreshInterval?: Maybe<Scalars['Int']['output']>;
+  statusDistribution: Array<TransferStatusDistribution>;
+  title: Scalars['String']['output'];
+  totalCount: Scalars['Int']['output'];
+  transfers: TransferConnection;
 };
 
 export type WidgetData = {
@@ -3328,6 +3883,47 @@ export type ChartCardQueryQuery = {
       averageResponseTime: number;
       dataAge: number;
     };
+  };
+};
+
+export type OperationsHistoryTreeQueryVariables = Exact<{
+  input?: InputMaybe<HistoryTreeInput>;
+}>;
+
+export type OperationsHistoryTreeQuery = {
+  __typename?: 'Query';
+  historyTree: {
+    __typename?: 'HistoryTreeResult';
+    totalCount: number;
+    hasNextPage: boolean;
+    entries: Array<{
+      __typename?: 'HistoryEntry';
+      id: string;
+      timestamp: any;
+      action: string;
+      location?: string | null;
+      remark?: string | null;
+      user?: {
+        __typename?: 'HistoryUser';
+        id: string;
+        name: string;
+        department?: string | null;
+        position?: string | null;
+      } | null;
+      pallet?: {
+        __typename?: 'HistoryPallet';
+        number: string;
+        series?: string | null;
+        quantity: number;
+        product?: {
+          __typename?: 'HistoryProduct';
+          code: string;
+          description: string;
+          type: string;
+          colour: string;
+        } | null;
+      } | null;
+    }>;
   };
 };
 
@@ -4230,6 +4826,107 @@ export type ChartCardQuerySuspenseQueryHookResult = ReturnType<
 export type ChartCardQueryQueryResult = Apollo.QueryResult<
   ChartCardQueryQuery,
   ChartCardQueryQueryVariables
+>;
+export const OperationsHistoryTreeDocument = gql`
+  query OperationsHistoryTree($input: HistoryTreeInput) {
+    historyTree(input: $input) {
+      entries {
+        id
+        timestamp
+        action
+        location
+        remark
+        user {
+          id
+          name
+          department
+          position
+        }
+        pallet {
+          number
+          series
+          quantity
+          product {
+            code
+            description
+            type
+            colour
+          }
+        }
+      }
+      totalCount
+      hasNextPage
+    }
+  }
+`;
+
+/**
+ * __useOperationsHistoryTreeQuery__
+ *
+ * To run a query within a React component, call `useOperationsHistoryTreeQuery` and pass it any options that fit your needs.
+ * When your component renders, `useOperationsHistoryTreeQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useOperationsHistoryTreeQuery({
+ *   variables: {
+ *      input: // value for 'input'
+ *   },
+ * });
+ */
+export function useOperationsHistoryTreeQuery(
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
+    OperationsHistoryTreeQuery,
+    OperationsHistoryTreeQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useQuery<OperationsHistoryTreeQuery, OperationsHistoryTreeQueryVariables>(
+    OperationsHistoryTreeDocument,
+    options
+  );
+}
+export function useOperationsHistoryTreeLazyQuery(
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    OperationsHistoryTreeQuery,
+    OperationsHistoryTreeQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useLazyQuery<
+    OperationsHistoryTreeQuery,
+    OperationsHistoryTreeQueryVariables
+  >(OperationsHistoryTreeDocument, options);
+}
+export function useOperationsHistoryTreeSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        OperationsHistoryTreeQuery,
+        OperationsHistoryTreeQueryVariables
+      >
+) {
+  const options =
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<
+    OperationsHistoryTreeQuery,
+    OperationsHistoryTreeQueryVariables
+  >(OperationsHistoryTreeDocument, options);
+}
+export type OperationsHistoryTreeQueryHookResult = ReturnType<typeof useOperationsHistoryTreeQuery>;
+export type OperationsHistoryTreeLazyQueryHookResult = ReturnType<
+  typeof useOperationsHistoryTreeLazyQuery
+>;
+export type OperationsHistoryTreeSuspenseQueryHookResult = ReturnType<
+  typeof useOperationsHistoryTreeSuspenseQuery
+>;
+export type OperationsHistoryTreeQueryResult = Apollo.QueryResult<
+  OperationsHistoryTreeQuery,
+  OperationsHistoryTreeQueryVariables
 >;
 export const ReportCardQueryDocument = gql`
   query ReportCardQuery($input: ReportCardInput!) {

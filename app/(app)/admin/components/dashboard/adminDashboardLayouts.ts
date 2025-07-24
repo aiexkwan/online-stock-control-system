@@ -49,87 +49,161 @@ const defaultLayout: AdminDashboardLayout = {
 export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
   overview: defaultLayout,
 
-  // 統一營運監控主題 (整合 injection, pipeline, warehouse, stock-management)
+  // Operations theme - 精確14列×10行CSS Grid佈局 (用戶規範)
   'operations': {
     theme: 'operations',
     gridTemplate: `
-      "stats-1 stats-1 stats-2 stats-2 stats-3 stats-3 stats-4 stats-4 history history history history"
-      "stats-1 stats-1 stats-2 stats-2 stats-3 stats-3 stats-4 stats-4 history history history history"
-      "table-1 table-1 table-1 table-1 chart chart chart chart history history history history"
-      "table-1 table-1 table-1 table-1 chart chart chart chart history history history history"
-      "table-1 table-1 table-1 table-1 chart chart chart chart history history history history"
-      "table-2 table-2 table-2 table-2 chart-2 chart-2 chart-2 chart-2 history history history history"
-      "table-2 table-2 table-2 table-2 chart-2 chart-2 chart-2 chart-2 history history history history"
+      ". department-selector department-selector department-selector department-selector . . . . . history-tree history-tree history-tree ."
+      ". stats-card-a stats-card-a stats-card-a stats-card-b stats-card-b stats-card-b stats-card-c stats-card-c stats-card-c history-tree history-tree history-tree ."
+      ". stats-card-a stats-card-a stats-card-a stats-card-b stats-card-b stats-card-b stats-card-c stats-card-c stats-card-c history-tree history-tree history-tree ."
+      ". stats-large-a stats-large-a stats-large-a stats-large-a stats-large-b stats-large-b stats-large-b stats-large-b stats-large-b history-tree history-tree history-tree ."
+      ". stats-large-a stats-large-a stats-large-a stats-large-a stats-large-b stats-large-b stats-large-b stats-large-b stats-large-b history-tree history-tree history-tree ."
+      ". stats-large-a stats-large-a stats-large-a stats-large-a stats-large-b stats-large-b stats-large-b stats-large-b stats-large-b history-tree history-tree history-tree ."
+      ". chart-card-a chart-card-a chart-card-a chart-card-a chart-card-a chart-card-b chart-card-b chart-card-b chart-card-b history-tree history-tree history-tree ."
+      ". chart-card-a chart-card-a chart-card-a chart-card-a chart-card-a chart-card-b chart-card-b chart-card-b chart-card-b history-tree history-tree history-tree ."
+      ". chart-card-a chart-card-a chart-card-a chart-card-a chart-card-a chart-card-b chart-card-b chart-card-b chart-card-b history-tree history-tree history-tree ."
+      ". chart-card-a chart-card-a chart-card-a chart-card-a chart-card-a chart-card-b chart-card-b chart-card-b chart-card-b history-tree history-tree history-tree ."
     `,
     widgets: [
+      // Item 1: Department Selector (列2-5, 行1-2)
       {
-        type: 'stats',
-        title: 'Primary Metric',
-        gridArea: 'stats-1',
-        dataSource: 'record_palletinfo',
-        metrics: ['dynamic_metric_1'],
-        component: 'UnifiedStatsWidget', // 統一統計組件
+        type: 'department-selector',
+        title: 'Department Selector',
+        gridArea: 'department-selector',
+        component: 'DepartmentSelectorCard',
+        config: {
+          departments: ['All', 'Injection', 'Pipeline', 'Quality', 'Warehouse'],
+          defaultDepartment: 'All',
+          showIcons: true,
+          style: 'compact'
+        }
       },
+      
+      // Item 2: StatsCard(A) (列2-5, 行2-4)
       {
-        type: 'stats',
-        title: 'Secondary Metric',
-        gridArea: 'stats-2',
-        dataSource: 'record_palletinfo',
-        metrics: ['dynamic_metric_2'],
-        component: 'UnifiedStatsWidget', // 統一統計組件
+        type: 'stats-card',
+        title: 'StatsCard(A)',
+        gridArea: 'stats-card-a',
+        component: 'StatsCard',
+        config: {
+          statsTypes: ['PALLET_COUNT', 'QUALITY_SCORE'],
+          columns: 1,
+          showTrend: true,
+          showComparison: true,
+          compact: true
+        }
       },
+      
+      // Item 3: StatsCard(B) (列5-8, 行2-4)
       {
-        type: 'stats',
-        title: 'Tertiary Metric',
-        gridArea: 'stats-3',
-        dataSource: 'record_inventory',
-        metrics: ['dynamic_metric_3'],
-        component: 'UnifiedStatsWidget',
+        type: 'stats-card',
+        title: 'StatsCard(B)',
+        gridArea: 'stats-card-b',
+        component: 'StatsCard',
+        config: {
+          statsTypes: ['EFFICIENCY_RATE', 'TRANSFER_COUNT'],
+          columns: 1,
+          showTrend: true,
+          showComparison: true,
+          compact: true
+        }
       },
+      
+      // Item 4: StatsCard(C) (列8-11, 行2-4)
       {
-        type: 'stats',
-        title: 'Department',
-        gridArea: 'stats-4',
-        component: 'DepartmentSelectorWidget', // 部門選擇器
-        dataSource: 'system_status',
-        metrics: ['department_selection'],
+        type: 'stats-card',
+        title: 'StatsCard(C)',
+        gridArea: 'stats-card-c',
+        component: 'StatsCard',
+        config: {
+          statsTypes: ['ACTIVE_USERS', 'ERROR_RATE'],
+          columns: 1,
+          showTrend: true,
+          showComparison: true,
+          compact: true
+        }
       },
+      
+      // Item 5: Large StatsCard(A) (列2-6, 行4-7)
+      {
+        type: 'stats-card',
+        title: 'StatsCard(A)',
+        gridArea: 'stats-large-a',
+        component: 'StatsCard',
+        config: {
+          statsTypes: ['INVENTORY_LEVEL', 'PENDING_TASKS', 'COMPLETION_RATE'],
+          columns: 2,
+          showTrend: true,
+          showComparison: true,
+          showPerformance: true,
+          large: true
+        }
+      },
+      
+      // Item 6: Large StatsCard(B) (列6-11, 行4-7)
+      {
+        type: 'stats-card',
+        title: 'StatsCard(B)',
+        gridArea: 'stats-large-b',
+        component: 'StatsCard',
+        config: {
+          statsTypes: ['YESTERDAY_TRANSFER_COUNT', 'AWAIT_LOCATION_QTY', 'STILL_IN_AWAIT_PERCENTAGE'],
+          columns: 2,
+          showTrend: true,
+          showComparison: true,
+          showPerformance: true,
+          large: true
+        }
+      },
+      
+      // Item 7: ChartCard(A) (列2-7, 行7-11)
+      {
+        type: 'chart-card',
+        title: 'ChartCard(A)',
+        gridArea: 'chart-card-a',
+        component: 'ChartCard',
+        config: {
+          chartType: 'LINE',
+          chartTypes: ['LINE', 'BAR', 'AREA'],
+          dataSource: 'operations_performance_chart',
+          aggregationType: 'AVERAGE',
+          timeGranularity: 'HOURLY',
+          showLegend: true,
+          interactive: true
+        }
+      },
+      
+      // Item 8: ChartCard(B) (列7-11, 行7-11)
+      {
+        type: 'chart-card',
+        title: 'ChartCard(B)',
+        gridArea: 'chart-card-b',
+        component: 'ChartCard',
+        config: {
+          chartType: 'PIE',
+          chartTypes: ['PIE', 'DONUT', 'BAR'],
+          dataSource: 'operations_distribution_chart',
+          aggregationType: 'COUNT',
+          timeGranularity: 'DAILY',
+          showLegend: true,
+          interactive: true
+        }
+      },
+      
+      // Item 9: History Tree (列11-14, 行1-11)
       {
         type: 'history-tree',
-        title: '',
-        gridArea: 'history',
-        component: 'HistoryTreeV2',
-      },
-      {
-        type: 'chart',
-        title: 'Performance Chart',
-        gridArea: 'table-1',
-        dataSource: 'record_palletinfo',
-        chartType: 'bar',
-        component: 'UnifiedChartWidget', // 統一圖表組件
-      },
-      {
-        type: 'chart',
-        title: 'Distribution Chart',
-        gridArea: 'chart',
-        dataSource: 'record_palletinfo',
-        chartType: 'donut',
-        component: 'UnifiedChartWidget', // 統一圖表組件
-      },
-      {
-        type: 'table',
-        title: 'Operations Details',
-        gridArea: 'table-2',
-        dataSource: 'unified_operations',
-        component: 'UnifiedTableWidget', // 統一表格組件
-      },
-      {
-        type: 'chart',
-        title: 'Staff Workload',
-        gridArea: 'chart-2',
-        dataSource: 'work_level',
-        chartType: 'line',
-        component: 'UnifiedChartWidget', // 統一圖表組件
+        title: 'History Tree',
+        gridArea: 'history-tree',
+        component: 'HistoryTreeCard',
+        config: {
+          maxDepth: 5,
+          showTimestamps: true,
+          showUsers: true,
+          expandable: true,
+          searchable: true,
+          realTime: true
+        }
       },
     ],
   },

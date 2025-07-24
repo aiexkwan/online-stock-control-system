@@ -24,7 +24,7 @@ import {
   UploadStatistics,
   FileTypeStats
 } from '@/types/generated/graphql';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/app/utils/supabase/server';
 import { uploadFile } from '@/app/actions/fileActions';
 import { analyzeOrderPDF } from '@/app/actions/orderUploadActions';
 
@@ -87,7 +87,7 @@ export const uploadResolvers = {
       { input }: { input: UploadCardInput }, 
       context: any
     ): Promise<UploadCardData> => {
-      const supabase = createClient();
+      const supabase = await createClient();
       const startTime = performance.now();
 
       try {
@@ -103,7 +103,7 @@ export const uploadResolvers = {
             .order('uploaded_at', { ascending: false })
             .limit(input.recentLimit || 10);
 
-          recentUploads = files?.map(file => ({
+          recentUploads = files?.map((file: any) => ({
             id: file.id,
             originalName: file.original_name,
             fileName: file.file_name,
@@ -133,9 +133,15 @@ export const uploadResolvers = {
           totalSize: 0,
           successRate: 1.0,
           averageUploadTime: 0,
+          averageProcessingTime: 0,
           todayUploads: 0,
+          failureRate: 0,
           recentErrors: [],
           popularFileTypes: [],
+          errorReasons: [],
+          uploadTrends: [],
+          dataSource: `upload_${input.uploadType}`,
+          lastUpdated: new Date().toISOString(),
         };
 
         if (input.includeStatistics) {
@@ -149,13 +155,19 @@ export const uploadResolvers = {
               totalSize: stats.total_size || 0,
               successRate: stats.success_rate || 1.0,
               averageUploadTime: stats.average_upload_time || 0,
+              averageProcessingTime: stats.average_processing_time || 0,
               todayUploads: stats.today_uploads || 0,
+              failureRate: stats.failure_rate || 0,
               recentErrors: stats.recent_errors || [],
               popularFileTypes: stats.popular_file_types?.map((type: any) => ({
                 type: type.extension as SupportedFileType,
                 count: type.count,
                 totalSize: type.total_size,
               })) || [],
+              errorReasons: stats.error_reasons || [],
+              uploadTrends: stats.upload_trends || [],
+              dataSource: `upload_${input.uploadType}`,
+              lastUpdated: new Date().toISOString(),
             };
           }
         }
@@ -191,7 +203,7 @@ export const uploadResolvers = {
       { input }: { input: FileSearchInput },
       context: any
     ): Promise<FileSearchResult> => {
-      const supabase = createClient();
+      const supabase = await createClient();
       
       try {
         let query = supabase
@@ -284,7 +296,7 @@ export const uploadResolvers = {
       { id }: { id: string },
       context: any
     ): Promise<FileInfo | null> => {
-      const supabase = createClient();
+      const supabase = await createClient();
 
       try {
         const { data: file } = await supabase
@@ -523,7 +535,7 @@ export const uploadResolvers = {
       { fileId }: { fileId: string },
       context: any
     ): Promise<boolean> => {
-      const supabase = createClient();
+      const supabase = await createClient();
 
       try {
         const { error } = await supabase

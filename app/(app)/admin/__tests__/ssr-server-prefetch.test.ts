@@ -3,11 +3,11 @@
  * 測試實際的服務器端預取邏輯
  */
 
-import { createClient } from '../../utils/supabase/server';
+import { createClient } from '@/app/utils/supabase/server';
 import { cookies } from 'next/headers';
 
 // Mock Supabase server client
-jest.mock('../../utils/supabase/server', () => ({
+jest.mock('@/app/utils/supabase/server', () => ({
   createClient: jest.fn(() => ({
     from: jest.fn(() => ({
       select: jest.fn(() => Promise.resolve({ data: [], error: null, count: 0 })),

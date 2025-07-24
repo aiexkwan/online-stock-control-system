@@ -26,6 +26,7 @@ import {
   FunnelIcon,
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
+import { ensureString } from '@/utils/graphql-types';
 import {
   ReportType,
   ReportFormat,
@@ -364,7 +365,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({
             <textarea
               value={reportDescription}
               onChange={(e) => setReportDescription(e.target.value)}
-              placeholder={data.reportCardData.config.description}
+              placeholder={ensureString(data.reportCardData.config.description ?? null)}
               rows={2}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             />

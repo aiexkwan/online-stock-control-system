@@ -22,6 +22,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { MetricCard } from '../widgets/common/data-display/MetricCard';
 import { cn } from '@/lib/utils';
+import { ensureString } from '@/utils/graphql-types';
 import type { 
   StatsType, 
   StatsData, 
@@ -206,7 +207,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
           title={config.title}
           value={stat.value}
           label={stat.label || stat.unit}
-          icon={Icon}
+          icon={Icon as any}
           iconColor={`${color.from} ${color.to}`}
           gradientFrom={color.from}
           gradientTo={color.to}
@@ -214,10 +215,10 @@ export const StatsCard: React.FC<StatsCardProps> = ({
           // 趨勢數據
           trend={showTrend && stat.trend ? stat.trend.direction.toLowerCase() as 'up' | 'down' | 'neutral' : undefined}
           trendValue={showTrend && stat.trend ? stat.trend.percentage : undefined}
-          trendLabel={showTrend && stat.trend ? stat.trend.label : undefined}
+          trendLabel={showTrend && stat.trend ? ensureString(stat.trend.label ?? null) : undefined}
           
           // 描述和額外信息
-          description={config.description}
+          description={ensureString(config.description ?? null)}
           subtitle={showComparison && stat.comparison ? 
             `vs ${stat.comparison.previousLabel}: ${stat.comparison.changePercentage > 0 ? '+' : ''}${stat.comparison.changePercentage.toFixed(1)}%` 
             : undefined
@@ -237,9 +238,6 @@ export const StatsCard: React.FC<StatsCardProps> = ({
           // 動畫
           animateOnMount={true}
           animationDelay={index * 100}
-          
-          // 點擊處理
-          onClick={() => onStatClick?.(stat.type)}
         />
       </motion.div>
     );

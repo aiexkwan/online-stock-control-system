@@ -1472,6 +1472,7 @@ extend type Subscription {
 export const statsSchema = `
 # Stats Related Types
 enum StatsType {
+  # 原有統計類型
   YESTERDAY_TRANSFER_COUNT
   AWAIT_LOCATION_QTY
   STILL_IN_AWAIT
@@ -1482,6 +1483,17 @@ enum StatsType {
   WAREHOUSE_WORK_LEVEL
   TRANSFER_TIME_DISTRIBUTION
   STOCK_LEVEL_HISTORY
+  
+  # 新Card系統統計類型
+  PALLET_COUNT
+  QUALITY_SCORE
+  EFFICIENCY_RATE
+  TRANSFER_COUNT
+  INVENTORY_LEVEL
+  PENDING_TASKS
+  ACTIVE_USERS
+  COMPLETION_RATE
+  ERROR_RATE
 }
 
 enum TrendDirection {
@@ -2595,6 +2607,792 @@ enum UploadErrorCode {
 }
 `;
 
+// List Schema - ListCard with unified list support  
+export const listSchema = `
+# List GraphQL Schema
+# ListCard 組件相關類型定義
+# 支援統一的列表數據查詢和管理
+
+# 基礎 ListData interface
+interface ListData {
+  id: ID!
+  listType: ListType!
+  title: String!
+  description: String
+  totalCount: Int!
+  filteredCount: Int!
+  lastUpdated: DateTime!
+  dataSource: String!
+  refreshInterval: Int
+}
+
+# List 類型枚舉
+enum ListType {
+  ORDER_STATE
+  ORDER_RECORD
+  WAREHOUSE_TRANSFER
+  OTHER_FILES
+}
+
+# 訂單狀態列表 (OrderState Lists)
+type OrderStateList implements ListData {
+  id: ID!
+  listType: ListType!
+  title: String!
+  description: String
+  totalCount: Int!
+  filteredCount: Int!
+  lastUpdated: DateTime!
+  dataSource: String!
+  refreshInterval: Int
+  
+  # 訂單狀態特定數據
+  orders: OrderStateConnection!
+  statusSummary: [OrderStatusSummary!]!
+  progressMetrics: OrderProgressMetrics!
+}
+
+type OrderStatusSummary {
+  status: OrderStatus!
+  count: Int!
+  percentage: Float!
+  averageProcessingTime: Int # minutes
+  urgentCount: Int
+}
+
+type OrderProgressMetrics {
+  totalInProgress: Int!
+  averageCompletionRate: Float!
+  bottleneckStage: OrderStatus
+  predictedCompletionTime: DateTime
+}
+
+type OrderStateConnection {
+  edges: [OrderStateEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type OrderStateEdge {
+  cursor: String!
+  node: OrderState!
+}
+
+type OrderState {
+  order: Order!
+  currentStage: OrderStatus!
+  progress: Float! # 0-100
+  stageHistory: [OrderStageHistory!]!
+  estimatedCompletion: DateTime
+  actualCompletion: DateTime
+  isUrgent: Boolean!
+  bottlenecks: [String!]
+  nextActions: [String!]
+}
+
+type OrderStageHistory {
+  stage: OrderStatus!
+  enteredAt: DateTime!
+  exitedAt: DateTime
+  duration: Int # minutes
+  performedBy: User
+  notes: String
+}
+
+# 訂單記錄列表 (OrderRecord Lists)
+type OrderRecordList implements ListData {
+  id: ID!
+  listType: ListType!
+  title: String!
+  description: String
+  totalCount: Int!
+  filteredCount: Int!
+  lastUpdated: DateTime!
+  dataSource: String!
+  refreshInterval: Int
+  
+  # 訂單記錄特定數據
+  records: OrderRecordConnection!
+  timeline: [OrderTimelineEvent!]!
+  analytics: OrderRecordAnalytics!
+}
+
+type OrderRecordConnection {
+  edges: [OrderRecordEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type OrderRecordEdge {
+  cursor: String!
+  node: OrderRecord!
+}
+
+type OrderRecord {
+  order: Order!
+  recordType: OrderRecordType!
+  timestamp: DateTime!
+  performedBy: User!
+  details: JSON!
+  impact: OrderRecordImpact
+  relatedRecords: [OrderRecord!]
+}
+
+enum OrderRecordType {
+  CREATED
+  MODIFIED
+  STATUS_CHANGED
+  ALLOCATED
+  PICKED
+  PACKED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+  EXCEPTION
+}
+
+type OrderRecordImpact {
+  delayMinutes: Int
+  costImpact: Float
+  customerSatisfaction: OrderRecordImpactLevel
+  operationalComplexity: OrderRecordImpactLevel
+}
+
+enum OrderRecordImpactLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+type OrderTimelineEvent {
+  timestamp: DateTime!
+  event: String!
+  description: String!
+  actor: String!
+  category: OrderRecordType!
+}
+
+type OrderRecordAnalytics {
+  averageOrderCycle: Int! # minutes
+  commonBottlenecks: [String!]!
+  performanceMetrics: JSON!
+  trendData: [OrderTrendPoint!]!
+}
+
+type OrderTrendPoint {
+  date: DateTime!
+  orderCount: Int!
+  averageCycleTime: Int!
+  completionRate: Float!
+}
+
+# 倉庫轉移列表 (WarehouseTransfer Lists)
+type WarehouseTransferList implements ListData {
+  id: ID!
+  listType: ListType!
+  title: String!
+  description: String
+  totalCount: Int!
+  filteredCount: Int!
+  lastUpdated: DateTime!
+  dataSource: String!
+  refreshInterval: Int
+  
+  # 轉移記錄特定數據
+  transfers: TransferConnection!
+  statusDistribution: [TransferStatusDistribution!]!
+  performanceMetrics: TransferPerformanceMetrics!
+  locationAnalysis: [LocationTransferAnalysis!]!
+}
+
+type TransferStatusDistribution {
+  status: TransferStatus!
+  count: Int!
+  percentage: Float!
+  averageDuration: Int # minutes
+}
+
+type TransferPerformanceMetrics {
+  averageTransferTime: Int! # minutes
+  onTimePercentage: Float!
+  delayedCount: Int!
+  efficiencyScore: Float!
+  resourceUtilization: Float!
+}
+
+type LocationTransferAnalysis {
+  location: Location!
+  incomingCount: Int!
+  outgoingCount: Int!
+  netFlow: Int!
+  averageWaitTime: Int! # minutes
+  congestionLevel: CongestionLevel!
+}
+
+enum CongestionLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+# 其他文件列表 (OtherFiles Lists)
+type OtherFilesList implements ListData {
+  id: ID!
+  listType: ListType!
+  title: String!
+  description: String
+  totalCount: Int!
+  filteredCount: Int!
+  lastUpdated: DateTime!
+  dataSource: String!
+  refreshInterval: Int
+  
+  # 文件列表特定數據
+  files: FileRecordConnection!
+  categorySummary: [FileCategorySummary!]!
+  storageMetrics: FileStorageMetrics!
+}
+
+type FileRecordConnection {
+  edges: [FileRecordEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type FileRecordEdge {
+  cursor: String!
+  node: FileRecord!
+}
+
+type FileRecord {
+  id: ID!
+  fileName: String!
+  fileType: FileType!
+  fileCategory: FileCategory!
+  size: Int! # bytes
+  mimeType: String!
+  url: String!
+  thumbnailUrl: String
+  
+  # 元數據
+  uploadedAt: DateTime!
+  uploadedBy: User!
+  lastModified: DateTime!
+  version: String!
+  
+  # 狀態和標籤
+  status: FileStatus!
+  tags: [String!]!
+  accessibility: FileAccessibility!
+  
+  # 關聯數據
+  relatedEntity: FileRelatedEntity
+  permissions: [FilePermission!]!
+  downloadCount: Int!
+  lastAccessed: DateTime
+}
+
+enum FileType {
+  DOCUMENT
+  IMAGE
+  SPREADSHEET
+  PDF
+  ARCHIVE
+  VIDEO
+  AUDIO
+  OTHER
+}
+
+enum FileCategory {
+  QC_REPORT
+  GRN_DOCUMENT
+  SHIPPING_LABEL
+  INVOICE
+  CERTIFICATE
+  PHOTO
+  MANUAL
+  TEMPLATE
+  BACKUP
+  LOG
+  OTHER
+}
+
+enum FileStatus {
+  ACTIVE
+  ARCHIVED
+  PENDING_REVIEW
+  EXPIRED
+  DELETED
+}
+
+enum FileAccessibility {
+  PUBLIC
+  INTERNAL
+  RESTRICTED
+  CONFIDENTIAL
+}
+
+type FileRelatedEntity {
+  entityType: String!
+  entityId: String!
+  relationship: String!
+}
+
+type FilePermission {
+  user: User!
+  permission: FilePermissionType!
+  grantedAt: DateTime!
+  grantedBy: User!
+}
+
+enum FilePermissionType {
+  READ
+  WRITE
+  DELETE
+  SHARE
+  ADMIN
+}
+
+type FileCategorySummary {
+  category: FileCategory!
+  count: Int!
+  totalSize: Int! # bytes
+  averageSize: Int! # bytes
+  recentCount: Int! # files added in last 7 days
+}
+
+type FileStorageMetrics {
+  totalSize: Int! # bytes
+  totalFiles: Int!
+  averageFileSize: Int! # bytes
+  storageUtilization: Float! # percentage
+  growthRate: Float! # bytes per day
+  topCategories: [FileCategorySummary!]!
+}
+
+# Union type for different list data types
+union ListDataUnion = OrderStateList | OrderRecordList | WarehouseTransferList | OtherFilesList
+
+# List 輸入參數
+input ListCardInput {
+  listType: ListType!
+  filters: ListFilters
+  pagination: PaginationInput
+  sort: SortInput
+  dateRange: DateRangeInput
+  includeMetrics: Boolean = true
+}
+
+input ListFilters {
+  # 通用過濾器
+  search: String
+  status: [String!]
+  category: [String!]
+  tags: [String!]
+  userId: ID
+  
+  # 特定類型過濾器
+  orderFilters: OrderListFilters
+  transferFilters: TransferListFilters
+  fileFilters: FileListFilters
+}
+
+input OrderListFilters {
+  orderNumbers: [String!]
+  customerCodes: [String!]
+  statuses: [OrderStatus!]
+  priorities: [OrderPriority!]
+  isUrgent: Boolean
+  valueRange: FloatRangeInput
+}
+
+input TransferListFilters {
+  transferNumbers: [String!]
+  palletNumbers: [String!]
+  fromLocations: [String!]
+  toLocations: [String!]
+  statuses: [TransferStatus!]
+  priorities: [TransferPriority!]
+}
+
+input FileListFilters {
+  fileTypes: [FileType!]
+  categories: [FileCategory!]
+  statuses: [FileStatus!]
+  accessibility: [FileAccessibility!]
+  sizeRange: IntRangeInput
+  hasPermissions: [FilePermissionType!]
+}
+
+input FloatRangeInput {
+  min: Float
+  max: Float
+}
+
+input IntRangeInput {
+  min: Int
+  max: Int
+}
+
+enum OrderPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+  CRITICAL
+}
+
+# 統計和分析輸入
+input ListAnalyticsInput {
+  listType: ListType!
+  dateRange: DateRangeInput!
+  groupBy: AnalyticsGroupBy
+  metrics: [AnalyticsMetric!]
+}
+
+enum AnalyticsGroupBy {
+  HOUR
+  DAY
+  WEEK
+  MONTH
+  STATUS
+  CATEGORY
+  USER
+  LOCATION
+}
+
+enum AnalyticsMetric {
+  COUNT
+  AVERAGE_DURATION
+  SUCCESS_RATE
+  THROUGHPUT
+  EFFICIENCY
+  UTILIZATION
+}
+
+type ListMetadata {
+  listType: ListType!
+  availableFilters: [FilterMetadata!]!
+  availableSorts: [SortMetadata!]!
+  defaultPageSize: Int!
+  maxPageSize: Int!
+  supportedFormats: [ExportFormat!]!
+}
+
+type FilterMetadata {
+  field: String!
+  type: FilterFieldType!
+  options: [String!]
+  required: Boolean!
+}
+
+enum FilterFieldType {
+  STRING
+  NUMBER
+  DATE
+  BOOLEAN
+  ENUM
+  ARRAY
+}
+
+type SortMetadata {
+  field: String!
+  displayName: String!
+  defaultDirection: SortDirection!
+}
+
+enum ExportFormat {
+  CSV
+  EXCEL
+  PDF
+  JSON
+}
+
+# 文件操作輸入類型
+input FileUploadInput {
+  fileName: String!
+  fileType: FileType!
+  category: FileCategory!
+  data: String! # Base64 encoded
+  relatedEntity: FileRelatedEntityInput
+  tags: [String!]
+  accessibility: FileAccessibility
+}
+
+input FileRelatedEntityInput {
+  entityType: String!
+  entityId: String!
+  relationship: String!
+}
+
+input FileMetadataInput {
+  fileName: String
+  category: FileCategory
+  tags: [String!]
+  accessibility: FileAccessibility
+  status: FileStatus
+}
+
+input BatchFileOperationInput {
+  operation: FileOperation!
+  fileIds: [ID!]!
+  metadata: FileMetadataInput
+}
+
+enum FileOperation {
+  DELETE
+  ARCHIVE
+  UPDATE_CATEGORY
+  UPDATE_TAGS
+  CHANGE_ACCESSIBILITY
+}
+
+input ListConfigurationInput {
+  listType: ListType!
+  name: String!
+  filters: ListFilters!
+  sort: SortInput!
+  isDefault: Boolean!
+  isPublic: Boolean!
+}
+`;
+
+// Form Schema - FormCard with unified form support
+export const formSchema = `
+# Form GraphQL Schema
+# FormCard 統一表單系統
+# NewPennine Warehouse Management System
+
+# ==========================================
+# 核心表單類型枚舉
+# ==========================================
+
+enum FormType {
+  # 產品相關表單
+  PRODUCT_EDIT         # 產品編輯表單 (基於 ProductEditForm)
+  PRODUCT_CREATE       # 產品創建表單
+  PRODUCT_BULK_EDIT    # 產品批量編輯
+  
+  # 文件相關表單
+  FILE_UPLOAD          # 文件上傳表單
+  FILE_METADATA_EDIT   # 文件元數據編輯
+  DOCUMENT_UPLOAD      # 文檔上傳表單
+  
+  # 操作確認表單
+  VOID_CONFIRMATION    # 作廢確認表單
+  DELETE_CONFIRMATION  # 刪除確認表單
+  TRANSFER_CONFIRMATION # 轉移確認表單
+  
+  # 庫存相關表單
+  INVENTORY_ADJUST     # 庫存調整表單
+  INVENTORY_TRANSFER   # 庫存轉移表單
+  STOCK_COUNT         # 盤點表單
+  
+  # 訂單相關表單
+  ORDER_CREATE        # 訂單創建表單
+  ORDER_EDIT          # 訂單編輯表單
+  GRN_CREATE          # GRN 創建表單
+  
+  # 系統配置表單
+  USER_PROFILE        # 用戶配置表單
+  SYSTEM_CONFIG       # 系統配置表單
+  NOTIFICATION_CONFIG # 通知配置表單
+}
+
+enum FormFieldType {
+  TEXT
+  EMAIL
+  PASSWORD
+  NUMBER
+  DECIMAL
+  DATE
+  DATETIME
+  TIME
+  SELECT
+  MULTI_SELECT
+  RADIO
+  CHECKBOX
+  TOGGLE
+  TEXTAREA
+  RICH_TEXT
+  FILE_UPLOAD
+  IMAGE_UPLOAD
+  COLOR_PICKER
+  PRODUCT_SELECTOR
+  LOCATION_SELECTOR
+  USER_SELECTOR
+  BARCODE_SCANNER
+}
+
+enum ValidationRuleType {
+  REQUIRED
+  MIN_LENGTH
+  MAX_LENGTH
+  MIN_VALUE
+  MAX_VALUE
+  PATTERN
+  EMAIL
+  URL
+  CUSTOM
+  UNIQUE
+  EXISTS
+}
+
+type ValidationRule {
+  type: ValidationRuleType!
+  value: JSON
+  message: String!
+  errorCode: String
+}
+
+type FormField {
+  id: ID!
+  name: String!
+  label: String!
+  type: FormFieldType!
+  placeholder: String
+  helpText: String
+  defaultValue: JSON
+  validationRules: [ValidationRule!]!
+  isRequired: Boolean!
+  isDisabled: Boolean!
+  isReadOnly: Boolean!
+  isHidden: Boolean!
+  options: [FormFieldOption!]
+  order: Int!
+  gridCols: Int
+}
+
+type FormFieldOption {
+  value: String!
+  label: String!
+  description: String
+  isDefault: Boolean!
+  isDisabled: Boolean!
+}
+
+type FormConfig {
+  id: ID!
+  type: FormType!
+  name: String!
+  title: String!
+  description: String
+  fields: [FormField!]!
+  layout: FormLayout!
+  submitButtonText: String
+  cancelButtonText: String
+  validateOnChange: Boolean!
+  version: String!
+  isActive: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum FormLayout {
+  VERTICAL
+  HORIZONTAL
+  GRID
+  WIZARD
+  TABS
+}
+
+type FormData {
+  formType: FormType!
+  formConfigId: ID!
+  data: JSON!
+  submittedAt: DateTime!
+  submittedBy: String!
+  validation: FormValidationResult
+}
+
+type FormValidationResult {
+  isValid: Boolean!
+  errors: [FormFieldError!]!
+  warnings: [FormFieldWarning!]!
+}
+
+type FormFieldError {
+  fieldName: String!
+  message: String!
+  errorCode: String!
+  value: JSON
+}
+
+type FormFieldWarning {
+  fieldName: String!
+  message: String!
+  warningCode: String!
+  value: JSON
+}
+
+type ProductFormOptions {
+  colours: [FormFieldOption!]!
+  types: [FormFieldOption!]!
+  units: [FormFieldOption!]!
+  suppliers: [FormFieldOption!]!
+}
+
+input FormSubmissionInput {
+  formType: FormType!
+  formConfigId: ID
+  data: JSON!
+  entityId: ID
+  submitMode: FormSubmitMode!
+  validateOnly: Boolean
+}
+
+enum FormSubmitMode {
+  CREATE
+  UPDATE
+  UPSERT
+  DELETE
+}
+
+type FormSubmissionResult {
+  success: Boolean!
+  entityId: ID
+  data: JSON
+  validation: FormValidationResult
+  error: Error
+}
+
+extend type Query {
+  formConfig(type: FormType!): FormConfig
+    @auth(requires: VIEWER)
+    @cache(ttl: 3600, scope: PUBLIC)
+    
+  formConfigs(types: [FormType!]): [FormConfig!]!
+    @auth(requires: VIEWER)
+    @cache(ttl: 3600, scope: PUBLIC)
+    
+  productFormOptions: ProductFormOptions!
+    @auth(requires: VIEWER)
+    @cache(ttl: 3600, scope: PUBLIC)
+    
+  validateFormData(formType: FormType!, data: JSON!): FormValidationResult!
+    @auth(requires: VIEWER)
+    @rateLimit(max: 100, window: "1m")
+    
+  formPrefillData(formType: FormType!, entityId: ID, params: JSON): JSON
+    @auth(requires: VIEWER)
+    @rateLimit(max: 50, window: "1m")
+}
+
+extend type Mutation {
+  submitForm(input: FormSubmissionInput!): FormSubmissionResult!
+    @auth(requires: OPERATOR)
+    @rateLimit(max: 30, window: "1m")
+}
+
+extend type Subscription {
+  formConfigUpdated(formType: FormType!): FormConfig!
+    @auth(requires: VIEWER)
+}
+`;
+
 // Analysis Schema - AnalysisCard with AI Integration
 export const analysisSchema = `
 # Analysis Card Schema - AI-powered analysis and insights
@@ -2842,6 +3640,8 @@ export const typeDefs = `
   ${tableSchema}
   ${reportSchema}
   ${uploadSchema}
+  ${listSchema}
   ${analysisSchema}
+  ${formSchema}
   ${mainSchema}
 `;

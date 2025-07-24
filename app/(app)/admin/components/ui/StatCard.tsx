@@ -68,7 +68,7 @@ export function StatCard({
                   : undefined
               }
             >
-              <div className='h-5 w-5 text-[#EAEAEA]'>{icon}</div>
+              <div className='h-5 w-5 text-[#ffffff]'>{icon}</div>
             </div>
           )}
         </div>
@@ -76,7 +76,7 @@ export function StatCard({
         {/* Main value */}
         <div className='flex flex-1 flex-col justify-center'>
           <motion.div
-            className='text-2xl font-bold tracking-tight text-[#EAEAEA]'
+            className='text-2xl font-bold tracking-tight text-[#ffffff]'
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{

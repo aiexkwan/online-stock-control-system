@@ -143,10 +143,16 @@ interface StockTypeChangeEvent {
 }
 
 export default function InventoryOrderedAnalysisWidgetGraphQL({
-  id,
-  config,
-  className,
+  widget,
+  isEditMode,
+  onUpdate,
+  onRemove,
+  timeFrame,
 }: TraditionalWidgetComponentProps) {
+  // Extract config from widget object
+  const config = widget?.config || {};
+  const id = widget?.id;
+  const className = '';
   // State
   const [stockType, setStockType] = useState<string | undefined>(undefined);
   const [localLoading, setLocalLoading] = useState(false);

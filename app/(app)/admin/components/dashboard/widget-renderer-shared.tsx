@@ -113,6 +113,7 @@ export const WIDGET_CATEGORIES = {
     'chart',
     'advanced-chart',
     'predictive-chart',
+    'chart-card', // 新Card類型
   ],
   STATS: [
     'AwaitLocationQtyWidget',
@@ -128,6 +129,7 @@ export const WIDGET_CATEGORIES = {
     'stats',
     'performance-monitor',
     'system-health',
+    'stats-card', // 新Card類型
   ],
   LIST: [
     'OrderStateListWidget',
@@ -140,6 +142,8 @@ export const WIDGET_CATEGORIES = {
     'list',
     'analysis',
     'history-tree',
+    'table-card', // 新Card類型
+    'analysis-card', // 新Card類型
   ],
 } as const;
 
