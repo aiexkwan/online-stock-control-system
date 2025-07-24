@@ -7,10 +7,12 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import '@testing-library/jest-dom';
 import { MockedProvider } from '@apollo/client/testing';
-import { ListCard, ListType } from '../app/(app)/admin/components/dashboard/cards/ListCard';
+import { ListCard } from '../app/(app)/admin/components/dashboard/cards/ListCard';
 import { FormCard, FormType } from '../app/(app)/admin/components/dashboard/cards/FormCard';
-import { AdminWidgetRenderer } from '../app/(app)/admin/components/dashboard/AdminWidgetRenderer';
+import { ListType } from '../types/generated/graphql';
+import { AdminCardRenderer } from '../app/(app)/admin/components/dashboard/AdminCardRenderer';
 import { AdminWidgetConfig } from '../types/components/dashboard';
 
 // 測試數據
@@ -24,8 +26,8 @@ const mockListCardConfig: AdminWidgetConfig = {
   title: 'Test List Card',
   gridArea: 'list-area',
   component: 'ListCard',
-  dataSource: 'ORDER_STATE',
-  metrics: ['listType:ORDER_STATE', 'pageSize:10']
+  dataSource: 'OrderState',
+  metrics: ['listType:OrderState', 'pageSize:10']
 };
 
 const mockFormCardConfig: AdminWidgetConfig = {
@@ -44,7 +46,7 @@ const mocks = [
       query: expect.any(Object),
       variables: {
         input: {
-          listType: ListType.ORDER_STATE,
+          listType: ListType.OrderState,
           timeFrame: mockTimeFrame,
           pagination: { page: 1, limit: 10 },
           filters: {},
@@ -57,7 +59,7 @@ const mocks = [
         listCardData: {
           __typename: 'OrderStateList',
           id: 'order-state-list',
-          listType: ListType.ORDER_STATE,
+          listType: ListType.OrderState,
           title: 'Order Status List',
           items: [
             {
@@ -112,7 +114,7 @@ describe('階段1整合測試', () => {
     test('ListCard 正常渲染', async () => {
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
+          listType={ListType.OrderState}
           timeFrame={mockTimeFrame}
           showHeader={true}
           showPagination={true}
@@ -127,7 +129,7 @@ describe('階段1整合測試', () => {
     test('ListCard 支援分頁功能', async () => {
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
+          listType={ListType.OrderState}
           timeFrame={mockTimeFrame}
           showPagination={true}
           pageSize={5}
@@ -146,7 +148,7 @@ describe('階段1整合測試', () => {
       
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
+          listType={ListType.OrderState}
           timeFrame={mockTimeFrame}
           onFilterChange={onFilterChange}
         />
@@ -164,7 +166,7 @@ describe('階段1整合測試', () => {
       
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
+          listType={ListType.OrderState}
           timeFrame={mockTimeFrame}
           onSortChange={onSortChange}
         />
@@ -240,10 +242,10 @@ describe('階段1整合測試', () => {
     });
   });
 
-  describe('AdminWidgetRenderer 整合測試', () => {
-    test('AdminWidgetRenderer 渲染 ListCard', async () => {
+  describe('AdminCardRenderer 整合測試', () => {
+    test('AdminCardRenderer 渲染 ListCard', async () => {
       renderWithProviders(
-        <AdminWidgetRenderer
+        <AdminCardRenderer
           config={mockListCardConfig}
           theme="dark"
           timeFrame={mockTimeFrame}
@@ -257,9 +259,9 @@ describe('階段1整合測試', () => {
       });
     });
 
-    test('AdminWidgetRenderer 渲染 FormCard', async () => {
+    test('AdminCardRenderer 渲染 FormCard', async () => {
       renderWithProviders(
-        <AdminWidgetRenderer
+        <AdminCardRenderer
           config={mockFormCardConfig}
           theme="dark"
           timeFrame={mockTimeFrame}
@@ -276,13 +278,13 @@ describe('階段1整合測試', () => {
     test('多個Card同時渲染測試', async () => {
       const { rerender } = renderWithProviders(
         <div>
-          <AdminWidgetRenderer
+          <AdminCardRenderer
             config={mockListCardConfig}
             theme="dark"
             timeFrame={mockTimeFrame}
             index={0}
           />
-          <AdminWidgetRenderer
+          <AdminCardRenderer
             config={mockFormCardConfig}
             theme="dark"
             timeFrame={mockTimeFrame}
@@ -310,7 +312,7 @@ describe('階段1整合測試', () => {
       const { rerender } = renderWithProviders(
         <div>
           <ListCard
-            listType={ListType.ORDER_STATE}
+            listType={ListType.OrderState}
             timeFrame={mockTimeFrame}
             onItemSelect={onItemSelect}
           />
@@ -347,7 +349,7 @@ describe('階段1整合測試', () => {
       renderWithProviders(
         <div>
           <ListCard
-            listType={ListType.ORDER_STATE}
+            listType={ListType.OrderState}
             timeFrame={mockTimeFrame}
             onRefresh={onListRefresh}
           />
@@ -379,7 +381,7 @@ describe('階段1整合測試', () => {
             listCardData: {
               __typename: 'OrderStateList',
               id: 'order-state-list',
-              listType: ListType.ORDER_STATE,
+              listType: ListType.OrderState,
               title: 'Order Status List',
               items: Array.from({ length: 100 }, (_, i) => ({
                 id: `${i + 1}`,
@@ -398,7 +400,7 @@ describe('階段1整合測試', () => {
       render(
         <MockedProvider mocks={[largeDataMock]} addTypename={false}>
           <ListCard
-            listType={ListType.ORDER_STATE}
+            listType={ListType.OrderState}
             timeFrame={mockTimeFrame}
             pageSize={100}
           />
@@ -420,7 +422,7 @@ describe('階段1整合測試', () => {
     test('快速切換Card類型性能測試', async () => {
       const { rerender } = renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
+          listType={ListType.OrderState}
           timeFrame={mockTimeFrame}
         />
       );
@@ -438,7 +440,7 @@ describe('階段1整合測試', () => {
       rerender(
         <MockedProvider mocks={mocks} addTypename={false}>
           <ListCard
-            listType={ListType.ORDER_RECORD}
+            listType={ListType.OrderRecord}
             timeFrame={mockTimeFrame}
           />
         </MockedProvider>
@@ -464,7 +466,7 @@ describe('階段1整合測試', () => {
       render(
         <MockedProvider mocks={[errorMock]} addTypename={false}>
           <ListCard
-            listType={ListType.ORDER_STATE}
+            listType={ListType.OrderState}
             timeFrame={mockTimeFrame}
           />
         </MockedProvider>
@@ -498,7 +500,7 @@ describe('階段1整合測試', () => {
     test('ListCard可訪問性', async () => {
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
+          listType={ListType.OrderState}
           timeFrame={mockTimeFrame}
         />
       );
@@ -538,7 +540,7 @@ describe('階段1整合測試', () => {
 
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
+          listType={ListType.OrderState}
           timeFrame={mockTimeFrame}
         />
       );

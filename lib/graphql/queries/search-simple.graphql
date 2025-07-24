@@ -1,0 +1,10 @@
+# Simple SearchCard Query for testing
+query SimpleSearchCard($input: SearchCardInput!) {
+  searchCard(input: $input) {
+    searchMeta {
+      query
+      totalResults
+      searchTime
+    }
+  }
+}

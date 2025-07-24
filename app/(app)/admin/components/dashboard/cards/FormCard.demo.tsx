@@ -6,7 +6,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FormCard, FormType } from './FormCard';
+import { 
+  FormCard, 
+  FormType,
+  SubmitSuccessData,
+  FormSubmitError,
+  FormValue 
+} from './FormCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,12 +30,12 @@ export const FormCardDemo: React.FC = () => {
     { type: FormType.WAREHOUSE_TRANSFER, label: 'Warehouse Transfer', description: 'Transfer between warehouses' },
   ];
 
-  const handleSubmitSuccess = (data: any) => {
+  const handleSubmitSuccess = (data: SubmitSuccessData) => {
     console.log('Form submitted successfully:', data);
     alert('Form submitted successfully!');
   };
 
-  const handleSubmitError = (error: any) => {
+  const handleSubmitError = (error: FormSubmitError) => {
     console.error('Form submission error:', error);
     alert('Form submission failed!');
   };
@@ -39,7 +45,7 @@ export const FormCardDemo: React.FC = () => {
     alert('Form cancelled!');
   };
 
-  const handleFieldChange = (fieldName: string, value: any) => {
+  const handleFieldChange = (fieldName: string, value: FormValue) => {
     console.log(`Field ${fieldName} changed to:`, value);
   };
 

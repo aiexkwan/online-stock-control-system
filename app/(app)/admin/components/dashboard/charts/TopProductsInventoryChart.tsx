@@ -1,6 +1,18 @@
 'use client';
 
 import React, { useMemo } from 'react';
+
+// 定義 Recharts Tooltip Payload 類型
+interface TooltipPayloadItem {
+  dataKey?: string;
+  value?: unknown;
+  payload?: {
+    code: string;
+    inventory: number;
+    description?: string;
+  };
+  color?: string;
+}
 import {
   BarChart,
   Bar,
@@ -178,10 +190,11 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
             />
             <YAxis dataKey='code' type='category' width={90} tick={{ fontSize: '12px' }} />
             <Tooltip
-              // @types-migration:todo(phase3) [P2] 使用 recharts TooltipProps 完整接口 - Target: 2025-08 - Owner: @frontend-team
-              content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
-                if (active && Array.isArray(payload) && payload.length > 0 && payload[0]?.payload) {
-                  const data = payload[0].payload;
+              content={(props: any) => {
+                const { active, payload } = props;
+                const typedPayload = payload as TooltipPayloadItem[];
+                if (active && Array.isArray(typedPayload) && typedPayload.length > 0 && typedPayload[0]?.payload) {
+                  const data = typedPayload[0].payload;
                   return (
                     <div
                       className={cn(

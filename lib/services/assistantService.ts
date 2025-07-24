@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { ORDER_ANALYZER_CONFIG, ASSISTANT_RETRY_CONFIG } from '@/lib/openai-assistant-config';
 import { systemLogger } from '@/lib/logger';
+import { AssistantMessageData, ParsedOrderResponse } from '@/lib/types/openai.types';
 
 /**
  * Assistant 管理服務
@@ -132,7 +133,7 @@ export class AssistantService {
    */
   public async sendMessage(threadId: string, content: string, fileId?: string): Promise<void> {
     try {
-      const messageData: any = {
+      const messageData: AssistantMessageData = {
         role: 'user' as const,
         content,
       };
@@ -294,18 +295,7 @@ export class AssistantService {
   /**
    * 解析助手返回的 JSON 結果
    */
-  public parseAssistantResponse(response: string): {
-    order_ref: string;
-    products: Array<{
-      product_code: string;
-      description?: string;
-      quantity: number;
-      unit_price?: number;
-    }>;
-    supplier?: string;
-    order_date?: string;
-    total_amount?: number;
-  } {
+  public parseAssistantResponse(response: string): ParsedOrderResponse {
     try {
       // 清理可能的多餘字符
       const cleanedResponse = response.trim();

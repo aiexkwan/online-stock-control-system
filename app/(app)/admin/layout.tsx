@@ -9,7 +9,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DialogProvider } from '@/app/contexts/DialogContext';
 import { UploadRefreshProvider } from './contexts/UploadRefreshContext';
-import { ApolloProvider } from '@/lib/graphql/apollo-provider';
+import { DynamicApolloProvider } from '@/lib/graphql/apollo-provider-dynamic';
 import { UnifiedBackground } from '@/app/components/visual-system/core/UnifiedBackground';
 import './styles/page-flip-animation.css';
 
@@ -44,13 +44,13 @@ export default function AdminLayout({ children }: { children?: React.ReactNode }
       
       {/* Admin Provider 結構 */}
       <div className="relative z-10 min-h-screen">
-        <ApolloProvider>
+        <DynamicApolloProvider>
           <QueryClientProvider client={queryClient}>
             <DialogProvider>
               <UploadRefreshProvider>{safeChildren}</UploadRefreshProvider>
             </DialogProvider>
           </QueryClientProvider>
-        </ApolloProvider>
+        </DynamicApolloProvider>
       </div>
     </>
   );

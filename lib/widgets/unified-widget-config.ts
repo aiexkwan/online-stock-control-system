@@ -26,6 +26,9 @@ export interface UnifiedWidgetConfig {
     cacheEnabled?: boolean;
     realtimeUpdates?: boolean;
     supportDateRange?: boolean;
+    graphqlQuery?: boolean;
+    migrationPhase?: string;
+    originalWidget?: string;
   };
 }
 

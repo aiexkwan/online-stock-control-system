@@ -7,6 +7,17 @@
 import { getCacheAdapter } from '../cache/cache-factory';
 import { createClient } from '@/app/utils/supabase/server';
 import { cacheLogger } from '../logger';
+import {
+  isWarehouseSummaryResponse,
+  isDashboardStatsResponse,
+  isOptimizedInventoryResponse,
+  safeNumber,
+  safeString,
+  safeArrayLength,
+  type WarehouseSummaryRPCResponse,
+  type DashboardStatsRPCResponse,
+  type OptimizedInventoryRPCResponse
+} from '../types/warehouse-rpc-types';
 
 export interface WarehouseSummaryData {
   location: string;
@@ -85,14 +96,18 @@ export class WarehouseCacheService {
         throw error;
       }
 
-      // 轉換數據格式 (Strategy 4: unknown + type narrowing)
-      const dataObj = data as any;
+      // 安全類型轉換 - 替代 any 類型
+      const dataObj = data as unknown;
+      if (!isWarehouseSummaryResponse(dataObj)) {
+        throw new Error('Invalid warehouse summary response structure');
+      }
+      
       const summary: WarehouseSummaryData[] =
-        dataObj?.summary?.map((item: Record<string, unknown>) => ({
-          location: String(item.location || ''),
-          totalQty: Number(item.total_qty) || 0,
-          itemCount: Number(item.item_count) || 0,
-          uniqueProducts: Number(item.unique_products) || 0,
+        dataObj.summary?.map((item) => ({
+          location: safeString(item.location),
+          totalQty: safeNumber(item.total_qty),
+          itemCount: safeNumber(item.item_count),
+          uniqueProducts: safeNumber(item.unique_products),
           lastUpdated: new Date().toISOString(),
         })) || [];
 
@@ -167,16 +182,20 @@ export class WarehouseCacheService {
       // 獲取緩存統計用於健康監控
       const cacheStats = await this.cache.getStats();
 
-      // 安全的類型轉換 (Strategy 4: unknown + type narrowing)
-      const dataObj2 = data as any;
+      // 安全類型轉換 - 替代 any 類型
+      const dataObj = data as unknown;
+      if (!isDashboardStatsResponse(dataObj)) {
+        throw new Error('Invalid dashboard stats response structure');
+      }
+      
       const stats: DashboardStatsData = {
-        totalPallets: Number(dataObj2?.total_pallets) || 0,
-        activePallets: Number(dataObj2?.active_pallets) || 0,
-        uniqueProducts: Number(dataObj2?.unique_products) || 0,
-        todayTransfers: Number(dataObj2?.today_transfers) || 0,
-        pendingOrders: Number(dataObj2?.pending_orders) || 0,
+        totalPallets: safeNumber(dataObj.total_pallets),
+        activePallets: safeNumber(dataObj.active_pallets),
+        uniqueProducts: safeNumber(dataObj.unique_products),
+        todayTransfers: safeNumber(dataObj.today_transfers),
+        pendingOrders: safeNumber(dataObj.pending_orders),
         systemHealth: {
-          dbResponseTime: Number(dataObj2?.execution_time_ms) || 0,
+          dbResponseTime: safeNumber(dataObj.execution_time_ms),
           cacheHitRate: Number(cacheStats.hitRate) || 0,
           lastUpdated: new Date().toISOString(),
         },
@@ -190,7 +209,7 @@ export class WarehouseCacheService {
           operation: 'getDashboardStats',
           source: 'database',
           useEstimated,
-          dbResponseTime: dataObj2?.execution_time_ms,
+          dbResponseTime: dataObj.execution_time_ms,
           responseTime: Date.now() - startTime,
         },
         'Dashboard stats from database'
@@ -272,15 +291,20 @@ export class WarehouseCacheService {
         {
           operation: 'getOptimizedInventory',
           source: 'database',
-          recordCount:
-            data &&
-            typeof data === 'object' &&
-            'inventory' in data &&
-            Array.isArray((data as any).inventory)
-              ? (data as any).inventory.length
-              : 0,
-          hasStats:
-            data && typeof data === 'object' && 'stats' in data && (data as any).stats !== null,
+          recordCount: (() => {
+            const inventoryData = data as unknown;
+            if (!isOptimizedInventoryResponse(inventoryData)) {
+              return 0;
+            }
+            return safeArrayLength(inventoryData.inventory);
+          })(),
+          hasStats: (() => {
+            const inventoryData = data as unknown;
+            if (!isOptimizedInventoryResponse(inventoryData)) {
+              return false;
+            }
+            return inventoryData.stats !== null && inventoryData.stats !== undefined;
+          })(),
           responseTime: Date.now() - startTime,
         },
         'Optimized inventory from database'

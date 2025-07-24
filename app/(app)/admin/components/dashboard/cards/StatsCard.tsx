@@ -74,8 +74,16 @@ const STATS_CARD_QUERY = gql`
   }
 `;
 
+// 定義與 @heroicons/react 兼容的圖標類型
+import type { SVGProps } from 'react';
+
+type HeroIconProps = SVGProps<SVGSVGElement> & {
+  title?: string;
+  titleId?: string;
+};
+
 // 圖標映射
-const ICON_MAP: Record<string, React.ComponentType<any>> = {
+const ICON_MAP: Record<string, React.ComponentType<HeroIconProps>> = {
   'truck': TruckIcon,
   'cube': CubeIcon,
   'clock': ClockIcon,
@@ -207,7 +215,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
           title={config.title}
           value={stat.value}
           label={stat.label || stat.unit}
-          icon={Icon as any}
+          icon={Icon}
           iconColor={`${color.from} ${color.to}`}
           gradientFrom={color.from}
           gradientTo={color.to}

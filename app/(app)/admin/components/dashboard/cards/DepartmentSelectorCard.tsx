@@ -18,6 +18,9 @@ import {
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 
+// HeroIcon props 類型定義
+type HeroIconProps = React.SVGProps<SVGSVGElement>;
+
 // 部門類型定義
 export type Department = 'All' | 'Injection' | 'Pipeline' | 'Quality' | 'Warehouse';
 
@@ -25,7 +28,7 @@ export type Department = 'All' | 'Injection' | 'Pipeline' | 'Quality' | 'Warehou
 const DEPARTMENT_CONFIG: Record<Department, {
   id: Department;
   label: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<HeroIconProps>;
   color: string;
   description: string;
 }> = {
@@ -270,6 +273,5 @@ export const DepartmentSelectorCard: React.FC<DepartmentSelectorCardProps> = ({
   );
 };
 
-// 導出類型供其他組件使用
-export type { Department };
+// 導出配置供其他組件使用
 export { DEPARTMENT_CONFIG };

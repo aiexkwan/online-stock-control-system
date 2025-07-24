@@ -21,7 +21,7 @@ export class UnknownTypeHandler {
 
     for (const key of keys) {
       if (current && typeof current === 'object' && key in current) {
-        current = (current as any)[key];
+        current = (current as Record<string, unknown>)[key];
       } else {
         return defaultValue;
       }

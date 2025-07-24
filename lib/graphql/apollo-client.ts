@@ -12,6 +12,22 @@ import { createClient } from '@/lib/supabase';
 const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_URL || '/api/graphql';
 const USE_SUPABASE_GRAPHQL = process.env.NEXT_PUBLIC_USE_SUPABASE_GRAPHQL === 'true';
 
+// Create a singleton Supabase client for Apollo
+let supabaseClient: ReturnType<typeof createClient> | null = null;
+
+const getSupabaseClient = () => {
+  if (typeof window === 'undefined') {
+    // Server-side: always create a new client
+    return createClient();
+  }
+  
+  // Client-side: use singleton
+  if (!supabaseClient) {
+    supabaseClient = createClient();
+  }
+  return supabaseClient;
+};
+
 // HTTP Link
 const httpLink = createHttpLink({
   uri: USE_SUPABASE_GRAPHQL 
@@ -22,36 +38,71 @@ const httpLink = createHttpLink({
 
 // Auth Link - adds authentication headers
 const authLink = setContext(async (_, { headers }) => {
-  // Get Supabase session for authenticated requests
-  const supabase = createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  
-  const authHeaders: any = {
-    ...headers,
-    authorization: session?.access_token ? `Bearer ${session.access_token}` : '',
-    'content-type': 'application/json',
-  };
+  try {
+    // Get Supabase session for authenticated requests
+    const supabase = getSupabaseClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    // If no session, try to refresh
+    if (!session) {
+      const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
+      if (refreshedSession) {
+        console.log('[Apollo Auth] Session refreshed');
+      }
+    }
+    
+    const authHeaders: any = {
+      ...headers,
+      authorization: session?.access_token ? `Bearer ${session.access_token}` : '',
+      'content-type': 'application/json',
+    };
 
-  // Only add apikey for Supabase GraphQL endpoint
-  if (USE_SUPABASE_GRAPHQL) {
-    authHeaders.apikey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    // Only add apikey for Supabase GraphQL endpoint
+    if (USE_SUPABASE_GRAPHQL) {
+      authHeaders.apikey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    }
+    
+    return { headers: authHeaders };
+  } catch (error) {
+    console.error('[Apollo Auth] Error getting session:', error);
+    return { headers };
   }
-  
-  return { headers: authHeaders };
 });
 
 // Error Link - handles GraphQL and network errors
 const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
   if (graphQLErrors) {
-    graphQLErrors.forEach(({ message, locations, path }) => {
+    graphQLErrors.forEach(({ message, locations, path, extensions }) => {
       console.error(
         `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
+        extensions
       );
+      
+      // Check for authentication errors
+      if (message.includes('Authentication') || message.includes('Unauthorized')) {
+        console.error('[GraphQL error]: Authentication required. Refreshing session...');
+        // Try to refresh the session
+        if (typeof window !== 'undefined' && supabaseClient) {
+          supabaseClient.auth.refreshSession().then(({ data, error }) => {
+            if (error) {
+              console.error('[GraphQL error]: Failed to refresh session:', error);
+            } else if (data.session) {
+              console.log('[GraphQL error]: Session refreshed, retrying operation');
+              return forward(operation);
+            }
+          });
+        }
+      }
     });
   }
 
   if (networkError) {
     console.error(`[Network error]: ${networkError}`);
+    
+    // Enhanced error logging
+    if ('statusCode' in networkError) {
+      console.error(`[Network error]: Status code: ${(networkError as any).statusCode}`);
+    }
     
     // Retry logic for network errors
     if (networkError.message === 'Failed to fetch') {

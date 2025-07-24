@@ -2,7 +2,7 @@ overwrite: true
 schema: "./lib/graphql/export-schema.js"
 documents: 
   - "./app/**/*.tsx"
-  - "!./lib/graphql/**/*.graphql"
+  - "./lib/graphql/queries/**/*.graphql"
   - "!./lib/api/unified-data-layer.ts"
   - "!./lib/graphql/schema/**"
 generates:

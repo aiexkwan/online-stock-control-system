@@ -7,6 +7,7 @@
 'use client';
 
 import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { useMutation, useQuery, gql } from '@apollo/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -527,9 +528,11 @@ export const UploadCard: React.FC<UploadCardProps> = ({
           <div className="grid grid-cols-4 gap-2">
             {previews.map((preview) => (
               <div key={preview.id} className="relative">
-                <img
+                <Image
                   src={preview.url}
                   alt={preview.file.name}
+                  width={64}
+                  height={64}
                   className="w-full h-16 object-cover rounded"
                 />
                 <button

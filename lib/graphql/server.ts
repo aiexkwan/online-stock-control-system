@@ -53,13 +53,55 @@ export async function getApolloServer() {
 export async function createGraphQLContext(req: Request) {
   // Extract user from request headers or cookies
   let user = null;
-  const authHeader = req.headers.get('authorization');
+  let session = null;
   
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7);
-    // Validate token and extract user
-    // This would use Supabase auth or JWT validation
-    // For now, we'll leave it as null
+  try {
+    // Import Supabase client for server
+    const { createClient } = await import('@/app/utils/supabase/server');
+    const supabase = await createClient();
+    
+    // Try to get session from cookies first (SSR)
+    const { data: { session: cookieSession }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (cookieSession && !sessionError) {
+      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
+      
+      if (!userError && authUser) {
+        user = {
+          id: authUser.id,
+          email: authUser.email,
+          role: authUser.role,
+          metadata: authUser.user_metadata,
+        };
+        session = cookieSession;
+        console.log('[GraphQL Context] User authenticated from cookies:', authUser.email);
+      }
+    } else {
+      // Fallback to Authorization header
+      const authHeader = req.headers.get('authorization');
+      
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        
+        // Verify the JWT token with Supabase
+        const { data: { user: authUser }, error } = await supabase.auth.getUser(token);
+        
+        if (!error && authUser) {
+          user = {
+            id: authUser.id,
+            email: authUser.email,
+            role: authUser.role,
+            metadata: authUser.user_metadata,
+          };
+          session = { access_token: token };
+          console.log('[GraphQL Context] User authenticated from header:', authUser.email);
+        } else {
+          console.error('[GraphQL Context] Auth header error:', error?.message);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[GraphQL Context] Failed to get authentication:', error);
   }
 
   // Create DataLoader context
@@ -68,6 +110,7 @@ export async function createGraphQLContext(req: Request) {
   return {
     ...dataLoaderContext,
     user,
+    session,
     requestId: crypto.randomUUID(),
   };
 }

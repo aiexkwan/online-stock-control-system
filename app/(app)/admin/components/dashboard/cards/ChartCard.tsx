@@ -45,6 +45,22 @@ import {
 } from '@/types/generated/graphql';
 import { ensureString } from '@/utils/graphql-types';
 
+// 類型定義
+type FilterValue = string | number | boolean | Date | null;
+
+// Recharts 點擊事件數據類型
+interface ChartClickEventData<T = unknown> {
+  activePayload?: Array<{
+    dataKey: string;
+    value: T;
+    payload: T;
+  }>;
+  activeIndex?: number;
+  activeCoordinate?: { x: number; y: number };
+  chartX?: number;
+  chartY?: number;
+}
+
 // GraphQL 查詢
 const CHART_CARD_QUERY = gql`
   query ChartCardQuery($input: ChartQueryInput!) {
@@ -156,7 +172,7 @@ export interface ChartCardProps {
   groupBy?: string[];
 
   // 篩選條件
-  filters?: Record<string, any>;
+  filters?: Record<string, FilterValue>;
 
   // 數據限制
   limit?: number;
@@ -173,7 +189,7 @@ export interface ChartCardProps {
   isEditMode?: boolean;
 
   // 回調
-  onChartClick?: (chartType: ChartType, data: any) => void;
+  onChartClick?: <T = unknown>(chartType: ChartType, data: ChartClickEventData<T>) => void;
   onRefresh?: () => void;
 }
 
@@ -250,7 +266,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
 
     const commonProps = {
       data: chartData,
-      onClick: (data: any) => onChartClick?.(config.type, data),
+      onClick: (data: ChartClickEventData) => onChartClick?.(config.type, data),
     };
 
     switch (config.type) {

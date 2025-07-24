@@ -27,8 +27,10 @@ import {
   ReportField,
   ReportOperation,
   AggregationFunction,
+  TableDataType,
 } from '@/types/generated/graphql';
 import { createClient } from '@/app/utils/supabase/server';
+import { GraphQLContext } from './index';
 
 // 報表類型配置映射
 const REPORT_CONFIGS: Record<ReportType, ReportConfig> = {
@@ -112,6 +114,14 @@ const REPORT_CONFIGS: Record<ReportType, ReportConfig> = {
   },
 };
 
+// 批量操作錯誤接口
+interface BatchOperationError {
+  reportId: string;
+  error: string;
+  errorCode?: string;
+  timestamp?: string;
+}
+
 // 內存中的報表生成進度追蹤
 const activeGenerations = new Map<string, ReportGenerationProgress>();
 
@@ -190,9 +200,9 @@ export const reportResolvers = {
   Query: {
     // 獲取 ReportCard 數據
     reportCardData: async (
-      _: any, 
+      _parent: undefined, 
       { input }: { input: ReportCardInput }, 
-      context: any
+      context: GraphQLContext
     ): Promise<ReportCardData> => {
       const supabase = createClient();
       const startTime = performance.now();
@@ -347,7 +357,7 @@ export const reportResolvers = {
 
     // 獲取報表配置
     reportConfig: async (
-      _: any, 
+      _parent: undefined, 
       { reportType }: { reportType: ReportType }
     ): Promise<ReportConfig> => {
       return REPORT_CONFIGS[reportType];
@@ -355,9 +365,9 @@ export const reportResolvers = {
 
     // 搜索報表
     searchReports: async (
-      _: any,
+      _parent: undefined,
       { input }: { input: ReportSearchInput },
-      context: any
+      context: GraphQLContext
     ): Promise<ReportSearchResult> => {
       // 這裡應該從數據庫搜索，現在返回模擬數據
       const mockReports: GeneratedReport[] = [
@@ -396,9 +406,9 @@ export const reportResolvers = {
 
     // 獲取報表詳情
     reportDetails: async (
-      _: any,
+      _parent: undefined,
       { reportId }: { reportId: string },
-      context: any
+      context: GraphQLContext
     ): Promise<GeneratedReport | null> => {
       // 模擬從數據庫獲取報表詳情
       return {
@@ -423,7 +433,7 @@ export const reportResolvers = {
 
     // 獲取生成進度
     reportProgress: async (
-      _: any,
+      _parent: undefined,
       { generationIds }: { generationIds: string[] }
     ): Promise<ReportGenerationProgress[]> => {
       return generationIds.map(id => activeGenerations.get(id)).filter(Boolean) as ReportGenerationProgress[];
@@ -431,7 +441,7 @@ export const reportResolvers = {
 
     // 獲取報表模板
     reportTemplates: async (
-      _: any,
+      _parent: undefined,
       { reportType, userId }: { reportType?: ReportType, userId?: string }
     ): Promise<ReportTemplate[]> => {
       // 模擬返回模板數據
@@ -454,7 +464,7 @@ export const reportResolvers = {
 
     // 預估報表生成時間
     estimateReportTime: async (
-      _: any,
+      _parent: undefined,
       { input }: { input: ReportGenerationInput }
     ): Promise<number> => {
       return REPORT_CONFIGS[input.reportType].estimatedGenerationTime;
@@ -462,7 +472,7 @@ export const reportResolvers = {
 
     // 獲取可用的報表欄位
     availableReportFields: async (
-      _: any,
+      _parent: undefined,
       { reportType }: { reportType: ReportType }
     ): Promise<ReportField[]> => {
       // 根據報表類型返回可用欄位
@@ -470,7 +480,7 @@ export const reportResolvers = {
         {
           key: 'date',
           label: 'Date',
-          dataType: 'DATE' as any,
+          dataType: TableDataType.Date,
           filterable: true,
           groupable: true,
           aggregatable: false,
@@ -479,7 +489,7 @@ export const reportResolvers = {
         {
           key: 'amount',
           label: 'Amount',
-          dataType: 'NUMBER' as any,
+          dataType: TableDataType.Number,
           filterable: true,
           groupable: false,
           aggregatable: true,
@@ -494,9 +504,9 @@ export const reportResolvers = {
   Mutation: {
     // 生成報表
     generateReport: async (
-      _: any,
+      _parent: undefined,
       { input }: { input: ReportGenerationInput },
-      context: any
+      context: GraphQLContext
     ): Promise<ReportGenerationResult> => {
       try {
         // 啟動非同步報表生成
@@ -537,7 +547,7 @@ export const reportResolvers = {
 
     // 取消報表生成
     cancelReportGeneration: async (
-      _: any,
+      _parent: undefined,
       { generationId }: { generationId: string }
     ): Promise<boolean> => {
       const generation = activeGenerations.get(generationId);
@@ -554,9 +564,9 @@ export const reportResolvers = {
 
     // 刪除報表
     deleteReport: async (
-      _: any,
+      _parent: undefined,
       { reportId }: { reportId: string },
-      context: any
+      context: GraphQLContext
     ): Promise<boolean> => {
       // 這裡應該從數據庫和文件系統刪除報表
       console.log(`Deleting report: ${reportId}`);
@@ -565,12 +575,12 @@ export const reportResolvers = {
 
     // 批量報表操作
     batchReportOperation: async (
-      _: any,
+      _parent: undefined,
       { input }: { input: BatchReportOperationInput },
-      context: any
+      context: GraphQLContext
     ): Promise<BatchReportResult> => {
       const successful: string[] = [];
-      const failed: any[] = [];
+      const failed: BatchOperationError[] = [];
 
       for (const reportId of input.reportIds) {
         try {
@@ -584,12 +594,17 @@ export const reportResolvers = {
               successful.push(reportId);
               break;
             default:
-              failed.push({ reportId, error: 'Unsupported operation' });
+              failed.push({ 
+            reportId, 
+            error: 'Unsupported operation',
+            timestamp: new Date().toISOString()
+          });
           }
         } catch (error) {
           failed.push({ 
             reportId, 
-            error: error instanceof Error ? error.message : 'Unknown error' 
+            error: error instanceof Error ? error.message : 'Unknown error',
+            timestamp: new Date().toISOString()
           });
         }
       }
@@ -605,9 +620,9 @@ export const reportResolvers = {
 
     // 延長報表過期時間
     extendReportExpiry: async (
-      _: any,
+      _parent: undefined,
       { reportId, days }: { reportId: string, days: number },
-      context: any
+      context: GraphQLContext
     ): Promise<GeneratedReport> => {
       // 這裡應該更新數據庫中的過期時間
       const newExpiryDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
@@ -634,9 +649,9 @@ export const reportResolvers = {
 
     // 創建報表模板
     createReportTemplate: async (
-      _: any,
+      _parent: undefined,
       { input }: { input: CreateReportTemplateInput },
-      context: any
+      context: GraphQLContext
     ): Promise<ReportTemplate> => {
       const templateId = `template_${Date.now()}`;
       
@@ -657,9 +672,9 @@ export const reportResolvers = {
 
     // 更新報表模板
     updateReportTemplate: async (
-      _: any,
+      _parent: undefined,
       { templateId, input }: { templateId: string, input: UpdateReportTemplateInput },
-      context: any
+      context: GraphQLContext
     ): Promise<ReportTemplate> => {
       // 這裡應該更新數據庫中的模板
       return {
@@ -679,9 +694,9 @@ export const reportResolvers = {
 
     // 刪除報表模板
     deleteReportTemplate: async (
-      _: any,
+      _parent: undefined,
       { templateId }: { templateId: string },
-      context: any
+      context: GraphQLContext
     ): Promise<boolean> => {
       // 這裡應該從數據庫刪除模板
       console.log(`Deleting template: ${templateId}`);
@@ -690,9 +705,9 @@ export const reportResolvers = {
 
     // 分享報表
     shareReport: async (
-      _: any,
+      _parent: undefined,
       { reportId, emails, message }: { reportId: string, emails: string[], message?: string },
-      context: any
+      context: GraphQLContext
     ): Promise<boolean> => {
       // 這裡應該發送郵件通知
       console.log(`Sharing report ${reportId} to ${emails.join(', ')}`);
@@ -701,9 +716,9 @@ export const reportResolvers = {
 
     // 重新生成失敗的報表
     regenerateReport: async (
-      _: any,
+      _parent: undefined,
       { reportId }: { reportId: string },
-      context: any
+      context: GraphQLContext
     ): Promise<ReportGenerationResult> => {
       // 這裡應該重新啟動報表生成
       return {

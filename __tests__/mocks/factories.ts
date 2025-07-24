@@ -1,9 +1,13 @@
 /**
  * Test factories for creating mock data
+ * Updated for Cards architecture
  */
 
 import { Database } from '@/lib/database.types';
 import { DatabaseRecord } from '@/types/database/tables';
+import { AdminWidgetConfig } from '@/types/components/dashboard';
+import { ListType } from '@/types/generated/graphql';
+import { FormType } from '@/app/(app)/admin/components/dashboard/cards/FormCard';
 
 type Tables = Database['public']['Tables'];
 type PalletInfo = Tables['record_palletinfo']['Row'];
@@ -152,5 +156,130 @@ export function createMockUser(overrides: DatabaseRecord = {}) {
     active: true,
     created_at: new Date().toISOString(),
     ...overrides,
+  };
+}
+
+// Cards Architecture Mock Factories
+
+/**
+ * Create a mock ListCard configuration
+ */
+export function createMockListCardConfig(overrides: Partial<AdminWidgetConfig> = {}): AdminWidgetConfig {
+  return {
+    type: 'list',
+    title: 'Test List Card',
+    gridArea: 'list-area',
+    component: 'ListCard',
+    dataSource: 'ORDER_STATE',
+    metrics: ['listType:OrderState', 'pageSize:10'],
+    ...overrides,
+  };
+}
+
+/**
+ * Create a mock FormCard configuration
+ */
+export function createMockFormCardConfig(overrides: Partial<AdminWidgetConfig> = {}): AdminWidgetConfig {
+  return {
+    type: 'form',
+    title: 'Test Form Card',
+    gridArea: 'form-area',
+    component: 'FormCard',
+    ...overrides,
+  };
+}
+
+/**
+ * Create a mock StatsCard configuration
+ */
+export function createMockStatsCardConfig(overrides: Partial<AdminWidgetConfig> = {}): AdminWidgetConfig {
+  return {
+    type: 'stats',
+    title: 'Test Stats Card',
+    gridArea: 'stats-area',
+    component: 'StatsCard',
+    metrics: ['totalOrders', 'pendingOrders', 'completedOrders'],
+    ...overrides,
+  };
+}
+
+/**
+ * Create a mock ChartCard configuration
+ */
+export function createMockChartCardConfig(overrides: Partial<AdminWidgetConfig> = {}): AdminWidgetConfig {
+  return {
+    type: 'chart',
+    title: 'Test Chart Card',
+    gridArea: 'chart-area',
+    component: 'ChartCard',
+    chartType: 'line',
+    dataSource: 'analytics',
+    ...overrides,
+  };
+}
+
+/**
+ * Create mock GraphQL query response for ListCard
+ */
+export function createMockListData(listType: ListType = ListType.OrderState) {
+  const baseItems = [
+    {
+      id: '1',
+      title: 'Test Item 1',
+      status: 'active',
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: '2', 
+      title: 'Test Item 2',
+      status: 'pending',
+      created_at: new Date().toISOString(),
+    },
+  ];
+
+  return {
+    data: {
+      getListData: {
+        items: baseItems,
+        metadata: {
+          listType,
+          totalCount: baseItems.length,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      },
+    },
+  };
+}
+
+/**
+ * Create mock form data for FormCard
+ */
+export function createMockFormData(formType: FormType = FormType.PRODUCT_EDIT) {
+  return {
+    formType,
+    fields: [
+      {
+        name: 'product_code',
+        type: 'TEXT',
+        label: 'Product Code',
+        required: true,
+        value: 'PROD001',
+      },
+      {
+        name: 'product_name',
+        type: 'TEXT', 
+        label: 'Product Name',
+        required: true,
+        value: 'Test Product',
+      },
+      {
+        name: 'quantity',
+        type: 'NUMBER',
+        label: 'Quantity',
+        required: true,
+        value: 100,
+      },
+    ],
   };
 }

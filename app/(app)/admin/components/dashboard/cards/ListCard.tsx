@@ -41,6 +41,17 @@ import {
   SortInput,
   PaginationInput,
   DateRangeInput,
+  OrderState,
+  OrderRecord,
+  Transfer,
+  FileRecord,
+  StatusSummary,
+  OrderProgressMetrics,
+  OrderRecordAnalytics,
+  StatusDistribution,
+  TransferPerformanceMetrics,
+  FileCategorySummary,
+  StorageMetrics,
 } from '@/types/generated/graphql';
 
 // GraphQL 查詢
@@ -220,6 +231,56 @@ const LIST_CARD_QUERY = gql`
   }
 `;
 
+// 類型定義
+type ListNodeType = OrderState | OrderRecord | Transfer | FileRecord;
+
+// Metadata 類型定義
+type OrderStateMetadata = {
+  totalCount: number;
+  filteredCount: number;
+  statusSummary?: StatusSummary[];
+  progressMetrics?: OrderProgressMetrics;
+};
+
+type OrderRecordMetadata = {
+  totalCount: number;
+  filteredCount: number;
+  analytics?: OrderRecordAnalytics;
+};
+
+type WarehouseTransferMetadata = {
+  totalCount: number;
+  filteredCount: number;
+  statusDistribution?: StatusDistribution[];
+  performanceMetrics?: TransferPerformanceMetrics;
+};
+
+type OtherFilesMetadata = {
+  totalCount: number;
+  filteredCount: number;
+  categorySummary?: FileCategorySummary[];
+  storageMetrics?: StorageMetrics;
+};
+
+type ListMetadata = OrderStateMetadata | OrderRecordMetadata | WarehouseTransferMetadata | OtherFilesMetadata;
+
+// 類型守衛函數
+function isOrderState(item: ListNodeType): item is OrderState {
+  return 'currentStage' in item && 'progress' in item;
+}
+
+function isOrderRecord(item: ListNodeType): item is OrderRecord {
+  return 'recordType' in item && 'timestamp' in item;
+}
+
+function isTransfer(item: ListNodeType): item is Transfer {
+  return 'fromLocation' in item && 'toLocation' in item && 'pallet' in item;
+}
+
+function isFileRecord(item: ListNodeType): item is FileRecord {
+  return 'fileName' in item && 'fileType' in item && 'fileCategory' in item;
+}
+
 // ListCard 組件 Props
 export interface ListCardProps {
   // List 類型配置
@@ -255,7 +316,7 @@ export interface ListCardProps {
   isEditMode?: boolean;
   
   // 回調
-  onRowClick?: (item: any) => void;
+  onRowClick?: (item: ListNodeType) => void;
   onRefresh?: () => void;
 }
 
@@ -368,7 +429,8 @@ export const ListCard: React.FC<ListCardProps> = ({
             header: 'Order',
             icon: ClipboardDocumentListIcon,
             width: '25%',
-            render: (_, item: any) => {
+            render: (_, item: ListNodeType) => {
+              if (!isOrderState(item)) return null;
               const order = item.order;
               const progress = item.progress || 0;
               const isUrgent = item.isUrgent;
@@ -390,15 +452,17 @@ export const ListCard: React.FC<ListCardProps> = ({
             key: 'customerCode',
             header: 'Customer',
             width: '25%',
-            render: (_, item: any) => (
-              <div className="text-white">{item.order?.customerCode || ''}</div>
-            ),
+            render: (_, item: ListNodeType) => {
+              if (!isOrderState(item)) return null;
+              return <div className="text-white">{item.order?.customerCode || ''}</div>;
+            },
           },
           {
             key: 'progress',
             header: 'Progress',
             width: '30%',
-            render: (_, item: any) => {
+            render: (_, item: ListNodeType) => {
+              if (!isOrderState(item)) return null;
               const progress = item.progress || 0;
               const stage = item.currentStage || '';
               
@@ -418,7 +482,8 @@ export const ListCard: React.FC<ListCardProps> = ({
             header: 'Status',
             width: '20%',
             align: 'center',
-            render: (_, item: any) => {
+            render: (_, item: ListNodeType) => {
+              if (!isOrderState(item)) return null;
               const progress = item.progress || 0;
               const isUrgent = item.isUrgent;
               
@@ -445,9 +510,10 @@ export const ListCard: React.FC<ListCardProps> = ({
             key: 'orderNumber',
             header: 'Order',
             width: '20%',
-            render: (_, item: any) => (
-              <span className="font-medium text-white">{item.order?.orderNumber || ''}</span>
-            ),
+            render: (_, item: ListNodeType) => {
+              if (!isOrderRecord(item)) return null;
+              return <span className="font-medium text-white">{item.order?.orderNumber || ''}</span>;
+            },
           },
           {
             key: 'recordType',
@@ -471,12 +537,15 @@ export const ListCard: React.FC<ListCardProps> = ({
             key: 'performedBy',
             header: 'Operator',
             width: '20%',
-            render: (_, item: any) => (
-              <div className="flex items-center gap-2">
-                <UserIcon className="h-4 w-4 text-slate-400" />
-                <span className="text-white">{item.performedBy?.name || ''}</span>
-              </div>
-            ),
+            render: (_, item: ListNodeType) => {
+              if (!isOrderRecord(item)) return null;
+              return (
+                <div className="flex items-center gap-2">
+                  <UserIcon className="h-4 w-4 text-slate-400" />
+                  <span className="text-white">{item.performedBy?.name || ''}</span>
+                </div>
+              );
+            },
           },
           {
             key: 'details',
@@ -493,36 +562,39 @@ export const ListCard: React.FC<ListCardProps> = ({
       case ListType.WarehouseTransfer:
         return [
           {
-            key: 'transferNumber',
-            header: 'Transfer',
+            key: 'id',
+            header: 'Transfer ID',
             width: '15%',
             render: (value) => (
               <span className="font-medium text-white">{String(value || '')}</span>
             ),
           },
           {
-            key: 'pltNum',
+            key: 'pallet',
             header: 'Pallet',
             width: '15%',
-            render: (value) => (
-              <span className="text-white">{String(value || '')}</span>
-            ),
+            render: (_, item: ListNodeType) => {
+              if (!isTransfer(item)) return null;
+              return <span className="text-white">{item.pallet?.pltNum || ''}</span>;
+            },
           },
           {
             key: 'fromLocation',
             header: 'From',
             width: '20%',
-            render: (_, item: any) => (
-              <span className="text-slate-300">{item.fromLocation?.name || ''}</span>
-            ),
+            render: (_, item: ListNodeType) => {
+              if (!isTransfer(item)) return null;
+              return <span className="text-slate-300">{item.fromLocation?.name || ''}</span>;
+            },
           },
           {
             key: 'toLocation',
             header: 'To',
             width: '20%',
-            render: (_, item: any) => (
-              <span className="text-slate-300">{item.toLocation?.name || ''}</span>
-            ),
+            render: (_, item: ListNodeType) => {
+              if (!isTransfer(item)) return null;
+              return <span className="text-slate-300">{item.toLocation?.name || ''}</span>;
+            },
           },
           {
             key: 'status',
@@ -543,14 +615,18 @@ export const ListCard: React.FC<ListCardProps> = ({
             key: 'requestedAt',
             header: 'Time',
             width: '15%',
-            render: (value) => (
-              <div className="flex items-center gap-1">
-                <ClockIcon className="h-3 w-3 text-slate-400" />
-                <span className="text-xs text-slate-300">
-                  {value ? new Date(String(value)).toLocaleDateString() : ''}
-                </span>
-              </div>
-            ),
+            render: (_, item: ListNodeType) => {
+              if (!isTransfer(item)) return null;
+              const date = item.requestedAt;
+              return (
+                <div className="flex items-center gap-1">
+                  <ClockIcon className="h-3 w-3 text-slate-400" />
+                  <span className="text-xs text-slate-300">
+                    {date ? new Date(String(date)).toLocaleDateString() : ''}
+                  </span>
+                </div>
+              );
+            },
           },
         ];
 
@@ -594,9 +670,10 @@ export const ListCard: React.FC<ListCardProps> = ({
             key: 'uploadedBy',
             header: 'Uploaded By',
             width: '15%',
-            render: (_, item: any) => (
-              <span className="text-sm text-slate-300">{item.uploadedBy?.name || ''}</span>
-            ),
+            render: (_, item: ListNodeType) => {
+              if (!isFileRecord(item)) return null;
+              return <span className="text-sm text-slate-300">{item.uploadedBy?.name || ''}</span>;
+            },
           },
           {
             key: 'uploadedAt',
@@ -626,8 +703,8 @@ export const ListCard: React.FC<ListCardProps> = ({
     const columns = getColumnsForType(listType, listData);
 
     // 根據類型提取實際的表格數據
-    let tableData: any[] = [];
-    let metadata: any = null;
+    let tableData: ListNodeType[] = [];
+    let metadata: ListMetadata | null = null;
 
     switch (listType) {
       case ListType.OrderState:

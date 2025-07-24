@@ -1,6 +1,20 @@
 'use client';
 
 import React, { useMemo } from 'react';
+
+// 定義 Recharts Tooltip Payload 類型
+interface TooltipPayloadItem {
+  dataKey?: string;
+  value?: unknown;
+  payload?: {
+    fullDate: string;
+    accuracy: number;
+    discrepancyCount: number;
+    period: string;
+    date: string;
+  };
+  color?: string;
+}
 import {
   LineChart,
   Line,
@@ -165,10 +179,11 @@ export default function StocktakeAccuracyTrend({ timeFrame }: StocktakeAccuracyT
               }}
             />
             <Tooltip
-              // @types-migration:todo(phase3) [P2] 使用 recharts TooltipProps 完整接口 - Target: 2025-08 - Owner: @frontend-team
-              content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
-                if (active && Array.isArray(payload) && payload.length > 0 && payload[0]?.payload) {
-                  const payloadData = payload[0].payload;
+              content={(props: any) => {
+                const { active, payload } = props;
+                const typedPayload = payload as TooltipPayloadItem[];
+                if (active && Array.isArray(typedPayload) && typedPayload.length > 0 && typedPayload[0]?.payload) {
+                  const payloadData = typedPayload[0].payload;
                   const data = payloadData as {
                     fullDate: string;
                     accuracy: number;

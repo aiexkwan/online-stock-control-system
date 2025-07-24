@@ -1,6 +1,6 @@
 /**
- * 共享的 Widget Renderer 類型定義和工具函數
- * 供 AdminWidgetRenderer 拆分後的子組件使用
+ * 共享的 Card Renderer 類型定義和工具函數
+ * 供 AdminCardRenderer 拆分後的子組件使用
  */
 
 import React from 'react';

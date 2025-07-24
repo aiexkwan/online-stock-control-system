@@ -22,6 +22,7 @@ import {
   DateOperator,
   ArrayOperator,
 } from '@/types/generated/graphql';
+import { GraphQLContext, PostgrestQueryBuilder, TableDataSourceConfig } from '@/lib/types/graphql-resolver.types';
 import { startOfDay, endOfDay, subDays, format, isValid, parseISO } from 'date-fns';
 import DataLoader from 'dataloader';
 import { ensureNumber, ensureInputValue, DEFAULT_PAGINATION } from '@/utils/graphql-types';
@@ -153,7 +154,7 @@ interface TableDataSourceConfig {
 }
 
 // 列配置生成器
-function generateTableColumns(dataSource: string, data: any[]): TableColumn[] {
+function generateTableColumns(dataSource: string, data: unknown[]): TableColumn[] {
   const config = TABLE_CONFIG_MAP[dataSource];
   if (!config || !data.length) {
     return [];
@@ -204,7 +205,7 @@ function formatColumnHeader(key: string): string {
 }
 
 // 推斷數據類型
-function inferDataType(value: any): TableDataType {
+function inferDataType(value: unknown): TableDataType {
   if (value === null || value === undefined) {
     return TableDataType.String;
   }
@@ -243,7 +244,7 @@ function isValidDateString(dateString: string): boolean {
 }
 
 // 推斷列對齊方式
-function inferColumnAlign(key: string, value: any): ColumnAlign {
+function inferColumnAlign(key: string, value: unknown): ColumnAlign {
   if (typeof value === 'number') {
     return ColumnAlign.Right;
   }
@@ -256,7 +257,7 @@ function inferColumnAlign(key: string, value: any): ColumnAlign {
 }
 
 // 推斷格式化器類型
-function inferFormatterType(key: string, value: any): FormatterType {
+function inferFormatterType(key: string, value: unknown): FormatterType {
   if (typeof value === 'number') {
     if (key.includes('rate') || key.includes('percentage')) {
       return FormatterType.Percentage;
@@ -288,7 +289,7 @@ function inferFormatterType(key: string, value: any): FormatterType {
 }
 
 // 應用篩選器
-function applyFilters(query: any, filters?: TableFilters): any {
+function applyFilters(query: PostgrestQueryBuilder, filters?: TableFilters): PostgrestQueryBuilder {
   if (!filters) return query;
   
   // 字符串篩選
@@ -421,7 +422,7 @@ function applyFilters(query: any, filters?: TableFilters): any {
 }
 
 // 應用排序
-function applySorting(query: any, sorting?: TableSorting): any {
+function applySorting(query: PostgrestQueryBuilder, sorting?: TableSorting): PostgrestQueryBuilder {
   if (!sorting) return query;
   
   const ascending = sorting.sortOrder === SortDirection.Asc;
@@ -437,7 +438,7 @@ function applySorting(query: any, sorting?: TableSorting): any {
 }
 
 // 應用分頁
-function applyPagination(query: any, pagination: TablePagination): any {
+function applyPagination(query: PostgrestQueryBuilder, pagination: TablePagination): PostgrestQueryBuilder {
   const limit = ensureNumber(pagination.limit, DEFAULT_PAGINATION.limit);
   const offset = ensureNumber(pagination.offset, DEFAULT_PAGINATION.offset);
   return query.range(offset, offset + limit - 1);
@@ -445,7 +446,7 @@ function applyPagination(query: any, pagination: TablePagination): any {
 
 // 獲取表格數據
 async function fetchTableData(
-  supabase: any,
+  supabase: GraphQLContext['supabase'],
   dataSource: string,
   input: TableDataInput
 ): Promise<TableCardData> {
@@ -539,9 +540,9 @@ export const tableResolvers = {
   Query: {
     // 統一表格數據查詢
     tableCardData: async (
-      _: any,
+      _: unknown,
       { input }: { input: TableDataInput },
-      context: any
+      context: GraphQLContext
     ): Promise<TableCardData> => {
       const { supabase } = context;
       return fetchTableData(supabase, input.dataSource, input);
@@ -549,7 +550,7 @@ export const tableResolvers = {
 
     // 獲取表格列配置
     tableColumns: async (
-      _: any,
+      _: unknown,
       { dataSource }: { dataSource: string }
     ): Promise<TableColumn[]> => {
       const config = TABLE_CONFIG_MAP[dataSource];
@@ -576,7 +577,7 @@ export const tableResolvers = {
 
     // 獲取表格權限
     tablePermissions: async (
-      _: any,
+      _: unknown,
       { dataSource }: { dataSource: string }
     ): Promise<TablePermissions> => {
       const config = TABLE_CONFIG_MAP[dataSource];
@@ -591,17 +592,17 @@ export const tableResolvers = {
   Mutation: {
     // 導出表格數據
     exportTableData: async (
-      _: any,
-      { input }: { input: any },
-      context: any
-    ): Promise<any> => {
+      _: unknown,
+      { input }: { input: unknown },
+      context: GraphQLContext
+    ): Promise<unknown> => {
       // TODO: 實現導出功能
       throw new Error('Export functionality not yet implemented');
     },
 
     // 清除表格緩存
     clearTableCache: async (
-      _: any,
+      _: unknown,
       { dataSource }: { dataSource: string }
     ): Promise<boolean> => {
       // TODO: 實現緩存清除邏輯
@@ -610,7 +611,7 @@ export const tableResolvers = {
 
     // 刷新表格數據
     refreshTableData: async (
-      _: any,
+      _: unknown,
       { dataSource }: { dataSource: string }
     ): Promise<boolean> => {
       // TODO: 實現數據刷新邏輯
@@ -621,7 +622,7 @@ export const tableResolvers = {
   Subscription: {
     // 表格數據更新訂閱
     tableDataUpdated: {
-      subscribe: async function* (_: any, { dataSource }: { dataSource: string }) {
+      subscribe: async function* (_: unknown, { dataSource }: { dataSource: string }) {
         // TODO: 實現實時訂閱邏輯
         throw new Error('Subscriptions not yet implemented');
       },

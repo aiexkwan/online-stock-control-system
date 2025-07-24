@@ -20,6 +20,15 @@ import {
 } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 import { ensureString } from '@/utils/graphql-types';
+
+// 定義表格數據行的類型
+interface TableRowData {
+  id: string | number;
+  [key: string]: unknown;
+}
+
+// 定義表格單元格值的類型
+type CellValue = string | number | boolean | Date | null | undefined;
 import {
   TableDataInput,
   TableCardData,
@@ -159,9 +168,9 @@ export interface TableCardProps {
   isEditMode?: boolean;
   
   // 回調
-  onRowClick?: (row: any) => void;
-  onRowDoubleClick?: (row: any) => void;
-  onSelectionChange?: (selectedRows: any[]) => void;
+  onRowClick?: (row: TableRowData) => void;
+  onRowDoubleClick?: (row: TableRowData) => void;
+  onSelectionChange?: (selectedRows: TableRowData[]) => void;
   onExport?: (format: string) => void;
   onRefresh?: () => void;
 }
@@ -193,7 +202,7 @@ export const TableCard: React.FC<TableCardProps> = ({
   const [filters, setFilters] = useState<TableFilters | undefined>(initialFilters);
   const [sorting, setSorting] = useState<TableSorting | undefined>(initialSorting);
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
-  const [selectedRows, setSelectedRows] = useState<any[]>([]);
+  const [selectedRows, setSelectedRows] = useState<TableRowData[]>([]);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
 
   // 準備查詢輸入
@@ -256,7 +265,7 @@ export const TableCard: React.FC<TableCardProps> = ({
   }, []);
 
   // 處理行選擇
-  const handleRowSelection = useCallback((row: any, selected: boolean) => {
+  const handleRowSelection = useCallback((row: TableRowData, selected: boolean) => {
     setSelectedRows((prev) => {
       const newSelection = selected
         ? [...prev, row]
@@ -281,33 +290,33 @@ export const TableCard: React.FC<TableCardProps> = ({
   }, [refetch, onRefresh]);
 
   // 格式化單元格值
-  const formatCellValue = useCallback((value: any, column: TableColumn) => {
+  const formatCellValue = useCallback((value: CellValue, column: TableColumn) => {
     if (value === null || value === undefined) {
       return '-';
     }
 
     switch (column.formatter?.type) {
       case FormatterType.Date:
-        return new Date(value).toLocaleDateString();
+        return value instanceof Date ? value.toLocaleDateString() : new Date(value as string).toLocaleDateString();
       case FormatterType.Datetime:
-        return new Date(value).toLocaleString();
+        return value instanceof Date ? value.toLocaleString() : new Date(value as string).toLocaleString();
       case FormatterType.Boolean:
-        return value ? 'Yes' : 'No';
+        return Boolean(value) ? 'Yes' : 'No';
       case FormatterType.Currency:
         return new Intl.NumberFormat('en-US', {
           style: 'currency',
           currency: 'USD',
-        }).format(value);
+        }).format(Number(value));
       case FormatterType.Percentage:
-        return `${(value * 100).toFixed(1)}%`;
+        return `${(Number(value) * 100).toFixed(1)}%`;
       case FormatterType.Truncate:
         return typeof value === 'string' && value.length > 50
           ? `${value.substring(0, 47)}...`
-          : value;
+          : String(value);
       case FormatterType.Link:
         return (
           <a
-            href={value}
+            href={String(value)}
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 hover:text-blue-800 underline"
@@ -316,7 +325,7 @@ export const TableCard: React.FC<TableCardProps> = ({
           </a>
         );
       default:
-        return String(value);
+        return String(value ?? '');
     }
   }, []);
 
@@ -374,7 +383,7 @@ export const TableCard: React.FC<TableCardProps> = ({
 
     return (
       <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-        {data.tableCardData.data.map((row: any, index: number) => (
+        {data.tableCardData.data.map((row: TableRowData, index: number) => (
           <motion.tr
             key={row.id || index}
             initial={{ opacity: 0, y: 20 }}
@@ -405,7 +414,7 @@ export const TableCard: React.FC<TableCardProps> = ({
                     column.align === ColumnAlign.Right && 'text-right'
                   )}
                 >
-                  {formatCellValue(row[column.key], column)}
+                  {formatCellValue(row[column.key] as CellValue, column)}
                 </td>
               ))}
           </motion.tr>

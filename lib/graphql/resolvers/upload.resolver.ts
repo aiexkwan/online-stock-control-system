@@ -24,6 +24,8 @@ import {
   UploadStatistics,
   FileTypeStats
 } from '@/types/generated/graphql';
+import { GraphQLContext } from '@/lib/types/graphql-resolver.types';
+import { UploadedFileRow, UploadStatisticsRow, AnalyzeOrderPDFResult } from '@/lib/types/upload-resolver.types';
 import { createClient } from '@/app/utils/supabase/server';
 import { uploadFile } from '@/app/actions/fileActions';
 import { analyzeOrderPDF } from '@/app/actions/orderUploadActions';
@@ -83,9 +85,9 @@ export const uploadResolvers = {
   Query: {
     // 獲取 UploadCard 數據
     uploadCardData: async (
-      _: any, 
+      _: unknown, 
       { input }: { input: UploadCardInput }, 
-      context: any
+      context: GraphQLContext
     ): Promise<UploadCardData> => {
       const supabase = await createClient();
       const startTime = performance.now();
@@ -103,7 +105,7 @@ export const uploadResolvers = {
             .order('uploaded_at', { ascending: false })
             .limit(input.recentLimit || 10);
 
-          recentUploads = files?.map((file: any) => ({
+          recentUploads = files?.map((file: UploadedFileRow) => ({
             id: file.id,
             originalName: file.original_name,
             fileName: file.file_name,
@@ -159,7 +161,7 @@ export const uploadResolvers = {
               todayUploads: stats.today_uploads || 0,
               failureRate: stats.failure_rate || 0,
               recentErrors: stats.recent_errors || [],
-              popularFileTypes: stats.popular_file_types?.map((type: any) => ({
+              popularFileTypes: stats.popular_file_types?.map((type: FileTypeStatRow) => ({
                 type: type.extension as SupportedFileType,
                 count: type.count,
                 totalSize: type.total_size,
@@ -191,7 +193,7 @@ export const uploadResolvers = {
 
     // 獲取上傳配置
     uploadConfig: async (
-      _: any, 
+      _: unknown, 
       { uploadType }: { uploadType: UploadType }
     ): Promise<UploadConfig> => {
       return UPLOAD_CONFIGS[uploadType];
@@ -199,9 +201,9 @@ export const uploadResolvers = {
 
     // 搜索文件
     searchFiles: async (
-      _: any,
+      _: unknown,
       { input }: { input: FileSearchInput },
-      context: any
+      context: GraphQLContext
     ): Promise<FileSearchResult> => {
       const supabase = await createClient();
       
@@ -284,7 +286,7 @@ export const uploadResolvers = {
 
     // 獲取上傳進度
     uploadProgress: async (
-      _: any,
+      _: unknown,
       { uploadIds }: { uploadIds: string[] }
     ): Promise<UploadProgress[]> => {
       return uploadIds.map(id => activeUploads.get(id)).filter(Boolean) as UploadProgress[];
@@ -292,9 +294,9 @@ export const uploadResolvers = {
 
     // 獲取文件詳情
     fileInfo: async (
-      _: any,
+      _: unknown,
       { id }: { id: string },
-      context: any
+      context: GraphQLContext
     ): Promise<FileInfo | null> => {
       const supabase = await createClient();
 
@@ -332,9 +334,9 @@ export const uploadResolvers = {
   Mutation: {
     // 單文件上傳
     uploadSingleFile: async (
-      _: any,
+      _: unknown,
       { input }: { input: SingleFileUploadInput },
-      context: any
+      context: GraphQLContext
     ): Promise<SingleUploadResult> => {
       const uploadId = `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
@@ -403,9 +405,9 @@ export const uploadResolvers = {
               recordCount: analysis.recordCount || 0,
               processingTime: 0, // TODO: 實際時間
               extractedData: analysis.extractedData?.map((order: any) => ({
-                orderNumber: order.orderNumber || '',
-                customerName: order.customerName || undefined,
-                orderDate: order.orderDate || undefined,
+                orderNumber: order?.orderNumber || '',
+                customerName: order?.customerName || undefined,
+                orderDate: order?.orderDate || undefined,
                 items: order.items || [],
                 totalAmount: order.totalAmount || undefined,
                 currency: order.currency || undefined,
@@ -469,9 +471,9 @@ export const uploadResolvers = {
 
     // 批量文件上傳
     uploadBatchFiles: async (
-      _: any,
+      _: unknown,
       { input }: { input: BatchUploadInput },
-      context: any
+      context: GraphQLContext
     ): Promise<BatchUploadResult> => {
       const results: SingleUploadResult[] = [];
       const uploadIds: string[] = [];
@@ -514,7 +516,7 @@ export const uploadResolvers = {
 
     // 取消上傳
     cancelUpload: async (
-      _: any,
+      _: unknown,
       { uploadId }: { uploadId: string }
     ): Promise<boolean> => {
       const upload = activeUploads.get(uploadId);
@@ -531,9 +533,9 @@ export const uploadResolvers = {
 
     // 刪除文件
     deleteFile: async (
-      _: any,
+      _: unknown,
       { fileId }: { fileId: string },
-      context: any
+      context: GraphQLContext
     ): Promise<boolean> => {
       const supabase = await createClient();
 

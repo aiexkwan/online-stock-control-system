@@ -220,13 +220,14 @@ export type {
 } from './config';
 
 // Utility Types
-export type {
-  PerformanceStatus,
-  PerformanceResult,
-  PerformanceSummary,
-  PerformanceReport,
-  PerformanceComparison,
-} from './utils';
+// Note: Performance types temporarily disabled pending utils module completion
+// export type {
+//   PerformanceStatus,
+//   PerformanceResult,
+//   PerformanceSummary,  
+//   PerformanceReport,
+//   PerformanceComparison,
+// } from './utils';
 
 // Hook Types
 export type {

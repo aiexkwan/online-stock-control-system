@@ -3,13 +3,13 @@
  * 防止相同請求在短時間內重複發送
  */
 
-interface PendingRequest {
-  promise: Promise<any>;
+interface PendingRequest<T = unknown> {
+  promise: Promise<T>;
   timestamp: number;
 }
 
 class RequestDeduplicator {
-  private pendingRequests: Map<string, PendingRequest> = new Map();
+  private pendingRequests = new Map<string, PendingRequest>();
   private readonly TTL = 5000; // 5 秒內的相同請求會被去重
 
   /**
@@ -20,7 +20,7 @@ class RequestDeduplicator {
    */
   async dedupe<T>(key: string, requestFn: () => Promise<T>): Promise<T> {
     // 檢查是否有進行中的請求
-    const pending = this.pendingRequests.get(key);
+    const pending = this.pendingRequests.get(key) as PendingRequest<T> | undefined;
     
     if (pending) {
       const age = Date.now() - pending.timestamp;
@@ -49,7 +49,7 @@ class RequestDeduplicator {
     this.pendingRequests.set(key, {
       promise,
       timestamp: Date.now(),
-    });
+    } as PendingRequest<T>);
 
     return promise;
   }

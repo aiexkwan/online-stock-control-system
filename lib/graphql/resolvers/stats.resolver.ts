@@ -15,6 +15,29 @@ import {
 } from '@/types/generated/graphql';
 import { startOfDay, endOfDay, subDays, format } from 'date-fns';
 import DataLoader from 'dataloader';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '@/types/database/supabase';
+
+// 定義 Supabase client 類型
+type SupabaseClientType = SupabaseClient<Database>;
+
+// 定義資料庫查詢結果類型
+type PalletInfoRow = Database['public']['Tables']['record_palletinfo']['Row'];
+type InventoryRow = Database['public']['Tables']['record_inventory']['Row'];
+type TransferRow = Database['public']['Tables']['record_transfer']['Row'];
+
+// 為 record_pallet_transfer 定義 fallback 類型（如果表不存在）
+type PalletTransferRow = TransferRow & {
+  transferdone?: string;
+  status?: string;
+  count?: number;
+};
+
+// 定義 GraphQL Context 類型
+interface StatsResolverContext {
+  supabase: SupabaseClientType;
+  user?: { id: string; email: string; role: string };
+}
 
 // 統計配置映射
 const STATS_CONFIG_MAP: Record<StatsType, StatsConfig> = {
@@ -175,7 +198,7 @@ const STATS_CONFIG_MAP: Record<StatsType, StatsConfig> = {
 };
 
 // DataLoader for batch loading stats
-const createStatsLoader = (supabase: any) => {
+const createStatsLoader = (supabase: SupabaseClientType) => {
   return new DataLoader<StatsType, StatsData>(async (types) => {
     const results = await Promise.all(
       types.map(type => fetchStatData(supabase, type))
@@ -186,7 +209,7 @@ const createStatsLoader = (supabase: any) => {
 
 // 獲取單個統計數據
 async function fetchStatData(
-  supabase: any, 
+  supabase: SupabaseClientType, 
   type: StatsType,
   dateRange?: { start: string; end: string }
 ): Promise<StatsData> {
@@ -260,8 +283,10 @@ async function fetchStatData(
         .select('quantity')
         .eq('location', 'AWAIT');
 
-      const totalQty = data?.reduce((sum: number, record: any) => 
-        sum + (record.quantity || 0), 0) || 0;
+      // 注意：此處查詢的 'quantity' 欄位在 record_palletinfo 表中不存在
+      // 應該使用 'product_qty' 或從其他表查詢
+      const totalQty = data?.reduce((sum: number, record: PalletInfoRow & { quantity?: number }) => 
+        sum + (record.quantity || record.product_qty || 0), 0) || 0;
 
       return {
         type,
@@ -421,8 +446,16 @@ async function fetchStatData(
         .select('quantity')
         .gt('quantity', 0);
 
-      const totalInventory = data?.reduce((sum: number, record: any) => 
-        sum + (record.quantity || 0), 0) || 0;
+      // 注意：此處查詢的 'quantity' 欄位在 record_inventory 表中不存在
+      // 應該使用具體的庫存字段總和
+      const totalInventory = data?.reduce((sum: number, record: InventoryRow & { quantity?: number }) => {
+        // 如果有 quantity 字段就使用，否則計算所有庫存位置的總和
+        const quantity = record.quantity || (
+          record.await + record.backcarpark + record.bulk + record.damage + 
+          record.fold + record.injection + record.pipeline + record.prebook
+        );
+        return sum + quantity;
+      }, 0) || 0;
 
       return {
         type,
@@ -546,9 +579,9 @@ export const statsResolvers = {
   Query: {
     // 批量獲取統計數據
     statsCardData: async (
-      _: any,
+      _: unknown,
       { input }: { input: StatsQueryInput },
-      context: any
+      context: StatsResolverContext
     ): Promise<StatsCardData> => {
       try {
         console.log('[StatsResolver] statsCardData called with input:', input);
@@ -604,9 +637,9 @@ export const statsResolvers = {
 
     // 獲取單個統計數據
     statData: async (
-      _: any,
+      _: unknown,
       { input }: { input: SingleStatQueryInput },
-      context: any
+      context: StatsResolverContext
     ): Promise<StatsData> => {
       const { supabase } = context;
       return fetchStatData(
@@ -621,7 +654,7 @@ export const statsResolvers = {
 
     // 獲取可用的統計配置
     availableStats: async (
-      _: any,
+      _: unknown,
       { category, includeDisabled }: { category?: string; includeDisabled?: boolean }
     ): Promise<StatsConfig[]> => {
       // 返回所有配置（可以根據 category 過濾）
@@ -633,7 +666,7 @@ export const statsResolvers = {
     // 訂閱統計數據更新
     statsUpdated: {
       subscribe: async function* (
-        _: any,
+        _: unknown,
         { types }: { types: StatsType[] }
       ) {
         // TODO: 實現實時訂閱邏輯

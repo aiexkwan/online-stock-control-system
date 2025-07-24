@@ -75,9 +75,9 @@ export const coreWidgetImports: Record<string, ComponentImport> = {
   HistoryTreeV2GraphQL: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/HistoryTreeV2GraphQL')
   ),
-  AdminWidgetRenderer: wrapNamedExport(
-    () => import('@/app/(app)/admin/components/dashboard/AdminWidgetRenderer'),
-    'AdminWidgetRenderer'
+  AdminCardRenderer: wrapNamedExport(
+    () => import('@/app/(app)/admin/components/dashboard/AdminCardRenderer'),
+    'AdminCardRenderer'
   ),
 };
 
@@ -130,9 +130,6 @@ export const chartsWidgetImports: Record<string, ComponentImport> = {
 
 // Lists Widgets - 策略 2: 標準化導入格式
 export const listsWidgetImports: Record<string, ComponentImport> = {
-  OrdersListWidget: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/OrdersListWidget')
-  ),
   OrdersListWidget: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/OrdersListWidget')
   ),

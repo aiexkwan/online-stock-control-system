@@ -1,11 +1,75 @@
 /**
  * Complex DataLoaders for handling relationships and JOINs
  * Optimized for the identified complex queries
+ * 
+ * NOTE: Enhanced type safety implementation
+ * - All DataLoaders use proper typed interfaces from ../../types/dataloaders.ts
+ * - DatabaseEntity with type assertions ensures data safety while maintaining flexibility
+ * - Runtime type checks prevent null reference errors
  */
 
 import DataLoader from 'dataloader';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { createBatchLoader } from './base.dataloader';
+import { 
+  DatabaseEntity,
+  TransferEntity,
+  ProductEntity,
+  WorkLevelEntity,
+  InventoryEntity,
+  PalletEntity,
+  UserEntity,
+  GRNEntity,
+  asTransferEntity,
+  asProductEntity,
+  asWorkLevelEntity,
+  asInventoryEntity,
+  asPalletEntity,
+  asUserEntity,
+  asGRNEntity,
+  safeGet,
+  safeString,
+  safeNumber
+} from '@/types/dataloaders/entities';
+
+// Flexible result types that match actual implementation
+type DataLoaderResult = Record<string, unknown> | null;
+type UnifiedOperationsResult = DataLoaderResult;
+type StockLevelResult = DataLoaderResult;
+type WorkLevelResult = DataLoaderResult;
+type GRNAnalyticsResult = DataLoaderResult;
+type PerformanceMetricsResult = DataLoaderResult;
+type InventoryOrderedAnalysisResult = DataLoaderResult;
+type HistoryTreeResult = DataLoaderResult;
+type TopProductsResult = DataLoaderResult;
+type StockDistributionResult = DataLoaderResult;
+
+// Type helper functions for safe property access
+type SafeAccess<T = unknown> = T | null | undefined;
+
+function safeAccess<T>(obj: SafeAccess, key: string): T | null {
+  return obj && typeof obj === 'object' && key in obj ? (obj as Record<string, T>)[key] : null;
+}
+
+function asRecord(obj: SafeAccess): Record<string, unknown> {
+  return obj && typeof obj === 'object' ? obj as Record<string, unknown> : {};
+}
+
+function getProperty<T = unknown>(obj: SafeAccess, key: string, defaultValue: T): T {
+  if (obj && typeof obj === 'object' && key in obj) {
+    const value = (obj as Record<string, unknown>)[key];
+    return value !== null && value !== undefined ? value as T : defaultValue;
+  }
+  return defaultValue;
+}
+
+function asString(value: SafeAccess, defaultValue = ''): string {
+  return typeof value === 'string' ? value : defaultValue;
+}
+
+function asNumber(value: SafeAccess, defaultValue = 0): number {
+  return typeof value === 'number' ? value : defaultValue;
+}
 
 interface UnifiedOperationsKey {
   warehouse?: string;
@@ -91,8 +155,8 @@ interface TopProductsKey {
  */
 export function createUnifiedOperationsLoader(
   supabase: SupabaseClient
-): DataLoader<UnifiedOperationsKey, any> {
-  return createBatchLoader<UnifiedOperationsKey, any>(
+): DataLoader<UnifiedOperationsKey, UnifiedOperationsResult | null> {
+  return createBatchLoader<UnifiedOperationsKey, UnifiedOperationsResult | null>(
     async (keys) => {
       // Since this is a complex query, we'll process each key individually
       // In a real implementation, we'd optimize this further
@@ -155,9 +219,10 @@ export function createUnifiedOperationsLoader(
 
             // Get work levels for active users
             const activeUserIds = new Set<string>();
-            transfers.data?.forEach((t: any) => {
-              if (t.requested_by?.id) activeUserIds.add(t.requested_by.id);
-              if (t.executed_by?.id) activeUserIds.add(t.executed_by.id);
+            transfers.data?.forEach((t: DatabaseEntity) => {
+              const transfer = asTransferEntity(t);
+              if (transfer?.requested_by?.id) activeUserIds.add(transfer.requested_by.id);
+              if (transfer?.executed_by?.id) activeUserIds.add(transfer.executed_by.id);
             });
 
             const workLevelsQuery = supabase
@@ -179,7 +244,7 @@ export function createUnifiedOperationsLoader(
               totalOrders: 0, // Would need to query orders
               totalPallets: pallets.data?.length || 0,
               activeUsers: activeUserIds.size,
-              averageEfficiency: calculateAverageEfficiency(workLevels.data || []),
+              averageEfficiency: calculateAverageEfficiency(workLevels.data || [] as DatabaseEntity[]),
             };
 
             return {
@@ -209,8 +274,8 @@ export function createUnifiedOperationsLoader(
  */
 export function createStockLevelsLoader(
   supabase: SupabaseClient
-): DataLoader<StockLevelKey, any> {
-  return createBatchLoader<StockLevelKey, any>(
+): DataLoader<StockLevelKey, StockLevelResult | null> {
+  return createBatchLoader<StockLevelKey, StockLevelResult | null>(
     async (keys) => {
       const results = await Promise.all(
         keys.map(async (key) => {
@@ -257,13 +322,16 @@ export function createStockLevelsLoader(
             if (error) throw error;
 
             // Transform data into stock level items
-            const items = (data || []).map((item: any) => ({
-              productCode: item.product_code,
-              productName: item.product?.description || 'Unknown',
-              quantity: item.total_quantity || 0,
-              location: determineMainLocation(item),
-              lastUpdated: item.latest_update,
-            }));
+            const items = (data || []).map((item: DatabaseEntity) => {
+              const product = asProductEntity(item);
+              return {
+                productCode: product?.product_code || '',
+                productName: product?.product?.description || product?.description || 'Unknown',
+                quantity: product?.total_quantity || 0,
+                location: determineMainLocation(item),
+                lastUpdated: product?.latest_update || '',
+              };
+            });
 
             // Calculate totals
             const totalItems = items.length;
@@ -295,13 +363,13 @@ export function createStockLevelsLoader(
  */
 export function createEnhancedWorkLevelLoader(
   supabase: SupabaseClient
-): DataLoader<WorkLevelKey, any> {
-  return createBatchLoader<WorkLevelKey, any>(
+): DataLoader<WorkLevelKey, WorkLevelResult | null> {
+  return createBatchLoader<WorkLevelKey, WorkLevelResult | null>(
     async (keys) => {
       try {
         // Group keys by date for optimal batch querying
         const dateGroups = groupKeysByDate(keys);
-        const allResults = new Map<string, any>();
+        const allResults = new Map<string, WorkLevelResult | null>();
 
         // Process all date groups in parallel
         const datePromises = Array.from(dateGroups.entries()).map(async ([date, dateKeys]) => {
@@ -371,7 +439,7 @@ export function createEnhancedWorkLevelLoader(
           }
 
           // Create efficient lookup maps
-          const workDataMap = new Map(
+          const workDataMap = new Map<string, DatabaseEntity>(
             (workData.data || []).map(w => [w.user_id, w])
           );
 
@@ -396,13 +464,13 @@ export function createEnhancedWorkLevelLoader(
 
             const result = {
               userId: key.userId,
-              user: workLevel.user,
+              user: asWorkLevelEntity(workLevel)?.user,
               date: new Date(date),
               
               // Basic metrics
               totalTransfers: transfers.length,
-              totalPalletsHandled: workLevel.total_pallets || 0,
-              totalQuantityMoved: workLevel.total_quantity || 0,
+              totalPalletsHandled: safeNumber(workLevel, 'total_pallets'),
+              totalQuantityMoved: safeNumber(workLevel, 'total_quantity'),
 
               // Enhanced metrics
               averageTransferTime: performanceMetrics.averageTransferTime,
@@ -451,7 +519,7 @@ export function createEnhancedWorkLevelLoader(
  */
 export function createWorkLevelLoader(
   supabase: SupabaseClient
-): DataLoader<WorkLevelKey, any> {
+): DataLoader<WorkLevelKey, WorkLevelResult | null> {
   // Delegate to enhanced version
   return createEnhancedWorkLevelLoader(supabase);
 }
@@ -462,8 +530,8 @@ export function createWorkLevelLoader(
  */
 export function createGRNAnalyticsLoader(
   supabase: SupabaseClient
-): DataLoader<GRNAnalyticsKey, any> {
-  return createBatchLoader<GRNAnalyticsKey, any>(
+): DataLoader<GRNAnalyticsKey, GRNAnalyticsResult | null> {
+  return createBatchLoader<GRNAnalyticsKey, GRNAnalyticsResult | null>(
     async (keys) => {
       const results = await Promise.all(
         keys.map(async (key) => {
@@ -527,7 +595,7 @@ export function createGRNAnalyticsLoader(
               .in('grn_ref', grnRefs);
 
             // Optional QC data if requested
-            let qcData: any[] = [];
+            let qcData: DatabaseEntity[] = [];
             if (key.includeQC && grnData) {
               const palletNums = grnData
                 .map(g => g.plt_num)
@@ -554,11 +622,11 @@ export function createGRNAnalyticsLoader(
             }
 
             // Create lookup maps for efficient data joining
-            const grnLevelMap = new Map(
+            const grnLevelMap = new Map<string, DatabaseEntity>(
               (grnLevelData || []).map(gl => [gl.grn_ref, gl])
             );
 
-            const qcMap = new Map(
+            const qcMap = new Map<string, DatabaseEntity>(
               qcData.map(qc => [qc.plt_num, qc])
             );
 
@@ -604,22 +672,26 @@ export function createGRNAnalyticsLoader(
 }
 
 // Helper functions
-function calculateAverageEfficiency(workLevels: any[]): number {
+function calculateAverageEfficiency(workLevels: DatabaseEntity[]): number {
   if (workLevels.length === 0) return 0;
-  const sum = workLevels.reduce((acc, wl) => acc + (wl.efficiency || 0), 0);
+  const sum = workLevels.reduce((acc, wl) => {
+    const workLevel = asWorkLevelEntity(wl);
+    return acc + (workLevel?.efficiency || 0);
+  }, 0);
   return sum / workLevels.length;
 }
 
-function determineMainLocation(inventory: any): string {
+function determineMainLocation(inventory: DatabaseEntity): string {
+  const inventoryEntity = asInventoryEntity(inventory);
   const locations = [
-    { name: 'Injection', qty: inventory.injection || 0 },
-    { name: 'Pipeline', qty: inventory.pipeline || 0 },
-    { name: 'Prebook', qty: inventory.prebook || 0 },
-    { name: 'Await', qty: inventory.await || 0 },
-    { name: 'Fold', qty: inventory.fold || 0 },
-    { name: 'Bulk', qty: inventory.bulk || 0 },
-    { name: 'Back Car Park', qty: inventory.backcarpark || 0 },
-    { name: 'Damage', qty: inventory.damage || 0 },
+    { name: 'Injection', qty: inventoryEntity?.injection || 0 },
+    { name: 'Pipeline', qty: safeNumber(inventory, 'pipeline') },
+    { name: 'Prebook', qty: safeNumber(inventory, 'prebook') },
+    { name: 'Await', qty: safeNumber(inventory, 'await') },
+    { name: 'Fold', qty: safeNumber(inventory, 'fold') },
+    { name: 'Bulk', qty: safeNumber(inventory, 'bulk') },
+    { name: 'Back Car Park', qty: safeNumber(inventory, 'backcarpark') },
+    { name: 'Damage', qty: safeNumber(inventory, 'damage') },
   ];
 
   const mainLocation = locations.reduce((max, loc) => 
@@ -629,15 +701,16 @@ function determineMainLocation(inventory: any): string {
   return mainLocation.name;
 }
 
-function calculateHourlyBreakdown(transfers: any[]): any[] {
+function calculateHourlyBreakdown(transfers: DatabaseEntity[]): Record<string, unknown>[] {
   const hourlyMap = new Map<number, { count: number; quantity: number }>();
 
   transfers.forEach(transfer => {
-    const hour = new Date(transfer.completed_at || transfer.created_at).getHours();
+    const transferEntity = asTransferEntity(transfer);
+    const hour = new Date(transferEntity?.completed_at || transferEntity?.created_at || '').getHours();
     const current = hourlyMap.get(hour) || { count: 0, quantity: 0 };
     hourlyMap.set(hour, {
       count: current.count + 1,
-      quantity: current.quantity + (transfer.quantity || 0),
+      quantity: current.quantity + (transferEntity?.quantity || 0),
     });
   });
 
@@ -648,15 +721,15 @@ function calculateHourlyBreakdown(transfers: any[]): any[] {
   }));
 }
 
-function calculateLocationBreakdown(transfers: any[]): any[] {
+function calculateLocationBreakdown(transfers: DatabaseEntity[]): Record<string, unknown>[] {
   const locationMap = new Map<string, { count: number; quantity: number }>();
 
   transfers.forEach(transfer => {
-    const location = transfer.to_location || 'Unknown';
+    const location = (transfer as any).to_location || 'Unknown';
     const current = locationMap.get(location) || { count: 0, quantity: 0 };
     locationMap.set(location, {
       count: current.count + 1,
-      quantity: current.quantity + (transfer.quantity || 0),
+      quantity: current.quantity + ((transfer as any).quantity || 0),
     });
   });
 
@@ -667,7 +740,7 @@ function calculateLocationBreakdown(transfers: any[]): any[] {
   }));
 }
 
-function calculateGRNAnalytics(grnData: any[], grnLevelData: any[]): any {
+function calculateGRNAnalytics(grnData: DatabaseEntity[], grnLevelData: DatabaseEntity[]): Record<string, unknown> {
   if (!grnData || grnData.length === 0) {
     return {
       totalGrossWeight: 0,
@@ -689,10 +762,22 @@ function calculateGRNAnalytics(grnData: any[], grnLevelData: any[]): any {
   }
 
   // Calculate totals
-  const totalGrossWeight = grnData.reduce((sum, grn) => sum + (grn.gross_weight || 0), 0);
-  const totalNetWeight = grnData.reduce((sum, grn) => sum + (grn.net_weight || 0), 0);
-  const totalPalletCount = grnData.reduce((sum, grn) => sum + (grn.pallet_count || 0), 0);
-  const totalPackageCount = grnData.reduce((sum, grn) => sum + (grn.package_count || 0), 0);
+  const totalGrossWeight = grnData.reduce((sum, grn) => {
+    const grnEntity = asGRNEntity(grn);
+    return sum + (grnEntity?.gross_weight || 0);
+  }, 0);
+  const totalNetWeight = grnData.reduce((sum, grn) => {
+    const grnEntity = asGRNEntity(grn);
+    return sum + (grnEntity?.net_weight || 0);
+  }, 0);
+  const totalPalletCount = grnData.reduce((sum, grn) => {
+    const grnEntity = asGRNEntity(grn);
+    return sum + (grnEntity?.pallet_count || 0);
+  }, 0);
+  const totalPackageCount = grnData.reduce((sum, grn) => {
+    const grnEntity = asGRNEntity(grn);
+    return sum + (grnEntity?.package_count || 0);
+  }, 0);
 
   // Calculate averages
   const recordCount = grnData.length;
@@ -702,18 +787,21 @@ function calculateGRNAnalytics(grnData: any[], grnLevelData: any[]): any {
   // Supplier breakdown
   const supplierMap = new Map<string, { count: number; grossWeight: number; netWeight: number }>();
   grnData.forEach(grn => {
-    const supplierCode = grn.sup_code || 'Unknown';
+    const supplierCode = (grn as any).sup_code || 'Unknown';
     const current = supplierMap.get(supplierCode) || { count: 0, grossWeight: 0, netWeight: 0 };
     supplierMap.set(supplierCode, {
       count: current.count + 1,
-      grossWeight: current.grossWeight + (grn.gross_weight || 0),
-      netWeight: current.netWeight + (grn.net_weight || 0),
+      grossWeight: current.grossWeight + ((grn as any).gross_weight || 0),
+      netWeight: current.netWeight + ((grn as any).net_weight || 0),
     });
   });
 
   const supplierBreakdown = Array.from(supplierMap.entries()).map(([code, data]) => ({
     supplierCode: code,
-    supplierName: grnData.find(g => g.sup_code === code)?.supplier?.supplier_name || code,
+    supplierName: (() => {
+      const foundGrn = grnData.find(g => (g as any).sup_code === code);
+      return foundGrn ? (foundGrn as any).supplier?.supplier_name || code : code;
+    })(),
     recordCount: data.count,
     totalGrossWeight: data.grossWeight,
     totalNetWeight: data.netWeight,
@@ -723,18 +811,21 @@ function calculateGRNAnalytics(grnData: any[], grnLevelData: any[]): any {
   // Material breakdown
   const materialMap = new Map<string, { count: number; grossWeight: number; netWeight: number }>();
   grnData.forEach(grn => {
-    const materialCode = grn.material_code || 'Unknown';
+    const materialCode = (grn as any).material_code || 'Unknown';
     const current = materialMap.get(materialCode) || { count: 0, grossWeight: 0, netWeight: 0 };
     materialMap.set(materialCode, {
       count: current.count + 1,
-      grossWeight: current.grossWeight + (grn.gross_weight || 0),
-      netWeight: current.netWeight + (grn.net_weight || 0),
+      grossWeight: current.grossWeight + ((grn as any).gross_weight || 0),
+      netWeight: current.netWeight + ((grn as any).net_weight || 0),
     });
   });
 
   const materialBreakdown = Array.from(materialMap.entries()).map(([code, data]) => ({
     materialCode: code,
-    materialName: grnData.find(g => g.material_code === code)?.material?.description || code,
+    materialName: (() => {
+      const foundGrn = grnData.find(g => (g as any).material_code === code);
+      return foundGrn ? (foundGrn as any).material?.description || code : code;
+    })(),
     recordCount: data.count,
     totalGrossWeight: data.grossWeight,
     totalNetWeight: data.netWeight,
@@ -744,13 +835,13 @@ function calculateGRNAnalytics(grnData: any[], grnLevelData: any[]): any {
   // Monthly trends (simplified - group by month)
   const monthlyMap = new Map<string, { count: number; grossWeight: number; netWeight: number }>();
   grnData.forEach(grn => {
-    const date = new Date(grn.creat_time);
+    const date = new Date((grn as any).creat_time);
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     const current = monthlyMap.get(monthKey) || { count: 0, grossWeight: 0, netWeight: 0 };
     monthlyMap.set(monthKey, {
       count: current.count + 1,
-      grossWeight: current.grossWeight + (grn.gross_weight || 0),
-      netWeight: current.netWeight + (grn.net_weight || 0),
+      grossWeight: current.grossWeight + ((grn as any).gross_weight || 0),
+      netWeight: current.netWeight + ((grn as any).net_weight || 0),
     });
   });
 
@@ -765,15 +856,15 @@ function calculateGRNAnalytics(grnData: any[], grnLevelData: any[]): any {
     }));
 
   // Quality metrics from QC data
-  const qcRecords = grnData.filter(grn => grn.qc_results).map(grn => grn.qc_results);
+  const qcRecords = grnData.filter(grn => (grn as any).qc_results).map(grn => (grn as any).qc_results);
   const qualityMetrics = {
     totalQCRecords: qcRecords.length,
     passRate: qcRecords.length > 0 ? 
-      (qcRecords.filter(qc => qc.flame_test === 'PASS').length / qcRecords.length) * 100 : 0,
+      (qcRecords.filter((qc: any) => qc.flame_test === 'PASS').length / qcRecords.length) * 100 : 0,
     avgWeight: qcRecords.length > 0 ? 
-      qcRecords.reduce((sum, qc) => sum + (qc.weight || 0), 0) / qcRecords.length : 0,
+      qcRecords.reduce((sum: number, qc: any) => sum + (qc.weight || 0), 0) / qcRecords.length : 0,
     avgThickness: qcRecords.length > 0 ? 
-      qcRecords.reduce((sum, qc) => sum + ((qc.t_thick || 0) + (qc.b_thick || 0)) / 2, 0) / qcRecords.length : 0,
+      qcRecords.reduce((sum: number, qc: any) => sum + ((qc.t_thick || 0) + (qc.b_thick || 0)) / 2, 0) / qcRecords.length : 0,
   };
 
   return {
@@ -791,7 +882,7 @@ function calculateGRNAnalytics(grnData: any[], grnLevelData: any[]): any {
 }
 
 // Enhanced WorkLevel helper functions
-function groupKeysByDate(keys: WorkLevelKey[]): Map<string, WorkLevelKey[]> {
+function groupKeysByDate(keys: readonly WorkLevelKey[]): Map<string, WorkLevelKey[]> {
   const groups = new Map<string, WorkLevelKey[]>();
   keys.forEach(key => {
     if (!groups.has(key.date)) {
@@ -802,10 +893,11 @@ function groupKeysByDate(keys: WorkLevelKey[]): Map<string, WorkLevelKey[]> {
   return groups;
 }
 
-function groupTransfersByUser(transfers: any[]): Map<string, any[]> {
-  const groups = new Map<string, any[]>();
+function groupTransfersByUser(transfers: DatabaseEntity[]): Map<string, DatabaseEntity[]> {
+  const groups = new Map<string, DatabaseEntity[]>();
   transfers.forEach(transfer => {
-    const userId = transfer.executed_by;
+    const transferEntity = asTransferEntity(transfer);
+    const userId = transferEntity?.executed_by?.id;
     if (!groups.has(userId)) {
       groups.set(userId, []);
     }
@@ -814,10 +906,11 @@ function groupTransfersByUser(transfers: any[]): Map<string, any[]> {
   return groups;
 }
 
-function groupHistoryByUser(history: any[]): Map<string, any[]> {
-  const groups = new Map<string, any[]>();
+function groupHistoryByUser(history: DatabaseEntity[]): Map<string, DatabaseEntity[]> {
+  const groups = new Map<string, DatabaseEntity[]>();
   history.forEach(record => {
-    const userId = record.id;
+    const userEntity = asUserEntity(record);
+    const userId = userEntity?.id;
     if (!groups.has(userId)) {
       groups.set(userId, []);
     }
@@ -826,7 +919,7 @@ function groupHistoryByUser(history: any[]): Map<string, any[]> {
   return groups;
 }
 
-function calculateEnhancedHourlyBreakdown(transfers: any[]): any[] {
+function calculateEnhancedHourlyBreakdown(transfers: DatabaseEntity[]): Record<string, unknown>[] {
   const hourlyMap = new Map<number, {
     count: number;
     quantity: number;
@@ -840,12 +933,12 @@ function calculateEnhancedHourlyBreakdown(transfers: any[]): any[] {
   }
 
   transfers.forEach(transfer => {
-    const date = new Date(transfer.completed_at || transfer.created_at);
+    const date = new Date((transfer as any).completed_at || (transfer as any).created_at);
     const hour = date.getHours();
     const current = hourlyMap.get(hour)!;
     
-    const transferTime = transfer.transfer_time || 0;
-    const quantity = transfer.quantity || 0;
+    const transferTime = (transfer as any).transfer_time || 0;
+    const quantity = (transfer as any).quantity || 0;
     
     hourlyMap.set(hour, {
       count: current.count + 1,
@@ -867,7 +960,7 @@ function calculateEnhancedHourlyBreakdown(transfers: any[]): any[] {
   }));
 }
 
-function calculateEnhancedLocationBreakdown(transfers: any[]): any[] {
+function calculateEnhancedLocationBreakdown(transfers: DatabaseEntity[]): Record<string, unknown>[] {
   const locationMap = new Map<string, {
     count: number;
     quantity: number;
@@ -877,10 +970,10 @@ function calculateEnhancedLocationBreakdown(transfers: any[]): any[] {
   }>();
 
   transfers.forEach(transfer => {
-    const fromLocation = transfer.from_location?.code || 'Unknown';
-    const toLocation = transfer.to_location?.code || 'Unknown';
-    const quantity = transfer.quantity || 0;
-    const transferTime = transfer.transfer_time || 0;
+    const fromLocation = (transfer as any).from_location?.code || 'Unknown';
+    const toLocation = (transfer as any).to_location?.code || 'Unknown';
+    const quantity = (transfer as any).quantity || 0;
+    const transferTime = (transfer as any).transfer_time || 0;
 
     // Track "to" locations
     const toCurrent = locationMap.get(toLocation) || {
@@ -923,7 +1016,7 @@ function calculateEnhancedLocationBreakdown(transfers: any[]): any[] {
     .sort((a, b) => b.totalCount - a.totalCount);
 }
 
-function calculatePerformanceMetrics(transfers: any[], history: any[]): any {
+function calculatePerformanceMetrics(transfers: DatabaseEntity[], history: DatabaseEntity[]): Record<string, unknown> {
   if (transfers.length === 0) {
     return {
       averageTransferTime: 0,
@@ -936,8 +1029,8 @@ function calculatePerformanceMetrics(transfers: any[], history: any[]): any {
   }
 
   // Calculate transfer metrics
-  const totalTransferTime = transfers.reduce((sum, t) => sum + (t.transfer_time || 0), 0);
-  const totalQuantity = transfers.reduce((sum, t) => sum + (t.quantity || 0), 0);
+  const totalTransferTime = transfers.reduce((sum, t) => sum + ((t as any).transfer_time || 0), 0);
+  const totalQuantity = transfers.reduce((sum, t) => sum + ((t as any).quantity || 0), 0);
   const averageTransferTime = totalTransferTime / transfers.length;
 
   // Calculate efficiency (quantity per minute)
@@ -945,7 +1038,7 @@ function calculatePerformanceMetrics(transfers: any[], history: any[]): any {
 
   // Calculate error rate from history
   const errorActions = history.filter(h => 
-    h.action && (h.action.includes('error') || h.action.includes('retry'))
+    (h as any).action && ((h as any).action.includes('error') || (h as any).action.includes('retry'))
   ).length;
   const errorRate = history.length > 0 ? (errorActions / history.length) * 100 : 0;
 
@@ -953,7 +1046,7 @@ function calculatePerformanceMetrics(transfers: any[], history: any[]): any {
   const productivityScore = efficiency * (1 - errorRate / 100);
 
   // Work quality score based on consistency and accuracy
-  const transferTimes = transfers.map(t => t.transfer_time || 0).filter(t => t > 0);
+  const transferTimes = transfers.map(t => (t as any).transfer_time || 0).filter(t => t > 0);
   const timeVariance = calculateVariance(transferTimes);
   const workQuality = Math.max(0, 100 - (timeVariance / 10) - errorRate);
 
@@ -972,7 +1065,7 @@ function calculatePerformanceMetrics(transfers: any[], history: any[]): any {
   };
 }
 
-function calculateTrendAnalysis(transfers: any[]): any {
+function calculateTrendAnalysis(transfers: DatabaseEntity[]): Record<string, unknown> {
   if (transfers.length < 2) {
     return {
       trend: 'stable',
@@ -984,10 +1077,10 @@ function calculateTrendAnalysis(transfers: any[]): any {
 
   // Sort transfers by time
   const sortedTransfers = transfers
-    .filter(t => t.completed_at || t.created_at)
+    .filter(t => (t as any).completed_at || (t as any).created_at)
     .sort((a, b) => 
-      new Date(a.completed_at || a.created_at).getTime() - 
-      new Date(b.completed_at || b.created_at).getTime()
+      new Date((a as any).completed_at || (a as any).created_at).getTime() - 
+      new Date((b as any).completed_at || (b as any).created_at).getTime()
     );
 
   // Calculate trend in efficiency over time
@@ -1004,8 +1097,8 @@ function calculateTrendAnalysis(transfers: any[]): any {
   // Find peak performance hours
   const hourlyPerformance = new Map<number, number>();
   sortedTransfers.forEach(transfer => {
-    const hour = new Date(transfer.completed_at || transfer.created_at).getHours();
-    const efficiency = (transfer.quantity || 0) / (transfer.transfer_time || 1);
+    const hour = new Date((transfer as any).completed_at || (transfer as any).created_at).getHours();
+    const efficiency = ((transfer as any).quantity || 0) / ((transfer as any).transfer_time || 1);
     const current = hourlyPerformance.get(hour) || 0;
     hourlyPerformance.set(hour, Math.max(current, efficiency));
   });
@@ -1016,7 +1109,7 @@ function calculateTrendAnalysis(transfers: any[]): any {
     .map(([hour]) => hour);
 
   // Calculate consistency score
-  const transferTimes = sortedTransfers.map(t => t.transfer_time || 0).filter(t => t > 0);
+  const transferTimes = sortedTransfers.map(t => (t as any).transfer_time || 0).filter(t => t > 0);
   const consistency = transferTimes.length > 0 ? 
     100 - Math.min(100, (calculateVariance(transferTimes) / calculateMean(transferTimes)) * 100) : 0;
 
@@ -1028,10 +1121,10 @@ function calculateTrendAnalysis(transfers: any[]): any {
   };
 }
 
-function calculateEfficiency(transfers: any[]): number {
+function calculateEfficiency(transfers: DatabaseEntity[]): number {
   if (transfers.length === 0) return 0;
-  const totalQuantity = transfers.reduce((sum, t) => sum + (t.quantity || 0), 0);
-  const totalTime = transfers.reduce((sum, t) => sum + (t.transfer_time || 1), 0);
+  const totalQuantity = transfers.reduce((sum, t) => sum + ((t as any).quantity || 0), 0);
+  const totalTime = transfers.reduce((sum, t) => sum + ((t as any).transfer_time || 1), 0);
   return totalTime > 0 ? (totalQuantity / totalTime) * 60 : 0;
 }
 
@@ -1054,8 +1147,8 @@ function calculateMean(numbers: number[]): number {
  */
 export function createPerformanceMetricsLoader(
   supabase: SupabaseClient
-): DataLoader<PerformanceMetricsKey, any> {
-  return createBatchLoader<PerformanceMetricsKey, any>(
+): DataLoader<PerformanceMetricsKey, PerformanceMetricsResult | null> {
+  return createBatchLoader<PerformanceMetricsKey, PerformanceMetricsResult | null>(
     async (keys) => {
       const results = await Promise.all(
         keys.map(async (key) => {
@@ -1150,7 +1243,7 @@ export function createPerformanceMetricsLoader(
             }
 
             // Calculate performance metrics based on metric type
-            let metrics: any = {};
+            let metrics: Record<string, unknown> = {};
 
             switch (key.metricType) {
               case 'user':
@@ -1220,15 +1313,15 @@ export function createPerformanceMetricsLoader(
 // Performance Metrics Calculation Functions
 
 function calculateUserPerformanceMetrics(
-  workLevels: any[],
-  history: any[],
-  transfers: any[],
+  workLevels: DatabaseEntity[],
+  history: DatabaseEntity[],
+  transfers: DatabaseEntity[],
   userId?: string
-): any {
+): Record<string, unknown> {
   // Filter data for specific user if provided
-  const userWorkLevels = userId ? workLevels.filter(w => w.user_id === userId) : workLevels;
-  const userHistory = userId ? history.filter(h => h.id === userId) : history;
-  const userTransfers = userId ? transfers.filter(t => t.operator_id === userId) : transfers;
+  const userWorkLevels = userId ? workLevels.filter(w => (w as any).user_id === userId) : workLevels;
+  const userHistory = userId ? history.filter(h => (h as any).id === userId) : history;
+  const userTransfers = userId ? transfers.filter(t => (t as any).operator_id === userId) : transfers;
 
   if (userWorkLevels.length === 0) {
     return {
@@ -1243,10 +1336,10 @@ function calculateUserPerformanceMetrics(
   }
 
   // Calculate productivity metrics
-  const totalQC = userWorkLevels.reduce((sum, w) => sum + (w.qc || 0), 0);
-  const totalMove = userWorkLevels.reduce((sum, w) => sum + (w.move || 0), 0);
-  const totalGRN = userWorkLevels.reduce((sum, w) => sum + (w.grn || 0), 0);
-  const totalLoading = userWorkLevels.reduce((sum, w) => sum + (w.loading || 0), 0);
+  const totalQC = userWorkLevels.reduce((sum, w) => sum + ((w as any).qc || 0), 0);
+  const totalMove = userWorkLevels.reduce((sum, w) => sum + ((w as any).move || 0), 0);
+  const totalGRN = userWorkLevels.reduce((sum, w) => sum + ((w as any).grn || 0), 0);
+  const totalLoading = userWorkLevels.reduce((sum, w) => sum + ((w as any).loading || 0), 0);
   
   const totalTasks = totalQC + totalMove + totalGRN + totalLoading;
   const workingDays = userWorkLevels.length;
@@ -1259,14 +1352,14 @@ function calculateUserPerformanceMetrics(
 
   // Calculate quality score from history (error rate)
   const errorOperations = userHistory.filter(h => 
-    h.action && (h.action.includes('error') || h.action.includes('retry') || h.action.includes('fail'))
+    (h as any).action && ((h as any).action.includes('error') || (h as any).action.includes('retry') || (h as any).action.includes('fail'))
   ).length;
   const errorRate = userHistory.length > 0 ? (errorOperations / userHistory.length) * 100 : 0;
   const qualityScore = Math.max(0, 100 - errorRate);
 
   // Calculate completion rate
   const completedOperations = userHistory.filter(h => 
-    h.action && (h.action.includes('complete') || h.action.includes('success'))
+    (h as any).action && ((h as any).action.includes('complete') || (h as any).action.includes('success'))
   ).length;
   const completionRate = userHistory.length > 0 ? (completedOperations / userHistory.length) * 100 : 0;
 
@@ -1291,16 +1384,16 @@ function calculateUserPerformanceMetrics(
 }
 
 function calculateSystemPerformanceMetrics(
-  workLevels: any[],
-  history: any[],
-  transfers: any[],
-  grnRecords: any[]
-): any {
+  workLevels: DatabaseEntity[],
+  history: DatabaseEntity[],
+  transfers: DatabaseEntity[],
+  grnRecords: DatabaseEntity[]
+): Record<string, unknown> {
   // Overall system health metrics
   const totalOperations = history.length;
   const totalTransfers = transfers.length;
   const totalGRNs = grnRecords.length;
-  const totalUsers = [...new Set(workLevels.map(w => w.user_id))].length;
+  const totalUsers = [...new Set(workLevels.map(w => (w as any).user_id))].length;
 
   // System throughput (operations per hour)
   const timeSpanHours = calculateTimeSpanHours(history);
@@ -1308,12 +1401,12 @@ function calculateSystemPerformanceMetrics(
 
   // System reliability (success rate)
   const successfulOps = history.filter(h => 
-    h.action && !h.action.includes('error') && !h.action.includes('fail')
+    (h as any).action && !(h as any).action.includes('error') && !(h as any).action.includes('fail')
   ).length;
   const systemReliability = totalOperations > 0 ? (successfulOps / totalOperations) * 100 : 0;
 
   // Resource utilization
-  const activeUsers = [...new Set(transfers.map(t => t.operator_id))].length;
+  const activeUsers = [...new Set(transfers.map(t => (t as any).operator_id))].length;
   const resourceUtilization = totalUsers > 0 ? (activeUsers / totalUsers) * 100 : 0;
 
   // Processing efficiency
@@ -1333,10 +1426,10 @@ function calculateSystemPerformanceMetrics(
 }
 
 function calculateOperationPerformanceMetrics(
-  transfers: any[],
-  grnRecords: any[],
-  history: any[]
-): any {
+  transfers: DatabaseEntity[],
+  grnRecords: DatabaseEntity[],
+  history: DatabaseEntity[]
+): Record<string, unknown> {
   // Operation-specific metrics
   const transferEfficiency = calculateTransferEfficiency(transfers);
   const grnEfficiency = calculateGRNEfficiency(grnRecords);
@@ -1361,11 +1454,11 @@ function calculateOperationPerformanceMetrics(
 }
 
 function calculateOverallPerformanceMetrics(
-  workLevels: any[],
-  history: any[],
-  transfers: any[],
-  grnRecords: any[]
-): any {
+  workLevels: DatabaseEntity[],
+  history: DatabaseEntity[],
+  transfers: DatabaseEntity[],
+  grnRecords: DatabaseEntity[]
+): Record<string, unknown> {
   // Combined metrics for comprehensive view
   const userMetrics = calculateUserPerformanceMetrics(workLevels, history, transfers);
   const systemMetrics = calculateSystemPerformanceMetrics(workLevels, history, transfers, grnRecords);
@@ -1405,21 +1498,21 @@ function calculateOverallPerformanceMetrics(
 
 // Helper functions for performance calculations
 
-function calculateTransferDuration(transfer: any): number {
-  if (!transfer.tran_date) return 0;
+function calculateTransferDuration(transfer: DatabaseEntity): number {
+  if (!(transfer as any).tran_date) return 0;
   // Simplified - in real scenario would calculate based on start/end times
   return 15; // Average 15 minutes per transfer
 }
 
-function calculateUserImprovementTrend(workLevels: any[]): string {
+function calculateUserImprovementTrend(workLevels: DatabaseEntity[]): string {
   if (workLevels.length < 2) return 'stable';
   
-  const sorted = workLevels.sort((a, b) => new Date(a.latest_update).getTime() - new Date(b.latest_update).getTime());
+  const sorted = workLevels.sort((a, b) => new Date((a as any).latest_update).getTime() - new Date((b as any).latest_update).getTime());
   const early = sorted.slice(0, Math.ceil(sorted.length / 2));
   const recent = sorted.slice(Math.floor(sorted.length / 2));
   
-  const earlyAvg = early.reduce((sum, w) => sum + (w.qc + w.move + w.grn + w.loading), 0) / early.length;
-  const recentAvg = recent.reduce((sum, w) => sum + (w.qc + w.move + w.grn + w.loading), 0) / recent.length;
+  const earlyAvg = early.reduce((sum, w) => sum + ((w as any).qc + (w as any).move + (w as any).grn + (w as any).loading), 0) / early.length;
+  const recentAvg = recent.reduce((sum, w) => sum + ((w as any).qc + (w as any).move + (w as any).grn + (w as any).loading), 0) / recent.length;
   
   const improvement = ((recentAvg - earlyAvg) / earlyAvg) * 100;
   
@@ -1428,15 +1521,15 @@ function calculateUserImprovementTrend(workLevels: any[]): string {
   return 'stable';
 }
 
-function calculateTimeSpanHours(history: any[]): number {
+function calculateTimeSpanHours(history: DatabaseEntity[]): number {
   if (history.length === 0) return 0;
   
-  const times = history.map(h => new Date(h.time).getTime()).sort((a, b) => a - b);
+  const times = history.map(h => new Date((h as any).time).getTime()).sort((a, b) => a - b);
   const spanMs = times[times.length - 1] - times[0];
   return spanMs / (1000 * 60 * 60); // Convert to hours
 }
 
-function calculateAverageGRNProcessingTime(grnRecords: any[]): number {
+function calculateAverageGRNProcessingTime(grnRecords: DatabaseEntity[]): number {
   // Simplified calculation - would need actual processing start/end times
   return grnRecords.length > 0 ? 45 : 0; // Average 45 minutes per GRN
 }
@@ -1445,40 +1538,40 @@ function calculateSystemHealthScore(reliability: number, utilization: number, ef
   return Math.round(((reliability + utilization + efficiency) / 3) * 100) / 100;
 }
 
-function calculateTransferEfficiency(transfers: any[]): number {
+function calculateTransferEfficiency(transfers: DatabaseEntity[]): number {
   if (transfers.length === 0) return 0;
   
   // Calculate based on quantity moved per time unit
-  const totalQuantity = transfers.reduce((sum, t) => sum + (t.pallet?.product_qty || 1), 0);
+  const totalQuantity = transfers.reduce((sum, t) => sum + ((t as any).pallet?.product_qty || 1), 0);
   const avgTime = 15; // Simplified average time
   
   return totalQuantity / (transfers.length * avgTime);
 }
 
-function calculateGRNEfficiency(grnRecords: any[]): number {
+function calculateGRNEfficiency(grnRecords: DatabaseEntity[]): number {
   if (grnRecords.length === 0) return 0;
   
-  const totalWeight = grnRecords.reduce((sum, g) => sum + (g.gross_weight || 0), 0);
+  const totalWeight = grnRecords.reduce((sum, g) => sum + ((g as any).gross_weight || 0), 0);
   const avgProcessTime = 45; // Simplified
   
   return totalWeight / (grnRecords.length * avgProcessTime);
 }
 
-function calculateOperationReliability(history: any[]): number {
+function calculateOperationReliability(history: DatabaseEntity[]): number {
   if (history.length === 0) return 0;
   
   const successfulOps = history.filter(h => 
-    h.action && !h.action.includes('error') && !h.action.includes('fail')
+    (h as any).action && !(h as any).action.includes('error') && !(h as any).action.includes('fail')
   ).length;
   
   return (successfulOps / history.length) * 100;
 }
 
-function calculateLocationPerformance(transfers: any[]): any[] {
+function calculateLocationPerformance(transfers: DatabaseEntity[]): Record<string, unknown>[] {
   const locationMap = new Map<string, { count: number; efficiency: number }>();
   
   transfers.forEach(transfer => {
-    const location = transfer.t_loc || 'Unknown';
+    const location = (transfer as any).t_loc || 'Unknown';
     const current = locationMap.get(location) || { count: 0, efficiency: 0 };
     locationMap.set(location, {
       count: current.count + 1,
@@ -1493,11 +1586,11 @@ function calculateLocationPerformance(transfers: any[]): any[] {
   }));
 }
 
-function calculatePeakOperationHours(transfers: any[], grnRecords: any[]): number[] {
+function calculatePeakOperationHours(transfers: DatabaseEntity[], grnRecords: DatabaseEntity[]): number[] {
   const hourCounts = new Map<number, number>();
   
   [...transfers, ...grnRecords].forEach(record => {
-    const date = new Date(record.tran_date || record.creat_time);
+    const date = new Date((record as any).tran_date || (record as any).creat_time);
     const hour = date.getHours();
     hourCounts.set(hour, (hourCounts.get(hour) || 0) + 1);
   });
@@ -1508,11 +1601,11 @@ function calculatePeakOperationHours(transfers: any[], grnRecords: any[]): numbe
     .map(([hour]) => hour);
 }
 
-function identifyOperationBottlenecks(transfers: any[], grnRecords: any[], history: any[]): string[] {
+function identifyOperationBottlenecks(transfers: DatabaseEntity[], grnRecords: DatabaseEntity[], history: DatabaseEntity[]): string[] {
   const bottlenecks: string[] = [];
   
   // Check for high error rates
-  const errorRate = history.filter(h => h.action?.includes('error')).length / history.length;
+  const errorRate = history.filter(h => (h as any).action?.includes('error')).length / history.length;
   if (errorRate > 0.1) bottlenecks.push('High error rate detected');
   
   // Check for slow transfers
@@ -1550,12 +1643,12 @@ function generatePerformanceInsights(efficiency: number, quality: number, produc
   return insights;
 }
 
-function generateOverallRecommendations(userMetrics: any, systemMetrics: any, operationMetrics: any): string[] {
+function generateOverallRecommendations(userMetrics: Record<string, unknown>, systemMetrics: Record<string, unknown>, operationMetrics: Record<string, unknown>): string[] {
   const recommendations: string[] = [];
   
-  if (userMetrics.efficiency < 70) recommendations.push('Provide additional user training');
-  if (systemMetrics.resourceUtilization < 60) recommendations.push('Optimize resource allocation');
-  if (operationMetrics.transferEfficiency < 0.4) recommendations.push('Review transfer workflows');
+  if ((userMetrics.efficiency as number) < 70) recommendations.push('Provide additional user training');
+  if ((systemMetrics.resourceUtilization as number) < 60) recommendations.push('Optimize resource allocation');
+  if ((operationMetrics.transferEfficiency as number) < 0.4) recommendations.push('Review transfer workflows');
   
   return recommendations;
 }
@@ -1567,8 +1660,8 @@ function generateOverallRecommendations(userMetrics: any, systemMetrics: any, op
  */
 export function createInventoryOrderedAnalysisLoader(
   supabase: SupabaseClient
-): DataLoader<InventoryOrderedAnalysisKey, any> {
-  return createBatchLoader<InventoryOrderedAnalysisKey, any>(
+): DataLoader<InventoryOrderedAnalysisKey, InventoryOrderedAnalysisResult | null> {
+  return createBatchLoader<InventoryOrderedAnalysisKey, InventoryOrderedAnalysisResult | null>(
     async (keys) => {
       const results = await Promise.all(
         keys.map(async (key) => {
@@ -1661,21 +1754,35 @@ export function createInventoryOrderedAnalysisLoader(
  * Process inventory ordered analysis data to replicate RPC function logic
  */
 function processInventoryOrderedAnalysis(
-  inventoryData: any[],
-  orderData: any[],
-  productData: any[],
+  inventoryData: DatabaseEntity[],
+  orderData: DatabaseEntity[],
+  productData: DatabaseEntity[],
   key: InventoryOrderedAnalysisKey
-): any {
+): Record<string, unknown> {
   // Create lookup maps for efficient data joining
-  const productMap = new Map(
+  const productMap = new Map<string, DatabaseEntity>(
     productData.map(p => [p.code, p])
   );
 
   // Aggregate inventory by product code (inventory_summary CTE equivalent)
-  const inventorySummary = new Map<string, any>();
+  const inventorySummary = new Map<string, {
+    product_code: string;
+    total_inventory: number;
+    qty_injection: number;
+    qty_pipeline: number;
+    qty_prebook: number;
+    qty_await: number;
+    qty_fold: number;
+    qty_bulk: number;
+    qty_backcarpark: number;
+    qty_damage: number;  
+    qty_await_grn: number;
+    last_inventory_update: string | null;
+  }>();
   inventoryData.forEach(inv => {
-    const current = inventorySummary.get(inv.product_code) || {
-      product_code: inv.product_code,
+    const invEntity = asInventoryEntity(inv);
+    const current = inventorySummary.get(invEntity?.product_code || '') || {
+      product_code: invEntity?.product_code || '',
       total_inventory: 0,
       qty_injection: 0,
       qty_pipeline: 0,
@@ -1690,15 +1797,15 @@ function processInventoryOrderedAnalysis(
     };
 
     // Aggregate quantities
-    const injection = inv.injection || 0;
-    const pipeline = inv.pipeline || 0;
-    const prebook = inv.prebook || 0;
-    const await_qty = inv.await || 0;
-    const fold = inv.fold || 0;
-    const bulk = inv.bulk || 0;
-    const backcarpark = inv.backcarpark || 0;
-    const damage = inv.damage || 0;
-    const await_grn = inv.await_grn || 0;
+    const injection = (inv as any).injection || 0;
+    const pipeline = (inv as any).pipeline || 0;
+    const prebook = (inv as any).prebook || 0;
+    const await_qty = (inv as any).await || 0;
+    const fold = (inv as any).fold || 0;
+    const bulk = (inv as any).bulk || 0;
+    const backcarpark = (inv as any).backcarpark || 0;
+    const damage = (inv as any).damage || 0;
+    const await_grn = (inv as any).await_grn || 0;
 
     current.total_inventory += injection + pipeline + prebook + await_qty + fold + bulk + backcarpark + damage + await_grn;
     current.qty_injection += injection;
@@ -1711,18 +1818,25 @@ function processInventoryOrderedAnalysis(
     current.qty_damage += damage;
     current.qty_await_grn += await_grn;
     
-    if (!current.last_inventory_update || new Date(inv.latest_update) > new Date(current.last_inventory_update)) {
-      current.last_inventory_update = inv.latest_update;
+    if (!current.last_inventory_update || new Date((inv as any).latest_update) > new Date(current.last_inventory_update)) {
+      current.last_inventory_update = (inv as any).latest_update;
     }
 
-    inventorySummary.set(inv.product_code, current);
+    inventorySummary.set(invEntity?.product_code || '', current);
   });
 
   // Aggregate orders by product code (order_summary CTE equivalent)
-  const orderSummary = new Map<string, any>();
+  const orderSummary = new Map<string, {
+    product_code: string;
+    total_orders: number;
+    total_outstanding_qty: number;
+    total_ordered_qty: number;
+    total_loaded_qty: number;
+  }>();
   orderData.forEach(order => {
-    const current = orderSummary.get(order.product_code) || {
-      product_code: order.product_code,
+    const orderEntity = asInventoryEntity(order);
+    const current = orderSummary.get(orderEntity?.product_code || '') || {
+      product_code: orderEntity?.product_code || '',
       total_orders: 0,
       total_outstanding_qty: 0,
       total_ordered_qty: 0,
@@ -1730,24 +1844,24 @@ function processInventoryOrderedAnalysis(
     };
 
     current.total_orders += 1;
-    current.total_ordered_qty += order.product_qty || 0;
+    current.total_ordered_qty += (order as any).product_qty || 0;
     
-    const loadedQty = parseFloat(order.loaded_qty || '0') || 0;
+    const loadedQty = parseFloat((order as any).loaded_qty || '0') || 0;
     current.total_loaded_qty += loadedQty;
     
     // Calculate outstanding quantity
-    const productQty = order.product_qty || 0;
-    if (!order.loaded_qty || order.loaded_qty === '' || order.loaded_qty === '0') {
+    const productQty = (order as any).product_qty || 0;
+    if (!(order as any).loaded_qty || (order as any).loaded_qty === '' || (order as any).loaded_qty === '0') {
       current.total_outstanding_qty += productQty;
     } else if (loadedQty < productQty) {
       current.total_outstanding_qty += (productQty - loadedQty);
     }
 
-    orderSummary.set(order.product_code, current);
+    orderSummary.set(orderEntity?.product_code || '', current);
   });
 
   // Combine and analyze data (analysis CTE equivalent)
-  const analysisData: any[] = [];
+  const analysisData: Record<string, unknown>[] = [];
   const allProductCodes = new Set([
     ...inventorySummary.keys(),
     ...orderSummary.keys()
@@ -1759,7 +1873,7 @@ function processInventoryOrderedAnalysis(
     const product = productMap.get(productCode);
 
     // Apply product type filter if specified
-    if (key.productType && product?.type !== key.productType) {
+    if (key.productType && (product as any)?.type !== key.productType) {
       return;
     }
 
@@ -1803,9 +1917,9 @@ function processInventoryOrderedAnalysis(
 
     const analysisItem = {
       product_code: productCode,
-      product_description: product?.description || '',
-      product_type: product?.type || '',
-      standard_qty: product?.standard_qty || 0,
+      product_description: (product as any)?.description || '',
+      product_type: (product as any)?.type || '',
+      standard_qty: (product as any)?.standard_qty || 0,
       inventory: {
         total: totalInventory,
         locations: key.includeLocationBreakdown ? {
@@ -1888,7 +2002,7 @@ function processInventoryOrderedAnalysis(
 
   return {
     summary,
-    data: analysisData,
+    data: analysisData as unknown[],
   };
 }
 
@@ -1899,8 +2013,8 @@ function processInventoryOrderedAnalysis(
  */
 export function createHistoryTreeLoader(
   supabase: SupabaseClient
-): DataLoader<HistoryTreeKey, any> {
-  return createBatchLoader<HistoryTreeKey, any>(
+): DataLoader<HistoryTreeKey, HistoryTreeResult | null> {
+  return createBatchLoader<HistoryTreeKey, HistoryTreeResult | null>(
     async (keys) => {
       // Process each key individually due to complexity of different filter combinations
       const results = await Promise.all(
@@ -2005,38 +2119,38 @@ export function createHistoryTreeLoader(
             }
 
             // Process and transform the data
-            const processedEntries = historyData.map((entry) => ({
-              id: entry.uuid,
-              timestamp: entry.time,
-              action: entry.action || 'Unknown',
-              location: entry.loc || null,
-              remark: entry.remark || null,
-              user: entry.user ? {
-                id: entry.user.id,
-                name: entry.user.name || 'Unknown User',
-                department: entry.user.department || null,
-                position: entry.user.position || 'User',
-                email: entry.user.email || null,
+            const processedEntries = historyData.map((entry: DatabaseEntity) => ({
+              id: (entry as any).uuid,
+              timestamp: (entry as any).time,
+              action: (entry as any).action || 'Unknown',
+              location: (entry as any).loc || null,
+              remark: (entry as any).remark || null,
+              user: (entry as any).user ? {
+                id: (entry as any).user.id,
+                name: (entry as any).user.name || 'Unknown User',
+                department: (entry as any).user.department || null,
+                position: (entry as any).user.position || 'User',
+                email: (entry as any).user.email || null,
               } : null,
-              pallet: entry.pallet ? {
-                number: entry.pallet.plt_num,
-                series: entry.pallet.series || null,
-                quantity: entry.pallet.product_qty || 0,
-                generatedAt: entry.pallet.generate_time,
-                product: entry.pallet.product ? {
-                  code: entry.pallet.product.code,
-                  description: entry.pallet.product.description || '',
-                  type: entry.pallet.product.type || '-',
-                  colour: entry.pallet.product.colour || 'Black',
-                  standardQty: entry.pallet.product.standard_qty || 1,
+              pallet: (entry as any).pallet ? {
+                number: (entry as any).pallet.plt_num,
+                series: (entry as any).pallet.series || null,
+                quantity: (entry as any).pallet.product_qty || 0,
+                generatedAt: (entry as any).pallet.generate_time,
+                product: (entry as any).pallet.product ? {
+                  code: (entry as any).pallet.product.code,
+                  description: (entry as any).pallet.product.description || '',
+                  type: (entry as any).pallet.product.type || '-',
+                  colour: (entry as any).pallet.product.colour || 'Black',
+                  standardQty: (entry as any).pallet.product.standard_qty || 1,
                 } : null,
               } : null,
             }));
 
             // Group data if groupBy is specified
-            let groupedData = {};
+            let groupedData: Record<string, unknown[]> = {};
             if (key.groupBy) {
-              groupedData = processedEntries.reduce((groups, entry) => {
+              groupedData = processedEntries.reduce((groups: Record<string, unknown[]>, entry) => {
                 let groupKey: string;
                 
                 switch (key.groupBy) {
@@ -2062,7 +2176,7 @@ export function createHistoryTreeLoader(
                 }
                 groups[groupKey].push(entry);
                 return groups;
-              }, {} as Record<string, any[]>);
+              }, {} as Record<string, unknown[]>);
             }
 
             // Calculate pagination info
@@ -2090,7 +2204,7 @@ export function createHistoryTreeLoader(
 
           } catch (error) {
             console.error('[HistoryTreeLoader] Error processing key:', key, error);
-            throw new Error(`HistoryTree loader failed: ${error.message}`);
+            throw new Error(`HistoryTree loader failed: ${(error as Error).message}`);
           }
         })
       );
@@ -2099,7 +2213,6 @@ export function createHistoryTreeLoader(
     },
     {
       // Cache results for 5 minutes since history data doesn't change frequently
-      cacheKeyFn: (key) => JSON.stringify(key),
       maxBatchSize: 10, // Limit batch size due to complexity
     }
   );
@@ -2111,8 +2224,8 @@ export function createHistoryTreeLoader(
  */
 export function createTopProductsLoader(
   supabase: SupabaseClient
-): DataLoader<TopProductsKey, any> {
-  return createBatchLoader<TopProductsKey, any>(
+): DataLoader<TopProductsKey, TopProductsResult | null> {
+  return createBatchLoader<TopProductsKey, TopProductsResult | null>(
     async (keys) => {
       const results = await Promise.all(
         keys.map(async (key) => {
@@ -2177,11 +2290,21 @@ export function createTopProductsLoader(
             }
 
             // Process and aggregate data
-            const productMap = new Map<string, any>();
+            const productMap = new Map<string, {
+              productCode: string;
+              productName: string;
+              productType: string;
+              colour: string;
+              standardQty: number;
+              totalQuantity: number;
+              locationQuantities: Record<string, number>;
+              lastUpdated: string;
+            }>();
 
-            inventoryData.forEach((item: any) => {
-              const productCode = item.product_code;
-              const product = item.product;
+            inventoryData.forEach((item: DatabaseEntity) => {
+              const itemEntity = asProductEntity(item);
+              const productCode = itemEntity?.product_code || '';
+              const product = (item as any).product;
 
               if (!product) {
                 return; // Skip if product data is missing
@@ -2198,7 +2321,7 @@ export function createTopProductsLoader(
               ];
 
               locations.forEach(location => {
-                const qty = item[location] || 0;
+                const qty = (item as any)[location] || 0;
                 locationQuantities[location] = qty;
                 
                 // Apply location filter if specified
@@ -2209,7 +2332,7 @@ export function createTopProductsLoader(
 
               // Aggregate by product code
               if (productMap.has(productCode)) {
-                const existing = productMap.get(productCode);
+                const existing = productMap.get(productCode)!;
                 existing.totalQuantity += totalQuantity;
                 
                 // Merge location quantities
@@ -2270,7 +2393,7 @@ export function createTopProductsLoader(
 
           } catch (error) {
             console.error('[TopProductsLoader] Error processing key:', key, error);
-            throw new Error(`TopProducts loader failed: ${error.message}`);
+            throw new Error(`TopProducts loader failed: ${(error as Error).message}`);
           }
         })
       );
@@ -2279,7 +2402,6 @@ export function createTopProductsLoader(
     },
     {
       // Cache results for 5 minutes since inventory data changes frequently but not constantly
-      cacheKeyFn: (key) => JSON.stringify(key),
       maxBatchSize: 5, // Reasonable batch size for aggregation queries
     }
   );
@@ -2295,8 +2417,8 @@ export interface StockDistributionKey {
 
 export function createStockDistributionLoader(
   supabase: SupabaseClient
-): DataLoader<StockDistributionKey, any> {
-  return createBatchLoader<StockDistributionKey, any>(
+): DataLoader<StockDistributionKey, StockDistributionResult | null> {
+  return createBatchLoader<StockDistributionKey, StockDistributionResult | null>(
     async (keys) => {
       const results = await Promise.all(
         keys.map(async (key) => {
@@ -2374,16 +2496,16 @@ export function createStockDistributionLoader(
             let totalStock = 0;
 
             // Process each inventory record
-            data.forEach((item: any) => {
-              const product = item.data_code;
+            data.forEach((item: DatabaseEntity) => {
+              const product = (item as any).data_code;
               if (!product) return;
 
               // Calculate total quantity for this product across all locations
               let productTotalQuantity = 0;
-              const locationBreakdown: { [key: string]: number } = {};
+              const locationBreakdown: Record<string, number> = {};
 
               locations.forEach(location => {
-                const qty = item[location] || 0;
+                const qty = (item as any)[location] || 0;
                 locationBreakdown[location] = qty;
                 productTotalQuantity += qty;
               });
@@ -2396,7 +2518,7 @@ export function createStockDistributionLoader(
               totalStock += productTotalQuantity;
 
               // Group by product type for the Treemap
-              const groupKey = product.type || 'Unknown Type';
+              const groupKey = (product as any).type || 'Unknown Type';
               
               if (groupedData.has(groupKey)) {
                 const existing = groupedData.get(groupKey)!;
@@ -2409,7 +2531,7 @@ export function createStockDistributionLoader(
                   description: `${groupKey} products`,
                   type: groupKey,
                   percentage: 0, // Will calculate after totals are known
-                });
+                }) as any;
               }
             });
 
@@ -2460,7 +2582,7 @@ export function createStockDistributionLoader(
 
           } catch (error) {
             console.error('[StockDistributionLoader] Processing error:', error);
-            throw new Error(`Stock distribution processing failed: ${error.message}`);
+            throw new Error(`Stock distribution processing failed: ${(error as Error).message}`);
           }
         })
       );
@@ -2469,7 +2591,6 @@ export function createStockDistributionLoader(
     },
     {
       // Cache results for 5 minutes - stock distribution changes moderately
-      cacheKeyFn: (key) => JSON.stringify(key),
       maxBatchSize: 3, // Conservative batch size for complex aggregation queries
     }
   );

@@ -45,6 +45,34 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
 
+// 表單值類型定義
+type FormValue = string | number | boolean | Date | File | FileList | string[] | null | undefined;
+
+// 元數據值類型定義  
+type MetadataValue = string | number | boolean | Record<string, unknown> | unknown[] | null;
+
+// 依賴值類型定義
+type DependencyValue = string | number | boolean | string[];
+
+// 表單數據記錄類型
+type FormDataRecord = Record<string, FormValue>;
+
+// 提交成功數據類型
+interface SubmitSuccessData {
+  id?: string;
+  message?: string;
+  [key: string]: unknown;
+}
+
+// 表單字段錯誤類型
+interface FormFieldError {
+  field: string;
+  message: string;
+}
+
+// 表單提交錯誤類型
+type FormSubmitError = FormFieldError[] | Error | string;
+
 // 臨時類型定義 - 將來會移到 GraphQL Schema
 export enum FormType {
   PRODUCT_EDIT = 'PRODUCT_EDIT',
@@ -98,7 +126,7 @@ export interface FieldValidation {
 
 export interface FieldDependency {
   fieldName: string;
-  value: any;
+  value: DependencyValue;
   operation: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
 }
 
@@ -109,11 +137,11 @@ export interface FormFieldConfig {
   type: FieldType;
   required: boolean;
   placeholder?: string;
-  defaultValue?: any;
+  defaultValue?: FormValue;
   validation?: FieldValidation;
   options?: SelectOption[];
   dependencies?: FieldDependency[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, MetadataValue>;
   gridColumn?: number; // 1-12 for responsive grid
   helpText?: string;
 }
@@ -135,9 +163,9 @@ export interface FormCardData {
   description?: string;
   fields: FormFieldConfig[];
   submitEndpoint: string;
-  validationRules?: Record<string, any>;
+  validationRules?: Record<string, MetadataValue>;
   layout?: FormLayout;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, MetadataValue>;
 }
 
 // 臨時 GraphQL 查詢 - 將來會替換為真實的 schema
@@ -218,7 +246,7 @@ export interface FormCardProps {
   entityId?: string;
   
   // 預填數據
-  prefilledData?: Record<string, any>;
+  prefilledData?: FormDataRecord;
   
   // 顯示選項
   showHeader?: boolean;
@@ -233,10 +261,10 @@ export interface FormCardProps {
   isEditMode?: boolean;
   
   // 回調
-  onSubmitSuccess?: (data: any) => void;
-  onSubmitError?: (error: any) => void;
+  onSubmitSuccess?: (data: SubmitSuccessData) => void;
+  onSubmitError?: (error: FormSubmitError) => void;
   onCancel?: () => void;
-  onFieldChange?: (fieldName: string, value: any) => void;
+  onFieldChange?: (fieldName: string, value: FormValue) => void;
 }
 
 export const FormCard: React.FC<FormCardProps> = ({
@@ -255,7 +283,7 @@ export const FormCard: React.FC<FormCardProps> = ({
   onFieldChange,
 }) => {
   // 狀態管理
-  const [formData, setFormData] = useState<Record<string, any>>(prefilledData);
+  const [formData, setFormData] = useState<FormDataRecord>(prefilledData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -439,7 +467,7 @@ export const FormCard: React.FC<FormCardProps> = ({
   const visualConfig = getFormConfig(formType);
 
   // 驗證單個字段
-  const validateField = useCallback((field: FormFieldConfig, value: any): string | null => {
+  const validateField = useCallback((field: FormFieldConfig, value: FormValue): string | null => {
     const validation = field.validation;
     if (!validation) return null;
 
@@ -495,7 +523,7 @@ export const FormCard: React.FC<FormCardProps> = ({
   }, [formConfig.fields, formData, validateField]);
 
   // 處理字段變更
-  const handleFieldChange = useCallback((fieldName: string, value: any) => {
+  const handleFieldChange = useCallback((fieldName: string, value: FormValue) => {
     setFormData(prev => ({ ...prev, [fieldName]: value }));
     setTouched(prev => ({ ...prev, [fieldName]: true }));
 
@@ -714,7 +742,7 @@ export const FormCard: React.FC<FormCardProps> = ({
   // 初始化表單數據
   useEffect(() => {
     if (formConfig.fields.length > 0 && Object.keys(formData).length === 0) {
-      const initialData: Record<string, any> = { ...prefilledData };
+      const initialData: FormDataRecord = { ...prefilledData };
       formConfig.fields.forEach(field => {
         if (initialData[field.name] === undefined && field.defaultValue !== undefined) {
           initialData[field.name] = field.defaultValue;
@@ -923,4 +951,18 @@ export const FormCard: React.FC<FormCardProps> = ({
 };
 
 // 導出類型，方便其他組件使用
-export type { FormType, FieldType };
+// FormType 和 FieldType 已在上面導出
+
+// 導出類型供其他組件使用
+export type {
+  SubmitSuccessData,
+  FormSubmitError,
+  FormValue,
+  FormFieldConfig,
+  FormCardData,
+  FormCardProps,
+  SelectOption,
+  FieldValidation,
+  FieldDependency,
+  FormLayout
+};

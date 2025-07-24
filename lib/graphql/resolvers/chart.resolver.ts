@@ -17,6 +17,65 @@ import {
 } from '@/types/generated/graphql';
 import { startOfDay, endOfDay, subDays, format } from 'date-fns';
 import DataLoader from 'dataloader';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '@/types/database/supabase';
+
+// 定義 Supabase client 類型
+type SupabaseClientType = SupabaseClient<Database>;
+
+// 定義 GraphQL Context 類型
+interface ChartResolverContext {
+  supabase: SupabaseClientType;
+  user?: { id: string; email: string; role: string };
+}
+
+// 定義資料庫查詢結果類型
+interface PalletInfoQueryResult {
+  productcode: string;
+  quantity: number;
+  location: string;
+  created_at?: string;
+  data_code: {
+    code: string;
+    description: string;
+    type: string;
+    colour: string;
+  };
+}
+
+interface TransferQueryResult {
+  transferstart: string;
+  transferdone: string | null;
+  from_location?: string;
+  to_location?: string;
+}
+
+// 定義數據處理類型
+interface GroupedData {
+  [key: string]: {
+    [field: string]: unknown;
+    count?: number;
+    totalQuantity?: number;
+  };
+}
+
+interface TimeSeriesDataPoint {
+  date: string;
+  count: number;
+  totalQuantity?: number;
+}
+
+interface ProductDistributionData {
+  productCode: string;
+  productName: string;
+  totalQuantity: number;
+  locations: { [location: string]: number };
+}
+
+// 定義聚合數據元素類型
+interface AggregateDataItem {
+  [key: string]: number | string | unknown;
+}
 
 // 圖表配置映射
 const CHART_CONFIG_MAP: Record<string, Partial<ChartConfig>> = {
@@ -64,7 +123,7 @@ const CHART_CONFIG_MAP: Record<string, Partial<ChartConfig>> = {
 
 // 數據聚合函數
 function aggregateData(
-  data: any[],
+  data: AggregateDataItem[],
   aggregationType: AggregationType,
   valueField: string
 ): number {
@@ -116,7 +175,7 @@ function formatTimeGranularity(date: Date, granularity: TimeGranularity): string
 
 // 獲取圖表數據
 async function fetchChartData(
-  supabase: any,
+  supabase: SupabaseClientType,
   chartType: ChartType,
   input: ChartQueryInput | SingleChartQueryInput
 ): Promise<ChartCardData> {
@@ -139,7 +198,7 @@ async function fetchChartData(
 
 // Treemap 數據（庫存分佈）
 async function fetchTreemapData(
-  supabase: any,
+  supabase: SupabaseClientType,
   input: ChartQueryInput | SingleChartQueryInput
 ): Promise<ChartCardData> {
   const { data, error } = await supabase
@@ -160,7 +219,7 @@ async function fetchTreemapData(
   if (error) throw error;
 
   // 按產品分組並聚合
-  const groupedData = data.reduce((acc: any, item: any) => {
+  const groupedData = data.reduce((acc: GroupedData, item: PalletInfoQueryResult) => {
     const key = item.productcode;
     if (!acc[key]) {
       acc[key] = {
@@ -176,9 +235,9 @@ async function fetchTreemapData(
   }, {});
 
   const chartData: ChartDataPoint[] = Object.values(groupedData)
-    .sort((a: any, b: any) => b.totalQuantity - a.totalQuantity)
+    .sort((a: ProductDistributionData, b: ProductDistributionData) => b.totalQuantity - a.totalQuantity)
     .slice(0, input.limit || 20)
-    .map((item: any) => ({
+    .map((item: ProductDistributionData) => ({
       x: item.productCode,
       y: item.totalQuantity,
       label: item.productName,
@@ -194,7 +253,7 @@ async function fetchTreemapData(
         id: 'stock-distribution',
         label: 'Stock Distribution',
         data: chartData,
-        type: 'SINGLE' as any,
+        type: 'SINGLE' as const,
         hidden: false,
       },
     ],
@@ -220,7 +279,7 @@ async function fetchTreemapData(
 
 // Area Chart 數據（倉庫工作量）
 async function fetchAreaChartData(
-  supabase: any,
+  supabase: SupabaseClientType,
   input: ChartQueryInput | SingleChartQueryInput
 ): Promise<ChartCardData> {
   const dateRange = input.dateRange || {
@@ -239,18 +298,18 @@ async function fetchAreaChartData(
 
   // 按時間粒度分組
   const granularity = (input as ChartQueryInput).timeGranularity || TimeGranularity.Day;
-  const groupedData = data.reduce((acc: any, item: any) => {
-    const key = formatTimeGranularity(new Date(item.transferdone), granularity);
+  const groupedData = data.reduce((acc: GroupedData, item: TransferQueryResult) => {
+    const key = formatTimeGranularity(new Date(item.transferdone || ''), granularity);
     if (!acc[key]) {
       acc[key] = { date: key, count: 0 };
     }
-    acc[key].count++;
+    (acc[key] as TimeSeriesDataPoint).count++;
     return acc;
   }, {});
 
   const chartData: ChartDataPoint[] = Object.values(groupedData)
-    .sort((a: any, b: any) => a.date.localeCompare(b.date))
-    .map((item: any) => ({
+    .sort((a: TimeSeriesDataPoint, b: TimeSeriesDataPoint) => a.date.localeCompare(b.date))
+    .map((item: TimeSeriesDataPoint) => ({
       x: item.date,
       y: item.count,
       label: item.date,
@@ -264,7 +323,7 @@ async function fetchAreaChartData(
         id: 'warehouse-work-level',
         label: 'Transfer Count',
         data: chartData,
-        type: 'SINGLE' as any,
+        type: 'SINGLE' as const,
         color: '#3b82f6',
         backgroundColor: '#3b82f6',
         borderColor: '#3b82f6',
@@ -302,7 +361,7 @@ async function fetchAreaChartData(
 
 // Bar Chart 數據（轉移時間分佈）
 async function fetchBarChartData(
-  supabase: any,
+  supabase: SupabaseClientType,
   input: ChartQueryInput | SingleChartQueryInput
 ): Promise<ChartCardData> {
   const { data, error } = await supabase
@@ -315,9 +374,9 @@ async function fetchBarChartData(
   if (error) throw error;
 
   // 計算轉移時間（小時）
-  const transferTimes = data.map((item: any) => {
+  const transferTimes = data.map((item: TransferQueryResult) => {
     const start = new Date(item.transferstart);
-    const end = new Date(item.transferdone);
+    const end = new Date(item.transferdone || '');
     return Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60)); // 小時
   });
 
@@ -348,7 +407,7 @@ async function fetchBarChartData(
         id: 'transfer-time-distribution',
         label: 'Transfer Count',
         data: chartData,
-        type: 'SINGLE' as any,
+        type: 'SINGLE' as const,
         backgroundColor: '#10b981',
         hidden: false,
       },
@@ -385,7 +444,7 @@ async function fetchBarChartData(
 
 // Line Chart 數據（庫存歷史）
 async function fetchLineChartData(
-  supabase: any,
+  supabase: SupabaseClientType,
   input: ChartQueryInput | SingleChartQueryInput
 ): Promise<ChartCardData> {
   const dateRange = input.dateRange || {
@@ -404,22 +463,22 @@ async function fetchLineChartData(
   if (error) throw error;
 
   // 按天分組
-  const groupedData = data.reduce((acc: any, item: any) => {
-    const date = format(new Date(item.created_at), 'yyyy-MM-dd');
+  const groupedData = data.reduce((acc: GroupedData, item: PalletInfoQueryResult) => {
+    const date = format(new Date(item.created_at || ''), 'yyyy-MM-dd');
     if (!acc[date]) {
       acc[date] = { date, totalQuantity: 0 };
     }
-    acc[date].totalQuantity += item.quantity;
+    (acc[date] as TimeSeriesDataPoint).totalQuantity = ((acc[date] as TimeSeriesDataPoint).totalQuantity || 0) + item.quantity;
     return acc;
   }, {});
 
   const chartData: ChartDataPoint[] = Object.values(groupedData)
-    .sort((a: any, b: any) => a.date.localeCompare(b.date))
-    .map((item: any) => ({
+    .sort((a: TimeSeriesDataPoint, b: TimeSeriesDataPoint) => a.date.localeCompare(b.date))
+    .map((item: TimeSeriesDataPoint) => ({
       x: item.date,
-      y: item.totalQuantity,
+      y: item.totalQuantity || 0,
       label: item.date,
-      value: item.totalQuantity,
+      value: item.totalQuantity || 0,
       metadata: {},
     }));
 
@@ -429,7 +488,7 @@ async function fetchLineChartData(
         id: 'stock-level-history',
         label: 'Stock Level',
         data: chartData,
-        type: 'SINGLE' as any,
+        type: 'SINGLE' as const,
         borderColor: '#8b5cf6',
         backgroundColor: 'transparent',
         hidden: false,
@@ -495,9 +554,9 @@ export const chartResolvers = {
   Query: {
     // 批量獲取圖表數據
     chartCardData: async (
-      _: any,
+      _: unknown,
       { input }: { input: ChartQueryInput },
-      context: any
+      context: ChartResolverContext
     ): Promise<ChartCardData> => {
       const { supabase } = context;
 
@@ -511,9 +570,9 @@ export const chartResolvers = {
 
     // 獲取單個圖表數據
     chartData: async (
-      _: any,
+      _: unknown,
       { input }: { input: SingleChartQueryInput },
-      context: any
+      context: ChartResolverContext
     ): Promise<ChartCardData> => {
       const { supabase } = context;
       return fetchChartData(supabase, input.chartType, input);
@@ -521,7 +580,7 @@ export const chartResolvers = {
 
     // 獲取可用的圖表配置
     availableCharts: async (
-      _: any,
+      _: unknown,
       { category }: { category?: string }
     ): Promise<ChartConfig[]> => {
       // 返回所有配置
@@ -538,7 +597,7 @@ export const chartResolvers = {
   Subscription: {
     // 訂閱圖表數據更新
     chartUpdated: {
-      subscribe: async function* (_: any, { chartTypes }: { chartTypes: ChartType[] }) {
+      subscribe: async function* (_: unknown, { chartTypes }: { chartTypes: ChartType[] }) {
         // TODO: 實現實時訂閱邏輯
       },
     },

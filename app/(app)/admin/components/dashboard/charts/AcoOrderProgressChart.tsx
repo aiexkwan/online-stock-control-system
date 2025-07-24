@@ -1,6 +1,20 @@
 'use client';
 
 import React, { useMemo } from 'react';
+
+// 定義 Recharts Tooltip Payload 類型
+interface TooltipPayloadItem {
+  dataKey?: string;
+  value?: unknown;
+  payload?: {
+    orderRef: string;
+    code: string;
+    completed: number;
+    total: number;
+    percentage: number;
+  };
+  color?: string;
+}
 import useSWR from 'swr';
 
 // Recharts components - using unified dynamic import module
@@ -173,10 +187,11 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
               domain={[0, 100]}
             />
             <Tooltip
-              // @types-migration:todo(phase3) [P2] 使用 recharts TooltipProps 類型替代 any[] - Target: 2025-08 - Owner: @frontend-team
-              content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
-                if (active && Array.isArray(payload) && payload.length > 0 && payload[0]?.payload) {
-                  const payloadData = payload[0].payload;
+              content={(props: any) => {
+                const { active, payload } = props;
+                const typedPayload = payload as TooltipPayloadItem[];
+                if (active && Array.isArray(typedPayload) && typedPayload.length > 0 && typedPayload[0]?.payload) {
+                  const payloadData = typedPayload[0].payload;
                   const data = payloadData as {
                     orderRef: string;
                     code: string;

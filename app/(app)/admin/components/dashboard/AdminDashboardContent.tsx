@@ -9,7 +9,7 @@
 import React, { lazy, Suspense, useEffect, useMemo } from 'react';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { adminDashboardLayouts } from './adminDashboardLayouts';
-import { AdminWidgetRenderer } from './AdminWidgetRenderer';
+import { AdminCardRenderer } from './AdminCardRenderer';
 import { Skeleton } from '@/components/ui/skeleton';
 import { unifiedWidgetRegistry } from '@/lib/widgets/unified-registry';
 import { useWidgetRegistry } from '@/app/hooks/useWidgetRegistry';
@@ -173,7 +173,7 @@ export const AdminDashboardContent: React.FC<AdminDashboardContentProps> = ({
   // 渲染 widgets - 保持原有順序，只添加延遲加載
   const renderWidgets = () => {
     return stableWidgets.map(({ key, delay, config, index }) => (
-      <AdminWidgetRenderer
+      <AdminCardRenderer
         key={key}
         config={config}
         theme={theme}

@@ -45,7 +45,7 @@ export interface RpcSupplierMutationResponse {
  * @param data - Supabase RPC 返回的 Json 數據
  * @returns 是否為有效的搜索響應結構
  */
-export function isRpcSearchSupplierResponse(data: any): data is RpcSearchSupplierResponse {
+export function isRpcSearchSupplierResponse(data: Json): data is RpcSearchSupplierResponse {
   return (
     data !== null &&
     typeof data === 'object' &&
@@ -60,7 +60,7 @@ export function isRpcSearchSupplierResponse(data: any): data is RpcSearchSupplie
  * @param data - Supabase RPC 返回的 Json 數據
  * @returns 是否為有效的變更響應結構
  */
-export function isRpcSupplierMutationResponse(data: any): data is RpcSupplierMutationResponse {
+export function isRpcSupplierMutationResponse(data: Json): data is RpcSupplierMutationResponse {
   return (
     data !== null &&
     typeof data === 'object' &&
@@ -76,7 +76,7 @@ export function isRpcSupplierMutationResponse(data: any): data is RpcSupplierMut
  * @throws 如果數據結構不符合預期
  */
 export function assertRpcSearchSupplierResponse(
-  data: any
+  data: Json
 ): asserts data is RpcSearchSupplierResponse {
   if (!isRpcSearchSupplierResponse(data)) {
     throw new Error('Invalid RPC search supplier response structure');
@@ -90,7 +90,7 @@ export function assertRpcSearchSupplierResponse(
  * @throws 如果數據結構不符合預期
  */
 export function assertRpcSupplierMutationResponse(
-  data: any
+  data: Json
 ): asserts data is RpcSupplierMutationResponse {
   if (!isRpcSupplierMutationResponse(data)) {
     throw new Error('Invalid RPC supplier mutation response structure');

@@ -3,6 +3,14 @@
  * 用於測量和比較 REST API 性能
  */
 
+import { 
+  BenchmarkTest, 
+  PerformanceSummary, 
+  hasMemoryAPI, 
+  isJSONSerializable,
+  PerformanceWithMemory 
+} from '@/lib/types/performance.types';
+
 export interface PerformanceMetrics {
   endpoint: string;
   responseTime: number;
@@ -85,13 +93,7 @@ export class PerformanceBenchmark {
   /**
    * 批量測試多個 API 端點
    */
-  async runBenchmarkSuite(tests: Array<{
-    name: string;
-    endpoint: string;
-    apiCall: () => Promise<any>;
-    expectedDbQueries?: number;
-    iterations?: number;
-  }>): Promise<BenchmarkResult[]> {
+  async runBenchmarkSuite<T = unknown>(tests: Array<BenchmarkTest<T>>): Promise<BenchmarkResult[]> {
     const results: BenchmarkResult[] = [];
 
     for (const test of tests) {
@@ -284,7 +286,7 @@ export class PerformanceBenchmark {
   /**
    * 生成基本優化建議
    */
-  private generateRecommendations(metrics: PerformanceMetrics[], summary: any): string[] {
+  private generateRecommendations(metrics: PerformanceMetrics[], summary: PerformanceSummary): string[] {
     const recommendations: string[] = [];
 
     if (summary.avgResponseTime > 2000) {
@@ -310,7 +312,7 @@ export class PerformanceBenchmark {
   /**
    * Dashboard 專用建議
    */
-  private generateDashboardRecommendations(metrics: PerformanceMetrics[], summary: any): string[] {
+  private generateDashboardRecommendations(metrics: PerformanceMetrics[], summary: PerformanceSummary): string[] {
     const recommendations = this.generateRecommendations(metrics, summary);
 
     // Dashboard 特定建議
@@ -328,7 +330,7 @@ export class PerformanceBenchmark {
   /**
    * Inventory 專用建議
    */
-  private generateInventoryRecommendations(metrics: PerformanceMetrics[], summary: any): string[] {
+  private generateInventoryRecommendations(metrics: PerformanceMetrics[], summary: PerformanceSummary): string[] {
     const recommendations = this.generateRecommendations(metrics, summary);
 
     // Inventory 特定建議
@@ -387,8 +389,8 @@ export class PerformanceBenchmark {
    * 獲取記憶體使用情況
    */
   private getMemoryUsage(): { used: number; total: number } {
-    if (typeof window !== 'undefined' && 'memory' in performance) {
-      const memory = (performance as any).memory;
+    if (typeof window !== 'undefined' && hasMemoryAPI(performance as PerformanceWithMemory)) {
+      const memory = (performance as PerformanceWithMemory).memory!;
       return {
         used: memory.usedJSHeapSize,
         total: memory.totalJSHeapSize
@@ -410,10 +412,15 @@ export class PerformanceBenchmark {
   /**
    * 計算 payload 大小
    */
-  private calculatePayloadSize(data: any): number {
+  private calculatePayloadSize(data: unknown): number {
     try {
+      if (!isJSONSerializable(data)) {
+        console.warn('Data is not JSON serializable, using fallback size calculation');
+        return String(data).length;
+      }
       return JSON.stringify(data || {}).length;
-    } catch {
+    } catch (error) {
+      console.error('Failed to calculate payload size:', error);
       return 0;
     }
   }

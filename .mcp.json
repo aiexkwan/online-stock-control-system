@@ -1,12 +1,17 @@
 {
   "mcpServers": {
     "supabase": {
+      "type": "stdio",
       "command": "npx",
-      "args": ["@supabase/mcp-server-supabase"],
-      "env": {
-        "SUPABASE_URL": "https://bbmkuiplnzvpudszrend.supabase.co",
-        "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTcxNTYwNCwiZXhwIjoyMDYxMjkxNjA0fQ.B0pQF2V0kWdrU2_2VEYXR6qxZzt2oMDvwxD7qiR3huM"
-      }
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--access-token",
+        "sbp_48ce06597a12ae50de726a65bbcb546b3c05e4ae",
+        "--project-ref",
+        "bbmkuiplnzvpudszrend"
+      ],
+      "env": {}
     }
   }
 }

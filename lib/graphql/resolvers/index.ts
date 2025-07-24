@@ -14,6 +14,9 @@ import { tableResolvers } from './table.resolver';
 import { reportResolvers } from './report.resolver';
 import { uploadResolvers } from './upload.resolver';
 import { analysisResolvers } from './analysis.resolver';
+import { alertResolvers } from './alert.resolver';
+// import { configResolvers } from './config.resolver'; // Temporarily disabled due to SSR issue
+import { searchResolver } from './search.resolver';
 import { IResolvers } from '@graphql-tools/utils';
 import { GraphQLJSON } from 'graphql-type-json';
 import { DateTimeResolver } from 'graphql-scalars';
@@ -298,6 +301,9 @@ export const resolvers: IResolvers = {
   ...reportResolvers,
   ...uploadResolvers,
   ...analysisResolvers,
+  ...alertResolvers,
+  // ...configResolvers, // Temporarily disabled due to SSR issue
+  ...searchResolver,
 };
 
 // Type guards for context

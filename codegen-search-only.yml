@@ -1,0 +1,16 @@
+overwrite: true
+schema:
+  - ./lib/graphql/schema/search-standalone.ts
+documents: 
+  - "./lib/graphql/queries/search-simple.graphql" 
+  - "./app/**/test-search-card/**/*.tsx"
+generates:
+  ./types/generated/search-types.ts:
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+    config:
+      withHooks: false
+      withComponent: false
+      withHOC: false
+      skipTypename: false

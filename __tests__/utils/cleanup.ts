@@ -1,5 +1,6 @@
 /**
  * Test cleanup utilities
+ * Updated for Cards architecture
  */
 
 /**
@@ -87,12 +88,51 @@ export function cleanupStorage() {
 }
 
 /**
+ * Cleanup function for Apollo Client cache
+ */
+export function cleanupApolloCache() {
+  // Clear Apollo Client cache if it exists
+  if (global.__APOLLO_CLIENT__) {
+    global.__APOLLO_CLIENT__.clearStore();
+  }
+}
+
+/**
+ * Cleanup function for React state and refs
+ */
+export function cleanupReactState() {
+  // Reset any global React state
+  // This is useful for Cards that might maintain global state
+  if (global.__REACT_STATE__) {
+    global.__REACT_STATE__ = {};
+  }
+}
+
+/**
+ * Cleanup function for Cards-specific test data
+ */
+export function cleanupCardsTestData() {
+  // Clear any Cards-specific test data
+  if (global.__CARDS_TEST_DATA__) {
+    global.__CARDS_TEST_DATA__ = {};
+  }
+  
+  // Reset any mock responses
+  if (global.__MOCK_RESPONSES__) {
+    global.__MOCK_RESPONSES__ = {};
+  }
+}
+
+/**
  * Master cleanup function that runs all cleanup utilities
  */
 export async function cleanupAll() {
   cleanupTimers();
   cleanupDOM();
   cleanupStorage();
+  cleanupApolloCache();
+  cleanupReactState();
+  cleanupCardsTestData();
   await cleanupTestDatabase();
 }
 

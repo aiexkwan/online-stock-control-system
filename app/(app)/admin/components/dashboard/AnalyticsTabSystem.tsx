@@ -26,11 +26,21 @@ import {
   CheckIcon
 } from '@heroicons/react/24/outline';
 
+// Heroicon component props interface
+interface HeroIconProps {
+  className?: string;
+  width?: number | string;
+  height?: number | string;
+  stroke?: string;
+  fill?: string;
+  'aria-hidden'?: boolean;
+}
+
 // Widget 類別配置 - 基於 UnifiedWidget 系統
 export interface WidgetCategory {
   id: string;
   label: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<HeroIconProps>;
   color: string;
   widgets: AnalysisWidgetId[];
 }

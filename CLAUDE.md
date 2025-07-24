@@ -45,8 +45,44 @@ NewPennine 倉庫管理系統 - 基於 Next.js 14、TypeScript 同 Supabase 嘅�
 # 📚 優先建議閱讀
 **角色定位功能**: `docs/role_play/README.md`
 
-## 文檔庫系統及相關規則
-**導航**: `docs\README.md`
+## 📁 文檔庫系統文件夾結構與用途
+
+### 🔧 **[role_play/](./role_play/)** - 專家角色定義文檔
+### 🚨 **[issue-library/](./issue-library/)** - 問題庫總覽
+### 🎓 **[expert-discussions/](./expert-discussions/)** - 專家討論總覽
+### 📋 **[planning/](./planning/)** - 規劃文檔總覽
+### ✅ **[Today_Todo/](./Today_Todo/)** - 每日任務總覽
+### 🔍 **[audit/](./audit/)** - 審計文檔總覽
+### 🗄️ **[databaseScheme/](./databaseScheme/)** - 資料庫架構總覽
+### 🔗 **[integration/](./integration/)** - 系統整合總覽
+### 📚 **[HistoryRecord/](./HistoryRecord/)** - 歷史紀錄總覽
+### 🗃️ **[RPC-Library/](./RPC-Library/)** - RPC 函數庫總覽
+### 💾 **[SQL-Library/](./SQL-Library/)** - SQL 查詢庫總覽
+### 📝 **[Others/](./Others/)** - 其他文檔/AI 提示/prompt
+
+## 📄 核心文檔文件
+
+### 🎯 **系統核心文檔**
+- **[CLAUDE.md](./CLAUDE.md)** - Claude AI 助手設定同專案配置
+- **[general_rules.md](./general_rules.md)** - 一般開發規則同指導原則
+
+### 🔧 **重構與類型**
+- **[type-refactor-plan.json](./type-refactor-plan.json)** (30KB) - 類型重構計劃 JSON 配置
+
+## 📋 各文件夾 README.md 功能
+
+- **[issue-library/README.md](./issue-library/README.md)** - 問題庫使用指南 (8.9KB)
+- **[expert-discussions/README.md](./expert-discussions/README.md)** - 專家討論索引 (2.4KB)
+- **[planning/README.md](./planning/README.md)** - 規劃文檔導航 (4.7KB)
+- **[Today_Todo/README.md](./Today_Todo/README.md)** - 任務管理指南 (7.9KB)
+- **[audit/README.md](./audit/README.md)** - 審計文檔導航 (13KB)
+- **[databaseScheme/README.md](./databaseScheme/README.md)** - 資料庫文檔索引 (6.4KB)
+- **[integration/README.md](./integration/README.md)** - 整合指南索引 (7.1KB)
+
+### ✅ **質量控制**
+- 各文檔庫資料夾內均有 README.md 的規範藍本
+- 重要變更需要團隊 review
+- 保持文檔結構一致性，及「單一真實來源」
 
 # 🏗️ 技術棧同架構
 
@@ -113,6 +149,9 @@ NewPennine 倉庫管理系統 - 基於 Next.js 14、TypeScript 同 Supabase 嘅�
 - ❌ **禁止自行建立文檔**：如用戶沒有要求，嚴禁建立文檔
 - ❌ **禁止繞過問題**：如使用"Unknown"繞過Eslint
 - ❌ **禁止單方面決策**：重要決策必須經過專家討論
+- ❌ **禁止隨意擺放文檔**：建立任何文檔前，先閱讀docs/README.md了解正確嘅文檔結構
+- ❌ **禁止創建新文件夾**：絕對禁止喺docs/下創建任何新文件夾，只能使用docs/README.md列出嘅12個現有文件夾
+- ❌ **禁止修改文檔結構**：docs/README.md定義嘅文檔結構係最終版本，任何改動都需要用戶明確批准
 
 ### 核心原則
 - **優先使用 React Query，取代 useEffect + useState 組合**
@@ -132,8 +171,7 @@ NewPennine 倉庫管理系統 - 基於 Next.js 14、TypeScript 同 Supabase 嘅�
 
 ## 工具使用
 所有命令都可使用：
-- **Ultrathink** - 深層思考
-- **Sequential-thinking** - 邏輯推理
+- **Sequential-thinking MCP** - 邏輯推理
 - **Task** - 同步平行執行任務（專家並行討論）
 - **Puppeteer MCP** - 自動化測試
 - **Supabase MCP** - 資料庫查詢
@@ -142,18 +180,25 @@ NewPennine 倉庫管理系統 - 基於 Next.js 14、TypeScript 同 Supabase 嘅�
 ## 測試憑證
 
 登入憑證:
-  email: ${env.local.SYS_LOGIN} 或 ${env.local.PUPPETEER_LOGIN}
-  password: ${env.local.SYS_PASSWORD} 或 ${env.local.PUPPETEER_PASSWORD}
+  email: ${env.local.SYS_LOGIN}
+  password: ${env.local.SYS_PASSWORD}
 
 
 ## 🔧 工作執行方式
 
 ### 執行流程（加強版）
+0. **文檔檢查**：任何文檔操作前必須先檢查docs/README.md，確認文件夾存在
 1. **分析階段**：根據用戶指示判斷需要的文檔
 2. **專家召集**：根據任務類型召集相關專家
 3. **協作討論**：專家間進行深度討論和決策
 4. **規劃階段**：建立詳細todolist
 5. **驗證階段**：基於證據的推理（測試/指標/文件）
+
+### 文檔管理鐵則
+- **創建任何文檔前**：必須檢查docs/README.md確認目標文件夾存在
+- **12個批准文件夾**：role_play, issue-library, expert-discussions, planning, Today_Todo, audit, databaseScheme, integration, HistoryRecord, RPC-Library, SQL-Library, Others
+- **絕對禁止**：創建docs/README.md未列出嘅新文件夾
+- **Today_Todo規則**：只能有一個README.md，所有更新必須喺原文件修改
 
 ---
 

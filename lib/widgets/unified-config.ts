@@ -442,9 +442,7 @@ export const widgetConfig: WidgetConfigMap = {
     category: 'special',
     description: 'Hierarchical history view',
     loader: () =>
-      import('@/app/(app)/admin/components/dashboard/widgets/HistoryTreeV2GraphQL').then(module => ({
-        default: module.HistoryTreeV2,
-      })),
+      import('@/app/(app)/admin/components/dashboard/widgets/HistoryTreeV2GraphQL'),
     dataSource: 'batch',
     priority: 'critical',
     refreshInterval: 120000,

@@ -6,29 +6,59 @@
 import DataLoader from 'dataloader';
 import { createClient } from '@/app/utils/supabase/server';
 import { SupabaseClient } from '@supabase/supabase-js';
+import type {
+  Product,
+  Supplier,
+  Pallet,
+  User,
+  Location,
+  Order,
+  Transfer,
+  Customer,
+  Inventory,
+  UnifiedOperationsKey,
+  UnifiedOperationsData,
+  StockLevelKey,
+  StockLevelData,
+  WorkLevelKey,
+  WorkLevelData,
+  GRNAnalyticsKey,
+  GRNAnalyticsData,
+  PerformanceMetricsKey,
+  PerformanceMetricsData,
+  InventoryOrderedAnalysisKey,
+  InventoryOrderedAnalysisData,
+  HistoryTreeKey,
+  HistoryTreeData,
+  TopProductsKey,
+  TopProductsData,
+  StockDistributionKey,
+  StockDistributionData,
+  DatabaseEntity
+} from '@/types/dataloaders';
 
 export interface DataLoaderContext {
   supabase: SupabaseClient;
   loaders: {
-    product: DataLoader<string, any>;
-    pallet: DataLoader<string, any>;
-    inventory: DataLoader<string, any>;
-    user: DataLoader<string, any>;
-    location: DataLoader<string, any>;
-    order: DataLoader<string, any>;
-    transfer: DataLoader<string, any>;
-    customer: DataLoader<string, any>;
-    supplier: DataLoader<string, any>;
+    product: DataLoader<string, Product>;
+    pallet: DataLoader<string, Pallet>;
+    inventory: DataLoader<string, Inventory>;
+    user: DataLoader<string, User>;
+    location: DataLoader<string, Location>;
+    order: DataLoader<string, Order>;
+    transfer: DataLoader<string, Transfer>;
+    customer: DataLoader<string, Customer>;
+    supplier: DataLoader<string, Supplier>;
     // Complex loaders
-    unifiedOperations?: DataLoader<any, any>;
-    stockLevels?: DataLoader<any, any>;
-    workLevel?: DataLoader<any, any>;
-    grnAnalytics?: DataLoader<any, any>;
-    performanceMetrics?: DataLoader<any, any>;
-    inventoryOrderedAnalysis?: DataLoader<any, any>;
-    historyTree?: DataLoader<any, any>;
-    topProducts?: DataLoader<any, any>;
-    stockDistribution?: DataLoader<any, any>;
+    unifiedOperations?: DataLoader<UnifiedOperationsKey, UnifiedOperationsData>;
+    stockLevels?: DataLoader<StockLevelKey, StockLevelData>;
+    workLevel?: DataLoader<WorkLevelKey, WorkLevelData>;
+    grnAnalytics?: DataLoader<GRNAnalyticsKey, GRNAnalyticsData>;
+    performanceMetrics?: DataLoader<PerformanceMetricsKey, PerformanceMetricsData>;
+    inventoryOrderedAnalysis?: DataLoader<InventoryOrderedAnalysisKey, InventoryOrderedAnalysisData>;
+    historyTree?: DataLoader<HistoryTreeKey, HistoryTreeData>;
+    topProducts?: DataLoader<TopProductsKey, TopProductsData>;
+    stockDistribution?: DataLoader<StockDistributionKey, StockDistributionData>;
   };
 }
 
@@ -50,10 +80,10 @@ export function createBatchLoader<K, V>(
 /**
  * Generic batch function for Supabase queries
  */
-export async function batchQuery<T>(
+export async function batchQuery<T extends DatabaseEntity>(
   supabase: SupabaseClient,
   table: string,
-  column: string,
+  column: keyof T & string,
   keys: readonly string[]
 ): Promise<(T | null)[]> {
   if (keys.length === 0) return [];
@@ -70,7 +100,7 @@ export async function batchQuery<T>(
 
   // Create a map for O(1) lookup
   const dataMap = new Map(
-    data.map((item: any) => [item[column], item])
+    data.map((item: T) => [item[column] as string, item])
   );
 
   // Return in the same order as keys
@@ -80,24 +110,30 @@ export async function batchQuery<T>(
 /**
  * Create a loader for a simple table lookup
  */
-export function createSimpleLoader<T>(
+export function createSimpleLoader<T extends DatabaseEntity>(
   supabase: SupabaseClient,
   table: string,
-  keyColumn: string = 'id'
+  keyColumn: keyof T & string = 'id'
 ): DataLoader<string, T> {
   return createBatchLoader<string, T>(
-    async (keys) => batchQuery<T>(supabase, table, keyColumn, keys) as Promise<(T | Error)[]>
+    async (keys) => {
+      const results = await batchQuery<T>(supabase, table, keyColumn, keys);
+      // Convert nulls to Errors for DataLoader compatibility
+      return results.map(result => 
+        result === null ? new Error(`Not found in ${table}`) : result
+      ) as (T | Error)[];
+    }
   );
 }
 
 /**
  * Create a loader for related entities (one-to-many)
  */
-export function createRelatedLoader<T>(
+export function createRelatedLoader<T extends DatabaseEntity>(
   supabase: SupabaseClient,
   table: string,
-  foreignKeyColumn: string,
-  orderBy?: { column: string; ascending?: boolean }
+  foreignKeyColumn: keyof T & string,
+  orderBy?: { column: keyof T & string; ascending?: boolean }
 ): DataLoader<string, T[]> {
   return createBatchLoader<string, T[]>(
     async (keys) => {
@@ -123,8 +159,8 @@ export function createRelatedLoader<T>(
       const groupedData = new Map<string, T[]>();
       keys.forEach(key => groupedData.set(key, []));
 
-      data.forEach((item: any) => {
-        const key = item[foreignKeyColumn];
+      data.forEach((item: T) => {
+        const key = item[foreignKeyColumn] as string;
         const group = groupedData.get(key) || [];
         group.push(item);
         groupedData.set(key, group);
@@ -135,14 +171,22 @@ export function createRelatedLoader<T>(
   );
 }
 
+// Type for aggregate query functions
+type AggregateQuery<K extends string | number | symbol, T> = (
+  keys: readonly K[]
+) => Promise<{ 
+  data: Map<K, T> | [K, T][]; 
+  error?: Error | null;
+}>;
+
 /**
  * Create a loader for aggregated data
  */
-export function createAggregateLoader<T>(
+export function createAggregateLoader<K extends string | number | symbol = string, T = unknown>(
   supabase: SupabaseClient,
-  query: (keys: readonly string[]) => any
-): DataLoader<string, T> {
-  return createBatchLoader<string, T>(
+  query: AggregateQuery<K, T>
+): DataLoader<K, T> {
+  return createBatchLoader<K, T>(
     async (keys) => {
       if (keys.length === 0) return [];
 
@@ -150,12 +194,12 @@ export function createAggregateLoader<T>(
 
       if (error) {
         console.error('[DataLoader] Error loading aggregate data:', error);
-        return keys.map(() => null as any);
+        return keys.map(() => null as T | Error);
       }
 
-      // Assume query returns data keyed by the input keys
-      const dataMap = new Map(data);
-      return keys.map(key => dataMap.get(key) || null);
+      // Handle both Map and array of tuples
+      const dataMap = data instanceof Map ? data : new Map(data);
+      return keys.map(key => dataMap.get(key) || null) as (T | Error)[];
     }
   );
 }

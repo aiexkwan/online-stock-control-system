@@ -270,7 +270,7 @@ query GetFilteredOrderStateList(
   ) {
     ... on OrderStateList {
       ...OrderStateListFields
-      orders(first: $pagination.limit, offset: $pagination.offset) {
+      orders(first: 20, offset: 0) {
         edges {
           node {
             order {
