@@ -13,8 +13,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ---
 
 ### 語言設定
-**回答問題**：只能使用廣東話。
-**系統語言**：只能使用英語
+**回答問題🇭🇰**：只能使用廣東話。
+**系統語言🇹🇨**：只能使用英語
 
 ---
 
@@ -36,14 +36,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - AI 訂單分析
 - 管理儀表板
 
-## 💻 系統資訊
+## 系統相關資訊
 - 現時用戶: 30-40人
 - 同時在線: 8-9人
 - 支援平台: 移動裝置 + 電腦端
 - 運作時間: 24/7
 
 ## 開發指引
-- 深層思考：使用Ultrathink作深度思考
+- 深層思考🧠：使用Ultrathink作深度思考
 - 任務執行：Sub-Task, Sub-Agent 幫助加快執行
 - 專家協作：多角色討論和決策，以作出最佳決策
 - 架構模式: Server Actions + 通用佈局
