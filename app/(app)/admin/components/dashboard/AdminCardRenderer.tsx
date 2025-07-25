@@ -10,11 +10,21 @@ import React, { Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { AdminWidgetConfig } from '@/types/components/dashboard';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
-import { 
-  MetricType, ChartType, CategoryType, SearchMode, SearchEntity,
-  MetricItem, PrefilledData, safeParseChartType, safeParseCategory,
-  safeParseSearchMode, safeParseSearchEntities, migrateMetrics
+import {
+  MetricType,
+  ChartType,
+  CategoryType,
+  SearchEntity,
+  MetricItem,
+  PrefilledData,
+  safeParseChartType,
+  safeParseCategory,
+  safeParseSearchEntities,
+  migrateMetrics,
+  migrateStatsTypes,
+  categoryTypeToConfigCategory,
 } from '@/lib/types/admin-cards';
+import { SearchMode, SearchableEntity } from '@/types/generated/search-types';
 import { StatsCard } from './cards/StatsCard';
 import { ChartCard } from './cards/ChartCard';
 import { TableCard } from './cards/TableCard';
@@ -24,9 +34,16 @@ import { FormCard, FormType as FormCardType } from './cards/FormCard';
 import { AlertCard } from './cards/AlertCard';
 import { ConfigCard } from './cards/ConfigCard';
 import { SearchCard } from './cards/SearchCard';
-import { NavigationCard, NavigationType } from './cards/NavigationCard';
-import { NotificationCard, NotificationType, NotificationPriority, NotificationStatus } from './cards/NotificationCard';
+import { NavigationCard } from './cards/NavigationCard';
+import { NavigationType } from './cards/NavigationCard';
+import {
+  NotificationCard,
+  NotificationType,
+  NotificationPriority,
+  NotificationStatus,
+} from './cards/NotificationCard';
 import { UploadCard } from './cards/UploadCard';
+import { UploadType } from '@/types/generated/graphql';
 import { ReportCard } from './cards/ReportCard';
 import { ListType, AnalysisType, ReportType } from '@/types/generated/graphql';
 import { DepartmentSelectorCard } from './cards/DepartmentSelectorCard';
@@ -68,10 +85,10 @@ const UnifiedCardWrapper = React.memo<{
 
   return (
     <GlassmorphicCard
-      variant="default"
+      variant='default'
       hover={true}
       borderGlow={false}
-      padding="none"
+      padding='none'
       className={cn(
         'h-full w-full',
         `glow-${glowColor}`,
@@ -86,7 +103,7 @@ const UnifiedCardWrapper = React.memo<{
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
-        className="h-full w-full"
+        className='h-full w-full'
         data-card-focusable='true'
         tabIndex={-1}
         role='region'
@@ -124,9 +141,7 @@ const createErrorFallback = (cardType: string, errorMessage?: string) => (
   <div className='rounded border border-red-300 bg-red-50 p-4 text-red-500'>
     <h4 className='font-semibold'>Card Error</h4>
     <p className='mt-1 text-sm'>Type: {cardType}</p>
-    {errorMessage && (
-      <p className='mt-2 text-xs text-gray-600'>Error: {errorMessage}</p>
-    )}
+    {errorMessage && <p className='mt-2 text-xs text-gray-600'>Error: {errorMessage}</p>}
   </div>
 );
 
@@ -147,12 +162,16 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
       case 'stats':
         renderedContent = (
           <StatsCard
-            statTypes={config.metrics ? migrateMetrics(config.metrics) : []}
+            statTypes={config.metrics ? migrateStatsTypes(config.metrics) : []}
             columns={1}
-            dateRange={timeFrame ? {
-              start: new Date(timeFrame.start),
-              end: new Date(timeFrame.end)
-            } : undefined}
+            dateRange={
+              timeFrame
+                ? {
+                    start: new Date(timeFrame.start),
+                    end: new Date(timeFrame.end),
+                  }
+                : undefined
+            }
             showTrend={true}
             showComparison={true}
             isEditMode={false}
@@ -167,10 +186,14 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
           <ChartCard
             chartTypes={[safeParseChartType(config.chartType || 'line')]}
             dataSources={[config.dataSource || 'default']}
-            dateRange={timeFrame ? {
-              start: new Date(timeFrame.start),
-              end: new Date(timeFrame.end)
-            } : undefined}
+            dateRange={
+              timeFrame
+                ? {
+                    start: new Date(timeFrame.start),
+                    end: new Date(timeFrame.end),
+                  }
+                : undefined
+            }
             isEditMode={false}
           />
         );
@@ -181,10 +204,14 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
         renderedContent = (
           <TableCard
             dataSource={config.dataSource || 'default'}
-            dateRange={timeFrame ? {
-              start: new Date(timeFrame.start),
-              end: new Date(timeFrame.end)
-            } : undefined}
+            dateRange={
+              timeFrame
+                ? {
+                    start: new Date(timeFrame.start),
+                    end: new Date(timeFrame.end),
+                  }
+                : undefined
+            }
             isEditMode={false}
           />
         );
@@ -194,7 +221,7 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
       case 'list-card':
         let listType = ListType.OrderState;
         let pageSize = 50;
-        
+
         const sourceType = config.dataSource || config.description;
         switch (sourceType) {
           case 'ORDER_STATE':
@@ -218,7 +245,7 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
             listType = ListType.OtherFiles;
             break;
         }
-        
+
         if (config.metrics && config.metrics.length > 0) {
           const pageSizeMetric = config.metrics.find(m => m.startsWith('pageSize:'));
           if (pageSizeMetric) {
@@ -228,15 +255,19 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
             }
           }
         }
-        
+
         renderedContent = (
           <ListCard
             listType={listType}
             pageSize={pageSize}
-            dateRange={timeFrame ? {
-              start: new Date(timeFrame.start),
-              end: new Date(timeFrame.end)
-            } : undefined}
+            dateRange={
+              timeFrame
+                ? {
+                    start: new Date(timeFrame.start),
+                    end: new Date(timeFrame.end),
+                  }
+                : undefined
+            }
             showHeader={true}
             showMetrics={true}
             showRefreshButton={true}
@@ -250,10 +281,14 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
         renderedContent = (
           <AnalysisCard
             analysisType={AnalysisType.TrendForecasting}
-            dateRange={timeFrame ? {
-              start: new Date(timeFrame.start),
-              end: new Date(timeFrame.end)
-            } : undefined}
+            dateRange={
+              timeFrame
+                ? {
+                    start: new Date(timeFrame.start),
+                    end: new Date(timeFrame.end),
+                  }
+                : undefined
+            }
             isEditMode={false}
           />
         );
@@ -274,35 +309,40 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
       // ConfigCard 類型
       case 'config-card':
         let defaultCategory: CategoryType = 'SYSTEM';
-        
+
         const categorySource = config.dataSource || config.description || config.component;
         if (categorySource) {
           const categoryMap: Record<string, string> = {
-            'system': 'SYSTEM',
-            'user': 'USER_PREFERENCES',
+            system: 'SYSTEM',
+            user: 'USER_PREFERENCES',
             'user-preferences': 'USER_PREFERENCES',
-            'department': 'DEPARTMENT',
-            'notification': 'NOTIFICATION',
-            'api': 'API',
-            'security': 'SECURITY',
-            'display': 'DISPLAY',
-            'workflow': 'WORKFLOW'
+            department: 'DEPARTMENT',
+            notification: 'NOTIFICATION',
+            api: 'API',
+            security: 'SECURITY',
+            display: 'DISPLAY',
+            workflow: 'WORKFLOW',
           };
-          
+
           const mappedCategory = categoryMap[categorySource.toLowerCase()];
           if (mappedCategory) {
             defaultCategory = safeParseCategory(mappedCategory);
           }
         }
-        
+
+        // Convert CategoryType to ConfigCategory for ConfigCard component
+        const configCategory = categoryTypeToConfigCategory(defaultCategory);
+
         renderedContent = (
           <ConfigCard
-            defaultCategory={defaultCategory}
+            defaultCategory={configCategory}
             showSearch={!config.metrics?.includes('noSearch')}
             showHistory={!config.metrics?.includes('noHistory')}
             showTemplates={!config.metrics?.includes('noTemplates')}
             refreshInterval={config.metrics?.includes('fastRefresh') ? 10 : 30}
-            permissions={config.metrics?.filter(m => m.startsWith('perm:')).map(m => m.substring(5))}
+            permissions={config.metrics
+              ?.filter(m => m.startsWith('perm:'))
+              .map(m => m.substring(5))}
           />
         );
         break;
@@ -312,7 +352,7 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
         let formType = FormCardType.PRODUCT_EDIT;
         let entityId: string | undefined = undefined;
         let prefilledData: PrefilledData = {};
-        
+
         const formSourceType = config.dataSource || config.description || config.component;
         switch (formSourceType) {
           case 'PRODUCT_EDIT':
@@ -346,7 +386,7 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
             formType = FormCardType.INVENTORY_ADJUST;
             break;
         }
-        
+
         if (config.metrics && config.metrics.length > 0) {
           config.metrics.forEach(metric => {
             if (metric.startsWith('entityId:')) {
@@ -361,7 +401,7 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
             }
           });
         }
-        
+
         if (config.config) {
           if (config.config.entityId) {
             entityId = config.config.entityId;
@@ -370,7 +410,7 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
             prefilledData = { ...prefilledData, ...config.config.prefilledData };
           }
         }
-        
+
         renderedContent = (
           <FormCard
             formType={formType}
@@ -380,10 +420,10 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
             showProgress={true}
             showValidationSummary={false}
             isEditMode={false}
-            onSubmitSuccess={(data) => {
+            onSubmitSuccess={data => {
               console.log('Form submitted successfully:', data);
             }}
-            onSubmitError={(error) => {
+            onSubmitError={error => {
               console.error('Form submission error:', error);
             }}
             onCancel={() => {
@@ -401,9 +441,9 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
       case 'UploadZone':
         renderedContent = (
           <UploadCard
-            uploadTypes={['BATCH_ORDERS', 'PRODUCT_DATA']}
-            maxFileSize={10 * 1024 * 1024} // 10MB
-            allowedFormats={['csv', 'xlsx', 'json']}
+            uploadType={UploadType.GeneralFiles}
+            showRecentUploads={true}
+            showProgress={true}
             isEditMode={false}
           />
         );
@@ -414,11 +454,15 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
       case 'report-generator':
         renderedContent = (
           <ReportCard
-            reportType={ReportType.INVENTORY_SUMMARY}
-            dateRange={timeFrame ? {
-              start: new Date(timeFrame.start),
-              end: new Date(timeFrame.end)
-            } : undefined}
+            reportType={ReportType.InventoryReport}
+            dateRange={
+              timeFrame
+                ? {
+                    start: new Date(timeFrame.start),
+                    end: new Date(timeFrame.end),
+                  }
+                : undefined
+            }
             isEditMode={false}
           />
         );
@@ -431,9 +475,9 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
             config={{
               defaultDepartment: 'All',
               showIcons: true,
-              style: 'full'
+              style: 'full',
             }}
-            onDepartmentChange={(department) => {
+            onDepartmentChange={department => {
               console.log('Department changed:', department);
             }}
           />
@@ -443,19 +487,62 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
       // SearchCard 類型
       case 'search-card':
       case 'search':
-        let defaultSearchMode: SearchMode = 'GLOBAL';
-        let defaultSearchEntities: SearchEntity[] = ['PRODUCT', 'PALLET'];
+        let defaultSearchMode: SearchMode = SearchMode.Global;
+        let defaultSearchEntities: SearchableEntity[] = [
+          SearchableEntity.Product,
+          SearchableEntity.Pallet,
+        ];
         let searchPlaceholder = 'Search products, pallets, orders...';
 
         // Parse search configuration from config.metrics
         if (config.metrics && config.metrics.length > 0) {
           config.metrics.forEach(metric => {
             if (metric.startsWith('mode:')) {
-              defaultSearchMode = safeParseSearchMode(metric.split(':')[1].toUpperCase());
+              const mode = metric.split(':')[1].toUpperCase();
+              switch (mode) {
+                case 'GLOBAL':
+                  defaultSearchMode = SearchMode.Global;
+                  break;
+                case 'ENTITY':
+                  defaultSearchMode = SearchMode.Entity;
+                  break;
+                case 'MIXED':
+                  defaultSearchMode = SearchMode.Mixed;
+                  break;
+                case 'SUGGESTION':
+                  defaultSearchMode = SearchMode.Suggestion;
+                  break;
+              }
             } else if (metric.startsWith('entities:')) {
               try {
                 const entitiesStr = metric.substring('entities:'.length);
-                defaultSearchEntities = safeParseSearchEntities(entitiesStr.split(',').map(e => e.trim().toUpperCase()));
+                const entityNames = entitiesStr.split(',').map(e => e.trim().toUpperCase());
+                defaultSearchEntities = entityNames.map(name => {
+                  switch (name) {
+                    case 'PRODUCT':
+                      return SearchableEntity.Product;
+                    case 'PALLET':
+                      return SearchableEntity.Pallet;
+                    case 'ORDER':
+                      return SearchableEntity.Order;
+                    case 'USER':
+                      return SearchableEntity.User;
+                    case 'SUPPLIER':
+                      return SearchableEntity.Supplier;
+                    case 'INVENTORY':
+                      return SearchableEntity.Inventory;
+                    case 'FILE':
+                      return SearchableEntity.File;
+                    case 'GRN':
+                      return SearchableEntity.Grn;
+                    case 'HISTORY':
+                      return SearchableEntity.History;
+                    case 'TRANSFER':
+                      return SearchableEntity.Transfer;
+                    default:
+                      return SearchableEntity.Product;
+                  }
+                });
               } catch (e) {
                 console.warn('Failed to parse search entities:', e);
               }
@@ -468,10 +555,53 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
         // Parse from config.config object
         if (config.config) {
           if (config.config.searchMode) {
-            defaultSearchMode = safeParseSearchMode(config.config.searchMode);
+            const mode = config.config.searchMode.toUpperCase();
+            switch (mode) {
+              case 'GLOBAL':
+                defaultSearchMode = SearchMode.Global;
+                break;
+              case 'ENTITY':
+                defaultSearchMode = SearchMode.Entity;
+                break;
+              case 'MIXED':
+                defaultSearchMode = SearchMode.Mixed;
+                break;
+              case 'SUGGESTION':
+                defaultSearchMode = SearchMode.Suggestion;
+                break;
+            }
           }
           if (config.config.searchEntities) {
-            defaultSearchEntities = safeParseSearchEntities(config.config.searchEntities);
+            const entities = Array.isArray(config.config.searchEntities)
+              ? config.config.searchEntities
+              : [config.config.searchEntities];
+            defaultSearchEntities = entities.map((name: string) => {
+              const upperName = name.toUpperCase();
+              switch (upperName) {
+                case 'PRODUCT':
+                  return SearchableEntity.Product;
+                case 'PALLET':
+                  return SearchableEntity.Pallet;
+                case 'ORDER':
+                  return SearchableEntity.Order;
+                case 'USER':
+                  return SearchableEntity.User;
+                case 'SUPPLIER':
+                  return SearchableEntity.Supplier;
+                case 'INVENTORY':
+                  return SearchableEntity.Inventory;
+                case 'FILE':
+                  return SearchableEntity.File;
+                case 'GRN':
+                  return SearchableEntity.Grn;
+                case 'HISTORY':
+                  return SearchableEntity.History;
+                case 'TRANSFER':
+                  return SearchableEntity.Transfer;
+                default:
+                  return SearchableEntity.Product;
+              }
+            });
           }
           if (config.config.placeholder) {
             searchPlaceholder = config.config.placeholder;
@@ -483,7 +613,7 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
             placeholder={searchPlaceholder}
             defaultMode={defaultSearchMode}
             defaultEntities={defaultSearchEntities}
-            onResultSelect={(result) => {
+            onResultSelect={result => {
               console.log('Search result selected:', result);
             }}
             onSearch={(query, results) => {
@@ -496,11 +626,11 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
       // NavigationCard 類型
       case 'navigation-card':
       case 'navigation':
-        let navigationType = NavigationType.SIDEBAR;
+        let navigationType: NavigationType = NavigationType.SIDEBAR;
         let showSearch = true;
         let showBookmarks = true;
         let collapsible = true;
-        
+
         const navSourceType = config.dataSource || config.description || config.component;
         switch (navSourceType) {
           case 'SIDEBAR':
@@ -522,7 +652,7 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
             navigationType = NavigationType.QUICK_ACCESS;
             break;
         }
-        
+
         if (config.metrics && config.metrics.length > 0) {
           config.metrics.forEach(metric => {
             if (metric === 'noSearch') showSearch = false;
@@ -530,7 +660,7 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
             if (metric === 'noCollapse') collapsible = false;
           });
         }
-        
+
         renderedContent = (
           <NavigationCard
             navigationType={navigationType}
@@ -543,7 +673,7 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
             onNavigate={(path, item) => {
               console.log('Navigation:', path, item);
             }}
-            onBookmark={(item) => {
+            onBookmark={item => {
               console.log('Bookmarked:', item);
             }}
             onSearch={(query, results) => {
@@ -565,7 +695,7 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
         let defaultTypes = Object.values(NotificationType);
         let defaultPriorities = Object.values(NotificationPriority);
         let defaultStatus = [NotificationStatus.UNREAD, NotificationStatus.READ];
-        
+
         if (config.metrics && config.metrics.length > 0) {
           config.metrics.forEach(metric => {
             if (metric.startsWith('maxItems:')) {
@@ -587,11 +717,12 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
             }
           });
         }
-        
+
         if (config.config) {
           if (config.config.maxItems) maxItems = config.config.maxItems;
           if (config.config.showFilters !== undefined) showFilters = config.config.showFilters;
-          if (config.config.showBulkActions !== undefined) showBulkActions = config.config.showBulkActions;
+          if (config.config.showBulkActions !== undefined)
+            showBulkActions = config.config.showBulkActions;
           if (config.config.showStats !== undefined) showStats = config.config.showStats;
           if (config.config.autoRefresh !== undefined) autoRefresh = config.config.autoRefresh;
           if (config.config.compact !== undefined) compact = config.config.compact;
@@ -599,7 +730,7 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
           if (config.config.defaultPriorities) defaultPriorities = config.config.defaultPriorities;
           if (config.config.defaultStatus) defaultStatus = config.config.defaultStatus;
         }
-        
+
         renderedContent = (
           <NotificationCard
             maxItems={maxItems}
@@ -613,13 +744,13 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
             compact={compact}
             isEditMode={false}
             userId={config.config?.userId || 'current-user'}
-            onNotificationClick={(notification) => {
+            onNotificationClick={notification => {
               console.log('Notification clicked:', notification);
             }}
             onNotificationAction={(notification, action) => {
               console.log('Notification action:', notification, action);
             }}
-            onStatsUpdate={(stats) => {
+            onStatsUpdate={stats => {
               console.log('Notification stats updated:', stats);
             }}
           />
@@ -628,12 +759,7 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
 
       // HistoryTreeCard 類型
       case 'history-tree':
-        renderedContent = (
-          <HistoryTreeCard
-            gridArea={config.gridArea}
-            maxEntries={20}
-          />
-        );
+        renderedContent = <HistoryTreeCard gridArea={config.gridArea} maxEntries={20} />;
         break;
 
       default:
@@ -649,30 +775,21 @@ const AdminCardRendererComponent: React.FC<AdminCardRendererProps> = ({
   }
 
   return (
-    <UnifiedCardWrapper
-      theme={theme}
-      title={config.title}
-      gridArea={config.gridArea}
-    >
-      <Suspense fallback={createSuspenseFallback('default')}>
-        {renderedContent}
-      </Suspense>
+    <UnifiedCardWrapper theme={theme} title={config.title} gridArea={config.gridArea}>
+      <Suspense fallback={createSuspenseFallback('default')}>{renderedContent}</Suspense>
     </UnifiedCardWrapper>
   );
 };
 
 // Export AdminCardRenderer with React.memo
-export const AdminCardRenderer = React.memo(
-  AdminCardRendererComponent,
-  (prevProps, nextProps) => {
-    return (
-      JSON.stringify(prevProps.config) === JSON.stringify(nextProps.config) &&
-      prevProps.theme === nextProps.theme &&
-      JSON.stringify(prevProps.timeFrame) === JSON.stringify(nextProps.timeFrame) &&
-      prevProps.index === nextProps.index &&
-      prevProps.delay === nextProps.delay
-    );
-  }
-);
+export const AdminCardRenderer = React.memo(AdminCardRendererComponent, (prevProps, nextProps) => {
+  return (
+    JSON.stringify(prevProps.config) === JSON.stringify(nextProps.config) &&
+    prevProps.theme === nextProps.theme &&
+    JSON.stringify(prevProps.timeFrame) === JSON.stringify(nextProps.timeFrame) &&
+    prevProps.index === nextProps.index &&
+    prevProps.delay === nextProps.delay
+  );
+});
 
 AdminCardRenderer.displayName = 'AdminCardRenderer';

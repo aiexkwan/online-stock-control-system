@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { dataSourceConfig } from '@/lib/data/data-source-config';
 import { unifiedDataLayer } from '@/lib/api/unified-data-layer';
 import { DataSourceType } from '@/lib/api/unified-data-layer';
+import type { DataSourceRule, ABTestConfig } from '@/lib/data/data-source-config';
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
         const status = unifiedDataLayer.getConfigStatus();
         return NextResponse.json({
           success: true,
-          data: status
+          data: status,
         });
 
       case 'metrics':
@@ -29,8 +30,8 @@ export async function GET(request: NextRequest) {
           success: true,
           data: {
             metrics: configStatus.performanceMetrics,
-            lastUpdated: new Date().toISOString()
-          }
+            lastUpdated: new Date().toISOString(),
+          },
         });
 
       case 'rules':
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
         const rules = dataSourceConfig.getStatus().rules;
         return NextResponse.json({
           success: true,
-          data: rules
+          data: rules,
         });
 
       case 'experiments':
@@ -46,21 +47,24 @@ export async function GET(request: NextRequest) {
         const experiments = dataSourceConfig.getStatus().abTests;
         return NextResponse.json({
           success: true,
-          data: experiments
+          data: experiments,
         });
 
       default:
         return NextResponse.json({
           success: true,
-          data: unifiedDataLayer.getConfigStatus()
+          data: unifiedDataLayer.getConfigStatus(),
         });
     }
   } catch (error) {
     console.error('[DataSourceConfig API] GET error:', error);
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -78,10 +82,10 @@ export async function POST(request: NextRequest) {
         }
 
         await unifiedDataLayer.switchDataSource(targetSource, duration);
-        
+
         return NextResponse.json({
           success: true,
-          message: `Switched to ${targetSource}${duration ? ` for ${duration}ms` : ' permanently'}`
+          message: `Switched to ${targetSource}${duration ? ` for ${duration}ms` : ' permanently'}`,
         });
 
       case 'add_rule':
@@ -95,12 +99,12 @@ export async function POST(request: NextRequest) {
           ...rule,
           priority: rule.priority || 50,
           enabled: rule.enabled !== undefined ? rule.enabled : true,
-          fallbackEnabled: rule.fallbackEnabled !== undefined ? rule.fallbackEnabled : true
+          fallbackEnabled: rule.fallbackEnabled !== undefined ? rule.fallbackEnabled : true,
         });
 
         return NextResponse.json({
           success: true,
-          message: `Rule "${rule.name}" added successfully`
+          message: `Rule "${rule.name}" added successfully`,
         });
 
       case 'update_rule':
@@ -114,7 +118,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
           success: true,
-          message: `Rule "${ruleId}" updated successfully`
+          message: `Rule "${ruleId}" updated successfully`,
         });
 
       case 'remove_rule':
@@ -128,7 +132,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
           success: true,
-          message: `Rule "${removeRuleId}" removed successfully`
+          message: `Rule "${removeRuleId}" removed successfully`,
         });
 
       case 'add_experiment':
@@ -143,12 +147,12 @@ export async function POST(request: NextRequest) {
           enabled: experiment.enabled !== undefined ? experiment.enabled : true,
           trafficPercentage: experiment.trafficPercentage || 10,
           startDate: new Date(experiment.startDate || Date.now()),
-          endDate: experiment.endDate ? new Date(experiment.endDate) : undefined
+          endDate: experiment.endDate ? new Date(experiment.endDate) : undefined,
         });
 
         return NextResponse.json({
           success: true,
-          message: `Experiment "${experiment.name}" added successfully`
+          message: `Experiment "${experiment.name}" added successfully`,
         });
 
       case 'remove_experiment':
@@ -162,7 +166,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
           success: true,
-          message: `Experiment "${experimentId}" removed successfully`
+          message: `Experiment "${experimentId}" removed successfully`,
         });
 
       case 'set_default_source':
@@ -176,7 +180,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
           success: true,
-          message: `Default data source set to ${defaultSource}`
+          message: `Default data source set to ${defaultSource}`,
         });
 
       case 'toggle_fallback':
@@ -186,7 +190,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
           success: true,
-          message: `Global fallback ${enabled ? 'enabled' : 'disabled'}`
+          message: `Global fallback ${enabled ? 'enabled' : 'disabled'}`,
         });
 
       case 'simulate_performance':
@@ -198,7 +202,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
           success: true,
-          message: 'Performance metrics updated'
+          message: 'Performance metrics updated',
         });
 
       default:
@@ -206,10 +210,13 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error('[DataSourceConfig API] POST error:', error);
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 400 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 400 }
+    );
   }
 }
 
@@ -235,27 +242,30 @@ export async function PUT(request: NextRequest) {
       // 清空現有規則並添加新規則
       const currentRules = dataSourceConfig.getStatus().rules;
       currentRules.forEach(rule => dataSourceConfig.removeRule(rule.id));
-      
-      config.rules.forEach((rule: any) => dataSourceConfig.addRule(rule));
+
+      config.rules.forEach((rule: DataSourceRule) => dataSourceConfig.addRule(rule));
     }
 
     if (config.experiments) {
       // 清空現有實驗並添加新實驗
       const currentExperiments = dataSourceConfig.getStatus().abTests;
       currentExperiments.forEach(exp => dataSourceConfig.removeABTest(exp.experimentId));
-      
-      config.experiments.forEach((exp: any) => dataSourceConfig.addABTest(exp));
+
+      config.experiments.forEach((exp: ABTestConfig) => dataSourceConfig.addABTest(exp));
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Configuration updated successfully'
+      message: 'Configuration updated successfully',
     });
   } catch (error) {
     console.error('[DataSourceConfig API] PUT error:', error);
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 400 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 400 }
+    );
   }
 }

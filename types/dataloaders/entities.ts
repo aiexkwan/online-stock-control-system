@@ -3,20 +3,7 @@
  * Centralized type definitions for all DataLoader entities
  */
 
-import type { 
-  Product, 
-  Supplier, 
-  Pallet, 
-  User, 
-  Location, 
-  Order, 
-  Transfer, 
-  Customer, 
-  Inventory 
-} from '@/types/generated/graphql';
-
-// Re-export GraphQL types for simple loaders
-export type {
+import type {
   Product,
   Supplier,
   Pallet,
@@ -25,8 +12,11 @@ export type {
   Order,
   Transfer,
   Customer,
-  Inventory
-};
+  Inventory,
+} from '@/types/generated/graphql';
+
+// Re-export GraphQL types for simple loaders
+export type { Product, Supplier, Pallet, User, Location, Order, Transfer, Customer, Inventory };
 
 // Complex loader input keys
 export interface UnifiedOperationsKey {
@@ -236,6 +226,12 @@ export interface StockDistributionData {
 // ============================================================================
 
 /**
+ * Base type for all database entities
+ * Represents the flexible nature of database query results
+ */
+export type DatabaseEntity = Record<string, unknown>;
+
+/**
  * Type-safe interfaces for database entities used in complex DataLoaders
  * These replace the `(item as any)` patterns for better type safety
  */
@@ -263,6 +259,14 @@ export interface TransferEntity {
   status?: string;
   priority?: string;
   notes?: string;
+  // Additional fields found in complex.dataloader.ts
+  transfer_time?: number;
+  operator_id?: string;
+  tran_date?: string;
+  t_loc?: string;
+  pallet?: {
+    product_qty?: number;
+  } | null;
 }
 
 /**
@@ -278,6 +282,9 @@ export interface ProductEntity {
   supplier_code?: string;
   unit_price?: number;
   stock_level?: number;
+  // Product master data fields
+  type?: string;
+  standard_qty?: number;
   // Product relationship data from joins
   product?: {
     description?: string;
@@ -302,6 +309,12 @@ export interface WorkLevelEntity {
     name?: string;
     email?: string;
   } | null;
+  // Additional task-specific fields
+  qc?: number;
+  move?: number;
+  grn?: number;
+  loading?: number;
+  latest_update?: string;
 }
 
 /**
@@ -403,6 +416,10 @@ export interface OrderEntity {
   delivery_date?: string;
   completed_at?: string;
   created_at?: string;
+  // Order line item fields
+  product_code?: string;
+  product_qty?: number;
+  loaded_qty?: string | number;
   // Customer relationship
   customer?: {
     code: string;
@@ -465,6 +482,7 @@ export interface GRNEntity {
   quantity?: number;
   received_date?: string;
   created_at?: string;
+  creat_time?: string; // Alternative creation time field
   // Relationships
   supplier?: {
     supplier_name?: string;
@@ -474,6 +492,18 @@ export interface GRNEntity {
     description?: string;
     category?: string;
   } | null;
+}
+
+/**
+ * History entity from record_history table
+ */
+export interface HistoryEntity {
+  time: string;
+  id: string;
+  action: string;
+  plt_num?: string;
+  loc?: string;
+  remark?: string;
 }
 
 // ============================================================================
@@ -526,7 +556,29 @@ export function isUserEntity(obj: unknown): obj is UserEntity {
  * Type guard for GRNEntity
  */
 export function isGRNEntity(obj: unknown): obj is GRNEntity {
-  return obj !== null && typeof obj === 'object' && ('grn_number' in obj || 'sup_code' in obj || 'material_code' in obj);
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    ('grn_number' in obj || 'sup_code' in obj || 'material_code' in obj)
+  );
+}
+
+/**
+ * Type guard for HistoryEntity
+ */
+export function isHistoryEntity(obj: unknown): obj is HistoryEntity {
+  return obj !== null && typeof obj === 'object' && 'time' in obj && 'action' in obj;
+}
+
+/**
+ * Type guard for OrderEntity
+ */
+export function isOrderEntity(obj: unknown): obj is OrderEntity {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    ('order_number' in obj || 'product_code' in obj || 'product_qty' in obj)
+  );
 }
 
 // ============================================================================
@@ -580,6 +632,20 @@ export function asUserEntity(obj: unknown): UserEntity | null {
  */
 export function asGRNEntity(obj: unknown): GRNEntity | null {
   return isGRNEntity(obj) ? obj : null;
+}
+
+/**
+ * Safely convert DatabaseEntity to HistoryEntity
+ */
+export function asHistoryEntity(obj: unknown): HistoryEntity | null {
+  return isHistoryEntity(obj) ? obj : null;
+}
+
+/**
+ * Safely convert DatabaseEntity to OrderEntity
+ */
+export function asOrderEntity(obj: unknown): OrderEntity | null {
+  return isOrderEntity(obj) ? obj : null;
 }
 
 /**

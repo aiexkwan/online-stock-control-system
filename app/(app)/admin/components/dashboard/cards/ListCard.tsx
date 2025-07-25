@@ -2,10 +2,10 @@
  * ListCard Component
  * 統一的列表卡片組件，取代原有的4個獨立列表widgets
  * 使用 GraphQL 批量查詢優化性能，支援動態配置
- * 
+ *
  * 支援的List類型：
  * - ORDER_STATE: 訂單狀態列表
- * - ORDER_RECORD: 訂單記錄列表  
+ * - ORDER_RECORD: 訂單記錄列表
  * - WAREHOUSE_TRANSFER: 倉庫轉移列表
  * - OTHER_FILES: 其他文件列表
  */
@@ -45,13 +45,13 @@ import {
   OrderRecord,
   Transfer,
   FileRecord,
-  StatusSummary,
+  OrderStatusSummary,
   OrderProgressMetrics,
   OrderRecordAnalytics,
-  StatusDistribution,
+  TransferStatusDistribution,
   TransferPerformanceMetrics,
   FileCategorySummary,
-  StorageMetrics,
+  FileStorageMetrics,
 } from '@/types/generated/graphql';
 
 // GraphQL 查詢
@@ -99,7 +99,7 @@ const LIST_CARD_QUERY = gql`
           predictedCompletionTime
         }
       }
-      
+
       ... on OrderRecordList {
         id
         listType
@@ -135,7 +135,7 @@ const LIST_CARD_QUERY = gql`
           performanceMetrics
         }
       }
-      
+
       ... on WarehouseTransferList {
         id
         listType
@@ -181,7 +181,7 @@ const LIST_CARD_QUERY = gql`
           efficiencyScore
         }
       }
-      
+
       ... on OtherFilesList {
         id
         listType
@@ -238,7 +238,7 @@ type ListNodeType = OrderState | OrderRecord | Transfer | FileRecord;
 type OrderStateMetadata = {
   totalCount: number;
   filteredCount: number;
-  statusSummary?: StatusSummary[];
+  statusSummary?: OrderStatusSummary[];
   progressMetrics?: OrderProgressMetrics;
 };
 
@@ -251,7 +251,7 @@ type OrderRecordMetadata = {
 type WarehouseTransferMetadata = {
   totalCount: number;
   filteredCount: number;
-  statusDistribution?: StatusDistribution[];
+  statusDistribution?: TransferStatusDistribution[];
   performanceMetrics?: TransferPerformanceMetrics;
 };
 
@@ -259,10 +259,14 @@ type OtherFilesMetadata = {
   totalCount: number;
   filteredCount: number;
   categorySummary?: FileCategorySummary[];
-  storageMetrics?: StorageMetrics;
+  storageMetrics?: FileStorageMetrics;
 };
 
-type ListMetadata = OrderStateMetadata | OrderRecordMetadata | WarehouseTransferMetadata | OtherFilesMetadata;
+type ListMetadata =
+  | OrderStateMetadata
+  | OrderRecordMetadata
+  | WarehouseTransferMetadata
+  | OtherFilesMetadata;
 
 // 類型守衛函數
 function isOrderState(item: ListNodeType): item is OrderState {
@@ -285,36 +289,36 @@ function isFileRecord(item: ListNodeType): item is FileRecord {
 export interface ListCardProps {
   // List 類型配置
   listType: ListType;
-  
+
   // 篩選和排序
   initialFilters?: ListFilters;
   initialSort?: SortInput;
-  
-  // 分頁配置  
+
+  // 分頁配置
   pageSize?: number;
-  
+
   // 時間範圍
   dateRange?: {
     start: Date;
     end: Date;
   };
-  
+
   // 搜索關鍵詞
   searchTerm?: string;
-  
+
   // 顯示選項
   showHeader?: boolean;
   showMetrics?: boolean;
   showRefreshButton?: boolean;
   showPerformance?: boolean;
-  
+
   // 樣式
   className?: string;
   height?: number | string;
-  
+
   // 編輯模式
   isEditMode?: boolean;
-  
+
   // 回調
   onRowClick?: (item: ListNodeType) => void;
   onRefresh?: () => void;
@@ -420,277 +424,296 @@ export const ListCard: React.FC<ListCardProps> = ({
   }, []);
 
   // 為不同類型的數據創建columns
-  const getColumnsForType = useCallback((type: ListType, listData: ListDataUnion): DataTableColumn[] => {
-    switch (type) {
-      case ListType.OrderState:
-        return [
-          {
-            key: 'orderNumber',
-            header: 'Order',
-            icon: ClipboardDocumentListIcon,
-            width: '25%',
-            render: (_, item: ListNodeType) => {
-              if (!isOrderState(item)) return null;
-              const order = item.order;
-              const progress = item.progress || 0;
-              const isUrgent = item.isUrgent;
-              
-              return (
-                <div className="flex items-center gap-2">
-                  <div
-                    className={cn(
-                      'h-2 w-2 flex-shrink-0 rounded-full',
-                      isUrgent ? 'bg-red-400' : progress >= 75 ? 'bg-green-400' : progress >= 50 ? 'bg-orange-400' : 'bg-yellow-400'
-                    )}
-                  />
-                  <span className="font-medium text-white">{order?.orderNumber || ''}</span>
-                </div>
-              );
-            },
-          },
-          {
-            key: 'customerCode',
-            header: 'Customer',
-            width: '25%',
-            render: (_, item: ListNodeType) => {
-              if (!isOrderState(item)) return null;
-              return <div className="text-white">{item.order?.customerCode || ''}</div>;
-            },
-          },
-          {
-            key: 'progress',
-            header: 'Progress',
-            width: '30%',
-            render: (_, item: ListNodeType) => {
-              if (!isOrderState(item)) return null;
-              const progress = item.progress || 0;
-              const stage = item.currentStage || '';
-              
-              return (
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-slate-400">{stage}</span>
-                    <span className="font-medium text-white">{Math.round(progress)}%</span>
+  const getColumnsForType = useCallback(
+    (type: ListType, listData: ListDataUnion): DataTableColumn<ListNodeType>[] => {
+      switch (type) {
+        case ListType.OrderState:
+          return [
+            {
+              key: 'orderNumber',
+              header: 'Order',
+              icon: ClipboardDocumentListIcon,
+              width: '25%',
+              render: (_: unknown, item: ListNodeType, index: number): React.ReactNode => {
+                if (!isOrderState(item)) return null;
+                const order = item.order;
+                const progress = item.progress || 0;
+                const isUrgent = item.isUrgent;
+
+                return (
+                  <div className='flex items-center gap-2'>
+                    <div
+                      className={cn(
+                        'h-2 w-2 flex-shrink-0 rounded-full',
+                        isUrgent
+                          ? 'bg-red-400'
+                          : progress >= 75
+                            ? 'bg-green-400'
+                            : progress >= 50
+                              ? 'bg-orange-400'
+                              : 'bg-yellow-400'
+                      )}
+                    />
+                    <span className='font-medium text-white'>{order?.orderNumber || ''}</span>
                   </div>
-                  <Progress value={progress} className="h-2" />
-                </div>
-              );
+                );
+              },
             },
-          },
-          {
-            key: 'status',
-            header: 'Status',
-            width: '20%',
-            align: 'center',
-            render: (_, item: ListNodeType) => {
-              if (!isOrderState(item)) return null;
-              const progress = item.progress || 0;
-              const isUrgent = item.isUrgent;
-              
-              if (progress >= 100) {
-                return <TruckIcon className="h-4 w-4 text-green-400 mx-auto" />;
-              }
-              
-              if (isUrgent) {
-                return <span className="text-xs font-medium text-red-400">Urgent</span>;
-              }
-              
-              return (
-                <span className="text-xs font-medium text-orange-400">
-                  {progress >= 75 ? 'Almost' : 'In Progress'}
-                </span>
-              );
+            {
+              key: 'customerCode',
+              header: 'Customer',
+              width: '25%',
+              render: (_: unknown, item: ListNodeType, index: number): React.ReactNode => {
+                if (!isOrderState(item)) return null;
+                return <div className='text-white'>{item.order?.customerCode || ''}</div>;
+              },
             },
-          },
-        ];
+            {
+              key: 'progress',
+              header: 'Progress',
+              width: '30%',
+              render: (_: unknown, item: ListNodeType, index: number): React.ReactNode => {
+                if (!isOrderState(item)) return null;
+                const progress = item.progress || 0;
+                const stage = item.currentStage || '';
 
-      case ListType.OrderRecord:
-        return [
-          {
-            key: 'orderNumber',
-            header: 'Order',
-            width: '20%',
-            render: (_, item: ListNodeType) => {
-              if (!isOrderRecord(item)) return null;
-              return <span className="font-medium text-white">{item.order?.orderNumber || ''}</span>;
+                return (
+                  <div className='space-y-1'>
+                    <div className='flex justify-between text-xs'>
+                      <span className='text-slate-400'>{stage}</span>
+                      <span className='font-medium text-white'>{Math.round(progress)}%</span>
+                    </div>
+                    <Progress value={progress} className='h-2' />
+                  </div>
+                );
+              },
             },
-          },
-          {
-            key: 'recordType',
-            header: 'Type',
-            width: '15%',
-            render: (value) => (
-              <span className="text-xs font-medium text-blue-400">{String(value || '')}</span>
-            ),
-          },
-          {
-            key: 'timestamp',
-            header: 'Time',
-            width: '20%',
-            render: (value) => (
-              <span className="text-sm text-slate-300">
-                {value ? new Date(String(value)).toLocaleString() : ''}
-              </span>
-            ),
-          },
-          {
-            key: 'performedBy',
-            header: 'Operator',
-            width: '20%',
-            render: (_, item: ListNodeType) => {
-              if (!isOrderRecord(item)) return null;
-              return (
-                <div className="flex items-center gap-2">
-                  <UserIcon className="h-4 w-4 text-slate-400" />
-                  <span className="text-white">{item.performedBy?.name || ''}</span>
-                </div>
-              );
-            },
-          },
-          {
-            key: 'details',
-            header: 'Details',
-            width: '25%',
-            render: (value) => (
-              <span className="text-sm text-slate-400 truncate">
-                {value ? JSON.stringify(value).substring(0, 50) : ''}
-              </span>
-            ),
-          },
-        ];
+            {
+              key: 'status',
+              header: 'Status',
+              width: '20%',
+              align: 'center',
+              render: (_: unknown, item: ListNodeType, index: number): React.ReactNode => {
+                if (!isOrderState(item)) return null;
+                const progress = item.progress || 0;
+                const isUrgent = item.isUrgent;
 
-      case ListType.WarehouseTransfer:
-        return [
-          {
-            key: 'id',
-            header: 'Transfer ID',
-            width: '15%',
-            render: (value) => (
-              <span className="font-medium text-white">{String(value || '')}</span>
-            ),
-          },
-          {
-            key: 'pallet',
-            header: 'Pallet',
-            width: '15%',
-            render: (_, item: ListNodeType) => {
-              if (!isTransfer(item)) return null;
-              return <span className="text-white">{item.pallet?.pltNum || ''}</span>;
-            },
-          },
-          {
-            key: 'fromLocation',
-            header: 'From',
-            width: '20%',
-            render: (_, item: ListNodeType) => {
-              if (!isTransfer(item)) return null;
-              return <span className="text-slate-300">{item.fromLocation?.name || ''}</span>;
-            },
-          },
-          {
-            key: 'toLocation',
-            header: 'To',
-            width: '20%',
-            render: (_, item: ListNodeType) => {
-              if (!isTransfer(item)) return null;
-              return <span className="text-slate-300">{item.toLocation?.name || ''}</span>;
-            },
-          },
-          {
-            key: 'status',
-            header: 'Status',
-            width: '15%',
-            render: (value) => (
-              <span className={cn(
-                'text-xs font-medium',
-                value === 'COMPLETED' ? 'text-green-400' :
-                value === 'IN_PROGRESS' ? 'text-orange-400' :
-                value === 'PENDING' ? 'text-yellow-400' : 'text-slate-400'
-              )}>
-                {String(value || '')}
-              </span>
-            ),
-          },
-          {
-            key: 'requestedAt',
-            header: 'Time',
-            width: '15%',
-            render: (_, item: ListNodeType) => {
-              if (!isTransfer(item)) return null;
-              const date = item.requestedAt;
-              return (
-                <div className="flex items-center gap-1">
-                  <ClockIcon className="h-3 w-3 text-slate-400" />
-                  <span className="text-xs text-slate-300">
-                    {date ? new Date(String(date)).toLocaleDateString() : ''}
+                if (progress >= 100) {
+                  return <TruckIcon className='mx-auto h-4 w-4 text-green-400' />;
+                }
+
+                if (isUrgent) {
+                  return <span className='text-xs font-medium text-red-400'>Urgent</span>;
+                }
+
+                return (
+                  <span className='text-xs font-medium text-orange-400'>
+                    {progress >= 75 ? 'Almost' : 'In Progress'}
                   </span>
-                </div>
-              );
+                );
+              },
             },
-          },
-        ];
+          ];
 
-      case ListType.OtherFiles:
-        return [
-          {
-            key: 'fileName',
-            header: 'File Name',
-            width: '30%',
-            render: (value) => (
-              <span className="font-medium text-white truncate">{String(value || '')}</span>
-            ),
-          },
-          {
-            key: 'fileType',
-            header: 'Type',
-            width: '10%',
-            render: (value) => (
-              <span className="text-xs font-medium text-blue-400">{String(value || '')}</span>
-            ),
-          },
-          {
-            key: 'fileCategory',
-            header: 'Category',
-            width: '15%',
-            render: (value) => (
-              <span className="text-xs text-slate-300">{String(value || '')}</span>
-            ),
-          },
-          {
-            key: 'size',
-            header: 'Size',
-            width: '10%',
-            render: (value) => {
-              const bytes = Number(value || 0);
-              const mb = bytes / (1024 * 1024);
-              return <span className="text-xs text-slate-400">{mb.toFixed(1)}MB</span>;
+        case ListType.OrderRecord:
+          return [
+            {
+              key: 'orderNumber',
+              header: 'Order',
+              width: '20%',
+              render: (_: unknown, item: ListNodeType, index: number): React.ReactNode => {
+                if (!isOrderRecord(item)) return null;
+                return (
+                  <span className='font-medium text-white'>{item.order?.orderNumber || ''}</span>
+                );
+              },
             },
-          },
-          {
-            key: 'uploadedBy',
-            header: 'Uploaded By',
-            width: '15%',
-            render: (_, item: ListNodeType) => {
-              if (!isFileRecord(item)) return null;
-              return <span className="text-sm text-slate-300">{item.uploadedBy?.name || ''}</span>;
+            {
+              key: 'recordType',
+              header: 'Type',
+              width: '15%',
+              render: value => (
+                <span className='text-xs font-medium text-blue-400'>{String(value || '')}</span>
+              ),
             },
-          },
-          {
-            key: 'uploadedAt',
-            header: 'Upload Date',
-            width: '20%',
-            render: (value) => (
-              <span className="text-sm text-slate-300">
-                {value ? new Date(String(value)).toLocaleDateString() : ''}
-              </span>
-            ),
-          },
-        ];
+            {
+              key: 'timestamp',
+              header: 'Time',
+              width: '20%',
+              render: value => (
+                <span className='text-sm text-slate-300'>
+                  {value ? new Date(String(value)).toLocaleString() : ''}
+                </span>
+              ),
+            },
+            {
+              key: 'performedBy',
+              header: 'Operator',
+              width: '20%',
+              render: (_: unknown, item: ListNodeType, index: number): React.ReactNode => {
+                if (!isOrderRecord(item)) return null;
+                return (
+                  <div className='flex items-center gap-2'>
+                    <UserIcon className='h-4 w-4 text-slate-400' />
+                    <span className='text-white'>{item.performedBy?.name || ''}</span>
+                  </div>
+                );
+              },
+            },
+            {
+              key: 'details',
+              header: 'Details',
+              width: '25%',
+              render: value => (
+                <span className='truncate text-sm text-slate-400'>
+                  {value ? JSON.stringify(value).substring(0, 50) : ''}
+                </span>
+              ),
+            },
+          ];
 
-      default:
-        return [];
-    }
-  }, []);
+        case ListType.WarehouseTransfer:
+          return [
+            {
+              key: 'id',
+              header: 'Transfer ID',
+              width: '15%',
+              render: value => (
+                <span className='font-medium text-white'>{String(value || '')}</span>
+              ),
+            },
+            {
+              key: 'pallet',
+              header: 'Pallet',
+              width: '15%',
+              render: (_: unknown, item: ListNodeType, index: number): React.ReactNode => {
+                if (!isTransfer(item)) return null;
+                return <span className='text-white'>{item.pallet?.pltNum || ''}</span>;
+              },
+            },
+            {
+              key: 'fromLocation',
+              header: 'From',
+              width: '20%',
+              render: (_: unknown, item: ListNodeType, index: number): React.ReactNode => {
+                if (!isTransfer(item)) return null;
+                return <span className='text-slate-300'>{item.fromLocation?.name || ''}</span>;
+              },
+            },
+            {
+              key: 'toLocation',
+              header: 'To',
+              width: '20%',
+              render: (_: unknown, item: ListNodeType, index: number): React.ReactNode => {
+                if (!isTransfer(item)) return null;
+                return <span className='text-slate-300'>{item.toLocation?.name || ''}</span>;
+              },
+            },
+            {
+              key: 'status',
+              header: 'Status',
+              width: '15%',
+              render: value => (
+                <span
+                  className={cn(
+                    'text-xs font-medium',
+                    value === 'COMPLETED'
+                      ? 'text-green-400'
+                      : value === 'IN_PROGRESS'
+                        ? 'text-orange-400'
+                        : value === 'PENDING'
+                          ? 'text-yellow-400'
+                          : 'text-slate-400'
+                  )}
+                >
+                  {String(value || '')}
+                </span>
+              ),
+            },
+            {
+              key: 'requestedAt',
+              header: 'Time',
+              width: '15%',
+              render: (_: unknown, item: ListNodeType, index: number): React.ReactNode => {
+                if (!isTransfer(item)) return null;
+                const date = item.requestedAt;
+                return (
+                  <div className='flex items-center gap-1'>
+                    <ClockIcon className='h-3 w-3 text-slate-400' />
+                    <span className='text-xs text-slate-300'>
+                      {date ? new Date(String(date)).toLocaleDateString() : ''}
+                    </span>
+                  </div>
+                );
+              },
+            },
+          ];
+
+        case ListType.OtherFiles:
+          return [
+            {
+              key: 'fileName',
+              header: 'File Name',
+              width: '30%',
+              render: value => (
+                <span className='truncate font-medium text-white'>{String(value || '')}</span>
+              ),
+            },
+            {
+              key: 'fileType',
+              header: 'Type',
+              width: '10%',
+              render: value => (
+                <span className='text-xs font-medium text-blue-400'>{String(value || '')}</span>
+              ),
+            },
+            {
+              key: 'fileCategory',
+              header: 'Category',
+              width: '15%',
+              render: value => (
+                <span className='text-xs text-slate-300'>{String(value || '')}</span>
+              ),
+            },
+            {
+              key: 'size',
+              header: 'Size',
+              width: '10%',
+              render: value => {
+                const bytes = Number(value || 0);
+                const mb = bytes / (1024 * 1024);
+                return <span className='text-xs text-slate-400'>{mb.toFixed(1)}MB</span>;
+              },
+            },
+            {
+              key: 'uploadedBy',
+              header: 'Uploaded By',
+              width: '15%',
+              render: (_: unknown, item: ListNodeType, index: number): React.ReactNode => {
+                if (!isFileRecord(item)) return null;
+                return (
+                  <span className='text-sm text-slate-300'>{item.uploadedBy?.name || ''}</span>
+                );
+              },
+            },
+            {
+              key: 'uploadedAt',
+              header: 'Upload Date',
+              width: '20%',
+              render: value => (
+                <span className='text-sm text-slate-300'>
+                  {value ? new Date(String(value)).toLocaleDateString() : ''}
+                </span>
+              ),
+            },
+          ];
+
+        default:
+          return [];
+      }
+    },
+    []
+  );
 
   // 獲取當前列表的數據和列配置
   const { tableData, columns, config, metadata } = useMemo(() => {
@@ -777,12 +800,12 @@ export const ListCard: React.FC<ListCardProps> = ({
     return (
       <div
         className={cn(
-          'flex items-center justify-center p-8 bg-red-50 dark:bg-red-950/20 rounded-lg',
+          'flex items-center justify-center rounded-lg bg-red-50 p-8 dark:bg-red-950/20',
           className
         )}
       >
-        <ExclamationTriangleIcon className="w-6 h-6 text-red-500 mr-2" />
-        <span className="text-red-700 dark:text-red-300">
+        <ExclamationTriangleIcon className='mr-2 h-6 w-6 text-red-500' />
+        <span className='text-red-700 dark:text-red-300'>
           Failed to load {config.title}: {error.message}
         </span>
       </div>
@@ -793,12 +816,14 @@ export const ListCard: React.FC<ListCardProps> = ({
     <div className={cn('w-full', className)}>
       <DataTable
         title={data?.listCardData.title || config.title}
-        subtitle={metadata ? `${metadata.filteredCount} of ${metadata.totalCount} items` : undefined}
+        subtitle={
+          metadata ? `${metadata.filteredCount} of ${metadata.totalCount} items` : undefined
+        }
         icon={config.icon}
         iconColor={config.color}
         data={tableData}
         columns={columns}
-        keyField="id"
+        keyField='id'
         loading={loading}
         error={error}
         empty={tableData.length === 0}
@@ -808,12 +833,16 @@ export const ListCard: React.FC<ListCardProps> = ({
         onRefresh={showRefreshButton ? handleRefresh : undefined}
         showRefreshButton={showRefreshButton}
         animate={true}
-        className="h-full"
-        performanceMetrics={showPerformance ? {
-          source: 'GraphQL',
-          optimized: true,
-          mode: 'Unified ListCard',
-        } : undefined}
+        className='h-full'
+        performanceMetrics={
+          showPerformance
+            ? {
+                source: 'GraphQL',
+                optimized: true,
+                mode: 'Unified ListCard',
+              }
+            : undefined
+        }
         connectionStatus={{
           type: 'realtime',
           label: '🚀 GraphQL',
@@ -827,12 +856,12 @@ export const ListCard: React.FC<ListCardProps> = ({
 };
 
 // 導出類型，方便其他組件使用
-export type { 
-  ListType, 
-  ListCardInput, 
+export type {
+  ListType,
+  ListCardInput,
   ListDataUnion,
   OrderStateList,
   OrderRecordList,
   WarehouseTransferList,
-  OtherFilesList 
+  OtherFilesList,
 } from '@/types/generated/graphql';

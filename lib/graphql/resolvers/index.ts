@@ -22,6 +22,27 @@ import { GraphQLJSON } from 'graphql-type-json';
 import { DateTimeResolver } from 'graphql-scalars';
 import { DataLoaderContext } from '../dataloaders/base.dataloader';
 
+// Batch widget 請求類型
+interface BatchWidgetRequest {
+  dataSource: string;
+  params?: Record<string, unknown>;
+  timeFrame?: {
+    start: string;
+    end: string;
+  };
+}
+
+// 批量操作結果類型
+interface BatchOperationResult {
+  entityId: string;
+  success: boolean;
+  error: {
+    message: string;
+    code: string;
+  } | null;
+  data: unknown;
+}
+
 export interface GraphQLContext extends DataLoaderContext {
   user?: {
     id: string;
@@ -80,19 +101,23 @@ const rootResolvers: IResolvers = {
         case 'stock_levels':
           return context.loaders.stockLevels?.load({
             warehouse: params?.warehouse,
-            dateRange: timeFrame ? {
-              start: timeFrame.start,
-              end: timeFrame.end,
-            } : undefined,
+            dateRange: timeFrame
+              ? {
+                  start: timeFrame.start,
+                  end: timeFrame.end,
+                }
+              : undefined,
           });
 
         case 'unified_operations':
           return context.loaders.unifiedOperations?.load({
             warehouse: params?.warehouse,
-            dateRange: timeFrame ? {
-              start: timeFrame.start,
-              end: timeFrame.end,
-            } : undefined,
+            dateRange: timeFrame
+              ? {
+                  start: timeFrame.start,
+                  end: timeFrame.end,
+                }
+              : undefined,
           });
 
         case 'work_level':
@@ -115,10 +140,11 @@ const rootResolvers: IResolvers = {
       const { requests } = args;
 
       const results = await Promise.all(
-        requests.map(async (request: any) => {
+        requests.map(async (request: BatchWidgetRequest) => {
           const startTime = Date.now();
           try {
-            const data = await (rootResolvers.Query as any).widgetData(
+            const queryResolvers = rootResolvers.Query as Record<string, Function>;
+            const data = await queryResolvers.widgetData(
               null,
               {
                 dataSource: request.dataSource,
@@ -236,7 +262,7 @@ const rootResolvers: IResolvers = {
               throw new Error(`Unsupported operation type: ${operation.operationType}`);
           }
 
-          (results.successful as any[]).push({
+          (results.successful as BatchOperationResult[]).push({
             entityId: operation.entityIds[0], // Simplified for now
             success: true,
             error: null,
@@ -244,7 +270,7 @@ const rootResolvers: IResolvers = {
           });
           results.totalSucceeded++;
         } catch (error) {
-          (results.failed as any[]).push({
+          (results.failed as BatchOperationResult[]).push({
             entityId: operation.entityIds[0],
             success: false,
             error: {

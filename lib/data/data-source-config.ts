@@ -14,13 +14,20 @@ export interface DataSourceRule {
   priority: number;
   enabled: boolean;
   fallbackEnabled: boolean;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface DataSourceCondition {
   type: 'user' | 'widget' | 'performance' | 'time' | 'feature_flag' | 'experiment';
-  value?: any;
+  value?: unknown;
   operator?: 'equals' | 'contains' | 'gt' | 'lt' | 'between';
+}
+
+export interface DataSourceContext {
+  userId?: string;
+  widgetId?: string;
+  widgetCategory?: string;
+  [key: string]: unknown;
 }
 
 export interface DataSourceMetrics {
@@ -68,7 +75,7 @@ export class DataSourceConfigManager {
         condition: {
           type: 'performance',
           value: 5000, // 5秒
-          operator: 'gt'
+          operator: 'gt',
         },
         target: DataSourceType.REST,
         priority: 100,
@@ -76,8 +83,8 @@ export class DataSourceConfigManager {
         fallbackEnabled: true,
         metadata: {
           description: '當 GraphQL 平均響應時間超過 5 秒時，切換到 REST API',
-          monitoringEnabled: true
-        }
+          monitoringEnabled: true,
+        },
       },
 
       // 中等優先級：Widget 特定規則
@@ -87,15 +94,15 @@ export class DataSourceConfigManager {
         condition: {
           type: 'widget',
           value: ['charts', 'analysis'],
-          operator: 'contains'
+          operator: 'contains',
         },
         target: DataSourceType.GRAPHQL,
         priority: 50,
         enabled: true,
         fallbackEnabled: true,
         metadata: {
-          description: '圖表和分析類 Widget 優先使用 GraphQL 以獲得更好的查詢能力'
-        }
+          description: '圖表和分析類 Widget 優先使用 GraphQL 以獲得更好的查詢能力',
+        },
       },
 
       // 低優先級：默認規則
@@ -104,16 +111,16 @@ export class DataSourceConfigManager {
         name: '默認使用 REST API',
         condition: {
           type: 'feature_flag',
-          value: 'use_rest_by_default'
+          value: 'use_rest_by_default',
         },
         target: DataSourceType.REST,
         priority: 10,
         enabled: true,
         fallbackEnabled: true,
         metadata: {
-          description: '系統默認優先使用 REST API'
-        }
-      }
+          description: '系統默認優先使用 REST API',
+        },
+      },
     ];
   }
 
@@ -132,7 +139,6 @@ export class DataSourceConfigManager {
     fallbackEnabled: boolean;
     appliedRule?: DataSourceRule;
   }> {
-    
     // 檢查 A/B 測試
     const abTestResult = await this.checkABTests(context);
     if (abTestResult) {
@@ -150,14 +156,14 @@ export class DataSourceConfigManager {
           ruleId: rule.id,
           ruleName: rule.name,
           target: rule.target,
-          context
+          context,
         });
 
         return {
           dataSource: rule.target,
           reason: `Rule: ${rule.name}`,
           fallbackEnabled: rule.fallbackEnabled,
-          appliedRule: rule
+          appliedRule: rule,
         };
       }
     }
@@ -166,14 +172,14 @@ export class DataSourceConfigManager {
     return {
       dataSource: this.defaultDataSource,
       reason: 'Default data source',
-      fallbackEnabled: this.globalFallbackEnabled
+      fallbackEnabled: this.globalFallbackEnabled,
     };
   }
 
   /**
    * 評估規則是否匹配
    */
-  private async evaluateRule(rule: DataSourceRule, context: any): Promise<boolean> {
+  private async evaluateRule(rule: DataSourceRule, context: DataSourceContext): Promise<boolean> {
     const { condition } = rule;
 
     switch (condition.type) {
@@ -182,15 +188,16 @@ export class DataSourceConfigManager {
 
       case 'widget':
         if (condition.operator === 'contains' && Array.isArray(condition.value)) {
-          return condition.value.includes(context.widgetCategory) || 
-                 condition.value.includes(context.widgetId);
+          return (
+            condition.value.includes(context.widgetCategory) ||
+            condition.value.includes(context.widgetId)
+          );
         }
-        return context.widgetId === condition.value || 
-               context.widgetCategory === condition.value;
+        return context.widgetId === condition.value || context.widgetCategory === condition.value;
 
       case 'performance':
         if (!this.metrics || !condition.operator) return false;
-        
+
         const currentResponseTime = this.metrics.graphqlAvgResponseTime;
         switch (condition.operator) {
           case 'gt':
@@ -225,7 +232,7 @@ export class DataSourceConfigManager {
   /**
    * 檢查 A/B 測試
    */
-  private async checkABTests(context: any): Promise<{
+  private async checkABTests(context: DataSourceContext): Promise<{
     dataSource: DataSourceType;
     reason: string;
     fallbackEnabled: boolean;
@@ -233,9 +240,7 @@ export class DataSourceConfigManager {
   } | null> {
     const activeTests = this.abTests.filter(test => {
       const now = new Date();
-      return test.enabled && 
-             now >= test.startDate && 
-             (!test.endDate || now <= test.endDate);
+      return test.enabled && now >= test.startDate && (!test.endDate || now <= test.endDate);
     });
 
     for (const test of activeTests) {
@@ -244,14 +249,17 @@ export class DataSourceConfigManager {
         // 檢查額外條件
         if (test.conditions) {
           const matchesConditions = await Promise.all(
-            test.conditions.map(condition => 
-              this.evaluateRule({ 
-                ...{} as DataSourceRule, 
-                condition 
-              }, context)
+            test.conditions.map(condition =>
+              this.evaluateRule(
+                {
+                  ...({} as DataSourceRule),
+                  condition,
+                },
+                context
+              )
             )
           );
-          
+
           if (!matchesConditions.every(Boolean)) {
             continue;
           }
@@ -260,14 +268,14 @@ export class DataSourceConfigManager {
         logger.info('A/B test activated', {
           experimentId: test.experimentId,
           userId: context.userId,
-          targetDataSource: test.targetDataSource
+          targetDataSource: test.targetDataSource,
         });
 
         return {
           dataSource: test.targetDataSource,
           reason: `A/B Test: ${test.name}`,
           fallbackEnabled: true,
-          appliedRule: undefined
+          appliedRule: undefined,
         };
       }
     }
@@ -283,10 +291,10 @@ export class DataSourceConfigManager {
     let hash = 0;
     for (let i = 0; i < userId.length; i++) {
       const char = userId.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // 轉換為 32 位整數
     }
-    
+
     const bucket = Math.abs(hash) % 100;
     return bucket < percentage;
   }
@@ -297,18 +305,18 @@ export class DataSourceConfigManager {
   private getFeatureFlag(flagName: string): boolean {
     // 簡單實現，實際項目中可能從配置服務獲取
     const flags: Record<string, boolean> = {
-      'use_rest_by_default': true,
-      'enable_graphql_for_charts': true,
-      'experimental_data_source_switching': true
+      use_rest_by_default: true,
+      enable_graphql_for_charts: true,
+      experimental_data_source_switching: true,
     };
-    
+
     return flags[flagName] || false;
   }
 
   /**
    * 評估實驗規則
    */
-  private evaluateExperiment(experimentId: string, context: any): boolean {
+  private evaluateExperiment(experimentId: string, context: DataSourceContext): boolean {
     // 實驗邏輯實現
     return false;
   }
@@ -320,7 +328,7 @@ export class DataSourceConfigManager {
     this.metrics = {
       ...this.metrics,
       ...metrics,
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     } as DataSourceMetrics;
 
     logger.debug('Data source metrics updated', this.metrics);
@@ -374,7 +382,7 @@ export class DataSourceConfigManager {
       abTests: this.abTests,
       metrics: this.metrics,
       defaultDataSource: this.defaultDataSource,
-      globalFallbackEnabled: this.globalFallbackEnabled
+      globalFallbackEnabled: this.globalFallbackEnabled,
     };
   }
 

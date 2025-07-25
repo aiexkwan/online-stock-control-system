@@ -1216,10 +1216,10 @@ export async function generateBatchVoidSummary(batchId: string): Promise<string>
 
   // Generate summary
   const totalItems = records.length;
-  const totalQty = records.reduce(
-    (sum, r) => sum + ((r as any).damage_qty || (r as any).product_qty || 0),
-    0
-  );
+  const totalQty = records.reduce((sum, r) => {
+    const record = r as { damage_qty?: number; product_qty?: number };
+    return sum + (record.damage_qty || record.product_qty || 0);
+  }, 0);
   const voidReason = records[0].remark || 'Unknown';
   const voidBy = 'System';
   const voidTime = format(new Date(records[0].time), 'dd/MM/yyyy HH:mm');

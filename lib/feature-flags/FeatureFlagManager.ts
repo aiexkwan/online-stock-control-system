@@ -28,7 +28,7 @@ export class FeatureFlagManager {
 
   constructor(config: FeatureFlagConfig) {
     this.config = config;
-    this.defaultContext = config.defaultContext || ({} as any);
+    this.defaultContext = config.defaultContext || {};
 
     // 創建提供者
     this.provider = this.createProvider();

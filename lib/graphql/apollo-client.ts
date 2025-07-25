@@ -20,7 +20,7 @@ const getSupabaseClient = () => {
     // Server-side: always create a new client
     return createClient();
   }
-  
+
   // Client-side: use singleton
   if (!supabaseClient) {
     supabaseClient = createClient();
@@ -30,7 +30,7 @@ const getSupabaseClient = () => {
 
 // HTTP Link
 const httpLink = createHttpLink({
-  uri: USE_SUPABASE_GRAPHQL 
+  uri: USE_SUPABASE_GRAPHQL
     ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/graphql/v1`
     : GRAPHQL_ENDPOINT,
   credentials: 'same-origin',
@@ -41,17 +41,21 @@ const authLink = setContext(async (_, { headers }) => {
   try {
     // Get Supabase session for authenticated requests
     const supabase = getSupabaseClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
     // If no session, try to refresh
     if (!session) {
-      const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
+      const {
+        data: { session: refreshedSession },
+      } = await supabase.auth.refreshSession();
       if (refreshedSession) {
         console.log('[Apollo Auth] Session refreshed');
       }
     }
-    
-    const authHeaders: any = {
+
+    const authHeaders: Record<string, string> = {
       ...headers,
       authorization: session?.access_token ? `Bearer ${session.access_token}` : '',
       'content-type': 'application/json',
@@ -61,7 +65,7 @@ const authLink = setContext(async (_, { headers }) => {
     if (USE_SUPABASE_GRAPHQL) {
       authHeaders.apikey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     }
-    
+
     return { headers: authHeaders };
   } catch (error) {
     console.error('[Apollo Auth] Error getting session:', error);
@@ -77,7 +81,7 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
         `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
         extensions
       );
-      
+
       // Check for authentication errors
       if (message.includes('Authentication') || message.includes('Unauthorized')) {
         console.error('[GraphQL error]: Authentication required. Refreshing session...');
@@ -98,12 +102,13 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
 
   if (networkError) {
     console.error(`[Network error]: ${networkError}`);
-    
+
     // Enhanced error logging
     if ('statusCode' in networkError) {
-      console.error(`[Network error]: Status code: ${(networkError as any).statusCode}`);
+      const statusCode = (networkError as { statusCode?: number }).statusCode;
+      console.error(`[Network error]: Status code: ${statusCode}`);
     }
-    
+
     // Retry logic for network errors
     if (networkError.message === 'Failed to fetch') {
       return forward(operation);
@@ -169,9 +174,9 @@ export const clearApolloCache = async () => {
 // Utility function to refetch queries
 export const refetchQueries = async (queryNames: string[]) => {
   const queries = apolloClient.getObservableQueries();
-  const queriesToRefetch = Array.from(queries.values()).filter(query => 
+  const queriesToRefetch = Array.from(queries.values()).filter(query =>
     queryNames.includes(query.queryName || '')
   );
-  
+
   await Promise.all(queriesToRefetch.map(query => query.refetch()));
 };

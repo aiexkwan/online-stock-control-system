@@ -2,7 +2,7 @@
  * FormCard Component
  * 統一的表單卡片組件，取代原有的獨立表單組件
  * 使用 GraphQL 動態配置，支援22種字段類型和多種表單類型
- * 
+ *
  * 支援的Form類型：
  * - PRODUCT_EDIT: 產品編輯表單
  * - USER_REGISTRATION: 用戶註冊表單
@@ -48,7 +48,7 @@ import { Progress } from '@/components/ui/progress';
 // 表單值類型定義
 type FormValue = string | number | boolean | Date | File | FileList | string[] | null | undefined;
 
-// 元數據值類型定義  
+// 元數據值類型定義
 type MetadataValue = string | number | boolean | Record<string, unknown> | unknown[] | null;
 
 // 依賴值類型定義
@@ -241,25 +241,25 @@ const FORM_SUBMIT_MUTATION = gql`
 export interface FormCardProps {
   // Form 類型配置
   formType: FormType;
-  
+
   // 實體 ID (用於編輯表單)
   entityId?: string;
-  
+
   // 預填數據
   prefilledData?: FormDataRecord;
-  
+
   // 顯示選項
   showHeader?: boolean;
   showProgress?: boolean;
   showValidationSummary?: boolean;
-  
+
   // 樣式
   className?: string;
   height?: number | string;
-  
+
   // 編輯模式
   isEditMode?: boolean;
-  
+
   // 回調
   onSubmitSuccess?: (data: SubmitSuccessData) => void;
   onSubmitError?: (error: FormSubmitError) => void;
@@ -312,14 +312,14 @@ export const FormCard: React.FC<FormCardProps> = ({
 
   // 表單提交 mutation
   const [submitForm, { loading: submitting }] = useMutation(FORM_SUBMIT_MUTATION, {
-    onCompleted: (data) => {
+    onCompleted: data => {
       if (data.submitForm.success) {
         onSubmitSuccess?.(data.submitForm.data);
       } else {
         onSubmitError?.(data.submitForm.errors);
       }
     },
-    onError: (error) => {
+    onError: error => {
       onSubmitError?.(error);
     },
   });
@@ -344,7 +344,8 @@ export const FormCard: React.FC<FormCardProps> = ({
               required: true,
               maxLength: 50,
               pattern: '^[A-Z0-9-_]+$',
-              customMessage: 'Product code must contain only uppercase letters, numbers, hyphens, and underscores',
+              customMessage:
+                'Product code must contain only uppercase letters, numbers, hyphens, and underscores',
             },
             gridColumn: 6,
             helpText: 'Unique identifier for the product',
@@ -414,7 +415,7 @@ export const FormCard: React.FC<FormCardProps> = ({
         },
       };
     }
-    
+
     // 其他表單類型的默認配置
     return {
       id: 'default-form',
@@ -511,7 +512,7 @@ export const FormCard: React.FC<FormCardProps> = ({
   const validateForm = useCallback((): boolean => {
     const newErrors: Record<string, string> = {};
 
-    formConfig.fields.forEach((field) => {
+    formConfig.fields.forEach(field => {
       const error = validateField(field, formData[field.name]);
       if (error) {
         newErrors[field.name] = error;
@@ -523,211 +524,304 @@ export const FormCard: React.FC<FormCardProps> = ({
   }, [formConfig.fields, formData, validateField]);
 
   // 處理字段變更
-  const handleFieldChange = useCallback((fieldName: string, value: FormValue) => {
-    setFormData(prev => ({ ...prev, [fieldName]: value }));
-    setTouched(prev => ({ ...prev, [fieldName]: true }));
+  const handleFieldChange = useCallback(
+    (fieldName: string, value: FormValue) => {
+      setFormData(prev => ({ ...prev, [fieldName]: value }));
+      setTouched(prev => ({ ...prev, [fieldName]: true }));
 
-    // 清除該字段的錯誤
-    if (errors[fieldName]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[fieldName];
-        return newErrors;
-      });
-    }
+      // 清除該字段的錯誤
+      if (errors[fieldName]) {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[fieldName];
+          return newErrors;
+        });
+      }
 
-    onFieldChange?.(fieldName, value);
-  }, [errors, onFieldChange]);
+      onFieldChange?.(fieldName, value);
+    },
+    [errors, onFieldChange]
+  );
 
   // 處理字段失焦驗證
-  const handleFieldBlur = useCallback((field: FormFieldConfig) => {
-    const error = validateField(field, formData[field.name]);
-    if (error) {
-      setErrors(prev => ({ ...prev, [field.name]: error }));
-    }
-  }, [formData, validateField]);
+  const handleFieldBlur = useCallback(
+    (field: FormFieldConfig) => {
+      const error = validateField(field, formData[field.name]);
+      if (error) {
+        setErrors(prev => ({ ...prev, [field.name]: error }));
+      }
+    },
+    [formData, validateField]
+  );
 
   // 處理表單提交
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitAttempted(true);
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setSubmitAttempted(true);
 
-    if (!validateForm()) {
-      return;
-    }
+      if (!validateForm()) {
+        return;
+      }
 
-    try {
-      await submitForm({
-        variables: {
-          input: {
-            formType,
-            entityId,
-            data: formData,
+      try {
+        await submitForm({
+          variables: {
+            input: {
+              formType,
+              entityId,
+              data: formData,
+            },
           },
-        },
-      });
-    } catch (error) {
-      console.error('Form submission error:', error);
-    }
-  }, [formType, entityId, formData, validateForm, submitForm]);
+        });
+      } catch (error) {
+        console.error('Form submission error:', error);
+      }
+    },
+    [formType, entityId, formData, validateForm, submitForm]
+  );
 
   // 渲染字段組件
-  const renderField = useCallback((field: FormFieldConfig) => {
-    const value = formData[field.name] || field.defaultValue || '';
-    const hasError = errors[field.name];
-    const isTouched = touched[field.name] || submitAttempted;
+  const renderField = useCallback(
+    (field: FormFieldConfig) => {
+      const value = formData[field.name] || field.defaultValue || '';
+      const hasError = errors[field.name];
+      const isTouched = touched[field.name] || submitAttempted;
 
-    const commonProps = {
-      id: field.id,
-      name: field.name,
-      disabled: submitting,
-      className: cn(
-        'transition-colors',
-        hasError && isTouched && 'border-red-500 focus:border-red-500 focus:ring-red-500'
-      ),
-    };
+      const commonProps = {
+        id: field.id,
+        name: field.name,
+        disabled: submitting,
+        className: cn(
+          'transition-colors',
+          hasError && isTouched && 'border-red-500 focus:border-red-500 focus:ring-red-500'
+        ),
+      };
 
-    switch (field.type) {
-      case FieldType.TEXT:
-      case FieldType.EMAIL:
-      case FieldType.URL:
-      case FieldType.PHONE:
-        return (
-          <Input
-            {...commonProps}
-            type={field.type === FieldType.EMAIL ? 'email' : field.type === FieldType.URL ? 'url' : field.type === FieldType.PHONE ? 'tel' : 'text'}
-            value={value}
-            onChange={(e) => handleFieldChange(field.name, e.target.value)}
-            onBlur={() => handleFieldBlur(field)}
-            placeholder={field.placeholder}
-          />
-        );
-
-      case FieldType.PASSWORD:
-        return (
-          <Input
-            {...commonProps}
-            type="password"
-            value={value}
-            onChange={(e) => handleFieldChange(field.name, e.target.value)}
-            onBlur={() => handleFieldBlur(field)}
-            placeholder={field.placeholder}
-          />
-        );
-
-      case FieldType.NUMBER:
-      case FieldType.CURRENCY:
-      case FieldType.PERCENTAGE:
-        return (
-          <Input
-            {...commonProps}
-            type="number"
-            value={value}
-            onChange={(e) => handleFieldChange(field.name, parseFloat(e.target.value) || 0)}
-            onBlur={() => handleFieldBlur(field)}
-            placeholder={field.placeholder}
-            min={field.validation?.min}
-            max={field.validation?.max}
-          />
-        );
-
-      case FieldType.TEXTAREA:
-        return (
-          <Textarea
-            {...commonProps}
-            value={value}
-            onChange={(e) => handleFieldChange(field.name, e.target.value)}
-            onBlur={() => handleFieldBlur(field)}
-            placeholder={field.placeholder}
-            rows={4}
-          />
-        );
-
-      case FieldType.SELECT:
-        return (
-          <Select
-            value={value}
-            onValueChange={(val: string) => handleFieldChange(field.name, val)}
-          >
-            <SelectTrigger className={commonProps.className}>
-              <SelectValue placeholder={field.placeholder} />
-            </SelectTrigger>
-            <SelectContent>
-              {field.options?.map((option) => (
-                <SelectItem
-                  key={option.value}
-                  value={option.value}
-                >
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        );
-
-      case FieldType.CHECKBOX:
-        return (
-          <div className="flex items-center space-x-2">
-            <Checkbox
+      switch (field.type) {
+        case FieldType.TEXT:
+        case FieldType.EMAIL:
+        case FieldType.URL:
+        case FieldType.PHONE:
+          const stringValue =
+            typeof value === 'string'
+              ? value
+              : typeof value === 'number'
+                ? String(value)
+                : Array.isArray(value)
+                  ? value
+                  : value === null || value === undefined
+                    ? ''
+                    : String(value);
+          return (
+            <Input
               {...commonProps}
-              checked={Boolean(value)}
-              onCheckedChange={(checked) => handleFieldChange(field.name, checked)}
+              type={
+                field.type === FieldType.EMAIL
+                  ? 'email'
+                  : field.type === FieldType.URL
+                    ? 'url'
+                    : field.type === FieldType.PHONE
+                      ? 'tel'
+                      : 'text'
+              }
+              value={stringValue}
+              onChange={e => handleFieldChange(field.name, e.target.value)}
+              onBlur={() => handleFieldBlur(field)}
+              placeholder={field.placeholder}
             />
-            <Label htmlFor={field.id} className="text-sm font-medium">
-              {field.label}
-            </Label>
-          </div>
-        );
+          );
 
-      case FieldType.RADIO:
-        return (
-          <RadioGroup
-            value={value}
-            onValueChange={(val) => handleFieldChange(field.name, val)}
-          >
-            {field.options?.map((option) => (
-              <div key={option.value} className="flex items-center space-x-2">
-                <RadioGroupItem value={option.value} id={`${field.id}-${option.value}`} />
-                <Label htmlFor={`${field.id}-${option.value}`}>{option.label}</Label>
-              </div>
-            ))}
-          </RadioGroup>
-        );
+        case FieldType.PASSWORD:
+          const passwordValue =
+            typeof value === 'string'
+              ? value
+              : typeof value === 'number'
+                ? String(value)
+                : value === null || value === undefined
+                  ? ''
+                  : String(value);
+          return (
+            <Input
+              {...commonProps}
+              type='password'
+              value={passwordValue}
+              onChange={e => handleFieldChange(field.name, e.target.value)}
+              onBlur={() => handleFieldBlur(field)}
+              placeholder={field.placeholder}
+            />
+          );
 
-      case FieldType.DATE:
-        return (
-          <Input
-            {...commonProps}
-            type="date"
-            value={value}
-            onChange={(e) => handleFieldChange(field.name, e.target.value)}
-            onBlur={() => handleFieldBlur(field)}
-          />
-        );
+        case FieldType.NUMBER:
+        case FieldType.CURRENCY:
+        case FieldType.PERCENTAGE:
+          const numberValue =
+            typeof value === 'number'
+              ? value
+              : typeof value === 'string'
+                ? value
+                : value === null || value === undefined
+                  ? ''
+                  : String(value);
+          return (
+            <Input
+              {...commonProps}
+              type='number'
+              value={numberValue}
+              onChange={e => handleFieldChange(field.name, parseFloat(e.target.value) || 0)}
+              onBlur={() => handleFieldBlur(field)}
+              placeholder={field.placeholder}
+              min={field.validation?.min}
+              max={field.validation?.max}
+            />
+          );
 
-      case FieldType.DATETIME:
-        return (
-          <Input
-            {...commonProps}
-            type="datetime-local"
-            value={value}
-            onChange={(e) => handleFieldChange(field.name, e.target.value)}
-            onBlur={() => handleFieldBlur(field)}
-          />
-        );
+        case FieldType.TEXTAREA:
+          const textareaValue =
+            typeof value === 'string'
+              ? value
+              : typeof value === 'number'
+                ? String(value)
+                : value === null || value === undefined
+                  ? ''
+                  : String(value);
+          return (
+            <Textarea
+              {...commonProps}
+              value={textareaValue}
+              onChange={e => handleFieldChange(field.name, e.target.value)}
+              onBlur={() => handleFieldBlur(field)}
+              placeholder={field.placeholder}
+              rows={4}
+            />
+          );
 
-      default:
-        return (
-          <Input
-            {...commonProps}
-            value={value}
-            onChange={(e) => handleFieldChange(field.name, e.target.value)}
-            onBlur={() => handleFieldBlur(field)}
-            placeholder={field.placeholder}
-          />
-        );
-    }
-  }, [formData, errors, touched, submitAttempted, submitting, handleFieldChange, handleFieldBlur]);
+        case FieldType.SELECT:
+          const selectValue =
+            typeof value === 'string'
+              ? value
+              : typeof value === 'number'
+                ? String(value)
+                : value === null || value === undefined
+                  ? ''
+                  : String(value);
+          return (
+            <Select
+              value={selectValue}
+              onValueChange={(val: string) => handleFieldChange(field.name, val)}
+            >
+              <SelectTrigger className={commonProps.className}>
+                <SelectValue placeholder={field.placeholder} />
+              </SelectTrigger>
+              <SelectContent>
+                {field.options?.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          );
+
+        case FieldType.CHECKBOX:
+          return (
+            <div className='flex items-center space-x-2'>
+              <Checkbox
+                {...commonProps}
+                checked={Boolean(value)}
+                onCheckedChange={checked => handleFieldChange(field.name, checked)}
+              />
+              <Label htmlFor={field.id} className='text-sm font-medium'>
+                {field.label}
+              </Label>
+            </div>
+          );
+
+        case FieldType.RADIO:
+          const radioValue =
+            typeof value === 'string'
+              ? value
+              : typeof value === 'number'
+                ? String(value)
+                : value === null || value === undefined
+                  ? ''
+                  : String(value);
+          return (
+            <RadioGroup
+              value={radioValue}
+              onValueChange={val => handleFieldChange(field.name, val)}
+            >
+              {field.options?.map(option => (
+                <div key={option.value} className='flex items-center space-x-2'>
+                  <RadioGroupItem value={option.value} id={`${field.id}-${option.value}`} />
+                  <Label htmlFor={`${field.id}-${option.value}`}>{option.label}</Label>
+                </div>
+              ))}
+            </RadioGroup>
+          );
+
+        case FieldType.DATE:
+          const dateValue =
+            value instanceof Date
+              ? value.toISOString().split('T')[0]
+              : typeof value === 'string'
+                ? value
+                : value === null || value === undefined
+                  ? ''
+                  : String(value);
+          return (
+            <Input
+              {...commonProps}
+              type='date'
+              value={dateValue}
+              onChange={e => handleFieldChange(field.name, e.target.value)}
+              onBlur={() => handleFieldBlur(field)}
+            />
+          );
+
+        case FieldType.DATETIME:
+          const datetimeValue =
+            value instanceof Date
+              ? value.toISOString().slice(0, 16)
+              : typeof value === 'string'
+                ? value
+                : value === null || value === undefined
+                  ? ''
+                  : String(value);
+          return (
+            <Input
+              {...commonProps}
+              type='datetime-local'
+              value={datetimeValue}
+              onChange={e => handleFieldChange(field.name, e.target.value)}
+              onBlur={() => handleFieldBlur(field)}
+            />
+          );
+
+        default:
+          const defaultValue =
+            typeof value === 'string'
+              ? value
+              : typeof value === 'number'
+                ? String(value)
+                : Array.isArray(value)
+                  ? value
+                  : value === null || value === undefined
+                    ? ''
+                    : String(value);
+          return (
+            <Input
+              {...commonProps}
+              value={defaultValue}
+              onChange={e => handleFieldChange(field.name, e.target.value)}
+              onBlur={() => handleFieldBlur(field)}
+              placeholder={field.placeholder}
+            />
+          );
+      }
+    },
+    [formData, errors, touched, submitAttempted, submitting, handleFieldChange, handleFieldBlur]
+  );
 
   // 計算表單完成進度
   const formProgress = useMemo(() => {
@@ -756,17 +850,15 @@ export const FormCard: React.FC<FormCardProps> = ({
   if (isEditMode) {
     return (
       <div className={cn('w-full', className)}>
-        <Card className="border-blue-400 bg-gray-800 text-white">
+        <Card className='border-blue-400 bg-gray-800 text-white'>
           <CardHeader>
-            <CardTitle className="flex items-center text-blue-400">
-              <visualConfig.icon className="mr-2 h-5 w-5" />
+            <CardTitle className='flex items-center text-blue-400'>
+              <visualConfig.icon className='mr-2 h-5 w-5' />
               {formConfig.title} - Edit Mode
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-gray-400">
-              Form configuration in edit mode
-            </div>
+            <div className='py-8 text-center text-gray-400'>Form configuration in edit mode</div>
           </CardContent>
         </Card>
       </div>
@@ -778,84 +870,82 @@ export const FormCard: React.FC<FormCardProps> = ({
     return (
       <div
         className={cn(
-          'flex items-center justify-center p-8 bg-red-50 dark:bg-red-950/20 rounded-lg',
+          'flex items-center justify-center rounded-lg bg-red-50 p-8 dark:bg-red-950/20',
           className
         )}
       >
-        <ExclamationTriangleIcon className="w-6 h-6 text-red-500 mr-2" />
-        <span className="text-red-700 dark:text-red-300">
-          Failed to load form: {error.message}
-        </span>
+        <ExclamationTriangleIcon className='mr-2 h-6 w-6 text-red-500' />
+        <span className='text-red-700 dark:text-red-300'>Failed to load form: {error.message}</span>
       </div>
     );
   }
 
   return (
     <div className={cn('w-full', className)} style={{ height }}>
-      <Card className="border-blue-400 bg-gray-800 text-white h-full flex flex-col">
+      <Card className='flex h-full flex-col border-blue-400 bg-gray-800 text-white'>
         {showHeader && (
-          <CardHeader className="flex-shrink-0">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center text-blue-400">
-                <div className={cn('p-2 rounded-lg bg-gradient-to-r mr-3', visualConfig.color)}>
-                  <visualConfig.icon className="h-5 w-5 text-white" />
+          <CardHeader className='flex-shrink-0'>
+            <div className='flex items-center justify-between'>
+              <CardTitle className='flex items-center text-blue-400'>
+                <div className={cn('mr-3 rounded-lg bg-gradient-to-r p-2', visualConfig.color)}>
+                  <visualConfig.icon className='h-5 w-5 text-white' />
                 </div>
                 <div>
                   <div>{formConfig.title}</div>
                   {formConfig.description && (
-                    <div className="text-sm text-gray-400 font-normal mt-1">
+                    <div className='mt-1 text-sm font-normal text-gray-400'>
                       {formConfig.description}
                     </div>
                   )}
                 </div>
               </CardTitle>
-              
-              {loading && (
-                <ArrowPathIcon className="h-5 w-5 text-blue-400 animate-spin" />
-              )}
+
+              {loading && <ArrowPathIcon className='h-5 w-5 animate-spin text-blue-400' />}
             </div>
-            
+
             {showProgress && (
-              <div className="mt-4">
-                <div className="flex justify-between text-xs mb-2">
-                  <span className="text-slate-400">Form Completion</span>
-                  <span className="font-medium text-white">{Math.round(formProgress)}%</span>
+              <div className='mt-4'>
+                <div className='mb-2 flex justify-between text-xs'>
+                  <span className='text-slate-400'>Form Completion</span>
+                  <span className='font-medium text-white'>{Math.round(formProgress)}%</span>
                 </div>
-                <Progress value={formProgress} className="h-2" />
+                <Progress value={formProgress} className='h-2' />
               </div>
             )}
           </CardHeader>
         )}
-        
-        <CardContent className="flex-1 overflow-auto">
-          <AnimatePresence mode="wait">
+
+        <CardContent className='flex-1 overflow-auto'>
+          <AnimatePresence mode='wait'>
             {loading && formType !== FormType.PRODUCT_EDIT ? (
               <motion.div
-                key="loading"
+                key='loading'
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex items-center justify-center py-8"
+                className='flex items-center justify-center py-8'
               >
-                <ArrowPathIcon className="h-8 w-8 text-blue-400 animate-spin mr-3" />
-                <span className="text-gray-300">Loading form configuration...</span>
+                <ArrowPathIcon className='mr-3 h-8 w-8 animate-spin text-blue-400' />
+                <span className='text-gray-300'>Loading form configuration...</span>
               </motion.div>
             ) : (
               <motion.form
-                key="form"
+                key='form'
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 onSubmit={handleSubmit}
-                className="space-y-6"
+                className='space-y-6'
               >
                 <div
                   className={cn(
                     'grid gap-4',
-                    formConfig.layout?.columns === 12 ? 'grid-cols-12' : 'grid-cols-1 md:grid-cols-2'
+                    formConfig.layout?.columns === 12
+                      ? 'grid-cols-12'
+                      : 'grid-cols-1 md:grid-cols-2'
                   )}
                 >
-                  {formConfig.fields.map((field) => (
+                  {formConfig.fields.map(field => (
                     <div
                       key={field.id}
                       className={cn(
@@ -866,23 +956,21 @@ export const FormCard: React.FC<FormCardProps> = ({
                       )}
                     >
                       {field.type !== FieldType.CHECKBOX && (
-                        <Label htmlFor={field.id} className="text-sm font-medium text-gray-300">
+                        <Label htmlFor={field.id} className='text-sm font-medium text-gray-300'>
                           {field.label}
-                          {field.required && <span className="text-red-400 ml-1">*</span>}
+                          {field.required && <span className='ml-1 text-red-400'>*</span>}
                         </Label>
                       )}
-                      
+
                       {renderField(field)}
-                      
-                      {field.helpText && (
-                        <p className="text-xs text-gray-500">{field.helpText}</p>
-                      )}
-                      
+
+                      {field.helpText && <p className='text-xs text-gray-500'>{field.helpText}</p>}
+
                       {errors[field.name] && (touched[field.name] || submitAttempted) && (
                         <motion.p
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
-                          className="text-sm text-red-400"
+                          className='text-sm text-red-400'
                         >
                           {errors[field.name]}
                         </motion.p>
@@ -895,13 +983,15 @@ export const FormCard: React.FC<FormCardProps> = ({
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="p-4 bg-red-950/20 border border-red-500/20 rounded-lg"
+                    className='rounded-lg border border-red-500/20 bg-red-950/20 p-4'
                   >
-                    <div className="flex items-center mb-2">
-                      <ExclamationTriangleIcon className="h-5 w-5 text-red-400 mr-2" />
-                      <span className="text-red-400 font-medium">Please fix the following errors:</span>
+                    <div className='mb-2 flex items-center'>
+                      <ExclamationTriangleIcon className='mr-2 h-5 w-5 text-red-400' />
+                      <span className='font-medium text-red-400'>
+                        Please fix the following errors:
+                      </span>
                     </div>
-                    <ul className="text-sm text-red-300 space-y-1 ml-7">
+                    <ul className='ml-7 space-y-1 text-sm text-red-300'>
                       {Object.entries(errors).map(([field, error]) => (
                         <li key={field}>• {error}</li>
                       ))}
@@ -909,34 +999,34 @@ export const FormCard: React.FC<FormCardProps> = ({
                   </motion.div>
                 )}
 
-                <div className="flex space-x-3 border-t border-gray-600 pt-6">
+                <div className='flex space-x-3 border-t border-gray-600 pt-6'>
                   <Button
-                    type="submit"
+                    type='submit'
                     disabled={submitting}
-                    className="flex-1 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                    className='flex-1 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50'
                   >
                     {submitting ? (
                       <>
-                        <ArrowPathIcon className="mr-2 h-4 w-4 animate-spin" />
+                        <ArrowPathIcon className='mr-2 h-4 w-4 animate-spin' />
                         Submitting...
                       </>
                     ) : (
                       <>
-                        <SaveIcon className="mr-2 h-4 w-4" />
+                        <SaveIcon className='mr-2 h-4 w-4' />
                         {entityId ? 'Update' : 'Create'}
                       </>
                     )}
                   </Button>
-                  
+
                   {onCancel && (
                     <Button
-                      type="button"
+                      type='button'
                       onClick={onCancel}
                       disabled={submitting}
-                      variant="outline"
-                      className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700 disabled:opacity-50"
+                      variant='outline'
+                      className='flex-1 border-gray-600 text-gray-300 hover:bg-gray-700 disabled:opacity-50'
                     >
-                      <XMarkIcon className="mr-2 h-4 w-4" />
+                      <XMarkIcon className='mr-2 h-4 w-4' />
                       Cancel
                     </Button>
                   )}
@@ -954,15 +1044,4 @@ export const FormCard: React.FC<FormCardProps> = ({
 // FormType 和 FieldType 已在上面導出
 
 // 導出類型供其他組件使用
-export type {
-  SubmitSuccessData,
-  FormSubmitError,
-  FormValue,
-  FormFieldConfig,
-  FormCardData,
-  FormCardProps,
-  SelectOption,
-  FieldValidation,
-  FieldDependency,
-  FormLayout
-};
+export type { SubmitSuccessData, FormSubmitError, FormValue };

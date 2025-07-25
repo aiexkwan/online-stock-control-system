@@ -101,7 +101,7 @@ export function SmartReminder({ userId, className }: SmartReminderProps) {
         });
       }
     }
-  }, [userId, dismissed]);
+  }, [dismissed, setReminder]);
 
   useEffect(() => {
     if (!userId) return;

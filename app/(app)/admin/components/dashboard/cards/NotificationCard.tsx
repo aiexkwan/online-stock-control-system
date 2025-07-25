@@ -1,7 +1,7 @@
 /**
  * NotificationCard Component
  * 統一的通知卡片組件，支援實時通知和多種通知類型
- * 
+ *
  * 支援的通知類型：
  * - SYSTEM: 系統通知
  * - ORDER: 訂單相關通知
@@ -171,25 +171,25 @@ export interface NotificationCardProps {
   showBulkActions?: boolean;
   showStats?: boolean;
   autoRefresh?: boolean;
-  
+
   // 過濾選項
   defaultTypes?: NotificationType[];
   defaultPriorities?: NotificationPriority[];
   defaultStatus?: NotificationStatus[];
-  
+
   // 樣式選項
   className?: string;
   height?: number | string;
   compact?: boolean;
-  
+
   // 編輯模式
   isEditMode?: boolean;
-  
+
   // 回調函數
   onNotificationClick?: (notification: NotificationItem) => void;
   onNotificationAction?: (notification: NotificationItem, action: string) => void;
   onStatsUpdate?: (stats: NotificationStats) => void;
-  
+
   // 用戶ID（用於實時訂閱）
   userId?: string;
 }
@@ -215,7 +215,8 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
   // 狀態管理
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [filterTypes, setFilterTypes] = useState<NotificationType[]>(defaultTypes);
-  const [filterPriorities, setFilterPriorities] = useState<NotificationPriority[]>(defaultPriorities);
+  const [filterPriorities, setFilterPriorities] =
+    useState<NotificationPriority[]>(defaultPriorities);
   const [filterStatus, setFilterStatus] = useState<NotificationStatus[]>(defaultStatus);
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
 
@@ -232,25 +233,19 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
   );
 
   // 執行 GraphQL 查詢
-  const { data, loading, error, refetch } = useQuery(
-    NOTIFICATIONS_QUERY,
-    {
-      variables: { input: queryInput },
-      fetchPolicy: 'cache-and-network',
-      skip: isEditMode,
-      pollInterval: autoRefresh ? 30000 : 0, // 30秒自動刷新
-      errorPolicy: 'ignore',
-    }
-  );
+  const { data, loading, error, refetch } = useQuery(NOTIFICATIONS_QUERY, {
+    variables: { input: queryInput },
+    fetchPolicy: 'cache-and-network',
+    skip: isEditMode,
+    pollInterval: autoRefresh ? 30000 : 0, // 30秒自動刷新
+    errorPolicy: 'ignore',
+  });
 
   // 實時通知訂閱
-  const { data: subscriptionData } = useSubscription(
-    NOTIFICATION_SUBSCRIPTION,
-    {
-      variables: { userId },
-      skip: isEditMode || !userId,
-    }
-  );
+  const { data: subscriptionData } = useSubscription(NOTIFICATION_SUBSCRIPTION, {
+    variables: { userId },
+    skip: isEditMode || !userId,
+  });
 
   // 通知操作 mutations
   const [markRead] = useMutation(MARK_NOTIFICATION_READ_MUTATION);
@@ -429,189 +424,197 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
   }, []);
 
   // 處理通知點擊
-  const handleNotificationClick = useCallback(async (notification: NotificationItem) => {
-    // 標記為已讀
-    if (notification.status === NotificationStatus.UNREAD) {
+  const handleNotificationClick = useCallback(
+    async (notification: NotificationItem) => {
+      // 標記為已讀
+      if (notification.status === NotificationStatus.UNREAD) {
+        try {
+          await markRead({
+            variables: {
+              input: {
+                notificationId: notification.id,
+              },
+            },
+          });
+          refetch();
+        } catch (error) {
+          console.error('Failed to mark notification as read:', error);
+        }
+      }
+
+      onNotificationClick?.(notification);
+
+      // 如果有 actionUrl，導航到該頁面
+      if (notification.actionUrl) {
+        window.location.href = notification.actionUrl;
+      }
+    },
+    [markRead, refetch, onNotificationClick]
+  );
+
+  // 處理批量操作
+  const handleBulkAction = useCallback(
+    async (action: 'READ' | 'UNREAD' | 'DELETE') => {
+      if (selectedItems.size === 0) return;
+
       try {
-        await markRead({
+        await bulkAction({
           variables: {
             input: {
-              notificationId: notification.id,
+              notificationIds: Array.from(selectedItems),
+              action,
             },
           },
         });
+
+        setSelectedItems(new Set());
         refetch();
       } catch (error) {
-        console.error('Failed to mark notification as read:', error);
+        console.error('Bulk action failed:', error);
       }
-    }
-
-    onNotificationClick?.(notification);
-
-    // 如果有 actionUrl，導航到該頁面
-    if (notification.actionUrl) {
-      window.location.href = notification.actionUrl;
-    }
-  }, [markRead, refetch, onNotificationClick]);
-
-  // 處理批量操作
-  const handleBulkAction = useCallback(async (action: 'READ' | 'UNREAD' | 'DELETE') => {
-    if (selectedItems.size === 0) return;
-
-    try {
-      await bulkAction({
-        variables: {
-          input: {
-            notificationIds: Array.from(selectedItems),
-            action,
-          },
-        },
-      });
-
-      setSelectedItems(new Set());
-      refetch();
-    } catch (error) {
-      console.error('Bulk action failed:', error);
-    }
-  }, [bulkAction, selectedItems, refetch]);
+    },
+    [bulkAction, selectedItems, refetch]
+  );
 
   // 處理全選/取消全選
   const handleSelectAll = useCallback(() => {
     if (selectedItems.size === notificationData.items.length) {
       setSelectedItems(new Set());
     } else {
-      setSelectedItems(new Set(notificationData.items.map(item => item.id)));
+      setSelectedItems(new Set(notificationData.items.map((item: NotificationItem) => item.id)));
     }
   }, [selectedItems.size, notificationData.items]);
 
   // 渲染通知項目
-  const renderNotificationItem = useCallback((notification: NotificationItem) => {
-    const config = getNotificationConfig(notification.type);
-    const priorityConfig = getPriorityConfig(notification.priority);
-    const isSelected = selectedItems.has(notification.id);
-    const isUnread = notification.status === NotificationStatus.UNREAD;
+  const renderNotificationItem = useCallback(
+    (notification: NotificationItem) => {
+      const config = getNotificationConfig(notification.type);
+      const priorityConfig = getPriorityConfig(notification.priority);
+      const isSelected = selectedItems.has(notification.id);
+      const isUnread = notification.status === NotificationStatus.UNREAD;
 
-    return (
-      <motion.div
-        key={notification.id}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        className={cn(
-          'flex items-start space-x-3 p-3 rounded-lg border border-transparent transition-all duration-200',
-          'hover:bg-gray-700/50 hover:border-gray-600/30',
-          isUnread && 'bg-blue-500/5 border-blue-500/20',
-          isSelected && 'bg-blue-500/10 border-blue-500/30'
-        )}
-      >
-        {/* 選擇框 */}
-        {showBulkActions && (
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={(checked) => {
-              const newSelected = new Set(selectedItems);
-              if (checked) {
-                newSelected.add(notification.id);
-              } else {
-                newSelected.delete(notification.id);
-              }
-              setSelectedItems(newSelected);
-            }}
-            className="mt-1"
-          />
-        )}
-
-        {/* 通知圖標 */}
-        <div className={cn('p-2 rounded-lg flex-shrink-0', config.bgColor)}>
-          <config.icon className={cn('h-4 w-4', config.color)} />
-        </div>
-
-        {/* 通知內容 */}
-        <div 
-          className="flex-1 min-w-0 cursor-pointer"
-          onClick={() => handleNotificationClick(notification)}
+      return (
+        <motion.div
+          key={notification.id}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className={cn(
+            'flex items-start space-x-3 rounded-lg border border-transparent p-3 transition-all duration-200',
+            'hover:border-gray-600/30 hover:bg-gray-700/50',
+            isUnread && 'border-blue-500/20 bg-blue-500/5',
+            isSelected && 'border-blue-500/30 bg-blue-500/10'
+          )}
         >
-          <div className="flex items-center justify-between mb-1">
-            <h4 className={cn(
-              'text-sm font-medium truncate',
-              isUnread ? 'text-white' : 'text-gray-300'
-            )}>
-              {notification.title}
-            </h4>
-            <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
-              {/* 優先級徽章 */}
-              <Badge 
-                variant="outline" 
-                className={cn('text-xs', priorityConfig.color)}
-              >
-                {priorityConfig.label}
-              </Badge>
-              {/* 類型徽章 */}
-              <Badge variant="secondary" className="text-xs">
-                {config.label}
-              </Badge>
-            </div>
+          {/* 選擇框 */}
+          {showBulkActions && (
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={checked => {
+                const newSelected = new Set(selectedItems);
+                if (checked) {
+                  newSelected.add(notification.id);
+                } else {
+                  newSelected.delete(notification.id);
+                }
+                setSelectedItems(newSelected);
+              }}
+              className='mt-1'
+            />
+          )}
+
+          {/* 通知圖標 */}
+          <div className={cn('flex-shrink-0 rounded-lg p-2', config.bgColor)}>
+            <config.icon className={cn('h-4 w-4', config.color)} />
           </div>
-          
-          <p className={cn(
-            'text-sm text-gray-400 mb-2',
-            compact ? 'line-clamp-1' : 'line-clamp-2'
-          )}>
-            {notification.message}
-          </p>
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3 text-xs text-gray-500">
-              <span className="flex items-center">
-                <ClockIcon className="h-3 w-3 mr-1" />
-                {formatTime(notification.timestamp)}
-              </span>
-              
-              {notification.readAt && (
-                <span className="flex items-center">
-                  <EyeIcon className="h-3 w-3 mr-1" />
-                  Read
+
+          {/* 通知內容 */}
+          <div
+            className='min-w-0 flex-1 cursor-pointer'
+            onClick={() => handleNotificationClick(notification)}
+          >
+            <div className='mb-1 flex items-center justify-between'>
+              <h4
+                className={cn(
+                  'truncate text-sm font-medium',
+                  isUnread ? 'text-white' : 'text-gray-300'
+                )}
+              >
+                {notification.title}
+              </h4>
+              <div className='ml-2 flex flex-shrink-0 items-center space-x-2'>
+                {/* 優先級徽章 */}
+                <Badge variant='outline' className={cn('text-xs', priorityConfig.color)}>
+                  {priorityConfig.label}
+                </Badge>
+                {/* 類型徽章 */}
+                <Badge variant='secondary' className='text-xs'>
+                  {config.label}
+                </Badge>
+              </div>
+            </div>
+
+            <p
+              className={cn(
+                'mb-2 text-sm text-gray-400',
+                compact ? 'line-clamp-1' : 'line-clamp-2'
+              )}
+            >
+              {notification.message}
+            </p>
+
+            <div className='flex items-center justify-between'>
+              <div className='flex items-center space-x-3 text-xs text-gray-500'>
+                <span className='flex items-center'>
+                  <ClockIcon className='mr-1 h-3 w-3' />
+                  {formatTime(notification.timestamp)}
                 </span>
+
+                {notification.readAt && (
+                  <span className='flex items-center'>
+                    <EyeIcon className='mr-1 h-3 w-3' />
+                    Read
+                  </span>
+                )}
+              </div>
+
+              {notification.actionLabel && (
+                <Button size='sm' variant='outline' className='text-xs'>
+                  {notification.actionLabel}
+                </Button>
               )}
             </div>
-            
-            {notification.actionLabel && (
-              <Button size="sm" variant="outline" className="text-xs">
-                {notification.actionLabel}
-              </Button>
-            )}
           </div>
-        </div>
 
-        {/* 未讀指示器 */}
-        {isUnread && (
-          <div className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0 mt-2"></div>
-        )}
-      </motion.div>
-    );
-  }, [
-    getNotificationConfig,
-    getPriorityConfig,
-    selectedItems,
-    showBulkActions,
-    formatTime,
-    handleNotificationClick,
-    compact
-  ]);
+          {/* 未讀指示器 */}
+          {isUnread && <div className='mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-400'></div>}
+        </motion.div>
+      );
+    },
+    [
+      getNotificationConfig,
+      getPriorityConfig,
+      selectedItems,
+      showBulkActions,
+      formatTime,
+      handleNotificationClick,
+      compact,
+    ]
+  );
 
   // Edit mode 渲染
   if (isEditMode) {
     return (
       <div className={cn('w-full', className)}>
-        <Card className="border-blue-400 bg-gray-800 text-white">
+        <Card className='border-blue-400 bg-gray-800 text-white'>
           <CardHeader>
-            <CardTitle className="flex items-center text-blue-400">
-              <BellIcon className="mr-2 h-5 w-5" />
+            <CardTitle className='flex items-center text-blue-400'>
+              <BellIcon className='mr-2 h-5 w-5' />
               Notifications - Edit Mode
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-gray-400">
+            <div className='py-8 text-center text-gray-400'>
               Notification configuration in edit mode
             </div>
           </CardContent>
@@ -622,73 +625,75 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
 
   return (
     <div className={cn('w-full', className)} style={{ height }}>
-      <Card className="border-blue-400 bg-gray-800 text-white h-full flex flex-col">
-        <CardHeader className="flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center text-blue-400">
-              <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 mr-3">
-                <BellIcon className="h-5 w-5 text-white" />
+      <Card className='flex h-full flex-col border-blue-400 bg-gray-800 text-white'>
+        <CardHeader className='flex-shrink-0'>
+          <div className='flex items-center justify-between'>
+            <CardTitle className='flex items-center text-blue-400'>
+              <div className='mr-3 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 p-2'>
+                <BellIcon className='h-5 w-5 text-white' />
               </div>
               <div>
-                <div className="flex items-center space-x-2">
+                <div className='flex items-center space-x-2'>
                   <span>Notifications</span>
                   {notificationData.stats.unread > 0 && (
-                    <Badge className="bg-red-500 text-white text-xs">
+                    <Badge className='bg-red-500 text-xs text-white'>
                       {notificationData.stats.unread}
                     </Badge>
                   )}
                 </div>
-                <div className="text-sm text-gray-400 font-normal mt-1">
+                <div className='mt-1 text-sm font-normal text-gray-400'>
                   {notificationData.stats.total} total, {notificationData.stats.unread} unread
                 </div>
               </div>
             </CardTitle>
-            
-            <div className="flex items-center space-x-2">
+
+            <div className='flex items-center space-x-2'>
               {showFilters && (
                 <Button
-                  size="sm"
-                  variant="ghost"
+                  size='sm'
+                  variant='ghost'
                   onClick={() => setShowFiltersPanel(!showFiltersPanel)}
-                  className="text-gray-400 hover:text-white"
+                  className='text-gray-400 hover:text-white'
                 >
-                  <FunnelIcon className="h-4 w-4" />
+                  <FunnelIcon className='h-4 w-4' />
                 </Button>
               )}
-              
+
               <Button
-                size="sm"
-                variant="ghost"
+                size='sm'
+                variant='ghost'
                 onClick={() => refetch()}
-                className="text-gray-400 hover:text-white"
+                className='text-gray-400 hover:text-white'
               >
-                <Cog6ToothIcon className="h-4 w-4" />
+                <Cog6ToothIcon className='h-4 w-4' />
               </Button>
             </div>
           </div>
 
           {/* 統計面板 */}
           {showStats && (
-            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="text-center p-2 bg-gray-700/30 rounded-lg">
-                <div className="text-lg font-bold text-white">{notificationData.stats.total}</div>
-                <div className="text-xs text-gray-400">Total</div>
+            <div className='mt-4 grid grid-cols-2 gap-3 md:grid-cols-4'>
+              <div className='rounded-lg bg-gray-700/30 p-2 text-center'>
+                <div className='text-lg font-bold text-white'>{notificationData.stats.total}</div>
+                <div className='text-xs text-gray-400'>Total</div>
               </div>
-              <div className="text-center p-2 bg-blue-500/10 rounded-lg">
-                <div className="text-lg font-bold text-blue-400">{notificationData.stats.unread}</div>
-                <div className="text-xs text-gray-400">Unread</div>
+              <div className='rounded-lg bg-blue-500/10 p-2 text-center'>
+                <div className='text-lg font-bold text-blue-400'>
+                  {notificationData.stats.unread}
+                </div>
+                <div className='text-xs text-gray-400'>Unread</div>
               </div>
-              <div className="text-center p-2 bg-red-500/10 rounded-lg">
-                <div className="text-lg font-bold text-red-400">
+              <div className='rounded-lg bg-red-500/10 p-2 text-center'>
+                <div className='text-lg font-bold text-red-400'>
                   {notificationData.stats.byPriority[NotificationPriority.URGENT] || 0}
                 </div>
-                <div className="text-xs text-gray-400">Urgent</div>
+                <div className='text-xs text-gray-400'>Urgent</div>
               </div>
-              <div className="text-center p-2 bg-orange-500/10 rounded-lg">
-                <div className="text-lg font-bold text-orange-400">
+              <div className='rounded-lg bg-orange-500/10 p-2 text-center'>
+                <div className='text-lg font-bold text-orange-400'>
                   {notificationData.stats.byPriority[NotificationPriority.HIGH] || 0}
                 </div>
-                <div className="text-xs text-gray-400">High</div>
+                <div className='text-xs text-gray-400'>High</div>
               </div>
             </div>
           )}
@@ -700,14 +705,14 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="mt-4 p-4 bg-gray-700/30 rounded-lg space-y-4"
+                className='mt-4 space-y-4 rounded-lg bg-gray-700/30 p-4'
               >
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
                   <div>
-                    <label className="text-xs text-gray-400 mb-2 block">Types</label>
+                    <label className='mb-2 block text-xs text-gray-400'>Types</label>
                     <Select>
-                      <SelectTrigger className="bg-gray-700 border-gray-600">
-                        <SelectValue placeholder="All types" />
+                      <SelectTrigger className='border-gray-600 bg-gray-700'>
+                        <SelectValue placeholder='All types' />
                       </SelectTrigger>
                       <SelectContent>
                         {Object.values(NotificationType).map(type => (
@@ -718,12 +723,12 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div>
-                    <label className="text-xs text-gray-400 mb-2 block">Priority</label>
+                    <label className='mb-2 block text-xs text-gray-400'>Priority</label>
                     <Select>
-                      <SelectTrigger className="bg-gray-700 border-gray-600">
-                        <SelectValue placeholder="All priorities" />
+                      <SelectTrigger className='border-gray-600 bg-gray-700'>
+                        <SelectValue placeholder='All priorities' />
                       </SelectTrigger>
                       <SelectContent>
                         {Object.values(NotificationPriority).map(priority => (
@@ -734,17 +739,17 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div>
-                    <label className="text-xs text-gray-400 mb-2 block">Status</label>
+                    <label className='mb-2 block text-xs text-gray-400'>Status</label>
                     <Select>
-                      <SelectTrigger className="bg-gray-700 border-gray-600">
-                        <SelectValue placeholder="All status" />
+                      <SelectTrigger className='border-gray-600 bg-gray-700'>
+                        <SelectValue placeholder='All status' />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="UNREAD">Unread</SelectItem>
-                        <SelectItem value="READ">Read</SelectItem>
-                        <SelectItem value="ARCHIVED">Archived</SelectItem>
+                        <SelectItem value='UNREAD'>Unread</SelectItem>
+                        <SelectItem value='READ'>Read</SelectItem>
+                        <SelectItem value='ARCHIVED'>Archived</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -755,36 +760,34 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
 
           {/* 批量操作 */}
           {showBulkActions && selectedItems.size > 0 && (
-            <div className="mt-4 flex items-center justify-between p-3 bg-blue-500/10 rounded-lg">
-              <span className="text-sm text-blue-400">
-                {selectedItems.size} selected
-              </span>
-              <div className="flex space-x-2">
+            <div className='mt-4 flex items-center justify-between rounded-lg bg-blue-500/10 p-3'>
+              <span className='text-sm text-blue-400'>{selectedItems.size} selected</span>
+              <div className='flex space-x-2'>
                 <Button
-                  size="sm"
-                  variant="outline"
+                  size='sm'
+                  variant='outline'
                   onClick={() => handleBulkAction('READ')}
-                  className="text-xs"
+                  className='text-xs'
                 >
-                  <EyeIcon className="h-3 w-3 mr-1" />
+                  <EyeIcon className='mr-1 h-3 w-3' />
                   Mark Read
                 </Button>
                 <Button
-                  size="sm"
-                  variant="outline"
+                  size='sm'
+                  variant='outline'
                   onClick={() => handleBulkAction('UNREAD')}
-                  className="text-xs"
+                  className='text-xs'
                 >
-                  <EyeSlashIcon className="h-3 w-3 mr-1" />
+                  <EyeSlashIcon className='mr-1 h-3 w-3' />
                   Mark Unread
                 </Button>
                 <Button
-                  size="sm"
-                  variant="destructive"
+                  size='sm'
+                  variant='destructive'
                   onClick={() => handleBulkAction('DELETE')}
-                  className="text-xs"
+                  className='text-xs'
                 >
-                  <TrashIcon className="h-3 w-3 mr-1" />
+                  <TrashIcon className='mr-1 h-3 w-3' />
                   Delete
                 </Button>
               </div>
@@ -793,55 +796,59 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
 
           {/* 全選/取消全選 */}
           {showBulkActions && notificationData.items.length > 0 && (
-            <div className="mt-2 flex items-center">
+            <div className='mt-2 flex items-center'>
               <Button
-                size="sm"
-                variant="ghost"
+                size='sm'
+                variant='ghost'
                 onClick={handleSelectAll}
-                className="text-xs text-gray-400 hover:text-white"
+                className='text-xs text-gray-400 hover:text-white'
               >
-                {selectedItems.size === notificationData.items.length ? 'Deselect All' : 'Select All'}
+                {selectedItems.size === notificationData.items.length
+                  ? 'Deselect All'
+                  : 'Select All'}
               </Button>
             </div>
           )}
         </CardHeader>
-        
-        <CardContent className="flex-1 overflow-auto">
-          <AnimatePresence mode="wait">
+
+        <CardContent className='flex-1 overflow-auto'>
+          <AnimatePresence mode='wait'>
             {loading ? (
               <motion.div
-                key="loading"
+                key='loading'
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex items-center justify-center py-8"
+                className='flex items-center justify-center py-8'
               >
-                <span className="text-gray-300">Loading notifications...</span>
+                <span className='text-gray-300'>Loading notifications...</span>
               </motion.div>
             ) : notificationData.items.length === 0 ? (
               <motion.div
-                key="empty"
+                key='empty'
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="text-center py-8 text-gray-400"
+                className='py-8 text-center text-gray-400'
               >
-                <BellIcon className="h-12 w-12 mx-auto mb-4 text-gray-600" />
+                <BellIcon className='mx-auto mb-4 h-12 w-12 text-gray-600' />
                 <p>No notifications found</p>
               </motion.div>
             ) : (
               <motion.div
-                key="notifications"
+                key='notifications'
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="space-y-3"
+                className='space-y-3'
               >
-                {notificationData.items.map(notification => renderNotificationItem(notification))}
-                
+                {notificationData.items.map((notification: NotificationItem) =>
+                  renderNotificationItem(notification)
+                )}
+
                 {notificationData.hasMore && (
-                  <div className="text-center pt-4">
-                    <Button variant="outline" size="sm">
+                  <div className='pt-4 text-center'>
+                    <Button variant='outline' size='sm'>
                       Load More
                     </Button>
                   </div>
@@ -854,6 +861,3 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     </div>
   );
 };
-
-// 導出類型供其他組件使用
-export type { NotificationType, NotificationPriority, NotificationStatus, NotificationItem };

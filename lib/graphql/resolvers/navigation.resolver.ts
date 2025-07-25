@@ -17,6 +17,20 @@ interface BookmarkInput {
   action: 'ADD' | 'REMOVE';
 }
 
+// Navigation item 類型定義
+interface NavigationItem {
+  id: string;
+  label: string;
+  icon?: string;
+  path?: string;
+  badge?: number;
+  permissions?: string[];
+  description?: string;
+  children?: NavigationItem[];
+  isActive?: boolean;
+  isBookmarked?: boolean;
+}
+
 // Mock navigation data - 將來會從資料庫獲取
 const mockNavigationData = {
   [NavigationType.SIDEBAR]: [
@@ -179,7 +193,10 @@ const mockNavigationData = {
 const userBookmarks: Record<string, Set<string>> = {};
 
 // 過濾有權限的導航項目
-const filterByPermissions = (items: any[], userPermissions: string[]): any[] => {
+const filterByPermissions = (
+  items: NavigationItem[],
+  userPermissions: string[]
+): NavigationItem[] => {
   return items
     .filter(item => {
       if (!item.permissions || item.permissions.length === 0) return true;
@@ -194,20 +211,20 @@ const filterByPermissions = (items: any[], userPermissions: string[]): any[] => 
 export const navigationResolver = {
   Query: {
     navigationMenu: async (
-      _: any,
+      _: unknown,
       { input }: { input: NavigationMenuInput },
       context: Context
     ) => {
       try {
         const { navigationType, permissions = [], currentPath } = input;
-        
+
         // 獲取用戶權限 - 這裡使用傳入的權限或從 context 獲取
-        const userPermissions = permissions.length > 0 ? permissions : 
-          context.user?.permissions || ['user'];
+        const userPermissions =
+          permissions.length > 0 ? permissions : context.user?.permissions || ['user'];
 
         // 獲取對應類型的導航數據
         const rawItems = mockNavigationData[navigationType] || [];
-        
+
         // 過濾權限
         const filteredItems = filterByPermissions(rawItems, userPermissions);
 
@@ -229,7 +246,7 @@ export const navigationResolver = {
 
   Mutation: {
     updateNavigationBookmark: async (
-      _: any,
+      _: unknown,
       { input }: { input: BookmarkInput },
       context: Context
     ) => {

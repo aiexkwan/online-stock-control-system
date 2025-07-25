@@ -180,10 +180,17 @@ export interface ChartCardProps {
   // 顯示選項
   showComparison?: boolean;
   showPerformance?: boolean;
+  showLegend?: boolean;
+  showTooltip?: boolean;
+  animationEnabled?: boolean;
 
   // 樣式
   className?: string;
   height?: number | string;
+
+  // 標題
+  title?: string;
+  subtitle?: string;
 
   // 編輯模式
   isEditMode?: boolean;
@@ -204,8 +211,13 @@ export const ChartCard: React.FC<ChartCardProps> = ({
   limit,
   showComparison = false,
   showPerformance = false,
+  showLegend = true,
+  showTooltip = true,
+  animationEnabled = true,
   className,
   height = 400,
+  title,
+  subtitle,
   isEditMode = false,
   onChartClick,
   onRefresh,
@@ -258,7 +270,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
 
   // 渲染圖表組件
   const renderChart = (config: ChartConfig, datasets: ChartDataset[], index: number) => {
-    const chartData = datasets[0]?.data.map((point) => ({
+    const chartData = datasets[0]?.data.map(point => ({
       name: point.x,
       value: point.y,
       ...point.metadata,
@@ -273,19 +285,25 @@ export const ChartCard: React.FC<ChartCardProps> = ({
       case ChartType.Area:
         return (
           <AreaChart {...commonProps}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
+            <CartesianGrid strokeDasharray='3 3' />
+            <XAxis dataKey='name' />
             <YAxis />
             <Tooltip />
             {config.legend?.display && <Legend />}
             {datasets.map((dataset, idx) => (
               <Area
                 key={dataset.id}
-                type="monotone"
-                dataKey="value"
+                type='monotone'
+                dataKey='value'
                 name={dataset.label}
-                stroke={ensureString(dataset.borderColor ?? null) || DEFAULT_COLORS[idx % DEFAULT_COLORS.length]}
-                fill={ensureString(dataset.backgroundColor ?? null) || DEFAULT_COLORS[idx % DEFAULT_COLORS.length]}
+                stroke={
+                  ensureString(dataset.borderColor ?? null) ||
+                  DEFAULT_COLORS[idx % DEFAULT_COLORS.length]
+                }
+                fill={
+                  ensureString(dataset.backgroundColor ?? null) ||
+                  DEFAULT_COLORS[idx % DEFAULT_COLORS.length]
+                }
                 stackId={ensureString(dataset.stack ?? null)}
               />
             ))}
@@ -295,17 +313,20 @@ export const ChartCard: React.FC<ChartCardProps> = ({
       case ChartType.Bar:
         return (
           <BarChart {...commonProps}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
+            <CartesianGrid strokeDasharray='3 3' />
+            <XAxis dataKey='name' />
             <YAxis />
             <Tooltip />
             {config.legend?.display && <Legend />}
             {datasets.map((dataset, idx) => (
               <Bar
                 key={dataset.id}
-                dataKey="value"
+                dataKey='value'
                 name={dataset.label}
-                fill={ensureString(dataset.backgroundColor ?? null) || DEFAULT_COLORS[idx % DEFAULT_COLORS.length]}
+                fill={
+                  ensureString(dataset.backgroundColor ?? null) ||
+                  DEFAULT_COLORS[idx % DEFAULT_COLORS.length]
+                }
                 stackId={ensureString(dataset.stack ?? null)}
               />
             ))}
@@ -315,16 +336,16 @@ export const ChartCard: React.FC<ChartCardProps> = ({
       case ChartType.Line:
         return (
           <LineChart {...commonProps}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
+            <CartesianGrid strokeDasharray='3 3' />
+            <XAxis dataKey='name' />
             <YAxis />
             <Tooltip />
             {config.legend?.display && <Legend />}
             {datasets.map((dataset, idx) => (
               <Line
                 key={dataset.id}
-                type="monotone"
-                dataKey="value"
+                type='monotone'
+                dataKey='value'
                 name={dataset.label}
                 stroke={dataset.borderColor || DEFAULT_COLORS[idx % DEFAULT_COLORS.length]}
                 strokeWidth={2}
@@ -339,20 +360,17 @@ export const ChartCard: React.FC<ChartCardProps> = ({
           <PieChart>
             <Pie
               data={chartData}
-              cx="50%"
-              cy="50%"
+              cx='50%'
+              cy='50%'
               labelLine={false}
               label
               outerRadius={config.type === ChartType.Donut ? 80 : 100}
               innerRadius={config.type === ChartType.Donut ? 40 : 0}
-              fill="#8884d8"
-              dataKey="value"
+              fill='#8884d8'
+              dataKey='value'
             >
               {chartData?.map((entry, idx) => (
-                <Cell
-                  key={`cell-${idx}`}
-                  fill={DEFAULT_COLORS[idx % DEFAULT_COLORS.length]}
-                />
+                <Cell key={`cell-${idx}`} fill={DEFAULT_COLORS[idx % DEFAULT_COLORS.length]} />
               ))}
             </Pie>
             <Tooltip />
@@ -364,13 +382,13 @@ export const ChartCard: React.FC<ChartCardProps> = ({
         return (
           <RadarChart data={chartData}>
             <PolarGrid />
-            <PolarAngleAxis dataKey="name" />
+            <PolarAngleAxis dataKey='name' />
             <PolarRadiusAxis />
             {datasets.map((dataset, idx) => (
               <Radar
                 key={dataset.id}
                 name={dataset.label}
-                dataKey="value"
+                dataKey='value'
                 stroke={dataset.borderColor || DEFAULT_COLORS[idx % DEFAULT_COLORS.length]}
                 fill={dataset.backgroundColor || DEFAULT_COLORS[idx % DEFAULT_COLORS.length]}
                 fillOpacity={0.6}
@@ -385,9 +403,9 @@ export const ChartCard: React.FC<ChartCardProps> = ({
         return (
           <Treemap
             data={chartData}
-            dataKey="value"
+            dataKey='value'
             aspectRatio={4 / 3}
-            stroke="#fff"
+            stroke='#fff'
             fill={DEFAULT_COLORS[0]}
           />
         );
@@ -402,12 +420,12 @@ export const ChartCard: React.FC<ChartCardProps> = ({
     return (
       <div
         className={cn(
-          'flex items-center justify-center p-8 bg-red-50 dark:bg-red-950/20 rounded-lg',
+          'flex items-center justify-center rounded-lg bg-red-50 p-8 dark:bg-red-950/20',
           className
         )}
       >
-        <ExclamationTriangleIcon className="w-6 h-6 text-red-500 mr-2" />
-        <span className="text-red-700 dark:text-red-300">
+        <ExclamationTriangleIcon className='mr-2 h-6 w-6 text-red-500' />
+        <span className='text-red-700 dark:text-red-300'>
           Failed to load chart: {error.message}
         </span>
       </div>
@@ -418,7 +436,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
   if (loading && !data) {
     return (
       <div className={cn('animate-pulse', className)}>
-        <div className="bg-gray-200 dark:bg-gray-700 rounded-lg" style={{ height }} />
+        <div className='rounded-lg bg-gray-200 dark:bg-gray-700' style={{ height }} />
       </div>
     );
   }
@@ -427,7 +445,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
     <div className={cn('space-y-4', className)}>
       {/* 性能指標（可選） */}
       {showPerformance && data?.chartCardData.performance && (
-        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 px-2">
+        <div className='flex items-center justify-between px-2 text-xs text-gray-500 dark:text-gray-400'>
           <span>Response: {data.chartCardData.performance.averageResponseTime.toFixed(0)}ms</span>
           <span>
             Cache Hit:{' '}
@@ -443,29 +461,29 @@ export const ChartCard: React.FC<ChartCardProps> = ({
       )}
 
       {/* 圖表容器 */}
-      <AnimatePresence mode="popLayout">
+      <AnimatePresence mode='popLayout'>
         {data?.chartCardData.config && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
+            className='rounded-lg bg-white p-6 shadow-md dark:bg-gray-800'
           >
             {/* 圖表標題 */}
-            <h3 className="text-lg font-semibold mb-2">{data.chartCardData.config.title}</h3>
+            <h3 className='mb-2 text-lg font-semibold'>{data.chartCardData.config.title}</h3>
             {data.chartCardData.config.description && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              <p className='mb-4 text-sm text-gray-600 dark:text-gray-400'>
                 {data.chartCardData.config.description}
               </p>
             )}
 
             {/* 圖表內容 */}
-            <ResponsiveContainer width="100%" height={height}>
+            <ResponsiveContainer width='100%' height={height}>
               {renderChart(data.chartCardData.config, data.chartCardData.datasets, 0)}
             </ResponsiveContainer>
 
             {/* 最後更新時間 */}
-            <div className="mt-4 text-xs text-gray-500 dark:text-gray-400">
+            <div className='mt-4 text-xs text-gray-500 dark:text-gray-400'>
               Last updated: {new Date(data.chartCardData.lastUpdated).toLocaleString()}
             </div>
           </motion.div>
@@ -474,10 +492,10 @@ export const ChartCard: React.FC<ChartCardProps> = ({
 
       {/* 刷新按鈕（編輯模式） */}
       {isEditMode && (
-        <div className="flex justify-end">
+        <div className='flex justify-end'>
           <button
             onClick={handleRefresh}
-            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            className='text-sm text-blue-600 hover:underline dark:text-blue-400'
           >
             Refresh Chart
           </button>

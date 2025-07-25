@@ -159,7 +159,7 @@ const calculateStats = (notifications: NotificationItem[]) => {
 export const notificationResolver = {
   Query: {
     notifications: async (
-      _: any,
+      _: unknown,
       { input }: { input: NotificationsInput },
       context: Context
     ) => {
@@ -206,16 +206,16 @@ export const notificationResolver = {
 
   Mutation: {
     markNotificationRead: async (
-      _: any,
+      _: unknown,
       { input }: { input: MarkNotificationInput },
       context: Context
     ) => {
       try {
         const { notificationId } = input;
-        
+
         // 找到並更新通知
         const notificationIndex = mockNotifications.findIndex(n => n.id === notificationId);
-        
+
         if (notificationIndex === -1) {
           return {
             success: false,
@@ -254,7 +254,7 @@ export const notificationResolver = {
     },
 
     bulkNotificationAction: async (
-      _: any,
+      _: unknown,
       { input }: { input: BulkNotificationActionInput },
       context: Context
     ) => {
@@ -264,7 +264,7 @@ export const notificationResolver = {
 
         notificationIds.forEach(id => {
           const notificationIndex = mockNotifications.findIndex(n => n.id === id);
-          
+
           if (notificationIndex !== -1) {
             switch (action) {
               case 'READ':

@@ -2,12 +2,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQuery, useMutation } from '@apollo/client';
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -36,13 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -72,7 +61,7 @@ import {
   Unlock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { 
+import {
   GET_CONFIG_BY_CATEGORY,
   GET_CONFIG_HISTORY,
   GET_CONFIG_TEMPLATES,
@@ -96,19 +85,16 @@ import { debounce } from 'lodash';
 import dynamic from 'next/dynamic';
 
 // Lazy load heavy components
-const MonacoEditor = dynamic(
-  () => import('@monaco-editor/react'),
-  { 
-    ssr: false,
-    loading: () => <Skeleton className="h-[200px] w-full" />
-  }
-);
+const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
+  ssr: false,
+  loading: () => <Skeleton className='h-[200px] w-full' />,
+});
 
 const DatePicker = dynamic(
   () => import('@/components/ui/date-picker').then(mod => mod.DatePicker),
-  { 
+  {
     ssr: false,
-    loading: () => <Skeleton className="h-10 w-full" />
+    loading: () => <Skeleton className='h-10 w-full' />,
   }
 );
 
@@ -123,33 +109,21 @@ interface ConfigCardProps {
 }
 
 // ConfigValue union type for type safety
-type ConfigValue = 
-  | string
-  | number
-  | boolean
-  | Record<string, unknown>
-  | unknown[]
-  | Date
-  | null;
+type ConfigValue = string | number | boolean | Record<string, unknown> | unknown[] | Date | null;
 
 // Type guard functions
-const isStringValue = (value: ConfigValue): value is string => 
-  typeof value === 'string';
+const isStringValue = (value: ConfigValue): value is string => typeof value === 'string';
 
-const isNumberValue = (value: ConfigValue): value is number => 
-  typeof value === 'number';
+const isNumberValue = (value: ConfigValue): value is number => typeof value === 'number';
 
-const isBooleanValue = (value: ConfigValue): value is boolean => 
-  typeof value === 'boolean';
+const isBooleanValue = (value: ConfigValue): value is boolean => typeof value === 'boolean';
 
-const isObjectValue = (value: ConfigValue): value is Record<string, unknown> => 
+const isObjectValue = (value: ConfigValue): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date);
 
-const isArrayValue = (value: ConfigValue): value is unknown[] => 
-  Array.isArray(value);
+const isArrayValue = (value: ConfigValue): value is unknown[] => Array.isArray(value);
 
-const isDateValue = (value: ConfigValue): value is Date => 
-  value instanceof Date;
+const isDateValue = (value: ConfigValue): value is Date => value instanceof Date;
 
 interface EditingState {
   [key: string]: {
@@ -162,14 +136,14 @@ interface EditingState {
 }
 
 const CATEGORY_ICONS: Record<ConfigCategory, React.ReactNode> = {
-  SYSTEM_CONFIG: <Settings className="w-4 h-4" />,
-  USER_PREFERENCES: <FileText className="w-4 h-4" />,
-  DEPARTMENT_CONFIG: <Building className="w-4 h-4" />,
-  NOTIFICATION_CONFIG: <Bell className="w-4 h-4" />,
-  API_CONFIG: <Link2 className="w-4 h-4" />,
-  SECURITY_CONFIG: <Lock className="w-4 h-4" />,
-  DISPLAY_CONFIG: <Monitor className="w-4 h-4" />,
-  WORKFLOW_CONFIG: <GitBranch className="w-4 h-4" />,
+  SYSTEM_CONFIG: <Settings className='h-4 w-4' />,
+  USER_PREFERENCES: <FileText className='h-4 w-4' />,
+  DEPARTMENT_CONFIG: <Building className='h-4 w-4' />,
+  NOTIFICATION_CONFIG: <Bell className='h-4 w-4' />,
+  API_CONFIG: <Link2 className='h-4 w-4' />,
+  SECURITY_CONFIG: <Lock className='h-4 w-4' />,
+  DISPLAY_CONFIG: <Monitor className='h-4 w-4' />,
+  WORKFLOW_CONFIG: <GitBranch className='h-4 w-4' />,
 };
 
 // Import missing icons
@@ -196,13 +170,13 @@ export function ConfigCard({
 
   // GraphQL queries
   const { data, loading, error, refetch } = useQuery(GET_CONFIG_BY_CATEGORY, {
-    variables: { 
+    variables: {
       input: {
         category: selectedCategory,
         includeDefaults: true,
         includeInherited: true,
         search: searchQuery || undefined,
-      }
+      },
     },
     pollInterval: refreshInterval,
   });
@@ -231,111 +205,125 @@ export function ConfigCard({
     if (!data?.configCardData?.configs) return [];
     return data.configCardData.configs;
   }, [data]);
-  
+
   // Get permissions from the response
   const userPermissions = useMemo(() => {
-    return data?.configCardData?.permissions || {
-      canView: true,
-      canEdit: false,
-      canCreate: false,
-      canDelete: false,
-      canImport: false,
-      canExport: false,
-      restrictedKeys: [],
-    };
+    return (
+      data?.configCardData?.permissions || {
+        canView: true,
+        canEdit: false,
+        canCreate: false,
+        canDelete: false,
+        canImport: false,
+        canExport: false,
+        restrictedKeys: [],
+      }
+    );
   }, [data]);
 
   // Permission helpers
-  const canEdit = useCallback((key: string) => {
-    if (!userPermissions.canEdit) return false;
-    if (userPermissions.restrictedKeys?.includes(key)) return false;
-    if (!permissions.length) return userPermissions.canEdit;
-    return permissions.includes('config.edit') || permissions.includes(`config.edit.${key}`);
-  }, [permissions, userPermissions]);
+  const canEdit = useCallback(
+    (key: string) => {
+      if (!userPermissions.canEdit) return false;
+      if (userPermissions.restrictedKeys?.includes(key)) return false;
+      if (!permissions.length) return userPermissions.canEdit;
+      return permissions.includes('config.edit') || permissions.includes(`config.edit.${key}`);
+    },
+    [permissions, userPermissions]
+  );
 
-  const canDelete = useCallback((key: string) => {
-    if (!userPermissions.canDelete) return false;
-    if (userPermissions.restrictedKeys?.includes(key)) return false;
-    if (!permissions.length) return userPermissions.canDelete;
-    return permissions.includes('config.delete') || permissions.includes(`config.delete.${key}`);
-  }, [permissions, userPermissions]);
+  const canDelete = useCallback(
+    (key: string) => {
+      if (!userPermissions.canDelete) return false;
+      if (userPermissions.restrictedKeys?.includes(key)) return false;
+      if (!permissions.length) return userPermissions.canDelete;
+      return permissions.includes('config.delete') || permissions.includes(`config.delete.${key}`);
+    },
+    [permissions, userPermissions]
+  );
 
   // Debounced search with proper memoization
   const debouncedSearch = useMemo(
-    () => debounce((value: string) => {
-      setSearchQuery(value);
-    }, 300),
+    () =>
+      debounce((value: string) => {
+        setSearchQuery(value);
+      }, 300),
     [] // Empty dependencies as setSearchQuery is stable
   );
 
   // Handle config update with proper dependencies
-  const handleUpdate = useCallback(async (config: ConfigItem) => {
-    const editing = editingState[config.id];
-    if (!editing || !editing.isEditing) return;
+  const handleUpdate = useCallback(
+    async (config: ConfigItem) => {
+      const editing = editingState[config.id];
+      if (!editing || !editing.isEditing) return;
 
-    try {
-      // Validate before saving
-      const { data: validationData } = await validateConfig({
-        variables: {
-          key: config.key,
-          value: editing.value,
-          dataType: config.dataType,
-        },
-      });
-
-      if (!validationData.validateConfig.isValid) {
-        setEditingState(prev => ({
-          ...prev,
-          [config.id]: {
-            ...prev[config.id],
-            hasError: true,
-            errorMessage: validationData.validateConfig.errors.join(', '),
+      try {
+        // Validate before saving
+        const { data: validationData } = await validateConfig({
+          variables: {
+            key: config.key,
+            value: editing.value,
+            dataType: config.dataType,
           },
-        }));
-        return;
+        });
+
+        if (!validationData.validateConfig.isValid) {
+          setEditingState(prev => ({
+            ...prev,
+            [config.id]: {
+              ...prev[config.id],
+              hasError: true,
+              errorMessage: validationData.validateConfig.errors.join(', '),
+            },
+          }));
+          return;
+        }
+
+        await updateConfig({
+          variables: {
+            id: config.id,
+            input: {
+              value: editing.value,
+            },
+          },
+          optimisticResponse: {
+            updateConfig: {
+              ...config,
+              value: editing.value,
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        });
+
+        setEditingState(prev => {
+          const newState = { ...prev };
+          delete newState[config.id];
+          return newState;
+        });
+
+        toast.success(`Updated ${config.key}`);
+      } catch (error) {
+        toast.error('Failed to update configuration');
+        console.error('Update error:', error);
       }
-
-      await updateConfig({
-        variables: {
-          id: config.id,
-          input: {
-            value: editing.value,
-          },
-        },
-        optimisticResponse: {
-          updateConfig: {
-            ...config,
-            value: editing.value,
-            updatedAt: new Date().toISOString(),
-          },
-        },
-      });
-
-      setEditingState(prev => {
-        const newState = { ...prev };
-        delete newState[config.id];
-        return newState;
-      });
-
-      toast.success(`Updated ${config.key}`);
-    } catch (error) {
-      toast.error('Failed to update configuration');
-      console.error('Update error:', error);
-    }
-  }, [editingState, validateConfig, updateConfig]);
+    },
+    [editingState, validateConfig, updateConfig]
+  );
 
   // Handle batch update
   const handleBatchUpdate = async () => {
-    const updates = Array.from(selectedItems).map(id => {
-      const config = filteredConfigs.find((c: ConfigItem) => c.id === id);
-      const editing = editingState[id];
-      if (!config || !editing) return null;
+    const updates = Array.from(selectedItems)
+      .map(id => {
+        const config = filteredConfigs.find((c: ConfigItem) => c.id === id);
+        const editing = editingState[id];
+        if (!config || !editing) return null;
 
-      return {
-        id,
-        value: editing.value,
-      };
-    }).filter(Boolean);
+        return {
+          id,
+          value: editing.value,
+        };
+      })
+      .filter(Boolean);
 
     if (!updates.length) return;
 
@@ -359,7 +347,7 @@ export function ConfigCard({
       await revertConfig({
         variables: { configId, version },
       });
-      
+
       await refetch();
       setShowHistoryDialog(false);
       toast.success('Configuration reverted successfully');
@@ -371,9 +359,9 @@ export function ConfigCard({
 
   // Handle template save
   const handleSaveTemplate = async (name: string, description?: string) => {
-    const selectedConfigs = Array.from(selectedItems).map(id =>
-      filteredConfigs.find((c: ConfigItem) => c.id === id)
-    ).filter(Boolean);
+    const selectedConfigs = Array.from(selectedItems)
+      .map(id => filteredConfigs.find((c: ConfigItem) => c.id === id))
+      .filter(Boolean);
 
     if (!selectedConfigs.length) return;
 
@@ -410,8 +398,8 @@ export function ConfigCard({
       });
 
       // Create download link
-      const blob = new Blob([exportData.exportConfig], { 
-        type: exportFormat === 'json' ? 'application/json' : 'text/plain' 
+      const blob = new Blob([exportData.exportConfig], {
+        type: exportFormat === 'json' ? 'application/json' : 'text/plain',
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -433,13 +421,12 @@ export function ConfigCard({
   const handleImport = async (file: File) => {
     try {
       const content = await file.text();
-      
+
       await importConfig({
         variables: {
           category: selectedCategory,
           data: content,
-          format: file.name.endsWith('.json') ? 'json' : 
-                  file.name.endsWith('.csv') ? 'csv' : 'env',
+          format: file.name.endsWith('.json') ? 'json' : file.name.endsWith('.csv') ? 'csv' : 'env',
         },
       });
 
@@ -460,12 +447,12 @@ export function ConfigCard({
 
     if (!isEditing) {
       return (
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-mono">{JSON.stringify(value)}</span>
+        <div className='flex items-center gap-2'>
+          <span className='font-mono text-sm'>{JSON.stringify(value)}</span>
           {canEdit(config.key) && (
             <Button
-              variant="ghost"
-              size="sm"
+              variant='ghost'
+              size='sm'
               onClick={() => {
                 setEditingState(prev => ({
                   ...prev,
@@ -478,7 +465,7 @@ export function ConfigCard({
                 }));
               }}
             >
-              <Edit className="w-3 h-3" />
+              <Edit className='h-3 w-3' />
             </Button>
           )}
         </div>
@@ -487,10 +474,16 @@ export function ConfigCard({
 
     switch (config.dataType) {
       case ConfigDataType.STRING:
+        const stringValue =
+          typeof value === 'string'
+            ? value
+            : value === null || value === undefined
+              ? ''
+              : String(value);
         return (
           <Input
-            value={value}
-            onChange={(e) => {
+            value={stringValue}
+            onChange={e => {
               setEditingState(prev => ({
                 ...prev,
                 [config.id]: {
@@ -505,11 +498,19 @@ export function ConfigCard({
         );
 
       case ConfigDataType.NUMBER:
+        const numberValue =
+          typeof value === 'number'
+            ? value
+            : typeof value === 'string'
+              ? value
+              : value === null || value === undefined
+                ? ''
+                : String(value);
         return (
           <Input
-            type="number"
-            value={value}
-            onChange={(e) => {
+            type='number'
+            value={numberValue}
+            onChange={e => {
               setEditingState(prev => ({
                 ...prev,
                 [config.id]: {
@@ -526,10 +527,20 @@ export function ConfigCard({
         );
 
       case ConfigDataType.BOOLEAN:
+        const booleanValue =
+          typeof value === 'boolean'
+            ? value
+            : typeof value === 'string'
+              ? value === 'true' || value === '1'
+              : typeof value === 'number'
+                ? Boolean(value)
+                : value === null || value === undefined
+                  ? false
+                  : Boolean(value);
         return (
           <Switch
-            checked={value}
-            onCheckedChange={(checked) => {
+            checked={booleanValue}
+            onCheckedChange={checked => {
               setEditingState(prev => ({
                 ...prev,
                 [config.id]: {
@@ -545,12 +556,12 @@ export function ConfigCard({
       case ConfigDataType.JSON:
       case ConfigDataType.OBJECT:
         return (
-          <div className="space-y-2">
+          <div className='space-y-2'>
             <MonacoEditor
-              height="200px"
-              language="json"
+              height='200px'
+              language='json'
               value={typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
-              onChange={(newValue) => {
+              onChange={newValue => {
                 try {
                   const parsed = JSON.parse(newValue || '{}');
                   setEditingState(prev => ({
@@ -578,20 +589,18 @@ export function ConfigCard({
                 lineNumbers: 'off',
               }}
             />
-            {editing?.hasError && (
-              <p className="text-xs text-red-500">{editing.errorMessage}</p>
-            )}
+            {editing?.hasError && <p className='text-xs text-red-500'>{editing.errorMessage}</p>}
           </div>
         );
 
       case ConfigDataType.ARRAY:
         return (
-          <div className="space-y-2">
+          <div className='space-y-2'>
             {(Array.isArray(value) ? value : []).map((item, index) => (
-              <div key={index} className="flex items-center gap-2">
+              <div key={index} className='flex items-center gap-2'>
                 <Input
-                  value={item}
-                  onChange={(e) => {
+                  value={typeof item === 'string' ? item : String(item || '')}
+                  onChange={e => {
                     const newArray = [...(Array.isArray(value) ? value : [])];
                     newArray[index] = e.target.value;
                     setEditingState(prev => ({
@@ -605,10 +614,12 @@ export function ConfigCard({
                   }}
                 />
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant='ghost'
+                  size='sm'
                   onClick={() => {
-                    const newArray = (Array.isArray(value) ? value : []).filter((_, i) => i !== index);
+                    const newArray = (Array.isArray(value) ? value : []).filter(
+                      (_, i) => i !== index
+                    );
                     setEditingState(prev => ({
                       ...prev,
                       [config.id]: {
@@ -619,13 +630,13 @@ export function ConfigCard({
                     }));
                   }}
                 >
-                  <X className="w-3 h-3" />
+                  <X className='h-3 w-3' />
                 </Button>
               </div>
             ))}
             <Button
-              variant="outline"
-              size="sm"
+              variant='outline'
+              size='sm'
               onClick={() => {
                 const newArray = [...(Array.isArray(value) ? value : []), ''];
                 setEditingState(prev => ({
@@ -638,17 +649,23 @@ export function ConfigCard({
                 }));
               }}
             >
-              <Plus className="w-3 h-3 mr-1" />
+              <Plus className='mr-1 h-3 w-3' />
               Add Item
             </Button>
           </div>
         );
 
       case ConfigDataType.DATE:
+        const dateValue =
+          value instanceof Date
+            ? value
+            : typeof value === 'string' || typeof value === 'number'
+              ? new Date(value)
+              : new Date();
         return (
           <DatePicker
-            date={new Date(value)}
-            onDateChange={(date) => {
+            date={dateValue}
+            onDateChange={date => {
               setEditingState(prev => ({
                 ...prev,
                 [config.id]: {
@@ -663,11 +680,11 @@ export function ConfigCard({
 
       case ConfigDataType.COLOR:
         return (
-          <div className="flex items-center gap-2">
+          <div className='flex items-center gap-2'>
             <Input
-              type="color"
-              value={value}
-              onChange={(e) => {
+              type='color'
+              value={typeof value === 'string' ? value : String(value || '#000000')}
+              onChange={e => {
                 setEditingState(prev => ({
                   ...prev,
                   [config.id]: {
@@ -677,11 +694,11 @@ export function ConfigCard({
                   },
                 }));
               }}
-              className="w-16 h-10"
+              className='h-10 w-16'
             />
             <Input
-              value={value}
-              onChange={(e) => {
+              value={typeof value === 'string' ? value : String(value || '')}
+              onChange={e => {
                 setEditingState(prev => ({
                   ...prev,
                   [config.id]: {
@@ -691,8 +708,8 @@ export function ConfigCard({
                   },
                 }));
               }}
-              placeholder="#000000"
-              className="flex-1"
+              placeholder='#000000'
+              className='flex-1'
             />
           </div>
         );
@@ -700,9 +717,9 @@ export function ConfigCard({
       case ConfigDataType.URL:
         return (
           <Input
-            type="url"
-            value={value}
-            onChange={(e) => {
+            type='url'
+            value={typeof value === 'string' ? value : String(value || '')}
+            onChange={e => {
               setEditingState(prev => ({
                 ...prev,
                 [config.id]: {
@@ -712,7 +729,7 @@ export function ConfigCard({
                 },
               }));
             }}
-            placeholder="https://example.com"
+            placeholder='https://example.com'
             className={cn(editing?.hasError && 'border-red-500')}
           />
         );
@@ -731,46 +748,46 @@ export function ConfigCard({
       <div
         key={config.id}
         className={cn(
-          'p-4 border rounded-lg space-y-3',
+          'space-y-3 rounded-lg border p-4',
           isSelected && 'border-primary bg-primary/5',
           editing?.isEditing && 'border-blue-500'
         )}
       >
-        <div className="flex items-start justify-between">
-          <div className="flex-1 space-y-1">
-            <div className="flex items-center gap-2">
-              <h4 className="font-medium">{config.key}</h4>
+        <div className='flex items-start justify-between'>
+          <div className='flex-1 space-y-1'>
+            <div className='flex items-center gap-2'>
+              <h4 className='font-medium'>{config.key}</h4>
               {config.accessLevel === ConfigAccessLevel.ADMIN && (
-                <Badge variant="secondary" className="text-xs">
-                  <Lock className="w-3 h-3 mr-1" />
+                <Badge variant='secondary' className='text-xs'>
+                  <Lock className='mr-1 h-3 w-3' />
                   Admin
                 </Badge>
               )}
               {!config.isEditable && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant='outline' className='text-xs'>
                   Read Only
                 </Badge>
               )}
             </div>
             {config.description && (
-              <p className="text-sm text-muted-foreground">{config.description}</p>
+              <p className='text-sm text-muted-foreground'>{config.description}</p>
             )}
           </div>
-          
-          <div className="flex items-center gap-2">
+
+          <div className='flex items-center gap-2'>
             {editing?.isEditing ? (
               <>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant='ghost'
+                  size='sm'
                   onClick={() => handleUpdate(config)}
                   disabled={editing.hasError}
                 >
-                  <Check className="w-4 h-4" />
+                  <Check className='h-4 w-4' />
                 </Button>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant='ghost'
+                  size='sm'
                   onClick={() => {
                     setEditingState(prev => {
                       const newState = { ...prev };
@@ -779,17 +796,17 @@ export function ConfigCard({
                     });
                   }}
                 >
-                  <X className="w-4 h-4" />
+                  <X className='h-4 w-4' />
                 </Button>
               </>
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <MoreVertical className="w-4 h-4" />
+                  <Button variant='ghost' size='sm'>
+                    <MoreVertical className='h-4 w-4' />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align='end'>
                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {canEdit(config.key) && config.isEditable && (
@@ -806,7 +823,7 @@ export function ConfigCard({
                         }));
                       }}
                     >
-                      <Edit className="w-4 h-4 mr-2" />
+                      <Edit className='mr-2 h-4 w-4' />
                       Edit
                     </DropdownMenuItem>
                   )}
@@ -816,7 +833,7 @@ export function ConfigCard({
                       toast.success('Value copied to clipboard');
                     }}
                   >
-                    <Copy className="w-4 h-4 mr-2" />
+                    <Copy className='mr-2 h-4 w-4' />
                     Copy Value
                   </DropdownMenuItem>
                   {showHistory && (
@@ -826,15 +843,15 @@ export function ConfigCard({
                         setShowHistoryDialog(true);
                       }}
                     >
-                      <History className="w-4 h-4 mr-2" />
+                      <History className='mr-2 h-4 w-4' />
                       View History
                     </DropdownMenuItem>
                   )}
                   {canDelete(config.key) && config.scope !== ConfigScope.GLOBAL && (
                     <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-red-600">
-                        <Trash2 className="w-4 h-4 mr-2" />
+                      <DropdownMenuItem className='text-red-600'>
+                        <Trash2 className='mr-2 h-4 w-4' />
                         Delete
                       </DropdownMenuItem>
                     </>
@@ -845,11 +862,11 @@ export function ConfigCard({
           </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Badge variant="outline">{config.dataType}</Badge>
+        <div className='space-y-2'>
+          <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+            <Badge variant='outline'>{config.dataType}</Badge>
             {config.tags?.map(tag => (
-              <Badge key={tag} variant="secondary" className="text-xs">
+              <Badge key={tag} variant='secondary' className='text-xs'>
                 {tag}
               </Badge>
             ))}
@@ -866,9 +883,7 @@ export function ConfigCard({
       // Ctrl/Cmd + S to save
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        const editingConfigs = Object.keys(editingState).filter(
-          id => editingState[id].isEditing
-        );
+        const editingConfigs = Object.keys(editingState).filter(id => editingState[id].isEditing);
         if (editingConfigs.length === 1) {
           const config = filteredConfigs.find((c: ConfigItem) => c.id === editingConfigs[0]);
           if (config) handleUpdate(config);
@@ -889,13 +904,13 @@ export function ConfigCard({
     return (
       <Card className={cn('w-full', className)}>
         <CardHeader>
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-4 w-64" />
+          <Skeleton className='h-8 w-32' />
+          <Skeleton className='h-4 w-64' />
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className='space-y-4'>
             {[1, 2, 3].map(i => (
-              <Skeleton key={i} className="h-32 w-full" />
+              <Skeleton key={i} className='h-32 w-full' />
             ))}
           </div>
         </CardContent>
@@ -907,15 +922,15 @@ export function ConfigCard({
     return (
       <Card className={cn('w-full', className)}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-red-600">
-            <AlertCircle className="w-5 h-5" />
+          <CardTitle className='flex items-center gap-2 text-red-600'>
+            <AlertCircle className='h-5 w-5' />
             Error Loading Configuration
           </CardTitle>
           <CardDescription>{error.message}</CardDescription>
         </CardHeader>
         <CardContent>
           <Button onClick={() => refetch()}>
-            <RefreshCw className="w-4 h-4 mr-2" />
+            <RefreshCw className='mr-2 h-4 w-4' />
             Retry
           </Button>
         </CardContent>
@@ -926,63 +941,51 @@ export function ConfigCard({
   return (
     <Card className={cn('w-full', className)}>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className='flex items-center justify-between'>
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="w-5 h-5" />
+            <CardTitle className='flex items-center gap-2'>
+              <Settings className='h-5 w-5' />
               Configuration Management
             </CardTitle>
-            <CardDescription>
-              Manage system configurations and settings
-            </CardDescription>
+            <CardDescription>Manage system configurations and settings</CardDescription>
           </div>
-          
-          <div className="flex items-center gap-2">
+
+          <div className='flex items-center gap-2'>
             {selectedItems.size > 0 && (
               <>
-                <Badge variant="secondary">
-                  {selectedItems.size} selected
-                </Badge>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleBatchUpdate}
-                >
-                  <Save className="w-4 h-4 mr-2" />
+                <Badge variant='secondary'>{selectedItems.size} selected</Badge>
+                <Button variant='outline' size='sm' onClick={handleBatchUpdate}>
+                  <Save className='mr-2 h-4 w-4' />
                   Save All
                 </Button>
-                <Separator orientation="vertical" className="h-6" />
+                <Separator orientation='vertical' className='h-6' />
               </>
             )}
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-            >
-              <RefreshCw className="w-4 h-4" />
+
+            <Button variant='outline' size='sm' onClick={() => refetch()}>
+              <RefreshCw className='h-4 w-4' />
             </Button>
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <MoreVertical className="w-4 h-4" />
+                <Button variant='outline' size='sm'>
+                  <MoreVertical className='h-4 w-4' />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align='end'>
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setImportDialogOpen(true)}>
-                  <Upload className="w-4 h-4 mr-2" />
+                  <Upload className='mr-2 h-4 w-4' />
                   Import
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleExport}>
-                  <Download className="w-4 h-4 mr-2" />
+                  <Download className='mr-2 h-4 w-4' />
                   Export
                 </DropdownMenuItem>
                 {showTemplates && (
                   <DropdownMenuItem onClick={() => setShowTemplateDialog(true)}>
-                    <FileText className="w-4 h-4 mr-2" />
+                    <FileText className='mr-2 h-4 w-4' />
                     Templates
                   </DropdownMenuItem>
                 )}
@@ -991,37 +994,40 @@ export function ConfigCard({
           </div>
         </div>
       </CardHeader>
-      
-      <CardContent className="space-y-4">
+
+      <CardContent className='space-y-4'>
         {showSearch && (
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <div className='relative'>
+            <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground' />
             <Input
-              placeholder="Search configurations..."
-              className="pl-10"
-              onChange={(e) => debouncedSearch(e.target.value)}
+              placeholder='Search configurations...'
+              className='pl-10'
+              onChange={e => debouncedSearch(e.target.value)}
             />
           </div>
         )}
-        
-        <Tabs value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as ConfigCategory)}>
-          <TabsList className="grid grid-cols-4 lg:grid-cols-8">
+
+        <Tabs
+          value={selectedCategory}
+          onValueChange={v => setSelectedCategory(v as ConfigCategory)}
+        >
+          <TabsList className='grid grid-cols-4 lg:grid-cols-8'>
             {Object.values(ConfigCategory).map(category => (
               <TabsTrigger key={category} value={category}>
-                <div className="flex items-center gap-1">
+                <div className='flex items-center gap-1'>
                   {CATEGORY_ICONS[category]}
-                  <span className="hidden lg:inline">{category}</span>
+                  <span className='hidden lg:inline'>{category}</span>
                 </div>
               </TabsTrigger>
             ))}
           </TabsList>
-          
+
           {Object.values(ConfigCategory).map(category => (
             <TabsContent key={category} value={category}>
-              <ScrollArea className="h-[600px] pr-4">
-                <div className="space-y-4">
+              <ScrollArea className='h-[600px] pr-4'>
+                <div className='space-y-4'>
                   {filteredConfigs.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
+                    <div className='py-8 text-center text-muted-foreground'>
                       No configurations found
                     </div>
                   ) : (
@@ -1036,42 +1042,42 @@ export function ConfigCard({
 
       {/* History Dialog */}
       <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className='max-w-2xl'>
           <DialogHeader>
             <DialogTitle>Configuration History</DialogTitle>
             <DialogDescription>
               View and revert to previous versions of {selectedConfig?.key}
             </DialogDescription>
           </DialogHeader>
-          
-          <ScrollArea className="h-[400px]">
+
+          <ScrollArea className='h-[400px]'>
             {historyLoading ? (
-              <div className="space-y-2">
+              <div className='space-y-2'>
                 {[1, 2, 3].map(i => (
-                  <Skeleton key={i} className="h-20 w-full" />
+                  <Skeleton key={i} className='h-20 w-full' />
                 ))}
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className='space-y-2'>
                 {historyData?.getConfigHistory.map((entry: ConfigHistoryEntry) => (
-                  <div key={entry.version} className="p-4 border rounded-lg space-y-2">
-                    <div className="flex items-center justify-between">
+                  <div key={entry.version} className='space-y-2 rounded-lg border p-4'>
+                    <div className='flex items-center justify-between'>
                       <div>
-                        <p className="font-medium">Version {entry.version}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className='font-medium'>Version {entry.version}</p>
+                        <p className='text-sm text-muted-foreground'>
                           {new Date(entry.changedAt).toLocaleString()} by {entry.changedBy}
                         </p>
                       </div>
                       <Button
-                        variant="outline"
-                        size="sm"
+                        variant='outline'
+                        size='sm'
                         onClick={() => handleRevert(selectedConfig!.id, entry.version)}
                       >
-                        <RotateCcw className="w-4 h-4 mr-2" />
+                        <RotateCcw className='mr-2 h-4 w-4' />
                         Revert
                       </Button>
                     </div>
-                    <div className="bg-muted p-2 rounded text-sm font-mono">
+                    <div className='rounded bg-muted p-2 font-mono text-sm'>
                       {JSON.stringify(entry.value, null, 2)}
                     </div>
                   </div>
@@ -1084,43 +1090,41 @@ export function ConfigCard({
 
       {/* Template Dialog */}
       <Dialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className='max-w-2xl'>
           <DialogHeader>
             <DialogTitle>Configuration Templates</DialogTitle>
-            <DialogDescription>
-              Save and apply configuration templates
-            </DialogDescription>
+            <DialogDescription>Save and apply configuration templates</DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-4">
+
+          <div className='space-y-4'>
             {templateLoading ? (
-              <div className="space-y-2">
+              <div className='space-y-2'>
                 {[1, 2, 3].map(i => (
-                  <Skeleton key={i} className="h-16 w-full" />
+                  <Skeleton key={i} className='h-16 w-full' />
                 ))}
               </div>
             ) : (
-              <ScrollArea className="h-[300px]">
-                <div className="space-y-2">
+              <ScrollArea className='h-[300px]'>
+                <div className='space-y-2'>
                   {templateData?.getConfigTemplates.map((template: ConfigTemplate) => (
-                    <div key={template.id} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between">
+                    <div key={template.id} className='rounded-lg border p-4'>
+                      <div className='flex items-center justify-between'>
                         <div>
-                          <p className="font-medium">{template.name}</p>
+                          <p className='font-medium'>{template.name}</p>
                           {template.description && (
-                            <p className="text-sm text-muted-foreground">{template.description}</p>
+                            <p className='text-sm text-muted-foreground'>{template.description}</p>
                           )}
                         </div>
                         <Button
-                          variant="outline"
-                          size="sm"
+                          variant='outline'
+                          size='sm'
                           onClick={() => {
                             // Apply template logic
                             toast.success('Template applied');
                             setShowTemplateDialog(false);
                           }}
                         >
-                          <Sparkles className="w-4 h-4 mr-2" />
+                          <Sparkles className='mr-2 h-4 w-4' />
                           Apply
                         </Button>
                       </div>
@@ -1129,17 +1133,18 @@ export function ConfigCard({
                 </div>
               </ScrollArea>
             )}
-            
+
             {selectedItems.size > 0 && (
               <>
                 <Separator />
-                <div className="space-y-2">
+                <div className='space-y-2'>
                   <Label>Save as Template</Label>
-                  <div className="flex gap-2">
-                    <Input placeholder="Template name" id="template-name" />
+                  <div className='flex gap-2'>
+                    <Input placeholder='Template name' id='template-name' />
                     <Button
                       onClick={() => {
-                        const name = (document.getElementById('template-name') as HTMLInputElement)?.value;
+                        const name = (document.getElementById('template-name') as HTMLInputElement)
+                          ?.value;
                         if (name) handleSaveTemplate(name);
                       }}
                     >
@@ -1158,31 +1163,25 @@ export function ConfigCard({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Import Configuration</DialogTitle>
-            <DialogDescription>
-              Upload a configuration file to import
-            </DialogDescription>
+            <DialogDescription>Upload a configuration file to import</DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="border-2 border-dashed rounded-lg p-8 text-center">
+
+          <div className='space-y-4'>
+            <div className='rounded-lg border-2 border-dashed p-8 text-center'>
               <input
-                type="file"
-                accept=".json,.csv,.env"
-                onChange={(e) => {
+                type='file'
+                accept='.json,.csv,.env'
+                onChange={e => {
                   const file = e.target.files?.[0];
                   if (file) handleImport(file);
                 }}
-                className="hidden"
-                id="import-file"
+                className='hidden'
+                id='import-file'
               />
-              <label htmlFor="import-file" className="cursor-pointer">
-                <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  Click to upload or drag and drop
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  JSON, CSV, or ENV files
-                </p>
+              <label htmlFor='import-file' className='cursor-pointer'>
+                <Upload className='mx-auto mb-2 h-8 w-8 text-muted-foreground' />
+                <p className='text-sm text-muted-foreground'>Click to upload or drag and drop</p>
+                <p className='mt-1 text-xs text-muted-foreground'>JSON, CSV, or ENV files</p>
               </label>
             </div>
           </div>

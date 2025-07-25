@@ -139,21 +139,21 @@ export function useStockTransfer(options: UseStockTransferOptions = {}) {
           throw new Error('Invalid location mapping');
         }
 
-        const inventoryUpdate: DatabaseRecord = {
+        const inventoryUpdate = {
           product_code: palletInfo.product_code,
           plt_num: palletInfo.plt_num,
           latest_update: new Date().toISOString(),
-        };
+        } as any;
 
         // Decrease from location
         inventoryUpdate[fromDbColumn] = -palletInfo.product_qty;
         // Increase to location
         inventoryUpdate[toDbColumn] = palletInfo.product_qty;
 
-        // @types-migration:todo(phase3) [P2] 修復 DatabaseRecord 動態屬性類型 - Target: 2025-08 - Owner: @frontend-team
+        // 使用 DatabaseRecord 接口的索引簽名來安全地插入動態屬性
         const { error: inventoryError } = await supabase
           .from('record_inventory')
-          .insert([inventoryUpdate as any]);
+          .insert([inventoryUpdate]);
 
         if (inventoryError) {
           throw new Error(`Failed to update inventory: ${inventoryError.message}`);

@@ -7,8 +7,18 @@
 
 import React from 'react';
 
+// HistoryTreeV2 Props 類型定義
+interface HistoryTreeV2Props {
+  widget?: {
+    title?: string;
+    [key: string]: unknown;
+  };
+  isEditMode?: boolean;
+  [key: string]: unknown;
+}
+
 // 直接使用 function declaration 避免任何 factory 問題
-function HistoryTreeV2(props: any) {
+function HistoryTreeV2(props: HistoryTreeV2Props) {
   const { widget, isEditMode } = props || {};
 
   return React.createElement(

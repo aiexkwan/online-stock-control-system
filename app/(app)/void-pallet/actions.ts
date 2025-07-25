@@ -1239,7 +1239,7 @@ export async function getUserHistoryAction(
 
     if (error) throw error;
 
-    return { success: true, data: (data || []) as any };
+    return { success: true, data: (data || []) as HistoryRecord[] };
   } catch (error: unknown) {
     console.error('Error fetching user history:', error);
     return {

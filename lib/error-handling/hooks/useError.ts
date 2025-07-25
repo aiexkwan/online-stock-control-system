@@ -330,7 +330,7 @@ export function useErrorRecovery() {
               })
               .then(() => window.location.reload());
           } else {
-            (window as any).location.reload();
+            window.location.reload();
           }
         }
         break;

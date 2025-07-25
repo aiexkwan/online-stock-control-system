@@ -516,6 +516,129 @@ export type Database = {
           },
         ];
       };
+      user_dashboard_settings: {
+        Row: {
+          id: string;
+          user_id: string;
+          email: string;
+          dashboard_name: string;
+          config: Json;
+          is_default: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          email: string;
+          dashboard_name: string;
+          config: Json;
+          is_default?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          email?: string;
+          dashboard_name?: string;
+          config?: Json;
+          is_default?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      user_navigation_history: {
+        Row: {
+          id: string;
+          user_id: string;
+          path: string;
+          visited_at: string | null;
+          session_id: string | null;
+          device_type: string | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          path: string;
+          visited_at?: string | null;
+          session_id?: string | null;
+          device_type?: string | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          path?: string;
+          visited_at?: string | null;
+          session_id?: string | null;
+          device_type?: string | null;
+          created_at?: string | null;
+        };
+        Relationships: [];
+      };
+      user_navigation_stats: {
+        Row: {
+          id: string;
+          user_id: string;
+          path: string;
+          visit_count: number;
+          last_visited: string | null;
+          avg_duration: number | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          path: string;
+          visit_count?: number;
+          last_visited?: string | null;
+          avg_duration?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          path?: string;
+          visit_count?: number;
+          last_visited?: string | null;
+          avg_duration?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      user_navigation_patterns: {
+        Row: {
+          id: string;
+          user_id: string;
+          pattern_data: Json;
+          confidence_score: number | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          pattern_data: Json;
+          confidence_score?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          pattern_data?: Json;
+          confidence_score?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
       report_log: {
         Row: {
           context: string;
@@ -729,3 +852,53 @@ export const Constants = {
     Enums: {},
   },
 } as const;
+
+// TypeScript utilities for type-safe Supabase client
+import { SupabaseClient } from '@supabase/supabase-js';
+
+export type TypedSupabaseClient = SupabaseClient<Database>;
+
+// Helper type for specific table operations
+export type TableName = keyof Database['public']['Tables'];
+
+// Helper type for insert operations
+export type TableInsert<T extends TableName> = Database['public']['Tables'][T]['Insert'];
+
+// Helper type for update operations
+export type TableUpdate<T extends TableName> = Database['public']['Tables'][T]['Update'];
+
+// Helper type for row data
+export type TableRow<T extends TableName> = Database['public']['Tables'][T]['Row'];
+
+// Configuration types for dashboard settings
+export interface DashboardConfig {
+  layout?: string;
+  widgets?: Array<{
+    id: string;
+    type: string;
+    position: { x: number; y: number };
+    size: { w: number; h: number };
+    config?: Record<string, unknown>;
+  }>;
+  theme?: string;
+  preferences?: Record<string, unknown>;
+}
+
+// Navigation action types for dynamic action bar
+export interface NavigationAction {
+  id: string;
+  type: 'navigate' | 'action' | 'modal';
+  label: string;
+  icon?: string;
+  href?: string;
+  onClick?: () => void;
+}
+
+// User data interface with icon support
+export interface UserData {
+  id: string;
+  name: string;
+  email: string;
+  icon_url?: string | null;
+  role?: string;
+}

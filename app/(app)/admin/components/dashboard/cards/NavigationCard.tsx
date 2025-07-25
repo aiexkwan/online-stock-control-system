@@ -1,7 +1,7 @@
 /**
  * NavigationCard Component
  * 統一的導航卡片組件，支援多種導航模式和權限控制
- * 
+ *
  * 支援的導航類型：
  * - SIDEBAR: 側邊欄導航
  * - BREADCRUMB: 面包屑導航
@@ -111,27 +111,27 @@ const NAVIGATION_BOOKMARK_MUTATION = gql`
 export interface NavigationCardProps {
   // 導航類型
   navigationType: NavigationType;
-  
+
   // 當前路徑
   currentPath?: string;
-  
+
   // 用戶權限
   permissions?: string[];
-  
+
   // 顯示選項
   showSearch?: boolean;
   showBookmarks?: boolean;
   collapsible?: boolean;
   showBadges?: boolean;
-  
+
   // 樣式選項
   className?: string;
   height?: number | string;
   theme?: 'light' | 'dark';
-  
+
   // 編輯模式
   isEditMode?: boolean;
-  
+
   // 回調函數
   onNavigate?: (path: string, item: NavigationItem) => void;
   onBookmark?: (item: NavigationItem) => void;
@@ -157,7 +157,7 @@ export const NavigationCard: React.FC<NavigationCardProps> = ({
   // Hooks
   const router = useRouter();
   const pathname = usePathname();
-  
+
   // 狀態管理
   const [searchQuery, setSearchQuery] = useState('');
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -306,18 +306,20 @@ export const NavigationCard: React.FC<NavigationCardProps> = ({
 
     const searchInItems = (items: NavigationItem[]): NavigationItem[] => {
       const results: NavigationItem[] = [];
-      
+
       items.forEach(item => {
-        if (item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.description?.toLowerCase().includes(searchQuery.toLowerCase())) {
+        if (
+          item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+        ) {
           results.push(item);
         }
-        
+
         if (item.children) {
           results.push(...searchInItems(item.children));
         }
       });
-      
+
       return results;
     };
 
@@ -325,17 +327,20 @@ export const NavigationCard: React.FC<NavigationCardProps> = ({
   }, [searchQuery, filteredItems]);
 
   // 處理導航點擊
-  const handleNavigate = useCallback((item: NavigationItem) => {
-    if (item.external && item.path) {
-      window.open(item.path, '_blank');
-      return;
-    }
+  const handleNavigate = useCallback(
+    (item: NavigationItem) => {
+      if (item.external && item.path) {
+        window.open(item.path, '_blank');
+        return;
+      }
 
-    if (item.path) {
-      router.push(item.path);
-      onNavigate?.(item.path, item);
-    }
-  }, [router, onNavigate]);
+      if (item.path) {
+        router.push(item.path);
+        onNavigate?.(item.path, item);
+      }
+    },
+    [router, onNavigate]
+  );
 
   // 處理展開/收起
   const handleToggleExpand = useCallback((itemId: string) => {
@@ -351,150 +356,171 @@ export const NavigationCard: React.FC<NavigationCardProps> = ({
   }, []);
 
   // 處理書籤
-  const handleBookmark = useCallback(async (item: NavigationItem) => {
-    const isBookmarked = bookmarkedItems.has(item.id);
-    
-    try {
-      await updateBookmark({
-        variables: {
-          input: {
-            itemId: item.id,
-            action: isBookmarked ? 'REMOVE' : 'ADD',
+  const handleBookmark = useCallback(
+    async (item: NavigationItem) => {
+      const isBookmarked = bookmarkedItems.has(item.id);
+
+      try {
+        await updateBookmark({
+          variables: {
+            input: {
+              itemId: item.id,
+              action: isBookmarked ? 'REMOVE' : 'ADD',
+            },
           },
-        },
-      });
+        });
 
-      setBookmarkedItems(prev => {
-        const newSet = new Set(prev);
-        if (isBookmarked) {
-          newSet.delete(item.id);
-        } else {
-          newSet.add(item.id);
-        }
-        return newSet;
-      });
+        setBookmarkedItems(prev => {
+          const newSet = new Set(prev);
+          if (isBookmarked) {
+            newSet.delete(item.id);
+          } else {
+            newSet.add(item.id);
+          }
+          return newSet;
+        });
 
-      onBookmark?.(item);
-    } catch (error) {
-      console.error('Bookmark error:', error);
-    }
-  }, [bookmarkedItems, updateBookmark, onBookmark]);
+        onBookmark?.(item);
+      } catch (error) {
+        console.error('Bookmark error:', error);
+      }
+    },
+    [bookmarkedItems, updateBookmark, onBookmark]
+  );
 
   // 渲染導航項目
-  const renderNavigationItem = useCallback((item: NavigationItem, level: number = 0) => {
-    const isActive = currentPath === item.path || pathname === item.path;
-    const isExpanded = expandedItems.has(item.id);
-    const isBookmarked = bookmarkedItems.has(item.id);
-    const hasChildren = item.children && item.children.length > 0;
+  const renderNavigationItem = useCallback(
+    (item: NavigationItem, level: number = 0) => {
+      const isActive = currentPath === item.path || pathname === item.path;
+      const isExpanded = expandedItems.has(item.id);
+      const isBookmarked = bookmarkedItems.has(item.id);
+      const hasChildren = item.children && item.children.length > 0;
 
-    return (
-      <div key={item.id} className="w-full">
-        <div
-          className={cn(
-            'flex items-center w-full px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer',
-            'hover:bg-blue-500/10',
-            isActive && 'bg-blue-500/20 border-l-2 border-blue-400',
-            level > 0 && 'ml-4'
-          )}
-          onClick={() => !hasChildren && handleNavigate(item)}
-        >
-          {/* 圖標 */}
-          {item.icon && (
-            <item.icon className={cn(
-              'h-5 w-5 mr-3 flex-shrink-0',
-              isActive ? 'text-blue-400' : 'text-gray-400'
-            )} />
-          )}
+      return (
+        <div key={item.id} className='w-full'>
+          <div
+            className={cn(
+              'flex w-full cursor-pointer items-center rounded-lg px-3 py-2 transition-all duration-200',
+              'hover:bg-blue-500/10',
+              isActive && 'border-l-2 border-blue-400 bg-blue-500/20',
+              level > 0 && 'ml-4'
+            )}
+            onClick={() => !hasChildren && handleNavigate(item)}
+          >
+            {/* 圖標 */}
+            {item.icon && (
+              <item.icon
+                className={cn(
+                  'mr-3 h-5 w-5 flex-shrink-0',
+                  isActive ? 'text-blue-400' : 'text-gray-400'
+                )}
+              />
+            )}
 
-          {/* 標籤 */}
-          <span className={cn(
-            'flex-1 text-sm font-medium truncate',
-            isActive ? 'text-blue-400' : 'text-gray-300'
-          )}>
-            {item.label}
-          </span>
-
-          {/* 徽章 */}
-          {showBadges && item.badge && item.badge > 0 && (
-            <Badge 
-              variant="secondary" 
-              className="ml-2 bg-red-500/20 text-red-400 text-xs"
-            >
-              {item.badge}
-            </Badge>
-          )}
-
-          {/* 書籤按鈕 */}
-          {showBookmarks && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="ml-2 h-6 w-6 p-0"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleBookmark(item);
-              }}
-            >
-              <BookmarkIcon className={cn(
-                'h-4 w-4',
-                isBookmarked ? 'text-yellow-400 fill-current' : 'text-gray-500'
-              )} />
-            </Button>
-          )}
-
-          {/* 展開/收起按鈕 */}
-          {hasChildren && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="ml-2 h-6 w-6 p-0"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleToggleExpand(item.id);
-              }}
-            >
-              {isExpanded ? (
-                <ChevronDownIcon className="h-4 w-4 text-gray-400" />
-              ) : (
-                <ChevronRightIcon className="h-4 w-4 text-gray-400" />
+            {/* 標籤 */}
+            <span
+              className={cn(
+                'flex-1 truncate text-sm font-medium',
+                isActive ? 'text-blue-400' : 'text-gray-300'
               )}
-            </Button>
-          )}
-        </div>
-
-        {/* 子項目 */}
-        <AnimatePresence>
-          {hasChildren && isExpanded && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden"
             >
-              <div className="ml-4 border-l border-gray-600/30 pl-4 mt-2">
-                {item.children!.map(child => renderNavigationItem(child, level + 1))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    );
-  }, [currentPath, pathname, expandedItems, bookmarkedItems, showBadges, showBookmarks, handleNavigate, handleToggleExpand, handleBookmark]);
+              {item.label}
+            </span>
+
+            {/* 徽章 */}
+            {showBadges && item.badge && item.badge > 0 && (
+              <Badge variant='secondary' className='ml-2 bg-red-500/20 text-xs text-red-400'>
+                {item.badge}
+              </Badge>
+            )}
+
+            {/* 書籤按鈕 */}
+            {showBookmarks && (
+              <Button
+                size='sm'
+                variant='ghost'
+                className='ml-2 h-6 w-6 p-0'
+                onClick={e => {
+                  e.stopPropagation();
+                  handleBookmark(item);
+                }}
+              >
+                <BookmarkIcon
+                  className={cn(
+                    'h-4 w-4',
+                    isBookmarked ? 'fill-current text-yellow-400' : 'text-gray-500'
+                  )}
+                />
+              </Button>
+            )}
+
+            {/* 展開/收起按鈕 */}
+            {hasChildren && (
+              <Button
+                size='sm'
+                variant='ghost'
+                className='ml-2 h-6 w-6 p-0'
+                onClick={e => {
+                  e.stopPropagation();
+                  handleToggleExpand(item.id);
+                }}
+              >
+                {isExpanded ? (
+                  <ChevronDownIcon className='h-4 w-4 text-gray-400' />
+                ) : (
+                  <ChevronRightIcon className='h-4 w-4 text-gray-400' />
+                )}
+              </Button>
+            )}
+          </div>
+
+          {/* 子項目 */}
+          <AnimatePresence>
+            {hasChildren && isExpanded && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className='overflow-hidden'
+              >
+                <div className='ml-4 mt-2 border-l border-gray-600/30 pl-4'>
+                  {item.children!.map(child => renderNavigationItem(child, level + 1))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      );
+    },
+    [
+      currentPath,
+      pathname,
+      expandedItems,
+      bookmarkedItems,
+      showBadges,
+      showBookmarks,
+      handleNavigate,
+      handleToggleExpand,
+      handleBookmark,
+    ]
+  );
 
   // 渲染面包屑導航
   const renderBreadcrumb = useCallback(() => {
     const pathSegments = (currentPath || pathname).split('/').filter(Boolean);
-    
+
     return (
-      <div className="flex items-center space-x-2 text-sm">
-        <HomeIcon className="h-4 w-4 text-gray-400" />
+      <div className='flex items-center space-x-2 text-sm'>
+        <HomeIcon className='h-4 w-4 text-gray-400' />
         {pathSegments.map((segment, index) => (
           <React.Fragment key={index}>
-            <ChevronRightIcon className="h-4 w-4 text-gray-500" />
-            <span className={cn(
-              'capitalize',
-              index === pathSegments.length - 1 ? 'text-blue-400 font-medium' : 'text-gray-300'
-            )}>
+            <ChevronRightIcon className='h-4 w-4 text-gray-500' />
+            <span
+              className={cn(
+                'capitalize',
+                index === pathSegments.length - 1 ? 'font-medium text-blue-400' : 'text-gray-300'
+              )}
+            >
               {segment.replace(/-/g, ' ')}
             </span>
           </React.Fragment>
@@ -545,15 +571,15 @@ export const NavigationCard: React.FC<NavigationCardProps> = ({
   if (isEditMode) {
     return (
       <div className={cn('w-full', className)}>
-        <Card className="border-blue-400 bg-gray-800 text-white">
+        <Card className='border-blue-400 bg-gray-800 text-white'>
           <CardHeader>
-            <CardTitle className="flex items-center text-blue-400">
-              <config.icon className="mr-2 h-5 w-5" />
+            <CardTitle className='flex items-center text-blue-400'>
+              <config.icon className='mr-2 h-5 w-5' />
               {config.title} - Edit Mode
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-gray-400">
+            <div className='py-8 text-center text-gray-400'>
               Navigation configuration in edit mode
             </div>
           </CardContent>
@@ -564,93 +590,93 @@ export const NavigationCard: React.FC<NavigationCardProps> = ({
 
   return (
     <div className={cn('w-full', className)} style={{ height }}>
-      <Card className="border-blue-400 bg-gray-800 text-white h-full flex flex-col">
-        <CardHeader className="flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center text-blue-400">
-              <div className={cn('p-2 rounded-lg bg-gradient-to-r mr-3', config.color)}>
-                <config.icon className="h-5 w-5 text-white" />
+      <Card className='flex h-full flex-col border-blue-400 bg-gray-800 text-white'>
+        <CardHeader className='flex-shrink-0'>
+          <div className='flex items-center justify-between'>
+            <CardTitle className='flex items-center text-blue-400'>
+              <div className={cn('mr-3 rounded-lg bg-gradient-to-r p-2', config.color)}>
+                <config.icon className='h-5 w-5 text-white' />
               </div>
               <div>
                 <div>{config.title}</div>
-                <div className="text-sm text-gray-400 font-normal mt-1">
-                  {navigationType === NavigationType.BREADCRUMB ? 'Current path navigation' : 
-                   navigationType === NavigationType.QUICK_ACCESS ? 'Frequently used links' :
-                   'Main navigation menu'}
+                <div className='mt-1 text-sm font-normal text-gray-400'>
+                  {navigationType === NavigationType.BREADCRUMB
+                    ? 'Current path navigation'
+                    : navigationType === NavigationType.QUICK_ACCESS
+                      ? 'Frequently used links'
+                      : 'Main navigation menu'}
                 </div>
               </div>
             </CardTitle>
-            
+
             {collapsible && navigationType === NavigationType.SIDEBAR && (
               <Button
-                size="sm"
-                variant="ghost"
+                size='sm'
+                variant='ghost'
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className="text-gray-400 hover:text-white"
+                className='text-gray-400 hover:text-white'
               >
-                <Bars3Icon className="h-5 w-5" />
+                <Bars3Icon className='h-5 w-5' />
               </Button>
             )}
           </div>
 
           {/* 搜索框 */}
           {showSearch && navigationType !== NavigationType.BREADCRUMB && (
-            <div className="mt-4 relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <div className='relative mt-4'>
+              <MagnifyingGlassIcon className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400' />
               <Input
-                placeholder="Search navigation..."
+                placeholder='Search navigation...'
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                onChange={e => setSearchQuery(e.target.value)}
+                className='border-gray-600 bg-gray-700 pl-10 text-white placeholder-gray-400'
               />
               {searchQuery && (
                 <Button
-                  size="sm"
-                  variant="ghost"
+                  size='sm'
+                  variant='ghost'
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 text-gray-400"
+                  className='absolute right-2 top-1/2 h-6 w-6 -translate-y-1/2 transform p-0 text-gray-400'
                 >
-                  <XMarkIcon className="h-4 w-4" />
+                  <XMarkIcon className='h-4 w-4' />
                 </Button>
               )}
             </div>
           )}
         </CardHeader>
-        
-        <CardContent className="flex-1 overflow-auto">
-          <AnimatePresence mode="wait">
+
+        <CardContent className='flex-1 overflow-auto'>
+          <AnimatePresence mode='wait'>
             {loading ? (
               <motion.div
-                key="loading"
+                key='loading'
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="flex items-center justify-center py-8"
+                className='flex items-center justify-center py-8'
               >
-                <span className="text-gray-300">Loading navigation...</span>
+                <span className='text-gray-300'>Loading navigation...</span>
               </motion.div>
             ) : (
               <motion.div
-                key="navigation"
+                key='navigation'
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="space-y-2"
+                className='space-y-2'
               >
                 {/* 面包屑模式 */}
                 {navigationType === NavigationType.BREADCRUMB && (
-                  <div className="p-4 bg-gray-700/50 rounded-lg">
-                    {renderBreadcrumb()}
-                  </div>
+                  <div className='rounded-lg bg-gray-700/50 p-4'>{renderBreadcrumb()}</div>
                 )}
 
                 {/* 搜索結果 */}
                 {searchQuery && searchResults.length > 0 && (
-                  <div className="mb-4">
-                    <div className="text-xs text-gray-400 mb-2">
+                  <div className='mb-4'>
+                    <div className='mb-2 text-xs text-gray-400'>
                       Search Results ({searchResults.length})
                     </div>
-                    <div className="space-y-1">
+                    <div className='space-y-1'>
                       {searchResults.map(item => renderNavigationItem(item))}
                     </div>
                   </div>
@@ -658,14 +684,14 @@ export const NavigationCard: React.FC<NavigationCardProps> = ({
 
                 {/* 主導航項目 */}
                 {(!searchQuery || searchResults.length === 0) && (
-                  <div className="space-y-1">
+                  <div className='space-y-1'>
                     {filteredItems.map(item => renderNavigationItem(item))}
                   </div>
                 )}
 
                 {/* 無搜索結果 */}
                 {searchQuery && searchResults.length === 0 && (
-                  <div className="text-center py-8 text-gray-400">
+                  <div className='py-8 text-center text-gray-400'>
                     No navigation items found for &quot;{searchQuery}&quot;
                   </div>
                 )}
@@ -677,6 +703,3 @@ export const NavigationCard: React.FC<NavigationCardProps> = ({
     </div>
   );
 };
-
-// 導出類型供其他組件使用
-export type { NavigationType, NavigationItem };

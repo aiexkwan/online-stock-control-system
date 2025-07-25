@@ -57,8 +57,8 @@ export function useVisualEffects() {
   };
 
   // 獲取性能優化的樣式
-  const getOptimizedStyles = () => {
-    const baseStyles: any = {};
+  const getOptimizedStyles = (): React.CSSProperties => {
+    const baseStyles: React.CSSProperties = {};
 
     // 根據性能層級調整
     if (state.performanceTier === 'low') {
@@ -78,20 +78,20 @@ export function useVisualEffects() {
     getContainerBorderStyles,
     getTransitionStyles,
     getOptimizedStyles,
-    
+
     // 狀態檢查
     shouldShowEffect,
-    
+
     // 快捷方法
     glassStyles: getGlassmorphicStyles(),
     borderStyles: getContainerBorderStyles(),
     transitionStyles: getTransitionStyles(),
-    
+
     // 狀態
     isHighPerformance: state.performanceTier === 'high',
     isLowPerformance: state.performanceTier === 'low',
     animationsEnabled: state.animationsEnabled && !state.prefersReducedMotion,
-    
+
     // 操作
     toggleStarfield: () => actions.setStarfieldEnabled(!state.starfieldEnabled),
     toggleGlassmorphism: () => actions.setGlassmorphismEnabled(!state.glassmorphismEnabled),

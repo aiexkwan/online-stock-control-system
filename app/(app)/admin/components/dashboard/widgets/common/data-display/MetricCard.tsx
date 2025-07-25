@@ -5,13 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LucideIcon, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { HeroIcon, IconComponent } from '@/types/heroicons';
 
 export interface MetricCardProps {
   // Basic content
   title: string;
   value: string | number;
   label?: string;
-  icon?: LucideIcon;
+  icon?: LucideIcon | HeroIcon | IconComponent;
 
   // Styling
   iconColor?: string;

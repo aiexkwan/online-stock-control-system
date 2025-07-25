@@ -4,10 +4,10 @@
  * 整合 4 個上傳 widgets 的功能
  */
 
-import { 
-  UploadType, 
-  UploadFolder, 
-  SupportedFileType, 
+import {
+  UploadType,
+  UploadFolder,
+  SupportedFileType,
   UploadStatus,
   UploadCardInput,
   SingleFileUploadInput,
@@ -22,19 +22,41 @@ import {
   OrderAnalysisResult,
   FileSearchResult,
   UploadStatistics,
-  FileTypeStats
+  FileTypeStats,
 } from '@/types/generated/graphql';
 import { GraphQLContext } from '@/lib/types/graphql-resolver.types';
-import { UploadedFileRow, UploadStatisticsRow, AnalyzeOrderPDFResult } from '@/lib/types/upload-resolver.types';
+import {
+  UploadedFileRow,
+  UploadStatisticsRow,
+  AnalyzeOrderPDFResult,
+} from '@/lib/types/upload-resolver.types';
 import { createClient } from '@/app/utils/supabase/server';
 import { uploadFile } from '@/app/actions/fileActions';
 import { analyzeOrderPDF } from '@/app/actions/orderUploadActions';
+
+// 提取的訂單數據結構
+interface ExtractedOrderData {
+  orderNumber?: string;
+  customerName?: string;
+  orderDate?: string;
+  items?: unknown[];
+  totalAmount?: number;
+  currency?: string;
+  confidence?: number;
+}
 
 // 文件類型配置映射
 const UPLOAD_CONFIGS: Record<UploadType, UploadConfig> = {
   [UploadType.GeneralFiles]: {
     uploadType: UploadType.GeneralFiles,
-    allowedTypes: [SupportedFileType.Png, SupportedFileType.Jpeg, SupportedFileType.Jpg, SupportedFileType.Pdf, SupportedFileType.Doc, SupportedFileType.Docx],
+    allowedTypes: [
+      SupportedFileType.Png,
+      SupportedFileType.Jpeg,
+      SupportedFileType.Jpg,
+      SupportedFileType.Pdf,
+      SupportedFileType.Doc,
+      SupportedFileType.Docx,
+    ],
     maxFileSize: 10 * 1024 * 1024, // 10MB
     maxFiles: 10,
     folder: UploadFolder.StockPic, // 可動態切換
@@ -56,7 +78,13 @@ const UPLOAD_CONFIGS: Record<UploadType, UploadConfig> = {
   },
   [UploadType.Photos]: {
     uploadType: UploadType.Photos,
-    allowedTypes: [SupportedFileType.Png, SupportedFileType.Jpeg, SupportedFileType.Jpg, SupportedFileType.Gif, SupportedFileType.Webp],
+    allowedTypes: [
+      SupportedFileType.Png,
+      SupportedFileType.Jpeg,
+      SupportedFileType.Jpg,
+      SupportedFileType.Gif,
+      SupportedFileType.Webp,
+    ],
     maxFileSize: 10 * 1024 * 1024,
     maxFiles: 20,
     folder: UploadFolder.Photos,
@@ -85,8 +113,8 @@ export const uploadResolvers = {
   Query: {
     // 獲取 UploadCard 數據
     uploadCardData: async (
-      _: unknown, 
-      { input }: { input: UploadCardInput }, 
+      _: unknown,
+      { input }: { input: UploadCardInput },
       context: GraphQLContext
     ): Promise<UploadCardData> => {
       const supabase = await createClient();
@@ -94,7 +122,7 @@ export const uploadResolvers = {
 
       try {
         const config = UPLOAD_CONFIGS[input.uploadType];
-        
+
         // 獲取最近上傳的文件
         let recentUploads: FileInfo[] = [];
         if (input.includeRecentUploads) {
@@ -105,27 +133,28 @@ export const uploadResolvers = {
             .order('uploaded_at', { ascending: false })
             .limit(input.recentLimit || 10);
 
-          recentUploads = files?.map((file: UploadedFileRow) => ({
-            id: file.id,
-            originalName: file.original_name,
-            fileName: file.file_name,
-            mimeType: file.mime_type,
-            size: file.size,
-            extension: file.extension,
-            folder: file.folder as UploadFolder,
-            uploadedAt: file.uploaded_at,
-            uploadedBy: file.uploaded_by,
-            checksum: file.checksum,
-            url: file.url,
-            thumbnailUrl: file.thumbnail_url,
-          })) || [];
+          recentUploads =
+            files?.map((file: UploadedFileRow) => ({
+              id: file.id,
+              originalName: file.original_name,
+              fileName: file.file_name,
+              mimeType: file.mime_type,
+              size: file.size,
+              extension: file.extension,
+              folder: file.folder as UploadFolder,
+              uploadedAt: file.uploaded_at,
+              uploadedBy: file.uploaded_by,
+              checksum: file.checksum,
+              url: file.url,
+              thumbnailUrl: file.thumbnail_url,
+            })) || [];
         }
 
         // 獲取活躍上傳
-        const activeUploadsList = input.includeActiveUploads 
-          ? Array.from(activeUploads.values()).filter(upload => 
-              upload.status === UploadStatus.Uploading || 
-              upload.status === UploadStatus.Analyzing
+        const activeUploadsList = input.includeActiveUploads
+          ? Array.from(activeUploads.values()).filter(
+              upload =>
+                upload.status === UploadStatus.Uploading || upload.status === UploadStatus.Analyzing
             )
           : [];
 
@@ -161,11 +190,12 @@ export const uploadResolvers = {
               todayUploads: stats.today_uploads || 0,
               failureRate: stats.failure_rate || 0,
               recentErrors: stats.recent_errors || [],
-              popularFileTypes: stats.popular_file_types?.map((type: FileTypeStatRow) => ({
-                type: type.extension as SupportedFileType,
-                count: type.count,
-                totalSize: type.total_size,
-              })) || [],
+              popularFileTypes:
+                stats.popular_file_types?.map((type: FileTypeStatRow) => ({
+                  type: type.extension as SupportedFileType,
+                  count: type.count,
+                  totalSize: type.total_size,
+                })) || [],
               errorReasons: stats.error_reasons || [],
               uploadTrends: stats.upload_trends || [],
               dataSource: `upload_${input.uploadType}`,
@@ -184,16 +214,17 @@ export const uploadResolvers = {
           refreshInterval: 30,
           dataSource: `upload_${input.uploadType.toLowerCase()}`,
         };
-
       } catch (error) {
         console.error('[UploadResolver] uploadCardData error:', error);
-        throw new Error(`Failed to fetch upload data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(
+          `Failed to fetch upload data: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
       }
     },
 
     // 獲取上傳配置
     uploadConfig: async (
-      _: unknown, 
+      _: unknown,
       { uploadType }: { uploadType: UploadType }
     ): Promise<UploadConfig> => {
       return UPLOAD_CONFIGS[uploadType];
@@ -206,11 +237,9 @@ export const uploadResolvers = {
       context: GraphQLContext
     ): Promise<FileSearchResult> => {
       const supabase = await createClient();
-      
+
       try {
-        let query = supabase
-          .from('uploaded_files')
-          .select('*', { count: 'exact' });
+        let query = supabase.from('uploaded_files').select('*', { count: 'exact' });
 
         // 應用篩選條件
         if (input.folder) {
@@ -226,7 +255,9 @@ export const uploadResolvers = {
         }
 
         if (input.searchTerm) {
-          query = query.or(`original_name.ilike.%${input.searchTerm}%,file_name.ilike.%${input.searchTerm}%`);
+          query = query.or(
+            `original_name.ilike.%${input.searchTerm}%,file_name.ilike.%${input.searchTerm}%`
+          );
         }
 
         if (input.dateRange) {
@@ -243,7 +274,8 @@ export const uploadResolvers = {
         query = query.range(offset, offset + limit - 1);
 
         if (input.sorting?.field) {
-          const direction = input.sorting.direction === 'ASC' ? { ascending: true } : { ascending: false };
+          const direction =
+            input.sorting.direction === 'ASC' ? { ascending: true } : { ascending: false };
           query = query.order(input.sorting.field, direction);
         } else {
           query = query.order('uploaded_at', { ascending: false });
@@ -251,20 +283,21 @@ export const uploadResolvers = {
 
         const { data: files, count } = await query;
 
-        const fileInfos: FileInfo[] = files?.map(file => ({
-          id: file.id,
-          originalName: file.original_name,
-          fileName: file.file_name,
-          mimeType: file.mime_type,
-          size: file.size,
-          extension: file.extension,
-          folder: file.folder as UploadFolder,
-          uploadedAt: file.uploaded_at,
-          uploadedBy: file.uploaded_by,
-          checksum: file.checksum,
-          url: file.url,
-          thumbnailUrl: file.thumbnail_url,
-        })) || [];
+        const fileInfos: FileInfo[] =
+          files?.map(file => ({
+            id: file.id,
+            originalName: file.original_name,
+            fileName: file.file_name,
+            mimeType: file.mime_type,
+            size: file.size,
+            extension: file.extension,
+            folder: file.folder as UploadFolder,
+            uploadedAt: file.uploaded_at,
+            uploadedBy: file.uploaded_by,
+            checksum: file.checksum,
+            url: file.url,
+            thumbnailUrl: file.thumbnail_url,
+          })) || [];
 
         return {
           files: fileInfos,
@@ -277,10 +310,11 @@ export const uploadResolvers = {
             currentPage: page,
           },
         };
-
       } catch (error) {
         console.error('[UploadResolver] searchFiles error:', error);
-        throw new Error(`Failed to search files: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(
+          `Failed to search files: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
       }
     },
 
@@ -323,7 +357,6 @@ export const uploadResolvers = {
           url: file.url,
           thumbnailUrl: file.thumbnail_url,
         };
-
       } catch (error) {
         console.error('[UploadResolver] fileInfo error:', error);
         return null;
@@ -339,7 +372,7 @@ export const uploadResolvers = {
       context: GraphQLContext
     ): Promise<SingleUploadResult> => {
       const uploadId = `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       try {
         // 創建上傳進度記錄
         const progress: UploadProgress = {
@@ -352,7 +385,7 @@ export const uploadResolvers = {
           totalBytes: input.file.size || 0,
           uploadSpeed: 0,
         };
-        
+
         activeUploads.set(uploadId, progress);
 
         // 模擬上傳進度更新
@@ -388,7 +421,7 @@ export const uploadResolvers = {
         let analysisResult: OrderAnalysisResult | undefined;
         if (input.requiresAnalysis && input.uploadType === UploadType.OrderPdf) {
           updateProgress(80, UploadStatus.Analyzing);
-          
+
           const arrayBuffer = await input.file.arrayBuffer();
           const analysis = await analyzeOrderPDF(
             {
@@ -404,15 +437,16 @@ export const uploadResolvers = {
               success: true,
               recordCount: analysis.recordCount || 0,
               processingTime: 0, // TODO: 實際時間
-              extractedData: analysis.extractedData?.map((order: any) => ({
-                orderNumber: order?.orderNumber || '',
-                customerName: order?.customerName || undefined,
-                orderDate: order?.orderDate || undefined,
-                items: order.items || [],
-                totalAmount: order.totalAmount || undefined,
-                currency: order.currency || undefined,
-                confidence: Number(order.confidence) || 0,
-              })) || [],
+              extractedData:
+                analysis.extractedData?.map((order: ExtractedOrderData) => ({
+                  orderNumber: order?.orderNumber || '',
+                  customerName: order?.customerName || undefined,
+                  orderDate: order?.orderDate || undefined,
+                  items: order.items || [],
+                  totalAmount: order.totalAmount || undefined,
+                  currency: order.currency || undefined,
+                  confidence: Number(order.confidence) || 0,
+                })) || [],
               confidence: 0.9,
               warnings: [],
               errors: [],
@@ -449,7 +483,6 @@ export const uploadResolvers = {
           fileInfo,
           analysisResult,
         };
-
       } catch (error) {
         const current = activeUploads.get(uploadId);
         if (current) {
@@ -515,10 +548,7 @@ export const uploadResolvers = {
     },
 
     // 取消上傳
-    cancelUpload: async (
-      _: unknown,
-      { uploadId }: { uploadId: string }
-    ): Promise<boolean> => {
+    cancelUpload: async (_: unknown, { uploadId }: { uploadId: string }): Promise<boolean> => {
       const upload = activeUploads.get(uploadId);
       if (upload) {
         activeUploads.set(uploadId, {
@@ -540,13 +570,9 @@ export const uploadResolvers = {
       const supabase = await createClient();
 
       try {
-        const { error } = await supabase
-          .from('uploaded_files')
-          .delete()
-          .eq('id', fileId);
+        const { error } = await supabase.from('uploaded_files').delete().eq('id', fileId);
 
         return !error;
-
       } catch (error) {
         console.error('[UploadResolver] deleteFile error:', error);
         return false;

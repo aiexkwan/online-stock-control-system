@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import { TooltipProps } from '@/types/external/recharts';
+import useSWR from 'swr';
 
 // 定義 Recharts Tooltip Payload 類型
 interface TooltipPayloadItem {
@@ -15,7 +17,6 @@ interface TooltipPayloadItem {
   };
   color?: string;
 }
-import useSWR from 'swr';
 
 // Recharts components - using unified dynamic import module
 import {
@@ -187,12 +188,17 @@ export default function AcoOrderProgressChart({ timeFrame }: AcoOrderProgressCha
               domain={[0, 100]}
             />
             <Tooltip
-              content={(props: any) => {
+              content={props => {
                 const { active, payload } = props;
                 const typedPayload = payload as TooltipPayloadItem[];
-                if (active && Array.isArray(typedPayload) && typedPayload.length > 0 && typedPayload[0]?.payload) {
+                if (
+                  active &&
+                  Array.isArray(typedPayload) &&
+                  typedPayload.length > 0 &&
+                  typedPayload[0]?.payload
+                ) {
                   const payloadData = typedPayload[0].payload;
-                  const data = payloadData as {
+                  const data = payloadData as unknown as {
                     orderRef: string;
                     code: string;
                     completed: number;

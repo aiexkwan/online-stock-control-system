@@ -188,7 +188,7 @@ export const getUserRole = (email: string): UserRole => {
 // 定義公開路由（不需要認證檢查）
 const PUBLIC_ROUTES = [
   '/main-login',
-  '/main-login/register', 
+  '/main-login/register',
   '/main-login/reset',
   '/main-login/simple',
   '/main-login/change',
@@ -332,7 +332,7 @@ export function useAuth(): AuthState {
 
       return () => subscription.unsubscribe();
     }
-  }, [hasError, supabase]);
+  }, [hasError, supabase, setAuthenticatedUser, clearAuthState]);
 
   return {
     user,

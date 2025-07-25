@@ -128,7 +128,7 @@ export type UnifiedWidgetProps =
  * Widget 組件導入結果
  */
 export interface WidgetImportResult {
-  default: ComponentType<any>; // 支援所有可能的 widget prop 類型
+  default: ComponentType<UnifiedWidgetProps>; // 支援所有可能的 widget prop 類型
 }
 
 /**

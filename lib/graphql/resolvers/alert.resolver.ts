@@ -7,6 +7,95 @@ import { AlertRuleEngine } from '@/lib/alerts/AlertRuleEngine';
 import { withRetry, withCache } from '@/lib/utils/error-handling';
 import { v4 as uuidv4 } from 'uuid';
 
+// Type definitions based on GraphQL schema
+type AlertType =
+  | 'SYSTEM_ALERT'
+  | 'INVENTORY_ALERT'
+  | 'ORDER_ALERT'
+  | 'TRANSFER_ALERT'
+  | 'QUALITY_ALERT'
+  | 'PERFORMANCE_ALERT'
+  | 'SECURITY_ALERT'
+  | 'CUSTOM_ALERT';
+type AlertSeverity = 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL';
+type AlertStatus = 'ACTIVE' | 'ACKNOWLEDGED' | 'RESOLVED' | 'EXPIRED' | 'DISMISSED';
+
+// Database Alert interface (raw database format)
+interface DatabaseAlert {
+  id: string;
+  type?: AlertType;
+  severity?: AlertSeverity;
+  status?: AlertStatus;
+  title: string;
+  message: string;
+  details?: Record<string, unknown>;
+  source?: string;
+  created_at: Date;
+  acknowledged_at?: Date;
+  acknowledged_by?: string;
+  resolved_at?: Date;
+  resolved_by?: string;
+  expires_at?: Date;
+  affected_entities?: AffectedEntity[];
+  actions?: AlertAction[];
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+}
+
+// GraphQL Input types
+interface AlertCardInput {
+  types?: AlertType[];
+  severities?: AlertSeverity[];
+  statuses?: AlertStatus[];
+  dateRange?: {
+    start: Date;
+    end: Date;
+  };
+  includeAcknowledged?: boolean;
+  includeResolved?: boolean;
+  limit?: number;
+  sortBy?: string;
+}
+
+interface CreateAlertInput {
+  type: AlertType;
+  severity: AlertSeverity;
+  title: string;
+  message: string;
+  details?: Record<string, unknown>;
+  affectedEntities?: AffectedEntity[];
+  expiresIn?: number;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+}
+
+interface UpdateAlertRuleInput {
+  name?: string;
+  enabled?: boolean;
+  conditions?: Record<string, unknown>;
+  actions?: AlertAction[];
+  severity?: AlertSeverity;
+  throttle?: number;
+}
+
+// Supporting types
+interface AffectedEntity {
+  entityType: string;
+  entityId: string;
+  entityName: string;
+  impact?: string;
+  entityUrl?: string;
+}
+
+interface AlertAction {
+  id: string;
+  type: string;
+  label: string;
+  url?: string;
+  confirmRequired: boolean;
+  icon?: string;
+}
+
 // Initialize services
 const alertMonitoringService = AlertMonitoringService.getInstance();
 const notificationService = NotificationService.getInstance();
@@ -14,7 +103,7 @@ const alertStateManager = AlertStateManager.getInstance();
 const alertRuleEngine = AlertRuleEngine.getInstance();
 
 // Helper function to map database alerts to GraphQL type
-function mapAlertToGraphQL(alert: any) {
+function mapAlertToGraphQL(alert: DatabaseAlert) {
   return {
     id: alert.id,
     type: alert.type || 'CUSTOM_ALERT',
@@ -33,7 +122,7 @@ function mapAlertToGraphQL(alert: any) {
     affectedEntities: alert.affected_entities || [],
     actions: alert.actions || [],
     tags: alert.tags || [],
-    metadata: alert.metadata || {}
+    metadata: alert.metadata || {},
   };
 }
 
@@ -41,14 +130,14 @@ export const alertResolvers = {
   Query: {
     alertCardData: async (
       _parent: unknown,
-      args: { input: any },
+      args: { input: AlertCardInput },
       context: Context,
       _info: GraphQLResolveInfo
     ) => {
       try {
         const { input } = args;
         const cacheKey = `alert-card-data:${JSON.stringify(input)}`;
-        
+
         return await withCache(
           cacheKey,
           async () => {
@@ -61,12 +150,12 @@ export const alertResolvers = {
               includeAcknowledged: input.includeAcknowledged,
               includeResolved: input.includeResolved,
               limit: input.limit,
-              sortBy: input.sortBy
+              sortBy: input.sortBy,
             });
 
             // Get statistics
             const statistics = await alertMonitoringService.getAlertStatistics({
-              dateRange: input.dateRange
+              dateRange: input.dateRange,
             });
 
             // Calculate summary
@@ -85,7 +174,8 @@ export const alertResolvers = {
                 const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
                 return createdAt > oneHourAgo;
               }).length,
-              criticalCount: alerts.filter(a => a.severity === 'CRITICAL' && a.status === 'ACTIVE').length
+              criticalCount: alerts.filter(a => a.severity === 'CRITICAL' && a.status === 'ACTIVE')
+                .length,
             };
 
             // Calculate pagination
@@ -94,7 +184,7 @@ export const alertResolvers = {
               hasPreviousPage: false,
               totalCount: alerts.length,
               totalPages: Math.ceil(alerts.length / input.limit),
-              currentPage: 1
+              currentPage: 1,
             };
 
             return {
@@ -104,7 +194,7 @@ export const alertResolvers = {
               pagination,
               lastUpdated: new Date(),
               refreshInterval: 30,
-              dataSource: 'alert-monitoring-service'
+              dataSource: 'alert-monitoring-service',
             };
           },
           60 // Cache for 60 seconds
@@ -115,11 +205,7 @@ export const alertResolvers = {
       }
     },
 
-    alertDetails: async (
-      _parent: unknown,
-      args: { alertId: string },
-      context: Context
-    ) => {
+    alertDetails: async (_parent: unknown, args: { alertId: string }, context: Context) => {
       try {
         const alert = await alertMonitoringService.getAlertById(args.alertId);
         return alert ? mapAlertToGraphQL(alert) : null;
@@ -131,14 +217,14 @@ export const alertResolvers = {
 
     alertHistory: async (
       _parent: unknown,
-      args: { entityId?: string; dateRange?: any; limit?: number },
+      args: { entityId?: string; dateRange?: { start: Date; end: Date }; limit?: number },
       context: Context
     ) => {
       try {
         const alerts = await alertMonitoringService.getAlertHistory({
           entityId: args.entityId,
           dateRange: args.dateRange,
-          limit: args.limit || 100
+          limit: args.limit || 100,
         });
         return alerts.map(mapAlertToGraphQL);
       } catch (error) {
@@ -147,11 +233,7 @@ export const alertResolvers = {
       }
     },
 
-    alertRules: async (
-      _parent: unknown,
-      _args: unknown,
-      context: Context
-    ) => {
+    alertRules: async (_parent: unknown, _args: unknown, context: Context) => {
       try {
         const rules = await alertRuleEngine.getRules();
         return rules;
@@ -161,11 +243,7 @@ export const alertResolvers = {
       }
     },
 
-    alertChannels: async (
-      _parent: unknown,
-      _args: unknown,
-      context: Context
-    ) => {
+    alertChannels: async (_parent: unknown, _args: unknown, context: Context) => {
       try {
         const channels = await notificationService.getChannels();
         return channels;
@@ -173,7 +251,7 @@ export const alertResolvers = {
         console.error('Error fetching alert channels:', error);
         throw new Error('Failed to fetch alert channels');
       }
-    }
+    },
   },
 
   Mutation: {
@@ -238,7 +316,7 @@ export const alertResolvers = {
     ) => {
       try {
         const results = await Promise.allSettled(
-          args.alertIds.map(id => 
+          args.alertIds.map(id =>
             alertStateManager.acknowledgeAlert(id, context.user?.id || 'system', args.note)
           )
         );
@@ -254,12 +332,12 @@ export const alertResolvers = {
               if (r.status === 'rejected') {
                 return {
                   alertId: args.alertIds[i],
-                  error: r.reason?.message || 'Unknown error'
+                  error: r.reason?.message || 'Unknown error',
                 };
               }
               return null;
             })
-            .filter(Boolean)
+            .filter(Boolean),
         };
       } catch (error) {
         console.error('Error batch acknowledging alerts:', error);
@@ -274,7 +352,7 @@ export const alertResolvers = {
     ) => {
       try {
         const results = await Promise.allSettled(
-          args.alertIds.map(id => 
+          args.alertIds.map(id =>
             alertStateManager.resolveAlert(id, context.user?.id || 'system', args.resolution)
           )
         );
@@ -290,12 +368,12 @@ export const alertResolvers = {
               if (r.status === 'rejected') {
                 return {
                   alertId: args.alertIds[i],
-                  error: r.reason?.message || 'Unknown error'
+                  error: r.reason?.message || 'Unknown error',
                 };
               }
               return null;
             })
-            .filter(Boolean)
+            .filter(Boolean),
         };
       } catch (error) {
         console.error('Error batch resolving alerts:', error);
@@ -305,7 +383,7 @@ export const alertResolvers = {
 
     createCustomAlert: async (
       _parent: unknown,
-      args: { input: any },
+      args: { input: CreateAlertInput },
       context: Context
     ) => {
       try {
@@ -314,7 +392,7 @@ export const alertResolvers = {
           id: uuidv4(),
           createdBy: context.user?.id || 'system',
           createdAt: new Date(),
-          status: 'ACTIVE'
+          status: 'ACTIVE',
         });
         return mapAlertToGraphQL(alert);
       } catch (error) {
@@ -325,7 +403,7 @@ export const alertResolvers = {
 
     updateAlertRule: async (
       _parent: unknown,
-      args: { ruleId: string; input: any },
+      args: { ruleId: string; input: UpdateAlertRuleInput },
       context: Context
     ) => {
       try {
@@ -337,11 +415,7 @@ export const alertResolvers = {
       }
     },
 
-    testAlertChannel: async (
-      _parent: unknown,
-      args: { channelId: string },
-      context: Context
-    ) => {
+    testAlertChannel: async (_parent: unknown, args: { channelId: string }, context: Context) => {
       try {
         const result = await notificationService.testChannel(args.channelId);
         return result;
@@ -349,7 +423,7 @@ export const alertResolvers = {
         console.error('Error testing alert channel:', error);
         throw new Error('Failed to test alert channel');
       }
-    }
+    },
   },
 
   Subscription: {
@@ -364,58 +438,50 @@ export const alertResolvers = {
         return alertMonitoringService.subscribeToNewAlerts({
           types: args.types,
           severities: args.severities,
-          userId: context.user?.id
+          userId: context.user?.id,
         });
-      }
+      },
     },
 
     alertStatusChanged: {
-      subscribe: async (
-        _parent: unknown,
-        args: { alertId?: string },
-        context: Context
-      ) => {
+      subscribe: async (_parent: unknown, args: { alertId?: string }, context: Context) => {
         // Implementation depends on your subscription mechanism
         // This is a placeholder for the subscription logic
         return alertStateManager.subscribeToStatusChanges({
           alertId: args.alertId,
-          userId: context.user?.id
+          userId: context.user?.id,
         });
-      }
+      },
     },
 
     alertStatisticsUpdated: {
-      subscribe: async (
-        _parent: unknown,
-        _args: unknown,
-        context: Context
-      ) => {
+      subscribe: async (_parent: unknown, _args: unknown, context: Context) => {
         // Implementation depends on your subscription mechanism
         // This is a placeholder for the subscription logic
         return alertMonitoringService.subscribeToStatisticsUpdates({
-          userId: context.user?.id
+          userId: context.user?.id,
         });
-      }
-    }
-  }
+      },
+    },
+  },
 };
 
 // Helper functions
-function calculateSeverityDistribution(alerts: any[]) {
+function calculateSeverityDistribution(alerts: DatabaseAlert[]) {
   const severities = ['INFO', 'WARNING', 'ERROR', 'CRITICAL'];
   const total = alerts.length || 1;
-  
+
   return severities.map(severity => {
     const count = alerts.filter(a => a.severity === severity).length;
     return {
       severity,
       count,
-      percentage: (count / total) * 100
+      percentage: (count / total) * 100,
     };
   });
 }
 
-function calculateTypeDistribution(alerts: any[]) {
+function calculateTypeDistribution(alerts: DatabaseAlert[]) {
   const types = [
     'SYSTEM_ALERT',
     'INVENTORY_ALERT',
@@ -424,30 +490,30 @@ function calculateTypeDistribution(alerts: any[]) {
     'QUALITY_ALERT',
     'PERFORMANCE_ALERT',
     'SECURITY_ALERT',
-    'CUSTOM_ALERT'
+    'CUSTOM_ALERT',
   ];
   const total = alerts.length || 1;
-  
+
   return types.map(type => {
     const count = alerts.filter(a => a.type === type).length;
     return {
       type,
       count,
-      percentage: (count / total) * 100
+      percentage: (count / total) * 100,
     };
   });
 }
 
-function calculateStatusDistribution(alerts: any[]) {
+function calculateStatusDistribution(alerts: DatabaseAlert[]) {
   const statuses = ['ACTIVE', 'ACKNOWLEDGED', 'RESOLVED', 'EXPIRED', 'DISMISSED'];
   const total = alerts.length || 1;
-  
+
   return statuses.map(status => {
     const count = alerts.filter(a => a.status === status).length;
     return {
       status,
       count,
-      percentage: (count / total) * 100
+      percentage: (count / total) * 100,
     };
   });
 }

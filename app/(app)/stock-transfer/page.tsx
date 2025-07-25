@@ -7,6 +7,7 @@ import {
   transferPallet,
   getTransferHistory,
   validateTransferDestination,
+  TransferHistoryItem,
 } from '@/app/actions/stockTransferActions';
 import { toast } from 'sonner';
 
@@ -66,7 +67,7 @@ export default function StockTransferPage() {
   const [selectedDestination, setSelectedDestination] = useState('');
   const [verifiedClockNumber, setVerifiedClockNumber] = useState<string | null>(null);
   const [verifiedName, setVerifiedName] = useState<string | null>(null);
-  const [transferHistory, setTransferHistory] = useState<Record<string, unknown>[]>([]);
+  const [transferHistory, setTransferHistory] = useState<TransferHistoryItem[]>([]);
 
   // Refs
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -133,7 +134,7 @@ export default function StockTransferPage() {
   const loadTransferHistory = async () => {
     try {
       const history = await getTransferHistory(20);
-      setTransferHistory(history as any);
+      setTransferHistory(history);
     } catch (error) {
       console.error('Failed to load transfer history:', error);
     }

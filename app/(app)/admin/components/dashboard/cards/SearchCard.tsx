@@ -2,12 +2,12 @@
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Search, 
-  Filter, 
-  History, 
-  Loader2, 
-  X, 
+import {
+  Search,
+  Filter,
+  History,
+  Loader2,
+  X,
   ArrowRight,
   Package,
   Layers,
@@ -18,17 +18,18 @@ import {
   ChevronDown,
   Clock,
   Star,
-  Zap
+  Zap,
 } from 'lucide-react';
 import { useQuery } from '@apollo/client';
 import { gql } from '@apollo/client';
-import { 
+import {
   SearchCardInput,
   SearchCardData,
   SearchMode,
   SearchType,
   SearchableEntity,
-  SuggestionType
+  SearchResultItem,
+  SuggestionType,
 } from '@/types/generated/search-types';
 
 // GraphQL Query
@@ -126,7 +127,7 @@ interface SearchCardProps {
   defaultQuery?: string;
   defaultMode?: SearchMode;
   defaultEntities?: SearchableEntity[];
-  onResultSelect?: (result: any) => void;
+  onResultSelect?: (result: SearchResultItem) => void;
   onSearch?: (query: string, results: SearchCardData) => void;
 }
 
@@ -165,7 +166,7 @@ export default function SearchCard({
   defaultMode = SearchMode.Global,
   defaultEntities,
   onResultSelect,
-  onSearch
+  onSearch,
 }: SearchCardProps) {
   // State
   const [query, setQuery] = useState(defaultQuery);
@@ -177,7 +178,7 @@ export default function SearchCard({
   );
   const [showFilters, setShowFilters] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  
+
   // Refs
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -191,30 +192,30 @@ export default function SearchCard({
   }, [query]);
 
   // Search input
-  const searchInput: SearchCardInput = useMemo(() => ({
-    query: debouncedQuery,
-    mode: selectedMode,
-    type: SearchType.Text, // Auto-detect in resolver
-    entities: selectedEntities,
-    pagination: {
-      limit: 20,
-      offset: 0
-    }
-  }), [debouncedQuery, selectedMode, selectedEntities]);
+  const searchInput: SearchCardInput = useMemo(
+    () => ({
+      query: debouncedQuery,
+      mode: selectedMode,
+      type: SearchType.Text, // Auto-detect in resolver
+      entities: selectedEntities,
+      pagination: {
+        limit: 20,
+        offset: 0,
+      },
+    }),
+    [debouncedQuery, selectedMode, selectedEntities]
+  );
 
   // GraphQL Query
-  const { data, loading, error } = useQuery<{ searchCard: SearchCardData }>(
-    SEARCH_CARD_QUERY,
-    {
-      variables: { input: searchInput },
-      skip: !debouncedQuery || debouncedQuery.length < 2,
-      onCompleted: (data) => {
-        if (onSearch && data.searchCard) {
-          onSearch(debouncedQuery, data.searchCard);
-        }
+  const { data, loading, error } = useQuery<{ searchCard: SearchCardData }>(SEARCH_CARD_QUERY, {
+    variables: { input: searchInput },
+    skip: !debouncedQuery || debouncedQuery.length < 2,
+    onCompleted: data => {
+      if (onSearch && data.searchCard) {
+        onSearch(debouncedQuery, data.searchCard);
       }
-    }
-  );
+    },
+  });
 
   // Handle search input focus
   const handleInputFocus = useCallback(() => {
@@ -231,20 +232,23 @@ export default function SearchCard({
   }, []);
 
   // Handle result selection
-  const handleResultSelect = useCallback((result: any) => {
-    setQuery(result.title);
-    setIsOpen(false);
-    
-    // Add to recent searches
-    setRecentSearches(prev => {
-      const updated = [result.title, ...prev.filter(s => s !== result.title)];
-      return updated.slice(0, 5); // Keep only 5 recent searches
-    });
+  const handleResultSelect = useCallback(
+    (result: SearchResultItem) => {
+      setQuery(result.title);
+      setIsOpen(false);
 
-    if (onResultSelect) {
-      onResultSelect(result);
-    }
-  }, [onResultSelect]);
+      // Add to recent searches
+      setRecentSearches(prev => {
+        const updated = [result.title, ...prev.filter(s => s !== result.title)];
+        return updated.slice(0, 5); // Keep only 5 recent searches
+      });
+
+      if (onResultSelect) {
+        onResultSelect(result);
+      }
+    },
+    [onResultSelect]
+  );
 
   // Handle entity filter toggle
   const handleEntityToggle = useCallback((entity: SearchableEntity) => {
@@ -273,7 +277,7 @@ export default function SearchCard({
         return Clock;
       case SuggestionType.SpellingCorrection:
         return Zap;
-      case SuggestionType.AutoComplete:
+      case SuggestionType.Autocomplete:
         return Search;
       case SuggestionType.RelatedSearch:
         return ArrowRight;
@@ -283,49 +287,47 @@ export default function SearchCard({
   };
 
   const searchResults = data?.searchCard;
-  const hasResults = searchResults?.results.items.length > 0;
+  const hasResults = (searchResults?.results?.items?.length ?? 0) > 0;
   const showDropdown = isOpen && (query.length >= 2 || recentSearches.length > 0);
 
   return (
     <div className={`relative ${className}`} ref={searchContainerRef}>
       {/* Search Input */}
-      <div className="relative">
-        <div className="relative flex items-center">
-          <Search className="absolute left-3 h-4 w-4 text-gray-400" />
+      <div className='relative'>
+        <div className='relative flex items-center'>
+          <Search className='absolute left-3 h-4 w-4 text-gray-400' />
           <input
             ref={searchInputRef}
-            type="text"
+            type='text'
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={e => setQuery(e.target.value)}
             onFocus={handleInputFocus}
             onBlur={handleInputBlur}
             placeholder={placeholder}
-            className="w-full pl-10 pr-20 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+            className='w-full rounded-lg border border-gray-200 bg-white py-3 pl-10 pr-20 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500'
           />
-          
+
           {/* Loading indicator */}
-          {loading && (
-            <Loader2 className="absolute right-12 h-4 w-4 text-gray-400 animate-spin" />
-          )}
+          {loading && <Loader2 className='absolute right-12 h-4 w-4 animate-spin text-gray-400' />}
 
           {/* Clear button */}
           {query && (
             <button
               onClick={handleClearSearch}
-              className="absolute right-12 h-4 w-4 text-gray-400 hover:text-gray-600"
+              className='absolute right-12 h-4 w-4 text-gray-400 hover:text-gray-600'
             >
-              <X className="h-4 w-4" />
+              <X className='h-4 w-4' />
             </button>
           )}
 
           {/* Filter button */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`absolute right-3 p-1 rounded transition-colors ${
-              showFilters ? 'text-blue-600 bg-blue-50' : 'text-gray-400 hover:text-gray-600'
+            className={`absolute right-3 rounded p-1 transition-colors ${
+              showFilters ? 'bg-blue-50 text-blue-600' : 'text-gray-400 hover:text-gray-600'
             }`}
           >
-            <Filter className="h-4 w-4" />
+            <Filter className='h-4 w-4' />
           </button>
         </div>
 
@@ -336,22 +338,22 @@ export default function SearchCard({
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="absolute top-full left-0 right-0 mt-2 p-4 bg-white border border-gray-200 rounded-lg shadow-lg z-50"
+              className='absolute left-0 right-0 top-full z-50 mt-2 rounded-lg border border-gray-200 bg-white p-4 shadow-lg'
             >
-              <div className="space-y-4">
+              <div className='space-y-4'>
                 {/* Search Mode */}
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  <label className='mb-2 block text-sm font-medium text-gray-700'>
                     Search Mode
                   </label>
-                  <div className="flex space-x-2">
-                    {Object.values(SearchMode).map((mode) => (
+                  <div className='flex space-x-2'>
+                    {Object.values(SearchMode).map(mode => (
                       <button
                         key={mode}
                         onClick={() => setSelectedMode(mode)}
-                        className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                        className={`rounded-full px-3 py-1 text-xs transition-colors ${
                           selectedMode === mode
-                            ? 'bg-blue-100 text-blue-700 border-blue-200'
+                            ? 'border-blue-200 bg-blue-100 text-blue-700'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                       >
@@ -363,26 +365,24 @@ export default function SearchCard({
 
                 {/* Entity Filters */}
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">
-                    Search In
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {Object.values(SearchableEntity).map((entity) => {
+                  <label className='mb-2 block text-sm font-medium text-gray-700'>Search In</label>
+                  <div className='grid grid-cols-3 gap-2'>
+                    {Object.values(SearchableEntity).map(entity => {
                       const Icon = entityIcons[entity];
                       const isSelected = selectedEntities.includes(entity);
-                      
+
                       return (
                         <button
                           key={entity}
                           onClick={() => handleEntityToggle(entity)}
-                          className={`flex items-center space-x-2 px-3 py-2 text-xs rounded-lg border transition-colors ${
+                          className={`flex items-center space-x-2 rounded-lg border px-3 py-2 text-xs transition-colors ${
                             isSelected
                               ? 'border-blue-200 bg-blue-50 text-blue-700'
                               : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
                           }`}
                         >
-                          <Icon className="h-3 w-3" />
-                          <span className="capitalize">{entity.toLowerCase()}</span>
+                          <Icon className='h-3 w-3' />
+                          <span className='capitalize'>{entity.toLowerCase()}</span>
                         </button>
                       );
                     })}
@@ -401,53 +401,52 @@ export default function SearchCard({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-40 max-h-96 overflow-y-auto"
+            className='absolute left-0 right-0 top-full z-40 mt-2 max-h-96 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg'
           >
             {/* Search Results */}
             {hasResults && searchResults && (
-              <div className="p-2">
+              <div className='p-2'>
                 {/* Search Meta */}
-                <div className="px-3 py-2 text-xs text-gray-500 border-b border-gray-100">
-                  Found {searchResults.searchMeta.totalResults} results in {searchResults.searchMeta.searchTime.toFixed(2)}ms
+                <div className='border-b border-gray-100 px-3 py-2 text-xs text-gray-500'>
+                  Found {searchResults.searchMeta.totalResults} results in{' '}
+                  {searchResults.searchMeta.searchTime.toFixed(2)}ms
                 </div>
 
                 {/* Results */}
-                <div className="space-y-1 mt-2">
-                  {searchResults.results.items.map((item) => {
+                <div className='mt-2 space-y-1'>
+                  {searchResults.results.items.map(item => {
                     const Icon = entityIcons[item.entity];
                     const entityColor = entityColors[item.entity];
-                    
+
                     return (
                       <motion.button
                         key={item.id}
                         onClick={() => handleResultSelect(item)}
                         whileHover={{ backgroundColor: 'rgb(249 250 251)' }}
-                        className="w-full flex items-center space-x-3 px-3 py-3 text-left rounded-lg transition-colors hover:bg-gray-50"
+                        className='flex w-full items-center space-x-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-gray-50'
                       >
                         {/* Entity Icon */}
-                        <div className={`flex-shrink-0 w-8 h-8 ${entityColor} rounded-lg flex items-center justify-center`}>
-                          <Icon className="h-4 w-4 text-white" />
+                        <div
+                          className={`h-8 w-8 flex-shrink-0 ${entityColor} flex items-center justify-center rounded-lg`}
+                        >
+                          <Icon className='h-4 w-4 text-white' />
                         </div>
-                        
+
                         {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 truncate">
-                            {item.title}
-                          </div>
+                        <div className='min-w-0 flex-1'>
+                          <div className='truncate font-medium text-gray-900'>{item.title}</div>
                           {item.subtitle && (
-                            <div className="text-sm text-gray-500 truncate">
-                              {item.subtitle}
-                            </div>
+                            <div className='truncate text-sm text-gray-500'>{item.subtitle}</div>
                           )}
                           {item.description && (
-                            <div className="text-xs text-gray-400 truncate mt-1">
+                            <div className='mt-1 truncate text-xs text-gray-400'>
                               {item.description}
                             </div>
                           )}
                         </div>
 
                         {/* Relevance Score */}
-                        <div className="flex-shrink-0 text-xs text-gray-400">
+                        <div className='flex-shrink-0 text-xs text-gray-400'>
                           {Math.round(item.relevanceScore)}%
                         </div>
                       </motion.button>
@@ -457,8 +456,8 @@ export default function SearchCard({
 
                 {/* Load More */}
                 {searchResults.searchMeta.hasMore && (
-                  <div className="px-3 py-2 border-t border-gray-100 mt-2">
-                    <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                  <div className='mt-2 border-t border-gray-100 px-3 py-2'>
+                    <button className='text-sm font-medium text-blue-600 hover:text-blue-700'>
                       Load more results
                     </button>
                   </div>
@@ -468,14 +467,12 @@ export default function SearchCard({
 
             {/* Suggestions */}
             {searchResults?.suggestions && searchResults.suggestions.length > 0 && (
-              <div className="p-2 border-t border-gray-100">
-                <div className="px-3 py-2 text-xs font-medium text-gray-700">
-                  Suggestions
-                </div>
-                <div className="space-y-1">
+              <div className='border-t border-gray-100 p-2'>
+                <div className='px-3 py-2 text-xs font-medium text-gray-700'>Suggestions</div>
+                <div className='space-y-1'>
                   {searchResults.suggestions.slice(0, 5).map((suggestion, index) => {
                     const Icon = getSuggestionIcon(suggestion.type);
-                    
+
                     return (
                       <button
                         key={index}
@@ -483,16 +480,12 @@ export default function SearchCard({
                           setQuery(suggestion.text);
                           setDebouncedQuery(suggestion.text);
                         }}
-                        className="w-full flex items-center space-x-3 px-3 py-2 text-left rounded-lg transition-colors hover:bg-gray-50"
+                        className='flex w-full items-center space-x-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-gray-50'
                       >
-                        <Icon className="h-4 w-4 text-gray-400" />
-                        <span className="flex-1 text-sm text-gray-700">
-                          {suggestion.text}
-                        </span>
+                        <Icon className='h-4 w-4 text-gray-400' />
+                        <span className='flex-1 text-sm text-gray-700'>{suggestion.text}</span>
                         {suggestion.count && (
-                          <span className="text-xs text-gray-400">
-                            {suggestion.count}
-                          </span>
+                          <span className='text-xs text-gray-400'>{suggestion.count}</span>
                         )}
                       </button>
                     );
@@ -503,11 +496,9 @@ export default function SearchCard({
 
             {/* Recent Searches */}
             {!hasResults && recentSearches.length > 0 && query.length < 2 && (
-              <div className="p-2">
-                <div className="px-3 py-2 text-xs font-medium text-gray-700">
-                  Recent Searches
-                </div>
-                <div className="space-y-1">
+              <div className='p-2'>
+                <div className='px-3 py-2 text-xs font-medium text-gray-700'>Recent Searches</div>
+                <div className='space-y-1'>
                   {recentSearches.map((recentQuery, index) => (
                     <button
                       key={index}
@@ -515,12 +506,10 @@ export default function SearchCard({
                         setQuery(recentQuery);
                         setDebouncedQuery(recentQuery);
                       }}
-                      className="w-full flex items-center space-x-3 px-3 py-2 text-left rounded-lg transition-colors hover:bg-gray-50"
+                      className='flex w-full items-center space-x-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-gray-50'
                     >
-                      <History className="h-4 w-4 text-gray-400" />
-                      <span className="flex-1 text-sm text-gray-700">
-                        {recentQuery}
-                      </span>
+                      <History className='h-4 w-4 text-gray-400' />
+                      <span className='flex-1 text-sm text-gray-700'>{recentQuery}</span>
                     </button>
                   ))}
                 </div>
@@ -529,12 +518,10 @@ export default function SearchCard({
 
             {/* No Results */}
             {query.length >= 2 && !loading && !hasResults && !error && (
-              <div className="p-6 text-center">
-                <Search className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <div className="text-sm font-medium text-gray-900 mb-1">
-                  No results found
-                </div>
-                <div className="text-xs text-gray-500">
+              <div className='p-6 text-center'>
+                <Search className='mx-auto mb-3 h-12 w-12 text-gray-300' />
+                <div className='mb-1 text-sm font-medium text-gray-900'>No results found</div>
+                <div className='text-xs text-gray-500'>
                   Try adjusting your search terms or filters
                 </div>
               </div>
@@ -542,13 +529,9 @@ export default function SearchCard({
 
             {/* Error State */}
             {error && (
-              <div className="p-6 text-center">
-                <div className="text-sm font-medium text-red-600 mb-1">
-                  Search Error
-                </div>
-                <div className="text-xs text-gray-500">
-                  {error.message}
-                </div>
+              <div className='p-6 text-center'>
+                <div className='mb-1 text-sm font-medium text-red-600'>Search Error</div>
+                <div className='text-xs text-gray-500'>{error.message}</div>
               </div>
             )}
           </motion.div>

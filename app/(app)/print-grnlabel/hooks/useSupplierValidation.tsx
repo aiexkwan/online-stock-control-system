@@ -3,11 +3,7 @@
 import { useState, useCallback } from 'react';
 import { validateSupplierCode } from '@/app/actions/grnActions';
 import { grnErrorHandler } from '../services/ErrorHandler';
-
-interface SupplierInfo {
-  supplier_code: string;
-  supplier_name: string;
-}
+import { SupplierInfo } from '@/types/business/supplier';
 
 interface UseSupplierValidationReturn {
   supplierInfo: SupplierInfo | null;
@@ -57,7 +53,7 @@ export const useSupplierValidation = (): UseSupplierValidationReturn => {
       } else {
         // Server Action 返回的數據
         const supplierData = result.data;
-        setSupplierInfo(supplierData as any);
+        setSupplierInfo(supplierData as SupplierInfo);
         setSupplierError(null);
         (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[useSupplierValidation] Supplier found:', supplierData);
@@ -89,7 +85,7 @@ export const useSupplierValidation = (): UseSupplierValidationReturn => {
     supplierInfo,
     supplierError,
     isValidating,
-    validateSupplier: validateSupplier as any,
+    validateSupplier,
     clearSupplierInfo,
   };
 };

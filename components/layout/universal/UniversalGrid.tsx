@@ -42,7 +42,9 @@ export const UniversalGrid = forwardRef<HTMLDivElement, UniversalGridProps>(
     ref
   ) => {
     // 獲取配置 (預設優先於直接 props)
-    const config = preset ? GRID_PRESETS[preset] : { columns: columns || ({} as any), gap };
+    const config = preset
+      ? GRID_PRESETS[preset]
+      : { columns: columns || ({} as ResponsiveColumns), gap };
     const finalColumns = columns || config.columns;
     const finalGap = gap || config.gap;
 

@@ -64,6 +64,11 @@ export interface PerformanceResult {
   duration: number;
   status: 'success' | 'warning' | 'error';
   metadata?: Record<string, unknown>;
+  // Additional properties for PerformanceMonitor display
+  metric?: string;
+  improvement?: string;
+  before?: string;
+  after?: string;
 }
 
 export interface PerformanceReport {

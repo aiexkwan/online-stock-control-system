@@ -4,29 +4,34 @@ import React, { createContext, useContext, useReducer, useEffect, ReactNode } fr
 import { VISUAL_CONFIG } from '../config/visual-config';
 import { PERFORMANCE_CONFIG } from '../config/performance-config';
 
+// 擴展Navigator接口以包含deviceMemory屬性（實驗性API）
+interface ExtendedNavigator extends Navigator {
+  deviceMemory?: number;
+}
+
 // 類型定義
 interface VisualSystemState {
   // 系統狀態
   isInitialized: boolean;
   webglSupported: boolean;
   performanceTier: 'high' | 'medium' | 'low';
-  
+
   // 視覺效果狀態
   starfieldEnabled: boolean;
   glassmorphismEnabled: boolean;
   animationsEnabled: boolean;
-  
+
   // 性能指標
   currentFPS: number;
   memoryUsage: number;
-  
+
   // 用戶偏好
   prefersReducedMotion: boolean;
   highContrastMode: boolean;
-  
+
   // 導航欄狀態
   bottomNavVisible: boolean;
-  
+
   // 當前配置
   currentTheme: 'default' | string;
   containerBorderStyle: string;
@@ -49,7 +54,10 @@ interface VisualSystemContextType {
 
 // Action types
 type Action =
-  | { type: 'INIT_COMPLETE'; payload: { webglSupported: boolean; performanceTier: 'high' | 'medium' | 'low' } }
+  | {
+      type: 'INIT_COMPLETE';
+      payload: { webglSupported: boolean; performanceTier: 'high' | 'medium' | 'low' };
+    }
   | { type: 'SET_STARFIELD_ENABLED'; payload: boolean }
   | { type: 'SET_GLASSMORPHISM_ENABLED'; payload: boolean }
   | { type: 'SET_ANIMATIONS_ENABLED'; payload: boolean }
@@ -57,7 +65,10 @@ type Action =
   | { type: 'SET_CONTAINER_BORDER_STYLE'; payload: string }
   | { type: 'UPDATE_PERFORMANCE_METRICS'; payload: { fps: number; memory: number } }
   | { type: 'SET_PERFORMANCE_TIER'; payload: 'high' | 'medium' | 'low' }
-  | { type: 'SET_USER_PREFERENCES'; payload: { prefersReducedMotion: boolean; highContrastMode: boolean } };
+  | {
+      type: 'SET_USER_PREFERENCES';
+      payload: { prefersReducedMotion: boolean; highContrastMode: boolean };
+    };
 
 // 初始狀態
 const initialState: VisualSystemState = {
@@ -130,7 +141,7 @@ export function VisualSystemProvider({ children, overrides }: VisualSystemProvid
     // 檢測WebGL支援
     const checkWebGLSupport = (): boolean => {
       if (typeof window === 'undefined') return false;
-      
+
       try {
         const canvas = document.createElement('canvas');
         const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
@@ -143,11 +154,11 @@ export function VisualSystemProvider({ children, overrides }: VisualSystemProvid
     // 檢測性能層級
     const detectPerformanceTier = (): 'high' | 'medium' | 'low' => {
       if (typeof window === 'undefined') return 'medium';
-      
+
       // 簡單的性能檢測邏輯
       const cores = navigator.hardwareConcurrency || 4;
-      const memory = (navigator as any).deviceMemory || 4;
-      
+      const memory = (navigator as ExtendedNavigator).deviceMemory || 4;
+
       if (cores >= 8 && memory >= 8) return 'high';
       if (cores >= 4 && memory >= 4) return 'medium';
       return 'low';
@@ -156,10 +167,10 @@ export function VisualSystemProvider({ children, overrides }: VisualSystemProvid
     // 檢測用戶偏好
     const detectUserPreferences = () => {
       if (typeof window === 'undefined') return;
-      
+
       const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const highContrastMode = window.matchMedia('(prefers-contrast: high)').matches;
-      
+
       dispatch({
         type: 'SET_USER_PREFERENCES',
         payload: { prefersReducedMotion, highContrastMode },
@@ -169,18 +180,18 @@ export function VisualSystemProvider({ children, overrides }: VisualSystemProvid
     // 執行初始化
     const webglSupported = checkWebGLSupport();
     const performanceTier = detectPerformanceTier();
-    
+
     dispatch({
       type: 'INIT_COMPLETE',
       payload: { webglSupported, performanceTier },
     });
-    
+
     detectUserPreferences();
 
     // 監聽用戶偏好變化
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const contrastQuery = window.matchMedia('(prefers-contrast: high)');
-    
+
     const handleMotionChange = (e: MediaQueryListEvent) => {
       dispatch({
         type: 'SET_USER_PREFERENCES',
@@ -190,7 +201,7 @@ export function VisualSystemProvider({ children, overrides }: VisualSystemProvid
         },
       });
     };
-    
+
     const handleContrastChange = (e: MediaQueryListEvent) => {
       dispatch({
         type: 'SET_USER_PREFERENCES',
@@ -200,10 +211,10 @@ export function VisualSystemProvider({ children, overrides }: VisualSystemProvid
         },
       });
     };
-    
+
     motionQuery.addEventListener('change', handleMotionChange);
     contrastQuery.addEventListener('change', handleContrastChange);
-    
+
     return () => {
       motionQuery.removeEventListener('change', handleMotionChange);
       contrastQuery.removeEventListener('change', handleContrastChange);
@@ -235,11 +246,7 @@ export function VisualSystemProvider({ children, overrides }: VisualSystemProvid
     performanceConfig: PERFORMANCE_CONFIG,
   };
 
-  return (
-    <VisualSystemContext.Provider value={value}>
-      {children}
-    </VisualSystemContext.Provider>
-  );
+  return <VisualSystemContext.Provider value={value}>{children}</VisualSystemContext.Provider>;
 }
 
 // Hook to use the context

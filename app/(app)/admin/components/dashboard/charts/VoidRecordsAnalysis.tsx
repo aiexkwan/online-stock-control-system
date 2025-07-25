@@ -21,6 +21,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { TooltipProps } from '@/types/external/recharts';
 
 interface VoidRecordsAnalysisProps {
   timeFrame?: {
@@ -201,7 +202,7 @@ export default function VoidRecordsAnalysis({ timeFrame }: VoidRecordsAnalysisPr
                 </Pie>
                 <Tooltip
                   // @types-migration:todo(phase3) [P2] 使用 recharts TooltipProps 完整接口 - Target: 2025-08 - Owner: @frontend-team
-                  content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
+                  content={({ active, payload }) => {
                     if (
                       active &&
                       Array.isArray(payload) &&
@@ -242,7 +243,7 @@ export default function VoidRecordsAnalysis({ timeFrame }: VoidRecordsAnalysisPr
                 <YAxis dataKey='code' type='category' width={50} tick={{ fontSize: '12px' }} />
                 <Tooltip
                   // @types-migration:todo(phase3) [P2] 使用 recharts TooltipProps 完整接口 - Target: 2025-08 - Owner: @frontend-team
-                  content={({ active, payload }: { active?: boolean; payload?: any[] }) => {
+                  content={({ active, payload }) => {
                     if (
                       active &&
                       Array.isArray(payload) &&

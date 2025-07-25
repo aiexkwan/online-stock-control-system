@@ -143,8 +143,9 @@ export class PrintOperationsAPI {
     quantity: number;
     operatorId: string;
   } {
-    // Strategy 4: unknown + type narrowing - 安全提取第一條記錄的數據
-    const firstRecord = data[0] || ({} as any);
+    // 安全提取第一條記錄的數據，使用空的DatabaseRecord作為預設值
+    const emptyRecord: Partial<DatabaseRecord> = {};
+    const firstRecord = data[0] || emptyRecord;
     return {
       productCode: typeof firstRecord.product_code === 'string' ? firstRecord.product_code : '',
       palletNum: typeof firstRecord.plt_num === 'string' ? firstRecord.plt_num : '',
@@ -162,8 +163,9 @@ export class PrintOperationsAPI {
     quantity: number;
     operatorId: string;
   } {
-    // Strategy 4: unknown + type narrowing - 安全提取第一條記錄的數據
-    const firstRecord = data[0] || ({} as any);
+    // 安全提取第一條記錄的數據，使用空的DatabaseRecord作為預設值
+    const emptyRecord: Partial<DatabaseRecord> = {};
+    const firstRecord = data[0] || emptyRecord;
     return {
       supplierName: typeof firstRecord.supplier_name === 'string' ? firstRecord.supplier_name : '',
       materialCode: typeof firstRecord.material_code === 'string' ? firstRecord.material_code : '',

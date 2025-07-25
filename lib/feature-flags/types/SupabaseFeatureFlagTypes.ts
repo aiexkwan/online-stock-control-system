@@ -157,7 +157,7 @@ export class FeatureFlagDbMapper {
       startDate: record.start_date ? new Date(record.start_date) : undefined,
       endDate: record.end_date ? new Date(record.end_date) : undefined,
       tags: record.tags || [],
-      metadata: record.metadata || ({} as any),
+      metadata: record.metadata || ({} as Record<string, unknown>),
     };
   }
 

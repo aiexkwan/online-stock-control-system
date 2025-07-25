@@ -181,13 +181,13 @@ export class ConversationContextManager {
         if (entity) {
           references.push({
             original: resolved.match(mapping.pattern)?.[0],
-            resolved: (entity as any).value,
-            type: (entity as any).type,
+            resolved: entity.value,
+            type: entity.type,
             entity,
           });
 
           // 替換代詞
-          resolved = resolved.replace(mapping.pattern, (entity as any).value);
+          resolved = resolved.replace(mapping.pattern, entity.value);
         }
       }
     });

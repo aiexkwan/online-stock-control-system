@@ -9,6 +9,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { AlertRuleEngine } from '../core/AlertRuleEngine';
 import { AlertStateManager } from '../core/AlertStateManager';
 import { NotificationService } from '../notifications/NotificationService';
+import { AlertCondition, isValidAlertCondition } from '../types/alert-types';
 import {
   AlertRule,
   Alert,
@@ -680,7 +681,9 @@ export class AlertMonitoringService {
       enabled: data.enabled as boolean,
       level: data.level as AlertLevel,
       metric: data.metric as string,
-      condition: data.condition as any,
+      condition: (isValidAlertCondition(data.condition)
+        ? data.condition
+        : 'gt') as any as AlertCondition,
       threshold: data.threshold as number | string,
       timeWindow: data.time_window as number,
       evaluationInterval: data.evaluation_interval as number,

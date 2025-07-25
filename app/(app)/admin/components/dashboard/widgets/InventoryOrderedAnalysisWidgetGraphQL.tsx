@@ -157,10 +157,11 @@ export default function InventoryOrderedAnalysisWidgetGraphQL({
   const [stockType, setStockType] = useState<string | undefined>(undefined);
   const [localLoading, setLocalLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
-  
+
   // Refs and contexts
   const { refreshTrigger } = useAdminRefresh();
-  const { ref: inViewportRef, inViewport } = useInViewport(InViewportPresets.PROGRESSIVE_LOADING);
+  const inViewportRef = useRef<HTMLDivElement>(null);
+  const { isInViewport: inViewport } = useInViewport(inViewportRef, InViewportPresets.preload);
 
   // GraphQL Query
   const { data, loading, error, refetch } = useQuery(INVENTORY_ORDERED_ANALYSIS_QUERY, {
@@ -201,10 +202,10 @@ export default function InventoryOrderedAnalysisWidgetGraphQL({
   // Manual refresh handler
   const handleRefresh = useCallback(async () => {
     if (localLoading) return;
-    
+
     setLocalLoading(true);
     setHasError(false);
-    
+
     try {
       await refetch();
     } catch (error) {
@@ -233,36 +234,36 @@ export default function InventoryOrderedAnalysisWidgetGraphQL({
     switch (status) {
       case 'SUFFICIENT':
         return {
-          color: semanticColors.success.primary,
-          bgColor: semanticColors.success.background,
+          color: semanticColors.success.DEFAULT,
+          bgColor: semanticColors.success.bg,
           icon: CheckCircle,
           label: 'Sufficient',
         };
       case 'INSUFFICIENT':
         return {
-          color: semanticColors.warning.primary,
-          bgColor: semanticColors.warning.background,
+          color: semanticColors.warning.DEFAULT,
+          bgColor: semanticColors.warning.bg,
           icon: AlertTriangle,
           label: 'Insufficient',
         };
       case 'OUT_OF_STOCK':
         return {
-          color: semanticColors.error.primary,
-          bgColor: semanticColors.error.background,
+          color: semanticColors.error.DEFAULT,
+          bgColor: semanticColors.error.bg,
           icon: AlertCircle,
           label: 'Out of Stock',
         };
       case 'NO_ORDERS':
         return {
-          color: semanticColors.info.primary,
-          bgColor: semanticColors.info.background,
+          color: semanticColors.info.DEFAULT,
+          bgColor: semanticColors.info.bg,
           icon: Package,
           label: 'No Orders',
         };
       default:
         return {
-          color: semanticColors.neutral.primary,
-          bgColor: semanticColors.neutral.background,
+          color: semanticColors.info.DEFAULT,
+          bgColor: semanticColors.info.bg,
           icon: Package,
           label: status,
         };
@@ -271,53 +272,50 @@ export default function InventoryOrderedAnalysisWidgetGraphQL({
 
   // Summary card component
   const SummaryCard = React.memo(({ summary }: { summary: InventoryAnalysisSummary }) => (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div className='mb-6 grid grid-cols-2 gap-4 md:grid-cols-4'>
       <motion.div
-        className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg"
+        className='rounded-lg bg-gradient-to-r from-blue-50 to-blue-100 p-4'
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="flex items-center justify-between">
+        <div className='flex items-center justify-between'>
           <div>
-            <p className="text-sm text-blue-600 font-medium">Total Products</p>
-            <p className="text-2xl font-bold text-blue-800">{summary.total_products}</p>
+            <p className='text-sm font-medium text-blue-600'>Total Products</p>
+            <p className='text-2xl font-bold text-blue-800'>{summary.total_products}</p>
           </div>
-          <Package className="h-8 w-8 text-blue-500" />
+          <Package className='h-8 w-8 text-blue-500' />
         </div>
       </motion.div>
 
       <motion.div
-        className="bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg"
+        className='rounded-lg bg-gradient-to-r from-green-50 to-green-100 p-4'
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.1 }}
       >
-        <div className="flex items-center justify-between">
+        <div className='flex items-center justify-between'>
           <div>
-            <p className="text-sm text-green-600 font-medium">Fulfillment Rate</p>
-            <p className="text-2xl font-bold text-green-800">
+            <p className='text-sm font-medium text-green-600'>Fulfillment Rate</p>
+            <p className='text-2xl font-bold text-green-800'>
               {summary.overall_fulfillment_rate.toFixed(1)}%
             </p>
           </div>
-          <TrendingUp className="h-8 w-8 text-green-500" />
+          <TrendingUp className='h-8 w-8 text-green-500' />
         </div>
-        <Progress
-          value={Math.min(summary.overall_fulfillment_rate, 100)}
-          className="mt-2 h-2"
-        />
+        <Progress value={Math.min(summary.overall_fulfillment_rate, 100)} className='mt-2 h-2' />
       </motion.div>
 
       <motion.div
-        className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg"
+        className='rounded-lg bg-gradient-to-r from-purple-50 to-purple-100 p-4'
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.2 }}
       >
-        <div className="flex items-center justify-between">
+        <div className='flex items-center justify-between'>
           <div>
-            <p className="text-sm text-purple-600 font-medium">Total Inventory</p>
-            <p className="text-2xl font-bold text-purple-800">
+            <p className='text-sm font-medium text-purple-600'>Total Inventory</p>
+            <p className='text-2xl font-bold text-purple-800'>
               {summary.total_inventory_value.toLocaleString()}
             </p>
           </div>
@@ -325,15 +323,15 @@ export default function InventoryOrderedAnalysisWidgetGraphQL({
       </motion.div>
 
       <motion.div
-        className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg"
+        className='rounded-lg bg-gradient-to-r from-orange-50 to-orange-100 p-4'
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: 0.3 }}
       >
-        <div className="flex items-center justify-between">
+        <div className='flex items-center justify-between'>
           <div>
-            <p className="text-sm text-orange-600 font-medium">Outstanding Orders</p>
-            <p className="text-2xl font-bold text-orange-800">
+            <p className='text-sm font-medium text-orange-600'>Outstanding Orders</p>
+            <p className='text-2xl font-bold text-orange-800'>
               {summary.total_outstanding_orders_value.toLocaleString()}
             </p>
           </div>
@@ -341,6 +339,7 @@ export default function InventoryOrderedAnalysisWidgetGraphQL({
       </motion.div>
     </div>
   ));
+  SummaryCard.displayName = 'SummaryCard';
 
   // Product item component
   const ProductItem = React.memo(({ item }: { item: InventoryAnalysisData }) => {
@@ -349,51 +348,53 @@ export default function InventoryOrderedAnalysisWidgetGraphQL({
 
     return (
       <motion.div
-        className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+        className='rounded-lg border border-gray-200 p-4 transition-shadow hover:shadow-md'
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex-1">
-            <h4 className="font-semibold text-gray-900">{item.product_code}</h4>
-            <p className="text-sm text-gray-600 mt-1">{item.product_description}</p>
-            <p className="text-xs text-gray-500">Type: {item.product_type}</p>
+        <div className='mb-3 flex items-start justify-between'>
+          <div className='flex-1'>
+            <h4 className='font-semibold text-gray-900'>{item.product_code}</h4>
+            <p className='mt-1 text-sm text-gray-600'>{item.product_description}</p>
+            <p className='text-xs text-gray-500'>Type: {item.product_type}</p>
           </div>
           <div
             className={cn(
-              'flex items-center px-3 py-1 rounded-full text-xs font-medium',
+              'flex items-center rounded-full px-3 py-1 text-xs font-medium',
               'transition-colors duration-200'
             )}
-            style={{ 
-              backgroundColor: statusStyle.bgColor, 
-              color: statusStyle.color 
+            style={{
+              backgroundColor: statusStyle.bgColor,
+              color: statusStyle.color,
             }}
           >
-            <StatusIcon className="h-3 w-3 mr-1" />
+            <StatusIcon className='mr-1 h-3 w-3' />
             {statusStyle.label}
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 text-sm">
+        <div className='grid grid-cols-3 gap-4 text-sm'>
           <div>
-            <p className="text-gray-500">Inventory</p>
-            <p className="font-semibold text-lg">{item.inventory.total.toLocaleString()}</p>
+            <p className='text-gray-500'>Inventory</p>
+            <p className='text-lg font-semibold'>{item.inventory.total.toLocaleString()}</p>
           </div>
           <div>
-            <p className="text-gray-500">Outstanding</p>
-            <p className="font-semibold text-lg">{item.orders.total_outstanding_qty.toLocaleString()}</p>
+            <p className='text-gray-500'>Outstanding</p>
+            <p className='text-lg font-semibold'>
+              {item.orders.total_outstanding_qty.toLocaleString()}
+            </p>
           </div>
           <div>
-            <p className="text-gray-500">Fulfillment</p>
-            <p className="font-semibold text-lg">{item.analysis.fulfillment_rate.toFixed(1)}%</p>
+            <p className='text-gray-500'>Fulfillment</p>
+            <p className='text-lg font-semibold'>{item.analysis.fulfillment_rate.toFixed(1)}%</p>
           </div>
         </div>
 
         {item.analysis.inventory_gap !== 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-100">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Inventory Gap:</span>
+          <div className='mt-3 border-t border-gray-100 pt-3'>
+            <div className='flex items-center justify-between text-sm'>
+              <span className='text-gray-500'>Inventory Gap:</span>
               <span
                 className={cn(
                   'font-medium',
@@ -409,16 +410,17 @@ export default function InventoryOrderedAnalysisWidgetGraphQL({
       </motion.div>
     );
   });
+  ProductItem.displayName = 'ProductItem';
 
   // Loading skeleton
   if (!inViewport) {
     return (
       <Card ref={inViewportRef} className={cn('h-96', className)}>
         <CardHeader>
-          <Skeleton className="h-6 w-64" />
+          <Skeleton className='h-6 w-64' />
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-32 w-full" />
+          <Skeleton className='h-32 w-full' />
         </CardContent>
       </Card>
     );
@@ -428,27 +430,27 @@ export default function InventoryOrderedAnalysisWidgetGraphQL({
   if (error || hasError) {
     return (
       <Card ref={inViewportRef} className={className}>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg font-semibold">
+        <CardHeader className='flex flex-row items-center justify-between'>
+          <CardTitle className='text-lg font-semibold'>
             Inventory Ordered Analysis (GraphQL)
           </CardTitle>
           <button
             onClick={handleRefresh}
             disabled={localLoading}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className='rounded-full p-2 transition-colors hover:bg-gray-100'
           >
             <RefreshCw className={cn('h-4 w-4', localLoading && 'animate-spin')} />
           </button>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-64 text-center">
+          <div className='flex h-64 items-center justify-center text-center'>
             <div>
-              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <p className="text-gray-600 mb-4">Failed to load inventory analysis</p>
+              <AlertCircle className='mx-auto mb-4 h-12 w-12 text-red-500' />
+              <p className='mb-4 text-gray-600'>Failed to load inventory analysis</p>
               <button
                 onClick={handleRefresh}
                 disabled={localLoading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                className='rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50'
               >
                 {localLoading ? 'Retrying...' : 'Retry'}
               </button>
@@ -463,22 +465,22 @@ export default function InventoryOrderedAnalysisWidgetGraphQL({
   if (loading || localLoading) {
     return (
       <Card ref={inViewportRef} className={className}>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg font-semibold">
+        <CardHeader className='flex flex-row items-center justify-between'>
+          <CardTitle className='text-lg font-semibold'>
             Inventory Ordered Analysis (GraphQL)
           </CardTitle>
-          <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+          <Loader2 className='h-5 w-5 animate-spin text-blue-600' />
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className='space-y-4'>
+            <div className='grid grid-cols-2 gap-4 md:grid-cols-4'>
               {[...Array(4)].map((_, i) => (
-                <Skeleton key={i} className="h-20" />
+                <Skeleton key={i} className='h-20' />
               ))}
             </div>
-            <div className="space-y-3">
+            <div className='space-y-3'>
               {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-24" />
+                <Skeleton key={i} className='h-24' />
               ))}
             </div>
           </div>
@@ -490,12 +492,12 @@ export default function InventoryOrderedAnalysisWidgetGraphQL({
   // Main render
   return (
     <Card ref={inViewportRef} className={className}>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg font-semibold flex items-center">
-          <Package className="h-5 w-5 mr-2 text-blue-600" />
+      <CardHeader className='flex flex-row items-center justify-between'>
+        <CardTitle className='flex items-center text-lg font-semibold'>
+          <Package className='mr-2 h-5 w-5 text-blue-600' />
           Inventory Ordered Analysis (GraphQL)
           {stockType && (
-            <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
+            <span className='ml-2 rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-700'>
               {stockType}
             </span>
           )}
@@ -503,34 +505,30 @@ export default function InventoryOrderedAnalysisWidgetGraphQL({
         <button
           onClick={handleRefresh}
           disabled={localLoading}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          className='rounded-full p-2 transition-colors hover:bg-gray-100'
         >
           <RefreshCw className={cn('h-4 w-4', localLoading && 'animate-spin')} />
         </button>
       </CardHeader>
       <CardContent>
-        {processedData.summary && (
-          <SummaryCard summary={processedData.summary} />
-        )}
+        {processedData.summary && <SummaryCard summary={processedData.summary} />}
 
-        <div className="space-y-4">
+        <div className='space-y-4'>
           {processedData.items.length > 0 ? (
-            processedData.items.map((item, index) => (
+            processedData.items.map((item: InventoryAnalysisData, index: number) => (
               <ProductItem key={`${item.product_code}-${index}`} item={item} />
             ))
           ) : (
-            <div className="text-center py-8 text-gray-500">
-              <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <div className='py-8 text-center text-gray-500'>
+              <Package className='mx-auto mb-4 h-12 w-12 opacity-50' />
               <p>No inventory analysis data available</p>
-              {stockType && (
-                <p className="text-sm mt-2">for product type: {stockType}</p>
-              )}
+              {stockType && <p className='mt-2 text-sm'>for product type: {stockType}</p>}
             </div>
           )}
         </div>
 
         {data?.inventoryOrderedAnalysis?.generated_at && (
-          <div className="mt-6 pt-4 border-t border-gray-100 text-xs text-gray-500 text-center">
+          <div className='mt-6 border-t border-gray-100 pt-4 text-center text-xs text-gray-500'>
             Last updated: {new Date(data.inventoryOrderedAnalysis.generated_at).toLocaleString()}
           </div>
         )}

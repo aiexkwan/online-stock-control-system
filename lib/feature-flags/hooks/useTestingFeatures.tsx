@@ -149,8 +149,12 @@ export function useTestingFeatures(): TestingFeatures {
     if (!isPerformanceMonitoringEnabled) return;
 
     // 監聽 Jest 測試結果（如果可用）
-    if (typeof window !== 'undefined' && (window as any).__JEST_TEST_RESULTS__) {
-      const results = (window as any).__JEST_TEST_RESULTS__ as Record<string, unknown>;
+    const windowWithJest =
+      typeof window !== 'undefined'
+        ? (window as Window & { __JEST_TEST_RESULTS__?: Record<string, unknown> })
+        : null;
+    if (windowWithJest?.__JEST_TEST_RESULTS__) {
+      const results = windowWithJest.__JEST_TEST_RESULTS__;
       setTestMetrics({
         totalTests: (results?.numTotalTests as number) || 0,
         passedTests: (results?.numPassedTests as number) || 0,

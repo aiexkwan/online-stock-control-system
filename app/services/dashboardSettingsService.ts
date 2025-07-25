@@ -41,7 +41,7 @@ class DashboardSettingsService {
     try {
       const user = await this.getCurrentUser();
 
-      const { data, error } = await (this.supabase as any)
+      const { data, error } = await this.supabase
         .from('user_dashboard_settings')
         .select('*')
         .eq('user_id', user.id)
@@ -56,7 +56,7 @@ class DashboardSettingsService {
         throw error;
       }
 
-      return data;
+      return data as unknown as DashboardSettings;
     } catch (error) {
       console.error('Error fetching dashboard settings:', error);
       return null;
@@ -78,21 +78,21 @@ class DashboardSettingsService {
 
       if (existing) {
         // 更新現有設定
-        const { data, error } = await (this.supabase as any)
+        const { data, error } = await this.supabase
           .from('user_dashboard_settings')
           .update({
             config,
             updated_at: new Date().toISOString(),
           })
-          .eq('id', existing.id)
+          .eq('id', existing.id!)
           .select()
           .single();
 
         if (error) throw error;
-        return data;
+        return data as unknown as DashboardSettings;
       } else {
         // 創建新設定
-        const { data, error } = await (this.supabase as any)
+        const { data, error } = await this.supabase
           .from('user_dashboard_settings')
           .insert({
             user_id: user.id,
@@ -105,7 +105,7 @@ class DashboardSettingsService {
           .single();
 
         if (error) throw error;
-        return data;
+        return data as unknown as DashboardSettings;
       }
     } catch (error) {
       console.error('Error saving dashboard settings:', error);
@@ -120,7 +120,7 @@ class DashboardSettingsService {
     try {
       const user = await this.getCurrentUser();
 
-      const { error } = await (this.supabase as any)
+      const { error } = await this.supabase
         .from('user_dashboard_settings')
         .delete()
         .eq('user_id', user.id)

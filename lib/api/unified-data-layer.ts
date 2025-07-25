@@ -9,29 +9,50 @@ import { restRequest } from '@/lib/api/unified-api-client';
 import { dataSourceConfig } from '@/lib/data/data-source-config';
 import { getWidgetCategory } from '@/lib/widgets/unified-widget-config';
 
+// Type-safe alternatives to 'any'
+type GraphQLVariables = Record<string, unknown>;
+type RequestBody = Record<string, unknown> | FormData | string | null;
+type DataTransformer<TInput = unknown, TOutput = unknown> = (data: TInput) => TOutput;
+type DefaultApiResponse = Record<string, unknown>;
+
+// Widget parameter types based on existing GraphQL queries
+interface WidgetParameters {
+  warehouse?: string;
+  dateRange?: {
+    start: string;
+    end: string;
+  };
+  limit?: number;
+  chartType?: string;
+  timeRange?: string;
+  widgetId?: string;
+  widgetCategory?: string;
+  [key: string]: unknown;
+}
+
 export enum DataSourceType {
   GRAPHQL = 'graphql',
   REST = 'rest',
   AUTO = 'auto',
 }
 
-export interface QueryOptions<TVariables = any> {
+export interface QueryOptions<TVariables = GraphQLVariables> {
   source?: DataSourceType;
   query?: DocumentNode | string;
   variables?: TVariables;
   endpoint?: string;
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   fallbackEnabled?: boolean;
-  cachePolicy?: 'cache-first' | 'cache-and-network' | 'network-only' | 'no-cache';
+  cachePolicy?: 'cache-first' | 'network-only' | 'no-cache';
 }
 
-export interface MutationOptions<TVariables = any> {
+export interface MutationOptions<TVariables = GraphQLVariables> {
   source?: DataSourceType;
   mutation?: DocumentNode | string;
   variables?: TVariables;
   endpoint?: string;
   method?: 'POST' | 'PUT' | 'DELETE';
-  body?: any;
+  body?: RequestBody;
   fallbackEnabled?: boolean;
 }
 
@@ -47,12 +68,12 @@ export interface WidgetDataMapping {
   [widgetId: string]: {
     graphql?: {
       query: DocumentNode;
-      transform?: (data: any) => any;
+      transform?: DataTransformer;
     };
     rest?: {
       endpoint: string;
       method?: 'GET' | 'POST';
-      transform?: (data: any) => any;
+      transform?: DataTransformer;
     };
     preferredSource?: DataSourceType;
   };
@@ -172,7 +193,7 @@ export class UnifiedDataLayer {
 
   constructor(client?: ApolloClient<NormalizedCacheObject>) {
     this.apolloClient = client || apolloClient;
-    
+
     // 定期更新配置管理器的性能指標
     this.startMetricsReporting();
   }
@@ -180,29 +201,29 @@ export class UnifiedDataLayer {
   /**
    * Execute a query with automatic source selection and fallback
    */
-  async query<T = any, TVariables = any>(
+  async query<T = DefaultApiResponse, TVariables = GraphQLVariables>(
     options: QueryOptions<TVariables>
   ): Promise<DataLayerResponse<T>> {
     const startTime = performance.now();
-    
+
     // 使用配置管理器決定數據源
     let source = options.source || DataSourceType.AUTO;
     let fallbackEnabled = options.fallbackEnabled ?? this.fallbackEnabled;
 
     if (source === DataSourceType.AUTO) {
       const decision = await dataSourceConfig.determineDataSource({
-        widgetId: options.variables?.widgetId as string,
-        widgetCategory: options.variables?.widgetCategory as string,
+        widgetId: (options.variables as WidgetParameters)?.widgetId as string,
+        widgetCategory: (options.variables as WidgetParameters)?.widgetCategory as string,
         performanceMetrics: this.getPerformanceMetrics(),
       });
-      
+
       source = decision.dataSource;
       fallbackEnabled = decision.fallbackEnabled;
-      
+
       console.log('[UnifiedDataLayer] Auto-selected data source:', {
         source,
         reason: decision.reason,
-        fallbackEnabled
+        fallbackEnabled,
       });
     }
 
@@ -219,21 +240,23 @@ export class UnifiedDataLayer {
         } catch (graphqlError) {
           this.recordMetrics('graphql', false, performance.now() - startTime);
           console.error('[UnifiedDataLayer] GraphQL query failed:', graphqlError);
-          
+
           // Fallback to REST if enabled
           if (fallbackEnabled && options.endpoint) {
             console.log('[UnifiedDataLayer] Falling back to REST API');
-            const restResult = await this.executeRESTQuery<T>(options);
+            const restResult = await this.executeRESTQuery<T>(
+              options as QueryOptions<GraphQLVariables>
+            );
             this.recordMetrics('rest', true, restResult.executionTime || 0);
             return restResult;
           }
-          
+
           throw graphqlError;
         }
       }
 
       // Direct REST query
-      const result = await this.executeRESTQuery<T>(options);
+      const result = await this.executeRESTQuery<T>(options as QueryOptions<GraphQLVariables>);
       this.recordMetrics('rest', true, result.executionTime || 0);
       return result;
     } catch (error) {
@@ -250,7 +273,7 @@ export class UnifiedDataLayer {
   /**
    * Execute a mutation with automatic source selection and fallback
    */
-  async mutation<T = any, TVariables = any>(
+  async mutation<T = DefaultApiResponse, TVariables = GraphQLVariables>(
     options: MutationOptions<TVariables>
   ): Promise<DataLayerResponse<T>> {
     const startTime = performance.now();
@@ -268,19 +291,19 @@ export class UnifiedDataLayer {
           };
         } catch (graphqlError) {
           console.error('[UnifiedDataLayer] GraphQL mutation failed:', graphqlError);
-          
+
           // Fallback to REST if enabled
           if (fallbackEnabled && (source === DataSourceType.AUTO || options.endpoint)) {
             console.log('[UnifiedDataLayer] Falling back to REST API');
-            return this.executeRESTMutation<T>(options);
+            return this.executeRESTMutation<T>(options as MutationOptions<GraphQLVariables>);
           }
-          
+
           throw graphqlError;
         }
       }
 
       // Direct REST mutation
-      return this.executeRESTMutation<T>(options);
+      return this.executeRESTMutation<T>(options as MutationOptions<GraphQLVariables>);
     } catch (error) {
       return {
         data: null,
@@ -294,12 +317,12 @@ export class UnifiedDataLayer {
   /**
    * Get widget data with intelligent source selection
    */
-  async getWidgetData<T = any>(
+  async getWidgetData<T = DefaultApiResponse>(
     widgetId: string,
-    params?: any
+    params?: WidgetParameters
   ): Promise<DataLayerResponse<T>> {
     const mapping = WIDGET_MAPPINGS[widgetId];
-    
+
     if (!mapping) {
       // No mapping found, fallback to REST
       return this.query<T>({
@@ -310,7 +333,7 @@ export class UnifiedDataLayer {
     }
 
     const preferredSource = mapping.preferredSource || DataSourceType.AUTO;
-    
+
     // Try preferred source first
     if (preferredSource === DataSourceType.GRAPHQL && mapping.graphql) {
       const result = await this.query<T>({
@@ -323,7 +346,7 @@ export class UnifiedDataLayer {
 
       // Apply transformation if needed
       if (result.data && mapping.graphql.transform) {
-        result.data = mapping.graphql.transform(result.data);
+        result.data = mapping.graphql.transform(result.data) as T;
       }
 
       return result;
@@ -337,7 +360,7 @@ export class UnifiedDataLayer {
 
       // Apply transformation if needed
       if (result.data && mapping.rest.transform) {
-        result.data = mapping.rest.transform(result.data);
+        result.data = mapping.rest.transform(result.data) as T;
       }
 
       return result;
@@ -366,7 +389,8 @@ export class UnifiedDataLayer {
     const result = await this.apolloClient.query<T, TVariables>({
       query,
       variables: options.variables,
-      fetchPolicy: options.cachePolicy || 'cache-first',
+      fetchPolicy:
+        (options.cachePolicy as 'cache-first' | 'network-only' | 'no-cache') || 'cache-first',
     });
 
     return {
@@ -386,9 +410,8 @@ export class UnifiedDataLayer {
       throw new Error('GraphQL mutation is required');
     }
 
-    const mutation = typeof options.mutation === 'string' 
-      ? gql(options.mutation) 
-      : options.mutation;
+    const mutation =
+      typeof options.mutation === 'string' ? gql(options.mutation) : options.mutation;
 
     const result = await this.apolloClient.mutate<T, TVariables>({
       mutation,
@@ -404,9 +427,7 @@ export class UnifiedDataLayer {
   /**
    * Execute REST query
    */
-  private async executeRESTQuery<T>(
-    options: QueryOptions
-  ): Promise<DataLayerResponse<T>> {
+  private async executeRESTQuery<T>(options: QueryOptions): Promise<DataLayerResponse<T>> {
     if (!options.endpoint) {
       throw new Error('REST endpoint is required');
     }
@@ -432,9 +453,7 @@ export class UnifiedDataLayer {
   /**
    * Execute REST mutation
    */
-  private async executeRESTMutation<T>(
-    options: MutationOptions
-  ): Promise<DataLayerResponse<T>> {
+  private async executeRESTMutation<T>(options: MutationOptions): Promise<DataLayerResponse<T>> {
     if (!options.endpoint) {
       throw new Error('REST endpoint is required');
     }
@@ -490,9 +509,13 @@ export class UnifiedDataLayer {
    * 獲取性能指標
    */
   private getPerformanceMetrics() {
-    const { 
-      restTotal, restSuccess, restTotalTime,
-      graphqlTotal, graphqlSuccess, graphqlTotalTime 
+    const {
+      restTotal,
+      restSuccess,
+      restTotalTime,
+      graphqlTotal,
+      graphqlSuccess,
+      graphqlTotalTime,
     } = this.performanceMetrics;
 
     return {
@@ -500,7 +523,7 @@ export class UnifiedDataLayer {
       graphqlSuccessRate: graphqlTotal > 0 ? graphqlSuccess / graphqlTotal : 1,
       restAvgResponseTime: restTotal > 0 ? restTotalTime / restTotal : 0,
       graphqlAvgResponseTime: graphqlTotal > 0 ? graphqlTotalTime / graphqlTotal : 0,
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     };
   }
 
@@ -524,7 +547,7 @@ export class UnifiedDataLayer {
       ...dataSourceConfig.getStatus(),
       performanceMetrics: this.getPerformanceMetrics(),
       metricsEnabled: this.metricsEnabled,
-      fallbackEnabled: this.fallbackEnabled
+      fallbackEnabled: this.fallbackEnabled,
     };
   }
 
@@ -533,7 +556,7 @@ export class UnifiedDataLayer {
    */
   async switchDataSource(targetSource: DataSourceType, duration?: number) {
     const originalDefault = dataSourceConfig.getStatus().defaultDataSource;
-    
+
     dataSourceConfig.setDefaultDataSource(targetSource);
     console.log(`[UnifiedDataLayer] Manually switched to ${targetSource}`);
 

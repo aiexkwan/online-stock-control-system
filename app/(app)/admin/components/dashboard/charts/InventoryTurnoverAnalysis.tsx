@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import { TooltipProps } from '@/types/external/recharts';
 
 // 定義 Recharts Tooltip Payload 類型
 interface TooltipPayloadItem {
@@ -97,12 +98,17 @@ export default function InventoryTurnoverAnalysis({ timeFrame }: InventoryTurnov
             <XAxis dataKey='code' />
             <YAxis />
             <Tooltip
-              content={(props: any) => {
+              content={props => {
                 const { active, payload } = props;
                 const typedPayload = payload as TooltipPayloadItem[];
-                if (active && Array.isArray(typedPayload) && typedPayload.length > 0 && typedPayload[0]?.payload) {
+                if (
+                  active &&
+                  Array.isArray(typedPayload) &&
+                  typedPayload.length > 0 &&
+                  typedPayload[0]?.payload
+                ) {
                   const payloadData = typedPayload[0].payload;
-                  const data = payloadData as {
+                  const data = payloadData as unknown as {
                     code: string;
                     inventory: number;
                     demand: number;

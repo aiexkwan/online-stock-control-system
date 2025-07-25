@@ -71,6 +71,44 @@ const TechDebtMetricsSchema = z.object({
 type TechDebtMetrics = z.infer<typeof TechDebtMetricsSchema>;
 
 /**
+ * 驗證並轉換數據庫記錄為TechDebtMetrics類型
+ */
+function validateTechDebtMetrics(record: unknown): TechDebtMetrics {
+  try {
+    // 嘗試驗證數據庫記錄
+    return TechDebtMetricsSchema.parse(record);
+  } catch (error) {
+    // 如果驗證失敗，返回預設值
+    console.warn('Failed to validate tech debt metrics record:', error);
+    return {
+      timestamp: new Date().toISOString(),
+      source: 'manual' as const,
+      metrics: {
+        typescript: {
+          errorCount: 0,
+          warningCount: 0,
+          details: [],
+        },
+        eslint: {
+          errorCount: 0,
+          warningCount: 0,
+          fixableCount: 0,
+          details: [],
+        },
+        testing: {
+          totalTests: 0,
+          passedTests: 0,
+          failedTests: 0,
+        },
+        build: {
+          status: 'failure' as const,
+        },
+      },
+    };
+  }
+}
+
+/**
  * 執行 TypeScript 檢查並解析結果
  */
 async function collectTypeScriptMetrics() {
@@ -83,7 +121,7 @@ async function collectTypeScriptMetrics() {
     interface TypeScriptError {
       file: string;
       line: number;
-      severity: string;
+      severity: 'error' | 'warning';
       message: string;
     }
 
@@ -157,19 +195,35 @@ async function collectESLintMetrics() {
     );
     const eslintResults: ESLintFileResult[] = JSON.parse(stdout);
 
-    const errors: ESLintMessage[] = [];
-    const warnings: ESLintMessage[] = [];
+    const errors: Array<{
+      file: string;
+      line: number;
+      column?: number;
+      severity: 'error' | 'warning';
+      message: string;
+      rule: string;
+      fixable: boolean;
+    }> = [];
+    const warnings: Array<{
+      file: string;
+      line: number;
+      column?: number;
+      severity: 'error' | 'warning';
+      message: string;
+      rule: string;
+      fixable: boolean;
+    }> = [];
     let fixableCount = 0;
 
     eslintResults.forEach((fileResult: ESLintFileResult) => {
       fileResult.messages.forEach(message => {
-        const item: ESLintMessage = {
+        const item = {
           file: fileResult.filePath.replace(process.cwd(), ''),
           line: message.line,
           column: message.column,
-          severity: message.severity,
+          severity: message.severity === 2 ? ('error' as const) : ('warning' as const),
           message: message.message,
-          ruleId: message.ruleId || 'unknown',
+          rule: message.ruleId || 'unknown',
           fixable: !!message.fix,
         };
 
@@ -259,17 +313,21 @@ async function collectBuildMetrics() {
 /**
  * GET: 獲取最新的技術債務指標
  */
-export async function GET(request: NextRequest): Promise<NextResponse<ApiResult<{
-  current: TechDebtMetrics | null;
-  historical: TechDebtMetrics[];
-  summary: {
-    totalRecords: number;
-    dateRange: {
-      start: string;
-      end: string;
-    };
-  };
-}>>> {
+export async function GET(request: NextRequest): Promise<
+  NextResponse<
+    ApiResult<{
+      current: TechDebtMetrics | null;
+      historical: TechDebtMetrics[];
+      summary: {
+        totalRecords: number;
+        dateRange: {
+          start: string;
+          end: string;
+        };
+      };
+    }>
+  >
+> {
   try {
     const { searchParams } = new URL(request.url);
     const range = searchParams.get('range') || '7d'; // 7d, 30d, 90d
@@ -327,9 +385,9 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiResult<
     return NextResponse.json({
       success: true,
       data: {
-        // @types-migration:todo(phase3) [P2] 重構API響應結構匹配TechDebtMetrics接口 - Target: 2025-08 - Owner: @backend-team
-        current: currentMetrics as any,
-        historical: (historicalData || []) as any,
+        // Type-safe response with proper validation
+        current: currentMetrics,
+        historical: (historicalData || []).map(record => validateTechDebtMetrics(record)),
         summary: {
           totalRecords: historicalData?.length || 0,
           dateRange: {

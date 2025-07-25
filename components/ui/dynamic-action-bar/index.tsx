@@ -102,7 +102,11 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
           .single();
 
         if (data && !error) {
-          setUserData(data as any);
+          setUserData({
+            name: data.name,
+            email: data.email || '',
+            icon_url: data.icon_url,
+          });
 
           // 更新緩存
           navigationCacheManager.setUserData(user.id, {

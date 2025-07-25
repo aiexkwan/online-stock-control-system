@@ -11,6 +11,7 @@ import type {
   InventoryAnalysisSortBy,
   InventoryAnalysisProduct,
 } from '@/lib/types/inventory-analysis.types';
+import type { InventoryOrderedAnalysisInput } from '@/types/generated/graphql';
 
 export class InventoryAnalysisAPI {
   private static instance: InventoryAnalysisAPI;
@@ -32,10 +33,16 @@ export class InventoryAnalysisAPI {
     params?: InventoryAnalysisParams
   ): Promise<InventoryOrderedAnalysisResponse> {
     try {
-      const { data, error } = await this.supabase.rpc('rpc_get_inventory_ordered_analysis', {
+      // 使用GraphQL類型確保參數安全
+      const rpcParams: Record<string, unknown> = {
         p_product_codes: params?.p_product_codes || null,
         p_product_type: params?.p_product_type || undefined,
-      } as any);
+      };
+
+      const { data, error } = await this.supabase.rpc(
+        'rpc_get_inventory_ordered_analysis',
+        rpcParams
+      );
 
       if (error) {
         console.error('Error fetching inventory analysis:', error);

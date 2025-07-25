@@ -4,6 +4,7 @@
  */
 
 import { WidgetDefinition, WidgetCategory } from './types';
+import { UnifiedWidgetProps } from './types/enhanced-widget-types';
 
 /**
  * 簡化的 Widget 配置接口
@@ -15,7 +16,7 @@ export interface UnifiedWidgetConfig {
   description?: string;
   lazyLoad: boolean;
   preloadPriority: number;
-  loader?: () => Promise<{ default: React.ComponentType<any> }>;
+  loader?: () => Promise<{ default: React.ComponentType<UnifiedWidgetProps> }>;
   metadata: {
     dataSource?: string;
     refreshInterval?: number | false;
@@ -62,13 +63,16 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     id: 'HistoryTreeV2GraphQL',
     name: 'History Tree V2 (GraphQL)',
     category: 'core',
-    description: 'System operations history with hierarchical structure using GraphQL - optimized performance',
+    description:
+      'System operations history with hierarchical structure using GraphQL - optimized performance',
     lazyLoad: true,
     preloadPriority: 9, // Higher priority than REST version
     loader: () =>
-      import('@/app/(app)/admin/components/dashboard/widgets/HistoryTreeV2GraphQL').then(module => ({
-        default: module.default,
-      })),
+      import('@/app/(app)/admin/components/dashboard/widgets/HistoryTreeV2GraphQL').then(
+        module => ({
+          default: module.default,
+        })
+      ),
     metadata: {
       dataSource: 'history_tree', // GraphQL data source
       refreshInterval: false, // 🛑 禁用自動刷新
@@ -161,9 +165,11 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     lazyLoad: true,
     preloadPriority: 8,
     loader: () =>
-      import('@/app/(app)/admin/components/dashboard/widgets/StockDistributionChart').then(module => ({
-        default: module.default || module.StockDistributionChart,
-      })),
+      import('@/app/(app)/admin/components/dashboard/widgets/StockDistributionChart').then(
+        module => ({
+          default: module.default || module.StockDistributionChart,
+        })
+      ),
     metadata: {
       dataSource: 'record_inventory',
       chartType: 'pie',
@@ -244,9 +250,11 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     lazyLoad: true,
     preloadPriority: 7,
     loader: () =>
-      import('@/app/(app)/admin/components/dashboard/widgets/TopProductsByQuantityWidget').then(module => ({
-        default: module.default || module.TopProductsByQuantityWidget,
-      })),
+      import('@/app/(app)/admin/components/dashboard/widgets/TopProductsByQuantityWidget').then(
+        module => ({
+          default: module.default || module.TopProductsByQuantityWidget,
+        })
+      ),
     metadata: {
       dataSource: 'record_inventory',
       chartType: 'bar',
@@ -261,11 +269,14 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     id: 'TopProductsByQuantityWidgetGraphQL',
     name: 'Top Products By Quantity (GraphQL)',
     category: 'charts',
-    description: 'Top products ranked by quantity using GraphQL - optimized performance with DataLoader batching',
+    description:
+      'Top products ranked by quantity using GraphQL - optimized performance with DataLoader batching',
     lazyLoad: true,
     preloadPriority: 6, // Higher priority than REST version
     loader: () =>
-      import('@/app/(app)/admin/components/dashboard/widgets/TopProductsByQuantityWidgetGraphQL').then(module => ({
+      import(
+        '@/app/(app)/admin/components/dashboard/widgets/TopProductsByQuantityWidgetGraphQL'
+      ).then(module => ({
         default: module.default,
       })),
     metadata: {
@@ -452,9 +463,11 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     lazyLoad: true,
     preloadPriority: 6,
     loader: () =>
-      import('@/app/(app)/admin/components/dashboard/widgets/AnalysisExpandableCards').then(module => ({
-        default: module.default || module.AnalysisExpandableCards,
-      })),
+      import('@/app/(app)/admin/components/dashboard/widgets/AnalysisExpandableCards').then(
+        module => ({
+          default: module.default || module.AnalysisExpandableCards,
+        })
+      ),
     metadata: {
       refreshInterval: false, // 🛑 禁用自動刷新
       supportDateRange: true,
@@ -470,9 +483,11 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     lazyLoad: true,
     preloadPriority: 7,
     loader: () =>
-      import('@/app/(app)/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget').then(module => ({
-        default: module.default || module.InventoryOrderedAnalysisWidget,
-      })),
+      import('@/app/(app)/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget').then(
+        module => ({
+          default: module.default || module.InventoryOrderedAnalysisWidget,
+        })
+      ),
     metadata: {
       dataSource: 'record_inventory',
       refreshInterval: false, // 🛑 禁用自動刷新
@@ -490,7 +505,9 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     lazyLoad: true,
     preloadPriority: 6, // Higher priority than REST version
     loader: () =>
-      import('@/app/(app)/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidgetGraphQL').then(module => ({
+      import(
+        '@/app/(app)/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidgetGraphQL'
+      ).then(module => ({
         default: module.default,
       })),
     metadata: {
@@ -580,11 +597,7 @@ export const ROUTE_PRELOAD_MAP: Record<string, string[]> = {
     'StillInAwaitWidget',
   ],
   '/admin/injection': ['HistoryTreeV2', 'StatsCardWidget', 'ProductDistributionChartWidget'],
-  '/admin/pipeline': [
-    'WarehouseWorkLevelAreaChart',
-    'OrdersListWidget',
-    'OrderStateListWidget',
-  ],
+  '/admin/pipeline': ['WarehouseWorkLevelAreaChart', 'OrdersListWidget', 'OrderStateListWidget'],
   '/admin/upload': [
     'UploadOrdersWidget',
     'UploadFilesWidget',

@@ -13,9 +13,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TimeFrame } from '@/app/components/admin/UniversalTimeRangeSelector';
 import { getCacheAdapter } from '@/lib/cache/cache-factory';
 import { GlassmorphicCard } from '@/app/components/visual-system/effects/GlassmorphicCard';
-import { AnalysisDisplayContainer, ANALYSIS_WIDGET_SELECTION, AnalysisWidgetId } from './widgets/AnalysisDisplayContainer';
+import {
+  AnalysisDisplayContainer,
+  ANALYSIS_WIDGET_SELECTION,
+  AnalysisWidgetId,
+} from './widgets/AnalysisDisplayContainer';
 import { UNIFIED_WIDGET_CONFIG } from '@/lib/widgets/unified-widget-config';
-import { 
+import {
   ChartBarIcon,
   CubeIcon,
   DocumentTextIcon,
@@ -23,24 +27,17 @@ import {
   ClipboardDocumentListIcon,
   WrenchScrewdriverIcon,
   EyeIcon,
-  CheckIcon
+  CheckIcon,
 } from '@heroicons/react/24/outline';
 
-// Heroicon component props interface
-interface HeroIconProps {
-  className?: string;
-  width?: number | string;
-  height?: number | string;
-  stroke?: string;
-  fill?: string;
-  'aria-hidden'?: boolean;
-}
+// Heroicon component props interface - 使用統一類型定義
+import type { HeroIcon, IconComponent } from '@/types/heroicons';
 
 // Widget 類別配置 - 基於 UnifiedWidget 系統
 export interface WidgetCategory {
   id: string;
   label: string;
-  icon: React.ComponentType<HeroIconProps>;
+  icon: HeroIcon | IconComponent;
   color: string;
   widgets: AnalysisWidgetId[];
 }
@@ -51,43 +48,51 @@ export const WIDGET_CATEGORIES: WidgetCategory[] = [
     label: 'Core Analysis',
     icon: EyeIcon,
     color: 'text-blue-400',
-    widgets: ['HistoryTreeV2']
+    widgets: ['HistoryTreeV2'],
   },
   {
     id: 'inventory',
     label: 'Inventory',
     icon: CubeIcon,
     color: 'text-green-400',
-    widgets: ['InventoryOrderedAnalysisWidget', 'StockDistributionChartV2', 'StockLevelHistoryChart']
+    widgets: [
+      'InventoryOrderedAnalysisWidget',
+      'StockDistributionChartV2',
+      'StockLevelHistoryChart',
+    ],
   },
   {
     id: 'products',
     label: 'Products',
     icon: ChartBarIcon,
     color: 'text-orange-400',
-    widgets: ['TopProductsByQuantityWidget', 'TopProductsDistributionWidget']
+    widgets: ['TopProductsByQuantityWidget', 'TopProductsDistributionWidget'],
   },
   {
     id: 'operations',
     label: 'Operations',
     icon: WrenchScrewdriverIcon,
     color: 'text-purple-400',
-    widgets: ['TransferTimeDistributionWidget', 'WarehouseWorkLevelAreaChart', 'WarehouseTransferListWidget']
+    widgets: [
+      'TransferTimeDistributionWidget',
+      'WarehouseWorkLevelAreaChart',
+      'WarehouseTransferListWidget',
+    ],
   },
   {
     id: 'reports',
     label: 'Reports',
     icon: ClipboardDocumentListIcon,
     color: 'text-cyan-400',
-    widgets: ['TransactionReportWidget']
+    widgets: ['TransactionReportWidget'],
   },
   {
     id: 'legacy',
     label: 'Legacy',
     icon: CogIcon,
     color: 'text-gray-400',
-    widgets: ['AnalysisExpandableCards']
-  }
+    widgets: ['AnalysisExpandableCards'],
+  },
 ];
 
 // 預設選中的 widget (單選模式)
@@ -107,10 +112,7 @@ interface WidgetSelectionState {
   };
 }
 
-export const AnalyticsTabSystem: React.FC<AnalyticsTabSystemProps> = ({
-  theme,
-  timeFrame,
-}) => {
+export const AnalyticsTabSystem: React.FC<AnalyticsTabSystemProps> = ({ theme, timeFrame }) => {
   // Widget 單選狀態管理
   const [selectionState, setSelectionState] = useState<WidgetSelectionState>({
     selectedWidget: DEFAULT_SELECTED_WIDGET,
@@ -127,23 +129,28 @@ export const AnalyticsTabSystem: React.FC<AnalyticsTabSystemProps> = ({
   const cacheAdapter = useMemo(() => getCacheAdapter(), []);
 
   // 緩存 Widget 選擇狀態
-  const cacheSelectionState = useCallback(async (newState: WidgetSelectionState) => {
-    try {
-      await cacheAdapter.set(
-        `analytics_widget_selection:${theme}`, 
-        newState, 
-        600 // 10分鐘 TTL - Widget 選擇相對穩定
-      );
-    } catch (error) {
-      console.warn('Widget selection cache failed:', error);
-    }
-  }, [cacheAdapter, theme]);
+  const cacheSelectionState = useCallback(
+    async (newState: WidgetSelectionState) => {
+      try {
+        await cacheAdapter.set(
+          `analytics_widget_selection:${theme}`,
+          newState,
+          600 // 10分鐘 TTL - Widget 選擇相對穩定
+        );
+      } catch (error) {
+        console.warn('Widget selection cache failed:', error);
+      }
+    },
+    [cacheAdapter, theme]
+  );
 
   // 恢復緩存的選擇狀態
   useEffect(() => {
     const restoreSelectionState = async () => {
       try {
-        const cachedState = await cacheAdapter.get<WidgetSelectionState>(`analytics_widget_selection:${theme}`);
+        const cachedState = await cacheAdapter.get<WidgetSelectionState>(
+          `analytics_widget_selection:${theme}`
+        );
         if (cachedState && cachedState.selectedWidget) {
           setSelectionState(cachedState);
         }
@@ -156,37 +163,43 @@ export const AnalyticsTabSystem: React.FC<AnalyticsTabSystemProps> = ({
   }, [cacheAdapter, theme]);
 
   // Widget 單選處理
-  const handleWidgetSelect = useCallback(async (widgetId: AnalysisWidgetId) => {
-    // 如果已經選中同一個widget，不需要更新
-    if (selectionState.selectedWidget === widgetId) {
-      return;
-    }
+  const handleWidgetSelect = useCallback(
+    async (widgetId: AnalysisWidgetId) => {
+      // 如果已經選中同一個widget，不需要更新
+      if (selectionState.selectedWidget === widgetId) {
+        return;
+      }
 
-    const newState: WidgetSelectionState = {
-      selectedWidget: widgetId,
-      expandedCategories: selectionState.expandedCategories,
-      userBehavior: {
-        selections: selectionState.userBehavior.selections + 1,
-        lastChange: new Date(),
-      },
-    };
+      const newState: WidgetSelectionState = {
+        selectedWidget: widgetId,
+        expandedCategories: selectionState.expandedCategories,
+        userBehavior: {
+          selections: selectionState.userBehavior.selections + 1,
+          lastChange: new Date(),
+        },
+      };
 
-    setSelectionState(newState);
-    await cacheSelectionState(newState);
-  }, [selectionState, cacheSelectionState]);
+      setSelectionState(newState);
+      await cacheSelectionState(newState);
+    },
+    [selectionState, cacheSelectionState]
+  );
 
   // 類別展開/收合處理
-  const handleCategoryToggle = useCallback((categoryId: string) => {
-    const isExpanded = selectionState.expandedCategories.includes(categoryId);
-    const newExpandedCategories = isExpanded
-      ? selectionState.expandedCategories.filter(id => id !== categoryId)
-      : [...selectionState.expandedCategories, categoryId];
+  const handleCategoryToggle = useCallback(
+    (categoryId: string) => {
+      const isExpanded = selectionState.expandedCategories.includes(categoryId);
+      const newExpandedCategories = isExpanded
+        ? selectionState.expandedCategories.filter(id => id !== categoryId)
+        : [...selectionState.expandedCategories, categoryId];
 
-    setSelectionState(prev => ({
-      ...prev,
-      expandedCategories: newExpandedCategories
-    }));
-  }, [selectionState.expandedCategories]);
+      setSelectionState(prev => ({
+        ...prev,
+        expandedCategories: newExpandedCategories,
+      }));
+    },
+    [selectionState.expandedCategories]
+  );
 
   // Widget 錯誤處理
   const handleWidgetError = useCallback((widgetId: string, error: Error) => {
@@ -198,70 +211,72 @@ export const AnalyticsTabSystem: React.FC<AnalyticsTabSystemProps> = ({
   const checkboxVariants = {
     unchecked: { scale: 1, opacity: 0.7 },
     checked: { scale: 1.05, opacity: 1 },
-    hover: { scale: 1.1 }
+    hover: { scale: 1.1 },
   };
 
   const categoryVariants = {
     collapsed: { height: 'auto', opacity: 0.8 },
-    expanded: { height: 'auto', opacity: 1 }
+    expanded: { height: 'auto', opacity: 1 },
   };
 
   const contentVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
-      transition: { duration: 0.4, ease: "easeOut" }
-    }
+      transition: { duration: 0.4, ease: 'easeOut' },
+    },
   };
 
   return (
-    <div className="flex h-full w-full gap-4">
+    <div className='flex h-full w-full gap-4'>
       {/* 左側 Widget 選擇區域 */}
-      <div className="w-80 flex-shrink-0">
-        <GlassmorphicCard 
-          variant="default" 
+      <div className='w-80 flex-shrink-0'>
+        <GlassmorphicCard
+          variant='default'
           hover={false}
           borderGlow={false}
-          padding="none"
-          className="h-full"
+          padding='none'
+          className='h-full'
         >
           {/* 標題區域 */}
-          <div className="border-b border-slate-600/50 p-4">
-            <h3 className="text-lg font-semibold text-white">Analysis Widgets</h3>
-            <p className="mt-1 text-sm text-slate-400">
+          <div className='border-b border-slate-600/50 p-4'>
+            <h3 className='text-lg font-semibold text-white'>Analysis Widgets</h3>
+            <p className='mt-1 text-sm text-slate-400'>
               Select one widget to display (Single Selection Mode)
             </p>
           </div>
 
           {/* Widget 分類和選擇列表 */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="space-y-1 p-4">
-              {WIDGET_CATEGORIES.map((category) => {
+          <div className='flex-1 overflow-y-auto'>
+            <div className='space-y-1 p-4'>
+              {WIDGET_CATEGORIES.map(category => {
                 const Icon = category.icon;
                 const isExpanded = selectionState.expandedCategories.includes(category.id);
-                const categoryHasSelected = category.widgets.includes(selectionState.selectedWidget);
+                const categoryHasSelected = category.widgets.includes(
+                  selectionState.selectedWidget
+                );
 
                 return (
-                  <div key={category.id} className="space-y-1">
+                  <div key={category.id} className='space-y-1'>
                     {/* 類別標題 */}
                     <motion.button
                       onClick={() => handleCategoryToggle(category.id)}
-                      className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-slate-700/50 transition-colors"
+                      className='flex w-full items-center gap-2 rounded-md p-2 transition-colors hover:bg-slate-700/50'
                       variants={categoryVariants}
-                      animate={isExpanded ? "expanded" : "collapsed"}
+                      animate={isExpanded ? 'expanded' : 'collapsed'}
                     >
                       <Icon className={`h-4 w-4 ${category.color}`} />
-                      <span className="text-sm font-medium text-slate-300 flex-1 text-left">
+                      <span className='flex-1 text-left text-sm font-medium text-slate-300'>
                         {category.label}
                       </span>
-                      <span className="text-xs text-slate-500">
+                      <span className='text-xs text-slate-500'>
                         {categoryHasSelected ? '✓' : ''}
                       </span>
                       <motion.div
                         animate={{ rotate: isExpanded ? 180 : 0 }}
                         transition={{ duration: 0.2 }}
-                        className="text-slate-400"
+                        className='text-slate-400'
                       >
                         ▼
                       </motion.div>
@@ -272,13 +287,13 @@ export const AnalyticsTabSystem: React.FC<AnalyticsTabSystemProps> = ({
                       {isExpanded && (
                         <motion.div
                           initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
+                          animate={{ height: 'auto', opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
                           transition={{ duration: 0.2 }}
-                          className="overflow-hidden"
+                          className='overflow-hidden'
                         >
-                          <div className="space-y-1 ml-6 pl-2 border-l border-slate-600/30">
-                            {category.widgets.map((widgetId) => {
+                          <div className='ml-6 space-y-1 border-l border-slate-600/30 pl-2'>
+                            {category.widgets.map(widgetId => {
                               const isSelected = selectionState.selectedWidget === widgetId;
                               const config = UNIFIED_WIDGET_CONFIG[widgetId];
                               const isAnalysisWidget = ANALYSIS_WIDGET_SELECTION.includes(widgetId);
@@ -287,61 +302,57 @@ export const AnalyticsTabSystem: React.FC<AnalyticsTabSystemProps> = ({
                                 <motion.button
                                   key={widgetId}
                                   onClick={() => handleWidgetSelect(widgetId)}
-                                  className={`
-                                    flex items-start gap-3 p-2 rounded-md cursor-pointer transition-all duration-200 w-full text-left
-                                    ${isSelected 
-                                      ? 'bg-blue-500/20 border border-blue-500/50 ring-1 ring-blue-500/30' 
+                                  className={`flex w-full cursor-pointer items-start gap-3 rounded-md p-2 text-left transition-all duration-200 ${
+                                    isSelected
+                                      ? 'border border-blue-500/50 bg-blue-500/20 ring-1 ring-blue-500/30'
                                       : 'hover:bg-slate-700/30'
-                                    }
-                                  `}
+                                  } `}
                                   whileHover={{ x: 2 }}
                                   whileTap={{ scale: 0.98 }}
                                 >
                                   <motion.div
-                                    className="flex items-center justify-center mt-0.5"
+                                    className='mt-0.5 flex items-center justify-center'
                                     variants={checkboxVariants}
-                                    animate={isSelected ? "checked" : "unchecked"}
-                                    whileHover="hover"
+                                    animate={isSelected ? 'checked' : 'unchecked'}
+                                    whileHover='hover'
                                   >
-                                    <div className={`
-                                      w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all
-                                      ${isSelected 
-                                        ? 'bg-blue-500 border-blue-500 ring-2 ring-blue-500/20' 
-                                        : 'border-slate-500 hover:border-slate-400'
-                                      }
-                                    `}>
+                                    <div
+                                      className={`flex h-4 w-4 items-center justify-center rounded-full border-2 transition-all ${
+                                        isSelected
+                                          ? 'border-blue-500 bg-blue-500 ring-2 ring-blue-500/20'
+                                          : 'border-slate-500 hover:border-slate-400'
+                                      } `}
+                                    >
                                       {isSelected && (
-                                        <div className="w-2 h-2 bg-white rounded-full" />
+                                        <div className='h-2 w-2 rounded-full bg-white' />
                                       )}
                                     </div>
                                   </motion.div>
 
-                                  <div className="flex-1 min-w-0">
-                                    <div className={`
-                                      text-sm font-medium transition-colors
-                                      ${isSelected ? 'text-white' : 'text-slate-300'}
-                                    `}>
+                                  <div className='min-w-0 flex-1'>
+                                    <div
+                                      className={`text-sm font-medium transition-colors ${isSelected ? 'text-white' : 'text-slate-300'} `}
+                                    >
                                       {config?.name || widgetId}
                                     </div>
                                     {config?.description && (
-                                      <p className={`
-                                        text-xs mt-0.5 leading-relaxed
-                                        ${isSelected ? 'text-slate-300' : 'text-slate-500'}
-                                      `}>
+                                      <p
+                                        className={`mt-0.5 text-xs leading-relaxed ${isSelected ? 'text-slate-300' : 'text-slate-500'} `}
+                                      >
                                         {config.description}
                                       </p>
                                     )}
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <span className={`
-                                        text-xs px-1.5 py-0.5 rounded
-                                        ${isSelected 
-                                          ? 'bg-blue-500/20 text-blue-300' 
-                                          : 'bg-slate-600/50 text-slate-400'
-                                        }
-                                      `}>
+                                    <div className='mt-1 flex items-center gap-2'>
+                                      <span
+                                        className={`rounded px-1.5 py-0.5 text-xs ${
+                                          isSelected
+                                            ? 'bg-blue-500/20 text-blue-300'
+                                            : 'bg-slate-600/50 text-slate-400'
+                                        } `}
+                                      >
                                         {config?.category}
                                       </span>
-                                      <span className="text-xs text-slate-500">
+                                      <span className='text-xs text-slate-500'>
                                         Priority: {config?.preloadPriority}
                                       </span>
                                     </div>
@@ -360,8 +371,8 @@ export const AnalyticsTabSystem: React.FC<AnalyticsTabSystemProps> = ({
           </div>
 
           {/* 統計信息 */}
-          <div className="border-t border-slate-600/50 p-4">
-            <div className="flex items-center justify-between text-xs text-slate-400">
+          <div className='border-t border-slate-600/50 p-4'>
+            <div className='flex items-center justify-between text-xs text-slate-400'>
               <span>Selected: {UNIFIED_WIDGET_CONFIG[selectionState.selectedWidget]?.name}</span>
               <span>Changes: {selectionState.userBehavior.selections}</span>
             </div>
@@ -370,17 +381,17 @@ export const AnalyticsTabSystem: React.FC<AnalyticsTabSystemProps> = ({
       </div>
 
       {/* 右側 Widget 顯示區域 */}
-      <div className="flex-1 min-w-0">
+      <div className='min-w-0 flex-1'>
         <motion.div
-          className="h-full w-full"
+          className='h-full w-full'
           variants={contentVariants}
-          initial="hidden"
-          animate="visible"
+          initial='hidden'
+          animate='visible'
         >
           <AnalysisDisplayContainer
             selectedWidget={selectionState.selectedWidget}
             onWidgetError={handleWidgetError}
-            className="h-full"
+            className='h-full'
           />
         </motion.div>
       </div>

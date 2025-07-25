@@ -63,7 +63,7 @@ const cache = new InMemoryCache({
 export function createApolloClient(accessToken?: string) {
   // HTTP Link
   const httpLink = createHttpLink({
-    uri: USE_SUPABASE_GRAPHQL 
+    uri: USE_SUPABASE_GRAPHQL
       ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/graphql/v1`
       : GRAPHQL_ENDPOINT,
     credentials: 'same-origin',
@@ -77,21 +77,25 @@ export function createApolloClient(accessToken?: string) {
       // If no token provided and we're on client-side, get from Supabase
       if (!token && typeof window !== 'undefined') {
         const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
         if (session?.access_token) {
           token = session.access_token;
         } else {
           // Try to refresh session
-          const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
+          const {
+            data: { session: refreshedSession },
+          } = await supabase.auth.refreshSession();
           if (refreshedSession?.access_token) {
             token = refreshedSession.access_token;
             console.log('[Apollo Client] Session refreshed');
           }
         }
       }
-      
-      const authHeaders: any = {
+
+      const authHeaders: Record<string, string> = {
         ...headers,
         'content-type': 'application/json',
       };
@@ -104,7 +108,7 @@ export function createApolloClient(accessToken?: string) {
       if (USE_SUPABASE_GRAPHQL) {
         authHeaders.apikey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       }
-      
+
       return { headers: authHeaders };
     } catch (error) {
       console.error('[Apollo Client] Error setting auth headers:', error);
@@ -120,11 +124,15 @@ export function createApolloClient(accessToken?: string) {
           `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
           extensions
         );
-        
+
         // Check for authentication errors
-        if (message.includes('Authentication') || message.includes('Unauthorized') || message.includes('JWT')) {
+        if (
+          message.includes('Authentication') ||
+          message.includes('Unauthorized') ||
+          message.includes('JWT')
+        ) {
           console.error('[GraphQL error]: Authentication error detected');
-          
+
           // On client-side, try to refresh and retry
           if (typeof window !== 'undefined') {
             const supabase = createClient();
@@ -141,13 +149,15 @@ export function createApolloClient(accessToken?: string) {
 
     if (networkError) {
       console.error(`[Network error]:`, networkError);
-      
+
       // Log additional details
       if ('statusCode' in networkError) {
-        console.error(`[Network error] Status: ${(networkError as any).statusCode}`);
+        const statusCode = (networkError as { statusCode?: number }).statusCode;
+        console.error(`[Network error] Status: ${statusCode}`);
       }
       if ('result' in networkError) {
-        console.error(`[Network error] Result:`, (networkError as any).result);
+        const result = (networkError as { result?: unknown }).result;
+        console.error(`[Network error] Result:`, result);
       }
     }
   });
@@ -179,9 +189,9 @@ export const clearApolloCache = async () => {
 
 export const refetchQueries = async (queryNames: string[]) => {
   const queries = apolloClient.getObservableQueries();
-  const queriesToRefetch = Array.from(queries.values()).filter(query => 
+  const queriesToRefetch = Array.from(queries.values()).filter(query =>
     queryNames.includes(query.queryName || '')
   );
-  
+
   await Promise.all(queriesToRefetch.map(query => query.refetch()));
 };

@@ -7,7 +7,7 @@
 import { BaseCacheAdapter, CacheStats } from './base-cache-adapter';
 import { cacheLogger } from '../logger';
 
-interface CacheItem<T = any> {
+interface CacheItem<T = unknown> {
   value: T;
   expireAt: number;
   createdAt: number;
@@ -119,7 +119,7 @@ export class MemoryCacheAdapter extends BaseCacheAdapter {
     // 創建緩存項目
     const item: CacheItem<T> = {
       value,
-      expireAt: now + (ttlSeconds * 1000),
+      expireAt: now + ttlSeconds * 1000,
       createdAt: now,
       accessCount: 1,
       lastAccess: now,
@@ -179,9 +179,9 @@ export class MemoryCacheAdapter extends BaseCacheAdapter {
   async has(key: string): Promise<boolean> {
     const fullKey = this.getKey(key);
     const item = this.cache.get(fullKey);
-    
+
     if (!item) return false;
-    
+
     // 檢查過期但不刪除
     return Date.now() <= item.expireAt;
   }
@@ -252,7 +252,7 @@ export class MemoryCacheAdapter extends BaseCacheAdapter {
       if (now > item.expireAt) {
         expiredItems++;
       }
-      
+
       // 估算內存使用（簡單計算）
       totalMemory += key.length * 2; // UTF-16 字符
       totalMemory += JSON.stringify(item.value).length * 2;
@@ -325,9 +325,12 @@ export class MemoryCacheAdapter extends BaseCacheAdapter {
    * 啟動清理定時器
    */
   private startCleanupTimer(): void {
-    this.cleanupInterval = setInterval(() => {
-      this.cleanupExpired();
-    }, 2 * 60 * 1000); // 每2分鐘清理一次
+    this.cleanupInterval = setInterval(
+      () => {
+        this.cleanupExpired();
+      },
+      2 * 60 * 1000
+    ); // 每2分鐘清理一次
   }
 
   /**
@@ -413,7 +416,7 @@ export class MemoryCacheAdapter extends BaseCacheAdapter {
   async acquireLock(lockKey: string, ttlSeconds: number = 60): Promise<string | null> {
     const fullKey = this.getKey(`lock:${lockKey}`);
     const lockValue = Math.random().toString(36).substring(2, 15);
-    
+
     // 檢查鎖是否存在
     if (await this.has(fullKey)) {
       return null; // 鎖已存在
@@ -443,10 +446,10 @@ export class MemoryCacheAdapter extends BaseCacheAdapter {
 
     try {
       const lockData = await this.get<{ lockValue: string }>(fullKey);
-      
+
       if (lockData && lockData.lockValue === lockValue) {
         const deleted = await this.delete(fullKey);
-        
+
         cacheLogger.debug(
           {
             operation: 'releaseLock',

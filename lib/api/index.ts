@@ -98,9 +98,21 @@ import { createDashboardAPI } from './admin/DashboardAPI';
 // Convenience methods with static imports
 export const api = {
   stockLevels: () => {
-    return APIFactory.getInstance().getAPI('stockLevels', createStockLevelsAPI as any);
+    return APIFactory.getInstance().getAPI(
+      'stockLevels',
+      createStockLevelsAPI as () => DataAccessLayerBase<
+        Record<string, unknown>,
+        Record<string, unknown>
+      >
+    );
   },
   dashboard: () => {
-    return APIFactory.getInstance().getAPI('dashboard', createDashboardAPI as any);
+    return APIFactory.getInstance().getAPI(
+      'dashboard',
+      createDashboardAPI as () => DataAccessLayerBase<
+        Record<string, unknown>,
+        Record<string, unknown>
+      >
+    );
   },
 };

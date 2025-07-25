@@ -9,25 +9,25 @@
 import React, { useMemo } from 'react';
 import { useQuery, gql } from '@apollo/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  TruckIcon, 
-  CubeIcon, 
+import {
+  TruckIcon,
+  CubeIcon,
   ClockIcon,
   ChartBarIcon,
   UserGroupIcon,
   BeakerIcon,
   BuildingOfficeIcon,
   ArrowTrendingUpIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import { MetricCard } from '../widgets/common/data-display/MetricCard';
 import { cn } from '@/lib/utils';
 import { ensureString } from '@/utils/graphql-types';
-import type { 
-  StatsType, 
-  StatsData, 
+import type {
+  StatsType,
+  StatsData,
   StatsCardData,
-  StatsQueryInput 
+  StatsQueryInput,
 } from '@/types/generated/graphql';
 
 // GraphQL 查詢
@@ -74,63 +74,58 @@ const STATS_CARD_QUERY = gql`
   }
 `;
 
-// 定義與 @heroicons/react 兼容的圖標類型
-import type { SVGProps } from 'react';
-
-type HeroIconProps = SVGProps<SVGSVGElement> & {
-  title?: string;
-  titleId?: string;
-};
+// 使用統一的 Heroicons 類型定義
+import type { HeroIcon, IconComponent } from '@/types/heroicons';
 
 // 圖標映射
-const ICON_MAP: Record<string, React.ComponentType<HeroIconProps>> = {
-  'truck': TruckIcon,
-  'cube': CubeIcon,
-  'clock': ClockIcon,
+const ICON_MAP: Record<string, HeroIcon | IconComponent> = {
+  truck: TruckIcon,
+  cube: CubeIcon,
+  clock: ClockIcon,
   'chart-bar': ChartBarIcon,
   'user-group': UserGroupIcon,
-  'beaker': BeakerIcon,
+  beaker: BeakerIcon,
   'building-office': BuildingOfficeIcon,
   'arrow-trending-up': ArrowTrendingUpIcon,
 };
 
 // 顏色映射
 const COLOR_MAP: Record<string, { from: string; to: string }> = {
-  'blue': { from: 'from-blue-500', to: 'to-cyan-500' },
-  'green': { from: 'from-green-500', to: 'to-emerald-500' },
-  'purple': { from: 'from-purple-500', to: 'to-pink-500' },
-  'orange': { from: 'from-orange-500', to: 'to-red-500' },
-  'indigo': { from: 'from-indigo-500', to: 'to-purple-500' },
+  blue: { from: 'from-blue-500', to: 'to-cyan-500' },
+  green: { from: 'from-green-500', to: 'to-emerald-500' },
+  purple: { from: 'from-purple-500', to: 'to-pink-500' },
+  orange: { from: 'from-orange-500', to: 'to-red-500' },
+  indigo: { from: 'from-indigo-500', to: 'to-purple-500' },
 };
 
 export interface StatsCardProps {
   // 要顯示的統計類型
   statTypes: StatsType[];
-  
+
   // 佈局配置
   columns?: 1 | 2 | 3 | 4;
-  
+
   // 時間範圍
   dateRange?: {
     start: Date;
     end: Date;
   };
-  
+
   // 篩選條件
   locationIds?: string[];
   departmentIds?: string[];
-  
+
   // 顯示選項
   showTrend?: boolean;
   showComparison?: boolean;
   showPerformance?: boolean;
-  
+
   // 樣式
   className?: string;
-  
+
   // 編輯模式
   isEditMode?: boolean;
-  
+
   // 回調
   onStatClick?: (type: StatsType) => void;
   onRefresh?: () => void;
@@ -151,16 +146,21 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   onRefresh,
 }) => {
   // 準備查詢輸入
-  const queryInput: StatsQueryInput = useMemo(() => ({
-    types: statTypes,
-    dateRange: dateRange ? {
-      start: dateRange.start.toISOString(),
-      end: dateRange.end.toISOString(),
-    } : undefined,
-    locationIds,
-    departmentIds,
-    includeComparison: showComparison,
-  }), [statTypes, dateRange, locationIds, departmentIds, showComparison]);
+  const queryInput: StatsQueryInput = useMemo(
+    () => ({
+      types: statTypes,
+      dateRange: dateRange
+        ? {
+            start: dateRange.start.toISOString(),
+            end: dateRange.end.toISOString(),
+          }
+        : undefined,
+      locationIds,
+      departmentIds,
+      includeComparison: showComparison,
+    }),
+    [statTypes, dateRange, locationIds, departmentIds, showComparison]
+  );
 
   // 執行 GraphQL 查詢
   const { data, loading, error, refetch } = useQuery<{ statsCardData: StatsCardData }>(
@@ -219,30 +219,34 @@ export const StatsCard: React.FC<StatsCardProps> = ({
           iconColor={`${color.from} ${color.to}`}
           gradientFrom={color.from}
           gradientTo={color.to}
-          
           // 趨勢數據
-          trend={showTrend && stat.trend ? stat.trend.direction.toLowerCase() as 'up' | 'down' | 'neutral' : undefined}
+          trend={
+            showTrend && stat.trend
+              ? (stat.trend.direction.toLowerCase() as 'up' | 'down' | 'neutral')
+              : undefined
+          }
           trendValue={showTrend && stat.trend ? stat.trend.percentage : undefined}
           trendLabel={showTrend && stat.trend ? ensureString(stat.trend.label ?? null) : undefined}
-          
           // 描述和額外信息
           description={ensureString(config.description ?? null)}
-          subtitle={showComparison && stat.comparison ? 
-            `vs ${stat.comparison.previousLabel}: ${stat.comparison.changePercentage > 0 ? '+' : ''}${stat.comparison.changePercentage.toFixed(1)}%` 
-            : undefined
+          subtitle={
+            showComparison && stat.comparison
+              ? `vs ${stat.comparison.previousLabel}: ${stat.comparison.changePercentage > 0 ? '+' : ''}${stat.comparison.changePercentage.toFixed(1)}%`
+              : undefined
           }
-          
           // 性能指標
-          performanceMetrics={stat.optimized ? {
-            source: stat.dataSource,
-            optimized: stat.optimized,
-          } : undefined}
-          
+          performanceMetrics={
+            stat.optimized
+              ? {
+                  source: stat.dataSource,
+                  optimized: stat.optimized,
+                }
+              : undefined
+          }
           // 狀態
           loading={loading}
           error={error || undefined}
           isEditMode={isEditMode}
-          
           // 動畫
           animateOnMount={true}
           animationDelay={index * 100}
@@ -254,12 +258,14 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   // 錯誤狀態
   if (error && !data) {
     return (
-      <div className={cn(
-        "flex items-center justify-center p-8 bg-red-50 dark:bg-red-950/20 rounded-lg",
-        className
-      )}>
-        <ExclamationTriangleIcon className="w-6 h-6 text-red-500 mr-2" />
-        <span className="text-red-700 dark:text-red-300">
+      <div
+        className={cn(
+          'flex items-center justify-center rounded-lg bg-red-50 p-8 dark:bg-red-950/20',
+          className
+        )}
+      >
+        <ExclamationTriangleIcon className='mr-2 h-6 w-6 text-red-500' />
+        <span className='text-red-700 dark:text-red-300'>
           Failed to load statistics: {error.message}
         </span>
       </div>
@@ -267,37 +273,37 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   }
 
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn('space-y-4', className)}>
       {/* 性能指標（可選） */}
       {showPerformance && data?.statsCardData.performance && (
-        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 px-2">
+        <div className='flex items-center justify-between px-2 text-xs text-gray-500 dark:text-gray-400'>
+          <span>Response: {data.statsCardData.performance.averageResponseTime.toFixed(0)}ms</span>
           <span>
-            Response: {data.statsCardData.performance.averageResponseTime.toFixed(0)}ms
+            Cache Hit:{' '}
+            {(
+              (data.statsCardData.performance.cachedQueries /
+                data.statsCardData.performance.totalQueries) *
+              100
+            ).toFixed(0)}
+            %
           </span>
-          <span>
-            Cache Hit: {((data.statsCardData.performance.cachedQueries / data.statsCardData.performance.totalQueries) * 100).toFixed(0)}%
-          </span>
-          <span>
-            Data Age: {data.statsCardData.performance.dataAge}s
-          </span>
+          <span>Data Age: {data.statsCardData.performance.dataAge}s</span>
         </div>
       )}
 
       {/* 統計卡片網格 */}
-      <div className={cn("grid gap-4", getGridClassName())}>
-        <AnimatePresence mode="popLayout">
-          {data?.statsCardData.stats.map((stat, index) => 
-            renderStatCard(stat, index)
-          )}
+      <div className={cn('grid gap-4', getGridClassName())}>
+        <AnimatePresence mode='popLayout'>
+          {data?.statsCardData.stats.map((stat, index) => renderStatCard(stat, index))}
         </AnimatePresence>
       </div>
 
       {/* 刷新按鈕（編輯模式） */}
       {isEditMode && (
-        <div className="flex justify-end mt-2">
+        <div className='mt-2 flex justify-end'>
           <button
             onClick={handleRefresh}
-            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            className='text-sm text-blue-600 hover:underline dark:text-blue-400'
           >
             Refresh All Stats
           </button>

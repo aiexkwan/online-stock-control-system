@@ -5,11 +5,87 @@
 import { IResolvers } from '@graphql-tools/utils';
 import { GraphQLContext } from './index';
 
+// 導入數據庫類型
+import { DataOrderRow, RecordInventoryRow } from '@/lib/types/database';
+
+// Analytics 數據轉換類型定義
+interface InventoryOrderedAnalysisItem {
+  product_code: string;
+  product_description: string;
+  product_type: string;
+  standard_qty: number;
+  inventory: {
+    total: number;
+    locations: Record<string, number> | null;
+    last_update: string;
+  };
+  orders: {
+    total_orders: number;
+    total_ordered_qty: number;
+    total_loaded_qty: number;
+    total_outstanding_qty: number;
+  };
+  analysis: {
+    fulfillment_rate: number;
+    inventory_gap: number;
+    status: string;
+  };
+}
+
+interface HistoryTreeEntry {
+  id: string;
+  timestamp: string;
+  action: string;
+  location: string;
+  remark?: string;
+  user?: {
+    id: string;
+    name: string;
+    department?: string;
+    position?: string;
+    email?: string;
+  };
+  pallet?: {
+    number: string;
+    series: string;
+    quantity: number;
+    generatedAt: string;
+    product?: {
+      code: string;
+      description: string;
+      type: string;
+      colour?: string;
+      standardQty: number;
+    };
+  };
+}
+
+interface TopProductItem {
+  productCode: string;
+  productName: string;
+  productType: string;
+  colour?: string;
+  standardQty: number;
+  totalQuantity: number;
+  locationQuantities: Record<string, number>;
+  lastUpdated: string;
+}
+
+interface StockDistributionItem {
+  name: string;
+  stock: number;
+  stockLevel: string;
+  description?: string;
+  type: string;
+  productCode?: string;
+  percentage: number;
+}
+
 export const analyticsResolvers: IResolvers = {
   Query: {
     qualityMetrics: async (_parent, args, context: GraphQLContext) => {
       const { dateRange, productCodes } = args;
-      
+
       // Would implement actual quality metrics calculation
       // For now, return mock data structure
       return {
@@ -31,7 +107,7 @@ export const analyticsResolvers: IResolvers = {
 
     efficiencyMetrics: async (_parent, args, context: GraphQLContext) => {
       const { dateRange, departments } = args;
-      
+
       // Would implement actual efficiency calculation
       return {
         overallEfficiency: 85.0,
@@ -51,21 +127,21 @@ export const analyticsResolvers: IResolvers = {
 
     uploadStatistics: async (_parent, args, context: GraphQLContext) => {
       const { dateRange } = args;
-      
+
       // Query upload statistics
       const today = new Date().toISOString().split('T')[0];
-      
+
       const { data: uploads, error } = await context.supabase
         .from('doc_upload')
         .select('*')
         .gte('created_at', today + 'T00:00:00')
         .lte('created_at', today + 'T23:59:59');
-      
+
       if (error) throw error;
-      
+
       const totalUploads = uploads?.length || 0;
       const successCount = uploads?.filter(u => u.doc_url).length || 0;
-      
+
       return {
         todayUploads: totalUploads,
         successRate: totalUploads > 0 ? successCount / totalUploads : 0,
@@ -83,7 +159,7 @@ export const analyticsResolvers: IResolvers = {
 
     updateStatistics: async (_parent, args, context: GraphQLContext) => {
       const { dateRange } = args;
-      
+
       // Would query various update-related tables
       // For now, return mock structure
       return {
@@ -104,7 +180,7 @@ export const analyticsResolvers: IResolvers = {
 
     systemPerformance: async (_parent, args, context: GraphQLContext) => {
       const { timeWindow } = args;
-      
+
       // Would implement actual performance monitoring
       return {
         averageResponseTime: 125,
@@ -142,7 +218,7 @@ export const analyticsResolvers: IResolvers = {
 
     analysisCards: async (_parent, args, context: GraphQLContext) => {
       const { category } = args;
-      
+
       // Would return configured analysis cards
       // For now, return empty array
       return [];
@@ -150,21 +226,23 @@ export const analyticsResolvers: IResolvers = {
 
     inventoryOrderedAnalysis: async (_parent, args, context: GraphQLContext) => {
       const { input = {} } = args;
-      
+
       try {
         // Transform input to match DataLoader key interface
         const loaderKey = {
           productType: input.productType,
           productCodes: input.productCodes,
           includeLocationBreakdown: input.includeLocationBreakdown || false,
-          filterStatus: input.filterStatus ? transformStatusToString(input.filterStatus) : undefined,
+          filterStatus: input.filterStatus
+            ? transformStatusToString(input.filterStatus)
+            : undefined,
           sortBy: input.sortBy ? transformSortField(input.sortBy) : 'status',
           sortOrder: input.sortOrder?.toLowerCase() || 'asc',
         };
 
         // Use the inventory ordered analysis DataLoader
         const result = await context.loaders.inventoryOrderedAnalysis?.load(loaderKey);
-        
+
         if (!result) {
           throw new Error('Failed to load inventory ordered analysis data');
         }
@@ -182,24 +260,26 @@ export const analyticsResolvers: IResolvers = {
             products_out_of_stock: result.summary.products_out_of_stock,
             products_no_orders: result.summary.products_no_orders,
           },
-          data: result.data.map((item: any) => ({
+          data: result.data.map((item: InventoryOrderedAnalysisItem) => ({
             product_code: item.product_code,
             product_description: item.product_description,
             product_type: item.product_type,
             standard_qty: item.standard_qty,
             inventory: {
               total: item.inventory.total,
-              locations: item.inventory.locations ? {
-                injection: item.inventory.locations.injection,
-                pipeline: item.inventory.locations.pipeline,
-                prebook: item.inventory.locations.prebook,
-                await: item.inventory.locations.await,
-                fold: item.inventory.locations.fold,
-                bulk: item.inventory.locations.bulk,
-                backcarpark: item.inventory.locations.backcarpark,
-                damage: item.inventory.locations.damage,
-                await_grn: item.inventory.locations.await_grn,
-              } : null,
+              locations: item.inventory.locations
+                ? {
+                    injection: item.inventory.locations.injection,
+                    pipeline: item.inventory.locations.pipeline,
+                    prebook: item.inventory.locations.prebook,
+                    await: item.inventory.locations.await,
+                    fold: item.inventory.locations.fold,
+                    bulk: item.inventory.locations.bulk,
+                    backcarpark: item.inventory.locations.backcarpark,
+                    damage: item.inventory.locations.damage,
+                    await_grn: item.inventory.locations.await_grn,
+                  }
+                : null,
               last_update: item.inventory.last_update,
             },
             orders: {
@@ -224,14 +304,16 @@ export const analyticsResolvers: IResolvers = {
 
     historyTree: async (_parent, args, context: GraphQLContext) => {
       const { input = {} } = args;
-      
+
       try {
         // Transform input to match DataLoader key interface
         const loaderKey = {
-          dateRange: input.dateRange ? {
-            start: input.dateRange.start,
-            end: input.dateRange.end,
-          } : undefined,
+          dateRange: input.dateRange
+            ? {
+                start: input.dateRange.start,
+                end: input.dateRange.end,
+              }
+            : undefined,
           actionTypes: input.actionTypes,
           userIds: input.userIds,
           palletNumbers: input.palletNumbers,
@@ -245,39 +327,45 @@ export const analyticsResolvers: IResolvers = {
 
         // Use the history tree DataLoader
         const result = await context.loaders.historyTree?.load(loaderKey);
-        
+
         if (!result) {
           throw new Error('Failed to load history tree data');
         }
 
         // Transform the result to match GraphQL schema
         return {
-          entries: result.entries.map((entry: any) => ({
+          entries: result.entries.map((entry: HistoryTreeEntry) => ({
             id: entry.id,
             timestamp: entry.timestamp,
             action: entry.action,
             location: entry.location,
             remark: entry.remark,
-            user: entry.user ? {
-              id: entry.user.id,
-              name: entry.user.name,
-              department: entry.user.department,
-              position: entry.user.position,
-              email: entry.user.email,
-            } : null,
-            pallet: entry.pallet ? {
-              number: entry.pallet.number,
-              series: entry.pallet.series,
-              quantity: entry.pallet.quantity,
-              generatedAt: entry.pallet.generatedAt,
-              product: entry.pallet.product ? {
-                code: entry.pallet.product.code,
-                description: entry.pallet.product.description,
-                type: entry.pallet.product.type,
-                colour: entry.pallet.product.colour,
-                standardQty: entry.pallet.product.standardQty,
-              } : null,
-            } : null,
+            user: entry.user
+              ? {
+                  id: entry.user.id,
+                  name: entry.user.name,
+                  department: entry.user.department,
+                  position: entry.user.position,
+                  email: entry.user.email,
+                }
+              : null,
+            pallet: entry.pallet
+              ? {
+                  number: entry.pallet.number,
+                  series: entry.pallet.series,
+                  quantity: entry.pallet.quantity,
+                  generatedAt: entry.pallet.generatedAt,
+                  product: entry.pallet.product
+                    ? {
+                        code: entry.pallet.product.code,
+                        description: entry.pallet.product.description,
+                        type: entry.pallet.product.type,
+                        colour: entry.pallet.product.colour,
+                        standardQty: entry.pallet.product.standardQty,
+                      }
+                    : null,
+                }
+              : null,
           })),
           totalCount: result.totalCount,
           hasNextPage: result.hasNextPage,
@@ -304,7 +392,7 @@ export const analyticsResolvers: IResolvers = {
 
     topProductsByQuantity: async (_parent, args, context: GraphQLContext) => {
       const { input = {} } = args;
-      
+
       try {
         // Transform input to match DataLoader key interface
         const loaderKey = {
@@ -318,14 +406,14 @@ export const analyticsResolvers: IResolvers = {
 
         // Use the top products DataLoader
         const result = await context.loaders.topProducts?.load(loaderKey);
-        
+
         if (!result) {
           throw new Error('Failed to load top products data');
         }
 
         // Transform the result to match GraphQL schema
         return {
-          products: result.products.map((product: any) => ({
+          products: result.products.map((product: TopProductItem) => ({
             productCode: product.productCode,
             productName: product.productName,
             productType: product.productType,
@@ -361,7 +449,7 @@ export const analyticsResolvers: IResolvers = {
 
     stockDistribution: async (_parent, args, context: GraphQLContext) => {
       const { input = {} } = args;
-      
+
       try {
         // Transform input to match DataLoader key interface
         const loaderKey = {
@@ -373,14 +461,14 @@ export const analyticsResolvers: IResolvers = {
 
         // Use the stock distribution DataLoader
         const result = await context.loaders.stockDistribution?.load(loaderKey);
-        
+
         if (!result) {
           throw new Error('Failed to load stock distribution data');
         }
 
         // Transform the result to match GraphQL schema
         return {
-          items: result.items.map((item: any) => ({
+          items: result.items.map((item: StockDistributionItem) => ({
             name: item.name,
             stock: item.stock,
             stockLevel: item.stockLevel,
@@ -406,18 +494,18 @@ export const analyticsResolvers: IResolvers = {
 // Helper functions for inventory ordered analysis
 function transformStatusToString(status: string): string {
   const statusMap: { [key: string]: string } = {
-    'SUFFICIENT': 'Sufficient',
-    'INSUFFICIENT': 'Insufficient',
-    'OUT_OF_STOCK': 'Out of Stock',
-    'NO_ORDERS': 'No Orders',
+    SUFFICIENT: 'Sufficient',
+    INSUFFICIENT: 'Insufficient',
+    OUT_OF_STOCK: 'Out of Stock',
+    NO_ORDERS: 'No Orders',
   };
   return statusMap[status] || status;
 }
 
 function transformStringToStatus(status: string): string {
   const statusMap: { [key: string]: string } = {
-    'Sufficient': 'SUFFICIENT',
-    'Insufficient': 'INSUFFICIENT',
+    Sufficient: 'SUFFICIENT',
+    Insufficient: 'INSUFFICIENT',
     'Out of Stock': 'OUT_OF_STOCK',
     'No Orders': 'NO_ORDERS',
   };
@@ -426,10 +514,10 @@ function transformStringToStatus(status: string): string {
 
 function transformSortField(field: string): string {
   const fieldMap: { [key: string]: string } = {
-    'STATUS': 'status',
-    'FULFILLMENT_RATE': 'fulfillment_rate',
-    'INVENTORY_GAP': 'inventory_gap',
-    'PRODUCT_CODE': 'product_code',
+    STATUS: 'status',
+    FULFILLMENT_RATE: 'fulfillment_rate',
+    INVENTORY_GAP: 'inventory_gap',
+    PRODUCT_CODE: 'product_code',
   };
   return fieldMap[field] || field.toLowerCase();
 }
@@ -437,30 +525,30 @@ function transformSortField(field: string): string {
 // Helper functions for history tree
 function transformGroupBy(groupBy: string): string {
   const groupByMap: { [key: string]: string } = {
-    'TIME': 'time',
-    'USER': 'user',
-    'ACTION': 'action',
-    'LOCATION': 'location',
+    TIME: 'time',
+    USER: 'user',
+    ACTION: 'action',
+    LOCATION: 'location',
   };
   return groupByMap[groupBy] || groupBy.toLowerCase();
 }
 
 function transformHistorySortField(field: string): string {
   const fieldMap: { [key: string]: string } = {
-    'TIME': 'time',
-    'ACTION': 'action',
-    'USER': 'user',
-    'LOCATION': 'location',
+    TIME: 'time',
+    ACTION: 'action',
+    USER: 'user',
+    LOCATION: 'location',
   };
   return fieldMap[field] || field.toLowerCase();
 }
 
 function transformHistorySortFieldReverse(field: string): string {
   const fieldMap: { [key: string]: string } = {
-    'time': 'TIME',
-    'action': 'ACTION',
-    'user': 'USER',
-    'location': 'LOCATION',
+    time: 'TIME',
+    action: 'ACTION',
+    user: 'USER',
+    location: 'LOCATION',
   };
   return fieldMap[field] || field.toUpperCase();
 }

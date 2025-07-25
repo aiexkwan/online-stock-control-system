@@ -9,7 +9,11 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ReportBuilder } from '@/app/components/reports/core/ReportBuilder';
 import { useReportGeneration } from '@/app/components/reports/hooks/useReportGeneration';
-import { ReportFormat, FilterValues } from '@/app/components/reports/core/ReportConfig';
+import {
+  ReportFormat,
+  FilterValues,
+  ReportConfig,
+} from '@/app/components/reports/core/ReportConfig';
 import { useToast } from '@/components/ui/use-toast';
 import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
 import { DynamicImportHandler } from '@/lib/utils/dynamic-import-handler';
@@ -43,7 +47,7 @@ export function UnifiedVoidReportDialog({ isOpen, onClose }: UnifiedVoidReportDi
   };
 
   // 動態加載報表配置
-  const [reportConfig, setReportConfig] = React.useState<Record<string, unknown> | null>(null);
+  const [reportConfig, setReportConfig] = React.useState<ReportConfig | null>(null);
   const [loadingError, setLoadingError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -67,7 +71,7 @@ export function UnifiedVoidReportDialog({ isOpen, onClose }: UnifiedVoidReportDi
         .then(({ ReportRegistry }) => {
           const report = ReportRegistry.getReport('void-pallet-report');
           if (report) {
-            setReportConfig(report.config as any);
+            setReportConfig(report.config as ReportConfig);
             setLoadingError(null);
           } else {
             setLoadingError('Report configuration not found');
@@ -169,7 +173,7 @@ export function UnifiedVoidReportDialog({ isOpen, onClose }: UnifiedVoidReportDi
             Generate Void Pallet Report
           </DialogTitle>
         </DialogHeader>
-        <ReportBuilder config={reportConfig as any} onGenerate={handleGenerate} />
+        <ReportBuilder config={reportConfig as ReportConfig} onGenerate={handleGenerate} />
       </DialogContent>
     </Dialog>
   );

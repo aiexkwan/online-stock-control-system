@@ -600,8 +600,8 @@ export class AlertStateManager {
       acknowledged_at: alert.acknowledgedAt?.toISOString(),
       acknowledged_by: alert.acknowledgedBy,
       notifications: JSON.stringify(alert.notifications),
-      labels: JSON.stringify(alert.labels || ({} as any)),
-      annotations: JSON.stringify(alert.annotations || ({} as any)),
+      labels: JSON.stringify(alert.labels || {}),
+      annotations: JSON.stringify(alert.annotations || {}),
     };
   }
 

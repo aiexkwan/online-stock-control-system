@@ -1,4 +1,11 @@
 // Stub implementation for AlertRuleEngine
+import {
+  RuleEvaluationContext,
+  AlertRuleDefinition,
+  RuleEvaluationResult,
+  AddRuleResult,
+} from './types/alert-types';
+
 export class AlertRuleEngine {
   private static instance: AlertRuleEngine;
 
@@ -11,12 +18,12 @@ export class AlertRuleEngine {
     return AlertRuleEngine.instance;
   }
 
-  async evaluateRules(context: any) {
+  async evaluateRules(context: RuleEvaluationContext): Promise<RuleEvaluationResult> {
     // Stub implementation
     return { evaluated: 0, triggered: [] };
   }
 
-  async addRule(rule: any) {
+  async addRule(rule: AlertRuleDefinition): Promise<AddRuleResult> {
     // Stub implementation
     return { success: true, ruleId: 'stub-rule-id' };
   }

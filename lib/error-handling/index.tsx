@@ -108,7 +108,7 @@ export class ErrorHandlingUtils {
         children: React.createElement(Component, props),
       };
 
-      return React.createElement(ErrorBoundary, boundaryProps as any);
+      return React.createElement(ErrorBoundary, boundaryProps as ErrorBoundaryProps);
     };
   }
 

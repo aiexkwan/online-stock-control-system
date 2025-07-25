@@ -547,7 +547,7 @@ export async function exportGrnReport(data: GrnReportPageData) {
   // Sheet Font
   sheet.eachRow(row => {
     row.eachCell(cell => {
-      const originalFont = cell.font || ({} as any);
+      const originalFont = cell.font || {};
       cell.font = {
         ...originalFont,
         name: 'Aptos Narrow',

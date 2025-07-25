@@ -11,6 +11,17 @@ import { cacheLogger } from '../logger';
 
 export type CacheType = 'redis' | 'memory' | 'auto';
 
+export interface CacheDecisionFactors {
+  hasRedisUrl: boolean;
+  isProduction: boolean;
+  isVercel: boolean;
+  expectedUsers: number;
+  maxConcurrent: number;
+  needsDistributedLock: boolean;
+  needsPubSub: boolean;
+  needsPersistence: boolean;
+}
+
 export interface CacheConfig {
   type: CacheType;
   redis?: {
@@ -77,17 +88,17 @@ class CacheFactory {
     // Phase 2.1 緊急修復：強制使用 MemoryCache 避免 DNS 模組依賴問題
     if (config.type === 'redis') {
       cacheLogger.info(
-        { 
-          reason: 'phase_2_1_override', 
+        {
+          reason: 'phase_2_1_override',
           type: 'memory',
           originalRequest: 'redis',
-          issue: 'dns_module_client_build_error'
+          issue: 'dns_module_client_build_error',
         },
         'Redis requested but using memory cache - Phase 2.1 DNS module fix'
       );
       return 'memory';
     }
-    
+
     // 明確指定內存類型
     if (config.type === 'memory') {
       cacheLogger.info(
@@ -100,12 +111,12 @@ class CacheFactory {
     // 自動判斷模式 - Phase 2.1 期間強制選擇 MemoryCache
     if (config.type === 'auto') {
       cacheLogger.info(
-        { 
-          reason: 'phase_2_1_auto_memory', 
+        {
+          reason: 'phase_2_1_auto_memory',
           type: 'memory',
           scale: 'small',
           benefits: ['lower_latency', 'simplified_deployment', 'no_dns_module_issues'],
-          phase: '2.1_redis_removal'
+          phase: '2.1_redis_removal',
         },
         'Auto-selected memory cache - Phase 2.1 strategy (DNS fix + optimal for current scale)'
       );
@@ -114,10 +125,10 @@ class CacheFactory {
 
     // 默認回退到內存緩存 (Phase 2.1 默認策略)
     cacheLogger.info(
-      { 
-        configType: config.type, 
+      {
+        configType: config.type,
         fallback: 'memory',
-        reason: 'phase_2_1_fallback'
+        reason: 'phase_2_1_fallback',
       },
       'Using memory cache - Phase 2.1 default strategy'
     );
@@ -135,15 +146,15 @@ class CacheFactory {
       hasRedisUrl: !!process.env.REDIS_URL,
       isProduction: process.env.NODE_ENV === 'production',
       isVercel: !!process.env.VERCEL,
-      
+
       // 系統規模檢測 (來自專家分析)
       expectedUsers: 40, // 最大預期用戶數
-      maxConcurrent: 5,  // 最大併發用戶數
-      
+      maxConcurrent: 5, // 最大併發用戶數
+
       // 性能需求
       needsDistributedLock: false, // 當前系統不需要分佈式鎖
-      needsPubSub: false,          // 當前系統不需要 pub/sub
-      needsPersistence: false,     // 緩存持久化非必需
+      needsPubSub: false, // 當前系統不需要 pub/sub
+      needsPersistence: false, // 緩存持久化非必需
     };
 
     // 專家決策邏輯
@@ -155,7 +166,7 @@ class CacheFactory {
         factors,
         memoryScore,
         redisScore,
-        decision: memoryScore > redisScore ? 'memory' : 'redis'
+        decision: memoryScore > redisScore ? 'memory' : 'redis',
       },
       'Cache type decision calculation'
     );
@@ -166,41 +177,41 @@ class CacheFactory {
   /**
    * 計算內存緩存得分
    */
-  private static calculateMemoryCacheScore(factors: any): number {
+  private static calculateMemoryCacheScore(factors: CacheDecisionFactors): number {
     let score = 0;
-    
+
     // 小規模系統優勢 (專家共識)
     if (factors.expectedUsers <= 50) score += 30;
     if (factors.maxConcurrent <= 10) score += 25;
-    
+
     // 簡化部署優勢 (KISS 原則)
     score += 20; // 無外部依賴
     score += 15; // 部署簡單
-    
+
     // 性能優勢
     score += 10; // 低延遲 (1-3ms vs 10-50ms)
-    
+
     return score;
   }
 
   /**
    * 計算 Redis 緩存得分
    */
-  private static calculateRedisCacheScore(factors: any): number {
+  private static calculateRedisCacheScore(factors: CacheDecisionFactors): number {
     let score = 0;
-    
+
     // 大規模系統優勢
     if (factors.expectedUsers > 100) score += 30;
     if (factors.maxConcurrent > 20) score += 25;
-    
+
     // 高級功能需求
     if (factors.needsDistributedLock) score += 20;
     if (factors.needsPubSub) score += 15;
     if (factors.needsPersistence) score += 15;
-    
+
     // 現有配置
     if (factors.hasRedisUrl) score += 10;
-    
+
     return score;
   }
 
@@ -210,14 +221,10 @@ class CacheFactory {
   private static createMemoryCache(config?: CacheConfig['memory']): CacheAdapter {
     const memoryConfig = {
       maxSize: config?.maxSize || 200, // 專家建議：200項目
-      ttl: config?.ttl || 300,         // 專家建議：5分鐘TTL
+      ttl: config?.ttl || 300, // 專家建議：5分鐘TTL
     };
 
-    return new MemoryCacheAdapter(
-      'oscs:cache:',
-      memoryConfig.maxSize,
-      memoryConfig.ttl
-    );
+    return new MemoryCacheAdapter('oscs:cache:', memoryConfig.maxSize, memoryConfig.ttl);
   }
 
   /**
@@ -231,11 +238,11 @@ class CacheFactory {
         reason: 'phase_2_1_redis_disabled',
         fallback: 'memory',
         issue: 'dns_module_client_build_error',
-        phase: '2.1_redis_removal'
+        phase: '2.1_redis_removal',
       },
       'Redis cache disabled in Phase 2.1 - using memory cache (DNS module fix)'
     );
-    
+
     // 直接降級到內存緩存
     return this.createMemoryCache({
       maxSize: config ? 200 : undefined,
@@ -254,7 +261,7 @@ class CacheFactory {
         },
         'Redis cache creation failed, falling back to memory cache'
       );
-      
+
       return this.createMemoryCache(config as any);
     }
     */
@@ -266,7 +273,7 @@ class CacheFactory {
   private static getDefaultConfig(): CacheConfig {
     // Phase 2.1 默認策略：環境變數控制，默認自動選擇
     const cacheType = (process.env.CACHE_TYPE as CacheType) || 'auto';
-    
+
     return {
       type: cacheType,
       redis: {
@@ -295,7 +302,7 @@ class CacheFactory {
    */
   static getCurrentCacheType(): string {
     if (!this.instance) return 'none';
-    
+
     if (this.instance instanceof MemoryCacheAdapter) {
       return 'memory';
     }
@@ -303,7 +310,7 @@ class CacheFactory {
     // else if (this.instance instanceof RedisCacheAdapter) {
     //   return 'redis';
     // }
-    
+
     // Phase 2.1: 所有實例都應該是 MemoryCache
     return 'memory_fallback';
   }

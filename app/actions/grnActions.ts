@@ -112,11 +112,14 @@ interface GrnRpcParams {
 interface GrnRpcResponse {
   success: boolean;
   message?: string;
-  data?: {
-    pallet_numbers?: string[];
-    series?: string[];
-    [key: string]: unknown;
-  };
+  data?: GrnRpcResponseData;
+}
+
+// RPC Response Data interface - 明確定義響應數據結構
+interface GrnRpcResponseData {
+  pallet_numbers?: string[];
+  series?: string[];
+  [key: string]: unknown;
 }
 
 export async function createGrnDatabaseEntries(
@@ -242,8 +245,7 @@ export async function createGrnDatabaseEntries(
       console.log('[grnActions] 統一 GRN RPC 處理成功:', rpcResult);
 
     // 提取棧板號碼和系列號
-    // @types-migration:todo(phase3) [P2] 替換 any 類型為明確的 RPC 響應類型 - Target: 2025-08 - Owner: @backend-team
-    const data = rpcResult.data || ({} as any);
+    const data: GrnRpcResponseData = rpcResult.data || {};
     const palletNumber = data.pallet_numbers?.[0] || '';
     const series = data.series?.[0] || '';
 
@@ -410,8 +412,7 @@ export async function createGrnDatabaseEntriesBatch(
 
     // 從 RPC 結果提取數據
     // RPC 返回嘅數據結構係 { success: true, data: { pallet_numbers: [...], series: [...] } }
-    // @types-migration:todo(phase3) [P2] 替換 any 類型為 RPC 批量響應類型 - Target: 2025-08 - Owner: @backend-team
-    const data = rpcResult.data || ({} as any);
+    const data: GrnRpcResponseData = rpcResult.data || {};
     const palletNumbers = data.pallet_numbers || [];
     const series = data.series || [];
 

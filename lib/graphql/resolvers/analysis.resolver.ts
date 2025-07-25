@@ -28,6 +28,20 @@ import {
   Correlation,
   ProcessingStep,
 } from '@/types/generated/graphql';
+import { DataOrderRow, RecordInventoryRow } from '@/lib/types/database';
+
+// Type definitions for analysis data processing
+interface TrendDataPoint {
+  timestamp: string;
+  value: number;
+  label: string;
+}
+
+interface AnalysisDataInput {
+  summary: AnalysisSummary;
+  detailData: AnalysisDetailData;
+  metadata: AnalysisMetadata;
+}
 
 // In-memory storage for analysis progress (in production, use Redis)
 const analysisProgressMap = new Map<string, AnalysisProgress>();
@@ -79,7 +93,7 @@ export const analysisResolvers: IResolvers = {
       context: GraphQLContext
     ): Promise<AnalysisCardData> => {
       const startTime = Date.now();
-      
+
       try {
         const config = ANALYSIS_CONFIGS[input.analysisType];
         if (!config) {
@@ -88,7 +102,7 @@ export const analysisResolvers: IResolvers = {
 
         // Fetch analysis data based on type
         const analysisData = await fetchAnalysisData(input, context);
-        
+
         // Generate AI insights if enabled
         let aiInsights: AiInsight[] = [];
         if (input.includeAIInsights && config.aiEnabled) {
@@ -127,7 +141,9 @@ export const analysisResolvers: IResolvers = {
         };
       } catch (error) {
         console.error('[Analysis] Query error:', error);
-        throw new Error(`Failed to fetch analysis data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(
+          `Failed to fetch analysis data: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
       }
     },
 
@@ -160,7 +176,7 @@ export const analysisResolvers: IResolvers = {
       try {
         const analysisId = `analysis-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         const config = ANALYSIS_CONFIGS[input.analysisType];
-        
+
         if (!config) {
           throw new Error(`Unknown analysis type: ${input.analysisType}`);
         }
@@ -205,10 +221,7 @@ export const analysisResolvers: IResolvers = {
       }
     },
 
-    cancelAnalysis: async (
-      _parent,
-      { analysisId }: { analysisId: string }
-    ): Promise<boolean> => {
+    cancelAnalysis: async (_parent, { analysisId }: { analysisId: string }): Promise<boolean> => {
       const progress = analysisProgressMap.get(analysisId);
       if (!progress) {
         return false;
@@ -221,10 +234,7 @@ export const analysisResolvers: IResolvers = {
       return true;
     },
 
-    refreshAnalysis: async (
-      _parent,
-      { analysisId }: { analysisId: string }
-    ): Promise<boolean> => {
+    refreshAnalysis: async (_parent, { analysisId }: { analysisId: string }): Promise<boolean> => {
       // In a real implementation, this would trigger a re-analysis
       const progress = analysisProgressMap.get(analysisId);
       if (!progress) {
@@ -240,7 +250,7 @@ export const analysisResolvers: IResolvers = {
 
     updateAnalysisConfig: async (
       _parent,
-      { config }: { config: any }
+      { config }: { config: AiAnalysisConfig }
     ): Promise<boolean> => {
       try {
         // Update analysis configuration
@@ -258,25 +268,29 @@ export const analysisResolvers: IResolvers = {
 async function fetchAnalysisData(
   input: AnalysisCardInput,
   context: GraphQLContext
-): Promise<{ summary: AnalysisSummary; detailData: AnalysisDetailData; metadata: AnalysisMetadata }> {
+): Promise<{
+  summary: AnalysisSummary;
+  detailData: AnalysisDetailData;
+  metadata: AnalysisMetadata;
+}> {
   const config = ANALYSIS_CONFIGS[input.analysisType];
-  
+
   switch (input.analysisType) {
     case AnalysisType.InventoryOrderMatching:
       return fetchInventoryOrderData(input, context);
-    
+
     case AnalysisType.OperationalDashboard:
       return fetchOperationalData(input, context);
-    
+
     case AnalysisType.PerformanceAnalysis:
       return fetchPerformanceData(input, context);
-    
+
     case AnalysisType.TrendForecasting:
       return fetchTrendData(input, context);
-    
+
     case AnalysisType.AnomalyDetection:
       return fetchAnomalyData(input, context);
-    
+
     default:
       throw new Error(`Unsupported analysis type: ${input.analysisType}`);
   }
@@ -286,18 +300,22 @@ async function fetchAnalysisData(
 async function fetchInventoryOrderData(
   input: AnalysisCardInput,
   context: GraphQLContext
-): Promise<{ summary: AnalysisSummary; detailData: AnalysisDetailData; metadata: AnalysisMetadata }> {
+): Promise<{
+  summary: AnalysisSummary;
+  detailData: AnalysisDetailData;
+  metadata: AnalysisMetadata;
+}> {
   try {
-    // Fetch inventory and order data from Supabase
+    // Fetch inventory and order data from Supabase (fixed table name)
     const { data: inventoryData, error: inventoryError } = await context.supabase
-      .from('inventory_levels')
+      .from('record_inventory')
       .select('*')
       .limit(1000);
 
     if (inventoryError) throw inventoryError;
 
     const { data: orderData, error: orderError } = await context.supabase
-      .from('orders')
+      .from('data_order')
       .select('*')
       .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()) // Last 30 days
       .limit(1000);
@@ -373,9 +391,24 @@ async function fetchInventoryOrderData(
       recordsAnalyzed: (inventoryData?.length || 0) + (orderData?.length || 0),
       aiModelVersion: null,
       processingSteps: [
-        { step: 'Data Extraction', duration: 2.1, status: 'COMPLETED', details: 'Extracted inventory and order data' },
-        { step: 'Data Processing', duration: 1.8, status: 'COMPLETED', details: 'Processed and analyzed data patterns' },
-        { step: 'Insight Generation', duration: 0.5, status: 'COMPLETED', details: 'Generated analysis insights' },
+        {
+          step: 'Data Extraction',
+          duration: 2.1,
+          status: 'COMPLETED',
+          details: 'Extracted inventory and order data',
+        },
+        {
+          step: 'Data Processing',
+          duration: 1.8,
+          status: 'COMPLETED',
+          details: 'Processed and analyzed data patterns',
+        },
+        {
+          step: 'Insight Generation',
+          duration: 0.5,
+          status: 'COMPLETED',
+          details: 'Generated analysis insights',
+        },
       ],
     };
 
@@ -389,7 +422,11 @@ async function fetchInventoryOrderData(
 async function fetchOperationalData(
   input: AnalysisCardInput,
   context: GraphQLContext
-): Promise<{ summary: AnalysisSummary; detailData: AnalysisDetailData; metadata: AnalysisMetadata }> {
+): Promise<{
+  summary: AnalysisSummary;
+  detailData: AnalysisDetailData;
+  metadata: AnalysisMetadata;
+}> {
   // Similar implementation for operational dashboard data
   return {
     summary: {
@@ -432,7 +469,11 @@ async function fetchOperationalData(
 async function fetchPerformanceData(
   input: AnalysisCardInput,
   context: GraphQLContext
-): Promise<{ summary: AnalysisSummary; detailData: AnalysisDetailData; metadata: AnalysisMetadata }> {
+): Promise<{
+  summary: AnalysisSummary;
+  detailData: AnalysisDetailData;
+  metadata: AnalysisMetadata;
+}> {
   // Implementation for performance analysis
   return {
     summary: {
@@ -466,7 +507,11 @@ async function fetchPerformanceData(
 async function fetchTrendData(
   input: AnalysisCardInput,
   context: GraphQLContext
-): Promise<{ summary: AnalysisSummary; detailData: AnalysisDetailData; metadata: AnalysisMetadata }> {
+): Promise<{
+  summary: AnalysisSummary;
+  detailData: AnalysisDetailData;
+  metadata: AnalysisMetadata;
+}> {
   // Implementation for trend forecasting
   return {
     summary: {
@@ -500,7 +545,11 @@ async function fetchTrendData(
 async function fetchAnomalyData(
   input: AnalysisCardInput,
   context: GraphQLContext
-): Promise<{ summary: AnalysisSummary; detailData: AnalysisDetailData; metadata: AnalysisMetadata }> {
+): Promise<{
+  summary: AnalysisSummary;
+  detailData: AnalysisDetailData;
+  metadata: AnalysisMetadata;
+}> {
   // Implementation for anomaly detection
   return {
     summary: {
@@ -532,20 +581,29 @@ async function fetchAnomalyData(
 }
 
 // Helper functions for calculations and data generation
-function calculateStockCoverage(inventoryData: any[], orderData: any[]): string {
+function calculateStockCoverage(
+  inventoryData: RecordInventoryRow[],
+  orderData: DataOrderRow[]
+): string {
   // Mock calculation - in real implementation, calculate based on actual data
   return '14.2';
 }
 
-function calculateFulfillmentRate(inventoryData: any[], orderData: any[]): string {
+function calculateFulfillmentRate(
+  inventoryData: RecordInventoryRow[],
+  orderData: DataOrderRow[]
+): string {
   return '94.8';
 }
 
-function calculateInventoryTurnover(inventoryData: any[], orderData: any[]): string {
+function calculateInventoryTurnover(
+  inventoryData: RecordInventoryRow[],
+  orderData: DataOrderRow[]
+): string {
   return '3.7';
 }
 
-function generateTrendData(metric: string): any[] {
+function generateTrendData(metric: string): TrendDataPoint[] {
   // Generate mock trend data
   const points = [];
   const now = Date.now();
@@ -559,7 +617,10 @@ function generateTrendData(metric: string): any[] {
   return points;
 }
 
-function generateDataPoints(inventoryData: any[], orderData: any[]): DataPoint[] {
+function generateDataPoints(
+  inventoryData: RecordInventoryRow[],
+  orderData: DataOrderRow[]
+): DataPoint[] {
   return [
     {
       id: 'total-products',
@@ -580,7 +641,10 @@ function generateDataPoints(inventoryData: any[], orderData: any[]): DataPoint[]
   ];
 }
 
-function generateComparisons(inventoryData: any[], orderData: any[]): Comparison[] {
+function generateComparisons(
+  inventoryData: RecordInventoryRow[],
+  orderData: DataOrderRow[]
+): Comparison[] {
   return [
     {
       id: 'month-over-month',
@@ -594,7 +658,10 @@ function generateComparisons(inventoryData: any[], orderData: any[]): Comparison
   ];
 }
 
-function generateCorrelations(inventoryData: any[], orderData: any[]): Correlation[] {
+function generateCorrelations(
+  inventoryData: RecordInventoryRow[],
+  orderData: DataOrderRow[]
+): Correlation[] {
   return [
     {
       id: 'inventory-orders',
@@ -607,7 +674,10 @@ function generateCorrelations(inventoryData: any[], orderData: any[]): Correlati
   ];
 }
 
-function generateVisualizations(analysisData: any, type: AnalysisType): AnalysisVisualization[] {
+function generateVisualizations(
+  analysisData: AnalysisDataInput,
+  type: AnalysisType
+): AnalysisVisualization[] {
   return [
     {
       id: 'main-chart',
@@ -670,7 +740,6 @@ async function processAnalysisAsync(
     progress.progress = 100;
     progress.estimatedTimeRemaining = 0;
     analysisProgressMap.set(analysisId, progress);
-
   } catch (error) {
     progress.status = 'ERROR';
     progress.error = error instanceof Error ? error.message : 'Unknown error';

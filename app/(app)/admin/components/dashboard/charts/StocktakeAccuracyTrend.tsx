@@ -32,6 +32,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
+import { TooltipProps } from '@/types/external/recharts';
 
 interface StocktakeAccuracyTrendProps {
   timeFrame?: {
@@ -179,12 +180,17 @@ export default function StocktakeAccuracyTrend({ timeFrame }: StocktakeAccuracyT
               }}
             />
             <Tooltip
-              content={(props: any) => {
+              content={props => {
                 const { active, payload } = props;
                 const typedPayload = payload as TooltipPayloadItem[];
-                if (active && Array.isArray(typedPayload) && typedPayload.length > 0 && typedPayload[0]?.payload) {
+                if (
+                  active &&
+                  Array.isArray(typedPayload) &&
+                  typedPayload.length > 0 &&
+                  typedPayload[0]?.payload
+                ) {
                   const payloadData = typedPayload[0].payload;
-                  const data = payloadData as {
+                  const data = payloadData as unknown as {
                     fullDate: string;
                     accuracy: number;
                     scanned: number;

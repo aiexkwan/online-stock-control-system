@@ -230,7 +230,7 @@ export class AlertRuleEngine {
         threshold: rule.threshold,
         triggeredAt: new Date(),
         notifications: [],
-        labels: context.metric.labels || ({} as any),
+        labels: context.metric.labels || {},
         annotations: {
           metric: rule.metric,
           condition: rule.condition,
@@ -532,7 +532,7 @@ export class AlertRuleEngine {
       dependencies: JSON.stringify(rule.dependencies || []),
       silence_time: rule.silenceTime,
       notifications: JSON.stringify(rule.notifications),
-      tags: JSON.stringify(rule.tags || ({} as any)),
+      tags: JSON.stringify(rule.tags || ({} as Record<string, string>)),
       created_at: rule.createdAt.toISOString(),
       updated_at: rule.updatedAt.toISOString(),
       created_by: rule.createdBy,
@@ -582,8 +582,8 @@ export class AlertRuleEngine {
       acknowledged_at: alert.acknowledgedAt?.toISOString(),
       acknowledged_by: alert.acknowledgedBy,
       notifications: JSON.stringify(alert.notifications),
-      labels: JSON.stringify(alert.labels || ({} as any)),
-      annotations: JSON.stringify(alert.annotations || ({} as any)),
+      labels: JSON.stringify(alert.labels || {}),
+      annotations: JSON.stringify(alert.annotations || {}),
     };
   }
 

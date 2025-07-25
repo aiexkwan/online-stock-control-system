@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useVisualSystem } from './VisualSystemProvider';
 import { PERFORMANCE_CONFIG } from '../config/performance-config';
 
@@ -40,7 +40,11 @@ class WebGLManager {
   }
 
   // 初始化WebGL
-  async initialize(canvas: HTMLCanvasElement, vertexShader: string, fragmentShader: string): Promise<boolean> {
+  async initialize(
+    canvas: HTMLCanvasElement,
+    vertexShader: string,
+    fragmentShader: string
+  ): Promise<boolean> {
     if (this.isInitialized && this.canvas === canvas) {
       return true;
     }
@@ -52,8 +56,9 @@ class WebGLManager {
 
     try {
       this.canvas = canvas;
-      this.gl = (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null;
-      
+      this.gl = (canvas.getContext('webgl') ||
+        canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null;
+
       if (!this.gl) {
         console.warn('WebGL not supported');
         return false;
@@ -62,7 +67,7 @@ class WebGLManager {
       // 編譯著色器
       const vs = this.compileShader(this.gl, vertexShader, this.gl.VERTEX_SHADER);
       const fs = this.compileShader(this.gl, fragmentShader, this.gl.FRAGMENT_SHADER);
-      
+
       if (!vs || !fs) {
         throw new Error('Shader compilation failed');
       }
@@ -97,7 +102,11 @@ class WebGLManager {
   }
 
   // 編譯著色器
-  private compileShader(gl: WebGLRenderingContext, source: string, type: number): WebGLShader | null {
+  private compileShader(
+    gl: WebGLRenderingContext,
+    source: string,
+    type: number
+  ): WebGLShader | null {
     const shader = gl.createShader(type);
     if (!shader) return null;
 
@@ -154,11 +163,11 @@ class WebGLManager {
   // 清理資源
   cleanup() {
     this.stopRendering();
-    
+
     if (this.gl && this.program) {
       this.gl.deleteProgram(this.program);
     }
-    
+
     this.gl = null;
     this.program = null;
     this.canvas = null;
@@ -225,6 +234,31 @@ export function UnifiedBackground() {
   const [isActive, setIsActive] = useState(false);
   const { state, config } = useVisualSystem();
 
+  // 渲染回調
+  const startRendering = useCallback(() => {
+    managerRef.current.startRendering((gl, program) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      // 更新畫布大小
+      if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        gl.viewport(0, 0, canvas.width, canvas.height);
+      }
+
+      // 設置uniforms
+      const iResolution = gl.getUniformLocation(program, 'iResolution');
+      const iTime = gl.getUniformLocation(program, 'iTime');
+
+      if (iResolution) gl.uniform2f(iResolution, canvas.width, canvas.height);
+      if (iTime) gl.uniform1f(iTime, performance.now() * 0.001);
+
+      // 繪製
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    });
+  }, []); // Empty deps since it only uses refs
+
   // 處理可見性變化
   useEffect(() => {
     if (!PERFORMANCE_CONFIG.webgl.pauseWhenHidden) return;
@@ -241,32 +275,7 @@ export function UnifiedBackground() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isActive, state.starfieldEnabled]);
-
-  // 渲染回調
-  const startRendering = () => {
-    managerRef.current.startRendering((gl, program) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      // 更新畫布大小
-      if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        gl.viewport(0, 0, canvas.width, canvas.height);
-      }
-
-      // 設置uniforms
-      const iResolution = gl.getUniformLocation(program, 'iResolution');
-      const iTime = gl.getUniformLocation(program, 'iTime');
-      
-      if (iResolution) gl.uniform2f(iResolution, canvas.width, canvas.height);
-      if (iTime) gl.uniform1f(iTime, performance.now() * 0.001);
-      
-      // 繪製
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
-    });
-  };
+  }, [isActive, state.starfieldEnabled, startRendering]);
 
   // 初始化和啟動
   useEffect(() => {
@@ -281,7 +290,7 @@ export function UnifiedBackground() {
         vertexShaderSource,
         fragmentShaderSource
       );
-      
+
       if (success) {
         setIsActive(true);
         startRendering();
@@ -290,10 +299,14 @@ export function UnifiedBackground() {
 
     initAndStart();
 
+    // Capture ref value for cleanup
+    const currentManager = managerRef.current;
     return () => {
-      managerRef.current.stopRendering();
+      if (currentManager) {
+        currentManager.stopRendering();
+      }
     };
-  }, [state.starfieldEnabled, state.webglSupported]);
+  }, [state.starfieldEnabled, state.webglSupported, startRendering]);
 
   // 處理窗口大小變化
   useEffect(() => {
@@ -334,15 +347,17 @@ export function UnifiedBackground() {
 // 降級背景（CSS動畫）
 function FallbackBackground() {
   const { state } = useVisualSystem();
-  const [stars, setStars] = useState<Array<{
-    width: number;
-    height: number;
-    left: number;
-    top: number;
-    animationDelay: number;
-    animationDuration: number;
-  }>>([]);
-  
+  const [stars, setStars] = useState<
+    Array<{
+      width: number;
+      height: number;
+      left: number;
+      top: number;
+      animationDelay: number;
+      animationDuration: number;
+    }>
+  >([]);
+
   // 只在客戶端生成星星位置，避免 hydration mismatch
   useEffect(() => {
     const generatedStars = Array.from({ length: 50 }, () => ({
@@ -355,7 +370,7 @@ function FallbackBackground() {
     }));
     setStars(generatedStars);
   }, []);
-  
+
   if (!state.animationsEnabled) {
     // 靜態背景
     return (
@@ -389,11 +404,17 @@ function FallbackBackground() {
     >
       <style jsx>{`
         @keyframes twinkle {
-          0% { opacity: 0.3; }
-          50% { opacity: 1; }
-          100% { opacity: 0.3; }
+          0% {
+            opacity: 0.3;
+          }
+          50% {
+            opacity: 1;
+          }
+          100% {
+            opacity: 0.3;
+          }
         }
-        
+
         .star {
           position: absolute;
           background: white;
@@ -404,7 +425,7 @@ function FallbackBackground() {
       {stars.map((star, i) => (
         <div
           key={i}
-          className="star"
+          className='star'
           style={{
             width: `${star.width}px`,
             height: `${star.height}px`,

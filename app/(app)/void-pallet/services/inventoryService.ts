@@ -38,11 +38,11 @@ export async function updateInventoryForVoid(
     const supabase = await createClient();
     const inventoryColumn = getInventoryColumn(location);
 
-    const inventoryUpdate: DatabaseRecord = {
+    const inventoryUpdate = {
       product_code: productCode,
       latest_update: new Date().toISOString(),
       plt_num: palletNum,
-    };
+    } as any;
 
     // Deduct from original location
     inventoryUpdate[inventoryColumn as string] = -quantity;
@@ -52,7 +52,7 @@ export async function updateInventoryForVoid(
       inventoryUpdate.damage = damageQuantity;
     }
 
-    const { error } = await supabase.from('record_inventory').insert(inventoryUpdate as any);
+    const { error } = await supabase.from('record_inventory').insert(inventoryUpdate);
 
     if (error) {
       console.error('[Inventory as string] Update failed:', error);

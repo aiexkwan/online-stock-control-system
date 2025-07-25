@@ -8,8 +8,14 @@ interface TooltipPayloadItem {
   value?: unknown;
   payload?: {
     code: string;
-    inventory: number;
-    description?: string;
+    description: string;
+    colour: string;
+    total: number;
+    await: number;
+    bulk: number;
+    fold: number;
+    damage: number;
+    other: number;
   };
   color?: string;
 }
@@ -37,6 +43,7 @@ import {
 import { textClasses, getTextClass } from '@/lib/design-system/typography';
 import { spacing, widgetSpacing, spacingUtilities } from '@/lib/design-system/spacing';
 import { cn } from '@/lib/utils';
+import { TooltipProps } from '@/types/external/recharts';
 
 interface TopProductsInventoryChartProps {
   timeFrame?: {
@@ -190,10 +197,15 @@ export default function TopProductsInventoryChart({ timeFrame }: TopProductsInve
             />
             <YAxis dataKey='code' type='category' width={90} tick={{ fontSize: '12px' }} />
             <Tooltip
-              content={(props: any) => {
+              content={props => {
                 const { active, payload } = props;
                 const typedPayload = payload as TooltipPayloadItem[];
-                if (active && Array.isArray(typedPayload) && typedPayload.length > 0 && typedPayload[0]?.payload) {
+                if (
+                  active &&
+                  Array.isArray(typedPayload) &&
+                  typedPayload.length > 0 &&
+                  typedPayload[0]?.payload
+                ) {
                   const data = typedPayload[0].payload;
                   return (
                     <div
