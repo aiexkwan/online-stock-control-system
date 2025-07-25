@@ -323,7 +323,7 @@ export function getWidgetCategoryColor(
     console.warn(`[getWidgetCategoryColor] Unknown category: ${category}`);
     return widgetColors.stats[property] || ''; // 回退到 stats 默認值
   }
-  
+
   return categoryColors[property] || '';
 }
 

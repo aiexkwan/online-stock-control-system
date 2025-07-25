@@ -89,7 +89,11 @@ class UnifiedAuth {
       error,
     } = await supabase.auth.getUser();
 
-    if (error && !error.message.includes('Auth session missing') && !error.message.includes('Invalid Refresh Token')) {
+    if (
+      error &&
+      !error.message.includes('Auth session missing') &&
+      !error.message.includes('Invalid Refresh Token')
+    ) {
       throw error;
     }
 

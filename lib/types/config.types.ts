@@ -4,12 +4,12 @@
  */
 
 import { z } from 'zod';
-import type { 
+import type {
   ConfigCategory,
   ConfigScope,
   ConfigDataType,
   ConfigAccessLevel,
-  Scalars
+  Scalars,
 } from '@/types/generated/graphql';
 
 // Re-export GraphQL enums for convenience
@@ -23,8 +23,14 @@ export { ConfigCategory, ConfigScope, ConfigDataType, ConfigAccessLevel };
  * Data type validation schema
  */
 export const ConfigDataTypeSchema = z.enum([
-  'STRING', 'NUMBER', 'BOOLEAN', 'JSON', 
-  'ARRAY', 'DATE', 'COLOR', 'URL'
+  'STRING',
+  'NUMBER',
+  'BOOLEAN',
+  'JSON',
+  'ARRAY',
+  'DATE',
+  'COLOR',
+  'URL',
 ]);
 
 /**
@@ -38,23 +44,25 @@ export const ConfigValueSchemas = {
   ARRAY: z.array(z.unknown()),
   DATE: z.union([z.string().datetime(), z.date()]),
   COLOR: z.string().regex(/^#[0-9A-F]{6}$/i),
-  URL: z.string().url()
+  URL: z.string().url(),
 } as const;
 
 /**
  * Validation rules schema
  */
-export const ValidationRulesSchema = z.object({
-  min: z.number().optional(),
-  max: z.number().optional(),
-  minLength: z.number().optional(),
-  maxLength: z.number().optional(),
-  pattern: z.string().optional(),
-  enum: z.array(z.unknown()).optional(),
-  required: z.boolean().optional(),
-  unique: z.boolean().optional(),
-  custom: z.string().optional() // Custom validation function name
-}).passthrough();
+export const ValidationRulesSchema = z
+  .object({
+    min: z.number().optional(),
+    max: z.number().optional(),
+    minLength: z.number().optional(),
+    maxLength: z.number().optional(),
+    pattern: z.string().optional(),
+    enum: z.array(z.unknown()).optional(),
+    required: z.boolean().optional(),
+    unique: z.boolean().optional(),
+    custom: z.string().optional(), // Custom validation function name
+  })
+  .passthrough();
 
 /**
  * Metadata schema - flexible key-value pairs
@@ -83,7 +91,7 @@ export const ConfigItemSchema = z.object({
   inheritedFrom: z.string().optional(),
   createdAt: z.union([z.string(), z.date()]),
   updatedAt: z.union([z.string(), z.date()]),
-  updatedBy: z.string().optional()
+  updatedBy: z.string().optional(),
 });
 
 /**
@@ -97,14 +105,14 @@ export const ConfigHistorySchema = z.object({
   changedBy: z.string(),
   changedAt: z.union([z.string(), z.date()]),
   changeReason: z.string().optional(),
-  metadata: MetadataSchema.optional()
+  metadata: MetadataSchema.optional(),
 });
 
 // ============================================================================
 // TypeScript Types (derived from Zod schemas)
 // ============================================================================
 
-export type ConfigValue = z.infer<typeof ConfigValueSchemas[keyof typeof ConfigValueSchemas]>;
+export type ConfigValue = z.infer<(typeof ConfigValueSchemas)[keyof typeof ConfigValueSchemas]>;
 export type ValidationRules = z.infer<typeof ValidationRulesSchema>;
 export type ConfigMetadata = z.infer<typeof MetadataSchema>;
 export type ConfigItem = z.infer<typeof ConfigItemSchema>;
@@ -117,16 +125,23 @@ export type ConfigHistory = z.infer<typeof ConfigHistorySchema>;
 /**
  * Type-safe config value based on data type
  */
-export type TypedConfigValue<T extends ConfigDataType> = 
-  T extends 'STRING' ? string :
-  T extends 'NUMBER' ? number :
-  T extends 'BOOLEAN' ? boolean :
-  T extends 'JSON' ? Record<string, unknown> :
-  T extends 'ARRAY' ? unknown[] :
-  T extends 'DATE' ? string | Date :
-  T extends 'COLOR' ? string :
-  T extends 'URL' ? string :
-  unknown;
+export type TypedConfigValue<T extends ConfigDataType> = T extends 'STRING'
+  ? string
+  : T extends 'NUMBER'
+    ? number
+    : T extends 'BOOLEAN'
+      ? boolean
+      : T extends 'JSON'
+        ? Record<string, unknown>
+        : T extends 'ARRAY'
+          ? unknown[]
+          : T extends 'DATE'
+            ? string | Date
+            : T extends 'COLOR'
+              ? string
+              : T extends 'URL'
+                ? string
+                : unknown;
 
 /**
  * Config input with proper typing
@@ -406,13 +421,13 @@ export function toConfigItem(dbConfig: Record<string, unknown>): ConfigItem {
     validation: dbConfig.validation as ValidationRules | undefined,
     metadata: dbConfig.metadata as ConfigMetadata | undefined,
     tags: dbConfig.tags as string[] | undefined,
-    accessLevel: dbConfig.access_level as string || 'AUTHENTICATED',
+    accessLevel: (dbConfig.access_level as string) || 'AUTHENTICATED',
     isEditable: Boolean(dbConfig.is_editable),
     isInherited: Boolean(dbConfig.is_inherited),
     inheritedFrom: dbConfig.inherited_from as string | undefined,
     createdAt: dbConfig.created_at as string | Date,
     updatedAt: dbConfig.updated_at as string | Date,
-    updatedBy: dbConfig.updated_by as string | undefined
+    updatedBy: dbConfig.updated_by as string | undefined,
   };
 }
 
@@ -422,64 +437,64 @@ export function toConfigItem(dbConfig: Record<string, unknown>): ConfigItem {
 export function createConfigValidator(dataType: ConfigDataType, validation?: ValidationRules) {
   return (value: unknown): ConfigValidationResult => {
     const errors: ConfigValidationResult['errors'] = [];
-    
+
     // Check data type
     if (!isValidConfigValue(value, dataType)) {
       errors.push({
         message: `Value must be of type ${dataType}`,
-        code: 'INVALID_TYPE'
+        code: 'INVALID_TYPE',
       });
     }
-    
+
     // Apply custom validation rules
     if (validation) {
       if (typeof value === 'number') {
         if (validation.min !== undefined && value < validation.min) {
           errors.push({
             message: `Value must be at least ${validation.min}`,
-            code: 'MIN_VALUE'
+            code: 'MIN_VALUE',
           });
         }
         if (validation.max !== undefined && value > validation.max) {
           errors.push({
             message: `Value must be at most ${validation.max}`,
-            code: 'MAX_VALUE'
+            code: 'MAX_VALUE',
           });
         }
       }
-      
+
       if (typeof value === 'string') {
         if (validation.minLength !== undefined && value.length < validation.minLength) {
           errors.push({
             message: `Value must be at least ${validation.minLength} characters`,
-            code: 'MIN_LENGTH'
+            code: 'MIN_LENGTH',
           });
         }
         if (validation.maxLength !== undefined && value.length > validation.maxLength) {
           errors.push({
             message: `Value must be at most ${validation.maxLength} characters`,
-            code: 'MAX_LENGTH'
+            code: 'MAX_LENGTH',
           });
         }
         if (validation.pattern && !new RegExp(validation.pattern).test(value)) {
           errors.push({
             message: `Value does not match required pattern`,
-            code: 'PATTERN_MISMATCH'
+            code: 'PATTERN_MISMATCH',
           });
         }
       }
-      
+
       if (validation.enum && !validation.enum.includes(value)) {
         errors.push({
           message: `Value must be one of: ${validation.enum.join(', ')}`,
-          code: 'ENUM_MISMATCH'
+          code: 'ENUM_MISMATCH',
         });
       }
     }
-    
+
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   };
 }

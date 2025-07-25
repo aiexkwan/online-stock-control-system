@@ -40,7 +40,7 @@ export function MobileButton({
     >
       {loading ? (
         <>
-          <div className='mr-2 h-1 w-4 bg-white/70 rounded-full' />
+          <div className='mr-2 h-1 w-4 rounded-full bg-white/70' />
           <span>Loading...</span>
         </>
       ) : (

@@ -3,6 +3,16 @@
  * Updated for Cards architecture
  */
 
+// Extend the global namespace to include custom test properties
+declare global {
+  var __APOLLO_CLIENT__: {
+    clearStore: () => void;
+  } | undefined;
+  var __REACT_STATE__: Record<string, any> | undefined;
+  var __CARDS_TEST_DATA__: Record<string, any> | undefined;
+  var __MOCK_RESPONSES__: Record<string, any> | undefined;
+}
+
 /**
  * Interface for cleanup functions
  */

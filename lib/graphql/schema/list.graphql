@@ -34,7 +34,7 @@ type OrderStateList implements ListData {
   lastUpdated: DateTime!
   dataSource: String!
   refreshInterval: Int
-  
+
   # 訂單狀態特定數據
   orders: OrderStateConnection!
   statusSummary: [OrderStatusSummary!]!
@@ -99,7 +99,7 @@ type OrderRecordList implements ListData {
   lastUpdated: DateTime!
   dataSource: String!
   refreshInterval: Int
-  
+
   # 訂單記錄特定數據
   records: OrderRecordConnection!
   timeline: [OrderTimelineEvent!]!
@@ -188,7 +188,7 @@ type WarehouseTransferList implements ListData {
   lastUpdated: DateTime!
   dataSource: String!
   refreshInterval: Int
-  
+
   # 轉移記錄特定數據
   transfers: TransferConnection!
   statusDistribution: [TransferStatusDistribution!]!
@@ -238,7 +238,7 @@ type OtherFilesList implements ListData {
   lastUpdated: DateTime!
   dataSource: String!
   refreshInterval: Int
-  
+
   # 文件列表特定數據
   files: FileRecordConnection!
   categorySummary: [FileCategorySummary!]!
@@ -265,18 +265,18 @@ type FileRecord {
   mimeType: String!
   url: String!
   thumbnailUrl: String
-  
+
   # 元數據
   uploadedAt: DateTime!
   uploadedBy: User!
   lastModified: DateTime!
   version: String!
-  
+
   # 狀態和標籤
   status: FileStatus!
   tags: [String!]!
   accessibility: FileAccessibility!
-  
+
   # 關聯數據
   relatedEntity: FileRelatedEntity
   permissions: [FilePermission!]!
@@ -382,7 +382,7 @@ input ListFilters {
   category: [String!]
   tags: [String!]
   userId: ID
-  
+
   # 特定類型過濾器
   orderFilters: OrderListFilters
   transferFilters: TransferListFilters
@@ -466,13 +466,13 @@ enum AnalyticsMetric {
 extend type Query {
   # 單一 List 查詢
   listCardData(input: ListCardInput!): ListDataUnion!
-  
+
   # 批量 List 查詢
   batchListCardData(inputs: [ListCardInput!]!): [ListDataUnion!]!
-  
+
   # List 分析數據
   listAnalytics(input: ListAnalyticsInput!): JSON!
-  
+
   # List 元數據
   listMetadata(listType: ListType!): ListMetadata!
 }
@@ -521,10 +521,10 @@ extend type Mutation {
   uploadFile(input: FileUploadInput!): FileRecord!
   deleteFile(id: ID!): Boolean!
   updateFileMetadata(id: ID!, input: FileMetadataInput!): FileRecord!
-  
+
   # 批量文件操作
   batchFileOperation(input: BatchFileOperationInput!): BatchResult!
-  
+
   # List 配置
   saveListConfiguration(input: ListConfigurationInput!): Boolean!
   deleteListConfiguration(id: ID!): Boolean!
@@ -581,24 +581,24 @@ input ListConfigurationInput {
 extend type Subscription {
   # List 數據實時更新
   listDataUpdated(listType: ListType!): ListDataUnion!
-  
+
   # 文件狀態變更
   fileStatusChanged(fileIds: [ID!]): FileRecord!
-  
+
   # 轉移狀態實時更新
   transferListUpdated(transferIds: [ID!]): WarehouseTransferList!
-  
+
   # 訂單狀態實時更新
   orderListUpdated(orderNumbers: [String!]): OrderStateList!
 }
 
 # 權限和緩存指令應用
 extend type Query {
-  listCardData(input: ListCardInput!): ListDataUnion! 
+  listCardData(input: ListCardInput!): ListDataUnion!
     @auth(requires: VIEWER)
     @rateLimit(max: 100, window: "1m")
     @cache(ttl: 300, scope: USER)
-    
+
   batchListCardData(inputs: [ListCardInput!]!): [ListDataUnion!]!
     @auth(requires: VIEWER)
     @rateLimit(max: 50, window: "1m")

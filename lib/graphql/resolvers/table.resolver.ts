@@ -22,7 +22,11 @@ import {
   DateOperator,
   ArrayOperator,
 } from '@/types/generated/graphql';
-import { GraphQLContext, PostgrestQueryBuilder, TableDataSourceConfig } from '@/lib/types/graphql-resolver.types';
+import {
+  GraphQLContext,
+  PostgrestQueryBuilder,
+  TableDataSourceConfig,
+} from '@/lib/types/graphql-resolver.types';
 import { startOfDay, endOfDay, subDays, format, isValid, parseISO } from 'date-fns';
 import DataLoader from 'dataloader';
 import { ensureNumber, ensureInputValue, DEFAULT_PAGINATION } from '@/utils/graphql-types';
@@ -34,10 +38,14 @@ const TABLE_CONFIG_MAP: Record<string, TableDataSourceConfig> = {
     name: 'Inventory Analysis',
     description: 'Product inventory analysis with order demand',
     baseQuery: 'record_palletinfo',
-    joins: [
-      'data_code!inner(code, description, type, colour)',
+    joins: ['data_code!inner(code, description, type, colour)'],
+    defaultColumns: [
+      'productCode',
+      'description',
+      'currentStock',
+      'orderDemand',
+      'fulfillmentRate',
     ],
-    defaultColumns: ['productCode', 'description', 'currentStock', 'orderDemand', 'fulfillmentRate'],
     permissions: {
       canView: true,
       canEdit: false,
@@ -48,7 +56,7 @@ const TABLE_CONFIG_MAP: Record<string, TableDataSourceConfig> = {
       canSort: true,
     },
   },
-  
+
   // 訂單列表表格
   orders_list: {
     name: 'Orders List',
@@ -65,13 +73,20 @@ const TABLE_CONFIG_MAP: Record<string, TableDataSourceConfig> = {
       canSort: true,
     },
   },
-  
+
   // 倉庫轉移列表
   warehouse_transfers: {
     name: 'Warehouse Transfer List',
     description: 'Warehouse transfer records',
     baseQuery: 'record_pallet_transfer',
-    defaultColumns: ['id', 'pltnum', 'from_location', 'to_location', 'transferstart', 'transferdone'],
+    defaultColumns: [
+      'id',
+      'pltnum',
+      'from_location',
+      'to_location',
+      'transferstart',
+      'transferdone',
+    ],
     permissions: {
       canView: true,
       canEdit: false,
@@ -82,7 +97,7 @@ const TABLE_CONFIG_MAP: Record<string, TableDataSourceConfig> = {
       canSort: true,
     },
   },
-  
+
   // 歷史記錄樹表格
   history_tree: {
     name: 'History Tree',
@@ -103,13 +118,20 @@ const TABLE_CONFIG_MAP: Record<string, TableDataSourceConfig> = {
       canSort: true,
     },
   },
-  
+
   // 生產詳情表格
   production_details: {
     name: 'Production Details',
     description: 'Production records and metrics',
     baseQuery: 'production_records',
-    defaultColumns: ['timestamp', 'product_code', 'quantity', 'department', 'operator', 'efficiency'],
+    defaultColumns: [
+      'timestamp',
+      'product_code',
+      'quantity',
+      'department',
+      'operator',
+      'efficiency',
+    ],
     permissions: {
       canView: true,
       canEdit: false,
@@ -120,7 +142,7 @@ const TABLE_CONFIG_MAP: Record<string, TableDataSourceConfig> = {
       canSort: true,
     },
   },
-  
+
   // 訂單狀態列表
   order_states: {
     name: 'Order State List',
@@ -159,11 +181,11 @@ function generateTableColumns(dataSource: string, data: unknown[]): TableColumn[
   if (!config || !data.length) {
     return [];
   }
-  
+
   const sampleRecord = data[0];
   const columns: TableColumn[] = [];
-  
-  config.defaultColumns.forEach((key) => {
+
+  config.defaultColumns.forEach(key => {
     const value = sampleRecord[key];
     const column: TableColumn = {
       key,
@@ -179,7 +201,7 @@ function generateTableColumns(dataSource: string, data: unknown[]): TableColumn[
       required: false,
       hidden: false,
     };
-    
+
     // 設置列寬度
     if (key.includes('id') || key.includes('uuid')) {
       column.width = '120px';
@@ -188,10 +210,10 @@ function generateTableColumns(dataSource: string, data: unknown[]): TableColumn[
     } else if (key.includes('description') || key.includes('remark')) {
       column.width = '300px';
     }
-    
+
     columns.push(column);
   });
-  
+
   return columns;
 }
 
@@ -209,15 +231,15 @@ function inferDataType(value: unknown): TableDataType {
   if (value === null || value === undefined) {
     return TableDataType.String;
   }
-  
+
   if (typeof value === 'number') {
     return TableDataType.Number;
   }
-  
+
   if (typeof value === 'boolean') {
     return TableDataType.Boolean;
   }
-  
+
   if (typeof value === 'string') {
     // 檢查是否為日期
     if (isValidDateString(value)) {
@@ -225,15 +247,15 @@ function inferDataType(value: unknown): TableDataType {
     }
     return TableDataType.String;
   }
-  
+
   if (Array.isArray(value)) {
     return TableDataType.Array;
   }
-  
+
   if (typeof value === 'object') {
     return TableDataType.Object;
   }
-  
+
   return TableDataType.String;
 }
 
@@ -248,11 +270,11 @@ function inferColumnAlign(key: string, value: unknown): ColumnAlign {
   if (typeof value === 'number') {
     return ColumnAlign.Right;
   }
-  
+
   if (key.includes('id') || key.includes('uuid') || key.includes('code')) {
     return ColumnAlign.Center;
   }
-  
+
   return ColumnAlign.Left;
 }
 
@@ -266,35 +288,35 @@ function inferFormatterType(key: string, value: unknown): FormatterType {
       return FormatterType.Currency;
     }
   }
-  
+
   if (typeof value === 'boolean') {
     return FormatterType.Boolean;
   }
-  
+
   if (typeof value === 'string') {
     if (isValidDateString(value)) {
       return value.includes('T') ? FormatterType.Datetime : FormatterType.Date;
     }
-    
+
     if (key.includes('url') || key.includes('link')) {
       return FormatterType.Link;
     }
-    
+
     if (value.length > 50) {
       return FormatterType.Truncate;
     }
   }
-  
+
   return FormatterType.Default;
 }
 
 // 應用篩選器
 function applyFilters(query: PostgrestQueryBuilder, filters?: TableFilters): PostgrestQueryBuilder {
   if (!filters) return query;
-  
+
   // 字符串篩選
   if (filters.stringFilters) {
-    filters.stringFilters.forEach((filter) => {
+    filters.stringFilters.forEach(filter => {
       switch (filter.operator) {
         case StringOperator.Equals:
           query = query.eq(filter.field, filter.value);
@@ -317,10 +339,10 @@ function applyFilters(query: PostgrestQueryBuilder, filters?: TableFilters): Pos
       }
     });
   }
-  
+
   // 數字篩選
   if (filters.numberFilters) {
-    filters.numberFilters.forEach((filter) => {
+    filters.numberFilters.forEach(filter => {
       switch (filter.operator) {
         case NumberOperator.Equals:
           query = query.eq(filter.field, filter.value);
@@ -348,18 +370,19 @@ function applyFilters(query: PostgrestQueryBuilder, filters?: TableFilters): Pos
       }
     });
   }
-  
+
   // 日期篩選
   if (filters.dateFilters) {
-    filters.dateFilters.forEach((filter) => {
+    filters.dateFilters.forEach(filter => {
       const now = new Date();
-      
+
       switch (filter.operator) {
         case DateOperator.Equals:
           if (filter.value) {
             const date = new Date(filter.value);
-            query = query.gte(filter.field, startOfDay(date).toISOString())
-                          .lte(filter.field, endOfDay(date).toISOString());
+            query = query
+              .gte(filter.field, startOfDay(date).toISOString())
+              .lte(filter.field, endOfDay(date).toISOString());
           }
           break;
         case DateOperator.Before:
@@ -374,18 +397,19 @@ function applyFilters(query: PostgrestQueryBuilder, filters?: TableFilters): Pos
           break;
         case DateOperator.Between:
           if (filter.startDate && filter.endDate) {
-            query = query.gte(filter.field, filter.startDate)
-                          .lte(filter.field, filter.endDate);
+            query = query.gte(filter.field, filter.startDate).lte(filter.field, filter.endDate);
           }
           break;
         case DateOperator.Today:
-          query = query.gte(filter.field, startOfDay(now).toISOString())
-                        .lte(filter.field, endOfDay(now).toISOString());
+          query = query
+            .gte(filter.field, startOfDay(now).toISOString())
+            .lte(filter.field, endOfDay(now).toISOString());
           break;
         case DateOperator.Yesterday:
           const yesterday = subDays(now, 1);
-          query = query.gte(filter.field, startOfDay(yesterday).toISOString())
-                        .lte(filter.field, endOfDay(yesterday).toISOString());
+          query = query
+            .gte(filter.field, startOfDay(yesterday).toISOString())
+            .lte(filter.field, endOfDay(yesterday).toISOString());
           break;
         case DateOperator.Last_7Days:
           query = query.gte(filter.field, subDays(now, 7).toISOString());
@@ -396,17 +420,17 @@ function applyFilters(query: PostgrestQueryBuilder, filters?: TableFilters): Pos
       }
     });
   }
-  
+
   // 布爾篩選
   if (filters.booleanFilters) {
-    filters.booleanFilters.forEach((filter) => {
+    filters.booleanFilters.forEach(filter => {
       query = query.eq(filter.field, filter.value);
     });
   }
-  
+
   // 數組篩選
   if (filters.arrayFilters) {
-    filters.arrayFilters.forEach((filter) => {
+    filters.arrayFilters.forEach(filter => {
       switch (filter.operator) {
         case ArrayOperator.In:
           query = query.in(filter.field, filter.values);
@@ -417,28 +441,31 @@ function applyFilters(query: PostgrestQueryBuilder, filters?: TableFilters): Pos
       }
     });
   }
-  
+
   return query;
 }
 
 // 應用排序
 function applySorting(query: PostgrestQueryBuilder, sorting?: TableSorting): PostgrestQueryBuilder {
   if (!sorting) return query;
-  
+
   const ascending = sorting.sortOrder === SortDirection.Asc;
   query = query.order(sorting.sortBy, { ascending });
-  
+
   // 二級排序
   if (sorting.secondarySort) {
     const secondaryAscending = sorting.secondarySort.sortOrder === SortDirection.Asc;
     query = query.order(sorting.secondarySort.sortBy, { ascending: secondaryAscending });
   }
-  
+
   return query;
 }
 
 // 應用分頁
-function applyPagination(query: PostgrestQueryBuilder, pagination: TablePagination): PostgrestQueryBuilder {
+function applyPagination(
+  query: PostgrestQueryBuilder,
+  pagination: TablePagination
+): PostgrestQueryBuilder {
   const limit = ensureNumber(pagination.limit, DEFAULT_PAGINATION.limit);
   const offset = ensureNumber(pagination.offset, DEFAULT_PAGINATION.offset);
   return query.range(offset, offset + limit - 1);
@@ -454,12 +481,12 @@ async function fetchTableData(
   if (!config) {
     throw new Error(`Unknown data source: ${dataSource}`);
   }
-  
+
   const startTime = Date.now();
-  
+
   // 構建查詢
   let query = supabase.from(config.baseQuery);
-  
+
   // 添加 joins
   if (config.joins) {
     const selectFields = config.joins.join(', ');
@@ -467,45 +494,42 @@ async function fetchTableData(
   } else {
     query = query.select('*');
   }
-  
+
   // 應用篩選
   if (input.filters) {
     query = applyFilters(query, ensureInputValue(input.filters, {} as TableFilters));
   }
-  
+
   // 應用排序
   if (input.sorting) {
     query = applySorting(query, ensureInputValue(input.sorting, {} as TableSorting));
   }
-  
+
   // 獲取總數（不含分頁）
   let countQuery = supabase.from(config.baseQuery).select('*', { count: 'exact', head: true });
   if (input.filters) {
     countQuery = applyFilters(countQuery, ensureInputValue(input.filters, {} as TableFilters));
   }
-  
+
   // 應用分頁
   query = applyPagination(query, input.pagination);
-  
+
   // 執行查詢
-  const [{ data, error }, { count, error: countError }] = await Promise.all([
-    query,
-    countQuery,
-  ]);
-  
+  const [{ data, error }, { count, error: countError }] = await Promise.all([query, countQuery]);
+
   if (error) throw error;
   if (countError) throw countError;
-  
+
   const queryTime = Date.now() - startTime;
   const totalCount = count || 0;
   const offset = ensureNumber(input.pagination.offset, DEFAULT_PAGINATION.offset);
   const limit = ensureNumber(input.pagination.limit, DEFAULT_PAGINATION.limit);
   const currentPage = Math.floor(offset / limit) + 1;
   const totalPages = Math.ceil(totalCount / limit);
-  
+
   // 生成列配置
   const columns = generateTableColumns(dataSource, data || []);
-  
+
   // 創建元數據
   const metadata: TableMetadata = {
     queryTime,
@@ -517,7 +541,7 @@ async function fetchTableData(
     permissions: config.permissions,
     generatedAt: new Date().toISOString(),
   };
-  
+
   return {
     data: data || [],
     columns,
@@ -557,9 +581,9 @@ export const tableResolvers = {
       if (!config) {
         throw new Error(`Unknown data source: ${dataSource}`);
       }
-      
+
       // 返回預設列配置
-      return config.defaultColumns.map((key) => ({
+      return config.defaultColumns.map(key => ({
         key,
         header: formatColumnHeader(key),
         dataType: TableDataType.String, // 預設值，實際使用時會推斷
@@ -584,7 +608,7 @@ export const tableResolvers = {
       if (!config) {
         throw new Error(`Unknown data source: ${dataSource}`);
       }
-      
+
       return config.permissions;
     },
   },

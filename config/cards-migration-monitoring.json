@@ -1,0 +1,378 @@
+{
+  "version": "1.0",
+  "name": "Cards Migration Monitoring Configuration",
+  "description": "監控 Cards/Widgets 系統遷移進度和性能指標",
+  "created": "2025-07-25",
+  "environments": {
+    "development": {
+      "enabled": true,
+      "alerting": false,
+      "detailed_logging": true
+    },
+    "staging": {
+      "enabled": true,
+      "alerting": true,
+      "detailed_logging": true
+    },
+    "production": {
+      "enabled": true,
+      "alerting": true,
+      "detailed_logging": false
+    }
+  },
+  "metrics": {
+    "migration_progress": {
+      "description": "遷移進度追蹤",
+      "metrics": [
+        {
+          "name": "cards_completion_percentage",
+          "description": "Cards 完成百分比",
+          "type": "gauge",
+          "target": 100,
+          "current_baseline": 88.2,
+          "unit": "percentage",
+          "data_source": "file_count",
+          "calculation": "(completed_cards / total_cards) * 100"
+        },
+        {
+          "name": "widgets_cleanup_percentage", 
+          "description": "Widgets 清理百分比",
+          "type": "gauge",
+          "target": 100,
+          "current_baseline": 0,
+          "unit": "percentage",
+          "data_source": "file_count",
+          "calculation": "((total_widgets - remaining_widgets) / total_widgets) * 100"
+        },
+        {
+          "name": "api_migration_percentage",
+          "description": "API 遷移百分比", 
+          "type": "gauge",
+          "target": 100,
+          "current_baseline": 22.1,
+          "unit": "percentage",
+          "data_source": "code_analysis",
+          "calculation": "(graphql_resolvers / total_endpoints) * 100"
+        }
+      ]
+    },
+    "performance_benchmarks": {
+      "description": "性能基準線監控",
+      "metrics": [
+        {
+          "name": "card_render_time",
+          "description": "Card 組件渲染時間",
+          "type": "histogram",
+          "target": 100,
+          "unit": "milliseconds",
+          "buckets": [10, 50, 100, 200, 500, 1000],
+          "alert_threshold": 200
+        },
+        {
+          "name": "widget_render_time",
+          "description": "Widget 組件渲染時間 (對比基準)",
+          "type": "histogram", 
+          "unit": "milliseconds",
+          "buckets": [10, 50, 100, 200, 500, 1000]
+        },
+        {
+          "name": "graphql_query_time",
+          "description": "GraphQL 查詢響應時間",
+          "type": "histogram",
+          "target": 200,
+          "unit": "milliseconds",
+          "buckets": [50, 100, 200, 500, 1000, 2000],
+          "alert_threshold": 500
+        },
+        {
+          "name": "rest_api_response_time",
+          "description": "REST API 響應時間 (對比基準)",
+          "type": "histogram",
+          "unit": "milliseconds",
+          "buckets": [50, 100, 200, 500, 1000, 2000]
+        },
+        {
+          "name": "bundle_size_cards",
+          "description": "Cards 模組 Bundle 大小",
+          "type": "gauge",
+          "target": 500,
+          "unit": "kilobytes",
+          "alert_threshold": 600
+        },
+        {
+          "name": "memory_usage_cards",
+          "description": "Cards 記憶體使用量",
+          "type": "gauge",
+          "target": 50,
+          "unit": "megabytes",
+          "alert_threshold": 100
+        }
+      ]
+    },
+    "feature_flag_adoption": {
+      "description": "Feature Flag 採用率監控",
+      "metrics": [
+        {
+          "name": "cards_system_usage_rate",
+          "description": "Cards 系統使用率",
+          "type": "gauge",
+          "unit": "percentage",
+          "data_source": "feature_flag",
+          "flag_key": "use_cards_system"
+        },
+        {
+          "name": "graphql_api_usage_rate",
+          "description": "GraphQL API 使用率",
+          "type": "gauge", 
+          "unit": "percentage",
+          "data_source": "feature_flag",
+          "flag_key": "use_graphql_api"
+        },
+        {
+          "name": "user_feedback_score",
+          "description": "用戶對新系統滿意度",
+          "type": "gauge",
+          "target": 4.5,
+          "unit": "score",
+          "range": [1, 5]
+        }
+      ]
+    },
+    "error_tracking": {
+      "description": "錯誤追蹤和穩定性監控",
+      "metrics": [
+        {
+          "name": "card_error_rate",
+          "description": "Card 組件錯誤率",
+          "type": "counter",
+          "target": 0.1,
+          "unit": "percentage",
+          "alert_threshold": 1.0
+        },
+        {
+          "name": "graphql_error_rate",
+          "description": "GraphQL 查詢錯誤率",
+          "type": "counter",
+          "target": 0.5,
+          "unit": "percentage", 
+          "alert_threshold": 2.0
+        },
+        {
+          "name": "migration_rollback_count",
+          "description": "遷移回滾次數",
+          "type": "counter",
+          "target": 0,
+          "alert_threshold": 1
+        }
+      ]
+    }
+  },
+  "dashboards": {
+    "migration_overview": {
+      "name": "Cards Migration Overview",
+      "description": "整體遷移進度儀表板",
+      "sections": [
+        {
+          "name": "進度總覽",
+          "type": "progress_bars",
+          "metrics": [
+            "cards_completion_percentage",
+            "widgets_cleanup_percentage", 
+            "api_migration_percentage"
+          ]
+        },
+        {
+          "name": "性能對比",
+          "type": "comparison_charts",
+          "comparisons": [
+            {
+              "name": "渲染時間對比",
+              "metrics": ["card_render_time", "widget_render_time"]
+            },
+            {
+              "name": "API 響應時間對比",
+              "metrics": ["graphql_query_time", "rest_api_response_time"]
+            }
+          ]
+        },
+        {
+          "name": "Feature Flag 狀態",
+          "type": "status_grid",
+          "metrics": [
+            "cards_system_usage_rate",
+            "graphql_api_usage_rate"
+          ]
+        }
+      ]
+    },
+    "performance_monitoring": {
+      "name": "Performance Monitoring",
+      "description": "性能監控儀表板",
+      "sections": [
+        {
+          "name": "響應時間",
+          "type": "time_series",
+          "metrics": [
+            "card_render_time",
+            "graphql_query_time"
+          ],
+          "time_range": "24h"
+        },
+        {
+          "name": "資源使用",
+          "type": "gauges",
+          "metrics": [
+            "bundle_size_cards",
+            "memory_usage_cards"
+          ]
+        },
+        {
+          "name": "錯誤率",
+          "type": "area_charts",
+          "metrics": [
+            "card_error_rate",
+            "graphql_error_rate"
+          ]
+        }
+      ]
+    }
+  },
+  "alerts": {
+    "critical": [
+      {
+        "name": "Migration Rollback Alert",
+        "description": "遷移發生回滾",
+        "metric": "migration_rollback_count",
+        "condition": "> 0",
+        "channels": ["slack", "email"],
+        "escalation": {
+          "to": ["architecture_team", "product_team"],
+          "after": "5m"
+        }
+      },
+      {
+        "name": "High Error Rate Alert",
+        "description": "Card 或 GraphQL 錯誤率過高",
+        "conditions": [
+          "card_error_rate > 5%",
+          "graphql_error_rate > 5%"
+        ],
+        "operator": "OR",
+        "channels": ["slack", "pager"]
+      }
+    ],
+    "warning": [
+      {
+        "name": "Performance Degradation",
+        "description": "性能下降警告",
+        "conditions": [
+          "card_render_time > 200ms",
+          "graphql_query_time > 500ms"
+        ],
+        "operator": "OR",
+        "channels": ["slack"]
+      },
+      {
+        "name": "Bundle Size Warning",
+        "description": "Bundle 大小超標",
+        "metric": "bundle_size_cards",
+        "condition": "> 500KB",
+        "channels": ["slack"]
+      },
+      {
+        "name": "Migration Progress Stalled",
+        "description": "遷移進度停滯",
+        "condition": "No progress in migration metrics for 7 days",
+        "channels": ["email"]
+      }
+    ],
+    "info": [
+      {
+        "name": "Daily Migration Report",
+        "description": "每日遷移進度報告",
+        "trigger": "cron(0 9 * * *)",
+        "channels": ["email"],
+        "recipients": ["architecture_team", "management"]
+      },
+      {
+        "name": "Feature Flag Update",
+        "description": "Feature Flag 使用率變化通知",
+        "condition": "Significant change in feature flag adoption",
+        "channels": ["slack"]
+      }
+    ]
+  },
+  "reporting": {
+    "daily": {
+      "enabled": true,
+      "time": "09:00",
+      "recipients": ["architecture_team"],
+      "metrics": [
+        "cards_completion_percentage",
+        "widgets_cleanup_percentage",
+        "api_migration_percentage",
+        "user_feedback_score"
+      ]
+    },
+    "weekly": {
+      "enabled": true,
+      "day": "monday",
+      "time": "10:00",
+      "recipients": ["architecture_team", "product_team", "management"],
+      "include_trends": true,
+      "include_performance_analysis": true
+    },
+    "milestone": {
+      "enabled": true,
+      "triggers": [
+        "cards_completion_percentage >= 100",
+        "widgets_cleanup_percentage >= 100", 
+        "api_migration_percentage >= 100"
+      ],
+      "recipients": ["all_teams"]
+    }
+  },
+  "data_sources": {
+    "file_system": {
+      "type": "file_count",
+      "description": "檔案系統統計",
+      "paths": {
+        "cards": "app/**/cards/**/*.tsx",
+        "widgets": "app/**/widgets/**/*.tsx",
+        "graphql_resolvers": "lib/graphql/resolvers/**/*.ts"
+      }
+    },
+    "feature_flags": {
+      "type": "supabase",
+      "description": "Feature Flag 數據",
+      "connection": {
+        "table": "feature_flags_analytics",
+        "metrics": ["usage_rate", "user_count", "error_rate"]
+      }
+    },
+    "performance": {
+      "type": "browser_metrics",
+      "description": "瀏覽器性能指標",
+      "sources": ["web_vitals", "custom_marks", "navigation_timing"]
+    },
+    "application_logs": {
+      "type": "structured_logs",
+      "description": "應用程式日誌",
+      "filters": {
+        "components": ["cards", "widgets", "graphql"],
+        "levels": ["error", "warn", "info"]
+      }
+    }
+  },
+  "retention": {
+    "raw_data": "30d",
+    "aggregated_hourly": "90d", 
+    "aggregated_daily": "1y",
+    "reports": "2y"
+  },
+  "maintenance": {
+    "cleanup_schedule": "0 2 * * 0",
+    "backup_schedule": "0 3 * * *",
+    "health_check_interval": "5m"
+  }
+}

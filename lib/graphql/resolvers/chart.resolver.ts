@@ -129,7 +129,7 @@ function aggregateData(
 ): number {
   if (!data.length) return 0;
 
-  const values = data.map((d) => d[valueField] || 0);
+  const values = data.map(d => d[valueField] || 0);
 
   switch (aggregationType) {
     case AggregationType.Sum:
@@ -203,7 +203,8 @@ async function fetchTreemapData(
 ): Promise<ChartCardData> {
   const { data, error } = await supabase
     .from('record_palletinfo')
-    .select(`
+    .select(
+      `
       productcode,
       quantity,
       location,
@@ -213,7 +214,8 @@ async function fetchTreemapData(
         type,
         colour
       )
-    `)
+    `
+    )
     .gt('quantity', 0);
 
   if (error) throw error;
@@ -235,7 +237,9 @@ async function fetchTreemapData(
   }, {});
 
   const chartData: ChartDataPoint[] = Object.values(groupedData)
-    .sort((a: ProductDistributionData, b: ProductDistributionData) => b.totalQuantity - a.totalQuantity)
+    .sort(
+      (a: ProductDistributionData, b: ProductDistributionData) => b.totalQuantity - a.totalQuantity
+    )
     .slice(0, input.limit || 20)
     .map((item: ProductDistributionData) => ({
       x: item.productCode,
@@ -257,7 +261,7 @@ async function fetchTreemapData(
         hidden: false,
       },
     ],
-    labels: chartData.map((d) => d.x),
+    labels: chartData.map(d => d.x),
     config: {
       ...CHART_CONFIG_MAP.stockDistribution,
       responsive: true,
@@ -330,7 +334,7 @@ async function fetchAreaChartData(
         hidden: false,
       },
     ],
-    labels: chartData.map((d) => d.x),
+    labels: chartData.map(d => d.x),
     config: {
       ...CHART_CONFIG_MAP.warehouseWorkLevel,
       responsive: true,
@@ -382,7 +386,7 @@ async function fetchBarChartData(
 
   // 創建直方圖數據
   const histogram: Record<string, number> = {};
-  transferTimes.forEach((time) => {
+  transferTimes.forEach(time => {
     const bucket = time < 24 ? `${time}h` : '24h+';
     histogram[bucket] = (histogram[bucket] || 0) + 1;
   });
@@ -412,7 +416,7 @@ async function fetchBarChartData(
         hidden: false,
       },
     ],
-    labels: chartData.map((d) => d.x),
+    labels: chartData.map(d => d.x),
     config: {
       ...CHART_CONFIG_MAP.transferTimeDistribution,
       responsive: true,
@@ -468,7 +472,8 @@ async function fetchLineChartData(
     if (!acc[date]) {
       acc[date] = { date, totalQuantity: 0 };
     }
-    (acc[date] as TimeSeriesDataPoint).totalQuantity = ((acc[date] as TimeSeriesDataPoint).totalQuantity || 0) + item.quantity;
+    (acc[date] as TimeSeriesDataPoint).totalQuantity =
+      ((acc[date] as TimeSeriesDataPoint).totalQuantity || 0) + item.quantity;
     return acc;
   }, {});
 
@@ -494,7 +499,7 @@ async function fetchLineChartData(
         hidden: false,
       },
     ],
-    labels: chartData.map((d) => d.x),
+    labels: chartData.map(d => d.x),
     config: {
       ...CHART_CONFIG_MAP.stockLevelHistory,
       responsive: true,
@@ -584,7 +589,7 @@ export const chartResolvers = {
       { category }: { category?: string }
     ): Promise<ChartConfig[]> => {
       // 返回所有配置
-      return Object.values(CHART_CONFIG_MAP).map((config) => ({
+      return Object.values(CHART_CONFIG_MAP).map(config => ({
         ...config,
         responsive: true,
         maintainAspectRatio: false,

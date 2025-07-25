@@ -1,7 +1,7 @@
 /**
  * Analytics API Authentication Middleware
  * Provides unified authentication and validation for all Analytics APIs
- * 
+ *
  * Key features:
  * - Session validation to ensure RLS policies work correctly
  * - Input validation using Zod schemas
@@ -36,11 +36,7 @@ export type AnalyticsHandler<TInput, TOutput> = (
 /**
  * Error response helper
  */
-function createErrorResponse(
-  message: string,
-  status: number,
-  errorCode?: string
-): NextResponse {
+function createErrorResponse(message: string, status: number, errorCode?: string): NextResponse {
   return NextResponse.json<AnalyticsApiResponse<null>>(
     {
       success: false,
@@ -65,12 +61,12 @@ function createSuccessResponse<T>(data: T): NextResponse {
 
 /**
  * Unified authentication and validation middleware for Analytics APIs
- * 
+ *
  * @param request - The incoming HTTP request
  * @param schema - Zod schema for input validation
  * @param handler - Business logic handler function
  * @returns NextResponse with standardized format
- * 
+ *
  * @example
  * ```typescript
  * export async function POST(request: Request) {
@@ -101,19 +97,18 @@ export async function withAnalyticsAuth<TInput, TOutput>(
       const errors = validationResult.error.issues
         .map(issue => `${issue.path.join('.')}: ${issue.message}`)
         .join(', ');
-      
-      return createErrorResponse(
-        `Invalid request parameters: ${errors}`,
-        400,
-        'VALIDATION_ERROR'
-      );
+
+      return createErrorResponse(`Invalid request parameters: ${errors}`, 400, 'VALIDATION_ERROR');
     }
 
     // 2. Create Supabase client (automatically handles JWT from cookies/headers)
     const supabase = createClient();
 
     // 3. Verify session exists (ensures RLS policies will work)
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
+    const {
+      data: { session },
+      error: authError,
+    } = await supabase.auth.getSession();
 
     if (authError || !session) {
       // User-friendly authentication error
@@ -129,7 +124,6 @@ export async function withAnalyticsAuth<TInput, TOutput>(
 
     // 5. Return success response
     return createSuccessResponse(result);
-
   } catch (error) {
     // Handle unexpected errors
     console.error('Analytics API error:', error);
@@ -181,12 +175,8 @@ export async function withAnalyticsValidation<TInput, TOutput>(
       const errors = validationResult.error.issues
         .map(issue => `${issue.path.join('.')}: ${issue.message}`)
         .join(', ');
-      
-      return createErrorResponse(
-        `Invalid request parameters: ${errors}`,
-        400,
-        'VALIDATION_ERROR'
-      );
+
+      return createErrorResponse(`Invalid request parameters: ${errors}`, 400, 'VALIDATION_ERROR');
     }
 
     // Execute business logic
@@ -194,7 +184,6 @@ export async function withAnalyticsValidation<TInput, TOutput>(
 
     // Return success response
     return createSuccessResponse(result);
-
   } catch (error) {
     console.error('Analytics API error:', error);
     return createErrorResponse(

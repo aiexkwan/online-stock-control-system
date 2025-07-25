@@ -6,8 +6,5 @@
     "allowJs": true,
     "checkJs": false
   },
-  "include": [
-    "app/legacy/**/*",
-    "pages/**/*"
-  ]
+  "include": ["app/legacy/**/*", "pages/**/*"]
 }

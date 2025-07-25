@@ -66,7 +66,10 @@ const TestNotificationSchema = z.object({
  * GET /api/v1/alerts/notifications
  * 獲取通知統計
  */
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<NextResponse<ApiResult<unknown>>> {
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse<ApiResult<unknown>>> {
   try {
     const service = await getNotificationService();
     const stats = await service.getNotificationStats();
@@ -92,7 +95,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
  * POST /api/v1/alerts/notifications/test
  * 測試通知配置
  */
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<NextResponse<ApiResult<unknown>>> {
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse<ApiResult<unknown>>> {
   try {
     const body = await request.json();
     const validated = TestNotificationSchema.parse(body);

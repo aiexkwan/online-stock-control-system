@@ -93,10 +93,10 @@
 .upload-container {
   display: grid;
   grid-template-areas:
-    "widget1 widget1 widget1 widget2 widget2 widget2 widget3 widget3 widget7 widget7"
-    "widget1 widget1 widget1 widget2 widget2 widget2 widget4 widget4 widget7 widget7"
-    "widget1 widget1 widget1 widget2 widget2 widget2 widget5 widget5 widget7 widget7"
-    "widget1 widget1 widget1 widget2 widget2 widget2 widget6 widget6 widget7 widget7";
+    'widget1 widget1 widget1 widget2 widget2 widget2 widget3 widget3 widget7 widget7'
+    'widget1 widget1 widget1 widget2 widget2 widget2 widget4 widget4 widget7 widget7'
+    'widget1 widget1 widget1 widget2 widget2 widget2 widget5 widget5 widget7 widget7'
+    'widget1 widget1 widget1 widget2 widget2 widget2 widget6 widget6 widget7 widget7';
   grid-template-columns: repeat(10, 1fr);
   grid-template-rows: repeat(4, 200px);
   gap: 10px 10px;
@@ -144,10 +144,10 @@
 .update-container {
   display: grid;
   grid-template-areas:
-    "widget2 widget2 widget2 widget4 widget4 widget4 widget4 widget4 widget1 widget1"
-    "widget2 widget2 widget2 widget4 widget4 widget4 widget4 widget4 widget1 widget1"
-    "widget3 widget3 widget3 widget4 widget4 widget4 widget4 widget4 widget1 widget1"
-    "widget3 widget3 widget3 widget5 widget5 widget5 widget5 widget5 widget1 widget1";
+    'widget2 widget2 widget2 widget4 widget4 widget4 widget4 widget4 widget1 widget1'
+    'widget2 widget2 widget2 widget4 widget4 widget4 widget4 widget4 widget1 widget1'
+    'widget3 widget3 widget3 widget4 widget4 widget4 widget4 widget4 widget1 widget1'
+    'widget3 widget3 widget3 widget5 widget5 widget5 widget5 widget5 widget1 widget1';
   grid-template-columns: repeat(10, 1fr);
   grid-template-rows: repeat(4, 200px);
   gap: 10px 10px;
@@ -185,10 +185,10 @@
 .stock-management-container {
   display: grid;
   grid-template-areas:
-    "widget2 widget2 widget2 widget2 widget2 widget4 widget4 widget4 widget1 widget1"
-    "widget2 widget2 widget2 widget2 widget2 widget4 widget4 widget4 widget1 widget1"
-    "widget3 widget3 widget3 widget3 widget3 widget5 widget5 widget5 widget1 widget1"
-    "widget3 widget3 widget3 widget3 widget3 widget5 widget5 widget5 widget1 widget1";
+    'widget2 widget2 widget2 widget2 widget2 widget4 widget4 widget4 widget1 widget1'
+    'widget2 widget2 widget2 widget2 widget2 widget4 widget4 widget4 widget1 widget1'
+    'widget3 widget3 widget3 widget3 widget3 widget5 widget5 widget5 widget1 widget1'
+    'widget3 widget3 widget3 widget3 widget3 widget5 widget5 widget5 widget1 widget1';
   grid-template-columns: repeat(10, 1fr);
   grid-template-rows: repeat(4, 200px);
   gap: 10px 10px;
@@ -226,10 +226,10 @@
 .system-container {
   display: grid;
   grid-template-areas:
-    "widget2 widget2 widget2 widget5 widget5 widget5 widget1 widget1"
-    "widget3 widget3 widget3 widget6 widget6 widget6 widget1 widget1"
-    "widget4 widget4 widget4 widget7 widget7 widget7 widget1 widget1"
-    "widget8 widget8 widget8 widget9 widget9 widget9 widget1 widget1";
+    'widget2 widget2 widget2 widget5 widget5 widget5 widget1 widget1'
+    'widget3 widget3 widget3 widget6 widget6 widget6 widget1 widget1'
+    'widget4 widget4 widget4 widget7 widget7 widget7 widget1 widget1'
+    'widget8 widget8 widget8 widget9 widget9 widget9 widget1 widget1';
   grid-template-columns: repeat(8, 1fr);
   grid-template-rows: repeat(4, 200px);
   gap: 10px 10px;
@@ -394,13 +394,13 @@
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(12, 1fr);
   }
-  
+
   /* 調整 widget 位置以適應小螢幕 */
   .analysis-container .overview-widget-0 {
     grid-column: 1 / 9;
     grid-row: 4 / 12;
   }
-  
+
   .analysis-container .overview-widget-1,
   .analysis-container .overview-widget-2,
   .analysis-container .overview-widget-3 {
@@ -416,7 +416,7 @@
     grid-template-rows: repeat(20, auto);
     gap: 15px;
   }
-  
+
   .analysis-container > * {
     grid-column: 1;
     grid-row: auto;

@@ -3,7 +3,7 @@
 import { createClient } from '@/app/utils/supabase/server';
 import { DatabaseRecord } from '@/types/database/tables';
 import { getErrorMessage } from '@/types/core/error';
-import { LocationMapper } from '@/lib/inventory/utils/locationMapper';
+import { LocationMapper, DatabaseLocationColumn } from '@/lib/inventory/utils/locationMapper';
 import { isNotProduction } from '@/lib/utils/env';
 
 /**
@@ -24,6 +24,14 @@ export function getInventoryColumn(location: string | null): string {
   return column;
 }
 
+// Define type for inventory update object
+type InventoryUpdateRecord = {
+  product_code: string;
+  latest_update: string;
+  plt_num: string;
+  damage?: number;
+} & Partial<Record<DatabaseLocationColumn, number>>;
+
 /**
  * Update inventory for void operation
  */
@@ -38,14 +46,14 @@ export async function updateInventoryForVoid(
     const supabase = await createClient();
     const inventoryColumn = getInventoryColumn(location);
 
-    const inventoryUpdate = {
+    const inventoryUpdate: InventoryUpdateRecord = {
       product_code: productCode,
       latest_update: new Date().toISOString(),
       plt_num: palletNum,
-    } as any;
+    };
 
     // Deduct from original location
-    inventoryUpdate[inventoryColumn as string] = -quantity;
+    inventoryUpdate[inventoryColumn as DatabaseLocationColumn] = -quantity;
 
     // Add to damage if applicable
     if (damageQuantity && damageQuantity > 0) {

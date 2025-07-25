@@ -65,7 +65,8 @@ export const StarfieldBackground: React.FC = () => {
     // Add safety check for WebGL support
     let glContext: WebGLRenderingContext | null = null;
     try {
-      glContext = (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null;
+      glContext = (canvas.getContext('webgl') ||
+        canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null;
     } catch (error) {
       console.warn('WebGL context creation failed:', error);
       return;

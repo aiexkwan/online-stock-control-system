@@ -12,6 +12,17 @@
         "bbmkuiplnzvpudszrend"
       ],
       "env": {}
+    },
+    "mem0": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@mem0/mcp-server@latest"
+      ],
+      "env": {
+        "MEM0_API_KEY": "m0-VLXdJntxXHp8CHq7EeEv6IyM3n0E0FeSvysTg5JA"
+      }
     }
   }
 }

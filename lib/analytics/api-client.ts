@@ -52,7 +52,7 @@ class AnalyticsApiClient {
         // Handle HTTP errors
         const errorText = await response.text();
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        
+
         try {
           const errorJson = JSON.parse(errorText);
           if (errorJson.error) {
@@ -61,12 +61,12 @@ class AnalyticsApiClient {
         } catch {
           // If response is not JSON, use status text
         }
-        
+
         throw new Error(errorMessage);
       }
 
       const result: AnalyticsApiResponse<T> = await response.json();
-      
+
       if (!result.success) {
         throw new Error(result.error || 'API request failed');
       }
@@ -82,7 +82,7 @@ class AnalyticsApiClient {
         console.error(`Analytics API Error (${endpoint}):`, error.message);
         throw new Error(`Failed to fetch analytics data: ${error.message}`);
       }
-      
+
       console.error(`Analytics API Unknown Error (${endpoint}):`, error);
       throw new Error('An unexpected error occurred while fetching analytics data');
     }
@@ -93,8 +93,8 @@ class AnalyticsApiClient {
    * @param timeRange - Time range for data: '1d', '7d', '30d', '90d'
    */
   static async getOutputRatio(timeRange: string): Promise<OutputRatioData> {
-    return this.makeRequest<OutputRatioData>('/api/analytics/charts/output-ratio', { 
-      timeRange 
+    return this.makeRequest<OutputRatioData>('/api/analytics/charts/output-ratio', {
+      timeRange,
     });
   }
 
@@ -103,8 +103,8 @@ class AnalyticsApiClient {
    * @param timeRange - Time range for data: '1d', '7d', '30d', '90d'
    */
   static async getProductTrends(timeRange: string): Promise<ProductTrendsData> {
-    return this.makeRequest<ProductTrendsData>('/api/analytics/charts/product-trends', { 
-      timeRange 
+    return this.makeRequest<ProductTrendsData>('/api/analytics/charts/product-trends', {
+      timeRange,
     });
   }
 
@@ -113,8 +113,8 @@ class AnalyticsApiClient {
    * @param timeRange - Time range for data: '1d', '7d', '30d', '90d'
    */
   static async getStaffWorkload(timeRange: string): Promise<StaffWorkloadData> {
-    return this.makeRequest<StaffWorkloadData>('/api/analytics/charts/staff-workload', { 
-      timeRange 
+    return this.makeRequest<StaffWorkloadData>('/api/analytics/charts/staff-workload', {
+      timeRange,
     });
   }
 
@@ -159,11 +159,6 @@ class AnalyticsApiClient {
 }
 
 // Export types for use in components
-export type { 
-  OutputRatioData, 
-  ProductTrendsData, 
-  StaffWorkloadData,
-  AnalyticsApiResponse 
-};
+export type { OutputRatioData, ProductTrendsData, StaffWorkloadData, AnalyticsApiResponse };
 
 export { AnalyticsApiClient };

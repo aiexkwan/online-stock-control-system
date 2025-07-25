@@ -71,10 +71,7 @@ export function isValidMaybe<T>(value: Maybe<T>): value is T {
  * @param defaultValue 預設對象
  * @returns object
  */
-export function ensureObject<T extends Record<string, any>>(
-  value: Maybe<T>, 
-  defaultValue: T
-): T {
+export function ensureObject<T extends Record<string, any>>(value: Maybe<T>, defaultValue: T): T {
   return value ?? defaultValue;
 }
 
@@ -84,29 +81,24 @@ export function ensureObject<T extends Record<string, any>>(
  * @param mapper 映射函數
  * @returns U[]
  */
-export function mapMaybeValues<T, U>(
-  values: Maybe<T>[], 
-  mapper: (value: T) => U
-): U[] {
-  return values
-    .filter(isValidMaybe)
-    .map(mapper);
+export function mapMaybeValues<T, U>(values: Maybe<T>[], mapper: (value: T) => U): U[] {
+  return values.filter(isValidMaybe).map(mapper);
 }
 
 // 常用的GraphQL類型預設值
 export const DEFAULT_PAGINATION = {
   limit: 50,
-  offset: 0
+  offset: 0,
 };
 
 export const DEFAULT_FILTERS = {
   stringFilters: [],
   numberFilters: [],
   dateFilters: [],
-  booleanFilters: []
+  booleanFilters: [],
 };
 
 export const DEFAULT_SORT = {
   field: 'id',
-  direction: 'ASC' as const
+  direction: 'ASC' as const,
 };

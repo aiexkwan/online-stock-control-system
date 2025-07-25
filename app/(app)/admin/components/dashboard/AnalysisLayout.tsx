@@ -70,10 +70,5 @@ export const AnalysisLayout: React.FC<AnalysisLayoutProps> = ({ theme, timeFrame
 
   // Phase 3.0 重構：AnalyticsTabSystem 不再需要 widgets prop
   // 現在它內部使用 AnalysisDisplayContainer 和 UnifiedWidget 系統
-  return (
-    <AnalyticsTabSystem 
-      theme={theme} 
-      timeFrame={timeFrame}
-    />
-  );
+  return <AnalyticsTabSystem theme={theme} timeFrame={timeFrame} />;
 };

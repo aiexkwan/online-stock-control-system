@@ -34,9 +34,7 @@ interface AcoOrderProgressCardsProps {
   timeFrame?: TimeFrame;
 }
 
-export default function AcoOrderProgressCards({
-  timeFrame,
-}: AcoOrderProgressCardsProps) {
+export default function AcoOrderProgressCards({ timeFrame }: AcoOrderProgressCardsProps) {
   const [data, setData] = useState<AcoOrderProgressCardsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);

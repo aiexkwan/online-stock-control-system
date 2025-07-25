@@ -298,7 +298,7 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
                   )}
                 >
                   {isLoading ? (
-                    <div className='h-1 w-6 bg-white/60 rounded-full' />
+                    <div className='h-1 w-6 rounded-full bg-white/60' />
                   ) : (
                     <MagnifyingGlassIcon className='h-4 w-4' />
                   )}
@@ -512,7 +512,7 @@ export const ProductUpdateWidgetV2 = React.memo(function ProductUpdateWidgetV2({
                   className='h-7 flex-1 bg-orange-600 text-xs hover:bg-orange-700'
                 >
                   {isLoading ? (
-                    <div className='h-1 w-6 bg-white/60 rounded-full' />
+                    <div className='h-1 w-6 rounded-full bg-white/60' />
                   ) : (
                     <>
                       <CheckCircleIcon className='mr-1 h-3 w-3' />

@@ -7,17 +7,17 @@ import dynamic from 'next/dynamic';
 // 動態載入不同的 Provider 組件
 const MinimalProviders = dynamic(
   () => import('./providers/MinimalProviders').then(mod => ({ default: mod.MinimalProviders })),
-  { 
+  {
     ssr: true,
-    loading: () => <div className="min-h-screen relative z-10" />
+    loading: () => <div className='relative z-10 min-h-screen' />,
   }
 );
 
 const FullProviders = dynamic(
   () => import('./providers/FullProviders').then(mod => ({ default: mod.FullProviders })),
-  { 
+  {
     ssr: false,
-    loading: () => <div className="min-h-screen relative z-10" />
+    loading: () => <div className='relative z-10 min-h-screen' />,
   }
 );
 
@@ -25,7 +25,7 @@ const FullProviders = dynamic(
 const LIGHTWEIGHT_ROUTES = [
   '/main-login',
   '/main-login/register',
-  '/main-login/reset', 
+  '/main-login/reset',
   '/main-login/simple',
   '/main-login/change',
 ];
@@ -36,13 +36,15 @@ interface ConditionalProvidersProps {
 
 export function ConditionalProviders({ children }: ConditionalProvidersProps) {
   const pathname = usePathname();
-  
+
   // 檢查是否為輕量級頁面
-  const isLightweightPage = pathname ? LIGHTWEIGHT_ROUTES.some(route => pathname.startsWith(route)) : false;
-  
+  const isLightweightPage = pathname
+    ? LIGHTWEIGHT_ROUTES.some(route => pathname.startsWith(route))
+    : false;
+
   // 根據頁面類型返回不同的 Provider
   return (
-    <Suspense fallback={<div className="min-h-screen relative z-10">{children}</div>}>
+    <Suspense fallback={<div className='relative z-10 min-h-screen'>{children}</div>}>
       {isLightweightPage ? (
         <MinimalProviders>{children}</MinimalProviders>
       ) : (

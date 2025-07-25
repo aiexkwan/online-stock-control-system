@@ -1,7 +1,7 @@
 /**
  * Widget 類型系統主入口
  * Main entry point for widget type system
- * 
+ *
  * 統一導出所有 widget 相關類型，確保整個項目使用一致的類型定義
  */
 
@@ -20,7 +20,7 @@ export type {
   WidgetLifecycle,
   WidgetRegistryItem,
   WidgetPerformance,
-  
+
   // 數據類型
   BaseApiResponse,
   ApiMetadata,
@@ -32,7 +32,7 @@ export type {
   TrendInfo,
   ComparisonInfo,
   DataSourceConfig,
-  
+
   // 狀態管理類型
   WidgetAction,
   WidgetStateManager,
@@ -73,19 +73,19 @@ export {
   isChartDataPoint,
   isTableData,
   isWidgetAction,
-  
+
   // Widget 類型工具
   isValidWidgetType,
   getWidgetCategory,
   parseWidgetType,
   createWidgetConfig,
   assertWidgetType,
-  
+
   // 狀態管理工具
   createInitialWidgetState,
   widgetStateReducer,
   widgetStateSelectors,
-  
+
   // 數據轉換工具
   WidgetDataMapper,
 } from './unified';

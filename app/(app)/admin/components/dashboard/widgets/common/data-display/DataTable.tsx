@@ -189,7 +189,7 @@ export function DataTable<T = Record<string, unknown>>({
             {onRefresh && (
               <Button variant='outline' size='sm' onClick={handleRefresh} disabled={isRefreshing}>
                 {isRefreshing ? (
-                  <div className='mr-2 h-1 w-8 bg-slate-400 rounded-full opacity-75' />
+                  <div className='mr-2 h-1 w-8 rounded-full bg-slate-400 opacity-75' />
                 ) : (
                   <RefreshCw className='mr-2 h-4 w-4' />
                 )}
@@ -230,7 +230,7 @@ export function DataTable<T = Record<string, unknown>>({
               {showRefreshButton && onRefresh && (
                 <Button variant='ghost' size='sm' onClick={handleRefresh} disabled={isRefreshing}>
                   {isRefreshing ? (
-                    <div className='h-1 w-8 bg-slate-400 rounded-full opacity-75' />
+                    <div className='h-1 w-8 rounded-full bg-slate-400 opacity-75' />
                   ) : (
                     <RefreshCw className='h-4 w-4' />
                   )}
@@ -291,8 +291,8 @@ export function DataTable<T = Record<string, unknown>>({
                   onClick={handleRefresh}
                   disabled={isRefreshing || loading}
                 >
-                  {(isRefreshing || loading) ? (
-                    <div className='h-1 w-8 bg-slate-400 rounded-full opacity-75' />
+                  {isRefreshing || loading ? (
+                    <div className='h-1 w-8 rounded-full bg-slate-400 opacity-75' />
                   ) : (
                     <RefreshCw className='h-4 w-4' />
                   )}
@@ -393,7 +393,7 @@ export function DataTable<T = Record<string, unknown>>({
               >
                 {pagination.loadingMore ? (
                   <span className='flex items-center justify-center gap-2'>
-                    <div className='h-1 w-8 bg-slate-400 rounded-full opacity-75' />
+                    <div className='h-1 w-8 rounded-full bg-slate-400 opacity-75' />
                     Loading more...
                   </span>
                 ) : (

@@ -16,14 +16,14 @@ const PERFORMANCE_CONFIG = {
     responseTime: {
       good: 500,
       warning: 2000,
-      critical: 5000
+      critical: 5000,
     },
     errorRate: {
       good: 1,
       warning: 5,
-      critical: 10
-    }
-  }
+      critical: 10,
+    },
+  },
 };
 
 test.describe('API Performance Tests', () => {
@@ -42,24 +42,30 @@ test.describe('API Performance Tests', () => {
 
   test('Dashboard API Performance Benchmark', async () => {
     console.log('📊 Testing Dashboard API performance...');
-    
+
     const result = await performanceBenchmark.benchmarkDashboardAPI();
-    
+
     // 驗證測試完成
     expect(result.metrics.length).toBeGreaterThan(0);
     expect(result.summary.totalTests).toBeGreaterThan(0);
-    
+
     // 性能閾值檢查
-    console.log(`Dashboard API - Avg Response Time: ${result.summary.avgResponseTime.toFixed(2)}ms`);
+    console.log(
+      `Dashboard API - Avg Response Time: ${result.summary.avgResponseTime.toFixed(2)}ms`
+    );
     console.log(`Dashboard API - Error Rate: ${result.summary.errorRate.toFixed(2)}%`);
-    
+
     // 軟性檢查（記錄但不失敗）
     if (result.summary.avgResponseTime > PERFORMANCE_CONFIG.thresholds.responseTime.critical) {
-      console.warn(`⚠️ Dashboard API response time (${result.summary.avgResponseTime}ms) exceeds critical threshold`);
+      console.warn(
+        `⚠️ Dashboard API response time (${result.summary.avgResponseTime}ms) exceeds critical threshold`
+      );
     }
-    
+
     if (result.summary.errorRate > PERFORMANCE_CONFIG.thresholds.errorRate.critical) {
-      console.warn(`⚠️ Dashboard API error rate (${result.summary.errorRate}%) exceeds critical threshold`);
+      console.warn(
+        `⚠️ Dashboard API error rate (${result.summary.errorRate}%) exceeds critical threshold`
+      );
     }
 
     // 檢查基本功能
@@ -70,23 +76,26 @@ test.describe('API Performance Tests', () => {
 
   test('Inventory Analysis API Performance Benchmark', async () => {
     console.log('📈 Testing Inventory Analysis API performance...');
-    
+
     const result = await performanceBenchmark.benchmarkInventoryAPI();
-    
+
     // 驗證測試完成
     expect(result.metrics.length).toBeGreaterThan(0);
     expect(result.summary.totalTests).toBeGreaterThan(0);
-    
+
     // 性能指標記錄
-    console.log(`Inventory API - Avg Response Time: ${result.summary.avgResponseTime.toFixed(2)}ms`);
+    console.log(
+      `Inventory API - Avg Response Time: ${result.summary.avgResponseTime.toFixed(2)}ms`
+    );
     console.log(`Inventory API - Error Rate: ${result.summary.errorRate.toFixed(2)}%`);
-    
+
     // 檢查是否有 filtering 性能測試
     const filteringMetrics = result.metrics.filter(m => m.endpoint.includes('filtering'));
     if (filteringMetrics.length > 0) {
-      const avgFilteringTime = filteringMetrics.reduce((sum, m) => sum + m.responseTime, 0) / filteringMetrics.length;
+      const avgFilteringTime =
+        filteringMetrics.reduce((sum, m) => sum + m.responseTime, 0) / filteringMetrics.length;
       console.log(`Client-side Filtering - Avg Time: ${avgFilteringTime.toFixed(2)}ms`);
-      
+
       if (avgFilteringTime > 1000) {
         console.warn('⚠️ Client-side filtering time suggests server-side optimization needed');
       }
@@ -98,34 +107,36 @@ test.describe('API Performance Tests', () => {
 
   test('Comprehensive Performance Analysis', async () => {
     console.log('🔍 Running comprehensive performance analysis...');
-    
+
     const report = await performanceBenchmark.generateComprehensiveReport();
-    
+
     // 驗證報告完整性
     expect(report.dashboard).toBeDefined();
     expect(report.inventory).toBeDefined();
     expect(report.overallRecommendations).toBeDefined();
     expect(report.performanceGrade).toMatch(/^[ABCDF]$/);
-    
+
     console.log(`📊 Overall Performance Grade: ${report.performanceGrade}`);
     console.log(`📈 Dashboard Tests: ${report.dashboard.summary.totalTests}`);
     console.log(`📈 Inventory Tests: ${report.inventory.summary.totalTests}`);
-    
+
     // 性能等級警告
     if (report.performanceGrade === 'D' || report.performanceGrade === 'F') {
-      console.warn(`⚠️ Performance grade ${report.performanceGrade} indicates significant optimization needed`);
+      console.warn(
+        `⚠️ Performance grade ${report.performanceGrade} indicates significant optimization needed`
+      );
     }
-    
+
     // 檢查建議數量
     expect(report.overallRecommendations.length).toBeGreaterThan(0);
-    
+
     // 存儲報告供後續使用
     (global as any).performanceReport = report;
   });
 
   test('Performance Monitoring Integration', async () => {
     console.log('🔧 Testing performance monitoring integration...');
-    
+
     // 測試性能監控功能
     const testMetrics = await performanceBenchmark.measureAPICall(
       'test-endpoint',
@@ -136,14 +147,14 @@ test.describe('API Performance Tests', () => {
       },
       1
     );
-    
+
     expect(testMetrics).toBeDefined();
-    
+
     // 驗證匯出功能
     const exportData = performanceBenchmark.exportResults();
     expect(exportData).toBeDefined();
     expect(typeof exportData).toBe('string');
-    
+
     // 驗證 JSON 格式
     const parsedData = JSON.parse(exportData);
     expect(parsedData.timestamp).toBeDefined();
@@ -158,12 +169,14 @@ test.describe('API Performance Tests', () => {
 async function generatePerformanceReports(): Promise<void> {
   try {
     // 獲取綜合報告
-    const report = (global as any).performanceReport || await performanceBenchmark.generateComprehensiveReport();
-    
+    const report =
+      (global as any).performanceReport ||
+      (await performanceBenchmark.generateComprehensiveReport());
+
     // 創建報告目錄
     const reportDir = path.dirname(PERFORMANCE_CONFIG.reportPath);
     await fs.mkdir(reportDir, { recursive: true });
-    
+
     // 生成 JSON 報告
     const jsonReport = {
       timestamp: new Date().toISOString(),
@@ -173,23 +186,19 @@ async function generatePerformanceReports(): Promise<void> {
       overallRecommendations: report.overallRecommendations,
       systemInfo: {
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Node.js',
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      },
     };
-    
-    await fs.writeFile(
-      PERFORMANCE_CONFIG.reportPath,
-      JSON.stringify(jsonReport, null, 2)
-    );
-    
+
+    await fs.writeFile(PERFORMANCE_CONFIG.reportPath, JSON.stringify(jsonReport, null, 2));
+
     // 生成 Markdown 報告
     const markdownReport = generateMarkdownReport(jsonReport);
     await fs.writeFile(PERFORMANCE_CONFIG.markdownPath, markdownReport);
-    
+
     console.log(`📄 Performance reports saved:`);
     console.log(`   JSON: ${PERFORMANCE_CONFIG.reportPath}`);
     console.log(`   Markdown: ${PERFORMANCE_CONFIG.markdownPath}`);
-    
   } catch (error) {
     console.error('Failed to generate performance reports:', error);
   }
@@ -200,14 +209,15 @@ async function generatePerformanceReports(): Promise<void> {
  */
 function generateMarkdownReport(report: any): string {
   const grade = report.performanceGrade;
-  const gradeEmoji = {
-    'A': '🏆',
-    'B': '✅', 
-    'C': '⚠️',
-    'D': '❌',
-    'F': '🚨'
-  }[grade] || '❓';
-  
+  const gradeEmoji =
+    {
+      A: '🏆',
+      B: '✅',
+      C: '⚠️',
+      D: '❌',
+      F: '🚨',
+    }[grade] || '❓';
+
   return `# 🚀 API 性能基準測試報告
 
 ## 📊 整體評級
@@ -260,12 +270,14 @@ ${report.overallRecommendations.join('\n')}
 ## 🔄 後續行動
 
 ### 立即處理 (1週內)
-${grade === 'D' || grade === 'F' ? 
-`- 🚨 **緊急**: 性能等級為 ${grade}，需要立即優化
+${
+  grade === 'D' || grade === 'F'
+    ? `- 🚨 **緊急**: 性能等級為 ${grade}，需要立即優化
 - 🔍 識別最慢的 API 端點
-- ⚡ 實施基本緩存機制` :
-`- 📊 建立持續性能監控
-- 🔧 優化識別的性能瓶頸`}
+- ⚡ 實施基本緩存機制`
+    : `- 📊 建立持續性能監控
+- 🔧 優化識別的性能瓶頸`
+}
 
 ### 中期優化 (2-4週)
 - 📈 實施批量查詢優化

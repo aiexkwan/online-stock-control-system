@@ -203,13 +203,15 @@ function generateAdaptiveCacheRecommendations(
       `Cache hit rate is below 70% (${cacheType} cache). Consider increasing TTL or pre-warming more data.`
     );
   } else if (hitRate > 95) {
-    recommendations.push(`Excellent cache hit rate with ${cacheType} cache! Consider increasing cache size.`);
+    recommendations.push(
+      `Excellent cache hit rate with ${cacheType} cache! Consider increasing cache size.`
+    );
   }
 
   // 響應時間建議 (適應性)
   const avgResponseTime = typeof metrics.avgResponseTime === 'number' ? metrics.avgResponseTime : 0;
   const responseTimeThreshold = cacheType === 'memory' ? 5 : 50; // 內存緩存標準更嚴格
-  
+
   if (avgResponseTime > responseTimeThreshold) {
     if (cacheType === 'memory') {
       recommendations.push(
@@ -236,7 +238,8 @@ function generateAdaptiveCacheRecommendations(
       // 內存緩存特定建議
       if (stats.memory.includes('KB')) {
         const memoryKB = parseFloat(stats.memory.replace('KB', ''));
-        if (memoryKB > 10000) { // 10MB
+        if (memoryKB > 10000) {
+          // 10MB
           recommendations.push(
             'Memory cache usage is high. Consider implementing more aggressive LRU eviction or reducing TTL.'
           );
@@ -282,8 +285,10 @@ function generateAdaptiveCacheRecommendations(
   }
 
   // 系統健康總結
-  if (recommendations.length === 0 || 
-      recommendations.every(r => r.includes('✅') || r.includes('🚀'))) {
+  if (
+    recommendations.length === 0 ||
+    recommendations.every(r => r.includes('✅') || r.includes('🚀'))
+  ) {
     recommendations.push(
       `🎯 Cache performance is optimal with ${cacheType} adapter. System is well-configured for current scale.`
     );

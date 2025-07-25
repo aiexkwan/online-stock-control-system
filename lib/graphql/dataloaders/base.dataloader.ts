@@ -34,7 +34,7 @@ import type {
   TopProductsData,
   StockDistributionKey,
   StockDistributionData,
-  DatabaseEntity
+  DatabaseEntity,
 } from '@/types/dataloaders';
 
 export interface DataLoaderContext {
@@ -55,7 +55,10 @@ export interface DataLoaderContext {
     workLevel?: DataLoader<WorkLevelKey, WorkLevelData>;
     grnAnalytics?: DataLoader<GRNAnalyticsKey, GRNAnalyticsData>;
     performanceMetrics?: DataLoader<PerformanceMetricsKey, PerformanceMetricsData>;
-    inventoryOrderedAnalysis?: DataLoader<InventoryOrderedAnalysisKey, InventoryOrderedAnalysisData>;
+    inventoryOrderedAnalysis?: DataLoader<
+      InventoryOrderedAnalysisKey,
+      InventoryOrderedAnalysisData
+    >;
     historyTree?: DataLoader<HistoryTreeKey, HistoryTreeData>;
     topProducts?: DataLoader<TopProductsKey, TopProductsData>;
     stockDistribution?: DataLoader<StockDistributionKey, StockDistributionData>;
@@ -72,7 +75,7 @@ export function createBatchLoader<K, V>(
   return new DataLoader<K, V>(batchFn, {
     cache: true,
     maxBatchSize: 100,
-    batchScheduleFn: (callback) => setTimeout(callback, 10), // 10ms delay for batching
+    batchScheduleFn: callback => setTimeout(callback, 10), // 10ms delay for batching
     ...options,
   });
 }
@@ -99,9 +102,7 @@ export async function batchQuery<T extends DatabaseEntity>(
   }
 
   // Create a map for O(1) lookup
-  const dataMap = new Map(
-    data.map((item: T) => [item[column] as string, item])
-  );
+  const dataMap = new Map(data.map((item: T) => [item[column] as string, item]));
 
   // Return in the same order as keys
   return keys.map(key => dataMap.get(key) || null);
@@ -115,15 +116,13 @@ export function createSimpleLoader<T extends DatabaseEntity>(
   table: string,
   keyColumn: keyof T & string = 'id'
 ): DataLoader<string, T> {
-  return createBatchLoader<string, T>(
-    async (keys) => {
-      const results = await batchQuery<T>(supabase, table, keyColumn, keys);
-      // Convert nulls to Errors for DataLoader compatibility
-      return results.map(result => 
-        result === null ? new Error(`Not found in ${table}`) : result
-      ) as (T | Error)[];
-    }
-  );
+  return createBatchLoader<string, T>(async keys => {
+    const results = await batchQuery<T>(supabase, table, keyColumn, keys);
+    // Convert nulls to Errors for DataLoader compatibility
+    return results.map(result =>
+      result === null ? new Error(`Not found in ${table}`) : result
+    ) as (T | Error)[];
+  });
 }
 
 /**
@@ -135,47 +134,43 @@ export function createRelatedLoader<T extends DatabaseEntity>(
   foreignKeyColumn: keyof T & string,
   orderBy?: { column: keyof T & string; ascending?: boolean }
 ): DataLoader<string, T[]> {
-  return createBatchLoader<string, T[]>(
-    async (keys) => {
-      if (keys.length === 0) return [];
+  return createBatchLoader<string, T[]>(async keys => {
+    if (keys.length === 0) return [];
 
-      let query = supabase
-        .from(table)
-        .select('*')
-        .in(foreignKeyColumn, keys as string[]);
+    let query = supabase
+      .from(table)
+      .select('*')
+      .in(foreignKeyColumn, keys as string[]);
 
-      if (orderBy) {
-        query = query.order(orderBy.column, { ascending: orderBy.ascending ?? true });
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error(`[DataLoader] Error loading related ${table}:`, error);
-        return keys.map(() => []);
-      }
-
-      // Group by foreign key
-      const groupedData = new Map<string, T[]>();
-      keys.forEach(key => groupedData.set(key, []));
-
-      data.forEach((item: T) => {
-        const key = item[foreignKeyColumn] as string;
-        const group = groupedData.get(key) || [];
-        group.push(item);
-        groupedData.set(key, group);
-      });
-
-      return keys.map(key => groupedData.get(key) || []);
+    if (orderBy) {
+      query = query.order(orderBy.column, { ascending: orderBy.ascending ?? true });
     }
-  );
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error(`[DataLoader] Error loading related ${table}:`, error);
+      return keys.map(() => []);
+    }
+
+    // Group by foreign key
+    const groupedData = new Map<string, T[]>();
+    keys.forEach(key => groupedData.set(key, []));
+
+    data.forEach((item: T) => {
+      const key = item[foreignKeyColumn] as string;
+      const group = groupedData.get(key) || [];
+      group.push(item);
+      groupedData.set(key, group);
+    });
+
+    return keys.map(key => groupedData.get(key) || []);
+  });
 }
 
 // Type for aggregate query functions
-type AggregateQuery<K extends string | number | symbol, T> = (
-  keys: readonly K[]
-) => Promise<{ 
-  data: Map<K, T> | [K, T][]; 
+type AggregateQuery<K extends string | number | symbol, T> = (keys: readonly K[]) => Promise<{
+  data: Map<K, T> | [K, T][];
   error?: Error | null;
 }>;
 
@@ -186,22 +181,20 @@ export function createAggregateLoader<K extends string | number | symbol = strin
   supabase: SupabaseClient,
   query: AggregateQuery<K, T>
 ): DataLoader<K, T> {
-  return createBatchLoader<K, T>(
-    async (keys) => {
-      if (keys.length === 0) return [];
+  return createBatchLoader<K, T>(async keys => {
+    if (keys.length === 0) return [];
 
-      const { data, error } = await query(keys);
+    const { data, error } = await query(keys);
 
-      if (error) {
-        console.error('[DataLoader] Error loading aggregate data:', error);
-        return keys.map(() => null as T | Error);
-      }
-
-      // Handle both Map and array of tuples
-      const dataMap = data instanceof Map ? data : new Map(data);
-      return keys.map(key => dataMap.get(key) || null) as (T | Error)[];
+    if (error) {
+      console.error('[DataLoader] Error loading aggregate data:', error);
+      return keys.map(() => null as T | Error);
     }
-  );
+
+    // Handle both Map and array of tuples
+    const dataMap = data instanceof Map ? data : new Map(data);
+    return keys.map(key => dataMap.get(key) || null) as (T | Error)[];
+  });
 }
 
 /**
@@ -218,11 +211,7 @@ export function clearAllCaches(context: DataLoaderContext): void {
 /**
  * Prime DataLoader cache with known data
  */
-export function primeCache<K, V>(
-  loader: DataLoader<K, V>,
-  key: K,
-  value: V
-): void {
+export function primeCache<K, V>(loader: DataLoader<K, V>, key: K, value: V): void {
   loader.prime(key, value);
 }
 
@@ -233,7 +222,7 @@ export async function createDataLoaderContext(): Promise<DataLoaderContext> {
   const supabase = await createClient();
 
   // Lazy import complex loaders to avoid circular dependencies
-  const { 
+  const {
     createUnifiedOperationsLoader,
     createStockLevelsLoader,
     createWorkLevelLoader,
@@ -242,7 +231,7 @@ export async function createDataLoaderContext(): Promise<DataLoaderContext> {
     createInventoryOrderedAnalysisLoader,
     createHistoryTreeLoader,
     createTopProductsLoader,
-    createStockDistributionLoader
+    createStockDistributionLoader,
   } = await import('./complex.dataloader');
 
   return {

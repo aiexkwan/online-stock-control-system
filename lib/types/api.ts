@@ -7,7 +7,7 @@
  * 標準 API 響應格式
  * 用於所有 REST API endpoints
  */
-export type ApiResult<T = unknown> = 
+export type ApiResult<T = unknown> =
   | { success: true; data: T; message?: string }
   | { success: false; error: string; details?: unknown };
 
@@ -87,14 +87,18 @@ export interface DetailedError {
 /**
  * 類型守衛：檢查是否為成功響應
  */
-export function isSuccessResult<T>(result: ApiResult<T>): result is { success: true; data: T; message?: string } {
+export function isSuccessResult<T>(
+  result: ApiResult<T>
+): result is { success: true; data: T; message?: string } {
   return result.success === true;
 }
 
 /**
  * 類型守衛：檢查是否為錯誤響應
  */
-export function isErrorResult(result: ApiResult<unknown>): result is { success: false; error: string; details?: unknown } {
+export function isErrorResult(
+  result: ApiResult<unknown>
+): result is { success: false; error: string; details?: unknown } {
   return result.success === false;
 }
 

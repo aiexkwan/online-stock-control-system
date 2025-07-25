@@ -1,8 +1,16 @@
 /**
- * GRN Report Widget V2
- * 使用 RPC 函數和 DashboardAPI 優化數據獲取
- * PDF 生成邏輯保留在客戶端
- * 遷移自原 GrnReportWidget
+ * GrnReportWidget - 特殊報表 Widget
+ * 
+ * ⚠️ 注意：此 Widget 有特殊的 GRN 功能，暫時保留原有實現
+ * 未來計劃：當 GraphQL schema 支援 GRN ReportType 時再完全遷移到 ReportCard
+ * 
+ * 特殊功能包括：
+ * - GRN reference 選擇器
+ * - Material codes 處理
+ * - 特定的 GRN PDF 格式
+ * - 與 exportGrnReport 的整合
+ * 
+ * 原始實現保留在此文件中，等待未來重構
  */
 
 'use client';

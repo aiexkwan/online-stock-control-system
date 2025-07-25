@@ -31,9 +31,18 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 }) => {
   const spinner = (
     <div className={cn('flex items-center gap-2', className)}>
-      <div className={cn('bg-slate-400 rounded-full opacity-75', 
-        size === 'sm' ? 'h-1 w-4' : size === 'lg' ? 'h-2 w-8' : size === 'xl' ? 'h-3 w-10' : 'h-1.5 w-6'
-      )} />
+      <div
+        className={cn(
+          'rounded-full bg-slate-400 opacity-75',
+          size === 'sm'
+            ? 'h-1 w-4'
+            : size === 'lg'
+              ? 'h-2 w-8'
+              : size === 'xl'
+                ? 'h-3 w-10'
+                : 'h-1.5 w-6'
+        )}
+      />
       {text && <span className='text-sm'>{text}</span>}
     </div>
   );

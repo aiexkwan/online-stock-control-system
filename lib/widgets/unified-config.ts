@@ -63,7 +63,8 @@ export const widgetConfig: WidgetConfigMap = {
     name: 'Yesterday Transfer Count',
     category: 'stats',
     description: 'Shows transfer count from yesterday',
-    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/YesterdayTransferCountWidget'),
+    loader: () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/YesterdayTransferCountWidget'),
     dataSource: 'batch',
     priority: 'high',
     refreshInterval: 300000,
@@ -86,7 +87,8 @@ export const widgetConfig: WidgetConfigMap = {
     name: 'Still In Await Percentage',
     category: 'stats',
     description: 'Shows percentage of items in await status',
-    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/StillInAwaitPercentageWidget'),
+    loader: () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/StillInAwaitPercentageWidget'),
     dataSource: 'batch',
     priority: 'normal',
     refreshInterval: 60000,
@@ -111,7 +113,8 @@ export const widgetConfig: WidgetConfigMap = {
     name: 'Injection Production Stats',
     category: 'stats',
     description: 'GraphQL-optimized production stats for injection route',
-    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/InjectionProductionStatsWidget'),
+    loader: () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/InjectionProductionStatsWidget'),
     dataSource: 'batch',
     priority: 'critical',
     refreshInterval: 300000,
@@ -160,7 +163,8 @@ export const widgetConfig: WidgetConfigMap = {
     name: 'Warehouse Work Level',
     category: 'charts',
     description: 'Area chart showing warehouse workload',
-    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/WarehouseWorkLevelAreaChart'),
+    loader: () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/WarehouseWorkLevelAreaChart'),
     dataSource: 'batch',
     priority: 'high',
     refreshInterval: 180000,
@@ -171,7 +175,8 @@ export const widgetConfig: WidgetConfigMap = {
     name: 'Transfer Time Distribution',
     category: 'charts',
     description: 'Distribution of transfer processing times',
-    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/TransferTimeDistributionWidget'),
+    loader: () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/TransferTimeDistributionWidget'),
     dataSource: 'batch',
     priority: 'normal',
     supportTimeFrame: true,
@@ -182,7 +187,8 @@ export const widgetConfig: WidgetConfigMap = {
     name: 'Product Distribution',
     category: 'charts',
     description: 'Distribution of products across warehouses',
-    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/ProductDistributionChartWidget'),
+    loader: () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/ProductDistributionChartWidget'),
     dataSource: 'batch',
     priority: 'high',
   },
@@ -192,7 +198,8 @@ export const widgetConfig: WidgetConfigMap = {
     name: 'Top Products by Quantity',
     category: 'charts',
     description: 'Top products ranked by quantity',
-    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/TopProductsByQuantityWidget'),
+    loader: () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/TopProductsByQuantityWidget'),
     dataSource: 'batch',
     priority: 'high',
   },
@@ -202,7 +209,8 @@ export const widgetConfig: WidgetConfigMap = {
     name: 'Top Products Distribution',
     category: 'charts',
     description: 'Distribution of top products',
-    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/TopProductsDistributionWidget'),
+    loader: () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/TopProductsDistributionWidget'),
     dataSource: 'batch',
     priority: 'high',
   },
@@ -233,7 +241,8 @@ export const widgetConfig: WidgetConfigMap = {
     name: 'Warehouse Transfer List',
     category: 'lists',
     description: 'Recent warehouse transfers',
-    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/WarehouseTransferListWidget'),
+    loader: () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/WarehouseTransferListWidget'),
     dataSource: 'batch',
     priority: 'high',
     refreshInterval: 120000,
@@ -429,7 +438,8 @@ export const widgetConfig: WidgetConfigMap = {
     name: 'Inventory Ordered Analysis',
     category: 'analysis',
     description: 'Analysis of ordered inventory',
-    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget'),
+    loader: () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget'),
     dataSource: 'batch',
     priority: 'normal',
     supportTimeFrame: true,
@@ -441,8 +451,7 @@ export const widgetConfig: WidgetConfigMap = {
     name: 'History Tree',
     category: 'special',
     description: 'Hierarchical history view',
-    loader: () =>
-      import('@/app/(app)/admin/components/dashboard/widgets/HistoryTreeV2GraphQL'),
+    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/HistoryTreeV2GraphQL') as Promise<WidgetImportResult>,
     dataSource: 'batch',
     priority: 'critical',
     refreshInterval: 120000,
@@ -462,7 +471,8 @@ export const widgetConfig: WidgetConfigMap = {
     name: 'Order Analysis Result',
     category: 'special',
     description: 'AI-powered order analysis results',
-    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/OrderAnalysisResultDialog'),
+    loader: () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/OrderAnalysisResultDialog') as Promise<WidgetImportResult>,
     dataSource: 'none',
     priority: 'low',
   },
@@ -472,7 +482,7 @@ export const widgetConfig: WidgetConfigMap = {
     name: 'Staff Workload',
     category: 'special',
     description: 'Staff workload monitoring',
-    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/StaffWorkloadWidget'),
+    loader: () => import('@/app/(app)/admin/components/dashboard/cards/StaffWorkloadCard') as Promise<WidgetImportResult>,
     dataSource: 'server-action',
     priority: 'normal',
   },
@@ -482,7 +492,7 @@ export const widgetConfig: WidgetConfigMap = {
     name: 'Performance Test',
     category: 'special',
     description: 'Performance testing widget',
-    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/PerformanceTestWidget'),
+    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/PerformanceTestWidget') as Promise<WidgetImportResult>,
     dataSource: 'none',
     priority: 'low',
     metadata: {
@@ -497,7 +507,7 @@ export const widgetConfig: WidgetConfigMap = {
     name: 'Upload Orders (Legacy)',
     category: 'uploads',
     description: 'Legacy order upload interface',
-    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/UploadOrdersWidget'),
+    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/UploadOrdersWidget') as Promise<WidgetImportResult>,
     dataSource: 'server-action',
     priority: 'low',
     metadata: {

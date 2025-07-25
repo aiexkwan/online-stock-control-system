@@ -9,9 +9,7 @@ export function MinimalProviders({ children }: { children: React.ReactNode }) {
   return (
     <VisualSystemProvider>
       <UnifiedBackground />
-      <div className="min-h-screen relative z-10">
-        {children}
-      </div>
+      <div className='relative z-10 min-h-screen'>{children}</div>
     </VisualSystemProvider>
   );
 }

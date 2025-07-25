@@ -362,6 +362,8 @@ export interface PalletEntity {
     description?: string;
     unit_price?: number;
   } | null;
+  // Index signature to satisfy DatabaseEntity constraint
+  [key: string]: unknown;
 }
 
 /**

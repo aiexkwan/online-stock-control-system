@@ -15,13 +15,13 @@ export const testUsers = {
   admin: {
     email: process.env.SYS_LOGIN || 'test@example.com',
     password: process.env.SYS_PASSWORD || 'password',
-    role: 'ADMIN'
+    role: 'ADMIN',
   },
   viewer: {
-    email: 'viewer@example.com', 
+    email: 'viewer@example.com',
     password: 'password',
-    role: 'VIEWER'
-  }
+    role: 'VIEWER',
+  },
 };
 
 export async function loginUser(page: Page, user: TestUser) {
@@ -45,4 +45,9 @@ export async function isAuthenticated(page: Page): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+// Convenience function for logging in with default admin user
+export async function login(page: Page) {
+  return loginUser(page, testUsers.admin);
 }

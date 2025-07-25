@@ -19,11 +19,5 @@
       "@/types/*": ["./types/*"]
     }
   },
-  "exclude": [
-    "node_modules",
-    ".next",
-    "dist",
-    "build",
-    "coverage"
-  ]
+  "exclude": ["node_modules", ".next", "dist", "build", "coverage"]
 }

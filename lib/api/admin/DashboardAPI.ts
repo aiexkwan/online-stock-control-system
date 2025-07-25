@@ -289,7 +289,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             records: [],
             dataSource: 'top_products',
           };
-        
+
         case 'production_details':
           return {
             value: 0,
@@ -297,7 +297,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             records: [],
             dataSource: 'production_details',
           };
-        
+
         case 'stock_distribution_chart':
           return {
             value: 0,
@@ -305,7 +305,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             records: [],
             dataSource: 'stock_distribution_chart',
           };
-        
+
         case 'production_stats':
           return {
             value: 0,
@@ -313,7 +313,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             records: [],
             dataSource: 'production_stats',
           };
-        
+
         case 'stock_level_history':
           return {
             value: 0,
@@ -321,7 +321,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             records: [],
             dataSource: 'stock_level_history',
           };
-        
+
         case 'order_state_list':
           return {
             value: 0,
@@ -329,7 +329,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             records: [],
             dataSource: 'order_state_list',
           };
-        
+
         case 'warehouse_transfer_list':
           return {
             value: 0,
@@ -337,7 +337,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             records: [],
             dataSource: 'warehouse_transfer_list',
           };
-        
+
         case 'warehouse_work_level':
           return {
             value: 0,
@@ -345,7 +345,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             records: [],
             dataSource: 'warehouse_work_level',
           };
-        
+
         case 'staff_workload':
           return {
             value: 0,
@@ -353,7 +353,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             records: [],
             dataSource: 'staff_workload',
           };
-        
+
         case 'aco_order_progress':
           return {
             value: 0,
@@ -361,7 +361,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             records: [],
             dataSource: 'aco_order_progress',
           };
-        
+
         case 'await_location_count_by_timeframe':
           return {
             value: 0,
@@ -369,7 +369,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             records: [],
             dataSource: 'await_location_count_by_timeframe',
           };
-        
+
         case 'history_tree':
           return {
             value: 0,
@@ -377,7 +377,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             records: [],
             dataSource: 'history_tree',
           };
-        
+
         case 'grn_report_data':
           return {
             value: 0,

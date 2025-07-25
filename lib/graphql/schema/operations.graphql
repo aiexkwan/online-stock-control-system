@@ -8,25 +8,25 @@ type Transfer {
   transferNumber: String!
   pltNum: String!
   pallet: Pallet!
-  
+
   # 轉移詳情
   fromLocation: Location!
   toLocation: Location!
   quantity: Int!
   status: TransferStatus!
-  
+
   # 時間資料
   requestedAt: DateTime!
   startedAt: DateTime
   completedAt: DateTime
   estimatedDuration: Int
   actualDuration: Int
-  
+
   # 人員資料
   requestedBy: User!
   executedBy: User
   approvedBy: User
-  
+
   # 元數據
   reason: String
   notes: String
@@ -47,29 +47,29 @@ type Order {
   orderNumber: String!
   customerCode: String!
   customer: Customer!
-  
+
   # 訂單詳情
   items: [OrderItem!]!
   totalItems: Int!
   totalQuantity: Int!
   totalValue: Float!
-  
+
   # 狀態
   status: OrderStatus!
   paymentStatus: PaymentStatus
   shippingStatus: ShippingStatus
-  
+
   # 日期
   orderDate: DateTime!
   requiredDate: DateTime
   shippedDate: DateTime
   deliveredDate: DateTime
-  
+
   # 配送資料
   shippingAddress: Address!
   billingAddress: Address
   trackingNumber: String
-  
+
   # 元數據
   createdAt: DateTime!
   updatedAt: DateTime!
@@ -139,17 +139,17 @@ type HistoryRecord {
   id: ID!
   recordType: HistoryType!
   action: String!
-  
+
   # 相關實體
   entityType: String!
   entityId: String!
   entityData: JSON
-  
+
   # 變更資料
   previousValue: JSON
   newValue: JSON
   changes: [FieldChange!]
-  
+
   # 元數據
   timestamp: DateTime!
   performedBy: User!
@@ -181,18 +181,18 @@ type WorkLevel {
   userId: ID!
   user: User!
   date: DateTime!
-  
+
   # 工作統計
   totalTransfers: Int!
   totalPalletsHandled: Int!
   totalQuantityMoved: Int!
   averageTransferTime: Float!
-  
+
   # 效率指標
   efficiency: Float!
   productivityScore: Float!
   errorRate: Float!
-  
+
   # 詳細分解
   transfersByHour: [HourlyBreakdown!]!
   transfersByLocation: [LocationBreakdown!]!
@@ -288,10 +288,10 @@ type UnifiedOperationsData implements WidgetData {
   orders: [Order!]!
   pallets: [Pallet!]!
   workLevels: [WorkLevel!]!
-  
+
   # 統計摘要
   summary: OperationsSummary!
-  
+
   # Widget 元數據
   lastUpdated: DateTime!
   refreshInterval: Int
@@ -315,78 +315,42 @@ extend type Query {
     pagination: PaginationInput
     sort: SortInput
   ): TransferConnection!
-  
+
   # 訂單查詢
   order(orderNumber: String!): Order
-  orders(
-    filter: OrderFilterInput
-    pagination: PaginationInput
-    sort: SortInput
-  ): OrderConnection!
-  
+  orders(filter: OrderFilterInput, pagination: PaginationInput, sort: SortInput): OrderConnection!
+
   # 歷史查詢
-  historyRecords(
-    filter: HistoryFilterInput
-    pagination: PaginationInput
-  ): [HistoryRecord!]!
-  
+  historyRecords(filter: HistoryFilterInput, pagination: PaginationInput): [HistoryRecord!]!
+
   # 工作量查詢
-  workLevel(
-    userId: ID!
-    date: DateTime!
-  ): WorkLevel
-  
-  workLevels(
-    dateRange: DateRangeInput
-    userIds: [ID!]
-  ): [WorkLevel!]!
-  
+  workLevel(userId: ID!, date: DateTime!): WorkLevel
+
+  workLevels(dateRange: DateRangeInput, userIds: [ID!]): [WorkLevel!]!
+
   # 統一操作數據
-  unifiedOperations(
-    warehouse: String
-    dateRange: DateRangeInput
-  ): UnifiedOperationsData!
-  
+  unifiedOperations(warehouse: String, dateRange: DateRangeInput): UnifiedOperationsData!
+
   # 客戶查詢
   customer(code: String!): Customer
-  customers(
-    filter: CustomerFilterInput
-    pagination: PaginationInput
-  ): [Customer!]!
+  customers(filter: CustomerFilterInput, pagination: PaginationInput): [Customer!]!
 }
 
 # 變更
 extend type Mutation {
   # 轉移操作
   createTransfer(input: CreateTransferInput!): Transfer!
-  updateTransferStatus(
-    id: ID!
-    status: TransferStatus!
-    notes: String
-  ): Transfer!
+  updateTransferStatus(id: ID!, status: TransferStatus!, notes: String): Transfer!
   cancelTransfer(id: ID!, reason: String!): Transfer!
-  
+
   # 訂單操作
   createOrder(input: CreateOrderInput!): Order!
-  updateOrderStatus(
-    orderNumber: String!
-    status: OrderStatus!
-  ): Order!
-  allocateOrderItems(
-    orderNumber: String!
-    allocations: [OrderAllocationInput!]!
-  ): Order!
-  shipOrder(
-    orderNumber: String!
-    trackingNumber: String!
-  ): Order!
-  
+  updateOrderStatus(orderNumber: String!, status: OrderStatus!): Order!
+  allocateOrderItems(orderNumber: String!, allocations: [OrderAllocationInput!]!): Order!
+  shipOrder(orderNumber: String!, trackingNumber: String!): Order!
+
   # 批量操作
-  batchTransfer(
-    pallets: [String!]!
-    toLocation: String!
-    reason: String
-  ): BatchResult!
+  batchTransfer(pallets: [String!]!, toLocation: String!, reason: String): BatchResult!
 }
 
 # 輸入類型

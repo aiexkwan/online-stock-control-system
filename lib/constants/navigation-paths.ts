@@ -35,7 +35,7 @@ export const getFrequentPaths = (limit = 5): string[] => {
 
 export const getTimeBasedSuggestion = () => {
   const currentHour = new Date().getHours();
-  
+
   for (const [period, config] of Object.entries(TIME_BASED_SUGGESTIONS)) {
     if (config.hours.includes(currentHour)) {
       return {
@@ -46,6 +46,6 @@ export const getTimeBasedSuggestion = () => {
       };
     }
   }
-  
+
   return null;
 };

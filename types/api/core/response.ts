@@ -1,7 +1,7 @@
 /**
  * @fileoverview 統一 API 響應類型定義
  * @module types/api/core/response
- * 
+ *
  * Phase 2: API 類型統一架構
  * 提供標準化的 API 響應格式，確保前後端類型一致性
  */
@@ -152,11 +152,14 @@ export interface HealthCheckResult {
   /** 運行時間（秒） */
   uptime: number;
   /** 各組件健康狀態 */
-  components: Record<string, {
-    status: 'healthy' | 'degraded' | 'unhealthy';
-    message?: string;
-    responseTime?: number;
-  }>;
+  components: Record<
+    string,
+    {
+      status: 'healthy' | 'degraded' | 'unhealthy';
+      message?: string;
+      responseTime?: number;
+    }
+  >;
 }
 
 /**
@@ -166,9 +169,11 @@ export interface ValidationErrorResult extends ApiResult<never> {
   success: false;
   error: ApiError & {
     code: 'VALIDATION_ERROR';
-    details: Array<ApiErrorDetail & {
-      field: string;
-    }>;
+    details: Array<
+      ApiErrorDetail & {
+        field: string;
+      }
+    >;
   };
 }
 
@@ -177,10 +182,7 @@ export interface ValidationErrorResult extends ApiResult<never> {
 /**
  * 創建成功的 API 響應
  */
-export function createSuccessResponse<T>(
-  data: T,
-  metadata?: Partial<ApiMetadata>
-): ApiResult<T> {
+export function createSuccessResponse<T>(data: T, metadata?: Partial<ApiMetadata>): ApiResult<T> {
   return {
     success: true,
     data,
@@ -261,8 +263,6 @@ export function isSuccessResponse<T>(
 /**
  * 類型守衛：檢查是否為驗證錯誤
  */
-export function isValidationError(
-  response: ApiResult<unknown>
-): response is ValidationErrorResult {
+export function isValidationError(response: ApiResult<unknown>): response is ValidationErrorResult {
   return isErrorResponse(response) && response.error.code === 'VALIDATION_ERROR';
 }

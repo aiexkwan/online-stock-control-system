@@ -8,21 +8,21 @@ export enum AlertType {
   INFO = 'info',
   WARNING = 'warning',
   ERROR = 'error',
-  SUCCESS = 'success'
+  SUCCESS = 'success',
 }
 
 export enum AlertPriority {
   LOW = 'low',
   MEDIUM = 'medium',
   HIGH = 'high',
-  CRITICAL = 'critical'
+  CRITICAL = 'critical',
 }
 
 export enum AlertStatus {
   ACTIVE = 'active',
   ACKNOWLEDGED = 'acknowledged',
   RESOLVED = 'resolved',
-  DISMISSED = 'dismissed'
+  DISMISSED = 'dismissed',
 }
 
 // ===== Widget 相關枚舉 =====
@@ -33,7 +33,7 @@ export enum LayoutType {
   GRID = 'grid',
   LIST = 'list',
   DASHBOARD = 'dashboard',
-  ANALYSIS = 'analysis'
+  ANALYSIS = 'analysis',
 }
 
 export enum ChartType {
@@ -44,14 +44,14 @@ export enum ChartType {
   SCATTER = 'scatter',
   DONUT = 'donut',
   RADAR = 'radar',
-  HEATMAP = 'heatmap'
+  HEATMAP = 'heatmap',
 }
 
 // ===== Dashboard 相關枚舉 =====
 export enum DashboardTheme {
   DEFAULT = 'default',
   ANALYSIS = 'analysis',
-  STOCK = 'stock'
+  STOCK = 'stock',
 }
 
 // ===== User 相關枚舉 =====
@@ -59,14 +59,14 @@ export enum UserRole {
   ADMIN = 'admin',
   MANAGER = 'manager',
   OPERATOR = 'operator',
-  VIEWER = 'viewer'
+  VIEWER = 'viewer',
 }
 
 export enum UserStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive',
   SUSPENDED = 'suspended',
-  PENDING = 'pending'
+  PENDING = 'pending',
 }
 
 // ===== Stock 相關枚舉 =====
@@ -76,7 +76,7 @@ export enum StockStatus {
   IN_TRANSIT = 'in_transit',
   DAMAGED = 'damaged',
   EXPIRED = 'expired',
-  VOID = 'void'
+  VOID = 'void',
 }
 
 export enum TransactionType {
@@ -84,7 +84,7 @@ export enum TransactionType {
   OUTBOUND = 'outbound',
   TRANSFER = 'transfer',
   ADJUSTMENT = 'adjustment',
-  RETURN = 'return'
+  RETURN = 'return',
 }
 
 // ===== Order 相關枚舉 =====
@@ -95,14 +95,14 @@ export enum OrderStatus {
   PACKED = 'packed',
   SHIPPED = 'shipped',
   DELIVERED = 'delivered',
-  CANCELLED = 'cancelled'
+  CANCELLED = 'cancelled',
 }
 
 export enum OrderPriority {
   LOW = 'low',
   NORMAL = 'normal',
   HIGH = 'high',
-  URGENT = 'urgent'
+  URGENT = 'urgent',
 }
 
 // ===== Quality Control 相關枚舉 =====
@@ -111,14 +111,14 @@ export enum QCStatus {
   PASSED = 'passed',
   FAILED = 'failed',
   PARTIAL = 'partial',
-  RETESTING = 'retesting'
+  RETESTING = 'retesting',
 }
 
 export enum QCType {
   INCOMING = 'incoming',
   IN_PROCESS = 'in_process',
   FINAL = 'final',
-  RANDOM = 'random'
+  RANDOM = 'random',
 }
 
 // ===== Report 相關枚舉 =====
@@ -128,14 +128,14 @@ export enum ReportType {
   STOCK_TAKE = 'stock_take',
   TRANSACTION = 'transaction',
   ORDER_LOADING = 'order_loading',
-  VOID_PALLET = 'void_pallet'
+  VOID_PALLET = 'void_pallet',
 }
 
 export enum ReportFormat {
   PDF = 'pdf',
   EXCEL = 'excel',
   CSV = 'csv',
-  JSON = 'json'
+  JSON = 'json',
 }
 
 // ===== API 相關枚舉 =====
@@ -143,7 +143,7 @@ export enum ApiStatus {
   SUCCESS = 'success',
   ERROR = 'error',
   PENDING = 'pending',
-  TIMEOUT = 'timeout'
+  TIMEOUT = 'timeout',
 }
 
 export enum HttpMethod {
@@ -151,7 +151,7 @@ export enum HttpMethod {
   POST = 'POST',
   PUT = 'PUT',
   DELETE = 'DELETE',
-  PATCH = 'PATCH'
+  PATCH = 'PATCH',
 }
 
 // ===== 系統相關枚舉 =====
@@ -159,7 +159,7 @@ export enum Environment {
   DEVELOPMENT = 'development',
   STAGING = 'staging',
   PRODUCTION = 'production',
-  TEST = 'test'
+  TEST = 'test',
 }
 
 export enum LogLevel {
@@ -167,7 +167,7 @@ export enum LogLevel {
   INFO = 'info',
   WARN = 'warn',
   ERROR = 'error',
-  FATAL = 'fatal'
+  FATAL = 'fatal',
 }
 
 // ===== TODO 標記相關枚舉 =====
@@ -175,12 +175,12 @@ export enum TodoPhase {
   PHASE1 = 'phase1',
   PHASE2 = 'phase2',
   PHASE3 = 'phase3',
-  PHASE4 = 'phase4'
+  PHASE4 = 'phase4',
 }
 
 export enum TodoPriority {
   P0 = 'P0', // Critical - 必須立即處理
   P1 = 'P1', // High - 本期必須完成
   P2 = 'P2', // Medium - 下期考慮
-  P3 = 'P3'  // Low - 長期優化
+  P3 = 'P3', // Low - 長期優化
 }

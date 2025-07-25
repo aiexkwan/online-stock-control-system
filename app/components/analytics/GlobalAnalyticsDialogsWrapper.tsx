@@ -10,9 +10,9 @@ import dynamic from 'next/dynamic';
 // Dynamically import to ensure client-only loading
 const GlobalAnalyticsDialogs = dynamic(
   () => import('./GlobalAnalyticsDialogs').then(mod => mod.GlobalAnalyticsDialogs),
-  { 
+  {
     ssr: false,
-    loading: () => null
+    loading: () => null,
   }
 );
 

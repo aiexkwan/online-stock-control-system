@@ -39,11 +39,7 @@ export default async function OperationsPage() {
   return (
     <AdminErrorBoundary>
       <AdminRefreshProvider>
-        <NewAdminDashboard 
-          prefetchedData={prefetchedData} 
-          ssrMode={ssrMode} 
-          theme="operations" 
-        />
+        <NewAdminDashboard prefetchedData={prefetchedData} ssrMode={ssrMode} theme='operations' />
       </AdminRefreshProvider>
     </AdminErrorBoundary>
   );

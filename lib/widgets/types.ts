@@ -42,7 +42,6 @@ export interface WidgetDefinition {
     h: number;
   };
 
-
   // 性能配置
   lazyLoad?: boolean;
   preloadPriority?: number; // 1-10, 10 最高
@@ -107,7 +106,6 @@ export interface IWidgetRegistry {
   getDefinition(widgetId: string): WidgetDefinition | undefined;
   getComponent(widgetId: string): React.ComponentType<WidgetComponentProps> | undefined;
 
-
   // 批量操作
   getAllDefinitions(): Map<string, WidgetDefinition>;
   getByCategory(category: WidgetCategory): WidgetDefinition[];
@@ -126,7 +124,6 @@ export interface WidgetMapping {
   categoryMap: {
     [widgetId: string]: WidgetCategory;
   };
-
 
   // 預加載優先級映射
   preloadPriorityMap: {

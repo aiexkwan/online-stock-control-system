@@ -16,7 +16,7 @@ import {
   safeArrayLength,
   type WarehouseSummaryRPCResponse,
   type DashboardStatsRPCResponse,
-  type OptimizedInventoryRPCResponse
+  type OptimizedInventoryRPCResponse,
 } from '../types/warehouse-rpc-types';
 
 export interface WarehouseSummaryData {
@@ -101,9 +101,9 @@ export class WarehouseCacheService {
       if (!isWarehouseSummaryResponse(dataObj)) {
         throw new Error('Invalid warehouse summary response structure');
       }
-      
+
       const summary: WarehouseSummaryData[] =
-        dataObj.summary?.map((item) => ({
+        dataObj.summary?.map(item => ({
           location: safeString(item.location),
           totalQty: safeNumber(item.total_qty),
           itemCount: safeNumber(item.item_count),
@@ -187,7 +187,7 @@ export class WarehouseCacheService {
       if (!isDashboardStatsResponse(dataObj)) {
         throw new Error('Invalid dashboard stats response structure');
       }
-      
+
       const stats: DashboardStatsData = {
         totalPallets: safeNumber(dataObj.total_pallets),
         activePallets: safeNumber(dataObj.active_pallets),

@@ -40,9 +40,7 @@ class OperationsWidgetErrorBoundary extends React.Component<
       return (
         <div className='flex h-full min-h-[120px] flex-col items-center justify-center rounded-lg border border-red-300/20 bg-red-500/5 p-4 text-red-400'>
           <div className='mb-2 text-lg'>⚠️</div>
-          <p className='text-center text-sm font-medium'>
-            {this.props.widgetName} Error
-          </p>
+          <p className='text-center text-sm font-medium'>{this.props.widgetName} Error</p>
           <p className='mt-1 text-xs text-gray-500'>{this.state.error?.message}</p>
           <button
             onClick={() => this.setState({ hasError: false })}
@@ -64,7 +62,7 @@ const OperationsWidgetSkeleton = ({ gridArea }: { gridArea: string }) => (
   <div
     style={{ gridArea }}
     className='rounded-lg border border-slate-600/20 bg-slate-800/50 p-4'
-    role="status"
+    role='status'
     aria-label={`Loading ${gridArea}`}
   >
     <div className='space-y-3'>
@@ -110,7 +108,7 @@ export const OperationsGridLayout: React.FC<OperationsGridLayoutProps> = ({
   const widgetNames = [
     'Department Selector',
     'Production Status',
-    'Quality Metrics', 
+    'Quality Metrics',
     'Inventory Levels',
     'Overall Performance',
     'Resource Utilization',
@@ -165,10 +163,20 @@ export const OperationsGridLayout: React.FC<OperationsGridLayoutProps> = ({
             <Suspense
               key={`operations-widget-${index}`}
               fallback={
-                <OperationsWidgetSkeleton 
+                <OperationsWidgetSkeleton
                   gridArea={
-                    ['dept-sel', 'stats-a', 'stats-b', 'stats-c', 'large-a', 'large-b', 'chart-a', 'chart-b', 'hist'][index] || 'widget'
-                  } 
+                    [
+                      'dept-sel',
+                      'stats-a',
+                      'stats-b',
+                      'stats-c',
+                      'large-a',
+                      'large-b',
+                      'chart-a',
+                      'chart-b',
+                      'hist',
+                    ][index] || 'widget'
+                  }
                 />
               }
             >
@@ -190,22 +198,22 @@ export const OperationsGridLayout: React.FC<OperationsGridLayoutProps> = ({
             linear-gradient(rgba(255,0,0,0.1) 1px, transparent 1px),
             linear-gradient(90deg, rgba(255,0,0,0.1) 1px, transparent 1px); */
         }
-        
+
         /* Responsive adjustments */
         @media (max-width: 1200px) {
           .operations-grid-container {
             grid-template-columns: repeat(8, 1fr);
             grid-template-areas:
-              "dept-sel dept-sel dept-sel dept-sel . . hist hist"
-              "dept-sel dept-sel dept-sel dept-sel . . hist hist"
-              "stats-a stats-a stats-b stats-b stats-c stats-c hist hist"
-              "stats-a stats-a stats-b stats-b stats-c stats-c hist hist"
-              "large-a large-a large-a large-b large-b large-b hist hist"
-              "large-a large-a large-a large-b large-b large-b hist hist"
-              "large-a large-a large-a large-b large-b large-b hist hist"
-              "chart-a chart-a chart-a chart-b chart-b chart-b hist hist"
-              "chart-a chart-a chart-a chart-b chart-b chart-b hist hist"
-              "chart-a chart-a chart-a chart-b chart-b chart-b hist hist";
+              'dept-sel dept-sel dept-sel dept-sel . . hist hist'
+              'dept-sel dept-sel dept-sel dept-sel . . hist hist'
+              'stats-a stats-a stats-b stats-b stats-c stats-c hist hist'
+              'stats-a stats-a stats-b stats-b stats-c stats-c hist hist'
+              'large-a large-a large-a large-b large-b large-b hist hist'
+              'large-a large-a large-a large-b large-b large-b hist hist'
+              'large-a large-a large-a large-b large-b large-b hist hist'
+              'chart-a chart-a chart-a chart-b chart-b chart-b hist hist'
+              'chart-a chart-a chart-a chart-b chart-b chart-b hist hist'
+              'chart-a chart-a chart-a chart-b chart-b chart-b hist hist';
           }
         }
 
@@ -214,15 +222,15 @@ export const OperationsGridLayout: React.FC<OperationsGridLayoutProps> = ({
             grid-template-columns: 1fr;
             grid-template-rows: auto;
             grid-template-areas:
-              "dept-sel"
-              "stats-a"
-              "stats-b"
-              "stats-c"
-              "large-a"
-              "large-b"
-              "chart-a"
-              "chart-b"
-              "hist";
+              'dept-sel'
+              'stats-a'
+              'stats-b'
+              'stats-c'
+              'large-a'
+              'large-b'
+              'chart-a'
+              'chart-b'
+              'hist';
             gap: 16px;
             padding: 16px;
           }

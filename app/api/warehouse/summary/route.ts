@@ -30,7 +30,9 @@ interface WarehouseSummaryResponse {
  * 優化的倉庫摘要 API - v1.8 性能優化
  * 使用 Redis 緩存 + RPC 函數實現 85%+ 性能提升
  */
-export async function GET(request: Request): Promise<NextResponse<ApiResult<WarehouseSummaryResponse>>> {
+export async function GET(
+  request: Request
+): Promise<NextResponse<ApiResult<WarehouseSummaryResponse>>> {
   const startTime = Date.now();
 
   const result = await handleAsync(async (): Promise<WarehouseSummaryResponse> => {

@@ -11,8 +11,8 @@ const TEST_CONFIG = {
   timeout: 30000,
   credentials: {
     email: process.env.TEST_EMAIL || 'test@example.com',
-    password: process.env.TEST_PASSWORD || 'test123456'
-  }
+    password: process.env.TEST_PASSWORD || 'test123456',
+  },
 };
 
 // 測試數據
@@ -22,11 +22,11 @@ const testData = {
     description: 'E2E Test Product',
     colour: 'BLUE',
     standard_qty: 100,
-    type: 'FINISHED_GOODS'
+    type: 'FINISHED_GOODS',
   },
   timeFrame: {
-    days: 7 // 過去7天
-  }
+    days: 7, // 過去7天
+  },
 };
 
 // 輔助函數
@@ -53,7 +53,7 @@ test.describe('階段1 E2E 驗證測試', () => {
   test.beforeEach(async ({ page }) => {
     // 設置測試超時
     test.setTimeout(TEST_CONFIG.timeout);
-    
+
     // 登入（如果需要）
     await loginIfRequired(page);
   });
@@ -110,7 +110,7 @@ test.describe('階段1 E2E 驗證測試', () => {
 
       // 填寫字段並檢查進度變化
       const initialProgress = await page.textContent('[data-testid="progress-value"]');
-      
+
       await page.fill('[name="code"]', testData.productData.code);
       await page.waitForTimeout(500); // 等待進度更新
 
@@ -123,10 +123,10 @@ test.describe('階段1 E2E 驗證測試', () => {
     test('ListCard 基本渲染測試', async ({ page }) => {
       // 導航到包含 ListCard 的頁面
       await page.goto('/admin/dashboard');
-      
+
       // 檢查 ListCard 組件
       await expect(page.locator('[data-testid="list-card"]')).toBeVisible();
-      
+
       // 檢查表格結構
       await expect(page.locator('table')).toBeVisible();
       await expect(page.locator('thead')).toBeVisible();
@@ -142,7 +142,7 @@ test.describe('階段1 E2E 驗證測試', () => {
       // 檢查是否有數據行
       const rows = page.locator('tbody tr');
       const rowCount = await rows.count();
-      
+
       if (rowCount > 0) {
         // 檢查第一行數據
         await expect(rows.first()).toBeVisible();
@@ -156,8 +156,10 @@ test.describe('階段1 E2E 驗證測試', () => {
       await page.goto('/admin/dashboard');
 
       // 查找分頁控制器
-      const paginationExists = await page.locator('[data-testid="pagination-controls"]').isVisible();
-      
+      const paginationExists = await page
+        .locator('[data-testid="pagination-controls"]')
+        .isVisible();
+
       if (paginationExists) {
         // 測試下一頁按鈕
         const nextButton = page.locator('[data-testid="next-page-button"]');
@@ -179,7 +181,7 @@ test.describe('階段1 E2E 驗證測試', () => {
         // 點擊第一個可排序標題
         await sortableHeaders.first().click();
         await page.waitForTimeout(1000); // 等待排序
-        
+
         // 再次點擊切換排序方向
         await sortableHeaders.first().click();
         await page.waitForTimeout(1000);
@@ -211,7 +213,7 @@ test.describe('階段1 E2E 驗證測試', () => {
       const listCards = page.locator('[data-testid="list-card"]');
 
       // 至少應該有一種類型的Card
-      const totalCards = await formCards.count() + await listCards.count();
+      const totalCards = (await formCards.count()) + (await listCards.count());
       expect(totalCards).toBeGreaterThan(0);
     });
   });
@@ -268,12 +270,12 @@ test.describe('階段1 E2E 驗證測試', () => {
   test.describe('性能和穩定性測試', () => {
     test('頁面載入性能測試', async ({ page }) => {
       const startTime = Date.now();
-      
+
       await page.goto('/admin/dashboard');
       await page.waitForSelector('[data-testid="widget-container"]');
-      
+
       const loadTime = Date.now() - startTime;
-      
+
       // 頁面載入時間應該在合理範圍內（10秒）
       expect(loadTime).toBeLessThan(10000);
       console.log(`Page load time: ${loadTime}ms`);
@@ -281,10 +283,7 @@ test.describe('階段1 E2E 驗證測試', () => {
 
     test('快速導航穩定性測試', async ({ page }) => {
       // 快速在多個頁面間切換
-      const pages = [
-        '/admin/dashboard',
-        '/admin/test-form-card-migration'
-      ];
+      const pages = ['/admin/dashboard', '/admin/test-form-card-migration'];
 
       for (const pagePath of pages) {
         await page.goto(pagePath);
@@ -304,12 +303,12 @@ test.describe('階段1 E2E 驗證測試', () => {
 
       // 模擬網路離線
       await page.context().setOffline(true);
-      
+
       // 嘗試刷新數據
       const refreshButton = page.locator('[data-testid="refresh-button"]');
       if (await refreshButton.isVisible()) {
         await refreshButton.click();
-        
+
         // 檢查錯誤處理
         await expect(page.getByText(/error/i)).toBeVisible();
       }

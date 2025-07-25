@@ -18,8 +18,8 @@ export const mockAlertData = {
           entityType: 'DATABASE',
           entityId: 'db-primary',
           entityName: 'Primary Database',
-          impact: 'All write operations are affected'
-        }
+          impact: 'All write operations are affected',
+        },
       ],
       actions: [
         {
@@ -27,10 +27,10 @@ export const mockAlertData = {
           type: 'RESTART_SERVICE',
           label: 'Restart Database',
           confirmRequired: true,
-          icon: 'restart'
-        }
+          icon: 'restart',
+        },
       ],
-      tags: ['critical', 'database', 'infrastructure']
+      tags: ['critical', 'database', 'infrastructure'],
     },
     {
       id: 'alert-2',
@@ -50,8 +50,8 @@ export const mockAlertData = {
           entityType: 'PRODUCT',
           entityId: 'SKU-12345',
           entityName: 'Widget Pro Max',
-          impact: 'May affect order fulfillment'
-        }
+          impact: 'May affect order fulfillment',
+        },
       ],
       actions: [
         {
@@ -59,10 +59,10 @@ export const mockAlertData = {
           type: 'CREATE_PO',
           label: 'Create Purchase Order',
           confirmRequired: false,
-          icon: 'document'
-        }
+          icon: 'document',
+        },
       ],
-      tags: ['inventory', 'low-stock']
+      tags: ['inventory', 'low-stock'],
     },
     {
       id: 'alert-3',
@@ -82,8 +82,8 @@ export const mockAlertData = {
           entityType: 'ORDER',
           entityId: 'ORD-2024-001',
           entityName: 'Customer Order #001',
-          impact: 'Order cannot be fulfilled'
-        }
+          impact: 'Order cannot be fulfilled',
+        },
       ],
       actions: [
         {
@@ -91,10 +91,10 @@ export const mockAlertData = {
           type: 'RETRY_PAYMENT',
           label: 'Retry Payment',
           confirmRequired: true,
-          icon: 'credit-card'
-        }
+          icon: 'credit-card',
+        },
       ],
-      tags: ['order', 'payment', 'error']
+      tags: ['order', 'payment', 'error'],
     },
     {
       id: 'alert-4',
@@ -111,8 +111,8 @@ export const mockAlertData = {
       resolvedBy: 'system',
       affectedEntities: [],
       actions: [],
-      tags: ['performance', 'api', 'resolved']
-    }
+      tags: ['performance', 'api', 'resolved'],
+    },
   ],
   summary: {
     totalActive: 2,
@@ -121,21 +121,21 @@ export const mockAlertData = {
       { severity: 'CRITICAL', count: 1, percentage: 25 },
       { severity: 'ERROR', count: 1, percentage: 25 },
       { severity: 'WARNING', count: 1, percentage: 25 },
-      { severity: 'INFO', count: 1, percentage: 25 }
+      { severity: 'INFO', count: 1, percentage: 25 },
     ],
     byType: [
       { type: 'SYSTEM_ALERT', count: 1, percentage: 25 },
       { type: 'INVENTORY_ALERT', count: 1, percentage: 25 },
       { type: 'ORDER_ALERT', count: 1, percentage: 25 },
-      { type: 'PERFORMANCE_ALERT', count: 1, percentage: 25 }
+      { type: 'PERFORMANCE_ALERT', count: 1, percentage: 25 },
     ],
     byStatus: [
       { status: 'ACTIVE', count: 2, percentage: 50 },
       { status: 'ACKNOWLEDGED', count: 1, percentage: 25 },
-      { status: 'RESOLVED', count: 1, percentage: 25 }
+      { status: 'RESOLVED', count: 1, percentage: 25 },
     ],
     recentCount: 1,
-    criticalCount: 1
+    criticalCount: 1,
   },
   statistics: {
     averageResolutionTime: 180, // minutes
@@ -150,20 +150,20 @@ export const mockAlertData = {
       { timestamp: new Date(Date.now() - 43200000).toISOString(), count: 1, severity: 'CRITICAL' },
       { timestamp: new Date(Date.now() - 28800000).toISOString(), count: 4, severity: 'WARNING' },
       { timestamp: new Date(Date.now() - 14400000).toISOString(), count: 2, severity: 'INFO' },
-      { timestamp: new Date().toISOString(), count: 4, severity: 'MIXED' }
+      { timestamp: new Date().toISOString(), count: 4, severity: 'MIXED' },
     ],
     performanceMetrics: {
       mttr: 180, // Mean Time To Resolution
       mtta: 60, // Mean Time To Acknowledge
       alertVolume: 25,
-      falsePositiveRate: 0.1
-    }
+      falsePositiveRate: 0.1,
+    },
   },
   pagination: {
     hasNextPage: false,
     hasPreviousPage: false,
     totalCount: 4,
     totalPages: 1,
-    currentPage: 1
-  }
+    currentPage: 1,
+  },
 };

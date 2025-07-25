@@ -50,7 +50,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
   overview: defaultLayout,
 
   // Operations theme - 精確14列×10行CSS Grid佈局 (用戶規範)
-  'operations': {
+  operations: {
     theme: 'operations',
     gridTemplate: `
       ". department-selector department-selector department-selector department-selector . . . . . history-tree history-tree history-tree ."
@@ -75,10 +75,10 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
           departments: ['All', 'Injection', 'Pipeline', 'Quality', 'Warehouse'],
           defaultDepartment: 'All',
           showIcons: true,
-          style: 'compact'
-        }
+          style: 'compact',
+        },
       },
-      
+
       // Item 2: StatsCard(A) (列2-5, 行2-4)
       {
         type: 'stats-card',
@@ -90,10 +90,10 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
           columns: 1,
           showTrend: true,
           showComparison: true,
-          compact: true
-        }
+          compact: true,
+        },
       },
-      
+
       // Item 3: StatsCard(B) (列5-8, 行2-4)
       {
         type: 'stats-card',
@@ -105,10 +105,10 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
           columns: 1,
           showTrend: true,
           showComparison: true,
-          compact: true
-        }
+          compact: true,
+        },
       },
-      
+
       // Item 4: StatsCard(C) (列8-11, 行2-4)
       {
         type: 'stats-card',
@@ -120,10 +120,10 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
           columns: 1,
           showTrend: true,
           showComparison: true,
-          compact: true
-        }
+          compact: true,
+        },
       },
-      
+
       // Item 5: Large StatsCard(A) (列2-6, 行4-7)
       {
         type: 'stats-card',
@@ -136,10 +136,10 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
           showTrend: true,
           showComparison: true,
           showPerformance: true,
-          large: true
-        }
+          large: true,
+        },
       },
-      
+
       // Item 6: Large StatsCard(B) (列6-11, 行4-7)
       {
         type: 'stats-card',
@@ -147,15 +147,19 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'stats-large-b',
         component: 'StatsCard',
         config: {
-          statsTypes: ['YESTERDAY_TRANSFER_COUNT', 'AWAIT_LOCATION_QTY', 'STILL_IN_AWAIT_PERCENTAGE'],
+          statsTypes: [
+            'YESTERDAY_TRANSFER_COUNT',
+            'AWAIT_LOCATION_QTY',
+            'STILL_IN_AWAIT_PERCENTAGE',
+          ],
           columns: 2,
           showTrend: true,
           showComparison: true,
           showPerformance: true,
-          large: true
-        }
+          large: true,
+        },
       },
-      
+
       // Item 7: ChartCard(A) (列2-7, 行7-11)
       {
         type: 'chart-card',
@@ -169,10 +173,10 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
           aggregationType: 'AVERAGE',
           timeGranularity: 'HOURLY',
           showLegend: true,
-          interactive: true
-        }
+          interactive: true,
+        },
       },
-      
+
       // Item 8: ChartCard(B) (列7-11, 行7-11)
       {
         type: 'chart-card',
@@ -186,10 +190,10 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
           aggregationType: 'COUNT',
           timeGranularity: 'DAILY',
           showLegend: true,
-          interactive: true
-        }
+          interactive: true,
+        },
       },
-      
+
       // Item 9: History Tree (列11-14, 行1-11)
       {
         type: 'history-tree',
@@ -202,8 +206,8 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
           showUsers: true,
           expandable: true,
           searchable: true,
-          realTime: true
-        }
+          realTime: true,
+        },
       },
     ],
   },
@@ -370,7 +374,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'stats7',
         dataSource: 'trend_analysis',
         chartType: 'line',
-        component: 'UnifiedChartWidget',
+        component: 'ChartCard',
         description: 'Multi-dimensional trend analysis',
       },
       {
@@ -379,7 +383,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'stats8',
         dataSource: 'distribution_analysis',
         chartType: 'donut',
-        component: 'UnifiedChartWidget',
+        component: 'ChartCard',
         description: 'Data distribution visualization',
       },
       {
@@ -388,7 +392,7 @@ export const adminDashboardLayouts: Record<string, AdminDashboardLayout> = {
         gridArea: 'stats9',
         dataSource: 'predictive_analysis',
         chartType: 'area',
-        component: 'UnifiedChartWidget',
+        component: 'ChartCard',
         description: 'AI-powered predictions and forecasts',
       },
       // 系統性能和健康監控

@@ -180,9 +180,7 @@ export function NewAdminDashboard({
                 }
                 style={
                   // v2.0.2: 更新為新主題名
-                  currentTheme === 'operations'
-                    ? {}
-                    : { minHeight: 'calc(100vh - 260px)' }
+                  currentTheme === 'operations' ? {} : { minHeight: 'calc(100vh - 260px)' }
                 }
               >
                 <ErrorProvider>

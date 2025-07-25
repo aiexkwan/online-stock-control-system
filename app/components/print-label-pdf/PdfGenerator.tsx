@@ -1,10 +1,7 @@
 'use client';
 
 import { renderReactPDFToBlob, registerFont } from '@/lib/services/unified-pdf-service';
-import {
-  PrintLabelPdf,
-  PrintLabelPdfProps,
-} from '@/components/print-label-pdf/PrintLabelPdf'; // Uncommented original import
+import { PrintLabelPdf, PrintLabelPdfProps } from '@/components/print-label-pdf/PrintLabelPdf'; // Uncommented original import
 import { setupStorage, uploadPdf } from '@/lib/supabase-storage';
 import { Dispatch, SetStateAction } from 'react'; // Restored
 // import { SupabaseClient } from '@supabase/supabase-js'; // Removed

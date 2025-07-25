@@ -3,12 +3,12 @@
  * 用於測量和比較 REST API 性能
  */
 
-import { 
-  BenchmarkTest, 
-  PerformanceSummary, 
-  hasMemoryAPI, 
+import {
+  BenchmarkTest,
+  PerformanceSummary,
+  hasMemoryAPI,
   isJSONSerializable,
-  PerformanceWithMemory 
+  PerformanceWithMemory,
 } from '@/lib/types/performance.types';
 
 export interface PerformanceMetrics {
@@ -59,7 +59,7 @@ export class PerformanceBenchmark {
   ): Promise<T> {
     const startTime = performance.now();
     const startMemory = this.getMemoryUsage();
-    
+
     let result: T;
     let errorCount = 0;
 
@@ -71,7 +71,7 @@ export class PerformanceBenchmark {
     } finally {
       const endTime = performance.now();
       const endMemory = this.getMemoryUsage();
-      
+
       const metrics: PerformanceMetrics = {
         endpoint,
         responseTime: endTime - startTime,
@@ -81,7 +81,7 @@ export class PerformanceBenchmark {
         dbQueries: expectedDbQueries,
         timestamp: Date.now(),
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Node.js',
-        errorCount
+        errorCount,
       };
 
       this.results.push(metrics);
@@ -98,26 +98,20 @@ export class PerformanceBenchmark {
 
     for (const test of tests) {
       console.log(`Running benchmark: ${test.name}...`);
-      
+
       const iterations = test.iterations || 5;
       const testMetrics: PerformanceMetrics[] = [];
 
       for (let i = 0; i < iterations; i++) {
         try {
-          await this.measureAPICall(
-            test.endpoint,
-            test.apiCall,
-            test.expectedDbQueries
-          );
+          await this.measureAPICall(test.endpoint, test.apiCall, test.expectedDbQueries);
         } catch (error) {
           console.error(`Test ${test.name} iteration ${i + 1} failed:`, error);
         }
       }
 
       // 收集此測試的所有指標
-      const currentTestMetrics = this.results.filter(
-        metric => metric.endpoint === test.endpoint
-      );
+      const currentTestMetrics = this.results.filter(metric => metric.endpoint === test.endpoint);
 
       const summary = this.calculateSummary(currentTestMetrics);
       const recommendations = this.generateRecommendations(currentTestMetrics, summary);
@@ -126,7 +120,7 @@ export class PerformanceBenchmark {
         testName: test.name,
         metrics: currentTestMetrics,
         summary,
-        recommendations
+        recommendations,
       });
     }
 
@@ -143,18 +137,31 @@ export class PerformanceBenchmark {
     const testCases = [
       {
         name: 'Dashboard - 5 Widgets',
-        widgetIds: ['total_pallets', 'today_transfers', 'active_products', 'pending_orders', 'await_location_count'],
-        expectedQueries: 5
+        widgetIds: [
+          'total_pallets',
+          'today_transfers',
+          'active_products',
+          'pending_orders',
+          'await_location_count',
+        ],
+        expectedQueries: 5,
       },
       {
         name: 'Dashboard - 10 Widgets',
         widgetIds: [
-          'total_pallets', 'today_transfers', 'active_products', 'pending_orders', 
-          'await_location_count', 'top_products', 'production_details', 
-          'stock_distribution_chart', 'production_stats', 'stock_level_history'
+          'total_pallets',
+          'today_transfers',
+          'active_products',
+          'pending_orders',
+          'await_location_count',
+          'top_products',
+          'production_details',
+          'stock_distribution_chart',
+          'production_stats',
+          'stock_level_history',
         ],
-        expectedQueries: 10
-      }
+        expectedQueries: 10,
+      },
     ];
 
     const allMetrics: PerformanceMetrics[] = [];
@@ -177,7 +184,7 @@ export class PerformanceBenchmark {
       testName: 'Dashboard API Benchmark',
       metrics: dashboardMetrics,
       summary,
-      recommendations
+      recommendations,
     };
   }
 
@@ -204,10 +211,13 @@ export class PerformanceBenchmark {
       for (let i = 0; i < 3; i++) {
         await this.measureAPICall(
           'inventory-analysis-filtering',
-          () => Promise.resolve(inventoryAnalysisAPI.applyFilters(analysisData.products, {
-            showInsufficientOnly: true,
-            minFulfillmentRate: 50
-          })),
+          () =>
+            Promise.resolve(
+              inventoryAnalysisAPI.applyFilters(analysisData.products, {
+                showInsufficientOnly: true,
+                minFulfillmentRate: 50,
+              })
+            ),
           0 // 客戶端處理無數據庫查詢
         );
       }
@@ -221,7 +231,7 @@ export class PerformanceBenchmark {
       testName: 'Inventory Analysis API Benchmark',
       metrics: inventoryMetrics,
       summary,
-      recommendations
+      recommendations,
     };
   }
 
@@ -251,7 +261,7 @@ export class PerformanceBenchmark {
       dashboard,
       inventory,
       overallRecommendations,
-      performanceGrade
+      performanceGrade,
     };
   }
 
@@ -266,7 +276,7 @@ export class PerformanceBenchmark {
         maxResponseTime: 0,
         minResponseTime: 0,
         totalTests: 0,
-        errorRate: 0
+        errorRate: 0,
       };
     }
 
@@ -279,14 +289,17 @@ export class PerformanceBenchmark {
       maxResponseTime: Math.max(...responseTimes),
       minResponseTime: Math.min(...responseTimes),
       totalTests: metrics.length,
-      errorRate: (errorCount / metrics.length) * 100
+      errorRate: (errorCount / metrics.length) * 100,
     };
   }
 
   /**
    * 生成基本優化建議
    */
-  private generateRecommendations(metrics: PerformanceMetrics[], summary: PerformanceSummary): string[] {
+  private generateRecommendations(
+    metrics: PerformanceMetrics[],
+    summary: PerformanceSummary
+  ): string[] {
     const recommendations: string[] = [];
 
     if (summary.avgResponseTime > 2000) {
@@ -312,7 +325,10 @@ export class PerformanceBenchmark {
   /**
    * Dashboard 專用建議
    */
-  private generateDashboardRecommendations(metrics: PerformanceMetrics[], summary: PerformanceSummary): string[] {
+  private generateDashboardRecommendations(
+    metrics: PerformanceMetrics[],
+    summary: PerformanceSummary
+  ): string[] {
     const recommendations = this.generateRecommendations(metrics, summary);
 
     // Dashboard 特定建議
@@ -330,7 +346,10 @@ export class PerformanceBenchmark {
   /**
    * Inventory 專用建議
    */
-  private generateInventoryRecommendations(metrics: PerformanceMetrics[], summary: PerformanceSummary): string[] {
+  private generateInventoryRecommendations(
+    metrics: PerformanceMetrics[],
+    summary: PerformanceSummary
+  ): string[] {
     const recommendations = this.generateRecommendations(metrics, summary);
 
     // Inventory 特定建議
@@ -349,11 +368,7 @@ export class PerformanceBenchmark {
     const allMetrics = results.flatMap(r => r.metrics);
     const overallSummary = this.calculateSummary(allMetrics);
 
-    const recommendations: string[] = [
-      '## 🎯 整體優化建議',
-      '',
-      '### 高優先級',
-    ];
+    const recommendations: string[] = ['## 🎯 整體優化建議', '', '### 高優先級'];
 
     if (overallSummary.avgResponseTime > 2000) {
       recommendations.push('1. **實施 API 響應時間監控**，設置警告閾值');
@@ -393,16 +408,16 @@ export class PerformanceBenchmark {
       const memory = (performance as PerformanceWithMemory).memory!;
       return {
         used: memory.usedJSHeapSize,
-        total: memory.totalJSHeapSize
+        total: memory.totalJSHeapSize,
       };
     }
-    
+
     // Node.js 環境
     if (typeof process !== 'undefined' && process.memoryUsage) {
       const memory = process.memoryUsage();
       return {
         used: memory.heapUsed,
-        total: memory.heapTotal
+        total: memory.heapTotal,
       };
     }
 
@@ -429,11 +444,15 @@ export class PerformanceBenchmark {
    * 匯出結果為 JSON
    */
   exportResults(): string {
-    return JSON.stringify({
-      timestamp: new Date().toISOString(),
-      results: this.results,
-      summary: this.calculateSummary(this.results)
-    }, null, 2);
+    return JSON.stringify(
+      {
+        timestamp: new Date().toISOString(),
+        results: this.results,
+        summary: this.calculateSummary(this.results),
+      },
+      null,
+      2
+    );
   }
 }
 

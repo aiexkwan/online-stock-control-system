@@ -299,14 +299,15 @@ export const useAcoManagement = ({
             return { ...prev, acoOrderDetailErrors: newErrors };
           });
         } else {
-          const productData = Array.isArray(data) && data.length > 0 
-            ? data[0] 
-            : {
-                code: '',
-                description: '',
-                standard_qty: '',
-                type: ''
-              };
+          const productData =
+            Array.isArray(data) && data.length > 0
+              ? data[0]
+              : {
+                  code: '',
+                  description: '',
+                  standard_qty: '',
+                  type: '',
+                };
 
           // 檢查產品類型是否為 ACO
           if (productData.type !== 'ACO') {

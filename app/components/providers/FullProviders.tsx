@@ -11,9 +11,7 @@ export function FullProviders({ children }: { children: React.ReactNode }) {
     <AccessibilityProvider>
       <ApolloProvider>
         <ClientVisualSystemProvider>
-          <div className="min-h-screen relative z-10">
-            {children}
-          </div>
+          <div className='relative z-10 min-h-screen'>{children}</div>
         </ClientVisualSystemProvider>
       </ApolloProvider>
     </AccessibilityProvider>

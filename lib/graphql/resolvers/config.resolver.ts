@@ -31,7 +31,7 @@ import {
   ConfigDataType,
   ConfigCategory,
   ConfigScope,
-  ConfigAccessLevel
+  ConfigAccessLevel,
 } from '@/lib/types/config.types';
 
 // Configuration service singleton
@@ -57,16 +57,14 @@ class ConfigService {
   async getConfigs(input: ConfigInput, userId?: string): Promise<ConfigItem[]> {
     const cacheKey = `configs:${JSON.stringify(input)}:${userId}`;
     const cached = this.cache.get(cacheKey);
-    
+
     if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
       return cached.data;
     }
 
     try {
       // Fetch from database
-      let query = this.supabase
-        .from('system_configs')
-        .select('*');
+      let query = this.supabase.from('system_configs').select('*');
 
       // Apply filters
       if (input.category) {
@@ -106,49 +104,52 @@ class ConfigService {
   }
 
   // Process inherited configurations
-  private async processInheritedConfigs(configs: ConfigItem[], input: ConfigInput): Promise<ConfigItem[]> {
+  private async processInheritedConfigs(
+    configs: ConfigItem[],
+    input: ConfigInput
+  ): Promise<ConfigItem[]> {
     const result = [...configs];
-    
+
     // Check for department inheritance
     if (input.scope === 'USER' && input.departmentId) {
       const departmentConfigs = await this.getConfigs({
         ...input,
         scope: 'DEPARTMENT',
-        scopeId: input.departmentId
+        scopeId: input.departmentId,
       });
-      
+
       // Merge department configs
       departmentConfigs.forEach(deptConfig => {
         if (!result.find(c => c.key === deptConfig.key)) {
           result.push({
             ...deptConfig,
             isInherited: true,
-            inheritedFrom: 'DEPARTMENT'
+            inheritedFrom: 'DEPARTMENT',
           });
         }
       });
     }
-    
+
     // Check for global inheritance
     if (input.includeDefaults) {
       const globalConfigs = await this.getConfigs({
         ...input,
         scope: 'GLOBAL',
-        scopeId: null
+        scopeId: null,
       });
-      
+
       // Merge global configs
       globalConfigs.forEach(globalConfig => {
         if (!result.find(c => c.key === globalConfig.key)) {
           result.push({
             ...globalConfig,
             isInherited: true,
-            inheritedFrom: 'GLOBAL'
+            inheritedFrom: 'GLOBAL',
           });
         }
       });
     }
-    
+
     return result;
   }
 
@@ -161,22 +162,26 @@ class ConfigService {
 
     // Get user permissions
     const permissions = await this.getUserPermissions(userId);
-    
+
     return configs.map(config => {
       const hasReadAccess = this.checkAccess(config, permissions, 'read');
       const hasWriteAccess = this.checkAccess(config, permissions, 'write');
-      
+
       return {
         ...config,
         isEditable: hasWriteAccess && !config.isInherited,
         // Mask sensitive values if no read access
-        value: hasReadAccess ? config.value : null
+        value: hasReadAccess ? config.value : null,
       };
     });
   }
 
   // Check if user has specific access to config
-  private checkAccess(config: ConfigItem, permissions: ConfigUserPermissions, action: string): boolean {
+  private checkAccess(
+    config: ConfigItem,
+    permissions: ConfigUserPermissions,
+    action: string
+  ): boolean {
     switch (config.accessLevel) {
       case 'PUBLIC':
         return true;
@@ -222,7 +227,7 @@ class ConfigService {
       isAdmin: userRoles?.some((r: { role: string }) => r.role === 'admin') || false,
       isSuperAdmin: userRoles?.some((r: { role: string }) => r.role === 'super_admin') || false,
       departments: userDepartments?.map((d: { department_id: string }) => d.department_id) || [],
-      roles: userRoles?.map((r: { role: string }) => r.role) || []
+      roles: userRoles?.map((r: { role: string }) => r.role) || [],
     };
   }
 
@@ -242,7 +247,7 @@ class ConfigService {
           created_by: userId,
           updated_by: userId,
           created_at: new Date(),
-          updated_at: new Date()
+          updated_at: new Date(),
         })
         .select()
         .single();
@@ -260,7 +265,12 @@ class ConfigService {
   }
 
   // Update config
-  async updateConfig(id: string, value: ConfigValue, userId: string, metadata?: ConfigMetadata): Promise<ConfigItem> {
+  async updateConfig(
+    id: string,
+    value: ConfigValue,
+    userId: string,
+    metadata?: ConfigMetadata
+  ): Promise<ConfigItem> {
     try {
       // Get current config
       const { data: currentConfig, error: fetchError } = await this.supabase
@@ -284,9 +294,9 @@ class ConfigService {
         .from('system_configs')
         .update({
           value,
-          metadata: { ...(currentConfig.metadata as object || {}), ...metadata },
+          metadata: { ...((currentConfig.metadata as object) || {}), ...metadata },
           updated_by: userId,
-          updated_at: new Date()
+          updated_at: new Date(),
         })
         .eq('id', id)
         .select()
@@ -316,24 +326,24 @@ class ConfigService {
     changeReason?: string
   ): Promise<void> {
     try {
-      await this.supabase
-        .from('config_history')
-        .insert({
-          id: uuidv4(),
-          config_id: configId,
-          previous_value: previousValue,
-          new_value: newValue,
-          changed_by: userId,
-          changed_at: new Date(),
-          change_reason: changeReason
-        });
+      await this.supabase.from('config_history').insert({
+        id: uuidv4(),
+        config_id: configId,
+        previous_value: previousValue,
+        new_value: newValue,
+        changed_by: userId,
+        changed_at: new Date(),
+        change_reason: changeReason,
+      });
     } catch (error) {
       console.error('Error adding to config history:', error);
     }
   }
 
   // Validate configuration
-  async validateConfig(input: ConfigCreateInput | ConfigUpdateInput): Promise<ConfigValidationResult> {
+  async validateConfig(
+    input: ConfigCreateInput | ConfigUpdateInput
+  ): Promise<ConfigValidationResult> {
     const errors = [];
 
     // Required fields validation
@@ -362,12 +372,18 @@ class ConfigService {
   }
 
   // Validate config value
-  async validateConfigValue(config: ConfigItem, value: ConfigValue): Promise<ConfigValidationResult> {
+  async validateConfigValue(
+    config: ConfigItem,
+    value: ConfigValue
+  ): Promise<ConfigValidationResult> {
     return this.validateConfig({ ...config, value });
   }
 
   // Validate data type
-  private validateDataType(value: ConfigValue, dataType: ConfigDataType): { isValid: boolean; error?: string } {
+  private validateDataType(
+    value: ConfigValue,
+    dataType: ConfigDataType
+  ): { isValid: boolean; error?: string } {
     switch (dataType) {
       case 'STRING':
         return { isValid: typeof value === 'string' };
@@ -401,7 +417,10 @@ class ConfigService {
   }
 
   // Run custom validation rules
-  private async runCustomValidation(value: ConfigValue, rules: ValidationRules): Promise<ConfigValidationResult> {
+  private async runCustomValidation(
+    value: ConfigValue,
+    rules: ValidationRules
+  ): Promise<ConfigValidationResult> {
     const errors = [];
 
     // Min/max validation
@@ -428,53 +447,61 @@ class ConfigService {
   // Export configurations
   async exportConfigs(category?: string, scope?: string, format: string = 'JSON'): Promise<string> {
     const configs = await this.getConfigs({ category, scope });
-    
+
     switch (format) {
       case 'JSON':
         return JSON.stringify(configs, null, 2);
-      
+
       case 'YAML':
         return yaml.dump(configs);
-      
+
       case 'ENV':
-        return configs
-          .map(c => `${c.key.toUpperCase()}=${JSON.stringify(c.value)}`)
-          .join('\n');
-      
+        return configs.map(c => `${c.key.toUpperCase()}=${JSON.stringify(c.value)}`).join('\n');
+
       case 'INI':
-        const grouped = configs.reduce((acc, c) => {
-          if (!acc[c.category]) acc[c.category] = [];
-          acc[c.category].push(c);
-          return acc;
-        }, {} as Record<string, ConfigItem[]>);
-        
+        const grouped = configs.reduce(
+          (acc, c) => {
+            if (!acc[c.category]) acc[c.category] = [];
+            acc[c.category].push(c);
+            return acc;
+          },
+          {} as Record<string, ConfigItem[]>
+        );
+
         return Object.entries(grouped)
-          .map(([category, items]) => 
-            `[${category}]\n${items.map((c: ConfigItem) => `${c.key}=${JSON.stringify(c.value)}`).join('\n')}`
+          .map(
+            ([category, items]) =>
+              `[${category}]\n${items.map((c: ConfigItem) => `${c.key}=${JSON.stringify(c.value)}`).join('\n')}`
           )
           .join('\n\n');
-      
+
       default:
         throw new Error(`Unsupported export format: ${format}`);
     }
   }
 
   // Import configurations
-  async importConfigs(data: string, format: string, userId: string, overwrite: boolean = false): Promise<ConfigImportResult> {
+  async importConfigs(
+    data: string,
+    format: string,
+    userId: string,
+    overwrite: boolean = false
+  ): Promise<ConfigImportResult> {
     let configs: ConfigCreateInput[];
-    
+
     try {
       switch (format) {
         case 'JSON':
           configs = JSON.parse(data);
           break;
-        
+
         case 'YAML':
           configs = yaml.load(data) as ConfigCreateInput[];
           break;
-        
+
         case 'ENV':
-          configs = data.split('\n')
+          configs = data
+            .split('\n')
             .filter(line => line.trim() && !line.startsWith('#'))
             .map(line => {
               const [key, ...valueParts] = line.split('=');
@@ -483,11 +510,11 @@ class ConfigService {
                 value: JSON.parse(valueParts.join('=')),
                 category: 'SYSTEM_CONFIG',
                 scope: 'GLOBAL',
-                dataType: 'STRING'
+                dataType: 'STRING',
               };
             });
           break;
-        
+
         default:
           throw new Error(`Unsupported import format: ${format}`);
       }
@@ -529,12 +556,12 @@ class ConfigService {
           if (r.status === 'rejected') {
             return {
               key: configs[i].key,
-              error: r.reason?.message || 'Unknown error'
+              error: r.reason?.message || 'Unknown error',
             };
           }
           return null;
         })
-        .filter(Boolean)
+        .filter(Boolean),
     };
   }
 }
@@ -570,7 +597,7 @@ function mapConfigToGraphQL(config: ConfigItem, permissions?: ConfigPermissions)
     createdAt: config.created_at,
     updatedAt: config.updated_at,
     updatedBy: config.updated_by,
-    history: []
+    history: [],
   };
 }
 
@@ -587,45 +614,53 @@ export const configResolvers = {
         const { input } = args;
         const userId = context.user?.id;
         const cacheKey = `config-card-data:${JSON.stringify(input)}:${userId}`;
-        
+
         return await withCache(
           cacheKey,
           async () => {
             // Get configs
             const configs = await configService.getConfigs(input, userId);
-            
+
             // Get permissions
             const permissions = await configService.getUserPermissions(userId);
-            
+
             // Group by category
-            const categoryGroups = configs.reduce((acc, config) => {
-              const category = config.category;
-              if (!acc[category]) {
-                acc[category] = {
-                  category,
-                  label: category.replace(/_/g, ' ').toLowerCase()
-                    .replace(/\b\w/g, (l: string) => l.toUpperCase()),
-                  description: `${category} configurations`,
-                  icon: getCategoryIcon(category),
-                  items: [],
-                  count: 0,
-                  editableCount: 0,
-                  lastUpdated: null
-                };
-              }
-              
-              (acc[category] as ConfigCategoryGroup).items.push(config);
-              (acc[category] as ConfigCategoryGroup).count++;
-              if (config.isEditable) (acc[category] as ConfigCategoryGroup).editableCount++;
-              
-              const updatedAt = new Date(config.updatedAt);
-              if (!(acc[category] as ConfigCategoryGroup).lastUpdated || updatedAt > new Date((acc[category] as ConfigCategoryGroup).lastUpdated || 0)) {
-                (acc[category] as ConfigCategoryGroup).lastUpdated = updatedAt;
-              }
-              
-              return acc;
-            }, {} as Record<string, ConfigCategoryGroup>);
-            
+            const categoryGroups = configs.reduce(
+              (acc, config) => {
+                const category = config.category;
+                if (!acc[category]) {
+                  acc[category] = {
+                    category,
+                    label: category
+                      .replace(/_/g, ' ')
+                      .toLowerCase()
+                      .replace(/\b\w/g, (l: string) => l.toUpperCase()),
+                    description: `${category} configurations`,
+                    icon: getCategoryIcon(category),
+                    items: [],
+                    count: 0,
+                    editableCount: 0,
+                    lastUpdated: null,
+                  };
+                }
+
+                (acc[category] as ConfigCategoryGroup).items.push(config);
+                (acc[category] as ConfigCategoryGroup).count++;
+                if (config.isEditable) (acc[category] as ConfigCategoryGroup).editableCount++;
+
+                const updatedAt = new Date(config.updatedAt);
+                if (
+                  !(acc[category] as ConfigCategoryGroup).lastUpdated ||
+                  updatedAt > new Date((acc[category] as ConfigCategoryGroup).lastUpdated || 0)
+                ) {
+                  (acc[category] as ConfigCategoryGroup).lastUpdated = updatedAt;
+                }
+
+                return acc;
+              },
+              {} as Record<string, ConfigCategoryGroup>
+            );
+
             // Calculate summary
             const summary = {
               totalConfigs: configs.length,
@@ -635,16 +670,16 @@ export const configResolvers = {
               byCategory: Object.values(categoryGroups).map(group => ({
                 category: group.category,
                 count: group.count,
-                editableCount: group.editableCount
+                editableCount: group.editableCount,
               })),
               byScope: calculateScopeDistribution(configs),
               recentChanges: configs.filter(c => {
                 const updatedAt = new Date(c.updatedAt);
                 const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
                 return updatedAt > oneDayAgo;
-              }).length
+              }).length,
             };
-            
+
             // Validate all configs
             const validationResults = await Promise.all(
               configs.map(async config => {
@@ -652,20 +687,22 @@ export const configResolvers = {
                 return { configId: config.id, validation };
               })
             );
-            
+
             const validation = {
               isValid: validationResults.every(r => r.validation.isValid),
               errors: validationResults
                 .filter(r => !r.validation.isValid)
-                .flatMap(r => r.validation.errors.map((e: ConfigValidationError) => ({
-                  configId: r.configId,
-                  key: configs.find(c => c.id === r.configId)?.key,
-                  message: e.message,
-                  details: e
-                }))),
-              warnings: []
+                .flatMap(r =>
+                  r.validation.errors.map((e: ConfigValidationError) => ({
+                    configId: r.configId,
+                    key: configs.find(c => c.id === r.configId)?.key,
+                    message: e.message,
+                    details: e,
+                  }))
+                ),
+              warnings: [],
             };
-            
+
             // Build permissions object
             const configPermissions = {
               canRead: true,
@@ -675,9 +712,9 @@ export const configResolvers = {
               canManageDepartment: permissions.isAdmin || permissions.departments.length > 0,
               canManageUsers: permissions.isAdmin || permissions.isSuperAdmin,
               accessibleScopes: getAccessibleScopes(permissions),
-              accessibleCategories: getAccessibleCategories(permissions)
+              accessibleCategories: getAccessibleCategories(permissions),
             };
-            
+
             return {
               configs: configs.map(c => mapConfigToGraphQL(c, configPermissions)),
               categories: Object.values(categoryGroups),
@@ -686,7 +723,7 @@ export const configResolvers = {
               validation,
               lastUpdated: new Date(),
               refreshInterval: 60,
-              dataSource: 'config-service'
+              dataSource: 'config-service',
             };
           },
           300 // Cache for 5 minutes
@@ -703,11 +740,14 @@ export const configResolvers = {
       context: Context
     ) => {
       try {
-        const configs = await configService.getConfigs({
-          scope: args.scope,
-          scopeId: args.scopeId
-        }, context.user?.id);
-        
+        const configs = await configService.getConfigs(
+          {
+            scope: args.scope,
+            scopeId: args.scopeId,
+          },
+          context.user?.id
+        );
+
         const config = configs.find(c => c.key === args.key);
         return config ? mapConfigToGraphQL(config) : null;
       } catch (error) {
@@ -728,9 +768,9 @@ export const configResolvers = {
           .eq('config_id', args.configId)
           .order('changed_at', { ascending: false })
           .limit(args.limit || 50);
-        
+
         if (error) throw error;
-        
+
         return data || [];
       } catch (error) {
         console.error('Error fetching config history:', error);
@@ -744,17 +784,15 @@ export const configResolvers = {
       context: Context
     ) => {
       try {
-        let query = configService.supabase
-          .from('config_templates')
-          .select('*');
-        
+        let query = configService.supabase.from('config_templates').select('*');
+
         if (args.category) query = query.eq('category', args.category);
         if (args.scope) query = query.eq('scope', args.scope);
         if (args.isPublic !== undefined) query = query.eq('is_public', args.isPublic);
-        
+
         const { data, error } = await query;
         if (error) throw error;
-        
+
         return data || [];
       } catch (error) {
         console.error('Error fetching config templates:', error);
@@ -762,18 +800,14 @@ export const configResolvers = {
       }
     },
 
-    configDefaults: async (
-      _parent: unknown,
-      args: { category?: string },
-      context: Context
-    ) => {
+    configDefaults: async (_parent: unknown, args: { category?: string }, context: Context) => {
       try {
         const configs = await configService.getConfigs({
           scope: 'GLOBAL',
           category: args.category,
-          includeDefaults: true
+          includeDefaults: true,
         });
-        
+
         return configs
           .filter(c => c.defaultValue !== null && c.defaultValue !== undefined)
           .map(mapConfigToGraphQL);
@@ -794,7 +828,7 @@ export const configResolvers = {
         console.error('Error validating config:', error);
         throw new Error('Failed to validate configuration');
       }
-    }
+    },
   },
 
   Mutation: {
@@ -807,7 +841,7 @@ export const configResolvers = {
         if (!context.user?.id) {
           throw new Error('Authentication required');
         }
-        
+
         const config = await configService.createConfig(args.input, context.user.id);
         return mapConfigToGraphQL(config);
       } catch (error) {
@@ -825,7 +859,7 @@ export const configResolvers = {
         if (!context.user?.id) {
           throw new Error('Authentication required');
         }
-        
+
         const config = await configService.updateConfig(
           args.input.id,
           args.input.value,
@@ -839,26 +873,22 @@ export const configResolvers = {
       }
     },
 
-    deleteConfig: async (
-      _parent: unknown,
-      args: { id: string },
-      context: Context
-    ) => {
+    deleteConfig: async (_parent: unknown, args: { id: string }, context: Context) => {
       try {
         if (!context.user?.id) {
           throw new Error('Authentication required');
         }
-        
+
         const { error } = await configService.supabase
           .from('system_configs')
           .delete()
           .eq('id', args.id);
-        
+
         if (error) throw error;
-        
+
         // Clear cache
         configService.cache.clear();
-        
+
         return true;
       } catch (error) {
         console.error('Error deleting config:', error);
@@ -875,24 +905,19 @@ export const configResolvers = {
         if (!context.user?.id) {
           throw new Error('Authentication required');
         }
-        
+
         const results = await Promise.allSettled(
-          args.input.updates.map((update) =>
-            configService.updateConfig(
-              update.id,
-              update.value,
-              context.user!.id,
-              update.metadata
-            )
+          args.input.updates.map(update =>
+            configService.updateConfig(update.id, update.value, context.user!.id, update.metadata)
           )
         );
-        
+
         const succeeded = results.filter(r => r.status === 'fulfilled').length;
         const failed = results.filter(r => r.status === 'rejected').length;
         const configs = results
           .filter(r => r.status === 'fulfilled')
           .map(r => mapConfigToGraphQL((r as PromiseFulfilledResult<ConfigItem>).value));
-        
+
         return {
           succeeded,
           failed,
@@ -901,13 +926,13 @@ export const configResolvers = {
               if (r.status === 'rejected') {
                 return {
                   configId: args.input.updates[i].id,
-                  error: r.reason?.message || 'Unknown error'
+                  error: r.reason?.message || 'Unknown error',
                 };
               }
               return null;
             })
             .filter(Boolean),
-          configs
+          configs,
         };
       } catch (error) {
         console.error('Error batch updating configs:', error);
@@ -915,31 +940,27 @@ export const configResolvers = {
       }
     },
 
-    resetConfig: async (
-      _parent: unknown,
-      args: { id: string },
-      context: Context
-    ) => {
+    resetConfig: async (_parent: unknown, args: { id: string }, context: Context) => {
       try {
         if (!context.user?.id) {
           throw new Error('Authentication required');
         }
-        
+
         // Get config with default value
         const { data: config, error: fetchError } = await configService.supabase
           .from('system_configs')
           .select('*')
           .eq('id', args.id)
           .single();
-        
+
         if (fetchError || !config) {
           throw new Error('Configuration not found');
         }
-        
+
         if (config.default_value === null || config.default_value === undefined) {
           throw new Error('No default value available for this configuration');
         }
-        
+
         // Reset to default
         const updatedConfig = await configService.updateConfig(
           args.id,
@@ -947,7 +968,7 @@ export const configResolvers = {
           context.user.id,
           { resetAt: new Date() }
         );
-        
+
         return mapConfigToGraphQL(updatedConfig);
       } catch (error) {
         console.error('Error resetting config:', error);
@@ -964,30 +985,27 @@ export const configResolvers = {
         if (!context.user?.id) {
           throw new Error('Authentication required');
         }
-        
+
         // Get all configs in category
         const configs = await configService.getConfigs({
           category: args.category,
           scope: args.scope,
-          scopeId: args.scopeId
+          scopeId: args.scopeId,
         });
-        
+
         const results = await Promise.allSettled(
           configs
             .filter(c => c.defaultValue !== null && c.defaultValue !== undefined)
             .map(config =>
-              configService.updateConfig(
-                config.id,
-                config.defaultValue,
-                context.user!.id,
-                { resetAt: new Date() }
-              )
+              configService.updateConfig(config.id, config.defaultValue, context.user!.id, {
+                resetAt: new Date(),
+              })
             )
         );
-        
+
         const succeeded = results.filter(r => r.status === 'fulfilled').length;
         const failed = results.filter(r => r.status === 'rejected').length;
-        
+
         return {
           succeeded,
           failed,
@@ -995,12 +1013,12 @@ export const configResolvers = {
             .map((r, i) => {
               if (r.status === 'rejected') {
                 return {
-                  error: r.reason?.message || 'Unknown error'
+                  error: r.reason?.message || 'Unknown error',
                 };
               }
               return null;
             })
-            .filter(Boolean)
+            .filter(Boolean),
         };
       } catch (error) {
         console.error('Error resetting config category:', error);
@@ -1024,17 +1042,17 @@ export const configResolvers = {
         if (!context.user?.id) {
           throw new Error('Authentication required');
         }
-        
+
         // Get configs to include in template
         const { data: configs, error: fetchError } = await configService.supabase
           .from('system_configs')
           .select('*')
           .in('id', args.configIds);
-        
+
         if (fetchError || !configs || configs.length === 0) {
           throw new Error('No valid configurations found');
         }
-        
+
         // Create template
         const { data, error } = await configService.supabase
           .from('config_templates')
@@ -1048,19 +1066,19 @@ export const configResolvers = {
               key: c.key,
               value: c.value,
               dataType: c.data_type,
-              validation: c.validation
+              validation: c.validation,
             })),
             tags: [],
             is_public: args.isPublic || false,
             created_by: context.user.id,
             created_at: new Date(),
-            usage_count: 0
+            usage_count: 0,
           })
           .select()
           .single();
-        
+
         if (error) throw error;
-        
+
         return data;
       } catch (error) {
         console.error('Error creating config template:', error);
@@ -1077,36 +1095,43 @@ export const configResolvers = {
         if (!context.user?.id) {
           throw new Error('Authentication required');
         }
-        
+
         // Get template
         const { data: template, error: fetchError } = await configService.supabase
           .from('config_templates')
           .select('*')
           .eq('id', args.templateId)
           .single();
-        
+
         if (fetchError || !template) {
           throw new Error('Template not found');
         }
-        
+
         // Apply template configs
         const results = await Promise.allSettled(
-          (template.configs as Array<{key: string; value: unknown; dataType: ConfigDataType; validation?: ValidationRules}>).map(async (configDef) => {
+          (
+            template.configs as Array<{
+              key: string;
+              value: unknown;
+              dataType: ConfigDataType;
+              validation?: ValidationRules;
+            }>
+          ).map(async configDef => {
             const input = {
               ...configDef,
               category: template.category,
               scope: args.scope,
-              scopeId: args.scopeId
+              scopeId: args.scopeId,
             };
-            
+
             // Check if config exists
             const existing = await configService.getConfigs({
               scope: args.scope,
-              scopeId: args.scopeId
+              scopeId: args.scopeId,
             });
-            
+
             const existingConfig = existing.find(c => c.key === configDef.key);
-            
+
             if (existingConfig) {
               return configService.updateConfig(
                 existingConfig.id,
@@ -1119,16 +1144,16 @@ export const configResolvers = {
             }
           })
         );
-        
+
         // Update usage count
         await configService.supabase
           .from('config_templates')
           .update({ usage_count: template.usage_count + 1 })
           .eq('id', args.templateId);
-        
+
         const succeeded = results.filter(r => r.status === 'fulfilled').length;
         const failed = results.filter(r => r.status === 'rejected').length;
-        
+
         return {
           succeeded,
           failed,
@@ -1136,13 +1161,13 @@ export const configResolvers = {
             .map((r, i) => {
               if (r.status === 'rejected') {
                 return {
-                  key: (template.configs as Array<{key: string}>)[i].key,
-                  error: r.reason?.message || 'Unknown error'
+                  key: (template.configs as Array<{ key: string }>)[i].key,
+                  error: r.reason?.message || 'Unknown error',
                 };
               }
               return null;
             })
-            .filter(Boolean)
+            .filter(Boolean),
         };
       } catch (error) {
         console.error('Error applying config template:', error);
@@ -1172,7 +1197,7 @@ export const configResolvers = {
         if (!context.user?.id) {
           throw new Error('Authentication required');
         }
-        
+
         return await configService.importConfigs(
           args.data,
           args.format,
@@ -1183,7 +1208,7 @@ export const configResolvers = {
         console.error('Error importing configs:', error);
         throw new Error('Failed to import configurations');
       }
-    }
+    },
   },
 
   Subscription: {
@@ -1196,19 +1221,19 @@ export const configResolvers = {
         // Implementation depends on your subscription mechanism
         // This is a placeholder for the subscription logic
         const channel = `config-changes:${args.category || '*'}:${args.scope || '*'}`;
-        
+
         // In a real implementation, you would:
         // 1. Set up a real-time subscription using your pubsub system
         // 2. Filter events based on the provided arguments
         // 3. Return an async iterator
-        
+
         return {
           [Symbol.asyncIterator]: async function* () {
             // Placeholder implementation
             yield { configChanged: {} };
-          }
+          },
         };
-      }
+      },
     },
 
     configBatchChanged: {
@@ -1220,33 +1245,29 @@ export const configResolvers = {
         // Implementation depends on your subscription mechanism
         // This is a placeholder for the subscription logic
         const channel = `config-batch-changes:${args.category || '*'}:${args.scope || '*'}`;
-        
+
         return {
           [Symbol.asyncIterator]: async function* () {
             // Placeholder implementation
             yield { configBatchChanged: [] };
-          }
+          },
         };
-      }
+      },
     },
 
     configValidationChanged: {
-      subscribe: async (
-        _parent: unknown,
-        _args: unknown,
-        context: Context
-      ) => {
+      subscribe: async (_parent: unknown, _args: unknown, context: Context) => {
         // Implementation depends on your subscription mechanism
         // This is a placeholder for the subscription logic
         return {
           [Symbol.asyncIterator]: async function* () {
             // Placeholder implementation
             yield { configValidationChanged: { isValid: true, errors: [], warnings: [] } };
-          }
+          },
         };
-      }
-    }
-  }
+      },
+    },
+  },
 };
 
 // Helper functions
@@ -1259,7 +1280,7 @@ function getCategoryIcon(category: string): string {
     API_CONFIG: 'api',
     SECURITY_CONFIG: 'security',
     DISPLAY_CONFIG: 'display_settings',
-    WORKFLOW_CONFIG: 'account_tree'
+    WORKFLOW_CONFIG: 'account_tree',
   };
   return iconMap[category] || 'settings';
 }
@@ -1267,53 +1288,49 @@ function getCategoryIcon(category: string): string {
 function calculateScopeDistribution(configs: ConfigItem[]) {
   const scopes = ['GLOBAL', 'DEPARTMENT', 'USER', 'ROLE'];
   const total = configs.length || 1;
-  
+
   return scopes.map(scope => {
     const count = configs.filter(c => c.scope === scope).length;
     return {
       scope,
       count,
-      editableCount: configs.filter(c => c.scope === scope && c.isEditable).length
+      editableCount: configs.filter(c => c.scope === scope && c.isEditable).length,
     };
   });
 }
 
 function getAccessibleScopes(permissions: ConfigUserPermissions): string[] {
   const scopes = ['USER'];
-  
+
   if (permissions.departments?.length > 0) {
     scopes.push('DEPARTMENT');
   }
-  
+
   if (permissions.isAdmin || permissions.isSuperAdmin) {
     scopes.push('ROLE');
   }
-  
+
   if (permissions.isSuperAdmin) {
     scopes.push('GLOBAL');
   }
-  
+
   return scopes;
 }
 
 function getAccessibleCategories(permissions: ConfigUserPermissions): string[] {
-  const categories = [
-    'USER_PREFERENCES',
-    'DISPLAY_CONFIG',
-    'NOTIFICATION_CONFIG'
-  ];
-  
+  const categories = ['USER_PREFERENCES', 'DISPLAY_CONFIG', 'NOTIFICATION_CONFIG'];
+
   if (permissions.departments?.length > 0) {
     categories.push('DEPARTMENT_CONFIG', 'WORKFLOW_CONFIG');
   }
-  
+
   if (permissions.isAdmin || permissions.isSuperAdmin) {
     categories.push('SYSTEM_CONFIG', 'API_CONFIG');
   }
-  
+
   if (permissions.isSuperAdmin) {
     categories.push('SECURITY_CONFIG');
   }
-  
+
   return categories;
 }

@@ -512,7 +512,10 @@ export async function getGrnReportData(
         console.log(
           `No GRN records found for grnRef ${grnRefNum} and materialCode ${trimmedMaterialCode}.`
         );
-      return { success: false, error: `No GRN records found for grnRef ${grnRefNum} and materialCode ${trimmedMaterialCode}` };
+      return {
+        success: false,
+        error: `No GRN records found for grnRef ${grnRefNum} and materialCode ${trimmedMaterialCode}`,
+      };
     }
 
     // Store supplier code from the first record to fetch supplier name later
@@ -770,7 +773,7 @@ export async function getTransactionReportData(
           summary: {},
           total_transfers: 0,
           total_pallets: 0,
-        }
+        },
       };
     }
 
@@ -893,7 +896,9 @@ import {
  * Get warehouse work level data
  * Server Action for fetching warehouse work level analytics
  */
-export async function getWarehouseWorkLevel(params?: WarehouseWorkLevelParams): Promise<ActionResult<WarehouseWorkLevelResponse>> {
+export async function getWarehouseWorkLevel(
+  params?: WarehouseWorkLevelParams
+): Promise<ActionResult<WarehouseWorkLevelResponse>> {
   try {
     const supabase = await createClient();
 
@@ -941,7 +946,9 @@ export async function getWarehouseWorkLevel(params?: WarehouseWorkLevelParams): 
  * Get today's warehouse work level
  * Convenience Server Action for today's data
  */
-export async function getTodayWarehouseWorkLevel(): Promise<ActionResult<WarehouseWorkLevelResponse>> {
+export async function getTodayWarehouseWorkLevel(): Promise<
+  ActionResult<WarehouseWorkLevelResponse>
+> {
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
@@ -956,7 +963,9 @@ export async function getTodayWarehouseWorkLevel(): Promise<ActionResult<Warehou
  * Get this week's warehouse work level
  * Convenience Server Action for this week's data
  */
-export async function getThisWeekWarehouseWorkLevel(): Promise<ActionResult<WarehouseWorkLevelResponse>> {
+export async function getThisWeekWarehouseWorkLevel(): Promise<
+  ActionResult<WarehouseWorkLevelResponse>
+> {
   const now = new Date();
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - now.getDay());
@@ -972,7 +981,9 @@ export async function getThisWeekWarehouseWorkLevel(): Promise<ActionResult<Ware
  * Get this month's warehouse work level
  * Convenience Server Action for this month's data
  */
-export async function getThisMonthWarehouseWorkLevel(): Promise<ActionResult<WarehouseWorkLevelResponse>> {
+export async function getThisMonthWarehouseWorkLevel(): Promise<
+  ActionResult<WarehouseWorkLevelResponse>
+> {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -1063,7 +1074,9 @@ function extractVoidReason(remark: string): string {
 /**
  * Get void pallet summary statistics
  */
-export async function getVoidPalletSummary(filters: VoidPalletFilters): Promise<ActionResult<VoidPalletSummary>> {
+export async function getVoidPalletSummary(
+  filters: VoidPalletFilters
+): Promise<ActionResult<VoidPalletSummary>> {
   const supabase = await createClient();
 
   try {
@@ -1155,7 +1168,9 @@ export async function getVoidPalletSummary(filters: VoidPalletFilters): Promise<
 /**
  * Get void reason statistics
  */
-export async function getVoidReasonStats(filters: VoidPalletFilters): Promise<ActionResult<VoidReasonStats[]>> {
+export async function getVoidReasonStats(
+  filters: VoidPalletFilters
+): Promise<ActionResult<VoidReasonStats[]>> {
   const supabase = await createClient();
 
   try {
@@ -1237,7 +1252,9 @@ export async function getVoidReasonStats(filters: VoidPalletFilters): Promise<Ac
 /**
  * Get void pallet details
  */
-export async function getVoidPalletDetails(filters: VoidPalletFilters): Promise<ActionResult<VoidPalletDetails[]>> {
+export async function getVoidPalletDetails(
+  filters: VoidPalletFilters
+): Promise<ActionResult<VoidPalletDetails[]>> {
   const supabase = await createClient();
 
   try {
@@ -1311,7 +1328,9 @@ export async function getVoidPalletDetails(filters: VoidPalletFilters): Promise<
 /**
  * Get void product statistics
  */
-export async function getVoidProductStats(filters: VoidPalletFilters): Promise<ActionResult<VoidProductStats[]>> {
+export async function getVoidProductStats(
+  filters: VoidPalletFilters
+): Promise<ActionResult<VoidProductStats[]>> {
   const supabase = await createClient();
 
   try {
@@ -1463,7 +1482,9 @@ interface NotCountedItem {
 /**
  * Get stock take summary statistics
  */
-export async function getStockTakeSummary(filters: StockTakeFilters): Promise<ActionResult<StockTakeSummary>> {
+export async function getStockTakeSummary(
+  filters: StockTakeFilters
+): Promise<ActionResult<StockTakeSummary>> {
   const supabase = await createClient();
 
   try {
@@ -1580,7 +1601,9 @@ export async function getStockTakeSummary(filters: StockTakeFilters): Promise<Ac
 /**
  * Get stock take details
  */
-export async function getStockTakeDetails(filters: StockTakeFilters): Promise<ActionResult<StockTakeDetails[]>> {
+export async function getStockTakeDetails(
+  filters: StockTakeFilters
+): Promise<ActionResult<StockTakeDetails[]>> {
   const supabase = await createClient();
 
   try {
@@ -1710,7 +1733,9 @@ export async function getStockTakeDetails(filters: StockTakeFilters): Promise<Ac
 /**
  * Get not counted items
  */
-export async function getNotCountedItems(filters: StockTakeFilters): Promise<ActionResult<NotCountedItem[]>> {
+export async function getNotCountedItems(
+  filters: StockTakeFilters
+): Promise<ActionResult<NotCountedItem[]>> {
   const supabase = await createClient();
 
   try {
@@ -1919,7 +1944,9 @@ function parseDateRange(dateRange: string): [string, string] {
 /**
  * Get order loading summary statistics
  */
-export async function getOrderLoadingSummary(filters: OrderLoadingFilters): Promise<ActionResult<OrderLoadingSummary>> {
+export async function getOrderLoadingSummary(
+  filters: OrderLoadingFilters
+): Promise<ActionResult<OrderLoadingSummary>> {
   const supabase = await createClient();
 
   try {
@@ -2036,7 +2063,9 @@ export async function getOrderLoadingSummary(filters: OrderLoadingFilters): Prom
 /**
  * Get order progress data
  */
-export async function getOrderProgress(filters: OrderLoadingFilters): Promise<ActionResult<OrderProgress[]>> {
+export async function getOrderProgress(
+  filters: OrderLoadingFilters
+): Promise<ActionResult<OrderProgress[]>> {
   const supabase = await createClient();
 
   try {
@@ -2135,7 +2164,9 @@ export async function getOrderProgress(filters: OrderLoadingFilters): Promise<Ac
 /**
  * Get loading details history
  */
-export async function getLoadingDetails(filters: OrderLoadingFilters): Promise<ActionResult<LoadingDetails[]>> {
+export async function getLoadingDetails(
+  filters: OrderLoadingFilters
+): Promise<ActionResult<LoadingDetails[]>> {
   const supabase = await createClient();
 
   try {
@@ -2207,7 +2238,9 @@ export async function getLoadingDetails(filters: OrderLoadingFilters): Promise<A
 /**
  * Get user performance statistics
  */
-export async function getUserPerformance(filters: OrderLoadingFilters): Promise<ActionResult<UserPerformance[]>> {
+export async function getUserPerformance(
+  filters: OrderLoadingFilters
+): Promise<ActionResult<UserPerformance[]>> {
   const supabase = await createClient();
 
   try {

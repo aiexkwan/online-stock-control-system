@@ -6,12 +6,7 @@
 import { z } from 'zod';
 
 // Widget 數據源枚舉
-export const WidgetDataSourceSchema = z.enum([
-  'batch',
-  'server-action',
-  'mixed',
-  'none',
-]);
+export const WidgetDataSourceSchema = z.enum(['batch', 'server-action', 'mixed', 'none']);
 
 // Widget 優先級枚舉
 export const WidgetPrioritySchema = z.enum(['critical', 'high', 'normal', 'low']);

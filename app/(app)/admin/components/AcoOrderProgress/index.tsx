@@ -136,7 +136,7 @@ export function AcoOrderProgress() {
             <div className='max-h-[400px] space-y-3 overflow-y-auto'>
               {progressLoading ? (
                 <div className='flex items-center justify-center py-8'>
-                  <div className='h-2 w-8 bg-orange-500 rounded-full opacity-75'></div>
+                  <div className='h-2 w-8 rounded-full bg-orange-500 opacity-75'></div>
                   <span className='ml-3 text-slate-400'>Loading progress...</span>
                 </div>
               ) : progress.length === 0 ? (

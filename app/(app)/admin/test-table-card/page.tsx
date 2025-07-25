@@ -5,24 +5,18 @@ import { TableCard } from '../components/dashboard/cards/TableCard';
 
 export default function TestTableCardPage() {
   return (
-    <div className="container mx-auto p-6 space-y-8">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          TableCard Test Page
-        </h1>
-        <p className="text-gray-600">
-          Testing the TableCard component with different data sources
-        </p>
+    <div className='container mx-auto space-y-8 p-6'>
+      <div className='text-center'>
+        <h1 className='mb-2 text-3xl font-bold text-gray-900'>TableCard Test Page</h1>
+        <p className='text-gray-600'>Testing the TableCard component with different data sources</p>
       </div>
 
       {/* Test 1: Products Table */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-gray-800">
-          Test 1: Products Table
-        </h2>
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+      <div className='space-y-4'>
+        <h2 className='text-xl font-semibold text-gray-800'>Test 1: Products Table</h2>
+        <div className='rounded-lg border border-gray-200 bg-white p-6 shadow-sm'>
           <TableCard
-            dataSource="products"
+            dataSource='products'
             columns={['sku', 'name', 'quantity', 'status', 'updated_at']}
             sortable={true}
             filterable={true}
@@ -36,13 +30,11 @@ export default function TestTableCardPage() {
       </div>
 
       {/* Test 2: Orders Table with Date Range */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-gray-800">
-          Test 2: Orders Table (Last 7 Days)
-        </h2>
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+      <div className='space-y-4'>
+        <h2 className='text-xl font-semibold text-gray-800'>Test 2: Orders Table (Last 7 Days)</h2>
+        <div className='rounded-lg border border-gray-200 bg-white p-6 shadow-sm'>
           <TableCard
-            dataSource="orders"
+            dataSource='orders'
             columns={['order_id', 'customer', 'total', 'status', 'created_at']}
             sortable={true}
             filterable={true}
@@ -52,7 +44,7 @@ export default function TestTableCardPage() {
             showSearch={true}
             dateRange={{
               start: new Date(new Date().setDate(new Date().getDate() - 7)),
-              end: new Date()
+              end: new Date(),
             }}
             isEditMode={false}
           />
@@ -60,13 +52,11 @@ export default function TestTableCardPage() {
       </div>
 
       {/* Test 3: Inventory Table */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-gray-800">
-          Test 3: Inventory Table
-        </h2>
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+      <div className='space-y-4'>
+        <h2 className='text-xl font-semibold text-gray-800'>Test 3: Inventory Table</h2>
+        <div className='rounded-lg border border-gray-200 bg-white p-6 shadow-sm'>
           <TableCard
-            dataSource="inventory"
+            dataSource='inventory'
             columns={['item_code', 'description', 'quantity', 'location', 'last_updated']}
             sortable={true}
             filterable={false}
@@ -80,13 +70,13 @@ export default function TestTableCardPage() {
       </div>
 
       {/* Test 4: Suppliers Table (Compact) */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-gray-800">
+      <div className='space-y-4'>
+        <h2 className='text-xl font-semibold text-gray-800'>
           Test 4: Suppliers Table (Compact View)
         </h2>
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+        <div className='rounded-lg border border-gray-200 bg-white p-6 shadow-sm'>
           <TableCard
-            dataSource="suppliers"
+            dataSource='suppliers'
             columns={['name', 'contact', 'status']}
             sortable={false}
             filterable={false}
@@ -100,13 +90,11 @@ export default function TestTableCardPage() {
       </div>
 
       {/* Test 5: Edit Mode */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-gray-800">
-          Test 5: Edit Mode
-        </h2>
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+      <div className='space-y-4'>
+        <h2 className='text-xl font-semibold text-gray-800'>Test 5: Edit Mode</h2>
+        <div className='rounded-lg border border-gray-200 bg-white p-6 shadow-sm'>
           <TableCard
-            dataSource="products"
+            dataSource='products'
             columns={['sku', 'name', 'quantity']}
             sortable={true}
             filterable={true}
@@ -120,13 +108,11 @@ export default function TestTableCardPage() {
       </div>
 
       {/* Test 6: Empty State */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-gray-800">
-          Test 6: Empty State Handling
-        </h2>
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+      <div className='space-y-4'>
+        <h2 className='text-xl font-semibold text-gray-800'>Test 6: Empty State Handling</h2>
+        <div className='rounded-lg border border-gray-200 bg-white p-6 shadow-sm'>
           <TableCard
-            dataSource="empty-data-source"
+            dataSource='empty-data-source'
             columns={['id', 'name', 'value']}
             sortable={true}
             filterable={true}
@@ -140,18 +126,17 @@ export default function TestTableCardPage() {
       </div>
 
       {/* Debug Information */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-gray-800">
-          Debug Information
-        </h2>
-        <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-          <div className="space-y-2 text-sm">
+      <div className='space-y-4'>
+        <h2 className='text-xl font-semibold text-gray-800'>Debug Information</h2>
+        <div className='rounded-lg border border-gray-200 bg-gray-50 p-6'>
+          <div className='space-y-2 text-sm'>
             <div>
-              <strong>Common Data Sources:</strong> products, orders, inventory, suppliers, users, transfers
+              <strong>Common Data Sources:</strong> products, orders, inventory, suppliers, users,
+              transfers
             </div>
             <div>
               <strong>Features to Test:</strong>
-              <ul className="list-disc list-inside mt-2 space-y-1">
+              <ul className='mt-2 list-inside list-disc space-y-1'>
                 <li>Sorting functionality on sortable columns</li>
                 <li>Filtering when enabled</li>
                 <li>Pagination controls</li>

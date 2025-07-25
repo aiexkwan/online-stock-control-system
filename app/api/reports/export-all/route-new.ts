@@ -23,7 +23,7 @@ interface ExportSummary {
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const startTime = Date.now();
-  
+
   try {
     const result = await handleAsync(async () => {
       const supabase = await createClient();
@@ -188,7 +188,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
       // 生成 Excel 文件
       const buffer = await workbook.xlsx.writeBuffer();
-      
+
       return buffer;
     }, 'Failed to export data');
 
@@ -207,9 +207,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
   } catch (error) {
     console.error('Error exporting all data:', error);
-    return NextResponse.json(
-      errorResult('Failed to export data', error),
-      { status: 500 }
-    );
+    return NextResponse.json(errorResult('Failed to export data', error), { status: 500 });
   }
 }

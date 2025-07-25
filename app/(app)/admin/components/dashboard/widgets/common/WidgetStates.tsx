@@ -47,11 +47,11 @@ export const WidgetSkeleton = React.memo(function WidgetSkeleton({
     return <div className={cn('animate-pulse', className)}>{children}</div>;
   }
 
-  // Spinner skeleton - 移除 animate-spin 
+  // Spinner skeleton - 移除 animate-spin
   if (type === 'spinner') {
     return (
       <div className={cn('flex items-center justify-center p-8', className)}>
-        <div className='h-2 w-16 bg-slate-600 rounded-full opacity-75' />
+        <div className='h-2 w-16 rounded-full bg-slate-600 opacity-75' />
       </div>
     );
   }
@@ -490,7 +490,7 @@ export const WidgetLoadingOverlay = React.memo(function WidgetLoadingOverlay({
         >
           <div className='flex flex-col items-center space-y-3'>
             <div className='relative'>
-              <div className='h-2 w-16 bg-slate-600 rounded-full opacity-75' />
+              <div className='h-2 w-16 rounded-full bg-slate-600 opacity-75' />
             </div>
             <p className='text-sm font-medium text-slate-300'>{message}</p>
           </div>
@@ -646,7 +646,7 @@ export const WidgetSuspenseFallback = React.memo(function WidgetSuspenseFallback
   return (
     <div className={`${baseClasses} ${className || ''}`}>
       <div className='flex items-center justify-center'>
-        <div className='h-2 w-16 bg-slate-600 rounded-full opacity-75' />
+        <div className='h-2 w-16 rounded-full bg-slate-600 opacity-75' />
       </div>
     </div>
   );

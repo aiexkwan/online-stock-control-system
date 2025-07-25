@@ -1,7 +1,7 @@
 /**
  * 統一 Hook 類型定義
  * Phase 3.2 Stage 2 - TypeScript 遷移標準化接口
- * 
+ *
  * @description 提供標準化的 Hook 類型模式，確保整個系統的一致性
  * @author Phase 3.2 專家協作團隊
  * @date 2025-07-21
@@ -53,7 +53,8 @@ export interface ApiHookOptions<TParams = unknown> {
  * 分頁 Hook 返回類型
  * 用於處理分頁數據的 Hook
  */
-export interface PaginatedHookReturn<TData, TError = Error> extends BaseHookReturn<TData[], TError> {
+export interface PaginatedHookReturn<TData, TError = Error>
+  extends BaseHookReturn<TData[], TError> {
   /** 當前頁碼 */
   page: number;
   /** 每頁數量 */

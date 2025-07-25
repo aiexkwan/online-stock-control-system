@@ -8,23 +8,23 @@ import { apolloClient } from '@/lib/graphql/apollo-client';
 export default function TestFormCardMigrationPage() {
   return (
     <ApolloProvider client={apolloClient}>
-      <div className="container mx-auto p-8 bg-gray-900 min-h-screen">
-        <h1 className="text-3xl font-bold text-white mb-8">FormCard Migration Test Page</h1>
-        
-        <div className="grid gap-8">
+      <div className='container mx-auto min-h-screen bg-gray-900 p-8'>
+        <h1 className='mb-8 text-3xl font-bold text-white'>FormCard Migration Test Page</h1>
+
+        <div className='grid gap-8'>
           {/* Product Edit Form */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-300 mb-4">Product Edit Form</h2>
-            <FormCard 
+            <h2 className='mb-4 text-xl font-semibold text-gray-300'>Product Edit Form</h2>
+            <FormCard
               formType={FormType.PRODUCT_EDIT}
               showHeader={true}
               showProgress={true}
               showValidationSummary={true}
-              className="max-w-4xl"
-              onSubmitSuccess={(data) => {
+              className='max-w-4xl'
+              onSubmitSuccess={data => {
                 console.log('Form submitted successfully:', data);
               }}
-              onSubmitError={(error) => {
+              onSubmitError={error => {
                 console.error('Form submission error:', error);
               }}
               onFieldChange={(fieldName, value) => {
@@ -35,16 +35,16 @@ export default function TestFormCardMigrationPage() {
 
           {/* User Registration Form */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-300 mb-4">User Registration Form</h2>
-            <FormCard 
+            <h2 className='mb-4 text-xl font-semibold text-gray-300'>User Registration Form</h2>
+            <FormCard
               formType={FormType.USER_REGISTRATION}
               showHeader={true}
               showProgress={true}
-              className="max-w-4xl"
-              onSubmitSuccess={(data) => {
+              className='max-w-4xl'
+              onSubmitSuccess={data => {
                 console.log('User registered successfully:', data);
               }}
-              onSubmitError={(error) => {
+              onSubmitError={error => {
                 console.error('Registration error:', error);
               }}
             />
@@ -52,16 +52,16 @@ export default function TestFormCardMigrationPage() {
 
           {/* Order Create Form */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-300 mb-4">Order Create Form</h2>
-            <FormCard 
+            <h2 className='mb-4 text-xl font-semibold text-gray-300'>Order Create Form</h2>
+            <FormCard
               formType={FormType.ORDER_CREATE}
               showHeader={true}
               showProgress={false}
-              className="max-w-4xl"
-              onSubmitSuccess={(data) => {
+              className='max-w-4xl'
+              onSubmitSuccess={data => {
                 console.log('Order created successfully:', data);
               }}
-              onSubmitError={(error) => {
+              onSubmitError={error => {
                 console.error('Order creation error:', error);
               }}
             />
@@ -69,15 +69,15 @@ export default function TestFormCardMigrationPage() {
 
           {/* Warehouse Transfer Form */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-300 mb-4">Warehouse Transfer Form</h2>
-            <FormCard 
+            <h2 className='mb-4 text-xl font-semibold text-gray-300'>Warehouse Transfer Form</h2>
+            <FormCard
               formType={FormType.WAREHOUSE_TRANSFER}
               showHeader={true}
-              className="max-w-4xl"
-              onSubmitSuccess={(data) => {
+              className='max-w-4xl'
+              onSubmitSuccess={data => {
                 console.log('Transfer completed successfully:', data);
               }}
-              onSubmitError={(error) => {
+              onSubmitError={error => {
                 console.error('Transfer error:', error);
               }}
             />

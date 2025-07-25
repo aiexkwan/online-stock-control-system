@@ -27,7 +27,6 @@ export async function POST(request: Request): Promise<NextResponse> {
   const body: OrderLoadingReportRequest = await request.json();
 
   const result = await handleAsync(async (): Promise<ArrayBuffer> => {
-
     // 使用新的 DataSource 架構
     const dataSource = orderLoadingDataSources.get('loading-details');
     if (!dataSource) {
@@ -126,9 +125,10 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const format = body.format || 'excel';
   const extension = format === 'pdf' ? 'pdf' : 'xlsx';
-  const contentType = format === 'pdf' 
-    ? 'application/pdf' 
-    : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  const contentType =
+    format === 'pdf'
+      ? 'application/pdf'
+      : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
   // 返回文件
   return new NextResponse(result.data, {

@@ -331,7 +331,7 @@ export const ReportGeneratorWithDialogWidgetV2 = function ReportGeneratorWithDia
               )}
               {downloadStatus === 'downloading' && (
                 <div className='z-[5] flex items-center justify-center'>
-                  <div className='mr-2 h-1 w-6 bg-slate-400 rounded-full' />
+                  <div className='mr-2 h-1 w-6 rounded-full bg-slate-400' />
                   {Math.round(progress)}%
                 </div>
               )}

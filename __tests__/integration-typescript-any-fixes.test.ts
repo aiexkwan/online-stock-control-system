@@ -30,7 +30,12 @@ describe('TypeScript Any Fixes Integration Test', () => {
           expect(result.trim()).toBe('');
         } catch (error) {
           // 如果有 ESLint 錯誤，測試失敗
-          fail(`ESLint found issues in ${filePath}: ${error.stdout}`);
+          // 處理 execSync 的錯誤輸出
+          if (error && typeof error === 'object' && 'stdout' in error) {
+            fail(`ESLint found issues in ${filePath}: ${error.stdout}`);
+          } else {
+            fail(`ESLint found issues in ${filePath}: ${String(error)}`);
+          }
         }
       });
     });

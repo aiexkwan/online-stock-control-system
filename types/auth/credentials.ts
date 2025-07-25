@@ -40,7 +40,6 @@ export interface ChangePasswordRequest {
   confirmPassword: string;
 }
 
-
 export interface User {
   id: string;
   email: string;

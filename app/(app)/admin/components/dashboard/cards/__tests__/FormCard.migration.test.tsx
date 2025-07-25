@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MockedProvider } from '@apollo/client/testing';
-import { FormCard, FormType } from '../FormCard';
+import { FormCard, FormType, type FormDataRecord } from '../FormCard';
 import ProductEditForm from '../../../../../productUpdate/components/ProductEditForm';
 import { ProductData } from '@/app/actions/productActions';
 
@@ -127,7 +127,7 @@ describe('FormCard 遷移驗證測試', () => {
       renderWithProviders(
         <FormCard
           formType={FormType.PRODUCT_EDIT}
-          prefilledData={mockProductData}
+          prefilledData={mockProductData as unknown as FormDataRecord}
           showHeader={true}
         />
       );
@@ -165,7 +165,7 @@ describe('FormCard 遷移驗證測試', () => {
       renderWithProviders(
         <FormCard
           formType={FormType.PRODUCT_EDIT}
-          prefilledData={mockProductData}
+          prefilledData={mockProductData as unknown as FormDataRecord}
           showHeader={true}
         />
       );
@@ -220,7 +220,7 @@ describe('FormCard 遷移驗證測試', () => {
       renderWithProviders(
         <FormCard
           formType={FormType.PRODUCT_EDIT}
-          prefilledData={{}}
+          prefilledData={{} as FormDataRecord}
           onSubmitSuccess={mockSubmitSuccess}
           onSubmitError={mockSubmitError}
           showValidationSummary={true}
@@ -271,7 +271,7 @@ describe('FormCard 遷移驗證測試', () => {
       renderWithProviders(
         <FormCard
           formType={FormType.PRODUCT_EDIT}
-          prefilledData={{}}
+          prefilledData={{} as FormDataRecord}
           showProgress={true}
           onFieldChange={mockFieldChange}
         />
@@ -321,7 +321,7 @@ describe('FormCard 遷移驗證測試', () => {
       renderWithProviders(
         <FormCard
           formType={FormType.PRODUCT_EDIT}
-          prefilledData={mockProductData}
+          prefilledData={mockProductData as unknown as FormDataRecord}
           onSubmitSuccess={mockSubmitSuccess}
         />
       );
@@ -372,7 +372,7 @@ describe('FormCard 遷移驗證測試', () => {
       renderWithProviders(
         <FormCard
           formType={FormType.PRODUCT_EDIT}
-          prefilledData={invalidProductData}
+          prefilledData={invalidProductData as unknown as FormDataRecord}
           onSubmitError={mockSubmitError}
           showValidationSummary={true}
         />
@@ -443,7 +443,7 @@ describe('FormCard 遷移驗證測試', () => {
       renderWithProviders(
         <FormCard
           formType={FormType.PRODUCT_EDIT}
-          prefilledData={mockProductData}
+          prefilledData={mockProductData as unknown as FormDataRecord}
           showHeader={true}
           showProgress={true}
         />
@@ -492,7 +492,7 @@ describe('遷移兼容性測試', () => {
       <FormCard
         formType={FormType.PRODUCT_EDIT}
         entityId="existing-product-id"
-        prefilledData={mockProductData}
+        prefilledData={mockProductData as unknown as FormDataRecord}
         isEditMode={false}
         showHeader={true}
         showProgress={true}

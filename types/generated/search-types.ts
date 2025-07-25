@@ -3,17 +3,21 @@ export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
-export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
-export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
+export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = {
+  [_ in K]?: never;
+};
+export type Incremental<T> =
+  | T
+  | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
-  ID: { input: string; output: string; }
-  String: { input: string; output: string; }
-  Boolean: { input: boolean; output: boolean; }
-  Int: { input: number; output: number; }
-  Float: { input: number; output: number; }
-  DateTime: { input: any; output: any; }
-  JSON: { input: any; output: any; }
+  ID: { input: string; output: string };
+  String: { input: string; output: string };
+  Boolean: { input: boolean; output: boolean };
+  Int: { input: number; output: number };
+  Float: { input: number; output: number };
+  DateTime: { input: any; output: any };
+  JSON: { input: any; output: any };
 };
 
 export type DateRangeInput = {
@@ -39,14 +43,14 @@ export enum LocationType {
   Fold = 'FOLD',
   Injection = 'INJECTION',
   Pipeline = 'PIPELINE',
-  Prebook = 'PREBOOK'
+  Prebook = 'PREBOOK',
 }
 
 export enum OrderStatus {
   Cancelled = 'CANCELLED',
   Completed = 'COMPLETED',
   Pending = 'PENDING',
-  Processing = 'PROCESSING'
+  Processing = 'PROCESSING',
 }
 
 export type PageInfo = {
@@ -88,11 +92,9 @@ export type Query = {
   searchSuggestions: Array<SearchSuggestion>;
 };
 
-
 export type QuerySearchCardArgs = {
   input: SearchCardInput;
 };
-
 
 export type QuerySearchSuggestionsArgs = {
   entity?: InputMaybe<SearchableEntity>;
@@ -131,7 +133,7 @@ export enum SearchMode {
   Entity = 'ENTITY',
   Global = 'GLOBAL',
   Mixed = 'MIXED',
-  Suggestion = 'SUGGESTION'
+  Suggestion = 'SUGGESTION',
 }
 
 export type SearchResultAction = {
@@ -181,7 +183,7 @@ export enum SearchType {
   Code = 'CODE',
   Exact = 'EXACT',
   Fuzzy = 'FUZZY',
-  Text = 'TEXT'
+  Text = 'TEXT',
 }
 
 export enum SearchableEntity {
@@ -194,12 +196,12 @@ export enum SearchableEntity {
   Product = 'PRODUCT',
   Supplier = 'SUPPLIER',
   Transfer = 'TRANSFER',
-  User = 'USER'
+  User = 'USER',
 }
 
 export enum SortDirection {
   Asc = 'ASC',
-  Desc = 'DESC'
+  Desc = 'DESC',
 }
 
 export enum SuggestionType {
@@ -207,12 +209,22 @@ export enum SuggestionType {
   PopularSearch = 'POPULAR_SEARCH',
   RecentSearch = 'RECENT_SEARCH',
   RelatedSearch = 'RELATED_SEARCH',
-  SpellingCorrection = 'SPELLING_CORRECTION'
+  SpellingCorrection = 'SPELLING_CORRECTION',
 }
 
 export type SimpleSearchCardQueryVariables = Exact<{
   input: SearchCardInput;
 }>;
 
-
-export type SimpleSearchCardQuery = { __typename?: 'Query', searchCard: { __typename?: 'SearchCardData', searchMeta: { __typename?: 'SearchMetadata', query: string, totalResults: number, searchTime: number } } };
+export type SimpleSearchCardQuery = {
+  __typename?: 'Query';
+  searchCard: {
+    __typename?: 'SearchCardData';
+    searchMeta: {
+      __typename?: 'SearchMetadata';
+      query: string;
+      totalResults: number;
+      searchTime: number;
+    };
+  };
+};

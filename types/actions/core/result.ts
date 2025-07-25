@@ -1,7 +1,7 @@
 /**
  * @fileoverview Server Actions 統一結果類型定義
  * @module types/actions/core/result
- * 
+ *
  * Phase 2: Server Actions 類型統一架構
  * 提供標準化的 Server Actions 響應格式
  */
@@ -93,36 +93,35 @@ export interface ActionResultWithNotification<T = unknown> extends ActionResult<
 /**
  * 文件上傳 Action 結果
  */
-export interface FileUploadActionResult extends ActionResult<{
-  fileId: string;
-  fileName: string;
-  fileSize: number;
-  mimeType: string;
-  url?: string;
-}> {}
+export interface FileUploadActionResult
+  extends ActionResult<{
+    fileId: string;
+    fileName: string;
+    fileSize: number;
+    mimeType: string;
+    url?: string;
+  }> {}
 
 /**
  * 批量操作 Action 結果
  */
-export interface BatchActionResult<T = unknown> extends ActionResult<{
-  succeeded: T[];
-  failed: Array<{ item: T; error: ActionError }>;
-  summary: {
-    total: number;
-    succeeded: number;
-    failed: number;
-  };
-}> {}
+export interface BatchActionResult<T = unknown>
+  extends ActionResult<{
+    succeeded: T[];
+    failed: Array<{ item: T; error: ActionError }>;
+    summary: {
+      total: number;
+      succeeded: number;
+      failed: number;
+    };
+  }> {}
 
 // ============= 輔助函數 =============
 
 /**
  * 創建成功的 Action 結果
  */
-export function createActionSuccess<T>(
-  data: T,
-  context?: Partial<ActionContext>
-): ActionResult<T> {
+export function createActionSuccess<T>(data: T, context?: Partial<ActionContext>): ActionResult<T> {
   return {
     success: true,
     data,

@@ -210,9 +210,7 @@ async function testCompleteUserFlow() {
     // 不需要手動導航，登入後已經在 admin 頁面
     const adminPageTitle = await page.title();
     runTest('Admin page loads without errors', () => {
-      return (
-        adminPageTitle && !adminPageTitle.includes('404') && !adminPageTitle.includes('Error')
-      );
+      return adminPageTitle && !adminPageTitle.includes('404') && !adminPageTitle.includes('Error');
     });
 
     await waitForNetworkIdle();

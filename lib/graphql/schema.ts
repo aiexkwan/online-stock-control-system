@@ -3,7 +3,6 @@
  * Combined schema for the NewPennine WMS
  */
 
-
 export const baseSchema = `
 # Base GraphQL Schema - Core Types
 scalar DateTime
@@ -2874,7 +2873,7 @@ type NotificationChannel {
 }
 `;
 
-// List Schema - ListCard with unified list support  
+// List Schema - ListCard with unified list support
 export const listSchema = `
 # List GraphQL Schema
 # ListCard 組件相關類型定義

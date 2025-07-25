@@ -18,7 +18,7 @@ import {
   OrderStatus,
   DateRangeInput,
   SearchResultCollection,
-  SearchResultItem
+  SearchResultItem,
 } from '@/types/generated/search-types';
 
 // Import additional types from main GraphQL types if needed
@@ -171,23 +171,16 @@ const searchPatterns = {
     /^[A-Z]{2,3}-\d{4}-\d{6}$/,
     /^[A-Z]+-[A-Z0-9]+$/,
     /^[\w]+-[\w]+$/,
-    /^[A-Z0-9]{12}$/
+    /^[A-Z0-9]{12}$/,
   ],
   // Pallet 模式 (240615/1, 240615-1)
-  pallet: [
-    /^\d{6}\/\d{1,3}$/,
-    /^\d{6}-\d{1,3}$/,
-    /^PLT-\d{6}\/\d{1,3}$/
-  ],
+  pallet: [/^\d{6}\/\d{1,3}$/, /^\d{6}-\d{1,3}$/, /^PLT-\d{6}\/\d{1,3}$/],
   // 產品代碼模式
-  productCode: [
-    /^[A-Z0-9]{3,20}$/,
-    /^[A-Z]{2}\d{4,}$/
-  ],
+  productCode: [/^[A-Z0-9]{3,20}$/, /^[A-Z]{2}\d{4,}$/],
   // 數字ID模式
   numericId: /^\d+$/,
   // 郵件模式
-  email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
 };
 
 export const searchResolver = {
@@ -206,8 +199,8 @@ export const searchResolver = {
         // 驗證認證
         if (!context.user) {
           throw new GraphQLError('User not authenticated', {
-          extensions: { code: 'UNAUTHENTICATED' }
-        });
+            extensions: { code: 'UNAUTHENTICATED' },
+          });
         }
 
         // 驗證輸入
@@ -219,9 +212,7 @@ export const searchResolver = {
         const suggestedEntities = suggestEntities(processedQuery, detectedType);
 
         // 確定搜索實體
-        const searchEntities = input.entities?.length 
-          ? input.entities 
-          : suggestedEntities;
+        const searchEntities = input.entities?.length ? input.entities : suggestedEntities;
 
         // 檢查緩存
         const cacheKey = generateCacheKey(input);
@@ -231,19 +222,18 @@ export const searchResolver = {
         }
 
         // 執行搜索
-        const searchResults = await executeSearch({
-          ...input,
-          query: processedQuery,
-          type: detectedType,
-          entities: searchEntities
-        }, context);
-
-        // 生成建議
-        const suggestions = await generateSuggestions(
-          processedQuery, 
-          searchEntities, 
+        const searchResults = await executeSearch(
+          {
+            ...input,
+            query: processedQuery,
+            type: detectedType,
+            entities: searchEntities,
+          },
           context
         );
+
+        // 生成建議
+        const suggestions = await generateSuggestions(processedQuery, searchEntities, context);
 
         // 搜索分析 (如果啟用)
         let analytics = null;
@@ -259,13 +249,16 @@ export const searchResolver = {
 
         // 保存搜索歷史
         if (input.options?.saveToHistory !== false) {
-          await saveSearchHistory({
-            query: processedQuery,
-            entities: searchEntities,
-            resultCount: searchResults.results.items.length,
-            userId: context.user.id,
-            success: searchResults.results.items.length > 0
-          }, context);
+          await saveSearchHistory(
+            {
+              query: processedQuery,
+              entities: searchEntities,
+              resultCount: searchResults.results.items.length,
+              userId: context.user.id,
+              success: searchResults.results.items.length > 0,
+            },
+            context
+          );
         }
 
         const executionTime = Date.now() - startTime;
@@ -280,25 +273,23 @@ export const searchResolver = {
             totalResults: searchResults.results.items.length,
             searchTime: executionTime,
             facets: searchResults.facets,
-            hasMore: searchResults.results.pageInfo.hasNextPage
+            hasMore: searchResults.results.pageInfo.hasNextPage,
           },
           results: searchResults.results,
           suggestions,
           analytics,
-          history
+          history,
         };
 
         // 緩存結果
         await cacheResult(cacheKey, result, 300); // 5分鐘緩存
 
         return result;
-
       } catch (error) {
         console.error('SearchCard error:', error);
-        throw new GraphQLError(
-          error.message || 'Search failed',
-          { extensions: { code: 'SEARCH_ERROR', query: input.query, entities: input.entities } }
-        );
+        throw new GraphQLError(error.message || 'Search failed', {
+          extensions: { code: 'SEARCH_ERROR', query: input.query, entities: input.entities },
+        });
       }
     },
 
@@ -312,20 +303,18 @@ export const searchResolver = {
     ): Promise<SearchCardData[]> => {
       if (!context.user) {
         throw new GraphQLError('User not authenticated', {
-          extensions: { code: 'UNAUTHENTICATED' }
+          extensions: { code: 'UNAUTHENTICATED' },
         });
       }
 
       if (inputs.length > 10) {
         throw new GraphQLError('Too many search requests in batch (max 10)', {
-          extensions: { code: 'BAD_USER_INPUT' }
+          extensions: { code: 'BAD_USER_INPUT' },
         });
       }
 
       return Promise.all(
-        inputs.map(input => 
-          searchResolver.Query.searchCard(_, { input }, context)
-        )
+        inputs.map(input => searchResolver.Query.searchCard(_, { input }, context))
       );
     },
 
@@ -339,7 +328,7 @@ export const searchResolver = {
     ): Promise<SearchSuggestion[]> => {
       if (!context.user) {
         throw new GraphQLError('User not authenticated', {
-          extensions: { code: 'UNAUTHENTICATED' }
+          extensions: { code: 'UNAUTHENTICATED' },
         });
       }
 
@@ -356,7 +345,7 @@ export const searchResolver = {
     ): Promise<SearchHistoryItem[]> => {
       if (!context.user) {
         throw new GraphQLError('User not authenticated', {
-          extensions: { code: 'UNAUTHENTICATED' }
+          extensions: { code: 'UNAUTHENTICATED' },
         });
       }
 
@@ -365,7 +354,7 @@ export const searchResolver = {
       // 權限檢查：只能查看自己的歷史或需要管理員權限
       if (targetUserId !== context.user.id && !context.user.isSupervisor) {
         throw new GraphQLError('Insufficient permissions', {
-          extensions: { code: 'FORBIDDEN' }
+          extensions: { code: 'FORBIDDEN' },
         });
       }
 
@@ -382,7 +371,7 @@ export const searchResolver = {
     ): Promise<SearchConfig[]> => {
       if (!context.user) {
         throw new GraphQLError('User not authenticated', {
-          extensions: { code: 'UNAUTHENTICATED' }
+          extensions: { code: 'UNAUTHENTICATED' },
         });
       }
 
@@ -409,12 +398,12 @@ export const searchResolver = {
     ): Promise<SearchAnalytics> => {
       if (!context.user?.isSupervisor) {
         throw new GraphQLError('Supervisor access required', {
-          extensions: { code: 'FORBIDDEN' }
+          extensions: { code: 'FORBIDDEN' },
         });
       }
 
       return generateSearchAnalytics({ dateRange, entities }, context);
-    }
+    },
   },
 
   Mutation: {
@@ -428,29 +417,31 @@ export const searchResolver = {
     ): Promise<SearchConfig> => {
       if (!context.user) {
         throw new GraphQLError('User not authenticated', {
-          extensions: { code: 'UNAUTHENTICATED' }
+          extensions: { code: 'UNAUTHENTICATED' },
         });
       }
 
-      const configId = await context.db.query(`
+      const configId = await context.db.query(
+        `
         INSERT INTO search_configs (
           name, query, entities, filters, is_default, is_public, created_by
         ) VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING id
-      `, [
-        input.name,
-        input.query,
-        JSON.stringify(input.entities),
-        JSON.stringify(input.filters),
-        input.isDefault,
-        input.isPublic,
-        context.user.id
-      ]);
-
-      const config = await context.db.query(
-        'SELECT * FROM search_configs WHERE id = $1',
-        [configId.rows[0].id]
+      `,
+        [
+          input.name,
+          input.query,
+          JSON.stringify(input.entities),
+          JSON.stringify(input.filters),
+          input.isDefault,
+          input.isPublic,
+          context.user.id,
+        ]
       );
+
+      const config = await context.db.query('SELECT * FROM search_configs WHERE id = $1', [
+        configId.rows[0].id,
+      ]);
 
       return mapSearchConfigRow(config.rows[0]);
     },
@@ -465,7 +456,7 @@ export const searchResolver = {
     ): Promise<boolean> => {
       if (!context.user) {
         throw new GraphQLError('User not authenticated', {
-          extensions: { code: 'UNAUTHENTICATED' }
+          extensions: { code: 'UNAUTHENTICATED' },
         });
       }
 
@@ -487,7 +478,7 @@ export const searchResolver = {
     ): Promise<boolean> => {
       if (!context.user) {
         throw new GraphQLError('User not authenticated', {
-          extensions: { code: 'UNAUTHENTICATED' }
+          extensions: { code: 'UNAUTHENTICATED' },
         });
       }
 
@@ -496,7 +487,7 @@ export const searchResolver = {
       // 權限檢查
       if (targetUserId !== context.user.id && !context.user.isSupervisor) {
         throw new GraphQLError('Insufficient permissions', {
-          extensions: { code: 'FORBIDDEN' }
+          extensions: { code: 'FORBIDDEN' },
         });
       }
 
@@ -523,21 +514,24 @@ export const searchResolver = {
     ): Promise<boolean> => {
       if (!context.user) {
         throw new GraphQLError('User not authenticated', {
-          extensions: { code: 'UNAUTHENTICATED' }
+          extensions: { code: 'UNAUTHENTICATED' },
         });
       }
 
-      await context.db.query(`
+      await context.db.query(
+        `
         INSERT INTO user_search_preferences (user_id, preferences)
         VALUES ($1, $2)
         ON CONFLICT (user_id) DO UPDATE SET 
           preferences = $2,
           updated_at = NOW()
-      `, [context.user.id, JSON.stringify(preferences)]);
+      `,
+        [context.user.id, JSON.stringify(preferences)]
+      );
 
       return true;
-    }
-  }
+    },
+  },
 };
 
 /**
@@ -546,25 +540,25 @@ export const searchResolver = {
 function validateSearchInput(input: SearchCardInput): void {
   if (!input.query || input.query.trim().length === 0) {
     throw new GraphQLError('Search query cannot be empty', {
-      extensions: { code: 'BAD_USER_INPUT' }
+      extensions: { code: 'BAD_USER_INPUT' },
     });
   }
 
   if (input.query.length > 1000) {
     throw new GraphQLError('Search query too long (max 1000 characters)', {
-      extensions: { code: 'BAD_USER_INPUT' }
+      extensions: { code: 'BAD_USER_INPUT' },
     });
   }
 
   if (input.entities && input.entities.length > 10) {
     throw new GraphQLError('Too many search entities (max 10)', {
-      extensions: { code: 'BAD_USER_INPUT' }
+      extensions: { code: 'BAD_USER_INPUT' },
     });
   }
 
   if (input.options?.maxResults && input.options.maxResults > 1000) {
     throw new GraphQLError('Too many results requested (max 1000)', {
-      extensions: { code: 'BAD_USER_INPUT' }
+      extensions: { code: 'BAD_USER_INPUT' },
     });
   }
 }
@@ -636,11 +630,7 @@ function suggestEntities(query: string, searchType: SearchType): SearchableEntit
       if (searchPatterns.email.test(query)) {
         suggestions.push(SearchableEntity.USER);
       } else {
-        suggestions.push(
-          SearchableEntity.PRODUCT,
-          SearchableEntity.PALLET,
-          SearchableEntity.ORDER
-        );
+        suggestions.push(SearchableEntity.PRODUCT, SearchableEntity.PALLET, SearchableEntity.ORDER);
       }
       break;
 
@@ -664,7 +654,7 @@ async function executeSearch(
   input: SearchCardInput & { entities: SearchableEntity[] },
   context: Context
 ): Promise<{ results: SearchResultCollection; facets: unknown[] }> {
-  const searchPromises = input.entities.map(async (entity) => {
+  const searchPromises = input.entities.map(async entity => {
     const handler = searchHandlers[entity];
     if (!handler) {
       console.warn(`No search handler for entity: ${entity}`);
@@ -701,10 +691,10 @@ async function executeSearch(
         hasNextPage: offset + limit < totalCount,
         hasPreviousPage: offset > 0,
         startCursor: offset.toString(),
-        endCursor: (offset + paginatedItems.length - 1).toString()
-      }
+        endCursor: (offset + paginatedItems.length - 1).toString(),
+      },
     },
-    facets: [] // TODO: 實現面向功能
+    facets: [], // TODO: 實現面向功能
   };
 }
 
@@ -716,7 +706,7 @@ async function handleProductSearch(
   context: Context
 ): Promise<DatabaseSearchResult> {
   const { query, filters } = input;
-  
+
   let whereClause = '1=1';
   const params: (string | string[] | boolean | number)[] = [];
   let paramIndex = 1;
@@ -737,7 +727,7 @@ async function handleProductSearch(
   // 產品特定過濾器
   if (filters?.productFilters) {
     const pf = filters.productFilters;
-    
+
     if (pf.productCodes?.length) {
       whereClause += ` AND code = ANY($${paramIndex})`;
       params.push(pf.productCodes);
@@ -806,14 +796,14 @@ async function handleProductSearch(
       remark: row.remark,
       totalStock: 0, // TODO: 從庫存表獲取
       totalPallets: 0, // TODO: 從托盤表獲取
-      lastUpdated: row.latest_update
+      lastUpdated: row.latest_update,
     },
     metadata: {
       source: 'data_code',
       freshness: row.latest_update,
       confidence: row.relevance_score / 100,
       tags: [row.type, row.colour].filter(Boolean),
-      customFields: {}
+      customFields: {},
     },
     actions: [
       {
@@ -822,7 +812,7 @@ async function handleProductSearch(
         icon: 'eye',
         url: `/products/${row.code}`,
         action: 'VIEW',
-        requiresAuth: false
+        requiresAuth: false,
       },
       {
         id: 'check-inventory',
@@ -830,9 +820,9 @@ async function handleProductSearch(
         icon: 'warehouse',
         url: `/inventory?product=${row.code}`,
         action: 'NAVIGATE',
-        requiresAuth: true
-      }
-    ]
+        requiresAuth: true,
+      },
+    ],
   }));
 
   return {
@@ -840,7 +830,7 @@ async function handleProductSearch(
     count: items.length,
     items,
     hasMore: items.length === 50,
-    relevanceScore: items.length > 0 ? Math.max(...items.map(i => i.relevanceScore)) : 0
+    relevanceScore: items.length > 0 ? Math.max(...items.map(i => i.relevanceScore)) : 0,
   };
 }
 
@@ -852,7 +842,7 @@ async function handlePalletSearch(
   context: Context
 ): Promise<DatabaseSearchResult> {
   const { query, filters } = input;
-  
+
   let whereClause = '1=1';
   const params: (string | string[] | boolean | number)[] = [];
   let paramIndex = 1;
@@ -872,7 +862,7 @@ async function handlePalletSearch(
   // 托盤特定過濾器
   if (filters?.palletFilters) {
     const pf = filters.palletFilters;
-    
+
     if (pf.series?.length) {
       whereClause += ` AND series = ANY($${paramIndex})`;
       params.push(pf.series);
@@ -939,17 +929,17 @@ async function handlePalletSearch(
         code: row.product_code,
         description: row.product_description || '',
         colour: null,
-        type: null
+        type: null,
       },
       currentLocation: null, // TODO: 從庫存表獲取
-      isAvailable: true // TODO: 檢查庫存狀態
+      isAvailable: true, // TODO: 檢查庫存狀態
     },
     metadata: {
       source: 'record_palletinfo',
       freshness: row.generate_time,
       confidence: row.relevance_score / 100,
       tags: [row.series, row.product_code].filter(Boolean),
-      customFields: {}
+      customFields: {},
     },
     actions: [
       {
@@ -958,7 +948,7 @@ async function handlePalletSearch(
         icon: 'package',
         url: `/pallets/${row.plt_num}`,
         action: 'VIEW',
-        requiresAuth: false
+        requiresAuth: false,
       },
       {
         id: 'track-pallet',
@@ -966,9 +956,9 @@ async function handlePalletSearch(
         icon: 'map-pin',
         url: `/tracking?pallet=${row.plt_num}`,
         action: 'NAVIGATE',
-        requiresAuth: true
-      }
-    ]
+        requiresAuth: true,
+      },
+    ],
   }));
 
   return {
@@ -976,49 +966,97 @@ async function handlePalletSearch(
     count: items.length,
     items,
     hasMore: items.length === 50,
-    relevanceScore: items.length > 0 ? Math.max(...items.map(i => i.relevanceScore)) : 0
+    relevanceScore: items.length > 0 ? Math.max(...items.map(i => i.relevanceScore)) : 0,
   };
 }
 
 /**
  * 其他搜索處理器的佔位符實現
  */
-async function handleInventorySearch(input: SearchCardInput, context: Context): Promise<DatabaseSearchResult> {
+async function handleInventorySearch(
+  input: SearchCardInput,
+  context: Context
+): Promise<DatabaseSearchResult> {
   // TODO: 實現庫存搜索邏輯
-  return { entity: SearchableEntity.INVENTORY, count: 0, items: [], hasMore: false, relevanceScore: 0 };
+  return {
+    entity: SearchableEntity.INVENTORY,
+    count: 0,
+    items: [],
+    hasMore: false,
+    relevanceScore: 0,
+  };
 }
 
-async function handleOrderSearch(input: SearchCardInput, context: Context): Promise<DatabaseSearchResult> {
+async function handleOrderSearch(
+  input: SearchCardInput,
+  context: Context
+): Promise<DatabaseSearchResult> {
   // TODO: 實現訂單搜索邏輯
   return { entity: SearchableEntity.ORDER, count: 0, items: [], hasMore: false, relevanceScore: 0 };
 }
 
-async function handleGRNSearch(input: SearchCardInput, context: Context): Promise<DatabaseSearchResult> {
+async function handleGRNSearch(
+  input: SearchCardInput,
+  context: Context
+): Promise<DatabaseSearchResult> {
   // TODO: 實現GRN搜索邏輯
   return { entity: SearchableEntity.GRN, count: 0, items: [], hasMore: false, relevanceScore: 0 };
 }
 
-async function handleUserSearch(input: SearchCardInput, context: Context): Promise<DatabaseSearchResult> {
+async function handleUserSearch(
+  input: SearchCardInput,
+  context: Context
+): Promise<DatabaseSearchResult> {
   // TODO: 實現用戶搜索邏輯
   return { entity: SearchableEntity.USER, count: 0, items: [], hasMore: false, relevanceScore: 0 };
 }
 
-async function handleSupplierSearch(input: SearchCardInput, context: Context): Promise<DatabaseSearchResult> {
+async function handleSupplierSearch(
+  input: SearchCardInput,
+  context: Context
+): Promise<DatabaseSearchResult> {
   // TODO: 實現供應商搜索邏輯
-  return { entity: SearchableEntity.SUPPLIER, count: 0, items: [], hasMore: false, relevanceScore: 0 };
+  return {
+    entity: SearchableEntity.SUPPLIER,
+    count: 0,
+    items: [],
+    hasMore: false,
+    relevanceScore: 0,
+  };
 }
 
-async function handleHistorySearch(input: SearchCardInput, context: Context): Promise<DatabaseSearchResult> {
+async function handleHistorySearch(
+  input: SearchCardInput,
+  context: Context
+): Promise<DatabaseSearchResult> {
   // TODO: 實現歷史搜索邏輯
-  return { entity: SearchableEntity.HISTORY, count: 0, items: [], hasMore: false, relevanceScore: 0 };
+  return {
+    entity: SearchableEntity.HISTORY,
+    count: 0,
+    items: [],
+    hasMore: false,
+    relevanceScore: 0,
+  };
 }
 
-async function handleTransferSearch(input: SearchCardInput, context: Context): Promise<DatabaseSearchResult> {
+async function handleTransferSearch(
+  input: SearchCardInput,
+  context: Context
+): Promise<DatabaseSearchResult> {
   // TODO: 實現轉移搜索邏輯
-  return { entity: SearchableEntity.TRANSFER, count: 0, items: [], hasMore: false, relevanceScore: 0 };
+  return {
+    entity: SearchableEntity.TRANSFER,
+    count: 0,
+    items: [],
+    hasMore: false,
+    relevanceScore: 0,
+  };
 }
 
-async function handleFileSearch(input: SearchCardInput, context: Context): Promise<DatabaseSearchResult> {
+async function handleFileSearch(
+  input: SearchCardInput,
+  context: Context
+): Promise<DatabaseSearchResult> {
   // TODO: 實現文件搜索邏輯
   return { entity: SearchableEntity.FILE, count: 0, items: [], hasMore: false, relevanceScore: 0 };
 }
@@ -1036,7 +1074,12 @@ async function generateSuggestions(
 
   // 自動完成建議
   if (query.length >= 2) {
-    const autocompleteSuggestions = await getAutocompleteSuggestions(query, entities, context, limit);
+    const autocompleteSuggestions = await getAutocompleteSuggestions(
+      query,
+      entities,
+      context,
+      limit
+    );
     suggestions.push(...autocompleteSuggestions);
   }
 
@@ -1054,9 +1097,7 @@ async function generateSuggestions(
     suggestions.push(...recentSuggestions);
   }
 
-  return suggestions
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit);
+  return suggestions.sort((a, b) => b.score - a.score).slice(0, limit);
 }
 
 /**
@@ -1072,23 +1113,28 @@ async function getAutocompleteSuggestions(
 
   // 產品代碼自動完成
   if (entities.includes(SearchableEntity.PRODUCT)) {
-    const productSuggestions = await context.db.query(`
+    const productSuggestions = await context.db.query(
+      `
       SELECT DISTINCT code, description, 
         LENGTH(code) - LENGTH($1) as score_modifier
       FROM data_code 
       WHERE code ILIKE $1 OR description ILIKE $1
       ORDER BY score_modifier ASC, code ASC
       LIMIT $2
-    `, [`${query}%`, Math.ceil(limit / entities.length)]);
+    `,
+      [`${query}%`, Math.ceil(limit / entities.length)]
+    );
 
-    suggestions.push(...productSuggestions.rows.map(row => ({
-      text: row.code,
-      type: SuggestionType.AUTOCOMPLETE,
-      entity: SearchableEntity.PRODUCT,
-      count: 1,
-      score: 80 - row.score_modifier,
-      metadata: { description: row.description }
-    })));
+    suggestions.push(
+      ...productSuggestions.rows.map(row => ({
+        text: row.code,
+        type: SuggestionType.AUTOCOMPLETE,
+        entity: SearchableEntity.PRODUCT,
+        count: 1,
+        score: 80 - row.score_modifier,
+        metadata: { description: row.description },
+      }))
+    );
   }
 
   // TODO: 添加其他實體的自動完成建議
@@ -1096,7 +1142,10 @@ async function getAutocompleteSuggestions(
   return suggestions;
 }
 
-async function getSpellingCorrections(query: string, context: Context): Promise<SearchSuggestion[]> {
+async function getSpellingCorrections(
+  query: string,
+  context: Context
+): Promise<SearchSuggestion[]> {
   // TODO: 實現拼寫糾正邏輯
   return [];
 }
@@ -1106,14 +1155,17 @@ async function getPopularSearches(
   context: Context,
   limit: number
 ): Promise<SearchSuggestion[]> {
-  const result = await context.db.query(`
+  const result = await context.db.query(
+    `
     SELECT query, COUNT(*) as count
     FROM search_history 
     WHERE entities && $1 AND timestamp > NOW() - INTERVAL '30 days'
     GROUP BY query
     ORDER BY count DESC
     LIMIT $2
-  `, [JSON.stringify(entities), limit]);
+  `,
+    [JSON.stringify(entities), limit]
+  );
 
   return result.rows.map(row => ({
     text: row.query,
@@ -1121,7 +1173,7 @@ async function getPopularSearches(
     entity: null,
     count: row.count,
     score: 60,
-    metadata: {}
+    metadata: {},
   }));
 }
 
@@ -1130,46 +1182,55 @@ async function getRecentSearches(userId: string, limit: number): Promise<SearchS
   return [];
 }
 
-async function generateSearchAnalytics(input: { dateRange?: DateRangeInput; entities?: SearchableEntity[] }, context: Context): Promise<SearchAnalytics> {
+async function generateSearchAnalytics(
+  input: { dateRange?: DateRangeInput; entities?: SearchableEntity[] },
+  context: Context
+): Promise<SearchAnalytics> {
   // TODO: 實現搜索分析功能
   return {
     queryStats: {
       totalQueries: 0,
       uniqueQueries: 0,
       averageQueryLength: 0,
-      topQueries: []
+      topQueries: [],
     },
     resultStats: {
       totalResults: 0,
       averageResults: 0,
       zeroResultQueries: 0,
-      entityBreakdown: []
+      entityBreakdown: [],
     },
     performanceStats: {
       averageResponseTime: 0,
       slowQueries: [],
-      cacheHitRate: 0
+      cacheHitRate: 0,
     },
     userBehavior: {
       clickThroughRate: 0,
       abandonmentRate: 0,
       refinementRate: 0,
-      commonPatterns: []
-    }
+      commonPatterns: [],
+    },
   };
 }
 
-async function saveSearchHistory(data: { query: string; entities: SearchableEntity[]; resultCount: number; userId: string; success: boolean }, context: Context): Promise<void> {
-  await context.db.query(`
+async function saveSearchHistory(
+  data: {
+    query: string;
+    entities: SearchableEntity[];
+    resultCount: number;
+    userId: string;
+    success: boolean;
+  },
+  context: Context
+): Promise<void> {
+  await context.db.query(
+    `
     INSERT INTO search_history (query, entities, result_count, user_id, success, timestamp)
     VALUES ($1, $2, $3, $4, $5, NOW())
-  `, [
-    data.query,
-    JSON.stringify(data.entities),
-    data.resultCount,
-    data.userId,
-    data.success
-  ]);
+  `,
+    [data.query, JSON.stringify(data.entities), data.resultCount, data.userId, data.success]
+  );
 }
 
 async function getSearchHistory(
@@ -1182,12 +1243,15 @@ async function getSearchHistory(
     return [];
   }
 
-  const result = await context.db.query(`
+  const result = await context.db.query(
+    `
     SELECT * FROM search_history 
     WHERE user_id = $1 
     ORDER BY timestamp DESC 
     LIMIT $2 OFFSET $3
-  `, [userId, limit, offset]);
+  `,
+    [userId, limit, offset]
+  );
 
   return result.rows.map(row => ({
     id: row.id,
@@ -1196,7 +1260,7 @@ async function getSearchHistory(
     resultCount: row.result_count,
     timestamp: row.timestamp,
     userId: row.user_id,
-    success: row.success
+    success: row.success,
   }));
 }
 
@@ -1212,7 +1276,7 @@ function mapSearchConfigRow(row: SearchConfigRow): SearchConfig {
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    usageCount: row.usage_count || 0
+    usageCount: row.usage_count || 0,
   };
 }
 

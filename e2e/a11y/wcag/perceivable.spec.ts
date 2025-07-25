@@ -20,13 +20,7 @@ import {
 } from '../utils/a11y-helpers';
 
 // 測試配置
-const TEST_URLS = [
-  '/',
-  '/admin/injection',
-  '/admin/pipeline',
-  '/admin/warehouse',
-  '/print-label',
-];
+const TEST_URLS = ['/', '/admin/injection', '/admin/pipeline', '/admin/warehouse', '/print-label'];
 
 const CRITICAL_COMPONENTS = [
   '[data-testid="dashboard"]',

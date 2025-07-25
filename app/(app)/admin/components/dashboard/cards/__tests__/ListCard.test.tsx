@@ -21,7 +21,7 @@ const mockOrderStateData = {
     query: expect.any(Object),
     variables: {
       input: {
-        listType: ListType.ORDER_STATE,
+        listType: ListType.OrderState,
         timeFrame: mockTimeFrame,
         pagination: { page: 1, limit: 10 },
         filters: {},
@@ -34,7 +34,7 @@ const mockOrderStateData = {
       listCardData: {
         __typename: 'OrderStateList',
         id: 'order-state-list',
-        listType: ListType.ORDER_STATE,
+        listType: ListType.OrderState,
         title: 'Order Status List',
         description: 'Display order status information',
         items: [
@@ -81,7 +81,7 @@ const mockOrderRecordData = {
     query: expect.any(Object),
     variables: {
       input: {
-        listType: ListType.ORDER_RECORD,
+        listType: ListType.OrderRecord,
         timeFrame: mockTimeFrame
       }
     }
@@ -91,7 +91,7 @@ const mockOrderRecordData = {
       listCardData: {
         __typename: 'OrderRecordList',
         id: 'order-record-list',
-        listType: ListType.ORDER_RECORD,
+        listType: ListType.OrderRecord,
         title: 'Order Records',
         items: [
           {
@@ -118,7 +118,7 @@ const mockWarehouseTransferData = {
     query: expect.any(Object),
     variables: {
       input: {
-        listType: ListType.WAREHOUSE_TRANSFER,
+        listType: ListType.WarehouseTransfer,
         timeFrame: mockTimeFrame
       }
     }
@@ -128,7 +128,7 @@ const mockWarehouseTransferData = {
       listCardData: {
         __typename: 'WarehouseTransferList',
         id: 'warehouse-transfer-list',
-        listType: ListType.WAREHOUSE_TRANSFER,
+        listType: ListType.WarehouseTransfer,
         title: 'Warehouse Transfers',
         items: [
           {
@@ -156,7 +156,7 @@ const mockOtherFilesData = {
     query: expect.any(Object),
     variables: {
       input: {
-        listType: ListType.OTHER_FILES,
+        listType: ListType.OtherFiles,
         timeFrame: mockTimeFrame
       }
     }
@@ -166,7 +166,7 @@ const mockOtherFilesData = {
       listCardData: {
         __typename: 'OtherFilesList',
         id: 'other-files-list',
-        listType: ListType.OTHER_FILES,
+        listType: ListType.OtherFiles,
         title: 'Other Files',
         items: [
           {
@@ -208,8 +208,11 @@ describe('ListCard Component', () => {
     test('ORDER_STATE 列表正常渲染', async () => {
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
           showHeader={true}
         />
       );
@@ -229,8 +232,11 @@ describe('ListCard Component', () => {
     test('ORDER_RECORD 列表正常渲染', async () => {
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_RECORD}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderRecord}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
         />,
         [mockOrderRecordData]
       );
@@ -243,8 +249,11 @@ describe('ListCard Component', () => {
     test('WAREHOUSE_TRANSFER 列表正常渲染', async () => {
       renderWithProviders(
         <ListCard
-          listType={ListType.WAREHOUSE_TRANSFER}
-          timeFrame={mockTimeFrame}
+          listType={ListType.WarehouseTransfer}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
         />,
         [mockWarehouseTransferData]
       );
@@ -257,8 +266,11 @@ describe('ListCard Component', () => {
     test('OTHER_FILES 列表正常渲染', async () => {
       renderWithProviders(
         <ListCard
-          listType={ListType.OTHER_FILES}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OtherFiles}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
         />,
         [mockOtherFilesData]
       );
@@ -273,8 +285,11 @@ describe('ListCard Component', () => {
     test('顯示載入指示器', () => {
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
         />
       );
 
@@ -284,8 +299,11 @@ describe('ListCard Component', () => {
     test('載入完成後隱藏載入指示器', async () => {
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
         />
       );
 
@@ -299,8 +317,11 @@ describe('ListCard Component', () => {
     test('顯示分頁控制器', async () => {
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
           showPagination={true}
           pageSize={1}
         />
@@ -317,8 +338,11 @@ describe('ListCard Component', () => {
 
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
           showPagination={true}
           pageSize={1}
           onPageChange={onPageChange}
@@ -344,8 +368,11 @@ describe('ListCard Component', () => {
 
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
           onSortChange={onSortChange}
         />
       );
@@ -370,8 +397,11 @@ describe('ListCard Component', () => {
 
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
           onSortChange={onSortChange}
           defaultSort={{ field: 'status', direction: 'ASC' }}
         />
@@ -396,8 +426,11 @@ describe('ListCard Component', () => {
     test('顯示過濾控制器', async () => {
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
           showFilters={true}
         />
       );
@@ -413,8 +446,11 @@ describe('ListCard Component', () => {
 
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
           showFilters={true}
           onFilterChange={onFilterChange}
         />
@@ -441,8 +477,11 @@ describe('ListCard Component', () => {
 
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
           selectable={true}
           onItemSelect={onItemSelect}
         />
@@ -467,8 +506,11 @@ describe('ListCard Component', () => {
 
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
           selectable={true}
           onItemSelect={onItemSelect}
         />
@@ -498,8 +540,11 @@ describe('ListCard Component', () => {
 
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
           showRefreshButton={true}
           onRefresh={onRefresh}
         />
@@ -522,8 +567,11 @@ describe('ListCard Component', () => {
 
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
           autoRefresh={true}
           refreshInterval={5000}
           onRefresh={onRefresh}
@@ -545,8 +593,11 @@ describe('ListCard Component', () => {
     test('顯示錯誤信息', async () => {
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
         />,
         [errorMock]
       );
@@ -561,8 +612,11 @@ describe('ListCard Component', () => {
 
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
         />,
         [errorMock]
       );
@@ -584,8 +638,11 @@ describe('ListCard Component', () => {
     test('應用自定義類名', () => {
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
           className="custom-list-card"
         />
       );
@@ -597,8 +654,11 @@ describe('ListCard Component', () => {
     test('設置自定義高度', () => {
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
           height={400}
         />
       );
@@ -619,8 +679,11 @@ describe('ListCard Component', () => {
 
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
         />
       );
 
@@ -638,8 +701,11 @@ describe('ListCard Component', () => {
 
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
         />
       );
 
@@ -652,8 +718,11 @@ describe('ListCard Component', () => {
     test('ARIA 標籤正確設置', async () => {
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
         />
       );
 
@@ -668,8 +737,11 @@ describe('ListCard Component', () => {
 
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
           selectable={true}
         />
       );
@@ -716,8 +788,11 @@ describe('ListCard Component', () => {
 
       renderWithProviders(
         <ListCard
-          listType={ListType.ORDER_STATE}
-          timeFrame={mockTimeFrame}
+          listType={ListType.OrderState}
+          dateRange={{
+            start: new Date(mockTimeFrame.start),
+            end: new Date(mockTimeFrame.end)
+          }}
           pageSize={50}
           virtualScrolling={true}
         />,

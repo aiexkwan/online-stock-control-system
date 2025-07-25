@@ -35,7 +35,7 @@ export default function DownloadButton({
       )}
       {downloadStatus === 'downloading' && (
         <div className='z-[5] flex items-center justify-center'>
-          <div className='mr-2 h-1 w-4 bg-current rounded-full opacity-75' />
+          <div className='mr-2 h-1 w-4 rounded-full bg-current opacity-75' />
           {progress}%
         </div>
       )}

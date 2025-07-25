@@ -52,33 +52,37 @@ export interface BenchmarkTest<TResponse = unknown> {
 }
 
 // JSON 序列化類型
-export type JSONSerializable = 
-  | string 
-  | number 
-  | boolean 
-  | null 
-  | JSONSerializable[] 
+export type JSONSerializable =
+  | string
+  | number
+  | boolean
+  | null
+  | JSONSerializable[]
   | { [key: string]: JSONSerializable };
 
 // 類型守衛函數
 export function hasMemoryAPI(perf: Performance): perf is PerformanceWithMemory {
-  return 'memory' in perf && 
-         typeof (perf as unknown as PerformanceWithMemory).memory === 'object' &&
-         (perf as unknown as PerformanceWithMemory).memory !== null;
+  return (
+    'memory' in perf &&
+    typeof (perf as unknown as PerformanceWithMemory).memory === 'object' &&
+    (perf as unknown as PerformanceWithMemory).memory !== null
+  );
 }
 
 export function isJSONSerializable(data: unknown): data is JSONSerializable {
-  if (data === null || 
-      typeof data === 'string' || 
-      typeof data === 'number' || 
-      typeof data === 'boolean') {
+  if (
+    data === null ||
+    typeof data === 'string' ||
+    typeof data === 'number' ||
+    typeof data === 'boolean'
+  ) {
     return true;
   }
-  
+
   if (Array.isArray(data)) {
     return data.every(isJSONSerializable);
   }
-  
+
   if (typeof data === 'object' && data !== null) {
     try {
       JSON.stringify(data);
@@ -87,6 +91,6 @@ export function isJSONSerializable(data: unknown): data is JSONSerializable {
       return false;
     }
   }
-  
+
   return false;
 }

@@ -15,7 +15,7 @@ module.exports = {
     'services/**/*.{ts,tsx}',
     'hooks/**/*.{ts,tsx}',
   ],
-  
+
   // 排除路徑
   exclude: [
     'node_modules/**',
@@ -28,37 +28,38 @@ module.exports = {
     '**/*.d.ts',
     '**/generated/**',
   ],
-  
+
   // TODO 標記模式
   patterns: {
     // Phase 3 TypeScript 遷移標記
     typeMigration: {
-      pattern: /@types-migration:todo\(phase(\d+)\)\s*\[P(\d)\]\s*(.+?)(?:\s*-\s*Target:\s*(\d{4}-\d{2}))?(?:\s*-\s*Owner:\s*@(\w+))?/g,
+      pattern:
+        /@types-migration:todo\(phase(\d+)\)\s*\[P(\d)\]\s*(.+?)(?:\s*-\s*Target:\s*(\d{4}-\d{2}))?(?:\s*-\s*Owner:\s*@(\w+))?/g,
       fields: ['phase', 'priority', 'description', 'target', 'owner'],
       category: 'TypeScript Migration',
     },
-    
+
     // 標準 TODO/FIXME/HACK
     standard: {
       pattern: /(TODO|FIXME|HACK|BUG|OPTIMIZE|REFACTOR):\s*(.+)/g,
       fields: ['type', 'description'],
       category: 'Standard',
     },
-    
+
     // 技術債標記
     techDebt: {
       pattern: /@tech-debt:\s*\[(\w+)\]\s*(.+?)(?:\s*-\s*Impact:\s*(\w+))?/g,
       fields: ['area', 'description', 'impact'],
       category: 'Technical Debt',
     },
-    
+
     // 安全相關
     security: {
       pattern: /@security-todo:\s*(.+?)(?:\s*-\s*Severity:\s*(\w+))?/g,
       fields: ['description', 'severity'],
       category: 'Security',
     },
-    
+
     // 性能優化
     performance: {
       pattern: /@perf-todo:\s*(.+?)(?:\s*-\s*Impact:\s*(\w+))?/g,
@@ -66,25 +67,25 @@ module.exports = {
       category: 'Performance',
     },
   },
-  
+
   // 優先級映射
   priorityMap: {
-    'P1': { label: 'Critical', color: 'red', weight: 100 },
-    'P2': { label: 'Important', color: 'yellow', weight: 50 },
-    'P3': { label: 'Nice to have', color: 'green', weight: 10 },
-    'HIGH': { label: 'High', color: 'red', weight: 80 },
-    'MEDIUM': { label: 'Medium', color: 'yellow', weight: 40 },
-    'LOW': { label: 'Low', color: 'green', weight: 20 },
+    P1: { label: 'Critical', color: 'red', weight: 100 },
+    P2: { label: 'Important', color: 'yellow', weight: 50 },
+    P3: { label: 'Nice to have', color: 'green', weight: 10 },
+    HIGH: { label: 'High', color: 'red', weight: 80 },
+    MEDIUM: { label: 'Medium', color: 'yellow', weight: 40 },
+    LOW: { label: 'Low', color: 'green', weight: 20 },
   },
-  
+
   // 報告配置
   report: {
     // 按類別分組
     groupBy: ['category', 'priority'],
-    
+
     // 排序規則
     sortBy: ['priority', 'target', 'file'],
-    
+
     // 輸出格式
     formats: {
       markdown: {
@@ -102,7 +103,7 @@ module.exports = {
         includeFilters: true,
       },
     },
-    
+
     // 統計信息
     statistics: {
       byCategory: true,
@@ -112,7 +113,7 @@ module.exports = {
       trendsOverTime: true,
     },
   },
-  
+
   // 整合配置
   integrations: {
     // GitHub Issues 整合
@@ -125,7 +126,7 @@ module.exports = {
         '@qa-team': ['qa-dev1', 'qa-dev2'],
       },
     },
-    
+
     // Slack 通知
     slack: {
       enabled: false,
@@ -135,7 +136,7 @@ module.exports = {
         weekly: '#dev-team',
       },
     },
-    
+
     // Jira 整合
     jira: {
       enabled: false,
@@ -143,7 +144,7 @@ module.exports = {
       issueType: 'Technical Debt',
     },
   },
-  
+
   // 閾值設置
   thresholds: {
     // PR 檢查閾值
@@ -153,14 +154,14 @@ module.exports = {
       blockOnP1: true,
       warnOnTotal: true,
     },
-    
+
     // 每週報告閾值
     weekly: {
       increaseTolerance: 10, // 允許增加 10%
       alertOnIncrease: true,
     },
   },
-  
+
   // 自定義規則
   customRules: [
     {

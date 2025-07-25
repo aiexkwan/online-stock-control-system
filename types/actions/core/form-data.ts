@@ -1,7 +1,7 @@
 /**
  * @fileoverview Server Actions FormData 處理類型定義
  * @module types/actions/core/form-data
- * 
+ *
  * 提供 FormData 的類型安全處理工具
  */
 
@@ -89,10 +89,7 @@ export function formDataToObject(
   options?: FormDataParseOptions
 ): ParsedFormData {
   const result: ParsedFormData = {};
-  const { 
-    flattenSingleValueArrays = true,
-    emptyStringHandling = 'keep'
-  } = options || {};
+  const { flattenSingleValueArrays = true, emptyStringHandling = 'keep' } = options || {};
 
   // 收集所有值
   for (const [key, value] of formData.entries()) {
@@ -139,10 +136,7 @@ export function formDataToObject(
 /**
  * 智能類型轉換
  */
-export function smartConvert(
-  value: FormDataValue,
-  options?: FormDataParseOptions
-): unknown {
+export function smartConvert(value: FormDataValue, options?: FormDataParseOptions): unknown {
   if (value === null || value instanceof File) {
     return value;
   }
@@ -181,7 +175,7 @@ export function parseFormData<T>(
     const transformedData: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(rawData)) {
       if (parser.transformers?.[key]) {
-        transformedData[key] = Array.isArray(value) 
+        transformedData[key] = Array.isArray(value)
           ? value.map(v => parser.transformers![key](v))
           : parser.transformers[key](value);
       } else {
@@ -217,11 +211,13 @@ export function parseFormData<T>(
   } catch (error) {
     return {
       success: false,
-      errors: [{
-        field: 'form',
-        message: error instanceof Error ? error.message : 'Form parsing failed',
-        type: 'PARSE_ERROR',
-      }],
+      errors: [
+        {
+          field: 'form',
+          message: error instanceof Error ? error.message : 'Form parsing failed',
+          type: 'PARSE_ERROR',
+        },
+      ],
     };
   }
 }
@@ -234,20 +230,18 @@ export function createFormDataParser<T>(
   options?: FormDataParseOptions,
   transformers?: Record<string, (value: FormDataValue) => unknown>
 ): (formData: FormData) => FormDataParseResult<T> {
-  return (formData: FormData) => parseFormData(formData, {
-    schema,
-    options,
-    transformers,
-  });
+  return (formData: FormData) =>
+    parseFormData(formData, {
+      schema,
+      options,
+      transformers,
+    });
 }
 
 /**
  * FormData 欄位提取工具
  */
-export function extractFormField(
-  formData: FormData,
-  field: FormField
-): unknown {
+export function extractFormField(formData: FormData, field: FormField): unknown {
   const rawValue = formData.get(field.name);
 
   if (rawValue === null && field.required) {

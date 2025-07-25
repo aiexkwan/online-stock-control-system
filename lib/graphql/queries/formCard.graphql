@@ -109,16 +109,8 @@ query GetProductFormOptions {
 }
 
 # 獲取特定字段選項
-query GetFormFieldOptions(
-  $fieldName: String!
-  $formType: FormType!
-  $filters: JSON
-) {
-  formFieldOptions(
-    fieldName: $fieldName
-    formType: $formType
-    filters: $filters
-  ) {
+query GetFormFieldOptions($fieldName: String!, $formType: FormType!, $filters: JSON) {
+  formFieldOptions(fieldName: $fieldName, formType: $formType, filters: $filters) {
     value
     label
     description
@@ -153,16 +145,8 @@ query BatchGetFormFieldOptions($requests: [FormFieldOptionsRequest!]!) {
 # ==========================================
 
 # 獲取表單預填數據
-query GetFormPrefillData(
-  $formType: FormType!
-  $entityId: ID
-  $params: JSON
-) {
-  formPrefillData(
-    formType: $formType
-    entityId: $entityId
-    params: $params
-  )
+query GetFormPrefillData($formType: FormType!, $entityId: ID, $params: JSON) {
+  formPrefillData(formType: $formType, entityId: $entityId, params: $params)
 }
 
 # 表單數據驗證
@@ -370,7 +354,7 @@ query GetProductEditFormData($productCode: ID) {
     cancelButtonText
     validateOnChange
   }
-  
+
   # 產品選項
   productFormOptions {
     colours {
@@ -386,12 +370,9 @@ query GetProductEditFormData($productCode: ID) {
       label
     }
   }
-  
+
   # 預填數據 (如果是編輯模式)
-  formPrefillData(
-    formType: PRODUCT_EDIT
-    entityId: $productCode
-  )
+  formPrefillData(formType: PRODUCT_EDIT, entityId: $productCode)
 }
 
 # 獲取文件上傳表單數據
@@ -514,7 +495,7 @@ query GetInventoryAdjustFormComplete {
     autoSaveInterval
     validateOnChange
   }
-  
+
   inventoryFormOptions {
     locations {
       value

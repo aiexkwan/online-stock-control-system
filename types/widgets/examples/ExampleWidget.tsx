@@ -10,18 +10,18 @@ import {
   WidgetState,
   WidgetType,
   WidgetErrorType,
-  
+
   // 狀態管理
   createInitialWidgetState,
   WidgetActionType,
   widgetStateReducer,
   widgetStateSelectors,
-  
+
   // 數據類型
   StatsCardData,
   ApiMetadata,
   WidgetCallbacks,
-  
+
   // 常量和工具
   WIDGET_CONSTANTS,
   WIDGET_SIZE_CLASSES,
@@ -86,7 +86,7 @@ export const ExampleWidget: React.FC<ExampleWidgetProps> = ({
   const isReady = widgetStateSelectors.isReady(state);
   const hasData = widgetStateSelectors.hasData(state);
   const isStale = widgetStateSelectors.isStale(
-    state, 
+    state,
     config?.refreshInterval || WIDGET_CONSTANTS.DEFAULT_REFRESH_INTERVAL
   );
 
@@ -97,12 +97,12 @@ export const ExampleWidget: React.FC<ExampleWidgetProps> = ({
   const fetchData = useCallback(async (): Promise<ExampleWidgetData> => {
     // 模擬 API 延遲
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     // 模擬錯誤情況（10% 機率）
     if (Math.random() < 0.1) {
       throw new Error('Failed to fetch widget data');
     }
-    
+
     // 返回模擬數據
     return {
       totalProducts: Math.floor(Math.random() * 1000),
@@ -128,7 +128,7 @@ export const ExampleWidget: React.FC<ExampleWidgetProps> = ({
 
     try {
       const data = await fetchData();
-      
+
       // 創建元數據
       const metadata: ApiMetadata = {
         queryTime: state.lastUpdated ? Date.now() - state.lastUpdated.getTime() : 0,
@@ -150,10 +150,7 @@ export const ExampleWidget: React.FC<ExampleWidgetProps> = ({
       // 觸發成功回調
       onSuccess?.(data);
     } catch (error) {
-      const widgetError = WidgetDataMapper.createWidgetError(
-        error,
-        'ExampleWidget'
-      );
+      const widgetError = WidgetDataMapper.createWidgetError(error, 'ExampleWidget');
 
       setState(prev => ({
         ...prev,
@@ -231,22 +228,17 @@ export const ExampleWidget: React.FC<ExampleWidgetProps> = ({
    */
   if (state.hasError && state.error) {
     return (
-      <Card className={cn(
-        'relative overflow-hidden',
-        WIDGET_SIZE_CLASSES[config?.size || 'md'],
-        className
-      )}>
-        <CardContent className="flex flex-col items-center justify-center h-full p-6">
-          <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-          <p className="text-sm text-muted-foreground text-center">
-            {state.error.message}
-          </p>
-          <Button
-            onClick={handleRefresh}
-            variant="outline"
-            size="sm"
-            className="mt-4"
-          >
+      <Card
+        className={cn(
+          'relative overflow-hidden',
+          WIDGET_SIZE_CLASSES[config?.size || 'md'],
+          className
+        )}
+      >
+        <CardContent className='flex h-full flex-col items-center justify-center p-6'>
+          <AlertCircle className='mb-4 h-12 w-12 text-red-500' />
+          <p className='text-center text-sm text-muted-foreground'>{state.error.message}</p>
+          <Button onClick={handleRefresh} variant='outline' size='sm' className='mt-4'>
             Retry
           </Button>
         </CardContent>
@@ -260,13 +252,15 @@ export const ExampleWidget: React.FC<ExampleWidgetProps> = ({
    */
   if (state.isLoading && !state.data) {
     return (
-      <Card className={cn(
-        'relative overflow-hidden',
-        WIDGET_SIZE_CLASSES[config?.size || 'md'],
-        className
-      )}>
-        <CardContent className="flex items-center justify-center h-full">
-          <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
+      <Card
+        className={cn(
+          'relative overflow-hidden',
+          WIDGET_SIZE_CLASSES[config?.size || 'md'],
+          className
+        )}
+      >
+        <CardContent className='flex h-full items-center justify-center'>
+          <RefreshCw className='h-8 w-8 animate-spin text-muted-foreground' />
         </CardContent>
       </Card>
     );
@@ -277,99 +271,84 @@ export const ExampleWidget: React.FC<ExampleWidgetProps> = ({
    * Render main content
    */
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode='wait'>
       <motion.div
         initial={WIDGET_ANIMATION_VARIANTS.hidden}
         animate={WIDGET_ANIMATION_VARIANTS.visible}
         exit={WIDGET_ANIMATION_VARIANTS.exit}
         transition={WIDGET_TRANSITION}
-        className={cn(
-          WIDGET_SIZE_CLASSES[config?.size || 'md'],
-          className
-        )}
+        className={cn(WIDGET_SIZE_CLASSES[config?.size || 'md'], className)}
       >
-        <Card className={cn(
-          'relative overflow-hidden h-full',
-          theme === 'dark' && 'bg-gray-900 text-white'
-        )}>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-lg font-medium">
+        <Card
+          className={cn(
+            'relative h-full overflow-hidden',
+            theme === 'dark' && 'bg-gray-900 text-white'
+          )}
+        >
+          <CardHeader className='flex flex-row items-center justify-between pb-2'>
+            <CardTitle className='text-lg font-medium'>
               {config?.title || 'Example Widget'}
             </CardTitle>
-            
-            <div className="flex items-center gap-2">
+
+            <div className='flex items-center gap-2'>
               {config?.showRefreshButton !== false && (
                 <Button
                   onClick={handleRefresh}
-                  variant="ghost"
-                  size="sm"
+                  variant='ghost'
+                  size='sm'
                   disabled={state.isRefreshing}
-                  className="h-8 w-8 p-0"
+                  className='h-8 w-8 p-0'
                 >
-                  <RefreshCw className={cn(
-                    'w-4 h-4',
-                    state.isRefreshing && 'animate-spin'
-                  )} />
+                  <RefreshCw className={cn('h-4 w-4', state.isRefreshing && 'animate-spin')} />
                 </Button>
               )}
-              
+
               {isEditMode && onRemove && (
-                <Button
-                  onClick={onRemove}
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                >
+                <Button onClick={onRemove} variant='ghost' size='sm' className='h-8 w-8 p-0'>
                   ×
                 </Button>
               )}
             </div>
           </CardHeader>
-          
+
           <CardContent>
             {hasData && state.data && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className='space-y-4'>
+                <div className='grid grid-cols-2 gap-4'>
                   <div>
-                    <p className="text-sm text-muted-foreground">
-                      Total Products
-                    </p>
-                    <p className="text-2xl font-bold">
+                    <p className='text-sm text-muted-foreground'>Total Products</p>
+                    <p className='text-2xl font-bold'>
                       {state.data.totalProducts.toLocaleString()}
                     </p>
                   </div>
-                  
+
                   <div>
-                    <p className="text-sm text-muted-foreground">
-                      Total Stock
-                    </p>
-                    <p className="text-2xl font-bold">
-                      {state.data.totalStock.toLocaleString()}
-                    </p>
+                    <p className='text-sm text-muted-foreground'>Total Stock</p>
+                    <p className='text-2xl font-bold'>{state.data.totalStock.toLocaleString()}</p>
                   </div>
                 </div>
-                
+
                 {showTrend && state.data.customMetric && (
-                  <div className="flex items-center gap-2 pt-2 border-t">
-                    <TrendingUp className="w-4 h-4 text-green-500" />
-                    <span className="text-sm text-muted-foreground">
+                  <div className='flex items-center gap-2 border-t pt-2'>
+                    <TrendingUp className='h-4 w-4 text-green-500' />
+                    <span className='text-sm text-muted-foreground'>
                       Custom Metric: {state.data.customMetric.toFixed(2)}
                     </span>
                   </div>
                 )}
-                
+
                 {state.metadata?.queryTime && (
-                  <div className="text-xs text-muted-foreground">
+                  <div className='text-xs text-muted-foreground'>
                     Query time: {state.metadata.queryTime}ms
                   </div>
                 )}
               </div>
             )}
           </CardContent>
-          
+
           {state.isCached && (
-            <div className="absolute top-2 right-2">
-              <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+            <div className='absolute right-2 top-2'>
+              <span className='rounded bg-yellow-100 px-2 py-1 text-xs text-yellow-800'>
                 Cached
               </span>
             </div>

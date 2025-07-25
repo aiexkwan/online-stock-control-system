@@ -4,14 +4,14 @@
  */
 
 import { createClient } from '@/app/utils/supabase/server';
-import { 
-  StatsType, 
-  StatsData, 
+import {
+  StatsType,
+  StatsData,
   StatsCardData,
   StatsQueryInput,
   SingleStatQueryInput,
   TrendDirection,
-  StatsConfig
+  StatsConfig,
 } from '@/types/generated/graphql';
 import { startOfDay, endOfDay, subDays, format } from 'date-fns';
 import DataLoader from 'dataloader';
@@ -121,7 +121,7 @@ const STATS_CONFIG_MAP: Record<StatsType, StatsConfig> = {
     refreshInterval: 300,
     color: 'indigo',
   },
-  
+
   // 新Card系統統計類型配置
   [StatsType.PalletCount]: {
     type: StatsType.PalletCount,
@@ -199,29 +199,27 @@ const STATS_CONFIG_MAP: Record<StatsType, StatsConfig> = {
 
 // DataLoader for batch loading stats
 const createStatsLoader = (supabase: SupabaseClientType) => {
-  return new DataLoader<StatsType, StatsData>(async (types) => {
-    const results = await Promise.all(
-      types.map(type => fetchStatData(supabase, type))
-    );
+  return new DataLoader<StatsType, StatsData>(async types => {
+    const results = await Promise.all(types.map(type => fetchStatData(supabase, type)));
     return results;
   });
 };
 
 // 獲取單個統計數據
 async function fetchStatData(
-  supabase: SupabaseClientType, 
+  supabase: SupabaseClientType,
   type: StatsType,
   dateRange?: { start: string; end: string }
 ): Promise<StatsData> {
   const now = new Date();
   const yesterday = subDays(now, 1);
-  
+
   // 默認日期範圍
   const defaultDateRange = {
     start: startOfDay(yesterday).toISOString(),
     end: endOfDay(yesterday).toISOString(),
   };
-  
+
   const range = dateRange || defaultDateRange;
 
   switch (type) {
@@ -234,20 +232,20 @@ async function fetchStatData(
         .eq('status', 'COMPLETED');
 
       const count = data?.[0]?.count || 0;
-      
+
       // 獲取前一天數據進行比較
       const previousRange = {
         start: startOfDay(subDays(yesterday, 1)).toISOString(),
         end: endOfDay(subDays(yesterday, 1)).toISOString(),
       };
-      
+
       const { data: previousData } = await supabase
         .from('record_pallet_transfer')
         .select('count', { count: 'exact' })
         .gte('transferdone', previousRange.start)
         .lte('transferdone', previousRange.end)
         .eq('status', 'COMPLETED');
-      
+
       const previousCount = previousData?.[0]?.count || 0;
       const change = count - previousCount;
       const changePercentage = previousCount > 0 ? (change / previousCount) * 100 : 0;
@@ -258,9 +256,12 @@ async function fetchStatData(
         label: 'transfers',
         unit: 'transfers',
         trend: {
-          direction: change > 0 ? TrendDirection.Increasing : 
-                    change < 0 ? TrendDirection.Decreasing : 
-                    TrendDirection.Stable,
+          direction:
+            change > 0
+              ? TrendDirection.Increasing
+              : change < 0
+                ? TrendDirection.Decreasing
+                : TrendDirection.Stable,
           value: Math.abs(change),
           percentage: Math.abs(changePercentage),
           label: `${change >= 0 ? '+' : ''}${change}`,
@@ -285,8 +286,12 @@ async function fetchStatData(
 
       // 注意：此處查詢的 'quantity' 欄位在 record_palletinfo 表中不存在
       // 應該使用 'product_qty' 或從其他表查詢
-      const totalQty = data?.reduce((sum: number, record: PalletInfoRow & { quantity?: number }) => 
-        sum + (record.quantity || record.product_qty || 0), 0) || 0;
+      const totalQty =
+        data?.reduce(
+          (sum: number, record: PalletInfoRow & { quantity?: number }) =>
+            sum + (record.quantity || record.product_qty || 0),
+          0
+        ) || 0;
 
       return {
         type,
@@ -328,7 +333,7 @@ async function fetchStatData(
       const { data: totalData } = await supabase
         .from('record_palletinfo')
         .select('count', { count: 'exact' });
-      
+
       const total = totalData?.[0]?.count || 1; // 避免除零
 
       // 獲取等待數量
@@ -336,7 +341,7 @@ async function fetchStatData(
         .from('record_palletinfo')
         .select('count', { count: 'exact' })
         .eq('location', 'AWAIT');
-      
+
       const awaitCount = awaitData?.[0]?.count || 0;
       const percentage = (awaitCount / total) * 100;
 
@@ -377,7 +382,7 @@ async function fetchStatData(
     case StatsType.QualityScore: {
       // 模擬質量分數計算
       const score = Math.floor(Math.random() * 30) + 70; // 70-100分
-      
+
       return {
         type,
         value: score,
@@ -399,7 +404,7 @@ async function fetchStatData(
     case StatsType.EfficiencyRate: {
       // 模擬效率百分比
       const efficiency = Math.floor(Math.random() * 20) + 75; // 75-95%
-      
+
       return {
         type,
         value: efficiency,
@@ -448,14 +453,21 @@ async function fetchStatData(
 
       // 注意：此處查詢的 'quantity' 欄位在 record_inventory 表中不存在
       // 應該使用具體的庫存字段總和
-      const totalInventory = data?.reduce((sum: number, record: InventoryRow & { quantity?: number }) => {
-        // 如果有 quantity 字段就使用，否則計算所有庫存位置的總和
-        const quantity = record.quantity || (
-          record.await + record.backcarpark + record.bulk + record.damage + 
-          record.fold + record.injection + record.pipeline + record.prebook
-        );
-        return sum + quantity;
-      }, 0) || 0;
+      const totalInventory =
+        data?.reduce((sum: number, record: InventoryRow & { quantity?: number }) => {
+          // 如果有 quantity 字段就使用，否則計算所有庫存位置的總和
+          const quantity =
+            record.quantity ||
+            record.await +
+              record.backcarpark +
+              record.bulk +
+              record.damage +
+              record.fold +
+              record.injection +
+              record.pipeline +
+              record.prebook;
+          return sum + quantity;
+        }, 0) || 0;
 
       return {
         type,
@@ -473,7 +485,7 @@ async function fetchStatData(
     case StatsType.PendingTasks: {
       // 模擬待處理任務數量
       const pendingCount = Math.floor(Math.random() * 50) + 5; // 5-55個
-      
+
       return {
         type,
         value: pendingCount,
@@ -495,7 +507,7 @@ async function fetchStatData(
     case StatsType.ActiveUsers: {
       // 模擬活躍用戶數
       const activeUsers = Math.floor(Math.random() * 10) + 2; // 2-12個
-      
+
       return {
         type,
         value: activeUsers,
@@ -517,7 +529,7 @@ async function fetchStatData(
     case StatsType.CompletionRate: {
       // 模擬完成率
       const completionRate = Math.floor(Math.random() * 15) + 80; // 80-95%
-      
+
       return {
         type,
         value: completionRate,
@@ -539,7 +551,7 @@ async function fetchStatData(
     case StatsType.ErrorRate: {
       // 模擬錯誤率
       const errorRate = Math.floor(Math.random() * 5) + 1; // 1-6%
-      
+
       return {
         type,
         value: errorRate,
@@ -585,30 +597,30 @@ export const statsResolvers = {
     ): Promise<StatsCardData> => {
       try {
         console.log('[StatsResolver] statsCardData called with input:', input);
-        
+
         const { supabase } = context;
         if (!supabase) {
           throw new Error('Supabase client not available in context');
         }
-        
+
         const startTime = Date.now();
-        
+
         // 創建 DataLoader 實例
         const statsLoader = createStatsLoader(supabase);
-        
+
         // 批量加載所有統計數據
         const statsPromises = input.types.map(type => {
           console.log('[StatsResolver] Loading stat type:', type);
           return statsLoader.load(type);
         });
-        
+
         const stats = await Promise.all(statsPromises);
         console.log('[StatsResolver] Loaded stats:', stats.length);
-        
+
         // 獲取配置，確保過濾掉未定義的配置
         const configs = input.types.map(type => STATS_CONFIG_MAP[type]).filter(Boolean);
         console.log('[StatsResolver] Loaded configs:', configs.length);
-        
+
         // 計算性能指標
         const endTime = Date.now();
         const performance = {
@@ -626,7 +638,7 @@ export const statsResolvers = {
           refreshInterval: 60,
           dataSource: 'supabase',
         };
-        
+
         console.log('[StatsResolver] Returning result:', result);
         return result;
       } catch (error) {
@@ -643,12 +655,14 @@ export const statsResolvers = {
     ): Promise<StatsData> => {
       const { supabase } = context;
       return fetchStatData(
-        supabase, 
+        supabase,
         input.type,
-        input.dateRange ? {
-          start: input.dateRange.start,
-          end: input.dateRange.end,
-        } : undefined
+        input.dateRange
+          ? {
+              start: input.dateRange.start,
+              end: input.dateRange.end,
+            }
+          : undefined
       );
     },
 
@@ -665,10 +679,7 @@ export const statsResolvers = {
   Subscription: {
     // 訂閱統計數據更新
     statsUpdated: {
-      subscribe: async function* (
-        _: unknown,
-        { types }: { types: StatsType[] }
-      ) {
+      subscribe: async function* (_: unknown, { types }: { types: StatsType[] }) {
         // TODO: 實現實時訂閱邏輯
         // 這裡可以使用 Supabase Realtime 或其他實時數據源
       },

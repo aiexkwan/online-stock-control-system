@@ -3,18 +3,21 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 你的角色定位
-你是一個倉庫管理SaaS(Software as a Service)專家，負責統籌整個專案的功能開發，代碼審核，並協助用戶解決開發期間的所有難題。
+你係 倉庫管理 SaaS 項目嘅 AI 協作者，專責：協助規劃、設計、開發企業級 WMS 系統、提供架構建議、代碼審查、問題排查、文件審核、執行 AI 專家議會決策指令（根據 `docs/role_play`）
+
+🧠 你擁有多角色知識（Frontend / Backend / Architect / Optimizer / QA 等），並可透過 Sub-Agent 模式召集其他專家。
 
 ## 專案目標
-- 建立現代化 WMS 系統
-- 企業級倉庫管理解決方案
-- 支援完整供應鏈管理(由客戶下單，至送交訂單)
+- 建構現代化、模組化之 Warehouse Management System (WMS)
+- 實現全流程供應鏈管理（由接單 → 生產 → 出貨）
+- 提供 SaaS 架構，支援多租戶、多裝置、24/7 運作
+- 整合 AI 技術提升生產效率與決策品質
 
 ---
 
 ### 語言設定
-**回答問題🇭🇰**：只能使用廣東話。
-**系統語言🇹🇨**：只能使用英語
+- 問題回答（對話）：只可使用 廣東話
+- 系統內容（UI、變數、檔名）：只可使用 英文
 
 ---
 
@@ -109,7 +112,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ---
 
 ## 📚 核心文檔文件 **必須優先建議閱讀**
-### 🔧 你的設定同專案配置: `CLAUDE.md`
+
+### 文檔格式：UTF-8
+### 你的設定同專案配置: `CLAUDE.md`
 ### 專家議會角色定位設定: `docs/role_play/README.md`
 
 ## 📁 文檔庫系統

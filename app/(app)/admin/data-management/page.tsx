@@ -12,9 +12,7 @@ export default function DataManagementPage() {
   return (
     <AdminErrorBoundary>
       <AdminRefreshProvider>
-        <NewAdminDashboard 
-          theme="data-management" 
-        />
+        <NewAdminDashboard theme='data-management' />
       </AdminRefreshProvider>
     </AdminErrorBoundary>
   );

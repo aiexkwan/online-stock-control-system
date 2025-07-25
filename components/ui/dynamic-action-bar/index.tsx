@@ -18,6 +18,8 @@ import { navigationCacheManager } from '@/lib/navigation/cache-manager';
 import { VirtualizedNavigation } from './VirtualizedNavigation';
 import { QuickAccess } from './QuickAccess';
 import { SmartReminder } from './SmartReminder';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database/supabase';
 import { useKeyboardNavigation } from '@/lib/accessibility';
 
 interface DynamicActionBarProps {
@@ -40,7 +42,7 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
   const { user, userRole } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [supabase, setSupabase] = useState<any>(null);
+  const [supabase, setSupabase] = useState<SupabaseClient<Database> | null>(null);
   const navigationRef = useRef<HTMLDivElement>(null);
 
   // 延遲初始化 Supabase client 確保只在客戶端執行

@@ -11,10 +11,10 @@ export const productResolvers: IResolvers = {
     inventory: async (parent, _args, context: GraphQLContext) => {
       return context.loaders.inventory.load(parent.code);
     },
-    
+
     pallets: async (parent, args, context: GraphQLContext) => {
       const { filter, pagination } = args;
-      
+
       // For now, return empty - would implement actual query
       return {
         edges: [],
@@ -28,7 +28,7 @@ export const productResolvers: IResolvers = {
         totalCount: 0,
       };
     },
-    
+
     statistics: async (parent, _args, context: GraphQLContext) => {
       // Would implement actual statistics calculation
       return {
@@ -41,16 +41,16 @@ export const productResolvers: IResolvers = {
       };
     },
   },
-  
+
   Query: {
     product: async (_parent, args, context: GraphQLContext) => {
       return context.loaders.product.load(args.code);
     },
-    
+
     products: async (_parent, args, context: GraphQLContext) => {
       // Would implement filtering, pagination, and sorting
       const { filter, pagination, sort } = args;
-      
+
       return {
         edges: [],
         pageInfo: {
@@ -63,50 +63,50 @@ export const productResolvers: IResolvers = {
         totalCount: 0,
       };
     },
-    
+
     searchProducts: async (_parent, args, context: GraphQLContext) => {
       const { query, limit = 10 } = args;
-      
+
       const { data, error } = await context.supabase
         .from('data_code')
         .select('*')
         .or(`code.ilike.%${query}%,description.ilike.%${query}%`)
         .limit(limit);
-      
+
       if (error) throw error;
       return data || [];
     },
   },
-  
+
   Mutation: {
     createProduct: async (_parent, args, context: GraphQLContext) => {
       const { input } = args;
-      
+
       const { data, error } = await context.supabase
         .from('data_code')
         .insert(input)
         .select()
         .single();
-      
+
       if (error) throw error;
       return data;
     },
-    
+
     updateProduct: async (_parent, args, context: GraphQLContext) => {
       const { code, input } = args;
-      
+
       const { data, error } = await context.supabase
         .from('data_code')
         .update(input)
         .eq('code', code)
         .select()
         .single();
-      
+
       if (error) throw error;
-      
+
       // Clear cache
       context.loaders.product.clear(code);
-      
+
       return data;
     },
   },

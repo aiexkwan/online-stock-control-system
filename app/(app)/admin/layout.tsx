@@ -41,9 +41,9 @@ export default function AdminLayout({ children }: { children?: React.ReactNode }
     <>
       {/* 🎯 統一背景系統 - 確保Admin區域視覺一致性 */}
       <UnifiedBackground />
-      
+
       {/* Admin Provider 結構 */}
-      <div className="relative z-10 min-h-screen">
+      <div className='relative z-10 min-h-screen'>
         <DynamicApolloProvider>
           <QueryClientProvider client={queryClient}>
             <DialogProvider>

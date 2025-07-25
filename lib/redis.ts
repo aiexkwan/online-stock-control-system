@@ -161,12 +161,12 @@ export async function testRedisConnection(): Promise<boolean> {
 
   try {
     const client = getRedisClient();
-    
+
     // 🔧 專家修復：設置較短的超時時間，避免長時間等待
     const timeoutPromise = new Promise<string>((_, reject) => {
       setTimeout(() => reject(new Error('Redis connection timeout')), 2000);
     });
-    
+
     const pingPromise = client.ping();
     const result = await Promise.race([pingPromise, timeoutPromise]);
 
@@ -184,8 +184,9 @@ export async function testRedisConnection(): Promise<boolean> {
   } catch (error) {
     // 🛑 專家修復：區分不同錯誤類型，提供更友善的錯誤訊息
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const isConnectionRefused = errorMessage.includes('ECONNREFUSED') || errorMessage.includes('connect');
-    
+    const isConnectionRefused =
+      errorMessage.includes('ECONNREFUSED') || errorMessage.includes('connect');
+
     cacheLogger.warn(
       {
         service: 'Redis',
@@ -195,8 +196,8 @@ export async function testRedisConnection(): Promise<boolean> {
         connectionRefused: isConnectionRefused,
         fallbackEnabled: true,
       },
-      isConnectionRefused 
-        ? 'Redis 服務不可用 - 系統將使用內存緩存降級模式' 
+      isConnectionRefused
+        ? 'Redis 服務不可用 - 系統將使用內存緩存降級模式'
         : 'Redis ping 測試失敗 - 啟用降級模式'
     );
     return false;

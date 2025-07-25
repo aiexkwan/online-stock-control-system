@@ -328,33 +328,66 @@ export function isUnifiedOperationsResult(value: unknown): value is UnifiedOpera
 }
 
 export function isStockLevelResult(value: unknown): value is StockLevelResult {
-  return typeof value === 'object' && value !== null && 'productCode' in value && 'currentStock' in value;
+  return (
+    typeof value === 'object' && value !== null && 'productCode' in value && 'currentStock' in value
+  );
 }
 
 export function isWorkLevelResult(value: unknown): value is WorkLevelResult {
-  return typeof value === 'object' && value !== null && 'department' in value && 'averageEfficiency' in value;
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'department' in value &&
+    'averageEfficiency' in value
+  );
 }
 
 export function isGRNAnalyticsResult(value: unknown): value is GRNAnalyticsResult {
-  return typeof value === 'object' && value !== null && 'totalGRNs' in value && 'supplierBreakdown' in value;
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'totalGRNs' in value &&
+    'supplierBreakdown' in value
+  );
 }
 
 export function isPerformanceMetricsResult(value: unknown): value is PerformanceMetricsResult {
-  return typeof value === 'object' && value !== null && 'totalOperations' in value && 'departmentMetrics' in value;
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'totalOperations' in value &&
+    'departmentMetrics' in value
+  );
 }
 
-export function isInventoryOrderedAnalysisResult(value: unknown): value is InventoryOrderedAnalysisResult {
-  return typeof value === 'object' && value !== null && 'totalProducts' in value && 'categoryBreakdown' in value;
+export function isInventoryOrderedAnalysisResult(
+  value: unknown
+): value is InventoryOrderedAnalysisResult {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'totalProducts' in value &&
+    'categoryBreakdown' in value
+  );
 }
 
 export function isHistoryTreeResult(value: unknown): value is HistoryTreeResult {
-  return typeof value === 'object' && value !== null && 'rootNodes' in value && 'statistics' in value;
+  return (
+    typeof value === 'object' && value !== null && 'rootNodes' in value && 'statistics' in value
+  );
 }
 
 export function isTopProductsResult(value: unknown): value is TopProductsResult {
-  return typeof value === 'object' && value !== null && 'byQuantity' in value && 'byRevenue' in value;
+  return (
+    typeof value === 'object' && value !== null && 'byQuantity' in value && 'byRevenue' in value
+  );
 }
 
 export function isStockDistributionResult(value: unknown): value is StockDistributionResult {
-  return typeof value === 'object' && value !== null && 'locationDistribution' in value && 'recommendations' in value;
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'locationDistribution' in value &&
+    'recommendations' in value
+  );
 }

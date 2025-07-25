@@ -1,7 +1,7 @@
 /**
  * Widget 狀態管理類型定義
  * State management type definitions for widgets
- * 
+ *
  * 這個文件包含所有 widget 狀態管理相關的類型定義
  */
 
@@ -33,18 +33,18 @@ export enum WidgetActionType {
   FETCH_START = 'FETCH_START',
   FETCH_SUCCESS = 'FETCH_SUCCESS',
   FETCH_ERROR = 'FETCH_ERROR',
-  
+
   // 刷新動作
   REFRESH_START = 'REFRESH_START',
   REFRESH_SUCCESS = 'REFRESH_SUCCESS',
   REFRESH_ERROR = 'REFRESH_ERROR',
-  
+
   // 狀態管理動作
   SET_DATA = 'SET_DATA',
   SET_ERROR = 'SET_ERROR',
   CLEAR_ERROR = 'CLEAR_ERROR',
   RESET_STATE = 'RESET_STATE',
-  
+
   // 元數據動作
   UPDATE_METADATA = 'UPDATE_METADATA',
   SET_CACHED = 'SET_CACHED',
@@ -71,7 +71,7 @@ export interface WidgetAction<T = unknown> {
 export interface WidgetStateManager<T = unknown> {
   state: WidgetState<T>;
   dispatch: (action: WidgetAction<T>) => void;
-  
+
   // 便捷方法
   setLoading: (loading: boolean) => void;
   setData: (data: T, metadata?: WidgetMetadata) => void;
@@ -115,11 +115,11 @@ export interface WidgetStateStore {
   setState<T = unknown>(widgetId: string, state: Partial<WidgetState<T>>): void;
   resetState(widgetId: string): void;
   clearAllStates(): void;
-  
+
   // 訂閱管理
   subscribe<T = unknown>(widgetId: string, subscriber: WidgetStateSubscriber<T>): () => void;
   unsubscribe(widgetId: string, subscriber: WidgetStateSubscriber): void;
-  
+
   // 批量操作
   batchUpdate(updates: Record<string, Partial<WidgetState>>): void;
   getSnapshot(): Record<string, WidgetStateSnapshot>;
@@ -186,7 +186,7 @@ export function widgetStateReducer<T = unknown>(
         hasError: false,
         error: null,
       };
-      
+
     case WidgetActionType.FETCH_SUCCESS:
       return {
         ...state,
@@ -198,7 +198,7 @@ export function widgetStateReducer<T = unknown>(
         lastUpdated: new Date(),
         isCached: action.payload?.isCached || false,
       };
-      
+
     case WidgetActionType.FETCH_ERROR:
       return {
         ...state,
@@ -206,7 +206,7 @@ export function widgetStateReducer<T = unknown>(
         hasError: true,
         error: action.payload?.error || null,
       };
-      
+
     case WidgetActionType.REFRESH_START:
       return {
         ...state,
@@ -214,7 +214,7 @@ export function widgetStateReducer<T = unknown>(
         hasError: false,
         error: null,
       };
-      
+
     case WidgetActionType.REFRESH_SUCCESS:
       return {
         ...state,
@@ -227,7 +227,7 @@ export function widgetStateReducer<T = unknown>(
         refreshCount: state.refreshCount + 1,
         isCached: false,
       };
-      
+
     case WidgetActionType.REFRESH_ERROR:
       return {
         ...state,
@@ -235,7 +235,7 @@ export function widgetStateReducer<T = unknown>(
         hasError: true,
         error: action.payload?.error || null,
       };
-      
+
     case WidgetActionType.SET_DATA:
       return {
         ...state,
@@ -243,24 +243,24 @@ export function widgetStateReducer<T = unknown>(
         metadata: action.payload?.metadata || state.metadata,
         lastUpdated: new Date(),
       };
-      
+
     case WidgetActionType.SET_ERROR:
       return {
         ...state,
         hasError: true,
         error: action.payload?.error || null,
       };
-      
+
     case WidgetActionType.CLEAR_ERROR:
       return {
         ...state,
         hasError: false,
         error: null,
       };
-      
+
     case WidgetActionType.RESET_STATE:
       return createInitialWidgetState(state.id);
-      
+
     case WidgetActionType.UPDATE_METADATA:
       return {
         ...state,
@@ -269,13 +269,13 @@ export function widgetStateReducer<T = unknown>(
           ...action.payload?.metadata,
         },
       };
-      
+
     case WidgetActionType.SET_CACHED:
       return {
         ...state,
         isCached: action.payload?.isCached || false,
       };
-      
+
     default:
       return state;
   }
@@ -287,7 +287,7 @@ export function widgetStateReducer<T = unknown>(
  */
 export function isWidgetState(state: unknown): state is WidgetState {
   if (!state || typeof state !== 'object') return false;
-  
+
   const widgetState = state as Record<string, unknown>;
   return (
     typeof widgetState.id === 'string' &&
@@ -299,7 +299,7 @@ export function isWidgetState(state: unknown): state is WidgetState {
 
 export function isWidgetAction(action: unknown): action is WidgetAction {
   if (!action || typeof action !== 'object') return false;
-  
+
   const widgetAction = action as Record<string, unknown>;
   return (
     typeof widgetAction.type === 'string' &&
@@ -312,21 +312,18 @@ export function isWidgetAction(action: unknown): action is WidgetAction {
  * State selectors
  */
 export const widgetStateSelectors = {
-  isReady: <T>(state: WidgetState<T>): boolean => 
+  isReady: <T>(state: WidgetState<T>): boolean =>
     !state.isLoading && !state.hasError && state.data !== undefined,
-    
+
   isStale: <T>(state: WidgetState<T>, maxAge: number): boolean => {
     if (!state.lastUpdated) return true;
     const age = Date.now() - state.lastUpdated.getTime();
     return age > maxAge;
   },
-  
-  hasData: <T>(state: WidgetState<T>): boolean => 
-    state.data !== undefined && state.data !== null,
-    
-  getError: <T>(state: WidgetState<T>): WidgetError | null => 
-    state.error || null,
-    
-  getMetadata: <T>(state: WidgetState<T>): WidgetMetadata => 
-    state.metadata || {},
+
+  hasData: <T>(state: WidgetState<T>): boolean => state.data !== undefined && state.data !== null,
+
+  getError: <T>(state: WidgetState<T>): WidgetError | null => state.error || null,
+
+  getMetadata: <T>(state: WidgetState<T>): WidgetMetadata => state.metadata || {},
 };

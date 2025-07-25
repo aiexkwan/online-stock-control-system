@@ -5,7 +5,7 @@ import React from 'react';
 // Phase 1 緊急修復：使用內聯樣式確保背景一定顯示
 export function MinimalBackground() {
   return (
-    <div 
+    <div
       style={{
         position: 'fixed',
         top: 0,
@@ -15,9 +15,9 @@ export function MinimalBackground() {
         zIndex: -1,
         background: 'linear-gradient(to bottom right, #0f172a, #1e293b, #0f172a)',
         minHeight: '100vh',
-        minWidth: '100vw'
+        minWidth: '100vw',
       }}
-      className="fixed inset-0"
+      className='fixed inset-0'
     />
   );
 }

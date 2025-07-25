@@ -21,7 +21,7 @@ class RequestDeduplicator {
   async dedupe<T>(key: string, requestFn: () => Promise<T>): Promise<T> {
     // 檢查是否有進行中的請求
     const pending = this.pendingRequests.get(key) as PendingRequest<T> | undefined;
-    
+
     if (pending) {
       const age = Date.now() - pending.timestamp;
       if (age < this.TTL) {
@@ -34,12 +34,12 @@ class RequestDeduplicator {
 
     // 創建新請求
     const promise = requestFn()
-      .then((result) => {
+      .then(result => {
         // 請求完成後清理
         this.pendingRequests.delete(key);
         return result;
       })
-      .catch((error) => {
+      .catch(error => {
         // 錯誤時也要清理
         this.pendingRequests.delete(key);
         throw error;

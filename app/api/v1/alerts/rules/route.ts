@@ -104,7 +104,17 @@ const QueryAlertRulesSchema = z.object({
  * GET /api/v1/alerts/rules
  * 查詢告警規則
  */
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<NextResponse<ApiResult<{ data: AlertRule[]; pagination: { total: number | null; limit: number; offset: number } }>>> {
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<
+  NextResponse<
+    ApiResult<{
+      data: AlertRule[];
+      pagination: { total: number | null; limit: number; offset: number };
+    }>
+  >
+> {
   try {
     const { searchParams } = new URL(request.url);
     const queryParams = Object.fromEntries(searchParams);
@@ -176,7 +186,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
  * POST /api/v1/alerts/rules
  * 創建告警規則
  */
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<NextResponse<ApiResult<AlertRule>>> {
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse<ApiResult<AlertRule>>> {
   try {
     const body = await request.json();
     const validated = CreateAlertRuleSchema.parse(body);

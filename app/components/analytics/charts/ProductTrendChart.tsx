@@ -75,7 +75,7 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
 
   const chartData = view === 'summary' ? data?.summary : data?.detail;
   const productCodes = data?.productCodes || [];
-  
+
   const chartProps = {
     data: chartData,
     margin: { top: 20, right: 30, left: 20, bottom: 60 },
@@ -124,7 +124,7 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
     return (
       <div className={dialogStyles.card}>
         <div className='flex h-[400px] items-center justify-center'>
-          <div className='h-2 w-16 bg-slate-600 rounded-full opacity-75' />
+          <div className='h-2 w-16 rounded-full bg-slate-600 opacity-75' />
         </div>
       </div>
     );

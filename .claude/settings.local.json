@@ -185,11 +185,15 @@
       "Bash(supabase gen types:*)",
       "mcp__supabase__list_migrations",
       "Bash(osascript:*)",
-      "Bash(open:*)"
+      "Bash(open:*)",
+      "Bash(pip3 list:*)",
+      "Bash(pip3 install:*)"
     ],
     "deny": []
   },
   "enabledMcpjsonServers": [
-    "supabase"
-  ]
+    "supabase",
+    "mem0"
+  ],
+  "enableAllProjectMcpServers": true
 }

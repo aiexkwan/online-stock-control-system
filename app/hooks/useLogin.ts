@@ -42,11 +42,11 @@ export function useLogin() {
     if (!email) {
       return 'Email is required';
     }
-    
+
     if (!EmailValidator.validate(email)) {
       return EmailValidator.getErrorMessage(email);
     }
-    
+
     return undefined;
   }, []);
 
@@ -55,31 +55,34 @@ export function useLogin() {
     if (!password) {
       return 'Password is required';
     }
-    
+
     if (password.length < PASSWORD_RULES.minLength) {
       return `Password must be at least ${PASSWORD_RULES.minLength} characters`;
     }
-    
+
     if (!PASSWORD_RULES.pattern.test(password)) {
       return PASSWORD_RULES.errorMessage;
     }
-    
+
     return undefined;
   }, []);
 
   // Form validation
-  const validateForm = useCallback((formData: LoginFormData): boolean => {
-    const errors: Partial<LoginFormData> = {};
-    
-    const emailError = validateEmail(formData.email);
-    if (emailError) errors.email = emailError;
-    
-    const passwordError = validatePassword(formData.password);
-    if (passwordError) errors.password = passwordError;
-    
-    setState(prev => ({ ...prev, fieldErrors: errors }));
-    return Object.keys(errors).length === 0;
-  }, [validateEmail, validatePassword]);
+  const validateForm = useCallback(
+    (formData: LoginFormData): boolean => {
+      const errors: Partial<LoginFormData> = {};
+
+      const emailError = validateEmail(formData.email);
+      if (emailError) errors.email = emailError;
+
+      const passwordError = validatePassword(formData.password);
+      if (passwordError) errors.password = passwordError;
+
+      setState(prev => ({ ...prev, fieldErrors: errors }));
+      return Object.keys(errors).length === 0;
+    },
+    [validateEmail, validatePassword]
+  );
 
   // Get user redirect path based on role
   const getUserRedirectPath = useCallback(async (email: string): Promise<string> => {
@@ -92,86 +95,93 @@ export function useLogin() {
     } catch (error) {
       console.warn('[useLogin] Failed to get role from database, using fallback', error);
     }
-    
+
     // Fallback to legacy role mapping
     const legacyRole = getUserRole(email);
     return legacyRole.defaultPath;
   }, []);
 
   // Main login function
-  const login = useCallback(async (email: string, password: string) => {
-    // Reset state
-    setState({ loading: true, error: '', fieldErrors: {} });
-    
-    // Validate form
-    if (!validateForm({ email, password })) {
-      setState(prev => ({ ...prev, loading: false }));
-      return { success: false, error: 'Validation failed' };
-    }
-    
-    try {
-      // Perform login
-      await unifiedAuth.signIn(email, password);
-      
-      // 🔧 修復異步競爭條件：等待 Supabase session 完全建立
-      // 最多等待 3 秒，檢查 session 是否可用
-      const maxRetries = 6; // 6 * 500ms = 3 秒
-      let retryCount = 0;
-      let sessionReady = false;
-      
-      while (retryCount < maxRetries && !sessionReady) {
-        try {
-          // 檢查 session 是否已經建立
-          const currentUser = await unifiedAuth.getCurrentUser();
-          
-          if (currentUser) {
-            // 進一步確認 session 可用性
-            const { createClient } = await import('@/app/utils/supabase/client');
-            const supabase = createClient();
-            const { data: { session }, error } = await supabase.auth.getSession();
-            
-            if (!error && session) {
-              sessionReady = true;
-              console.log('[useLogin] Session confirmed, proceeding with redirect');
-              break;
+  const login = useCallback(
+    async (email: string, password: string) => {
+      // Reset state
+      setState({ loading: true, error: '', fieldErrors: {} });
+
+      // Validate form
+      if (!validateForm({ email, password })) {
+        setState(prev => ({ ...prev, loading: false }));
+        return { success: false, error: 'Validation failed' };
+      }
+
+      try {
+        // Perform login
+        await unifiedAuth.signIn(email, password);
+
+        // 🔧 修復異步競爭條件：等待 Supabase session 完全建立
+        // 最多等待 3 秒，檢查 session 是否可用
+        const maxRetries = 6; // 6 * 500ms = 3 秒
+        let retryCount = 0;
+        let sessionReady = false;
+
+        while (retryCount < maxRetries && !sessionReady) {
+          try {
+            // 檢查 session 是否已經建立
+            const currentUser = await unifiedAuth.getCurrentUser();
+
+            if (currentUser) {
+              // 進一步確認 session 可用性
+              const { createClient } = await import('@/app/utils/supabase/client');
+              const supabase = createClient();
+              const {
+                data: { session },
+                error,
+              } = await supabase.auth.getSession();
+
+              if (!error && session) {
+                sessionReady = true;
+                console.log('[useLogin] Session confirmed, proceeding with redirect');
+                break;
+              }
             }
+          } catch (sessionError) {
+            console.warn('[useLogin] Session check failed:', sessionError);
           }
-        } catch (sessionError) {
-          console.warn('[useLogin] Session check failed:', sessionError);
+
+          // 等待 500ms 後重試
+          await new Promise(resolve => setTimeout(resolve, 500));
+          retryCount++;
+          console.log(`[useLogin] Waiting for session (${retryCount}/${maxRetries})...`);
         }
-        
-        // 等待 500ms 後重試
-        await new Promise(resolve => setTimeout(resolve, 500));
-        retryCount++;
-        console.log(`[useLogin] Waiting for session (${retryCount}/${maxRetries})...`);
+
+        if (!sessionReady) {
+          console.warn('[useLogin] Session not ready after 3 seconds, proceeding anyway');
+        }
+
+        // Get redirect path based on user role
+        const redirectPath = await getUserRedirectPath(email);
+
+        // Login successful
+        setState({ loading: false, error: '', fieldErrors: {} });
+
+        // Redirect to appropriate page
+        router.push(redirectPath);
+
+        return { success: true, redirectPath };
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Login failed. Please try again.';
+        setState({ loading: false, error: errorMessage, fieldErrors: {} });
+        return { success: false, error: errorMessage };
       }
-      
-      if (!sessionReady) {
-        console.warn('[useLogin] Session not ready after 3 seconds, proceeding anyway');
-      }
-      
-      // Get redirect path based on user role
-      const redirectPath = await getUserRedirectPath(email);
-      
-      // Login successful
-      setState({ loading: false, error: '', fieldErrors: {} });
-      
-      // Redirect to appropriate page
-      router.push(redirectPath);
-      
-      return { success: true, redirectPath };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Login failed. Please try again.';
-      setState({ loading: false, error: errorMessage, fieldErrors: {} });
-      return { success: false, error: errorMessage };
-    }
-  }, [validateForm, getUserRedirectPath, router]);
+    },
+    [validateForm, getUserRedirectPath, router]
+  );
 
   // Clear specific field error
   const clearFieldError = useCallback((field: keyof LoginFormData) => {
     setState(prev => ({
       ...prev,
-      fieldErrors: { ...prev.fieldErrors, [field]: undefined }
+      fieldErrors: { ...prev.fieldErrors, [field]: undefined },
     }));
   }, []);
 
@@ -185,14 +195,14 @@ export function useLogin() {
     loading: state.loading,
     error: state.error,
     fieldErrors: state.fieldErrors,
-    
+
     // Actions
     login,
     validateEmail,
     validatePassword,
     clearFieldError,
     clearErrors,
-    
+
     // Constants
     emailDomain: EmailValidator.getAllowedDomain(),
     passwordRules: {

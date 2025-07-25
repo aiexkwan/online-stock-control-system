@@ -292,7 +292,7 @@ export function useRealtimePerformanceMonitor(widgetId?: string) {
 
     // 🛑 完全禁用自動更新：按用戶要求，只在頁面載入和手動刷新時更新
     updateMetrics(); // 只執行一次初始更新
-    
+
     // 不再使用任何 setInterval - 只在頁面載入時更新一次
     return () => {}; // 無需清理
   }, [isMonitoring, widgetId]);

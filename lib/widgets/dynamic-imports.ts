@@ -25,9 +25,8 @@ const wrapNamedExport = (
         throw new Error(`Module import failed: received ${typeof importedModule}`);
       }
 
-      const component = (importedModule[exportName] || importedModule.default) as React.ComponentType<
-        Record<string, unknown>
-      >;
+      const component = (importedModule[exportName] ||
+        importedModule.default) as React.ComponentType<Record<string, unknown>>;
 
       if (!component || typeof component !== 'function') {
         throw new Error(`Component "${exportName}" not found or is not a function`);
@@ -95,22 +94,23 @@ export const statsWidgetImports: Record<string, ComponentImport> = {
   StillInAwaitPercentageWidget: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/StillInAwaitPercentageWidget')
   ),
-  WarehouseWorkLevelAreaChart: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/WarehouseWorkLevelAreaChart')
-  ),
-  StatsCardWidget: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/StatsCardWidget')
+  // WarehouseWorkLevelAreaChart: wrapDefaultExport(
+  //   () => import('@/app/(app)/admin/components/dashboard/widgets/WarehouseWorkLevelAreaChart')
+  // ),
+  StatsCardWidget: wrapNamedExport(
+    () => import('@/app/(app)/admin/components/dashboard/cards/StatsCard'),
+    'StatsCard'
   ),
 };
 
 // Charts Widgets - 策略 2: 標準化導入格式
 export const chartsWidgetImports: Record<string, ComponentImport> = {
-  StockDistributionChart: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/StockDistributionChart')
-  ),
-  StockLevelHistoryChart: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/StockLevelHistoryChart')
-  ),
+  // StockDistributionChart: wrapDefaultExport(
+  //   () => import('@/app/(app)/admin/components/dashboard/widgets/StockDistributionChart')
+  // ),
+  // StockLevelHistoryChart: wrapDefaultExport(
+  //   () => import('@/app/(app)/admin/components/dashboard/widgets/StockLevelHistoryChart')
+  // ),
   TransferTimeDistributionWidget: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/TransferTimeDistributionWidget')
   ),
@@ -118,7 +118,8 @@ export const chartsWidgetImports: Record<string, ComponentImport> = {
     () => import('@/app/(app)/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget')
   ),
   InventoryOrderedAnalysisWidgetGraphQL: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidgetGraphQL')
+    () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidgetGraphQL')
   ),
   TopProductsInventoryChart: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/charts/TopProductsInventoryChart')
@@ -130,17 +131,21 @@ export const chartsWidgetImports: Record<string, ComponentImport> = {
 
 // Lists Widgets - 策略 2: 標準化導入格式
 export const listsWidgetImports: Record<string, ComponentImport> = {
-  OrdersListWidget: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/OrdersListWidget')
+  OrdersListWidget: wrapNamedExport(
+    () => import('@/app/(app)/admin/components/dashboard/cards/ListCard'),
+    'ListCard'
   ),
-  OtherFilesListWidget: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/OtherFilesListWidget')
+  OtherFilesListWidget: wrapNamedExport(
+    () => import('@/app/(app)/admin/components/dashboard/cards/OtherFilesCard'),
+    'OtherFilesCard'
   ),
-  WarehouseTransferListWidget: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/WarehouseTransferListWidget')
+  WarehouseTransferListWidget: wrapNamedExport(
+    () => import('@/app/(app)/admin/components/dashboard/cards/WarehouseTransferCard'),
+    'WarehouseTransferCard'
   ),
-  OrderStateListWidget: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/OrderStateListWidget')
+  OrderStateListWidget: wrapNamedExport(
+    () => import('@/app/(app)/admin/components/dashboard/cards/OrderStateCard'),
+    'OrderStateCard'
   ),
 };
 
@@ -168,8 +173,9 @@ export const uploadsWidgetImports: Record<string, ComponentImport> = {
   UploadOrdersWidget: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/UploadOrdersWidget')
   ),
-  UploadFilesWidget: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/UploadFilesWidget')
+  UploadFilesWidget: wrapNamedExport(
+    () => import('@/app/(app)/admin/components/dashboard/cards/UploadCard'),
+    'UploadCard'
   ),
   UploadProductSpecWidget: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/UploadProductSpecWidget')
@@ -233,20 +239,22 @@ export const productionWidgetImports: Record<string, ComponentImport> = {
   InjectionProductionStatsWidget: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/InjectionProductionStatsWidget')
   ),
-  StaffWorkloadWidget: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/StaffWorkloadWidget')
+  StaffWorkloadWidget: wrapNamedExport(
+    () => import('@/app/(app)/admin/components/dashboard/cards/StaffWorkloadCard'),
+    'StaffWorkloadCard'
   ),
   TopProductsByQuantityWidget: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/TopProductsByQuantityWidget')
   ),
   // GraphQL Version - Phase 2 Migration
   TopProductsByQuantityWidgetGraphQL: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/TopProductsByQuantityWidgetGraphQL')
+    () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/TopProductsByQuantityWidgetGraphQL')
   ),
-  ProductDistributionChartWidget: wrapNamedExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/ProductDistributionChartWidget'),
-    'ProductDistributionChartWidget'
-  ),
+  // ProductDistributionChartWidget: wrapNamedExport(
+  //   () => import('@/app/(app)/admin/components/dashboard/widgets/ProductDistributionChartWidget'),
+  //   'ProductDistributionChartWidget'
+  // ),
   TopProductsDistributionWidget: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/TopProductsDistributionWidget')
   ),
@@ -257,7 +265,9 @@ export const specialWidgetImports: Record<string, ComponentImport> = {
   OrderAnalysisResultDialog: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/OrderAnalysisResultDialog')
   ),
-  Folder3D: wrapDefaultExport(() => import('@/app/(app)/admin/components/dashboard/widgets/Folder3D')),
+  Folder3D: wrapDefaultExport(
+    () => import('@/app/(app)/admin/components/dashboard/widgets/Folder3D')
+  ),
   PerformanceTestWidget: wrapDefaultExport(
     () => import('@/app/(app)/admin/components/dashboard/widgets/PerformanceTestWidget')
   ),
@@ -266,13 +276,16 @@ export const specialWidgetImports: Record<string, ComponentImport> = {
 // Unified Widgets - v2.0.3 新增統一組件 - 策略 2: 標準化導入格式
 export const unifiedWidgetImports: Record<string, ComponentImport> = {
   UnifiedStatsWidget: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/UnifiedStatsWidgetWithErrorBoundary')
+    () =>
+      import('@/app/(app)/admin/components/dashboard/widgets/UnifiedStatsWidgetWithErrorBoundary')
   ),
-  UnifiedChartWidget: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/UnifiedChartWidgetWithErrorBoundary')
+  UnifiedChartWidget: wrapNamedExport(
+    () => import('@/app/(app)/admin/components/dashboard/cards/ChartCard'),
+    'ChartCard'
   ),
-  UnifiedTableWidget: wrapDefaultExport(
-    () => import('@/app/(app)/admin/components/dashboard/widgets/UnifiedTableWidgetWithErrorBoundary')
+  UnifiedTableWidget: wrapNamedExport(
+    () => import('@/app/(app)/admin/components/dashboard/cards/UnifiedTableCard'),
+    'UnifiedTableCard'
   ),
 };
 

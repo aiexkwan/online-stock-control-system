@@ -8,9 +8,5 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true
   },
-  "include": [
-    "app/components/**/*",
-    "lib/utils/**/*",
-    "app/hooks/**/*"
-  ]
+  "include": ["app/components/**/*", "lib/utils/**/*", "app/hooks/**/*"]
 }

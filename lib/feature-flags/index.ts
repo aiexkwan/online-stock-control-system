@@ -36,6 +36,10 @@ export {
 
 export { FeatureFlagPanel } from './components/FeatureFlagPanel';
 
+// 配置導出
+export { phase4FeatureFlags } from './configs/phase4-rollout';
+export { cardsMigrationFlags, shouldUseCard, shouldUseGraphQL, getMigrationProgress } from './configs/cards-migration';
+
 /**
  * 快捷函數
  */

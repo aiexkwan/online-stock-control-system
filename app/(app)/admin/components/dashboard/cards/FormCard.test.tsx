@@ -26,7 +26,7 @@ describe('FormCard Component', () => {
 
   it('renders product edit form correctly', () => {
     renderFormCard();
-    
+
     expect(screen.getByText('Product Information')).toBeInTheDocument();
     expect(screen.getByLabelText(/Product Code/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Product Description/)).toBeInTheDocument();
@@ -37,7 +37,7 @@ describe('FormCard Component', () => {
 
   it('shows validation errors for required fields', async () => {
     renderFormCard();
-    
+
     const submitButton = screen.getByRole('button', { name: /Create/i });
     fireEvent.click(submitButton);
 
@@ -49,32 +49,32 @@ describe('FormCard Component', () => {
 
   it('updates form data on input change', () => {
     renderFormCard();
-    
+
     const codeInput = screen.getByLabelText(/Product Code/);
     fireEvent.change(codeInput, { target: { value: 'TEST-001' } });
-    
+
     expect(codeInput).toHaveValue('TEST-001');
   });
 
   it('shows progress bar when enabled', () => {
     renderFormCard({ showProgress: true });
-    
+
     expect(screen.getByText(/Form Completion/)).toBeInTheDocument();
   });
 
   it('renders in edit mode correctly', () => {
     renderFormCard({ isEditMode: true });
-    
+
     expect(screen.getByText(/Edit Mode/)).toBeInTheDocument();
   });
 
   it('handles cancel button click', () => {
     const onCancel = jest.fn();
     renderFormCard({ onCancel });
-    
+
     const cancelButton = screen.getByRole('button', { name: /Cancel/i });
     fireEvent.click(cancelButton);
-    
+
     expect(onCancel).toHaveBeenCalled();
   });
 
@@ -83,9 +83,9 @@ describe('FormCard Component', () => {
       code: 'PREFILL-001',
       description: 'Prefilled Product',
     };
-    
+
     renderFormCard({ prefilledData });
-    
+
     expect(screen.getByDisplayValue('PREFILL-001')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Prefilled Product')).toBeInTheDocument();
   });

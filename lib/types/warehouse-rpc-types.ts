@@ -55,28 +55,29 @@ export function isWarehouseSummaryResponse(data: unknown): data is WarehouseSumm
   if (typeof data !== 'object' || data === null) {
     return false;
   }
-  
+
   const obj = data as Record<string, unknown>;
-  
+
   // 檢查 summary 字段
   if ('summary' in obj) {
     if (obj.summary !== undefined && !Array.isArray(obj.summary)) {
       return false;
     }
-    
+
     // 如果 summary 存在且是數組，檢查數組元素結構
     if (Array.isArray(obj.summary)) {
-      return obj.summary.every(item => 
-        typeof item === 'object' && 
-        item !== null &&
-        'location' in item &&
-        'total_qty' in item &&
-        'item_count' in item &&
-        'unique_products' in item
+      return obj.summary.every(
+        item =>
+          typeof item === 'object' &&
+          item !== null &&
+          'location' in item &&
+          'total_qty' in item &&
+          'item_count' in item &&
+          'unique_products' in item
       );
     }
   }
-  
+
   return true;
 }
 
@@ -94,21 +95,21 @@ export function isOptimizedInventoryResponse(data: unknown): data is OptimizedIn
   if (typeof data !== 'object' || data === null) {
     return false;
   }
-  
+
   const obj = data as Record<string, unknown>;
-  
+
   // 至少需要有 inventory 或 stats 字段之一
   if (!('inventory' in obj) && !('stats' in obj)) {
     return false;
   }
-  
+
   // 檢查 inventory 字段
   if ('inventory' in obj && obj.inventory !== undefined) {
     if (!Array.isArray(obj.inventory)) {
       return false;
     }
   }
-  
+
   return true;
 }
 

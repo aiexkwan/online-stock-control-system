@@ -205,7 +205,7 @@ export function ReprintLabelWidget({ title = 'Reprint Label', gridArea }: Reprin
             size='sm'
           >
             {isLoading ? (
-              <div className='h-1 w-8 bg-slate-500 rounded-full opacity-75' />
+              <div className='h-1 w-8 rounded-full bg-slate-500 opacity-75' />
             ) : (
               <PrinterIcon className='h-4 w-4' />
             )}

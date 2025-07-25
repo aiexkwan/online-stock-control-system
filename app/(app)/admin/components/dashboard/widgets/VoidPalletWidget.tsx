@@ -185,7 +185,9 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
 
     try {
       // Call the void action directly with parameters
-      const { voidPalletAction, processDamageAction } = await import('@/app/(app)/void-pallet/actions');
+      const { voidPalletAction, processDamageAction } = await import(
+        '@/app/(app)/void-pallet/actions'
+      );
 
       let result;
       if (state.voidReason === 'Damage' && state.damageQuantity > 0) {
@@ -348,7 +350,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
             />
             {state.isSearching && (
               <div className='absolute right-3 top-1/2 -translate-y-1/2 transform'>
-                <div className='h-1 w-4 bg-primary rounded-full opacity-75' />
+                <div className='h-1 w-4 rounded-full bg-primary opacity-75' />
               </div>
             )}
           </div>
@@ -590,7 +592,7 @@ export const VoidPalletWidget = React.memo(function VoidPalletWidget({
         >
           {state.isProcessing || batchState.isProcessing ? (
             <>
-              <div className='h-1 w-4 bg-slate-400 rounded-full opacity-75' />
+              <div className='h-1 w-4 rounded-full bg-slate-400 opacity-75' />
               <span>Processing...</span>
             </>
           ) : (

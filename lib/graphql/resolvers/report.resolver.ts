@@ -4,9 +4,9 @@
  * 整合 ReportGeneratorWithDialogWidget + TransactionReportWidget
  */
 
-import { 
-  ReportType, 
-  ReportFormat, 
+import {
+  ReportType,
+  ReportFormat,
   ReportStatus,
   ReportPriority,
   ReportCardInput,
@@ -90,7 +90,13 @@ const REPORT_CONFIGS: Record<ReportType, ReportConfig> = {
     reportType: ReportType.CustomReport,
     title: 'Custom Report',
     description: 'User-defined custom reports with flexible configuration',
-    formats: [ReportFormat.Pdf, ReportFormat.Excel, ReportFormat.Csv, ReportFormat.Html, ReportFormat.Json],
+    formats: [
+      ReportFormat.Pdf,
+      ReportFormat.Excel,
+      ReportFormat.Csv,
+      ReportFormat.Html,
+      ReportFormat.Json,
+    ],
     maxFileSize: 100 * 1024 * 1024,
     retentionDays: 60,
     requireAuth: true,
@@ -128,7 +134,7 @@ const activeGenerations = new Map<string, ReportGenerationProgress>();
 // 模擬報表生成服務
 async function generateReportFile(input: ReportGenerationInput): Promise<GeneratedReport> {
   const generationId = `report_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  
+
   // 創建生成進度記錄
   const progress: ReportGenerationProgress = {
     id: generationId,
@@ -142,7 +148,7 @@ async function generateReportFile(input: ReportGenerationInput): Promise<Generat
     startedAt: new Date().toISOString(),
     userId: input.userId,
   };
-  
+
   activeGenerations.set(generationId, progress);
 
   // 模擬生成過程
@@ -153,7 +159,9 @@ async function generateReportFile(input: ReportGenerationInput): Promise<Generat
         ...current,
         progress: i,
         recordsProcessed: Math.floor((i / 100) * 1000),
-        estimatedTimeRemaining: Math.floor(((100 - i) / 100) * REPORT_CONFIGS[input.reportType].estimatedGenerationTime),
+        estimatedTimeRemaining: Math.floor(
+          ((100 - i) / 100) * REPORT_CONFIGS[input.reportType].estimatedGenerationTime
+        ),
       });
     }
     await new Promise(resolve => setTimeout(resolve, 1000)); // 1秒延遲
@@ -171,7 +179,9 @@ async function generateReportFile(input: ReportGenerationInput): Promise<Generat
     fileName,
     fileSize: Math.floor(Math.random() * 10000000) + 1000000, // 1-10MB 隨機
     downloadUrl: `/api/reports/${generationId}/download`,
-    expiresAt: new Date(Date.now() + REPORT_CONFIGS[input.reportType].retentionDays * 24 * 60 * 60 * 1000).toISOString(),
+    expiresAt: new Date(
+      Date.now() + REPORT_CONFIGS[input.reportType].retentionDays * 24 * 60 * 60 * 1000
+    ).toISOString(),
     generatedAt: new Date().toISOString(),
     generatedBy: input.userId,
     generationTime: REPORT_CONFIGS[input.reportType].estimatedGenerationTime,
@@ -200,8 +210,8 @@ export const reportResolvers = {
   Query: {
     // 獲取 ReportCard 數據
     reportCardData: async (
-      _parent: undefined, 
-      { input }: { input: ReportCardInput }, 
+      _parent: undefined,
+      { input }: { input: ReportCardInput },
       context: GraphQLContext
     ): Promise<ReportCardData> => {
       const supabase = createClient();
@@ -210,7 +220,7 @@ export const reportResolvers = {
       try {
         const reportType = input.reportType || ReportType.TransactionReport;
         const config = REPORT_CONFIGS[reportType];
-        
+
         // 獲取最近生成的報表
         let recentReports: GeneratedReport[] = [];
         if (input.includeRecentReports) {
@@ -234,14 +244,14 @@ export const reportResolvers = {
               priority: ReportPriority.Normal,
               downloadCount: 3,
               lastDownloaded: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-            }
+            },
           ];
         }
 
         // 獲取活躍的報表生成
-        const activeGenerationsList = input.includeActiveGenerations 
-          ? Array.from(activeGenerations.values()).filter(gen => 
-              !input.reportType || gen.reportType === input.reportType
+        const activeGenerationsList = input.includeActiveGenerations
+          ? Array.from(activeGenerations.values()).filter(
+              gen => !input.reportType || gen.reportType === input.reportType
             )
           : [];
 
@@ -262,7 +272,7 @@ export const reportResolvers = {
               createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
               lastUsed: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
               usageCount: 25,
-            }
+            },
           ];
         }
 
@@ -328,7 +338,7 @@ export const reportResolvers = {
                 reportCount: 12,
                 lastGenerated: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
                 favoriteType: ReportType.TransactionReport,
-              }
+              },
             ],
             popularTemplates: templates,
             recentReports: recentReports.slice(0, 5),
@@ -348,16 +358,17 @@ export const reportResolvers = {
           refreshInterval: 30,
           dataSource: `report_${reportType.toLowerCase()}`,
         };
-
       } catch (error) {
         console.error('[ReportResolver] reportCardData error:', error);
-        throw new Error(`Failed to fetch report data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(
+          `Failed to fetch report data: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
       }
     },
 
     // 獲取報表配置
     reportConfig: async (
-      _parent: undefined, 
+      _parent: undefined,
       { reportType }: { reportType: ReportType }
     ): Promise<ReportConfig> => {
       return REPORT_CONFIGS[reportType];
@@ -388,7 +399,7 @@ export const reportResolvers = {
           recordCount: 500,
           priority: ReportPriority.Normal,
           downloadCount: 1,
-        }
+        },
       ];
 
       return {
@@ -436,13 +447,15 @@ export const reportResolvers = {
       _parent: undefined,
       { generationIds }: { generationIds: string[] }
     ): Promise<ReportGenerationProgress[]> => {
-      return generationIds.map(id => activeGenerations.get(id)).filter(Boolean) as ReportGenerationProgress[];
+      return generationIds
+        .map(id => activeGenerations.get(id))
+        .filter(Boolean) as ReportGenerationProgress[];
     },
 
     // 獲取報表模板
     reportTemplates: async (
       _parent: undefined,
-      { reportType, userId }: { reportType?: ReportType, userId?: string }
+      { reportType, userId }: { reportType?: ReportType; userId?: string }
     ): Promise<ReportTemplate[]> => {
       // 模擬返回模板數據
       return [
@@ -458,7 +471,7 @@ export const reportResolvers = {
           createdBy: 'system',
           createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
           usageCount: 50,
-        }
+        },
       ];
     },
 
@@ -511,7 +524,7 @@ export const reportResolvers = {
       try {
         // 啟動非同步報表生成
         const generationId = `gen_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
+
         // 異步生成報表（不等待完成）
         generateReportFile(input).catch(error => {
           console.error('Report generation failed:', error);
@@ -530,10 +543,11 @@ export const reportResolvers = {
           reportId: generationId,
           success: true,
           message: 'Report generation started successfully',
-          estimatedCompletionTime: new Date(Date.now() + REPORT_CONFIGS[input.reportType].estimatedGenerationTime * 1000).toISOString(),
+          estimatedCompletionTime: new Date(
+            Date.now() + REPORT_CONFIGS[input.reportType].estimatedGenerationTime * 1000
+          ).toISOString(),
           progress: 0,
         };
-
       } catch (error) {
         return {
           id: '',
@@ -594,17 +608,17 @@ export const reportResolvers = {
               successful.push(reportId);
               break;
             default:
-              failed.push({ 
-            reportId, 
-            error: 'Unsupported operation',
-            timestamp: new Date().toISOString()
-          });
+              failed.push({
+                reportId,
+                error: 'Unsupported operation',
+                timestamp: new Date().toISOString(),
+              });
           }
         } catch (error) {
-          failed.push({ 
-            reportId, 
+          failed.push({
+            reportId,
             error: error instanceof Error ? error.message : 'Unknown error',
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           });
         }
       }
@@ -621,12 +635,12 @@ export const reportResolvers = {
     // 延長報表過期時間
     extendReportExpiry: async (
       _parent: undefined,
-      { reportId, days }: { reportId: string, days: number },
+      { reportId, days }: { reportId: string; days: number },
       context: GraphQLContext
     ): Promise<GeneratedReport> => {
       // 這裡應該更新數據庫中的過期時間
       const newExpiryDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
-      
+
       return {
         id: reportId,
         reportType: ReportType.TransactionReport,
@@ -654,7 +668,7 @@ export const reportResolvers = {
       context: GraphQLContext
     ): Promise<ReportTemplate> => {
       const templateId = `template_${Date.now()}`;
-      
+
       return {
         id: templateId,
         name: input.name,
@@ -673,7 +687,7 @@ export const reportResolvers = {
     // 更新報表模板
     updateReportTemplate: async (
       _parent: undefined,
-      { templateId, input }: { templateId: string, input: UpdateReportTemplateInput },
+      { templateId, input }: { templateId: string; input: UpdateReportTemplateInput },
       context: GraphQLContext
     ): Promise<ReportTemplate> => {
       // 這裡應該更新數據庫中的模板
@@ -706,7 +720,7 @@ export const reportResolvers = {
     // 分享報表
     shareReport: async (
       _parent: undefined,
-      { reportId, emails, message }: { reportId: string, emails: string[], message?: string },
+      { reportId, emails, message }: { reportId: string; emails: string[]; message?: string },
       context: GraphQLContext
     ): Promise<boolean> => {
       // 這裡應該發送郵件通知

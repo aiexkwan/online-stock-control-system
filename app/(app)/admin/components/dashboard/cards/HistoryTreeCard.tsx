@@ -127,14 +127,15 @@ export const HistoryTreeCard: React.FC<HistoryTreeCardProps> = ({
     if (!data?.historyTree?.entries) return [];
 
     const entries = data.historyTree.entries as HistoryEntry[];
-    
+
     if (!searchTerm) return entries;
 
-    return entries.filter(entry =>
-      entry.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.pallet.product.code.toLowerCase().includes(searchTerm.toLowerCase())
+    return entries.filter(
+      entry =>
+        entry.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.pallet.product.code.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [data, searchTerm]);
 
@@ -197,7 +198,7 @@ export const HistoryTreeCard: React.FC<HistoryTreeCardProps> = ({
             isExpanded && 'bg-slate-700/30'
           )}
           onClick={() => toggleExpanded(entry.id)}
-          role="button"
+          role='button'
           tabIndex={0}
           aria-expanded={isExpanded}
           aria-label={`History entry: ${entry.action} at ${formatTimestamp(entry.timestamp)}`}
@@ -225,12 +226,10 @@ export const HistoryTreeCard: React.FC<HistoryTreeCardProps> = ({
               <span className={cn('text-sm font-medium', actionColor)}>
                 {ensureString(entry.action)}
               </span>
-              <span className='text-xs text-slate-500'>
-                {formatTimestamp(entry.timestamp)}
-              </span>
+              <span className='text-xs text-slate-500'>{formatTimestamp(entry.timestamp)}</span>
             </div>
             <div className='mt-1 text-xs text-slate-400'>
-              <MapPin className='inline h-3 w-3 mr-1' />
+              <MapPin className='mr-1 inline h-3 w-3' />
               {ensureString(entry.location)}
             </div>
           </div>
@@ -246,7 +245,7 @@ export const HistoryTreeCard: React.FC<HistoryTreeCardProps> = ({
               transition={{ duration: 0.2 }}
               className='ml-10 overflow-hidden'
             >
-              <div className='space-y-2 border-l border-slate-600 pl-4 pb-3'>
+              <div className='space-y-2 border-l border-slate-600 pb-3 pl-4'>
                 {/* User info */}
                 <div className='flex items-center gap-2 text-xs'>
                   <User className='h-3 w-3 text-slate-500' />
@@ -259,7 +258,8 @@ export const HistoryTreeCard: React.FC<HistoryTreeCardProps> = ({
                   <div className='flex items-center gap-2 text-xs'>
                     <Package className='h-3 w-3 text-slate-500' />
                     <span className='text-slate-300'>
-                      {ensureString(entry.pallet.number)} - {ensureString(entry.pallet.product.code)}
+                      {ensureString(entry.pallet.number)} -{' '}
+                      {ensureString(entry.pallet.product.code)}
                     </span>
                     <span className='text-slate-500'>({entry.pallet.quantity} pcs)</span>
                   </div>
@@ -267,9 +267,7 @@ export const HistoryTreeCard: React.FC<HistoryTreeCardProps> = ({
 
                 {/* Remark */}
                 {entry.remark && (
-                  <div className='text-xs text-slate-400'>
-                    {ensureString(entry.remark)}
-                  </div>
+                  <div className='text-xs text-slate-400'>{ensureString(entry.remark)}</div>
                 )}
               </div>
             </motion.div>
@@ -289,33 +287,31 @@ export const HistoryTreeCard: React.FC<HistoryTreeCardProps> = ({
         'flex h-full flex-col rounded-lg border border-slate-600/20 bg-slate-800/50 backdrop-blur-sm',
         className
       )}
-      role="region"
-      aria-label="Operations history timeline"
+      role='region'
+      aria-label='Operations history timeline'
     >
       {/* Header */}
       <div className='flex items-center justify-between border-b border-slate-600/20 p-4'>
         <div className='flex items-center gap-2'>
           <History className='h-5 w-5 text-purple-400' />
-          <h3 className='text-sm font-semibold text-slate-200'>
-            Operations History
-          </h3>
+          <h3 className='text-sm font-semibold text-slate-200'>Operations History</h3>
         </div>
         <div className='flex items-center gap-2'>
           <Button
-            variant="ghost"
-            size="sm"
+            variant='ghost'
+            size='sm'
             onClick={() => refetch()}
             className='h-8 w-8 p-0 text-slate-400 hover:text-slate-200'
-            aria-label="Refresh history"
+            aria-label='Refresh history'
           >
             <RefreshCw className='h-4 w-4' />
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
+            variant='ghost'
+            size='sm'
             onClick={() => setShowFilters(!showFilters)}
             className='h-8 w-8 p-0 text-slate-400 hover:text-slate-200'
-            aria-label="Toggle filters"
+            aria-label='Toggle filters'
           >
             <Filter className='h-4 w-4' />
           </Button>
@@ -333,11 +329,11 @@ export const HistoryTreeCard: React.FC<HistoryTreeCardProps> = ({
           <div className='relative'>
             <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400' />
             <Input
-              type="text"
-              placeholder="Search history..."
+              type='text'
+              placeholder='Search history...'
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className='pl-10 bg-slate-700/50 border-slate-600 text-slate-200 placeholder:text-slate-400'
+              onChange={e => setSearchTerm(e.target.value)}
+              className='border-slate-600 bg-slate-700/50 pl-10 text-slate-200 placeholder:text-slate-400'
             />
           </div>
         </motion.div>
@@ -361,14 +357,14 @@ export const HistoryTreeCard: React.FC<HistoryTreeCardProps> = ({
 
         {error && (
           <div className='flex flex-col items-center justify-center py-8 text-center'>
-            <AlertCircle className='h-12 w-12 text-red-400 mb-3' />
-            <p className='text-sm text-red-400 mb-2'>Failed to load history</p>
-            <p className='text-xs text-slate-500 mb-4'>{error.message}</p>
+            <AlertCircle className='mb-3 h-12 w-12 text-red-400' />
+            <p className='mb-2 text-sm text-red-400'>Failed to load history</p>
+            <p className='mb-4 text-xs text-slate-500'>{error.message}</p>
             <Button
-              variant="outline"
-              size="sm"
+              variant='outline'
+              size='sm'
               onClick={() => refetch()}
-              className='text-slate-300 border-slate-600'
+              className='border-slate-600 text-slate-300'
             >
               Try Again
             </Button>
@@ -377,12 +373,10 @@ export const HistoryTreeCard: React.FC<HistoryTreeCardProps> = ({
 
         {!loading && !error && filteredEntries.length === 0 && (
           <div className='flex flex-col items-center justify-center py-8 text-center'>
-            <History className='h-12 w-12 text-slate-500 mb-3' />
+            <History className='mb-3 h-12 w-12 text-slate-500' />
             <p className='text-sm text-slate-400'>No history found</p>
             {searchTerm && (
-              <p className='text-xs text-slate-500 mt-1'>
-                Try adjusting your search terms
-              </p>
+              <p className='mt-1 text-xs text-slate-500'>Try adjusting your search terms</p>
             )}
           </div>
         )}
@@ -399,7 +393,7 @@ export const HistoryTreeCard: React.FC<HistoryTreeCardProps> = ({
         <div className='border-t border-slate-600/20 p-3'>
           <div className='flex items-center justify-between text-xs text-slate-500'>
             <span>
-              Showing {filteredEntries.length} 
+              Showing {filteredEntries.length}
               {data?.historyTree?.totalCount && ` of ${data.historyTree.totalCount}`} entries
             </span>
             <div className='flex items-center gap-1'>

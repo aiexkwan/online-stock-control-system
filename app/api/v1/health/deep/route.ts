@@ -170,8 +170,8 @@ async function testCacheHealth(): Promise<HealthCheckResult> {
         details: {
           cacheType,
           fallbackMode: true,
-          note: 'Cache unavailable but system operational'
-        }
+          note: 'Cache unavailable but system operational',
+        },
       };
     }
 
@@ -190,12 +190,12 @@ async function testCacheHealth(): Promise<HealthCheckResult> {
         connections: stats.connections,
         hitRate: stats.hitRate || 0,
         expectedResponseTime: `< ${responseTimeThreshold}ms`,
-        phase: 'Phase 2.1 - Adaptive Cache'
+        phase: 'Phase 2.1 - Adaptive Cache',
       },
     };
   } catch (error) {
     const cacheType = getCurrentCacheType();
-    
+
     return {
       service: 'cache',
       status: 'degraded', // Phase 2.1: 緩存錯誤不影響系統核心功能
@@ -204,8 +204,8 @@ async function testCacheHealth(): Promise<HealthCheckResult> {
       details: {
         cacheType,
         fallbackAvailable: true,
-        note: 'System continues to operate without cache'
-      }
+        note: 'System continues to operate without cache',
+      },
     };
   }
 }

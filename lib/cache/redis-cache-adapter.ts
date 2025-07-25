@@ -13,7 +13,7 @@ export class RedisCacheAdapter extends BaseCacheAdapter {
 
   constructor(keyPrefix: string = 'oscs:cache:', redisClient?: Redis) {
     super(keyPrefix);
-    
+
     try {
       this.redis = redisClient || getRedisClient();
     } catch (error) {
@@ -74,12 +74,13 @@ export class RedisCacheAdapter extends BaseCacheAdapter {
       // 🔧 專家修復：優雅處理 Redis 連接失敗
       const responseTime = Date.now() - startTime;
       this.updateMetrics(responseTime, false);
-      
+
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      const isConnectionError = errorMessage.includes('ECONNREFUSED') || 
-                              errorMessage.includes('connect') ||
-                              errorMessage.includes('timeout');
-      
+      const isConnectionError =
+        errorMessage.includes('ECONNREFUSED') ||
+        errorMessage.includes('connect') ||
+        errorMessage.includes('timeout');
+
       if (isConnectionError) {
         cacheLogger.warn(
           {
@@ -94,7 +95,7 @@ export class RedisCacheAdapter extends BaseCacheAdapter {
       } else {
         this.handleError('get', error);
       }
-      
+
       // 返回 null 表示緩存未命中，讓調用方從數據庫獲取數據
       return null;
     }
@@ -133,12 +134,13 @@ export class RedisCacheAdapter extends BaseCacheAdapter {
       // 🔧 專家修復：Redis 連接失敗時不拋出異常，只記錄警告
       const responseTime = Date.now() - startTime;
       this.updateMetrics(responseTime);
-      
+
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      const isConnectionError = errorMessage.includes('ECONNREFUSED') || 
-                              errorMessage.includes('connect') ||
-                              errorMessage.includes('timeout');
-      
+      const isConnectionError =
+        errorMessage.includes('ECONNREFUSED') ||
+        errorMessage.includes('connect') ||
+        errorMessage.includes('timeout');
+
       if (isConnectionError) {
         cacheLogger.warn(
           {

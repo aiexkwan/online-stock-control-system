@@ -19,9 +19,9 @@ const schema = makeExecutableSchema({
 export const apolloServer = new ApolloServer({
   schema,
   introspection: process.env.NODE_ENV !== 'production',
-  formatError: (err) => {
+  formatError: err => {
     console.error('[GraphQL Error]:', err);
-    
+
     // Don't expose internal errors in production
     if (process.env.NODE_ENV === 'production') {
       // Generic error message for production
@@ -33,7 +33,7 @@ export const apolloServer = new ApolloServer({
       }
       return new Error('Internal server error');
     }
-    
+
     return err;
   },
 });
@@ -54,18 +54,24 @@ export async function createGraphQLContext(req: Request) {
   // Extract user from request headers or cookies
   let user = null;
   let session = null;
-  
+
   try {
     // Import Supabase client for server
     const { createClient } = await import('@/app/utils/supabase/server');
     const supabase = await createClient();
-    
+
     // Try to get session from cookies first (SSR)
-    const { data: { session: cookieSession }, error: sessionError } = await supabase.auth.getSession();
-    
+    const {
+      data: { session: cookieSession },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
     if (cookieSession && !sessionError) {
-      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
-      
+      const {
+        data: { user: authUser },
+        error: userError,
+      } = await supabase.auth.getUser();
+
       if (!userError && authUser) {
         user = {
           id: authUser.id,
@@ -79,13 +85,16 @@ export async function createGraphQLContext(req: Request) {
     } else {
       // Fallback to Authorization header
       const authHeader = req.headers.get('authorization');
-      
+
       if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.substring(7);
-        
+
         // Verify the JWT token with Supabase
-        const { data: { user: authUser }, error } = await supabase.auth.getUser(token);
-        
+        const {
+          data: { user: authUser },
+          error,
+        } = await supabase.auth.getUser(token);
+
         if (!error && authUser) {
           user = {
             id: authUser.id,

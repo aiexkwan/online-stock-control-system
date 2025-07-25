@@ -15,9 +15,7 @@ export default function AnalyticsPage() {
   return (
     <AdminErrorBoundary>
       <AdminRefreshProvider>
-        <NewAdminDashboard 
-          theme="analytics" 
-        />
+        <NewAdminDashboard theme='analytics' />
       </AdminRefreshProvider>
     </AdminErrorBoundary>
   );

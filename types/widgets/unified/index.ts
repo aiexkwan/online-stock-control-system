@@ -1,26 +1,21 @@
 /**
  * Widget 統一類型導出
  * Unified widget type exports
- * 
+ *
  * 這個文件統一導出所有 widget 相關的類型定義
  * 確保整個項目使用一致的類型系統
  */
 
 // 從 components/dashboard 導入核心枚舉和類型
-import { 
+import {
   WidgetType,
   DashboardTheme,
   ChartType,
-  WidgetEventType 
+  WidgetEventType,
 } from '@/types/components/dashboard';
 
 // 重新導出枚舉
-export { 
-  WidgetType,
-  DashboardTheme,
-  ChartType,
-  WidgetEventType 
-};
+export { WidgetType, DashboardTheme, ChartType, WidgetEventType };
 
 // 導出基礎類型（排除已從 state 導出的 WidgetState）
 export {
@@ -29,7 +24,7 @@ export {
   WIDGET_TRANSITION,
   isWidgetError,
   isBaseWidgetConfig,
-  WidgetErrorType,  // 導出為值，因為是 enum
+  WidgetErrorType, // 導出為值，因為是 enum
 } from '../base';
 
 export type {
@@ -59,31 +54,31 @@ export type {
   DashboardConfig,
   DashboardLayout,
   DashboardLayoutExtended,
-  
+
   // Widget 組件屬性
   BaseWidgetComponentProps,
   TraditionalWidgetComponentProps,
   BatchQueryWidgetComponentProps,
   WidgetComponentProps,
-  
+
   // Widget 大小和位置
   WidgetSize,
   WidgetPosition,
-  
+
   // Chart Widget 類型
   ChartWidgetConfig,
   DataSource,
   AxisConfig,
-  
+
   // Table Widget 類型
   TableWidgetConfig,
-  
+
   // Stats Widget 類型
   StatsWidgetConfig,
-  
+
   // Widget 事件
   WidgetEvent,
-  
+
   // 從 dashboard.ts 導入的類型
   WidgetProps,
   DashboardDateRange,
@@ -108,37 +103,37 @@ export type {
  */
 export const WIDGET_TYPE_MAP: Record<string, WidgetType> = {
   // 基礎類型
-  'stats_card': WidgetType.STATS_CARD,
-  'analytics_chart': WidgetType.ANALYTICS_CHART,
-  'recent_activity': WidgetType.RECENT_ACTIVITY,
-  'stock_summary': WidgetType.STOCK_SUMMARY,
-  'alerts': WidgetType.ALERTS,
-  
+  stats_card: WidgetType.STATS_CARD,
+  analytics_chart: WidgetType.ANALYTICS_CHART,
+  recent_activity: WidgetType.RECENT_ACTIVITY,
+  stock_summary: WidgetType.STOCK_SUMMARY,
+  alerts: WidgetType.ALERTS,
+
   // 業務類型
-  'product_mix_chart': WidgetType.PRODUCT_MIX_CHART,
-  'aco_order_progress': WidgetType.ACO_ORDER_PROGRESS,
-  'void_stats': WidgetType.VOID_STATS,
-  'void_pallet': WidgetType.VOID_PALLET,
-  
+  product_mix_chart: WidgetType.PRODUCT_MIX_CHART,
+  aco_order_progress: WidgetType.ACO_ORDER_PROGRESS,
+  void_stats: WidgetType.VOID_STATS,
+  void_pallet: WidgetType.VOID_PALLET,
+
   // 功能類型
-  'upload_files': WidgetType.UPLOAD_FILES,
-  'product_spec': WidgetType.PRODUCT_SPEC,
-  'analytics_dashboard': WidgetType.ANALYTICS_DASHBOARD,
-  'reports': WidgetType.REPORTS,
-  
+  upload_files: WidgetType.UPLOAD_FILES,
+  product_spec: WidgetType.PRODUCT_SPEC,
+  analytics_dashboard: WidgetType.ANALYTICS_DASHBOARD,
+  reports: WidgetType.REPORTS,
+
   // 生產類型
-  'today_production': WidgetType.TODAY_PRODUCTION,
-  'machine_efficiency': WidgetType.MACHINE_EFFICIENCY,
-  'target_hit_rate': WidgetType.TARGET_HIT_RATE,
-  
+  today_production: WidgetType.TODAY_PRODUCTION,
+  machine_efficiency: WidgetType.MACHINE_EFFICIENCY,
+  target_hit_rate: WidgetType.TARGET_HIT_RATE,
+
   // 通用類型
-  'chart': WidgetType.CHART,
-  'table': WidgetType.TABLE,
-  'stats': WidgetType.STATS,
-  'map': WidgetType.MAP,
-  'alert': WidgetType.ALERT,
-  'form': WidgetType.FORM,
-  'custom': WidgetType.CUSTOM,
+  chart: WidgetType.CHART,
+  table: WidgetType.TABLE,
+  stats: WidgetType.STATS,
+  map: WidgetType.MAP,
+  alert: WidgetType.ALERT,
+  form: WidgetType.FORM,
+  custom: WidgetType.CUSTOM,
 };
 
 /**
@@ -146,48 +141,28 @@ export const WIDGET_TYPE_MAP: Record<string, WidgetType> = {
  * Widget category groupings
  */
 export const WIDGET_CATEGORIES = {
-  stats: [
-    WidgetType.STATS_CARD,
-    WidgetType.STATS,
-    WidgetType.VOID_STATS,
-  ],
-  
-  charts: [
-    WidgetType.ANALYTICS_CHART,
-    WidgetType.PRODUCT_MIX_CHART,
-    WidgetType.CHART,
-  ],
-  
+  stats: [WidgetType.STATS_CARD, WidgetType.STATS, WidgetType.VOID_STATS],
+
+  charts: [WidgetType.ANALYTICS_CHART, WidgetType.PRODUCT_MIX_CHART, WidgetType.CHART],
+
   production: [
     WidgetType.TODAY_PRODUCTION,
     WidgetType.MACHINE_EFFICIENCY,
     WidgetType.TARGET_HIT_RATE,
   ],
-  
-  orders: [
-    WidgetType.ACO_ORDER_PROGRESS,
-    WidgetType.RECENT_ACTIVITY,
-  ],
-  
-  warehouse: [
-    WidgetType.STOCK_SUMMARY,
-    WidgetType.VOID_PALLET,
-  ],
-  
+
+  orders: [WidgetType.ACO_ORDER_PROGRESS, WidgetType.RECENT_ACTIVITY],
+
+  warehouse: [WidgetType.STOCK_SUMMARY, WidgetType.VOID_PALLET],
+
   tools: [
     WidgetType.UPLOAD_FILES,
     WidgetType.PRODUCT_SPEC,
     WidgetType.REPORTS,
     WidgetType.ANALYTICS_DASHBOARD,
   ],
-  
-  system: [
-    WidgetType.ALERTS,
-    WidgetType.ALERT,
-    WidgetType.MAP,
-    WidgetType.FORM,
-    WidgetType.TABLE,
-  ],
+
+  system: [WidgetType.ALERTS, WidgetType.ALERT, WidgetType.MAP, WidgetType.FORM, WidgetType.TABLE],
 } as const;
 
 /**
@@ -253,25 +228,25 @@ export function assertWidgetType<T extends WidgetType>(
 export const WIDGET_CONSTANTS = {
   // 默認刷新間隔（毫秒）
   DEFAULT_REFRESH_INTERVAL: 30000,
-  
+
   // 最小刷新間隔（毫秒）
   MIN_REFRESH_INTERVAL: 5000,
-  
+
   // 最大刷新間隔（毫秒）
   MAX_REFRESH_INTERVAL: 3600000,
-  
+
   // 默認頁面大小
   DEFAULT_PAGE_SIZE: 20,
-  
+
   // 最大頁面大小
   MAX_PAGE_SIZE: 100,
-  
+
   // 緩存過期時間（毫秒）
   CACHE_TTL: 300000, // 5 minutes
-  
+
   // 錯誤重試次數
   ERROR_RETRY_COUNT: 3,
-  
+
   // 錯誤重試延遲（毫秒）
   ERROR_RETRY_DELAY: 1000,
 } as const;

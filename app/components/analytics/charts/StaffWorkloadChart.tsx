@@ -158,7 +158,7 @@ export function StaffWorkloadChart({ timeRange }: StaffWorkloadChartProps) {
     return (
       <div className={dialogStyles.card}>
         <div className='flex h-[400px] items-center justify-center'>
-          <div className='h-2 w-16 bg-slate-600 rounded-full opacity-75' />
+          <div className='h-2 w-16 rounded-full bg-slate-600 opacity-75' />
         </div>
       </div>
     );

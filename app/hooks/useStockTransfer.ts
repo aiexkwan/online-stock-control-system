@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { DatabaseRecord } from '@/types/database/tables';
 import { createClient } from '@/app/utils/supabase/client';
 import { toast } from 'sonner';
-import { LocationMapper } from '@/lib/inventory/utils/locationMapper';
+import { LocationMapper, DatabaseLocationColumn } from '@/lib/inventory/utils/locationMapper';
 import type { PalletInfo } from '@/app/services/palletSearchService';
 
 interface OptimisticTransfer {
@@ -139,16 +139,20 @@ export function useStockTransfer(options: UseStockTransferOptions = {}) {
           throw new Error('Invalid location mapping');
         }
 
-        const inventoryUpdate = {
+        const inventoryUpdate: {
+          product_code: string;
+          plt_num: string;
+          latest_update: string;
+        } & Partial<Record<DatabaseLocationColumn, number>> = {
           product_code: palletInfo.product_code,
           plt_num: palletInfo.plt_num,
           latest_update: new Date().toISOString(),
-        } as any;
+        };
 
         // Decrease from location
-        inventoryUpdate[fromDbColumn] = -palletInfo.product_qty;
+        inventoryUpdate[fromDbColumn as DatabaseLocationColumn] = -palletInfo.product_qty;
         // Increase to location
-        inventoryUpdate[toDbColumn] = palletInfo.product_qty;
+        inventoryUpdate[toDbColumn as DatabaseLocationColumn] = palletInfo.product_qty;
 
         // 使用 DatabaseRecord 接口的索引簽名來安全地插入動態屬性
         const { error: inventoryError } = await supabase

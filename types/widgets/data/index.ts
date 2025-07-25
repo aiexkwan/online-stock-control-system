@@ -1,7 +1,7 @@
 /**
  * Widget 數據類型定義
  * Data type definitions for widgets
- * 
+ *
  * 這個文件包含所有 widget 相關的數據類型定義
  */
 
@@ -43,37 +43,37 @@ export interface ApiMetadata {
 export interface DashboardBatchQueryData {
   // 基礎統計數據
   statsCard?: StatsCardData;
-  
+
   // 棧板總數
   total_pallets?: number | PalletMetric;
-  
+
   // 庫存相關數據
   stockDistribution?: StockDistributionData;
   stockLevelHistory?: StockLevelHistoryData;
   topProducts?: TopProductsData;
-  
+
   // 訂單相關數據
   acoOrderProgress?: AcoOrderProgressData;
   ordersList?: OrdersListData;
-  
+
   // 生產相關數據
   injectionProductionStats?: InjectionProductionStatsData;
   productionDetails?: ProductionDetailsData;
   staffWorkload?: StaffWorkloadData;
-  
+
   // 倉庫相關數據
   warehouseTransferList?: WarehouseTransferListData;
   warehouseWorkLevel?: WarehouseWorkLevelData;
-  
+
   // GRN 相關數據
   grnReport?: GrnReportData;
-  
+
   // 其他數據
   availableSoon?: AvailableSoonData;
   awaitLocationQty?: AwaitLocationQtyData;
   historyTree?: HistoryTreeData;
   yesterdayTransferCount?: YesterdayTransferCountData;
-  
+
   // 允許動態添加新的 widget 數據
   [key: string]: unknown;
 }
@@ -484,15 +484,15 @@ export function isTableData(data: unknown): data is TableData {
 export class WidgetDataMapper {
   static extractMetadata(response: unknown): ApiMetadata {
     if (!isBaseApiResponse(response)) return {};
-    
+
     const data = response as Record<string, unknown>;
     const metadata = data.metadata;
-    
+
     if (!metadata || typeof metadata !== 'object') return {};
-    
+
     return metadata as ApiMetadata;
   }
-  
+
   static createWidgetError(error: unknown, context?: string): WidgetError {
     if (error instanceof Error) {
       return {
@@ -503,7 +503,7 @@ export class WidgetDataMapper {
         timestamp: new Date(),
       };
     }
-    
+
     if (typeof error === 'string') {
       return {
         type: WidgetErrorType.DATA_ERROR,
@@ -512,7 +512,7 @@ export class WidgetDataMapper {
         timestamp: new Date(),
       };
     }
-    
+
     return {
       type: WidgetErrorType.UNKNOWN_ERROR,
       message: 'Unknown error occurred',
@@ -522,4 +522,3 @@ export class WidgetDataMapper {
     };
   }
 }
-

@@ -856,8 +856,11 @@ export const ListCard: React.FC<ListCardProps> = ({
 };
 
 // 導出類型，方便其他組件使用
-export type {
+export {
   ListType,
+} from '@/types/generated/graphql';
+
+export type {
   ListCardInput,
   ListDataUnion,
   OrderStateList,

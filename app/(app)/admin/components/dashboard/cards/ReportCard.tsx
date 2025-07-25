@@ -153,27 +153,27 @@ const DELETE_REPORT_MUTATION = gql`
 export interface ReportCardProps {
   // 報表類型配置
   reportType?: ReportType;
-  
+
   // 顯示選項
   showRecentReports?: boolean;
   showActiveGenerations?: boolean;
   showTemplates?: boolean;
   showStatistics?: boolean;
   showGenerationForm?: boolean;
-  
+
   // 時間範圍
   dateRange?: {
     start: Date;
     end: Date;
   };
-  
+
   // 樣式
   className?: string;
   height?: number | string;
-  
+
   // 編輯模式
   isEditMode?: boolean;
-  
+
   // 回調
   onReportGenerated?: (report: GeneratedReport) => void;
   onReportDeleted?: (reportId: string) => void;
@@ -203,15 +203,19 @@ export const ReportCard: React.FC<ReportCardProps> = ({
   const [reportTitle, setReportTitle] = useState('');
   const [reportDescription, setReportDescription] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [generationPriority, setGenerationPriority] = useState<ReportPriority>(ReportPriority.Normal);
+  const [generationPriority, setGenerationPriority] = useState<ReportPriority>(
+    ReportPriority.Normal
+  );
 
   // 準備查詢輸入
   const queryInput: ReportCardInput = {
     reportType,
-    dateRange: dateRange ? {
-      start: dateRange.start.toISOString(),
-      end: dateRange.end.toISOString(),
-    } : undefined,
+    dateRange: dateRange
+      ? {
+          start: dateRange.start.toISOString(),
+          end: dateRange.end.toISOString(),
+        }
+      : undefined,
     includeStatistics: showStatistics,
     includeRecentReports: showRecentReports,
     includeActiveGenerations: showActiveGenerations,
@@ -251,51 +255,70 @@ export const ReportCard: React.FC<ReportCardProps> = ({
 
     try {
       const { data: result } = await generateReport({ variables: { input } });
-      
+
       if (result?.generateReport.success) {
         // 清空表單
         setReportTitle('');
         setReportDescription('');
         setSelectedTemplate('');
-        
+
         // 重新查詢數據以顯示新的生成進度
         refetch();
       }
     } catch (error) {
       console.error('Failed to generate report:', error);
     }
-  }, [reportType, selectedFormat, reportTitle, reportDescription, selectedTemplate, generationPriority, generateReport, refetch, data?.reportCardData.config]);
+  }, [
+    reportType,
+    selectedFormat,
+    reportTitle,
+    reportDescription,
+    selectedTemplate,
+    generationPriority,
+    generateReport,
+    refetch,
+    data?.reportCardData.config,
+  ]);
 
   // 處理取消生成
-  const handleCancelGeneration = useCallback(async (generationId: string) => {
-    try {
-      await cancelGeneration({ variables: { generationId } });
-      refetch();
-    } catch (error) {
-      console.error('Failed to cancel generation:', error);
-    }
-  }, [cancelGeneration, refetch]);
+  const handleCancelGeneration = useCallback(
+    async (generationId: string) => {
+      try {
+        await cancelGeneration({ variables: { generationId } });
+        refetch();
+      } catch (error) {
+        console.error('Failed to cancel generation:', error);
+      }
+    },
+    [cancelGeneration, refetch]
+  );
 
   // 處理刪除報表
-  const handleDeleteReport = useCallback(async (reportId: string) => {
-    if (!confirm('Are you sure you want to delete this report?')) return;
+  const handleDeleteReport = useCallback(
+    async (reportId: string) => {
+      if (!confirm('Are you sure you want to delete this report?')) return;
 
-    try {
-      await deleteReport({ variables: { reportId } });
-      onReportDeleted?.(reportId);
-      refetch();
-    } catch (error) {
-      console.error('Failed to delete report:', error);
-    }
-  }, [deleteReport, onReportDeleted, refetch]);
+      try {
+        await deleteReport({ variables: { reportId } });
+        onReportDeleted?.(reportId);
+        refetch();
+      } catch (error) {
+        console.error('Failed to delete report:', error);
+      }
+    },
+    [deleteReport, onReportDeleted, refetch]
+  );
 
   // 處理下載報表
-  const handleDownloadReport = useCallback((report: GeneratedReport) => {
-    if (report.downloadUrl) {
-      window.open(report.downloadUrl, '_blank');
-      onReportDownload?.(report);
-    }
-  }, [onReportDownload]);
+  const handleDownloadReport = useCallback(
+    (report: GeneratedReport) => {
+      if (report.downloadUrl) {
+        window.open(report.downloadUrl, '_blank');
+        onReportDownload?.(report);
+      }
+    },
+    [onReportDownload]
+  );
 
   // 格式化文件大小
   const formatFileSize = useCallback((bytes: number) => {
@@ -319,38 +342,38 @@ export const ReportCard: React.FC<ReportCardProps> = ({
     if (!showGenerationForm || !data?.reportCardData.config) return null;
 
     return (
-      <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">
+      <div className='mb-6 rounded-lg bg-blue-50 p-6 dark:bg-blue-950/20'>
+        <div className='mb-4 flex items-center justify-between'>
+          <h3 className='text-lg font-semibold text-blue-900 dark:text-blue-100'>
             Generate New Report
           </h3>
-          <PlayIcon className="w-5 h-5 text-blue-600" />
+          <PlayIcon className='h-5 w-5 text-blue-600' />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className='mb-4 grid grid-cols-1 gap-4 md:grid-cols-2'>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
               Report Title
             </label>
             <input
-              type="text"
+              type='text'
               value={reportTitle}
-              onChange={(e) => setReportTitle(e.target.value)}
+              onChange={e => setReportTitle(e.target.value)}
               placeholder={data.reportCardData.config.title}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              className='w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500'
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
               Format
             </label>
             <select
               value={selectedFormat}
-              onChange={(e) => setSelectedFormat(e.target.value as ReportFormat)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              onChange={e => setSelectedFormat(e.target.value as ReportFormat)}
+              className='w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500'
             >
-              {data.reportCardData.config.formats.map((format) => (
+              {data.reportCardData.config.formats.map(format => (
                 <option key={format} value={format}>
                   {format}
                 </option>
@@ -358,31 +381,31 @@ export const ReportCard: React.FC<ReportCardProps> = ({
             </select>
           </div>
 
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <div className='md:col-span-2'>
+            <label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
               Description
             </label>
             <textarea
               value={reportDescription}
-              onChange={(e) => setReportDescription(e.target.value)}
+              onChange={e => setReportDescription(e.target.value)}
               placeholder={ensureString(data.reportCardData.config.description ?? null)}
               rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              className='w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500'
             />
           </div>
 
           {showTemplates && data.reportCardData.templates.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
                 Template
               </label>
               <select
                 value={selectedTemplate}
-                onChange={(e) => setSelectedTemplate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                onChange={e => setSelectedTemplate(e.target.value)}
+                className='w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500'
               >
-                <option value="">No Template</option>
-                {data.reportCardData.templates.map((template) => (
+                <option value=''>No Template</option>
+                {data.reportCardData.templates.map(template => (
                   <option key={template.id} value={template.id}>
                     {template.name}
                   </option>
@@ -392,13 +415,13 @@ export const ReportCard: React.FC<ReportCardProps> = ({
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className='mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300'>
               Priority
             </label>
             <select
               value={generationPriority}
-              onChange={(e) => setGenerationPriority(e.target.value as ReportPriority)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              onChange={e => setGenerationPriority(e.target.value as ReportPriority)}
+              className='w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500'
             >
               <option value={ReportPriority.Low}>Low</option>
               <option value={ReportPriority.Normal}>Normal</option>
@@ -408,16 +431,16 @@ export const ReportCard: React.FC<ReportCardProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-600 dark:text-gray-400">
+        <div className='flex items-center justify-between'>
+          <div className='text-sm text-gray-600 dark:text-gray-400'>
             Estimated generation time: {data.reportCardData.config.estimatedGenerationTime}s
           </div>
           <button
             onClick={handleGenerateReport}
             disabled={isEditMode}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            className='flex items-center space-x-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50'
           >
-            <PlayIcon className="w-4 h-4" />
+            <PlayIcon className='h-4 w-4' />
             <span>Generate Report</span>
           </button>
         </div>
@@ -430,48 +453,48 @@ export const ReportCard: React.FC<ReportCardProps> = ({
     if (!showActiveGenerations || !data?.reportCardData.activeGenerations.length) return null;
 
     return (
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+      <div className='mb-6'>
+        <h3 className='mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100'>
           Active Generations
         </h3>
-        <div className="space-y-3">
-          {data.reportCardData.activeGenerations.map((generation) => (
+        <div className='space-y-3'>
+          {data.reportCardData.activeGenerations.map(generation => (
             <motion.div
               key={generation.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4"
+              className='rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-950/20'
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2">
-                  <ClockIcon className="w-5 h-5 text-yellow-600" />
-                  <span className="font-medium text-yellow-900 dark:text-yellow-100">
+              <div className='mb-2 flex items-center justify-between'>
+                <div className='flex items-center space-x-2'>
+                  <ClockIcon className='h-5 w-5 text-yellow-600' />
+                  <span className='font-medium text-yellow-900 dark:text-yellow-100'>
                     {generation.title}
                   </span>
                 </div>
                 <button
                   onClick={() => handleCancelGeneration(generation.id)}
-                  className="text-red-600 hover:text-red-800"
+                  className='text-red-600 hover:text-red-800'
                 >
-                  <StopIcon className="w-4 h-4" />
+                  <StopIcon className='h-4 w-4' />
                 </button>
               </div>
-              
-              <div className="mb-2">
-                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+
+              <div className='mb-2'>
+                <div className='mb-1 flex justify-between text-sm text-gray-600 dark:text-gray-400'>
                   <span>Progress: {generation.progress.toFixed(1)}%</span>
                   <span>ETA: {generation.estimatedTimeRemaining}s</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className='h-2 w-full rounded-full bg-gray-200'>
                   <div
-                    className="bg-yellow-600 h-2 rounded-full transition-all duration-300"
+                    className='h-2 rounded-full bg-yellow-600 transition-all duration-300'
                     style={{ width: `${generation.progress}%` }}
                   />
                 </div>
               </div>
 
               {generation.error && (
-                <div className="text-sm text-red-600 dark:text-red-400">
+                <div className='text-sm text-red-600 dark:text-red-400'>
                   Error: {generation.error}
                 </div>
               )}
@@ -487,69 +510,71 @@ export const ReportCard: React.FC<ReportCardProps> = ({
     if (!showRecentReports || !data?.reportCardData.recentReports.length) return null;
 
     return (
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+      <div className='mb-6'>
+        <h3 className='mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100'>
           Recent Reports
         </h3>
-        <div className="space-y-3">
-          {data.reportCardData.recentReports.map((report) => (
+        <div className='space-y-3'>
+          {data.reportCardData.recentReports.map(report => (
             <motion.div
               key={report.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+              className='rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800'
             >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2">
-                  <DocumentTextIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                  <span className="font-medium text-gray-900 dark:text-gray-100">
+              <div className='mb-2 flex items-center justify-between'>
+                <div className='flex items-center space-x-2'>
+                  <DocumentTextIcon className='h-5 w-5 text-gray-600 dark:text-gray-400' />
+                  <span className='font-medium text-gray-900 dark:text-gray-100'>
                     {report.title}
                   </span>
                   {report.status === ReportStatus.Completed && (
-                    <CheckCircleIcon className="w-4 h-4 text-green-500" />
+                    <CheckCircleIcon className='h-4 w-4 text-green-500' />
                   )}
                   {report.status === ReportStatus.Error && (
-                    <ExclamationTriangleIcon className="w-4 h-4 text-red-500" />
+                    <ExclamationTriangleIcon className='h-4 w-4 text-red-500' />
                   )}
                 </div>
-                
-                <div className="flex items-center space-x-2">
+
+                <div className='flex items-center space-x-2'>
                   {report.status === ReportStatus.Completed && (
                     <button
                       onClick={() => handleDownloadReport(report)}
-                      className="text-blue-600 hover:text-blue-800"
-                      title="Download"
+                      className='text-blue-600 hover:text-blue-800'
+                      title='Download'
                     >
-                      <DocumentArrowDownIcon className="w-4 h-4" />
+                      <DocumentArrowDownIcon className='h-4 w-4' />
                     </button>
                   )}
                   <button
                     onClick={() => handleDeleteReport(report.id)}
-                    className="text-red-600 hover:text-red-800"
-                    title="Delete"
+                    className='text-red-600 hover:text-red-800'
+                    title='Delete'
                   >
-                    <TrashIcon className="w-4 h-4" />
+                    <TrashIcon className='h-4 w-4' />
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 dark:text-gray-400">
+              <div className='grid grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400 md:grid-cols-4'>
                 <div>
-                  <span className="font-medium">Format:</span> {report.format}
+                  <span className='font-medium'>Format:</span> {report.format}
                 </div>
                 <div>
-                  <span className="font-medium">Size:</span> {formatFileSize(report.fileSize || 0)}
+                  <span className='font-medium'>Size:</span> {formatFileSize(report.fileSize || 0)}
                 </div>
                 <div>
-                  <span className="font-medium">Records:</span> {report.recordCount?.toLocaleString()}
+                  <span className='font-medium'>Records:</span>{' '}
+                  {report.recordCount?.toLocaleString()}
                 </div>
                 <div>
-                  <span className="font-medium">Generated:</span> {formatDuration(report.generationTime || 0)}
+                  <span className='font-medium'>Generated:</span>{' '}
+                  {formatDuration(report.generationTime || 0)}
                 </div>
               </div>
 
               {report.error && (
-                <div className="mt-2 text-sm text-red-600 dark:text-red-400">
+                <div className='mt-2 text-sm text-red-600 dark:text-red-400'>
                   Error: {report.error}
                 </div>
               )}
@@ -567,22 +592,26 @@ export const ReportCard: React.FC<ReportCardProps> = ({
     const stats = data.reportCardData.statistics;
 
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-4">
-          <div className="text-2xl font-bold text-green-600">{stats.completedReports}</div>
-          <div className="text-sm text-green-800 dark:text-green-200">Completed</div>
+      <div className='mb-6 grid grid-cols-2 gap-4 md:grid-cols-4'>
+        <div className='rounded-lg bg-green-50 p-4 dark:bg-green-950/20'>
+          <div className='text-2xl font-bold text-green-600'>{stats.completedReports}</div>
+          <div className='text-sm text-green-800 dark:text-green-200'>Completed</div>
         </div>
-        <div className="bg-yellow-50 dark:bg-yellow-950/20 rounded-lg p-4">
-          <div className="text-2xl font-bold text-yellow-600">{stats.pendingReports}</div>
-          <div className="text-sm text-yellow-800 dark:text-yellow-200">Pending</div>
+        <div className='rounded-lg bg-yellow-50 p-4 dark:bg-yellow-950/20'>
+          <div className='text-2xl font-bold text-yellow-600'>{stats.pendingReports}</div>
+          <div className='text-sm text-yellow-800 dark:text-yellow-200'>Pending</div>
         </div>
-        <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4">
-          <div className="text-2xl font-bold text-blue-600">{formatDuration(stats.averageGenerationTime)}</div>
-          <div className="text-sm text-blue-800 dark:text-blue-200">Avg Time</div>
+        <div className='rounded-lg bg-blue-50 p-4 dark:bg-blue-950/20'>
+          <div className='text-2xl font-bold text-blue-600'>
+            {formatDuration(stats.averageGenerationTime)}
+          </div>
+          <div className='text-sm text-blue-800 dark:text-blue-200'>Avg Time</div>
         </div>
-        <div className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-4">
-          <div className="text-2xl font-bold text-purple-600">{(stats.successRate * 100).toFixed(1)}%</div>
-          <div className="text-sm text-purple-800 dark:text-purple-200">Success Rate</div>
+        <div className='rounded-lg bg-purple-50 p-4 dark:bg-purple-950/20'>
+          <div className='text-2xl font-bold text-purple-600'>
+            {(stats.successRate * 100).toFixed(1)}%
+          </div>
+          <div className='text-sm text-purple-800 dark:text-purple-200'>Success Rate</div>
         </div>
       </div>
     );
@@ -593,12 +622,12 @@ export const ReportCard: React.FC<ReportCardProps> = ({
     return (
       <div
         className={cn(
-          'flex items-center justify-center p-8 bg-red-50 dark:bg-red-950/20 rounded-lg',
+          'flex items-center justify-center rounded-lg bg-red-50 p-8 dark:bg-red-950/20',
           className
         )}
       >
-        <ExclamationTriangleIcon className="w-6 h-6 text-red-500 mr-2" />
-        <span className="text-red-700 dark:text-red-300">
+        <ExclamationTriangleIcon className='mr-2 h-6 w-6 text-red-500' />
+        <span className='text-red-700 dark:text-red-300'>
           Failed to load reports: {error.message}
         </span>
       </div>
@@ -609,31 +638,33 @@ export const ReportCard: React.FC<ReportCardProps> = ({
   if (loading && !data) {
     return (
       <div className={cn('animate-pulse', className)}>
-        <div className="bg-gray-200 dark:bg-gray-700 rounded-lg" style={{ height }} />
+        <div className='rounded-lg bg-gray-200 dark:bg-gray-700' style={{ height }} />
       </div>
     );
   }
 
   return (
-    <div className={cn('bg-white dark:bg-gray-900 rounded-lg shadow-md overflow-hidden', className)}>
+    <div
+      className={cn('overflow-hidden rounded-lg bg-white shadow-md dark:bg-gray-900', className)}
+    >
       {/* 標題欄 */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center space-x-3">
-          <DocumentTextIcon className="w-6 h-6 text-blue-600" />
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+      <div className='flex items-center justify-between border-b border-gray-200 p-6 dark:border-gray-700'>
+        <div className='flex items-center space-x-3'>
+          <DocumentTextIcon className='h-6 w-6 text-blue-600' />
+          <h2 className='text-xl font-semibold text-gray-900 dark:text-gray-100'>
             {data?.reportCardData.config.title || 'Report Management'}
           </h2>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className='flex items-center space-x-2'>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md"
+            className='rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700'
           >
-            <FunnelIcon className="w-5 h-5" />
+            <FunnelIcon className='h-5 w-5' />
           </button>
           <button
             onClick={() => refetch()}
-            className="px-3 py-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md"
+            className='rounded-md px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 hover:text-blue-800'
           >
             Refresh
           </button>
@@ -641,36 +672,36 @@ export const ReportCard: React.FC<ReportCardProps> = ({
       </div>
 
       {/* 內容容器 */}
-      <div className="p-6" style={{ maxHeight: height, overflowY: 'auto' }}>
+      <div className='p-6' style={{ maxHeight: height, overflowY: 'auto' }}>
         {renderGenerationForm()}
         {renderActiveGenerations()}
         {renderStatistics()}
         {renderRecentReports()}
 
         {/* 空狀態 */}
-        {!data?.reportCardData.recentReports.length && 
-         !data?.reportCardData.activeGenerations.length && (
-          <div className="text-center py-12">
-            <DocumentTextIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-              No reports yet
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Generate your first report to get started
-            </p>
-          </div>
-        )}
+        {!data?.reportCardData.recentReports.length &&
+          !data?.reportCardData.activeGenerations.length && (
+            <div className='py-12 text-center'>
+              <DocumentTextIcon className='mx-auto mb-4 h-16 w-16 text-gray-300' />
+              <h3 className='mb-2 text-lg font-medium text-gray-900 dark:text-gray-100'>
+                No reports yet
+              </h3>
+              <p className='mb-4 text-gray-600 dark:text-gray-400'>
+                Generate your first report to get started
+              </p>
+            </div>
+          )}
       </div>
     </div>
   );
 };
 
 // 導出類型，方便其他組件使用
-export type { 
-  ReportType, 
-  ReportFormat, 
+export type {
+  ReportType,
+  ReportFormat,
   ReportStatus,
   ReportCardInput,
   ReportCardData,
-  GeneratedReport 
+  GeneratedReport,
 } from '@/types/generated/graphql';

@@ -19,7 +19,7 @@ export async function withRetry<T>(
   delay: number = 1000
 ): Promise<T> {
   let lastError: Error | undefined;
-  
+
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await fn();
@@ -30,7 +30,7 @@ export async function withRetry<T>(
       }
     }
   }
-  
+
   throw lastError;
 }
 
@@ -44,23 +44,21 @@ export async function withCache<T>(
 ): Promise<T> {
   const cached = cache.get(key);
   const now = Date.now();
-  
+
   if (cached && now - cached.timestamp < ttlSeconds * 1000) {
     return cached.data;
   }
-  
+
   const data = await fn();
   cache.set(key, { data: data as unknown, timestamp: now });
-  
+
   // Clean up old cache entries
   if (cache.size > 100) {
     const entries = Array.from(cache.entries());
-    const expired = entries.filter(([_, value]) => 
-      now - value.timestamp > ttlSeconds * 1000
-    );
+    const expired = entries.filter(([_, value]) => now - value.timestamp > ttlSeconds * 1000);
     expired.forEach(([key]) => cache.delete(key));
   }
-  
+
   return data;
 }
 
@@ -72,7 +70,7 @@ export function clearCache(pattern?: string): void {
     cache.clear();
     return;
   }
-  
+
   const keys = Array.from(cache.keys());
   keys.forEach(key => {
     if (key.includes(pattern)) {
@@ -95,12 +93,12 @@ export function formatError(error: unknown): FormattedError {
     return {
       message: error.message,
       code: 'INTERNAL_ERROR',
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
     };
   }
-  
+
   return {
     message: 'An unknown error occurred',
-    code: 'UNKNOWN_ERROR'
+    code: 'UNKNOWN_ERROR',
   };
 }

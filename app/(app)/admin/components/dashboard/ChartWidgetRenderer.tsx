@@ -62,21 +62,41 @@ export const ChartWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
   try {
     switch (config.type) {
       case 'StockDistributionChart':
-        console.warn(
-          '[Deprecated] StockDistributionChart is deprecated, use StockDistributionChartV2'
-        );
-      // fallthrough
       case 'StockDistributionChartV2':
-        return renderLazyComponent('StockDistributionChartV2', createWidgetProps(data));
+        // 使用 ChartCard 替代舊的 Widget
+        return renderLazyComponent('ChartCard', {
+          ...createWidgetProps(data),
+          chartType: 'pie',
+          title: 'Stock Distribution',
+          description: 'Distribution of stock across categories',
+        });
 
       case 'StockLevelHistoryChart':
-        return renderLazyComponent('StockLevelHistoryChart', createWidgetProps(data));
+        // 使用 ChartCard 替代舊的 Widget
+        return renderLazyComponent('ChartCard', {
+          ...createWidgetProps(data),
+          chartType: 'line',
+          title: 'Stock Level History',
+          description: 'Historical stock levels over time',
+        });
 
       case 'TransferTimeDistributionWidget':
-        return renderLazyComponent('TransferTimeDistributionWidget', createWidgetProps(data));
+        // 使用 ChartCard 替代舊的 Widget
+        return renderLazyComponent('ChartCard', {
+          ...createWidgetProps(data),
+          chartType: 'bar',
+          title: 'Transfer Time Distribution',
+          description: 'Distribution of transfer times',
+        });
 
       case 'WarehouseWorkLevelAreaChart':
-        return renderLazyComponent('WarehouseWorkLevelAreaChart', createWidgetProps(data));
+        // 使用 ChartCard 替代舊的 Widget
+        return renderLazyComponent('ChartCard', {
+          ...createWidgetProps(data),
+          chartType: 'area',
+          title: 'Warehouse Work Level',
+          description: 'Work level across warehouses',
+        });
 
       case 'WarehouseHeatmap':
         return (
@@ -111,30 +131,31 @@ export const ChartWidgetRenderer: React.FC<BaseWidgetRendererProps> = ({
         );
 
       case 'chart':
-        // 通用圖表處理
-        if (!data || !Array.isArray(data)) {
-          return <div>No chart data available</div>;
-        }
-
-        return (
-          <div className='h-full w-full'>
-            <ResponsiveContainer width='100%' height='100%'>
-              <BarChart data={data}>
-                <CartesianGrid strokeDasharray='3 3' />
-                <XAxis dataKey='name' />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey='value' fill={CHART_COLORS[0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        );
+        // 通用圖表處理 - 使用 ChartCard
+        return renderLazyComponent('ChartCard', {
+          ...createWidgetProps(data),
+          chartType: 'bar',
+          title: config.title || 'Chart',
+          description: config.description || 'Data visualization',
+        });
 
       case 'advanced-chart':
-        return renderLazyComponent('UnifiedChartWidget', createWidgetProps(data));
+        // 使用 ChartCard 替代 UnifiedChartWidget
+        return renderLazyComponent('ChartCard', {
+          ...createWidgetProps(data),
+          chartType: config.chartType || 'line',
+          title: config.title || 'Advanced Chart',
+          description: config.description || 'Advanced data visualization',
+        });
 
       case 'predictive-chart':
-        return renderLazyComponent('UnifiedChartWidget', createWidgetProps(data));
+        // 使用 ChartCard 替代 UnifiedChartWidget
+        return renderLazyComponent('ChartCard', {
+          ...createWidgetProps(data),
+          chartType: config.chartType || 'area',
+          title: config.title || 'Predictive Chart',
+          description: config.description || 'AI-powered predictions',
+        });
 
       default:
         return createErrorFallback(`Unknown chart type: ${config.type}`);

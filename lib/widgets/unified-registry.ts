@@ -309,7 +309,6 @@ class UnifiedWidgetRegistry implements IWidgetRegistry {
 
     return stats;
   }
-
 }
 
 // 導出統一實例

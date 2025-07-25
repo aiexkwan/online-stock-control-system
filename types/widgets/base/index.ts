@@ -1,7 +1,7 @@
 /**
  * Widget 基礎類型定義
  * Base type definitions for widgets
- * 
+ *
  * 這個文件包含所有 widget 的基礎類型定義，包括配置、屬性和通用接口
  */
 

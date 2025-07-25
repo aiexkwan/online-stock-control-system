@@ -135,7 +135,7 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
   if (isLoading) {
     return (
       <div className='flex h-full items-center justify-center'>
-        <div className='h-2 w-16 bg-gray-600 rounded-full opacity-75' />
+        <div className='h-2 w-16 rounded-full bg-gray-600 opacity-75' />
       </div>
     );
   }
@@ -167,7 +167,7 @@ export const StockTypeSelector: React.FC<StockTypeSelectorProps> = ({ widget, is
       <div className='flex-1 overflow-auto'>
         {isLoadingStock ? (
           <div className='flex h-32 items-center justify-center'>
-            <div className='h-2 w-12 bg-gray-600 rounded-full opacity-75' />
+            <div className='h-2 w-12 rounded-full bg-gray-600 opacity-75' />
           </div>
         ) : (
           <table className='w-full'>

@@ -48,7 +48,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     loader: () =>
       import('@/app/(app)/admin/components/dashboard/widgets/HistoryTreeV2').then(module => ({
         default: module.HistoryTreeV2,
-      })),
+      })) as Promise<{ default: React.ComponentType<UnifiedWidgetProps> }>,
     metadata: {
       dataSource: 'record_history',
       refreshInterval: false, // 🛑 禁用自動刷新
@@ -72,7 +72,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
         module => ({
           default: module.default,
         })
-      ),
+      ) as Promise<{ default: React.ComponentType<UnifiedWidgetProps> }>,
     metadata: {
       dataSource: 'history_tree', // GraphQL data source
       refreshInterval: false, // 🛑 禁用自動刷新
@@ -157,59 +157,59 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
   },
 
   // Chart Widgets
-  StockDistributionChart: {
-    id: 'StockDistributionChart',
-    name: 'Stock Distribution Chart',
-    category: 'charts',
-    description: 'Enhanced stock distribution visualization',
-    lazyLoad: true,
-    preloadPriority: 8,
-    loader: () =>
-      import('@/app/(app)/admin/components/dashboard/widgets/StockDistributionChart').then(
-        module => ({
-          default: module.default || module.StockDistributionChart,
-        })
-      ),
-    metadata: {
-      dataSource: 'record_inventory',
-      chartType: 'pie',
-      exportFormats: ['png', 'pdf'],
-      refreshInterval: false, // 🛑 禁用自動刷新
-      supportDateRange: true,
-    },
-  },
+  // StockDistributionChart: {
+  //   id: 'StockDistributionChart',
+  //   name: 'Stock Distribution Chart',
+  //   category: 'charts',
+  //   description: 'Enhanced stock distribution visualization',
+  //   lazyLoad: true,
+  //   preloadPriority: 8,
+  //   loader: () =>
+  //     import('@/app/(app)/admin/components/dashboard/widgets/StockDistributionChart').then(
+  //       module => ({
+  //         default: module.default || module.StockDistributionChart,
+  //       })
+  //     ) as Promise<{ default: React.ComponentType<UnifiedWidgetProps> }>,
+  //   metadata: {
+  //     dataSource: 'record_inventory',
+  //     chartType: 'pie',
+  //     exportFormats: ['png', 'pdf'],
+  //     refreshInterval: false, // 🛑 禁用自動刷新
+  //     supportDateRange: true,
+  //   },
+  // },
 
-  StockLevelHistoryChart: {
-    id: 'StockLevelHistoryChart',
-    name: 'Stock Level History Chart',
-    category: 'charts',
-    description: 'Historical stock level trends',
-    lazyLoad: true,
-    preloadPriority: 7,
-    metadata: {
-      dataSource: 'record_inventory',
-      chartType: 'line',
-      exportFormats: ['png', 'pdf'],
-      refreshInterval: false, // 🛑 禁用自動刷新
-      supportDateRange: true,
-    },
-  },
+  // StockLevelHistoryChart: {
+  //   id: 'StockLevelHistoryChart',
+  //   name: 'Stock Level History Chart',
+  //   category: 'charts',
+  //   description: 'Historical stock level trends',
+  //   lazyLoad: true,
+  //   preloadPriority: 7,
+  //   metadata: {
+  //     dataSource: 'record_inventory',
+  //     chartType: 'line',
+  //     exportFormats: ['png', 'pdf'],
+  //     refreshInterval: false, // 🛑 禁用自動刷新
+  //     supportDateRange: true,
+  //   },
+  // },
 
-  WarehouseWorkLevelAreaChart: {
-    id: 'WarehouseWorkLevelAreaChart',
-    name: 'Warehouse Work Level Area Chart',
-    category: 'charts',
-    description: 'Area chart of warehouse work levels',
-    lazyLoad: true,
-    preloadPriority: 7,
-    metadata: {
-      dataSource: 'work_level',
-      chartType: 'area',
-      exportFormats: ['png', 'pdf'],
-      refreshInterval: false, // 🛑 禁用自動刷新
-      supportDateRange: true,
-    },
-  },
+  // WarehouseWorkLevelAreaChart: {
+  //   id: 'WarehouseWorkLevelAreaChart',
+  //   name: 'Warehouse Work Level Area Chart',
+  //   category: 'charts',
+  //   description: 'Area chart of warehouse work levels',
+  //   lazyLoad: true,
+  //   preloadPriority: 7,
+  //   metadata: {
+  //     dataSource: 'work_level',
+  //     chartType: 'area',
+  //     exportFormats: ['png', 'pdf'],
+  //     refreshInterval: false, // 🛑 禁用自動刷新
+  //     supportDateRange: true,
+  //   },
+  // },
 
   TransferTimeDistributionWidget: {
     id: 'TransferTimeDistributionWidget',
@@ -254,7 +254,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
         module => ({
           default: module.default || module.TopProductsByQuantityWidget,
         })
-      ),
+      ) as Promise<{ default: React.ComponentType<UnifiedWidgetProps> }>,
     metadata: {
       dataSource: 'record_inventory',
       chartType: 'bar',
@@ -278,7 +278,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
         '@/app/(app)/admin/components/dashboard/widgets/TopProductsByQuantityWidgetGraphQL'
       ).then(module => ({
         default: module.default,
-      })),
+      })) as Promise<{ default: React.ComponentType<UnifiedWidgetProps> }>,
     metadata: {
       dataSource: 'top_products_by_quantity', // GraphQL data source
       chartType: 'bar',
@@ -467,7 +467,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
         module => ({
           default: module.default || module.AnalysisExpandableCards,
         })
-      ),
+      ) as Promise<{ default: React.ComponentType<UnifiedWidgetProps> }>,
     metadata: {
       refreshInterval: false, // 🛑 禁用自動刷新
       supportDateRange: true,
@@ -487,7 +487,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
         module => ({
           default: module.default || module.InventoryOrderedAnalysisWidget,
         })
-      ),
+      ) as Promise<{ default: React.ComponentType<UnifiedWidgetProps> }>,
     metadata: {
       dataSource: 'record_inventory',
       refreshInterval: false, // 🛑 禁用自動刷新
@@ -509,7 +509,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
         '@/app/(app)/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidgetGraphQL'
       ).then(module => ({
         default: module.default,
-      })),
+      })) as Promise<{ default: React.ComponentType<UnifiedWidgetProps> }>,
     metadata: {
       dataSource: 'inventory_ordered_analysis', // GraphQL data source
       refreshInterval: false, // 🛑 禁用自動刷新
@@ -558,7 +558,7 @@ export const UNIFIED_WIDGET_CONFIG: Record<string, UnifiedWidgetConfig> = {
     description: 'Proof of Concept for GraphQL migration using UnifiedDataLayer',
     lazyLoad: true,
     preloadPriority: 8,
-    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/StockLevelPOCWidget'),
+    loader: () => import('@/app/(app)/admin/components/dashboard/widgets/StockLevelPOCWidget') as Promise<{ default: React.ComponentType<UnifiedWidgetProps> }>,
     metadata: {
       dataSource: 'stock_levels',
       refreshInterval: false,
@@ -593,11 +593,11 @@ export const ROUTE_PRELOAD_MAP: Record<string, string[]> = {
   '/admin/warehouse': [
     'AwaitLocationQtyWidget',
     'WarehouseTransferListWidget',
-    'StockDistributionChart',
+    // 'StockDistributionChart', // 待遷移到 Card 系統
     'StillInAwaitWidget',
   ],
-  '/admin/injection': ['HistoryTreeV2', 'StatsCardWidget', 'ProductDistributionChartWidget'],
-  '/admin/pipeline': ['WarehouseWorkLevelAreaChart', 'OrdersListWidget', 'OrderStateListWidget'],
+  '/admin/injection': ['HistoryTreeV2', 'StatsCardWidget'], // ProductDistributionChartWidget 待遷移
+  '/admin/pipeline': [/* 'WarehouseWorkLevelAreaChart', */ 'OrdersListWidget', 'OrderStateListWidget'],
   '/admin/upload': [
     'UploadOrdersWidget',
     'UploadFilesWidget',
@@ -606,8 +606,8 @@ export const ROUTE_PRELOAD_MAP: Record<string, string[]> = {
   ],
   '/admin/update': ['ProductUpdateWidget', 'SupplierUpdateWidget', 'VoidPalletWidget'],
   '/admin/stock-management': [
-    'StockDistributionChart',
-    'StockLevelHistoryChart',
+    // 'StockDistributionChart', // 待遷移到 Card 系統
+    // 'StockLevelHistoryChart', // 待遷移到 Card 系統
     'InventoryOrderedAnalysisWidget',
   ],
   '/admin/system': [

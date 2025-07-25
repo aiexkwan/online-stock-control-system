@@ -11,14 +11,21 @@ import '@testing-library/jest-dom';
 import { MockedProvider } from '@apollo/client/testing';
 import { ListCard } from '../app/(app)/admin/components/dashboard/cards/ListCard';
 import { FormCard, FormType } from '../app/(app)/admin/components/dashboard/cards/FormCard';
-import { ListType } from '../types/generated/graphql';
+import { ListType, SortDirection } from '../types/generated/graphql';
 import { AdminCardRenderer } from '../app/(app)/admin/components/dashboard/AdminCardRenderer';
 import { AdminWidgetConfig } from '../types/components/dashboard';
 
 // 測試數據
+const mockDateRange = {
+  start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+  end: new Date()
+};
+
 const mockTimeFrame = {
-  start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-  end: new Date().toISOString()
+  label: 'Last 7 Days',
+  value: '7d',
+  start: mockDateRange.start,
+  end: mockDateRange.end
 };
 
 const mockListCardConfig: AdminWidgetConfig = {
@@ -47,7 +54,10 @@ const mocks = [
       variables: {
         input: {
           listType: ListType.OrderState,
-          timeFrame: mockTimeFrame,
+          timeFrame: {
+            start: mockDateRange.start.toISOString(),
+            end: mockDateRange.end.toISOString()
+          },
           pagination: { page: 1, limit: 10 },
           filters: {},
           sort: { field: 'created_at', direction: 'DESC' }
@@ -115,9 +125,8 @@ describe('階段1整合測試', () => {
       renderWithProviders(
         <ListCard
           listType={ListType.OrderState}
-          timeFrame={mockTimeFrame}
+          dateRange={mockDateRange}
           showHeader={true}
-          showPagination={true}
         />
       );
 
@@ -130,8 +139,7 @@ describe('階段1整合測試', () => {
       renderWithProviders(
         <ListCard
           listType={ListType.OrderState}
-          timeFrame={mockTimeFrame}
-          showPagination={true}
+          dateRange={mockDateRange}
           pageSize={5}
         />
       );
@@ -144,13 +152,15 @@ describe('階段1整合測試', () => {
     });
 
     test('ListCard 支援過濾功能', async () => {
-      const onFilterChange = jest.fn();
+      const initialFilters = {
+        status: ['PENDING']
+      };
       
       renderWithProviders(
         <ListCard
           listType={ListType.OrderState}
-          timeFrame={mockTimeFrame}
-          onFilterChange={onFilterChange}
+          dateRange={mockDateRange}
+          initialFilters={initialFilters}
         />
       );
 
@@ -162,13 +172,16 @@ describe('階段1整合測試', () => {
     });
 
     test('ListCard 支援排序功能', async () => {
-      const onSortChange = jest.fn();
+      const initialSort = {
+        field: 'created_at',
+        direction: SortDirection.Desc
+      };
       
       renderWithProviders(
         <ListCard
           listType={ListType.OrderState}
-          timeFrame={mockTimeFrame}
-          onSortChange={onSortChange}
+          dateRange={mockDateRange}
+          initialSort={initialSort}
         />
       );
 
@@ -313,12 +326,12 @@ describe('階段1整合測試', () => {
         <div>
           <ListCard
             listType={ListType.OrderState}
-            timeFrame={mockTimeFrame}
-            onItemSelect={onItemSelect}
+            dateRange={mockDateRange}
+            onRowClick={onItemSelect}
           />
           <FormCard
             formType={FormType.PRODUCT_EDIT}
-            prefilledData={selectedData}
+            prefilledData={selectedData || undefined}
           />
         </div>
       );
@@ -350,7 +363,7 @@ describe('階段1整合測試', () => {
         <div>
           <ListCard
             listType={ListType.OrderState}
-            timeFrame={mockTimeFrame}
+            dateRange={mockDateRange}
             onRefresh={onListRefresh}
           />
           <FormCard
@@ -401,7 +414,7 @@ describe('階段1整合測試', () => {
         <MockedProvider mocks={[largeDataMock]} addTypename={false}>
           <ListCard
             listType={ListType.OrderState}
-            timeFrame={mockTimeFrame}
+            dateRange={mockDateRange}
             pageSize={100}
           />
         </MockedProvider>
@@ -423,7 +436,7 @@ describe('階段1整合測試', () => {
       const { rerender } = renderWithProviders(
         <ListCard
           listType={ListType.OrderState}
-          timeFrame={mockTimeFrame}
+          dateRange={mockDateRange}
         />
       );
 
@@ -441,7 +454,7 @@ describe('階段1整合測試', () => {
         <MockedProvider mocks={mocks} addTypename={false}>
           <ListCard
             listType={ListType.OrderRecord}
-            timeFrame={mockTimeFrame}
+            dateRange={mockDateRange}
           />
         </MockedProvider>
       );
@@ -467,7 +480,7 @@ describe('階段1整合測試', () => {
         <MockedProvider mocks={[errorMock]} addTypename={false}>
           <ListCard
             listType={ListType.OrderState}
-            timeFrame={mockTimeFrame}
+            dateRange={mockDateRange}
           />
         </MockedProvider>
       );
@@ -501,7 +514,7 @@ describe('階段1整合測試', () => {
       renderWithProviders(
         <ListCard
           listType={ListType.OrderState}
-          timeFrame={mockTimeFrame}
+          dateRange={mockDateRange}
         />
       );
 
@@ -541,13 +554,13 @@ describe('階段1整合測試', () => {
       renderWithProviders(
         <ListCard
           listType={ListType.OrderState}
-          timeFrame={mockTimeFrame}
+          dateRange={mockDateRange}
         />
       );
 
       // 檢查響應式類名
       const container = screen.getByTestId('list-card-container');
-      expect(container).toHaveClass(/responsive/);
+      expect(container.className).toMatch(/responsive/);
     });
 
     test('移動端FormCard佈局', () => {

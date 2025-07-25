@@ -280,5 +280,4 @@ export class LocalFeatureFlagProvider extends BaseFeatureFlagProvider {
       console.error('Failed to load feature flags from localStorage:', error);
     }
   }
-
 }

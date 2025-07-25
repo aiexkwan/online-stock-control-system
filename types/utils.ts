@@ -7,18 +7,14 @@
  * 深度部分類型 - 讓對象所有屬性都變成可選的
  */
 export type DeepPartial<T> = {
-  [P in keyof T]?: T[P] extends object 
-    ? DeepPartial<T[P]> 
-    : T[P];
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };
 
 /**
  * 深度必需類型 - 讓對象所有屬性都變成必需的
  */
 export type DeepRequired<T> = {
-  [P in keyof T]-?: T[P] extends object 
-    ? DeepRequired<T[P]> 
-    : T[P];
+  [P in keyof T]-?: T[P] extends object ? DeepRequired<T[P]> : T[P];
 };
 
 /**
@@ -39,17 +35,22 @@ export type NonNullable<T> = T extends null | undefined ? never : T;
 /**
  * 函數參數類型提取
  */
-export type Parameters<T extends (...args: any) => any> = T extends (...args: infer P) => any ? P : never;
+export type Parameters<T extends (...args: any) => any> = T extends (...args: infer P) => any
+  ? P
+  : never;
 
 /**
  * 函數返回類型提取
  */
-export type ReturnType<T extends (...args: any) => any> = T extends (...args: any) => infer R ? R : any;
+export type ReturnType<T extends (...args: any) => any> = T extends (...args: any) => infer R
+  ? R
+  : any;
 
 /**
  * 陣列元素類型提取
  */
-export type ArrayElement<T extends ReadonlyArray<any>> = T extends ReadonlyArray<infer E> ? E : never;
+export type ArrayElement<T extends ReadonlyArray<any>> =
+  T extends ReadonlyArray<infer E> ? E : never;
 
 /**
  * Promise解析類型提取

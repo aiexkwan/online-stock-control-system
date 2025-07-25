@@ -39,13 +39,15 @@ export const DashboardStatsRPCSchema = z.object({
 /**
  * 庫存項目架構
  */
-const InventoryItemSchema = z.object({
-  product_code: z.string().default(''),
-  location: z.string().default(''),
-  quantity: z.number().or(z.string().transform(Number)).default(0),
-  pallet_number: z.string().optional(),
-  last_updated: z.string().optional(),
-}).catchall(z.unknown()); // 允許其他動態字段
+const InventoryItemSchema = z
+  .object({
+    product_code: z.string().default(''),
+    location: z.string().default(''),
+    quantity: z.number().or(z.string().transform(Number)).default(0),
+    pallet_number: z.string().optional(),
+    last_updated: z.string().optional(),
+  })
+  .catchall(z.unknown()); // 允許其他動態字段
 
 /**
  * 庫存統計架構

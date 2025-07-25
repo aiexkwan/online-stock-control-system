@@ -1,7 +1,7 @@
 /**
  * @fileoverview API 核心類型統一導出
  * @module types/api/core
- * 
+ *
  * Phase 2: API 類型統一 - 核心模塊
  */
 

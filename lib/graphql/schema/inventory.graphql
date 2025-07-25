@@ -10,26 +10,21 @@ type Pallet {
   quantity: Int!
   location: Location
   status: PalletStatus!
-  
+
   # 關聯數據
-  transfers(
-    filter: TransferFilterInput
-    pagination: PaginationInput
-  ): TransferConnection!
-  
-  history(
-    pagination: PaginationInput
-  ): [HistoryRecord!]!
-  
+  transfers(filter: TransferFilterInput, pagination: PaginationInput): TransferConnection!
+
+  history(pagination: PaginationInput): [HistoryRecord!]!
+
   # GRN 資料
   grnNumber: String
   grn: GRN
-  
+
   # 批次資料
   batchNumber: String
   expiryDate: DateTime
   manufactureDate: DateTime
-  
+
   # 元數據
   createdAt: DateTime!
   updatedAt: DateTime!
@@ -51,16 +46,16 @@ type Inventory {
   id: ID!
   productCode: String!
   product: Product!
-  
+
   # 位置庫存
   locationQuantities: LocationInventory!
   totalQuantity: Int!
-  
+
   # 統計
   awaitQuantity: Int!
   availableQuantity: Int!
   reservedQuantity: Int!
-  
+
   # 元數據
   lastUpdate: DateTime!
   lastMovement: DateTime
@@ -117,22 +112,22 @@ type GRN {
   grnNumber: String!
   supplierCode: String!
   supplier: Supplier!
-  
+
   # 詳細資料
   items: [GRNItem!]!
   totalItems: Int!
   totalQuantity: Int!
-  
+
   # 狀態
   status: GRNStatus!
   receivedDate: DateTime!
   completedDate: DateTime
-  
+
   # 質檢
   qcStatus: QCStatus
   qcCompletedDate: DateTime
   qcBy: User
-  
+
   # 元數據
   createdAt: DateTime!
   createdBy: User!
@@ -230,39 +225,24 @@ extend type Query {
     pagination: PaginationInput
     sort: SortInput
   ): PalletConnection!
-  
+
   # 庫存查詢
   inventory(productCode: ID!): Inventory
-  inventories(
-    filter: InventoryFilterInput
-    pagination: PaginationInput
-  ): [Inventory!]!
-  
+  inventories(filter: InventoryFilterInput, pagination: PaginationInput): [Inventory!]!
+
   # 庫存統計
-  inventoryStatistics(
-    warehouse: String
-    dateRange: DateRangeInput
-  ): InventoryStatistics!
-  
+  inventoryStatistics(warehouse: String, dateRange: DateRangeInput): InventoryStatistics!
+
   # 位置查詢
   location(id: ID!): Location
-  locations(
-    warehouse: String
-    type: LocationType
-  ): [Location!]!
-  
+  locations(warehouse: String, type: LocationType): [Location!]!
+
   # GRN 查詢
   grn(grnNumber: String!): GRN
-  grns(
-    filter: GRNFilterInput
-    pagination: PaginationInput
-  ): GRNConnection!
-  
+  grns(filter: GRNFilterInput, pagination: PaginationInput): GRNConnection!
+
   # 庫存水平（GraphQL POC）
-  stockLevels(
-    warehouse: String
-    dateRange: DateRangeInput
-  ): StockLevelData!
+  stockLevels(warehouse: String, dateRange: DateRangeInput): StockLevelData!
 }
 
 # 變更
@@ -270,28 +250,16 @@ extend type Mutation {
   # 棧板管理
   createPallet(input: CreatePalletInput!): Pallet!
   voidPallet(pltNum: ID!, reason: String!): Pallet!
-  updatePalletLocation(
-    pltNum: ID!
-    location: String!
-  ): Pallet!
-  
+  updatePalletLocation(pltNum: ID!, location: String!): Pallet!
+
   # 庫存調整
   adjustStock(input: StockAdjustmentInput!): Inventory!
-  performStocktake(
-    productCode: String!
-    counts: LocationInventoryInput!
-  ): Inventory!
-  
+  performStocktake(productCode: String!, counts: LocationInventoryInput!): Inventory!
+
   # GRN 管理
   createGRN(input: CreateGRNInput!): GRN!
-  updateGRNStatus(
-    grnNumber: String!
-    status: GRNStatus!
-  ): GRN!
-  completeQC(
-    grnNumber: String!
-    qcResults: [QCResultInput!]!
-  ): GRN!
+  updateGRNStatus(grnNumber: String!, status: GRNStatus!): GRN!
+  completeQC(grnNumber: String!, qcResults: [QCResultInput!]!): GRN!
 }
 
 # 輸入類型

@@ -9,31 +9,34 @@ import { StatsType } from '@/types/generated/graphql';
 // Widget 名稱到 StatsType 的映射
 export const WIDGET_TO_STATS_TYPE_MAP: Record<string, StatsType> = {
   // 基礎統計 widgets
-  'YesterdayTransferCountWidget': StatsType.YesterdayTransferCount,
-  'AwaitLocationQtyWidget': StatsType.AwaitLocationQty,
-  'StillInAwaitWidget': StatsType.StillInAwait,
-  'StillInAwaitPercentageWidget': StatsType.StillInAwaitPercentage,
-  
+  YesterdayTransferCountWidget: StatsType.YesterdayTransferCount,
+  AwaitLocationQtyWidget: StatsType.AwaitLocationQty,
+  StillInAwaitWidget: StatsType.StillInAwait,
+  StillInAwaitPercentageWidget: StatsType.StillInAwaitPercentage,
+
   // 生產統計 widgets
-  'ProductionStatsWidget': StatsType.ProductionStats,
-  'InjectionProductionStatsWidget': StatsType.InjectionProductionStats,
-  
+  ProductionStatsWidget: StatsType.ProductionStats,
+  InjectionProductionStatsWidget: StatsType.InjectionProductionStats,
+
   // 工作量統計 widgets
-  'StaffWorkloadWidget': StatsType.StaffWorkload,
-  'WarehouseWorkLevelAreaChart': StatsType.WarehouseWorkLevel,
-  
+  StaffWorkloadWidget: StatsType.StaffWorkload,
+  WarehouseWorkLevelAreaChart: StatsType.WarehouseWorkLevel,
+
   // 時間和歷史統計 widgets
-  'TransferTimeDistributionWidget': StatsType.TransferTimeDistribution,
-  'StockLevelHistoryChart': StatsType.StockLevelHistory,
+  TransferTimeDistributionWidget: StatsType.TransferTimeDistribution,
+  StockLevelHistoryChart: StatsType.StockLevelHistory,
 };
 
 // 反向映射（StatsType 到 Widget 名稱）
 export const STATS_TYPE_TO_WIDGET_MAP: Record<StatsType, string> = Object.entries(
   WIDGET_TO_STATS_TYPE_MAP
-).reduce((acc, [widgetName, statsType]) => {
-  acc[statsType] = widgetName;
-  return acc;
-}, {} as Record<StatsType, string>);
+).reduce(
+  (acc, [widgetName, statsType]) => {
+    acc[statsType] = widgetName;
+    return acc;
+  },
+  {} as Record<StatsType, string>
+);
 
 // 需要遷移的 widget 列表
 export const STATS_WIDGETS_TO_MIGRATE = Object.keys(WIDGET_TO_STATS_TYPE_MAP);
@@ -51,7 +54,7 @@ export interface StatsCardPreset {
 // 預設配置（用於不同的 admin 頁面）
 export const STATS_CARD_PRESETS: Record<string, StatsCardPreset> = {
   // 儀表板主頁
-  'dashboard': {
+  dashboard: {
     name: 'Dashboard Overview',
     description: 'Key metrics overview',
     statTypes: [
@@ -63,9 +66,9 @@ export const STATS_CARD_PRESETS: Record<string, StatsCardPreset> = {
     showTrend: true,
     showComparison: true,
   },
-  
+
   // 倉庫操作頁面
-  'warehouse': {
+  warehouse: {
     name: 'Warehouse Operations',
     description: 'Warehouse activity metrics',
     statTypes: [
@@ -78,9 +81,9 @@ export const STATS_CARD_PRESETS: Record<string, StatsCardPreset> = {
     showTrend: true,
     showComparison: false,
   },
-  
+
   // 生產監控頁面
-  'production': {
+  production: {
     name: 'Production Monitoring',
     description: 'Production statistics',
     statTypes: [
@@ -92,9 +95,9 @@ export const STATS_CARD_PRESETS: Record<string, StatsCardPreset> = {
     showTrend: true,
     showComparison: true,
   },
-  
+
   // 庫存管理頁面
-  'inventory': {
+  inventory: {
     name: 'Inventory Management',
     description: 'Stock and inventory metrics',
     statTypes: [
@@ -122,9 +125,10 @@ export function isStatsWidget(widgetName: string): boolean {
 }
 
 // 將舊的 widget 配置轉換為 StatsCard 配置
-export function convertWidgetConfigToStatsCard(
-  widgetNames: string[]
-): { statTypes: StatsType[]; unmapped: string[] } {
+export function convertWidgetConfigToStatsCard(widgetNames: string[]): {
+  statTypes: StatsType[];
+  unmapped: string[];
+} {
   const statTypes: StatsType[] = [];
   const unmapped: string[] = [];
 
@@ -152,7 +156,7 @@ export function getStatsCardPresetForPage(pagePath: string): StatsCardPreset | u
   } else if (pagePath.includes('/admin/inventory')) {
     return STATS_CARD_PRESETS['inventory'];
   }
-  
+
   // 默認返回 dashboard 配置
   return STATS_CARD_PRESETS['dashboard'];
 }
@@ -161,16 +165,16 @@ export function getStatsCardPresetForPage(pagePath: string): StatsCardPreset | u
 export const STATS_MIGRATION_FLAGS = {
   // 是否啟用 StatsCard
   enableStatsCard: true,
-  
+
   // 是否顯示遷移提示
   showMigrationHints: true,
-  
+
   // 是否保留舊 widgets（用於 A/B 測試）
   keepOldWidgets: false,
-  
+
   // 自動遷移模式
   autoMigrate: true,
-  
+
   // 遷移批次（可以分批遷移）
   migrationBatch: 1, // 1 = 第一批, 2 = 第二批, etc.
 };
@@ -180,11 +184,11 @@ export function shouldMigrateWidget(widgetName: string): boolean {
   if (!STATS_MIGRATION_FLAGS.enableStatsCard) {
     return false;
   }
-  
+
   if (!isStatsWidget(widgetName)) {
     return false;
   }
-  
+
   // 可以根據批次控制遷移
   // 例如：第一批只遷移基礎統計 widgets
   if (STATS_MIGRATION_FLAGS.migrationBatch === 1) {
@@ -196,6 +200,6 @@ export function shouldMigrateWidget(widgetName: string): boolean {
     ];
     return batch1Widgets.includes(widgetName);
   }
-  
+
   return true;
 }

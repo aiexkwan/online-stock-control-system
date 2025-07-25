@@ -17,7 +17,7 @@ export interface GraphQLRequest {
 }
 
 export async function waitForGraphQLResponse(
-  page: Page, 
+  page: Page,
   operationName: string,
   timeout = 10000
 ): Promise<GraphQLResponse> {
@@ -26,7 +26,7 @@ export async function waitForGraphQLResponse(
       reject(new Error(`GraphQL operation ${operationName} timed out after ${timeout}ms`));
     }, timeout);
 
-    page.on('response', async (response) => {
+    page.on('response', async response => {
       if (response.url().includes('/api/graphql')) {
         try {
           const body = await response.json();
@@ -47,15 +47,15 @@ export async function interceptGraphQL(
   operationName: string,
   mockResponse: GraphQLResponse
 ) {
-  await page.route('/api/graphql', async (route) => {
+  await page.route('/api/graphql', async route => {
     const request = route.request();
     const postData = request.postData();
-    
+
     if (postData?.includes(operationName)) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(mockResponse)
+        body: JSON.stringify(mockResponse),
       });
     } else {
       await route.continue();
@@ -69,3 +69,6 @@ export function createMockGraphQLResponse<T>(
 ): GraphQLResponse<T> {
   return { data, errors };
 }
+
+// Alias for backward compatibility
+export const waitForGraphQL = waitForGraphQLResponse;

@@ -21,6 +21,7 @@ import {
   UserPlusIcon,
   ClipboardDocumentListIcon,
   TruckIcon,
+  CubeIcon,
   Cog6ToothIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
@@ -55,7 +56,7 @@ type MetadataValue = string | number | boolean | Record<string, unknown> | unkno
 type DependencyValue = string | number | boolean | string[];
 
 // 表單數據記錄類型
-type FormDataRecord = Record<string, FormValue>;
+export type FormDataRecord = Record<string, FormValue>;
 
 // 提交成功數據類型
 interface SubmitSuccessData {
@@ -76,11 +77,13 @@ type FormSubmitError = FormFieldError[] | Error | string;
 // 臨時類型定義 - 將來會移到 GraphQL Schema
 export enum FormType {
   PRODUCT_EDIT = 'PRODUCT_EDIT',
+  PRODUCT_UPDATE = 'PRODUCT_UPDATE',
   USER_REGISTRATION = 'USER_REGISTRATION',
   ORDER_CREATE = 'ORDER_CREATE',
   WAREHOUSE_TRANSFER = 'WAREHOUSE_TRANSFER',
   QUALITY_CHECK = 'QUALITY_CHECK',
   INVENTORY_ADJUST = 'INVENTORY_ADJUST',
+  REPRINT_LABEL = 'REPRINT_LABEL',
 }
 
 export enum FieldType {
@@ -265,6 +268,9 @@ export interface FormCardProps {
   onSubmitError?: (error: FormSubmitError) => void;
   onCancel?: () => void;
   onFieldChange?: (fieldName: string, value: FormValue) => void;
+  
+  // 自定義提交處理器（用於業務邏輯遷移）
+  customSubmitHandler?: (formData: FormDataRecord) => Promise<SubmitSuccessData>;
 }
 
 export const FormCard: React.FC<FormCardProps> = ({
@@ -281,6 +287,7 @@ export const FormCard: React.FC<FormCardProps> = ({
   onSubmitError,
   onCancel,
   onFieldChange,
+  customSubmitHandler,
 }) => {
   // 狀態管理
   const [formData, setFormData] = useState<FormDataRecord>(prefilledData);
@@ -324,8 +331,70 @@ export const FormCard: React.FC<FormCardProps> = ({
     },
   });
 
-  // 模擬數據 - 產品編輯表單配置
+  // 模擬數據 - 表單配置
   const mockFormData: FormCardData = useMemo(() => {
+    if (formType === FormType.REPRINT_LABEL) {
+      return {
+        id: 'reprint-label-form',
+        formType: FormType.REPRINT_LABEL,
+        title: 'Reprint Label',
+        description: 'Enter pallet number to reprint label',
+        fields: [
+          {
+            id: 'palletNumber',
+            name: 'palletNumber',
+            label: 'Pallet Number',
+            type: FieldType.TEXT,
+            required: true,
+            placeholder: 'Enter pallet number...',
+            validation: {
+              required: true,
+              customMessage: 'Please enter a pallet number',
+            },
+            gridColumn: 12,
+            helpText: 'Enter the pallet number to reprint its label',
+          },
+        ],
+        submitEndpoint: '/api/reprint-label',
+        layout: {
+          columns: 12,
+          spacing: 'normal',
+        },
+      };
+    }
+
+    if (formType === FormType.PRODUCT_UPDATE) {
+      return {
+        id: 'product-update-form',
+        formType: FormType.PRODUCT_UPDATE,
+        title: 'Product Management',
+        description: 'Search, edit, or create product information',
+        fields: [
+          {
+            id: 'searchCode',
+            name: 'searchCode',
+            label: 'Product Code (Search)',
+            type: FieldType.TEXT,
+            required: false,
+            placeholder: 'Enter product code to search...',
+            gridColumn: 12,
+            helpText: 'Search for existing product by code',
+            metadata: { isSearchField: true },
+          },
+        ],
+        submitEndpoint: '/api/products/search',
+        layout: {
+          columns: 12,
+          spacing: 'normal',
+        },
+        metadata: {
+          mode: 'search', // search, edit, create
+          allowCreate: true,
+          allowEdit: true,
+        },
+      };
+    }
+    
     if (formType === FormType.PRODUCT_EDIT) {
       return {
         id: 'product-edit-form',
@@ -438,6 +507,12 @@ export const FormCard: React.FC<FormCardProps> = ({
           color: 'from-blue-500 to-cyan-500',
           title: 'Product Form',
         };
+      case FormType.PRODUCT_UPDATE:
+        return {
+          icon: CubeIcon,
+          color: 'from-orange-500 to-amber-500',
+          title: 'Product Management',
+        };
       case FormType.USER_REGISTRATION:
         return {
           icon: UserPlusIcon,
@@ -455,6 +530,12 @@ export const FormCard: React.FC<FormCardProps> = ({
           icon: TruckIcon,
           color: 'from-purple-500 to-violet-500',
           title: 'Warehouse Transfer',
+        };
+      case FormType.REPRINT_LABEL:
+        return {
+          icon: DocumentTextIcon,
+          color: 'from-emerald-500 to-teal-500',
+          title: 'Reprint Label',
         };
       default:
         return {
@@ -565,20 +646,35 @@ export const FormCard: React.FC<FormCardProps> = ({
       }
 
       try {
-        await submitForm({
-          variables: {
-            input: {
-              formType,
-              entityId,
-              data: formData,
+        if (customSubmitHandler) {
+          // 使用自定義提交處理器
+          const result = await customSubmitHandler(formData);
+          onSubmitSuccess?.(result);
+          
+          // 清空表單（如果成功）
+          setFormData({});
+          setTouched({});
+          setSubmitAttempted(false);
+        } else {
+          // 使用默認的 GraphQL mutation
+          await submitForm({
+            variables: {
+              input: {
+                formType,
+                entityId,
+                data: formData,
+              },
             },
-          },
-        });
+          });
+        }
       } catch (error) {
         console.error('Form submission error:', error);
+        if (customSubmitHandler) {
+          onSubmitError?.(error instanceof Error ? error : new Error('Submission failed'));
+        }
       }
     },
-    [formType, entityId, formData, validateForm, submitForm]
+    [formType, entityId, formData, validateForm, submitForm, customSubmitHandler, onSubmitSuccess, onSubmitError]
   );
 
   // 渲染字段組件

@@ -13,40 +13,37 @@ const ProductTrendsRequestSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  return withAnalyticsAuth(
-    request,
-    ProductTrendsRequestSchema,
-    async (supabase, { timeRange }) => {
-      // Get date range using helper function
-      const { startDate, endDate } = getDateRangeFromTimeRange(timeRange);
+  return withAnalyticsAuth(request, ProductTrendsRequestSchema, async (supabase, { timeRange }) => {
+    // Get date range using helper function
+    const { startDate, endDate } = getDateRangeFromTimeRange(timeRange);
 
-      // Fetch order data
-      const { data: orderData, error: orderError } = await supabase
-        .from('data_order')
-        .select('product_code, created_at')
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString())
-        .order('created_at');
+    // Fetch order data
+    const { data: orderData, error: orderError } = await supabase
+      .from('data_order')
+      .select('product_code, created_at')
+      .gte('created_at', startDate.toISOString())
+      .lte('created_at', endDate.toISOString())
+      .order('created_at');
 
-      if (orderError) throw orderError;
+    if (orderError) throw orderError;
 
-      // Process data and return
-      return processProductTrendsData(orderData || [], timeRange);
-    }
-  );
+    // Process data and return
+    return processProductTrendsData(orderData || [], timeRange);
+  });
 }
 
 // Data processing function migrated from frontend utils
 function processProductTrendsData(
-  orderData: { product_code: unknown; created_at: unknown }[], 
+  orderData: { product_code: unknown; created_at: unknown }[],
   timeRange: string
 ) {
   // Safe data filtering
-  const safeOrderData = orderData.filter(record => 
-    record && 
-    typeof record === 'object' && 
-    typeof record.product_code === 'string' && 
-    typeof record.created_at === 'string'
+  const safeOrderData = orderData.filter(
+    record =>
+      record &&
+      typeof record === 'object' &&
+      typeof record.product_code === 'string' &&
+      typeof record.created_at === 'string'
   ) as { product_code: string; created_at: string }[];
 
   // Calculate top products (top 10 by order count)
@@ -68,12 +65,12 @@ function processProductTrendsData(
     const hourlyData = Array.from({ length: 24 }, (_, hour) => {
       const hourStr = hour.toString().padStart(2, '0') + ':00';
       const item: { date: string; [key: string]: number | string } = { date: hourStr };
-      
+
       // Initialize all products with 0
       topProducts.forEach(product => {
         item[product] = 0;
       });
-      
+
       return item;
     });
 
@@ -81,7 +78,7 @@ function processProductTrendsData(
     safeOrderData.forEach(record => {
       const createdAt = record.created_at;
       const productCode = record.product_code;
-      
+
       if (createdAt && isValidDate(createdAt) && topProducts.includes(productCode)) {
         const date = new Date(createdAt);
         const hour = date.getHours();
@@ -95,14 +92,14 @@ function processProductTrendsData(
     // Summary data for hourly view
     const summaryData = hourlyData.map(item => ({
       date: item.date as string,
-      count: topProducts.reduce((sum, product) => sum + (item[product] as number), 0)
+      count: topProducts.reduce((sum, product) => sum + (item[product] as number), 0),
     }));
 
     return {
       detail: hourlyData,
       summary: summaryData,
       productCodes: topProducts,
-      totalOrders: safeOrderData.length
+      totalOrders: safeOrderData.length,
     };
   } else {
     // Daily processing for multi-day views
@@ -111,14 +108,14 @@ function processProductTrendsData(
       const date = new Date();
       date.setDate(date.getDate() - (dayCount - 1 - index));
       const dateStr = date.toISOString().split('T')[0];
-      
+
       const item: { date: string; [key: string]: number | string } = { date: dateStr };
-      
+
       // Initialize all products with 0
       topProducts.forEach(product => {
         item[product] = 0;
       });
-      
+
       return item;
     });
 
@@ -126,7 +123,7 @@ function processProductTrendsData(
     safeOrderData.forEach(record => {
       const createdAt = record.created_at;
       const productCode = record.product_code;
-      
+
       if (createdAt && isValidDate(createdAt) && topProducts.includes(productCode)) {
         const date = new Date(createdAt);
         const dateStr = date.toISOString().split('T')[0];
@@ -141,14 +138,14 @@ function processProductTrendsData(
     // Summary data for daily view
     const summaryData = dailyData.map(item => ({
       date: item.date as string,
-      count: topProducts.reduce((sum, product) => sum + (item[product] as number), 0)
+      count: topProducts.reduce((sum, product) => sum + (item[product] as number), 0),
     }));
 
     return {
       detail: dailyData,
       summary: summaryData,
       productCodes: topProducts,
-      totalOrders: safeOrderData.length
+      totalOrders: safeOrderData.length,
     };
   }
 }

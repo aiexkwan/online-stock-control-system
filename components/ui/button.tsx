@@ -97,7 +97,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {loading ? (
           <>
-            <div className='mr-2 h-1 w-4 bg-current rounded-full opacity-75' />
+            <div className='mr-2 h-1 w-4 rounded-full bg-current opacity-75' />
             <span className='sr-only'>{loadingText}</span>
             {loadingText}
           </>

@@ -1,4 +1,9 @@
-import { ConfigCategory, ConfigDataType, ConfigScope, ConfigAccessLevel } from '@/lib/graphql/queries/config';
+import {
+  ConfigCategory,
+  ConfigDataType,
+  ConfigScope,
+  ConfigAccessLevel,
+} from '@/lib/graphql/queries/config';
 
 export const mockConfigData = {
   configs: [
@@ -21,7 +26,7 @@ export const mockConfigData = {
       metadata: { critical: true },
       createdAt: new Date(Date.now() - 86400000).toISOString(),
       updatedAt: new Date(Date.now() - 3600000).toISOString(),
-      updatedBy: 'admin@example.com'
+      updatedBy: 'admin@example.com',
     },
     {
       id: 'config-2',
@@ -41,7 +46,7 @@ export const mockConfigData = {
       metadata: {},
       createdAt: new Date(Date.now() - 172800000).toISOString(),
       updatedAt: new Date(Date.now() - 7200000).toISOString(),
-      updatedBy: 'admin@example.com'
+      updatedBy: 'admin@example.com',
     },
 
     // User Preferences
@@ -64,7 +69,7 @@ export const mockConfigData = {
       metadata: {},
       createdAt: new Date(Date.now() - 259200000).toISOString(),
       updatedAt: new Date(Date.now() - 14400000).toISOString(),
-      updatedBy: 'user@example.com'
+      updatedBy: 'user@example.com',
     },
     {
       id: 'config-4',
@@ -85,7 +90,7 @@ export const mockConfigData = {
       metadata: {},
       createdAt: new Date(Date.now() - 345600000).toISOString(),
       updatedAt: new Date(Date.now() - 28800000).toISOString(),
-      updatedBy: 'user@example.com'
+      updatedBy: 'user@example.com',
     },
 
     // Department Configuration
@@ -108,7 +113,7 @@ export const mockConfigData = {
       metadata: { department: 'warehouse' },
       createdAt: new Date(Date.now() - 432000000).toISOString(),
       updatedAt: new Date(Date.now() - 43200000).toISOString(),
-      updatedBy: 'manager@example.com'
+      updatedBy: 'manager@example.com',
     },
     {
       id: 'config-6',
@@ -129,7 +134,7 @@ export const mockConfigData = {
       metadata: { department: 'warehouse' },
       createdAt: new Date(Date.now() - 518400000).toISOString(),
       updatedAt: new Date(Date.now() - 57600000).toISOString(),
-      updatedBy: 'manager@example.com'
+      updatedBy: 'manager@example.com',
     },
 
     // Notification Configuration
@@ -151,7 +156,7 @@ export const mockConfigData = {
       metadata: { encrypted: false },
       createdAt: new Date(Date.now() - 604800000).toISOString(),
       updatedAt: new Date(Date.now() - 72000000).toISOString(),
-      updatedBy: 'admin@example.com'
+      updatedBy: 'admin@example.com',
     },
     {
       id: 'config-8',
@@ -171,7 +176,7 @@ export const mockConfigData = {
       metadata: {},
       createdAt: new Date(Date.now() - 691200000).toISOString(),
       updatedAt: new Date(Date.now() - 86400000).toISOString(),
-      updatedBy: 'admin@example.com'
+      updatedBy: 'admin@example.com',
     },
 
     // API Configuration
@@ -193,7 +198,7 @@ export const mockConfigData = {
       metadata: { isSecret: true },
       createdAt: new Date(Date.now() - 777600000).toISOString(),
       updatedAt: new Date(Date.now() - 100800000).toISOString(),
-      updatedBy: 'superadmin@example.com'
+      updatedBy: 'superadmin@example.com',
     },
     {
       id: 'config-10',
@@ -213,7 +218,7 @@ export const mockConfigData = {
       metadata: {},
       createdAt: new Date(Date.now() - 864000000).toISOString(),
       updatedAt: new Date(Date.now() - 115200000).toISOString(),
-      updatedBy: 'admin@example.com'
+      updatedBy: 'admin@example.com',
     },
 
     // Security Configuration
@@ -235,7 +240,7 @@ export const mockConfigData = {
       metadata: { compliance: 'SOC2' },
       createdAt: new Date(Date.now() - 950400000).toISOString(),
       updatedAt: new Date(Date.now() - 129600000).toISOString(),
-      updatedBy: 'security@example.com'
+      updatedBy: 'security@example.com',
     },
     {
       id: 'config-12',
@@ -255,7 +260,7 @@ export const mockConfigData = {
       metadata: { unit: 'seconds' },
       createdAt: new Date(Date.now() - 1036800000).toISOString(),
       updatedAt: new Date(Date.now() - 144000000).toISOString(),
-      updatedBy: 'security@example.com'
+      updatedBy: 'security@example.com',
     },
 
     // Display Configuration
@@ -277,7 +282,7 @@ export const mockConfigData = {
       metadata: {},
       createdAt: new Date(Date.now() - 1123200000).toISOString(),
       updatedAt: new Date(Date.now() - 158400000).toISOString(),
-      updatedBy: 'designer@example.com'
+      updatedBy: 'designer@example.com',
     },
     {
       id: 'config-14',
@@ -297,7 +302,7 @@ export const mockConfigData = {
       metadata: {},
       createdAt: new Date(Date.now() - 1209600000).toISOString(),
       updatedAt: new Date(Date.now() - 172800000).toISOString(),
-      updatedBy: 'designer@example.com'
+      updatedBy: 'designer@example.com',
     },
 
     // Workflow Configuration
@@ -320,7 +325,7 @@ export const mockConfigData = {
       metadata: {},
       createdAt: new Date(Date.now() - 1296000000).toISOString(),
       updatedAt: new Date(Date.now() - 187200000).toISOString(),
-      updatedBy: 'admin@example.com'
+      updatedBy: 'admin@example.com',
     },
     {
       id: 'config-16',
@@ -329,7 +334,7 @@ export const mockConfigData = {
         autoAssign: true,
         priorityThreshold: 5,
         escalationTime: 3600,
-        notifyManagers: true
+        notifyManagers: true,
       },
       dataType: ConfigDataType.JSON,
       category: ConfigCategory.WORKFLOW_CONFIG,
@@ -345,8 +350,8 @@ export const mockConfigData = {
       metadata: {},
       createdAt: new Date(Date.now() - 1382400000).toISOString(),
       updatedAt: new Date(Date.now() - 201600000).toISOString(),
-      updatedBy: 'admin@example.com'
-    }
+      updatedBy: 'admin@example.com',
+    },
   ],
   categories: [
     {
@@ -356,11 +361,11 @@ export const mockConfigData = {
       icon: 'settings',
       items: [
         { id: 'config-1', key: 'system.maintenance.mode' },
-        { id: 'config-2', key: 'system.api.rateLimit' }
+        { id: 'config-2', key: 'system.api.rateLimit' },
       ],
       count: 2,
       editableCount: 2,
-      lastUpdated: new Date(Date.now() - 3600000).toISOString()
+      lastUpdated: new Date(Date.now() - 3600000).toISOString(),
     },
     {
       category: ConfigCategory.USER_PREFERENCES,
@@ -369,11 +374,11 @@ export const mockConfigData = {
       icon: 'user',
       items: [
         { id: 'config-3', key: 'user.theme.mode' },
-        { id: 'config-4', key: 'user.notifications.email' }
+        { id: 'config-4', key: 'user.notifications.email' },
       ],
       count: 2,
       editableCount: 2,
-      lastUpdated: new Date(Date.now() - 14400000).toISOString()
+      lastUpdated: new Date(Date.now() - 14400000).toISOString(),
     },
     {
       category: ConfigCategory.DEPARTMENT_CONFIG,
@@ -382,11 +387,11 @@ export const mockConfigData = {
       icon: 'building',
       items: [
         { id: 'config-5', key: 'department.workflow.autoApprove' },
-        { id: 'config-6', key: 'department.settings.workingHours' }
+        { id: 'config-6', key: 'department.settings.workingHours' },
       ],
       count: 2,
       editableCount: 2,
-      lastUpdated: new Date(Date.now() - 43200000).toISOString()
+      lastUpdated: new Date(Date.now() - 43200000).toISOString(),
     },
     {
       category: ConfigCategory.NOTIFICATION_CONFIG,
@@ -395,11 +400,11 @@ export const mockConfigData = {
       icon: 'bell',
       items: [
         { id: 'config-7', key: 'notification.smtp.server' },
-        { id: 'config-8', key: 'notification.channels.enabled' }
+        { id: 'config-8', key: 'notification.channels.enabled' },
       ],
       count: 2,
       editableCount: 2,
-      lastUpdated: new Date(Date.now() - 72000000).toISOString()
+      lastUpdated: new Date(Date.now() - 72000000).toISOString(),
     },
     {
       category: ConfigCategory.API_CONFIG,
@@ -408,11 +413,11 @@ export const mockConfigData = {
       icon: 'link',
       items: [
         { id: 'config-9', key: 'api.external.weatherApiKey' },
-        { id: 'config-10', key: 'api.endpoints.baseUrl' }
+        { id: 'config-10', key: 'api.endpoints.baseUrl' },
       ],
       count: 2,
       editableCount: 2,
-      lastUpdated: new Date(Date.now() - 100800000).toISOString()
+      lastUpdated: new Date(Date.now() - 100800000).toISOString(),
     },
     {
       category: ConfigCategory.SECURITY_CONFIG,
@@ -421,11 +426,11 @@ export const mockConfigData = {
       icon: 'lock',
       items: [
         { id: 'config-11', key: 'security.password.minLength' },
-        { id: 'config-12', key: 'security.session.timeout' }
+        { id: 'config-12', key: 'security.session.timeout' },
       ],
       count: 2,
       editableCount: 1,
-      lastUpdated: new Date(Date.now() - 129600000).toISOString()
+      lastUpdated: new Date(Date.now() - 129600000).toISOString(),
     },
     {
       category: ConfigCategory.DISPLAY_CONFIG,
@@ -434,11 +439,11 @@ export const mockConfigData = {
       icon: 'monitor',
       items: [
         { id: 'config-13', key: 'display.grid.columns' },
-        { id: 'config-14', key: 'display.theme.primaryColor' }
+        { id: 'config-14', key: 'display.theme.primaryColor' },
       ],
       count: 2,
       editableCount: 2,
-      lastUpdated: new Date(Date.now() - 158400000).toISOString()
+      lastUpdated: new Date(Date.now() - 158400000).toISOString(),
     },
     {
       category: ConfigCategory.WORKFLOW_CONFIG,
@@ -447,12 +452,12 @@ export const mockConfigData = {
       icon: 'git-branch',
       items: [
         { id: 'config-15', key: 'workflow.approval.levels' },
-        { id: 'config-16', key: 'workflow.automation.rules' }
+        { id: 'config-16', key: 'workflow.automation.rules' },
       ],
       count: 2,
       editableCount: 2,
-      lastUpdated: new Date(Date.now() - 187200000).toISOString()
-    }
+      lastUpdated: new Date(Date.now() - 187200000).toISOString(),
+    },
   ],
   summary: {
     totalConfigs: 16,
@@ -460,7 +465,7 @@ export const mockConfigData = {
     readOnlyConfigs: 1,
     inheritedConfigs: 1,
     modifiedConfigs: 14,
-    lastUpdated: new Date(Date.now() - 3600000).toISOString()
+    lastUpdated: new Date(Date.now() - 3600000).toISOString(),
   },
   permissions: {
     canView: true,
@@ -469,11 +474,11 @@ export const mockConfigData = {
     canDelete: true,
     canImport: true,
     canExport: true,
-    restrictedKeys: ['api.external.weatherApiKey']
+    restrictedKeys: ['api.external.weatherApiKey'],
   },
   lastUpdated: new Date().toISOString(),
   refreshInterval: 30000,
-  dataSource: 'cache'
+  dataSource: 'cache',
 };
 
 export const mockConfigHistory = [
@@ -484,7 +489,7 @@ export const mockConfigHistory = [
     value: true,
     changedBy: 'admin@example.com',
     changedAt: new Date(Date.now() - 3600000).toISOString(),
-    changeReason: 'Enabled maintenance mode for upgrade'
+    changeReason: 'Enabled maintenance mode for upgrade',
   },
   {
     id: 'history-2',
@@ -493,7 +498,7 @@ export const mockConfigHistory = [
     value: false,
     changedBy: 'admin@example.com',
     changedAt: new Date(Date.now() - 86400000).toISOString(),
-    changeReason: 'Disabled maintenance mode after upgrade'
+    changeReason: 'Disabled maintenance mode after upgrade',
   },
   {
     id: 'history-3',
@@ -502,8 +507,8 @@ export const mockConfigHistory = [
     value: false,
     changedBy: 'system',
     changedAt: new Date(Date.now() - 172800000).toISOString(),
-    changeReason: 'Initial configuration'
-  }
+    changeReason: 'Initial configuration',
+  },
 ];
 
 export const mockConfigTemplates = [
@@ -516,16 +521,16 @@ export const mockConfigTemplates = [
       {
         key: 'system.maintenance.mode',
         value: false,
-        dataType: ConfigDataType.BOOLEAN
+        dataType: ConfigDataType.BOOLEAN,
       },
       {
         key: 'system.api.rateLimit',
         value: 5000,
-        dataType: ConfigDataType.NUMBER
-      }
+        dataType: ConfigDataType.NUMBER,
+      },
     ],
     createdAt: new Date(Date.now() - 604800000).toISOString(),
-    updatedAt: new Date(Date.now() - 259200000).toISOString()
+    updatedAt: new Date(Date.now() - 259200000).toISOString(),
   },
   {
     id: 'template-2',
@@ -536,16 +541,16 @@ export const mockConfigTemplates = [
       {
         key: 'system.maintenance.mode',
         value: false,
-        dataType: ConfigDataType.BOOLEAN
+        dataType: ConfigDataType.BOOLEAN,
       },
       {
         key: 'system.api.rateLimit',
         value: 100,
-        dataType: ConfigDataType.NUMBER
-      }
+        dataType: ConfigDataType.NUMBER,
+      },
     ],
     createdAt: new Date(Date.now() - 1209600000).toISOString(),
-    updatedAt: new Date(Date.now() - 432000000).toISOString()
+    updatedAt: new Date(Date.now() - 432000000).toISOString(),
   },
   {
     id: 'template-3',
@@ -556,17 +561,17 @@ export const mockConfigTemplates = [
       {
         key: 'department.workflow.autoApprove',
         value: false,
-        dataType: ConfigDataType.BOOLEAN
+        dataType: ConfigDataType.BOOLEAN,
       },
       {
         key: 'department.settings.workingHours',
         value: { start: '09:00', end: '17:00', timezone: 'GMT' },
-        dataType: ConfigDataType.OBJECT
-      }
+        dataType: ConfigDataType.OBJECT,
+      },
     ],
     createdAt: new Date(Date.now() - 1814400000).toISOString(),
-    updatedAt: new Date(Date.now() - 864000000).toISOString()
-  }
+    updatedAt: new Date(Date.now() - 864000000).toISOString(),
+  },
 ];
 
 // Export format examples
@@ -576,7 +581,7 @@ export const mockExportData = {
 system.maintenance.mode,false,BOOLEAN,SYSTEM_CONFIG,Enable system maintenance mode
 system.api.rateLimit,1000,NUMBER,SYSTEM_CONFIG,API rate limit per minute`,
   env: `SYSTEM_MAINTENANCE_MODE=false
-SYSTEM_API_RATE_LIMIT=1000`
+SYSTEM_API_RATE_LIMIT=1000`,
 };
 
 // Import test data
@@ -587,10 +592,10 @@ export const mockImportData = {
       value: 'test-value',
       dataType: ConfigDataType.STRING,
       category: ConfigCategory.SYSTEM_CONFIG,
-      description: 'Imported test configuration'
-    }
+      description: 'Imported test configuration',
+    },
   ]),
   csv: `key,value,dataType,category,description
 imported.csv.config,123,NUMBER,SYSTEM_CONFIG,Imported from CSV`,
-  env: `IMPORTED_ENV_CONFIG=true`
+  env: `IMPORTED_ENV_CONFIG=true`,
 };

@@ -25,7 +25,9 @@ export function DynamicApolloProvider({ children }: DynamicApolloProviderProps) 
     // Initialize with current session
     const initializeClient = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (session?.access_token) {
           // Create new client with token
           const newClient = createApolloClient(session.access_token);
@@ -41,15 +43,17 @@ export function DynamicApolloProvider({ children }: DynamicApolloProviderProps) 
     initializeClient();
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('[DynamicApolloProvider] Auth state changed:', event);
-      
+
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (session?.access_token) {
           // Create new client with fresh token
           const newClient = createApolloClient(session.access_token);
           setClient(newClient);
-          
+
           // Clear cache to ensure fresh data
           await newClient.clearStore();
         }
@@ -57,7 +61,7 @@ export function DynamicApolloProvider({ children }: DynamicApolloProviderProps) 
         // Create client without token
         const newClient = createApolloClient();
         setClient(newClient);
-        
+
         // Clear cache
         await newClient.clearStore();
       }
@@ -71,20 +75,16 @@ export function DynamicApolloProvider({ children }: DynamicApolloProviderProps) 
   // Show loading state while initializing
   if (!isReady) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2 text-sm text-gray-600">Initializing...</p>
+      <div className='flex min-h-screen items-center justify-center'>
+        <div className='text-center'>
+          <div className='mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900'></div>
+          <p className='mt-2 text-sm text-gray-600'>Initializing...</p>
         </div>
       </div>
     );
   }
 
-  return (
-    <BaseApolloProvider client={client}>
-      {children}
-    </BaseApolloProvider>
-  );
+  return <BaseApolloProvider client={client}>{children}</BaseApolloProvider>;
 }
 
 // Export the factory function for server-side use

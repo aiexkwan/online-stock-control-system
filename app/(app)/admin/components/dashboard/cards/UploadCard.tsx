@@ -131,22 +131,22 @@ const UPLOAD_SINGLE_FILE_MUTATION = gql`
 export interface UploadCardProps {
   // 上傳類型配置
   uploadType: UploadType;
-  
+
   // 可選的文件夾覆寫
   folder?: UploadFolder;
-  
+
   // 顯示選項
   showRecentUploads?: boolean;
   showStatistics?: boolean;
   showProgress?: boolean;
-  
+
   // 自定義樣式
   className?: string;
   height?: number | string;
-  
+
   // 編輯模式
   isEditMode?: boolean;
-  
+
   // 回調函數
   onUploadComplete?: (result: SingleUploadResult) => void;
   onUploadError?: (error: string) => void;
@@ -221,24 +221,21 @@ export const UploadCard: React.FC<UploadCardProps> = ({
   }, [previews]);
 
   // 文件驗證
-  const validateFile = useCallback(
-    (file: File, config: UploadConfig): string | null => {
-      const fileExtension = ('.' + file.name.split('.').pop()?.toLowerCase()) as SupportedFileType;
+  const validateFile = useCallback((file: File, config: UploadConfig): string | null => {
+    const fileExtension = ('.' + file.name.split('.').pop()?.toLowerCase()) as SupportedFileType;
 
-      // 檢查文件格式
-      if (!config.allowedTypes.includes(fileExtension)) {
-        return `Invalid file format. Allowed: ${config.allowedTypes.join(', ')}`;
-      }
+    // 檢查文件格式
+    if (!config.allowedTypes.includes(fileExtension)) {
+      return `Invalid file format. Allowed: ${config.allowedTypes.join(', ')}`;
+    }
 
-      // 檢查文件大小
-      if (file.size > config.maxFileSize) {
-        return `File size must be less than ${Math.round(config.maxFileSize / (1024 * 1024))}MB`;
-      }
+    // 檢查文件大小
+    if (file.size > config.maxFileSize) {
+      return `File size must be less than ${Math.round(config.maxFileSize / (1024 * 1024))}MB`;
+    }
 
-      return null;
-    },
-    []
-  );
+    return null;
+  }, []);
 
   // 創建圖片預覽
   const createPreview = useCallback((file: File): string => {
@@ -292,7 +289,6 @@ export const UploadCard: React.FC<UploadCardProps> = ({
           } else {
             throw new Error(uploadResult?.error || 'Upload failed');
           }
-
         } catch (error) {
           console.error('[UploadCard] Upload error:', error);
           const errorMessage = error instanceof Error ? error.message : 'Upload failed';
@@ -310,7 +306,17 @@ export const UploadCard: React.FC<UploadCardProps> = ({
         return [];
       });
     },
-    [data?.uploadCardData.config, selectedFolder, isEditMode, validateFile, uploadSingleFile, onUploadComplete, onUploadError, onAnalysisComplete, refetch]
+    [
+      data?.uploadCardData.config,
+      selectedFolder,
+      isEditMode,
+      validateFile,
+      uploadSingleFile,
+      onUploadComplete,
+      onUploadError,
+      onAnalysisComplete,
+      refetch,
+    ]
   );
 
   // 處理文件選擇
@@ -322,7 +328,7 @@ export const UploadCard: React.FC<UploadCardProps> = ({
       const fileArray = Array.from(files);
 
       // 限制文件數量
-      const limitedFiles = config.allowMultiple 
+      const limitedFiles = config.allowMultiple
         ? fileArray.slice(0, ensureNumber(config.maxFiles ?? null, 10))
         : [fileArray[0]];
 
@@ -361,11 +367,14 @@ export const UploadCard: React.FC<UploadCardProps> = ({
     setIsDragOver(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    handleFiles(e.dataTransfer.files);
-  }, [handleFiles]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragOver(false);
+      handleFiles(e.dataTransfer.files);
+    },
+    [handleFiles]
+  );
 
   // 點擊上傳
   const handleClick = useCallback(() => {
@@ -378,16 +387,18 @@ export const UploadCard: React.FC<UploadCardProps> = ({
   const getUploadIcon = () => {
     switch (uploadType) {
       case UploadType.OrderPdf:
-        return <DocumentArrowUpIcon className="w-20 h-20 text-blue-500" />;
+        return <DocumentArrowUpIcon className='h-20 w-20 text-blue-500' />;
       case UploadType.Photos:
-        return <PhotoIcon className="w-20 h-20 text-green-500" />;
+        return <PhotoIcon className='h-20 w-20 text-green-500' />;
       case UploadType.ProductSpec:
-        return <DocumentTextIcon className="w-20 h-20 text-purple-500" />;
+        return <DocumentTextIcon className='h-20 w-20 text-purple-500' />;
       case UploadType.GeneralFiles:
       default:
-        return selectedFolder === UploadFolder.StockPic
-          ? <PhotoIcon className="w-20 h-20 text-green-500" />
-          : <DocumentIcon className="w-20 h-20 text-blue-500" />;
+        return selectedFolder === UploadFolder.StockPic ? (
+          <PhotoIcon className='h-20 w-20 text-green-500' />
+        ) : (
+          <DocumentIcon className='h-20 w-20 text-blue-500' />
+        );
     }
   };
 
@@ -414,9 +425,9 @@ export const UploadCard: React.FC<UploadCardProps> = ({
   // 錯誤狀態
   if (error && !data) {
     return (
-      <div className={cn('flex items-center justify-center p-8 bg-red-50 rounded-lg', className)}>
-        <ExclamationTriangleIcon className="w-6 h-6 text-red-500 mr-2" />
-        <span className="text-red-700">Failed to load upload configuration: {error.message}</span>
+      <div className={cn('flex items-center justify-center rounded-lg bg-red-50 p-8', className)}>
+        <ExclamationTriangleIcon className='mr-2 h-6 w-6 text-red-500' />
+        <span className='text-red-700'>Failed to load upload configuration: {error.message}</span>
       </div>
     );
   }
@@ -425,7 +436,7 @@ export const UploadCard: React.FC<UploadCardProps> = ({
   if (loading && !data) {
     return (
       <div className={cn('animate-pulse', className)}>
-        <div className="bg-gray-200 rounded-lg" style={{ height }} />
+        <div className='rounded-lg bg-gray-200' style={{ height }} />
       </div>
     );
   }
@@ -433,13 +444,15 @@ export const UploadCard: React.FC<UploadCardProps> = ({
   const config = data?.uploadCardData.config;
 
   return (
-    <div className={cn('bg-white rounded-lg shadow-md overflow-hidden', className)}>
+    <div className={cn('overflow-hidden rounded-lg bg-white shadow-md', className)}>
       {/* 主上傳區域 */}
       <div
         className={cn(
-          'flex flex-col items-center justify-center p-8 border-2 border-dashed transition-all',
+          'flex flex-col items-center justify-center border-2 border-dashed p-8 transition-all',
           isDragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-300',
-          config?.supportsDragDrop && !isEditMode && 'cursor-pointer hover:border-blue-400 hover:bg-blue-50'
+          config?.supportsDragDrop &&
+            !isEditMode &&
+            'cursor-pointer hover:border-blue-400 hover:bg-blue-50'
         )}
         style={{ height }}
         onDragOver={config?.supportsDragDrop ? handleDragOver : undefined}
@@ -448,29 +461,29 @@ export const UploadCard: React.FC<UploadCardProps> = ({
         onClick={handleClick}
       >
         {/* 上傳圖標 */}
-        <div className="relative mb-4">
+        <div className='relative mb-4'>
           {getUploadIcon()}
           {isAnalyzing && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-20 h-20 animate-spin rounded-full border-4 border-blue-500/20 border-t-blue-500" />
+            <div className='absolute inset-0 flex items-center justify-center'>
+              <div className='h-20 w-20 animate-spin rounded-full border-4 border-blue-500/20 border-t-blue-500' />
             </div>
           )}
         </div>
 
         {/* 標題和描述 */}
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">{getUploadTitle()}</h3>
-        <p className="text-sm text-gray-500 mb-4">{getUploadSubtitle()}</p>
+        <h3 className='mb-2 text-lg font-semibold text-gray-900'>{getUploadTitle()}</h3>
+        <p className='mb-4 text-sm text-gray-500'>{getUploadSubtitle()}</p>
 
         {/* 文件夾選擇（通用文件上傳時顯示） */}
         {uploadType === UploadType.GeneralFiles && !isEditMode && (
-          <div className="flex gap-2 mb-4">
+          <div className='mb-4 flex gap-2'>
             <button
-              onClick={(e) => {
+              onClick={e => {
                 e.stopPropagation();
                 setSelectedFolder(UploadFolder.StockPic);
               }}
               className={cn(
-                'px-3 py-1 rounded-md text-sm font-medium transition-all',
+                'rounded-md px-3 py-1 text-sm font-medium transition-all',
                 selectedFolder === UploadFolder.StockPic
                   ? 'bg-green-500 text-white'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -479,12 +492,12 @@ export const UploadCard: React.FC<UploadCardProps> = ({
               Pictures
             </button>
             <button
-              onClick={(e) => {
+              onClick={e => {
                 e.stopPropagation();
                 setSelectedFolder(UploadFolder.ProductSpec);
               }}
               className={cn(
-                'px-3 py-1 rounded-md text-sm font-medium transition-all',
+                'rounded-md px-3 py-1 text-sm font-medium transition-all',
                 selectedFolder === UploadFolder.ProductSpec
                   ? 'bg-blue-500 text-white'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -497,43 +510,41 @@ export const UploadCard: React.FC<UploadCardProps> = ({
 
         {/* AI 分析狀態 */}
         {isAnalyzing && (
-          <div className="flex items-center gap-2 text-yellow-600">
-            <SparklesIcon className="w-4 h-4 animate-pulse" />
-            <span className="text-sm">Analyzing with AI...</span>
+          <div className='flex items-center gap-2 text-yellow-600'>
+            <SparklesIcon className='h-4 w-4 animate-pulse' />
+            <span className='text-sm'>Analyzing with AI...</span>
           </div>
         )}
 
         {/* 拖放提示 */}
         {config?.supportsDragDrop && !isEditMode && (
-          <p className="text-xs text-gray-400 mt-2">
-            Drag & drop files here or click to browse
-          </p>
+          <p className='mt-2 text-xs text-gray-400'>Drag & drop files here or click to browse</p>
         )}
 
         {/* 隱藏的文件輸入 */}
         <input
           ref={fileInputRef}
-          type="file"
+          type='file'
           multiple={config?.allowMultiple}
           accept={config?.allowedTypes.join(',')}
-          onChange={(e) => handleFiles(e.target.files)}
-          className="hidden"
+          onChange={e => handleFiles(e.target.files)}
+          className='hidden'
         />
       </div>
 
       {/* 圖片預覽 */}
       {config?.supportsPreview && previews.length > 0 && (
-        <div className="p-4 bg-gray-50">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Preview</h4>
-          <div className="grid grid-cols-4 gap-2">
-            {previews.map((preview) => (
-              <div key={preview.id} className="relative">
+        <div className='bg-gray-50 p-4'>
+          <h4 className='mb-2 text-sm font-medium text-gray-700'>Preview</h4>
+          <div className='grid grid-cols-4 gap-2'>
+            {previews.map(preview => (
+              <div key={preview.id} className='relative'>
                 <Image
                   src={preview.url}
                   alt={preview.file.name}
                   width={64}
                   height={64}
-                  className="w-full h-16 object-cover rounded"
+                  className='h-16 w-full rounded object-cover'
                 />
                 <button
                   onClick={() => {
@@ -541,9 +552,9 @@ export const UploadCard: React.FC<UploadCardProps> = ({
                     setPreviews(prev => prev.filter(p => p.id !== preview.id));
                     setLocalFiles(prev => prev.filter(f => f !== preview.file));
                   }}
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs"
+                  className='absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white'
                 >
-                  <XMarkIcon className="w-3 h-3" />
+                  <XMarkIcon className='h-3 w-3' />
                 </button>
               </div>
             ))}
@@ -552,86 +563,92 @@ export const UploadCard: React.FC<UploadCardProps> = ({
       )}
 
       {/* 上傳進度 */}
-      {showProgress && data?.uploadCardData.activeUploads && data.uploadCardData.activeUploads.length > 0 && (
-        <div className="p-4 bg-gray-50 border-t">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Upload Progress</h4>
-          <div className="space-y-2">
-            {data.uploadCardData.activeUploads.map((upload) => (
-              <div key={upload.id} className="flex items-center gap-2">
-                <div className="flex-1">
-                  <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                    <span className="truncate">{upload.fileName}</span>
-                    <span>{Math.round(upload.progress)}%</span>
+      {showProgress &&
+        data?.uploadCardData.activeUploads &&
+        data.uploadCardData.activeUploads.length > 0 && (
+          <div className='border-t bg-gray-50 p-4'>
+            <h4 className='mb-2 text-sm font-medium text-gray-700'>Upload Progress</h4>
+            <div className='space-y-2'>
+              {data.uploadCardData.activeUploads.map(upload => (
+                <div key={upload.id} className='flex items-center gap-2'>
+                  <div className='flex-1'>
+                    <div className='mb-1 flex items-center justify-between text-xs text-gray-600'>
+                      <span className='truncate'>{upload.fileName}</span>
+                      <span>{Math.round(upload.progress)}%</span>
+                    </div>
+                    <div className='h-1 w-full rounded-full bg-gray-200'>
+                      <div
+                        className={cn(
+                          'h-1 rounded-full transition-all',
+                          upload.status === UploadStatus.Error
+                            ? 'bg-red-500'
+                            : upload.status === UploadStatus.Completed
+                              ? 'bg-green-500'
+                              : 'bg-blue-500'
+                        )}
+                        style={{ width: `${upload.progress}%` }}
+                      />
+                    </div>
+                    {upload.error && <p className='mt-1 text-xs text-red-600'>{upload.error}</p>}
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1">
-                    <div
-                      className={cn(
-                        'h-1 rounded-full transition-all',
-                        upload.status === UploadStatus.Error
-                          ? 'bg-red-500'
-                          : upload.status === UploadStatus.Completed
-                          ? 'bg-green-500'
-                          : 'bg-blue-500'
-                      )}
-                      style={{ width: `${upload.progress}%` }}
-                    />
-                  </div>
-                  {upload.error && (
-                    <p className="text-xs text-red-600 mt-1">{upload.error}</p>
+                  {upload.status === UploadStatus.Completed && (
+                    <CheckIcon className='h-4 w-4 text-green-500' />
+                  )}
+                  {upload.status === UploadStatus.Error && (
+                    <ExclamationTriangleIcon className='h-4 w-4 text-red-500' />
                   )}
                 </div>
-                {upload.status === UploadStatus.Completed && (
-                  <CheckIcon className="w-4 h-4 text-green-500" />
-                )}
-                {upload.status === UploadStatus.Error && (
-                  <ExclamationTriangleIcon className="w-4 h-4 text-red-500" />
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* 最近上傳 */}
-      {showRecentUploads && data?.uploadCardData.recentUploads && data.uploadCardData.recentUploads.length > 0 && (
-        <div className="p-4 border-t">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Recent Uploads</h4>
-          <div className="space-y-2">
-            {data.uploadCardData.recentUploads.slice(0, 5).map((file) => (
-              <div key={file.id} className="flex items-center gap-2 text-sm">
-                <DocumentIcon className="w-4 h-4 text-gray-400" />
-                <span className="flex-1 truncate">{file.originalName}</span>
-                <span className="text-xs text-gray-500">
-                  {new Date(file.uploadedAt).toLocaleTimeString()}
-                </span>
-              </div>
-            ))}
+      {showRecentUploads &&
+        data?.uploadCardData.recentUploads &&
+        data.uploadCardData.recentUploads.length > 0 && (
+          <div className='border-t p-4'>
+            <h4 className='mb-2 text-sm font-medium text-gray-700'>Recent Uploads</h4>
+            <div className='space-y-2'>
+              {data.uploadCardData.recentUploads.slice(0, 5).map(file => (
+                <div key={file.id} className='flex items-center gap-2 text-sm'>
+                  <DocumentIcon className='h-4 w-4 text-gray-400' />
+                  <span className='flex-1 truncate'>{file.originalName}</span>
+                  <span className='text-xs text-gray-500'>
+                    {new Date(file.uploadedAt).toLocaleTimeString()}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* 統計信息 */}
       {showStatistics && data?.uploadCardData.statistics && (
-        <div className="p-4 bg-gray-50 border-t">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Statistics</h4>
-          <div className="grid grid-cols-2 gap-4 text-sm">
+        <div className='border-t bg-gray-50 p-4'>
+          <h4 className='mb-2 text-sm font-medium text-gray-700'>Statistics</h4>
+          <div className='grid grid-cols-2 gap-4 text-sm'>
             <div>
-              <span className="text-gray-500">Total Uploads:</span>
-              <span className="ml-1 font-medium">{data.uploadCardData.statistics.totalUploads}</span>
+              <span className='text-gray-500'>Total Uploads:</span>
+              <span className='ml-1 font-medium'>
+                {data.uploadCardData.statistics.totalUploads}
+              </span>
             </div>
             <div>
-              <span className="text-gray-500">Success Rate:</span>
-              <span className="ml-1 font-medium">
+              <span className='text-gray-500'>Success Rate:</span>
+              <span className='ml-1 font-medium'>
                 {Math.round(data.uploadCardData.statistics.successRate * 100)}%
               </span>
             </div>
             <div>
-              <span className="text-gray-500">Today:</span>
-              <span className="ml-1 font-medium">{data.uploadCardData.statistics.todayUploads}</span>
+              <span className='text-gray-500'>Today:</span>
+              <span className='ml-1 font-medium'>
+                {data.uploadCardData.statistics.todayUploads}
+              </span>
             </div>
             <div>
-              <span className="text-gray-500">Total Size:</span>
-              <span className="ml-1 font-medium">
+              <span className='text-gray-500'>Total Size:</span>
+              <span className='ml-1 font-medium'>
                 {Math.round(data.uploadCardData.statistics.totalSize / (1024 * 1024))}MB
               </span>
             </div>
@@ -643,4 +660,10 @@ export const UploadCard: React.FC<UploadCardProps> = ({
 };
 
 // 導出類型，方便其他組件使用
-export type { UploadType, UploadFolder, SupportedFileType, UploadCardInput, UploadConfig } from '@/types/generated/graphql';
+export type {
+  UploadType,
+  UploadFolder,
+  SupportedFileType,
+  UploadCardInput,
+  UploadConfig,
+} from '@/types/generated/graphql';

@@ -95,7 +95,6 @@ export const ChartContainer: React.FC<ChartContainerProps> = ({
     return `From ${format(dateRange.start, 'MMM d')} to ${format(dateRange.end, 'MMM d')}`;
   };
 
-
   // Loading state
   if (loading) {
     return (
@@ -229,7 +228,7 @@ export const ChartContainer: React.FC<ChartContainerProps> = ({
                   className='h-7 px-2'
                 >
                   {refreshing ? (
-                    <div className='h-1 w-8 bg-slate-400 rounded-full opacity-75' />
+                    <div className='h-1 w-8 rounded-full bg-slate-400 opacity-75' />
                   ) : (
                     <RefreshCw className='h-4 w-4' />
                   )}

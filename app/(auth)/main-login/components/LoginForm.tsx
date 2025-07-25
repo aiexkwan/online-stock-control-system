@@ -10,15 +10,8 @@ interface LoginFormProps {
 }
 
 export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
-  const {
-    loading,
-    error,
-    fieldErrors,
-    login,
-    clearFieldError,
-    clearErrors,
-    passwordRules,
-  } = useLogin();
+  const { loading, error, fieldErrors, login, clearFieldError, clearErrors, passwordRules } =
+    useLogin();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -38,7 +31,7 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
     clearErrors();
 
     const result = await login(formData.email, formData.password);
-    
+
     if (result.success && onSuccess) {
       onSuccess();
     }
@@ -46,7 +39,7 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
 
   const handleInputChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    
+
     // Clear field error when user starts typing
     if (fieldErrors[field]) {
       clearFieldError(field);
@@ -73,9 +66,7 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
           required
           autoComplete='email'
         />
-        {fieldErrors.email && (
-          <p className='mt-1 text-sm text-red-500'>{fieldErrors.email}</p>
-        )}
+        {fieldErrors.email && <p className='mt-1 text-sm text-red-500'>{fieldErrors.email}</p>}
       </div>
 
       {/* Password Field */}
@@ -104,11 +95,7 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
             tabIndex={-1}
             aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
-            {showPassword ? (
-              <EyeSlashIcon className='h-5 w-5' />
-            ) : (
-              <EyeIcon className='h-5 w-5' />
-            )}
+            {showPassword ? <EyeSlashIcon className='h-5 w-5' /> : <EyeIcon className='h-5 w-5' />}
           </button>
         </div>
         {fieldErrors.password && (
@@ -155,13 +142,13 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
       <div className='flex items-center justify-between text-sm'>
         <a
           href='/main-login/reset'
-          className='text-purple-400 hover:text-purple-300 focus:outline-none focus:underline'
+          className='text-purple-400 hover:text-purple-300 focus:underline focus:outline-none'
         >
           Forgot password?
         </a>
         <a
           href='/main-login/register'
-          className='text-purple-400 hover:text-purple-300 focus:outline-none focus:underline'
+          className='text-purple-400 hover:text-purple-300 focus:underline focus:outline-none'
         >
           Create account
         </a>

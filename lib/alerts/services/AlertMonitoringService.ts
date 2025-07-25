@@ -681,9 +681,7 @@ export class AlertMonitoringService {
       enabled: data.enabled as boolean,
       level: data.level as AlertLevel,
       metric: data.metric as string,
-      condition: (isValidAlertCondition(data.condition)
-        ? data.condition
-        : 'gt') as any as AlertCondition,
+      condition: (isValidAlertCondition(data.condition) ? data.condition : 'gt') as AlertCondition,
       threshold: data.threshold as number | string,
       timeWindow: data.time_window as number,
       evaluationInterval: data.evaluation_interval as number,

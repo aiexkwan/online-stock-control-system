@@ -11,7 +11,7 @@ import {
   createAggregateLoader,
   DataLoaderContext 
 } from '@/lib/graphql/dataloaders/base.dataloader';
-import type { Product, Pallet, StockLevelKey, StockLevelData } from '@/types/dataloaders';
+import type { Product, Pallet, PalletEntity, StockLevelKey, StockLevelData } from '@/types/dataloaders';
 
 // Mock Supabase client
 const mockSupabase = {
@@ -32,24 +32,27 @@ describe('DataLoader Type Safety', () => {
     expect(loader.constructor.name).toBe('DataLoader');
   });
 
-  it('should create typed related loader for Pallet', () => {
-    const loader = createRelatedLoader<Pallet>(
+  it('should create typed related loader for PalletEntity', () => {
+    const loader = createRelatedLoader<PalletEntity>(
       mockSupabase as any, 
       'pallets', 
-      'productCode',
-      { column: 'createdAt', ascending: false }
+      'product_code',
+      { column: 'created_at', ascending: false }
     );
     expect(loader).toBeDefined();
   });
 
   it('should create typed aggregate loader', () => {
-    const aggregateQuery = async (keys: readonly StockLevelKey[]) => {
-      const data = new Map<StockLevelKey, StockLevelData>();
+    // Use string key for aggregate loader to match the constraint
+    const aggregateQuery = async (keys: readonly string[]) => {
+      const data = new Map<string, StockLevelData>();
       keys.forEach(key => {
+        // Parse the string key to get productCode and warehouse
+        const [productCode, warehouse] = key.split('|');
         data.set(key, {
-          productCode: key.productCode,
+          productCode,
           productName: 'Test Product',
-          warehouse: key.warehouse,
+          warehouse,
           currentLevel: 100,
           reservedQuantity: 20,
           availableQuantity: 80,
@@ -59,7 +62,7 @@ describe('DataLoader Type Safety', () => {
       return { data, error: null };
     };
 
-    const loader = createAggregateLoader<StockLevelKey, StockLevelData>(
+    const loader = createAggregateLoader<string, StockLevelData>(
       mockSupabase as any,
       aggregateQuery
     );
@@ -94,7 +97,7 @@ describe('DataLoader Type Safety', () => {
       supabase: mockSupabase as any,
       loaders: {
         product: createSimpleLoader<Product>(mockSupabase as any, 'products', 'code'),
-        pallet: createSimpleLoader<Pallet>(mockSupabase as any, 'pallets', 'plt_num'),
+        pallet: createSimpleLoader<Pallet>(mockSupabase as any, 'pallets', 'plt_num' as any),
         inventory: createSimpleLoader<any>(mockSupabase as any, 'inventory', 'id'),
         user: createSimpleLoader<any>(mockSupabase as any, 'users', 'id'),
         location: createSimpleLoader<any>(mockSupabase as any, 'locations', 'code'),

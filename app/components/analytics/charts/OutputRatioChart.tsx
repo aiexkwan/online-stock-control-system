@@ -104,7 +104,7 @@ export function OutputRatioChart({ timeRange }: OutputRatioChartProps) {
     return (
       <div className={dialogStyles.card}>
         <div className='flex h-[400px] items-center justify-center'>
-          <div className='h-2 w-16 bg-slate-600 rounded-full opacity-75' />
+          <div className='h-2 w-16 rounded-full bg-slate-600 opacity-75' />
         </div>
       </div>
     );
@@ -138,10 +138,16 @@ export function OutputRatioChart({ timeRange }: OutputRatioChartProps) {
           <h3 className='text-lg font-semibold text-white'>Hourly Output vs Booked Out Ratio</h3>
           {data?.summary && (
             <div className='text-sm text-slate-400'>
-              Efficiency: <span className={
-                data.summary.efficiency === 'High' ? 'text-green-400' :
-                data.summary.efficiency === 'Medium' ? 'text-yellow-400' : 'text-red-400'
-              }>
+              Efficiency:{' '}
+              <span
+                className={
+                  data.summary.efficiency === 'High'
+                    ? 'text-green-400'
+                    : data.summary.efficiency === 'Medium'
+                      ? 'text-yellow-400'
+                      : 'text-red-400'
+                }
+              >
                 {data.summary.efficiency}
               </span>
             </div>
@@ -176,10 +182,16 @@ export function OutputRatioChart({ timeRange }: OutputRatioChartProps) {
         <h3 className='text-lg font-semibold text-white'>Daily Output vs Booked Out Ratio</h3>
         {data?.summary && (
           <div className='text-sm text-slate-400'>
-            Efficiency: <span className={
-              data.summary.efficiency === 'High' ? 'text-green-400' :
-              data.summary.efficiency === 'Medium' ? 'text-yellow-400' : 'text-red-400'
-            }>
+            Efficiency:{' '}
+            <span
+              className={
+                data.summary.efficiency === 'High'
+                  ? 'text-green-400'
+                  : data.summary.efficiency === 'Medium'
+                    ? 'text-yellow-400'
+                    : 'text-red-400'
+              }
+            >
               {data.summary.efficiency}
             </span>
           </div>

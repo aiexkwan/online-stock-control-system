@@ -13,42 +13,38 @@ const OutputRatioRequestSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  return withAnalyticsAuth(
-    request,
-    OutputRatioRequestSchema,
-    async (supabase, { timeRange }) => {
-      // Get date range using helper function
-      const { startDate, endDate } = getDateRangeFromTimeRange(timeRange);
+  return withAnalyticsAuth(request, OutputRatioRequestSchema, async (supabase, { timeRange }) => {
+    // Get date range using helper function
+    const { startDate, endDate } = getDateRangeFromTimeRange(timeRange);
 
-      // Fetch output data (pallets generated)
-      const { data: outputData, error: outputError } = await supabase
-        .from('record_palletinfo')
-        .select('generate_time')
-        .gte('generate_time', startDate.toISOString())
-        .lte('generate_time', endDate.toISOString())
-        .not('plt_remark', 'ilike', '%Material GRN-%');
+    // Fetch output data (pallets generated)
+    const { data: outputData, error: outputError } = await supabase
+      .from('record_palletinfo')
+      .select('generate_time')
+      .gte('generate_time', startDate.toISOString())
+      .lte('generate_time', endDate.toISOString())
+      .not('plt_remark', 'ilike', '%Material GRN-%');
 
-      if (outputError) throw outputError;
+    if (outputError) throw outputError;
 
-      // Fetch transfer data (pallets booked out)
-      const { data: transferData, error: transferError } = await supabase
-        .from('record_transfer')
-        .select('tran_date, plt_num')
-        .gte('tran_date', startDate.toISOString())
-        .lte('tran_date', endDate.toISOString());
+    // Fetch transfer data (pallets booked out)
+    const { data: transferData, error: transferError } = await supabase
+      .from('record_transfer')
+      .select('tran_date, plt_num')
+      .gte('tran_date', startDate.toISOString())
+      .lte('tran_date', endDate.toISOString());
 
-      if (transferError) throw transferError;
+    if (transferError) throw transferError;
 
-      // Process data and return
-      return processOutputRatioData(outputData || [], transferData || [], timeRange);
-    }
-  );
+    // Process data and return
+    return processOutputRatioData(outputData || [], transferData || [], timeRange);
+  });
 }
 
 // Data processing function migrated from frontend utils
 function processOutputRatioData(
-  outputData: { generate_time: string }[], 
-  transferData: { tran_date: string; plt_num: string }[], 
+  outputData: { generate_time: string }[],
+  transferData: { tran_date: string; plt_num: string }[],
   timeRange: string
 ) {
   if (timeRange === '1d') {
@@ -57,7 +53,7 @@ function processOutputRatioData(
       hour: hour.toString().padStart(2, '0') + ':00',
       output: 0,
       booked_out: 0,
-      ratio: 0
+      ratio: 0,
     }));
 
     // Process output data
@@ -100,7 +96,7 @@ function processOutputRatioData(
         date: date.toISOString().split('T')[0],
         output: 0,
         booked_out: 0,
-        ratio: 0
+        ratio: 0,
       };
     });
 
@@ -143,12 +139,12 @@ function calculateSummary(data: { output: number; booked_out: number; ratio: num
   const totalOutput = data.reduce((sum, item) => sum + item.output, 0);
   const totalBookedOut = data.reduce((sum, item) => sum + item.booked_out, 0);
   const avgRatio = totalOutput > 0 ? Math.round((totalBookedOut / totalOutput) * 100) : 0;
-  
+
   return {
     totalOutput,
     totalBookedOut,
     averageRatio: avgRatio,
-    efficiency: avgRatio > 80 ? 'High' : avgRatio > 60 ? 'Medium' : 'Low'
+    efficiency: avgRatio > 80 ? 'High' : avgRatio > 60 ? 'Medium' : 'Low',
   };
 }
 

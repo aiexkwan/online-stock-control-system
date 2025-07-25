@@ -42,7 +42,9 @@ interface QueryParams {
  * REST API endpoint for stock levels
  * Supports the client-side strategy of DataAccessLayer
  */
-export async function GET(request: NextRequest): Promise<NextResponse<ApiResult<StockLevelsResponse>>> {
+export async function GET(
+  request: NextRequest
+): Promise<NextResponse<ApiResult<StockLevelsResponse>>> {
   const result = await handleAsync(async (): Promise<StockLevelsResponse> => {
     const searchParams = request.nextUrl.searchParams;
 

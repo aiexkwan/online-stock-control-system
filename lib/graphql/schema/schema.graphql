@@ -10,37 +10,31 @@
 type Query {
   # Health check
   health: SystemStatus!
-  
+
   # Widget data sources - unified entry point
-  widgetData(
-    dataSource: String!
-    params: JSON
-    timeFrame: DateRangeInput
-  ): JSON!
-  
+  widgetData(dataSource: String!, params: JSON, timeFrame: DateRangeInput): JSON!
+
   # Batch widget data fetch
-  batchWidgetData(
-    requests: [WidgetDataRequest!]!
-  ): [WidgetDataResponse!]!
-  
+  batchWidgetData(requests: [WidgetDataRequest!]!): [WidgetDataResponse!]!
+
   # ListCard data sources - unified list entry point
   listCardData(input: ListCardInput!): ListDataUnion!
     @auth(requires: VIEWER)
     @rateLimit(max: 100, window: "1m")
     @cache(ttl: 300, scope: USER)
-  
+
   # Batch ListCard data fetch
   batchListCardData(inputs: [ListCardInput!]!): [ListDataUnion!]!
     @auth(requires: VIEWER)
     @rateLimit(max: 50, window: "1m")
     @cache(ttl: 300, scope: USER)
-  
+
   # List analytics data
   listAnalytics(input: ListAnalyticsInput!): JSON!
     @auth(requires: VIEWER)
     @rateLimit(max: 20, window: "1m")
     @cache(ttl: 600, scope: USER)
-  
+
   # List metadata
   listMetadata(listType: ListType!): ListMetadata!
     @auth(requires: VIEWER)
@@ -52,35 +46,31 @@ type Mutation {
   # System operations
   refreshCache(dataSource: String!): Boolean!
   clearCache: Boolean!
-  
+
   # Batch operations
-  batchOperation(
-    operations: [BatchOperationInput!]!
-  ): BatchOperationResult!
-  
+  batchOperation(operations: [BatchOperationInput!]!): BatchOperationResult!
+
   # ListCard file operations
   uploadFile(input: FileUploadInput!): FileRecord!
     @auth(requires: OPERATOR)
     @rateLimit(max: 10, window: "1m")
-    
-  deleteFile(id: ID!): Boolean!
-    @auth(requires: OPERATOR)
-    @rateLimit(max: 20, window: "1m")
-    
+
+  deleteFile(id: ID!): Boolean! @auth(requires: OPERATOR) @rateLimit(max: 20, window: "1m")
+
   updateFileMetadata(id: ID!, input: FileMetadataInput!): FileRecord!
     @auth(requires: OPERATOR)
     @rateLimit(max: 30, window: "1m")
-  
+
   # Batch file operations
   batchFileOperation(input: BatchFileOperationInput!): BatchResult!
     @auth(requires: SUPERVISOR)
     @rateLimit(max: 5, window: "1m")
-  
+
   # List configuration
   saveListConfiguration(input: ListConfigurationInput!): Boolean!
     @auth(requires: VIEWER)
     @rateLimit(max: 10, window: "1m")
-    
+
   deleteListConfiguration(id: ID!): Boolean!
     @auth(requires: VIEWER)
     @rateLimit(max: 20, window: "1m")
@@ -90,31 +80,27 @@ type Mutation {
 type Subscription {
   # Real-time inventory updates
   inventoryUpdated(productCodes: [String!]): Inventory!
-  
+
   # Real-time transfer status
   transferStatusChanged(transferIds: [ID!]): Transfer!
-  
+
   # Real-time order updates
   orderStatusChanged(orderNumbers: [String!]): Order!
-  
+
   # System alerts
   systemAlert(severity: AlertSeverity): SystemAlert!
-  
+
   # ListCard real-time updates
-  listDataUpdated(listType: ListType!): ListDataUnion!
-    @auth(requires: VIEWER)
-  
+  listDataUpdated(listType: ListType!): ListDataUnion! @auth(requires: VIEWER)
+
   # File status updates
-  fileStatusChanged(fileIds: [ID!]): FileRecord!
-    @auth(requires: VIEWER)
-  
+  fileStatusChanged(fileIds: [ID!]): FileRecord! @auth(requires: VIEWER)
+
   # Transfer list updates
-  transferListUpdated(transferIds: [ID!]): WarehouseTransferList!
-    @auth(requires: VIEWER)
-  
+  transferListUpdated(transferIds: [ID!]): WarehouseTransferList! @auth(requires: VIEWER)
+
   # Order list updates
-  orderListUpdated(orderNumbers: [String!]): OrderStateList!
-    @auth(requires: VIEWER)
+  orderListUpdated(orderNumbers: [String!]): OrderStateList! @auth(requires: VIEWER)
 }
 
 # Widget data request/response types
@@ -201,19 +187,11 @@ enum AlertType {
 }
 
 # Schema directives
-directive @auth(
-  requires: UserRole = VIEWER
-) on FIELD_DEFINITION
+directive @auth(requires: UserRole = VIEWER) on FIELD_DEFINITION
 
-directive @rateLimit(
-  max: Int!
-  window: String!
-) on FIELD_DEFINITION
+directive @rateLimit(max: Int!, window: String!) on FIELD_DEFINITION
 
-directive @cache(
-  ttl: Int!
-  scope: CacheScope = PUBLIC
-) on FIELD_DEFINITION
+directive @cache(ttl: Int!, scope: CacheScope = PUBLIC) on FIELD_DEFINITION
 
 enum CacheScope {
   PUBLIC

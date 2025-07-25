@@ -56,7 +56,7 @@ export function QuickSearch() {
                   className='absolute right-2 top-1/2 -translate-y-1/2 transform p-2 text-blue-400 transition-colors duration-300 hover:text-blue-300 disabled:text-slate-500'
                 >
                   {loading ? (
-                    <div className='h-1.5 w-6 bg-blue-500 rounded-full opacity-75'></div>
+                    <div className='h-1.5 w-6 rounded-full bg-blue-500 opacity-75'></div>
                   ) : (
                     <MagnifyingGlassIcon className='h-5 w-5' />
                   )}

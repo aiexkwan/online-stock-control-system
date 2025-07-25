@@ -198,7 +198,7 @@ export function AlertDashboard() {
   if (isLoading) {
     return (
       <div className='flex min-h-screen items-center justify-center'>
-        <div className='h-2 w-8 bg-blue-500 rounded-full opacity-75'></div>
+        <div className='h-2 w-8 rounded-full bg-blue-500 opacity-75'></div>
       </div>
     );
   }

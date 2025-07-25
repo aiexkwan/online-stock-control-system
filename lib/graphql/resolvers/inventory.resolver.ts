@@ -16,7 +16,7 @@ export const inventoryResolvers: IResolvers = {
     product: async (parent, _args, context: GraphQLContext) => {
       return context.loaders.product.load(parent.product_code || parent.productCode);
     },
-    
+
     transfers: async (parent, args, context: GraphQLContext) => {
       // Would implement transfer loading
       return {
@@ -36,11 +36,11 @@ export const inventoryResolvers: IResolvers = {
   Query: {
     stockLevels: async (_parent, args, context: GraphQLContext) => {
       const { warehouse, dateRange } = args;
-      
+
       if (!context.loaders.stockLevels) {
         throw new Error('Stock levels loader not initialized');
       }
-      
+
       return context.loaders.stockLevels.load({
         warehouse,
         dateRange,

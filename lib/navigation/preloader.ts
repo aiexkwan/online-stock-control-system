@@ -180,9 +180,7 @@ export class NavigationPreloader {
 
     // 使用預定義的常用路徑進行預加載
     // 排除當前路徑，預加載前3個最常用的路徑
-    const pathsToPreload = FREQUENT_PATHS
-      .filter(path => path !== currentPath)
-      .slice(0, 3);
+    const pathsToPreload = FREQUENT_PATHS.filter(path => path !== currentPath).slice(0, 3);
 
     // 預加載常用路徑
     for (const path of pathsToPreload) {

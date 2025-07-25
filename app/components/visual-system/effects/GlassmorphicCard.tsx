@@ -63,9 +63,7 @@ export function GlassmorphicCard({
     padding: getPaddingValue(padding),
     position: 'relative',
     overflow: 'hidden',
-    transition: state.animationsEnabled 
-      ? 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' 
-      : 'none',
+    transition: state.animationsEnabled ? 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
     ...style,
   };
 
@@ -88,7 +86,7 @@ export function GlassmorphicCard({
         e.currentTarget.style.boxShadow = glassConfig.shadow.default;
       },
     };
-    
+
     return (
       <div
         className={`glassmorphic-card ${className}`}
@@ -98,9 +96,10 @@ export function GlassmorphicCard({
       >
         {borderGlow && (
           <div
-            className="absolute inset-[-2px] rounded-[inherit] opacity-50 pointer-events-none"
+            className='pointer-events-none absolute inset-[-2px] rounded-[inherit] opacity-50'
             style={{
-              background: 'linear-gradient(45deg, #ff0080, #ff8c00, #ffd700, #00ff00, #00ffff, #ff0080)',
+              background:
+                'linear-gradient(45deg, #ff0080, #ff8c00, #ffd700, #00ff00, #00ffff, #ff0080)',
               animation: state.animationsEnabled ? 'spin 3s linear infinite' : 'none',
               WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
               WebkitMaskComposite: 'xor',
@@ -115,16 +114,13 @@ export function GlassmorphicCard({
   }
 
   return (
-    <div
-      className={`glassmorphic-card ${className}`}
-      style={cardStyles}
-      onClick={onClick}
-    >
+    <div className={`glassmorphic-card ${className}`} style={cardStyles} onClick={onClick}>
       {borderGlow && (
         <div
-          className="absolute inset-[-2px] rounded-[inherit] opacity-50 pointer-events-none"
+          className='pointer-events-none absolute inset-[-2px] rounded-[inherit] opacity-50'
           style={{
-            background: 'linear-gradient(45deg, #ff0080, #ff8c00, #ffd700, #00ff00, #00ffff, #ff0080)',
+            background:
+              'linear-gradient(45deg, #ff0080, #ff8c00, #ffd700, #00ff00, #00ffff, #ff0080)',
             animation: state.animationsEnabled ? 'spin 3s linear infinite' : 'none',
             WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
             WebkitMaskComposite: 'xor',
@@ -151,13 +147,13 @@ function getPaddingValue(padding: 'none' | 'small' | 'medium' | 'large'): string
 
 // 預設導出一些常用變體
 export const GlassCard = (props: Omit<GlassmorphicCardProps, 'variant'>) => (
-  <GlassmorphicCard {...props} variant="default" />
+  <GlassmorphicCard {...props} variant='default' />
 );
 
 export const StrongGlassCard = (props: Omit<GlassmorphicCardProps, 'variant'>) => (
-  <GlassmorphicCard {...props} variant="strong" />
+  <GlassmorphicCard {...props} variant='strong' />
 );
 
 export const LightGlassCard = (props: Omit<GlassmorphicCardProps, 'variant'>) => (
-  <GlassmorphicCard {...props} variant="light" />
+  <GlassmorphicCard {...props} variant='light' />
 );

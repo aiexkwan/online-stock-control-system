@@ -3,6 +3,19 @@
 
 ### 思考模式
 - Sequential-thinking
+- Ultrathink
+
+### 相關文檔記錄
+- 計劃記錄庫：`docs\planning`
+- 計劃記錄文檔規範：`docs\planning\README.md`
+- 會議記錄庫：`docs\expert-discussions`
+- 會議記錄文檔規範：`docs\expert-discussions\README.md`
+
+### 可使用工具
+| **MCP工具列** | 查看 `docs\Others\MCP_List.md` |
+| **前端測試** | Playwright | E2E測試 |
+| **單元測試** | Vitest | 快速測試 |
+| **元件開發** | Storybook | 元件開發與測試 |
 
 ### 專家小組
 - ID：1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 用戶代表
@@ -32,11 +45,11 @@
    - 如用戶滿意，生成最終計劃
    - 如仍有意見，重複步驟3-4
 
-
 ## 互動模式詳細說明
 
 ### 第1階段：AI Agent 初始討論
 - 各AI Agent : 從各自專業角度分析
+- 可按需要使用 **可使用工具** 列表中的工具，獲取所需資料
 - 用戶代表: 整理和提出用戶視角問題
 
 ### 第2階段：用戶反饋收集
@@ -96,16 +109,3 @@
 1. 呢啲調整係咪符合你嘅期望？
 2. 仲有咩地方需要修改？
 3. 可以開始制定詳細計劃嗎？
-
-### 可使用判斷MCP工具
-- Puppeteer MCP: 自動化測試
-- Supabase MCP: 資料庫查詢
-- Brave Search MCP: 搜尋BUG資料
-
-### 相關文檔記錄
-- 計劃記錄庫：`docs\planning`
-- 計劃記錄文檔規範：`docs\planning\README.md`
-
-- 會議記錄庫：`docs\expert-discussions`
-- 會議記錄文檔規範：`docs\expert-discussions\README.md`
-

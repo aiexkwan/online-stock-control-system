@@ -12,7 +12,7 @@ type Product {
   unit: String
   weightPerPiece: Float
   volumePerPiece: Float
-  
+
   # 關聯數據
   inventory: InventorySummary
   pallets(
@@ -20,10 +20,10 @@ type Product {
     pagination: PaginationInput
     sort: SortInput
   ): PalletConnection!
-  
+
   # 統計數據
   statistics: ProductStatistics
-  
+
   # 元數據
   createdAt: DateTime!
   updatedAt: DateTime!
@@ -61,17 +61,14 @@ type Supplier {
   email: String
   phone: String
   address: String
-  
+
   # 關聯數據
   products: [Product!]
-  grns(
-    filter: GRNFilterInput
-    pagination: PaginationInput
-  ): GRNConnection!
-  
+  grns(filter: GRNFilterInput, pagination: PaginationInput): GRNConnection!
+
   # 統計
   statistics: SupplierStatistics
-  
+
   # 元數據
   createdAt: DateTime!
   updatedAt: DateTime!
@@ -91,18 +88,18 @@ type ProductSpecification {
   id: ID!
   productCode: String!
   product: Product!
-  
+
   # 規格詳情
   specifications: JSON!
   images: [String!]
   documents: [String!]
-  
+
   # 版本控制
   version: Int!
   effectiveDate: DateTime!
   createdBy: User!
   approvedBy: User
-  
+
   # 元數據
   createdAt: DateTime!
   updatedAt: DateTime!
@@ -135,31 +132,19 @@ extend type Query {
     pagination: PaginationInput
     sort: SortInput
   ): ProductConnection!
-  
+
   # 產品搜索
-  searchProducts(
-    query: String!
-    limit: Int = 10
-  ): [Product!]!
-  
+  searchProducts(query: String!, limit: Int = 10): [Product!]!
+
   # 產品統計
-  productStatistics(
-    productCode: ID!
-    dateRange: DateRangeInput
-  ): ProductStatistics!
-  
+  productStatistics(productCode: ID!, dateRange: DateRangeInput): ProductStatistics!
+
   # 供應商查詢
   supplier(id: ID!): Supplier
-  suppliers(
-    filter: SupplierFilterInput
-    pagination: PaginationInput
-  ): [Supplier!]!
-  
+  suppliers(filter: SupplierFilterInput, pagination: PaginationInput): [Supplier!]!
+
   # 產品規格
-  productSpecification(
-    productCode: String!
-    version: Int
-  ): ProductSpecification
+  productSpecification(productCode: String!, version: Int): ProductSpecification
 }
 
 # 變更
@@ -168,12 +153,12 @@ extend type Mutation {
   createProduct(input: CreateProductInput!): Product!
   updateProduct(code: ID!, input: UpdateProductInput!): Product!
   deactivateProduct(code: ID!): Product!
-  
+
   # 供應商管理
   createSupplier(input: CreateSupplierInput!): Supplier!
   updateSupplier(id: ID!, input: UpdateSupplierInput!): Supplier!
   deactivateSupplier(id: ID!): Supplier!
-  
+
   # 產品規格
   uploadProductSpecification(
     productCode: String!
