@@ -102,13 +102,6 @@
       "Bash(app/api/stock-count/scan/route.ts )",
       "Bash(app/api/stock-count/process/route.ts )",
       "Bash(app/api/print-label-updates/route.ts)",
-      "Bash(for file in /mnt/c/Users/ccohen/Documents/NewPennine/online-stock-control-system/app/void-pallet/services/*.ts)",
-      "Bash(do)",
-      "Bash(echo \"Updating $file\")",
-      "Bash(done)",
-      "Bash(/mnt/c/Users/ccohen/Documents/NewPennine/online-stock-control-system/app/actions/reportActions.ts )",
-      "Bash(/mnt/c/Users/ccohen/Documents/NewPennine/online-stock-control-system/app/actions/viewHistoryActions.ts )",
-      "Bash(/mnt/c/Users/ccohen/Documents/NewPennine/online-stock-control-system/app/actions/newReportActions.ts)",
       "Bash(npx swc:*)",
       "mcp__supabase__get_logs",
       "Bash(jq:*)",
@@ -187,13 +180,25 @@
       "Bash(osascript:*)",
       "Bash(open:*)",
       "Bash(pip3 list:*)",
-      "Bash(pip3 install:*)"
+      "Bash(pip3 install:*)",
+      "mcp__graphiti-memory__add_memory",
+      "Bash(wc:*)",
+      "mcp__graphiti-memory__search_memory_nodes",
+      "mcp__mem0__search-memories",
+      "mcp__graphiti-memory__search_memory_facts",
+      "Bash(/Users/chun/.local/bin/uv run:*)",
+      "Bash(/Users/chun/.local/bin/uv pip list)",
+      "mcp__graphiti-memory__add_episode"
     ],
     "deny": []
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "supabase",
-    "mem0"
-  ],
-  "enableAllProjectMcpServers": true
+    "sequential-thinking",
+    "context7",
+    "puppeteer",
+    "graphiti-memory",
+    "playwright"
+  ]
 }
