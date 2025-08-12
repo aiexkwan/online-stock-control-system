@@ -55,6 +55,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# GraphQL generated files
+lib/graphql/introspection.json
+
 # IDE
 .idea/
 .vscode/

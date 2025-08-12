@@ -212,68 +212,156 @@ async function storeEnhancedOrderData(
   return insertResults;
 }
 
-// 背景存儲文件到 Supabase Storage
+// Admin client 用於背景任務
+const getAdminClient = () => {
+  const { createClient: createAdminSupabaseClient } = require('@supabase/supabase-js');
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Supabase URL or Service Role Key is required for admin client');
+  }
+  return createAdminSupabaseClient(supabaseUrl, supabaseServiceKey);
+};
+
+// 背景存儲文件到 Supabase Storage（支援重試機制）
 async function uploadToStorageAsync(
   fileData: { buffer: ArrayBuffer; name: string },
   uploadedBy: string,
   extractedText?: string
 ): Promise<string | null> {
-  try {
-    const buffer = Buffer.from(fileData.buffer);
-    
-    // 使用 service role key 創建 admin client 來繞過所有 RLS
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.warn('[uploadToStorageAsync] SUPABASE_SERVICE_ROLE_KEY not found, skipping storage upload');
-      return null;
-    }
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 1000; // 1秒
+  
+  // 重試機制輔助函數
+  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const buffer = Buffer.from(fileData.buffer);
+      
+      // 使用 Admin client 繞過 RLS 限制，確保背景任務能正常執行
+      const adminSupabase = getAdminClient();
+      
+      console.log(`[uploadToStorageAsync] Attempt ${attempt}/${MAX_RETRIES} - Starting file upload and doc_upload record creation using Admin client`);
+      
+      // Admin client 不需要用戶身份驗證，直接開始上傳
+      console.log('[uploadToStorageAsync] Using Service Role client, skipping user auth check');
 
-    // Use server client with service role key for admin operations
-    const adminSupabase = await createClient();
-    
-    // For storage operations, we'll use the existing authenticated client
-    // The service role permissions should be configured in Supabase dashboard
+      // 使用 admin client 上傳文件到 Storage
+      const { data: uploadData, error: uploadError } = await adminSupabase.storage
+        .from('documents')
+        .upload(`orderpdf/${fileData.name}`, buffer, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: 'application/pdf',
+        });
 
-    // 使用 admin client 上傳文件到 Storage
-    const { data: uploadData, error: uploadError } = await adminSupabase.storage
-      .from('documents')
-      .upload(`orderpdf/${fileData.name}`, buffer, {
-        cacheControl: '3600',
-        upsert: true,
-        contentType: 'application/pdf',
+      if (uploadError) {
+        console.error(`[uploadToStorageAsync] Attempt ${attempt} - Storage upload failed:`, uploadError);
+        if (attempt < MAX_RETRIES) {
+          await sleep(RETRY_DELAY * attempt);
+          continue;
+        }
+        return null;
+      }
+
+      const { data: urlData } = adminSupabase.storage
+        .from('documents')
+        .getPublicUrl(`orderpdf/${fileData.name}`);
+
+      // 驗證必要資料
+      const parsedUploadedBy = parseInt(uploadedBy);
+      if (isNaN(parsedUploadedBy)) {
+        console.error('[uploadToStorageAsync] Invalid uploadedBy value:', uploadedBy);
+        return null;
+      }
+
+      // 除錯：輸出要插入的資料
+      console.log(`[uploadToStorageAsync] Attempt ${attempt} - Preparing to insert doc_upload using Service Role:`, {
+        doc_name: fileData.name,
+        upload_by: parsedUploadedBy,
+        doc_url: urlData.publicUrl,
+        file_size: buffer.length,
+        folder: 'orderpdf',
+        has_json_txt: !!extractedText,
+        using_admin_client: true
       });
 
-    if (uploadError) {
-      console.error('[uploadToStorageAsync] Storage upload failed:', uploadError);
+      // 使用 Database Function 安全地寫入 doc_upload 表
+      // 呢個方法更安全，因為只授予特定操作權限，而唔係完整嘅 Service Role 權限
+      const { data: insertResult, error: docError } = await adminSupabase
+        .rpc('insert_doc_upload', {
+          p_doc_name: fileData.name,
+          p_upload_by: parsedUploadedBy,
+          p_doc_type: 'application/pdf',
+          p_doc_url: urlData.publicUrl,
+          p_file_size: buffer.length,
+          p_folder: 'orderpdf',
+          p_json_txt: extractedText || null
+        });
+
+      if (docError) {
+        console.error(`[uploadToStorageAsync] Attempt ${attempt} - doc_upload insert failed:`, {
+          error: docError,
+          errorDetails: {
+            message: docError.message,
+            code: docError.code,
+            details: docError.details,
+            hint: docError.hint,
+          },
+          insertData: {
+            doc_name: fileData.name,
+            upload_by: parsedUploadedBy,
+            doc_type: 'order',
+            file_size: buffer.length,
+            folder: 'orderpdf',
+            uploadedBy_raw: uploadedBy,
+            uploadedBy_parsed: parsedUploadedBy,
+          }
+        });
+        
+        // 如果是權限錯誤或數據驗證錯誤，不需要重試
+        if (docError.code === 'PGRST116' || docError.code === 'PGRST301' || docError.code === '42501') {
+          console.error('[uploadToStorageAsync] Non-retryable error detected, aborting retries');
+          return null;
+        }
+        
+        if (attempt < MAX_RETRIES) {
+          console.log(`[uploadToStorageAsync] Retrying in ${RETRY_DELAY * attempt}ms...`);
+          await sleep(RETRY_DELAY * attempt);
+          continue;
+        }
+        return null;
+      } else {
+        console.log(`[uploadToStorageAsync] Attempt ${attempt} - Successfully created doc_upload record using Database Function:`, {
+          uuid: insertResult,
+          doc_name: fileData.name,
+          executionTime: `${Date.now()}ms`,
+          function_call_success: true
+        });
+        
+        return urlData.publicUrl;
+      }
+    } catch (error) {
+      console.error(`[uploadToStorageAsync] Attempt ${attempt} - Unexpected error:`, {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+        uploadedBy,
+        fileName: fileData.name
+      });
+      
+      if (attempt < MAX_RETRIES) {
+        console.log(`[uploadToStorageAsync] Retrying in ${RETRY_DELAY * attempt}ms...`);
+        await sleep(RETRY_DELAY * attempt);
+        continue;
+      }
       return null;
     }
-
-    const { data: urlData } = adminSupabase.storage
-      .from('documents')
-      .getPublicUrl(`orderpdf/${fileData.name}`);
-
-    // 寫入 doc_upload 表
-    const { error: docError } = await adminSupabase.from('doc_upload').insert({
-      doc_name: fileData.name,
-      upload_by: parseInt(uploadedBy),
-      doc_type: 'order',
-      doc_url: urlData.publicUrl,
-      file_size: buffer.length,
-      folder: 'orderpdf',
-      json_txt: extractedText || null,
-      created_at: new Date().toISOString(),
-    });
-
-    if (docError) {
-      console.error('[uploadToStorageAsync] doc_upload insert failed:', docError);
-    } else {
-      console.log('[uploadToStorageAsync] Successfully uploaded file and created doc_upload record');
-    }
-
-    return urlData.publicUrl;
-  } catch (error) {
-    console.error('[uploadToStorageAsync] Error:', error);
-    return null;
   }
+  
+  console.error('[uploadToStorageAsync] All retry attempts exhausted');
+  return null;
 }
 
 // 發送電郵通知
@@ -493,13 +581,20 @@ export async function analyzeOrderPDF(
       console.log('[analyzeOrderPDF] Email sent successfully:', emailResult.details);
     }
 
-    // 背景存儲
+    // 背景存儲 - 改為等待完成以便除錯
     if (saveToStorage) {
-      // 使用 Promise 而不是 setImmediate (server action 環境)
-      uploadToStorageAsync(fileData, uploadedBy, result).catch(error => {
+      try {
+        console.log('[analyzeOrderPDF] Starting background storage upload');
+        const storageUrl = await uploadToStorageAsync(fileData, uploadedBy, result);
+        if (storageUrl) {
+          console.log('[analyzeOrderPDF] Background storage completed successfully:', storageUrl);
+        } else {
+          console.warn('[analyzeOrderPDF] Background storage returned null');
+        }
+      } catch (error) {
         console.error('[analyzeOrderPDF] Background storage failed:', error);
-        // 背景存儲失敗不應影響主要功能
-      });
+        // 背景存儲失敗不應影響主要功能，繼續返回成功
+      }
     }
 
     // 緩存結果

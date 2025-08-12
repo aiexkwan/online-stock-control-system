@@ -8,13 +8,6 @@ import { isNotProduction } from '@/lib/utils/env';
 import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Tables } from '@/types/database/supabase';
 import { DatabaseRecord } from '@/types/database/tables';
-import {
-  DashboardResponseSchema,
-  DashboardQueryParamsSchema,
-  type DashboardResponse,
-  type DashboardQueryParams,
-  type ReportData,
-} from '@/lib/schemas/dashboard';
 
 // 使用 Supabase 生成的類型
 type DataIdRow = Tables<'data_id'>;

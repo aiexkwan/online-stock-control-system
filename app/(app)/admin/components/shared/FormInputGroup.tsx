@@ -204,8 +204,8 @@ export const FormInputGroup: React.FC<FormInputGroupProps> = ({
                 option.bgColor || 'bg-gray-800',
                 option.borderColor || 'border-gray-700',
                 'hover:border-opacity-80',
-                `peer-checked:${option.borderColor || 'border-gray-500'}`,
-                `peer-checked:${option.bgColor || 'bg-gray-700'}`,
+                'peer-checked:border-gray-500',
+                'peer-checked:bg-gray-700',
                 'peer-disabled:cursor-not-allowed peer-disabled:opacity-50',
                 optionClassName
               )}

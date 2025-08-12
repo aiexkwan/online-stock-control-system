@@ -14,7 +14,7 @@ import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { textClasses } from '@/lib/design-system/typography';
+// Removed design-system import - using direct Tailwind classes
 import { ChartType } from '@/types/generated/graphql';
 
 // Card Props type definition
@@ -289,8 +289,8 @@ const CardErrorBoundary: React.FC<{
         )}
       >
         <AlertTriangle className='mb-2 h-8 w-8' />
-        <p className={cn(textClasses['body-small'], 'font-medium')}>Card Load Error</p>
-        <p className={cn(textClasses['label-small'], 'mt-1 opacity-70')}>{cardId}</p>
+        <p className={cn('text-sm font-medium leading-normal')}>Card Load Error</p>
+        <p className={cn('text-xs font-normal leading-tight', 'mt-1 opacity-70')}>{cardId}</p>
       </div>
     );
   }
@@ -422,10 +422,10 @@ export const AnalysisCardSelector: React.FC<AnalysisCardSelectorProps> = ({
         <div className='mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted'>
           <AlertTriangle className='h-6 w-6' />
         </div>
-        <h3 className={cn(textClasses['body-base'], 'mb-2 font-medium')}>
+        <h3 className={cn('text-base font-medium leading-normal', 'mb-2')}>
           Card Configuration Error
         </h3>
-        <p className={cn(textClasses['body-small'], 'max-w-sm text-center')}>
+        <p className={cn('text-sm font-normal leading-normal', 'max-w-sm text-center')}>
           The selected card &quot;{selectedCard}&quot; is not properly configured.
         </p>
       </div>
@@ -441,7 +441,7 @@ export const AnalysisCardSelector: React.FC<AnalysisCardSelectorProps> = ({
     >
       {/* Title area */}
       <div className='mb-4 flex-shrink-0'>
-        <h2 className={cn(textClasses['heading-small'], 'font-bold text-foreground')}>
+        <h2 className={cn('text-lg font-bold leading-normal', 'text-foreground')}>
           {cardConfig.config.name}
         </h2>
       </div>

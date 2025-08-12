@@ -14,17 +14,13 @@ export const UniversalBackground: React.FC<UniversalBackgroundProps> = ({
 }) => {
   return (
     <div className={`relative min-h-screen ${className}`}>
-      {/* Starfield Background - Fixed position for universal coverage */}
-      <StarfieldBackground />
-
-      {/* Dark background base */}
-      <div
-        className='fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'
-        style={{ zIndex: -1 }}
-      />
-
-      {/* Content */}
-      <div className='relative' style={{ zIndex: 1 }}>
+      {/* Background layer with starfield */}
+      <div className='fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'>
+        <StarfieldBackground />
+      </div>
+      
+      {/* Content layer - must be above background */}
+      <div className='relative z-10'>
         {children}
       </div>
     </div>

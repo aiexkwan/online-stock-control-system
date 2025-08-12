@@ -3,6 +3,7 @@ import { GraphQLError } from 'graphql';
 import { getCacheAdapter } from '@/lib/cache/cache-factory';
 import { CacheAdapter } from '@/lib/cache/base-cache-adapter';
 import { safeGet, safeNumber, safeString } from '@/types/database/helpers';
+import { toGraphQLErrorMessage } from '@/lib/types/api';
 
 // Input Types
 export interface InventoryAnalysisInput {
@@ -224,7 +225,7 @@ export class InventoryAnalysisService {
     } catch (error) {
       console.error(`[InventoryAnalysisService-${requestId}] Error:`, error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to analyze inventory';
-      throw new GraphQLError(errorMessage, {
+      throw new GraphQLError(toGraphQLErrorMessage(errorMessage), {
         extensions: { 
           code: 'INVENTORY_ANALYSIS_ERROR',
           requestId,
@@ -262,13 +263,13 @@ export class InventoryAnalysisService {
     const { data, error } = await supabase.rpc('rpc_get_inventory_analysis_aggregation', rpcParams);
 
     if (error) {
-      throw new GraphQLError(`RPC call failed: ${error.message}`, {
+      throw new GraphQLError(toGraphQLErrorMessage(`RPC call failed: ${error.message}`), {
         extensions: { code: 'RPC_ERROR' }
       });
     }
 
     if (!data) {
-      throw new GraphQLError('No data returned from RPC', {
+      throw new GraphQLError(toGraphQLErrorMessage('No data returned from RPC'), {
         extensions: { code: 'NO_DATA' }
       });
     }

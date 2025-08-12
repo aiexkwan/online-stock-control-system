@@ -21,6 +21,7 @@ import { startOfDay, endOfDay } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
+import { extractErrorMessage } from '@/lib/types/api';
 
 // Import GraphQL queries and actions
 import { GRN_OPTIONS_QUERY } from '@/lib/graphql/queries/grnReport.graphql';
@@ -101,7 +102,7 @@ export const DownloadCenterCard: React.FC<DownloadCenterCardProps> = ({
           } else {
             toast({
               title: 'Export failed',
-              description: ('error' in acoResult ? acoResult.error : 'Failed to generate report'),
+              description: ('error' in acoResult ? extractErrorMessage(acoResult.error) : 'Failed to generate report'),
               variant: 'destructive',
             });
           }
@@ -121,7 +122,7 @@ export const DownloadCenterCard: React.FC<DownloadCenterCardProps> = ({
           } else {
             toast({
               title: 'Export failed',
-              description: ('error' in grnResult ? grnResult.error : 'Failed to generate report'),
+              description: ('error' in grnResult ? extractErrorMessage(grnResult.error) : 'Failed to generate report'),
               variant: 'destructive',
             });
           }
@@ -154,7 +155,7 @@ export const DownloadCenterCard: React.FC<DownloadCenterCardProps> = ({
           } else {
             toast({
               title: 'Export failed',
-              description: ('error' in transferResult ? transferResult.error : 'Failed to generate report'),
+              description: ('error' in transferResult ? extractErrorMessage(transferResult.error) : 'Failed to generate report'),
               variant: 'destructive',
             });
           }

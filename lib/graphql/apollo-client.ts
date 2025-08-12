@@ -123,13 +123,13 @@ const cache = new InMemoryCache({
     Query: {
       fields: {
         // Card data caching
-        widget: {
+        card: {
           keyArgs: ['id', 'params'],
           merge(existing, incoming) {
             return incoming;
           },
         },
-        widgets: {
+        cards: {
           keyArgs: ['ids', 'params'],
           merge(existing = [], incoming) {
             return [...incoming];
@@ -145,7 +145,7 @@ const cache = new InMemoryCache({
       },
     },
     // Card-specific cache policies
-    WidgetData: {
+    CardData: {
       keyFields: ['id'],
     },
     // Department-specific cache policies

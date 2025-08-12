@@ -101,15 +101,9 @@ export {
   withFocusRestore,
 } from './utils/focus-helpers';
 
-// 設計系統擴展
-export {
-  wcagColors,
-  accessibilityStyles,
-  getAccessibleTextColor,
-  getAccessibleInteractiveColor,
-  getAccessibleFocusStyle,
-  generateAccessibilityClasses,
-} from '../design-system/colors';
+// 設計系統擴展 - Temporarily removed (deprecated design-system)
+// These utilities are now available in lib/design-system-deprecated/colors.ts
+// TODO: Migrate accessibility features to new card-system or standalone module
 
 /**
  * 無障礙性配置常數

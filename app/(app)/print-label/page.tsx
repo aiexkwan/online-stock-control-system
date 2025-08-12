@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useMemo, useEffect, Suspense } from 'react';
 import { PrintLabelGrid, GridWidget } from '@/app/components/qc-label-form/PrintLabelGrid';
 import { GridBasicProductForm } from '@/app/components/qc-label-form/GridBasicProductForm';
-import { ErrorBoundary } from '@/app/(app)/admin/components/ErrorBoundary';
+import { PageErrorBoundary } from '@/lib/error-handling';
 import { EnhancedProgressBar } from '@/app/(app)/admin/components/EnhancedProgressBar';
 import { AcoOrderForm } from '@/app/components/qc-label-form/AcoOrderForm';
 import { SlateDetailsForm } from '@/app/components/qc-label-form/SlateDetailsForm';
@@ -264,7 +264,7 @@ function PrintLabelContent() {
       <PrintLabelGrid>
         {/* Main Form Card */}
         <GridWidget area='main' borderStyle='default' glow>
-          <ErrorBoundary>
+          <PageErrorBoundary pageName="PrintLabel">
             <GridBasicProductForm
               productCode={formData.productCode}
               onProductCodeChange={value => handleInputChange('productCode', value)}
@@ -283,7 +283,7 @@ function PrintLabelContent() {
               errors={errors}
               disabled={formData.isLoading}
             />
-          </ErrorBoundary>
+          </PageErrorBoundary>
         </GridWidget>
 
         {/* ACO/Slate Event Card - Only show when needed */}

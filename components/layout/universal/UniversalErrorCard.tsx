@@ -12,7 +12,7 @@ import { UniversalCard } from './UniversalCard';
 import {
   ErrorFallback,
   CompactErrorFallback,
-  WidgetErrorFallback,
+  CardErrorFallback,
   InlineErrorMessage,
   SuccessMessage,
   ErrorBoundary,
@@ -111,7 +111,7 @@ export function UniversalErrorCard({
         return <CompactErrorFallback {...fallbackProps} />;
 
       case 'widget':
-        return <WidgetErrorFallback {...fallbackProps} widgetName={widgetName} />;
+        return <CardErrorFallback {...fallbackProps} cardName={widgetName} />;
 
       case 'inline':
         return (

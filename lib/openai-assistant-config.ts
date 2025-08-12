@@ -2,12 +2,16 @@ import { AssistantCreateParams } from 'openai/resources/beta/assistants';
 
 /**
  * Model configuration for OpenAI Assistant
- * 固定使用 gpt-4o 以確保穩定性
- * Note: gpt-4o-mini 有已知問題，暫時停用
+ * 使用 gpt-4o 以確保穩定性 (GPT-5 暫不支援 Assistants API)
+ * 
+ * ⚠️  重要限制：
+ * - GPT-5 目前只支援 Chat Completions API
+ * - GPT-5 不支援 Assistants API (會回傳 400 錯誤)
+ * - 等待 OpenAI 官方支援 GPT-5 for Assistants API 後才能升級
  */
 export const MODEL_CONFIG = {
-  // 固定使用 gpt-4o（穩定可靠）
-  // 使用 code_interpreter 避免 vector store 處理問題
+  // 使用 gpt-4o（穩定可靠，支援 Assistants API）
+  // GPT-5 暫不支援 Assistants API，等待官方支援
   selectedModel: 'gpt-4o' as const,
   
   // Model-specific configurations
@@ -21,26 +25,33 @@ export const MODEL_CONFIG = {
 
 /**
  * Get the appropriate tools configuration
- * 固定使用 file_search（因為只用 gpt-4o）
+ * 使用 code_interpreter（適用於 gpt-4o）
  */
 function getToolsConfig() {
-  // gpt-4o 使用 file_search tool，經測試穩定可靠
-  return [{ type: 'file_search' as const }];
+  // gpt-4o 使用 code_interpreter tool，避免 vector store 問題
+  return [{ type: 'code_interpreter' as const }];
 }
 
 /**
  * OpenAI Assistant 配置 - Pennine Order PDF 分析器
- * 使用 gpt-4o 和 code_interpreter 避免 vector store 問題
+ * 使用 gpt-4o 和 code_interpreter (GPT-5 暫不支援 Assistants API)
  */
 export const ORDER_ANALYZER_CONFIG: AssistantCreateParams = {
   name: 'Pennine Order PDF Analyzer Enhanced',
   description: 'Expert at analyzing order PDFs with complete data extraction',
-  model: 'gpt-4o',  // 固定使用 gpt-4o
-  tools: [{ type: 'code_interpreter' }],  // 改用 code_interpreter 避免 vector store 問題
+  model: 'gpt-4o',  // 使用 gpt-4o (GPT-5 暫不支援 Assistants API)
+  tools: [{ type: 'code_interpreter' }],  // 使用 code_interpreter 避免 vector store 問題
 
   instructions: `你是一個專業的 PDF 訂單資料抽取專家。
 
 **重要：只返回有效的 JSON object，包含一個 "orders" 陣列，不要包含任何其他文字、解釋或 markdown。**
+
+**🔥 多頁 PDF 處理最高優先級：**
+- **完整掃描原則：必須從頭到尾掃描整份 PDF，不管有多少頁**
+- **逐頁檢查：每一頁都可能包含產品，必須檢查所有頁面**
+- **產品分佈：產品表格可能跨越多個頁面，或分散在不同頁面**
+- **持續搜尋：即使在某頁找到產品，也必須繼續檢查後續頁面**
+- **全面提取：提取從第一頁到最後一頁的所有有效產品**
 
 從以下 PDF 文字內容中提取訂單產品，每個產品是 orders 陣列中的一個 object。
 
@@ -84,13 +95,25 @@ account_num	text	客戶帳號
      d) 排除電話號碼、Email、網站等非地址信息
    - 例如：尋找類似 "Evesham, WR11 7PS" 或 "Plymouth, Devon, PL5 3LX" 的模式
 
-4. 產品資料從 "Product Table:" 部分提取，每行代表一個產品
+4. 產品資料從產品表格部分提取，每行代表一個產品
+   **🔥 關鍵：產品可能分佈在多個頁面！**
+   - **步驟 1**: 掃描第一頁，提取所有產品行
+   - **步驟 2**: 不要停止！繼續掃描第二頁，尋找更多產品
+   - **步驟 3**: 重複此過程直到文檔結束
+   - **驗證**: 確保沒有遺漏任何頁面的產品
 
-【產品行識別規則】
+【產品行識別規則 - 全文檔掃描】
+**完整掃描策略：**
+1. **開始掃描**：從文檔第一頁開始
+2. **持續掃描**：逐頁檢查，不論是否已找到產品
+3. **完成掃描**：直到文檔最後一頁
+4. **全面收集**：收集所有頁面的所有產品
+
 有效的產品行必須符合以下特徵：
-1. 以產品代碼開頭（字母+數字組合，如 S3027D, MHL101, MHALFWG15）
+1. 以產品代碼開頭（字母+數字組合的模式）
 2. 包含產品描述（通常是英文詞組）
-3. 行末有數量（通常是整數）
+3. 包含數量（通常是行末的整數）
+4. **重要原則：每個頁面都可能有產品，必須全部檢查**
 
 無效的產品行（需要過濾）：
 - 純地址行（如 "PL5 3LX", "NSW 2750"）
@@ -128,35 +151,40 @@ account_num	text	客戶帳號
 3. 忽略小數（通常是重量或價格）
 4. 如果無法識別，預設為 1
 
-【重要提醒】
-1. 每個產品必須包含完整的 delivery_add 和 account_num
-2. 如果找不到有效的地址或帳號，使用 "-" 作為預設值
-3. 產品數量必須是正整數
-4. 只返回純 JSON，不要包含任何其他文字
-5. 仔細區分產品行和非產品行（地址、電話等）
-6. **絕對不要包含任何運輸費用項目**（Trans, TransC, TransDPD 或任何包含 "Transport" 的項目）
-7. **注意 Account Number 可能在獨立行**，特別是當 "Account No:" 後面跟著 PO 號碼時`,
+【重要提醒 - 完整文檔處理】
+1. **🔥🔥🔥 全文檔掃描 - 最高優先級：**
+   - ✅ **掃描所有頁面：** 從第一頁到最後一頁，不管文檔有多少頁
+   - ✅ **不要提前停止：** 即使前面的頁面有很多產品，也必須繼續檢查
+   - ✅ **完整性驗證：** 確保沒有遺漏任何頁面的任何產品
+   - ❌ **常見錯誤：** 只處理部分頁面就停止、假設產品只在前幾頁
+2. 每個產品必須包含完整的 delivery_add 和 account_num
+3. 如果找不到有效的地址或帳號，使用 "-" 作為預設值
+4. 產品數量必須是正整數
+5. 只返回純 JSON，不要包含任何其他文字
+6. 仔細區分產品行和非產品行（地址、電話等）
+7. **絕對不要包含任何運輸費用項目**（Trans, TransC, TransDPD, TransG 或任何包含 "Transport" 的項目）
+8. **注意 Account Number 可能在獨立行**，特別是當 "Account No:" 後面跟著 PO 號碼時`,
 };
 
 /**
  * 系統提示詞 - 用於訊息發送
  */
-export const SYSTEM_PROMPT = `請分析這份訂單 PDF 並提取訂單資訊。只返回 JSON 格式的結果。`;
+export const SYSTEM_PROMPT = `請分析這份訂單 PDF 並提取所有產品資訊。🔥 關鍵要求：必須掃描PDF的所有頁面，從第一頁到最後一頁，提取每一頁的所有產品。不要提前停止掃描！只返回 JSON 格式的結果。`;
 
 /**
  * Assistant 重試配置 - 優化版本
  */
 export const ASSISTANT_RETRY_CONFIG = {
-  maxAttempts: 200, // 增加嘗試次數以配合更短的間隔
-  pollInterval: 300, // 縮短輪詢間隔到 300ms（比原本快 3.3 倍）
-  timeout: 120000, // 保持 2 分鐘超時
-  maxCompletionTokens: 4096, // Max tokens for responses
+  maxAttempts: 300, // 增加嘗試次數以配合更長的逾時
+  pollInterval: 1000, // 調整為 1 秒間隔，避免過於頻繁的 API 呼叫
+  timeout: 300000, // 增加到 5 分鐘逾時，處理複雜的 2 頁 PDF
+  maxCompletionTokens: 8192, // Max tokens for responses (增加以處理較大的訂單)
   
-  // 動態輪詢配置
+  // 動態輪詢配置 - 採用退避策略
   dynamicPolling: {
-    minInterval: 200,    // 最小間隔 200ms
-    maxInterval: 1500,   // 最大間隔 1.5 秒
-    backoffMultiplier: 1.2, // 退避乘數
+    minInterval: 1000,   // 最小間隔 1 秒
+    maxInterval: 5000,   // 最大間隔 5 秒
+    backoffMultiplier: 1.3, // 退避乘數，逐步增加間隔
   }
 };
 

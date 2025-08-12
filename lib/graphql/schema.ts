@@ -132,8 +132,8 @@ enum ChangeType {
   STABLE
 }
 
-# Widget 數據源類型
-interface WidgetData {
+# Card 數據源類型
+interface CardData {
   lastUpdated: DateTime!
   refreshInterval: Int
   dataSource: String!
@@ -520,7 +520,7 @@ input GRNFilterInput {
   dateRange: DateRangeInput
 }
 
-type StockLevelData implements WidgetData {
+type StockLevelData implements CardData {
   items: [StockLevelItem!]!
   totalItems: Int!
   totalQuantity: Int!
@@ -785,7 +785,7 @@ input OrderFilterInput {
   maxValue: Float
 }
 
-type UnifiedOperationsData implements WidgetData {
+type UnifiedOperationsData implements CardData {
   transfers: [Transfer!]!
   orders: [Order!]!
   pallets: [Pallet!]!
@@ -817,7 +817,7 @@ input CreateTransferInput {
 
 export const analyticsSchema = `
 # Analytics GraphQL Schema
-type QualityMetrics implements WidgetData {
+type QualityMetrics implements CardData {
   overallScore: Float!
   defectRate: Float!
   firstPassYield: Float!
@@ -856,7 +856,7 @@ enum DefectSeverity {
   CRITICAL
 }
 
-type EfficiencyMetrics implements WidgetData {
+type EfficiencyMetrics implements CardData {
   overallEfficiency: Float!
   productivityIndex: Float!
   utilizationRate: Float!
@@ -894,7 +894,7 @@ type TrendPoint {
   label: String
 }
 
-type UploadStatistics implements WidgetData {
+type UploadStatistics implements CardData {
   todayUploads: Int!
   successRate: Float!
   failureRate: Float!
@@ -932,7 +932,7 @@ type ErrorReason {
   percentage: Float!
 }
 
-type UpdateStatistics implements WidgetData {
+type UpdateStatistics implements CardData {
   pendingCount: Int!
   completedToday: Int!
   inProgress: Int!
@@ -963,7 +963,7 @@ type UpdateStatusMetric {
   percentage: Float!
 }
 
-type SystemPerformance implements WidgetData {
+type SystemPerformance implements CardData {
   averageResponseTime: Float!
   p95ResponseTime: Float!
   p99ResponseTime: Float!
@@ -1015,9 +1015,9 @@ type Query {
   # Health check
   health: SystemStatus!
   
-  # Widget data sources
-  widgetData(dataSource: String!, params: JSON, timeFrame: DateRangeInput): JSON!
-  batchWidgetData(requests: [WidgetDataRequest!]!): [WidgetDataResponse!]!
+  # Card data sources
+  cardData(dataSource: String!, params: JSON, timeFrame: DateRangeInput): JSON!
+  batchCardData(requests: [CardDataRequest!]!): [CardDataResponse!]!
   
   # Products
   product(code: ID!): Product
@@ -1090,16 +1090,16 @@ type Subscription {
   systemAlert(severity: AlertSeverity): SystemAlert!
 }
 
-# Widget data request/response types
-input WidgetDataRequest {
-  widgetId: String!
+# Card data request/response types
+input CardDataRequest {
+  cardId: String!
   dataSource: String!
   params: JSON
   timeFrame: DateRangeInput
 }
 
-type WidgetDataResponse {
-  widgetId: String!
+type CardDataResponse {
+  cardId: String!
   data: JSON
   error: Error
   source: DataSourceType!
@@ -1525,7 +1525,7 @@ type ChartConfig {
   animations: JSON
 }
 
-type ChartCardData implements WidgetData {
+type ChartCardData implements CardData {
   datasets: [ChartDataset!]!
   labels: [String!]
   config: ChartConfig!
@@ -1643,7 +1643,7 @@ type PerformanceMetrics {
   dataAge: Int!
 }
 
-type StatsCardData implements WidgetData {
+type StatsCardData implements CardData {
   stats: [StatsData!]!
   configs: [StatsConfig!]!
   performance: PerformanceMetrics!
@@ -1835,7 +1835,7 @@ type TableMetadata {
   generatedAt: DateTime!
 }
 
-type TableCardData implements WidgetData {
+type TableCardData implements CardData {
   data: [TableRow!]!
   columns: [TableColumn!]!
   totalCount: Int!
@@ -1890,11 +1890,11 @@ type ExportResult {
 
 export const reportSchema = `
 # Report-related types for ReportCard
-# Consolidates ReportGeneratorWithDialogWidget + TransactionReportWidget + analysis reports
+# Consolidates ReportGeneratorCard + TransactionReportCard + analysis reports
 
 # 報表類型枚舉
 enum ReportType {
-  TRANSACTION_REPORT    # TransactionReportWidget - 交易報表
+  TRANSACTION_REPORT    # TransactionReportCard - 交易報表
   INVENTORY_REPORT      # 庫存報表
   FINANCIAL_REPORT      # 財務報表
   OPERATIONAL_REPORT    # 運營報表
@@ -2098,7 +2098,7 @@ type UserReportStats {
 }
 
 # ReportCard 數據類型
-type ReportCardData implements WidgetData {
+type ReportCardData implements CardData {
   reportType: ReportType!
   config: ReportConfig!
   recentReports: [GeneratedReport!]!
@@ -2305,10 +2305,10 @@ scalar File
 
 # 文件上傳類型枚舉
 enum UploadType {
-  GENERAL_FILES     # UploadFilesWidget - 通用文件上傳
-  ORDER_PDF         # UploadOrdersWidget - 訂單PDF分析
-  PHOTOS           # UploadPhotoWidget - 圖片上傳
-  PRODUCT_SPEC     # UploadProductSpecWidget - 產品規格文檔
+  GENERAL_FILES     # UploadFilesCard - 通用文件上傳
+  ORDER_PDF         # UploadOrdersCard - 訂單PDF分析
+  PHOTOS           # UploadPhotoCard - 圖片上傳
+  PRODUCT_SPEC     # UploadProductSpecCard - 產品規格文檔
 }
 
 # 文件夾類型
@@ -2433,7 +2433,7 @@ type UploadConfig {
 }
 
 # UploadCard 數據類型
-type UploadCardData implements WidgetData {
+type UploadCardData implements CardData {
   uploadType: UploadType!
   config: UploadConfig!
   recentUploads: [FileInfo!]!
@@ -2648,7 +2648,7 @@ enum AlertSortBy {
 }
 
 # Output types
-type AlertCardData implements WidgetData {
+type AlertCardData implements CardData {
   alerts: [Alert!]!
   summary: AlertSummary!
   statistics: AlertStatistics!
@@ -2931,7 +2931,7 @@ input ConfigBatchUpdateInput {
 }
 
 # Output types
-type ConfigCardData implements WidgetData {
+type ConfigCardData implements CardData {
   configs: [ConfigItem!]!
   categories: [ConfigCategoryGroup!]!
   summary: ConfigSummary!

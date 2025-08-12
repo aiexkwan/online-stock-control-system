@@ -23,19 +23,19 @@ export { ErrorProvider, useError, ErrorContext } from './ErrorContext';
 export {
   ErrorBoundary,
   withErrorBoundary,
-  WidgetErrorBoundary,
+  CardErrorBoundary,
   PageErrorBoundary,
   AppErrorBoundary,
 } from './components/ErrorBoundary';
 
 // Import for internal use in this file
-import { ErrorBoundary, WidgetErrorBoundary, PageErrorBoundary } from './components/ErrorBoundary';
+import { ErrorBoundary, CardErrorBoundary, PageErrorBoundary } from './components/ErrorBoundary';
 
 // Error Fallback Components
 export {
   ErrorFallback,
   CompactErrorFallback,
-  WidgetErrorFallback,
+  CardErrorFallback,
   PageErrorFallback,
   InlineErrorMessage,
   SuccessMessage,
@@ -93,7 +93,7 @@ export class ErrorHandlingUtils {
     Component: React.ComponentType<P>,
     componentName: string,
     options?: {
-      isolationLevel?: 'component' | 'widget' | 'page' | 'app';
+      isolationLevel?: 'component' | 'card' | 'page' | 'app';
       fallback?: React.ComponentType<Record<string, unknown>>;
     }
   ) {

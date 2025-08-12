@@ -15,7 +15,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { toast } from 'sonner';
 import {
   searchPalletAuto,
@@ -134,9 +134,12 @@ export const useStockTransfer = ({
       const transferId = `${palletInfo.plt_num}-${Date.now()}`;
       const fromLocation = palletInfo.current_plt_loc || palletInfo.location || 'Unknown';
 
-      const hasPending = optimisticTransfers.some(
-        t => t.pltNum === palletInfo.plt_num && t.status === 'pending'
-      );
+      // Use functional update to avoid dependency on optimisticTransfers
+      let hasPending = false;
+      setOptimisticTransfers(prev => {
+        hasPending = prev.some(t => t.pltNum === palletInfo.plt_num && t.status === 'pending');
+        return prev;
+      });
 
       if (hasPending) {
         toast.warning(`Pallet ${palletInfo.plt_num} has a pending transfer. Please wait.`);
@@ -207,7 +210,7 @@ export const useStockTransfer = ({
         setIsTransferring(false);
       }
     },
-    [optimisticTransfers, onTransferComplete, onTransferError]
+    [onTransferComplete, onTransferError]
   );
 
   // Clock number validation
@@ -310,10 +313,16 @@ export const useStockTransfer = ({
   }, [focusSearchInput]);
 
   // Auto-execute transfer when all conditions are met
+  const executeTransferRef = useRef<boolean>(false);
+  
   useEffect(() => {
-    if (selectedPallet && selectedDestination && verifiedClockNumber && !isTransferring) {
+    if (selectedPallet && selectedDestination && verifiedClockNumber && !isTransferring && !executeTransferRef.current) {
+      executeTransferRef.current = true;
+      
       executeStockTransfer(selectedPallet, selectedDestination, verifiedClockNumber).then(
         success => {
+          executeTransferRef.current = false;
+          
           if (success) {
             setStatusMessage({
               type: 'success',
@@ -329,7 +338,13 @@ export const useStockTransfer = ({
             });
           }
         }
-      );
+      ).catch(() => {
+        // Ensure ref is reset even on error
+        executeTransferRef.current = false;
+      });
+    } else if (!selectedPallet || !selectedDestination || !verifiedClockNumber) {
+      // Reset the ref when conditions are not met
+      executeTransferRef.current = false;
     }
   }, [selectedPallet, selectedDestination, verifiedClockNumber, isTransferring, executeStockTransfer, focusSearchInput]);
 
@@ -373,8 +388,8 @@ export const useStockTransfer = ({
     return () => clearInterval(interval);
   }, []);
 
-  // State object
-  const state: StockTransferState = {
+  // Memoize state object to prevent recreation on every render
+  const state: StockTransferState = useMemo(() => ({
     isLoading,
     isSearching,
     isTransferring,
@@ -389,10 +404,25 @@ export const useStockTransfer = ({
     clockError,
     isVerifying,
     currentLocation,
-  };
+  }), [
+    isLoading,
+    isSearching,
+    isTransferring,
+    optimisticTransfers,
+    searchValue,
+    statusMessage,
+    selectedPallet,
+    selectedDestination,
+    verifiedClockNumber,
+    verifiedName,
+    clockNumber,
+    clockError,
+    isVerifying,
+    currentLocation,
+  ]);
 
-  // Actions object
-  const actions: StockTransferActions = {
+  // Memoize actions object to prevent recreation on every render
+  const actions: StockTransferActions = useMemo(() => ({
     setIsLoading,
     setSearchValue,
     setSelectedDestination,
@@ -406,7 +436,16 @@ export const useStockTransfer = ({
     focusSearchInput,
     resetToSearch,
     onDestinationChange,
-  };
+  }), [
+    executeStockTransfer,
+    validateClockNumberLocal,
+    handleSearchSelect,
+    handleClockNumberChange,
+    handleVerifyClockNumber,
+    focusSearchInput,
+    resetToSearch,
+    onDestinationChange,
+  ]);
 
   return { state, actions };
 };

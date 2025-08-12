@@ -188,7 +188,10 @@
       "mcp__graphiti-memory__search_memory_facts",
       "Bash(/Users/chun/.local/bin/uv run:*)",
       "Bash(/Users/chun/.local/bin/uv pip list)",
-      "mcp__graphiti-memory__add_episode"
+      "mcp__graphiti-memory__add_episode",
+      "mcp__context7__resolve-library-id",
+      "mcp__playwright__playwright_navigate",
+      "mcp__playwright__playwright_close"
     ],
     "deny": []
   },
@@ -197,7 +200,6 @@
     "supabase",
     "sequential-thinking",
     "context7",
-    "puppeteer",
     "graphiti-memory",
     "playwright"
   ]

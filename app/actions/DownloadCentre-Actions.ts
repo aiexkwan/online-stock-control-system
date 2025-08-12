@@ -873,7 +873,7 @@ import {
   isWarehouseWorkLevelError,
   formatDateForRPC,
   getDefaultDateRange,
-} from '@/types/api/response';
+} from '@/lib/types/warehouse-work-level';
 
 /**
  * Get warehouse work level data

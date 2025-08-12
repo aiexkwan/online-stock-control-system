@@ -14,15 +14,17 @@
 - Do not perform any deletions until explicit confirmation is received from the user
 
 ## Workflow
+- *Ultrathink*
 - Understand task background : The system currently contains many junk or outdated files, leading to potential information mismatches and inaccuracies.
 
 - Investigate whether $ARGUMENTS are still in use, have been recently updated or updated.
 
 - Revokes [agent-manager](../agents/agent-manager.md) to assign related other sub-agents for sub-task
-
-- *Ultrathink* : Determine whether $ARGUMENTS are being import/export by any components — either directly or indirectly.
-- *Ultrathink* : Analyse any potential impact on the new main core [Card System](/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/cards)
-- *Ultrathink* : Assess any impact on the current running system if $ARGUMENTS is deleted
+- Analyse if still mentioning old widget system
+- Determine whether $ARGUMENTS are being import/export by any components — either directly or indirectly.
+- Analyse any potential impact on the new main core [Card System](/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/cards)
+- Assess any impact on the current running system if $ARGUMENTS is deleted
+- Providing porfessional suggestion to keep, remove or relocated $ARGUMENTS
 
 ## Assign Agents
 - [Search_Speicalist](../agents/search-specialist.md)

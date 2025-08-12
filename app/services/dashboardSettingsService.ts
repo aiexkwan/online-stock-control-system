@@ -1,16 +1,17 @@
 /**
- * 儀表板設定服務
+ * 儀表板設定服務 (Card Architecture)
  * 處理用戶儀表板配置的儲存和讀取
+ * Updated: 2025-08 - Migrated from Widget to Card system
  */
 
 import { createClient } from '@/lib/supabase';
 
-// Dashboard configuration types (extracted from /types/components/dashboard.ts)
+// Dashboard configuration types (updated to Card architecture)
 export interface DashboardConfig {
   id?: string;
   name: string;
   description?: string;
-  widgets: DashboardWidget[];
+  cards: DashboardCard[];
   layouts: {
     lg?: DashboardLayoutItem[];
     md?: DashboardLayoutItem[];
@@ -23,7 +24,7 @@ export interface DashboardConfig {
   updatedAt?: string;
 }
 
-export interface DashboardWidget {
+export interface DashboardCard {
   id: string;
   type: string;
   title: string;

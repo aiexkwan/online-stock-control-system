@@ -16,6 +16,12 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { 
+  getCardTheme, 
+  cardTextStyles, 
+  cardStatusColors,
+  cardContainerStyles 
+} from '@/lib/card-system/theme';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -28,7 +34,7 @@ import {
   Package2,
 } from 'lucide-react';
 import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
-import { textClasses } from '@/lib/design-system/typography';
+// Removed design-system import - using direct Tailwind classes
 import { GlassmorphicCard } from '../components/GlassmorphicCard';
 import { SearchInput, SearchInputRef, StepIndicator, Step } from '../components/shared';
 import {
@@ -253,59 +259,59 @@ export const VoidPalletCard: React.FC<VoidPalletCardProps> = ({
             {/* Pallet info (single mode) */}
             {voidMode === 'single' && foundPallet && (
               <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-                <h4 className={cn(textClasses['label-large'], 'mb-3 text-white')}>
+                <h4 className={cn(cardTextStyles.label, 'mb-3 text-white')}>
                   Pallet Information
                 </h4>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className={cn(textClasses['label-small'], 'text-white/60')}>
+                    <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>
                       Pallet Number
                     </p>
-                    <p className={cn(textClasses['body-base'], 'font-medium text-white')}>
+                    <p className={cn(cardTextStyles.body, 'font-medium text-white')}>
                       {foundPallet.plt_num}
                     </p>
                   </div>
                   <div>
-                    <p className={cn(textClasses['label-small'], 'text-white/60')}>
+                    <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>
                       Product Code
                     </p>
-                    <p className={cn(textClasses['body-base'], 'text-white')}>{foundPallet.product_code}</p>
+                    <p className={cn(cardTextStyles.body, 'text-white')}>{foundPallet.product_code}</p>
                   </div>
                   <div>
-                    <p className={cn(textClasses['label-small'], 'text-white/60')}>
+                    <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>
                       Product Name
                     </p>
-                    <p className={cn(textClasses['body-base'], 'text-white')}>{foundPallet.description || 'N/A'}</p>
+                    <p className={cn(cardTextStyles.body, 'text-white')}>{foundPallet.description || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className={cn(textClasses['label-small'], 'text-white/60')}>
+                    <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>
                       Product Type
                     </p>
-                    <p className={cn(textClasses['body-base'], 'text-white')}>{foundPallet.type || 'N/A'}</p>
+                    <p className={cn(cardTextStyles.body, 'text-white')}>{foundPallet.type || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className={cn(textClasses['label-small'], 'text-white/60')}>
+                    <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>
                       Pallet Quantity
                     </p>
-                    <p className={cn(textClasses['body-base'], 'text-white')}>{foundPallet.product_qty} units</p>
+                    <p className={cn(cardTextStyles.body, 'text-white')}>{foundPallet.product_qty} units</p>
                   </div>
                   <div>
-                    <p className={cn(textClasses['label-small'], 'text-white/60')}>
+                    <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>
                       Pallet Remark
                     </p>
-                    <p className={cn(textClasses['body-base'], 'text-white')}>{foundPallet.plt_remark || 'N/A'}</p>
+                    <p className={cn(cardTextStyles.body, 'text-white')}>{foundPallet.plt_remark || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className={cn(textClasses['label-small'], 'text-white/60')}>
+                    <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>
                       Pallet Current Location
                     </p>
-                    <p className={cn(textClasses['body-base'], 'text-white')}>{foundPallet.plt_loc || 'N/A'}</p>
+                    <p className={cn(cardTextStyles.body, 'text-white')}>{foundPallet.plt_loc || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className={cn(textClasses['label-small'], 'text-white/60')}>
+                    <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>
                       Created At
                     </p>
-                    <p className={cn(textClasses['body-base'], 'text-white')}>
+                    <p className={cn(cardTextStyles.body, 'text-white')}>
                       {foundPallet.generate_time 
                         ? new Date(foundPallet.generate_time).toLocaleString() 
                         : 'N/A'}
@@ -318,7 +324,7 @@ export const VoidPalletCard: React.FC<VoidPalletCardProps> = ({
             {/* Batch info */}
             {voidMode === 'batch' && (
               <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-                <h4 className={cn(textClasses['label-large'], 'mb-3 text-white')}>
+                <h4 className={cn(cardTextStyles.label, 'mb-3 text-white')}>
                   Batch Void Confirmation
                 </h4>
                 <p className="text-sm text-white/70">

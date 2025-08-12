@@ -85,27 +85,6 @@ export default function MainLoginPage() {
 
               {/* 登入表單 */}
               <LoginForm />
-
-              {/* 連結 */}
-              <div className='mt-4 space-y-2 text-center text-sm'>
-                <div>
-                  <Link
-                    href='/main-login/reset'
-                    className='text-blue-400 transition-colors hover:text-blue-300'
-                  >
-                    Forgot your password?
-                  </Link>
-                </div>
-                <div className='text-slate-400'>
-                  Don&apos;t have an account?{' '}
-                  <Link
-                    href='/main-login/register'
-                    className='text-blue-400 transition-colors hover:text-blue-300'
-                  >
-                    Sign up
-                  </Link>
-                </div>
-              </div>
             </div>
           </div>
 

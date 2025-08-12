@@ -3,10 +3,4 @@
  * Re-exports all utility-related type definitions
  */
 
-export type {
-  PerformanceStatus,
-  PerformanceResult,
-  PerformanceSummary,
-  PerformanceReport,
-  PerformanceComparison,
-} from './performance';
+// Performance types have been removed as they are no longer in use

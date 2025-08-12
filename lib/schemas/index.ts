@@ -3,7 +3,7 @@
  * 統一管理所有類型驗證和推導
  */
 
-export * from './dashboard';
+// Dashboard schemas removed - file no longer exists
 export * from './printing';
 export * from './alerts';
 

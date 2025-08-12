@@ -33,42 +33,34 @@ export {
 
 // AlertLevel 和 AlertCondition 從 @/lib/alerts/types 導入
 
-// 認證類型
-export type {
-  LoginCredentials,
-  RegisterCredentials,
-  ResetPasswordRequest,
-  UpdatePasswordRequest,
-  User,
-  AuthResponse,
-  ApiError,
-  ValidationError,
-  AuthError,
-  Session,
-  TokenPayload,
-} from './auth/credentials';
+// 認證類型 - 已遷移到其他模塊
 
-// API 類型
+// API 類型 - 基礎類型已刪除，請使用 lib/types/api
+// export type {
+//   BaseResponse,
+//   ErrorResponse,
+//   ValidationErrorResponse,
+// } from './api/response'; // 已刪除
+
+// 暫時保留的業務響應類型
 export type {
-  BaseResponse,
-  ErrorResponse,
-  ValidationErrorResponse,
   ProductResponse,
   OrderResponse,
   StockResponse,
   ReportResponse,
-  PrintResponse,
-  HealthCheckResponse,
-  AcoOrderUpdateResponse,
-  RpcResponse,
-  MonitoringResponse,
+} from '@/lib/types/api-legacy';
+
+// 從新位置導出
+export type { AcoOrderUpdateResponse } from '@/lib/types/aco-order';
+export type {
   WarehouseWorkLevelResponse,
   WarehouseWorkLevelError,
   WarehouseWorkLevelResult,
-} from './api/response';
+} from '@/lib/types/warehouse-work-level';
 
 // 業務邏輯類型
 export type { VoidReason, VoidRecord, VoidReportFilters } from './business/schemas';
+// SupplierInfo 和 DatabaseSupplierInfo 在下方統一導出
 
 // 外部庫類型
 export type {
@@ -158,32 +150,16 @@ export {
   assertIsArray,
 } from './external/unknown-handlers';
 
-// API 響應處理器
-export { ApiResponseHandler } from './api/handlers';
+// API 響應處理器 - 現在從 lib/types 導入
+export { ApiResponseHandler } from '@/lib/types/api-response-handlers';
 
-// 供應商類型和 RPC 響應類型
+// 供應商類型和 RPC 響應類型 - Simplified exports to fix build
 export type {
   SupplierInfo,
   DatabaseSupplierInfo,
-  SupplierData,
-  RpcSearchSupplierResponse,
-  RpcSupplierMutationResponse,
 } from './business/supplier';
 export {
   convertDatabaseSupplierInfo,
-  convertToDatabase,
-  isValidSupplierInfoLegacy as isValidSupplierInfo,
-  isRpcSearchSupplierResponse,
-  isRpcSupplierMutationResponse,
-  isSupplierData,
-  assertRpcSearchSupplierResponse,
-  assertRpcSupplierMutationResponse,
-  getSupplierCode,
-  getSupplierName,
-  getSupplierAddress,
-  createEmptySupplierInfo,
-  isValidSupplierCode,
-  normalizeSupplierCode,
 } from './business/supplier';
 
 // Context Types
@@ -229,24 +205,11 @@ export type {
 //   PerformanceComparison,
 // } from './utils';
 
-// Hook Types
+// Hook Types - Now imported from lib/types
 export type {
   AuthState,
   UserRole,
-  PerformanceMetrics,
-  ABTestConfiguration,
-  PerformanceContext,
-  RealtimeMetrics,
-  UseWidgetPerformanceTrackingOptions,
-  ErrorSeverity,
-  ErrorType,
-  ErrorMetrics,
-  UseWidgetPerformanceTrackingResult,
-  ReportType,
-  ExportFormat,
-  UsePerformanceReportsResult,
-  UseRealtimePerformanceMonitorResult,
-} from './hooks';
+} from '@/lib/types/auth';
 
 // Domain Types - Only export types that actually exist
 export type {
@@ -269,6 +232,7 @@ export type {
   ErrorState,
 } from './core/common';
 
-export type {
-  SearchResult,
-} from '../lib/types/index';
+// SearchResult export removed - type not found in lib/types
+// export type {
+//   SearchResult,
+// } from '@/lib/types';

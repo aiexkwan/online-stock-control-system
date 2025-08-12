@@ -569,8 +569,9 @@ export class AssistantService {
 
     while (attempts < maxAttempts) {
       // 檢查是否超時
-      if (Date.now() - startTime > timeout) {
-        throw new Error('Assistant execution timeout');
+      const elapsed = Date.now() - startTime;
+      if (elapsed > timeout) {
+        throw new Error(`Assistant execution timeout after ${elapsed}ms (${Math.round(elapsed/1000)}s). Max timeout: ${timeout}ms. Attempts made: ${attempts}/${maxAttempts}`);
       }
 
       const run = await this.openai.beta.threads.runs.retrieve(threadId, runId);

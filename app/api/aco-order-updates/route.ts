@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getErrorMessage } from '@/types/core/error';
 import { createClient } from '@/app/utils/supabase/server';
-import type { AcoOrderUpdateResponse } from '@/types/api/response';
+import type { AcoOrderUpdateResponse } from '@/lib/types/aco-order';
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {

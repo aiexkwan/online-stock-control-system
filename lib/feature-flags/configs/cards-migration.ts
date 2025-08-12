@@ -1,10 +1,10 @@
 /**
- * Cards/Widgets 系統架構遷移 Feature Flags 配置
+ * Cards 系統架構 Feature Flags 配置
  * 
- * 控制 Card→Card 遷移和 REST→GraphQL 遷移的漸進式發布
+ * 控制 REST→GraphQL API 遷移的漸進式發布
  * 
- * @document /docs/planning/系統架構全面遷移計劃.md
  * @created 2025-07-25
+ * @updated 2025-08-12
  */
 
 import { FeatureFlag, FeatureFlagStatus } from '../types';
@@ -201,12 +201,6 @@ export const cardsMigrationFlags: FeatureFlag[] = [
 ];
 
 /**
- * 檢查是否應該使用 Card 組件
- * @deprecated CardMigrationWrapper has been deleted - this function is no longer needed
- */
-// Removed shouldUseCard function - migration system has been removed
-
-/**
  * 檢查是否應該使用 GraphQL API
  */
 export function shouldUseGraphQL(operation: 'query' | 'mutation' | 'subscription', userId?: string): boolean {
@@ -243,11 +237,3 @@ export function shouldUseGraphQL(operation: 'query' | 'mutation' | 'subscription
 
   return apiFlag.defaultValue as boolean;
 }
-
-/**
- * @deprecated Migration progress tracking has been removed
- * The CardMigrationWrapper and related migration system have been deleted
- */
-// Removed getMigrationProgress function - migration system has been removed
-
-// Removed canDisableLegacySystem function - migration system has been removed

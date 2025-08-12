@@ -187,23 +187,23 @@ export function CompactErrorFallback({
 }
 
 // Card-specific Error Fallback
-export function WidgetErrorFallback({
+export function CardErrorFallback({
   error,
   errorReport,
   retry,
-  widgetName,
-}: ErrorFallbackProps & { widgetName?: string }) {
+  cardName,
+}: ErrorFallbackProps & { cardName?: string }) {
   return (
     <Card className='h-full border-red-800/50 bg-red-950/20'>
       <CardHeader className='pb-3'>
         <CardTitle className='flex items-center gap-2 text-sm text-red-400'>
           <AlertTriangle className='h-4 w-4' />
-          Widget Error
+          Card Error
         </CardTitle>
       </CardHeader>
       <CardContent className='space-y-3'>
         <p className='text-xs text-gray-400'>
-          {widgetName ? `${widgetName} widget` : 'This widget'} encountered an error
+          {cardName ? `${cardName} card` : 'This card'} encountered an error
         </p>
 
         {errorReport?.userMessage && (

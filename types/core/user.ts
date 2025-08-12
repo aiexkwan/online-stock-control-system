@@ -2,7 +2,7 @@
  * 用戶相關類型定義
  */
 
-import { UserRole } from './enums';
+import { UserRole } from '../database/tables';
 
 // @types-migration:todo(phase1) [P0] UserRole 已遷移到 enums.ts - Completed: 2025-07
 

@@ -7,8 +7,7 @@
 'use client';
 
 import React, { lazy, Suspense } from 'react';
-import { AdminErrorBoundary } from '../components/AdminErrorBoundary';
-import { ErrorProvider } from '@/lib/error-handling';
+import { ErrorProvider, PageErrorBoundary } from '@/lib/error-handling';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Direct lazy loading of TabSelectorCard
@@ -40,7 +39,7 @@ export default function AnalyticsPage() {
   // Main content - directly render AnalysisLayout
   // Authentication is handled by middleware, so we can assume user is authenticated
   return (
-    <AdminErrorBoundary>
+    <PageErrorBoundary pageName="Analytics">
       <ErrorProvider>
           <div className='min-h-screen'>
             <div className='relative z-10 flex min-h-screen flex-col overflow-x-hidden text-white'>
@@ -70,6 +69,6 @@ export default function AnalyticsPage() {
             </div>
           </div>
       </ErrorProvider>
-    </AdminErrorBoundary>
+    </PageErrorBoundary>
   );
 }

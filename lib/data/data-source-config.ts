@@ -18,15 +18,15 @@ export interface DataSourceRule {
 }
 
 export interface DataSourceCondition {
-  type: 'user' | 'widget' | 'performance' | 'time' | 'feature_flag' | 'experiment';
+  type: 'user' | 'card' | 'performance' | 'time' | 'feature_flag' | 'experiment';
   value?: unknown;
   operator?: 'equals' | 'contains' | 'gt' | 'lt' | 'between';
 }
 
 export interface DataSourceContext {
   userId?: string;
-  widgetId?: string;
-  widgetCategory?: string;
+  cardId?: string;
+  cardCategory?: string;
   [key: string]: unknown;
 }
 
@@ -89,10 +89,10 @@ export class DataSourceConfigManager {
 
       // 中等優先級：Card 特定規則
       {
-        id: 'widget_chart_graphql',
-        name: '圖表 Widget 優先使用 GraphQL',
+        id: 'card_chart_graphql',
+        name: '圖表 Card 優先使用 GraphQL',
         condition: {
-          type: 'widget',
+          type: 'card',
           value: ['charts', 'analysis'],
           operator: 'contains',
         },
@@ -101,7 +101,7 @@ export class DataSourceConfigManager {
         enabled: true,
         fallbackEnabled: true,
         metadata: {
-          description: '圖表和分析類 Widget 優先使用 GraphQL 以獲得更好的查詢能力',
+          description: '圖表和分析類 Card 優先使用 GraphQL 以獲得更好的查詢能力',
         },
       },
 
@@ -128,8 +128,8 @@ export class DataSourceConfigManager {
    * 根據上下文決定數據源
    */
   async determineDataSource(context: {
-    widgetId?: string;
-    widgetCategory?: string;
+    cardId?: string;
+    cardCategory?: string;
     userId?: string;
     userAgent?: string;
     performanceMetrics?: Partial<DataSourceMetrics>;
@@ -186,14 +186,14 @@ export class DataSourceConfigManager {
       case 'user':
         return context.userId === condition.value;
 
-      case 'widget':
+      case 'card':
         if (condition.operator === 'contains' && Array.isArray(condition.value)) {
           return (
-            condition.value.includes(context.widgetCategory) ||
-            condition.value.includes(context.widgetId)
+            condition.value.includes(context.cardCategory) ||
+            condition.value.includes(context.cardId)
           );
         }
-        return context.widgetId === condition.value || context.widgetCategory === condition.value;
+        return context.cardId === condition.value || context.cardCategory === condition.value;
 
       case 'performance':
         if (!this.metrics || !condition.operator) return false;

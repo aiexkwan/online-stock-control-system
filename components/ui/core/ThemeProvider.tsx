@@ -7,6 +7,7 @@
 
 import * as React from 'react';
 import { usePathname } from 'next/navigation';
+// Temporarily using deprecated theme system - TODO: Migrate to card-system
 import {
   themes,
   applyTheme,
@@ -15,7 +16,7 @@ import {
   type ThemeName,
   type ThemeConfig,
   type ThemeContextValue,
-} from '@/lib/design-system/theme-system';
+} from '@/lib/design-system-deprecated/theme-system';
 
 // Theme Context
 const ThemeContext = React.createContext<ThemeContextValue | undefined>(undefined);

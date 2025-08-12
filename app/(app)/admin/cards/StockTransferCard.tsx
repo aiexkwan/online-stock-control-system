@@ -6,6 +6,13 @@ import { StatusMessage } from '@/components/ui/universal-stock-movement-layout';
 import { Input } from '@/components/ui/input';
 import { SearchInput, SearchInputRef, FormInputGroup, FormOption } from '../components/shared';
 import { Label } from '@/components/ui/label';
+import { 
+  getCardTheme, 
+  cardTextStyles, 
+  cardStatusColors,
+  cardContainerStyles 
+} from '@/lib/card-system/theme';
+import { cn } from '@/lib/utils';
 import {
   Loader2,
   Package,
@@ -39,13 +46,17 @@ const ErrorOverlay: React.FC<{
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="relative w-full max-w-md rounded-lg border border-red-500 bg-slate-900 p-6 shadow-2xl shadow-red-500/20">
+      <div className={cn(
+        "relative w-full max-w-md rounded-lg border p-6 shadow-2xl",
+        cardStatusColors.error.border,
+        "bg-slate-900 shadow-red-500/20"
+      )}>
         <div className="mb-4 flex items-center gap-3">
           <AlertTriangle className="h-8 w-8 text-red-500" />
-          <h2 className="text-2xl font-bold text-red-500">Error</h2>
+          <h2 className={cn("text-2xl font-bold", cardStatusColors.error.text)}>Error</h2>
         </div>
         <div className="space-y-3">
-          <p className="text-lg font-medium text-white">Reason: {message}</p>
+          <p className={cn("text-lg font-medium", "text-white")}>Reason: {message}</p>
           <p className="text-base text-gray-300">Details: {details}</p>
         </div>
         <button
@@ -74,8 +85,15 @@ const TransferLogItem: React.FC<{
   };
 
   return (
-    <div className="flex items-start space-x-2 rounded-lg border border-slate-700 bg-slate-800/50 p-2">
-      <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-400" />
+    <div className={cn(
+      "flex items-start space-x-2 rounded-lg border p-2",
+      getCardTheme('operation').border,
+      getCardTheme('operation').bg
+    )}>
+      <div className={cn(
+        "mt-2 h-2 w-2 flex-shrink-0 rounded-full",
+        "bg-blue-400"
+      )} />
       <div className="min-w-0 flex-1">
         <div className="mb-1 flex items-center gap-2">
           <span className="font-mono text-xs text-slate-400">
@@ -235,7 +253,7 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
     loadTransferHistory();
   }, [loadTransferHistory]);
   
-  // Sync with hook state
+  // Sync with hook state - use specific dependencies to avoid infinite loops
   useEffect(() => {
     setTransferState(prev => ({
       ...prev,
@@ -244,7 +262,9 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
       selectedDestination: state.selectedDestination,
       currentLocation: state.currentLocation,
     }));
-    
+  }, [state.isLoading, state.isSearching, state.isTransferring, state.selectedPallet, state.selectedDestination, state.currentLocation]);
+  
+  useEffect(() => {
     setOperatorState(prev => ({
       ...prev,
       clockNumber: state.clockNumber,
@@ -253,13 +273,30 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
       isVerifying: state.isVerifying,
       error: state.clockError,
     }));
-    
-    setUiState(prev => ({
-      ...prev,
-      statusMessage: state.statusMessage,
-      searchValue: state.searchValue,
-    }));
-  }, [state]);
+  }, [state.clockNumber, state.verifiedClockNumber, state.verifiedName, state.isVerifying, state.clockError]);
+  
+  useEffect(() => {
+    // Only update if values actually changed to prevent loops
+    setUiState(prev => {
+      const updates: Partial<typeof prev> = {};
+      
+      // Only update statusMessage if it's different
+      if (JSON.stringify(prev.statusMessage) !== JSON.stringify(state.statusMessage)) {
+        updates.statusMessage = state.statusMessage;
+      }
+      
+      // Only update searchValue if it's different
+      if (prev.searchValue !== state.searchValue) {
+        updates.searchValue = state.searchValue;
+      }
+      
+      // Only return new state if there are updates
+      if (Object.keys(updates).length > 0) {
+        return { ...prev, ...updates };
+      }
+      return prev;
+    });
+  }, [state.statusMessage, state.searchValue]);
 
   // Get destination-based theme colors
   const getDestinationTheme = () => {
@@ -328,7 +365,7 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
           <div className={`border-b border-slate-700/50 p-4 transition-all duration-300 ${theme.headerBg}`}>
             <div className="flex items-center gap-2">
               <ArrowLeftRight className={`h-6 w-6 ${theme.accentColor}`} />
-              <h2 className="text-xl font-semibold text-white">Stock Transfer</h2>
+              <h2 className={cn("text-xl", cardTextStyles.title)}>Stock Transfer</h2>
               {transferState.selectedDestination && (
                 <span className={`ml-auto text-base font-medium ${theme.accentColor}`}>
                   → {transferState.selectedDestination}
@@ -365,7 +402,7 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <span className={`flex h-6 w-6 items-center justify-center rounded-full ${transferState.selectedDestination ? theme.headerBg : 'bg-blue-500'} text-xs font-bold text-white`}>1</span>
-                  <h3 className="text-sm font-medium text-white">Select Destination</h3>
+                  <h3 className={cardTextStyles.subtitle}>Select Destination</h3>
                 </div>
                 <TransferDestinationSelector
                   currentLocation={transferState.currentLocation}
@@ -379,7 +416,7 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <span className={`flex h-6 w-6 items-center justify-center rounded-full ${operatorState.verifiedClockNumber ? 'bg-green-500' : theme.headerBg} text-xs font-bold text-white`}>2</span>
-                  <h3 className="text-sm font-medium text-white">Verify Operator</h3>
+                  <h3 className={cardTextStyles.subtitle}>Verify Operator</h3>
                 </div>
                 <div className="space-y-2">
                   <Input
@@ -418,7 +455,7 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <span className={`flex h-6 w-6 items-center justify-center rounded-full ${transferState.selectedPallet ? 'bg-green-500' : theme.headerBg} text-xs font-bold text-white`}>3</span>
-                  <h3 className="text-sm font-medium text-white">Scan/Search Pallet</h3>
+                  <h3 className={cardTextStyles.subtitle}>Scan/Search Pallet</h3>
                 </div>
                 <div 
                   onBlur={(e) => {
@@ -494,7 +531,7 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
 
             {/* Transfer Log - Always visible with real database records */}
             <div className="flex-1">
-              <h3 className="mb-2 text-sm font-medium text-white">Transfer Log</h3>
+              <h3 className={cn("mb-2", cardTextStyles.subtitle)}>Transfer Log</h3>
               <div className={`h-40 space-y-2 overflow-y-auto rounded-lg border ${theme.borderColor} bg-slate-900/50 p-3`}>
                 {uiState.transferHistory.length === 0 ? (
                   <div className="flex h-full items-center justify-center text-slate-400">

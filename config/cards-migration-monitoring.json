@@ -156,13 +156,6 @@
           "target": 0.5,
           "unit": "percentage", 
           "alert_threshold": 2.0
-        },
-        {
-          "name": "migration_rollback_count",
-          "description": "遷移回滾次數",
-          "type": "counter",
-          "target": 0,
-          "alert_threshold": 1
         }
       ]
     }
@@ -239,17 +232,6 @@
   },
   "alerts": {
     "critical": [
-      {
-        "name": "Migration Rollback Alert",
-        "description": "遷移發生回滾",
-        "metric": "migration_rollback_count",
-        "condition": "> 0",
-        "channels": ["slack", "email"],
-        "escalation": {
-          "to": ["architecture_team", "product_team"],
-          "after": "5m"
-        }
-      },
       {
         "name": "High Error Rate Alert",
         "description": "Card 或 GraphQL 錯誤率過高",

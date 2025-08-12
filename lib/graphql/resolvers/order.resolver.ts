@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { toGraphQLErrorMessage } from '@/lib/types/api';
 import { createClient } from '@/app/utils/supabase/server';
 import { getAcoReportData } from '@/app/actions/DownloadCentre-Actions';
 import { orderLoadingDataSources } from '@/app/components/reports/dataSources/OrderLoadingDataSource';
@@ -308,7 +309,7 @@ export const orderResolvers = {
       const reportResult = await getAcoReportData(args.reference);
 
       if (!reportResult.success) {
-        throw new GraphQLError(reportResult.error || 'Failed to fetch ACO order data', {
+        throw new GraphQLError(toGraphQLErrorMessage(reportResult.error || 'Failed to fetch ACO order data'), {
           extensions: { code: 'INTERNAL_SERVER_ERROR' }
         });
       }

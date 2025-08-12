@@ -58,8 +58,8 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
           type='email'
           value={formData.email}
           onChange={e => handleInputChange('email', e.target.value)}
-          className={`w-full rounded-lg border bg-gray-800 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-            fieldErrors.email ? 'border-red-500' : 'border-gray-700'
+          className={`w-full rounded-lg border bg-slate-900/80 px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+            fieldErrors.email ? 'border-red-500' : 'border-gray-600'
           }`}
           placeholder='user@pennineindustries.com'
           disabled={loading}
@@ -80,8 +80,8 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
             type={showPassword ? 'text' : 'password'}
             value={formData.password}
             onChange={e => handleInputChange('password', e.target.value)}
-            className={`w-full rounded-lg border bg-gray-800 px-4 py-3 pr-12 text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-              fieldErrors.password ? 'border-red-500' : 'border-gray-700'
+            className={`w-full rounded-lg border bg-slate-900/80 px-4 py-3 pr-12 text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+              fieldErrors.password ? 'border-red-500' : 'border-gray-600'
             }`}
             placeholder={passwordRules.description}
             disabled={loading}

@@ -4,7 +4,14 @@
  * 重構：使用 Zod schema 替換 unknown 類型
  */
 
-import { UserRole } from '@/types/core/enums';
+// UserRole enum - migrated from core/enums.ts
+export enum UserRole {
+  ADMIN = 'admin',
+  MANAGER = 'manager',
+  OPERATOR = 'operator',
+  VIEWER = 'viewer',
+}
+
 import {
   DatabaseValue,
   SafeDatabaseValue,

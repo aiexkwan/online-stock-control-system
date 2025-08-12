@@ -2,8 +2,7 @@
  * Core types 統一導出
  */
 
-// 枚舉類型
-export * from './enums';
+// 枚舉類型 - 已遷移到各自使用的文件中
 
 // 認證相關
 export * from './auth';

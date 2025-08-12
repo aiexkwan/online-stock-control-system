@@ -16,14 +16,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
-    "test:v1.3.2": "jest --config ./test/jest-e2e.json test/v1.3.2-validation.e2e-spec.ts",
-    "test:playwright": "playwright test",
-    "test:playwright:ui": "playwright test --ui",
-    "test:playwright:debug": "playwright test --debug",
-    "test:integration": "npm run test:v1.3.2 && npm run test:playwright",
-    "test:all": "npm run test && npm run test:e2e && npm run test:playwright"
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

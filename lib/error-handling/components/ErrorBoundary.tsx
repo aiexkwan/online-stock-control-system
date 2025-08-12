@@ -219,16 +219,16 @@ export function withErrorBoundary<P extends object>(
 }
 
 // Specialized error boundaries for different contexts
-export function WidgetErrorBoundary({
+export function CardErrorBoundary({
   children,
-  widgetName,
+  cardName,
   ...props
-}: ErrorBoundaryProps & { widgetName: string }) {
+}: ErrorBoundaryProps & { cardName: string }) {
   return (
     <ErrorBoundary
       {...props}
       context={{
-        component: `Widget.${widgetName}`,
+        component: `Card.${cardName}`,
         action: 'render',
         ...props.context,
       }}

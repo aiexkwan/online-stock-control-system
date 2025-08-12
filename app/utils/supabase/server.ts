@@ -32,9 +32,9 @@ export async function createClient() {
           }
         },
       },
-      // 根據搜索結果，添加 auth 配置可以減少 realtime 依賴
+      // 優化身份驗證配置，改善服務器操作中的會話持久性
       auth: {
-        persistSession: false,
+        persistSession: true,    // 改為 true 以保持服務器操作中的會話
         autoRefreshToken: false,
         detectSessionInUrl: false
       }

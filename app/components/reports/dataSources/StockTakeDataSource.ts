@@ -17,6 +17,7 @@ import {
   safeOptionalNumber,
   safeCountStatus,
 } from '@/types/core/guards';
+import { extractErrorMessage } from '@/lib/types/api';
 
 // Stock Take Summary data source
 const stockTakeSummaryDataSource: ReportDataSource = {
@@ -31,7 +32,7 @@ const stockTakeSummaryDataSource: ReportDataSource = {
     };
     const result = await getStockTakeSummary(stockTakeFilters);
     if (!result.success) {
-      throw new Error(result.error || 'Failed to fetch stock take summary');
+      throw new Error(extractErrorMessage(result.error || 'Failed to fetch stock take summary'));
     }
     // 策略4: unknown + type narrowing - 安全的類型轉換
     const data = result.data;
@@ -60,7 +61,7 @@ const stockTakeDetailsDataSource: ReportDataSource = {
     };
     const result = await getStockTakeDetails(stockTakeFilters);
     if (!result.success) {
-      throw new Error(result.error || 'Failed to fetch stock take details');
+      throw new Error(extractErrorMessage(result.error || 'Failed to fetch stock take details'));
     }
     // 策略4: unknown + type narrowing - 安全的類型轉換
     const data = result.data;
@@ -85,7 +86,7 @@ const notCountedItemsDataSource: ReportDataSource = {
     };
     const result = await getNotCountedItems(stockTakeFilters);
     if (!result.success) {
-      throw new Error(result.error || 'Failed to fetch not counted items');
+      throw new Error(extractErrorMessage(result.error || 'Failed to fetch not counted items'));
     }
     // 策略4: unknown + type narrowing - 安全的類型轉換
     const data = result.data;

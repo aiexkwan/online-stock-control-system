@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { toast } from 'sonner';
 import StockCountForm from './components/StockCountForm';
 import ScanResult from './components/ScanResult';
-import ErrorBoundary from './components/ErrorBoundary';
+import { PageErrorBoundary } from '@/lib/error-handling';
 import { UniversalBackground } from '@/app/components/UniversalBackground';
 
 // 簡化狀態類型
@@ -149,7 +149,7 @@ export default function AdminStockCountPage() {
 
   return (
     <UniversalBackground>
-      <ErrorBoundary>
+      <PageErrorBoundary pageName="StockCount">
         <div className="text-white">
           <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
             <div className="space-y-8">
@@ -175,7 +175,7 @@ export default function AdminStockCountPage() {
             </div>
           </div>
         </div>
-      </ErrorBoundary>
+      </PageErrorBoundary>
     </UniversalBackground>
   );
 }

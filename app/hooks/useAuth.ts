@@ -6,7 +6,7 @@ import { createClient } from '@/app/utils/supabase/client';
 import { unifiedAuth } from '@/app/(auth)/main-login/utils/unified-auth';
 import type { User, PostgrestError } from '@supabase/supabase-js';
 
-import { AuthState, UserRole } from '@/types/hooks/auth';
+import { AuthState, UserRole } from '@/lib/types/auth';
 
 // 基於 department 和 position 的用戶角色映射
 const USER_ROUTING_MAP: Record<

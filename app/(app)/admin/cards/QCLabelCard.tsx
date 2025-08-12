@@ -4,7 +4,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { ApolloError } from '@apollo/client';
 import { GlassmorphicCard } from '../components/GlassmorphicCard';
 import GridBasicProductFormGraphQL from '../components/GridBasicProductFormGraphQL';
-import { ErrorBoundary } from '../components/ErrorBoundary';
+import { CardErrorBoundary } from '@/lib/error-handling';
 import { EnhancedProgressBar } from '../components/EnhancedProgressBar';
 import { useAdminQcLabelBusiness } from '../hooks/useAdminQcLabelBusiness';
 import ClockNumberConfirmDialog from '../components/ClockNumberConfirmDialog';
@@ -344,7 +344,7 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
           <div className="min-h-0 flex-1 overflow-auto p-4">
             <div className="space-y-6">
               {/* Main Form - GraphQL Version */}
-              <ErrorBoundary>
+              <CardErrorBoundary cardName="QCLabel">
                 <GridBasicProductFormGraphQL
                   productCode={formData.productCode}
                   onProductCodeChange={handleProductCodeChange}
@@ -369,7 +369,7 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
                   }}
                   disabled={formData.isLoading}
                 />
-              </ErrorBoundary>
+              </CardErrorBoundary>
 
               {/* ACO/Slate Details */}
               {productInfo && (productInfo.type === 'ACO' || productInfo.type?.toLowerCase().includes('slate')) && (

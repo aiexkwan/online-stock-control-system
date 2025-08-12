@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import { grnErrorHandler } from '@/app/(app)/print-grnlabel/services/ErrorHandler';
 import { EnhancedProgressBar } from '../components/EnhancedProgressBar';
 import ClockNumberConfirmDialog from '../components/ClockNumberConfirmDialog';
+import { GlassmorphicCard } from '../components/GlassmorphicCard';
+import { Package } from 'lucide-react';
 
 // Import new modular components from print-grnlabel
 import { GrnDetailCard } from '@/app/(app)/print-grnlabel/components/GrnDetailCard';
@@ -33,8 +35,6 @@ interface GrnProductInfo {
 
 export interface GRNLabelCardProps {
   className?: string;
-  title?: string;
-  onGenerateComplete?: (data: GrnProductInfo[]) => void;
 }
 
 // Add custom CSS for scrollbar styling
@@ -72,10 +72,6 @@ const customStyles = `
     animation: fadeIn 0.3s ease-out forwards;
   }
 `;
-
-export interface GRNLabelCardProps {
-  className?: string;
-}
 
 export const GRNLabelCard: React.FC<GRNLabelCardProps> = ({ className }) => {
   // Lazy initialize Supabase client only on client side
@@ -297,6 +293,14 @@ export const GRNLabelCard: React.FC<GRNLabelCardProps> = ({ className }) => {
     [processPrintRequest, actions]
   );
 
+  // Theme configuration for consistent styling
+  const theme = {
+    borderColor: 'border-orange-500/20',
+    glowColor: 'shadow-orange-500/10',
+    accentColor: 'text-orange-400',
+    headerBg: 'bg-orange-500/10',
+  };
+
   return (
     <>
       {/* Inject custom styles */}
@@ -304,40 +308,58 @@ export const GRNLabelCard: React.FC<GRNLabelCardProps> = ({ className }) => {
         {customStyles}
       </style>
 
-      <div className={`h-full overflow-hidden ${className || ''}`}>
-        <div className="flex h-full flex-col">
-          {/* Main Content Area */}
-          <div className="flex-1 overflow-y-auto p-4">
-            <div className="grid grid-cols-12 gap-4">
-              {/* Left side - GRN Details */}
-              <div className="col-span-6">
-                <GrnDetailCard
-                  formData={state.formData}
-                  labelMode={state.labelMode}
-                  productInfo={state.productInfo}
-                  supplierInfo={state.supplierInfo}
-                  supplierError={state.ui.supplierError}
-                  currentUserId={currentUserId}
-                  palletType={state.palletType}
-                  packageType={state.packageType}
-                  onFormChange={handleFormChange}
-                  onSupplierInfoChange={handleSupplierInfoChange}
-                  onProductInfoChange={qcProductInfo => {
-                    const adaptedInfo = adaptProductInfo(qcProductInfo);
-                    actions.setProductInfo(adaptedInfo);
-                  }}
-                  onLabelModeChange={mode => handleLabelModeChange(mode)}
-                  onPalletTypeChange={handlePalletTypeChange}
-                  onPackageTypeChange={handlePackageTypeChange}
-                  disabled={state.ui.isProcessing}
-                />
+      <div className={`h-full ${className || ''}`}>
+        <GlassmorphicCard
+          variant="default"
+          hover={false}
+          borderGlow={false}
+          className={`h-full overflow-hidden transition-all duration-300 ${theme.borderColor} ${theme.glowColor}`}
+        >
+          <div className="flex h-full flex-col">
+            {/* Header */}
+            <div className={`border-b border-slate-700/50 p-4 transition-all duration-300 ${theme.headerBg}`}>
+              <div className="flex items-center gap-2">
+                <Package className={`h-6 w-6 ${theme.accentColor}`} />
+                <h2 className="text-xl font-semibold text-white">GRN Label Generation</h2>
+                {state.grossWeights.filter(w => w.trim() !== '').length > 0 && (
+                  <span className={`ml-auto rounded-full bg-orange-600/80 px-2 py-1 text-sm font-medium text-white`}>
+                    {state.grossWeights.filter(w => w.trim() !== '').length} labels
+                  </span>
+                )}
               </div>
+              <p className="text-sm text-slate-300">Generate and print GRN labels for received goods</p>
+            </div>
 
-              {/* Right side - Weight Input */}
-              <div className="col-span-6">
-                <div className="flex h-full flex-col">
-                  {/* Weight/Quantity Input Section */}
-                  <div className="flex-1 overflow-hidden">
+            {/* Main Content */}
+            <div className="min-h-0 flex-1 overflow-auto p-4">
+              <div className="space-y-6">
+                {/* GRN Details Section */}
+                <div className="space-y-4">
+                  <GrnDetailCard
+                    formData={state.formData}
+                    labelMode={state.labelMode}
+                    productInfo={state.productInfo}
+                    supplierInfo={state.supplierInfo}
+                    supplierError={state.ui.supplierError}
+                    currentUserId={currentUserId}
+                    palletType={state.palletType}
+                    packageType={state.packageType}
+                    onFormChange={handleFormChange}
+                    onSupplierInfoChange={handleSupplierInfoChange}
+                    onProductInfoChange={qcProductInfo => {
+                      const adaptedInfo = adaptProductInfo(qcProductInfo);
+                      actions.setProductInfo(adaptedInfo);
+                    }}
+                    onLabelModeChange={mode => handleLabelModeChange(mode)}
+                    onPalletTypeChange={handlePalletTypeChange}
+                    onPackageTypeChange={handlePackageTypeChange}
+                    disabled={state.ui.isProcessing}
+                  />
+                </div>
+
+                {/* Weight Input Section */}
+                <div className="space-y-4 border-t border-slate-700/30 pt-6">
+                  <h3 className="text-base font-medium text-white">Weight/Quantity Input</h3>
                     <WeightInputList
                       grossWeights={state.grossWeights}
                       onChange={handleGrossWeightChange}
@@ -369,77 +391,58 @@ export const GRNLabelCard: React.FC<GRNLabelCardProps> = ({ className }) => {
                       maxItems={22}
                       disabled={state.ui.isProcessing}
                     />
-                  </div>
+                </div>
 
-                  {/* Action Button */}
-                  <div className="mt-4">
-                    <div className='group relative'>
-                      <button
-                        onClick={handlePrintClick}
-                        disabled={!isFormValid || state.ui.isProcessing}
-                        className={`relative flex w-full items-center justify-center space-x-3 overflow-hidden rounded-xl px-6 py-3 text-base font-semibold transition-all duration-300 ease-out ${
-                          !isFormValid || state.ui.isProcessing
-                            ? 'cursor-not-allowed bg-gradient-to-r from-slate-700 to-slate-600 text-slate-300 shadow-lg shadow-slate-900/20'
-                            : 'bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 text-white shadow-xl shadow-orange-500/20 hover:scale-[1.02] hover:from-orange-500 hover:via-orange-400 hover:to-amber-400 hover:shadow-orange-400/30 active:scale-[0.98]'
-                        }`}
-                      >
-                        {!state.ui.isProcessing && isFormValid && (
-                          <div className='absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100'></div>
+                {/* Progress Bar */}
+                {state.progress.total > 0 && (
+                  <div className="space-y-4 border-t border-slate-700/30 pt-6">
+                    <h3 className="text-base font-medium text-white">Generation Progress</h3>
+                    <EnhancedProgressBar
+                      current={state.progress.current}
+                      total={state.progress.total}
+                      status={state.progress.status}
+                      title="GRN Label Generation"
+                      variant="compact"
+                      showPercentage={true}
+                      showItemDetails={true}
+                      className="w-full"
+                    />
+                  </div>
+                )}
+
+                {/* Action Button */}
+                <div className="space-y-4 border-t border-slate-700/30 pt-6">
+                  <button
+                    onClick={handlePrintClick}
+                    disabled={!isFormValid || state.ui.isProcessing}
+                    className={`flex w-full items-center justify-center space-x-2 rounded-lg px-4 py-3 font-medium transition-colors ${
+                      !isFormValid || state.ui.isProcessing
+                        ? 'cursor-not-allowed bg-slate-700 text-slate-400'
+                        : 'bg-orange-600 text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500'
+                    }`}
+                  >
+                    {state.ui.isProcessing ? (
+                      <>
+                        <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
+                        <span>Processing Labels...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Package className="h-4 w-4" />
+                        <span>Print GRN Label(s)</span>
+                        {state.grossWeights.filter(w => w.trim() !== '').length > 0 && (
+                          <span className="rounded-full bg-orange-800 px-2 py-0.5 text-xs font-bold">
+                            {state.grossWeights.filter(w => w.trim() !== '').length}
+                          </span>
                         )}
-
-                        <div className='relative z-10 flex items-center space-x-3'>
-                          {state.ui.isProcessing ? (
-                            <>
-                              <div className='h-5 w-5 animate-spin rounded-full border-b-2 border-white'></div>
-                              <span>Processing Labels...</span>
-                            </>
-                          ) : (
-                            <>
-                              <svg
-                                className='h-5 w-5'
-                                fill='none'
-                                stroke='currentColor'
-                                viewBox='0 0 24 24'
-                              >
-                                <path
-                                  strokeLinecap='round'
-                                  strokeLinejoin='round'
-                                  strokeWidth={2}
-                                  d='M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z'
-                                />
-                              </svg>
-                              <span>Print GRN Label(s)</span>
-                              {state.grossWeights.filter(w => w.trim() !== '').length > 0 && (
-                                <span className='rounded-full bg-orange-600/80 px-2 py-0.5 text-xs font-bold'>
-                                  {state.grossWeights.filter(w => w.trim() !== '').length}
-                                </span>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </button>
-                    </div>
-
-                    {/* Progress Bar */}
-                    {state.progress.total > 0 && (
-                      <div className='mt-4'>
-                        <EnhancedProgressBar
-                          current={state.progress.current}
-                          total={state.progress.total}
-                          status={state.progress.status}
-                          title='GRN Label Generation'
-                          variant='compact'
-                          showPercentage={true}
-                          showItemDetails={true}
-                        />
-                      </div>
+                      </>
                     )}
-                  </div>
+                  </button>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        </GlassmorphicCard>
       </div>
 
       <ClockNumberConfirmDialog

@@ -226,8 +226,8 @@ export class UnifiedDataLayer {
 
     if (source === DataSourceType.AUTO) {
       const decision = await dataSourceConfig.determineDataSource({
-        widgetId: (options.variables as WidgetParameters)?.widgetId as string,
-        widgetCategory: (options.variables as WidgetParameters)?.widgetCategory as string,
+        cardId: (options.variables as WidgetParameters)?.widgetId as string,
+        cardCategory: (options.variables as WidgetParameters)?.widgetCategory as string,
         performanceMetrics: this.getPerformanceMetrics(),
       });
 

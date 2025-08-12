@@ -10,7 +10,8 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { designTokens } from '@/lib/design-system/tokens';
+// Temporarily using deprecated design tokens - TODO: Migrate to card-system
+import { designTokens } from '@/lib/design-system-deprecated/tokens';
 import { useMediaQuery } from '@/lib/hooks/use-media-query';
 
 // Dialog 動畫變體

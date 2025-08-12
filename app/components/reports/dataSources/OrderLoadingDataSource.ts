@@ -13,6 +13,7 @@ import {
   type OrderLoadingFilters,
 } from '@/app/actions/DownloadCentre-Actions';
 import { safeString, safeOptionalString, safeOptionalNumber } from '@/types/core/guards';
+import { extractErrorMessage } from '@/lib/types/api';
 
 // Order Loading Summary data source
 const orderLoadingSummaryDataSource: ReportDataSource = {
@@ -27,7 +28,7 @@ const orderLoadingSummaryDataSource: ReportDataSource = {
     };
     const result = await getOrderLoadingSummary(orderLoadingFilters);
     if (!result.success) {
-      throw new Error(result.error || 'Failed to fetch order loading summary');
+      throw new Error(extractErrorMessage(result.error || 'Failed to fetch order loading summary'));
     }
     // 策略4: unknown + type narrowing - 安全的類型轉換
     const data = result.data;
@@ -58,7 +59,7 @@ const orderProgressDataSource: ReportDataSource = {
     };
     const result = await getOrderProgress(orderLoadingFilters);
     if (!result.success) {
-      throw new Error(result.error || 'Failed to fetch order progress');
+      throw new Error(extractErrorMessage(result.error || 'Failed to fetch order progress'));
     }
     // 策略4: unknown + type narrowing - 安全的類型轉換
     const data = result.data;
@@ -83,7 +84,7 @@ const loadingDetailsDataSource: ReportDataSource = {
     };
     const result = await getLoadingDetails(orderLoadingFilters);
     if (!result.success) {
-      throw new Error(result.error || 'Failed to fetch loading details');
+      throw new Error(extractErrorMessage(result.error || 'Failed to fetch loading details'));
     }
     // 策略4: unknown + type narrowing - 安全的類型轉換
     const data = result.data;
@@ -108,7 +109,7 @@ const userPerformanceDataSource: ReportDataSource = {
     };
     const result = await getUserPerformance(orderLoadingFilters);
     if (!result.success) {
-      throw new Error(result.error || 'Failed to fetch user performance');
+      throw new Error(extractErrorMessage(result.error || 'Failed to fetch user performance'));
     }
     // 策略4: unknown + type narrowing - 安全的類型轉換
     const data = result.data;

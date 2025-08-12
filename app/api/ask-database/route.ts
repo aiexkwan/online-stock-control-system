@@ -15,8 +15,8 @@ import type {
   QueryResult,
   CacheResult,
   ASK_DATABASE_CONSTANTS,
-} from '@/types/api/ask-database';
-import { isClassifiedError } from '@/types/api/ask-database';
+} from '@/lib/types/ask-database';
+import { isClassifiedError } from '@/lib/types/ask-database';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { enhanceQueryWithTemplate } from '@/lib/query-templates';
 import { optimizeSQL, analyzeQueryWithPlan, generatePerformanceReport } from '@/lib/sql-optimizer';
