@@ -20,7 +20,7 @@
 
 - Revokes [agent-manager](../agents/agent-manager.md) to assign related other sub-agents for sub-task
 
-- *Ultrathink* : Determine whether $ARGUMENTS are being imported by any components — either directly or indirectly.
+- *Ultrathink* : Determine whether $ARGUMENTS are being import/export by any components — either directly or indirectly.
 - *Ultrathink* : Analyse any potential impact on the new main core [Card System](/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/cards)
 - *Ultrathink* : Assess any impact on the current running system if $ARGUMENTS is deleted
 

@@ -91,6 +91,7 @@ storybook-static
 # Backend specific ignores
 backend/**/dist/
 backend/**/node_modules/
+backend/**/test-results/
 
 # MCP Server node_modules
 mcp-servers/**/node_modules/
