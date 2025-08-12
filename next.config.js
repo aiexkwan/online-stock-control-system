@@ -17,9 +17,17 @@ const nextConfig = {
     // 在生產環境中強制 ESLint 檢查
     ignoreDuringBuilds: false,
   },
+  // Vercel 部署優化
+  output: 'standalone',
+  poweredByHeader: false,
+  compress: true,
   experimental: {
     optimizeCss: false,
+    // Vercel 部署優化
+    optimizePackageImports: ['@apollo/client', '@heroicons/react'],
   },
+  // 外部套件配置 (已移出 experimental)
+  serverExternalPackages: ['@prisma/client'],
   // webpack 配置 - 根據搜索結果嘅最佳實踐
   webpack: (config, { isServer, dev }) => {
     // 根據官方建議添加 fallbacks 來解決 Node.js polyfills 問題
