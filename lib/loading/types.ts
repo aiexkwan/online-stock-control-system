@@ -32,7 +32,7 @@ export type LoadingType =
   | 'data' // 數據載入
   | 'image' // 圖片載入
   | 'api' // API 請求
-  | 'widget' // Widget 載入
+  | 'widget' // Card 載入
   | 'background'; // 背景載入
 
 export type LoadingPriority = 'low' | 'medium' | 'high' | 'critical';

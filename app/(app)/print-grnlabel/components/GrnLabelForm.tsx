@@ -5,8 +5,8 @@ import { createClient } from '@/app/utils/supabase/client';
 import { toast } from 'sonner';
 import { grnErrorHandler } from '../services/ErrorHandler';
 import { UniversalContainer, UniversalCard, UniversalGrid } from '@/components/layout/universal';
-import { EnhancedProgressBar } from '@/app/components/qc-label-form/EnhancedProgressBar';
-import ClockNumberConfirmDialog from '@/app/components/qc-label-form/ClockNumberConfirmDialog';
+import { EnhancedProgressBar } from '@/app/(app)/admin/components/EnhancedProgressBar';
+import ClockNumberConfirmDialog from '@/app/(app)/admin/components/ClockNumberConfirmDialog';
 
 // Import new modular components
 import { GrnDetailCard } from './GrnDetailCard';
@@ -82,7 +82,13 @@ interface GrnProductInfo {
 }
 
 export const GrnLabelFormV2: React.FC = () => {
-  const supabase = createClient();
+  // Lazy initialize Supabase client only on client side
+  const [supabase] = React.useState(() => {
+    if (typeof window !== 'undefined') {
+      return createClient();
+    }
+    return null;
+  });
 
   // 使用統一的 state 管理
   const { state, actions } = useGrnFormReducer();
@@ -116,6 +122,11 @@ export const GrnLabelFormV2: React.FC = () => {
   useEffect(() => {
     const initializeUser = async () => {
       try {
+        if (!supabase) {
+          console.error('Supabase client not initialized');
+          return;
+        }
+        
         const {
           data: { user },
         } = await supabase.auth.getUser();
@@ -309,7 +320,7 @@ export const GrnLabelFormV2: React.FC = () => {
 
       <UniversalContainer variant='page' maxWidth='full' padding='none' className='h-screen'>
         <div className='mx-auto grid h-auto max-w-6xl grid-cols-12 gap-4 pt-4'>
-          {/* Widget 1 - GRN Details (左邊) */}
+          {/* Card 1 - GRN Details (左邊) */}
           <div className='col-start-2 col-end-6'>
             <UniversalCard
               variant='widget'
@@ -343,7 +354,7 @@ export const GrnLabelFormV2: React.FC = () => {
             </UniversalCard>
           </div>
 
-          {/* Widget 3 - Weight/Qty Input (右邊) */}
+          {/* Card 3 - Weight/Qty Input (右邊) */}
           <div className='col-start-6 col-end-11'>
             <UniversalCard
               variant='widget'

@@ -2,7 +2,7 @@
 
 /**
  * Stock Transfer 監控腳本
- * 實時監控 stock transfer 操作同 report_log
+ * 實時監控 stock transfer 操作同 record_history
  */
 
 const { createClient } = require('@supabase/supabase-js');
@@ -30,8 +30,8 @@ const colors = {
 };
 
 function formatLog(log) {
-  const icon = log.state ? '✅' : '❌';
-  const color = log.state ? colors.green : colors.red;
+  const icon = '✅'; // record_history 只記錄成功的操作
+  const color = colors.green;
   const time = new Date(log.time).toLocaleString('en-US', {
     hour12: false,
     year: 'numeric',
@@ -42,16 +42,16 @@ function formatLog(log) {
     second: '2-digit'
   });
 
-  console.log(`${color}${icon} [${time}] User ${log.user_id}: ${log.error}${colors.reset}`);
-  console.log(`   ${colors.cyan}${log.error_info}${colors.reset}`);
+  console.log(`${color}${icon} [${time}] User ${log.id}: ${log.action}${colors.reset}`);
+  console.log(`   ${colors.cyan}Pallet ${log.plt_num} → ${log.loc}: ${log.remark}${colors.reset}`);
   console.log('');
 }
 
 async function getRecentLogs() {
   const { data, error } = await supabase
-    .from('report_log')
+    .from('record_history')
     .select('*')
-    .like('error', 'STOCK_TRANSFER%')
+    .eq('action', 'Stock Transfer')
     .order('time', { ascending: false })
     .limit(10);
 

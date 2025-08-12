@@ -60,7 +60,7 @@ export class PerformanceBenchmark {
     const startTime = performance.now();
     const startMemory = this.getMemoryUsage();
 
-    let result: T;
+    let result: T | undefined;
     let errorCount = 0;
 
     try {
@@ -75,7 +75,7 @@ export class PerformanceBenchmark {
       const metrics: PerformanceMetrics = {
         endpoint,
         responseTime: endTime - startTime,
-        payloadSize: this.calculatePayloadSize(result),
+        payloadSize: result ? this.calculatePayloadSize(result) : 0,
         memoryUsage: endMemory.used - startMemory.used,
         networkRequests: 1, // 假設單一網絡請求
         dbQueries: expectedDbQueries,
@@ -87,7 +87,10 @@ export class PerformanceBenchmark {
       this.results.push(metrics);
     }
 
-    return result!;
+    if (result === undefined) {
+      throw new Error('API call failed and result is undefined');
+    }
+    return result;
   }
 
   /**

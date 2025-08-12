@@ -1,6 +1,6 @@
 /**
- * GraphQL Server Configuration
- * Sets up Apollo Server for Next.js App Router
+ * GraphQL Server Configuration - Fixed Version
+ * 根據 Apollo Server 官方建議解決重複啟動問題
  */
 
 import { ApolloServer } from '@apollo/server';
@@ -15,38 +15,70 @@ const schema = makeExecutableSchema({
   resolvers,
 });
 
-// Create Apollo Server instance
-export const apolloServer = new ApolloServer({
-  schema,
-  introspection: process.env.NODE_ENV !== 'production',
-  formatError: err => {
-    console.error('[GraphQL Error]:', err);
+// 根據官方建議：緩存 server instance 和 start promise
+declare global {
+  var apolloServer: ApolloServer | undefined;
+  var apolloStartPromise: Promise<void> | undefined;
+}
 
-    // Don't expose internal errors in production
-    if (process.env.NODE_ENV === 'production') {
-      // Generic error message for production
-      if (err.message.includes('Authentication')) {
-        return new Error('Authentication required');
+// 創建 Apollo Server 實例
+function createApolloServer() {
+  return new ApolloServer({
+    schema,
+    introspection: process.env.NODE_ENV !== 'production',
+    formatError: err => {
+      // Only log in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[GraphQL Error]:', err);
       }
-      if (err.message.includes('Permission')) {
-        return new Error('Insufficient permissions');
+
+      // Don't expose internal errors in production
+      if (process.env.NODE_ENV === 'production') {
+        if (err.message.includes('Authentication')) {
+          return new Error('Authentication required');
+        }
+        if (err.message.includes('Permission')) {
+          return new Error('Insufficient permissions');
+        }
+        return new Error('Internal server error');
       }
-      return new Error('Internal server error');
-    }
 
-    return err;
-  },
-});
+      return err;
+    },
+  });
+}
 
-// Start the server (for serverless, this is handled differently)
-let serverStarted = false;
-
+// 根據官方建議：緩存 start promise 而唔係 server instance
 export async function getApolloServer() {
-  if (!serverStarted) {
-    await apolloServer.start();
-    serverStarted = true;
+  // 如果 server 未創建，創建一個新嘅
+  if (!globalThis.apolloServer) {
+    globalThis.apolloServer = createApolloServer();
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Apollo Server] Created new server instance');
+    }
   }
-  return apolloServer;
+
+  // 如果 start promise 未創建，創建並緩存
+  if (!globalThis.apolloStartPromise) {
+    globalThis.apolloStartPromise = globalThis.apolloServer.start().then(() => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Apollo Server] ✅ Server started successfully');
+      }
+    }).catch(error => {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[Apollo Server] ❌ Start failed:', error);
+      }
+      // 清除 promise 以便重試
+      globalThis.apolloStartPromise = undefined;
+      throw error;
+    });
+  }
+
+  // 等待 start promise 完成
+  await globalThis.apolloStartPromise;
+  
+  return globalThis.apolloServer;
 }
 
 // Context creation function

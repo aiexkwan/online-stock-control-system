@@ -130,7 +130,7 @@ LIMIT 50`;
     if (data && Array.isArray(data) && data.length > 0) {
       // Convert JSONB result to proper format
       const formattedData = toRecordArray(data).map(
-        (row: DatabaseRecord) => safeGet(row, 'result') || row
+        (row: Record<string, unknown>) => safeGet(row, 'result') || row
       );
 
       return {
@@ -203,7 +203,7 @@ LIMIT 20`;
     if (data && Array.isArray(data) && data.length > 0) {
       // Convert JSONB result to proper format
       const formattedData = toRecordArray(data).map(
-        (row: DatabaseRecord) => safeGet(row, 'result') || row
+        (row: Record<string, unknown>) => safeGet(row, 'result') || row
       );
       const criticalCount = formattedData.filter((item: unknown) => {
         if (!isRecord(item)) return false;
@@ -266,7 +266,7 @@ LIMIT 50`;
     if (data && Array.isArray(data) && data.length > 0) {
       // Convert JSONB result to proper format
       const formattedData = toRecordArray(data).map(
-        (row: DatabaseRecord) => safeGet(row, 'result') || row
+        (row: Record<string, unknown>) => safeGet(row, 'result') || row
       );
       const criticalOrders = formattedData.filter((order: unknown) => {
         if (!isRecord(order)) return false;

@@ -97,12 +97,12 @@ describe('PrintTemplateService', () => {
 
       const formatted = await service.applyTemplate(template!, [inputData]);
 
-      expect((formatted as any).formattedData).toBeDefined();
+      expect(formatted.formattedData).toBeDefined();
       expect(Array.isArray(formatted.formattedData)).toBe(true);
-      expect((formatted as any).template).toBeDefined();
-      expect((formatted as any).metadata).toBeDefined();
+      expect(formatted.template).toBeDefined();
+      expect(formatted.metadata).toBeDefined();
       // Check metadata contains expected information
-      expect((formatted as any).metadata.type).toBe('QC_LABEL');
+      expect(formatted.metadata.type).toBe('QC_LABEL');
     });
 
     it('should handle missing optional QC label data', async () => {
@@ -114,15 +114,16 @@ describe('PrintTemplateService', () => {
         operator: ''
       };
 
-      const formatted = await service.applyTemplate(template as any, inputData as any);
+      const formatted = await service.applyTemplate(template!, [inputData]);
 
-      expect((formatted as any).productCode).toBe('TEST');
-      expect((formatted as any).productDescription).toBe('');
-      expect((formatted as any).quantity).toBe(0);
-      expect((formatted as any).count).toBe(0);
-      expect((formatted as any).palletIds).toEqual([]);
-      expect((formatted as any).palletCount).toBe(0);
-      expect((formatted as any).operatorClockNum).toBe('');
+      const formattedItem = formatted.formattedData as Record<string, unknown>;
+      expect(formattedItem.productCode).toBe('TEST');
+      expect(formattedItem.productDescription).toBe('');
+      expect(formattedItem.quantity).toBe(0);
+      expect(formattedItem.count).toBe(0);
+      expect(formattedItem.palletIds).toEqual([]);
+      expect(formattedItem.palletCount).toBe(0);
+      expect(formattedItem.operatorClockNum).toBe('');
     });
   });
 
@@ -144,21 +145,22 @@ describe('PrintTemplateService', () => {
         operatorClockNum: 'OP456'
       };
 
-      const formatted = await service.applyTemplate(template as any, inputData as any);
+      const formatted = await service.applyTemplate(template!, [inputData]);
 
-      expect((formatted as any).grnNumber).toBe('GRN001');
-      expect((formatted as any).supplierId).toBe('SUP001');
-      expect((formatted as any).supplierName).toBe('Test Supplier');
-      expect((formatted as any).materialCode).toBe('MAT001');
-      expect((formatted as any).materialDescription).toBe('Test Material');
-      expect((formatted as any).palletType).toBe('Standard');
-      expect((formatted as any).packageType).toBe('Box');
-      expect((formatted as any).palletIds).toEqual(['P1', 'P2', 'P3']);
-      expect((formatted as any).weights).toEqual([100, 200, 150]);
-      expect((formatted as any).totalGrossWeight).toBe(450);
-      expect((formatted as any).totalNetWeight).toBe(400);
-      expect((formatted as any).operatorClockNum).toBe('OP456');
-      expect((formatted as any).printDate).toBeDefined();
+      const formattedItem = formatted.formattedData as Record<string, unknown>;
+      expect(formattedItem.grnNumber).toBe('GRN001');
+      expect(formattedItem.supplierId).toBe('SUP001');
+      expect(formattedItem.supplierName).toBe('Test Supplier');
+      expect(formattedItem.materialCode).toBe('MAT001');
+      expect(formattedItem.materialDescription).toBe('Test Material');
+      expect(formattedItem.palletType).toBe('Standard');
+      expect(formattedItem.packageType).toBe('Box');
+      expect(formattedItem.palletIds).toEqual(['P1', 'P2', 'P3']);
+      expect(formattedItem.weights).toEqual([100, 200, 150]);
+      expect(formattedItem.totalGrossWeight).toBe(450);
+      expect(formattedItem.totalNetWeight).toBe(400);
+      expect(formattedItem.operatorClockNum).toBe('OP456');
+      expect(formattedItem.printDate).toBeDefined();
     });
 
     it('should handle missing optional GRN label data', async () => {
@@ -171,13 +173,14 @@ describe('PrintTemplateService', () => {
         operatorClockNum: 'OP001'
       };
 
-      const formatted = await service.applyTemplate(template as any, inputData as any);
+      const formatted = await service.applyTemplate(template!, [inputData]);
 
-      expect((formatted as any).grnNumber).toBe('GRN001');
-      expect((formatted as any).supplierId).toBe('SUP001');
-      expect((formatted as any).materialCode).toBe('MAT001');
-      expect((formatted as any).weights).toEqual([]);
-      expect((formatted as any).totalGrossWeight).toBe(0);
+      const formattedItem = formatted.formattedData as Record<string, unknown>;
+      expect(formattedItem.grnNumber).toBe('GRN001');
+      expect(formattedItem.supplierId).toBe('SUP001');
+      expect(formattedItem.materialCode).toBe('MAT001');
+      expect(formattedItem.weights).toEqual([]);
+      expect(formattedItem.totalGrossWeight).toBe(0);
     });
   });
 
@@ -195,15 +198,16 @@ describe('PrintTemplateService', () => {
         userId: 'USER001'
       };
 
-      const formatted = await service.applyTemplate(template as any, inputData as any);
+      const formatted = await service.applyTemplate(template!, [inputData]);
 
-      expect((formatted as any).transactionType).toBe('inbound');
-      expect((formatted as any).location).toBe('Warehouse A');
-      expect((formatted as any).productCode).toBe('PROD001');
-      expect((formatted as any).transactions).toHaveLength(2);
-      expect((formatted as any).summary.total).toBe(100);
-      expect((formatted as any).generatedBy).toBe('USER001');
-      expect((formatted as any).generatedAt).toBeDefined();
+      const formattedItem = formatted.formattedData as Record<string, unknown>;
+      expect(formattedItem.transactionType).toBe('inbound');
+      expect(formattedItem.location).toBe('Warehouse A');
+      expect(formattedItem.productCode).toBe('PROD001');
+      expect(formattedItem.transactions).toHaveLength(2);
+      expect((formattedItem.summary as { total: number }).total).toBe(100);
+      expect(formattedItem.generatedBy).toBe('USER001');
+      expect(formattedItem.generatedAt).toBeDefined();
     });
 
     it('should format inventory report data', async () => {
@@ -220,20 +224,21 @@ describe('PrintTemplateService', () => {
         userId: 'USER002'
       };
 
-      const formatted = await service.applyTemplate(template as any, inputData as any);
+      const formatted = await service.applyTemplate(template!, [inputData]);
 
-      expect((formatted as any).location).toBe('Warehouse B');
-      expect((formatted as any).category).toBe('Electronics');
-      expect((formatted as any).inventoryItems).toHaveLength(3);
-      expect((formatted as any).totalValue).toBe(50000);
-      expect((formatted as any).itemCount).toBe(150);
-      expect((formatted as any).stockLevels.low).toBe(10);
-      expect((formatted as any).turnoverRates.fast).toBe(30);
-      expect((formatted as any).generatedBy).toBe('USER002');
+      const formattedItem = formatted.formattedData as Record<string, unknown>;
+      expect(formattedItem.location).toBe('Warehouse B');
+      expect(formattedItem.category).toBe('Electronics');
+      expect(formattedItem.inventoryItems).toHaveLength(3);
+      expect(formattedItem.totalValue).toBe(50000);
+      expect(formattedItem.itemCount).toBe(150);
+      expect((formattedItem.stockLevels as { low: number }).low).toBe(10);
+      expect((formattedItem.turnoverRates as { fast: number }).fast).toBe(30);
+      expect(formattedItem.generatedBy).toBe('USER002');
     });
 
     it('should format ACO order report data', async () => {
-      const template = await service.getTemplate('QC_LABEL' as any); // PrintType.ACO_ORDER_REPORT
+      const template = await service.getTemplate('QC_LABEL'); // PrintType.ACO_ORDER_REPORT
       const inputData = {
         orderRef: 'ORD001',
         orders: [{ id: 1 }, { id: 2 }],
@@ -243,18 +248,19 @@ describe('PrintTemplateService', () => {
         userId: 'USER003'
       };
 
-      const formatted = await service.applyTemplate(template as any, inputData as any);
+      const formatted = await service.applyTemplate(template!, [inputData]);
 
-      expect((formatted as any).orderRef).toBe('ORD001');
-      expect((formatted as any).orders).toHaveLength(2);
-      expect((formatted as any).orderSummary.total).toBe(5);
-      expect((formatted as any).progressData.completed).toBe(3);
-      expect((formatted as any).completionRate).toBe(60);
-      expect((formatted as any).generatedBy).toBe('USER003');
+      const formattedItem = formatted.formattedData as Record<string, unknown>;
+      expect(formattedItem.orderRef).toBe('ORD001');
+      expect(formattedItem.orders).toHaveLength(2);
+      expect((formattedItem.orderSummary as { total: number }).total).toBe(5);
+      expect((formattedItem.progressData as { completed: number }).completed).toBe(3);
+      expect(formattedItem.completionRate).toBe(60);
+      expect(formattedItem.generatedBy).toBe('USER003');
     });
 
     it('should format GRN report data', async () => {
-      const template = await service.getTemplate('QC_LABEL' as any); // PrintType.GRN_REPORT);
+      const template = await service.getTemplate('QC_LABEL'); // PrintType.GRN_REPORT);
       const inputData = {
         grnRef: 'GRN001',
         materialCode: 'MAT001',
@@ -263,14 +269,15 @@ describe('PrintTemplateService', () => {
         userId: 'USER004'
       };
 
-      const formatted = await service.applyTemplate(template as any, inputData as any);
+      const formatted = await service.applyTemplate(template!, [inputData]);
 
-      expect((formatted as any).grnRef).toBe('GRN001');
-      expect((formatted as any).materialCode).toBe('MAT001');
-      expect((formatted as any).palletData).toHaveLength(2);
-      expect((formatted as any).summary.totalWeight).toBe(1000);
-      expect((formatted as any).reportType).toBe('grn');
-      expect((formatted as any).generatedBy).toBe('USER004');
+      const formattedItem = formatted.formattedData as Record<string, unknown>;
+      expect(formattedItem.grnRef).toBe('GRN001');
+      expect(formattedItem.materialCode).toBe('MAT001');
+      expect(formattedItem.palletData).toHaveLength(2);
+      expect((formattedItem.summary as { totalWeight: number }).totalWeight).toBe(1000);
+      expect(formattedItem.reportType).toBe('grn');
+      expect(formattedItem.generatedBy).toBe('USER004');
     });
   });
 
@@ -283,7 +290,7 @@ describe('PrintTemplateService', () => {
       };
 
       await expect(
-        service.applyTemplate(template as any, invalidData as any)
+        service.applyTemplate(template!, [invalidData])
       ).rejects.toThrow('Missing required field: productCode');
     });
 
@@ -296,7 +303,7 @@ describe('PrintTemplateService', () => {
       };
 
       await expect(
-        service.applyTemplate(template as any, validData as any)
+        service.applyTemplate(template!, [validData])
       ).resolves.toBeDefined();
     });
 
@@ -309,7 +316,7 @@ describe('PrintTemplateService', () => {
       };
 
       await expect(
-        service.applyTemplate(template as any, dataWithNull as any)
+        service.applyTemplate(template!, [dataWithNull])
       ).rejects.toThrow('Missing required field: productCode');
 
       const dataWithUndefined = {
@@ -319,7 +326,7 @@ describe('PrintTemplateService', () => {
       };
 
       await expect(
-        service.applyTemplate(template as any, dataWithUndefined as any)
+        service.applyTemplate(template!, [dataWithUndefined])
       ).rejects.toThrow('Missing required field: productCode');
     });
   });
@@ -337,7 +344,7 @@ describe('PrintTemplateService', () => {
       service.registerTemplate(unknownTemplate as any);
       const data = { test: 'data' };
 
-      const result = await service.applyTemplate(unknownTemplate as any, data as any);
+      const result = await service.applyTemplate(unknownTemplate as any, [data]);
 
       // Should return data unchanged for unknown types
       expect(result).toEqual(data);
@@ -353,10 +360,11 @@ describe('PrintTemplateService', () => {
         customField2: 'value2'
       };
 
-      const formatted = await service.applyTemplate(template as any, inputData as any);
+      const formatted = await service.applyTemplate(template!, [inputData]);
 
-      expect((formatted as any).customField1).toBe('value1');
-      expect((formatted as any).customField2).toBe('value2');
+      const formattedItem = formatted.formattedData as Record<string, unknown>;
+      expect(formattedItem.customField1).toBe('value1');
+      expect(formattedItem.customField2).toBe('value2');
     });
 
     it('should handle deeply nested data', async () => {
@@ -375,10 +383,11 @@ describe('PrintTemplateService', () => {
         }
       };
 
-      const formatted = await service.applyTemplate(template as any, inputData as any);
+      const formatted = await service.applyTemplate(template!, [inputData]);
 
-      expect((formatted as any).slateDetail.batchNumber).toBe('BATCH001');
-      expect((formatted as any).slateDetail.nested.deep.value).toBe('test');
+      const formattedItem = formatted.formattedData as Record<string, unknown>;
+      expect((formattedItem.slateDetail as any).batchNumber).toBe('BATCH001');
+      expect((formattedItem.slateDetail as any).nested.deep.value).toBe('test');
     });
   });
 });

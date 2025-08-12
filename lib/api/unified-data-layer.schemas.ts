@@ -5,7 +5,7 @@
 
 import { z } from 'zod';
 
-// Widget Parameters Schema
+// Card Parameters Schema
 export const WidgetParametersSchema = z
   .object({
     warehouse: z.string().optional(),

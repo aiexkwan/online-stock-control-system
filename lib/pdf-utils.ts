@@ -46,7 +46,7 @@ export async function batchDownloadAndPrintPdfs(
     }
 
     const mergedPdfBytes = await mergedPdf.save();
-    const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+    const blob = new Blob([mergedPdfBytes as unknown as ArrayBuffer], { type: 'application/pdf' });
     const objectUrl = URL.createObjectURL(blob);
 
     const printWindow = window.open(objectUrl);

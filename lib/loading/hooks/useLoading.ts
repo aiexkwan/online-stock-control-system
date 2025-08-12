@@ -150,7 +150,7 @@ export function usePageLoading(id: string = 'page-loading') {
 }
 
 /**
- * Widget 載入 Hook - 專門用於 Widget 組件
+ * Card 載入 Hook - 專門用於 Card 組件
  */
 export function useWidgetLoading(widgetId: string, priority: LoadingPriority = 'medium') {
   return useLoading({

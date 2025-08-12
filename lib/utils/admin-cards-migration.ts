@@ -180,7 +180,7 @@ export class AdminCardsMigration {
       if (configObj.searchMode) {
         defaultSearchMode = safeParseSearchMode(configObj.searchMode);
       }
-      if (configObj.searchEntities) {
+      if (configObj.searchEntities && Array.isArray(configObj.searchEntities)) {
         defaultSearchEntities = safeParseSearchEntities(configObj.searchEntities);
       }
       if (configObj.placeholder && typeof configObj.placeholder === 'string') {

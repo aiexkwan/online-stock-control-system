@@ -33,12 +33,11 @@ import { ReportRegistry } from '@/app/components/reports/core/ReportRegistry';
 import { RegisteredReport } from '@/app/components/reports/core/ReportConfig';
 
 // Report Dialogs
-import { UnifiedVoidReportDialog } from '@/app/(app)/void-pallet/components/UnifiedVoidReportDialog';
 import { UnifiedLoadingReportDialog } from '@/app/(app)/order-loading/components/UnifiedLoadingReportDialog';
 // import { UnifiedStockTakeReportDialog } from '@/app/stock-take/components/UnifiedStockTakeReportDialog'; // Component not found
-// ACO Report now integrated directly into system page widget
+// ACO Report now integrated directly into system page card
 // import { UnifiedGrnReportDialog } from '@/app/components/reports/UnifiedGrnReportDialog'; // Component not found
-// Transaction Report now integrated directly into system page widget
+// Transaction Report now integrated directly into system page card
 import { UnifiedExportAllDataDialog } from '@/app/components/reports/UnifiedExportAllDataDialog';
 
 interface ReportsDashboardDialogProps {
@@ -265,11 +264,6 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
       </Dialog>
 
       {/* Individual Report Dialogs */}
-      <UnifiedVoidReportDialog
-        isOpen={dialogStates['void-pallet-report'] || false}
-        onClose={() => closeReportDialog('void-pallet-report')}
-      />
-
       <UnifiedLoadingReportDialog
         isOpen={dialogStates['order-loading-report'] || false}
         onClose={() => closeReportDialog('order-loading-report')}
@@ -280,9 +274,9 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
         isOpen={dialogStates['stock-take-report'] || false}
         onClose={() => closeReportDialog('stock-take-report')}
       /> */}
-      {/* ACO Order Report now integrated directly into system page widget */}
+      {/* ACO Order Report now integrated directly into system page card */}
 
-      {/* Transaction Report now integrated directly into system page widget */}
+      {/* Transaction Report now integrated directly into system page card */}
 
       <UnifiedExportAllDataDialog
         isOpen={dialogStates['export-all-data'] || false}

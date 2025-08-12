@@ -9,7 +9,7 @@ jest.mock('../FeatureFlagManager', () => ({
   featureFlagManager: {
     evaluate: jest.fn(),
     evaluateAll: jest.fn(),
-    getMergedContext: jest.fn((context) => context || ({} as any)),
+    getMergedContext: jest.fn((context) => context || ({} as unknown)),
     subscribe: jest.fn(() => () => {}),
     toggleFlag: jest.fn()
   }
@@ -21,7 +21,7 @@ describe('Feature Flag Hooks', () => {
     // Reset the evaluate mock to prevent infinite loops
     (featureFlagManager.evaluate as jest.Mock).mockReset();
     (featureFlagManager.evaluateAll as jest.Mock).mockReset();
-    (featureFlagManager.getMergedContext as jest.Mock).mockImplementation((context) => context || ({} as any));
+    (featureFlagManager.getMergedContext as jest.Mock).mockImplementation((context) => context || ({} as unknown));
     (featureFlagManager.subscribe as jest.Mock).mockImplementation(() => jest.fn());
   });
 

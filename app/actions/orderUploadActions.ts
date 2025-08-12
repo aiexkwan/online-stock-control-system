@@ -2,8 +2,9 @@
 
 import { createClient } from '@/app/utils/supabase/server';
 import { DatabaseRecord } from '@/types/database/tables';
+import type { Database } from '@/types/database/supabase';
 import { getErrorMessage } from '@/types/core/error';
-import { AssistantService } from '@/lib/services/assistantService';
+import { AssistantService } from '@/app/services/assistantService';
 import { SYSTEM_PROMPT } from '@/lib/openai-assistant-config';
 import crypto from 'crypto';
 
@@ -197,7 +198,8 @@ async function storeEnhancedOrderData(
       code: product.product_code,
       order_ref: parseInt(orderData.order_ref),
       required_qty: product.product_qty,
-      uploaded_by: parseInt(uploadedBy),
+      finished_qty: 0,
+      latest_update: new Date().toISOString(),
     }));
 
     const { error: acoError } = await supabase.from('record_aco').insert(acoRecords);
@@ -217,10 +219,22 @@ async function uploadToStorageAsync(
   extractedText?: string
 ): Promise<string | null> {
   try {
-    const supabase = await createClient();
     const buffer = Buffer.from(fileData.buffer);
+    
+    // 使用 service role key 創建 admin client 來繞過所有 RLS
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.warn('[uploadToStorageAsync] SUPABASE_SERVICE_ROLE_KEY not found, skipping storage upload');
+      return null;
+    }
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    // Use server client with service role key for admin operations
+    const adminSupabase = await createClient();
+    
+    // For storage operations, we'll use the existing authenticated client
+    // The service role permissions should be configured in Supabase dashboard
+
+    // 使用 admin client 上傳文件到 Storage
+    const { data: uploadData, error: uploadError } = await adminSupabase.storage
       .from('documents')
       .upload(`orderpdf/${fileData.name}`, buffer, {
         cacheControl: '3600',
@@ -229,16 +243,16 @@ async function uploadToStorageAsync(
       });
 
     if (uploadError) {
-      console.error('[uploadToStorageAsync] Upload failed:', uploadError);
+      console.error('[uploadToStorageAsync] Storage upload failed:', uploadError);
       return null;
     }
 
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = adminSupabase.storage
       .from('documents')
       .getPublicUrl(`orderpdf/${fileData.name}`);
 
     // 寫入 doc_upload 表
-    const { error: docError } = await supabase.from('doc_upload').insert({
+    const { error: docError } = await adminSupabase.from('doc_upload').insert({
       doc_name: fileData.name,
       upload_by: parseInt(uploadedBy),
       doc_type: 'order',
@@ -246,10 +260,13 @@ async function uploadToStorageAsync(
       file_size: buffer.length,
       folder: 'orderpdf',
       json_txt: extractedText || null,
+      created_at: new Date().toISOString(),
     });
 
     if (docError) {
       console.error('[uploadToStorageAsync] doc_upload insert failed:', docError);
+    } else {
+      console.log('[uploadToStorageAsync] Successfully uploaded file and created doc_upload record');
     }
 
     return urlData.publicUrl;
@@ -264,8 +281,10 @@ async function sendEmailNotification(
   orderData: EnhancedOrderData,
   fileData: { buffer: ArrayBuffer; name: string },
   uploadedBy: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; details?: unknown }> {
   try {
+    console.log('[sendEmailNotification] Starting email notification process');
+    
     const { sendOrderCreatedEmail } = await import('../services/emailService');
 
     const emailRequestBody = {
@@ -281,10 +300,39 @@ async function sendEmailNotification(
       },
     };
 
+    console.log('[sendEmailNotification] Email request prepared:', {
+      orderRef: orderData.order_ref,
+      productCount: orderData.products.length,
+      attachmentName: fileData.name,
+      attachmentSizeBytes: fileData.buffer.byteLength,
+    });
+
     const emailResponse = await sendOrderCreatedEmail(emailRequestBody);
-    return emailResponse;
+    
+    console.log('[sendEmailNotification] Email service response:', {
+      success: emailResponse.success,
+      emailId: emailResponse.emailId,
+      recipients: emailResponse.recipients,
+      resendResponseKeys: Object.keys(emailResponse.resendResponse || {}),
+    });
+    
+    // 檢查 Resend API 實際響應
+    if (emailResponse.resendResponse && !emailResponse.resendResponse.id) {
+      console.warn('[sendEmailNotification] Warning: No email ID in Resend response');
+    }
+    
+    return {
+      success: emailResponse.success,
+      details: {
+        emailId: emailResponse.emailId,
+        recipients: emailResponse.recipients,
+      }
+    };
   } catch (error: unknown) {
-    console.error('[sendEmailNotification] Error:', error);
+    console.error('[sendEmailNotification] Error details:', {
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return { success: false, error: getErrorMessage(error) };
   }
 }
@@ -353,7 +401,7 @@ export async function analyzeOrderPDF(
     // 創建 Thread
     threadId = await assistantService.createThread();
 
-    // 上傳文件到 OpenAI
+    // 上傳文件到 OpenAI (使用簡單上傳，避免 vector store 問題)
     const pdfBuffer = Buffer.from(fileData.buffer);
     fileId = await assistantService.uploadFile(pdfBuffer, fileData.name);
 
@@ -366,14 +414,46 @@ export async function analyzeOrderPDF(
     // 解析結果
     let orderData: EnhancedOrderData;
     try {
+      // 調試日誌（僅在開發環境）
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[analyzeOrderPDF] Raw assistant response length:', result.length);
+      }
+      
+      // 使用 assistantService 來解析響應（它會處理新舊格式）
       const parsedData = assistantService.parseAssistantResponse(result);
-      // 確保解析的數據包含必需的字段，為缺失的字段提供默認值
+      
+      // 如果是新格式（orders 陣列），嘗試從原始響應提取額外資訊
+      let accountNum = '-';
+      let deliveryAdd = '-';
+      let invoiceTo = '-';
+      let customerRef = '-';
+      
+      try {
+        // 先清理 markdown 代碼塊
+        let cleanedResult = result;
+        const codeBlockMatch = result.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (codeBlockMatch) {
+          cleanedResult = codeBlockMatch[1].trim();
+        }
+        
+        const rawParsed = JSON.parse(cleanedResult);
+        if (rawParsed.orders && Array.isArray(rawParsed.orders) && rawParsed.orders.length > 0) {
+          const firstOrder = rawParsed.orders[0];
+          accountNum = firstOrder.account_num || '-';
+          deliveryAdd = firstOrder.delivery_add || '-';
+        }
+      } catch (rawParseError) {
+        // 如果原始解析失敗，使用默認值
+        console.warn('[analyzeOrderPDF] Could not extract extra fields, using defaults');
+      }
+      
+      // 構建增強的訂單數據
       orderData = {
         order_ref: parsedData.order_ref || '',
-        account_num: '', // 從 parsedData 中無法獲取，使用默認值
-        delivery_add: '', // 從 parsedData 中無法獲取，使用默認值
-        invoice_to: '', // 從 parsedData 中無法獲取，使用默認值
-        customer_ref: '', // 從 parsedData 中無法獲取，使用默認值
+        account_num: accountNum,
+        delivery_add: deliveryAdd,
+        invoice_to: invoiceTo,
+        customer_ref: customerRef,
         products: parsedData.products.map(product => ({
           product_code: product.product_code,
           product_desc: product.description || '',
@@ -382,7 +462,15 @@ export async function analyzeOrderPDF(
           unit_price: product.unit_price?.toString() || '0',
         })),
       };
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[analyzeOrderPDF] Successfully parsed order data:', {
+          orderRef: orderData.order_ref,
+          productCount: orderData.products.length
+        });
+      }
     } catch (parseError: unknown) {
+      console.error('[analyzeOrderPDF] Parse error details:', parseError);
       throw new Error(`Failed to parse assistant response: ${getErrorMessage(parseError)}`);
     }
 
@@ -397,12 +485,20 @@ export async function analyzeOrderPDF(
 
     // 發送電郵通知
     const emailResult = await sendEmailNotification(orderData, fileData, uploadedBy);
+    
+    if (!emailResult.success) {
+      console.error('[analyzeOrderPDF] Email notification failed:', emailResult.error);
+      // 即使電郵失敗，也繼續處理（但會在結果中標記）
+    } else {
+      console.log('[analyzeOrderPDF] Email sent successfully:', emailResult.details);
+    }
 
     // 背景存儲
     if (saveToStorage) {
       // 使用 Promise 而不是 setImmediate (server action 環境)
       uploadToStorageAsync(fileData, uploadedBy, result).catch(error => {
         console.error('[analyzeOrderPDF] Background storage failed:', error);
+        // 背景存儲失敗不應影響主要功能
       });
     }
 

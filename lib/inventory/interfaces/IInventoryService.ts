@@ -20,7 +20,7 @@ import {
   HistoryRecord,
   StockLevel,
   ActivityLogEntry,
-} from '../types';
+} from '../types/inventory.types';
 
 export interface IInventoryService {
   // Pallet Management

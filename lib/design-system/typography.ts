@@ -193,7 +193,7 @@ export const typography = {
     },
   },
 
-  // Widget 特定樣式
+  // Card 特定樣式
   widget: {
     title: {
       fontSize: fontSizes.lg,
@@ -243,7 +243,7 @@ export const textClasses = {
   'label-base': 'text-xs font-medium leading-tight tracking-wide',
   'label-small': 'text-xs font-normal leading-tight',
 
-  // Widget 類
+  // Card 類
   'widget-title': 'text-lg font-semibold leading-tight',
   'widget-subtitle': 'text-sm font-normal leading-normal text-gray-400',
   'widget-metric': 'text-2xl font-bold leading-tight',

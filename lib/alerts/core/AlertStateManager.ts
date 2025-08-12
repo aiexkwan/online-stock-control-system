@@ -3,9 +3,11 @@
  * 告警狀態管理 - 負責告警狀態轉換、生命週期管理、狀態持久化
  */
 
-import { Redis } from 'ioredis';
 import { DatabaseRecord } from '@/types/database/tables';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { getCacheAdapter } from '@/lib/cache/cache-factory';
+import { CacheAdapter } from '@/lib/cache/base-cache-adapter';
+import { AlertCacheHelper } from './cache-helper';
 import {
   Alert,
   AlertState,
@@ -20,13 +22,15 @@ import {
 } from '../types';
 
 export class AlertStateManager {
-  private redis: Redis;
+  private cache: CacheAdapter;
+  private cacheHelper: AlertCacheHelper;
   private supabase: SupabaseClient;
   private stateTransitions: Map<string, (alert: Alert) => Promise<void>> = new Map();
   private stateChangeListeners: ((alert: Alert, oldState: AlertState) => void)[] = [];
 
   constructor() {
-    this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+    this.cache = getCacheAdapter();
+    this.cacheHelper = new AlertCacheHelper(this.cache);
     this.supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -50,14 +54,14 @@ export class AlertStateManager {
    */
   private async handleActiveState(alert: Alert): Promise<void> {
     try {
-      // 更新 Redis 緩存
-      await this.redis.setex(`alert:active:${alert.id}`, 3600, JSON.stringify(alert));
+      // 更新緩存
+      await this.cache.set(`alert:active:${alert.id}`, alert, 3600);
 
       // 添加到活躍告警列表
-      await this.redis.sadd('alerts:active', alert.id);
+      await this.cacheHelper.addToSet('alerts:active', alert.id);
 
-      // 移除已解決告警列表
-      await this.redis.srem('alerts:resolved', alert.id);
+      // 從已解決列表中移除
+      await this.cacheHelper.removeFromSet('alerts:resolved', alert.id);
 
       // 更新統計
       await this.updateStats('active', 1);
@@ -77,18 +81,14 @@ export class AlertStateManager {
       // 設置解決時間
       alert.resolvedAt = new Date();
 
-      // 更新 Redis 緩存
-      await this.redis.setex(
-        `alert:resolved:${alert.id}`,
-        86400, // 24 小時
-        JSON.stringify(alert)
-      );
+      // 更新緩存
+      await this.cache.set(`alert:resolved:${alert.id}`, alert, 86400);
 
       // 移除活躍告警列表
-      await this.redis.srem('alerts:active', alert.id);
+      await this.cacheHelper.removeFromSet('alerts:active', alert.id);
 
       // 添加到已解決告警列表
-      await this.redis.sadd('alerts:resolved', alert.id);
+      await this.cacheHelper.addToSet('alerts:resolved', alert.id);
 
       // 更新統計
       await this.updateStats('resolved', 1);
@@ -116,10 +116,10 @@ export class AlertStateManager {
       alert.acknowledgedAt = new Date();
 
       // 更新 Redis 緩存
-      await this.redis.setex(`alert:acknowledged:${alert.id}`, 3600, JSON.stringify(alert));
+      await this.cache.set(`alert:acknowledged:${alert.id}`, alert, 3600);
 
       // 添加到已確認告警列表
-      await this.redis.sadd('alerts:acknowledged', alert.id);
+      await this.cacheHelper.addToSet('alerts:acknowledged', alert.id);
 
       // 更新統計
       await this.updateStats('acknowledged', 1);
@@ -137,10 +137,10 @@ export class AlertStateManager {
   private async handleSilencedState(alert: Alert): Promise<void> {
     try {
       // 更新 Redis 緩存
-      await this.redis.setex(`alert:silenced:${alert.id}`, 3600, JSON.stringify(alert));
+      await this.cache.set(`alert:silenced:${alert.id}`, alert, 3600);
 
       // 添加到靜默告警列表
-      await this.redis.sadd('alerts:silenced', alert.id);
+      await this.cacheHelper.addToSet('alerts:silenced', alert.id);
 
       // 更新統計
       await this.updateStats('silenced', 1);
@@ -236,9 +236,9 @@ export class AlertStateManager {
   public async getAlert(alertId: string): Promise<Alert | null> {
     try {
       // 先從 Redis 獲取
-      const cached = await this.redis.get(`alert:${alertId}`);
+      const cached = await this.cache.get<Alert>(`alert:${alertId}`);
       if (cached) {
-        return JSON.parse(cached);
+        return cached;
       }
 
       // 從數據庫獲取
@@ -256,7 +256,7 @@ export class AlertStateManager {
       const alert = this.deserializeAlert(data);
 
       // 緩存到 Redis
-      await this.redis.setex(`alert:${alertId}`, 3600, JSON.stringify(alert));
+      await this.cache.set(`alert:${alertId}`, alert, 3600);
 
       return alert;
     } catch (error) {
@@ -324,9 +324,8 @@ export class AlertStateManager {
   public async getAlertStats(): Promise<AlertStats> {
     try {
       // 從 Redis 獲取統計
-      const stats = await this.redis.hmget(
-        'alert:stats',
-        'total',
+      const stats = await this.cacheHelper.hashMultiGet(
+        'alert:stats', 'total',
         'active',
         'resolved',
         'acknowledged',
@@ -436,10 +435,10 @@ export class AlertStateManager {
       if (error) throw error;
 
       // 緩存抑制配置
-      await this.redis.setex(
+      await this.cache.set(
         `suppression:${ruleId}`,
-        expiresAt ? Math.floor((expiresAt.getTime() - Date.now()) / 1000) : 86400,
-        JSON.stringify(suppression)
+        suppression,
+        expiresAt ? Math.floor((expiresAt.getTime() - Date.now()) / 1000) : 86400
       );
 
       return {
@@ -461,11 +460,10 @@ export class AlertStateManager {
    */
   public async isAlertSuppressed(ruleId: string): Promise<boolean> {
     try {
-      // 先檢查 Redis 緩存
-      const cached = await this.redis.get(`suppression:${ruleId}`);
+      // 先檢查緩存
+      const cached = await this.cache.get<AlertSuppression>(`suppression:${ruleId}`);
       if (cached) {
-        const suppression: AlertSuppression = JSON.parse(cached);
-        return suppression.active && (!suppression.expiresAt || suppression.expiresAt > new Date());
+        return cached.active && (!cached.expiresAt || cached.expiresAt > new Date());
       }
 
       // 檢查數據庫
@@ -512,9 +510,9 @@ export class AlertStateManager {
       if (deleteError) throw deleteError;
 
       // 清理 Redis 緩存
-      const keys = await this.redis.keys('alert:*');
+      const keys = await this.cacheHelper.findKeys('alert:*');
       if (keys.length > 0) {
-        await this.redis.del(...keys);
+        await this.cacheHelper.deleteMultiple(...keys);
       }
 
       return {
@@ -538,7 +536,7 @@ export class AlertStateManager {
    */
   private async updateStats(key: string, value: number): Promise<void> {
     try {
-      await this.redis.hincrby('alert:stats', key, value);
+      await this.cacheHelper.hashIncrement('alert:stats', key, value);
     } catch (error) {
       console.error('Failed to update stats:', error);
     }
@@ -550,8 +548,8 @@ export class AlertStateManager {
   private async updateResolutionTime(resolutionTime: number): Promise<void> {
     try {
       // 獲取當前平均解決時間
-      const currentAvg = await this.redis.hget('alert:stats', 'avg_resolution_time');
-      const currentCount = await this.redis.hget('alert:stats', 'resolved');
+      const currentAvg = await this.cacheHelper.hashGet('alert:stats', 'avg_resolution_time');
+      const currentCount = await this.cacheHelper.hashGet('alert:stats', 'resolved');
 
       const avg = parseFloat(currentAvg || '0');
       const count = parseInt(currentCount || '0');
@@ -559,7 +557,7 @@ export class AlertStateManager {
       // 計算新的平均值
       const newAvg = (avg * (count - 1) + resolutionTime) / count;
 
-      await this.redis.hset('alert:stats', 'avg_resolution_time', newAvg.toString());
+      await this.cacheHelper.hashSet('alert:stats', 'avg_resolution_time', newAvg.toString());
     } catch (error) {
       console.error('Failed to update resolution time:', error);
     }
@@ -575,7 +573,7 @@ export class AlertStateManager {
       if (error) throw error;
 
       // 更新 Redis 緩存
-      await this.redis.setex(`alert:${alert.id}`, 3600, JSON.stringify(alert));
+      await this.cache.set(`alert:${alert.id}`, alert, 3600);
     } catch (error) {
       console.error('Failed to save alert:', error);
       throw error;
@@ -663,5 +661,132 @@ export class AlertStateManager {
     if (index > -1) {
       this.stateChangeListeners.splice(index, 1);
     }
+  }
+
+  /**
+   * 確認告警
+   */
+  public async acknowledgeAlert(alertId: string, userId: string): Promise<AlertResponse> {
+    try {
+      const alert = await this.getAlert(alertId);
+      if (!alert) {
+        return {
+          success: false,
+          message: 'Alert not found',
+        };
+      }
+
+      const updatedAlert = {
+        ...alert,
+        state: AlertState.ACKNOWLEDGED,
+        acknowledgedAt: new Date(),
+        acknowledgedBy: userId,
+      };
+
+      const { error } = await this.supabase
+        .from('alerts')
+        .update({
+          state: AlertState.ACKNOWLEDGED,
+          acknowledged_at: new Date().toISOString(),
+          acknowledged_by: userId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', alertId);
+
+      if (error) throw error;
+
+      this.emitStateChange(updatedAlert, alert.state);
+
+      return {
+        success: true,
+        message: 'Alert acknowledged successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to acknowledge alert',
+        errors: [error instanceof Error ? error.message : String(error)],
+      };
+    }
+  }
+
+  /**
+   * 解決告警
+   */
+  public async resolveAlert(alertId: string, userId: string, resolution?: string): Promise<AlertResponse> {
+    try {
+      // First update the alert state
+      const stateResult = await this.updateAlertState(alertId, AlertState.RESOLVED, userId);
+      
+      if (stateResult.success) {
+        // Then update the additional fields
+        const { error } = await this.supabase
+          .from('alerts')
+          .update({
+            resolved_at: new Date().toISOString(),
+            resolved_by: userId,
+            resolution,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', alertId);
+          
+        if (error) throw error;
+      }
+      
+      return stateResult;
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to resolve alert',
+        errors: [error instanceof Error ? error.message : String(error)],
+      };
+    }
+  }
+
+  /**
+   * 關閉告警
+   */
+  public async dismissAlert(alertId: string, userId: string, reason?: string): Promise<AlertResponse> {
+    try {
+      const alert = await this.getAlert(alertId);
+      if (!alert) {
+        return {
+          success: false,
+          message: 'Alert not found',
+        };
+      }
+
+      const { error } = await this.supabase
+        .from('alerts')
+        .update({
+          state: AlertState.RESOLVED,
+          dismissed_at: new Date().toISOString(),
+          dismissed_by: userId,
+          dismissal_reason: reason,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', alertId);
+
+      if (error) throw error;
+
+      return {
+        success: true,
+        message: 'Alert dismissed successfully',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to dismiss alert',
+        errors: [error instanceof Error ? error.message : String(error)],
+      };
+    }
+  }
+
+  /**
+   * 訂閱狀態變更
+   */
+  public async *subscribeToStatusChanges(): AsyncGenerator<Alert> {
+    // 暫時實現為空生成器
+    yield* [];
   }
 }

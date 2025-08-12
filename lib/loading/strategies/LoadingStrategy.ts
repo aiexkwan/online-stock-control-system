@@ -69,7 +69,7 @@ const DEFAULT_STRATEGIES: Record<string, LoadingStrategy> = {
     performanceAware: true,
   },
 
-  // Widget 載入
+  // Card 載入
   widget: {
     name: 'widget',
     debounceTime: 150,

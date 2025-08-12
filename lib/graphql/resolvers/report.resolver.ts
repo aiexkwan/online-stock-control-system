@@ -24,10 +24,10 @@ import {
   ReportGenerationProgress,
   ReportSearchResult,
   BatchReportResult,
-  ReportField,
+  // ReportField, // Commented out - TableDataType dependency removed
   ReportOperation,
   AggregationFunction,
-  TableDataType,
+  // TableDataType, // Commented out - type removed from schema
 } from '@/types/generated/graphql';
 import { createClient } from '@/app/utils/supabase/server';
 import { GraphQLContext } from './index';
@@ -160,7 +160,7 @@ async function generateReportFile(input: ReportGenerationInput): Promise<Generat
         progress: i,
         recordsProcessed: Math.floor((i / 100) * 1000),
         estimatedTimeRemaining: Math.floor(
-          ((100 - i) / 100) * REPORT_CONFIGS[input.reportType].estimatedGenerationTime
+          ((100 - i) / 100) * (REPORT_CONFIGS[input.reportType]?.estimatedGenerationTime || 60)
         ),
       });
     }
@@ -188,7 +188,7 @@ async function generateReportFile(input: ReportGenerationInput): Promise<Generat
     recordCount: 1000,
     filters: input.filters ? JSON.stringify(input.filters) : undefined,
     grouping: input.grouping ? JSON.stringify(input.grouping) : undefined,
-    priority: input.priority,
+    priority: input.priority || ReportPriority.Normal,
     downloadCount: 0,
   };
 
@@ -480,38 +480,9 @@ export const reportResolvers = {
       _parent: undefined,
       { input }: { input: ReportGenerationInput }
     ): Promise<number> => {
-      return REPORT_CONFIGS[input.reportType].estimatedGenerationTime;
+      return REPORT_CONFIGS[input.reportType]?.estimatedGenerationTime || 60;
     },
 
-    // 獲取可用的報表欄位
-    availableReportFields: async (
-      _parent: undefined,
-      { reportType }: { reportType: ReportType }
-    ): Promise<ReportField[]> => {
-      // 根據報表類型返回可用欄位
-      const commonFields: ReportField[] = [
-        {
-          key: 'date',
-          label: 'Date',
-          dataType: TableDataType.Date,
-          filterable: true,
-          groupable: true,
-          aggregatable: false,
-          required: true,
-        },
-        {
-          key: 'amount',
-          label: 'Amount',
-          dataType: TableDataType.Number,
-          filterable: true,
-          groupable: false,
-          aggregatable: true,
-          required: false,
-        },
-      ];
-
-      return commonFields;
-    },
   },
 
   Mutation: {
@@ -544,7 +515,7 @@ export const reportResolvers = {
           success: true,
           message: 'Report generation started successfully',
           estimatedCompletionTime: new Date(
-            Date.now() + REPORT_CONFIGS[input.reportType].estimatedGenerationTime * 1000
+            Date.now() + (REPORT_CONFIGS[input.reportType]?.estimatedGenerationTime || 60) * 1000
           ).toISOString(),
           progress: 0,
         };
@@ -677,7 +648,7 @@ export const reportResolvers = {
         config: JSON.stringify(input.config),
         filters: input.filters ? JSON.stringify(input.filters) : undefined,
         grouping: input.grouping ? JSON.stringify(input.grouping) : undefined,
-        isPublic: input.isPublic,
+        isPublic: input.isPublic ?? false,
         createdBy: 'user123', // 應該從 context 獲取
         createdAt: new Date().toISOString(),
         usageCount: 0,

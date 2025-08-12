@@ -98,6 +98,61 @@ export class WarehouseCacheService {
 
       // 安全類型轉換 - 替代 any 類型
       const dataObj = data as unknown;
+      
+      // Debug logging to identify the actual response structure
+      cacheLogger.info(
+        {
+          operation: 'getWarehouseSummary',
+          responseType: typeof dataObj,
+          isArray: Array.isArray(dataObj),
+          dataStructure: dataObj !== null && typeof dataObj === 'object' ? Object.keys(dataObj) : 'not-object',
+          sampleData: JSON.stringify(dataObj).substring(0, 200),
+        },
+        'RPC response structure'
+      );
+      
+      // Handle the new RPC response format
+      if (dataObj && typeof dataObj === 'object' && 'summary' in dataObj && !Array.isArray(dataObj.summary)) {
+        // New format: { success: true, summary: { total_pallets, ... }, ... }
+        const summaryObj = dataObj.summary as Record<string, unknown>;
+        const summary: WarehouseSummaryData[] = [{
+          location: 'ALL', // Aggregate data for all locations
+          totalQty: safeNumber(summaryObj.total_inventory),
+          itemCount: safeNumber(summaryObj.total_pallets),
+          uniqueProducts: safeNumber(summaryObj.total_products),
+          lastUpdated: new Date().toISOString(),
+        }];
+        
+        // If location_distribution is available, add individual locations
+        if ('location_distribution' in dataObj && Array.isArray(dataObj.location_distribution)) {
+          const locations = dataObj.location_distribution as Array<Record<string, unknown>>;
+          locations.forEach(loc => {
+            summary.push({
+              location: safeString(loc.location),
+              totalQty: safeNumber(loc.total_quantity),
+              itemCount: safeNumber(loc.pallet_count),
+              uniqueProducts: safeNumber(loc.unique_products),
+              lastUpdated: new Date().toISOString(),
+            });
+          });
+        }
+        
+        // Store in cache
+        await this.cache.set(cacheKey, summary, this.WAREHOUSE_TTL);
+        
+        cacheLogger.info(
+          {
+            operation: 'getWarehouseSummary',
+            source: 'database',
+            recordCount: summary.length,
+            responseTime: Date.now() - startTime,
+          },
+          'Warehouse summary fetched from RPC (new format)'
+        );
+        
+        return summary;
+      }
+      
       if (!isWarehouseSummaryResponse(dataObj)) {
         throw new Error('Invalid warehouse summary response structure');
       }

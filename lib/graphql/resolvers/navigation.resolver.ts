@@ -3,8 +3,15 @@
  * Handles navigation menu queries and bookmark management
  */
 
-import { Context } from '../context';
-import { NavigationType } from '@/app/(app)/admin/components/dashboard/cards/NavigationCard';
+import { GraphQLContext as Context } from './index';
+// NavigationCard has been deleted - define NavigationType locally
+enum NavigationType {
+  DASHBOARD = 'dashboard',
+  MENU = 'menu',
+  BREADCRUMB = 'breadcrumb',
+  SIDEBAR = 'sidebar',
+  QUICK_ACCESS = 'quick_access'
+}
 
 interface NavigationMenuInput {
   navigationType: NavigationType;
@@ -209,76 +216,6 @@ const filterByPermissions = (
 };
 
 export const navigationResolver = {
-  Query: {
-    navigationMenu: async (
-      _: unknown,
-      { input }: { input: NavigationMenuInput },
-      context: Context
-    ) => {
-      try {
-        const { navigationType, permissions = [], currentPath } = input;
-
-        // 獲取用戶權限 - 這裡使用傳入的權限或從 context 獲取
-        const userPermissions =
-          permissions.length > 0 ? permissions : context.user?.permissions || ['user'];
-
-        // 獲取對應類型的導航數據
-        const rawItems = mockNavigationData[navigationType] || [];
-
-        // 過濾權限
-        const filteredItems = filterByPermissions(rawItems, userPermissions);
-
-        return {
-          id: `nav-${navigationType.toLowerCase()}`,
-          items: filteredItems,
-          permissions: userPermissions,
-          metadata: {
-            currentPath,
-            lastUpdated: new Date().toISOString(),
-          },
-        };
-      } catch (error) {
-        console.error('NavigationMenu query error:', error);
-        throw new Error('Failed to fetch navigation menu');
-      }
-    },
-  },
-
-  Mutation: {
-    updateNavigationBookmark: async (
-      _: unknown,
-      { input }: { input: BookmarkInput },
-      context: Context
-    ) => {
-      try {
-        const { itemId, action } = input;
-        const userId = context.user?.id || 'anonymous';
-
-        // 初始化用戶書籤
-        if (!userBookmarks[userId]) {
-          userBookmarks[userId] = new Set();
-        }
-
-        // 執行書籤操作
-        if (action === 'ADD') {
-          userBookmarks[userId].add(itemId);
-        } else if (action === 'REMOVE') {
-          userBookmarks[userId].delete(itemId);
-        }
-
-        return {
-          success: true,
-          message: `Bookmark ${action.toLowerCase()}ed successfully`,
-          bookmarks: Array.from(userBookmarks[userId]),
-        };
-      } catch (error) {
-        console.error('UpdateNavigationBookmark mutation error:', error);
-        return {
-          success: false,
-          message: 'Failed to update bookmark',
-          bookmarks: [],
-        };
-      }
-    },
-  },
+  Query: {},
+  Mutation: {},
 };

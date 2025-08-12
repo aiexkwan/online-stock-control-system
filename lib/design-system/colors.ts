@@ -111,8 +111,8 @@ export const neutralColors = {
 } as const;
 
 /**
- * Widget Category Colors
- * Widget 分類色彩 - 統一各類 Widget 的配色
+ * Card Category Colors
+ * Card 分類色彩 - 統一各類 Card 的配色
  */
 export const widgetColors = {
   stats: {
@@ -173,6 +173,15 @@ export const widgetColors = {
     accent: '#facc15',
     bg: 'bg-yellow-500/10',
     border: 'border-yellow-500/30',
+  },
+  // Special category for unique widgets like HistoryTree
+  special: {
+    gradient: 'from-violet-500 to-purple-500',
+    icon: '#8b5cf6',
+    text: '#7c3aed',
+    accent: '#a78bfa',
+    bg: 'bg-violet-500/10',
+    border: 'border-violet-500/30',
   },
 } as {
   [key: string]: {
@@ -311,7 +320,7 @@ export function getSemanticColorClass(
 }
 
 /**
- * 獲取 Widget 類別色彩
+ * 獲取 Card 類別色彩
  */
 export function getWidgetCategoryColor(
   category: keyof typeof widgetColors,

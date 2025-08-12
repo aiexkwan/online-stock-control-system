@@ -1,0 +1,43 @@
+Risk ID,Risk Category,Risk Description,Severity,Likelihood,Risk Score,Current Status,Mitigation Strategy,Owner,Due Date,Implementation Status,Cost Estimate,Business Impact,Detection Method,Last Review
+CACHE-001,Security,Unauthorized Access to Cache Clear API,Critical,High,9.5,Active,Implement authentication and authorization,Security Team,2025-08-12,Not Started,£2000,System compromise possible,Manual audit,2025-08-11
+CACHE-002,Security,DoS Attack via Rapid Cache Clearing,High,High,8.0,Active,Implement rate limiting (5 req/min),DevOps Team,2025-08-12,Not Started,£1000,Service unavailable for all users,Performance monitoring,2025-08-11
+CACHE-003,Security,No Audit Trail for Cache Operations,High,Medium,7.5,Active,Add comprehensive audit logging,Compliance Team,2025-08-15,Not Started,£1500,Cannot prove compliance,Log analysis,2025-08-11
+CACHE-004,Operational,Cache Inconsistency During Updates,High,High,8.0,Active,Implement granular cache control,Development Team,2025-08-18,Not Started,£3000,Data integrity issues,User reports,2025-08-11
+CACHE-005,Operational,Performance Degradation After Cache Clear,High,Medium,7.0,Active,Implement cache warming strategy,Performance Team,2025-08-20,Not Started,£2500,Slow response times,APM tools,2025-08-11
+CACHE-006,Operational,Cascading Failures from Simultaneous Revalidation,Medium,Medium,6.0,Active,Implement staged cache clearing,Infrastructure Team,2025-08-25,Not Started,£2000,Service degradation,Health checks,2025-08-11
+CACHE-007,Business,QC Label Printing Workflow Disruption,High,Medium,7.0,Active,Priority queue for critical operations,Business Team,2025-08-15,Not Started,£1000,£500-2000/hour downtime,Business metrics,2025-08-11
+CACHE-008,Business,Stock Level Data Staleness,Medium,High,6.5,Active,Event-driven cache invalidation,Data Team,2025-09-01,Not Started,£4000,Incorrect inventory,Data validation,2025-08-11
+CACHE-009,Business,Order Processing Delays,Medium,Medium,5.5,Active,Optimize cache strategy for orders,Operations Team,2025-08-22,Not Started,£1500,Customer dissatisfaction,Order metrics,2025-08-11
+CACHE-010,Technical Debt,Legacy System Dependencies,Medium,High,6.5,Active,Gradual migration to new architecture,Architecture Team,2025-09-15,Not Started,£5000,Maintenance burden,Code analysis,2025-08-11
+CACHE-011,Technical Debt,Hard-coded Cache Paths,Low,High,4.5,Active,Centralize cache configuration,Development Team,2025-08-30,Not Started,£1000,Maintenance overhead,Code review,2025-08-11
+CACHE-012,Technical Debt,No Cache Management Interface,Medium,Medium,5.0,Active,Build admin dashboard,UI Team,2025-09-10,Not Started,£3000,Manual intervention required,Support tickets,2025-08-11
+CACHE-013,Compliance,GDPR Data Processing Transparency,High,Medium,7.5,Active,Document cache operations,Legal Team,2025-08-14,Not Started,£500,Regulatory fines,Compliance audit,2025-08-11
+CACHE-014,Compliance,ISO 27001 Access Control Violation,High,Medium,7.5,Active,Implement RBAC system,Security Team,2025-08-13,Not Started,£2000,Certification risk,Security audit,2025-08-11
+CACHE-015,Compliance,SOC 2 Security Controls Gap,Medium,Medium,6.0,Active,Implement security controls,Compliance Team,2025-08-20,Not Started,£2500,Audit findings,SOC 2 audit,2025-08-11
+CACHE-016,Security,No IP Whitelisting,Medium,Medium,5.5,Active,Implement IP-based access control,Network Team,2025-08-25,Not Started,£1500,External access possible,Network logs,2025-08-11
+CACHE-017,Security,Missing CORS Configuration,Low,Low,3.0,Active,Configure CORS properly,Development Team,2025-08-30,Not Started,£500,Cross-origin attacks,Security scan,2025-08-11
+CACHE-018,Operational,No Monitoring or Alerting,High,High,8.5,Active,Setup monitoring dashboard,Monitoring Team,2025-08-13,Not Started,£500/month,Blind to issues,Manual checks,2025-08-11
+CACHE-019,Operational,No Backup Cache Strategy,Medium,Low,4.0,Active,Implement cache redundancy,Infrastructure Team,2025-09-05,Not Started,£3000,Extended downtime,Disaster recovery test,2025-08-11
+CACHE-020,Business,Reputation Risk from Instability,Medium,Medium,5.5,Active,Improve system reliability,Leadership Team,2025-08-31,Not Started,£10000,Customer trust loss,Customer feedback,2025-08-11
+
+Risk Scoring Matrix:
+Score = Severity (1-5) × Likelihood (1-5) × 0.4
+- 9-10: Critical - Immediate action required
+- 7-8.9: High - Urgent action within 1 week
+- 5-6.9: Medium - Action within 1 month
+- 3-4.9: Low - Monitor and plan
+- 0-2.9: Minimal - Accept risk
+
+Severity Scale:
+5 - Critical: Complete system failure or data breach
+4 - High: Major functionality impaired or significant data exposure
+3 - Medium: Moderate impact on operations
+2 - Low: Minor inconvenience
+1 - Minimal: Negligible impact
+
+Likelihood Scale:
+5 - Almost Certain: >90% chance in next month
+4 - High: 70-90% chance in next month
+3 - Medium: 40-70% chance in next month
+2 - Low: 10-40% chance in next month
+1 - Rare: <10% chance in next month

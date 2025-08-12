@@ -1,26 +1,24 @@
 import { calculateStringSimilarity } from '@/lib/utils/string-similarity';
+import {
+  ErrorResponse,
+  ErrorResponseSchema,
+  QueryContext,
+  QueryContextSchema,
+  SafeDatabaseValue,
+  safeParseDatabaseValue,
+} from '@/lib/validation/zod-schemas';
+import { z } from 'zod';
 
-interface ErrorPattern {
-  pattern: RegExp;
-  handler: (error: string) => ErrorResponse;
-}
+// Error Pattern Schema
+const ErrorPatternSchema = z.object({
+  pattern: z.instanceof(RegExp),
+  handler: z.function(
+    z.tuple([z.string()]),
+    ErrorResponseSchema
+  ),
+});
 
-interface ErrorResponse {
-  message: string;
-  suggestion?: string;
-  alternatives?: string[];
-  showSchema?: boolean;
-  showExamples?: boolean;
-  showHelp?: boolean;
-  details?: string;
-  suggestions?: string[];
-}
-
-interface QueryContext {
-  query: string;
-  sql?: string;
-  previousQueries?: string[];
-}
+type ErrorPattern = z.infer<typeof ErrorPatternSchema>;
 
 export class QueryErrorHandler {
   // 常見錯誤模式
@@ -138,11 +136,14 @@ export class QueryErrorHandler {
   };
 
   handleError(error: unknown, context: QueryContext): ErrorResponse {
-    // Strategy 4: unknown + type narrowing - 安全獲取錯誤信息
-    const errorMessage =
-      error && typeof error === 'object' && 'message' in error
-        ? String((error as { message: unknown }).message)
-        : String(error);
+    // 使用 Zod 驗證 context
+    const validatedContext = QueryContextSchema.safeParse(context);
+    if (!validatedContext.success) {
+      console.warn('Invalid query context provided to error handler');
+    }
+    
+    // 安全取得錯誤信息 - 使用 Zod 驗證
+    const errorMessage = this.extractErrorMessage(error);
 
     // 1. 匹配錯誤模式
     for (const pattern of this.errorPatterns) {
@@ -295,6 +296,48 @@ export class QueryErrorHandler {
     }
 
     return suggestions.slice(0, 3);
+  }
+
+  // 新增方法：安全提取錯誤消息
+  private extractErrorMessage(error: unknown): string {
+    if (error === null || error === undefined) {
+      return 'Unknown error occurred';
+    }
+
+    if (typeof error === 'string') {
+      return error;
+    }
+
+    if (typeof error === 'object' && 'message' in error) {
+      const messageValue = safeParseDatabaseValue((error as Record<string, unknown>).message);
+      if (typeof messageValue === 'string') {
+        return messageValue;
+      }
+    }
+
+    // Fallback to string conversion
+    return String(error);
+  }
+
+  // 新增方法：驗證錯誤回應
+  validateErrorResponse(response: unknown): response is ErrorResponse {
+    return ErrorResponseSchema.safeParse(response).success;
+  }
+
+  // 新增方法：創建標準錯誤回應
+  createStandardErrorResponse(message: string, details?: string): ErrorResponse {
+    const response: ErrorResponse = {
+      message,
+      details,
+      showHelp: true,
+    };
+
+    // 驗證回應格式
+    if (!this.validateErrorResponse(response)) {
+      console.warn('Created invalid error response format');
+    }
+
+    return response;
   }
 }
 

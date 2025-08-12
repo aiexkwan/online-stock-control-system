@@ -7,6 +7,7 @@ import { StockMovementService, MovementResult } from '../services/StockMovementS
 import { LocationMapper } from '../utils/locationMapper';
 import { createMockPallet, createMockUser, createSupabaseResponse, createSupabaseError } from '@/__tests__/mocks/factories';
 import { createMockSupabaseClient, createMockSupabaseChain } from './test-helpers';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 // Mock LocationMapper
 jest.mock('../utils/locationMapper');
@@ -15,39 +16,32 @@ jest.mock('../utils/locationMapper');
 const mockSupabase = createMockSupabaseClient();
 
 // Mock LocationMapper static methods
-const mockLocationMapper = {
-  getValidDatabaseLocations: jest.fn().mockReturnValue([
-    'injection', 'pipeline', 'prebook', 'await', 'fold', 'bulk', 'backcarpark'
-  ]),
-  getValidLocations: jest.fn().mockReturnValue([
-    { id: 'injection', name: 'Injection' },
-    { id: 'pipeline', name: 'Pipeline' },
-    { id: 'bulk', name: 'Bulk' }
-  ]),
-  toDbColumn: jest.fn((location: string) => {
-    // Handle valid locations
-    const validLocations = ['injection', 'pipeline', 'prebook', 'await', 'fold', 'bulk', 'backcarpark'];
-    if (validLocations.includes(location.toLowerCase())) {
-      return location.toLowerCase();
-    }
-    // Handle invalid locations
-    if (location === 'INVALID_LOCATION' || location === 'INVALID') {
-      return null;
-    }
-    return location.toLowerCase();
-  }),
-};
+const mockLocationMapper = LocationMapper as jest.Mocked<typeof LocationMapper>;
 
-// Apply mock to LocationMapper
-(LocationMapper as any).getValidDatabaseLocations = mockLocationMapper.getValidDatabaseLocations;
-(LocationMapper as any).getValidLocations = mockLocationMapper.getValidLocations;
-(LocationMapper as any).toDbColumn = mockLocationMapper.toDbColumn;
+// Mock getValidDatabaseLocations
+(mockLocationMapper.getValidDatabaseLocations as jest.Mock) = jest.fn().mockReturnValue([
+  'injection', 'pipeline', 'prebook', 'await', 'fold', 'bulk', 'backcarpark'
+]);
+
+// Mock toDbColumn
+(mockLocationMapper.toDbColumn as jest.Mock) = jest.fn((location: string) => {
+  // Handle valid locations
+  const validLocations = ['injection', 'pipeline', 'prebook', 'await', 'fold', 'bulk', 'backcarpark'];
+  if (validLocations.includes(location.toLowerCase())) {
+    return location.toLowerCase();
+  }
+  // Handle invalid locations
+  if (location === 'INVALID_LOCATION' || location === 'INVALID') {
+    return null;
+  }
+  return location.toLowerCase();
+});
 
 describe('StockMovementService', () => {
   let service: StockMovementService;
 
   beforeEach(() => {
-    service = new StockMovementService(mockSupabase as any, LocationMapper as any);
+    service = new StockMovementService(mockSupabase as any, LocationMapper);
     jest.clearAllMocks();
   });
 
@@ -195,8 +189,9 @@ describe('StockMovementService', () => {
       const result = await service.getMovementHistory('PLT12345678', { includeUser: true });
 
       expect(result.success).toBe(true);
-      expect((result.movements![0] as any).users).toBeDefined();
-      expect((result.movements![0] as any).users.full_name).toBe('John Doe');
+      const movement = result.movements![0] as Record<string, unknown>;
+      expect(movement.users).toBeDefined();
+      expect((movement.users as { full_name: string }).full_name).toBe('John Doe');
     });
   });
 
@@ -321,7 +316,7 @@ describe('StockMovementService', () => {
         to_location: 'pipeline',
         quantity: 100,
         created_at: `2025-01-06T${i % 3 === 0 ? '10' : '14'}:00:00Z`
-      }));
+      })) as any[];
 
       // Mock RPC failure to trigger manual analysis
       mockSupabase.rpc.mockResolvedValue({
@@ -340,9 +335,14 @@ describe('StockMovementService', () => {
         '2025-01-07'
       );
 
-      expect((result as any).success).toBe(true);
-      expect((result as any).analysis!.peakHours).toBeDefined();
-      expect((result as any).analysis!.peakHours.length).toBeGreaterThan(0);
+      // Type guard to check if result is MovementResult
+      if ('success' in result) {
+        expect(result.success).toBe(true);
+        expect(result.analysis!.peakHours).toBeDefined();
+        expect(result.analysis!.peakHours!.length).toBeGreaterThan(0);
+      } else {
+        fail('Expected MovementResult but got MovementPattern[]');
+      }
     });
   });
 

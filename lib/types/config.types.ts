@@ -5,15 +5,40 @@
 
 import { z } from 'zod';
 import type {
-  ConfigCategory,
-  ConfigScope,
-  ConfigDataType,
-  ConfigAccessLevel,
   Scalars,
 } from '@/types/generated/graphql';
 
-// Re-export GraphQL enums for convenience
-export { ConfigCategory, ConfigScope, ConfigDataType, ConfigAccessLevel };
+// Define local enums since they don't exist in GraphQL generated types
+export enum ConfigCategory {
+  SYSTEM = 'SYSTEM',
+  SYSTEM_CONFIG = 'SYSTEM_CONFIG',
+  USER = 'USER',
+  ADMIN = 'ADMIN',
+  PUBLIC = 'PUBLIC',
+}
+
+export enum ConfigScope {
+  GLOBAL = 'GLOBAL',
+  USER = 'USER',
+  DEPARTMENT = 'DEPARTMENT',
+}
+
+export enum ConfigDataType {
+  STRING = 'STRING',
+  NUMBER = 'NUMBER',
+  BOOLEAN = 'BOOLEAN',
+  JSON = 'JSON',
+  ARRAY = 'ARRAY',
+  DATE = 'DATE',
+  COLOR = 'COLOR',
+  URL = 'URL',
+}
+
+export enum ConfigAccessLevel {
+  READ_ONLY = 'READ_ONLY',
+  READ_WRITE = 'READ_WRITE',
+  ADMIN_ONLY = 'ADMIN_ONLY',
+}
 
 // ============================================================================
 // Zod Schemas for Runtime Validation

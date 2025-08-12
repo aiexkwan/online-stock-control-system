@@ -397,7 +397,7 @@ class SimplePerformanceMonitor {
   }
 
   /**
-   * 獲取特定 Widget 的報告 (for backward compatibility)
+   * 獲取特定 Card 的報告 (for backward compatibility)
    */
   getWidgetReport(widgetId: string): {
     widgetId: string;
@@ -431,7 +431,7 @@ class SimplePerformanceMonitor {
   }
 
   /**
-   * 開始監控一個 Widget (for backward compatibility)
+   * 開始監控一個 Card (for backward compatibility)
    */
   startMonitoring(widgetId: string, variant: string = 'v2'): PerformanceTimer {
     const startTime = performance.now();

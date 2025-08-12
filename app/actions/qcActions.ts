@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/app/utils/supabase/server';
 import { getErrorMessage } from '@/types/core/error';
 import { z } from 'zod';
 
@@ -9,7 +9,7 @@ import {
   MAX_DUPLICATE_CHECK_ATTEMPTS,
   DUPLICATE_CHECK_DELAY_BASE,
   ONE_HOUR_CACHE,
-} from '@/app/components/qc-label-form/constants';
+} from '@/app/(app)/admin/components/qc-label-constants';
 
 if (!process.env.SUPABASE_URL) {
   // console.error('[qcActions] 錯誤: SUPABASE_URL 未設置'); // 保留錯誤日誌供生產環境調試
@@ -19,37 +19,24 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   // console.error('[qcActions] 錯誤: SUPABASE_SERVICE_ROLE_KEY 未設置'); // 保留錯誤日誌供生產環境調試
 }
 
-// 創建 Supabase 客戶端的函數
-function createSupabaseAdmin() {
-  // 確保環境變數存在
+// 創建 Supabase Admin 客戶端的函數（使用 Service Role 權限）
+async function createSupabaseAdmin() {
+  const { createClient: createSupabaseServer } = await import('@supabase/supabase-js');
+  
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl) {
-    throw new Error('SUPABASE_URL environment variable is not set');
+  
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables');
   }
 
-  if (!serviceRoleKey) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is not set');
-  }
-
-  const client = createClient(supabaseUrl, serviceRoleKey, {
+  // 使用 Service Role Key 創建具有管理權限的客戶端
+  return createSupabaseServer(supabaseUrl, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
     },
-    db: {
-      schema: 'public',
-    },
-    global: {
-      headers: {
-        apikey: serviceRoleKey,
-        Authorization: `Bearer ${serviceRoleKey}`,
-      },
-    },
   });
-
-  return client;
 }
 
 // Schema for validating the clock number string and converting to number
@@ -70,11 +57,11 @@ export interface QcPalletInfoPayload {
 
 export interface QcHistoryPayload {
   time: string;
-  id: string;
+  id?: number; // Changed from string to number to match database schema, made optional for auto-generation
   action: string;
   plt_num?: string;
   loc?: string;
-  remark?: string;
+  remark: string;
 }
 
 export interface QcAcoRecordPayload {
@@ -90,33 +77,12 @@ export interface QcInventoryPayload {
   await: number;
 }
 
-export interface QcSlateRecordPayload {
-  first_off: string;
-  batch_num: string;
-  setter: string;
-  material: string;
-  weight: number;
-  t_thick: number;
-  b_thick: number;
-  length: number;
-  width: number;
-  centre_hole: number;
-  colour: string;
-  shape: string;
-  flame_test: number;
-  remark: string;
-  code: string;
-  plt_num: string;
-  mach_num: string;
-  uuid: string;
-}
 
 export interface QcDatabaseEntryPayload {
   palletInfo: QcPalletInfoPayload;
   historyRecord: QcHistoryPayload;
   inventoryRecord: QcInventoryPayload;
   acoRecords?: QcAcoRecordPayload[];
-  slateRecords?: QcSlateRecordPayload[];
 }
 
 export async function createQcDatabaseEntries(
@@ -132,7 +98,7 @@ export async function createQcDatabaseEntries(
   }
 
   // 創建新的 Supabase 客戶端
-  const supabaseAdmin = createSupabaseAdmin();
+  const supabaseAdmin = await createSupabaseAdmin();
 
   try {
     // Insert pallet info record
@@ -176,17 +142,6 @@ export async function createQcDatabaseEntries(
       }
     }
 
-    // Insert Slate records if provided
-    if (payload.slateRecords && payload.slateRecords.length > 0) {
-      const { error: slateError } = await supabaseAdmin
-        .from('record_slate')
-        .insert(payload.slateRecords);
-
-      if (slateError) {
-        // console.error('[qcActions] Error inserting Slate records:', slateError); // 保留錯誤日誌供生產環境調試
-        return { error: `Failed to insert Slate records: ${getErrorMessage(slateError)}` };
-      }
-    }
 
     return { data: 'QC database entries created successfully' };
   } catch (error: unknown) {
@@ -203,7 +158,7 @@ export async function updatePalletPdfUrl(
   pdfUrl: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabaseAdmin = createSupabaseAdmin();
+    const supabaseAdmin = await createSupabaseAdmin();
 
     const { error } = await supabaseAdmin
       .from('record_palletinfo')
@@ -233,15 +188,17 @@ export async function uploadPdfToStorage(
 ): Promise<{ publicUrl?: string; error?: string }> {
   try {
     // 創建新的 Supabase 客戶端
-    const supabaseAdmin = createSupabaseAdmin();
+    const supabaseAdmin = await createSupabaseAdmin();
 
     // Convert number array back to Uint8Array and then to Blob
     const uint8Array = new Uint8Array(pdfUint8Array);
     const pdfBlob = new Blob([uint8Array], { type: 'application/pdf' });
 
+    // 修復 RLS 政策問題：檔案必須上傳到 private/ 資料夾
+    const fullPath = `private/${fileName}`;
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from('pallet-label-pdf')
-      .upload(fileName, pdfBlob, {
+      .upload(fullPath, pdfBlob, {
         cacheControl: ONE_HOUR_CACHE,
         upsert: true,
         contentType: 'application/pdf',
@@ -278,7 +235,7 @@ export async function updateAcoOrderRemainQty(
 ): Promise<{ data?: string; error?: string }> {
   try {
     // 創建新的 Supabase 客戶端
-    const supabaseAdmin = createSupabaseAdmin();
+    const supabaseAdmin = await createSupabaseAdmin();
 
     // First, get the current data
     const { data: currentData, error: selectError } = await supabaseAdmin
@@ -341,7 +298,7 @@ export async function createQcDatabaseEntriesWithTransaction(
     };
   }
 
-  const supabaseAdmin = createSupabaseAdmin();
+  const supabaseAdmin = await createSupabaseAdmin();
 
   try {
     // 🔥 強化的重複檢查機制 - 特別針對 Vercel 環境
@@ -464,17 +421,6 @@ export async function createQcDatabaseEntriesWithTransaction(
       }
     }
 
-    // 5. Insert Slate records if provided
-    if (payload.slateRecords && payload.slateRecords.length > 0) {
-      const { error: slateError } = await supabaseAdmin
-        .from('record_slate')
-        .insert(payload.slateRecords);
-
-      if (slateError) {
-        // console.error('[qcActions] Error inserting Slate records:', slateError); // 保留錯誤日誌供生產環境調試
-        throw new Error(`Failed to insert Slate records: ${getErrorMessage(slateError)}`);
-      }
-    }
 
     // 6. If ACO update is needed, do it after successful inserts
     if (acoUpdateInfo) {

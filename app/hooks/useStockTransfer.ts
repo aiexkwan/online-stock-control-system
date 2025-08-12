@@ -5,7 +5,7 @@ import { DatabaseRecord } from '@/types/database/tables';
 import { createClient } from '@/app/utils/supabase/client';
 import { toast } from 'sonner';
 import { LocationMapper, DatabaseLocationColumn } from '@/lib/inventory/utils/locationMapper';
-import type { PalletInfo } from '@/app/services/palletSearchService';
+import type { PalletInfo } from '@/lib/inventory/types';
 
 interface OptimisticTransfer {
   id: string;
@@ -69,7 +69,8 @@ export function useStockTransfer(options: UseStockTransferOptions = {}) {
       }
 
       const transferId = `transfer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const fromLocation = palletInfo.current_plt_loc || 'Await';
+      // Get current location from pallet info or default to 'Await'
+      const fromLocation = 'Await'; // Default location for pallets without specific location
 
       // Add optimistic transfer
       setOptimisticTransfers(prev => [

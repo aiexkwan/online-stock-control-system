@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { TransferLogItem } from './TransferLogItem';
-import type { ActivityLogEntry } from '@/app/hooks/useActivityLog';
+import type { ActivityLogEntry } from '@/lib/inventory/types/inventory.types';
 import type { OptimisticTransfer } from '@/app/actions/stockTransferActions';
 
 interface TransferLogSectionProps {

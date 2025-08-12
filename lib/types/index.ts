@@ -144,7 +144,7 @@ export interface UserSession {
   created_at: string;
 }
 
-// Widget Types
+// Card Types
 export interface WidgetConfig {
   widget_id: string;
   widget_type: string;

@@ -529,7 +529,7 @@ export function useDirectionalNavigation(options: {
  */
 export function useSearchableNavigation(options: {
   items: Array<{ id: string; text: string; element?: HTMLElement }>;
-  onSelect?: (item: DatabaseRecord) => void;
+  onSelect?: (item: { id: string; text: string; element?: HTMLElement }) => void;
   searchDelay?: number;
 }) {
   const { items, onSelect, searchDelay = 1000 } = options;

@@ -8,7 +8,7 @@ interface PerformanceMetric {
   type: 'load_time' | 'render_time' | 'query_time' | 'bundle_size' | 'cache_hit';
   value: number;
   timestamp: number;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 interface PerformanceReport {
@@ -39,7 +39,7 @@ export class CardPerformanceMonitor {
   /**
    * 結束監控 Card 載入
    */
-  endCardLoad(cardId: string, context?: Record<string, any>): void {
+  endCardLoad(cardId: string, context?: Record<string, unknown>): void {
     const startTime = this.loadStartTimes.get(cardId);
     if (startTime) {
       const loadTime = performance.now() - startTime;
@@ -134,8 +134,8 @@ export class CardPerformanceMonitor {
     
     // 找出最快和最慢的 Card
     const sortedLoadTimes = loadTimeMetrics.sort((a, b) => a.value - b.value);
-    const fastestCard = sortedLoadTimes[0]?.context?.cardId || 'N/A';
-    const slowestCard = sortedLoadTimes[sortedLoadTimes.length - 1]?.context?.cardId || 'N/A';
+    const fastestCard = (sortedLoadTimes[0]?.context?.cardId as string) || 'N/A';
+    const slowestCard = (sortedLoadTimes[sortedLoadTimes.length - 1]?.context?.cardId as string) || 'N/A';
     
     // 計算緩存命中率
     const cacheHitRate = cacheMetrics.length > 0
@@ -157,7 +157,7 @@ export class CardPerformanceMonitor {
     };
     
     return {
-      totalCards: new Set(loadTimeMetrics.map(m => m.context?.cardId)).size,
+      totalCards: new Set(loadTimeMetrics.map(m => m.context?.cardId as string).filter(Boolean)).size,
       averageLoadTime,
       cacheHitRate,
       slowestCard,
@@ -206,7 +206,7 @@ export const cardPerformanceMonitor = new CardPerformanceMonitor();
 
 // 便捷方法
 export const startCardLoad = (cardId: string) => cardPerformanceMonitor.startCardLoad(cardId);
-export const endCardLoad = (cardId: string, context?: Record<string, any>) => 
+export const endCardLoad = (cardId: string, context?: Record<string, unknown>) => 
   cardPerformanceMonitor.endCardLoad(cardId, context);
 export const recordQueryTime = (queryName: string, queryTime: number, cacheHit: boolean) =>
   cardPerformanceMonitor.recordQueryTime(queryName, queryTime, cacheHit);

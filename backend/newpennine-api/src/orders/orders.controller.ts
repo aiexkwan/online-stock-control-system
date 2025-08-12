@@ -22,6 +22,11 @@ import { AcoResponseDto, AcoRecordDto } from './dto/aco-response.dto';
 import { GrnQueryDto } from './dto/grn-query.dto';
 import { GrnResponseDto, GrnRecordDto } from './dto/grn-response.dto';
 
+interface OrderStats {
+  total: number;
+  by_status: Record<string, number>;
+}
+
 @ApiTags('Orders')
 @Controller('api/v1/orders')
 @UseGuards(JwtAuthGuard)
@@ -118,7 +123,7 @@ export class OrdersController {
     status: HttpStatus.INTERNAL_SERVER_ERROR,
     description: 'Internal server error',
   })
-  async getAcoOrderStats(): Promise<any> {
+  async getAcoOrderStats(): Promise<OrderStats> {
     this.logger.log('Fetching ACO order statistics');
     return this.ordersService.getAcoOrderStats();
   }
@@ -212,7 +217,7 @@ export class OrdersController {
     status: HttpStatus.INTERNAL_SERVER_ERROR,
     description: 'Internal server error',
   })
-  async getGrnOrderStats(): Promise<any> {
+  async getGrnOrderStats(): Promise<OrderStats> {
     this.logger.log('Fetching GRN order statistics');
     return this.ordersService.getGrnOrderStats();
   }

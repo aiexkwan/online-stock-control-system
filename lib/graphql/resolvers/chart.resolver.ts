@@ -14,6 +14,7 @@ import {
   ChartDataPoint,
   TimeGranularity,
   AggregationType,
+  ChartDatasetType,
 } from '@/types/generated/graphql';
 import { startOfDay, endOfDay, subDays, format } from 'date-fns';
 import DataLoader from 'dataloader';
@@ -31,11 +32,11 @@ interface ChartResolverContext {
 
 // 定義資料庫查詢結果類型
 interface PalletInfoQueryResult {
-  productcode: string;
-  quantity: number;
-  location: string;
-  created_at?: string;
-  data_code: {
+  product_code: string;
+  product_qty: number;
+  current_location?: string;
+  generate_time?: string;
+  data_code?: {
     code: string;
     description: string;
     type: string;
@@ -50,6 +51,49 @@ interface TransferQueryResult {
   to_location?: string;
 }
 
+interface ProductDistributionData {
+  productCode: string;
+  productName: string;
+  totalQuantity: number;
+  locations: Record<string, number>;
+}
+
+interface WorkLevelData {
+  id: string;
+  staffName: string;
+  qc: number;
+  move: number;
+  grn: number;
+  loading: number;
+  latest_update: string;
+  total: number;
+}
+
+interface StaffWorkHistory {
+  staffId: string;
+  staffName: string;
+  department: string;
+  dataPoints: Array<{
+    timestamp: string;
+    total: number;
+  }>;
+}
+
+interface WorkLevelRecord {
+  id: number;
+  qc?: number;
+  move?: number;
+  grn?: number;
+  loading?: number;
+  latest_update: string;
+}
+
+interface StaffRecord {
+  id: number;
+  name?: string;
+  department?: string;
+}
+
 // 定義數據處理類型
 interface GroupedData {
   [key: string]: {
@@ -61,15 +105,8 @@ interface GroupedData {
 
 interface TimeSeriesDataPoint {
   date: string;
-  count: number;
+  count?: number;
   totalQuantity?: number;
-}
-
-interface ProductDistributionData {
-  productCode: string;
-  productName: string;
-  totalQuantity: number;
-  locations: { [location: string]: number };
 }
 
 // 定義聚合數據元素類型
@@ -85,9 +122,9 @@ const CHART_CONFIG_MAP: Record<string, Partial<ChartConfig>> = {
     description: 'Product distribution across warehouses',
   },
   warehouseWorkLevel: {
-    type: ChartType.Area,
-    title: 'Warehouse Work Level',
-    description: 'Warehouse activity over time',
+    type: ChartType.Line,
+    title: 'Work Level',
+    description: 'Staff work level over past 7 days',
   },
   transferTimeDistribution: {
     type: ChartType.Bar,
@@ -129,7 +166,7 @@ function aggregateData(
 ): number {
   if (!data.length) return 0;
 
-  const values = data.map(d => d[valueField] || 0);
+  const values = data.map(d => Number(d[valueField]) || 0);
 
   switch (aggregationType) {
     case AggregationType.Sum:
@@ -201,46 +238,76 @@ async function fetchTreemapData(
   supabase: SupabaseClientType,
   input: ChartQueryInput | SingleChartQueryInput
 ): Promise<ChartCardData> {
-  const { data, error } = await supabase
+  // Direct query approach - no MV needed
+  // Step 1: Get pallet info
+  const { data: pallets, error: palletError } = await supabase
     .from('record_palletinfo')
-    .select(
-      `
-      productcode,
-      quantity,
-      location,
-      data_code!inner(
-        code,
-        description,
-        type,
-        colour
-      )
-    `
-    )
-    .gt('quantity', 0);
-
-  if (error) throw error;
+    .select('plt_num, product_code, product_qty')
+    .gt('product_qty', 0);
+  
+  if (palletError) throw palletError;
+  
+  if (!pallets || pallets.length === 0) {
+    return createEmptyChartData(ChartType.Treemap);
+  }
+  
+  // Step 2: Get current locations for all pallets
+  const pltNums = pallets.map(p => p.plt_num);
+  const { data: locations, error: locationError } = await supabase
+    .from('record_history')
+    .select('plt_num, loc, time')
+    .in('plt_num', pltNums)
+    .order('time', { ascending: false });
+  
+  if (locationError) throw locationError;
+  
+  // Create location map (only keep latest location for each pallet)
+  const locationMap = new Map<string, string>();
+  locations?.forEach(loc => {
+    if (loc.plt_num && loc.loc && !locationMap.has(loc.plt_num)) {
+      locationMap.set(loc.plt_num, loc.loc);
+    }
+  });
+  
+  // Combine data
+  const data = pallets.map(p => ({
+    product_code: p.product_code,
+    product_qty: p.product_qty,
+    current_location: locationMap.get(p.plt_num) || 'Await'
+  }));
 
   // 按產品分組並聚合
-  const groupedData = data.reduce((acc: GroupedData, item: PalletInfoQueryResult) => {
-    const key = item.productcode;
+  interface ProductInfoQueryResult {
+    product_code: string;
+    current_location?: string;
+    product_qty?: number;
+    [key: string]: unknown;
+  }
+  
+  const groupedData = (data as ProductInfoQueryResult[] || []).reduce((acc: Record<string, ProductDistributionData>, item: ProductInfoQueryResult) => {
+    const key = item.product_code;
     if (!acc[key]) {
       acc[key] = {
         productCode: key,
-        productName: item.data_code.description,
+        productName: key, // 簡化處理，使用產品代碼作為名稱
         totalQuantity: 0,
         locations: {},
       };
     }
-    acc[key].totalQuantity += item.quantity;
-    acc[key].locations[item.location] = (acc[key].locations[item.location] || 0) + item.quantity;
+    const productData = acc[key];
+    const qty = item.product_qty || 0;
+    productData.totalQuantity += qty;
+    if (item.current_location) {
+      productData.locations[item.current_location] = (productData.locations[item.current_location] || 0) + qty;
+    }
     return acc;
   }, {});
 
-  const chartData: ChartDataPoint[] = Object.values(groupedData)
+  const chartData: ChartDataPoint[] = (Object.values(groupedData) as ProductDistributionData[])
     .sort(
       (a: ProductDistributionData, b: ProductDistributionData) => b.totalQuantity - a.totalQuantity
     )
-    .slice(0, input.limit || 20)
+    .slice(0, ('limit' in input ? input.limit : undefined) || 20)
     .map((item: ProductDistributionData) => ({
       x: item.productCode,
       y: item.totalQuantity,
@@ -257,7 +324,7 @@ async function fetchTreemapData(
         id: 'stock-distribution',
         label: 'Stock Distribution',
         data: chartData,
-        type: 'SINGLE' as const,
+        type: ChartDatasetType.Single,
         hidden: false,
       },
     ],
@@ -272,10 +339,10 @@ async function fetchTreemapData(
     performance: {
       totalQueries: 1,
       cachedQueries: 0,
-      averageResponseTime: Date.now() - now.getTime(),
+      averageResponseTime: Date.now() - new Date().getTime(),
       dataAge: 0,
     },
-    lastUpdated: now.toISOString(),
+    lastUpdated: new Date().toISOString(),
     refreshInterval: 300,
     dataSource: 'supabase',
   };
@@ -292,32 +359,44 @@ async function fetchAreaChartData(
   };
 
   const { data, error } = await supabase
-    .from('record_pallet_transfer')
-    .select('transferdone, from_location, to_location')
-    .gte('transferdone', dateRange.start)
-    .lte('transferdone', dateRange.end)
-    .order('transferdone');
+    .from('record_transfer')
+    .select('tran_date, f_loc, t_loc, plt_num')
+    .gte('tran_date', dateRange.start)
+    .lte('tran_date', dateRange.end)
+    .order('tran_date');
 
   if (error) throw error;
 
   // 按時間粒度分組
   const granularity = (input as ChartQueryInput).timeGranularity || TimeGranularity.Day;
-  const groupedData = data.reduce((acc: GroupedData, item: TransferQueryResult) => {
-    const key = formatTimeGranularity(new Date(item.transferdone || ''), granularity);
+  
+  interface TransferQueryResult {
+    tran_date?: string;
+    f_loc?: string;
+    t_loc?: string;
+    plt_num?: string;
+    [key: string]: unknown;
+  }
+  
+  const groupedData = (data as TransferQueryResult[] || []).reduce((acc: Record<string, TimeSeriesDataPoint>, item: TransferQueryResult) => {
+    const key = formatTimeGranularity(new Date(item.tran_date || ''), granularity);
     if (!acc[key]) {
       acc[key] = { date: key, count: 0 };
     }
-    (acc[key] as TimeSeriesDataPoint).count++;
+    const entry = acc[key];
+    if (entry && entry.count !== undefined) {
+      entry.count++;
+    }
     return acc;
   }, {});
 
-  const chartData: ChartDataPoint[] = Object.values(groupedData)
+  const chartData: ChartDataPoint[] = (Object.values(groupedData) as TimeSeriesDataPoint[])
     .sort((a: TimeSeriesDataPoint, b: TimeSeriesDataPoint) => a.date.localeCompare(b.date))
     .map((item: TimeSeriesDataPoint) => ({
       x: item.date,
-      y: item.count,
+      y: item.count || 0,
       label: item.date,
-      value: item.count,
+      value: item.count || 0,
       metadata: {},
     }));
 
@@ -327,7 +406,7 @@ async function fetchAreaChartData(
         id: 'warehouse-work-level',
         label: 'Transfer Count',
         data: chartData,
-        type: 'SINGLE' as const,
+        type: ChartDatasetType.Single,
         color: '#3b82f6',
         backgroundColor: '#3b82f6',
         borderColor: '#3b82f6',
@@ -369,38 +448,40 @@ async function fetchBarChartData(
   input: ChartQueryInput | SingleChartQueryInput
 ): Promise<ChartCardData> {
   const { data, error } = await supabase
-    .from('record_pallet_transfer')
-    .select('transferstart, transferdone')
-    .not('transferdone', 'is', null)
-    .not('transferstart', 'is', null)
+    .from('record_transfer')
+    .select('tran_date, f_loc, t_loc, plt_num')
+    .not('tran_date', 'is', null)
     .limit(1000);
 
   if (error) throw error;
 
-  // 計算轉移時間（小時）
-  const transferTimes = data.map((item: TransferQueryResult) => {
-    const start = new Date(item.transferstart);
-    const end = new Date(item.transferdone || '');
-    return Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60)); // 小時
-  });
+  // 計算位置間轉移統計
+  interface TransferLocationQueryResult {
+    tran_date: string;
+    f_loc?: string;
+    t_loc?: string;
+    plt_num?: string;
+    [key: string]: unknown;
+  }
+  
+  const locations = (data as TransferLocationQueryResult[] || []).reduce((acc: Record<string, number>, item: TransferLocationQueryResult) => {
+    const fromLoc = item.f_loc || 'Unknown';
+    const toLoc = item.t_loc || 'Unknown';
+    const locationPair = `${fromLoc} → ${toLoc}`;
+    acc[locationPair] = (acc[locationPair] || 0) + 1;
+    return acc;
+  }, {});
 
-  // 創建直方圖數據
-  const histogram: Record<string, number> = {};
-  transferTimes.forEach(time => {
-    const bucket = time < 24 ? `${time}h` : '24h+';
-    histogram[bucket] = (histogram[bucket] || 0) + 1;
-  });
+  // 創建圓餅圖數據 - 取前10個最常見的轉移路徑
+  const sortedLocations = Object.entries(locations)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 10);
 
-  const chartData: ChartDataPoint[] = Object.entries(histogram)
-    .sort((a, b) => {
-      const aNum = parseInt(a[0]) || 999;
-      const bNum = parseInt(b[0]) || 999;
-      return aNum - bNum;
-    })
-    .map(([time, count]) => ({
-      x: time,
+  const chartData: ChartDataPoint[] = sortedLocations
+    .map(([location, count]) => ({
+      x: location,
       y: count,
-      label: time,
+      label: location,
       value: count,
       metadata: {},
     }));
@@ -411,7 +492,7 @@ async function fetchBarChartData(
         id: 'transfer-time-distribution',
         label: 'Transfer Count',
         data: chartData,
-        type: 'SINGLE' as const,
+        type: ChartDatasetType.Single,
         backgroundColor: '#10b981',
         hidden: false,
       },
@@ -459,25 +540,31 @@ async function fetchLineChartData(
   // 這裡簡化處理，實際應該從歷史記錄表獲取
   const { data, error } = await supabase
     .from('record_palletinfo')
-    .select('quantity, created_at')
-    .gte('created_at', dateRange.start)
-    .lte('created_at', dateRange.end)
-    .order('created_at');
+    .select('product_code, product_qty, generate_time')
+    .gte('generate_time', dateRange.start)
+    .lte('generate_time', dateRange.end)
+    .order('generate_time');
 
   if (error) throw error;
 
   // 按天分組
-  const groupedData = data.reduce((acc: GroupedData, item: PalletInfoQueryResult) => {
-    const date = format(new Date(item.created_at || ''), 'yyyy-MM-dd');
+  interface HistoryQueryResult {
+    generate_time?: string;
+    product_qty?: number;
+    [key: string]: unknown;
+  }
+  
+  const groupedData = (data as HistoryQueryResult[] || []).reduce((acc: Record<string, TimeSeriesDataPoint>, item: HistoryQueryResult) => {
+    const date = format(new Date(item.generate_time || ''), 'yyyy-MM-dd');
     if (!acc[date]) {
-      acc[date] = { date, totalQuantity: 0 };
+      acc[date] = { date, count: 0, totalQuantity: 0 };
     }
-    (acc[date] as TimeSeriesDataPoint).totalQuantity =
-      ((acc[date] as TimeSeriesDataPoint).totalQuantity || 0) + item.quantity;
+    const qty = item.product_qty || 0;
+    acc[date].totalQuantity = (acc[date].totalQuantity || 0) + qty;
     return acc;
   }, {});
 
-  const chartData: ChartDataPoint[] = Object.values(groupedData)
+  const chartData: ChartDataPoint[] = (Object.values(groupedData) as TimeSeriesDataPoint[])
     .sort((a: TimeSeriesDataPoint, b: TimeSeriesDataPoint) => a.date.localeCompare(b.date))
     .map((item: TimeSeriesDataPoint) => ({
       x: item.date,
@@ -493,7 +580,7 @@ async function fetchLineChartData(
         id: 'stock-level-history',
         label: 'Stock Level',
         data: chartData,
-        type: 'SINGLE' as const,
+        type: ChartDatasetType.Single,
         borderColor: '#8b5cf6',
         backgroundColor: 'transparent',
         hidden: false,
@@ -518,6 +605,189 @@ async function fetchLineChartData(
     } as ChartConfig,
     performance: {
       totalQueries: 1,
+      cachedQueries: 0,
+      averageResponseTime: Date.now() - new Date().getTime(),
+      dataAge: 0,
+    },
+    lastUpdated: new Date().toISOString(),
+    refreshInterval: 300,
+    dataSource: 'supabase',
+  };
+}
+
+// Work Level Chart 數據
+async function fetchWorkLevelData(
+  supabase: SupabaseClientType,
+  input: ChartQueryInput | SingleChartQueryInput
+): Promise<ChartCardData> {
+  // 獲取最新的數據（根據最後更新時間）
+  // 首先找出最新的更新時間
+  const { data: latestData, error: latestError } = await supabase
+    .from('work_level')
+    .select('latest_update')
+    .order('latest_update', { ascending: false })
+    .limit(1);
+
+  if (latestError) throw latestError;
+  
+  if (!latestData || latestData.length === 0) {
+    return createEmptyChartData(ChartType.Line);
+  }
+
+  const latestUpdate = new Date((latestData[0] as { latest_update: string }).latest_update);
+  const past7Days = subDays(latestUpdate, 7);
+  
+  // 查詢 work_level 表格，獲取最新更新時間往前7天的所有記錄
+  const { data: workLevelData, error: workLevelError } = await supabase
+    .from('work_level')
+    .select('id, qc, move, grn, loading, latest_update')
+    .gte('latest_update', past7Days.toISOString())
+    .lte('latest_update', latestUpdate.toISOString())
+    .order('latest_update');
+
+  if (workLevelError) throw workLevelError;
+
+  // 類型斷言確保類型安全
+  const typedWorkLevelData = (workLevelData || []) as WorkLevelRecord[];
+
+  // 獲取員工姓名和部門
+  const staffIds = [...new Set(typedWorkLevelData.map(item => item.id))];
+  const { data: staffData, error: staffError } = await supabase
+    .from('data_id')
+    .select('id, name, department')
+    .in('id', staffIds);
+
+  if (staffError) throw staffError;
+
+  // 類型斷言確保類型安全
+  const typedStaffData = (staffData || []) as StaffRecord[];
+
+  // 創建員工 ID 到資訊的映射
+  const staffInfoMap: Record<string, { name: string; department: string }> = {};
+  typedStaffData.forEach(staff => {
+    staffInfoMap[staff.id.toString()] = {
+      name: staff.name || staff.id.toString(),
+      department: staff.department || 'Unknown'
+    };
+  });
+
+  // 按員工分組數據並計算每個時間點的工作總量
+  const staffHistoryMap: Record<string, StaffWorkHistory> = {};
+  
+  typedWorkLevelData.forEach(item => {
+    const staffId = item.id.toString();
+    const staffInfo = staffInfoMap[staffId] || { name: staffId, department: 'Unknown' };
+    const total = (item.qc || 0) + (item.move || 0) + (item.grn || 0) + (item.loading || 0);
+    const timestamp = format(new Date(item.latest_update), 'yyyy-MM-dd HH:mm');
+    
+    if (!staffHistoryMap[staffId]) {
+      staffHistoryMap[staffId] = {
+        staffId,
+        staffName: staffInfo.name,
+        department: staffInfo.department,
+        dataPoints: []
+      };
+    }
+    
+    staffHistoryMap[staffId].dataPoints.push({
+      timestamp,
+      total
+    });
+  });
+
+  // 獲取所有唯一時間點並排序
+  const allTimestamps = [...new Set(
+    Object.values(staffHistoryMap).flatMap(staff => 
+      staff.dataPoints.map(dp => dp.timestamp)
+    )
+  )].sort();
+
+  // 準備數據集 - 每個員工一條線
+  const datasets: ChartDataset[] = Object.values(staffHistoryMap).map((staff, index) => {
+    // 為每個時間點創建數據點，如果沒有數據則使用最近的值
+    const dataPoints: ChartDataPoint[] = [];
+    let lastValue = 0;
+    
+    allTimestamps.forEach(timestamp => {
+      const dataPoint = staff.dataPoints.find(dp => dp.timestamp === timestamp);
+      if (dataPoint) {
+        lastValue = dataPoint.total;
+      }
+      dataPoints.push({
+        x: timestamp,
+        y: lastValue,
+        label: `${staff.staffName}: ${lastValue}`,
+        value: lastValue,
+        metadata: {
+          staffId: staff.staffId,
+          staffName: staff.staffName,
+          department: staff.department
+        }
+      });
+    });
+
+    // 生成不同顏色
+    const colors = [
+      '#FF6B6B', '#4ECDC4', '#45B7D1', '#FD7272', '#C44569',
+      '#F8B500', '#5CDB95', '#FC5185', '#3FC1C9', '#364F6B',
+      '#A8E6CF', '#FFDAB9', '#FF8B94', '#D1C4E9', '#B2DFDB'
+    ];
+    const color = colors[index % colors.length];
+
+    return {
+      id: `staff-${staff.staffId}`,
+      label: staff.staffName,
+      data: dataPoints,
+      type: ChartDatasetType.Single,
+      borderColor: color,
+      backgroundColor: 'transparent',
+      hidden: false,
+    };
+  });
+
+  // 獲取所有唯一的部門
+  const uniqueDepartments = [...new Set(Object.values(staffHistoryMap).map(staff => staff.department))].sort();
+
+  return {
+    datasets,
+    labels: allTimestamps,
+    config: {
+      ...CHART_CONFIG_MAP.warehouseWorkLevel,
+      responsive: true,
+      maintainAspectRatio: false,
+      xAxis: {
+        type: 'category',
+        display: true,
+        label: 'Time',
+      },
+      yAxis: {
+        type: 'linear',
+        display: true,
+        label: 'Total Work Count',
+        min: 0,
+      },
+      legend: { 
+        display: true, 
+        position: 'top',
+        labels: {
+          color: '#ffffff' // 白色文字
+        }
+      },
+      tooltip: { 
+        enabled: true, 
+        mode: 'index', 
+        intersect: false 
+      },
+      // 黑色背景樣式配置
+      plugins: {
+        backgroundColor: '#000000',
+        gridColor: '#333333',
+        textColor: '#ffffff',
+        departments: uniqueDepartments // 傳遞部門列表
+      }
+    } as ChartConfig,
+    performance: {
+      totalQueries: 3, // 增加了一個查詢來獲取最新時間
       cachedQueries: 0,
       averageResponseTime: Date.now() - new Date().getTime(),
       dataAge: 0,
@@ -567,7 +837,17 @@ export const chartResolvers = {
 
       // 目前簡化處理，只返回第一個圖表類型的數據
       if (input.chartTypes.length > 0) {
-        return fetchChartData(supabase, input.chartTypes[0], input);
+        const chartType = input.chartTypes[0];
+        
+        // 特殊處理 Work Level 圖表
+        // 檢查是否包含特定的 filters 或 metadata 來識別 Work Level 圖表
+        if (chartType === ChartType.Line && 
+            (input.filters?.chartId === 'WorkLevelCard' || 
+             input.filters?.dataSource === 'work_level')) {
+          return fetchWorkLevelData(supabase, input);
+        }
+        
+        return fetchChartData(supabase, chartType, input);
       }
 
       return createEmptyChartData(ChartType.Line);

@@ -103,7 +103,7 @@ export function VirtualizedNavigation({
 // 用於大量子菜單項的虛擬化列表
 interface VirtualizedSubMenuProps {
   items: Record<string, unknown>[];
-  onItemClick: (item: DatabaseRecord) => void;
+  onItemClick: (item: Record<string, unknown>) => void;
   className?: string;
 }
 

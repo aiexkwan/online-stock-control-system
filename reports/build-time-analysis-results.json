@@ -1,0 +1,156 @@
+{
+  "typescript": {
+    "individualFiles": [
+      {
+        "file": "./lib/schemas/alerts.ts",
+        "time": 0.12308400000000042,
+        "complexity": {
+          "schemas": 5,
+          "types": 5,
+          "interfaces": 0,
+          "enums": 0,
+          "zodUsage": 16,
+          "total": 10
+        },
+        "size": 1402
+      },
+      {
+        "file": "./lib/schemas/api.ts",
+        "time": 0.20583300000000015,
+        "complexity": {
+          "schemas": 1,
+          "types": 0,
+          "interfaces": 0,
+          "enums": 0,
+          "zodUsage": 1,
+          "total": 1
+        },
+        "size": 303
+      },
+      {
+        "file": "./lib/schemas/dashboard.ts",
+        "time": 0.13112499999999905,
+        "complexity": {
+          "schemas": 10,
+          "types": 10,
+          "interfaces": 0,
+          "enums": 0,
+          "zodUsage": 68,
+          "total": 20
+        },
+        "size": 3426
+      },
+      {
+        "file": "./lib/schemas/widgets.ts",
+        "time": 0.13720799999999933,
+        "complexity": {
+          "schemas": 2,
+          "types": 2,
+          "interfaces": 0,
+          "enums": 0,
+          "zodUsage": 16,
+          "total": 4
+        },
+        "size": 873
+      },
+      {
+        "file": "./lib/schemas/shared.ts",
+        "time": 0.39424999999999955,
+        "complexity": {
+          "schemas": 9,
+          "types": 5,
+          "interfaces": 0,
+          "enums": 0,
+          "zodUsage": 25,
+          "total": 14
+        },
+        "size": 1638
+      },
+      {
+        "file": "./lib/schemas/printing.ts",
+        "time": 0.13649999999999984,
+        "complexity": {
+          "schemas": 9,
+          "types": 9,
+          "interfaces": 0,
+          "enums": 0,
+          "zodUsage": 89,
+          "total": 18
+        },
+        "size": 5106
+      },
+      {
+        "file": "./types/business/schemas.ts",
+        "time": 0.16020799999999902,
+        "complexity": {
+          "schemas": 11,
+          "types": 11,
+          "interfaces": 0,
+          "enums": 0,
+          "zodUsage": 84,
+          "total": 22
+        },
+        "size": 8126
+      },
+      {
+        "file": "./app/actions/schemas.ts",
+        "time": 0.20129200000000047,
+        "complexity": {
+          "schemas": 2,
+          "types": 0,
+          "interfaces": 0,
+          "enums": 0,
+          "zodUsage": 0,
+          "total": 2
+        },
+        "size": 401
+      },
+      {
+        "file": "./app/components/reports/schemas/ExcelGeneratorSchemas.ts",
+        "time": 0.17737499999999784,
+        "complexity": {
+          "schemas": 5,
+          "types": 5,
+          "interfaces": 0,
+          "enums": 0,
+          "zodUsage": 92,
+          "total": 10
+        },
+        "size": 5321
+      }
+    ],
+    "totalTime": 1.6668749999999957,
+    "averageComplexity": 11.222222222222221,
+    "filesCount": 9
+  },
+  "dependencies": {
+    "directImports": {},
+    "indirectImports": {},
+    "circularDeps": [],
+    "importGraph": {},
+    "summary": {
+      "totalFiles": 9,
+      "totalImports": 11,
+      "avgImportsPerFile": 1.2222222222222223,
+      "zodDependentFiles": 8,
+      "schemaImportFiles": 0
+    }
+  },
+  "treeShaking": {
+    "exportedSymbols": {},
+    "usedSymbols": {},
+    "deadCodePercentage": 48.18181818181818,
+    "recommendations": [
+      "Consider removing unused schema exports"
+    ]
+  },
+  "bundleImpact": {
+    "estimatedBundleSize": 0,
+    "compressionRatio": 0,
+    "loadTimeImpact": 92.89355468749999,
+    "recommendations": [],
+    "rawSize": 27178,
+    "estimatedGzipSize": 9512.3,
+    "totalLines": 949
+  }
+}

@@ -75,7 +75,7 @@ export const DashboardStatsSchema = z.object({
   criticalStock: z.number().int().min(0),
 });
 
-// Dashboard Widget 資料
+// Dashboard Card 資料
 export const DashboardWidgetDataSchema = z.object({
   id: z.string(),
   type: z.enum(['chart', 'stats', 'list', 'table']),

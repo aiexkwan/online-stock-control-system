@@ -15,6 +15,7 @@ interface ProductInfo {
 interface ProductCodeInputProps {
   value: string;
   onChange: (value: string) => void;
+  onBlur?: () => void;
   onProductInfoChange: (productInfo: ProductInfo | null) => void;
   onQuantityChange?: (quantity: string) => void;
   disabled?: boolean;
@@ -27,6 +28,7 @@ interface ProductCodeInputProps {
 export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
   value,
   onChange,
+  onBlur,
   onProductInfoChange,
   onQuantityChange,
   disabled = false,
@@ -55,6 +57,11 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
 
     // 空值處理
     if (!trimmedValue) {
+      // 取消任何進行中的搜尋
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
       onProductInfoChange(null);
       setProductError(null);
       setIsLoading(false);
@@ -86,15 +93,14 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
       const client = createClient();
 
       (process.env.NODE_ENV as string) !== 'production' &&
-        console.log('[ProductCodeInput] Executing RPC query for:', trimmedValue);
+        console.log('[ProductCodeInput] Executing query for:', trimmedValue);
 
-      // 使用 RPC 函數進行產品搜尋 - 在資料庫端執行，更穩定更快速
-      // 不需要超時機制，因為 RPC 是獨立事件
+      // 直接查詢 data_code 表，不需要 RPC
       const { data, error } = await client
-        .rpc('get_product_details_by_code', {
-          p_code: trimmedValue,
-        })
-        .abortSignal(abortController.signal); // 使用 abort signal
+        .from('data_code')
+        .select('code, description, standard_qty, type, remark')
+        .ilike('code', trimmedValue)
+        .single();
 
       (process.env.NODE_ENV as string) !== 'production' &&
         console.log('[ProductCodeInput] Search result:', { data, error });
@@ -106,27 +112,26 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
         return;
       }
 
-      if (error || !data || !Array.isArray(data) || data.length === 0) {
+      if (error || !data) {
         // 找不到產品
         onProductInfoChange(null);
         setProductError(`Product Code ${trimmedValue} Not Found`);
+        setIsLoading(false); // 確保清除 loading 狀態
         (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[ProductCodeInput] Product not found:', trimmedValue);
       } else {
-        // 找到產品 - get_product_details_by_code 返回數組，取第一個結果
-        const productData = (
-          Array.isArray(data) && data.length > 0
-            ? data[0]
-            : {
-                code: '',
-                description: '',
-                standard_qty: '',
-                type: '',
-              }
-        ) as ProductInfo;
+        // 找到產品
+        const productData: ProductInfo = {
+          code: data.code,
+          description: data.description,
+          standard_qty: data.standard_qty.toString(),
+          type: data.type,
+          remark: data.remark || '-'
+        };
         onProductInfoChange(productData);
         onChange(productData.code); // 使用資料庫中的標準化代碼
         setProductError(null);
+        setIsLoading(false); // 確保清除 loading 狀態
         (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[ProductCodeInput] Product found:', productData);
 
@@ -151,21 +156,36 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
         return;
       } else {
         setProductError('Search failed. Please try again.');
+        setIsLoading(false); // 確保清除 loading 狀態
       }
     } finally {
-      // 只有在沒有被取消的情況下才清除 loading 狀態
-      if (abortControllerRef.current === abortController && !abortController.signal.aborted) {
-        setIsLoading(false);
+      // 清理 abortController 引用
+      if (abortControllerRef.current === abortController) {
         (process.env.NODE_ENV as string) !== 'production' &&
-          console.log('[ProductCodeInput] Search completed, loading state cleared');
+          console.log('[ProductCodeInput] Search completed');
       }
     }
   };
 
   // 處理 blur 事件
   const handleBlur = () => {
+    // 只有當輸入欄有值時才搜尋
     if (value.trim()) {
       searchProductCode(value);
+    } else {
+      // 輸入欄冇值，確保清除所有狀態
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      setIsLoading(false);
+      setProductError(null);
+      onProductInfoChange(null);
+    }
+    
+    // 呼叫父組件的 onBlur（如果有）
+    if (onBlur) {
+      onBlur();
     }
   };
 
@@ -189,11 +209,18 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
       setProductError(null);
     }
 
-    // 當輸入框被清空時，重置 productInfo
+    // 當輸入框被清空時，只係清理狀態，唔觸發搜尋
     if (!newValue.trim()) {
-      onProductInfoChange(null);
+      // 取消任何進行中的搜尋
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      // 立即清除載入狀態
+      setIsLoading(false);
+      // 注意：唔喺呢度 call onProductInfoChange，等 onBlur 處理
       (process.env.NODE_ENV as string) !== 'production' &&
-        console.log('[ProductCodeInput] Input cleared, resetting product info');
+        console.log('[ProductCodeInput] Input cleared, cancelling any pending searches');
     }
   };
 

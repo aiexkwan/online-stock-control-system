@@ -55,7 +55,7 @@ export class TransfersService {
         `);
 
       // Apply filters to both queries
-      const applyFilters = (query: any) => {
+      const applyFilters = (query: ReturnType<typeof this.supabase.from>) => {
         if (palletId) {
           query = query.eq('plt_num', palletId);
         }
@@ -141,12 +141,12 @@ export class TransfersService {
         };
 
         // Only add optional properties if they have values
-        if ((transfer as any).product_name) {
-          result.productName = (transfer as any).product_name;
+        if ((transfer as unknown).product_name) {
+          result.productName = (transfer as unknown).product_name;
         }
 
-        if ((transfer as any).user_name) {
-          result.userName = (transfer as any).user_name;
+        if ((transfer as unknown).user_name) {
+          result.userName = (transfer as unknown).user_name;
         }
 
         return result as TransferResponseDto;

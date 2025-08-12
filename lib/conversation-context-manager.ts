@@ -178,7 +178,7 @@ export class ConversationContextManager {
     pronounMappings.forEach(mapping => {
       if (mapping.pattern.test(resolved)) {
         const entity = this.findEntity(mapping.type, mapping.position);
-        if (entity) {
+        if (entity && !Array.isArray(entity)) {
           references.push({
             original: resolved.match(mapping.pattern)?.[0],
             resolved: entity.value,

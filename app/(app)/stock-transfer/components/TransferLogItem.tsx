@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ActivityLogEntry } from '@/app/hooks/useActivityLog';
+import type { ActivityLogEntry } from '@/lib/inventory/types/inventory.types';
 import type { OptimisticTransfer } from '@/app/actions/stockTransferActions';
 
 interface TransferLogItemProps {

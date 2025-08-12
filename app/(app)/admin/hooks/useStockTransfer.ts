@@ -1,0 +1,414 @@
+/**
+ * useStockTransfer Hook
+ * 
+ * Extracted from StockTransferCard component for better reusability and testability
+ * Handles stock transfer business logic, validation, and state management
+ * 
+ * Features:
+ * - Pallet search and validation
+ * - Transfer execution with optimistic updates
+ * - Clock number validation
+ * - Activity logging
+ * - Automatic transfer execution
+ * - Error handling and status management
+ */
+
+'use client';
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { toast } from 'sonner';
+import {
+  searchPalletAuto,
+  transferPallet,
+  getTransferHistory,
+  validateTransferDestination,
+  validateClockNumber,
+  TransferHistoryItem,
+  OptimisticTransfer,
+} from '@/app/actions/stockTransferActions';
+import { LOCATION_DESTINATIONS } from '../constants/stockTransfer';
+import { LocationStandardizer } from '../utils/locationStandardizer';
+import type { SearchInputRef } from '../components/shared';
+
+// Types
+export interface PalletInfo {
+  plt_num: string;
+  product_code: string;
+  product_desc?: string;
+  product_qty: number;
+  plt_remark?: string | null;
+  current_plt_loc?: string | null;
+  location?: string | null;
+  generate_time?: string;
+  series?: string;
+}
+
+export interface SearchResult {
+  id: string;
+  title: string;
+  subtitle: string;
+  metadata?: string;
+  data: Array<Record<string, unknown>>;
+}
+
+export interface StockTransferState {
+  isLoading: boolean;
+  isSearching: boolean;
+  isTransferring: boolean;
+  optimisticTransfers: OptimisticTransfer[];
+  searchValue: string;
+  statusMessage: {
+    type: 'success' | 'error' | 'warning' | 'info';
+    message: string;
+  } | null;
+  selectedPallet: PalletInfo | null;
+  selectedDestination: string;
+  verifiedClockNumber: string | null;
+  verifiedName: string | null;
+  clockNumber: string;
+  clockError: string;
+  isVerifying: boolean;
+  currentLocation: string;
+}
+
+export interface StockTransferActions {
+  setIsLoading: (loading: boolean) => void;
+  setSearchValue: (value: string) => void;
+  setSelectedDestination: (destination: string) => void;
+  setClockNumber: (number: string) => void;
+  setStatusMessage: (message: StockTransferState['statusMessage']) => void;
+  executeStockTransfer: (palletInfo: PalletInfo, toLocation: string, operatorId: string) => Promise<boolean>;
+  validateClockNumberLocal: (clockNum: string) => Promise<boolean>;
+  handleSearchSelect: (result: SearchResult) => void;
+  handleClockNumberChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleVerifyClockNumber: (numberToVerify?: string) => Promise<void>;
+  focusSearchInput: () => void;
+  resetToSearch: () => void;
+  onDestinationChange: (destination: string) => void;
+}
+
+export interface UseStockTransferProps {
+  searchInputRef?: React.RefObject<SearchInputRef>;
+  onTransferComplete?: (pallet: PalletInfo, destination: string) => void;
+  onTransferError?: (error: string) => void;
+}
+
+export interface UseStockTransferReturn {
+  state: StockTransferState;
+  actions: StockTransferActions;
+}
+
+export const useStockTransfer = ({
+  searchInputRef,
+  onTransferComplete,
+  onTransferError,
+}: UseStockTransferProps = {}): UseStockTransferReturn => {
+  // State management
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isTransferring, setIsTransferring] = useState(false);
+  const [optimisticTransfers, setOptimisticTransfers] = useState<OptimisticTransfer[]>([]);
+  const [searchValue, setSearchValue] = useState('');
+  const [statusMessage, setStatusMessage] = useState<StockTransferState['statusMessage']>(null);
+  const [selectedPallet, setSelectedPallet] = useState<PalletInfo | null>(null);
+  const [selectedDestination, setSelectedDestination] = useState('');
+  const [verifiedClockNumber, setVerifiedClockNumber] = useState<string | null>(null);
+  const [verifiedName, setVerifiedName] = useState<string | null>(null);
+  const [clockNumber, setClockNumber] = useState('');
+  const [clockError, setClockError] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState('Await');
+
+  // Focus search input helper
+  const focusSearchInput = useCallback(() => {
+    setTimeout(() => {
+      if (searchInputRef?.current) {
+        searchInputRef.current.focus();
+      }
+    }, 100);
+  }, [searchInputRef]);
+
+  // Execute stock transfer
+  const executeStockTransfer = useCallback(
+    async (palletInfo: PalletInfo, toLocation: string, operatorId: string): Promise<boolean> => {
+      const transferId = `${palletInfo.plt_num}-${Date.now()}`;
+      const fromLocation = palletInfo.current_plt_loc || palletInfo.location || 'Unknown';
+
+      const hasPending = optimisticTransfers.some(
+        t => t.pltNum === palletInfo.plt_num && t.status === 'pending'
+      );
+
+      if (hasPending) {
+        toast.warning(`Pallet ${palletInfo.plt_num} has a pending transfer. Please wait.`);
+        return false;
+      }
+
+      const optimisticEntry: OptimisticTransfer = {
+        id: transferId,
+        pltNum: palletInfo.plt_num,
+        fromLocation,
+        toLocation,
+        status: 'pending',
+        timestamp: Date.now(),
+      };
+
+      setOptimisticTransfers(prev => [...prev, optimisticEntry]);
+      setIsTransferring(true);
+
+      try {
+        const validation = await validateTransferDestination(palletInfo.plt_num, toLocation);
+        if (!validation.valid) {
+          throw new Error(validation.message || 'Invalid transfer');
+        }
+
+        const result = await transferPallet(palletInfo.plt_num, toLocation);
+
+        if (result.success) {
+          setOptimisticTransfers(prev =>
+            prev.map(t => (t.id === transferId ? { ...t, status: 'success' } : t))
+          );
+
+          toast.success(result.message);
+          
+          // Callback for successful transfer
+          if (onTransferComplete) {
+            onTransferComplete(palletInfo, toLocation);
+          }
+          
+          return true;
+        } else {
+          setOptimisticTransfers(prev =>
+            prev.map(t => (t.id === transferId ? { ...t, status: 'failed' } : t))
+          );
+          
+          const errorMessage = result.error || 'Transfer failed';
+          toast.error(errorMessage);
+          
+          if (onTransferError) {
+            onTransferError(errorMessage);
+          }
+          
+          return false;
+        }
+      } catch (error) {
+        setOptimisticTransfers(prev =>
+          prev.map(t => (t.id === transferId ? { ...t, status: 'failed' } : t))
+        );
+        
+        const errorMessage = error instanceof Error ? error.message : 'Transfer failed';
+        toast.error(errorMessage);
+        
+        if (onTransferError) {
+          onTransferError(errorMessage);
+        }
+        
+        return false;
+      } finally {
+        setIsTransferring(false);
+      }
+    },
+    [optimisticTransfers, onTransferComplete, onTransferError]
+  );
+
+  // Clock number validation
+  const validateClockNumberLocal = useCallback(async (clockNum: string): Promise<boolean> => {
+    try {
+      const result = await validateClockNumber(clockNum);
+      if (!result.success) {
+        setClockError(result.error || 'Clock number not found');
+        return false;
+      }
+      if (result.data) {
+        setClockError('');
+        setVerifiedClockNumber(clockNum);
+        setVerifiedName(result.data.name);
+        return true;
+      }
+      setClockError('No user data received');
+      return false;
+    } catch (error) {
+      setClockError('Validation error occurred');
+      return false;
+    }
+  }, []);
+
+  // Handle clock number verification
+  const handleVerifyClockNumber = useCallback(async (numberToVerify?: string) => {
+    const clockNum = numberToVerify || clockNumber;
+    if (!clockNum || clockNum.length !== 4) {
+      return;
+    }
+    setIsVerifying(true);
+    await validateClockNumberLocal(clockNum);
+    setIsVerifying(false);
+  }, [clockNumber, validateClockNumberLocal]);
+
+  // Handle clock number input change
+  const handleClockNumberChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (/^\d*$/.test(value) && value.length <= 4) {
+      setClockNumber(value);
+      if (clockError) {
+        setClockError('');
+      }
+      if (verifiedClockNumber && value !== verifiedClockNumber) {
+        setVerifiedClockNumber('');
+        setVerifiedName('');
+      }
+      if (value.length === 4) {
+        handleVerifyClockNumber(value);
+      }
+    }
+  }, [clockError, verifiedClockNumber, handleVerifyClockNumber]);
+
+  // Handle search result selection
+  const handleSearchSelect = useCallback((result: SearchResult) => {
+    const searchValueExtracted =
+      Array.isArray(result.data) && result.data.length > 0
+        ? typeof result.data[0]?.value === 'string'
+          ? result.data[0].value
+          : result.title
+        : result.title || '';
+
+    if (searchValueExtracted) {
+      setIsSearching(true);
+      
+      searchPalletAuto(searchValueExtracted)
+        .then(searchResult => {
+          if (searchResult.success && searchResult.data) {
+            setSelectedPallet(searchResult.data);
+            // Found pallet successfully
+          } else {
+            toast.error(searchResult.error || 'Pallet not found');
+          }
+        })
+        .catch(error => {
+          toast.error('Search failed');
+        })
+        .finally(() => {
+          setIsSearching(false);
+        });
+    }
+  }, []);
+
+  // Destination change handler
+  const onDestinationChange = useCallback((destination: string) => {
+    setSelectedDestination(destination);
+  }, []);
+
+  // Reset to search state
+  const resetToSearch = useCallback(() => {
+    setSearchValue('');
+    setSelectedPallet(null);
+    setStatusMessage(null);
+    setVerifiedClockNumber(null);
+    setVerifiedName(null);
+    setClockNumber('');
+    setClockError('');
+    setSelectedDestination('');
+    focusSearchInput();
+  }, [focusSearchInput]);
+
+  // Auto-execute transfer when all conditions are met
+  useEffect(() => {
+    if (selectedPallet && selectedDestination && verifiedClockNumber && !isTransferring) {
+      executeStockTransfer(selectedPallet, selectedDestination, verifiedClockNumber).then(
+        success => {
+          if (success) {
+            setStatusMessage({
+              type: 'success',
+              message: `✓ Pallet ${selectedPallet.plt_num} successfully moved to ${selectedDestination}`,
+            });
+            setSearchValue('');
+            setSelectedPallet(null);
+            focusSearchInput();
+          } else {
+            setStatusMessage({
+              type: 'error',
+              message: `✗ Failed to transfer pallet ${selectedPallet.plt_num}`,
+            });
+          }
+        }
+      );
+    }
+  }, [selectedPallet, selectedDestination, verifiedClockNumber, isTransferring, executeStockTransfer, focusSearchInput]);
+
+  // Update current location based on selected pallet
+  useEffect(() => {
+    if (selectedPallet) {
+      const rawLocation = selectedPallet.current_plt_loc || selectedPallet.location || 'Await';
+      const standardizedLocation = LocationStandardizer.standardizeForUI(rawLocation);
+      setCurrentLocation(standardizedLocation);
+    }
+  }, [selectedPallet]);
+
+  // Set default destination based on current location
+  useEffect(() => {
+    if (!selectedDestination) {
+      const getDefaultDestination = (location: string): string => {
+        switch (location) {
+          case 'Await':
+          case 'Await_grn':
+            return 'Fold Mill';
+          case 'Fold Mill':
+          case 'PipeLine':
+            return 'Production';
+          default:
+            return 'Fold Mill';
+        }
+      };
+      onDestinationChange(getDefaultDestination(currentLocation));
+    }
+  }, [currentLocation, selectedDestination, onDestinationChange]);
+
+  // Cleanup optimistic transfers
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setOptimisticTransfers(prev =>
+        prev.filter(
+          t => t.status === 'pending' || Date.now() - t.timestamp < 5000
+        )
+      );
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // State object
+  const state: StockTransferState = {
+    isLoading,
+    isSearching,
+    isTransferring,
+    optimisticTransfers,
+    searchValue,
+    statusMessage,
+    selectedPallet,
+    selectedDestination,
+    verifiedClockNumber,
+    verifiedName,
+    clockNumber,
+    clockError,
+    isVerifying,
+    currentLocation,
+  };
+
+  // Actions object
+  const actions: StockTransferActions = {
+    setIsLoading,
+    setSearchValue,
+    setSelectedDestination,
+    setClockNumber,
+    setStatusMessage,
+    executeStockTransfer,
+    validateClockNumberLocal,
+    handleSearchSelect,
+    handleClockNumberChange,
+    handleVerifyClockNumber,
+    focusSearchInput,
+    resetToSearch,
+    onDestinationChange,
+  };
+
+  return { state, actions };
+};
+
+export default useStockTransfer;

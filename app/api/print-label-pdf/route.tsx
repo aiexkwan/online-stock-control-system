@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     isDevelopment &&
       console.log('[Print Label PDF API] PDF generated successfully, size:', pdfBuffer.length);
 
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(Buffer.from(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': 'attachment; filename=pallet-label.pdf',

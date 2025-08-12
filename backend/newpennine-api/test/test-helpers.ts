@@ -22,7 +22,7 @@ export class TestHelpers {
       iat: Math.floor(Date.now() / 1000),
     };
 
-    return jwt.sign(payload, secret, { expiresIn } as any);
+    return jwt.sign(payload, secret, { expiresIn } as unknown);
   }
 
   static async loginAndGetRealToken(app: INestApplication): Promise<string> {

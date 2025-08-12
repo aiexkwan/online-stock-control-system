@@ -43,10 +43,8 @@ const customJestConfig = {
     '<rootDir>/node_modules/',
     '<rootDir>/.next/',
     '<rootDir>/e2e/',
-    '<rootDir>/__tests__/utils/',
-    '<rootDir>/__tests__/mocks/',
   ],
-  testMatch: ['**/__tests__/**/*.test.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
+  testMatch: ['**/?(*.)+(spec|test).[jt]s?(x)'],
   transformIgnorePatterns: [
     'node_modules/(?!(.*\\.mjs$|exceljs|uuid|isows|@supabase/realtime-js|@supabase/ssr|@supabase/supabase-js))',
   ],
@@ -87,14 +85,30 @@ const customJestConfig = {
   projects: [
     {
       displayName: 'unit',
-      testMatch: ['<rootDir>/__tests__/**/*.test.(js|ts|tsx)'],
-      testPathIgnorePatterns: ['<rootDir>/__tests__/integration/'],
+      testMatch: ['<rootDir>/**/*.test.(js|ts|tsx)'],
+      testPathIgnorePatterns: ['<rootDir>/e2e/', '<rootDir>/node_modules/'],
+      testEnvironment: 'jest-environment-jsdom',
+      setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+      moduleNameMapper: {
+        '^@/(.*)$': '<rootDir>/$1',
+        '^@/components/(.*)$': '<rootDir>/components/$1',
+        '^@/app/(.*)$': '<rootDir>/app/$1',
+        '^@/lib/(.*)$': '<rootDir>/lib/$1',
+      },
     },
     {
       displayName: 'integration',
-      testMatch: ['<rootDir>/__tests__/integration/**/*.test.(js|ts|tsx)'],
+      testMatch: ['<rootDir>/**/*.integration.test.(js|ts|tsx)'],
       // Integration tests run serially
       maxWorkers: 1,
+      testEnvironment: 'jest-environment-jsdom',
+      setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+      moduleNameMapper: {
+        '^@/(.*)$': '<rootDir>/$1',
+        '^@/components/(.*)$': '<rootDir>/components/$1',
+        '^@/app/(.*)$': '<rootDir>/app/$1',
+        '^@/lib/(.*)$': '<rootDir>/lib/$1',
+      },
     },
   ],
   coverageReporters: ['text', 'lcov', 'html', 'json-summary'],

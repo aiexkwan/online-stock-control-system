@@ -264,7 +264,7 @@ describe('getUserIdClient', () => {
   describe('data type handling', () => {
     it('should handle numeric ID as string', async () => {
       const mockUser = {
-        id: '999' as any, // ID as string
+        id: '999' as unknown, // ID as string
         name: 'String ID User',
         email: 'stringid@example.com'
       };

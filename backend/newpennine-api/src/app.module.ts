@@ -5,7 +5,6 @@ import { AppService } from './app.service';
 import { SupabaseModule } from './supabase/supabase.module';
 import { AuthModule } from './auth/auth.module';
 import { HealthModule } from './health/health.module';
-import { WidgetsModule } from './widgets/widgets.module';
 import { PalletsModule } from './pallets/pallets.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { TransfersModule } from './transfers/transfers.module';
@@ -15,7 +14,6 @@ import { RpcModule } from './rpc/rpc.module';
 import { GrnModule } from './grn/grn.module';
 import { AcoModule } from './aco/aco.module';
 import { WarehouseTransfersModule } from './warehouse-transfers/warehouse-transfers.module';
-import { AnalysisModule } from './analysis/analysis.module';
 import { ProductsModule } from './products/products.module';
 import supabaseConfig from './config/supabase.config';
 
@@ -28,7 +26,6 @@ import supabaseConfig from './config/supabase.config';
     SupabaseModule,
     AuthModule,
     HealthModule,
-    WidgetsModule,
     PalletsModule,
     InventoryModule,
     TransfersModule,
@@ -38,7 +35,6 @@ import supabaseConfig from './config/supabase.config';
     GrnModule,
     AcoModule,
     WarehouseTransfersModule,
-    AnalysisModule,
     ProductsModule,
   ],
   controllers: [AppController],

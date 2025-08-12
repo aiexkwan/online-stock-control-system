@@ -73,7 +73,7 @@ export const ERROR_MESSAGES = {
     LAZY_LOAD_FAILED: 'Failed to load component. Please refresh the page.',
   },
 
-  // Widget-specific errors
+  // Card-specific errors
   WIDGET: {
     STATS_LOAD_FAILED: 'Unable to load statistics. Please refresh.',
     CHART_DATA_FAILED: 'Unable to load chart data. Please try again.',

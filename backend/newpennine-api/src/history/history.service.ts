@@ -227,8 +227,8 @@ export class HistoryService {
       quantity: number;
       weight: number;
       description: string;
-      previousState: any;
-      newState: any;
+      previousState: Record<string, unknown>;
+      newState: Record<string, unknown>;
       metadata: DatabaseRecord[];
     }>,
   ): Promise<HistoryRecordDto> {

@@ -8,10 +8,8 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DialogProvider } from '@/app/contexts/DialogContext';
-import { UploadRefreshProvider } from './contexts/UploadRefreshContext';
 import { DynamicApolloProvider } from '@/lib/graphql/apollo-provider-dynamic';
 import { UnifiedBackground } from '@/app/components/visual-system/core/UnifiedBackground';
-import './styles/page-flip-animation.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -47,7 +45,7 @@ export default function AdminLayout({ children }: { children?: React.ReactNode }
         <DynamicApolloProvider>
           <QueryClientProvider client={queryClient}>
             <DialogProvider>
-              <UploadRefreshProvider>{safeChildren}</UploadRefreshProvider>
+              {safeChildren}
             </DialogProvider>
           </QueryClientProvider>
         </DynamicApolloProvider>

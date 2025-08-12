@@ -23,34 +23,42 @@ export type Scalars = {
   DateTime: { input: any; output: any };
   File: { input: any; output: any };
   JSON: { input: any; output: any };
-  TableRow: { input: any; output: any };
   Upload: { input: any; output: any };
 };
 
-export type AiAnalysisConfig = {
-  __typename?: 'AIAnalysisConfig';
-  confidenceThreshold: Scalars['Float']['output'];
-  enableAnomalyDetection: Scalars['Boolean']['output'];
-  enablePredictions: Scalars['Boolean']['output'];
-  languages: Array<Scalars['String']['output']>;
-  maxTokens: Scalars['Int']['output'];
-  modelType: Scalars['String']['output'];
-  temperature: Scalars['Float']['output'];
+export type AcoOrder = {
+  __typename?: 'AcoOrder';
+  completionStatus: Scalars['String']['output'];
+  lastUpdated?: Maybe<Scalars['DateTime']['output']>;
+  orderRef: Scalars['Int']['output'];
+  productCode: Scalars['String']['output'];
+  productDesc?: Maybe<Scalars['String']['output']>;
+  quantityOrdered: Scalars['Int']['output'];
+  quantityUsed: Scalars['Int']['output'];
+  remainingQuantity: Scalars['Int']['output'];
 };
 
-export type AiInsight = {
-  __typename?: 'AIInsight';
-  confidence: Scalars['Float']['output'];
-  content: Scalars['String']['output'];
+export type AcoOrderReportResponse = {
+  __typename?: 'AcoOrderReportResponse';
+  data: Array<AcoOrder>;
   generatedAt: Scalars['DateTime']['output'];
-  id: Scalars['ID']['output'];
-  modelUsed?: Maybe<Scalars['String']['output']>;
-  processingTime?: Maybe<Scalars['Float']['output']>;
-  recommendations: Array<Scalars['String']['output']>;
-  relatedData?: Maybe<Scalars['JSON']['output']>;
-  severity: InsightSeverity;
-  title: Scalars['String']['output'];
-  type: InsightType;
+  reference: Scalars['String']['output'];
+  total: Scalars['Int']['output'];
+};
+
+export type ActionSummary = {
+  __typename?: 'ActionSummary';
+  action: Scalars['String']['output'];
+  avgDuration: Scalars['Float']['output'];
+  count: Scalars['Int']['output'];
+  percentage: Scalars['Float']['output'];
+};
+
+export type ActionTrend = {
+  __typename?: 'ActionTrend';
+  action: Scalars['String']['output'];
+  totalGrowth: Scalars['Float']['output'];
+  trend: Array<TrendPoint>;
 };
 
 export type Address = {
@@ -60,6 +68,23 @@ export type Address = {
   postalCode: Scalars['String']['output'];
   state?: Maybe<Scalars['String']['output']>;
   street: Scalars['String']['output'];
+};
+
+export type AffectedEntity = {
+  __typename?: 'AffectedEntity';
+  entityId: Scalars['String']['output'];
+  entityName: Scalars['String']['output'];
+  entityType: Scalars['String']['output'];
+  entityUrl?: Maybe<Scalars['String']['output']>;
+  impact?: Maybe<Scalars['String']['output']>;
+};
+
+export type AffectedEntityInput = {
+  entityId: Scalars['String']['input'];
+  entityName: Scalars['String']['input'];
+  entityType: Scalars['String']['input'];
+  entityUrl?: InputMaybe<Scalars['String']['input']>;
+  impact?: InputMaybe<Scalars['String']['input']>;
 };
 
 export enum AggregationFunction {
@@ -81,6 +106,86 @@ export enum AggregationType {
   Sum = 'SUM',
 }
 
+export type Alert = {
+  __typename?: 'Alert';
+  acknowledgedAt?: Maybe<Scalars['DateTime']['output']>;
+  acknowledgedBy?: Maybe<Scalars['String']['output']>;
+  actions?: Maybe<Array<AlertAction>>;
+  affectedEntities?: Maybe<Array<AffectedEntity>>;
+  createdAt: Scalars['DateTime']['output'];
+  details?: Maybe<Scalars['JSON']['output']>;
+  expiresAt?: Maybe<Scalars['DateTime']['output']>;
+  id: Scalars['ID']['output'];
+  message: Scalars['String']['output'];
+  metadata?: Maybe<Scalars['JSON']['output']>;
+  resolvedAt?: Maybe<Scalars['DateTime']['output']>;
+  resolvedBy?: Maybe<Scalars['String']['output']>;
+  severity: AlertSeverity;
+  source: Scalars['String']['output'];
+  status: AlertStatus;
+  tags?: Maybe<Array<Scalars['String']['output']>>;
+  title: Scalars['String']['output'];
+  type: AlertType;
+};
+
+export type AlertAction = {
+  __typename?: 'AlertAction';
+  confirmRequired: Scalars['Boolean']['output'];
+  icon?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  label: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+  url?: Maybe<Scalars['String']['output']>;
+};
+
+export type AlertActionInput = {
+  config: Scalars['JSON']['input'];
+  type: Scalars['String']['input'];
+};
+
+export type AlertCardData = WidgetData & {
+  __typename?: 'AlertCardData';
+  alerts: Array<Alert>;
+  dataSource: Scalars['String']['output'];
+  lastUpdated: Scalars['DateTime']['output'];
+  pagination: PageInfo;
+  refreshInterval?: Maybe<Scalars['Int']['output']>;
+  statistics: AlertStatistics;
+  summary: AlertSummary;
+};
+
+export type AlertCardInput = {
+  dateRange?: InputMaybe<DateRangeInput>;
+  includeAcknowledged?: InputMaybe<Scalars['Boolean']['input']>;
+  includeResolved?: InputMaybe<Scalars['Boolean']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  severities?: InputMaybe<Array<AlertSeverity>>;
+  sortBy?: InputMaybe<AlertSortBy>;
+  statuses?: InputMaybe<Array<AlertStatus>>;
+  types?: InputMaybe<Array<AlertType>>;
+};
+
+export type AlertPerformanceMetrics = {
+  __typename?: 'AlertPerformanceMetrics';
+  alertVolume: Scalars['Int']['output'];
+  falsePositiveRate: Scalars['Float']['output'];
+  mtta: Scalars['Float']['output'];
+  mttr: Scalars['Float']['output'];
+};
+
+export type AlertRule = {
+  __typename?: 'AlertRule';
+  actions: Array<AlertAction>;
+  conditions: Scalars['JSON']['output'];
+  enabled: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  lastTriggered?: Maybe<Scalars['DateTime']['output']>;
+  name: Scalars['String']['output'];
+  severity: AlertSeverity;
+  throttle: Scalars['Int']['output'];
+  triggerCount: Scalars['Int']['output'];
+};
+
 export enum AlertSeverity {
   Critical = 'CRITICAL',
   Error = 'ERROR',
@@ -88,86 +193,67 @@ export enum AlertSeverity {
   Warning = 'WARNING',
 }
 
-export enum AlertType {
-  InventoryLow = 'INVENTORY_LOW',
-  PerformanceDegradation = 'PERFORMANCE_DEGRADATION',
-  QualityIssue = 'QUALITY_ISSUE',
-  SecurityAlert = 'SECURITY_ALERT',
-  SystemError = 'SYSTEM_ERROR',
-  TransferDelayed = 'TRANSFER_DELAYED',
+export enum AlertSortBy {
+  CreatedAtAsc = 'CREATED_AT_ASC',
+  CreatedAtDesc = 'CREATED_AT_DESC',
+  SeverityAsc = 'SEVERITY_ASC',
+  SeverityDesc = 'SEVERITY_DESC',
+  StatusAsc = 'STATUS_ASC',
+  StatusDesc = 'STATUS_DESC',
 }
 
-export type AnalysisCardData = {
-  __typename?: 'AnalysisCardData';
-  aiInsights: Array<AiInsight>;
-  analysisType: AnalysisType;
-  cached: Scalars['Boolean']['output'];
-  detailData: AnalysisDetailData;
-  executionTime: Scalars['Float']['output'];
-  lastUpdated: Scalars['DateTime']['output'];
-  metadata: AnalysisMetadata;
-  refreshInterval?: Maybe<Scalars['Int']['output']>;
-  summary: AnalysisSummary;
-  visualizations: Array<AnalysisVisualization>;
+export type AlertStatistics = {
+  __typename?: 'AlertStatistics';
+  acknowledgeRate: Scalars['Float']['output'];
+  averageAcknowledgeTime: Scalars['Float']['output'];
+  averageResolutionTime: Scalars['Float']['output'];
+  performanceMetrics: AlertPerformanceMetrics;
+  recurringAlerts: Scalars['Int']['output'];
+  resolutionRate: Scalars['Float']['output'];
+  trendsData: Array<AlertTrend>;
 };
 
-export type AnalysisCardInput = {
-  analysisType: AnalysisType;
-  filters?: InputMaybe<AnalysisFilters>;
-  includeAIInsights?: InputMaybe<Scalars['Boolean']['input']>;
-  timeRange?: InputMaybe<DateRangeInput>;
-  urgency?: InputMaybe<AnalysisUrgency>;
-  userId?: InputMaybe<Scalars['String']['input']>;
+export enum AlertStatus {
+  Acknowledged = 'ACKNOWLEDGED',
+  Active = 'ACTIVE',
+  Dismissed = 'DISMISSED',
+  Expired = 'EXPIRED',
+  Resolved = 'RESOLVED',
+}
+
+export type AlertSummary = {
+  __typename?: 'AlertSummary';
+  bySeverity: Array<SeverityCount>;
+  byStatus: Array<StatusCount>;
+  byType: Array<TypeCount>;
+  criticalCount: Scalars['Int']['output'];
+  recentCount: Scalars['Int']['output'];
+  totalActive: Scalars['Int']['output'];
+  totalToday: Scalars['Int']['output'];
 };
 
-export type AnalysisDetailData = {
-  __typename?: 'AnalysisDetailData';
-  comparisons: Array<Comparison>;
-  correlations: Array<Correlation>;
-  dataPoints: Array<DataPoint>;
-  sections: Array<AnalysisSection>;
+export type AlertTrend = {
+  __typename?: 'AlertTrend';
+  count: Scalars['Int']['output'];
+  severity: AlertSeverity;
+  timestamp: Scalars['DateTime']['output'];
 };
 
-export type AnalysisFilters = {
-  customFilters?: InputMaybe<Scalars['JSON']['input']>;
-  dateRange?: InputMaybe<DateRangeInput>;
-  productCategories?: InputMaybe<Array<Scalars['String']['input']>>;
-  statusFilters?: InputMaybe<Array<Scalars['String']['input']>>;
-  warehouse?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type AnalysisGenerationInput = {
-  analysisType: AnalysisType;
-  description?: InputMaybe<Scalars['String']['input']>;
-  filters?: InputMaybe<AnalysisFilters>;
-  includeAI?: InputMaybe<Scalars['Boolean']['input']>;
-  title?: InputMaybe<Scalars['String']['input']>;
-  urgency?: InputMaybe<AnalysisUrgency>;
-  userId: Scalars['String']['input'];
-};
-
-export type AnalysisGenerationResponse = {
-  __typename?: 'AnalysisGenerationResponse';
-  analysisId?: Maybe<Scalars['String']['output']>;
-  estimatedCompletionTime?: Maybe<Scalars['DateTime']['output']>;
-  id: Scalars['ID']['output'];
-  message: Scalars['String']['output'];
-  progress?: Maybe<Scalars['Float']['output']>;
-  success: Scalars['Boolean']['output'];
-};
-
-export type AnalysisMetadata = {
-  __typename?: 'AnalysisMetadata';
-  aiModelVersion?: Maybe<Scalars['String']['output']>;
-  analysisId: Scalars['String']['output'];
-  dataPeriod: Scalars['String']['output'];
-  dataSource: Scalars['String']['output'];
-  generatedAt: Scalars['DateTime']['output'];
-  processingSteps: Array<ProcessingStep>;
-  recordsAnalyzed: Scalars['Int']['output'];
-  userEmail?: Maybe<Scalars['String']['output']>;
-  userId: Scalars['String']['output'];
-};
+export enum AlertType {
+  CustomAlert = 'CUSTOM_ALERT',
+  InventoryAlert = 'INVENTORY_ALERT',
+  InventoryLow = 'INVENTORY_LOW',
+  OrderAlert = 'ORDER_ALERT',
+  PerformanceAlert = 'PERFORMANCE_ALERT',
+  PerformanceDegradation = 'PERFORMANCE_DEGRADATION',
+  QualityAlert = 'QUALITY_ALERT',
+  QualityIssue = 'QUALITY_ISSUE',
+  SecurityAlert = 'SECURITY_ALERT',
+  SystemAlert = 'SYSTEM_ALERT',
+  SystemError = 'SYSTEM_ERROR',
+  TransferAlert = 'TRANSFER_ALERT',
+  TransferDelayed = 'TRANSFER_DELAYED',
+}
 
 export type AnalysisMetrics = {
   __typename?: 'AnalysisMetrics';
@@ -176,157 +262,61 @@ export type AnalysisMetrics = {
   status: InventoryStatus;
 };
 
-export type AnalysisProgress = {
-  __typename?: 'AnalysisProgress';
-  analysisType: AnalysisType;
-  currentStep: Scalars['String']['output'];
-  error?: Maybe<Scalars['String']['output']>;
-  estimatedTimeRemaining?: Maybe<Scalars['Int']['output']>;
-  id: Scalars['ID']['output'];
-  progress: Scalars['Float']['output'];
-  startedAt: Scalars['DateTime']['output'];
-  status: Scalars['String']['output'];
-  title: Scalars['String']['output'];
-  userId: Scalars['String']['output'];
+export type AppliedFilters = {
+  __typename?: 'AppliedFilters';
+  action?: Maybe<Scalars['String']['output']>;
+  actions?: Maybe<Array<Scalars['String']['output']>>;
+  dateRange?: Maybe<DateRange>;
+  departments?: Maybe<Array<Scalars['String']['output']>>;
+  hasMultipleOperations?: Maybe<Scalars['Boolean']['output']>;
+  location?: Maybe<Scalars['String']['output']>;
+  locations?: Maybe<Array<Scalars['String']['output']>>;
+  maxDuration?: Maybe<Scalars['Int']['output']>;
+  minDuration?: Maybe<Scalars['Int']['output']>;
+  operatorEmail?: Maybe<Scalars['String']['output']>;
+  operatorId?: Maybe<Scalars['Int']['output']>;
+  operatorName?: Maybe<Scalars['String']['output']>;
+  palletNumbers?: Maybe<Array<Scalars['String']['output']>>;
+  pltNum?: Maybe<Scalars['String']['output']>;
+  positions?: Maybe<Array<Scalars['String']['output']>>;
+  searchTerm?: Maybe<Scalars['String']['output']>;
 };
 
-export type AnalysisSection = {
-  __typename?: 'AnalysisSection';
-  content: Scalars['String']['output'];
-  data: Scalars['JSON']['output'];
-  id: Scalars['String']['output'];
-  importance: Scalars['String']['output'];
-  title: Scalars['String']['output'];
-  visualizationType?: Maybe<Scalars['String']['output']>;
+export type AppliedMergingConfig = {
+  __typename?: 'AppliedMergingConfig';
+  groupByLocation?: Maybe<Scalars['Boolean']['output']>;
+  includeSequentialAnalysis?: Maybe<Scalars['Boolean']['output']>;
+  maxOperationsPerGroup?: Maybe<Scalars['Int']['output']>;
+  minOperationsToMerge?: Maybe<Scalars['Int']['output']>;
+  sameActionOnly?: Maybe<Scalars['Boolean']['output']>;
+  sameOperatorOnly?: Maybe<Scalars['Boolean']['output']>;
+  timeWindowMinutes?: Maybe<Scalars['Int']['output']>;
 };
 
-export type AnalysisSummary = {
-  __typename?: 'AnalysisSummary';
-  alertLevel: Scalars['String']['output'];
-  description: Scalars['String']['output'];
-  keyMetrics: Array<KeyMetric>;
-  overallScore?: Maybe<Scalars['Float']['output']>;
-  status: Scalars['String']['output'];
-  title: Scalars['String']['output'];
+export type AppliedPagination = {
+  __typename?: 'AppliedPagination';
+  cursor?: Maybe<Scalars['String']['output']>;
+  limit?: Maybe<Scalars['Int']['output']>;
+  offset?: Maybe<Scalars['Int']['output']>;
 };
 
-export enum AnalysisType {
-  AnomalyDetection = 'ANOMALY_DETECTION',
-  InventoryOrderMatching = 'INVENTORY_ORDER_MATCHING',
-  OperationalDashboard = 'OPERATIONAL_DASHBOARD',
-  PerformanceAnalysis = 'PERFORMANCE_ANALYSIS',
-  TrendForecasting = 'TREND_FORECASTING',
-}
-
-export enum AnalysisUrgency {
-  Fast = 'FAST',
-  Normal = 'NORMAL',
-  Thorough = 'THOROUGH',
-}
-
-export type AnalysisVisualization = {
-  __typename?: 'AnalysisVisualization';
-  config: Scalars['JSON']['output'];
-  data: Scalars['JSON']['output'];
-  exportable: Scalars['Boolean']['output'];
-  id: Scalars['String']['output'];
-  interactive: Scalars['Boolean']['output'];
-  title: Scalars['String']['output'];
-  type: Scalars['String']['output'];
+export type AppliedSort = {
+  __typename?: 'AppliedSort';
+  direction?: Maybe<SortDirection>;
+  field?: Maybe<RecordHistorySortField>;
 };
 
-export enum AnalyticsGroupBy {
-  Category = 'CATEGORY',
-  Day = 'DAY',
-  Hour = 'HOUR',
-  Location = 'LOCATION',
-  Month = 'MONTH',
-  Status = 'STATUS',
-  User = 'USER',
-  Week = 'WEEK',
-}
-
-export enum AnalyticsMetric {
-  AverageDuration = 'AVERAGE_DURATION',
-  Count = 'COUNT',
-  Efficiency = 'EFFICIENCY',
-  SuccessRate = 'SUCCESS_RATE',
-  Throughput = 'THROUGHPUT',
-  Utilization = 'UTILIZATION',
-}
-
-export type AppliedArrayFilter = {
-  __typename?: 'AppliedArrayFilter';
-  field: Scalars['String']['output'];
-  operator: ArrayOperator;
-  values: Array<Scalars['String']['output']>;
+export type BatchAlertResult = {
+  __typename?: 'BatchAlertResult';
+  errors?: Maybe<Array<BatchError>>;
+  failed: Scalars['Int']['output'];
+  succeeded: Scalars['Int']['output'];
 };
 
-export type AppliedBooleanFilter = {
-  __typename?: 'AppliedBooleanFilter';
-  field: Scalars['String']['output'];
-  value: Scalars['Boolean']['output'];
-};
-
-export type AppliedDateFilter = {
-  __typename?: 'AppliedDateFilter';
-  endDate?: Maybe<Scalars['DateTime']['output']>;
-  field: Scalars['String']['output'];
-  operator: DateOperator;
-  startDate?: Maybe<Scalars['DateTime']['output']>;
-  value?: Maybe<Scalars['DateTime']['output']>;
-};
-
-export type AppliedNumberFilter = {
-  __typename?: 'AppliedNumberFilter';
-  field: Scalars['String']['output'];
-  max?: Maybe<Scalars['Float']['output']>;
-  min?: Maybe<Scalars['Float']['output']>;
-  operator: NumberOperator;
-  value?: Maybe<Scalars['Float']['output']>;
-};
-
-export type AppliedStringFilter = {
-  __typename?: 'AppliedStringFilter';
-  caseSensitive: Scalars['Boolean']['output'];
-  field: Scalars['String']['output'];
-  operator: StringOperator;
-  value: Scalars['String']['output'];
-};
-
-export type AppliedTableFilters = {
-  __typename?: 'AppliedTableFilters';
-  arrayFilters?: Maybe<Array<AppliedArrayFilter>>;
-  booleanFilters?: Maybe<Array<AppliedBooleanFilter>>;
-  dateFilters?: Maybe<Array<AppliedDateFilter>>;
-  numberFilters?: Maybe<Array<AppliedNumberFilter>>;
-  stringFilters?: Maybe<Array<AppliedStringFilter>>;
-};
-
-export type AppliedTableSorting = {
-  __typename?: 'AppliedTableSorting';
-  secondarySort?: Maybe<AppliedTableSorting>;
-  sortBy: Scalars['String']['output'];
-  sortOrder: SortDirection;
-};
-
-export type ArrayFilter = {
-  field: Scalars['String']['input'];
-  operator: ArrayOperator;
-  values: Array<Scalars['String']['input']>;
-};
-
-export enum ArrayOperator {
-  ContainsAll = 'CONTAINS_ALL',
-  ContainsAny = 'CONTAINS_ANY',
-  In = 'IN',
-  NotIn = 'NOT_IN',
-}
-
-export type BatchFileOperationInput = {
-  fileIds: Array<Scalars['ID']['input']>;
-  metadata?: InputMaybe<FileMetadataInput>;
-  operation: FileOperation;
+export type BatchError = {
+  __typename?: 'BatchError';
+  alertId: Scalars['ID']['output'];
+  error: Scalars['String']['output'];
 };
 
 export type BatchOperationInput = {
@@ -392,10 +382,12 @@ export type BatchUploadResult = {
   uploadIds: Array<Scalars['ID']['output']>;
 };
 
-export type BooleanFilter = {
-  field: Scalars['String']['input'];
-  value: Scalars['Boolean']['input'];
-};
+export enum BottleneckSeverity {
+  Critical = 'CRITICAL',
+  High = 'HIGH',
+  Low = 'LOW',
+  Medium = 'MEDIUM',
+}
 
 export enum ChangeType {
   Decrease = 'DECREASE',
@@ -510,27 +502,9 @@ export enum ChartType {
   Treemap = 'TREEMAP',
 }
 
-export enum ColumnAlign {
-  Center = 'CENTER',
-  Left = 'LEFT',
-  Right = 'RIGHT',
-}
-
-export type ColumnFormatter = {
-  __typename?: 'ColumnFormatter';
-  options?: Maybe<Scalars['JSON']['output']>;
-  type: FormatterType;
-};
-
-export type Comparison = {
-  __typename?: 'Comparison';
-  baseline: Scalars['Float']['output'];
-  change: Scalars['Float']['output'];
-  changePercent: Scalars['Float']['output'];
-  current: Scalars['Float']['output'];
-  id: Scalars['String']['output'];
-  timeframe: Scalars['String']['output'];
-  title: Scalars['String']['output'];
+export type Colour = {
+  __typename?: 'Colour';
+  colour: Scalars['String']['output'];
 };
 
 export type ComparisonData = {
@@ -541,25 +515,250 @@ export type ComparisonData = {
   previousValue: Scalars['Float']['output'];
 };
 
-export enum CongestionLevel {
-  Critical = 'CRITICAL',
-  High = 'HIGH',
-  Low = 'LOW',
-  Medium = 'MEDIUM',
+export enum ConfigAccessLevel {
+  Admin = 'ADMIN',
+  Authenticated = 'AUTHENTICATED',
+  Department = 'DEPARTMENT',
+  Public = 'PUBLIC',
+  SuperAdmin = 'SUPER_ADMIN',
 }
 
-export type Correlation = {
-  __typename?: 'Correlation';
-  coefficient: Scalars['Float']['output'];
-  id: Scalars['String']['output'];
-  interpretation: Scalars['String']['output'];
-  significance: Scalars['Float']['output'];
-  strength: Scalars['String']['output'];
-  variables: Array<Scalars['String']['output']>;
+export type ConfigBatchError = {
+  __typename?: 'ConfigBatchError';
+  configId?: Maybe<Scalars['ID']['output']>;
+  error: Scalars['String']['output'];
+  key?: Maybe<Scalars['String']['output']>;
+};
+
+export type ConfigBatchResult = {
+  __typename?: 'ConfigBatchResult';
+  configs?: Maybe<Array<ConfigItem>>;
+  errors?: Maybe<Array<ConfigBatchError>>;
+  failed: Scalars['Int']['output'];
+  succeeded: Scalars['Int']['output'];
+};
+
+export type ConfigBatchUpdateInput = {
+  atomicUpdate?: InputMaybe<Scalars['Boolean']['input']>;
+  updates: Array<ConfigUpdateInput>;
+  validateAll?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+export type ConfigCardData = {
+  __typename?: 'ConfigCardData';
+  categories: Array<ConfigCategoryGroup>;
+  configs: Array<ConfigItem>;
+  dataSource: Scalars['String']['output'];
+  lastUpdated: Scalars['DateTime']['output'];
+  permissions: ConfigPermissions;
+  refreshInterval?: Maybe<Scalars['Int']['output']>;
+  summary: ConfigSummary;
+  validation: ConfigValidation;
+};
+
+export type ConfigCardInput = {
+  category?: InputMaybe<ConfigCategory>;
+  departmentId?: InputMaybe<Scalars['ID']['input']>;
+  includeDefaults?: InputMaybe<Scalars['Boolean']['input']>;
+  includeInherited?: InputMaybe<Scalars['Boolean']['input']>;
+  roleId?: InputMaybe<Scalars['ID']['input']>;
+  scope?: InputMaybe<ConfigScope>;
+  search?: InputMaybe<Scalars['String']['input']>;
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
+  userId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export enum ConfigCategory {
+  ApiConfig = 'API_CONFIG',
+  DepartmentConfig = 'DEPARTMENT_CONFIG',
+  DisplayConfig = 'DISPLAY_CONFIG',
+  NotificationConfig = 'NOTIFICATION_CONFIG',
+  SecurityConfig = 'SECURITY_CONFIG',
+  SystemConfig = 'SYSTEM_CONFIG',
+  UserPreferences = 'USER_PREFERENCES',
+  WorkflowConfig = 'WORKFLOW_CONFIG',
+}
+
+export type ConfigCategoryCount = {
+  __typename?: 'ConfigCategoryCount';
+  category: ConfigCategory;
+  count: Scalars['Int']['output'];
+  editableCount: Scalars['Int']['output'];
+};
+
+export type ConfigCategoryGroup = {
+  __typename?: 'ConfigCategoryGroup';
+  category: ConfigCategory;
+  count: Scalars['Int']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  editableCount: Scalars['Int']['output'];
+  icon?: Maybe<Scalars['String']['output']>;
+  items: Array<ConfigItem>;
+  label: Scalars['String']['output'];
+  lastUpdated?: Maybe<Scalars['DateTime']['output']>;
+};
+
+export enum ConfigDataType {
+  Array = 'ARRAY',
+  Boolean = 'BOOLEAN',
+  Color = 'COLOR',
+  Date = 'DATE',
+  Json = 'JSON',
+  Number = 'NUMBER',
+  String = 'STRING',
+  Url = 'URL',
+}
+
+export type ConfigHistory = {
+  __typename?: 'ConfigHistory';
+  changeReason?: Maybe<Scalars['String']['output']>;
+  changedAt: Scalars['DateTime']['output'];
+  changedBy: Scalars['String']['output'];
+  configId: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+  metadata?: Maybe<Scalars['JSON']['output']>;
+  newValue: Scalars['JSON']['output'];
+  previousValue: Scalars['JSON']['output'];
+};
+
+export type ConfigItem = {
+  __typename?: 'ConfigItem';
+  accessLevel: ConfigAccessLevel;
+  category: ConfigCategory;
+  createdAt: Scalars['DateTime']['output'];
+  dataType: ConfigDataType;
+  defaultValue?: Maybe<Scalars['JSON']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  history?: Maybe<Array<ConfigHistory>>;
+  id: Scalars['ID']['output'];
+  inheritedFrom?: Maybe<Scalars['String']['output']>;
+  isEditable: Scalars['Boolean']['output'];
+  isInherited: Scalars['Boolean']['output'];
+  key: Scalars['String']['output'];
+  metadata?: Maybe<Scalars['JSON']['output']>;
+  scope: ConfigScope;
+  scopeId?: Maybe<Scalars['String']['output']>;
+  tags?: Maybe<Array<Scalars['String']['output']>>;
+  updatedAt: Scalars['DateTime']['output'];
+  updatedBy?: Maybe<Scalars['String']['output']>;
+  validation?: Maybe<Scalars['JSON']['output']>;
+  value: Scalars['JSON']['output'];
+};
+
+export type ConfigItemInput = {
+  category: ConfigCategory;
+  dataType: ConfigDataType;
+  description?: InputMaybe<Scalars['String']['input']>;
+  key: Scalars['String']['input'];
+  metadata?: InputMaybe<Scalars['JSON']['input']>;
+  scope: ConfigScope;
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
+  validation?: InputMaybe<Scalars['JSON']['input']>;
+  value: Scalars['JSON']['input'];
+};
+
+export type ConfigPermissions = {
+  __typename?: 'ConfigPermissions';
+  accessibleCategories: Array<ConfigCategory>;
+  accessibleScopes: Array<ConfigScope>;
+  canDelete: Scalars['Boolean']['output'];
+  canManageDepartment: Scalars['Boolean']['output'];
+  canManageGlobal: Scalars['Boolean']['output'];
+  canManageUsers: Scalars['Boolean']['output'];
+  canRead: Scalars['Boolean']['output'];
+  canWrite: Scalars['Boolean']['output'];
+};
+
+export enum ConfigScope {
+  Department = 'DEPARTMENT',
+  Global = 'GLOBAL',
+  Role = 'ROLE',
+  User = 'USER',
+}
+
+export type ConfigScopeCount = {
+  __typename?: 'ConfigScopeCount';
+  count: Scalars['Int']['output'];
+  editableCount: Scalars['Int']['output'];
+  scope: ConfigScope;
+};
+
+export type ConfigSummary = {
+  __typename?: 'ConfigSummary';
+  byCategory: Array<ConfigCategoryCount>;
+  byScope: Array<ConfigScopeCount>;
+  customConfigs: Scalars['Int']['output'];
+  editableConfigs: Scalars['Int']['output'];
+  inheritedConfigs: Scalars['Int']['output'];
+  recentChanges: Scalars['Int']['output'];
+  totalConfigs: Scalars['Int']['output'];
+};
+
+export type ConfigTemplate = {
+  __typename?: 'ConfigTemplate';
+  category: ConfigCategory;
+  configs: Scalars['JSON']['output'];
+  createdAt: Scalars['DateTime']['output'];
+  createdBy: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  isPublic: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  scope: ConfigScope;
+  tags?: Maybe<Array<Scalars['String']['output']>>;
+  usageCount: Scalars['Int']['output'];
+};
+
+export type ConfigUpdateInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['ID']['input'];
+  metadata?: InputMaybe<Scalars['JSON']['input']>;
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
+  validation?: InputMaybe<Scalars['JSON']['input']>;
+  value: Scalars['JSON']['input'];
+};
+
+export type ConfigValidation = {
+  __typename?: 'ConfigValidation';
+  errors?: Maybe<Array<ConfigValidationError>>;
+  isValid: Scalars['Boolean']['output'];
+  warnings?: Maybe<Array<ConfigValidationWarning>>;
+};
+
+export type ConfigValidationError = {
+  __typename?: 'ConfigValidationError';
+  configId: Scalars['ID']['output'];
+  details?: Maybe<Scalars['JSON']['output']>;
+  key: Scalars['String']['output'];
+  message: Scalars['String']['output'];
+};
+
+export type ConfigValidationWarning = {
+  __typename?: 'ConfigValidationWarning';
+  configId: Scalars['ID']['output'];
+  details?: Maybe<Scalars['JSON']['output']>;
+  key: Scalars['String']['output'];
+  message: Scalars['String']['output'];
+};
+
+export type Connection = {
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type CreateAlertInput = {
+  affectedEntities?: InputMaybe<Array<AffectedEntityInput>>;
+  details?: InputMaybe<Scalars['JSON']['input']>;
+  expiresIn?: InputMaybe<Scalars['Int']['input']>;
+  message: Scalars['String']['input'];
+  metadata?: InputMaybe<Scalars['JSON']['input']>;
+  severity: AlertSeverity;
+  tags?: InputMaybe<Array<Scalars['String']['input']>>;
+  title: Scalars['String']['input'];
+  type: AlertType;
 };
 
 export type CreateProductInput = {
-  chinesedescription?: InputMaybe<Scalars['String']['input']>;
   code: Scalars['String']['input'];
   colour?: InputMaybe<Scalars['String']['input']>;
   description: Scalars['String']['input'];
@@ -570,6 +769,15 @@ export type CreateProductInput = {
   weightPerPiece?: InputMaybe<Scalars['Float']['input']>;
 };
 
+export type CreateRecordHistoryInput = {
+  action: Scalars['String']['input'];
+  location?: InputMaybe<Scalars['String']['input']>;
+  operatorId: Scalars['Int']['input'];
+  pltNum?: InputMaybe<Scalars['String']['input']>;
+  remark?: InputMaybe<Scalars['String']['input']>;
+  timestamp?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
 export type CreateReportTemplateInput = {
   config: Scalars['JSON']['input'];
   description?: InputMaybe<Scalars['String']['input']>;
@@ -578,6 +786,20 @@ export type CreateReportTemplateInput = {
   isPublic?: InputMaybe<Scalars['Boolean']['input']>;
   name: Scalars['String']['input'];
   reportType: ReportType;
+};
+
+export type CreateSupplierInput = {
+  address?: InputMaybe<Scalars['String']['input']>;
+  code: Scalars['String']['input'];
+  contact?: InputMaybe<Scalars['String']['input']>;
+  email?: InputMaybe<Scalars['String']['input']>;
+  fax?: InputMaybe<Scalars['String']['input']>;
+  leadTime?: InputMaybe<Scalars['Int']['input']>;
+  minimumOrderQuantity?: InputMaybe<Scalars['Int']['input']>;
+  name: Scalars['String']['input'];
+  paymentTerms?: InputMaybe<Scalars['String']['input']>;
+  phone?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type CreateTransferInput = {
@@ -601,14 +823,13 @@ export type Customer = {
   phone?: Maybe<Scalars['String']['output']>;
 };
 
-export type DataPoint = {
-  __typename?: 'DataPoint';
-  category?: Maybe<Scalars['String']['output']>;
-  id: Scalars['String']['output'];
-  label: Scalars['String']['output'];
-  metadata?: Maybe<Scalars['JSON']['output']>;
-  timestamp: Scalars['DateTime']['output'];
-  value: Scalars['Float']['output'];
+export type DailyTrend = {
+  __typename?: 'DailyTrend';
+  avgEfficiency: Scalars['Float']['output'];
+  date: Scalars['DateTime']['output'];
+  operationCount: Scalars['Int']['output'];
+  peakHour: Scalars['Int']['output'];
+  uniqueOperators: Scalars['Int']['output'];
 };
 
 export enum DataSourceType {
@@ -616,27 +837,6 @@ export enum DataSourceType {
   Cache = 'CACHE',
   Graphql = 'GRAPHQL',
   Rest = 'REST',
-}
-
-export type DateFilter = {
-  endDate?: InputMaybe<Scalars['DateTime']['input']>;
-  field: Scalars['String']['input'];
-  operator: DateOperator;
-  startDate?: InputMaybe<Scalars['DateTime']['input']>;
-  value?: InputMaybe<Scalars['DateTime']['input']>;
-};
-
-export enum DateOperator {
-  After = 'AFTER',
-  Before = 'BEFORE',
-  Between = 'BETWEEN',
-  Equals = 'EQUALS',
-  Last_7Days = 'LAST_7_DAYS',
-  Last_30Days = 'LAST_30_DAYS',
-  LastMonth = 'LAST_MONTH',
-  ThisMonth = 'THIS_MONTH',
-  Today = 'TODAY',
-  Yesterday = 'YESTERDAY',
 }
 
 export type DateRange = {
@@ -664,6 +864,14 @@ export type DefectTypeMetric = {
   type: Scalars['String']['output'];
 };
 
+export type DeliveryPerformance = {
+  __typename?: 'DeliveryPerformance';
+  averageDelayDays?: Maybe<Scalars['Float']['output']>;
+  earlyDeliveries: Scalars['Int']['output'];
+  lateDeliveries: Scalars['Int']['output'];
+  onTimeDeliveries: Scalars['Int']['output'];
+};
+
 export type DepartmentEfficiency = {
   __typename?: 'DepartmentEfficiency';
   department: Scalars['String']['output'];
@@ -672,20 +880,93 @@ export type DepartmentEfficiency = {
   outputPerPerson: Scalars['Float']['output'];
 };
 
+export type DepartmentInjectionData = {
+  __typename?: 'DepartmentInjectionData';
+  error?: Maybe<Scalars['String']['output']>;
+  loading: Scalars['Boolean']['output'];
+  machineStates: Array<MachineState>;
+  materialStocks: StockItemConnection;
+  stats: DepartmentStats;
+  topStocks: StockItemConnection;
+};
+
+export type DepartmentPipeData = {
+  __typename?: 'DepartmentPipeData';
+  error?: Maybe<Scalars['String']['output']>;
+  loading: Scalars['Boolean']['output'];
+  machineStates: Array<MachineState>;
+  materialConsumptionRate?: Maybe<Scalars['Float']['output']>;
+  materialStocks: StockItemConnection;
+  pipeProductionRate?: Maybe<Scalars['Float']['output']>;
+  stats: DepartmentStats;
+  topStocks: StockItemConnection;
+};
+
+export type DepartmentStats = {
+  __typename?: 'DepartmentStats';
+  lastUpdated: Scalars['String']['output'];
+  past7Days: Scalars['Int']['output'];
+  past14Days: Scalars['Int']['output'];
+  todayFinished?: Maybe<Scalars['Int']['output']>;
+  todayTransferred?: Maybe<Scalars['Int']['output']>;
+};
+
+export type DepartmentWarehouseData = {
+  __typename?: 'DepartmentWarehouseData';
+  error?: Maybe<Scalars['String']['output']>;
+  loading: Scalars['Boolean']['output'];
+  materialStocks: StockItemConnection;
+  orderCompletions: Array<OrderCompletion>;
+  recentActivities: Array<RecentActivity>;
+  stats: DepartmentStats;
+  topStocks: StockItemConnection;
+};
+
 export type EfficiencyMetrics = WidgetData & {
   __typename?: 'EfficiencyMetrics';
+  averageOperationsPerMinute: Scalars['Float']['output'];
   averageTaskTime: Scalars['Float']['output'];
   dataSource: Scalars['String']['output'];
   efficiencyByDepartment: Array<DepartmentEfficiency>;
   efficiencyByShift: Array<ShiftEfficiency>;
   efficiencyTrends: Array<TrendPoint>;
+  fastestOperator: OperatorEfficiency;
   idleTimePercentage: Scalars['Float']['output'];
   lastUpdated: Scalars['DateTime']['output'];
   overallEfficiency: Scalars['Float']['output'];
+  peakHour: Scalars['Int']['output'];
   productivityIndex: Scalars['Float']['output'];
+  quietHour: Scalars['Int']['output'];
   refreshInterval?: Maybe<Scalars['Int']['output']>;
+  slowestOperator: OperatorEfficiency;
   tasksPerHour: Scalars['Float']['output'];
   utilizationRate: Scalars['Float']['output'];
+};
+
+export type EfficiencyTrend = {
+  __typename?: 'EfficiencyTrend';
+  activeOperators: Scalars['Int']['output'];
+  avgOperationsPerMinute: Scalars['Float']['output'];
+  timestamp: Scalars['DateTime']['output'];
+};
+
+export type EnhancedTransferRecord = {
+  __typename?: 'EnhancedTransferRecord';
+  action: Scalars['String']['output'];
+  duration?: Maybe<Scalars['Int']['output']>;
+  efficiency?: Maybe<Scalars['Float']['output']>;
+  formattedDate: Scalars['String']['output'];
+  formattedDuration?: Maybe<Scalars['String']['output']>;
+  formattedTime: Scalars['String']['output'];
+  fromLocation: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  isBottleneck: Scalars['Boolean']['output'];
+  operator: Scalars['String']['output'];
+  operatorInfo?: Maybe<User>;
+  pallet?: Maybe<PalletBasicInfo>;
+  palletNumber: Scalars['String']['output'];
+  timestamp: Scalars['DateTime']['output'];
+  toLocation: Scalars['String']['output'];
 };
 
 export type Error = {
@@ -711,75 +992,17 @@ export type ErrorTypeMetric = {
 };
 
 export enum ExportFormat {
-  Csv = 'CSV',
-  Excel = 'EXCEL',
+  Env = 'ENV',
+  Ini = 'INI',
   Json = 'JSON',
-  Pdf = 'PDF',
+  Yaml = 'YAML',
 }
-
-export type ExportResult = {
-  __typename?: 'ExportResult';
-  downloadUrl: Scalars['String']['output'];
-  error?: Maybe<Scalars['String']['output']>;
-  expiresAt: Scalars['DateTime']['output'];
-  fileName: Scalars['String']['output'];
-  fileSize: Scalars['Int']['output'];
-  progress?: Maybe<Scalars['Float']['output']>;
-  status: ExportStatus;
-};
-
-export enum ExportStatus {
-  Completed = 'COMPLETED',
-  Failed = 'FAILED',
-  Pending = 'PENDING',
-  Processing = 'PROCESSING',
-}
-
-export type ExportTableInput = {
-  columns?: InputMaybe<Array<Scalars['String']['input']>>;
-  dataSource: Scalars['String']['input'];
-  dateRange?: InputMaybe<DateRangeInput>;
-  fileName?: InputMaybe<Scalars['String']['input']>;
-  filters?: InputMaybe<TableFilters>;
-  format: ExportFormat;
-  includeHeaders?: InputMaybe<Scalars['Boolean']['input']>;
-};
 
 export type FieldChange = {
   __typename?: 'FieldChange';
   field: Scalars['String']['output'];
   newValue?: Maybe<Scalars['JSON']['output']>;
   oldValue?: Maybe<Scalars['JSON']['output']>;
-};
-
-export enum FileAccessibility {
-  Confidential = 'CONFIDENTIAL',
-  Internal = 'INTERNAL',
-  Public = 'PUBLIC',
-  Restricted = 'RESTRICTED',
-}
-
-export enum FileCategory {
-  Backup = 'BACKUP',
-  Certificate = 'CERTIFICATE',
-  GrnDocument = 'GRN_DOCUMENT',
-  Invoice = 'INVOICE',
-  Log = 'LOG',
-  Manual = 'MANUAL',
-  Other = 'OTHER',
-  Photo = 'PHOTO',
-  QcReport = 'QC_REPORT',
-  ShippingLabel = 'SHIPPING_LABEL',
-  Template = 'TEMPLATE',
-}
-
-export type FileCategorySummary = {
-  __typename?: 'FileCategorySummary';
-  averageSize: Scalars['Int']['output'];
-  category: FileCategory;
-  count: Scalars['Int']['output'];
-  recentCount: Scalars['Int']['output'];
-  totalSize: Scalars['Int']['output'];
 };
 
 export type FileInfo = {
@@ -796,96 +1019,6 @@ export type FileInfo = {
   uploadedAt: Scalars['DateTime']['output'];
   uploadedBy: Scalars['String']['output'];
   url?: Maybe<Scalars['String']['output']>;
-};
-
-export type FileListFilters = {
-  accessibility?: InputMaybe<Array<FileAccessibility>>;
-  categories?: InputMaybe<Array<FileCategory>>;
-  fileTypes?: InputMaybe<Array<FileType>>;
-  hasPermissions?: InputMaybe<Array<FilePermissionType>>;
-  sizeRange?: InputMaybe<IntRangeInput>;
-  statuses?: InputMaybe<Array<FileStatus>>;
-};
-
-export type FileMetadataInput = {
-  accessibility?: InputMaybe<FileAccessibility>;
-  category?: InputMaybe<FileCategory>;
-  fileName?: InputMaybe<Scalars['String']['input']>;
-  status?: InputMaybe<FileStatus>;
-  tags?: InputMaybe<Array<Scalars['String']['input']>>;
-};
-
-export enum FileOperation {
-  Archive = 'ARCHIVE',
-  ChangeAccessibility = 'CHANGE_ACCESSIBILITY',
-  Delete = 'DELETE',
-  UpdateCategory = 'UPDATE_CATEGORY',
-  UpdateTags = 'UPDATE_TAGS',
-}
-
-export type FilePermission = {
-  __typename?: 'FilePermission';
-  grantedAt: Scalars['DateTime']['output'];
-  grantedBy: User;
-  permission: FilePermissionType;
-  user: User;
-};
-
-export enum FilePermissionType {
-  Admin = 'ADMIN',
-  Delete = 'DELETE',
-  Read = 'READ',
-  Share = 'SHARE',
-  Write = 'WRITE',
-}
-
-export type FileRecord = {
-  __typename?: 'FileRecord';
-  accessibility: FileAccessibility;
-  downloadCount: Scalars['Int']['output'];
-  fileCategory: FileCategory;
-  fileName: Scalars['String']['output'];
-  fileType: FileType;
-  id: Scalars['ID']['output'];
-  lastAccessed?: Maybe<Scalars['DateTime']['output']>;
-  lastModified: Scalars['DateTime']['output'];
-  mimeType: Scalars['String']['output'];
-  permissions: Array<FilePermission>;
-  relatedEntity?: Maybe<FileRelatedEntity>;
-  size: Scalars['Int']['output'];
-  status: FileStatus;
-  tags: Array<Scalars['String']['output']>;
-  thumbnailUrl?: Maybe<Scalars['String']['output']>;
-  uploadedAt: Scalars['DateTime']['output'];
-  uploadedBy: User;
-  url: Scalars['String']['output'];
-  version: Scalars['String']['output'];
-};
-
-export type FileRecordConnection = {
-  __typename?: 'FileRecordConnection';
-  edges: Array<FileRecordEdge>;
-  pageInfo: PageInfo;
-  totalCount: Scalars['Int']['output'];
-};
-
-export type FileRecordEdge = {
-  __typename?: 'FileRecordEdge';
-  cursor: Scalars['String']['output'];
-  node: FileRecord;
-};
-
-export type FileRelatedEntity = {
-  __typename?: 'FileRelatedEntity';
-  entityId: Scalars['String']['output'];
-  entityType: Scalars['String']['output'];
-  relationship: Scalars['String']['output'];
-};
-
-export type FileRelatedEntityInput = {
-  entityId: Scalars['String']['input'];
-  entityType: Scalars['String']['input'];
-  relationship: Scalars['String']['input'];
 };
 
 export type FileSearchInput = {
@@ -905,35 +1038,6 @@ export type FileSearchResult = {
   totalCount: Scalars['Int']['output'];
 };
 
-export enum FileStatus {
-  Active = 'ACTIVE',
-  Archived = 'ARCHIVED',
-  Deleted = 'DELETED',
-  Expired = 'EXPIRED',
-  PendingReview = 'PENDING_REVIEW',
-}
-
-export type FileStorageMetrics = {
-  __typename?: 'FileStorageMetrics';
-  averageFileSize: Scalars['Int']['output'];
-  growthRate: Scalars['Float']['output'];
-  storageUtilization: Scalars['Float']['output'];
-  topCategories: Array<FileCategorySummary>;
-  totalFiles: Scalars['Int']['output'];
-  totalSize: Scalars['Int']['output'];
-};
-
-export enum FileType {
-  Archive = 'ARCHIVE',
-  Audio = 'AUDIO',
-  Document = 'DOCUMENT',
-  Image = 'IMAGE',
-  Other = 'OTHER',
-  Pdf = 'PDF',
-  Spreadsheet = 'SPREADSHEET',
-  Video = 'VIDEO',
-}
-
 export type FileTypeStats = {
   __typename?: 'FileTypeStats';
   count: Scalars['Int']['output'];
@@ -941,37 +1045,10 @@ export type FileTypeStats = {
   type: SupportedFileType;
 };
 
-export type FileUploadInput = {
-  accessibility?: InputMaybe<FileAccessibility>;
-  category: FileCategory;
-  data: Scalars['String']['input'];
-  fileName: Scalars['String']['input'];
-  fileType: FileType;
-  relatedEntity?: InputMaybe<FileRelatedEntityInput>;
-  tags?: InputMaybe<Array<Scalars['String']['input']>>;
-};
-
-export enum FilterFieldType {
-  Array = 'ARRAY',
-  Boolean = 'BOOLEAN',
-  Date = 'DATE',
-  Enum = 'ENUM',
-  Number = 'NUMBER',
-  String = 'STRING',
-}
-
 export type FilterInput = {
   field: Scalars['String']['input'];
   operator: FilterOperator;
   value: Scalars['JSON']['input'];
-};
-
-export type FilterMetadata = {
-  __typename?: 'FilterMetadata';
-  field: Scalars['String']['output'];
-  options?: Maybe<Array<Scalars['String']['output']>>;
-  required: Scalars['Boolean']['output'];
-  type: FilterFieldType;
 };
 
 export enum FilterOperator {
@@ -990,23 +1067,15 @@ export enum FilterOperator {
   NotIn = 'NOT_IN',
 }
 
-export type FloatRangeInput = {
-  max?: InputMaybe<Scalars['Float']['input']>;
-  min?: InputMaybe<Scalars['Float']['input']>;
+export type FlowMetrics = {
+  __typename?: 'FlowMetrics';
+  averageTransferDuration: Scalars['Float']['output'];
+  fastestRoute?: Maybe<RouteMetric>;
+  p95TransferDuration: Scalars['Float']['output'];
+  peakHour: Scalars['String']['output'];
+  slowestRoute?: Maybe<RouteMetric>;
+  totalThroughput: Scalars['Int']['output'];
 };
-
-export enum FormatterType {
-  Badge = 'BADGE',
-  Boolean = 'BOOLEAN',
-  Currency = 'CURRENCY',
-  Custom = 'CUSTOM',
-  Date = 'DATE',
-  Datetime = 'DATETIME',
-  Default = 'DEFAULT',
-  Link = 'LINK',
-  Percentage = 'PERCENTAGE',
-  Truncate = 'TRUNCATE',
-}
 
 export type Grn = {
   __typename?: 'GRN';
@@ -1219,25 +1288,12 @@ export type HourlyBreakdown = {
   quantity: Scalars['Int']['output'];
 };
 
-export enum InsightSeverity {
-  Critical = 'CRITICAL',
-  Info = 'INFO',
-  Optimization = 'OPTIMIZATION',
-  Warning = 'WARNING',
-}
-
-export enum InsightType {
-  AnomalyDetection = 'ANOMALY_DETECTION',
-  OptimizationSuggestion = 'OPTIMIZATION_SUGGESTION',
-  PerformanceInsight = 'PERFORMANCE_INSIGHT',
-  PredictiveForecast = 'PREDICTIVE_FORECAST',
-  RiskAssessment = 'RISK_ASSESSMENT',
-  TrendAnalysis = 'TREND_ANALYSIS',
-}
-
-export type IntRangeInput = {
-  max?: InputMaybe<Scalars['Int']['input']>;
-  min?: InputMaybe<Scalars['Int']['input']>;
+export type HourlyTrend = {
+  __typename?: 'HourlyTrend';
+  avgEfficiency: Scalars['Float']['output'];
+  hour: Scalars['Int']['output'];
+  operationCount: Scalars['Int']['output'];
+  uniqueOperators: Scalars['Int']['output'];
 };
 
 export type Inventory = {
@@ -1333,86 +1389,13 @@ export type InventorySummary = {
   totalQuantity: Scalars['Int']['output'];
 };
 
-export type KeyMetric = {
-  __typename?: 'KeyMetric';
-  change?: Maybe<Scalars['Float']['output']>;
-  changeDirection: Scalars['String']['output'];
-  name: Scalars['String']['output'];
-  trend?: Maybe<Array<TrendPoint>>;
-  unit?: Maybe<Scalars['String']['output']>;
-  value: Scalars['String']['output'];
+export type LoadingSummary = {
+  __typename?: 'LoadingSummary';
+  averageLoadPerOrder: Scalars['Float']['output'];
+  totalLoaded: Scalars['Int']['output'];
+  uniqueOrders: Scalars['Int']['output'];
+  uniqueProducts: Scalars['Int']['output'];
 };
-
-export type ListAnalyticsInput = {
-  dateRange: DateRangeInput;
-  groupBy?: InputMaybe<AnalyticsGroupBy>;
-  listType: ListType;
-  metrics?: InputMaybe<Array<AnalyticsMetric>>;
-};
-
-export type ListCardInput = {
-  dateRange?: InputMaybe<DateRangeInput>;
-  filters?: InputMaybe<ListFilters>;
-  includeMetrics?: InputMaybe<Scalars['Boolean']['input']>;
-  listType: ListType;
-  pagination?: InputMaybe<PaginationInput>;
-  sort?: InputMaybe<SortInput>;
-};
-
-export type ListConfigurationInput = {
-  filters: ListFilters;
-  isDefault: Scalars['Boolean']['input'];
-  isPublic: Scalars['Boolean']['input'];
-  listType: ListType;
-  name: Scalars['String']['input'];
-  sort: SortInput;
-};
-
-export type ListData = {
-  dataSource: Scalars['String']['output'];
-  description?: Maybe<Scalars['String']['output']>;
-  filteredCount: Scalars['Int']['output'];
-  id: Scalars['ID']['output'];
-  lastUpdated: Scalars['DateTime']['output'];
-  listType: ListType;
-  refreshInterval?: Maybe<Scalars['Int']['output']>;
-  title: Scalars['String']['output'];
-  totalCount: Scalars['Int']['output'];
-};
-
-export type ListDataUnion =
-  | OrderRecordList
-  | OrderStateList
-  | OtherFilesList
-  | WarehouseTransferList;
-
-export type ListFilters = {
-  category?: InputMaybe<Array<Scalars['String']['input']>>;
-  fileFilters?: InputMaybe<FileListFilters>;
-  orderFilters?: InputMaybe<OrderListFilters>;
-  search?: InputMaybe<Scalars['String']['input']>;
-  status?: InputMaybe<Array<Scalars['String']['input']>>;
-  tags?: InputMaybe<Array<Scalars['String']['input']>>;
-  transferFilters?: InputMaybe<TransferListFilters>;
-  userId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type ListMetadata = {
-  __typename?: 'ListMetadata';
-  availableFilters: Array<FilterMetadata>;
-  availableSorts: Array<SortMetadata>;
-  defaultPageSize: Scalars['Int']['output'];
-  listType: ListType;
-  maxPageSize: Scalars['Int']['output'];
-  supportedFormats: Array<ExportFormat>;
-};
-
-export enum ListType {
-  OrderRecord = 'ORDER_RECORD',
-  OrderState = 'ORDER_STATE',
-  OtherFiles = 'OTHER_FILES',
-  WarehouseTransfer = 'WAREHOUSE_TRANSFER',
-}
 
 export type Location = {
   __typename?: 'Location';
@@ -1424,6 +1407,14 @@ export type Location = {
   name: Scalars['String']['output'];
   type: LocationType;
   warehouse: Warehouse;
+};
+
+export type LocationBottleneck = {
+  __typename?: 'LocationBottleneck';
+  avgWaitTime: Scalars['Float']['output'];
+  backlogCount: Scalars['Int']['output'];
+  location: Scalars['String']['output'];
+  severity: BottleneckSeverity;
 };
 
 export type LocationBreakdown = {
@@ -1442,6 +1433,13 @@ export type LocationBreakdown = {
   quantity: Scalars['Int']['output'];
 };
 
+export type LocationCount = {
+  __typename?: 'LocationCount';
+  count: Scalars['Int']['output'];
+  location: Scalars['String']['output'];
+  percentage: Scalars['Float']['output'];
+};
+
 export type LocationInventory = {
   __typename?: 'LocationInventory';
   await: Scalars['Int']['output'];
@@ -1454,14 +1452,15 @@ export type LocationInventory = {
   prebook: Scalars['Int']['output'];
 };
 
-export type LocationTransferAnalysis = {
-  __typename?: 'LocationTransferAnalysis';
-  averageWaitTime: Scalars['Int']['output'];
-  congestionLevel: CongestionLevel;
-  incomingCount: Scalars['Int']['output'];
-  location: Location;
-  netFlow: Scalars['Int']['output'];
-  outgoingCount: Scalars['Int']['output'];
+export type LocationJourney = {
+  __typename?: 'LocationJourney';
+  actions: Array<StockAction>;
+  duration?: Maybe<Scalars['Int']['output']>;
+  entryTime: Scalars['DateTime']['output'];
+  exitTime?: Maybe<Scalars['DateTime']['output']>;
+  location: Scalars['String']['output'];
+  operator?: Maybe<Scalars['String']['output']>;
+  sequence: Scalars['Int']['output'];
 };
 
 export enum LocationType {
@@ -1475,42 +1474,146 @@ export enum LocationType {
   Prebook = 'PREBOOK',
 }
 
+export type MachineState = {
+  __typename?: 'MachineState';
+  currentTask?: Maybe<Scalars['String']['output']>;
+  efficiency?: Maybe<Scalars['Float']['output']>;
+  lastActiveTime?: Maybe<Scalars['String']['output']>;
+  machineNumber: Scalars['String']['output'];
+  nextMaintenance?: Maybe<Scalars['String']['output']>;
+  state: MachineStatus;
+};
+
+export enum MachineStatus {
+  Active = 'ACTIVE',
+  Idle = 'IDLE',
+  Maintenance = 'MAINTENANCE',
+  Offline = 'OFFLINE',
+  Unknown = 'UNKNOWN',
+}
+
+export type Material = {
+  __typename?: 'Material';
+  chinese_description?: Maybe<Scalars['String']['output']>;
+  product_code: Scalars['String']['output'];
+  product_description?: Maybe<Scalars['String']['output']>;
+};
+
+export type MergedRecordHistory = {
+  __typename?: 'MergedRecordHistory';
+  action: Scalars['String']['output'];
+  averageTimeBetweenOps?: Maybe<Scalars['Float']['output']>;
+  count: Scalars['Int']['output'];
+  duration: Scalars['Int']['output'];
+  efficiency?: Maybe<Scalars['Float']['output']>;
+  id: Scalars['ID']['output'];
+  isSequential: Scalars['Boolean']['output'];
+  locations?: Maybe<Array<Scalars['String']['output']>>;
+  operatorDepartment?: Maybe<Scalars['String']['output']>;
+  operatorEmail?: Maybe<Scalars['String']['output']>;
+  operatorId: Scalars['Int']['output'];
+  operatorName: Scalars['String']['output'];
+  operatorPosition?: Maybe<Scalars['String']['output']>;
+  palletNumbers: Array<Scalars['String']['output']>;
+  remark: Scalars['String']['output'];
+  timeEnd: Scalars['DateTime']['output'];
+  timeStart: Scalars['DateTime']['output'];
+};
+
+export type MergingConfig = {
+  groupByLocation?: InputMaybe<Scalars['Boolean']['input']>;
+  includeSequentialAnalysis?: InputMaybe<Scalars['Boolean']['input']>;
+  maxOperationsPerGroup?: InputMaybe<Scalars['Int']['input']>;
+  minOperationsToMerge?: InputMaybe<Scalars['Int']['input']>;
+  sameActionOnly?: InputMaybe<Scalars['Boolean']['input']>;
+  sameOperatorOnly?: InputMaybe<Scalars['Boolean']['input']>;
+  timeWindowMinutes?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type MergingStats = {
+  __typename?: 'MergingStats';
+  averageGroupSize: Scalars['Float']['output'];
+  compressionRatio: Scalars['Float']['output'];
+  largestGroupSize: Scalars['Int']['output'];
+  sequentialGroups: Scalars['Int']['output'];
+  totalMergedGroups: Scalars['Int']['output'];
+  totalOriginalRecords: Scalars['Int']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
+  acknowledgeAlert: Alert;
+  applyConfigTemplate: ConfigBatchResult;
+  batchAcknowledgeAlerts: BatchAlertResult;
   batchOperation: BatchOperationResult;
   batchReportOperation: BatchReportResult;
-  cancelAnalysis: Scalars['Boolean']['output'];
+  batchResolveAlerts: BatchAlertResult;
+  batchUpdateConfigs: ConfigBatchResult;
+  bulkCreateRecordHistory: BatchResult;
   cancelReportGeneration: Scalars['Boolean']['output'];
   cancelTransfer: Transfer;
   cancelUpload: Scalars['Boolean']['output'];
+  cancelWarehouseOrder: WarehouseOrder;
   clearCache: Scalars['Boolean']['output'];
-  clearTableCache: Scalars['Boolean']['output'];
+  clearRecordHistoryCache: Scalars['Boolean']['output'];
+  createConfig: ConfigItem;
+  createConfigTemplate: ConfigTemplate;
+  createCustomAlert: Alert;
   createProduct: Product;
+  createRecordHistoryEntry: RecordHistoryEntry;
   createReportTemplate: ReportTemplate;
+  createSupplier: Supplier;
   createTransfer: Transfer;
   deactivateProduct: Product;
+  deactivateSupplier: Supplier;
+  deleteConfig: Scalars['Boolean']['output'];
   deleteFile: Scalars['Boolean']['output'];
   deleteFiles: BatchResult;
   deleteReport: Scalars['Boolean']['output'];
   deleteReportTemplate: Scalars['Boolean']['output'];
-  exportTableData: ExportResult;
+  dismissAlert: Scalars['Boolean']['output'];
+  exportConfigs: Scalars['String']['output'];
+  exportRecordHistory: RecordHistoryExportResult;
   extendReportExpiry: GeneratedReport;
-  generateAnalysis: AnalysisGenerationResponse;
   generateReport: ReportGenerationResult;
+  importConfigs: ConfigBatchResult;
   reanalyzeOrderPDF: OrderAnalysisResult;
-  refreshAnalysis: Scalars['Boolean']['output'];
   refreshCache: Scalars['Boolean']['output'];
-  refreshTableData: Scalars['Boolean']['output'];
   regenerateReport: ReportGenerationResult;
+  resetConfig: ConfigItem;
+  resetConfigCategory: ConfigBatchResult;
+  resolveAlert: Alert;
   retryUpload: SingleUploadResult;
   shareReport: Scalars['Boolean']['output'];
-  updateAnalysisConfig: Scalars['Boolean']['output'];
+  testAlertChannel: Scalars['Boolean']['output'];
+  updateAcoOrder: UpdateAcoOrderResponse;
+  updateAlertRule: AlertRule;
+  updateConfig: ConfigItem;
   updateFileMetadata: FileInfo;
+  updateMergingConfig: Scalars['Boolean']['output'];
   updateProduct: Product;
   updateReportTemplate: ReportTemplate;
+  updateSupplier: Supplier;
   updateTransferStatus: Transfer;
+  updateWarehouseOrderStatus: WarehouseOrder;
   uploadBatchFiles: BatchUploadResult;
   uploadSingleFile: SingleUploadResult;
+};
+
+export type MutationAcknowledgeAlertArgs = {
+  alertId: Scalars['ID']['input'];
+  note?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type MutationApplyConfigTemplateArgs = {
+  scope: ConfigScope;
+  scopeId: Scalars['String']['input'];
+  templateId: Scalars['ID']['input'];
+};
+
+export type MutationBatchAcknowledgeAlertsArgs = {
+  alertIds: Array<Scalars['ID']['input']>;
+  note?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type MutationBatchOperationArgs = {
@@ -1521,8 +1624,17 @@ export type MutationBatchReportOperationArgs = {
   input: BatchReportOperationInput;
 };
 
-export type MutationCancelAnalysisArgs = {
-  analysisId: Scalars['ID']['input'];
+export type MutationBatchResolveAlertsArgs = {
+  alertIds: Array<Scalars['ID']['input']>;
+  resolution: Scalars['String']['input'];
+};
+
+export type MutationBatchUpdateConfigsArgs = {
+  input: ConfigBatchUpdateInput;
+};
+
+export type MutationBulkCreateRecordHistoryArgs = {
+  entries: Array<CreateRecordHistoryInput>;
 };
 
 export type MutationCancelReportGenerationArgs = {
@@ -1538,16 +1650,42 @@ export type MutationCancelUploadArgs = {
   uploadId: Scalars['ID']['input'];
 };
 
-export type MutationClearTableCacheArgs = {
-  dataSource: Scalars['String']['input'];
+export type MutationCancelWarehouseOrderArgs = {
+  orderId: Scalars['ID']['input'];
+  reason?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type MutationCreateConfigArgs = {
+  input: ConfigItemInput;
+};
+
+export type MutationCreateConfigTemplateArgs = {
+  category: ConfigCategory;
+  configIds: Array<Scalars['ID']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  isPublic?: InputMaybe<Scalars['Boolean']['input']>;
+  name: Scalars['String']['input'];
+  scope: ConfigScope;
+};
+
+export type MutationCreateCustomAlertArgs = {
+  input: CreateAlertInput;
 };
 
 export type MutationCreateProductArgs = {
   input: CreateProductInput;
 };
 
+export type MutationCreateRecordHistoryEntryArgs = {
+  input: CreateRecordHistoryInput;
+};
+
 export type MutationCreateReportTemplateArgs = {
   input: CreateReportTemplateInput;
+};
+
+export type MutationCreateSupplierArgs = {
+  input: CreateSupplierInput;
 };
 
 export type MutationCreateTransferArgs = {
@@ -1556,6 +1694,14 @@ export type MutationCreateTransferArgs = {
 
 export type MutationDeactivateProductArgs = {
   code: Scalars['ID']['input'];
+};
+
+export type MutationDeactivateSupplierArgs = {
+  code: Scalars['String']['input'];
+};
+
+export type MutationDeleteConfigArgs = {
+  id: Scalars['ID']['input'];
 };
 
 export type MutationDeleteFileArgs = {
@@ -1574,8 +1720,19 @@ export type MutationDeleteReportTemplateArgs = {
   templateId: Scalars['ID']['input'];
 };
 
-export type MutationExportTableDataArgs = {
-  input: ExportTableInput;
+export type MutationDismissAlertArgs = {
+  alertId: Scalars['ID']['input'];
+  reason?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type MutationExportConfigsArgs = {
+  category?: InputMaybe<ConfigCategory>;
+  format: ExportFormat;
+  scope?: InputMaybe<ConfigScope>;
+};
+
+export type MutationExportRecordHistoryArgs = {
+  input: RecordHistoryExportInput;
 };
 
 export type MutationExtendReportExpiryArgs = {
@@ -1583,32 +1740,41 @@ export type MutationExtendReportExpiryArgs = {
   reportId: Scalars['ID']['input'];
 };
 
-export type MutationGenerateAnalysisArgs = {
-  input: AnalysisGenerationInput;
-};
-
 export type MutationGenerateReportArgs = {
   input: ReportGenerationInput;
+};
+
+export type MutationImportConfigsArgs = {
+  data: Scalars['String']['input'];
+  format: ExportFormat;
+  overwrite?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type MutationReanalyzeOrderPdfArgs = {
   fileId: Scalars['ID']['input'];
 };
 
-export type MutationRefreshAnalysisArgs = {
-  analysisId: Scalars['ID']['input'];
-};
-
 export type MutationRefreshCacheArgs = {
-  dataSource: Scalars['String']['input'];
-};
-
-export type MutationRefreshTableDataArgs = {
   dataSource: Scalars['String']['input'];
 };
 
 export type MutationRegenerateReportArgs = {
   reportId: Scalars['ID']['input'];
+};
+
+export type MutationResetConfigArgs = {
+  id: Scalars['ID']['input'];
+};
+
+export type MutationResetConfigCategoryArgs = {
+  category: ConfigCategory;
+  scope: ConfigScope;
+  scopeId?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type MutationResolveAlertArgs = {
+  alertId: Scalars['ID']['input'];
+  resolution: Scalars['String']['input'];
 };
 
 export type MutationRetryUploadArgs = {
@@ -1621,13 +1787,30 @@ export type MutationShareReportArgs = {
   reportId: Scalars['ID']['input'];
 };
 
-export type MutationUpdateAnalysisConfigArgs = {
-  config: Scalars['JSON']['input'];
+export type MutationTestAlertChannelArgs = {
+  channelId: Scalars['ID']['input'];
+};
+
+export type MutationUpdateAcoOrderArgs = {
+  input: UpdateAcoOrderInput;
+};
+
+export type MutationUpdateAlertRuleArgs = {
+  input: UpdateAlertRuleInput;
+  ruleId: Scalars['ID']['input'];
+};
+
+export type MutationUpdateConfigArgs = {
+  input: ConfigUpdateInput;
 };
 
 export type MutationUpdateFileMetadataArgs = {
   fileId: Scalars['ID']['input'];
   metadata: Scalars['JSON']['input'];
+};
+
+export type MutationUpdateMergingConfigArgs = {
+  config: MergingConfig;
 };
 
 export type MutationUpdateProductArgs = {
@@ -1640,10 +1823,20 @@ export type MutationUpdateReportTemplateArgs = {
   templateId: Scalars['ID']['input'];
 };
 
+export type MutationUpdateSupplierArgs = {
+  code: Scalars['String']['input'];
+  input: UpdateSupplierInput;
+};
+
 export type MutationUpdateTransferStatusArgs = {
   id: Scalars['ID']['input'];
   notes?: InputMaybe<Scalars['String']['input']>;
   status: TransferStatus;
+};
+
+export type MutationUpdateWarehouseOrderStatusArgs = {
+  orderId: Scalars['ID']['input'];
+  status: WarehouseOrderStatus;
 };
 
 export type MutationUploadBatchFilesArgs = {
@@ -1654,22 +1847,26 @@ export type MutationUploadSingleFileArgs = {
   input: SingleFileUploadInput;
 };
 
-export type NumberFilter = {
-  field: Scalars['String']['input'];
-  max?: InputMaybe<Scalars['Float']['input']>;
-  min?: InputMaybe<Scalars['Float']['input']>;
-  operator: NumberOperator;
-  value?: InputMaybe<Scalars['Float']['input']>;
+export type NotificationChannel = {
+  __typename?: 'NotificationChannel';
+  config: Scalars['JSON']['output'];
+  enabled: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  lastUsed?: Maybe<Scalars['DateTime']['output']>;
+  name: Scalars['String']['output'];
+  successRate: Scalars['Float']['output'];
+  type: Scalars['String']['output'];
 };
 
-export enum NumberOperator {
-  Between = 'BETWEEN',
-  Equals = 'EQUALS',
-  Gt = 'GT',
-  Gte = 'GTE',
-  Lt = 'LT',
-  Lte = 'LTE',
-  NotEquals = 'NOT_EQUALS',
+export enum NotificationConfigKey {
+  DesktopNotifications = 'DESKTOP_NOTIFICATIONS',
+  EmailEnabled = 'EMAIL_ENABLED',
+  EmailFrequency = 'EMAIL_FREQUENCY',
+  MobileNotifications = 'MOBILE_NOTIFICATIONS',
+  NotificationSound = 'NOTIFICATION_SOUND',
+  PushEnabled = 'PUSH_ENABLED',
+  QuietHours = 'QUIET_HOURS',
+  SmsEnabled = 'SMS_ENABLED',
 }
 
 export type OperationResult = {
@@ -1696,6 +1893,49 @@ export type OperationsSummary = {
   totalOrders: Scalars['Int']['output'];
   totalPallets: Scalars['Int']['output'];
   totalTransfers: Scalars['Int']['output'];
+};
+
+export type OperatorCount = {
+  __typename?: 'OperatorCount';
+  count: Scalars['Int']['output'];
+  efficiency?: Maybe<Scalars['Float']['output']>;
+  operatorId: Scalars['String']['output'];
+  operatorName: Scalars['String']['output'];
+  percentage: Scalars['Float']['output'];
+};
+
+export type OperatorEfficiency = {
+  __typename?: 'OperatorEfficiency';
+  operationsPerMinute: Scalars['Float']['output'];
+  operatorId: Scalars['Int']['output'];
+  operatorName: Scalars['String']['output'];
+  totalOperations: Scalars['Int']['output'];
+};
+
+export type OperatorPerformance = {
+  __typename?: 'OperatorPerformance';
+  averageDuration: Scalars['Float']['output'];
+  efficiency: Scalars['Float']['output'];
+  operatorName: Scalars['String']['output'];
+  rank: Scalars['Int']['output'];
+  transfersPerHour: Scalars['Float']['output'];
+};
+
+export type OperatorSummary = {
+  __typename?: 'OperatorSummary';
+  avgEfficiency: Scalars['Float']['output'];
+  operationCount: Scalars['Int']['output'];
+  operatorId: Scalars['Int']['output'];
+  operatorName: Scalars['String']['output'];
+  percentage: Scalars['Float']['output'];
+};
+
+export type OperatorTrend = {
+  __typename?: 'OperatorTrend';
+  operatorId: Scalars['Int']['output'];
+  operatorName: Scalars['String']['output'];
+  totalGrowth: Scalars['Float']['output'];
+  trend: Array<TrendPoint>;
 };
 
 export type Order = {
@@ -1735,6 +1975,17 @@ export type OrderAnalysisResult = {
   warnings?: Maybe<Array<Scalars['String']['output']>>;
 };
 
+export type OrderCompletion = {
+  __typename?: 'OrderCompletion';
+  completionPercentage: Scalars['Int']['output'];
+  docUrl?: Maybe<Scalars['String']['output']>;
+  hasPdf: Scalars['Boolean']['output'];
+  latestUpdate?: Maybe<Scalars['String']['output']>;
+  loadedQty: Scalars['Int']['output'];
+  orderRef: Scalars['String']['output'];
+  productQty: Scalars['Int']['output'];
+};
+
 export type OrderConnection = {
   __typename?: 'OrderConnection';
   edges: Array<OrderEdge>;
@@ -1751,6 +2002,15 @@ export type OrderData = {
   orderDate?: Maybe<Scalars['DateTime']['output']>;
   orderNumber: Scalars['String']['output'];
   totalAmount?: Maybe<Scalars['Float']['output']>;
+};
+
+export type OrderDetail = {
+  __typename?: 'OrderDetail';
+  actionTime: Scalars['String']['output'];
+  description: Scalars['String']['output'];
+  loadedBy: Scalars['String']['output'];
+  palletNum: Scalars['String']['output'];
+  productQty: Scalars['Int']['output'];
 };
 
 export type OrderDetails = {
@@ -1796,158 +2056,37 @@ export enum OrderItemStatus {
   Shipped = 'SHIPPED',
 }
 
-export type OrderListFilters = {
-  customerCodes?: InputMaybe<Array<Scalars['String']['input']>>;
-  isUrgent?: InputMaybe<Scalars['Boolean']['input']>;
-  orderNumbers?: InputMaybe<Array<Scalars['String']['input']>>;
-  priorities?: InputMaybe<Array<OrderPriority>>;
-  statuses?: InputMaybe<Array<OrderStatus>>;
-  valueRange?: InputMaybe<FloatRangeInput>;
+export type OrderLoadingFilterInput = {
+  actionBy?: InputMaybe<Scalars['String']['input']>;
+  endDate: Scalars['String']['input'];
+  orderRef?: InputMaybe<Scalars['String']['input']>;
+  productCode?: InputMaybe<Scalars['String']['input']>;
+  startDate: Scalars['String']['input'];
 };
 
-export enum OrderPriority {
-  Critical = 'CRITICAL',
-  High = 'HIGH',
-  Low = 'LOW',
-  Normal = 'NORMAL',
-  Urgent = 'URGENT',
-}
-
-export type OrderProgressMetrics = {
-  __typename?: 'OrderProgressMetrics';
-  averageCompletionRate: Scalars['Float']['output'];
-  bottleneckStage?: Maybe<OrderStatus>;
-  predictedCompletionTime?: Maybe<Scalars['DateTime']['output']>;
-  totalInProgress: Scalars['Int']['output'];
-};
-
-export type OrderRecord = {
-  __typename?: 'OrderRecord';
-  details: Scalars['JSON']['output'];
-  impact?: Maybe<OrderRecordImpact>;
-  order: Order;
-  performedBy: User;
-  recordType: OrderRecordType;
-  relatedRecords?: Maybe<Array<OrderRecord>>;
+export type OrderLoadingRecord = {
+  __typename?: 'OrderLoadingRecord';
+  action: Scalars['String']['output'];
+  loadedQty: Scalars['Int']['output'];
+  orderNumber: Scalars['String']['output'];
+  productCode: Scalars['String']['output'];
   timestamp: Scalars['DateTime']['output'];
+  userName: Scalars['String']['output'];
 };
 
-export type OrderRecordAnalytics = {
-  __typename?: 'OrderRecordAnalytics';
-  averageOrderCycle: Scalars['Int']['output'];
-  commonBottlenecks: Array<Scalars['String']['output']>;
-  performanceMetrics: Scalars['JSON']['output'];
-  trendData: Array<OrderTrendPoint>;
+export type OrderLoadingResponse = {
+  __typename?: 'OrderLoadingResponse';
+  records: Array<OrderLoadingRecord>;
+  summary?: Maybe<LoadingSummary>;
+  total: Scalars['Int']['output'];
 };
 
-export type OrderRecordConnection = {
-  __typename?: 'OrderRecordConnection';
-  edges: Array<OrderRecordEdge>;
-  pageInfo: PageInfo;
-  totalCount: Scalars['Int']['output'];
-};
-
-export type OrderRecordEdge = {
-  __typename?: 'OrderRecordEdge';
-  cursor: Scalars['String']['output'];
-  node: OrderRecord;
-};
-
-export type OrderRecordImpact = {
-  __typename?: 'OrderRecordImpact';
-  costImpact?: Maybe<Scalars['Float']['output']>;
-  customerSatisfaction?: Maybe<OrderRecordImpactLevel>;
-  delayMinutes?: Maybe<Scalars['Int']['output']>;
-  operationalComplexity?: Maybe<OrderRecordImpactLevel>;
-};
-
-export enum OrderRecordImpactLevel {
-  Critical = 'CRITICAL',
-  High = 'HIGH',
-  Low = 'LOW',
-  Medium = 'MEDIUM',
-}
-
-export type OrderRecordList = ListData & {
-  __typename?: 'OrderRecordList';
-  analytics: OrderRecordAnalytics;
-  dataSource: Scalars['String']['output'];
-  description?: Maybe<Scalars['String']['output']>;
-  filteredCount: Scalars['Int']['output'];
-  id: Scalars['ID']['output'];
-  lastUpdated: Scalars['DateTime']['output'];
-  listType: ListType;
-  records: OrderRecordConnection;
-  refreshInterval?: Maybe<Scalars['Int']['output']>;
-  timeline: Array<OrderTimelineEvent>;
-  title: Scalars['String']['output'];
-  totalCount: Scalars['Int']['output'];
-};
-
-export enum OrderRecordType {
-  Allocated = 'ALLOCATED',
-  Cancelled = 'CANCELLED',
-  Created = 'CREATED',
-  Delivered = 'DELIVERED',
-  Exception = 'EXCEPTION',
-  Modified = 'MODIFIED',
-  Packed = 'PACKED',
-  Picked = 'PICKED',
-  Refunded = 'REFUNDED',
-  Shipped = 'SHIPPED',
-  StatusChanged = 'STATUS_CHANGED',
-}
-
-export type OrderStageHistory = {
-  __typename?: 'OrderStageHistory';
-  duration?: Maybe<Scalars['Int']['output']>;
-  enteredAt: Scalars['DateTime']['output'];
-  exitedAt?: Maybe<Scalars['DateTime']['output']>;
-  notes?: Maybe<Scalars['String']['output']>;
-  performedBy?: Maybe<User>;
-  stage: OrderStatus;
-};
-
-export type OrderState = {
-  __typename?: 'OrderState';
-  actualCompletion?: Maybe<Scalars['DateTime']['output']>;
-  bottlenecks?: Maybe<Array<Scalars['String']['output']>>;
-  currentStage: OrderStatus;
-  estimatedCompletion?: Maybe<Scalars['DateTime']['output']>;
-  isUrgent: Scalars['Boolean']['output'];
-  nextActions?: Maybe<Array<Scalars['String']['output']>>;
-  order: Order;
-  progress: Scalars['Float']['output'];
-  stageHistory: Array<OrderStageHistory>;
-};
-
-export type OrderStateConnection = {
-  __typename?: 'OrderStateConnection';
-  edges: Array<OrderStateEdge>;
-  pageInfo: PageInfo;
-  totalCount: Scalars['Int']['output'];
-};
-
-export type OrderStateEdge = {
-  __typename?: 'OrderStateEdge';
-  cursor: Scalars['String']['output'];
-  node: OrderState;
-};
-
-export type OrderStateList = ListData & {
-  __typename?: 'OrderStateList';
-  dataSource: Scalars['String']['output'];
-  description?: Maybe<Scalars['String']['output']>;
-  filteredCount: Scalars['Int']['output'];
-  id: Scalars['ID']['output'];
-  lastUpdated: Scalars['DateTime']['output'];
-  listType: ListType;
-  orders: OrderStateConnection;
-  progressMetrics: OrderProgressMetrics;
-  refreshInterval?: Maybe<Scalars['Int']['output']>;
-  statusSummary: Array<OrderStatusSummary>;
-  title: Scalars['String']['output'];
-  totalCount: Scalars['Int']['output'];
+export type OrderMetrics = {
+  __typename?: 'OrderMetrics';
+  cancelledOrders: Scalars['Int']['output'];
+  completedOrders: Scalars['Int']['output'];
+  pendingOrders: Scalars['Int']['output'];
+  totalOrders: Scalars['Int']['output'];
 };
 
 export enum OrderStatus {
@@ -1959,68 +2098,26 @@ export enum OrderStatus {
   Shipped = 'SHIPPED',
 }
 
-export type OrderStatusSummary = {
-  __typename?: 'OrderStatusSummary';
-  averageProcessingTime?: Maybe<Scalars['Int']['output']>;
-  count: Scalars['Int']['output'];
-  percentage: Scalars['Float']['output'];
-  status: OrderStatus;
-  urgentCount?: Maybe<Scalars['Int']['output']>;
-};
-
-export type OrderTimelineEvent = {
-  __typename?: 'OrderTimelineEvent';
-  actor: Scalars['String']['output'];
-  category: OrderRecordType;
-  description: Scalars['String']['output'];
-  event: Scalars['String']['output'];
-  timestamp: Scalars['DateTime']['output'];
-};
-
-export type OrderTrendPoint = {
-  __typename?: 'OrderTrendPoint';
-  averageCycleTime: Scalars['Int']['output'];
-  completionRate: Scalars['Float']['output'];
-  date: Scalars['DateTime']['output'];
-  orderCount: Scalars['Int']['output'];
-};
-
-export type OtherFilesList = ListData & {
-  __typename?: 'OtherFilesList';
-  categorySummary: Array<FileCategorySummary>;
-  dataSource: Scalars['String']['output'];
-  description?: Maybe<Scalars['String']['output']>;
-  files: FileRecordConnection;
-  filteredCount: Scalars['Int']['output'];
-  id: Scalars['ID']['output'];
-  lastUpdated: Scalars['DateTime']['output'];
-  listType: ListType;
-  refreshInterval?: Maybe<Scalars['Int']['output']>;
-  storageMetrics: FileStorageMetrics;
-  title: Scalars['String']['output'];
-  totalCount: Scalars['Int']['output'];
-};
-
 export type PageInfo = {
   __typename?: 'PageInfo';
   currentPage: Scalars['Int']['output'];
+  endCursor?: Maybe<Scalars['String']['output']>;
   hasNextPage: Scalars['Boolean']['output'];
   hasPreviousPage: Scalars['Boolean']['output'];
+  startCursor?: Maybe<Scalars['String']['output']>;
   totalCount: Scalars['Int']['output'];
   totalPages: Scalars['Int']['output'];
 };
 
 export type PaginationInput = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
   page?: InputMaybe<Scalars['Int']['input']>;
 };
-
-export enum PaginationStyle {
-  Cursor = 'CURSOR',
-  LoadMore = 'LOAD_MORE',
-  Offset = 'OFFSET',
-}
 
 export type Pallet = {
   __typename?: 'Pallet';
@@ -2052,11 +2149,29 @@ export type PalletTransfersArgs = {
   pagination?: InputMaybe<PaginationInput>;
 };
 
+export type PalletBasicInfo = {
+  __typename?: 'PalletBasicInfo';
+  palletNumber: Scalars['String']['output'];
+  product: ProductBasicInfo;
+  productCode: Scalars['String']['output'];
+  quantity: Scalars['Int']['output'];
+};
+
 export type PalletConnection = {
   __typename?: 'PalletConnection';
   edges: Array<PalletEdge>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
+};
+
+export type PalletCurrentStatus = {
+  __typename?: 'PalletCurrentStatus';
+  daysInCurrentLocation: Scalars['Int']['output'];
+  isActive: Scalars['Boolean']['output'];
+  lastAction: StockAction;
+  lastActionAt: Scalars['DateTime']['output'];
+  lastOperator: Scalars['String']['output'];
+  location?: Maybe<Scalars['String']['output']>;
 };
 
 export type PalletEdge = {
@@ -2074,6 +2189,29 @@ export type PalletFilterInput = {
   status?: InputMaybe<PalletStatus>;
 };
 
+export type PalletHistoryAggregations = {
+  __typename?: 'PalletHistoryAggregations';
+  mostActiveLocation?: Maybe<Scalars['String']['output']>;
+  mostActiveOperator?: Maybe<Scalars['String']['output']>;
+  timeRange?: Maybe<DateRange>;
+  totalActions: Scalars['Int']['output'];
+  uniqueOperators: Scalars['Int']['output'];
+  uniquePallets: Scalars['Int']['output'];
+};
+
+export type PalletHistoryResult = {
+  __typename?: 'PalletHistoryResult';
+  aggregations: PalletHistoryAggregations;
+  locationDistribution: Array<LocationCount>;
+  operatorDistribution: Array<OperatorCount>;
+  pageInfo: PageInfo;
+  productCode: Scalars['String']['output'];
+  productInfo: ProductBasicInfo;
+  records: Array<StockHistoryRecord>;
+  timelineGroups: Array<TimelineGroup>;
+  totalRecords: Scalars['Int']['output'];
+};
+
 export enum PalletStatus {
   Active = 'ACTIVE',
   Damaged = 'DAMAGED',
@@ -2081,6 +2219,16 @@ export enum PalletStatus {
   Transferred = 'TRANSFERRED',
   Void = 'VOID',
 }
+
+export type PalletTimeline = {
+  __typename?: 'PalletTimeline';
+  averageLocationStay: Scalars['Float']['output'];
+  created: Scalars['DateTime']['output'];
+  firstMovement?: Maybe<Scalars['DateTime']['output']>;
+  lastMovement?: Maybe<Scalars['DateTime']['output']>;
+  totalDaysActive: Scalars['Int']['output'];
+  totalMovements: Scalars['Int']['output'];
+};
 
 export enum PaymentStatus {
   Cancelled = 'CANCELLED',
@@ -2098,17 +2246,9 @@ export type PerformanceMetrics = {
   totalQueries: Scalars['Int']['output'];
 };
 
-export type ProcessingStep = {
-  __typename?: 'ProcessingStep';
-  details?: Maybe<Scalars['String']['output']>;
-  duration: Scalars['Float']['output'];
-  status: Scalars['String']['output'];
-  step: Scalars['String']['output'];
-};
-
 export type Product = {
   __typename?: 'Product';
-  chinesedescription?: Maybe<Scalars['String']['output']>;
+  chinese_description?: Maybe<Scalars['String']['output']>;
   code: Scalars['ID']['output'];
   colour?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['DateTime']['output'];
@@ -2116,6 +2256,9 @@ export type Product = {
   inventory?: Maybe<InventorySummary>;
   isActive: Scalars['Boolean']['output'];
   pallets: PalletConnection;
+  prod_type?: Maybe<Scalars['String']['output']>;
+  product_code: Scalars['String']['output'];
+  product_description?: Maybe<Scalars['String']['output']>;
   standardQty?: Maybe<Scalars['Int']['output']>;
   statistics?: Maybe<ProductStatistics>;
   type?: Maybe<Scalars['String']['output']>;
@@ -2129,6 +2272,25 @@ export type ProductPalletsArgs = {
   filter?: InputMaybe<PalletFilterInput>;
   pagination?: InputMaybe<PaginationInput>;
   sort?: InputMaybe<SortInput>;
+};
+
+export type ProductBasicInfo = {
+  __typename?: 'ProductBasicInfo';
+  chineseDescription?: Maybe<Scalars['String']['output']>;
+  code: Scalars['String']['output'];
+  colour?: Maybe<Scalars['String']['output']>;
+  description: Scalars['String']['output'];
+  standardQty?: Maybe<Scalars['Int']['output']>;
+  type?: Maybe<Scalars['String']['output']>;
+};
+
+export type ProductColour = {
+  __typename?: 'ProductColour';
+  description?: Maybe<Scalars['String']['output']>;
+  isDefault: Scalars['Boolean']['output'];
+  isDisabled: Scalars['Boolean']['output'];
+  label: Scalars['String']['output'];
+  value: Scalars['String']['output'];
 };
 
 export type ProductConnection = {
@@ -2163,6 +2325,25 @@ export type ProductFilterInput = {
   type?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type ProductFormOptions = {
+  __typename?: 'ProductFormOptions';
+  colours: Array<ProductColour>;
+  materials: Array<Material>;
+  products: Array<Product>;
+  suppliers: Array<Supplier>;
+  types: Array<ProductType>;
+  units: Array<ProductUnit>;
+};
+
+export type ProductInfo = {
+  __typename?: 'ProductInfo';
+  code: Scalars['String']['output'];
+  colour: Scalars['String']['output'];
+  description: Scalars['String']['output'];
+  standardQty: Scalars['Int']['output'];
+  type: Scalars['String']['output'];
+};
+
 export type ProductStatistics = {
   __typename?: 'ProductStatistics';
   averageStockLevel: Scalars['Float']['output'];
@@ -2171,6 +2352,31 @@ export type ProductStatistics = {
   totalLocations: Scalars['Int']['output'];
   totalPallets: Scalars['Int']['output'];
   totalQuantity: Scalars['Int']['output'];
+};
+
+export type ProductType = {
+  __typename?: 'ProductType';
+  description?: Maybe<Scalars['String']['output']>;
+  isDefault: Scalars['Boolean']['output'];
+  isDisabled: Scalars['Boolean']['output'];
+  label: Scalars['String']['output'];
+  value: Scalars['String']['output'];
+};
+
+export type ProductTypeCount = {
+  __typename?: 'ProductTypeCount';
+  count: Scalars['Int']['output'];
+  totalStock: Scalars['Int']['output'];
+  type: Scalars['String']['output'];
+};
+
+export type ProductUnit = {
+  __typename?: 'ProductUnit';
+  description?: Maybe<Scalars['String']['output']>;
+  isDefault: Scalars['Boolean']['output'];
+  isDisabled: Scalars['Boolean']['output'];
+  label: Scalars['String']['output'];
+  value: Scalars['String']['output'];
 };
 
 export enum QcStatus {
@@ -2182,6 +2388,7 @@ export enum QcStatus {
 
 export type QualityMetrics = WidgetData & {
   __typename?: 'QualityMetrics';
+  acceptedGRNs: Scalars['Int']['output'];
   dataSource: Scalars['String']['output'];
   defectRate: Scalars['Float']['output'];
   defectTrends: Array<TrendPoint>;
@@ -2191,23 +2398,36 @@ export type QualityMetrics = WidgetData & {
   firstPassYield: Scalars['Float']['output'];
   lastUpdated: Scalars['DateTime']['output'];
   overallScore: Scalars['Float']['output'];
+  partialGRNs: Scalars['Int']['output'];
   passedInspections: Scalars['Int']['output'];
   pendingInspections: Scalars['Int']['output'];
   refreshInterval?: Maybe<Scalars['Int']['output']>;
+  rejectedGRNs: Scalars['Int']['output'];
   totalInspections: Scalars['Int']['output'];
 };
 
 export type Query = {
   __typename?: 'Query';
-  aiAnalysisConfig: AiAnalysisConfig;
-  analysisCardData: AnalysisCardData;
-  analysisProgress?: Maybe<AnalysisProgress>;
+  acoOrderReport: AcoOrderReportResponse;
+  alertCardData: AlertCardData;
+  alertChannels: Array<NotificationChannel>;
+  alertDetails?: Maybe<Alert>;
+  alertHistory: Array<Alert>;
+  alertRules: Array<AlertRule>;
   availableCharts: Array<ChartConfig>;
-  availableReportFields: Array<ReportField>;
   availableStats: Array<StatsConfig>;
   batchWidgetData: Array<WidgetDataResponse>;
   chartCardData: ChartCardData;
   chartData: ChartCardData;
+  configCardData: ConfigCardData;
+  configDefaults: Array<ConfigItem>;
+  configHistory: Array<ConfigHistory>;
+  configItem?: Maybe<ConfigItem>;
+  configTemplates: Array<ConfigTemplate>;
+  departmentInjectionData: DepartmentInjectionData;
+  departmentPipeData: DepartmentPipeData;
+  departmentPipeDataAdvanced: DepartmentPipeData;
+  departmentWarehouseData: DepartmentWarehouseData;
   efficiencyMetrics: EfficiencyMetrics;
   estimateReportTime: Scalars['Int']['output'];
   fileInfo?: Maybe<FileInfo>;
@@ -2216,15 +2436,27 @@ export type Query = {
   inventories: Array<Inventory>;
   inventory?: Maybe<Inventory>;
   inventoryOrderedAnalysis: InventoryOrderedAnalysisResult;
+  machineStatusRealTime: Array<MachineState>;
+  mergedRecord?: Maybe<MergedRecordHistory>;
+  operatorActivity: Array<OperatorSummary>;
   order?: Maybe<Order>;
   orderAnalysisResult?: Maybe<OrderAnalysisResult>;
+  orderLoadingRecords: OrderLoadingResponse;
   orders: OrderConnection;
   pallet?: Maybe<Pallet>;
+  palletHistoryByNumber: SinglePalletHistoryResult;
+  palletHistoryByProduct: PalletHistoryResult;
   pallets: PalletConnection;
   product?: Maybe<Product>;
+  productFormOptions: ProductFormOptions;
   productStatistics: ProductStatistics;
   products: ProductConnection;
   qualityMetrics: QualityMetrics;
+  rawRecordHistory: Array<RecordHistoryEntry>;
+  realTimeStockLevels: StockItemConnection;
+  recordHistory: RecordHistoryResult;
+  recordHistorySearchSuggestions: Array<Scalars['String']['output']>;
+  recordHistoryTrends: RecordHistoryTrends;
   reportCardData: ReportCardData;
   reportConfig: ReportConfig;
   reportDetails?: Maybe<GeneratedReport>;
@@ -2233,14 +2465,19 @@ export type Query = {
   searchFiles: FileSearchResult;
   searchProducts: Array<Product>;
   searchReports: ReportSearchResult;
+  searchSuppliers: Array<Supplier>;
   statData: StatsData;
   statsCardData: StatsCardData;
   stockDistribution: StockDistributionResult;
+  stockHistoryStats: StockHistoryStats;
+  stockLevelChart: StockLevelChartResult;
+  stockLevelList: StockLevelListResult;
+  stockLevelStats: StockLevelStats;
   stockLevels: StockLevelData;
+  supplier?: Maybe<Supplier>;
+  supplierPerformance: SupplierPerformance;
+  suppliers: SupplierConnection;
   systemPerformance: SystemPerformance;
-  tableCardData: TableCardData;
-  tableColumns: Array<TableColumn>;
-  tablePermissions: TablePermissions;
   topProductsByQuantity: TopProductsResult;
   transfer?: Maybe<Transfer>;
   transfers: TransferConnection;
@@ -2250,25 +2487,34 @@ export type Query = {
   uploadConfig: UploadConfig;
   uploadProgress: Array<UploadProgress>;
   uploadStatistics: UploadStatistics;
+  validateConfig: ConfigValidation;
+  warehouseOrder?: Maybe<WarehouseOrder>;
+  warehouseOrders: WarehouseOrdersResponse;
   widgetData: Scalars['JSON']['output'];
   workLevel?: Maybe<WorkLevel>;
   workLevels: Array<WorkLevel>;
 };
 
-export type QueryAnalysisCardDataArgs = {
-  input: AnalysisCardInput;
+export type QueryAcoOrderReportArgs = {
+  reference: Scalars['String']['input'];
 };
 
-export type QueryAnalysisProgressArgs = {
-  analysisId: Scalars['ID']['input'];
+export type QueryAlertCardDataArgs = {
+  input: AlertCardInput;
+};
+
+export type QueryAlertDetailsArgs = {
+  alertId: Scalars['ID']['input'];
+};
+
+export type QueryAlertHistoryArgs = {
+  dateRange?: InputMaybe<DateRangeInput>;
+  entityId?: InputMaybe<Scalars['ID']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type QueryAvailableChartsArgs = {
   category?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type QueryAvailableReportFieldsArgs = {
-  reportType: ReportType;
 };
 
 export type QueryAvailableStatsArgs = {
@@ -2286,6 +2532,40 @@ export type QueryChartCardDataArgs = {
 
 export type QueryChartDataArgs = {
   input: SingleChartQueryInput;
+};
+
+export type QueryConfigCardDataArgs = {
+  input: ConfigCardInput;
+};
+
+export type QueryConfigDefaultsArgs = {
+  category?: InputMaybe<ConfigCategory>;
+};
+
+export type QueryConfigHistoryArgs = {
+  configId: Scalars['ID']['input'];
+  limit?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type QueryConfigItemArgs = {
+  key: Scalars['String']['input'];
+  scope: ConfigScope;
+  scopeId?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type QueryConfigTemplatesArgs = {
+  category?: InputMaybe<ConfigCategory>;
+  isPublic?: InputMaybe<Scalars['Boolean']['input']>;
+  scope?: InputMaybe<ConfigScope>;
+};
+
+export type QueryDepartmentPipeDataAdvancedArgs = {
+  materialFilter?: InputMaybe<StockFilterInput>;
+  materialPagination?: InputMaybe<PaginationInput>;
+  materialSort?: InputMaybe<StockSortInput>;
+  stockFilter?: InputMaybe<StockFilterInput>;
+  stockPagination?: InputMaybe<PaginationInput>;
+  stockSort?: InputMaybe<StockSortInput>;
 };
 
 export type QueryEfficiencyMetricsArgs = {
@@ -2318,12 +2598,29 @@ export type QueryInventoryOrderedAnalysisArgs = {
   input?: InputMaybe<InventoryOrderedAnalysisInput>;
 };
 
+export type QueryMachineStatusRealTimeArgs = {
+  departmentType: Scalars['String']['input'];
+};
+
+export type QueryMergedRecordArgs = {
+  id: Scalars['ID']['input'];
+};
+
+export type QueryOperatorActivityArgs = {
+  dateRange: DateRangeInput;
+  operatorIds?: InputMaybe<Array<Scalars['Int']['input']>>;
+};
+
 export type QueryOrderArgs = {
   orderNumber: Scalars['String']['input'];
 };
 
 export type QueryOrderAnalysisResultArgs = {
   uploadId: Scalars['ID']['input'];
+};
+
+export type QueryOrderLoadingRecordsArgs = {
+  input: OrderLoadingFilterInput;
 };
 
 export type QueryOrdersArgs = {
@@ -2334,6 +2631,19 @@ export type QueryOrdersArgs = {
 
 export type QueryPalletArgs = {
   pltNum: Scalars['ID']['input'];
+};
+
+export type QueryPalletHistoryByNumberArgs = {
+  includeJourney?: InputMaybe<Scalars['Boolean']['input']>;
+  includeSeries?: InputMaybe<Scalars['Boolean']['input']>;
+  palletNumber: Scalars['String']['input'];
+};
+
+export type QueryPalletHistoryByProductArgs = {
+  filter?: InputMaybe<StockHistoryFilter>;
+  pagination?: InputMaybe<StockHistoryPagination>;
+  productCode: Scalars['String']['input'];
+  sort?: InputMaybe<StockHistorySort>;
 };
 
 export type QueryPalletsArgs = {
@@ -2360,6 +2670,36 @@ export type QueryProductsArgs = {
 export type QueryQualityMetricsArgs = {
   dateRange?: InputMaybe<DateRangeInput>;
   productCodes?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type QueryRawRecordHistoryArgs = {
+  filters?: InputMaybe<RecordHistoryFilters>;
+  pagination?: InputMaybe<RecordHistoryPagination>;
+  sorting?: InputMaybe<RecordHistorySort>;
+};
+
+export type QueryRealTimeStockLevelsArgs = {
+  filter?: InputMaybe<StockFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<StockSortInput>;
+};
+
+export type QueryRecordHistoryArgs = {
+  filters?: InputMaybe<RecordHistoryFilters>;
+  mergingConfig?: InputMaybe<MergingConfig>;
+  pagination?: InputMaybe<RecordHistoryPagination>;
+  sorting?: InputMaybe<RecordHistorySort>;
+};
+
+export type QueryRecordHistorySearchSuggestionsArgs = {
+  field: Scalars['String']['input'];
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  query: Scalars['String']['input'];
+};
+
+export type QueryRecordHistoryTrendsArgs = {
+  filters?: InputMaybe<RecordHistoryFilters>;
+  timeGranularity?: InputMaybe<TimeGranularity>;
 };
 
 export type QueryReportCardDataArgs = {
@@ -2396,6 +2736,11 @@ export type QuerySearchReportsArgs = {
   input: ReportSearchInput;
 };
 
+export type QuerySearchSuppliersArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  query: Scalars['String']['input'];
+};
+
 export type QueryStatDataArgs = {
   input: SingleStatQueryInput;
 };
@@ -2408,25 +2753,47 @@ export type QueryStockDistributionArgs = {
   input?: InputMaybe<StockDistributionInput>;
 };
 
+export type QueryStockHistoryStatsArgs = {
+  filter?: InputMaybe<StockHistoryFilter>;
+  includeTrends?: InputMaybe<Scalars['Boolean']['input']>;
+  trendsInterval?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type QueryStockLevelChartArgs = {
+  days?: InputMaybe<Scalars['Int']['input']>;
+  productType?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type QueryStockLevelListArgs = {
+  productType?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type QueryStockLevelStatsArgs = {
+  filter?: InputMaybe<StockLevelFilter>;
+};
+
 export type QueryStockLevelsArgs = {
   dateRange?: InputMaybe<DateRangeInput>;
   warehouse?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type QuerySupplierArgs = {
+  code: Scalars['String']['input'];
+};
+
+export type QuerySupplierPerformanceArgs = {
+  dateRange?: InputMaybe<DateRangeInput>;
+  supplierCode: Scalars['String']['input'];
+};
+
+export type QuerySuppliersArgs = {
+  filter?: InputMaybe<SupplierFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<SortInput>;
+};
+
 export type QuerySystemPerformanceArgs = {
   timeWindow?: InputMaybe<TimeWindow>;
-};
-
-export type QueryTableCardDataArgs = {
-  input: TableDataInput;
-};
-
-export type QueryTableColumnsArgs = {
-  dataSource: Scalars['String']['input'];
-};
-
-export type QueryTablePermissionsArgs = {
-  dataSource: Scalars['String']['input'];
 };
 
 export type QueryTopProductsByQuantityArgs = {
@@ -2468,6 +2835,19 @@ export type QueryUploadStatisticsArgs = {
   dateRange?: InputMaybe<DateRangeInput>;
 };
 
+export type QueryValidateConfigArgs = {
+  input: ConfigItemInput;
+};
+
+export type QueryWarehouseOrderArgs = {
+  id?: InputMaybe<Scalars['ID']['input']>;
+  orderRef?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type QueryWarehouseOrdersArgs = {
+  input?: InputMaybe<WarehouseOrderFilterInput>;
+};
+
 export type QueryWidgetDataArgs = {
   dataSource: Scalars['String']['input'];
   params?: InputMaybe<Scalars['JSON']['input']>;
@@ -2483,6 +2863,162 @@ export type QueryWorkLevelsArgs = {
   dateRange?: InputMaybe<DateRangeInput>;
   userIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
+
+export type RecentActivity = {
+  __typename?: 'RecentActivity';
+  action: Scalars['String']['output'];
+  detail: Scalars['String']['output'];
+  staff: Scalars['String']['output'];
+  time: Scalars['String']['output'];
+};
+
+export type RecordHistoryEntry = {
+  __typename?: 'RecordHistoryEntry';
+  action: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  location?: Maybe<Scalars['String']['output']>;
+  operatorDepartment?: Maybe<Scalars['String']['output']>;
+  operatorEmail?: Maybe<Scalars['String']['output']>;
+  operatorId?: Maybe<Scalars['Int']['output']>;
+  operatorName?: Maybe<Scalars['String']['output']>;
+  operatorPosition?: Maybe<Scalars['String']['output']>;
+  pltNum?: Maybe<Scalars['String']['output']>;
+  remark: Scalars['String']['output'];
+  time: Scalars['DateTime']['output'];
+  uuid: Scalars['String']['output'];
+};
+
+export type RecordHistoryError = {
+  __typename?: 'RecordHistoryError';
+  code: RecordHistoryErrorCode;
+  details?: Maybe<Scalars['JSON']['output']>;
+  field?: Maybe<Scalars['String']['output']>;
+  message: Scalars['String']['output'];
+};
+
+export enum RecordHistoryErrorCode {
+  DatabaseError = 'DATABASE_ERROR',
+  ExportFailed = 'EXPORT_FAILED',
+  InvalidOperator = 'INVALID_OPERATOR',
+  InvalidTimerange = 'INVALID_TIMERANGE',
+  MergeConfigInvalid = 'MERGE_CONFIG_INVALID',
+  PermissionDenied = 'PERMISSION_DENIED',
+  RateLimitExceeded = 'RATE_LIMIT_EXCEEDED',
+}
+
+export type RecordHistoryExportInput = {
+  filters?: InputMaybe<RecordHistoryFilters>;
+  format: ExportFormat;
+  includeRawData?: InputMaybe<Scalars['Boolean']['input']>;
+  includeSummaryStats?: InputMaybe<Scalars['Boolean']['input']>;
+  mergingConfig?: InputMaybe<MergingConfig>;
+};
+
+export type RecordHistoryExportResult = {
+  __typename?: 'RecordHistoryExportResult';
+  downloadUrl: Scalars['String']['output'];
+  expiresAt: Scalars['DateTime']['output'];
+  fileName: Scalars['String']['output'];
+  fileSize: Scalars['Int']['output'];
+  recordCount: Scalars['Int']['output'];
+};
+
+export type RecordHistoryFilters = {
+  action?: InputMaybe<Scalars['String']['input']>;
+  actions?: InputMaybe<Array<Scalars['String']['input']>>;
+  dateRange?: InputMaybe<DateRangeInput>;
+  departments?: InputMaybe<Array<Scalars['String']['input']>>;
+  hasMultipleOperations?: InputMaybe<Scalars['Boolean']['input']>;
+  location?: InputMaybe<Scalars['String']['input']>;
+  locations?: InputMaybe<Array<Scalars['String']['input']>>;
+  maxDuration?: InputMaybe<Scalars['Int']['input']>;
+  minDuration?: InputMaybe<Scalars['Int']['input']>;
+  operatorEmail?: InputMaybe<Scalars['String']['input']>;
+  operatorId?: InputMaybe<Scalars['Int']['input']>;
+  operatorName?: InputMaybe<Scalars['String']['input']>;
+  palletNumbers?: InputMaybe<Array<Scalars['String']['input']>>;
+  pltNum?: InputMaybe<Scalars['String']['input']>;
+  positions?: InputMaybe<Array<Scalars['String']['input']>>;
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type RecordHistoryPagination = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type RecordHistoryResult = {
+  __typename?: 'RecordHistoryResult';
+  appliedFilters?: Maybe<AppliedFilters>;
+  cacheHit: Scalars['Boolean']['output'];
+  hasNextPage: Scalars['Boolean']['output'];
+  hasPreviousPage: Scalars['Boolean']['output'];
+  mergedRecords: Array<MergedRecordHistory>;
+  mergingConfig?: Maybe<AppliedMergingConfig>;
+  nextCursor?: Maybe<Scalars['String']['output']>;
+  pagination?: Maybe<AppliedPagination>;
+  previousCursor?: Maybe<Scalars['String']['output']>;
+  queryTime: Scalars['Float']['output'];
+  sorting?: Maybe<AppliedSort>;
+  summary: RecordHistorySummary;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type RecordHistorySort = {
+  direction?: InputMaybe<SortDirection>;
+  field?: InputMaybe<RecordHistorySortField>;
+};
+
+export enum RecordHistorySortField {
+  Action = 'ACTION',
+  Count = 'COUNT',
+  Duration = 'DURATION',
+  Efficiency = 'EFFICIENCY',
+  OperatorName = 'OPERATOR_NAME',
+  PalletCount = 'PALLET_COUNT',
+  TimeEnd = 'TIME_END',
+  TimeStart = 'TIME_START',
+}
+
+export type RecordHistorySummary = {
+  __typename?: 'RecordHistorySummary';
+  efficiencyMetrics: EfficiencyMetrics;
+  mergingStats: MergingStats;
+  timeSpan: TimeSpan;
+  topActions: Array<ActionSummary>;
+  topOperators: Array<OperatorSummary>;
+  totalMergedRecords: Scalars['Int']['output'];
+  totalOperations: Scalars['Int']['output'];
+  uniqueActions: Scalars['Int']['output'];
+  uniqueLocations: Scalars['Int']['output'];
+  uniqueOperators: Scalars['Int']['output'];
+  uniquePallets: Scalars['Int']['output'];
+};
+
+export type RecordHistoryTrends = {
+  __typename?: 'RecordHistoryTrends';
+  actionTrends: Array<ActionTrend>;
+  dailyDistribution: Array<DailyTrend>;
+  efficiencyTrends: Array<EfficiencyTrend>;
+  hourlyDistribution: Array<HourlyTrend>;
+  operatorTrends: Array<OperatorTrend>;
+};
+
+export type RecordHistoryUpdate = {
+  __typename?: 'RecordHistoryUpdate';
+  affectedMergedRecord?: Maybe<MergedRecordHistory>;
+  operatorId: Scalars['Int']['output'];
+  record: RecordHistoryEntry;
+  timestamp: Scalars['DateTime']['output'];
+  type: RecordHistoryUpdateType;
+};
+
+export enum RecordHistoryUpdateType {
+  MergedUpdate = 'MERGED_UPDATE',
+  NewRecord = 'NEW_RECORD',
+  OperatorActivity = 'OPERATOR_ACTIVITY',
+}
 
 export type ReportAggregation = {
   alias?: InputMaybe<Scalars['String']['input']>;
@@ -2547,17 +3083,6 @@ export enum ReportErrorCode {
   SystemError = 'SYSTEM_ERROR',
   TemplateError = 'TEMPLATE_ERROR',
 }
-
-export type ReportField = {
-  __typename?: 'ReportField';
-  aggregatable: Scalars['Boolean']['output'];
-  dataType: TableDataType;
-  filterable: Scalars['Boolean']['output'];
-  groupable: Scalars['Boolean']['output'];
-  key: Scalars['String']['output'];
-  label: Scalars['String']['output'];
-  required: Scalars['Boolean']['output'];
-};
 
 export type ReportFilters = {
   customFilters?: InputMaybe<Scalars['JSON']['input']>;
@@ -2724,6 +3249,14 @@ export type ReportTypeStats = {
   type: ReportType;
 };
 
+export type RouteMetric = {
+  __typename?: 'RouteMetric';
+  averageDuration: Scalars['Float']['output'];
+  count: Scalars['Int']['output'];
+  fromLocation: Scalars['String']['output'];
+  toLocation: Scalars['String']['output'];
+};
+
 export type ServiceHealth = {
   __typename?: 'ServiceHealth';
   lastError?: Maybe<Scalars['DateTime']['output']>;
@@ -2739,6 +3272,13 @@ export enum ServiceStatus {
   Offline = 'OFFLINE',
   Unhealthy = 'UNHEALTHY',
 }
+
+export type SeverityCount = {
+  __typename?: 'SeverityCount';
+  count: Scalars['Int']['output'];
+  percentage: Scalars['Float']['output'];
+  severity: AlertSeverity;
+};
 
 export type ShiftEfficiency = {
   __typename?: 'ShiftEfficiency';
@@ -2778,6 +3318,15 @@ export type SingleFileUploadInput = {
   userId?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type SinglePalletHistoryResult = {
+  __typename?: 'SinglePalletHistoryResult';
+  pageInfo: PageInfo;
+  palletInfo: PalletBasicInfo;
+  palletNumber: Scalars['String']['output'];
+  records: Array<StockHistoryRecord>;
+  totalRecords: Scalars['Int']['output'];
+};
+
 export type SingleStatQueryInput = {
   dateRange?: InputMaybe<DateRangeInput>;
   departmentId?: InputMaybe<Scalars['ID']['input']>;
@@ -2803,13 +3352,6 @@ export enum SortDirection {
 export type SortInput = {
   direction: SortDirection;
   field: Scalars['String']['input'];
-};
-
-export type SortMetadata = {
-  __typename?: 'SortMetadata';
-  defaultDirection: SortDirection;
-  displayName: Scalars['String']['output'];
-  field: Scalars['String']['output'];
 };
 
 export type StatMetric = {
@@ -2884,6 +3426,46 @@ export enum StatsType {
   YesterdayTransferCount = 'YESTERDAY_TRANSFER_COUNT',
 }
 
+export type StatusCount = {
+  __typename?: 'StatusCount';
+  count: Scalars['Int']['output'];
+  percentage: Scalars['Float']['output'];
+  status: AlertStatus;
+};
+
+export enum StockAction {
+  Adjusted = 'ADJUSTED',
+  Allocated = 'ALLOCATED',
+  Created = 'CREATED',
+  Damaged = 'DAMAGED',
+  Expired = 'EXPIRED',
+  FinishedQc = 'FINISHED_QC',
+  GrnLabelError = 'GRN_LABEL_ERROR',
+  GrnReceiving = 'GRN_RECEIVING',
+  Loaded = 'LOADED',
+  Moved = 'MOVED',
+  QualityCheck = 'QUALITY_CHECK',
+  Repaired = 'REPAIRED',
+  Transferred = 'TRANSFERRED',
+  Unknown = 'UNKNOWN',
+  Unloaded = 'UNLOADED',
+  Voided = 'VOIDED',
+}
+
+export enum StockActionCategory {
+  Administrative = 'ADMINISTRATIVE',
+  Inbound = 'INBOUND',
+  Internal = 'INTERNAL',
+  Outbound = 'OUTBOUND',
+}
+
+export enum StockActionType {
+  Movement = 'MOVEMENT',
+  QuantityChange = 'QUANTITY_CHANGE',
+  StatusChange = 'STATUS_CHANGE',
+  SystemAction = 'SYSTEM_ACTION',
+}
+
 export type StockDistributionInput = {
   includeInactive?: InputMaybe<Scalars['Boolean']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
@@ -2912,6 +3494,150 @@ export type StockDistributionResult = {
   totalStock: Scalars['Int']['output'];
 };
 
+export type StockFilterInput = {
+  descriptionPattern?: InputMaybe<Scalars['String']['input']>;
+  maxLevel?: InputMaybe<Scalars['Int']['input']>;
+  minLevel?: InputMaybe<Scalars['Int']['input']>;
+  productTypes?: InputMaybe<Array<Scalars['String']['input']>>;
+  stockCodePattern?: InputMaybe<Scalars['String']['input']>;
+  updatedAfter?: InputMaybe<Scalars['String']['input']>;
+  updatedBefore?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type StockHistoryFilter = {
+  actionCategories?: InputMaybe<Array<StockActionCategory>>;
+  actionTypes?: InputMaybe<Array<StockActionType>>;
+  actions?: InputMaybe<Array<StockAction>>;
+  dateRange?: InputMaybe<DateRangeInput>;
+  hasRemark?: InputMaybe<Scalars['Boolean']['input']>;
+  includeVoided?: InputMaybe<Scalars['Boolean']['input']>;
+  locations?: InputMaybe<Array<Scalars['String']['input']>>;
+  maxQuantity?: InputMaybe<Scalars['Int']['input']>;
+  minQuantity?: InputMaybe<Scalars['Int']['input']>;
+  operators?: InputMaybe<Array<Scalars['String']['input']>>;
+  palletNumbers?: InputMaybe<Array<Scalars['String']['input']>>;
+  productCodes?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type StockHistoryPagination = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  useCursor?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+export type StockHistoryRecord = {
+  __typename?: 'StockHistoryRecord';
+  action: StockAction;
+  actionCategory: StockActionCategory;
+  actionType: StockActionType;
+  fromLocation?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  location?: Maybe<Scalars['String']['output']>;
+  metadata?: Maybe<Scalars['JSON']['output']>;
+  operator: User;
+  operatorName: Scalars['String']['output'];
+  pallet?: Maybe<Pallet>;
+  palletNumber: Scalars['String']['output'];
+  product?: Maybe<Product>;
+  productCode: Scalars['String']['output'];
+  quantity?: Maybe<Scalars['Int']['output']>;
+  remark?: Maybe<Scalars['String']['output']>;
+  timestamp: Scalars['DateTime']['output'];
+  toLocation?: Maybe<Scalars['String']['output']>;
+  transfer?: Maybe<Transfer>;
+};
+
+export type StockHistorySearchResult = {
+  __typename?: 'StockHistorySearchResult';
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['String']['output'];
+  matchScore: Scalars['Float']['output'];
+  palletNumber?: Maybe<Scalars['String']['output']>;
+  productCode?: Maybe<Scalars['String']['output']>;
+  recordId?: Maybe<Scalars['String']['output']>;
+  subtitle?: Maybe<Scalars['String']['output']>;
+  title: Scalars['String']['output'];
+  type: StockHistorySearchType;
+};
+
+export enum StockHistorySearchType {
+  Location = 'LOCATION',
+  Operator = 'OPERATOR',
+  PalletNumber = 'PALLET_NUMBER',
+  ProductCode = 'PRODUCT_CODE',
+  Remark = 'REMARK',
+}
+
+export type StockHistorySort = {
+  direction: SortDirection;
+  field: StockHistorySortField;
+  secondary?: InputMaybe<StockHistorySort>;
+};
+
+export enum StockHistorySortField {
+  Action = 'ACTION',
+  Location = 'LOCATION',
+  Operator = 'OPERATOR',
+  PalletNumber = 'PALLET_NUMBER',
+  ProductCode = 'PRODUCT_CODE',
+  Quantity = 'QUANTITY',
+  Timestamp = 'TIMESTAMP',
+}
+
+export type StockHistoryStats = {
+  __typename?: 'StockHistoryStats';
+  activeLocations: Scalars['Int']['output'];
+  recentActivity: Scalars['Int']['output'];
+  totalRecords: Scalars['Int']['output'];
+  trendsData: Array<StockTrendPoint>;
+  uniquePallets: Scalars['Int']['output'];
+  uniqueProducts: Scalars['Int']['output'];
+};
+
+export type StockItem = {
+  __typename?: 'StockItem';
+  description?: Maybe<Scalars['String']['output']>;
+  lastStockUpdate?: Maybe<Scalars['String']['output']>;
+  realTimeLevel?: Maybe<Scalars['Int']['output']>;
+  stock: Scalars['String']['output'];
+  stockLevel: Scalars['Int']['output'];
+  type?: Maybe<Scalars['String']['output']>;
+  updateTime: Scalars['String']['output'];
+};
+
+export type StockItemConnection = Connection & {
+  __typename?: 'StockItemConnection';
+  edges: Array<StockItemEdge>;
+  nodes: Array<StockItem>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type StockItemEdge = {
+  __typename?: 'StockItemEdge';
+  cursor: Scalars['String']['output'];
+  node: StockItem;
+};
+
+export type StockLevelChartPoint = {
+  __typename?: 'StockLevelChartPoint';
+  date: Scalars['DateTime']['output'];
+  description: Scalars['String']['output'];
+  stockCode: Scalars['String']['output'];
+  stockLevel: Scalars['Int']['output'];
+};
+
+export type StockLevelChartResult = {
+  __typename?: 'StockLevelChartResult';
+  chartData: Array<StockLevelChartPoint>;
+  dateRange: DateRange;
+  productCodes: Array<Scalars['String']['output']>;
+};
+
 export type StockLevelData = WidgetData & {
   __typename?: 'StockLevelData';
   dataSource: Scalars['String']['output'];
@@ -2920,6 +3646,14 @@ export type StockLevelData = WidgetData & {
   refreshInterval?: Maybe<Scalars['Int']['output']>;
   totalItems: Scalars['Int']['output'];
   totalQuantity: Scalars['Int']['output'];
+};
+
+export type StockLevelFilter = {
+  dateRange?: InputMaybe<DateRangeInput>;
+  maxStockLevel?: InputMaybe<Scalars['Int']['input']>;
+  minStockLevel?: InputMaybe<Scalars['Int']['input']>;
+  productCodes?: InputMaybe<Array<Scalars['String']['input']>>;
+  productType?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type StockLevelItem = {
@@ -2931,39 +3665,98 @@ export type StockLevelItem = {
   quantity: Scalars['Int']['output'];
 };
 
-export type StringFilter = {
-  caseSensitive?: InputMaybe<Scalars['Boolean']['input']>;
-  field: Scalars['String']['input'];
-  operator: StringOperator;
-  value: Scalars['String']['input'];
+export type StockLevelListResult = {
+  __typename?: 'StockLevelListResult';
+  lastUpdated: Scalars['DateTime']['output'];
+  records: Array<StockLevelRecord>;
+  totalCount: Scalars['Int']['output'];
 };
 
-export enum StringOperator {
-  Contains = 'CONTAINS',
-  EndsWith = 'ENDS_WITH',
-  Equals = 'EQUALS',
-  NotContains = 'NOT_CONTAINS',
-  NotEquals = 'NOT_EQUALS',
-  StartsWith = 'STARTS_WITH',
+export type StockLevelRecord = {
+  __typename?: 'StockLevelRecord';
+  description: Scalars['String']['output'];
+  productInfo?: Maybe<ProductInfo>;
+  stock: Scalars['String']['output'];
+  stockLevel: Scalars['Int']['output'];
+  updateTime: Scalars['DateTime']['output'];
+  uuid: Scalars['ID']['output'];
+};
+
+export type StockLevelStats = {
+  __typename?: 'StockLevelStats';
+  lastUpdate: Scalars['DateTime']['output'];
+  productsByType: Array<ProductTypeCount>;
+  totalProducts: Scalars['Int']['output'];
+  totalStock: Scalars['Int']['output'];
+};
+
+export type StockMovementUpdate = {
+  __typename?: 'StockMovementUpdate';
+  affectedLocations: Array<Scalars['String']['output']>;
+  affectedPallets: Array<Scalars['String']['output']>;
+  affectedProducts: Array<Scalars['String']['output']>;
+  record: StockHistoryRecord;
+  recordId: Scalars['ID']['output'];
+  timestamp: Scalars['DateTime']['output'];
+  type: StockUpdateType;
+};
+
+export enum StockSortField {
+  Description = 'DESCRIPTION',
+  StockCode = 'STOCK_CODE',
+  StockLevel = 'STOCK_LEVEL',
+  UpdateTime = 'UPDATE_TIME',
+}
+
+export type StockSortInput = {
+  direction: SortDirection;
+  field: StockSortField;
+};
+
+export type StockTrendPoint = {
+  __typename?: 'StockTrendPoint';
+  label?: Maybe<Scalars['String']['output']>;
+  timestamp: Scalars['DateTime']['output'];
+  value: Scalars['Int']['output'];
+};
+
+export enum StockUpdateType {
+  LocationChange = 'LOCATION_CHANGE',
+  NewRecord = 'NEW_RECORD',
+  QuantityChange = 'QUANTITY_CHANGE',
+  StatusChange = 'STATUS_CHANGE',
+  VoidOperation = 'VOID_OPERATION',
 }
 
 export type Subscription = {
   __typename?: 'Subscription';
+  alertStatisticsUpdated: AlertStatistics;
+  alertStatusChanged: Alert;
   analysisCompleted: OrderAnalysisResult;
   chartUpdated: ChartCardData;
+  configBatchChanged: Array<ConfigItem>;
+  configChanged: ConfigItem;
+  configValidationChanged: ConfigValidation;
   fileUploaded: FileInfo;
+  highFrequencyAlert: MergedRecordHistory;
   inventoryUpdated: Inventory;
+  newAlert: Alert;
   newReportAvailable: GeneratedReport;
+  operatorActivityAlert: OperatorEfficiency;
   orderStatusChanged: Order;
+  recordHistoryUpdated: RecordHistoryUpdate;
   reportGenerated: GeneratedReport;
   reportGenerationError: Scalars['String']['output'];
   reportProgressUpdated: ReportGenerationProgress;
   statsUpdated: StatsData;
   systemAlert: SystemAlert;
-  tableDataUpdated: TableCardData;
   transferStatusChanged: Transfer;
   uploadError: Scalars['String']['output'];
   uploadProgressUpdated: UploadProgress;
+};
+
+export type SubscriptionAlertStatusChangedArgs = {
+  alertId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type SubscriptionAnalysisCompletedArgs = {
@@ -2974,20 +3767,52 @@ export type SubscriptionChartUpdatedArgs = {
   chartTypes: Array<ChartType>;
 };
 
+export type SubscriptionConfigBatchChangedArgs = {
+  category?: InputMaybe<ConfigCategory>;
+  scope?: InputMaybe<ConfigScope>;
+};
+
+export type SubscriptionConfigChangedArgs = {
+  category?: InputMaybe<ConfigCategory>;
+  keys?: InputMaybe<Array<Scalars['String']['input']>>;
+  scope?: InputMaybe<ConfigScope>;
+};
+
 export type SubscriptionFileUploadedArgs = {
   folder?: InputMaybe<UploadFolder>;
+};
+
+export type SubscriptionHighFrequencyAlertArgs = {
+  minOperationsPerWindow?: InputMaybe<Scalars['Int']['input']>;
+  timeWindowMinutes?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type SubscriptionInventoryUpdatedArgs = {
   productCodes?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
+export type SubscriptionNewAlertArgs = {
+  severities?: InputMaybe<Array<AlertSeverity>>;
+  types?: InputMaybe<Array<AlertType>>;
+};
+
 export type SubscriptionNewReportAvailableArgs = {
   reportTypes: Array<ReportType>;
 };
 
+export type SubscriptionOperatorActivityAlertArgs = {
+  operatorIds?: InputMaybe<Array<Scalars['Int']['input']>>;
+  thresholdOperationsPerMinute?: InputMaybe<Scalars['Float']['input']>;
+};
+
 export type SubscriptionOrderStatusChangedArgs = {
   orderNumbers?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type SubscriptionRecordHistoryUpdatedArgs = {
+  actions?: InputMaybe<Array<Scalars['String']['input']>>;
+  locations?: InputMaybe<Array<Scalars['String']['input']>>;
+  operatorIds?: InputMaybe<Array<Scalars['Int']['input']>>;
 };
 
 export type SubscriptionReportGeneratedArgs = {
@@ -3008,10 +3833,6 @@ export type SubscriptionStatsUpdatedArgs = {
 
 export type SubscriptionSystemAlertArgs = {
   severity?: InputMaybe<AlertSeverity>;
-};
-
-export type SubscriptionTableDataUpdatedArgs = {
-  dataSource: Scalars['String']['input'];
 };
 
 export type SubscriptionTransferStatusChangedArgs = {
@@ -3040,12 +3861,41 @@ export type Supplier = {
   phone?: Maybe<Scalars['String']['output']>;
   products?: Maybe<Array<Product>>;
   statistics?: Maybe<SupplierStatistics>;
+  supplier_code: Scalars['String']['output'];
+  supplier_name?: Maybe<Scalars['String']['output']>;
   updatedAt: Scalars['DateTime']['output'];
 };
 
 export type SupplierGrnsArgs = {
   filter?: InputMaybe<GrnFilterInput>;
   pagination?: InputMaybe<PaginationInput>;
+};
+
+export type SupplierConnection = {
+  __typename?: 'SupplierConnection';
+  edges: Array<SupplierEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type SupplierEdge = {
+  __typename?: 'SupplierEdge';
+  cursor: Scalars['String']['output'];
+  node: Supplier;
+};
+
+export type SupplierFilterInput = {
+  code?: InputMaybe<Scalars['String']['input']>;
+  contact?: InputMaybe<Scalars['String']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type SupplierPerformance = {
+  __typename?: 'SupplierPerformance';
+  deliveryPerformance: DeliveryPerformance;
+  orderMetrics: OrderMetrics;
+  qualityMetrics: QualityMetrics;
 };
 
 export type SupplierStatistics = {
@@ -3079,6 +3929,19 @@ export type SystemAlert = {
   type: AlertType;
 };
 
+export enum SystemConfigKey {
+  Currency = 'CURRENCY',
+  DateFormat = 'DATE_FORMAT',
+  DefaultPageSize = 'DEFAULT_PAGE_SIZE',
+  Language = 'LANGUAGE',
+  NumberFormat = 'NUMBER_FORMAT',
+  PasswordPolicy = 'PASSWORD_POLICY',
+  SessionTimeout = 'SESSION_TIMEOUT',
+  Theme = 'THEME',
+  Timezone = 'TIMEZONE',
+  TwoFactorAuth = 'TWO_FACTOR_AUTH',
+}
+
 export type SystemPerformance = WidgetData & {
   __typename?: 'SystemPerformance';
   averageResponseTime: Scalars['Float']['output'];
@@ -3107,104 +3970,6 @@ export type SystemStatus = {
   version: Scalars['String']['output'];
 };
 
-export type TableCardData = WidgetData & {
-  __typename?: 'TableCardData';
-  columns: Array<TableColumn>;
-  currentPage?: Maybe<Scalars['Int']['output']>;
-  data: Array<Scalars['TableRow']['output']>;
-  dataSource: Scalars['String']['output'];
-  filters?: Maybe<AppliedTableFilters>;
-  hasNextPage: Scalars['Boolean']['output'];
-  hasPreviousPage: Scalars['Boolean']['output'];
-  lastUpdated: Scalars['DateTime']['output'];
-  metadata: TableMetadata;
-  refreshInterval?: Maybe<Scalars['Int']['output']>;
-  sorting?: Maybe<AppliedTableSorting>;
-  totalCount: Scalars['Int']['output'];
-  totalPages?: Maybe<Scalars['Int']['output']>;
-};
-
-export type TableColumn = {
-  __typename?: 'TableColumn';
-  align?: Maybe<ColumnAlign>;
-  dataType: TableDataType;
-  filterable: Scalars['Boolean']['output'];
-  formatter?: Maybe<ColumnFormatter>;
-  header: Scalars['String']['output'];
-  hidden?: Maybe<Scalars['Boolean']['output']>;
-  key: Scalars['String']['output'];
-  required?: Maybe<Scalars['Boolean']['output']>;
-  sortable: Scalars['Boolean']['output'];
-  width?: Maybe<Scalars['String']['output']>;
-};
-
-export type TableDataInput = {
-  columns?: InputMaybe<Array<Scalars['String']['input']>>;
-  dataSource: Scalars['String']['input'];
-  dateRange?: InputMaybe<DateRangeInput>;
-  filters?: InputMaybe<TableFilters>;
-  includeMetadata?: InputMaybe<Scalars['Boolean']['input']>;
-  pagination: TablePagination;
-  searchTerm?: InputMaybe<Scalars['String']['input']>;
-  sorting?: InputMaybe<TableSorting>;
-};
-
-export enum TableDataType {
-  Array = 'ARRAY',
-  Boolean = 'BOOLEAN',
-  Date = 'DATE',
-  Datetime = 'DATETIME',
-  Json = 'JSON',
-  Number = 'NUMBER',
-  Object = 'OBJECT',
-  String = 'STRING',
-}
-
-export type TableFilters = {
-  arrayFilters?: InputMaybe<Array<ArrayFilter>>;
-  booleanFilters?: InputMaybe<Array<BooleanFilter>>;
-  dateFilters?: InputMaybe<Array<DateFilter>>;
-  numberFilters?: InputMaybe<Array<NumberFilter>>;
-  stringFilters?: InputMaybe<Array<StringFilter>>;
-};
-
-export type TableMetadata = {
-  __typename?: 'TableMetadata';
-  cacheHit: Scalars['Boolean']['output'];
-  dataSource: Scalars['String']['output'];
-  filteredRecords: Scalars['Int']['output'];
-  generatedAt: Scalars['DateTime']['output'];
-  lastUpdated: Scalars['DateTime']['output'];
-  permissions: TablePermissions;
-  queryTime: Scalars['Float']['output'];
-  totalRecords: Scalars['Int']['output'];
-};
-
-export type TablePagination = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  limit?: Scalars['Int']['input'];
-  loadMore?: InputMaybe<Scalars['Boolean']['input']>;
-  offset?: Scalars['Int']['input'];
-  style?: InputMaybe<PaginationStyle>;
-};
-
-export type TablePermissions = {
-  __typename?: 'TablePermissions';
-  canCreate: Scalars['Boolean']['output'];
-  canDelete: Scalars['Boolean']['output'];
-  canEdit: Scalars['Boolean']['output'];
-  canExport: Scalars['Boolean']['output'];
-  canFilter: Scalars['Boolean']['output'];
-  canSort: Scalars['Boolean']['output'];
-  canView: Scalars['Boolean']['output'];
-};
-
-export type TableSorting = {
-  secondarySort?: InputMaybe<TableSorting>;
-  sortBy: Scalars['String']['input'];
-  sortOrder: SortDirection;
-};
-
 export enum TimeGranularity {
   Day = 'DAY',
   Hour = 'HOUR',
@@ -3215,6 +3980,13 @@ export enum TimeGranularity {
   Year = 'YEAR',
 }
 
+export type TimeSpan = {
+  __typename?: 'TimeSpan';
+  durationHours: Scalars['Float']['output'];
+  end: Scalars['DateTime']['output'];
+  start: Scalars['DateTime']['output'];
+};
+
 export enum TimeWindow {
   Last_5Minutes = 'LAST_5_MINUTES',
   Last_7Days = 'LAST_7_DAYS',
@@ -3223,6 +3995,12 @@ export enum TimeWindow {
   Last_30Days = 'LAST_30_DAYS',
   LastHour = 'LAST_HOUR',
 }
+
+export type TimelineGroup = {
+  __typename?: 'TimelineGroup';
+  count: Scalars['Int']['output'];
+  date: Scalars['DateTime']['output'];
+};
 
 export type TopProduct = {
   __typename?: 'TopProduct';
@@ -3316,22 +4094,15 @@ export type TransferFilterInput = {
   transferNumber?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type TransferListFilters = {
-  fromLocations?: InputMaybe<Array<Scalars['String']['input']>>;
-  palletNumbers?: InputMaybe<Array<Scalars['String']['input']>>;
-  priorities?: InputMaybe<Array<TransferPriority>>;
-  statuses?: InputMaybe<Array<TransferStatus>>;
-  toLocations?: InputMaybe<Array<Scalars['String']['input']>>;
-  transferNumbers?: InputMaybe<Array<Scalars['String']['input']>>;
-};
-
-export type TransferPerformanceMetrics = {
-  __typename?: 'TransferPerformanceMetrics';
-  averageTransferTime: Scalars['Int']['output'];
-  delayedCount: Scalars['Int']['output'];
-  efficiencyScore: Scalars['Float']['output'];
-  onTimePercentage: Scalars['Float']['output'];
-  resourceUtilization: Scalars['Float']['output'];
+export type TransferFlowSummary = {
+  __typename?: 'TransferFlowSummary';
+  averageTransferTime: Scalars['Float']['output'];
+  timeSpan: DateRange;
+  topFromLocation: Scalars['String']['output'];
+  topToLocation: Scalars['String']['output'];
+  totalTransfers: Scalars['Int']['output'];
+  uniqueOperators: Scalars['Int']['output'];
+  uniquePallets: Scalars['Int']['output'];
 };
 
 export enum TransferPriority {
@@ -3348,12 +4119,26 @@ export enum TransferStatus {
   Pending = 'PENDING',
 }
 
-export type TransferStatusDistribution = {
-  __typename?: 'TransferStatusDistribution';
-  averageDuration?: Maybe<Scalars['Int']['output']>;
-  count: Scalars['Int']['output'];
-  percentage: Scalars['Float']['output'];
-  status: TransferStatus;
+export type TransferTimeFlowFilter = {
+  dateRange: DateRangeInput;
+  fromLocations?: InputMaybe<Array<Scalars['String']['input']>>;
+  includeBottlenecks?: InputMaybe<Scalars['Boolean']['input']>;
+  maxDuration?: InputMaybe<Scalars['Int']['input']>;
+  minDuration?: InputMaybe<Scalars['Int']['input']>;
+  operators?: InputMaybe<Array<Scalars['String']['input']>>;
+  palletNumbers?: InputMaybe<Array<Scalars['String']['input']>>;
+  toLocations?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type TransferTimeFlowResult = {
+  __typename?: 'TransferTimeFlowResult';
+  bottlenecks: Array<LocationBottleneck>;
+  flowMetrics: FlowMetrics;
+  operatorPerformance: Array<OperatorPerformance>;
+  pageInfo: PageInfo;
+  summary: TransferFlowSummary;
+  totalCount: Scalars['Int']['output'];
+  transfers: Array<EnhancedTransferRecord>;
 };
 
 export type TrendData = {
@@ -3377,6 +4162,13 @@ export type TrendPoint = {
   value: Scalars['Float']['output'];
 };
 
+export type TypeCount = {
+  __typename?: 'TypeCount';
+  count: Scalars['Int']['output'];
+  percentage: Scalars['Float']['output'];
+  type: AlertType;
+};
+
 export type UnifiedOperationsData = WidgetData & {
   __typename?: 'UnifiedOperationsData';
   dataSource: Scalars['String']['output'];
@@ -3389,8 +4181,33 @@ export type UnifiedOperationsData = WidgetData & {
   workLevels: Array<WorkLevel>;
 };
 
+export type UpdateAcoOrderInput = {
+  orderCompleted?: InputMaybe<Scalars['Boolean']['input']>;
+  orderRef: Scalars['Int']['input'];
+  productCode: Scalars['String']['input'];
+  quantityUsed: Scalars['Int']['input'];
+  skipUpdate?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+export type UpdateAcoOrderResponse = {
+  __typename?: 'UpdateAcoOrderResponse';
+  emailSent?: Maybe<Scalars['Boolean']['output']>;
+  error?: Maybe<Error>;
+  message?: Maybe<Scalars['String']['output']>;
+  order?: Maybe<AcoOrder>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type UpdateAlertRuleInput = {
+  actions?: InputMaybe<Array<AlertActionInput>>;
+  conditions?: InputMaybe<Scalars['JSON']['input']>;
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  severity?: InputMaybe<AlertSeverity>;
+  throttle?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export type UpdateProductInput = {
-  chinesedescription?: InputMaybe<Scalars['String']['input']>;
   colour?: InputMaybe<Scalars['String']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
   standardQty?: InputMaybe<Scalars['Int']['input']>;
@@ -3430,6 +4247,19 @@ export type UpdateStatusMetric = {
   count: Scalars['Int']['output'];
   percentage: Scalars['Float']['output'];
   status: Scalars['String']['output'];
+};
+
+export type UpdateSupplierInput = {
+  address?: InputMaybe<Scalars['String']['input']>;
+  contact?: InputMaybe<Scalars['String']['input']>;
+  email?: InputMaybe<Scalars['String']['input']>;
+  fax?: InputMaybe<Scalars['String']['input']>;
+  leadTime?: InputMaybe<Scalars['Int']['input']>;
+  minimumOrderQuantity?: InputMaybe<Scalars['Int']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  paymentTerms?: InputMaybe<Scalars['String']['input']>;
+  phone?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateTypeMetric = {
@@ -3609,21 +4439,66 @@ export type Warehouse = {
   totalCapacity: Scalars['Int']['output'];
 };
 
-export type WarehouseTransferList = ListData & {
-  __typename?: 'WarehouseTransferList';
-  dataSource: Scalars['String']['output'];
-  description?: Maybe<Scalars['String']['output']>;
-  filteredCount: Scalars['Int']['output'];
+export type WarehouseOrder = {
+  __typename?: 'WarehouseOrder';
+  completedAt?: Maybe<Scalars['DateTime']['output']>;
+  createdAt: Scalars['DateTime']['output'];
+  customerName?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
-  lastUpdated: Scalars['DateTime']['output'];
-  listType: ListType;
-  locationAnalysis: Array<LocationTransferAnalysis>;
-  performanceMetrics: TransferPerformanceMetrics;
-  refreshInterval?: Maybe<Scalars['Int']['output']>;
-  statusDistribution: Array<TransferStatusDistribution>;
-  title: Scalars['String']['output'];
-  totalCount: Scalars['Int']['output'];
-  transfers: TransferConnection;
+  items: Array<WarehouseOrderItem>;
+  loadedQuantity: Scalars['Int']['output'];
+  orderRef: Scalars['String']['output'];
+  remainingQuantity: Scalars['Int']['output'];
+  status: WarehouseOrderStatus;
+  totalQuantity: Scalars['Int']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+export type WarehouseOrderAggregates = {
+  __typename?: 'WarehouseOrderAggregates';
+  completedOrders: Scalars['Int']['output'];
+  loadedQuantity: Scalars['Int']['output'];
+  pendingOrders: Scalars['Int']['output'];
+  totalOrders: Scalars['Int']['output'];
+  totalQuantity: Scalars['Int']['output'];
+};
+
+export type WarehouseOrderFilterInput = {
+  customerName?: InputMaybe<Scalars['String']['input']>;
+  dateRange?: InputMaybe<DateRangeInput>;
+  orderRef?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<WarehouseOrderStatus>;
+};
+
+export type WarehouseOrderItem = {
+  __typename?: 'WarehouseOrderItem';
+  id: Scalars['ID']['output'];
+  loadedQuantity: Scalars['Int']['output'];
+  orderId: Scalars['ID']['output'];
+  productCode: Scalars['String']['output'];
+  productDesc?: Maybe<Scalars['String']['output']>;
+  quantity: Scalars['Int']['output'];
+  status: WarehouseOrderItemStatus;
+};
+
+export enum WarehouseOrderItemStatus {
+  Completed = 'COMPLETED',
+  Partial = 'PARTIAL',
+  Pending = 'PENDING',
+}
+
+export enum WarehouseOrderStatus {
+  Cancelled = 'CANCELLED',
+  Completed = 'COMPLETED',
+  InProgress = 'IN_PROGRESS',
+  Pending = 'PENDING',
+}
+
+export type WarehouseOrdersResponse = {
+  __typename?: 'WarehouseOrdersResponse';
+  aggregates?: Maybe<WarehouseOrderAggregates>;
+  items: Array<WarehouseOrder>;
+  total: Scalars['Int']['output'];
 };
 
 export type WidgetData = {
@@ -3665,139 +4540,241 @@ export type WorkLevel = {
   userId: Scalars['ID']['output'];
 };
 
-export type AnalysisCardQueryQueryVariables = Exact<{
-  input: AnalysisCardInput;
-}>;
+export enum WorkflowConfigKey {
+  AutoApproveOrders = 'AUTO_APPROVE_ORDERS',
+  OrderPriorityRules = 'ORDER_PRIORITY_RULES',
+  ReorderPoints = 'REORDER_POINTS',
+  RequireQcApproval = 'REQUIRE_QC_APPROVAL',
+  StockAlertThresholds = 'STOCK_ALERT_THRESHOLDS',
+  TransferApprovalLevels = 'TRANSFER_APPROVAL_LEVELS',
+}
 
-export type AnalysisCardQueryQuery = {
+export type GetDepartmentInjectionDataQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetDepartmentInjectionDataQuery = {
   __typename?: 'Query';
-  analysisCardData: {
-    __typename?: 'AnalysisCardData';
-    analysisType: AnalysisType;
-    executionTime: number;
-    cached: boolean;
-    lastUpdated: any;
-    refreshInterval?: number | null;
-    summary: {
-      __typename?: 'AnalysisSummary';
-      title: string;
-      description: string;
-      overallScore?: number | null;
-      status: string;
-      alertLevel: string;
-      keyMetrics: Array<{
-        __typename?: 'KeyMetric';
-        name: string;
-        value: string;
-        change?: number | null;
-        changeDirection: string;
-        unit?: string | null;
-        trend?: Array<{
-          __typename?: 'TrendPoint';
-          timestamp: any;
-          value: number;
-          label?: string | null;
-        }> | null;
+  departmentInjectionData: {
+    __typename?: 'DepartmentInjectionData';
+    loading: boolean;
+    error?: string | null;
+    stats: {
+      __typename?: 'DepartmentStats';
+      todayFinished?: number | null;
+      past7Days: number;
+      past14Days: number;
+      lastUpdated: string;
+    };
+    topStocks: {
+      __typename?: 'StockItemConnection';
+      totalCount: number;
+      nodes: Array<{
+        __typename?: 'StockItem';
+        stock: string;
+        description?: string | null;
+        stockLevel: number;
+        updateTime: string;
       }>;
     };
-    detailData: {
-      __typename?: 'AnalysisDetailData';
-      sections: Array<{
-        __typename?: 'AnalysisSection';
-        id: string;
-        title: string;
-        content: string;
-        data: any;
-        visualizationType?: string | null;
-        importance: string;
-      }>;
-      dataPoints: Array<{
-        __typename?: 'DataPoint';
-        id: string;
-        label: string;
-        value: number;
-        timestamp: any;
-        category?: string | null;
-        metadata?: any | null;
-      }>;
-      comparisons: Array<{
-        __typename?: 'Comparison';
-        id: string;
-        title: string;
-        baseline: number;
-        current: number;
-        change: number;
-        changePercent: number;
-        timeframe: string;
-      }>;
-      correlations: Array<{
-        __typename?: 'Correlation';
-        id: string;
-        variables: Array<string>;
-        coefficient: number;
-        strength: string;
-        significance: number;
-        interpretation: string;
+    materialStocks: {
+      __typename?: 'StockItemConnection';
+      totalCount: number;
+      nodes: Array<{
+        __typename?: 'StockItem';
+        stock: string;
+        description?: string | null;
+        stockLevel: number;
+        updateTime: string;
       }>;
     };
-    aiInsights: Array<{
-      __typename?: 'AIInsight';
-      id: string;
-      type: InsightType;
-      confidence: number;
-      title: string;
-      content: string;
-      recommendations: Array<string>;
-      severity: InsightSeverity;
-      relatedData?: any | null;
-      generatedAt: any;
-      modelUsed?: string | null;
-      processingTime?: number | null;
+    machineStates: Array<{
+      __typename?: 'MachineState';
+      machineNumber: string;
+      lastActiveTime?: string | null;
+      state: MachineStatus;
     }>;
-    visualizations: Array<{
-      __typename?: 'AnalysisVisualization';
-      id: string;
-      type: string;
-      title: string;
-      data: any;
-      config: any;
-      interactive: boolean;
-      exportable: boolean;
-    }>;
-    metadata: {
-      __typename?: 'AnalysisMetadata';
-      analysisId: string;
-      userId: string;
-      generatedAt: any;
-      dataSource: string;
-      dataPeriod: string;
-      recordsAnalyzed: number;
-      aiModelVersion?: string | null;
-      processingSteps: Array<{
-        __typename?: 'ProcessingStep';
-        step: string;
-        duration: number;
-        status: string;
-        details?: string | null;
-      }>;
-    };
   };
 };
 
-export type GenerateAnalysisMutationVariables = Exact<{
-  input: AnalysisGenerationInput;
+export type GetDepartmentPipeDataQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetDepartmentPipeDataQuery = {
+  __typename?: 'Query';
+  departmentPipeData: {
+    __typename?: 'DepartmentPipeData';
+    pipeProductionRate?: number | null;
+    materialConsumptionRate?: number | null;
+    loading: boolean;
+    error?: string | null;
+    stats: {
+      __typename?: 'DepartmentStats';
+      todayFinished?: number | null;
+      past7Days: number;
+      past14Days: number;
+      lastUpdated: string;
+    };
+    topStocks: {
+      __typename?: 'StockItemConnection';
+      totalCount: number;
+      nodes: Array<{
+        __typename?: 'StockItem';
+        stock: string;
+        description?: string | null;
+        stockLevel: number;
+        updateTime: string;
+        type?: string | null;
+        realTimeLevel?: number | null;
+        lastStockUpdate?: string | null;
+      }>;
+      pageInfo: { __typename?: 'PageInfo'; hasNextPage: boolean; hasPreviousPage: boolean };
+    };
+    materialStocks: {
+      __typename?: 'StockItemConnection';
+      totalCount: number;
+      nodes: Array<{
+        __typename?: 'StockItem';
+        stock: string;
+        description?: string | null;
+        stockLevel: number;
+        updateTime: string;
+        type?: string | null;
+        realTimeLevel?: number | null;
+        lastStockUpdate?: string | null;
+      }>;
+      pageInfo: { __typename?: 'PageInfo'; hasNextPage: boolean; hasPreviousPage: boolean };
+    };
+    machineStates: Array<{
+      __typename?: 'MachineState';
+      machineNumber: string;
+      lastActiveTime?: string | null;
+      state: MachineStatus;
+      efficiency?: number | null;
+      currentTask?: string | null;
+      nextMaintenance?: string | null;
+    }>;
+  };
+};
+
+export type GetDepartmentWarehouseDataQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetDepartmentWarehouseDataQuery = {
+  __typename?: 'Query';
+  departmentWarehouseData: {
+    __typename?: 'DepartmentWarehouseData';
+    loading: boolean;
+    error?: string | null;
+    stats: {
+      __typename?: 'DepartmentStats';
+      todayTransferred?: number | null;
+      past7Days: number;
+      past14Days: number;
+      lastUpdated: string;
+    };
+    recentActivities: Array<{
+      __typename?: 'RecentActivity';
+      time: string;
+      staff: string;
+      action: string;
+      detail: string;
+    }>;
+    orderCompletions: Array<{
+      __typename?: 'OrderCompletion';
+      orderRef: string;
+      productQty: number;
+      loadedQty: number;
+      completionPercentage: number;
+      latestUpdate?: string | null;
+      hasPdf: boolean;
+      docUrl?: string | null;
+    }>;
+  };
+};
+
+export type GetOrderDetailsQueryVariables = Exact<{
+  orderRef: Scalars['String']['input'];
 }>;
 
-export type GenerateAnalysisMutation = {
-  __typename?: 'Mutation';
-  generateAnalysis: {
-    __typename?: 'AnalysisGenerationResponse';
+export type GetOrderDetailsQuery = {
+  __typename?: 'Query';
+  warehouseOrder?: {
+    __typename?: 'WarehouseOrder';
     id: string;
-    analysisId?: string | null;
-    success: boolean;
-    message: string;
-    estimatedCompletionTime?: any | null;
-    progress?: number | null;
+    orderRef: string;
+    customerName?: string | null;
+    status: WarehouseOrderStatus;
+    totalQuantity: number;
+    loadedQuantity: number;
+    remainingQuantity: number;
+    createdAt: any;
+    updatedAt: any;
+    items: Array<{
+      __typename?: 'WarehouseOrderItem';
+      id: string;
+      productCode: string;
+      productDesc?: string | null;
+      quantity: number;
+      loadedQuantity: number;
+      status: WarehouseOrderItemStatus;
+    }>;
+  } | null;
+};
+
+export type GetProductTypesQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetProductTypesQuery = {
+  __typename?: 'Query';
+  productFormOptions: {
+    __typename?: 'ProductFormOptions';
+    types: Array<{ __typename?: 'ProductType'; value: string; label: string }>;
+  };
+};
+
+export type GetStockLevelListQueryVariables = Exact<{
+  productType: Scalars['String']['input'];
+}>;
+
+export type GetStockLevelListQuery = {
+  __typename?: 'Query';
+  stockLevelList: {
+    __typename?: 'StockLevelListResult';
+    totalCount: number;
+    lastUpdated: any;
+    records: Array<{
+      __typename?: 'StockLevelRecord';
+      uuid: string;
+      stock: string;
+      description: string;
+      stockLevel: number;
+      updateTime: any;
+      productInfo?: {
+        __typename?: 'ProductInfo';
+        code: string;
+        description: string;
+        type: string;
+        colour: string;
+        standardQty: number;
+      } | null;
+    }>;
+  };
+};
+
+export type GetStockLevelChartQueryVariables = Exact<{
+  productType: Scalars['String']['input'];
+  days?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+export type GetStockLevelChartQuery = {
+  __typename?: 'Query';
+  stockLevelChart: {
+    __typename?: 'StockLevelChartResult';
+    productCodes: Array<string>;
+    chartData: Array<{
+      __typename?: 'StockLevelChartPoint';
+      date: any;
+      stockCode: string;
+      stockLevel: number;
+      description: string;
+    }>;
+    dateRange: { __typename?: 'DateRange'; start: any; end: any };
   };
 };
 
@@ -3886,809 +4863,674 @@ export type ChartCardQueryQuery = {
   };
 };
 
-export type OperationsHistoryTreeQueryVariables = Exact<{
-  input?: InputMaybe<HistoryTreeInput>;
-}>;
-
-export type OperationsHistoryTreeQuery = {
-  __typename?: 'Query';
-  historyTree: {
-    __typename?: 'HistoryTreeResult';
-    totalCount: number;
-    hasNextPage: boolean;
-    entries: Array<{
-      __typename?: 'HistoryEntry';
-      id: string;
-      timestamp: any;
-      action: string;
-      location?: string | null;
-      remark?: string | null;
-      user?: {
-        __typename?: 'HistoryUser';
-        id: string;
-        name: string;
-        department?: string | null;
-        position?: string | null;
-      } | null;
-      pallet?: {
-        __typename?: 'HistoryPallet';
-        number: string;
-        series?: string | null;
-        quantity: number;
-        product?: {
-          __typename?: 'HistoryProduct';
-          code: string;
-          description: string;
-          type: string;
-          colour: string;
-        } | null;
-      } | null;
-    }>;
-  };
-};
-
-export type ReportCardQueryQueryVariables = Exact<{
-  input: ReportCardInput;
-}>;
-
-export type ReportCardQueryQuery = {
-  __typename?: 'Query';
-  reportCardData: {
-    __typename?: 'ReportCardData';
-    reportType: ReportType;
-    lastUpdated: any;
-    refreshInterval?: number | null;
-    dataSource: string;
-    config: {
-      __typename?: 'ReportConfig';
-      reportType: ReportType;
-      title: string;
-      description?: string | null;
-      formats: Array<ReportFormat>;
-      maxFileSize: number;
-      retentionDays: number;
-      requireAuth: boolean;
-      allowScheduling: boolean;
-      supportsFiltering: boolean;
-      supportsGrouping: boolean;
-      estimatedGenerationTime?: number | null;
-    };
-    recentReports: Array<{
-      __typename?: 'GeneratedReport';
-      id: string;
-      reportType: ReportType;
-      title: string;
-      description?: string | null;
-      format: ReportFormat;
-      status: ReportStatus;
-      fileName?: string | null;
-      fileSize?: number | null;
-      downloadUrl?: string | null;
-      expiresAt?: any | null;
-      generatedAt: any;
-      generatedBy: string;
-      generationTime?: number | null;
-      recordCount?: number | null;
-      priority: ReportPriority;
-      downloadCount: number;
-      lastDownloaded?: any | null;
-      error?: string | null;
-    }>;
-    activeGenerations: Array<{
-      __typename?: 'ReportGenerationProgress';
-      id: string;
-      reportType: ReportType;
-      title: string;
-      status: ReportStatus;
-      progress: number;
-      estimatedTimeRemaining?: number | null;
-      recordsProcessed?: number | null;
-      totalRecords?: number | null;
-      error?: string | null;
-      startedAt: any;
-      userId: string;
-    }>;
-    templates: Array<{
-      __typename?: 'ReportTemplate';
-      id: string;
-      name: string;
-      reportType: ReportType;
-      description?: string | null;
-      config: any;
-      filters?: any | null;
-      grouping?: any | null;
-      isPublic: boolean;
-      createdBy: string;
-      createdAt: any;
-      lastUsed?: any | null;
-      usageCount: number;
-    }>;
-    statistics: {
-      __typename?: 'ReportStatistics';
-      totalReports: number;
-      todayReports: number;
-      pendingReports: number;
-      completedReports: number;
-      failedReports: number;
-      averageGenerationTime: number;
-      successRate: number;
-      diskUsage: number;
-      quotaUsage: number;
-    };
-  };
-};
-
-export type GenerateReportMutationVariables = Exact<{
-  input: ReportGenerationInput;
-}>;
-
-export type GenerateReportMutation = {
-  __typename?: 'Mutation';
-  generateReport: {
-    __typename?: 'ReportGenerationResult';
-    id: string;
-    reportId: string;
-    success: boolean;
-    message?: string | null;
-    estimatedCompletionTime?: any | null;
-    progress?: number | null;
-  };
-};
-
-export type CancelReportGenerationMutationVariables = Exact<{
-  generationId: Scalars['ID']['input'];
-}>;
-
-export type CancelReportGenerationMutation = {
-  __typename?: 'Mutation';
-  cancelReportGeneration: boolean;
-};
-
-export type DeleteReportMutationVariables = Exact<{
-  reportId: Scalars['ID']['input'];
-}>;
-
-export type DeleteReportMutation = { __typename?: 'Mutation'; deleteReport: boolean };
-
-export type StatsCardQueryQueryVariables = Exact<{
-  input: StatsQueryInput;
-}>;
-
-export type StatsCardQueryQuery = {
-  __typename?: 'Query';
-  statsCardData: {
-    __typename?: 'StatsCardData';
-    lastUpdated: any;
-    refreshInterval?: number | null;
-    stats: Array<{
-      __typename?: 'StatsData';
-      type: StatsType;
-      value: number;
-      label: string;
-      unit: string;
-      lastUpdated: any;
-      dataSource: string;
-      optimized: boolean;
-      trend?: {
-        __typename?: 'TrendData';
-        direction: TrendDirection;
-        value: number;
-        percentage: number;
-        label?: string | null;
-      } | null;
-      comparison?: {
-        __typename?: 'ComparisonData';
-        previousValue: number;
-        previousLabel: string;
-        change: number;
-        changePercentage: number;
-      } | null;
-    }>;
-    configs: Array<{
-      __typename?: 'StatsConfig';
-      type: StatsType;
-      title: string;
-      description?: string | null;
-      icon?: string | null;
-      color?: string | null;
-    }>;
-    performance: {
-      __typename?: 'PerformanceMetrics';
-      totalQueries: number;
-      cachedQueries: number;
-      averageResponseTime: number;
-      dataAge: number;
-    };
-  };
-};
-
-export type TableCardQueryQueryVariables = Exact<{
-  input: TableDataInput;
-}>;
-
-export type TableCardQueryQuery = {
-  __typename?: 'Query';
-  tableCardData: {
-    __typename?: 'TableCardData';
-    data: Array<any>;
-    totalCount: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
-    currentPage?: number | null;
-    totalPages?: number | null;
-    lastUpdated: any;
-    refreshInterval?: number | null;
-    columns: Array<{
-      __typename?: 'TableColumn';
-      key: string;
-      header: string;
-      dataType: TableDataType;
-      sortable: boolean;
-      filterable: boolean;
-      width?: string | null;
-      align?: ColumnAlign | null;
-      required?: boolean | null;
-      hidden?: boolean | null;
-      formatter?: {
-        __typename?: 'ColumnFormatter';
-        type: FormatterType;
-        options?: any | null;
-      } | null;
-    }>;
-    filters?: {
-      __typename?: 'AppliedTableFilters';
-      stringFilters?: Array<{
-        __typename?: 'AppliedStringFilter';
-        field: string;
-        operator: StringOperator;
-        value: string;
-        caseSensitive: boolean;
-      }> | null;
-      numberFilters?: Array<{
-        __typename?: 'AppliedNumberFilter';
-        field: string;
-        operator: NumberOperator;
-        value?: number | null;
-        min?: number | null;
-        max?: number | null;
-      }> | null;
-      dateFilters?: Array<{
-        __typename?: 'AppliedDateFilter';
-        field: string;
-        operator: DateOperator;
-        value?: any | null;
-        startDate?: any | null;
-        endDate?: any | null;
-      }> | null;
-      booleanFilters?: Array<{
-        __typename?: 'AppliedBooleanFilter';
-        field: string;
-        value: boolean;
-      }> | null;
-      arrayFilters?: Array<{
-        __typename?: 'AppliedArrayFilter';
-        field: string;
-        operator: ArrayOperator;
-        values: Array<string>;
-      }> | null;
-    } | null;
-    sorting?: {
-      __typename?: 'AppliedTableSorting';
-      sortBy: string;
-      sortOrder: SortDirection;
-      secondarySort?: {
-        __typename?: 'AppliedTableSorting';
-        sortBy: string;
-        sortOrder: SortDirection;
-      } | null;
-    } | null;
-    metadata: {
-      __typename?: 'TableMetadata';
-      queryTime: number;
-      cacheHit: boolean;
-      dataSource: string;
-      lastUpdated: any;
-      totalRecords: number;
-      filteredRecords: number;
-      generatedAt: any;
-      permissions: {
-        __typename?: 'TablePermissions';
-        canView: boolean;
-        canEdit: boolean;
-        canDelete: boolean;
-        canCreate: boolean;
-        canExport: boolean;
-        canFilter: boolean;
-        canSort: boolean;
-      };
-    };
-  };
-};
-
-export type UploadCardQueryQueryVariables = Exact<{
-  input: UploadCardInput;
-}>;
-
-export type UploadCardQueryQuery = {
-  __typename?: 'Query';
-  uploadCardData: {
-    __typename?: 'UploadCardData';
-    uploadType: UploadType;
-    lastUpdated: any;
-    refreshInterval?: number | null;
-    dataSource: string;
-    config: {
-      __typename?: 'UploadConfig';
-      uploadType: UploadType;
-      allowedTypes: Array<SupportedFileType>;
-      maxFileSize: number;
-      maxFiles?: number | null;
-      folder: UploadFolder;
-      requiresAnalysis: boolean;
-      allowMultiple: boolean;
-      supportsDragDrop: boolean;
-      supportsPreview: boolean;
-    };
-    recentUploads: Array<{
-      __typename?: 'FileInfo';
-      id: string;
-      originalName: string;
-      fileName: string;
-      size: number;
-      extension: string;
-      uploadedAt: any;
-      url?: string | null;
-      thumbnailUrl?: string | null;
-    }>;
-    activeUploads: Array<{
-      __typename?: 'UploadProgress';
-      id: string;
-      fileName: string;
-      progress: number;
-      status: UploadStatus;
-      error?: string | null;
-      bytesUploaded?: number | null;
-      totalBytes?: number | null;
-    }>;
-    statistics: {
-      __typename?: 'UploadStatistics';
-      totalUploads: number;
-      totalSize: number;
-      successRate: number;
-      todayUploads: number;
-      popularFileTypes: Array<{
-        __typename?: 'FileTypeStats';
-        type: SupportedFileType;
-        count: number;
-        totalSize: number;
-      }>;
-    };
-  };
-};
-
-export type UploadSingleFileMutationVariables = Exact<{
-  input: SingleFileUploadInput;
-}>;
-
-export type UploadSingleFileMutation = {
-  __typename?: 'Mutation';
-  uploadSingleFile: {
-    __typename?: 'SingleUploadResult';
-    id: string;
-    fileName: string;
-    success: boolean;
-    error?: string | null;
-    fileInfo?: {
-      __typename?: 'FileInfo';
-      id: string;
-      originalName: string;
-      fileName: string;
-      size: number;
-      extension: string;
-      folder: UploadFolder;
-      uploadedAt: any;
-      url?: string | null;
-      thumbnailUrl?: string | null;
-    } | null;
-    analysisResult?: {
-      __typename?: 'OrderAnalysisResult';
-      success: boolean;
-      recordCount: number;
-      processingTime: number;
-      confidence?: number | null;
-      extractedData?: Array<{
-        __typename?: 'OrderData';
-        orderNumber: string;
-        customerName?: string | null;
-        orderDate?: any | null;
-        totalAmount?: number | null;
-      }> | null;
-    } | null;
-  };
-};
-
-export type HistoryTreeQueryVariables = Exact<{
-  input?: InputMaybe<HistoryTreeInput>;
-}>;
-
-export type HistoryTreeQuery = {
-  __typename?: 'Query';
-  historyTree: {
-    __typename?: 'HistoryTreeResult';
-    totalCount: number;
-    hasNextPage: boolean;
-    groupedData?: any | null;
-    limit: number;
-    offset: number;
-    entries: Array<{
-      __typename?: 'HistoryEntry';
-      id: string;
-      timestamp: any;
-      action: string;
-      location?: string | null;
-      remark?: string | null;
-      user?: {
-        __typename?: 'HistoryUser';
-        id: string;
-        name: string;
-        department?: string | null;
-        position?: string | null;
-        email?: string | null;
-      } | null;
-      pallet?: {
-        __typename?: 'HistoryPallet';
-        number: string;
-        series?: string | null;
-        quantity: number;
-        generatedAt?: any | null;
-        product?: {
-          __typename?: 'HistoryProduct';
-          code: string;
-          description: string;
-          type: string;
-          colour: string;
-          standardQty: number;
-        } | null;
-      } | null;
-    }>;
-    filters: {
-      __typename?: 'HistoryTreeFilters';
-      actionTypes?: Array<string> | null;
-      userIds?: Array<string> | null;
-      palletNumbers?: Array<string> | null;
-      locations?: Array<string> | null;
-      dateRange?: { __typename?: 'DateRange'; start: any; end: any } | null;
-    };
-    sort: {
-      __typename?: 'HistoryTreeSort';
-      sortBy: HistoryTreeSortField;
-      sortOrder: SortDirection;
-    };
-  };
-};
-
-export type InventoryOrderedAnalysisQueryVariables = Exact<{
-  input?: InputMaybe<InventoryOrderedAnalysisInput>;
-}>;
-
-export type InventoryOrderedAnalysisQuery = {
-  __typename?: 'Query';
-  inventoryOrderedAnalysis: {
-    __typename?: 'InventoryOrderedAnalysisResult';
-    success: boolean;
-    generated_at: any;
-    summary: {
-      __typename?: 'InventoryAnalysisSummary';
-      total_products: number;
-      total_inventory_value: number;
-      total_outstanding_orders_value: number;
-      overall_fulfillment_rate: number;
-      products_sufficient: number;
-      products_insufficient: number;
-      products_out_of_stock: number;
-      products_no_orders: number;
-    };
-    data: Array<{
-      __typename?: 'InventoryAnalysisItem';
-      product_code: string;
-      product_description: string;
-      product_type: string;
-      standard_qty: number;
-      inventory: {
-        __typename?: 'InventoryDetails';
-        total: number;
-        last_update?: any | null;
-        locations?: {
-          __typename?: 'LocationBreakdown';
-          injection: number;
-          pipeline: number;
-          prebook: number;
-          await: number;
-          fold: number;
-          bulk: number;
-          backcarpark: number;
-          damage: number;
-          await_grn: number;
-        } | null;
-      };
-      orders: {
-        __typename?: 'OrderDetails';
-        total_orders: number;
-        total_ordered_qty: number;
-        total_loaded_qty: number;
-        total_outstanding_qty: number;
-      };
-      analysis: {
-        __typename?: 'AnalysisMetrics';
-        fulfillment_rate: number;
-        inventory_gap: number;
-        status: InventoryStatus;
-      };
-    }>;
-  };
-};
-
-export type TopProductsByQuantityQueryVariables = Exact<{
-  input?: InputMaybe<TopProductsInput>;
-}>;
-
-export type TopProductsByQuantityQuery = {
-  __typename?: 'Query';
-  topProductsByQuantity: {
-    __typename?: 'TopProductsResult';
-    totalCount: number;
-    averageQuantity: number;
-    maxQuantity: number;
-    minQuantity: number;
-    lastUpdated: any;
-    dataSource: string;
-    refreshInterval?: number | null;
-    products: Array<{
-      __typename?: 'TopProduct';
-      productCode: string;
-      productName: string;
-      productType: string;
-      colour: string;
-      standardQty: number;
-      totalQuantity: number;
-      lastUpdated: any;
-      locationQuantities: {
-        __typename?: 'TopProductLocationQuantities';
-        injection: number;
-        pipeline: number;
-        prebook: number;
-        await: number;
-        fold: number;
-        bulk: number;
-        backcarpark: number;
-        damage: number;
-        await_grn: number;
-      };
-    }>;
-  };
-};
-
-export const AnalysisCardQueryDocument = gql`
-  query AnalysisCardQuery($input: AnalysisCardInput!) {
-    analysisCardData(input: $input) {
-      analysisType
-      summary {
-        title
-        description
-        keyMetrics {
-          name
-          value
-          change
-          changeDirection
-          unit
-          trend {
-            timestamp
-            value
-            label
-          }
-        }
-        overallScore
-        status
-        alertLevel
+export const GetDepartmentInjectionDataDocument = gql`
+  query GetDepartmentInjectionData {
+    departmentInjectionData {
+      stats {
+        todayFinished
+        past7Days
+        past14Days
+        lastUpdated
       }
-      detailData {
-        sections {
-          id
-          title
-          content
-          data
-          visualizationType
-          importance
+      topStocks {
+        nodes {
+          stock
+          description
+          stockLevel
+          updateTime
         }
-        dataPoints {
-          id
-          label
-          value
-          timestamp
-          category
-          metadata
-        }
-        comparisons {
-          id
-          title
-          baseline
-          current
-          change
-          changePercent
-          timeframe
-        }
-        correlations {
-          id
-          variables
-          coefficient
-          strength
-          significance
-          interpretation
-        }
+        totalCount
       }
-      aiInsights {
-        id
-        type
-        confidence
-        title
-        content
-        recommendations
-        severity
-        relatedData
-        generatedAt
-        modelUsed
-        processingTime
-      }
-      visualizations {
-        id
-        type
-        title
-        data
-        config
-        interactive
-        exportable
-      }
-      metadata {
-        analysisId
-        userId
-        generatedAt
-        dataSource
-        dataPeriod
-        recordsAnalyzed
-        aiModelVersion
-        processingSteps {
-          step
-          duration
-          status
-          details
+      materialStocks {
+        nodes {
+          stock
+          description
+          stockLevel
+          updateTime
         }
+        totalCount
       }
-      executionTime
-      cached
-      lastUpdated
-      refreshInterval
+      machineStates {
+        machineNumber
+        lastActiveTime
+        state
+      }
+      loading
+      error
     }
   }
 `;
 
 /**
- * __useAnalysisCardQueryQuery__
+ * __useGetDepartmentInjectionDataQuery__
  *
- * To run a query within a React component, call `useAnalysisCardQueryQuery` and pass it any options that fit your needs.
- * When your component renders, `useAnalysisCardQueryQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * To run a query within a React component, call `useGetDepartmentInjectionDataQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetDepartmentInjectionDataQuery` returns an object from Apollo Client that contains loading, error, and data properties
  * you can use to render your UI.
  *
  * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const { data, loading, error } = useAnalysisCardQueryQuery({
+ * const { data, loading, error } = useGetDepartmentInjectionDataQuery({
  *   variables: {
- *      input: // value for 'input'
  *   },
  * });
  */
-export function useAnalysisCardQueryQuery(
-  baseOptions: ApolloReactHooks.QueryHookOptions<
-    AnalysisCardQueryQuery,
-    AnalysisCardQueryQueryVariables
-  > &
-    ({ variables: AnalysisCardQueryQueryVariables; skip?: boolean } | { skip: boolean })
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useQuery<AnalysisCardQueryQuery, AnalysisCardQueryQueryVariables>(
-    AnalysisCardQueryDocument,
-    options
-  );
-}
-export function useAnalysisCardQueryLazyQuery(
-  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
-    AnalysisCardQueryQuery,
-    AnalysisCardQueryQueryVariables
+export function useGetDepartmentInjectionDataQuery(
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
+    GetDepartmentInjectionDataQuery,
+    GetDepartmentInjectionDataQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useLazyQuery<AnalysisCardQueryQuery, AnalysisCardQueryQueryVariables>(
-    AnalysisCardQueryDocument,
-    options
-  );
+  return ApolloReactHooks.useQuery<
+    GetDepartmentInjectionDataQuery,
+    GetDepartmentInjectionDataQueryVariables
+  >(GetDepartmentInjectionDataDocument, options);
 }
-export function useAnalysisCardQuerySuspenseQuery(
+export function useGetDepartmentInjectionDataLazyQuery(
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    GetDepartmentInjectionDataQuery,
+    GetDepartmentInjectionDataQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useLazyQuery<
+    GetDepartmentInjectionDataQuery,
+    GetDepartmentInjectionDataQueryVariables
+  >(GetDepartmentInjectionDataDocument, options);
+}
+export function useGetDepartmentInjectionDataSuspenseQuery(
   baseOptions?:
     | ApolloReactHooks.SkipToken
     | ApolloReactHooks.SuspenseQueryHookOptions<
-        AnalysisCardQueryQuery,
-        AnalysisCardQueryQueryVariables
+        GetDepartmentInjectionDataQuery,
+        GetDepartmentInjectionDataQueryVariables
       >
 ) {
   const options =
     baseOptions === ApolloReactHooks.skipToken
       ? baseOptions
       : { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useSuspenseQuery<AnalysisCardQueryQuery, AnalysisCardQueryQueryVariables>(
-    AnalysisCardQueryDocument,
-    options
-  );
+  return ApolloReactHooks.useSuspenseQuery<
+    GetDepartmentInjectionDataQuery,
+    GetDepartmentInjectionDataQueryVariables
+  >(GetDepartmentInjectionDataDocument, options);
 }
-export type AnalysisCardQueryQueryHookResult = ReturnType<typeof useAnalysisCardQueryQuery>;
-export type AnalysisCardQueryLazyQueryHookResult = ReturnType<typeof useAnalysisCardQueryLazyQuery>;
-export type AnalysisCardQuerySuspenseQueryHookResult = ReturnType<
-  typeof useAnalysisCardQuerySuspenseQuery
+export type GetDepartmentInjectionDataQueryHookResult = ReturnType<
+  typeof useGetDepartmentInjectionDataQuery
 >;
-export type AnalysisCardQueryQueryResult = Apollo.QueryResult<
-  AnalysisCardQueryQuery,
-  AnalysisCardQueryQueryVariables
+export type GetDepartmentInjectionDataLazyQueryHookResult = ReturnType<
+  typeof useGetDepartmentInjectionDataLazyQuery
 >;
-export const GenerateAnalysisDocument = gql`
-  mutation GenerateAnalysis($input: AnalysisGenerationInput!) {
-    generateAnalysis(input: $input) {
-      id
-      analysisId
-      success
-      message
-      estimatedCompletionTime
-      progress
+export type GetDepartmentInjectionDataSuspenseQueryHookResult = ReturnType<
+  typeof useGetDepartmentInjectionDataSuspenseQuery
+>;
+export type GetDepartmentInjectionDataQueryResult = Apollo.QueryResult<
+  GetDepartmentInjectionDataQuery,
+  GetDepartmentInjectionDataQueryVariables
+>;
+export const GetDepartmentPipeDataDocument = gql`
+  query GetDepartmentPipeData {
+    departmentPipeData {
+      stats {
+        todayFinished
+        past7Days
+        past14Days
+        lastUpdated
+      }
+      topStocks {
+        nodes {
+          stock
+          description
+          stockLevel
+          updateTime
+          type
+          realTimeLevel
+          lastStockUpdate
+        }
+        totalCount
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+        }
+      }
+      materialStocks {
+        nodes {
+          stock
+          description
+          stockLevel
+          updateTime
+          type
+          realTimeLevel
+          lastStockUpdate
+        }
+        totalCount
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+        }
+      }
+      machineStates {
+        machineNumber
+        lastActiveTime
+        state
+        efficiency
+        currentTask
+        nextMaintenance
+      }
+      pipeProductionRate
+      materialConsumptionRate
+      loading
+      error
     }
   }
 `;
-export type GenerateAnalysisMutationFn = Apollo.MutationFunction<
-  GenerateAnalysisMutation,
-  GenerateAnalysisMutationVariables
->;
 
 /**
- * __useGenerateAnalysisMutation__
+ * __useGetDepartmentPipeDataQuery__
  *
- * To run a mutation, you first call `useGenerateAnalysisMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useGenerateAnalysisMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
+ * To run a query within a React component, call `useGetDepartmentPipeDataQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetDepartmentPipeDataQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
  *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
  *
  * @example
- * const [generateAnalysisMutation, { data, loading, error }] = useGenerateAnalysisMutation({
+ * const { data, loading, error } = useGetDepartmentPipeDataQuery({
  *   variables: {
- *      input: // value for 'input'
  *   },
  * });
  */
-export function useGenerateAnalysisMutation(
-  baseOptions?: ApolloReactHooks.MutationHookOptions<
-    GenerateAnalysisMutation,
-    GenerateAnalysisMutationVariables
+export function useGetDepartmentPipeDataQuery(
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
+    GetDepartmentPipeDataQuery,
+    GetDepartmentPipeDataQueryVariables
   >
 ) {
   const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useMutation<GenerateAnalysisMutation, GenerateAnalysisMutationVariables>(
-    GenerateAnalysisDocument,
+  return ApolloReactHooks.useQuery<GetDepartmentPipeDataQuery, GetDepartmentPipeDataQueryVariables>(
+    GetDepartmentPipeDataDocument,
     options
   );
 }
-export type GenerateAnalysisMutationHookResult = ReturnType<typeof useGenerateAnalysisMutation>;
-export type GenerateAnalysisMutationResult = Apollo.MutationResult<GenerateAnalysisMutation>;
-export type GenerateAnalysisMutationOptions = Apollo.BaseMutationOptions<
-  GenerateAnalysisMutation,
-  GenerateAnalysisMutationVariables
+export function useGetDepartmentPipeDataLazyQuery(
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    GetDepartmentPipeDataQuery,
+    GetDepartmentPipeDataQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useLazyQuery<
+    GetDepartmentPipeDataQuery,
+    GetDepartmentPipeDataQueryVariables
+  >(GetDepartmentPipeDataDocument, options);
+}
+export function useGetDepartmentPipeDataSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        GetDepartmentPipeDataQuery,
+        GetDepartmentPipeDataQueryVariables
+      >
+) {
+  const options =
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<
+    GetDepartmentPipeDataQuery,
+    GetDepartmentPipeDataQueryVariables
+  >(GetDepartmentPipeDataDocument, options);
+}
+export type GetDepartmentPipeDataQueryHookResult = ReturnType<typeof useGetDepartmentPipeDataQuery>;
+export type GetDepartmentPipeDataLazyQueryHookResult = ReturnType<
+  typeof useGetDepartmentPipeDataLazyQuery
+>;
+export type GetDepartmentPipeDataSuspenseQueryHookResult = ReturnType<
+  typeof useGetDepartmentPipeDataSuspenseQuery
+>;
+export type GetDepartmentPipeDataQueryResult = Apollo.QueryResult<
+  GetDepartmentPipeDataQuery,
+  GetDepartmentPipeDataQueryVariables
+>;
+export const GetDepartmentWarehouseDataDocument = gql`
+  query GetDepartmentWarehouseData {
+    departmentWarehouseData {
+      stats {
+        todayTransferred
+        past7Days
+        past14Days
+        lastUpdated
+      }
+      recentActivities {
+        time
+        staff
+        action
+        detail
+      }
+      orderCompletions {
+        orderRef
+        productQty
+        loadedQty
+        completionPercentage
+        latestUpdate
+        hasPdf
+        docUrl
+      }
+      loading
+      error
+    }
+  }
+`;
+
+/**
+ * __useGetDepartmentWarehouseDataQuery__
+ *
+ * To run a query within a React component, call `useGetDepartmentWarehouseDataQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetDepartmentWarehouseDataQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetDepartmentWarehouseDataQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetDepartmentWarehouseDataQuery(
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
+    GetDepartmentWarehouseDataQuery,
+    GetDepartmentWarehouseDataQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useQuery<
+    GetDepartmentWarehouseDataQuery,
+    GetDepartmentWarehouseDataQueryVariables
+  >(GetDepartmentWarehouseDataDocument, options);
+}
+export function useGetDepartmentWarehouseDataLazyQuery(
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    GetDepartmentWarehouseDataQuery,
+    GetDepartmentWarehouseDataQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useLazyQuery<
+    GetDepartmentWarehouseDataQuery,
+    GetDepartmentWarehouseDataQueryVariables
+  >(GetDepartmentWarehouseDataDocument, options);
+}
+export function useGetDepartmentWarehouseDataSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        GetDepartmentWarehouseDataQuery,
+        GetDepartmentWarehouseDataQueryVariables
+      >
+) {
+  const options =
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<
+    GetDepartmentWarehouseDataQuery,
+    GetDepartmentWarehouseDataQueryVariables
+  >(GetDepartmentWarehouseDataDocument, options);
+}
+export type GetDepartmentWarehouseDataQueryHookResult = ReturnType<
+  typeof useGetDepartmentWarehouseDataQuery
+>;
+export type GetDepartmentWarehouseDataLazyQueryHookResult = ReturnType<
+  typeof useGetDepartmentWarehouseDataLazyQuery
+>;
+export type GetDepartmentWarehouseDataSuspenseQueryHookResult = ReturnType<
+  typeof useGetDepartmentWarehouseDataSuspenseQuery
+>;
+export type GetDepartmentWarehouseDataQueryResult = Apollo.QueryResult<
+  GetDepartmentWarehouseDataQuery,
+  GetDepartmentWarehouseDataQueryVariables
+>;
+export const GetOrderDetailsDocument = gql`
+  query GetOrderDetails($orderRef: String!) {
+    warehouseOrder(orderRef: $orderRef) {
+      id
+      orderRef
+      customerName
+      status
+      totalQuantity
+      loadedQuantity
+      remainingQuantity
+      createdAt
+      updatedAt
+      items {
+        id
+        productCode
+        productDesc
+        quantity
+        loadedQuantity
+        status
+      }
+    }
+  }
+`;
+
+/**
+ * __useGetOrderDetailsQuery__
+ *
+ * To run a query within a React component, call `useGetOrderDetailsQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetOrderDetailsQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetOrderDetailsQuery({
+ *   variables: {
+ *      orderRef: // value for 'orderRef'
+ *   },
+ * });
+ */
+export function useGetOrderDetailsQuery(
+  baseOptions: ApolloReactHooks.QueryHookOptions<
+    GetOrderDetailsQuery,
+    GetOrderDetailsQueryVariables
+  > &
+    ({ variables: GetOrderDetailsQueryVariables; skip?: boolean } | { skip: boolean })
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useQuery<GetOrderDetailsQuery, GetOrderDetailsQueryVariables>(
+    GetOrderDetailsDocument,
+    options
+  );
+}
+export function useGetOrderDetailsLazyQuery(
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    GetOrderDetailsQuery,
+    GetOrderDetailsQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useLazyQuery<GetOrderDetailsQuery, GetOrderDetailsQueryVariables>(
+    GetOrderDetailsDocument,
+    options
+  );
+}
+export function useGetOrderDetailsSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<GetOrderDetailsQuery, GetOrderDetailsQueryVariables>
+) {
+  const options =
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<GetOrderDetailsQuery, GetOrderDetailsQueryVariables>(
+    GetOrderDetailsDocument,
+    options
+  );
+}
+export type GetOrderDetailsQueryHookResult = ReturnType<typeof useGetOrderDetailsQuery>;
+export type GetOrderDetailsLazyQueryHookResult = ReturnType<typeof useGetOrderDetailsLazyQuery>;
+export type GetOrderDetailsSuspenseQueryHookResult = ReturnType<
+  typeof useGetOrderDetailsSuspenseQuery
+>;
+export type GetOrderDetailsQueryResult = Apollo.QueryResult<
+  GetOrderDetailsQuery,
+  GetOrderDetailsQueryVariables
+>;
+export const GetProductTypesDocument = gql`
+  query GetProductTypes {
+    productFormOptions {
+      types {
+        value
+        label
+      }
+    }
+  }
+`;
+
+/**
+ * __useGetProductTypesQuery__
+ *
+ * To run a query within a React component, call `useGetProductTypesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetProductTypesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetProductTypesQuery({
+ *   variables: {
+ *   },
+ * });
+ */
+export function useGetProductTypesQuery(
+  baseOptions?: ApolloReactHooks.QueryHookOptions<
+    GetProductTypesQuery,
+    GetProductTypesQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useQuery<GetProductTypesQuery, GetProductTypesQueryVariables>(
+    GetProductTypesDocument,
+    options
+  );
+}
+export function useGetProductTypesLazyQuery(
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    GetProductTypesQuery,
+    GetProductTypesQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useLazyQuery<GetProductTypesQuery, GetProductTypesQueryVariables>(
+    GetProductTypesDocument,
+    options
+  );
+}
+export function useGetProductTypesSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<GetProductTypesQuery, GetProductTypesQueryVariables>
+) {
+  const options =
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<GetProductTypesQuery, GetProductTypesQueryVariables>(
+    GetProductTypesDocument,
+    options
+  );
+}
+export type GetProductTypesQueryHookResult = ReturnType<typeof useGetProductTypesQuery>;
+export type GetProductTypesLazyQueryHookResult = ReturnType<typeof useGetProductTypesLazyQuery>;
+export type GetProductTypesSuspenseQueryHookResult = ReturnType<
+  typeof useGetProductTypesSuspenseQuery
+>;
+export type GetProductTypesQueryResult = Apollo.QueryResult<
+  GetProductTypesQuery,
+  GetProductTypesQueryVariables
+>;
+export const GetStockLevelListDocument = gql`
+  query GetStockLevelList($productType: String!) {
+    stockLevelList(productType: $productType) {
+      records {
+        uuid
+        stock
+        description
+        stockLevel
+        updateTime
+        productInfo {
+          code
+          description
+          type
+          colour
+          standardQty
+        }
+      }
+      totalCount
+      lastUpdated
+    }
+  }
+`;
+
+/**
+ * __useGetStockLevelListQuery__
+ *
+ * To run a query within a React component, call `useGetStockLevelListQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetStockLevelListQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetStockLevelListQuery({
+ *   variables: {
+ *      productType: // value for 'productType'
+ *   },
+ * });
+ */
+export function useGetStockLevelListQuery(
+  baseOptions: ApolloReactHooks.QueryHookOptions<
+    GetStockLevelListQuery,
+    GetStockLevelListQueryVariables
+  > &
+    ({ variables: GetStockLevelListQueryVariables; skip?: boolean } | { skip: boolean })
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useQuery<GetStockLevelListQuery, GetStockLevelListQueryVariables>(
+    GetStockLevelListDocument,
+    options
+  );
+}
+export function useGetStockLevelListLazyQuery(
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    GetStockLevelListQuery,
+    GetStockLevelListQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useLazyQuery<GetStockLevelListQuery, GetStockLevelListQueryVariables>(
+    GetStockLevelListDocument,
+    options
+  );
+}
+export function useGetStockLevelListSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        GetStockLevelListQuery,
+        GetStockLevelListQueryVariables
+      >
+) {
+  const options =
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<GetStockLevelListQuery, GetStockLevelListQueryVariables>(
+    GetStockLevelListDocument,
+    options
+  );
+}
+export type GetStockLevelListQueryHookResult = ReturnType<typeof useGetStockLevelListQuery>;
+export type GetStockLevelListLazyQueryHookResult = ReturnType<typeof useGetStockLevelListLazyQuery>;
+export type GetStockLevelListSuspenseQueryHookResult = ReturnType<
+  typeof useGetStockLevelListSuspenseQuery
+>;
+export type GetStockLevelListQueryResult = Apollo.QueryResult<
+  GetStockLevelListQuery,
+  GetStockLevelListQueryVariables
+>;
+export const GetStockLevelChartDocument = gql`
+  query GetStockLevelChart($productType: String!, $days: Int = 21) {
+    stockLevelChart(productType: $productType, days: $days) {
+      chartData {
+        date
+        stockCode
+        stockLevel
+        description
+      }
+      productCodes
+      dateRange {
+        start
+        end
+      }
+    }
+  }
+`;
+
+/**
+ * __useGetStockLevelChartQuery__
+ *
+ * To run a query within a React component, call `useGetStockLevelChartQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetStockLevelChartQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetStockLevelChartQuery({
+ *   variables: {
+ *      productType: // value for 'productType'
+ *      days: // value for 'days'
+ *   },
+ * });
+ */
+export function useGetStockLevelChartQuery(
+  baseOptions: ApolloReactHooks.QueryHookOptions<
+    GetStockLevelChartQuery,
+    GetStockLevelChartQueryVariables
+  > &
+    ({ variables: GetStockLevelChartQueryVariables; skip?: boolean } | { skip: boolean })
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useQuery<GetStockLevelChartQuery, GetStockLevelChartQueryVariables>(
+    GetStockLevelChartDocument,
+    options
+  );
+}
+export function useGetStockLevelChartLazyQuery(
+  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
+    GetStockLevelChartQuery,
+    GetStockLevelChartQueryVariables
+  >
+) {
+  const options = { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useLazyQuery<GetStockLevelChartQuery, GetStockLevelChartQueryVariables>(
+    GetStockLevelChartDocument,
+    options
+  );
+}
+export function useGetStockLevelChartSuspenseQuery(
+  baseOptions?:
+    | ApolloReactHooks.SkipToken
+    | ApolloReactHooks.SuspenseQueryHookOptions<
+        GetStockLevelChartQuery,
+        GetStockLevelChartQueryVariables
+      >
+) {
+  const options =
+    baseOptions === ApolloReactHooks.skipToken
+      ? baseOptions
+      : { ...defaultOptions, ...baseOptions };
+  return ApolloReactHooks.useSuspenseQuery<
+    GetStockLevelChartQuery,
+    GetStockLevelChartQueryVariables
+  >(GetStockLevelChartDocument, options);
+}
+export type GetStockLevelChartQueryHookResult = ReturnType<typeof useGetStockLevelChartQuery>;
+export type GetStockLevelChartLazyQueryHookResult = ReturnType<
+  typeof useGetStockLevelChartLazyQuery
+>;
+export type GetStockLevelChartSuspenseQueryHookResult = ReturnType<
+  typeof useGetStockLevelChartSuspenseQuery
+>;
+export type GetStockLevelChartQueryResult = Apollo.QueryResult<
+  GetStockLevelChartQuery,
+  GetStockLevelChartQueryVariables
 >;
 export const ChartCardQueryDocument = gql`
   query ChartCardQuery($input: ChartQueryInput!) {
@@ -4826,1174 +5668,4 @@ export type ChartCardQuerySuspenseQueryHookResult = ReturnType<
 export type ChartCardQueryQueryResult = Apollo.QueryResult<
   ChartCardQueryQuery,
   ChartCardQueryQueryVariables
->;
-export const OperationsHistoryTreeDocument = gql`
-  query OperationsHistoryTree($input: HistoryTreeInput) {
-    historyTree(input: $input) {
-      entries {
-        id
-        timestamp
-        action
-        location
-        remark
-        user {
-          id
-          name
-          department
-          position
-        }
-        pallet {
-          number
-          series
-          quantity
-          product {
-            code
-            description
-            type
-            colour
-          }
-        }
-      }
-      totalCount
-      hasNextPage
-    }
-  }
-`;
-
-/**
- * __useOperationsHistoryTreeQuery__
- *
- * To run a query within a React component, call `useOperationsHistoryTreeQuery` and pass it any options that fit your needs.
- * When your component renders, `useOperationsHistoryTreeQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useOperationsHistoryTreeQuery({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useOperationsHistoryTreeQuery(
-  baseOptions?: ApolloReactHooks.QueryHookOptions<
-    OperationsHistoryTreeQuery,
-    OperationsHistoryTreeQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useQuery<OperationsHistoryTreeQuery, OperationsHistoryTreeQueryVariables>(
-    OperationsHistoryTreeDocument,
-    options
-  );
-}
-export function useOperationsHistoryTreeLazyQuery(
-  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
-    OperationsHistoryTreeQuery,
-    OperationsHistoryTreeQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useLazyQuery<
-    OperationsHistoryTreeQuery,
-    OperationsHistoryTreeQueryVariables
-  >(OperationsHistoryTreeDocument, options);
-}
-export function useOperationsHistoryTreeSuspenseQuery(
-  baseOptions?:
-    | ApolloReactHooks.SkipToken
-    | ApolloReactHooks.SuspenseQueryHookOptions<
-        OperationsHistoryTreeQuery,
-        OperationsHistoryTreeQueryVariables
-      >
-) {
-  const options =
-    baseOptions === ApolloReactHooks.skipToken
-      ? baseOptions
-      : { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useSuspenseQuery<
-    OperationsHistoryTreeQuery,
-    OperationsHistoryTreeQueryVariables
-  >(OperationsHistoryTreeDocument, options);
-}
-export type OperationsHistoryTreeQueryHookResult = ReturnType<typeof useOperationsHistoryTreeQuery>;
-export type OperationsHistoryTreeLazyQueryHookResult = ReturnType<
-  typeof useOperationsHistoryTreeLazyQuery
->;
-export type OperationsHistoryTreeSuspenseQueryHookResult = ReturnType<
-  typeof useOperationsHistoryTreeSuspenseQuery
->;
-export type OperationsHistoryTreeQueryResult = Apollo.QueryResult<
-  OperationsHistoryTreeQuery,
-  OperationsHistoryTreeQueryVariables
->;
-export const ReportCardQueryDocument = gql`
-  query ReportCardQuery($input: ReportCardInput!) {
-    reportCardData(input: $input) {
-      reportType
-      config {
-        reportType
-        title
-        description
-        formats
-        maxFileSize
-        retentionDays
-        requireAuth
-        allowScheduling
-        supportsFiltering
-        supportsGrouping
-        estimatedGenerationTime
-      }
-      recentReports {
-        id
-        reportType
-        title
-        description
-        format
-        status
-        fileName
-        fileSize
-        downloadUrl
-        expiresAt
-        generatedAt
-        generatedBy
-        generationTime
-        recordCount
-        priority
-        downloadCount
-        lastDownloaded
-        error
-      }
-      activeGenerations {
-        id
-        reportType
-        title
-        status
-        progress
-        estimatedTimeRemaining
-        recordsProcessed
-        totalRecords
-        error
-        startedAt
-        userId
-      }
-      templates {
-        id
-        name
-        reportType
-        description
-        config
-        filters
-        grouping
-        isPublic
-        createdBy
-        createdAt
-        lastUsed
-        usageCount
-      }
-      statistics {
-        totalReports
-        todayReports
-        pendingReports
-        completedReports
-        failedReports
-        averageGenerationTime
-        successRate
-        diskUsage
-        quotaUsage
-      }
-      lastUpdated
-      refreshInterval
-      dataSource
-    }
-  }
-`;
-
-/**
- * __useReportCardQueryQuery__
- *
- * To run a query within a React component, call `useReportCardQueryQuery` and pass it any options that fit your needs.
- * When your component renders, `useReportCardQueryQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useReportCardQueryQuery({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useReportCardQueryQuery(
-  baseOptions: ApolloReactHooks.QueryHookOptions<
-    ReportCardQueryQuery,
-    ReportCardQueryQueryVariables
-  > &
-    ({ variables: ReportCardQueryQueryVariables; skip?: boolean } | { skip: boolean })
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useQuery<ReportCardQueryQuery, ReportCardQueryQueryVariables>(
-    ReportCardQueryDocument,
-    options
-  );
-}
-export function useReportCardQueryLazyQuery(
-  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
-    ReportCardQueryQuery,
-    ReportCardQueryQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useLazyQuery<ReportCardQueryQuery, ReportCardQueryQueryVariables>(
-    ReportCardQueryDocument,
-    options
-  );
-}
-export function useReportCardQuerySuspenseQuery(
-  baseOptions?:
-    | ApolloReactHooks.SkipToken
-    | ApolloReactHooks.SuspenseQueryHookOptions<ReportCardQueryQuery, ReportCardQueryQueryVariables>
-) {
-  const options =
-    baseOptions === ApolloReactHooks.skipToken
-      ? baseOptions
-      : { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useSuspenseQuery<ReportCardQueryQuery, ReportCardQueryQueryVariables>(
-    ReportCardQueryDocument,
-    options
-  );
-}
-export type ReportCardQueryQueryHookResult = ReturnType<typeof useReportCardQueryQuery>;
-export type ReportCardQueryLazyQueryHookResult = ReturnType<typeof useReportCardQueryLazyQuery>;
-export type ReportCardQuerySuspenseQueryHookResult = ReturnType<
-  typeof useReportCardQuerySuspenseQuery
->;
-export type ReportCardQueryQueryResult = Apollo.QueryResult<
-  ReportCardQueryQuery,
-  ReportCardQueryQueryVariables
->;
-export const GenerateReportDocument = gql`
-  mutation GenerateReport($input: ReportGenerationInput!) {
-    generateReport(input: $input) {
-      id
-      reportId
-      success
-      message
-      estimatedCompletionTime
-      progress
-    }
-  }
-`;
-export type GenerateReportMutationFn = Apollo.MutationFunction<
-  GenerateReportMutation,
-  GenerateReportMutationVariables
->;
-
-/**
- * __useGenerateReportMutation__
- *
- * To run a mutation, you first call `useGenerateReportMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useGenerateReportMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [generateReportMutation, { data, loading, error }] = useGenerateReportMutation({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useGenerateReportMutation(
-  baseOptions?: ApolloReactHooks.MutationHookOptions<
-    GenerateReportMutation,
-    GenerateReportMutationVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useMutation<GenerateReportMutation, GenerateReportMutationVariables>(
-    GenerateReportDocument,
-    options
-  );
-}
-export type GenerateReportMutationHookResult = ReturnType<typeof useGenerateReportMutation>;
-export type GenerateReportMutationResult = Apollo.MutationResult<GenerateReportMutation>;
-export type GenerateReportMutationOptions = Apollo.BaseMutationOptions<
-  GenerateReportMutation,
-  GenerateReportMutationVariables
->;
-export const CancelReportGenerationDocument = gql`
-  mutation CancelReportGeneration($generationId: ID!) {
-    cancelReportGeneration(generationId: $generationId)
-  }
-`;
-export type CancelReportGenerationMutationFn = Apollo.MutationFunction<
-  CancelReportGenerationMutation,
-  CancelReportGenerationMutationVariables
->;
-
-/**
- * __useCancelReportGenerationMutation__
- *
- * To run a mutation, you first call `useCancelReportGenerationMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useCancelReportGenerationMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [cancelReportGenerationMutation, { data, loading, error }] = useCancelReportGenerationMutation({
- *   variables: {
- *      generationId: // value for 'generationId'
- *   },
- * });
- */
-export function useCancelReportGenerationMutation(
-  baseOptions?: ApolloReactHooks.MutationHookOptions<
-    CancelReportGenerationMutation,
-    CancelReportGenerationMutationVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useMutation<
-    CancelReportGenerationMutation,
-    CancelReportGenerationMutationVariables
-  >(CancelReportGenerationDocument, options);
-}
-export type CancelReportGenerationMutationHookResult = ReturnType<
-  typeof useCancelReportGenerationMutation
->;
-export type CancelReportGenerationMutationResult =
-  Apollo.MutationResult<CancelReportGenerationMutation>;
-export type CancelReportGenerationMutationOptions = Apollo.BaseMutationOptions<
-  CancelReportGenerationMutation,
-  CancelReportGenerationMutationVariables
->;
-export const DeleteReportDocument = gql`
-  mutation DeleteReport($reportId: ID!) {
-    deleteReport(reportId: $reportId)
-  }
-`;
-export type DeleteReportMutationFn = Apollo.MutationFunction<
-  DeleteReportMutation,
-  DeleteReportMutationVariables
->;
-
-/**
- * __useDeleteReportMutation__
- *
- * To run a mutation, you first call `useDeleteReportMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useDeleteReportMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [deleteReportMutation, { data, loading, error }] = useDeleteReportMutation({
- *   variables: {
- *      reportId: // value for 'reportId'
- *   },
- * });
- */
-export function useDeleteReportMutation(
-  baseOptions?: ApolloReactHooks.MutationHookOptions<
-    DeleteReportMutation,
-    DeleteReportMutationVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useMutation<DeleteReportMutation, DeleteReportMutationVariables>(
-    DeleteReportDocument,
-    options
-  );
-}
-export type DeleteReportMutationHookResult = ReturnType<typeof useDeleteReportMutation>;
-export type DeleteReportMutationResult = Apollo.MutationResult<DeleteReportMutation>;
-export type DeleteReportMutationOptions = Apollo.BaseMutationOptions<
-  DeleteReportMutation,
-  DeleteReportMutationVariables
->;
-export const StatsCardQueryDocument = gql`
-  query StatsCardQuery($input: StatsQueryInput!) {
-    statsCardData(input: $input) {
-      stats {
-        type
-        value
-        label
-        unit
-        trend {
-          direction
-          value
-          percentage
-          label
-        }
-        comparison {
-          previousValue
-          previousLabel
-          change
-          changePercentage
-        }
-        lastUpdated
-        dataSource
-        optimized
-      }
-      configs {
-        type
-        title
-        description
-        icon
-        color
-      }
-      performance {
-        totalQueries
-        cachedQueries
-        averageResponseTime
-        dataAge
-      }
-      lastUpdated
-      refreshInterval
-    }
-  }
-`;
-
-/**
- * __useStatsCardQueryQuery__
- *
- * To run a query within a React component, call `useStatsCardQueryQuery` and pass it any options that fit your needs.
- * When your component renders, `useStatsCardQueryQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useStatsCardQueryQuery({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useStatsCardQueryQuery(
-  baseOptions: ApolloReactHooks.QueryHookOptions<
-    StatsCardQueryQuery,
-    StatsCardQueryQueryVariables
-  > &
-    ({ variables: StatsCardQueryQueryVariables; skip?: boolean } | { skip: boolean })
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useQuery<StatsCardQueryQuery, StatsCardQueryQueryVariables>(
-    StatsCardQueryDocument,
-    options
-  );
-}
-export function useStatsCardQueryLazyQuery(
-  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
-    StatsCardQueryQuery,
-    StatsCardQueryQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useLazyQuery<StatsCardQueryQuery, StatsCardQueryQueryVariables>(
-    StatsCardQueryDocument,
-    options
-  );
-}
-export function useStatsCardQuerySuspenseQuery(
-  baseOptions?:
-    | ApolloReactHooks.SkipToken
-    | ApolloReactHooks.SuspenseQueryHookOptions<StatsCardQueryQuery, StatsCardQueryQueryVariables>
-) {
-  const options =
-    baseOptions === ApolloReactHooks.skipToken
-      ? baseOptions
-      : { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useSuspenseQuery<StatsCardQueryQuery, StatsCardQueryQueryVariables>(
-    StatsCardQueryDocument,
-    options
-  );
-}
-export type StatsCardQueryQueryHookResult = ReturnType<typeof useStatsCardQueryQuery>;
-export type StatsCardQueryLazyQueryHookResult = ReturnType<typeof useStatsCardQueryLazyQuery>;
-export type StatsCardQuerySuspenseQueryHookResult = ReturnType<
-  typeof useStatsCardQuerySuspenseQuery
->;
-export type StatsCardQueryQueryResult = Apollo.QueryResult<
-  StatsCardQueryQuery,
-  StatsCardQueryQueryVariables
->;
-export const TableCardQueryDocument = gql`
-  query TableCardQuery($input: TableDataInput!) {
-    tableCardData(input: $input) {
-      data
-      columns {
-        key
-        header
-        dataType
-        sortable
-        filterable
-        width
-        align
-        formatter {
-          type
-          options
-        }
-        required
-        hidden
-      }
-      totalCount
-      hasNextPage
-      hasPreviousPage
-      currentPage
-      totalPages
-      filters {
-        stringFilters {
-          field
-          operator
-          value
-          caseSensitive
-        }
-        numberFilters {
-          field
-          operator
-          value
-          min
-          max
-        }
-        dateFilters {
-          field
-          operator
-          value
-          startDate
-          endDate
-        }
-        booleanFilters {
-          field
-          value
-        }
-        arrayFilters {
-          field
-          operator
-          values
-        }
-      }
-      sorting {
-        sortBy
-        sortOrder
-        secondarySort {
-          sortBy
-          sortOrder
-        }
-      }
-      metadata {
-        queryTime
-        cacheHit
-        dataSource
-        lastUpdated
-        totalRecords
-        filteredRecords
-        permissions {
-          canView
-          canEdit
-          canDelete
-          canCreate
-          canExport
-          canFilter
-          canSort
-        }
-        generatedAt
-      }
-      lastUpdated
-      refreshInterval
-    }
-  }
-`;
-
-/**
- * __useTableCardQueryQuery__
- *
- * To run a query within a React component, call `useTableCardQueryQuery` and pass it any options that fit your needs.
- * When your component renders, `useTableCardQueryQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useTableCardQueryQuery({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useTableCardQueryQuery(
-  baseOptions: ApolloReactHooks.QueryHookOptions<
-    TableCardQueryQuery,
-    TableCardQueryQueryVariables
-  > &
-    ({ variables: TableCardQueryQueryVariables; skip?: boolean } | { skip: boolean })
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useQuery<TableCardQueryQuery, TableCardQueryQueryVariables>(
-    TableCardQueryDocument,
-    options
-  );
-}
-export function useTableCardQueryLazyQuery(
-  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
-    TableCardQueryQuery,
-    TableCardQueryQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useLazyQuery<TableCardQueryQuery, TableCardQueryQueryVariables>(
-    TableCardQueryDocument,
-    options
-  );
-}
-export function useTableCardQuerySuspenseQuery(
-  baseOptions?:
-    | ApolloReactHooks.SkipToken
-    | ApolloReactHooks.SuspenseQueryHookOptions<TableCardQueryQuery, TableCardQueryQueryVariables>
-) {
-  const options =
-    baseOptions === ApolloReactHooks.skipToken
-      ? baseOptions
-      : { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useSuspenseQuery<TableCardQueryQuery, TableCardQueryQueryVariables>(
-    TableCardQueryDocument,
-    options
-  );
-}
-export type TableCardQueryQueryHookResult = ReturnType<typeof useTableCardQueryQuery>;
-export type TableCardQueryLazyQueryHookResult = ReturnType<typeof useTableCardQueryLazyQuery>;
-export type TableCardQuerySuspenseQueryHookResult = ReturnType<
-  typeof useTableCardQuerySuspenseQuery
->;
-export type TableCardQueryQueryResult = Apollo.QueryResult<
-  TableCardQueryQuery,
-  TableCardQueryQueryVariables
->;
-export const UploadCardQueryDocument = gql`
-  query UploadCardQuery($input: UploadCardInput!) {
-    uploadCardData(input: $input) {
-      uploadType
-      config {
-        uploadType
-        allowedTypes
-        maxFileSize
-        maxFiles
-        folder
-        requiresAnalysis
-        allowMultiple
-        supportsDragDrop
-        supportsPreview
-      }
-      recentUploads {
-        id
-        originalName
-        fileName
-        size
-        extension
-        uploadedAt
-        url
-        thumbnailUrl
-      }
-      activeUploads {
-        id
-        fileName
-        progress
-        status
-        error
-        bytesUploaded
-        totalBytes
-      }
-      statistics {
-        totalUploads
-        totalSize
-        successRate
-        todayUploads
-        popularFileTypes {
-          type
-          count
-          totalSize
-        }
-      }
-      lastUpdated
-      refreshInterval
-      dataSource
-    }
-  }
-`;
-
-/**
- * __useUploadCardQueryQuery__
- *
- * To run a query within a React component, call `useUploadCardQueryQuery` and pass it any options that fit your needs.
- * When your component renders, `useUploadCardQueryQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useUploadCardQueryQuery({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useUploadCardQueryQuery(
-  baseOptions: ApolloReactHooks.QueryHookOptions<
-    UploadCardQueryQuery,
-    UploadCardQueryQueryVariables
-  > &
-    ({ variables: UploadCardQueryQueryVariables; skip?: boolean } | { skip: boolean })
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useQuery<UploadCardQueryQuery, UploadCardQueryQueryVariables>(
-    UploadCardQueryDocument,
-    options
-  );
-}
-export function useUploadCardQueryLazyQuery(
-  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
-    UploadCardQueryQuery,
-    UploadCardQueryQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useLazyQuery<UploadCardQueryQuery, UploadCardQueryQueryVariables>(
-    UploadCardQueryDocument,
-    options
-  );
-}
-export function useUploadCardQuerySuspenseQuery(
-  baseOptions?:
-    | ApolloReactHooks.SkipToken
-    | ApolloReactHooks.SuspenseQueryHookOptions<UploadCardQueryQuery, UploadCardQueryQueryVariables>
-) {
-  const options =
-    baseOptions === ApolloReactHooks.skipToken
-      ? baseOptions
-      : { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useSuspenseQuery<UploadCardQueryQuery, UploadCardQueryQueryVariables>(
-    UploadCardQueryDocument,
-    options
-  );
-}
-export type UploadCardQueryQueryHookResult = ReturnType<typeof useUploadCardQueryQuery>;
-export type UploadCardQueryLazyQueryHookResult = ReturnType<typeof useUploadCardQueryLazyQuery>;
-export type UploadCardQuerySuspenseQueryHookResult = ReturnType<
-  typeof useUploadCardQuerySuspenseQuery
->;
-export type UploadCardQueryQueryResult = Apollo.QueryResult<
-  UploadCardQueryQuery,
-  UploadCardQueryQueryVariables
->;
-export const UploadSingleFileDocument = gql`
-  mutation UploadSingleFile($input: SingleFileUploadInput!) {
-    uploadSingleFile(input: $input) {
-      id
-      fileName
-      success
-      fileInfo {
-        id
-        originalName
-        fileName
-        size
-        extension
-        folder
-        uploadedAt
-        url
-        thumbnailUrl
-      }
-      analysisResult {
-        success
-        recordCount
-        processingTime
-        extractedData {
-          orderNumber
-          customerName
-          orderDate
-          totalAmount
-        }
-        confidence
-      }
-      error
-    }
-  }
-`;
-export type UploadSingleFileMutationFn = Apollo.MutationFunction<
-  UploadSingleFileMutation,
-  UploadSingleFileMutationVariables
->;
-
-/**
- * __useUploadSingleFileMutation__
- *
- * To run a mutation, you first call `useUploadSingleFileMutation` within a React component and pass it any options that fit your needs.
- * When your component renders, `useUploadSingleFileMutation` returns a tuple that includes:
- * - A mutate function that you can call at any time to execute the mutation
- * - An object with fields that represent the current status of the mutation's execution
- *
- * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
- *
- * @example
- * const [uploadSingleFileMutation, { data, loading, error }] = useUploadSingleFileMutation({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useUploadSingleFileMutation(
-  baseOptions?: ApolloReactHooks.MutationHookOptions<
-    UploadSingleFileMutation,
-    UploadSingleFileMutationVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useMutation<UploadSingleFileMutation, UploadSingleFileMutationVariables>(
-    UploadSingleFileDocument,
-    options
-  );
-}
-export type UploadSingleFileMutationHookResult = ReturnType<typeof useUploadSingleFileMutation>;
-export type UploadSingleFileMutationResult = Apollo.MutationResult<UploadSingleFileMutation>;
-export type UploadSingleFileMutationOptions = Apollo.BaseMutationOptions<
-  UploadSingleFileMutation,
-  UploadSingleFileMutationVariables
->;
-export const HistoryTreeDocument = gql`
-  query HistoryTree($input: HistoryTreeInput) {
-    historyTree(input: $input) {
-      entries {
-        id
-        timestamp
-        action
-        location
-        remark
-        user {
-          id
-          name
-          department
-          position
-          email
-        }
-        pallet {
-          number
-          series
-          quantity
-          generatedAt
-          product {
-            code
-            description
-            type
-            colour
-            standardQty
-          }
-        }
-      }
-      totalCount
-      hasNextPage
-      groupedData
-      limit
-      offset
-      filters {
-        dateRange {
-          start
-          end
-        }
-        actionTypes
-        userIds
-        palletNumbers
-        locations
-      }
-      sort {
-        sortBy
-        sortOrder
-      }
-    }
-  }
-`;
-
-/**
- * __useHistoryTreeQuery__
- *
- * To run a query within a React component, call `useHistoryTreeQuery` and pass it any options that fit your needs.
- * When your component renders, `useHistoryTreeQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useHistoryTreeQuery({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useHistoryTreeQuery(
-  baseOptions?: ApolloReactHooks.QueryHookOptions<HistoryTreeQuery, HistoryTreeQueryVariables>
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useQuery<HistoryTreeQuery, HistoryTreeQueryVariables>(
-    HistoryTreeDocument,
-    options
-  );
-}
-export function useHistoryTreeLazyQuery(
-  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<HistoryTreeQuery, HistoryTreeQueryVariables>
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useLazyQuery<HistoryTreeQuery, HistoryTreeQueryVariables>(
-    HistoryTreeDocument,
-    options
-  );
-}
-export function useHistoryTreeSuspenseQuery(
-  baseOptions?:
-    | ApolloReactHooks.SkipToken
-    | ApolloReactHooks.SuspenseQueryHookOptions<HistoryTreeQuery, HistoryTreeQueryVariables>
-) {
-  const options =
-    baseOptions === ApolloReactHooks.skipToken
-      ? baseOptions
-      : { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useSuspenseQuery<HistoryTreeQuery, HistoryTreeQueryVariables>(
-    HistoryTreeDocument,
-    options
-  );
-}
-export type HistoryTreeQueryHookResult = ReturnType<typeof useHistoryTreeQuery>;
-export type HistoryTreeLazyQueryHookResult = ReturnType<typeof useHistoryTreeLazyQuery>;
-export type HistoryTreeSuspenseQueryHookResult = ReturnType<typeof useHistoryTreeSuspenseQuery>;
-export type HistoryTreeQueryResult = Apollo.QueryResult<
-  HistoryTreeQuery,
-  HistoryTreeQueryVariables
->;
-export const InventoryOrderedAnalysisDocument = gql`
-  query InventoryOrderedAnalysis($input: InventoryOrderedAnalysisInput) {
-    inventoryOrderedAnalysis(input: $input) {
-      success
-      summary {
-        total_products
-        total_inventory_value
-        total_outstanding_orders_value
-        overall_fulfillment_rate
-        products_sufficient
-        products_insufficient
-        products_out_of_stock
-        products_no_orders
-      }
-      data {
-        product_code
-        product_description
-        product_type
-        standard_qty
-        inventory {
-          total
-          locations {
-            injection
-            pipeline
-            prebook
-            await
-            fold
-            bulk
-            backcarpark
-            damage
-            await_grn
-          }
-          last_update
-        }
-        orders {
-          total_orders
-          total_ordered_qty
-          total_loaded_qty
-          total_outstanding_qty
-        }
-        analysis {
-          fulfillment_rate
-          inventory_gap
-          status
-        }
-      }
-      generated_at
-    }
-  }
-`;
-
-/**
- * __useInventoryOrderedAnalysisQuery__
- *
- * To run a query within a React component, call `useInventoryOrderedAnalysisQuery` and pass it any options that fit your needs.
- * When your component renders, `useInventoryOrderedAnalysisQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useInventoryOrderedAnalysisQuery({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useInventoryOrderedAnalysisQuery(
-  baseOptions?: ApolloReactHooks.QueryHookOptions<
-    InventoryOrderedAnalysisQuery,
-    InventoryOrderedAnalysisQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useQuery<
-    InventoryOrderedAnalysisQuery,
-    InventoryOrderedAnalysisQueryVariables
-  >(InventoryOrderedAnalysisDocument, options);
-}
-export function useInventoryOrderedAnalysisLazyQuery(
-  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
-    InventoryOrderedAnalysisQuery,
-    InventoryOrderedAnalysisQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useLazyQuery<
-    InventoryOrderedAnalysisQuery,
-    InventoryOrderedAnalysisQueryVariables
-  >(InventoryOrderedAnalysisDocument, options);
-}
-export function useInventoryOrderedAnalysisSuspenseQuery(
-  baseOptions?:
-    | ApolloReactHooks.SkipToken
-    | ApolloReactHooks.SuspenseQueryHookOptions<
-        InventoryOrderedAnalysisQuery,
-        InventoryOrderedAnalysisQueryVariables
-      >
-) {
-  const options =
-    baseOptions === ApolloReactHooks.skipToken
-      ? baseOptions
-      : { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useSuspenseQuery<
-    InventoryOrderedAnalysisQuery,
-    InventoryOrderedAnalysisQueryVariables
-  >(InventoryOrderedAnalysisDocument, options);
-}
-export type InventoryOrderedAnalysisQueryHookResult = ReturnType<
-  typeof useInventoryOrderedAnalysisQuery
->;
-export type InventoryOrderedAnalysisLazyQueryHookResult = ReturnType<
-  typeof useInventoryOrderedAnalysisLazyQuery
->;
-export type InventoryOrderedAnalysisSuspenseQueryHookResult = ReturnType<
-  typeof useInventoryOrderedAnalysisSuspenseQuery
->;
-export type InventoryOrderedAnalysisQueryResult = Apollo.QueryResult<
-  InventoryOrderedAnalysisQuery,
-  InventoryOrderedAnalysisQueryVariables
->;
-export const TopProductsByQuantityDocument = gql`
-  query TopProductsByQuantity($input: TopProductsInput) {
-    topProductsByQuantity(input: $input) {
-      products {
-        productCode
-        productName
-        productType
-        colour
-        standardQty
-        totalQuantity
-        locationQuantities {
-          injection
-          pipeline
-          prebook
-          await
-          fold
-          bulk
-          backcarpark
-          damage
-          await_grn
-        }
-        lastUpdated
-      }
-      totalCount
-      averageQuantity
-      maxQuantity
-      minQuantity
-      lastUpdated
-      dataSource
-      refreshInterval
-    }
-  }
-`;
-
-/**
- * __useTopProductsByQuantityQuery__
- *
- * To run a query within a React component, call `useTopProductsByQuantityQuery` and pass it any options that fit your needs.
- * When your component renders, `useTopProductsByQuantityQuery` returns an object from Apollo Client that contains loading, error, and data properties
- * you can use to render your UI.
- *
- * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
- *
- * @example
- * const { data, loading, error } = useTopProductsByQuantityQuery({
- *   variables: {
- *      input: // value for 'input'
- *   },
- * });
- */
-export function useTopProductsByQuantityQuery(
-  baseOptions?: ApolloReactHooks.QueryHookOptions<
-    TopProductsByQuantityQuery,
-    TopProductsByQuantityQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useQuery<TopProductsByQuantityQuery, TopProductsByQuantityQueryVariables>(
-    TopProductsByQuantityDocument,
-    options
-  );
-}
-export function useTopProductsByQuantityLazyQuery(
-  baseOptions?: ApolloReactHooks.LazyQueryHookOptions<
-    TopProductsByQuantityQuery,
-    TopProductsByQuantityQueryVariables
-  >
-) {
-  const options = { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useLazyQuery<
-    TopProductsByQuantityQuery,
-    TopProductsByQuantityQueryVariables
-  >(TopProductsByQuantityDocument, options);
-}
-export function useTopProductsByQuantitySuspenseQuery(
-  baseOptions?:
-    | ApolloReactHooks.SkipToken
-    | ApolloReactHooks.SuspenseQueryHookOptions<
-        TopProductsByQuantityQuery,
-        TopProductsByQuantityQueryVariables
-      >
-) {
-  const options =
-    baseOptions === ApolloReactHooks.skipToken
-      ? baseOptions
-      : { ...defaultOptions, ...baseOptions };
-  return ApolloReactHooks.useSuspenseQuery<
-    TopProductsByQuantityQuery,
-    TopProductsByQuantityQueryVariables
-  >(TopProductsByQuantityDocument, options);
-}
-export type TopProductsByQuantityQueryHookResult = ReturnType<typeof useTopProductsByQuantityQuery>;
-export type TopProductsByQuantityLazyQueryHookResult = ReturnType<
-  typeof useTopProductsByQuantityLazyQuery
->;
-export type TopProductsByQuantitySuspenseQueryHookResult = ReturnType<
-  typeof useTopProductsByQuantitySuspenseQuery
->;
-export type TopProductsByQuantityQueryResult = Apollo.QueryResult<
-  TopProductsByQuantityQuery,
-  TopProductsByQuantityQueryVariables
 >;

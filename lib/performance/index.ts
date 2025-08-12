@@ -7,7 +7,7 @@
 // 主要導出
 export * from './PerformanceMonitor';
 export * from './hooks/usePerformanceMonitor';
-export { PerformanceDashboard } from './components/PerformanceDashboard';
+export { PerformanceDashboard } from './components/PerformanceDashboardSimple';
 
 // 便捷導出
 export { performanceMonitor } from './PerformanceMonitor';

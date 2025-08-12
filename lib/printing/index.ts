@@ -11,7 +11,7 @@ export {
   UnifiedPrintingService,
   getUnifiedPrintingService,
 } from './services/unified-printing-service';
-export { PrintHistoryService } from './services/print-history-service';
+// PrintHistoryService removed - redundant with existing record_history
 export { PrintTemplateService } from './services/print-template-service';
 export { PrintStatusMonitor, getPrintStatusMonitor } from './services/print-status-monitor';
 

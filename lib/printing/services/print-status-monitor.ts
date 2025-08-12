@@ -27,7 +27,7 @@ export interface MonitorConfig {
  * Extends hardware monitoring with job-specific status tracking
  */
 export class PrintStatusMonitor extends EventEmitter {
-  private hal = getHardwareAbstractionLayer();
+  private hal: ReturnType<typeof getHardwareAbstractionLayer> | null = null;
   private statusMap: Map<string, PrintJobStatus> = new Map();
   private updateInterval: NodeJS.Timeout | null = null;
   private config: Required<MonitorConfig>;
@@ -41,7 +41,9 @@ export class PrintStatusMonitor extends EventEmitter {
     };
 
     // Defer HAL subscription until it's initialized
-    this.initializeHalSubscription();
+    if (typeof window !== 'undefined') {
+      this.initializeHalSubscription();
+    }
   }
 
   /**
@@ -186,7 +188,10 @@ export class PrintStatusMonitor extends EventEmitter {
     cancelled: number;
   }> {
     // Get real queue status from HAL
-    const queueStatus = await this.hal.queue.getQueueStatus();
+    const hal = this.getHal();
+    if (!hal) return { total: 0, queued: 0, processing: 0, completed: 0, failed: 0, cancelled: 0 };
+    
+    const queueStatus = await hal.queue.getQueueStatus();
 
     // Count completed/failed from our status map
     let completed = 0;
@@ -225,12 +230,25 @@ export class PrintStatusMonitor extends EventEmitter {
     this.emit('cleared');
   }
 
+  /**
+   * Get HAL instance (lazy initialization for browser environment)
+   */
+  private getHal() {
+    if (!this.hal && typeof window !== 'undefined') {
+      this.hal = getHardwareAbstractionLayer();
+    }
+    return this.hal;
+  }
+
   // Private methods
   private async initializeHalSubscription(): Promise<void> {
     try {
       // Check if HAL is already initialized
-      if (!this.hal.isInitialized) {
-        await this.hal.initialize();
+      const hal = this.getHal();
+      if (!hal) return;
+      
+      if (!hal.isInitialized) {
+        await hal.initialize();
       }
       this.subscribeToHalEvents();
     } catch (error) {
@@ -242,7 +260,10 @@ export class PrintStatusMonitor extends EventEmitter {
 
   private subscribeToHalEvents(): void {
     // Subscribe to HAL queue events
-    this.hal.queue.on('job.added', job => {
+    const hal = this.getHal();
+    if (!hal) return;
+    
+    hal.queue.on('job.added', job => {
       this.updateStatus(job.id, {
         jobId: job.id,
         status: 'queued',
@@ -250,21 +271,21 @@ export class PrintStatusMonitor extends EventEmitter {
       });
     });
 
-    this.hal.queue.on('job.processing', job => {
+    hal.queue.on('job.processing', job => {
       this.updateStatus(job.id, {
         status: 'processing',
         startedAt: new Date().toISOString(),
       });
     });
 
-    this.hal.queue.on('job.completed', (job, result) => {
+    hal.queue.on('job.completed', (job, result) => {
       this.updateStatus(job.id, {
         status: 'completed',
         completedAt: new Date().toISOString(),
       });
     });
 
-    this.hal.queue.on('job.failed', (job, error) => {
+    hal.queue.on('job.failed', (job, error) => {
       this.updateStatus(job.id, {
         status: 'failed',
         completedAt: new Date().toISOString(),

@@ -1,5 +1,8 @@
 'use client';
 
+// Prevent SSR for this page due to services that require client-side initialization
+export const dynamic = 'force-dynamic';
+
 import React from 'react';
 // 使用新版本的 GrnLabelForm 組件（使用 useReducer 統一管理狀態）
 import GrnLabelForm from './components/GrnLabelForm';

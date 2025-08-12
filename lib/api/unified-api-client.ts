@@ -74,18 +74,24 @@ export class UnifiedAPIClient {
       // 獲取路由決策
       const routingInfo = await this.router.route();
 
-      logger.debug('API request routing', {
+      logger.debug({
         useRestAPI: routingInfo.useRestAPI,
         percentage: routingInfo.percentage,
         reason: routingInfo.reason,
         endpoint: request.endpoint || 'graphql',
-      });
+      }, 'API request routing');
 
       let response: APIResponse<T>;
 
-      if (routingInfo.useRestAPI && request.endpoint) {
-        // 使用 REST API
-        response = await this.executeRestRequest<T>(request);
+      if (request.endpoint) {
+        // 如果是 REST 請求
+        if (routingInfo.useRestAPI) {
+          // REST API 已啟用，正常執行
+          response = await this.executeRestRequest<T>(request);
+        } else {
+          // REST API 被禁用，返回適當的錯誤
+          throw new Error('REST API is currently disabled. Please try again later or contact support.');
+        }
       } else if (request.query) {
         // 使用 GraphQL
         response = await this.executeGraphQLRequest<T>(request);
@@ -107,12 +113,12 @@ export class UnifiedAPIClient {
       const responseTime = Date.now() - startTime;
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-      logger.error('API request failed', {
+      logger.error({
         error: errorMessage,
         endpoint: request.endpoint || request.operationName,
         responseTime,
         userId: this.config.userId,
-      });
+      }, 'API request failed');
 
       // 記錄錯誤指標
       apiMonitor.recordError(
@@ -149,7 +155,7 @@ export class UnifiedAPIClient {
       throw new Error('REST API endpoint is required');
     }
 
-    const url = new URL(request.endpoint, 'http://localhost:3001/api/v1');
+    const url = new URL(request.endpoint, 'http://localhost:3001/api');
 
     if (request.params && request.method === 'GET') {
       Object.entries(request.params).forEach(([key, value]) => {
@@ -263,11 +269,11 @@ export class UnifiedAPIClient {
   ): Promise<APIResponse<T>> {
     const startTime = Date.now();
 
-    logger.warn('Attempting API fallback', {
+    logger.warn({
       originalError: originalError instanceof Error ? originalError.message : 'Unknown error',
       hasQuery: !!request.query,
       hasEndpoint: !!request.endpoint,
-    });
+    }, 'Attempting API fallback');
 
     try {
       let response: APIResponse<T>;
@@ -281,10 +287,10 @@ export class UnifiedAPIClient {
         throw new Error('No fallback option available');
       }
 
-      logger.info('API fallback successful', {
+      logger.info({
         fallbackType: response.apiType,
         responseTime: response.responseTime,
-      });
+      }, 'API fallback successful');
 
       return response;
     } catch (fallbackError) {
@@ -292,11 +298,11 @@ export class UnifiedAPIClient {
       const errorMessage =
         fallbackError instanceof Error ? fallbackError.message : 'Fallback failed';
 
-      logger.error('API fallback failed', {
+      logger.error({
         originalError: originalError instanceof Error ? originalError.message : 'Unknown error',
         fallbackError: errorMessage,
         responseTime,
-      });
+      }, 'API fallback failed');
 
       return {
         success: false,

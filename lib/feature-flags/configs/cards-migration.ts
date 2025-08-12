@@ -1,7 +1,7 @@
 /**
  * Cards/Widgets 系統架構遷移 Feature Flags 配置
  * 
- * 控制 Widget→Card 遷移和 REST→GraphQL 遷移的漸進式發布
+ * 控制 Card→Card 遷移和 REST→GraphQL 遷移的漸進式發布
  * 
  * @document /docs/planning/系統架構全面遷移計劃.md
  * @created 2025-07-25
@@ -26,7 +26,7 @@ export const cardsMigrationFlags: FeatureFlag[] = [
     },
   },
 
-  // ===== Widget 到 Card 遷移 =====
+  // ===== Card 到 Card 遷移 =====
   {
     key: 'use_cards_system',
     name: 'Use Cards System Instead of Widgets',
@@ -86,15 +86,6 @@ export const cardsMigrationFlags: FeatureFlag[] = [
     tags: ['cards', 'tables'],
   },
 
-  {
-    key: 'enable_form_card',
-    name: 'Enable Form Card',
-    description: '啟用 FormCard 取代表單 Widgets',
-    type: 'boolean',
-    status: FeatureFlagStatus.ENABLED,
-    defaultValue: true,
-    tags: ['cards', 'forms'],
-  },
 
   {
     key: 'enable_upload_card',
@@ -211,50 +202,9 @@ export const cardsMigrationFlags: FeatureFlag[] = [
 
 /**
  * 檢查是否應該使用 Card 組件
+ * @deprecated CardMigrationWrapper has been deleted - this function is no longer needed
  */
-export function shouldUseCard(cardType: string, userId?: string): boolean {
-  // 檢查總開關
-  const masterSwitch = cardsMigrationFlags.find(f => f.key === 'cards_migration_enabled');
-  if (!masterSwitch || masterSwitch.status === FeatureFlagStatus.DISABLED) {
-    return false;
-  }
-
-  // 檢查系統級開關
-  const systemFlag = cardsMigrationFlags.find(f => f.key === 'use_cards_system');
-  if (!systemFlag || systemFlag.status === FeatureFlagStatus.DISABLED) {
-    return false;
-  }
-
-  // 檢查特定 Card 的開關
-  const cardFlag = cardsMigrationFlags.find(f => f.key === `enable_${cardType}_card`);
-  if (!cardFlag) {
-    return false; // 未定義的 Card 類型預設不啟用
-  }
-
-  if (cardFlag.status === FeatureFlagStatus.DISABLED) {
-    return false;
-  }
-
-  if (cardFlag.status === FeatureFlagStatus.ENABLED) {
-    return true;
-  }
-
-  // 部分啟用 - 檢查百分比或用戶規則
-  if (cardFlag.type === 'percentage' && cardFlag.rolloutPercentage !== undefined && userId) {
-    // 使用穩定的哈希函數
-    let hash = 0;
-    const str = `${cardFlag.key}-${userId}`;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash;
-    }
-    const bucketValue = Math.abs(hash) % 100;
-    return bucketValue < cardFlag.rolloutPercentage;
-  }
-
-  return cardFlag.defaultValue as boolean;
-}
+// Removed shouldUseCard function - migration system has been removed
 
 /**
  * 檢查是否應該使用 GraphQL API
@@ -295,53 +245,9 @@ export function shouldUseGraphQL(operation: 'query' | 'mutation' | 'subscription
 }
 
 /**
- * 獲取當前遷移進度
+ * @deprecated Migration progress tracking has been removed
+ * The CardMigrationWrapper and related migration system have been deleted
  */
-export function getMigrationProgress(): {
-  cards: { completed: number; total: number; percentage: number };
-  api: { completed: number; total: number; percentage: number };
-  widgets: { remaining: number; cleaned: number; percentage: number };
-} {
-  const cardsFlag = cardsMigrationFlags.find(f => f.key === 'use_cards_system');
-  const apiFlag = cardsMigrationFlags.find(f => f.key === 'use_graphql_api');
-  
-  const cardsMetadata = cardsFlag?.metadata as Record<string, number> || {};
-  const apiMetadata = apiFlag?.metadata as Record<string, number> || {};
+// Removed getMigrationProgress function - migration system has been removed
 
-  return {
-    cards: {
-      completed: cardsMetadata.completedCards || 15,
-      total: cardsMetadata.totalCards || 17,
-      percentage: ((cardsMetadata.completedCards || 15) / (cardsMetadata.totalCards || 17)) * 100,
-    },
-    api: {
-      completed: apiMetadata.completedResolvers || 17,
-      total: apiMetadata.totalEndpoints || 77,
-      percentage: ((apiMetadata.completedResolvers || 17) / (apiMetadata.totalEndpoints || 77)) * 100,
-    },
-    widgets: {
-      remaining: cardsMetadata.remainingWidgets || 56,
-      cleaned: 0, // 目前未開始清理
-      percentage: 0,
-    },
-  };
-}
-
-/**
- * 檢查是否可以停用舊系統
- */
-export function canDisableLegacySystem(system: 'widgets' | 'rest'): boolean {
-  const progress = getMigrationProgress();
-  
-  if (system === 'widgets') {
-    // 當所有 Cards 完成且 Widgets 清理完成才能停用
-    return progress.cards.percentage >= 100 && progress.widgets.percentage >= 100;
-  }
-  
-  if (system === 'rest') {
-    // 當 GraphQL 遷移達到 100% 才能停用 REST
-    return progress.api.percentage >= 100;
-  }
-  
-  return false;
-}
+// Removed canDisableLegacySystem function - migration system has been removed

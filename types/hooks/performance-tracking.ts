@@ -1,6 +1,6 @@
 /**
  * Performance Tracking Hook Type Definitions
- * Types for widget performance monitoring hooks
+ * Types for card performance monitoring hooks
  */
 
 // Basic performance metrics
@@ -24,7 +24,7 @@ export interface PerformanceContext {
   userId?: string | undefined;
 }
 
-// Realtime metrics for widget monitoring
+// Realtime metrics for card monitoring
 export interface RealtimeMetrics {
   widget?: {
     id: string;

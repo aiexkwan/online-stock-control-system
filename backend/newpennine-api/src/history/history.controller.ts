@@ -8,6 +8,7 @@ import {
   UseGuards,
   HttpStatus,
   Logger,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -24,6 +25,12 @@ import {
   HistoryRecordDto,
 } from './dto/history-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import {
+  HistoryStateSchema,
+  validateHistoryState,
+  type HistoryState,
+} from '@/lib/validation/zod-schemas';
+import { z } from 'zod';
 
 @ApiTags('History')
 @Controller('api/v1/history')
@@ -187,14 +194,36 @@ export class HistoryController {
       quantity?: number;
       weight?: number;
       description?: string;
-      previousState?: any;
-      newState?: any;
-      metadata?: any;
+      previousState?: HistoryState;
+      newState?: HistoryState;
+      metadata?: HistoryState;
     },
   ): Promise<HistoryRecordDto> {
     this.logger.log('Creating new history record:', createHistoryDto);
 
     try {
+      // Validate state objects using Zod schemas
+      if (createHistoryDto.previousState) {
+        const validationResult = validateHistoryState(createHistoryDto.previousState);
+        if (!validationResult.success) {
+          throw new BadRequestException(`Invalid previousState: ${validationResult.error}`);
+        }
+      }
+
+      if (createHistoryDto.newState) {
+        const validationResult = validateHistoryState(createHistoryDto.newState);
+        if (!validationResult.success) {
+          throw new BadRequestException(`Invalid newState: ${validationResult.error}`);
+        }
+      }
+
+      if (createHistoryDto.metadata) {
+        const validationResult = validateHistoryState(createHistoryDto.metadata);
+        if (!validationResult.success) {
+          throw new BadRequestException(`Invalid metadata: ${validationResult.error}`);
+        }
+      }
+
       const { userId, action, ...data } = createHistoryDto;
       return await this.historyService.createHistoryRecord(
         userId,

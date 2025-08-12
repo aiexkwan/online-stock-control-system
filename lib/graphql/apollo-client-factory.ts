@@ -17,7 +17,7 @@ const cache = new InMemoryCache({
   typePolicies: {
     Query: {
       fields: {
-        // Widget data caching
+        // Card data caching
         widget: {
           keyArgs: ['id', 'params'],
           merge(existing, incoming) {
@@ -44,12 +44,9 @@ const cache = new InMemoryCache({
         chartCardData: {
           merge: false,
         },
-        tableCardData: {
-          merge: false,
-        },
       },
     },
-    // Widget-specific cache policies
+    // Card-specific cache policies
     WidgetData: {
       keyFields: ['id'],
     },
@@ -106,7 +103,7 @@ export function createApolloClient(accessToken?: string) {
 
       // Only add apikey for Supabase GraphQL endpoint
       if (USE_SUPABASE_GRAPHQL) {
-        authHeaders.apikey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        authHeaders.apikey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
       }
 
       return { headers: authHeaders };

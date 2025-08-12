@@ -1,11 +1,11 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { navigationPreloader } from '@/lib/navigation/preloader';
+// NavigationPreloader removed
 import { navigationCacheManager } from '@/lib/navigation/cache-manager';
 import { NavigationErrorBoundary } from './NavigationErrorBoundary';
 import { NavigationSkeleton, MobileNavigationSkeleton } from './NavigationSkeleton';
-import { useMediaQuery } from '@/hooks/use-media-query';
+import { useMediaQuery } from '@/lib/hooks/use-media-query';
 import { useAuth } from '@/app/hooks/useAuth';
 
 interface NavigationContextType {
@@ -52,11 +52,7 @@ export function NavigationProvider({ children }: NavigationProviderProps) {
             console.warn('Cache warmup failed:', err);
           }
 
-          try {
-            await navigationPreloader.preloadUserData(user.id);
-          } catch (err) {
-            console.warn('Preload user data failed:', err);
-          }
+          // Navigation preloader removed
         }
 
         setIsReady(true);
@@ -73,26 +69,24 @@ export function NavigationProvider({ children }: NavigationProviderProps) {
     return () => clearTimeout(timeoutId);
   }, [user?.id]);
 
-  // 預加載路由
+  // 預加載路由 (removed - using Next.js built-in)
   const preloadRoute = useCallback(
     (route: string) => {
-      if (user?.id) {
-        navigationPreloader.predictAndPreload(user.id, route);
-      }
+      // Navigation preloader removed - Next.js Link handles prefetch
     },
-    [user?.id]
+    []
   );
 
   // 清理緩存
   const clearCache = useCallback(() => {
-    navigationPreloader.clearCache();
+    // Navigation preloader removed
     navigationCacheManager.clearAllCache();
   }, []);
 
   // 獲取緩存統計
   const getCacheStats = useCallback(() => {
     return {
-      preloader: navigationPreloader.getStats(),
+      // preloader removed
       cache: navigationCacheManager.getCacheStats(),
     };
   }, []);

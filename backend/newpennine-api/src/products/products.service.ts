@@ -40,7 +40,7 @@ export class ProductsService {
 
       // Count products per type
       const typeCounts = new Map<string, number>();
-      data?.forEach((item: DatabaseRecord) => {
+      data?.forEach((item: Record<string, unknown>) => {
         const type = item.type;
         typeCounts.set(type, (typeCounts.get(type) || 0) + 1);
       });

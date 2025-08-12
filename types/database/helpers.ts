@@ -101,7 +101,7 @@ export function hasProperty<K extends string>(obj: unknown, prop: K): obj is Rec
  */
 export function handleSupabaseError(error: unknown): string {
   if (error && typeof error === 'object' && 'message' in error) {
-    return String((error as any).message);
+    return String((error as { message: unknown }).message);
   }
   if (typeof error === 'string') {
     return error;

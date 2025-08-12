@@ -22,10 +22,17 @@ export interface ErrorReport {
 
 export class ErrorHandler {
   private static instance: ErrorHandler;
-  private supabase = createClient();
+  private supabase: ReturnType<typeof createClient> | null = null;
   private errorReports: ErrorReport[] = [];
 
   private constructor() {}
+
+  private getSupabase() {
+    if (!this.supabase && typeof window !== 'undefined') {
+      this.supabase = createClient();
+    }
+    return this.supabase;
+  }
 
   public static getInstance(): ErrorHandler {
     if (!ErrorHandler.instance) {
@@ -191,8 +198,9 @@ export class ErrorHandler {
 
     // Log to database (optional, for production monitoring)
     try {
-      if (context.userId) {
-        await this.supabase.from('record_history').insert({
+      const supabase = this.getSupabase();
+      if (context.userId && supabase) {
+        await supabase.from('record_history').insert({
           time: errorReport.timestamp,
           id: parseInt(context.userId, 10) || 0,
           plt_num: null,
@@ -215,8 +223,9 @@ export class ErrorHandler {
     details?: string
   ): Promise<void> {
     try {
-      if (context.userId) {
-        await this.supabase.from('record_history').insert({
+      const supabase = this.getSupabase();
+      if (context.userId && supabase) {
+        await supabase.from('record_history').insert({
           time: new Date().toISOString(),
           id: parseInt(context.userId, 10) || 0,
           plt_num: null,
@@ -340,5 +349,25 @@ export class ErrorHandler {
   }
 }
 
-// Export singleton instance
-export const errorHandler = ErrorHandler.getInstance();
+// Export singleton instance - lazy initialization to avoid SSR issues
+export const errorHandler = {
+  handleValidationError: (...args: Parameters<ErrorHandler['handleValidationError']>) => 
+    ErrorHandler.getInstance().handleValidationError(...args),
+  handleApiError: (...args: Parameters<ErrorHandler['handleApiError']>) => 
+    ErrorHandler.getInstance().handleApiError(...args),
+  handleNetworkError: (...args: Parameters<ErrorHandler['handleNetworkError']>) => 
+    ErrorHandler.getInstance().handleNetworkError(...args),
+  handleAuthError: (...args: Parameters<ErrorHandler['handleAuthError']>) => 
+    ErrorHandler.getInstance().handleAuthError(...args),
+  handlePdfError: (...args: Parameters<ErrorHandler['handlePdfError']>) => 
+    ErrorHandler.getInstance().handlePdfError(...args),
+  handleSuccess: (...args: Parameters<ErrorHandler['handleSuccess']>) => 
+    ErrorHandler.getInstance().handleSuccess(...args),
+  handleWarning: (...args: Parameters<ErrorHandler['handleWarning']>) => 
+    ErrorHandler.getInstance().handleWarning(...args),
+  handleInfo: (...args: Parameters<ErrorHandler['handleInfo']>) => 
+    ErrorHandler.getInstance().handleInfo(...args),
+  getErrorReports: () => ErrorHandler.getInstance().getErrorReports(),
+  clearErrorReports: () => ErrorHandler.getInstance().clearErrorReports(),
+  getErrorStats: () => ErrorHandler.getInstance().getErrorStats(),
+};

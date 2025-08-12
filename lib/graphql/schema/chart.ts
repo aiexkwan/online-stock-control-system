@@ -104,7 +104,7 @@ type ChartConfig {
   animations: JSON
 }
 
-type ChartCardData implements WidgetData {
+type ChartCardData {
   datasets: [ChartDataset!]!
   labels: [String!]
   config: ChartConfig!

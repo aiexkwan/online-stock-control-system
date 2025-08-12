@@ -39,6 +39,21 @@ class WebGLManager {
     return this.canvas;
   }
 
+  // 更新 Canvas 尺寸（修復壓縮問題）
+  updateCanvasSize(canvas: HTMLCanvasElement) {
+    if (!canvas || !this.gl) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    
+    // 設置 canvas 內部解析度與顯示尺寸保持正確比例
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    
+    // 更新 WebGL viewport
+    this.gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+
   // 初始化WebGL
   async initialize(
     canvas: HTMLCanvasElement,
@@ -90,6 +105,9 @@ class WebGLManager {
 
       // 設置幾何體
       this.setupGeometry();
+
+      // 初始設置正確的 canvas 尺寸
+      this.updateCanvasSize(canvas);
 
       this.isInitialized = true;
       this.notify();
@@ -234,18 +252,11 @@ export function UnifiedBackground() {
   const [isActive, setIsActive] = useState(false);
   const { state, config } = useVisualSystem();
 
-  // 渲染回調
+  // 渲染回調（移除尺寸檢查，避免性能問題）
   const startRendering = useCallback(() => {
     managerRef.current.startRendering((gl, program) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-
-      // 更新畫布大小
-      if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        gl.viewport(0, 0, canvas.width, canvas.height);
-      }
 
       // 設置uniforms
       const iResolution = gl.getUniformLocation(program, 'iResolution');
@@ -308,17 +319,20 @@ export function UnifiedBackground() {
     };
   }, [state.starfieldEnabled, state.webglSupported, startRendering]);
 
-  // 處理窗口大小變化
+  // 處理窗口大小變化（使用 ResizeObserver 取代 window resize）
   useEffect(() => {
-    const handleResize = () => {
-      if (canvasRef.current && isActive) {
-        // 大小調整將在下一幀渲染時處理
-      }
-    };
+    if (!canvasRef.current || !isActive) return;
 
-    window.addEventListener('resize', handleResize);
+    const resizeObserver = new ResizeObserver(() => {
+      if (canvasRef.current && managerRef.current.getIsInitialized()) {
+        managerRef.current.updateCanvasSize(canvasRef.current);
+      }
+    });
+
+    resizeObserver.observe(canvasRef.current);
+    
     return () => {
-      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
     };
   }, [isActive]);
 

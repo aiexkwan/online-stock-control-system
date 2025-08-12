@@ -186,7 +186,7 @@ export function CompactErrorFallback({
   );
 }
 
-// Widget-specific Error Fallback
+// Card-specific Error Fallback
 export function WidgetErrorFallback({
   error,
   errorReport,

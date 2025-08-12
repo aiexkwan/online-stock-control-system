@@ -1,12 +1,12 @@
 /**
  * Admin Dashboard Page
- * 重定向到 Operations Monitoring Dashboard
- * Updated to use static route instead of dynamic theme route
+ * 重定向到 Analytics Dashboard
+ * Updated to use analytics as the main dashboard
  */
 
 import { redirect } from 'next/navigation';
 
 export default function AdminDashboardPage() {
-  // Redirect to the main operations dashboard
-  redirect('/admin/operations');
+  // Redirect to the analytics dashboard
+  redirect('/admin/analytics');
 }

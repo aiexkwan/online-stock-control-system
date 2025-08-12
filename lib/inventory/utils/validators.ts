@@ -2,7 +2,7 @@
  * Common validation functions for inventory operations
  */
 
-import { StockTransferDto, VoidPalletDto, InventoryAdjustmentDto } from '../types';
+import { StockTransferDto, VoidPalletDto, InventoryAdjustmentDto } from '../types/inventory.types';
 import { LocationMapper } from './locationMapper';
 
 /**

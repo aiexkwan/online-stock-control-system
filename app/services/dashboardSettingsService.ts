@@ -4,7 +4,52 @@
  */
 
 import { createClient } from '@/lib/supabase';
-import { DashboardConfig } from '@/types/components/dashboard';
+
+// Dashboard configuration types (extracted from /types/components/dashboard.ts)
+export interface DashboardConfig {
+  id?: string;
+  name: string;
+  description?: string;
+  widgets: DashboardWidget[];
+  layouts: {
+    lg?: DashboardLayoutItem[];
+    md?: DashboardLayoutItem[];
+    sm?: DashboardLayoutItem[];
+    xs?: DashboardLayoutItem[];
+    xxs?: DashboardLayoutItem[];
+  };
+  isDefault?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface DashboardWidget {
+  id: string;
+  type: string;
+  title: string;
+  config: {
+    refreshInterval?: number;
+    dataSource?: string;
+    theme?: string;
+    [key: string]: unknown;
+  };
+  permissions?: string[];
+}
+
+export interface DashboardLayoutItem {
+  i: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  static?: boolean;
+  isDraggable?: boolean;
+  isResizable?: boolean;
+  minW?: number;
+  minH?: number;
+  maxW?: number;
+  maxH?: number;
+}
 
 export interface DashboardSettings {
   id?: string;
@@ -18,7 +63,14 @@ export interface DashboardSettings {
 }
 
 class DashboardSettingsService {
-  private supabase = createClient();
+  private supabase: ReturnType<typeof createClient> | null = null;
+
+  private getSupabase() {
+    if (!this.supabase) {
+      this.supabase = createClient();
+    }
+    return this.supabase;
+  }
 
   /**
    * 獲取當前用戶資訊
@@ -27,7 +79,7 @@ class DashboardSettingsService {
     const {
       data: { user },
       error,
-    } = await this.supabase.auth.getUser();
+    } = await this.getSupabase().auth.getUser();
     if (error || !user) {
       throw new Error('User not authenticated');
     }
@@ -41,7 +93,7 @@ class DashboardSettingsService {
     try {
       const user = await this.getCurrentUser();
 
-      const { data, error } = await this.supabase
+      const { data, error } = await this.getSupabase()
         .from('user_dashboard_settings')
         .select('*')
         .eq('user_id', user.id)
@@ -78,7 +130,7 @@ class DashboardSettingsService {
 
       if (existing) {
         // 更新現有設定
-        const { data, error } = await this.supabase
+        const { data, error } = await this.getSupabase()
           .from('user_dashboard_settings')
           .update({
             config,
@@ -92,7 +144,7 @@ class DashboardSettingsService {
         return data as unknown as DashboardSettings;
       } else {
         // 創建新設定
-        const { data, error } = await this.supabase
+        const { data, error } = await this.getSupabase()
           .from('user_dashboard_settings')
           .insert({
             user_id: user.id,
@@ -120,7 +172,7 @@ class DashboardSettingsService {
     try {
       const user = await this.getCurrentUser();
 
-      const { error } = await this.supabase
+      const { error } = await this.getSupabase()
         .from('user_dashboard_settings')
         .delete()
         .eq('user_id', user.id)
@@ -164,4 +216,14 @@ class DashboardSettingsService {
 }
 
 // 導出單例
-export const dashboardSettingsService = new DashboardSettingsService();
+// 使用延遲初始化以避免 SSR 問題
+let serviceInstance: DashboardSettingsService | null = null;
+
+export const dashboardSettingsService = {
+  getInstance(): DashboardSettingsService {
+    if (!serviceInstance) {
+      serviceInstance = new DashboardSettingsService();
+    }
+    return serviceInstance;
+  }
+};

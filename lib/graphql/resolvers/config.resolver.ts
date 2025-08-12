@@ -1,6 +1,7 @@
 import { GraphQLResolveInfo } from 'graphql';
 import { GraphQLContext as Context } from './index';
 import { createClient } from '@/app/utils/supabase/server';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { dashboardSettingsService } from '../../../app/services/dashboardSettingsService';
 import { withRetry, withCache } from '../../utils/error-handling';
 import { v4 as uuidv4 } from 'uuid';
@@ -39,11 +40,14 @@ class ConfigService {
   private static instance: ConfigService;
   public cache = new Map<string, { data: ConfigItem[]; timestamp: number }>();
   public cacheTimeout = 5 * 60 * 1000; // 5 minutes
-  public supabase = createClient();
+  public supabase: SupabaseClient | null = null;
 
   // Get Supabase client dynamically to support SSR
-  async getSupabase() {
-    return await createClient();
+  async getSupabase(): Promise<SupabaseClient> {
+    if (!this.supabase) {
+      this.supabase = await createClient();
+    }
+    return this.supabase;
   }
 
   static getInstance(): ConfigService {
@@ -63,8 +67,9 @@ class ConfigService {
     }
 
     try {
+      const supabase = await this.getSupabase();
       // Fetch from database
-      let query = this.supabase.from('system_configs').select('*');
+      let query = supabase.from('system_configs').select('*');
 
       // Apply filters
       if (input.category) {
@@ -114,7 +119,7 @@ class ConfigService {
     if (input.scope === 'USER' && input.departmentId) {
       const departmentConfigs = await this.getConfigs({
         ...input,
-        scope: 'DEPARTMENT',
+        scope: ConfigScope.DEPARTMENT,
         scopeId: input.departmentId,
       });
 
@@ -134,8 +139,8 @@ class ConfigService {
     if (input.includeDefaults) {
       const globalConfigs = await this.getConfigs({
         ...input,
-        scope: 'GLOBAL',
-        scopeId: null,
+        scope: ConfigScope.GLOBAL,
+        scopeId: undefined,
       });
 
       // Merge global configs
@@ -188,7 +193,7 @@ class ConfigService {
       case 'AUTHENTICATED':
         return !!permissions.userId;
       case 'DEPARTMENT':
-        return permissions.departments?.includes(config.scopeId);
+        return permissions.departments?.includes(config.scopeId || '');
       case 'ADMIN':
         return permissions.isAdmin;
       case 'SUPER_ADMIN':
@@ -200,24 +205,25 @@ class ConfigService {
 
   // Get user permissions
   public async getUserPermissions(userId: string): Promise<ConfigUserPermissions> {
-    const { data: user, error } = await this.supabase
+    const supabase = await this.getSupabase();
+    const { data: user, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', userId)
       .single();
 
     if (error || !user) {
-      return { userId, isAdmin: false, isSuperAdmin: false, departments: [] };
+      return { userId, isAdmin: false, isSuperAdmin: false, departments: [], roles: [] };
     }
 
     // Get user roles
-    const { data: userRoles } = await this.supabase
+    const { data: userRoles } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', userId);
 
     // Get user departments
-    const { data: userDepartments } = await this.supabase
+    const { data: userDepartments } = await supabase
       .from('user_departments')
       .select('department_id')
       .eq('user_id', userId);
@@ -239,7 +245,8 @@ class ConfigService {
         throw new Error(`Validation failed: ${validation.errors[0]?.message}`);
       }
 
-      const { data, error } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { data, error } = await supabase
         .from('system_configs')
         .insert({
           id: uuidv4(),
@@ -272,8 +279,9 @@ class ConfigService {
     metadata?: ConfigMetadata
   ): Promise<ConfigItem> {
     try {
+      const supabase = await this.getSupabase();
       // Get current config
-      const { data: currentConfig, error: fetchError } = await this.supabase
+      const { data: currentConfig, error: fetchError } = await supabase
         .from('system_configs')
         .select('*')
         .eq('id', id)
@@ -290,7 +298,7 @@ class ConfigService {
       }
 
       // Update config
-      const { data, error } = await this.supabase
+      const { data, error } = await supabase
         .from('system_configs')
         .update({
           value,
@@ -326,7 +334,8 @@ class ConfigService {
     changeReason?: string
   ): Promise<void> {
     try {
-      await this.supabase.from('config_history').insert({
+      const supabase = await this.getSupabase();
+      await supabase.from('config_history').insert({
         id: uuidv4(),
         config_id: configId,
         previous_value: previousValue,
@@ -347,28 +356,36 @@ class ConfigService {
     const errors = [];
 
     // Required fields validation
-    if (!input.key) errors.push({ message: 'Key is required' });
-    if (!input.category) errors.push({ message: 'Category is required' });
-    if (!input.scope) errors.push({ message: 'Scope is required' });
-    if (!input.dataType) errors.push({ message: 'Data type is required' });
+    const inputWithRequired = input as ConfigCreateInput | ConfigUpdateInput;
+    if (!('key' in inputWithRequired) || !inputWithRequired.key) errors.push({ message: 'Key is required' });
+    if (!('category' in inputWithRequired) || !inputWithRequired.category) errors.push({ message: 'Category is required' });
+    if (!('scope' in inputWithRequired) || !inputWithRequired.scope) errors.push({ message: 'Scope is required' });
+    if (!('dataType' in inputWithRequired) || !inputWithRequired.dataType) errors.push({ message: 'Data type is required' });
 
     // Data type validation
     if (input.value !== null && input.value !== undefined) {
-      const typeValidation = this.validateDataType(input.value, input.dataType);
+      const dataType = ('dataType' in inputWithRequired) ? inputWithRequired.dataType : ConfigDataType.STRING;
+      const typeValidation = this.validateDataType(input.value as ConfigValue, dataType);
       if (!typeValidation.isValid) {
-        errors.push({ message: typeValidation.error });
+        errors.push({ message: typeValidation.error || 'Invalid data type' });
       }
     }
 
     // Custom validation rules
     if (input.validation) {
-      const customValidation = await this.runCustomValidation(input.value, input.validation);
-      if (!customValidation.isValid) {
-        errors.push(...customValidation.errors);
+      const validation = ('validation' in inputWithRequired) ? inputWithRequired.validation : undefined;
+      if (validation) {
+        const customValidation = await this.runCustomValidation(
+          input.value as ConfigValue, 
+          validation as ValidationRules
+        );
+        if (!customValidation.isValid) {
+          errors.push(...(customValidation.errors || []).filter(e => e && typeof e.message === 'string').map(e => ({ ...e, message: e.message as string })));
+        }
       }
     }
 
-    return { isValid: errors.length === 0, errors };
+    return { isValid: errors.length === 0, errors: errors as { field?: string; message: string; code?: string }[] };
   }
 
   // Validate config value
@@ -401,12 +418,12 @@ class ConfigService {
       case 'ARRAY':
         return { isValid: Array.isArray(value) };
       case 'DATE':
-        return { isValid: !isNaN(Date.parse(value)) };
+        return { isValid: !isNaN(Date.parse(value as string)) };
       case 'COLOR':
-        return { isValid: /^#[0-9A-F]{6}$/i.test(value) };
+        return { isValid: /^#[0-9A-F]{6}$/i.test(value as string) };
       case 'URL':
         try {
-          new URL(value);
+          new URL(value as string);
           return { isValid: true };
         } catch (e) {
           return { isValid: false, error: 'Invalid URL' };
@@ -424,15 +441,15 @@ class ConfigService {
     const errors = [];
 
     // Min/max validation
-    if (rules.min !== undefined && value < rules.min) {
+    if (rules.min !== undefined && (value as number) < rules.min) {
       errors.push({ message: `Value must be at least ${rules.min}` });
     }
-    if (rules.max !== undefined && value > rules.max) {
+    if (rules.max !== undefined && (value as number) > rules.max) {
       errors.push({ message: `Value must be at most ${rules.max}` });
     }
 
     // Pattern validation
-    if (rules.pattern && !new RegExp(rules.pattern).test(value)) {
+    if (rules.pattern && !new RegExp(rules.pattern).test(value as string)) {
       errors.push({ message: `Value does not match required pattern` });
     }
 
@@ -446,7 +463,10 @@ class ConfigService {
 
   // Export configurations
   async exportConfigs(category?: string, scope?: string, format: string = 'JSON'): Promise<string> {
-    const configs = await this.getConfigs({ category, scope });
+    const configs = await this.getConfigs({ 
+      category: category as ConfigCategory | undefined, 
+      scope: scope as ConfigScope | undefined 
+    });
 
     switch (format) {
       case 'JSON':
@@ -508,9 +528,9 @@ class ConfigService {
               return {
                 key: key.toLowerCase(),
                 value: JSON.parse(valueParts.join('=')),
-                category: 'SYSTEM_CONFIG',
-                scope: 'GLOBAL',
-                dataType: 'STRING',
+                category: ConfigCategory.SYSTEM_CONFIG,
+                scope: ConfigScope.GLOBAL,
+                dataType: ConfigDataType.STRING,
               };
             });
           break;
@@ -525,7 +545,8 @@ class ConfigService {
     const results = await Promise.allSettled(
       configs.map(async config => {
         // Check if config exists
-        const existing = await this.supabase
+        const supabase = await this.getSupabase();
+        const existing = await supabase
           .from('system_configs')
           .select('id')
           .eq('key', config.key)
@@ -538,7 +559,7 @@ class ConfigService {
         }
 
         if (existing.data) {
-          return this.updateConfig(existing.data.id, config.value, userId);
+          return this.updateConfig(existing.data.id, config.value as ConfigValue, userId);
         } else {
           return this.createConfig(config, userId);
         }
@@ -561,7 +582,7 @@ class ConfigService {
           }
           return null;
         })
-        .filter(Boolean),
+        .filter((validation): validation is { key: string; error: string } => Boolean(validation)),
     };
   }
 }
@@ -575,35 +596,127 @@ export const getConfigService = () => ConfigService.getInstance();
 // Get service instance for resolvers
 const configService = getConfigService();
 
+// Database config type with snake_case fields
+interface DatabaseConfig extends Omit<ConfigItem, 'defaultValue' | 'scopeId' | 'dataType' | 'accessLevel' | 'isInherited' | 'inheritedFrom' | 'createdAt' | 'updatedAt' | 'updatedBy'> {
+  default_value?: ConfigValue;
+  scope_id?: string | null;
+  data_type?: ConfigDataType;
+  access_level?: ConfigAccessLevel;
+  is_inherited?: boolean;
+  inherited_from?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  updated_by?: string;
+}
+
 // Helper function to map database config to GraphQL type
-function mapConfigToGraphQL(config: ConfigItem, permissions?: ConfigPermissions): ConfigItem {
+function mapConfigToGraphQL(config: ConfigItem | DatabaseConfig, permissions?: ConfigPermissions): ConfigItem {
+  const isConfigItem = 'defaultValue' in config;
+  const dbConfig = config as DatabaseConfig;
+  const configItem = config as ConfigItem;
+  
   return {
     id: config.id,
     key: config.key,
     value: config.value,
-    defaultValue: config.default_value,
+    defaultValue: isConfigItem ? configItem.defaultValue : dbConfig.default_value,
     category: config.category,
     scope: config.scope,
-    scopeId: config.scope_id,
+    scopeId: isConfigItem ? configItem.scopeId : dbConfig.scope_id ?? undefined,
     description: config.description,
-    dataType: config.data_type,
+    dataType: isConfigItem ? configItem.dataType : dbConfig.data_type ?? ConfigDataType.STRING,
     validation: config.validation,
     metadata: config.metadata,
     tags: config.tags || [],
-    accessLevel: config.access_level || 'AUTHENTICATED',
-    isEditable: permissions?.canWrite && !config.is_inherited,
-    isInherited: config.is_inherited || false,
-    inheritedFrom: config.inherited_from,
-    createdAt: config.created_at,
-    updatedAt: config.updated_at,
-    updatedBy: config.updated_by,
-    history: [],
+    accessLevel: isConfigItem ? configItem.accessLevel : dbConfig.access_level ?? ConfigAccessLevel.READ_WRITE,
+    isEditable: Boolean(permissions?.canWrite && !dbConfig.is_inherited && !(isConfigItem && configItem.isInherited)),
+    isInherited: isConfigItem ? configItem.isInherited ?? false : dbConfig.is_inherited ?? false,
+    inheritedFrom: isConfigItem ? configItem.inheritedFrom : dbConfig.inherited_from ?? undefined,
+    createdAt: isConfigItem ? configItem.createdAt : dbConfig.created_at ?? new Date(),
+    updatedAt: isConfigItem ? configItem.updatedAt : dbConfig.updated_at ?? new Date(),
+    updatedBy: isConfigItem ? configItem.updatedBy : dbConfig.updated_by,
   };
 }
 
 // GraphQL Resolvers
 export const configResolvers = {
   Query: {
+    productFormOptions: async (
+      _parent: unknown,
+      _args: unknown,
+      context: Context,
+      _info: GraphQLResolveInfo
+    ) => {
+      try {
+        const supabase = context.supabase;
+        
+        // Fetch all product types directly from data_code table
+        const { data: typeData, error: typeError } = await supabase
+          .from('data_code')
+          .select('type')
+          .not('type', 'is', null)
+          .neq('type', '')
+          .neq('type', '-')
+          .order('type');
+          
+        if (typeError) throw typeError;
+        
+        // Get unique types - already filtered at database level
+        const uniqueTypes = [...new Set(typeData?.map(item => item.type) || [])];
+        
+        const types = uniqueTypes.map(type => ({
+          value: type,
+          label: type,
+          description: null,
+          isDefault: false,
+          isDisabled: false
+        }));
+        
+        // Fetch colours
+        const { data: colourData, error: colourError } = await supabase
+          .from('data_code')
+          .select('colour')
+          .not('colour', 'is', null)
+          .order('colour');
+          
+        if (colourError) throw colourError;
+        
+        // Get unique colours
+        const uniqueColours = [...new Set(colourData?.map(item => item.colour) || [])];
+        const colours = uniqueColours.filter(colour => colour).map(colour => ({
+          value: colour,
+          label: colour,
+          description: null,
+          isDefault: false,
+          isDisabled: false
+        }));
+        
+        // Units (hardcoded for now - could be from config table)
+        const units = [
+          { value: 'PCS', label: 'Pieces', description: null, isDefault: true, isDisabled: false },
+          { value: 'BOX', label: 'Box', description: null, isDefault: false, isDisabled: false },
+          { value: 'PALLET', label: 'Pallet', description: null, isDefault: false, isDisabled: false }
+        ];
+        
+        // Suppliers - not needed for Stock Distribution Card, return empty array
+        const suppliers: unknown[] = [];
+        
+        return {
+          colours,
+          types,
+          units,
+          suppliers
+        };
+      } catch (error) {
+        console.error('[productFormOptions] Error:', error);
+        // Better error handling with more details
+        if (error instanceof Error) {
+          throw new Error(`Failed to fetch product form options: ${error.message}`);
+        } else {
+          throw new Error(`Failed to fetch product form options: ${JSON.stringify(error)}`);
+        }
+      }
+    },
     configCardData: async (
       _parent: unknown,
       args: { input: ConfigInput },
@@ -622,7 +735,7 @@ export const configResolvers = {
             const configs = await configService.getConfigs(input, userId);
 
             // Get permissions
-            const permissions = await configService.getUserPermissions(userId);
+            const permissions = await configService.getUserPermissions(userId || '');
 
             // Group by category
             const categoryGroups = configs.reduce(
@@ -630,7 +743,7 @@ export const configResolvers = {
                 const category = config.category;
                 if (!acc[category]) {
                   acc[category] = {
-                    category,
+                    category: category as ConfigCategory,
                     label: category
                       .replace(/_/g, ' ')
                       .toLowerCase()
@@ -640,7 +753,7 @@ export const configResolvers = {
                     items: [],
                     count: 0,
                     editableCount: 0,
-                    lastUpdated: null,
+                    lastUpdated: undefined,
                   };
                 }
 
@@ -683,7 +796,7 @@ export const configResolvers = {
             // Validate all configs
             const validationResults = await Promise.all(
               configs.map(async config => {
-                const validation = await configService.validateConfigValue(config, config.value);
+                const validation = await configService.validateConfigValue(config, config.value as ConfigValue);
                 return { configId: config.id, validation };
               })
             );
@@ -711,9 +824,9 @@ export const configResolvers = {
               canManageGlobal: permissions.isSuperAdmin,
               canManageDepartment: permissions.isAdmin || permissions.departments.length > 0,
               canManageUsers: permissions.isAdmin || permissions.isSuperAdmin,
-              accessibleScopes: getAccessibleScopes(permissions),
-              accessibleCategories: getAccessibleCategories(permissions),
-            };
+              accessibleScopes: getAccessibleScopes(permissions) as ConfigScope[],
+              accessibleCategories: getAccessibleCategories(permissions) as ConfigCategory[],
+            } as ConfigPermissions;
 
             return {
               configs: configs.map(c => mapConfigToGraphQL(c, configPermissions)),
@@ -742,7 +855,7 @@ export const configResolvers = {
       try {
         const configs = await configService.getConfigs(
           {
-            scope: args.scope,
+            scope: args.scope as ConfigScope | undefined,
             scopeId: args.scopeId,
           },
           context.user?.id
@@ -762,7 +875,8 @@ export const configResolvers = {
       context: Context
     ) => {
       try {
-        const { data, error } = await configService.supabase
+        const supabase = await configService.getSupabase();
+        const { data, error } = await supabase
           .from('config_history')
           .select('*')
           .eq('config_id', args.configId)
@@ -784,7 +898,8 @@ export const configResolvers = {
       context: Context
     ) => {
       try {
-        let query = configService.supabase.from('config_templates').select('*');
+        const supabase = await configService.getSupabase();
+        let query = supabase.from('config_templates').select('*');
 
         if (args.category) query = query.eq('category', args.category);
         if (args.scope) query = query.eq('scope', args.scope);
@@ -803,14 +918,14 @@ export const configResolvers = {
     configDefaults: async (_parent: unknown, args: { category?: string }, context: Context) => {
       try {
         const configs = await configService.getConfigs({
-          scope: 'GLOBAL',
-          category: args.category,
+          scope: ConfigScope.GLOBAL,
+          category: args.category as ConfigCategory | undefined,
           includeDefaults: true,
         });
 
         return configs
           .filter(c => c.defaultValue !== null && c.defaultValue !== undefined)
-          .map(mapConfigToGraphQL);
+          .map(config => mapConfigToGraphQL(config));
       } catch (error) {
         console.error('Error fetching config defaults:', error);
         throw new Error('Failed to fetch configuration defaults');
@@ -862,7 +977,7 @@ export const configResolvers = {
 
         const config = await configService.updateConfig(
           args.input.id,
-          args.input.value,
+          args.input.value as ConfigValue,
           context.user.id,
           args.input.metadata
         );
@@ -879,7 +994,8 @@ export const configResolvers = {
           throw new Error('Authentication required');
         }
 
-        const { error } = await configService.supabase
+        const supabase = await configService.getSupabase();
+        const { error } = await supabase
           .from('system_configs')
           .delete()
           .eq('id', args.id);
@@ -908,7 +1024,7 @@ export const configResolvers = {
 
         const results = await Promise.allSettled(
           args.input.updates.map(update =>
-            configService.updateConfig(update.id, update.value, context.user!.id, update.metadata)
+            configService.updateConfig(update.id, update.value as ConfigValue, context.user!.id, update.metadata)
           )
         );
 
@@ -947,7 +1063,8 @@ export const configResolvers = {
         }
 
         // Get config with default value
-        const { data: config, error: fetchError } = await configService.supabase
+        const supabase = await configService.getSupabase();
+        const { data: config, error: fetchError } = await supabase
           .from('system_configs')
           .select('*')
           .eq('id', args.id)
@@ -988,8 +1105,8 @@ export const configResolvers = {
 
         // Get all configs in category
         const configs = await configService.getConfigs({
-          category: args.category,
-          scope: args.scope,
+          category: args.category as ConfigCategory | undefined,
+          scope: args.scope as ConfigScope | undefined,
           scopeId: args.scopeId,
         });
 
@@ -997,7 +1114,7 @@ export const configResolvers = {
           configs
             .filter(c => c.defaultValue !== null && c.defaultValue !== undefined)
             .map(config =>
-              configService.updateConfig(config.id, config.defaultValue, context.user!.id, {
+              configService.updateConfig(config.id, config.defaultValue as ConfigValue, context.user!.id, {
                 resetAt: new Date(),
               })
             )
@@ -1044,7 +1161,8 @@ export const configResolvers = {
         }
 
         // Get configs to include in template
-        const { data: configs, error: fetchError } = await configService.supabase
+        const supabase = await configService.getSupabase();
+        const { data: configs, error: fetchError } = await supabase
           .from('system_configs')
           .select('*')
           .in('id', args.configIds);
@@ -1054,7 +1172,7 @@ export const configResolvers = {
         }
 
         // Create template
-        const { data, error } = await configService.supabase
+        const { data, error } = await supabase
           .from('config_templates')
           .insert({
             id: uuidv4(),
@@ -1062,10 +1180,10 @@ export const configResolvers = {
             description: args.description,
             category: args.category,
             scope: args.scope,
-            configs: configs.map(c => ({
+            configs: configs.map((c: ConfigItem) => ({
               key: c.key,
               value: c.value,
-              dataType: c.data_type,
+              dataType: c.dataType,
               validation: c.validation,
             })),
             tags: [],
@@ -1097,7 +1215,8 @@ export const configResolvers = {
         }
 
         // Get template
-        const { data: template, error: fetchError } = await configService.supabase
+        const supabase = await configService.getSupabase();
+        const { data: template, error: fetchError } = await supabase
           .from('config_templates')
           .select('*')
           .eq('id', args.templateId)
@@ -1120,13 +1239,13 @@ export const configResolvers = {
             const input = {
               ...configDef,
               category: template.category,
-              scope: args.scope,
+              scope: args.scope as ConfigScope,
               scopeId: args.scopeId,
             };
 
             // Check if config exists
             const existing = await configService.getConfigs({
-              scope: args.scope,
+              scope: args.scope as ConfigScope,
               scopeId: args.scopeId,
             });
 
@@ -1135,18 +1254,18 @@ export const configResolvers = {
             if (existingConfig) {
               return configService.updateConfig(
                 existingConfig.id,
-                configDef.value,
+                configDef.value as ConfigValue,
                 context.user!.id,
                 { templateId: args.templateId }
               );
             } else {
-              return configService.createConfig(input, context.user!.id);
+              return configService.createConfig(input as ConfigCreateInput, context.user!.id);
             }
           })
         );
 
         // Update usage count
-        await configService.supabase
+        await supabase
           .from('config_templates')
           .update({ usage_count: template.usage_count + 1 })
           .eq('id', args.templateId);

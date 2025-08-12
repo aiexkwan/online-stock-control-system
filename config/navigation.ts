@@ -69,19 +69,7 @@ export const MAIN_NAVIGATION: NavigationItem[] = [
     gradient: 'radial-gradient(circle, rgba(147,51,234,0.15) 0%, rgba(126,34,206,0.06) 50%)',
     iconColor: 'text-purple-500',
     children: [
-      // v2.0.2: 簡化為3個主要主題
-      {
-        id: 'operations',
-        label: 'Operations & Production',
-        href: '/admin/operations',
-        description: 'Monitor production, warehouse operations, and inventory levels',
-      },
-      {
-        id: 'data-management',
-        label: 'Data Management',
-        href: '/admin/data-management',
-        description: 'Upload files, update data, and generate system reports',
-      },
+      // v2.0.3: 只保留 Analytics & Stock Count
       {
         id: 'analytics',
         label: 'Analytics & Reports',
@@ -93,12 +81,6 @@ export const MAIN_NAVIGATION: NavigationItem[] = [
         label: 'Stock Count',
         href: '/admin/stock-count',
         description: 'Inventory cycle counting',
-      },
-      {
-        id: 'performance-dashboard',
-        label: 'Performance',
-        href: '/admin/performance-dashboard',
-        description: 'Widget performance monitoring',
       },
     ],
   },

@@ -1,0 +1,266 @@
+{
+  "bundleSize": {
+    "libSchemas": 13467,
+    "businessSchemas": 8180,
+    "actionSchemas": 401,
+    "excelSchemas": 5391,
+    "total": 27439
+  },
+  "schemaCounts": {
+    "files": {
+      "lib/schemas/alerts.ts": {
+        "schemas": 5,
+        "types": 5,
+        "hasZodImport": true,
+        "totalLines": 49
+      },
+      "lib/schemas/api.ts": {
+        "schemas": 1,
+        "types": 0,
+        "hasZodImport": true,
+        "totalLines": 13
+      },
+      "lib/schemas/dashboard.ts": {
+        "schemas": 10,
+        "types": 10,
+        "hasZodImport": true,
+        "totalLines": 115
+      },
+      "lib/schemas/widgets.ts": {
+        "schemas": 2,
+        "types": 2,
+        "hasZodImport": true,
+        "totalLines": 39
+      },
+      "lib/schemas/shared.ts": {
+        "schemas": 9,
+        "types": 5,
+        "hasZodImport": true,
+        "totalLines": 63
+      },
+      "lib/schemas/printing.ts": {
+        "schemas": 9,
+        "types": 9,
+        "hasZodImport": true,
+        "totalLines": 174
+      },
+      "types/business/schemas.ts": {
+        "schemas": 11,
+        "types": 11,
+        "hasZodImport": true,
+        "totalLines": 306
+      },
+      "app/actions/schemas.ts": {
+        "schemas": 2,
+        "types": 0,
+        "hasZodImport": true,
+        "totalLines": 12
+      },
+      "app/components/reports/schemas/ExcelGeneratorSchemas.ts": {
+        "schemas": 5,
+        "types": 5,
+        "hasZodImport": true,
+        "totalLines": 178
+      }
+    },
+    "totals": {
+      "schemas": 54,
+      "types": 47,
+      "totalLines": 949
+    }
+  },
+  "usage": {
+    "summary": {
+      "filesUsingSchemas": 37,
+      "totalImports": 15,
+      "totalDirectUsage": 120,
+      "totalZodUsage": 930
+    },
+    "details": {
+      "app/actions/adminQcActions.ts": {
+        "imports": 0,
+        "directUsage": 1,
+        "zodUsage": 0
+      },
+      "app/actions/authActions.ts": {
+        "imports": 0,
+        "directUsage": 1,
+        "zodUsage": 0
+      },
+      "app/actions/fileActions.ts": {
+        "imports": 0,
+        "directUsage": 1,
+        "zodUsage": 6
+      },
+      "app/actions/grnActions.ts": {
+        "imports": 0,
+        "directUsage": 3,
+        "zodUsage": 0
+      },
+      "app/actions/palletActions.ts": {
+        "imports": 0,
+        "directUsage": 1,
+        "zodUsage": 2
+      },
+      "app/actions/qcActions.ts": {
+        "imports": 0,
+        "directUsage": 2,
+        "zodUsage": 0
+      },
+      "app/actions/supplierActions.ts": {
+        "imports": 0,
+        "directUsage": 3,
+        "zodUsage": 6
+      },
+      "app/api/analyze-order-pdf-assistant/route.ts": {
+        "imports": 1,
+        "directUsage": 0,
+        "zodUsage": 0
+      },
+      "app/api/v1/alerts/history/route.ts": {
+        "imports": 0,
+        "directUsage": 1,
+        "zodUsage": 14
+      },
+      "app/api/v1/alerts/notifications/route.ts": {
+        "imports": 0,
+        "directUsage": 1,
+        "zodUsage": 20
+      },
+      "app/api/v1/alerts/rules/[id]/route.ts": {
+        "imports": 0,
+        "directUsage": 1,
+        "zodUsage": 33
+      },
+      "app/api/v1/alerts/rules/route.ts": {
+        "imports": 0,
+        "directUsage": 3,
+        "zodUsage": 45
+      },
+      "app/components/qc-label-form/hooks/modules/useBatchProcessing.tsx": {
+        "imports": 1,
+        "directUsage": 0,
+        "zodUsage": 0
+      },
+      "app/components/reports/generators/ExcelGeneratorNew.ts": {
+        "imports": 1,
+        "directUsage": 0,
+        "zodUsage": 0
+      },
+      "app/components/reports/schemas/ExcelGeneratorSchemas.ts": {
+        "imports": 0,
+        "directUsage": 21,
+        "zodUsage": 92
+      },
+      "lib/alerts/core/AlertRuleEngine.ts": {
+        "imports": 1,
+        "directUsage": 0,
+        "zodUsage": 0
+      },
+      "lib/api/admin/DashboardAPI.ts": {
+        "imports": 1,
+        "directUsage": 0,
+        "zodUsage": 0
+      },
+      "lib/api/unified-data-layer.schemas.ts": {
+        "imports": 0,
+        "directUsage": 11,
+        "zodUsage": 38
+      },
+      "lib/logger.ts": {
+        "imports": 1,
+        "directUsage": 0,
+        "zodUsage": 0
+      },
+      "lib/printing/services/__tests__/print-template-service.test.ts": {
+        "imports": 1,
+        "directUsage": 0,
+        "zodUsage": 0
+      },
+      "lib/printing/services/print-template-service.ts": {
+        "imports": 1,
+        "directUsage": 0,
+        "zodUsage": 0
+      },
+      "lib/schemas/alerts.ts": {
+        "imports": 0,
+        "directUsage": 3,
+        "zodUsage": 16
+      },
+      "lib/schemas/dashboard.ts": {
+        "imports": 0,
+        "directUsage": 2,
+        "zodUsage": 68
+      },
+      "lib/schemas/printing.ts": {
+        "imports": 0,
+        "directUsage": 8,
+        "zodUsage": 89
+      },
+      "lib/schemas/shared.ts": {
+        "imports": 0,
+        "directUsage": 3,
+        "zodUsage": 25
+      },
+      "lib/schemas/widgets.ts": {
+        "imports": 0,
+        "directUsage": 1,
+        "zodUsage": 16
+      },
+      "lib/types/admin-cards.ts": {
+        "imports": 0,
+        "directUsage": 8,
+        "zodUsage": 26
+      },
+      "lib/types/business-schemas.ts": {
+        "imports": 0,
+        "directUsage": 11,
+        "zodUsage": 84
+      },
+      "lib/types/config.types.ts": {
+        "imports": 0,
+        "directUsage": 5,
+        "zodUsage": 62
+      },
+      "lib/types/type-guards.ts": {
+        "imports": 2,
+        "directUsage": 3,
+        "zodUsage": 0
+      },
+      "lib/types/warehouse-rpc-schemas.ts": {
+        "imports": 0,
+        "directUsage": 5,
+        "zodUsage": 51
+      },
+      "lib/validation/zod-schemas.ts": {
+        "imports": 0,
+        "directUsage": 7,
+        "zodUsage": 153
+      },
+      "types/business/index.ts": {
+        "imports": 1,
+        "directUsage": 0,
+        "zodUsage": 0
+      },
+      "types/business/schemas.ts": {
+        "imports": 0,
+        "directUsage": 11,
+        "zodUsage": 84
+      },
+      "types/core/guards.ts": {
+        "imports": 1,
+        "directUsage": 3,
+        "zodUsage": 0
+      },
+      "types/index.ts": {
+        "imports": 2,
+        "directUsage": 0,
+        "zodUsage": 0
+      }
+    }
+  },
+  "dependencies": {
+    "zodVersion": "^3.24.1",
+    "hasZodDependency": true
+  }
+}

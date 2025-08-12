@@ -12,7 +12,7 @@ export class RpcQueryDto {
     description: 'Parameters for the RPC function',
   })
   @IsOptional()
-  params?: any;
+  params?: Record<string, unknown>;
 }
 
 export class AwaitLocationCountQueryDto {

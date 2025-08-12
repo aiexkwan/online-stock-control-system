@@ -15,10 +15,7 @@ import {
   VoidPalletDto,
   BatchTransferDto,
   BatchTransferResult,
-  InventorySnapshot,
-  InventoryStats,
   PalletInfo,
-  TransactionResult,
   HistoryRecord,
   StockLevel,
   LocationInventory,
@@ -28,7 +25,9 @@ import {
   StockCountDto,
   InventoryAdjustmentDto,
   ActivityLogEntry,
-} from '../types';
+} from '../types/inventory.types';
+import { InventorySnapshot, InventoryStats } from '../types/index';
+import { TransactionResult } from '../types/transaction.types';
 import { getCurrentUserId } from '../utils/authHelpers';
 import { validatePalletNumber, validateStockTransfer } from '../utils/validators';
 import { detectSearchType } from '@/app/utils/palletSearchUtils';
@@ -188,13 +187,13 @@ export class UnifiedInventoryService implements IInventoryService {
 
       // Execute all transfers in a single transaction
       const operations = batch.transfers.map(
-        transfer => () => this.transactionService.executeStockTransfer(transfer)
+        (transfer: StockTransferDto) => () => this.transactionService.executeStockTransfer(transfer)
       );
 
       const txResult = await this.transactionService.executeBatchOperations<
         TransactionResult<void>
       >(
-        operations.map(op => async client => {
+        operations.map((op: () => Promise<TransactionResult<void>>) => async (client: SupabaseClient) => {
           const result = await op();
           if (!result.success) {
             throw new Error(result.error);
@@ -211,7 +210,7 @@ export class UnifiedInventoryService implements IInventoryService {
       let successCount = 0;
       let failureCount = 0;
 
-      batch.transfers.forEach((transfer, index) => {
+      batch.transfers.forEach((transfer: StockTransferDto, index: number) => {
         const result = txResult.data?.[index];
         if (result?.success) {
           successCount++;
@@ -232,7 +231,7 @@ export class UnifiedInventoryService implements IInventoryService {
 
       // Invalidate cache for all transferred pallets
       if (successCount > 0) {
-        await Promise.all(batch.transfers.map(t => this.invalidateCache(t.palletNum)));
+        await Promise.all(batch.transfers.map((t: StockTransferDto) => this.invalidateCache(t.palletNum)));
       }
 
       return {
@@ -360,14 +359,8 @@ export class UnifiedInventoryService implements IInventoryService {
   }
 
   private async invalidateCache(palletNum: string): Promise<void> {
-    try {
-      // Mark materialized view as needing refresh
-      await this.supabase.rpc('mark_mv_needs_refresh', {
-        p_mv_name: 'mv_pallet_current_location',
-      });
-    } catch (error) {
-      console.error('[UnifiedInventoryService] Invalidate cache error:', error);
-    }
+    // No longer needed - we're using direct queries instead of materialized view
+    // Cache invalidation can be handled at the application level if needed
   }
 
   private async getTotalPalletCount(): Promise<number> {

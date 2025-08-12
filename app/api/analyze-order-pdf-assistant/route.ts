@@ -5,7 +5,7 @@ import { DatabaseRecord } from '@/types/database/tables';
 import { ApiResponse, ApiRequest, QueryParams } from '@/lib/validation/zod-schemas';
 import { getErrorMessage } from '@/types/core/error';
 import { createClient } from '@supabase/supabase-js';
-import { AssistantService } from '@/lib/services/assistantService';
+import { AssistantService } from '@/app/services/assistantService';
 import { SYSTEM_PROMPT } from '@/lib/openai-assistant-config';
 import { apiLogger, logApiRequest, logApiResponse, systemLogger } from '@/lib/logger';
 import crypto from 'crypto';
@@ -162,33 +162,33 @@ async function storeEnhancedOrderData(
   });
 
   // 插入所有記錄
-  apiLogger.debug('[Assistant API] Inserting records', {
+  apiLogger.debug({
     recordCount: orderRecords.length,
     sampleRecord: orderRecords[0],
-  });
+  }, '[Assistant API] Inserting records');
 
   try {
     const { data, error } = await supabase.from('data_order').insert(orderRecords).select();
 
     if (error) {
-      apiLogger.error('[Assistant API] Database insert failed', {
+      apiLogger.error({
         error: getErrorMessage(error),
         code: (error as Error & { code?: string }).code,
         details: error.details,
         hint: error.hint,
         sampleRecord: orderRecords[0],
         allRecords: orderRecords, // 記錄所有數據以便調試
-      });
+      }, '[Assistant API] Database insert failed');
 
       // 嘗試單獨插入第一筆記錄來診斷問題
       const { error: singleError } = await supabase.from('data_order').insert(orderRecords[0]);
 
       if (singleError) {
-        apiLogger.error('[Assistant API] Single record insert also failed', {
+        apiLogger.error({
           error: getErrorMessage(singleError),
           code: (singleError as Error & { code?: string }).code,
           record: orderRecords[0],
-        });
+        }, '[Assistant API] Single record insert also failed');
       }
 
       throw new Error(`資料庫插入失敗: ${getErrorMessage(error)}`);
@@ -196,11 +196,11 @@ async function storeEnhancedOrderData(
 
     insertResults = data || [];
 
-    apiLogger.info('[Assistant API] Records inserted successfully', {
+    apiLogger.info({
       recordCount: insertResults.length,
       tokenPerRecord,
       totalTokens: tokenUsed,
-    });
+    }, '[Assistant API] Records inserted successfully');
   } catch (error) {
     throw error;
   }
@@ -216,21 +216,21 @@ async function storeEnhancedOrderData(
       uploaded_by: parseInt(uploadedBy), // 確保是數字
     }));
 
-    apiLogger.debug('[Assistant API] Inserting ACO records', {
+    apiLogger.debug({
       count: acoRecords.length,
       records: acoRecords,
-    });
+    }, '[Assistant API] Inserting ACO records');
 
     const { error: acoError } = await supabase.from('record_aco').insert(acoRecords);
 
     if (acoError) {
-      apiLogger.warn('[Assistant API] ACO records insert failed', {
+      apiLogger.warn({
         error: getErrorMessage(acoError),
         code: (acoError as Error & { code?: string }).code,
         details: acoError.details,
-      });
+      }, '[Assistant API] ACO records insert failed');
     } else {
-      apiLogger.info('[Assistant API] ACO records inserted', { count: acoRecords.length });
+      apiLogger.info({ count: acoRecords.length }, '[Assistant API] ACO records inserted');
     }
   }
 
@@ -256,14 +256,14 @@ async function recordOrderUploadHistory(orderRef: string, uploadedBy: string): P
     });
 
     if (error) {
-      apiLogger.error('[recordOrderUploadHistory as string] Error recording history:', error);
+      apiLogger.error({ error }, '[recordOrderUploadHistory as string] Error recording history');
     } else {
       apiLogger.info(
         `[recordOrderUploadHistory as string] Recorded: Order Upload for ${orderRef} by user ID ${userId}`
       );
     }
   } catch (error) {
-    apiLogger.error('[recordOrderUploadHistory as string] Unexpected error:', error);
+    apiLogger.error({ error }, '[recordOrderUploadHistory as string] Unexpected error');
   }
 }
 
@@ -306,14 +306,14 @@ async function uploadToStorageAsync(
     });
 
     if (docError) {
-      systemLogger.warn('[Background Storage] doc_upload insert failed', { error: docError });
+      systemLogger.warn({ error: docError }, '[Background Storage] doc_upload insert failed');
     } else {
       systemLogger.info('[Background Storage] doc_upload inserted with json_txt field');
     }
 
     return urlData.publicUrl;
   } catch (error: unknown) {
-    systemLogger.error('[Background Storage] Upload failed', { error: getErrorMessage(error) });
+    systemLogger.error({ error: getErrorMessage(error) }, '[Background Storage] Upload failed');
     throw error;
   }
 }
@@ -346,18 +346,18 @@ async function sendEmailNotification(
     const emailResponse = await sendOrderCreatedEmail(emailRequestBody);
 
     if (emailResponse.success) {
-      apiLogger.info('[Assistant API] Order created email sent successfully', {
+      apiLogger.info({
         recipients: emailResponse.recipients,
-      });
+      }, '[Assistant API] Order created email sent successfully');
     } else {
-      apiLogger.warn('[Assistant API] Failed to send order created email', {
+      apiLogger.warn({
         error: getErrorMessage(emailResponse) || 'Unknown error',
-      });
+      }, '[Assistant API] Failed to send order created email');
     }
 
     return emailResponse;
   } catch (error: unknown) {
-    apiLogger.error('[Assistant API] Email notification error', { error: getErrorMessage(error) });
+    apiLogger.error({ error: getErrorMessage(error) }, '[Assistant API] Email notification error');
     return { success: false, error: getErrorMessage(error) };
   }
 }
@@ -397,7 +397,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     // 檢查緩存
     const cachedResult = getCachedResult(fileHash);
     if (cachedResult) {
-      apiLogger.info('[Assistant API] Using cached result', { fileHash });
+      apiLogger.info({ fileHash }, '[Assistant API] Using cached result');
 
       // 準備返回數據（與非緩存版本一致）
       const cachedExtractedData = cachedResult.orderData.products.map(product => ({
@@ -443,21 +443,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     // 運行 Assistant 並等待結果
     const result = await assistantService.runAndWait(threadId, assistantId);
 
-    apiLogger.info('[Assistant API] Raw assistant response', {
+    apiLogger.info({
       responseLength: result.length,
       responsePreview: result.substring(0, 1000),
       fullResponse: result.length < 2000 ? result : 'Response too long to log',
-    });
+    }, '[Assistant API] Raw assistant response');
 
     // 解析結果
     let parsedData: ReturnType<typeof assistantService.parseAssistantResponse>;
     try {
       parsedData = assistantService.parseAssistantResponse(result);
     } catch (parseError: unknown) {
-      apiLogger.error('[Assistant API] Failed to parse assistant response', {
+      apiLogger.error({
         error: getErrorMessage(parseError),
         rawResponse: result.substring(0, 1000),
-      });
+      }, '[Assistant API] Failed to parse assistant response');
       throw new Error(`Failed to parse assistant response: ${getErrorMessage(parseError)}`);
     }
 
@@ -477,14 +477,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       })),
     };
 
-    apiLogger.info('[Assistant API] Analysis completed', {
+    apiLogger.info({
       orderRef: orderData.order_ref,
       productCount: orderData.products?.length || 0,
       hasInvoiceTo: !!orderData.invoice_to && orderData.invoice_to !== '-',
       hasCustomerRef: !!orderData.customer_ref && orderData.customer_ref !== '-',
       hasWeights: orderData.products?.some(p => p.weight) || false,
       hasUnitPrices: orderData.products?.some(p => p.unit_price && p.unit_price !== '-') || false,
-    });
+    }, '[Assistant API] Analysis completed');
 
     // 估算 token 使用量（基於文件大小）
     const estimatedTokens = Math.ceil(pdfBuffer.length / 4);
@@ -504,9 +504,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         try {
           await uploadToStorageAsync(pdfBuffer, fileName, uploadedBy, result);
         } catch (storageError) {
-          systemLogger.warn('[Assistant API] Background storage failed', {
+          systemLogger.warn({
             error: storageError,
-          });
+          }, '[Assistant API] Background storage failed');
         }
       });
     }
@@ -520,7 +520,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     // 清理資源
     assistantService.cleanup(threadId, fileId).catch(error => {
-      systemLogger.warn('[Assistant API] Cleanup failed', { error });
+      systemLogger.warn({ error }, '[Assistant API] Cleanup failed');
     });
 
     const processingTime = Date.now() - startTime;
@@ -557,18 +557,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       },
     });
   } catch (error: unknown) {
-    apiLogger.error('[Assistant API] Analysis failed', {
+    apiLogger.error({
       error: getErrorMessage(error),
       stack: (error as Error).stack,
-    });
+    }, '[Assistant API] Analysis failed');
 
     // 清理資源
     if (threadId || fileId) {
       const assistantService = AssistantService.getInstance();
       assistantService.cleanup(threadId, fileId).catch(cleanupError => {
-        systemLogger.warn('[Assistant API] Cleanup failed after error', {
+        systemLogger.warn({
           error: cleanupError,
-        });
+        }, '[Assistant API] Cleanup failed after error');
       });
     }
 

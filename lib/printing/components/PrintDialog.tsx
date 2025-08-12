@@ -105,16 +105,20 @@ export function PrintDialog({
             <div className='space-y-2'>
               <Label htmlFor='paperSize'>Paper Size</Label>
               <Select
-                id='paperSize'
                 value={options.paperSize}
-                onChange={e =>
-                  setOptions(prev => ({ ...prev, paperSize: e.target.value as PaperSize }))
+                onValueChange={(value: string) =>
+                  setOptions(prev => ({ ...prev, paperSize: value as PaperSize }))
                 }
               >
-                <option value={PaperSize.A4}>A4</option>
-                <option value={PaperSize.A5}>A5</option>
-                <option value={PaperSize.LETTER}>Letter</option>
-                <option value={PaperSize.LEGAL}>Legal</option>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={PaperSize.A4}>A4</SelectItem>
+                  <SelectItem value={PaperSize.A5}>A5</SelectItem>
+                  <SelectItem value={PaperSize.LETTER}>Letter</SelectItem>
+                  <SelectItem value={PaperSize.LEGAL}>Legal</SelectItem>
+                </SelectContent>
               </Select>
             </div>
 

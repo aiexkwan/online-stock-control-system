@@ -6,40 +6,27 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { UnifiedVoidReportDialog } from '@/app/(app)/void-pallet/components/UnifiedVoidReportDialog';
 import { UnifiedLoadingReportDialog } from '@/app/(app)/order-loading/components/UnifiedLoadingReportDialog';
-// ACO Report now integrated directly into system page widget
-// GRN Report now integrated directly into system page widget
-// Transaction Report now integrated directly into system page widget
+// ACO Report now integrated directly into system page card
+// GRN Report now integrated directly into system page card
+// Transaction Report now integrated directly into system page card
 import { UnifiedExportAllDataDialog } from '@/app/components/reports/UnifiedExportAllDataDialog';
 
 interface ReportDialogState {
-  voidPalletReport: boolean;
   orderLoadingReport: boolean;
   stockTakeReport: boolean;
-  // acoOrderReport: boolean; // Now integrated into system page
-  // transactionReport: boolean; // Now integrated into system page
-  // grnReport: boolean; // Now integrated into system page
   exportAllData: boolean;
 }
 
 export function GlobalReportDialogs() {
   const [dialogStates, setDialogStates] = useState<ReportDialogState>({
-    voidPalletReport: false,
     orderLoadingReport: false,
     stockTakeReport: false,
-    // acoOrderReport: false, // Now integrated into system page
-    // transactionReport: false, // Now integrated into system page
-    // grnReport: false, // Now integrated into system page
     exportAllData: false,
   });
 
   useEffect(() => {
     // 監聽開啟報表的自定義事件
-    const handleOpenVoidPalletReport = () => {
-      setDialogStates(prev => ({ ...prev, voidPalletReport: true }));
-    };
-
     const handleOpenOrderLoadingReport = () => {
       setDialogStates(prev => ({ ...prev, orderLoadingReport: true }));
     };
@@ -68,7 +55,6 @@ export function GlobalReportDialogs() {
     };
 
     // 添加事件監聽器
-    window.addEventListener('openVoidPalletReport', handleOpenVoidPalletReport);
     window.addEventListener('openOrderLoadingReport', handleOpenOrderLoadingReport);
     window.addEventListener('openStockTakeReport', handleOpenStockTakeReport);
     // window.addEventListener('openAcoOrderReport', handleOpenAcoOrderReport);
@@ -78,12 +64,8 @@ export function GlobalReportDialogs() {
 
     // 清理函數
     return () => {
-      window.removeEventListener('openVoidPalletReport', handleOpenVoidPalletReport);
       window.removeEventListener('openOrderLoadingReport', handleOpenOrderLoadingReport);
       window.removeEventListener('openStockTakeReport', handleOpenStockTakeReport);
-      // window.removeEventListener('openAcoOrderReport', handleOpenAcoOrderReport);
-      // window.removeEventListener('openTransactionReport', handleOpenTransactionReport);
-      // window.removeEventListener('openGrnReport', handleOpenGrnReport);
       window.removeEventListener('openExportAllData', handleOpenExportAllData);
     };
   }, []);
@@ -94,20 +76,15 @@ export function GlobalReportDialogs() {
 
   return (
     <>
-      <UnifiedVoidReportDialog
-        isOpen={dialogStates.voidPalletReport}
-        onClose={() => closeDialog('voidPalletReport')}
-      />
-
       <UnifiedLoadingReportDialog
         isOpen={dialogStates.orderLoadingReport}
         onClose={() => closeDialog('orderLoadingReport')}
       />
 
-      {/* ACO Order Report now integrated directly into system page widget */}
+      {/* ACO Order Report now integrated directly into system page card */}
 
-      {/* Transaction Report now integrated directly into system page widget */}
-      {/* GRN Report now integrated directly into system page widget */}
+      {/* Transaction Report now integrated directly into system page card */}
+      {/* GRN Report now integrated directly into system page card */}
 
       <UnifiedExportAllDataDialog
         isOpen={dialogStates.exportAllData}

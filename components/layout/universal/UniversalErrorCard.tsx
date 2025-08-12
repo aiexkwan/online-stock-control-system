@@ -36,7 +36,7 @@ interface UniversalErrorCardProps extends Omit<ErrorFallbackProps, 'error'> {
   showCard?: boolean;
   /** Card title */
   title?: string;
-  /** Widget name (for widget variant) */
+  /** Card name (for card variant) */
   widgetName?: string;
 }
 

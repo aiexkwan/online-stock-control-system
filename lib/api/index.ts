@@ -100,7 +100,7 @@ export const api = {
   stockLevels: () => {
     return APIFactory.getInstance().getAPI(
       'stockLevels',
-      createStockLevelsAPI as () => DataAccessLayerBase<
+      createStockLevelsAPI as unknown as () => DataAccessLayerBase<
         Record<string, unknown>,
         Record<string, unknown>
       >
@@ -109,7 +109,7 @@ export const api = {
   dashboard: () => {
     return APIFactory.getInstance().getAPI(
       'dashboard',
-      createDashboardAPI as () => DataAccessLayerBase<
+      createDashboardAPI as unknown as () => DataAccessLayerBase<
         Record<string, unknown>,
         Record<string, unknown>
       >

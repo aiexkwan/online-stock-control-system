@@ -4,7 +4,7 @@
  * 提供性能監控功能的 React Hook
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { performanceMonitor, PerformanceMetric, PerformanceAlert } from '../PerformanceMonitor';
 import {
   SimplePerformanceMonitor,
@@ -78,11 +78,13 @@ export function usePerformanceMonitor(
   // 檢查 Feature Flag
   const isPerformanceMonitoringEnabled = true; // Hardcoded for now
 
-  // 開始監控
+  // 開始監控 - 使用 ref 來追蹤狀態，避免依賴 isMonitoring
+  const isMonitoringRef = React.useRef(false);
   const startMonitoring = useCallback(() => {
-    if (!isPerformanceMonitoringEnabled) return;
+    if (!isPerformanceMonitoringEnabled || isMonitoringRef.current) return; // 防止重複啟動
 
     // performanceMonitor.startMonitoring(); // Method doesn't exist in SimplePerformanceMonitor
+    isMonitoringRef.current = true;
     setIsMonitoring(true);
   }, [isPerformanceMonitoringEnabled]);
 
@@ -95,6 +97,7 @@ export function usePerformanceMonitor(
       timestamp: new Date().toISOString(),
     };
 
+    isMonitoringRef.current = false;
     setIsMonitoring(false);
     setReport(finalReport);
 
@@ -224,25 +227,55 @@ export function usePerformanceMonitor(
       // getRealtimeMetrics not available, use available methods
       const currentMetrics = performanceMonitor.getMetrics();
       const activeAlerts = performanceMonitor.getAlerts();
-      setMetrics(currentMetrics);
-      setAlerts(activeAlerts);
+      
+      // 使用更高效的比較方式，避免 JSON.stringify
+      setMetrics(prev => {
+        // 如果長度不同，肯定有變化
+        if (prev.length !== currentMetrics.length) {
+          return currentMetrics;
+        }
+        // 只比較最後一個指標是否相同（假設新指標會添加到末尾）
+        const lastPrev = prev[prev.length - 1];
+        const lastCurrent = currentMetrics[currentMetrics.length - 1];
+        if (!lastPrev || !lastCurrent || 
+            lastPrev.timestamp !== lastCurrent.timestamp ||
+            lastPrev.value !== lastCurrent.value) {
+          return currentMetrics;
+        }
+        return prev;
+      });
+      
+      setAlerts(prev => {
+        // 如果長度不同，肯定有變化
+        if (prev.length !== activeAlerts.length) {
+          return activeAlerts;
+        }
+        return prev;
+      });
     }, reportInterval);
 
     return () => clearInterval(interval);
   }, [isMonitoring, reportInterval]);
 
-  // 自動啟動
+  // 自動啟動 - 使用 useRef 來確保只執行一次
+  const hasAutoStarted = React.useRef(false);
   useEffect(() => {
-    if (autoStart && isPerformanceMonitoringEnabled && !isMonitoring) {
+    if (autoStart && isPerformanceMonitoringEnabled && !hasAutoStarted.current) {
+      hasAutoStarted.current = true;
       startMonitoring();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 空依賴數組，只在組件掛載時執行一次
 
+  // 清理函數放在獨立的 useEffect 中
+  useEffect(() => {
     return () => {
-      if (isMonitoring) {
-        stopMonitoring();
+      if (isMonitoringRef.current) {
+        isMonitoringRef.current = false;
+        setIsMonitoring(false);
       }
     };
-  }, [autoStart, isPerformanceMonitoringEnabled, isMonitoring, startMonitoring, stopMonitoring]);
+  }, []); // 空依賴數組，只在組件卸載時清理
 
   return {
     isMonitoring,

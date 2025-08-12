@@ -224,12 +224,12 @@ export class GrnService {
       };
 
       if (firstRecord) {
-        const materialDescription = (firstRecord.data_code as any)?.description;
+        const materialDescription = (firstRecord.data_code as unknown)?.description;
         if (materialDescription) {
           result.material_description = materialDescription;
         }
 
-        const supplierName = (firstRecord.data_supplier as any)?.supplier_name;
+        const supplierName = (firstRecord.data_supplier as unknown)?.supplier_name;
         if (supplierName) {
           result.supplier_name = supplierName;
         }

@@ -20,8 +20,8 @@ export interface PrintLabelPdfProps {
   grnMaterialSupplier?: string;
 }
 
-const LOGO_URL =
-  'https://bbmkuiplnzvpudszrend.supabase.co/storage/v1/object/public/web-ui/P_Logo_DB.PNG';
+// Use the correct path - image is in public directory, accessible via relative path
+const LOGO_URL = '/images/P_Logo_DB.PNG';
 
 const styles = StyleSheet.create({
   page: {
@@ -225,12 +225,14 @@ function LabelBlock(props: PrintLabelPdfProps) {
   return (
     <View style={styles.label}>
       {/* Logo */}
+      {/* eslint-disable-next-line jsx-a11y/alt-text -- React PDF Image component doesn't support alt prop */}
       <Image
         src={LOGO_URL}
         style={{ position: 'absolute', top: 14, left: 14, width: 180, height: 48 }}
       />
       {/* QR Code */}
       {qrCodeDataUrl && (
+        // eslint-disable-next-line jsx-a11y/alt-text -- React PDF Image component doesn't support alt prop
         <Image
           src={qrCodeDataUrl}
           style={{ position: 'absolute', top: 14, right: 14, width: 140, height: 140 }}

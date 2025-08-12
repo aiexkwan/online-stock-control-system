@@ -343,7 +343,7 @@ export async function mergeAndPrintPdfs(
     }
 
     const mergedPdfBytes = await mergedPdf.save();
-    const pdfBlob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+    const pdfBlob = new Blob([mergedPdfBytes as unknown as ArrayBuffer], { type: 'application/pdf' });
 
     const url = URL.createObjectURL(pdfBlob);
     const iframe = document.createElement('iframe');

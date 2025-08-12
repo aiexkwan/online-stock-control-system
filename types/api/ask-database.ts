@@ -51,9 +51,9 @@ export interface CacheEntry {
   tokensUsed: number;
   cached: boolean;
   timestamp: string | number;
-  executionTime: number;
-  cacheHits: number;
-  lastAccessed: number;
+  executionTime?: number;
+  cacheHits?: number;
+  lastAccessed?: number;
   embedding?: number[];
   fuzzyHash?: string;
   tags?: string[];
@@ -61,6 +61,8 @@ export interface CacheEntry {
   resolvedQuestion?: string;
   references?: Record<string, unknown>[];
   performanceAnalysis?: string;
+  cacheLevel?: string;
+  responseTime?: number;
 }
 
 export interface QueryRecordData {

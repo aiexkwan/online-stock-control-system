@@ -189,6 +189,9 @@ interface InventoryOrderedAnalysisKey {
 }
 
 interface HistoryTreeKey {
+  entityType: 'product' | 'pallet' | 'order';
+  entityId: string;
+  depth?: number;
   dateRange?: {
     start: string;
     end: string;
@@ -205,6 +208,8 @@ interface HistoryTreeKey {
 }
 
 interface TopProductsKey {
+  metric: 'sales' | 'quantity' | 'revenue';
+  timeRange: 'week' | 'month' | 'quarter' | 'year';
   productType?: string;
   productCodes?: string[];
   limit?: number;
@@ -642,32 +647,8 @@ export function createGRNAnalyticsLoader(
             .select('*')
             .in('grn_ref', grnRefs);
 
-          // Optional QC data if requested
-          let qcData: DatabaseEntity[] = [];
-          if (key.includeQC && grnData) {
-            const palletNums = grnData.map(g => g.plt_num).filter(Boolean);
-
-            if (palletNums.length > 0) {
-              const { data: qcResults } = await supabase
-                .from('record_slate') // Assuming QC data is in record_slate
-                .select(
-                  `
-                    plt_num,
-                    code,
-                    weight,
-                    t_thick,
-                    b_thick,
-                    length,
-                    width,
-                    flame_test,
-                    first_off
-                  `
-                )
-                .in('plt_num', palletNums);
-
-              qcData = qcResults || [];
-            }
-          }
+          // QC data removed - record_slate table no longer exists
+          const qcData: DatabaseEntity[] = [];
 
           // Create lookup maps for efficient data joining
           const grnLevelMap = new Map<string, DatabaseEntity>(
@@ -2666,7 +2647,7 @@ export function createTopProductsLoader(
             inventoryData.forEach((item: DatabaseEntity) => {
               const itemEntity = asProductEntity(item);
               const productCode = itemEntity?.product_code || '';
-              const inventoryItem = item as InventoryWithRelations;
+              const inventoryItem = item as unknown as InventoryWithRelations;
               const product = inventoryItem.product;
 
               if (!product) {
@@ -2692,7 +2673,7 @@ export function createTopProductsLoader(
 
               locations.forEach(location => {
                 const qty = getLocationQuantity(
-                  item as InventoryWithRelations,
+                  item as unknown as InventoryWithRelations,
                   location as InventoryLocation
                 );
                 locationQuantities[location] = qty;
@@ -2718,8 +2699,8 @@ export function createTopProductsLoader(
                   productCode,
                   productName: product.description || productCode,
                   productType: product.type || '-',
-                  colour: product.colour || 'Black',
-                  standardQty: product.standard_qty || 1,
+                  colour: safeString(safeGet(product, 'colour', 'Black'), 'Black'),
+                  standardQty: safeNumber(product, 'standard_qty', 1),
                   totalQuantity,
                   locationQuantities,
                   lastUpdated: new Date().toISOString(),
@@ -2785,6 +2766,8 @@ export interface StockDistributionKey {
   warehouseId?: string;
   limit?: number;
   includeInactive?: boolean;
+  groupBy?: 'warehouse' | 'category' | 'supplier';
+  includeEmpty?: boolean;
 }
 
 export function createStockDistributionLoader(
@@ -2804,41 +2787,65 @@ export function createStockDistributionLoader(
               includeInactive,
             });
 
-            // Base query for inventory data with product details
-            let query = supabase.from('record_inventory').select(`
-                product_code,
-                injection, pipeline, prebook, await, fold, bulk, backcarpark, damage, await_grn,
-                last_update,
-                data_code!inner (
-                  code,
-                  description,
-                  type,
-                  colour,
-                  standard_qty
-                )
-              `);
+            // Query latest stock_level data instead of record_inventory
+            // First get all stock levels grouped by stock code to get latest update
+            const { data: stockData, error: stockError } = await supabase
+              .from('stock_level')
+              .select(`
+                stock,
+                description,
+                stock_level,
+                update_time
+              `)
+              .order('update_time', { ascending: false });
 
-            // Apply type filter if specified
+            if (stockError) {
+              console.error('[StockDistributionLoader] Database query error:', stockError);
+              throw new Error(`Stock distribution query failed: ${stockError.message}`);
+            }
+
+            // Group by stock to get latest record for each product
+            const latestStockMap = new Map<string, DatabaseEntity>();
+            (stockData || []).forEach((item: DatabaseEntity) => {
+              const stock = safeString(item, 'stock', '');
+              const existing = latestStockMap.get(stock);
+              if (!existing || new Date(safeString(item, 'update_time', '')) > new Date(safeString(existing, 'update_time', ''))) {
+                latestStockMap.set(stock, item);
+              }
+            });
+
+            // Get product codes for type lookup
+            const productCodes = Array.from(latestStockMap.keys());
+            
+            // Get product types from data_code table
+            const { data: typeData, error: typeError } = await supabase
+              .from('data_code')
+              .select('code, type, colour')
+              .in('code', productCodes);
+
+            if (typeError) {
+              console.error('[StockDistributionLoader] Type lookup error:', typeError);
+            }
+
+            // Create type lookup map
+            const productTypeMap = new Map<string, { type: string; colour: string }>();
+            (typeData || []).forEach((item: DatabaseEntity) => {
+              productTypeMap.set(safeString(item, 'code', ''), {
+                type: safeString(item, 'type', 'Unknown'),
+                colour: safeString(item, 'colour', '')
+              });
+            });
+
+            // Filter by type if specified
+            let filteredData = Array.from(latestStockMap.values());
             if (type && type !== 'all') {
-              query = query.eq('data_code.type', type);
+              filteredData = filteredData.filter(item => {
+                const productInfo = productTypeMap.get(safeString(item, 'stock', ''));
+                return productInfo?.type === type;
+              });
             }
 
-            // Apply warehouse filter if specified (for future expansion)
-            if (warehouseId) {
-              // Note: This is a placeholder for potential warehouse filtering
-              // The current schema doesn't have direct warehouse relationships
-              console.log(
-                '[StockDistributionLoader] Warehouse filtering not yet implemented:',
-                warehouseId
-              );
-            }
-
-            const { data, error } = await query;
-
-            if (error) {
-              console.error('[StockDistributionLoader] Database query error:', error);
-              throw new Error(`Stock distribution query failed: ${error.message}`);
-            }
+            const data = filteredData;
 
             if (!data || data.length === 0) {
               console.log('[StockDistributionLoader] No data found');
@@ -2852,18 +2859,7 @@ export function createStockDistributionLoader(
               };
             }
 
-            // Define location fields for aggregation
-            const locations = [
-              'injection',
-              'pipeline',
-              'prebook',
-              'await',
-              'fold',
-              'bulk',
-              'backcarpark',
-              'damage',
-              'await_grn',
-            ];
+            // No location fields needed - stock_level table has simple stock_level column
 
             // Aggregate data by grouping criteria (type, location, or product)
             const groupedData = new Map<
@@ -2881,47 +2877,35 @@ export function createStockDistributionLoader(
 
             let totalStock = 0;
 
-            // Process each inventory record
+            // Process each stock record
             data.forEach((item: DatabaseEntity) => {
-              const inventoryItem = item as InventoryWithRelations;
-              const product = inventoryItem.data_code;
-              if (!product) return;
-
-              // Calculate total quantity for this product across all locations
-              let productTotalQuantity = 0;
-              const locationBreakdown: Record<string, number> = {};
-
-              locations.forEach(location => {
-                const qty = getLocationQuantity(
-                  item as InventoryWithRelations,
-                  location as InventoryLocation
-                );
-                locationBreakdown[location] = qty;
-                productTotalQuantity += qty;
-              });
+              const stockLevel = safeNumber(item, 'stock_level');
+              const productCode = safeString(item, 'stock', '');
+              const productInfo = productTypeMap.get(productCode);
+              const productType = productInfo?.type || 'Unknown';
 
               // Skip products with no stock if inactive products are excluded
-              if (!includeInactive && productTotalQuantity === 0) {
+              if (!includeInactive && stockLevel === 0) {
                 return;
               }
 
-              totalStock += productTotalQuantity;
+              totalStock += stockLevel;
 
               // Group by product type for the Treemap
-              const groupKey = product?.type || 'Unknown Type';
+              const groupKey = productType;
 
               if (groupedData.has(groupKey)) {
                 const existing = groupedData.get(groupKey)!;
-                existing.stockLevel += productTotalQuantity;
+                existing.stockLevel += stockLevel;
               } else {
                 groupedData.set(groupKey, {
                   name: groupKey,
                   stock: groupKey,
-                  stockLevel: productTotalQuantity,
+                  stockLevel: stockLevel,
                   description: `${groupKey} products`,
                   type: groupKey,
                   percentage: 0, // Will calculate after totals are known
-                }) as StockDistributionGroupItem;
+                });
               }
             });
 
@@ -2960,7 +2944,7 @@ export function createStockDistributionLoader(
             }
 
             console.log(
-              `[StockDistributionLoader] Processed ${data.length} inventory records into ${itemsArray.length} distribution items`
+              `[StockDistributionLoader] Processed ${data.length} stock level records into ${itemsArray.length} distribution items`
             );
 
             return {
@@ -2983,6 +2967,74 @@ export function createStockDistributionLoader(
     {
       // Cache results for 5 minutes - stock distribution changes moderately
       maxBatchSize: 3, // Conservative batch size for complex aggregation queries
+    }
+  );
+}
+
+/**
+ * Transfer Details Loader with Single Query optimization
+ * 
+ * This loader implements the Single Query pattern to solve the N+1 problem
+ * by using field resolvers to fetch pallet data on demand.
+ * 
+ * Performance improvement: Avoids N+1 queries by using field-level optimization
+ */
+export function createTransferDetailsLoader(supabase: SupabaseClient) {
+  return createBatchLoader(
+    async (transferIds: readonly string[]) => {
+      console.log(`[TransferDetailsLoader] Loading ${transferIds.length} transfer details`);
+      
+      try {
+        // Fetch transfers - pallet data will be loaded via field resolver for optimization
+        const { data, error } = await supabase
+          .from('stock_transfers')
+          .select('*')
+          .in('id', transferIds as string[])
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('[TransferDetailsLoader] Database error:', error);
+          throw new Error(`Failed to load transfer details: ${error.message}`);
+        }
+
+        if (!data) {
+          console.warn('[TransferDetailsLoader] No data returned');
+          return transferIds.map(() => null);
+        }
+
+        console.log(`[TransferDetailsLoader] Successfully loaded ${data.length} transfer records`);
+
+        // Transform the data to match GraphQL schema and create a map for efficient lookup
+        const transferMap = new Map<string, TransferEntity>();
+        
+        data.forEach((transfer: DatabaseEntity) => {
+          const transformedTransfer = {
+            ...transfer,
+            id: safeString(transfer.id, ''),
+            productCode: safeString(transfer.product_code, ''),
+            productDesc: safeString(transfer.product_desc, ''),
+            fromLocation: safeString(transfer.from_location, ''),
+            toLocation: safeString(transfer.to_location, ''),
+            createdBy: safeString(transfer.created_by, ''),
+            createdAt: safeString(transfer.created_at, ''),
+            completedAt: safeString(transfer.completed_at, ''),
+            pallet: null, // Will be loaded via field resolver
+          };
+          
+          transferMap.set(String(transfer.id), transformedTransfer as TransferEntity);
+        });
+
+        // Return results in the same order as requested IDs
+        return transferIds.map(id => transferMap.get(id) || null);
+        
+      } catch (error) {
+        console.error('[TransferDetailsLoader] Processing error:', error);
+        throw new Error(`Transfer details processing failed: ${(error as Error).message}`);
+      }
+    },
+    {
+      // Cache results for 10 minutes - transfer details don't change frequently once created
+      maxBatchSize: 50, // Allow larger batches since we're using field-level optimization
     }
   );
 }

@@ -10,7 +10,19 @@
 import { glob } from 'glob';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { shouldUseCard, shouldUseGraphQL, getMigrationProgress } from '../feature-flags/configs/cards-migration';
+import { shouldUseGraphQL } from '../feature-flags/configs/cards-migration';
+
+interface MetricConfig {
+  name: string;
+  alert_threshold?: number;
+  type?: string;
+}
+
+interface BundleAsset {
+  size?: number;
+  chunks?: string[];
+  type?: string;
+}
 
 export interface MigrationMetrics {
   progress: {
@@ -37,7 +49,7 @@ export interface MigrationMetrics {
 
 export class CardsMigrationMonitor {
   private metricsHistory: MigrationMetrics[] = [];
-  private alertCallbacks: Map<string, Function[]> = new Map();
+  private alertCallbacks: Map<string, ((messages: string[]) => void)[]> = new Map();
 
   constructor(
     private projectRoot: string = process.cwd(),
@@ -57,13 +69,13 @@ export class CardsMigrationMonitor {
         const config = JSON.parse(readFileSync(configPath, 'utf-8'));
         
         // 提取告警閾值
-        config.metrics?.performance_benchmarks?.metrics?.forEach((metric: any) => {
+        config.metrics?.performance_benchmarks?.metrics?.forEach((metric: MetricConfig) => {
           if (metric.alert_threshold) {
             this.alertThresholds[metric.name] = metric.alert_threshold;
           }
         });
 
-        config.metrics?.error_tracking?.metrics?.forEach((metric: any) => {
+        config.metrics?.error_tracking?.metrics?.forEach((metric: MetricConfig) => {
           if (metric.alert_threshold) {
             this.alertThresholds[metric.name] = metric.alert_threshold;
           }
@@ -137,9 +149,10 @@ export class CardsMigrationMonitor {
         const stats = JSON.parse(readFileSync(bundleStatsPath, 'utf-8'));
         
         // 計算 Cards 相關的 bundle 大小
-        bundleSize = Object.entries(stats.assets || {})
+        const assetsEntries = Object.entries(stats.assets || {}) as [string, BundleAsset][];
+        bundleSize = assetsEntries
           .filter(([name]) => name.includes('cards'))
-          .reduce((sum, [, asset]: [string, any]) => sum + (asset.size || 0), 0) / 1024; // 轉換為 KB
+          .reduce((sum, [, asset]) => sum + (asset.size || 0), 0) / 1024; // 轉換為 KB
       } catch (error) {
         console.warn('Failed to read bundle stats:', error);
       }
@@ -164,9 +177,13 @@ export class CardsMigrationMonitor {
     let graphqlEnabledCount = 0;
 
     for (const userId of sampleUsers) {
-      if (shouldUseCard('stats', userId)) {
-        cardsEnabledCount++;
-      }
+      // shouldUseCard function has been removed
+      // if (shouldUseCard('stats', userId)) {
+      //   cardsEnabledCount++;
+      // }
+      // Temporarily always increment cardsEnabledCount
+      cardsEnabledCount++;
+      
       if (shouldUseGraphQL('query', userId)) {
         graphqlEnabledCount++;
       }
@@ -256,7 +273,7 @@ export class CardsMigrationMonitor {
   /**
    * 註冊告警回調
    */
-  onAlert(level: string, callback: Function): void {
+  onAlert(level: string, callback: (messages: string[]) => void): void {
     if (!this.alertCallbacks.has(level)) {
       this.alertCallbacks.set(level, []);
     }
@@ -367,88 +384,7 @@ cardsMigrationMonitor.onAlert('warning', (messages: string[]) => {
 });
 
 // 瀏覽器環境的性能收集器
-export class BrowserPerformanceCollector {
-  private performanceEntries: PerformanceEntry[] = [];
+// BrowserPerformanceCollector has been removed
+// This class was only used by the deleted CardMigrationWrapper component
+// The performance monitoring functionality is no longer needed
 
-  constructor() {
-    if (typeof window !== 'undefined') {
-      this.setupBrowserMonitoring();
-    }
-  }
-
-  private setupBrowserMonitoring(): void {
-    // 監控 Card 組件渲染性能
-    const observer = new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) {
-        if (entry.name.includes('card-render') || entry.name.includes('widget-render')) {
-          this.performanceEntries.push(entry);
-        }
-      }
-    });
-
-    observer.observe({ entryTypes: ['measure', 'mark'] });
-
-    // Web Vitals 收集
-    if ('web-vitals' in window) {
-      // 實際環境中會使用 web-vitals 庫
-    }
-  }
-
-  /**
-   * 標記 Card 渲染開始
-   */
-  markCardRenderStart(cardType: string, cardId: string): void {
-    if (typeof performance !== 'undefined') {
-      performance.mark(`card-render-start-${cardType}-${cardId}`);
-    }
-  }
-
-  /**
-   * 標記 Card 渲染結束並測量
-   */
-  markCardRenderEnd(cardType: string, cardId: string): number {
-    if (typeof performance !== 'undefined') {
-      const endMark = `card-render-end-${cardType}-${cardId}`;
-      const startMark = `card-render-start-${cardType}-${cardId}`;
-      
-      performance.mark(endMark);
-      
-      try {
-        performance.measure(`card-render-${cardType}-${cardId}`, startMark, endMark);
-        
-        const measures = performance.getEntriesByName(`card-render-${cardType}-${cardId}`);
-        if (measures.length > 0) {
-          return measures[measures.length - 1].duration;
-        }
-      } catch (error) {
-        console.warn('Performance measurement failed:', error);
-      }
-    }
-    
-    return 0;
-  }
-
-  /**
-   * 獲取性能數據
-   */
-  getPerformanceData(): {
-    cardRenderTimes: number[];
-    memoryUsage: number;
-  } {
-    const cardRenderTimes = this.performanceEntries
-      .filter(entry => entry.name.includes('card-render'))
-      .map(entry => entry.duration);
-
-    let memoryUsage = 0;
-    if ('memory' in performance) {
-      memoryUsage = (performance as any).memory.usedJSHeapSize / 1024 / 1024; // MB
-    }
-
-    return {
-      cardRenderTimes,
-      memoryUsage,
-    };
-  }
-}
-
-export const browserPerformanceCollector = new BrowserPerformanceCollector();

@@ -11,7 +11,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { designTokens } from '@/lib/design-system/tokens';
-import { useMediaQuery } from '@/hooks/use-media-query';
+import { useMediaQuery } from '@/lib/hooks/use-media-query';
 
 // Dialog 動畫變體
 const dialogAnimationVariants = cva('fixed inset-0 z-50 flex items-center justify-center', {

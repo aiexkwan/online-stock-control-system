@@ -224,14 +224,13 @@ async function fetchStatData(
 
   switch (type) {
     case StatsType.YesterdayTransferCount: {
-      const { data, error } = await supabase
-        .from('record_pallet_transfer')
-        .select('count', { count: 'exact' })
-        .gte('transferdone', range.start)
-        .lte('transferdone', range.end)
-        .eq('status', 'COMPLETED');
+      const { data, error, count } = await supabase
+        .from('record_transfer')
+        .select('*', { count: 'exact' })
+        .gte('tran_date', range.start)
+        .lte('tran_date', range.end);
 
-      const count = data?.[0]?.count || 0;
+      const transferCount = count || 0;
 
       // 獲取前一天數據進行比較
       const previousRange = {
@@ -239,20 +238,19 @@ async function fetchStatData(
         end: endOfDay(subDays(yesterday, 1)).toISOString(),
       };
 
-      const { data: previousData } = await supabase
-        .from('record_pallet_transfer')
-        .select('count', { count: 'exact' })
-        .gte('transferdone', previousRange.start)
-        .lte('transferdone', previousRange.end)
-        .eq('status', 'COMPLETED');
+      const { data: previousData, count: previousCount } = await supabase
+        .from('record_transfer')
+        .select('*', { count: 'exact' })
+        .gte('tran_date', previousRange.start)
+        .lte('tran_date', previousRange.end);
 
-      const previousCount = previousData?.[0]?.count || 0;
-      const change = count - previousCount;
-      const changePercentage = previousCount > 0 ? (change / previousCount) * 100 : 0;
+      const prevTransferCount = previousCount || 0;
+      const change = transferCount - prevTransferCount;
+      const changePercentage = prevTransferCount > 0 ? (change / prevTransferCount) * 100 : 0;
 
       return {
         type,
-        value: count,
+        value: transferCount,
         label: 'transfers',
         unit: 'transfers',
         trend: {
@@ -267,7 +265,7 @@ async function fetchStatData(
           label: `${change >= 0 ? '+' : ''}${change}`,
         },
         comparison: {
-          previousValue: previousCount,
+          previousValue: prevTransferCount,
           previousLabel: format(subDays(yesterday, 1), 'MMM dd'),
           change,
           changePercentage,
@@ -281,15 +279,16 @@ async function fetchStatData(
     case StatsType.AwaitLocationQty: {
       const { data, error } = await supabase
         .from('record_palletinfo')
-        .select('quantity')
+        .select('product_qty')
         .eq('location', 'AWAIT');
 
       // 注意：此處查詢的 'quantity' 欄位在 record_palletinfo 表中不存在
       // 應該使用 'product_qty' 或從其他表查詢
+      type RecordPalletInfo = { product_qty?: number };
       const totalQty =
-        data?.reduce(
-          (sum: number, record: PalletInfoRow & { quantity?: number }) =>
-            sum + (record.quantity || record.product_qty || 0),
+        (data as RecordPalletInfo[])?.reduce(
+          (sum: number, record: RecordPalletInfo) =>
+            sum + (record.product_qty || 0),
           0
         ) || 0;
 
@@ -424,17 +423,17 @@ async function fetchStatData(
     }
 
     case StatsType.TransferCount: {
-      const { data, error } = await supabase
-        .from('record_pallet_transfer')
-        .select('count', { count: 'exact' })
-        .gte('created_at', range.start)
-        .lte('created_at', range.end);
+      const { data, error, count } = await supabase
+        .from('record_transfer')
+        .select('*', { count: 'exact' })
+        .gte('tran_date', range.start)
+        .lte('tran_date', range.end);
 
-      const count = data?.[0]?.count || 0;
+      const transferCount = count || 0;
 
       return {
         type,
-        value: count,
+        value: transferCount,
         label: 'transfers',
         unit: 'transfers',
         trend: undefined,
@@ -448,24 +447,32 @@ async function fetchStatData(
     case StatsType.InventoryLevel: {
       const { data, error } = await supabase
         .from('record_inventory')
-        .select('quantity')
-        .gt('quantity', 0);
+        .select('await, backcarpark, bulk, damage, fold, injection, pipeline, prebook');
 
       // 注意：此處查詢的 'quantity' 欄位在 record_inventory 表中不存在
       // 應該使用具體的庫存字段總和
+      type RecordInventory = {
+        await?: number;
+        backcarpark?: number;
+        bulk?: number;
+        damage?: number;
+        fold?: number;
+        injection?: number;
+        pipeline?: number;
+        prebook?: number;
+      };
       const totalInventory =
-        data?.reduce((sum: number, record: InventoryRow & { quantity?: number }) => {
-          // 如果有 quantity 字段就使用，否則計算所有庫存位置的總和
+        (data as RecordInventory[])?.reduce((sum: number, record: RecordInventory) => {
+          // 計算所有庫存位置的總和
           const quantity =
-            record.quantity ||
-            record.await +
-              record.backcarpark +
-              record.bulk +
-              record.damage +
-              record.fold +
-              record.injection +
-              record.pipeline +
-              record.prebook;
+            (record.await || 0) +
+            (record.backcarpark || 0) +
+            (record.bulk || 0) +
+            (record.damage || 0) +
+            (record.fold || 0) +
+            (record.injection || 0) +
+            (record.pipeline || 0) +
+            (record.prebook || 0);
           return sum + quantity;
         }, 0) || 0;
 

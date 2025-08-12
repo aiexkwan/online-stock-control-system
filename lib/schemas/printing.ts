@@ -103,17 +103,6 @@ export const PrintJobSchema = z.object({
     .optional(),
 });
 
-// 列印歷史記錄
-export const PrintHistorySchema = z.object({
-  id: UuidSchema,
-  job_id: z.string(),
-  type: PrintTypeSchema,
-  data: z.unknown(),
-  options: z.unknown().optional(),
-  result: z.unknown().optional(),
-  metadata: z.unknown().optional(),
-  created_at: TimestampSchema,
-});
 
 // 列印服務響應
 export const PrintServiceResponseSchema = z.object({
@@ -159,7 +148,6 @@ export type QcLabelData = z.infer<typeof QcLabelDataSchema>;
 export type GrnLabelData = z.infer<typeof GrnLabelDataSchema>;
 export type TemplateConfig = z.infer<typeof TemplateConfigSchema>;
 export type PrintJob = z.infer<typeof PrintJobSchema>;
-export type PrintHistory = z.infer<typeof PrintHistorySchema>;
 export type PrintServiceResponse = z.infer<typeof PrintServiceResponseSchema>;
 export type TemplateValidation = z.infer<typeof TemplateValidationSchema>;
 export type PrintStats = z.infer<typeof PrintStatsSchema>;

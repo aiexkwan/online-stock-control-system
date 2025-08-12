@@ -14,7 +14,9 @@ import {
   handleApiVersioning,
   addVersionHeadersToResponse,
   recordVersionUsage,
+  type ApiVersion,
 } from '@/lib/middleware/apiVersioning';
+import { handleApiRedirect, isDeprecatedApiPath, getDeprecationHeaders } from '@/lib/middleware/apiRedirects';
 // import { emailToClockNumber } from './app/utils/authUtils'; // 可能不再需要在中間件中直接使用
 
 // 認證中間件 - 處理用戶會話和路由保護
@@ -38,13 +40,17 @@ export async function middleware(request: NextRequest) {
     '/change-password', // 密碼更新頁面需要公開，用戶通過電郵連結訪問
     '/new-password', // 密碼重設頁面需要公開，用戶通過電郵連結訪問
     '/api/health', // Health check API
-    '/api/v1/health', // v1 健康檢查 API (v1.8 新增)
-    '/api/v2/health', // v2 健康檢查 API (v1.8 新增)
-    '/api/v1/metrics', // v1 監控統計 API (v1.8 新增)
+    '/api/monitoring/health', // Consolidated monitoring health check (2025-08-11)
+    '/api/monitoring/deep', // Deep health check (2025-08-11)
+    '/api/metrics', // Consolidated metrics API (2025-08-11)
+    '/api/v1/health', // v1 健康檢查 API (deprecated, redirects)
+    '/api/v2/health', // v2 健康檢查 API (deprecated, redirects)
+    '/api/v1/metrics', // v1 監控統計 API (deprecated, redirects)
     '/api/auth', // 認證相關 API
     '/api/print-label-pdf', // PDF 生成 API（用於內部調用）
     '/api/print-label-html', // HTML 標籤預覽 API（用於測試和預覽）
     '/api/send-order-email', // 訂單郵件發送 API（用於內部調用）
+    '/api/graphql', // GraphQL endpoint (allow app to handle auth)
   ];
 
   // 檢查是否為公開路由
@@ -65,6 +71,22 @@ export async function middleware(request: NextRequest) {
 
   // 記錄路由決策
   logMiddlewareRouting(correlationId, request.nextUrl.pathname, isPublicRoute);
+
+  // API redirect handling for backward compatibility (2025-08-11)
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    // Check for API redirects first
+    const redirectResponse = handleApiRedirect(request);
+    if (redirectResponse) {
+      // Add deprecation headers if using old API version
+      if (isDeprecatedApiPath(request.nextUrl.pathname)) {
+        const deprecationHeaders = getDeprecationHeaders(request.nextUrl.pathname);
+        Object.entries(deprecationHeaders).forEach(([key, value]) => {
+          redirectResponse.headers.set(key, value as string);
+        });
+      }
+      return redirectResponse;
+    }
+  }
 
   // API 版本管理處理 (v1.8 新增)
   let processedRequest = request;
@@ -100,7 +122,8 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isPublicRoute) {
-    middlewareLogger.info(
+    // 改為 debug level 減少噪音
+    middlewareLogger.debug(
       {
         correlationId,
         path: request.nextUrl.pathname,
@@ -122,12 +145,13 @@ export async function middleware(request: NextRequest) {
 
     // 添加 API 版本 headers (v1.8 新增)
     if (processedRequest.nextUrl.pathname.startsWith('/api/')) {
-      response = addVersionHeadersToResponse(response, apiVersion, versionInfo as any);
+      response = addVersionHeadersToResponse(response, apiVersion, versionInfo as unknown as ApiVersion | undefined);
     }
 
     // 記錄請求完成時間
     const duration = Date.now() - startTime;
-    middlewareLogger.info(
+    // 改為 debug level 減少噪音
+    middlewareLogger.debug(
       {
         correlationId,
         duration,
@@ -310,21 +334,32 @@ export async function middleware(request: NextRequest) {
     }
 
     if (!user) {
-      // 對於 admin 路由，讓應用層處理身份驗證而非強制重定向
+      // 對於 admin 路由，強制重定向到登入頁面
       if (request.nextUrl.pathname.startsWith('/admin/')) {
-        middlewareLogger.info(
+        // 改為 debug level 減少噪音
+        middlewareLogger.debug(
           {
             correlationId,
             path: request.nextUrl.pathname,
-            action: 'continue',
-            reason: 'admin_route_app_auth',
+            action: 'redirect',
+            reason: 'admin_route_requires_auth',
           },
-          'Admin route without user, allowing app to handle authentication'
+          'Admin route requires authentication, redirecting to login'
         );
 
-        // 設置標頭讓應用知道用戶未認證
-        response.headers.set('X-User-Logged', 'false');
-        response.headers.set('X-Auth-Required', 'true');
+        const redirectUrl = new URL('/main-login', request.url);
+        redirectUrl.searchParams.set('from', request.nextUrl.pathname);
+        redirectUrl.searchParams.set('error', 'admin_authentication_required');
+
+        logMiddlewareRouting(correlationId, request.nextUrl.pathname, false, '/main-login');
+
+        const redirectResponse = NextResponse.redirect(redirectUrl);
+        redirectResponse.headers.set('x-correlation-id', correlationId);
+        // 添加快取控制頭以防止部署不匹配問題
+        redirectResponse.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        redirectResponse.headers.set('Pragma', 'no-cache');
+        redirectResponse.headers.set('Expires', '0');
+        return redirectResponse;
       }
       // 對於其他非公開路由，保持原有重定向邏輯
       else if (request.nextUrl.pathname !== '/main-login' && !isPublicRoute) {
@@ -367,12 +402,13 @@ export async function middleware(request: NextRequest) {
 
     // 添加 API 版本 headers (v1.8 新增)
     if (processedRequest.nextUrl.pathname.startsWith('/api/')) {
-      response = addVersionHeadersToResponse(response, apiVersion, versionInfo as any);
+      response = addVersionHeadersToResponse(response, apiVersion, versionInfo as unknown as ApiVersion | undefined);
     }
 
     // 記錄請求完成
     const duration = Date.now() - startTime;
-    middlewareLogger.info(
+    // 改為 debug level 減少噪音
+    middlewareLogger.debug(
       {
         correlationId,
         duration,
@@ -400,7 +436,7 @@ export async function middleware(request: NextRequest) {
 
     // 添加 API 版本 headers (v1.8 新增)
     if (processedRequest.nextUrl.pathname.startsWith('/api/')) {
-      response = addVersionHeadersToResponse(response, apiVersion, versionInfo as any);
+      response = addVersionHeadersToResponse(response, apiVersion, versionInfo as unknown as ApiVersion | undefined);
     }
 
     return response;

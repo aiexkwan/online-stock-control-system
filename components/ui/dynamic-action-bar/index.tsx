@@ -6,14 +6,14 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { NavigationItem } from './NavigationItem';
 import { MobileView } from './MobileView';
-import { useMediaQuery } from '@/hooks/use-media-query';
+import { useMediaQuery } from '@/lib/hooks/use-media-query';
 import { MAIN_NAVIGATION } from '@/config/navigation';
 import { useAuth } from '@/app/hooks/useAuth';
 import { createClient } from '@/app/utils/supabase/client';
 import { ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'sonner';
-import { navigationPreloader } from '@/lib/navigation/preloader';
+// NavigationPreloader removed - using Next.js built-in prefetch
 import { navigationCacheManager } from '@/lib/navigation/cache-manager';
 import { VirtualizedNavigation } from './VirtualizedNavigation';
 import { QuickAccess } from './QuickAccess';
@@ -60,12 +60,7 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
     return 'Good Evening';
   };
 
-  // 使用預加載系統
-  useEffect(() => {
-    if (user?.id && pathname) {
-      navigationPreloader.predictAndPreload(user.id, pathname);
-    }
-  }, [pathname, user?.id]);
+  // Navigation preloader removed - using Next.js built-in Link prefetch
 
   // 優化用戶數據獲取
   useEffect(() => {
@@ -143,7 +138,7 @@ export function DynamicActionBar({ className }: DynamicActionBarProps) {
       if (user?.id) {
         navigationCacheManager.clearUserCache(user.id);
       }
-      navigationPreloader.clearCache();
+      // Navigation preloader cache clearing removed
 
       if (!supabase) {
         toast.error('Auth client not available');

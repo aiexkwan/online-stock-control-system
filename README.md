@@ -36,7 +36,7 @@ A comprehensive stock control and management system built with Next.js 14, TypeS
 - **Quick Inventory Search**: Instant stock level queries
 - **Report Generation**: ACO, GRN, Transaction, Slate reports
 - **Data Export**: Comprehensive database export tools
-- **Universal Upload Widget**: Configurable upload system with plugins for folder selection, preview, and AI analysis
+- **Universal Upload Card**: Configurable upload system with plugins for folder selection, preview, and AI analysis
 
 #### **AI-Powered Features**
 - **PDF Order Analysis**: Automatic order data extraction
@@ -67,8 +67,8 @@ A comprehensive stock control and management system built with Next.js 14, TypeS
 ```
 online-stock-control-system/
 ├── app/
-│   ├── admin/                  # Comprehensive admin panel with dashboard widgets
-│   │   └── components/dashboard/widgets/common/UniversalUploadWidget/ # New universal upload component
+│   ├── admin/                  # Comprehensive admin panel with dashboard cards
+│   │   └── components/dashboard/cards/common/UniversalUploadCard/ # New universal upload component
 │   ├── api/                    # API endpoints including AI analysis and reports
 │   ├── print-label/            # QC label printing system
 │   ├── print-grnlabel/         # GRN label printing
@@ -79,7 +79,7 @@ online-stock-control-system/
 │   ├── qr-scanner/             # QR code scanning
 │   └── ...
 ├── docs/                      # Comprehensive documentation
-├── lib/                       # Utility libraries including widgets config
+├── lib/                       # Utility libraries including cards config
 ├── supabase/                  # Supabase configurations and migrations
 ├── tests/                     # Unit and integration tests
 └── public/                    # Static assets
@@ -186,9 +186,9 @@ The system uses PostgreSQL through Supabase with the following main tables:
 #### **Recent Updates**
 
 ##### **Phase V1.2 Enhancements**
-- Implemented UniversalUploadWidget with plugin system for modular upload features
+- Implemented UniversalUploadCard with plugin system for modular upload features
 - Added plugins: FolderSelector, Preview, AIAnalysis
-- Updated widget configurations for better modularity
+- Updated card configurations for better modularity
 - Enhanced design system unification
 
 ### 📖 Documentation
@@ -281,8 +281,8 @@ This project is proprietary software developed for Pennine Manufacturing Industr
 ```
 online-stock-control-system/
 ├── app/
-│   ├── admin/                  # 綜合管理面板與儀表板小部件
-│   │   └── components/dashboard/widgets/common/UniversalUploadWidget/ # 新的通用上傳組件
+│   ├── admin/                  # 綜合管理面板與儀表板卡片
+│   │   └── components/dashboard/cards/common/UniversalUploadCard/ # 新的通用上傳組件
 │   ├── api/                    # API端點包括AI分析和報表
 │   ├── print-label/            # QC標籤列印系統
 │   ├── print-grnlabel/         # GRN標籤列印
@@ -293,7 +293,7 @@ online-stock-control-system/
 │   ├── qr-scanner/             # QR碼掃描
 │   └── ...
 ├── docs/                      # 綜合文檔
-├── lib/                       # 工具庫包括小部件配置
+├── lib/                       # 工具庫包括卡片配置
 ├── supabase/                  # Supabase配置和遷移
 ├── tests/                     # 單元和整合測試
 └── public/                    # 靜態資源
@@ -401,9 +401,9 @@ online-stock-control-system/
 - 更好的錯誤日誌和監控
 
 #### **Phase V1.2 增強**
-- 實施UniversalUploadWidget與插件系統用於模塊化上傳功能
+- 實施UniversalUploadCard與插件系統用於模塊化上傳功能
 - 新增插件：FolderSelector、Preview、AIAnalysis
-- 更新小部件配置以提高模塊性
+- 更新卡片配置以提高模塊性
 - 增強設計系統統一
 
 ### 文檔

@@ -10,12 +10,14 @@ import { ITransactionService } from '../interfaces/ITransactionService';
 import {
   TransactionOptions,
   TransactionResult,
+  TransactionContext,
+} from '../types/transaction.types';
+import {
   HistoryRecord,
   StockTransferDto,
   VoidPalletDto,
-  TransactionContext,
   InventoryRecord,
-} from '../types';
+} from '../types/inventory.types';
 import { LocationMapper, DatabaseLocationColumn } from '../utils/locationMapper';
 import { validatePalletNumber } from '../utils/validators';
 

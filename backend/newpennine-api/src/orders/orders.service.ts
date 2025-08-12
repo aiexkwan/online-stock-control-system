@@ -11,6 +11,11 @@ import { AcoResponseDto, AcoRecordDto } from './dto/aco-response.dto';
 import { GrnQueryDto } from './dto/grn-query.dto';
 import { GrnResponseDto, GrnRecordDto } from './dto/grn-response.dto';
 
+interface OrderStats {
+  total: number;
+  by_status: Record<string, number>;
+}
+
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name);
@@ -261,7 +266,7 @@ export class OrdersService {
     }
   }
 
-  async getAcoOrderStats(): Promise<any> {
+  async getAcoOrderStats(): Promise<OrderStats> {
     try {
       const { data, error } = await this.supabaseService
         .getClient()
@@ -297,7 +302,7 @@ export class OrdersService {
     }
   }
 
-  async getGrnOrderStats(): Promise<any> {
+  async getGrnOrderStats(): Promise<OrderStats> {
     try {
       const { data, error } = await this.supabaseService
         .getClient()

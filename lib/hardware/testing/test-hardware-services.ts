@@ -42,7 +42,7 @@ export async function testHardwareServices() {
     logger.info(`✅ Job added to queue: ${jobId}`);
 
     const queueStatus = hal.queue.getQueueStatus();
-    logger.info('Queue status:', queueStatus);
+    logger.info(queueStatus, 'Queue status:');
 
     // Test 4: Monitoring
     logger.info('Test 4: Device Monitoring');

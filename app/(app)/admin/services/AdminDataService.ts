@@ -100,10 +100,13 @@ class AdminDataService {
       // 轉換 server action 結果到符合現有介面的格式
       return result.map(item => ({
         code: item.code,
-        required_qty: item.required_qty,
-        remain_qty: item.remain_qty,
-        completed_qty: item.completed_qty,
-        completion_percentage: item.completion_percentage,
+        description: '', // Default empty description
+        ordered: item.required_qty,
+        completed: item.completed_qty,
+        remaining: item.remain_qty,
+        percentage: item.completion_percentage,
+        orderRef: orderRef,
+        updatedAt: new Date().toISOString(),
       }));
     } catch (error) {
       console.warn('Server action failed, falling back to direct query:', error);
@@ -124,11 +127,13 @@ class AdminDataService {
           const remaining = Math.max(0, item.required_qty - completed);
           return {
             code: item.code,
-            required_qty: item.required_qty,
-            remain_qty: remaining,
-            completed_qty: completed,
-            completion_percentage:
-              item.required_qty > 0 ? Math.round((completed / item.required_qty) * 100) : 0,
+            description: item.code,
+            ordered: item.required_qty,
+            completed: completed,
+            remaining: remaining,
+            percentage: item.required_qty > 0 ? Math.round((completed / item.required_qty) * 100) : 0,
+            orderRef: orderRef,
+            updatedAt: new Date().toISOString(),
           };
         });
       } catch (fallbackError) {
@@ -151,15 +156,11 @@ class AdminDataService {
       );
 
       return {
-        product_code: productCode.toUpperCase(),
-        injection: 0,
-        pipeline: 0,
-        await: 0,
-        fold: 0,
-        bulk: 0,
-        backcarpark: 0,
-        damage: 0,
-        total: 0,
+        productCode: productCode.toUpperCase(),
+        productName: productCode.toUpperCase(),
+        totalStock: 0,
+        locations: [],
+        lastUpdated: new Date().toISOString(),
       };
     } catch (error) {
       console.error('Error searching inventory:', error);

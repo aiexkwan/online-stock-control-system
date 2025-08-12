@@ -9,7 +9,8 @@ import { z } from 'zod';
 export const TimestampSchema = z.string().datetime();
 export const UuidSchema = z.string().uuid();
 export const ProductCodeSchema = z.string().min(1);
-export const PalletNumberSchema = z.string().regex(/^[A-Z0-9]+$/);
+// Pallet number format: DDMMYY/X, DDMMYY/XX or DDMMYY/XXX (e.g., 050825/1, 050825/12, 050825/123)
+export const PalletNumberSchema = z.string().regex(/^\d{6}\/\d{1,3}$/);
 
 // 分頁參數
 export const PaginationSchema = z.object({

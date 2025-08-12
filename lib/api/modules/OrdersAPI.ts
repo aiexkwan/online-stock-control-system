@@ -2,7 +2,7 @@
  * Orders API Module
  * Part of Phase 3.1: Real-time Component Migration
  *
- * Provides server-side data access for Orders List Widget
+ * Provides server-side data access for Orders List Card
  * with optimized RPC calls and Server Actions
  */
 

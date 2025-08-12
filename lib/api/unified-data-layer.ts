@@ -3,11 +3,12 @@
  * Abstraction layer supporting both REST and GraphQL with automatic fallback
  */
 
-import { ApolloClient, DocumentNode, gql, NormalizedCacheObject } from '@apollo/client';
+import { ApolloClient, DocumentNode, gql, NormalizedCacheObject, OperationVariables } from '@apollo/client';
 import { apolloClient } from '@/lib/graphql/apollo-client';
 import { restRequest } from '@/lib/api/unified-api-client';
 import { dataSourceConfig } from '@/lib/data/data-source-config';
-import { getWidgetCategory } from '@/lib/widgets/unified-widget-config';
+// WidgetCategory type removed - using Card architecture
+type WidgetCategory = 'stats' | 'chart' | 'table' | 'analysis' | 'unknown';
 
 // Type-safe alternatives to 'any'
 type GraphQLVariables = Record<string, unknown>;
@@ -15,7 +16,7 @@ type RequestBody = Record<string, unknown> | FormData | string | null;
 type DataTransformer<TInput = unknown, TOutput = unknown> = (data: TInput) => TOutput;
 type DefaultApiResponse = Record<string, unknown>;
 
-// Widget parameter types based on existing GraphQL queries
+// Card parameter types based on existing GraphQL queries
 interface WidgetParameters {
   warehouse?: string;
   dateRange?: {
@@ -33,6 +34,7 @@ interface WidgetParameters {
 export enum DataSourceType {
   GRAPHQL = 'graphql',
   REST = 'rest',
+  SERVER_ACTION = 'server_action',
   AUTO = 'auto',
 }
 
@@ -44,6 +46,7 @@ export interface QueryOptions<TVariables = GraphQLVariables> {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   fallbackEnabled?: boolean;
   cachePolicy?: 'cache-first' | 'network-only' | 'no-cache';
+  serverAction?: (variables?: TVariables) => Promise<unknown>;
 }
 
 export interface MutationOptions<TVariables = GraphQLVariables> {
@@ -54,6 +57,7 @@ export interface MutationOptions<TVariables = GraphQLVariables> {
   method?: 'POST' | 'PUT' | 'DELETE';
   body?: RequestBody;
   fallbackEnabled?: boolean;
+  serverAction?: (variables?: TVariables) => Promise<unknown>;
 }
 
 export interface DataLayerResponse<T> {
@@ -75,12 +79,16 @@ export interface WidgetDataMapping {
       method?: 'GET' | 'POST';
       transform?: DataTransformer;
     };
+    serverAction?: {
+      action: (params?: unknown) => Promise<unknown>;
+      transform?: DataTransformer;
+    };
     preferredSource?: DataSourceType;
   };
 }
 
 /**
- * Widget mappings for dual-mode operation
+ * Card mappings for dual-mode operation
  */
 const WIDGET_MAPPINGS: WidgetDataMapping = {
   stock_levels: {
@@ -168,7 +176,7 @@ const WIDGET_MAPPINGS: WidgetDataMapping = {
     },
     preferredSource: DataSourceType.GRAPHQL, // GraphQL 更適合複雜查詢
   },
-  // Add more widget mappings as we migrate
+  // Add more card mappings as we migrate
 };
 
 export class UnifiedDataLayer {
@@ -182,6 +190,9 @@ export class UnifiedDataLayer {
     graphqlTotal: number;
     graphqlSuccess: number;
     graphqlTotalTime: number;
+    serverActionTotal: number;
+    serverActionSuccess: number;
+    serverActionTotalTime: number;
   } = {
     restTotal: 0,
     restSuccess: 0,
@@ -189,6 +200,9 @@ export class UnifiedDataLayer {
     graphqlTotal: 0,
     graphqlSuccess: 0,
     graphqlTotalTime: 0,
+    serverActionTotal: 0,
+    serverActionSuccess: 0,
+    serverActionTotalTime: 0,
   };
 
   constructor(client?: ApolloClient<NormalizedCacheObject>) {
@@ -201,7 +215,7 @@ export class UnifiedDataLayer {
   /**
    * Execute a query with automatic source selection and fallback
    */
-  async query<T = DefaultApiResponse, TVariables = GraphQLVariables>(
+  async query<T = DefaultApiResponse, TVariables extends OperationVariables = GraphQLVariables>(
     options: QueryOptions<TVariables>
   ): Promise<DataLayerResponse<T>> {
     const startTime = performance.now();
@@ -229,7 +243,38 @@ export class UnifiedDataLayer {
 
     try {
       // Determine data source
-      if (source === DataSourceType.GRAPHQL) {
+      if (source === DataSourceType.SERVER_ACTION) {
+        try {
+          const result = await this.executeServerAction<T, TVariables>(options);
+          this.recordMetrics('serverAction', true, result.executionTime || 0);
+          return {
+            ...result,
+            executionTime: performance.now() - startTime,
+          };
+        } catch (serverActionError) {
+          this.recordMetrics('serverAction', false, performance.now() - startTime);
+          console.error('[UnifiedDataLayer] Server Action failed:', serverActionError);
+          
+          // Fallback to GraphQL or REST if enabled
+          if (fallbackEnabled) {
+            if (options.query) {
+              console.log('[UnifiedDataLayer] Falling back to GraphQL');
+              const graphqlResult = await this.executeGraphQLQuery<T, TVariables>(options);
+              this.recordMetrics('graphql', true, graphqlResult.executionTime || 0);
+              return graphqlResult;
+            } else if (options.endpoint) {
+              console.log('[UnifiedDataLayer] Falling back to REST API');
+              const restResult = await this.executeRESTQuery<T>(
+                options as QueryOptions<GraphQLVariables>
+              );
+              this.recordMetrics('rest', true, restResult.executionTime || 0);
+              return restResult;
+            }
+          }
+          
+          throw serverActionError;
+        }
+      } else if (source === DataSourceType.GRAPHQL) {
         try {
           const result = await this.executeGraphQLQuery<T, TVariables>(options);
           this.recordMetrics('graphql', true, result.executionTime || 0);
@@ -273,7 +318,7 @@ export class UnifiedDataLayer {
   /**
    * Execute a mutation with automatic source selection and fallback
    */
-  async mutation<T = DefaultApiResponse, TVariables = GraphQLVariables>(
+  async mutation<T = DefaultApiResponse, TVariables extends OperationVariables = GraphQLVariables>(
     options: MutationOptions<TVariables>
   ): Promise<DataLayerResponse<T>> {
     const startTime = performance.now();
@@ -282,7 +327,32 @@ export class UnifiedDataLayer {
 
     try {
       // Determine data source
-      if (source === DataSourceType.GRAPHQL || source === DataSourceType.AUTO) {
+      if (source === DataSourceType.SERVER_ACTION) {
+        try {
+          const result = await this.executeServerAction<T, TVariables>(options);
+          this.recordMetrics('serverAction', true, result.executionTime || 0);
+          return {
+            ...result,
+            executionTime: performance.now() - startTime,
+          };
+        } catch (serverActionError) {
+          this.recordMetrics('serverAction', false, performance.now() - startTime);
+          console.error('[UnifiedDataLayer] Server Action mutation failed:', serverActionError);
+          
+          // Fallback if enabled
+          if (fallbackEnabled) {
+            if (options.mutation) {
+              console.log('[UnifiedDataLayer] Falling back to GraphQL');
+              return this.executeGraphQLMutation<T, TVariables>(options);
+            } else if (options.endpoint) {
+              console.log('[UnifiedDataLayer] Falling back to REST API');
+              return this.executeRESTMutation<T>(options as MutationOptions<GraphQLVariables>);
+            }
+          }
+          
+          throw serverActionError;
+        }
+      } else if (source === DataSourceType.GRAPHQL || source === DataSourceType.AUTO) {
         try {
           const result = await this.executeGraphQLMutation<T, TVariables>(options);
           return {
@@ -315,7 +385,7 @@ export class UnifiedDataLayer {
   }
 
   /**
-   * Get widget data with intelligent source selection
+   * Get card data with intelligent source selection
    */
   async getWidgetData<T = DefaultApiResponse>(
     widgetId: string,
@@ -377,7 +447,7 @@ export class UnifiedDataLayer {
   /**
    * Execute GraphQL query
    */
-  private async executeGraphQLQuery<T, TVariables>(
+  private async executeGraphQLQuery<T, TVariables extends OperationVariables>(
     options: QueryOptions<TVariables>
   ): Promise<DataLayerResponse<T>> {
     if (!options.query) {
@@ -403,7 +473,7 @@ export class UnifiedDataLayer {
   /**
    * Execute GraphQL mutation
    */
-  private async executeGraphQLMutation<T, TVariables>(
+  private async executeGraphQLMutation<T, TVariables extends OperationVariables>(
     options: MutationOptions<TVariables>
   ): Promise<DataLayerResponse<T>> {
     if (!options.mutation) {
@@ -475,6 +545,34 @@ export class UnifiedDataLayer {
   }
 
   /**
+   * Execute Server Action
+   */
+  private async executeServerAction<T, TVariables extends OperationVariables>(
+    options: QueryOptions<TVariables> | MutationOptions<TVariables>
+  ): Promise<DataLayerResponse<T>> {
+    if (!options.serverAction) {
+      throw new Error('Server Action is required');
+    }
+
+    const startTime = performance.now();
+    
+    try {
+      const result = await options.serverAction(options.variables);
+      
+      return {
+        data: result as T,
+        source: DataSourceType.SERVER_ACTION,
+        cached: false,
+        executionTime: performance.now() - startTime,
+      };
+    } catch (error) {
+      throw new Error(
+        `Server Action failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
    * Enable/disable metrics collection
    */
   setMetricsEnabled(enabled: boolean) {
@@ -491,17 +589,21 @@ export class UnifiedDataLayer {
   /**
    * 記錄性能指標
    */
-  private recordMetrics(apiType: 'rest' | 'graphql', success: boolean, responseTime: number) {
+  private recordMetrics(apiType: 'rest' | 'graphql' | 'serverAction', success: boolean, responseTime: number) {
     if (!this.metricsEnabled) return;
 
     if (apiType === 'rest') {
       this.performanceMetrics.restTotal++;
       this.performanceMetrics.restTotalTime += responseTime;
       if (success) this.performanceMetrics.restSuccess++;
-    } else {
+    } else if (apiType === 'graphql') {
       this.performanceMetrics.graphqlTotal++;
       this.performanceMetrics.graphqlTotalTime += responseTime;
       if (success) this.performanceMetrics.graphqlSuccess++;
+    } else if (apiType === 'serverAction') {
+      this.performanceMetrics.serverActionTotal++;
+      this.performanceMetrics.serverActionTotalTime += responseTime;
+      if (success) this.performanceMetrics.serverActionSuccess++;
     }
   }
 
@@ -516,13 +618,18 @@ export class UnifiedDataLayer {
       graphqlTotal,
       graphqlSuccess,
       graphqlTotalTime,
+      serverActionTotal,
+      serverActionSuccess,
+      serverActionTotalTime,
     } = this.performanceMetrics;
 
     return {
       restSuccessRate: restTotal > 0 ? restSuccess / restTotal : 1,
       graphqlSuccessRate: graphqlTotal > 0 ? graphqlSuccess / graphqlTotal : 1,
+      serverActionSuccessRate: serverActionTotal > 0 ? serverActionSuccess / serverActionTotal : 1,
       restAvgResponseTime: restTotal > 0 ? restTotalTime / restTotal : 0,
       graphqlAvgResponseTime: graphqlTotal > 0 ? graphqlTotalTime / graphqlTotal : 0,
+      serverActionAvgResponseTime: serverActionTotal > 0 ? serverActionTotalTime / serverActionTotal : 0,
       lastUpdated: new Date(),
     };
   }

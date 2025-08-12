@@ -5,6 +5,36 @@
 import { DefaultPrinterService } from '../printer-service';
 import { PrintJob, PrintJobType } from '../../types';
 
+// Define specific data types for different print job types
+interface QCLabelData {
+  pdfBlob?: Blob;
+  productCode: string;
+  quantity?: number;
+}
+
+interface DocumentData {
+  pdfBlob: Blob;
+}
+
+// Type guard functions
+function isQCLabelData(data: unknown): data is QCLabelData {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'productCode' in data &&
+    typeof (data as QCLabelData).productCode === 'string'
+  );
+}
+
+function isDocumentData(data: unknown): data is DocumentData {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'pdfBlob' in data &&
+    (data as DocumentData).pdfBlob instanceof Blob
+  );
+}
+
 // Mock fetch for testing
 global.fetch = jest.fn();
 
@@ -130,7 +160,10 @@ describe('DefaultPrinterService', () => {
       expect(result.jobId).toBeDefined();
       expect(result.pdfUrl).toBe('blob:mock-url');
       expect(result.message).toBe('QC label printed successfully');
-      expect(URL.createObjectURL).toHaveBeenCalledWith((job.data as any).pdfBlob);
+      
+      // Type assertion with proper type
+      const data = job.data as QCLabelData;
+      expect(URL.createObjectURL).toHaveBeenCalledWith(data.pdfBlob);
     });
 
     it('should print QC label via API when no blob provided', async () => {
@@ -151,7 +184,8 @@ describe('DefaultPrinterService', () => {
       };
 
       // Mock the triggerPrint method to avoid iframe complications
-      jest.spyOn(service as any, 'triggerPrint').mockResolvedValue(undefined);
+      // @ts-expect-error - Accessing private method for testing
+      jest.spyOn(service, 'triggerPrint').mockResolvedValue(undefined);
 
       const result = await service.print(job);
 
@@ -320,8 +354,8 @@ describe('DefaultPrinterService', () => {
       jest.advanceTimersByTime(10000);
       const result2 = await printPromise2;
 
-      expect(result1.jobId).not.toBe(result2.jobId);
-      expect(result1.jobId).toMatch(/^job-\d+-[a-z0-9]+$/);
+      expect((result1 as any).jobId).not.toBe((result2 as any).jobId);
+      expect((result1 as any).jobId).toMatch(/^job-\d+-[a-z0-9]+$/);
     });
 
     it('should handle print with multiple copies', async () => {
@@ -335,7 +369,7 @@ describe('DefaultPrinterService', () => {
       const printPromise = service.print(job);
 
       // Trigger iframe onload
-      mockIframe.onload();
+      (mockIframe as any).onload();
 
       // Fast forward timers
       jest.advanceTimersByTime(10000);
@@ -419,9 +453,9 @@ describe('DefaultPrinterService', () => {
 
       // Verify sequential processing
       const calls = printSpy.mock.calls;
-      expect((calls[0][0].data as any).pdfBlob).toBeDefined();
-      expect((calls[1][0].data as any).pdfBlob).toBeDefined();
-      expect((calls[2][0].data as any).pdfBlob).toBeDefined();
+      expect((calls[0][0].data as DocumentData).pdfBlob).toBeDefined();
+      expect((calls[1][0].data as DocumentData).pdfBlob).toBeDefined();
+      expect((calls[2][0].data as DocumentData).pdfBlob).toBeDefined();
     });
   });
 

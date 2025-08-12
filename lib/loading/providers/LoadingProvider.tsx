@@ -184,12 +184,12 @@ export function LoadingProvider({
           dispatch({ type: 'START_LOADING', payload: loadingState });
           timeoutsRef.current.delete(id);
 
-          logger.debug('Loading started after debounce', {
+          logger.debug({
             id,
             type,
             priority,
             debounceTime: strategy.debounceTime,
-          });
+          }, 'Loading started after debounce');
         }, strategy.debounceTime);
 
         timeoutsRef.current.set(id, debounceTimeout);
@@ -211,13 +211,13 @@ export function LoadingProvider({
           });
           timeoutsRef.current.delete(id);
 
-          logger.warn('Loading timeout', { id, timeout: strategy.timeout });
+          logger.warn({ id, timeout: strategy.timeout }, 'Loading timeout');
         }, strategy.timeout);
 
         timeoutsRef.current.set(id, timeoutId);
       }
 
-      logger.debug('Loading started', { id, type, priority, strategy });
+      logger.debug({ id, type, priority, strategy }, 'Loading started');
     },
     [enablePerformanceAware]
   );
@@ -244,7 +244,7 @@ export function LoadingProvider({
 
         setTimeout(() => {
           dispatch({ type: 'STOP_LOADING', payload: id });
-          logger.debug('Loading stopped after min show time', { id, elapsedTime, minShowTime });
+          logger.debug({ id, elapsedTime, minShowTime }, 'Loading stopped after min show time');
         }, remainingTime);
 
         return;
@@ -253,11 +253,11 @@ export function LoadingProvider({
       // 立即結束載入
       dispatch({ type: 'STOP_LOADING', payload: id });
 
-      logger.debug('Loading stopped', {
+      logger.debug({
         id,
         elapsedTime,
         estimatedDuration: state.estimatedDuration,
-      });
+      }, 'Loading stopped');
     },
     [loadingStates]
   );
@@ -270,7 +270,7 @@ export function LoadingProvider({
       payload: { id, progress: clampedProgress },
     });
 
-    logger.debug('Loading progress updated', { id, progress: clampedProgress });
+    logger.debug({ id, progress: clampedProgress }, 'Loading progress updated');
   }, []);
 
   // 更新文字
@@ -289,7 +289,7 @@ export function LoadingProvider({
       timeoutsRef.current.delete(id);
     }
 
-    logger.error('Loading error set', { id, error });
+    logger.error({ id, error }, 'Loading error set');
   }, []);
 
   // 清除所有載入狀態

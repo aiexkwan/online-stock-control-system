@@ -1,22 +1,22 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, Suspense } from 'react';
 import { PrintLabelGrid, GridWidget } from '@/app/components/qc-label-form/PrintLabelGrid';
 import { GridBasicProductForm } from '@/app/components/qc-label-form/GridBasicProductForm';
-import { ErrorBoundary } from '@/app/components/qc-label-form/ErrorBoundary';
-import { EnhancedProgressBar } from '@/app/components/qc-label-form/EnhancedProgressBar';
+import { ErrorBoundary } from '@/app/(app)/admin/components/ErrorBoundary';
+import { EnhancedProgressBar } from '@/app/(app)/admin/components/EnhancedProgressBar';
 import { AcoOrderForm } from '@/app/components/qc-label-form/AcoOrderForm';
 import { SlateDetailsForm } from '@/app/components/qc-label-form/SlateDetailsForm';
 import { useQcLabelBusiness } from '@/app/components/qc-label-form/hooks/useQcLabelBusiness';
-import ClockNumberConfirmDialog from '@/app/components/qc-label-form/ClockNumberConfirmDialog';
+import ClockNumberConfirmDialog from '@/app/(app)/admin/components/ClockNumberConfirmDialog';
 import FloatingInstructions from '@/components/ui/floating-instructions';
 import { TestHardwareButton } from '@/app/components/qc-label-form/TestHardwareButton';
 import { useSearchParams } from 'next/navigation';
-import { MAX_PALLET_COUNT } from '@/app/components/qc-label-form/constants';
+import { MAX_PALLET_COUNT } from '@/app/(app)/admin/components/qc-label-constants';
 import type { ProductInfo, FormData } from '@/app/components/qc-label-form/types';
 import { PrintQueueMonitor } from '@/lib/printing';
 
-export default function PrintLabelPage() {
+function PrintLabelContent() {
   const searchParams = useSearchParams();
 
   // Check if this is an auto-fill request from void-pallet
@@ -262,7 +262,7 @@ export default function PrintLabelPage() {
       </div>
 
       <PrintLabelGrid>
-        {/* Main Form Widget */}
+        {/* Main Form Card */}
         <GridWidget area='main' borderStyle='default' glow>
           <ErrorBoundary>
             <GridBasicProductForm
@@ -286,7 +286,7 @@ export default function PrintLabelPage() {
           </ErrorBoundary>
         </GridWidget>
 
-        {/* ACO/Slate Event Widget - Only show when needed */}
+        {/* ACO/Slate Event Card - Only show when needed */}
         {productInfo && (productInfo.type === 'ACO' || productInfo.type === 'Slate') && (
           <GridWidget area='bottom-left' borderStyle='highlight'>
             <div className='h-full overflow-auto'>
@@ -324,7 +324,7 @@ export default function PrintLabelPage() {
           </GridWidget>
         )}
 
-        {/* Progress Widget */}
+        {/* Progress Card */}
         {formData.pdfProgress.total > 0 && (
           <GridWidget area='bottom-right' borderStyle='default'>
             <div className='flex h-full flex-col'>
@@ -368,5 +368,26 @@ export default function PrintLabelPage() {
         </div>
       </div>
     </>
+  );
+}
+
+// Loading component for Suspense
+function PrintLabelLoading() {
+  return (
+    <div className='flex h-screen items-center justify-center'>
+      <div className='text-center'>
+        <div className='mb-4 h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-primary mx-auto'></div>
+        <p className='text-muted-foreground'>Loading print label page...</p>
+      </div>
+    </div>
+  );
+}
+
+// Main export with Suspense boundary
+export default function PrintLabelPage() {
+  return (
+    <Suspense fallback={<PrintLabelLoading />}>
+      <PrintLabelContent />
+    </Suspense>
   );
 }

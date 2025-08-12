@@ -14,17 +14,18 @@
 ### 位置（Location）概念
 - **Await**: 默認暫存區，新收貨或待處理的棧板通常在此
 - **Await_grn**: 收貨暫存區，剛完成GRN收貨的棧板
-- **Injection**: 生產區，正在生產的材料
-- **Pipeline**: 管道處理區
-- **Fold**: 摺疊加工區
+- **Injection**: 模具生產區
+- **Pipeline**: 喉管生產區
+- **Fold**: 成品倉存區
 - **Bulk**: 散裝儲存區
 - **Backcarpark**: 外部停車場儲存
 - **Damage**: 損壞品區
 
 ### 業務流程
-1. **收貨流程**: GRN收貨 → await_grn → 轉移到其他位置
+1. **物料收貨**: GRN收貨 → await_grn → 轉移到其他位置
 2. **生產流程**: 材料 → injection(生產) → 完成QC → await
-3. **出貨流程**: await → 分配到訂單 → loaded → 出貨
+3. **生產完成**: await → 轉移到成品倉存區
+4. **出貨流程**: 成品倉存區 → 根據訂單 → loaded → 出貨
 
 ### 棧板號格式
 - 格式：DDMMYY/XX (例: 280625/1 = 2025年6月28日第1個棧板)
@@ -55,12 +56,12 @@
 | 欄位          | 用途說明                | 類型          | 主/外鍵  |
 |-------------|----------------------|-------------|---------|
 | plt_num     | 棧板號碼              | text        | FK      |
-| injection   | 生產區庫存            | integer     |         |
-| pipeline    | 生產線庫存            | integer     |         |
-| prebook     | 預訂庫存              | integer     |         |
+| injection   | 模具生產區            | integer     |         |
+| pipeline    | 喉管生產區            | integer     |         |
+| prebook     | 預訂庫存             | integer     |         |
 | await       | 待處理庫存            | integer     |         |
-| await_grn   | 收貨暫存區            | integer     |         |
-| fold        | 包裝區庫存            | integer     |         |
+| await_grn   | 收貨暫存區            | integer     |         | 
+| fold        | 成品倉存區            | integer     |         |
 | bulk        | 散貨區庫存            | integer     |         |
 | backcarpark | 後停車場庫存          | integer     |         |
 | damage      | 損壞品庫存            | integer     |         |
@@ -236,16 +237,6 @@
 | void_qty   | 損壞數量     | integer     |         |
 | void_reason| 損壞原因     | text        |         |
 | void_time  | 損壞時間     | timestamptz |         |
-
-#### 18. `report_log` — 系統日誌
-| 欄位        | 用途說明     | 類型        | 主/外鍵  |
-|-----------|------------|-------------|---------|
-| uuid      | 唯一識別碼  | uuid        | PK      |
-| error     | 錯誤訊息    | text        |         |
-| error_info| 錯誤詳情    | text        |         |
-| state     | 處理狀態    | boolean     |         |
-| user_id   | 用戶編號    | integer     | FK      |
-| time      | 發生時間    | timestamptz |         |
 
 ---
 
@@ -479,4 +470,4 @@ ORDER BY o.created_at DESC;
 
 ---
 
-**系統版本：2025-06-27 | 支援 OpenAI GPT-4o | 完整18張核心表格映射 | 已整合查詢模板系統**
+**系統版本：2025-06-27 | 支援 OpenAI GPT-4o | 完整17張核心表格映射 | 已整合查詢模板系統**

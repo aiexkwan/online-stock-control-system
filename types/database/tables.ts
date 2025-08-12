@@ -1,21 +1,56 @@
 /**
  * 數據庫表格類型定義
  * 基於實際業務邏輯的表格類型
+ * 重構：使用 Zod schema 替換 unknown 類型
  */
 
 import { UserRole } from '@/types/core/enums';
+import {
+  DatabaseValue,
+  SafeDatabaseValue,
+  RelationResult,
+  safeParseDatabaseValue,
+  safeCastToDatabaseRecord,
+  safeCastToEnhancedDatabaseRecord,
+  convertLegacyDatabaseRecord,
+  EnhancedDatabaseRecord as ZodEnhancedDatabaseRecord,
+  DatabaseRecord as ZodDatabaseRecord,
+  LegacyDatabaseRecord as ZodLegacyDatabaseRecord,
+} from '@/lib/validation/zod-schemas';
 
-// 通用記錄類型 (從 lib/types/database.ts 遷移)
+// ===== 改進的通用記錄類型系統 =====
+
+// 主要 DatabaseRecord 類型 - 支援嵌套物件和陣列
 export interface DatabaseRecord {
+  [key: string]: DatabaseValue;
+}
+
+// Legacy 類型（向後相容）
+export interface LegacyDatabaseRecord {
   [key: string]: unknown;
 }
 
-// 擴展類型，用於複雜查詢結果
-export interface EnhancedDatabaseRecord extends DatabaseRecord {
-  // 關聯查詢結果 - 可以根據實際需要擴展
-  data_code?: any;
-  data_supplier?: any;
-  data_id?: any;
+// 增強的 DatabaseRecord - 支援常見的關聯查詢結果
+export interface EnhancedDatabaseRecord {
+  // 關聯查詢結果 - 支援嵌套物件
+  data_code?: RelationResult;
+  data_supplier?: RelationResult;
+  data_id?: RelationResult;
+  users?: RelationResult;
+  error?: {
+    message: string;
+    code?: string;
+    details?: DatabaseValue;
+  };
+  // 保持靈活性，允許其他欄位
+  [key: string]: DatabaseValue;
+}
+
+// Legacy Enhanced (向後相容)
+export interface LegacyEnhancedDatabaseRecord extends LegacyDatabaseRecord {
+  data_code?: unknown;
+  data_supplier?: unknown;
+  data_id?: unknown;
 }
 
 // 產品相關
@@ -167,7 +202,7 @@ export interface User {
 
 // === 向後兼容的數據項類型 (從 lib/types/database-types.ts 遷移) ===
 
-// 庫存分佈數據
+// 庫存分佈數據 - 使用安全類型
 export interface StockDistributionItem extends DatabaseRecord {
   name: string;
   size: number;
@@ -187,7 +222,7 @@ export interface StockDistributionItem extends DatabaseRecord {
   bulk?: number;
 }
 
-// 產品數據
+// 產品數據 - 使用安全類型
 export interface ProductItem extends DatabaseRecord {
   product_code: string;
   product_desc?: string;
@@ -198,7 +233,7 @@ export interface ProductItem extends DatabaseRecord {
   unit_price?: number;
 }
 
-// 訂單數據
+// 訂單數據 - 使用安全類型
 export interface OrderItem extends DatabaseRecord {
   order_ref: string;
   account_num?: string;
@@ -210,7 +245,7 @@ export interface OrderItem extends DatabaseRecord {
   product_qty?: number;
 }
 
-// 報告數據
+// 報告數據 - 使用安全類型
 export interface ReportItem extends DatabaseRecord {
   plt_num: string;
   product_code?: string;
@@ -222,7 +257,7 @@ export interface ReportItem extends DatabaseRecord {
   remark?: string;
 }
 
-// Void 記錄
+// Void 記錄 - 使用安全類型
 export interface VoidItem extends DatabaseRecord {
   uuid: string;
   plt_num: string;
@@ -237,7 +272,7 @@ export interface VoidItem extends DatabaseRecord {
   void_qty?: number;
 }
 
-// 搜尋歷史
+// 搜尋歷史 - 使用安全類型
 export interface SearchHistoryItem extends DatabaseRecord {
   id: string;
   value: string;
@@ -247,39 +282,98 @@ export interface SearchHistoryItem extends DatabaseRecord {
 
 // === 安全屬性訪問工具 (從 lib/types/database-types.ts 遷移) ===
 
-export function safeGetProperty<T>(obj: DatabaseRecord, key: string, defaultValue: T): T {
+// ===== 改進的安全屬性訪問工具 =====
+
+// 通用安全屬性訪問 - 支援嵌套值
+export function safeGetProperty<T extends DatabaseValue>(
+  obj: DatabaseRecord, 
+  key: string, 
+  defaultValue: T
+): T {
+  const value = obj[key];
+  if (value !== undefined && value !== null) {
+    // 嘗試解析為指定類型
+    const parsed = safeParseDatabaseValue(value);
+    return parsed !== null ? (parsed as T) : defaultValue;
+  }
+  return defaultValue;
+}
+
+// 安全獲取關聯物件
+export function safeGetRelation(
+  obj: DatabaseRecord,
+  key: string
+): RelationResult | null {
+  const value = obj[key];
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as RelationResult;
+  }
+  return null;
+}
+
+// Legacy 版本（向後相容）
+export function safeGetPropertyLegacy<T>(obj: LegacyDatabaseRecord, key: string, defaultValue: T): T {
   const value = obj[key];
   return value !== undefined && value !== null ? (value as T) : defaultValue;
 }
 
+// 基礎類型安全訪問（更新版）
 export function safeGetString(obj: DatabaseRecord, key: string, defaultValue = ''): string {
   const value = obj[key];
-  return typeof value === 'string' ? value : defaultValue;
+  if (typeof value === 'string') return value;
+  if (value !== undefined && value !== null) {
+    return String(value);
+  }
+  return defaultValue;
 }
 
 export function safeGetNumber(obj: DatabaseRecord, key: string, defaultValue = 0): number {
   const value = obj[key];
-  return typeof value === 'number' ? value : defaultValue;
+  if (typeof value === 'number' && !isNaN(value)) return value;
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value);
+    if (!isNaN(parsed)) return parsed;
+  }
+  return defaultValue;
 }
 
 export function safeGetBoolean(obj: DatabaseRecord, key: string, defaultValue = false): boolean {
   const value = obj[key];
-  return typeof value === 'boolean' ? value : defaultValue;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    return value.toLowerCase() === 'true' || value === '1';
+  }
+  if (typeof value === 'number') {
+    return value !== 0;
+  }
+  return defaultValue;
 }
 
-// === 數據轉換工具 (從 lib/types/database-types.ts 遷移) ===
+// 安全獲取陣列
+export function safeGetArray<T = DatabaseValue>(obj: DatabaseRecord, key: string, defaultValue: T[] = []): T[] {
+  const value = obj[key];
+  if (Array.isArray(value)) {
+    return value as T[];
+  }
+  return defaultValue;
+}
+
+// ===== 改進的數據轉換工具 - 支援嵌套結構 =====
 
 export function convertToStockDistributionItem(item: DatabaseRecord): StockDistributionItem {
+  // 處理關聯數據 (如 data_code)
+  const dataCode = safeGetRelation(item, 'data_code');
+  
   return {
     ...item,
-    name: safeGetString(item, 'name'),
+    name: safeGetString(item, 'name') || (dataCode?.description) || safeGetString(item, 'product_code', ''),
     size: safeGetNumber(item, 'size'),
     value: safeGetNumber(item, 'value'),
     percentage: safeGetNumber(item, 'percentage'),
-    color: safeGetString(item, 'color'),
-    fill: safeGetString(item, 'fill'),
-    description: safeGetString(item, 'description'),
-    type: safeGetString(item, 'type'),
+    color: safeGetString(item, 'color') || (dataCode?.colour) || '#000000',
+    fill: safeGetString(item, 'fill') || (dataCode?.colour) || '#000000',
+    description: safeGetString(item, 'description') || (dataCode?.description) || '',
+    type: safeGetString(item, 'type') || (dataCode?.type) || '',
     stock: safeGetString(item, 'stock'),
     stock_level: safeGetNumber(item, 'stock_level'),
     injection: safeGetNumber(item, 'injection'),
@@ -292,19 +386,23 @@ export function convertToStockDistributionItem(item: DatabaseRecord): StockDistr
 }
 
 export function convertToProductItem(item: DatabaseRecord): ProductItem {
+  const dataCode = safeGetRelation(item, 'data_code');
+  
   return {
     ...item,
-    product_code: safeGetString(item, 'product_code'),
-    product_desc: safeGetString(item, 'product_desc'),
-    product_qty: safeGetNumber(item, 'product_qty'),
-    description: safeGetString(item, 'description'),
-    name: safeGetString(item, 'name'),
+    product_code: safeGetString(item, 'product_code') || safeGetString(item, 'code', ''),
+    product_desc: safeGetString(item, 'product_desc') || (dataCode?.description) || '',
+    product_qty: safeGetNumber(item, 'product_qty') || safeGetNumber(item, 'quantity'),
+    description: safeGetString(item, 'description') || (dataCode?.description) || '',
+    name: safeGetString(item, 'name') || (dataCode?.name) || '',
     weight: safeGetNumber(item, 'weight'),
     unit_price: safeGetNumber(item, 'unit_price'),
   };
 }
 
 export function convertToOrderItem(item: DatabaseRecord): OrderItem {
+  const dataCode = safeGetRelation(item, 'data_code');
+  
   return {
     ...item,
     order_ref: safeGetString(item, 'order_ref'),
@@ -312,50 +410,149 @@ export function convertToOrderItem(item: DatabaseRecord): OrderItem {
     delivery_add: safeGetString(item, 'delivery_add'),
     invoice_to: safeGetString(item, 'invoice_to'),
     customer_ref: safeGetString(item, 'customer_ref'),
-    product_code: safeGetString(item, 'product_code'),
-    product_desc: safeGetString(item, 'product_desc'),
-    product_qty: safeGetNumber(item, 'product_qty'),
+    product_code: safeGetString(item, 'product_code') || safeGetString(item, 'code', ''),
+    product_desc: safeGetString(item, 'product_desc') || (dataCode?.description) || '',
+    product_qty: safeGetNumber(item, 'product_qty') || safeGetNumber(item, 'quantity'),
   };
 }
 
 export function convertToReportItem(item: DatabaseRecord): ReportItem {
+  const users = safeGetRelation(item, 'users');
+  
   return {
     ...item,
     plt_num: safeGetString(item, 'plt_num'),
     product_code: safeGetString(item, 'product_code'),
-    product_qty: safeGetNumber(item, 'product_qty'),
+    product_qty: safeGetNumber(item, 'product_qty') || safeGetNumber(item, 'quantity'),
     generate_time: safeGetString(item, 'generate_time'),
-    void_date: safeGetString(item, 'void_date'),
-    quantity: safeGetNumber(item, 'quantity'),
-    operator_name: safeGetString(item, 'operator_name'),
+    void_date: safeGetString(item, 'void_date') || safeGetString(item, 'void_time', ''),
+    quantity: safeGetNumber(item, 'quantity') || safeGetNumber(item, 'product_qty'),
+    operator_name: safeGetString(item, 'operator_name') || (users?.name) || '',
     remark: safeGetString(item, 'remark'),
   };
 }
 
 export function convertToVoidItem(item: DatabaseRecord): VoidItem {
+  const users = safeGetRelation(item, 'users');
+  
   return {
     ...item,
     uuid: safeGetString(item, 'uuid'),
     plt_num: safeGetString(item, 'plt_num'),
-    time: safeGetString(item, 'time'),
-    reason: safeGetString(item, 'reason'),
+    time: safeGetString(item, 'time') || safeGetString(item, 'void_time', ''),
+    reason: safeGetString(item, 'reason') || safeGetString(item, 'void_reason', ''),
     damage_qty: safeGetNumber(item, 'damage_qty'),
     product_code: safeGetString(item, 'product_code'),
     product_qty: safeGetNumber(item, 'product_qty'),
-    plt_loc: safeGetString(item, 'plt_loc'),
-    user_name: safeGetString(item, 'user_name'),
-    user_id: safeGetString(item, 'user_id'),
-    void_qty: safeGetNumber(item, 'void_qty'),
+    plt_loc: safeGetString(item, 'plt_loc') || safeGetString(item, 'location', ''),
+    user_name: safeGetString(item, 'user_name') || (users?.name) || '',
+    user_id: safeGetString(item, 'user_id') || (users?.id?.toString()) || '',
+    void_qty: safeGetNumber(item, 'void_qty') || safeGetNumber(item, 'damage_qty'),
   };
 }
 
 export function convertToSearchHistoryItem(item: DatabaseRecord): SearchHistoryItem {
-  const timestamp = item.timestamp;
+  const timestampValue = item.timestamp;
+  let timestamp: Date;
+  
+  if (timestampValue instanceof Date) {
+    timestamp = timestampValue;
+  } else if (typeof timestampValue === 'string') {
+    timestamp = new Date(timestampValue);
+  } else {
+    timestamp = new Date();
+  }
+  
   return {
     ...item,
     id: safeGetString(item, 'id'),
     value: safeGetString(item, 'value'),
     type: safeGetString(item, 'type'),
-    timestamp: timestamp instanceof Date ? timestamp : new Date(String(timestamp)),
+    timestamp,
   };
+}
+
+// === 類型守衛函數 (使用 Zod) ===
+
+// ===== 改進的類型守衛函數 =====
+
+/**
+ * 檢查是否為有效的資料庫記錄（更寬鬆）
+ */
+export function isDatabaseRecord(value: unknown): value is DatabaseRecord {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
+ * 檢查是否為增強的資料庫記錄
+ */
+export function isEnhancedDatabaseRecord(value: unknown): value is EnhancedDatabaseRecord {
+  if (!isDatabaseRecord(value)) return false;
+  
+  // 檢查是否有常見的關聯欄位
+  const record = value as Record<string, unknown>;
+  return 'data_code' in record || 'data_supplier' in record || 'data_id' in record;
+}
+
+// ===== 改進的轉換工具 =====
+
+/**
+ * 安全轉換任意資料為 DatabaseRecord
+ */
+export function toDatabaseRecord(data: unknown): DatabaseRecord {
+  if (!isDatabaseRecord(data)) {
+    console.warn('Invalid data provided to toDatabaseRecord:', data);
+    return {};
+  }
+  return safeCastToDatabaseRecord(data);
+}
+
+/**
+ * 安全轉換任意資料為 EnhancedDatabaseRecord
+ */
+export function toEnhancedDatabaseRecord(data: unknown): EnhancedDatabaseRecord {
+  if (!isDatabaseRecord(data)) {
+    console.warn('Invalid data provided to toEnhancedDatabaseRecord:', data);
+    return {};
+  }
+  return safeCastToEnhancedDatabaseRecord(data);
+}
+
+/**
+ * 驗證並轉換資料庫記錄（更新版）
+ */
+export function validateAndConvertDatabaseRecord(
+  data: unknown
+): { success: true; data: DatabaseRecord } | { success: false; error: string } {
+  if (!data || typeof data !== 'object') {
+    return { success: false, error: 'Invalid data: not an object' };
+  }
+  
+  try {
+    const converted = toDatabaseRecord(data);
+    return { success: true, data: converted };
+  } catch (error) {
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown conversion error' 
+    };
+  }
+}
+
+/**
+ * 批次轉換資料庫記錄陣列
+ */
+export function convertDatabaseRecordArray(data: unknown[]): DatabaseRecord[] {
+  return data.map(item => toDatabaseRecord(item)).filter(record => 
+    Object.keys(record).length > 0
+  );
+}
+
+/**
+ * 批次轉換增強資料庫記錄陣列
+ */
+export function convertEnhancedDatabaseRecordArray(data: unknown[]): EnhancedDatabaseRecord[] {
+  return data.map(item => toEnhancedDatabaseRecord(item)).filter(record => 
+    Object.keys(record).length > 0
+  );
 }

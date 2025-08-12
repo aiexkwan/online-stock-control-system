@@ -6,7 +6,6 @@
  */
 
 const http = require('http');
-const url = require('url');
 
 let callCount = 0;
 let startTime = Date.now();
@@ -14,7 +13,9 @@ const callLog = [];
 
 // Create a proxy server to monitor API calls
 const server = http.createServer((req, res) => {
-  const parsedUrl = url.parse(req.url, true);
+  // Use WHATWG URL API instead of deprecated url.parse()
+  const baseURL = `http://${req.headers.host || 'localhost'}`;
+  const parsedUrl = new URL(req.url, baseURL);
 
   // Only monitor dashboard API calls
   if (parsedUrl.pathname.includes('/api/admin/dashboard')) {

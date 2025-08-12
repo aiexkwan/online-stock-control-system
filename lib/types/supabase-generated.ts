@@ -538,39 +538,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      print_history: {
-        Row: {
-          created_at: string | null;
-          data: Json | null;
-          id: string;
-          job_id: string;
-          metadata: Json | null;
-          options: Json | null;
-          result: Json | null;
-          type: string;
-        };
-        Insert: {
-          created_at?: string | null;
-          data?: Json | null;
-          id?: string;
-          job_id: string;
-          metadata?: Json | null;
-          options?: Json | null;
-          result?: Json | null;
-          type: string;
-        };
-        Update: {
-          created_at?: string | null;
-          data?: Json | null;
-          id?: string;
-          job_id?: string;
-          metadata?: Json | null;
-          options?: Json | null;
-          result?: Json | null;
-          type?: string;
-        };
-        Relationships: [];
-      };
       query_record: {
         Row: {
           answer: string;
@@ -939,91 +906,6 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: 'data_code';
             referencedColumns: ['code'];
-          },
-        ];
-      };
-      record_slate: {
-        Row: {
-          b_thick: number;
-          batch_num: string;
-          centre_hole: number;
-          code: string;
-          colour: string;
-          first_off: string | null;
-          flame_test: number;
-          length: number;
-          mach_num: string;
-          material: string;
-          plt_num: string;
-          remark: string | null;
-          setter: string;
-          shape: string;
-          t_thick: number;
-          uuid: string;
-          weight: number;
-          width: number;
-        };
-        Insert: {
-          b_thick: number;
-          batch_num?: string;
-          centre_hole: number;
-          code?: string;
-          colour?: string;
-          first_off?: string | null;
-          flame_test: number;
-          length: number;
-          mach_num?: string;
-          material?: string;
-          plt_num?: string;
-          remark?: string | null;
-          setter?: string;
-          shape?: string;
-          t_thick: number;
-          uuid?: string;
-          weight: number;
-          width: number;
-        };
-        Update: {
-          b_thick?: number;
-          batch_num?: string;
-          centre_hole?: number;
-          code?: string;
-          colour?: string;
-          first_off?: string | null;
-          flame_test?: number;
-          length?: number;
-          mach_num?: string;
-          material?: string;
-          plt_num?: string;
-          remark?: string | null;
-          setter?: string;
-          shape?: string;
-          t_thick?: number;
-          uuid?: string;
-          weight?: number;
-          width?: number;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'record_slate_P_Code_fkey';
-            columns: ['code'];
-            isOneToOne: false;
-            referencedRelation: 'data_code';
-            referencedColumns: ['code'];
-          },
-          {
-            foreignKeyName: 'record_slate_P_Num_fkey';
-            columns: ['plt_num'];
-            isOneToOne: false;
-            referencedRelation: 'mv_pallet_current_location';
-            referencedColumns: ['plt_num'];
-          },
-          {
-            foreignKeyName: 'record_slate_P_Num_fkey';
-            columns: ['plt_num'];
-            isOneToOne: false;
-            referencedRelation: 'record_palletinfo';
-            referencedColumns: ['plt_num'];
           },
         ];
       };

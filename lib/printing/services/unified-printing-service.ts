@@ -13,15 +13,16 @@ import {
   PrintData,
 } from '../types';
 import { getHardwareAbstractionLayer } from '@/lib/hardware/hardware-abstraction-layer';
-import { PrintHistoryService } from './print-history-service';
+// PrintHistoryService removed - redundant with existing record_history
 import { PrintTemplateService } from './print-template-service';
 import { EventEmitter } from 'events';
 import type { PrintJob } from '@/lib/hardware/types';
+import type { DatabaseRecord } from '@/types/database/tables';
+import { uploadPdfToStorage, updatePalletPdfUrl } from '@/app/actions/grnActions';
+import { uploadPdfToStorage as uploadPdfToStorageQc, updatePalletPdfUrl as updatePalletPdfUrlQc } from '@/app/actions/qcActions';
 
 export interface UnifiedPrintingServiceConfig {
-  historyService?: PrintHistoryService;
   templateService?: PrintTemplateService;
-  enableHistory?: boolean;
 }
 
 /**
@@ -31,18 +32,14 @@ export interface UnifiedPrintingServiceConfig {
  */
 export class UnifiedPrintingService extends EventEmitter {
   private hal = getHardwareAbstractionLayer();
-  private historyService: PrintHistoryService;
   private templateService: PrintTemplateService;
   private initialized = false;
-  private enableHistory: boolean;
 
   constructor(config?: UnifiedPrintingServiceConfig) {
     super();
 
     // Only create services that don't exist in HAL
-    this.historyService = config?.historyService || new PrintHistoryService();
     this.templateService = config?.templateService || new PrintTemplateService();
-    this.enableHistory = config?.enableHistory ?? false; // Disable by default since table might not exist
   }
 
   /**
@@ -85,8 +82,34 @@ export class UnifiedPrintingService extends EventEmitter {
       // 1. Validate print permission
       await this.validatePermission(request);
 
-      // 2. Prepare print data
-      const printData = await this.preparePrintData(request);
+      // 2. Handle PDF upload if enabled
+      let uploadedUrls: string[] = [];
+      let uploadErrors: string[] = [];
+      
+      if (request.pdfBlobs && request.metadata?.uploadEnabled && request.metadata?.palletNumbers) {
+        console.log('[UnifiedPrintingService] Processing PDF uploads...');
+        const uploadResults = await this.uploadPdfsToStorage(
+          request.pdfBlobs,
+          request.metadata.palletNumbers,
+          request.type
+        );
+        uploadedUrls = uploadResults.uploadedUrls;
+        uploadErrors = uploadResults.uploadErrors;
+      }
+
+      // 3. Prepare print data
+      let printData: { pdfBlob: Blob } | { formattedData: unknown; template: string; metadata: Record<string, string | number> } | PrintData | null = null;
+      if (request.pdfBlobs && request.pdfBlobs.length > 0) {
+        // Handle PDF blobs - merge if multiple
+        printData = await this.preparePdfPrintData(request.pdfBlobs);
+      } else if (request.data && typeof request.data === 'object' && 'pdfBlob' in request.data && request.data.pdfBlob instanceof Blob) {
+        // Direct PDF printing - skip template processing
+        console.log('[UnifiedPrintingService] PDF blob detected, skipping template processing');
+        printData = { pdfBlob: request.data.pdfBlob };
+      } else {
+        // Apply template processing for other types
+        printData = await this.preparePrintData(request);
+      }
 
       // 3. Select printer if preference provided
       if (request.options.printerPreference) {
@@ -123,32 +146,19 @@ export class UnifiedPrintingService extends EventEmitter {
       // 5. Use HAL to print (it handles queuing internally)
       const result = await this.hal.print(printJob);
 
-      // 6. Record history (if enabled)
-      console.log('[UnifiedPrintingService] History enabled?', this.enableHistory);
-      if (this.enableHistory) {
-        try {
-          console.log('[UnifiedPrintingService] Recording print history for job:', result.jobId);
-          await this.historyService.record({
-            jobId: result.jobId,
-            type: request.type,
-            data: request.data,
-            options: request.options,
-            metadata: request.metadata,
-            result,
-            createdAt: new Date().toISOString(),
-          });
-          console.log('[UnifiedPrintingService] History recorded successfully');
-        } catch (error) {
-          console.warn('[UnifiedPrintingService] Failed to record history (non-blocking):', error);
-        }
-      } else {
-        console.log('[UnifiedPrintingService] History recording is disabled');
-      }
+      // 6. History recording removed - using existing record_history mechanism
 
-      // 7. Emit completion event
-      this.emit('printCompleted', result);
+      // 7. Add upload results to response
+      const enhancedResult: PrintResult = {
+        ...result,
+        uploadedUrls: uploadedUrls.length > 0 ? uploadedUrls : undefined,
+        uploadErrors: uploadErrors.length > 0 ? uploadErrors : undefined,
+      };
 
-      return result;
+      // 8. Emit completion event
+      this.emit('printCompleted', enhancedResult);
+
+      return enhancedResult;
     } catch (error) {
       const errorResult: PrintResult = {
         success: false,
@@ -156,16 +166,7 @@ export class UnifiedPrintingService extends EventEmitter {
         error: error instanceof Error ? error.message : 'Unknown error',
       };
 
-      // Record failed attempt in history
-      await this.historyService.record({
-        jobId: errorResult.jobId,
-        type: request.type,
-        data: request.data,
-        options: request.options,
-        metadata: request.metadata,
-        result: errorResult,
-        createdAt: new Date().toISOString(),
-      });
+      // History recording removed - errors are handled by calling service
 
       this.emit('printFailed', errorResult);
       return errorResult;
@@ -249,39 +250,7 @@ export class UnifiedPrintingService extends EventEmitter {
     }
   }
 
-  /**
-   * Reprint a previous job from history
-   */
-  async reprint(historyId: string): Promise<PrintResult> {
-    this.ensureInitialized();
-
-    const history = await this.historyService.getById(historyId);
-    if (!history) {
-      throw new Error(`Print history ${historyId} not found`);
-    }
-
-    // Create new print request from history
-    const request: PrintRequest = {
-      type: history.type,
-      data: history.data,
-      options: history.options,
-      metadata: {
-        userId: history.metadata?.userId || 'system',
-        ...history.metadata,
-        source: 'reprint',
-        reference: historyId,
-      },
-    };
-
-    return this.print(request);
-  }
-
-  /**
-   * Get print statistics
-   */
-  async getStatistics(startDate: Date, endDate: Date) {
-    return this.historyService.getStatistics(startDate, endDate);
-  }
+  // Statistics functionality removed - use existing record_history if needed
 
   /**
    * Get queue status from HAL
@@ -360,11 +329,13 @@ export class UnifiedPrintingService extends EventEmitter {
     if (template) {
       // 策略4: unknown + type narrowing - 確保數據為陣列格式
       const dataArray = Array.isArray(request.data) ? request.data : [request.data];
-      return this.templateService.applyTemplate(template, dataArray);
+      // Filter out undefined values and cast to DatabaseRecord[]
+      const validData = dataArray.filter((item): item is DatabaseRecord => item !== undefined);
+      return this.templateService.applyTemplate(template, validData);
     }
 
     // Return raw data if no template
-    return request.data;
+    return request.data || {};
   }
 
   private groupPrintJobsByType(requests: PrintRequest[]): PrintRequest[][] {
@@ -381,6 +352,105 @@ export class UnifiedPrintingService extends EventEmitter {
 
   private generateJobId(): string {
     return `job-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * Upload PDFs to storage and update pallet records
+   */
+  private async uploadPdfsToStorage(
+    pdfBlobs: Blob[],
+    palletNumbers: string[],
+    printType: PrintType
+  ): Promise<{ uploadedUrls: string[]; uploadErrors: string[] }> {
+    const uploadedUrls: string[] = [];
+    const uploadErrors: string[] = [];
+
+    console.log(`[UnifiedPrintingService] Uploading ${pdfBlobs.length} PDFs to storage...`);
+
+    for (let i = 0; i < pdfBlobs.length; i++) {
+      try {
+        const pdfBlob = pdfBlobs[i];
+        const palletNum = palletNumbers[i];
+        
+        if (!palletNum) {
+          uploadErrors.push(`Missing pallet number for PDF ${i + 1}`);
+          continue;
+        }
+
+        // Convert blob to number array for upload
+        const arrayBuffer = await pdfBlob.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        const numberArray = Array.from(uint8Array);
+        
+        // Generate filename
+        const fileName = `${palletNum.replace('/', '_')}.pdf`;
+        
+        // Upload based on print type
+        let uploadResult: { publicUrl?: string; error?: string };
+        if (printType === PrintType.QC_LABEL) {
+          uploadResult = await uploadPdfToStorageQc(numberArray, fileName);
+        } else {
+          uploadResult = await uploadPdfToStorage(numberArray, fileName);
+        }
+        
+        if (uploadResult.publicUrl) {
+          uploadedUrls.push(uploadResult.publicUrl);
+          console.log(`[UnifiedPrintingService] PDF uploaded for pallet ${palletNum}`);
+          
+          // Update database with PDF URL
+          const updateResult = printType === PrintType.QC_LABEL
+            ? await updatePalletPdfUrlQc(palletNum, uploadResult.publicUrl)
+            : await updatePalletPdfUrl(palletNum, uploadResult.publicUrl);
+            
+          if (!updateResult.success) {
+            console.error(`[UnifiedPrintingService] Failed to update PDF URL for pallet ${palletNum}:`, updateResult.error);
+          }
+        } else {
+          uploadErrors.push(`Failed to upload PDF for pallet ${palletNum}: ${uploadResult.error}`);
+        }
+      } catch (error) {
+        const errorMsg = `Upload error for PDF ${i + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        console.error('[UnifiedPrintingService]', errorMsg);
+        uploadErrors.push(errorMsg);
+      }
+    }
+
+    console.log(`[UnifiedPrintingService] Upload complete: ${uploadedUrls.length} successful, ${uploadErrors.length} failed`);
+    return { uploadedUrls, uploadErrors };
+  }
+
+  /**
+   * Prepare PDF print data - merge if multiple PDFs
+   */
+  private async preparePdfPrintData(pdfBlobs: Blob[]): Promise<{ pdfBlob: Blob }> {
+    if (pdfBlobs.length === 1) {
+      // Single PDF - return as is
+      return { pdfBlob: pdfBlobs[0] };
+    }
+    
+    // Multiple PDFs - merge them
+    console.log(`[UnifiedPrintingService] Merging ${pdfBlobs.length} PDFs...`);
+    
+    try {
+      const { PDFDocument } = await import('pdf-lib');
+      const mergedPdf = await PDFDocument.create();
+      
+      for (let i = 0; i < pdfBlobs.length; i++) {
+        const pdfBuffer = await pdfBlobs[i].arrayBuffer();
+        const pdfToMerge = await PDFDocument.load(pdfBuffer, { ignoreEncryption: true });
+        const pages = await mergedPdf.copyPages(pdfToMerge, pdfToMerge.getPageIndices());
+        pages.forEach(page => mergedPdf.addPage(page));
+      }
+      
+      const mergedPdfBytes = await mergedPdf.save();
+      const mergedPdfBlob = new Blob([mergedPdfBytes as unknown as ArrayBuffer], { type: 'application/pdf' });
+      
+      console.log(`[UnifiedPrintingService] Successfully merged ${pdfBlobs.length} PDFs`);
+      return { pdfBlob: mergedPdfBlob };
+    } catch (error) {
+      console.error('[UnifiedPrintingService] PDF merge failed:', error);
+      throw new Error(`Failed to merge PDFs: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   private setupEventListeners(): void {
@@ -437,9 +507,7 @@ let serviceInstance: UnifiedPrintingService | null = null;
  */
 export function getUnifiedPrintingService(): UnifiedPrintingService {
   if (!serviceInstance) {
-    serviceInstance = new UnifiedPrintingService({
-      enableHistory: true, // Enable history now that table exists
-    });
+    serviceInstance = new UnifiedPrintingService();
   }
   return serviceInstance;
 }

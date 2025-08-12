@@ -12,7 +12,7 @@ export * from './auth';
 export * from './user';
 
 // 通用類型
-export * from './common';
+// Common exports removed
 
 // 錯誤處理
 export * from './error';

@@ -270,7 +270,7 @@ export class InventoryService {
         // Manual aggregation
         const summaryMap = new Map<string, InventorySummaryDto>();
 
-        inventoryData?.forEach((item: DatabaseRecord) => {
+        inventoryData?.forEach((item: Record<string, unknown>) => {
           const key = item.warehouse;
           if (!summaryMap.has(key)) {
             summaryMap.set(key, {
@@ -281,13 +281,13 @@ export class InventoryService {
               total_damage_qty: 0,
               total_qty: 0,
               products_count: new Set(),
-            } as any);
+            } as unknown);
           }
 
           const summary = summaryMap.get(key);
-          (summary as any).total_locations.add(item.loc);
-          (summary as any).total_pallets.add(item.plt_num);
-          (summary as any).products_count.add(item.product_code);
+          (summary as unknown).total_locations.add(item.loc);
+          (summary as unknown).total_pallets.add(item.plt_num);
+          (summary as unknown).products_count.add(item.product_code);
           summary.total_good_qty += item.qty || 0;
           summary.total_damage_qty += item.damage || 0;
           summary.total_qty += (item.qty || 0) + (item.damage || 0);
@@ -297,12 +297,12 @@ export class InventoryService {
           summaryMap.values(),
         ).map((summary) => ({
           warehouse: summary.warehouse,
-          total_locations: (summary as any).total_locations.size,
-          total_pallets: (summary as any).total_pallets.size,
+          total_locations: (summary as unknown).total_locations.size,
+          total_pallets: (summary as unknown).total_pallets.size,
           total_good_qty: summary.total_good_qty,
           total_damage_qty: summary.total_damage_qty,
           total_qty: summary.total_qty,
-          products_count: (summary as any).products_count.size,
+          products_count: (summary as unknown).products_count.size,
         }));
 
         return {

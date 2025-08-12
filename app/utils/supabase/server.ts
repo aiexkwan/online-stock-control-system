@@ -32,6 +32,12 @@ export async function createClient() {
           }
         },
       },
+      // 根據搜索結果，添加 auth 配置可以減少 realtime 依賴
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
+      }
     }
   );
 }

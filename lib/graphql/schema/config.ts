@@ -78,7 +78,7 @@ input ConfigBatchUpdateInput {
 }
 
 # Output types
-type ConfigCardData implements WidgetData {
+type ConfigCardData {
   configs: [ConfigItem!]!
   categories: [ConfigCategoryGroup!]!
   summary: ConfigSummary!
@@ -216,6 +216,64 @@ type ConfigTemplate {
   usageCount: Int!
 }
 
+# Product form options types
+type ProductFormOptions {
+  materials: [Material!]!
+  colours: [ProductColour!]!
+  products: [Product!]!
+  types: [ProductType!]!
+  units: [ProductUnit!]!
+  suppliers: [Supplier!]!
+}
+
+type ProductType {
+  value: String!
+  label: String!
+  description: String
+  isDefault: Boolean!
+  isDisabled: Boolean!
+}
+
+type ProductUnit {
+  value: String!
+  label: String!
+  description: String
+  isDefault: Boolean!
+  isDisabled: Boolean!
+}
+
+type ProductColour {
+  value: String!
+  label: String!
+  description: String
+  isDefault: Boolean!
+  isDisabled: Boolean!
+}
+
+type Material {
+  product_code: String!
+  product_description: String
+  chinese_description: String
+}
+
+type Colour {
+  colour: String!
+}
+
+type Product {
+  product_code: String!
+  product_description: String
+  chinese_description: String
+  colour: String
+  prod_type: String
+  unit: String
+}
+
+type Supplier {
+  supplier_code: String!
+  supplier_name: String
+}
+
 # Query extensions
 extend type Query {
   configCardData(input: ConfigCardInput!): ConfigCardData!
@@ -231,6 +289,7 @@ extend type Query {
   ): [ConfigTemplate!]!
   configDefaults(category: ConfigCategory): [ConfigItem!]!
   validateConfig(input: ConfigItemInput!): ConfigValidation!
+  productFormOptions: ProductFormOptions!
 }
 
 # Mutation extensions

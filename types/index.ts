@@ -172,7 +172,7 @@ export type {
 export {
   convertDatabaseSupplierInfo,
   convertToDatabase,
-  isValidSupplierInfo,
+  isValidSupplierInfoLegacy as isValidSupplierInfo,
   isRpcSearchSupplierResponse,
   isRpcSupplierMutationResponse,
   isSupplierData,
@@ -248,21 +248,27 @@ export type {
   UseRealtimePerformanceMonitorResult,
 } from './hooks';
 
-// Domain Types
+// Domain Types - Only export types that actually exist
 export type {
-  PalletInfo,
-  SearchParams,
-  SearchResult,
-  VoidParams,
-  VoidResult,
-  ReprintInfo,
-  ReprintInfoInput,
-  VoidReasonConfig,
-  ErrorState,
-  VoidPalletState,
-  HistoryRecord,
-  AutoReprintParams,
-  AutoReprintResult,
   SearchType,
   ErrorType as VoidErrorType,
 } from './domains';
+
+// Import types from correct locations
+export type {
+  PalletInfo,
+  VoidParams,
+  VoidResult,
+} from '../app/(app)/admin/types/data-management';
+
+export type {
+  HistoryRecord,
+} from './business/schemas';
+
+export type {
+  ErrorState,
+} from './core/common';
+
+export type {
+  SearchResult,
+} from '../lib/types/index';

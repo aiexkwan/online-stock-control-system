@@ -4,7 +4,7 @@ import {
   AcoProductData,
   GrnReportPageData,
   TransactionReportData,
-} from '../app/actions/reportActions';
+} from '../app/actions/DownloadCentre-Actions';
 import { format as formatDateFns } from 'date-fns'; // 重新命名以避免與可能的內部 format 衝突
 import { toast } from 'sonner';
 
@@ -615,8 +615,8 @@ Difference >> ${data.weight_difference}`;
   const blob = new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });
-  // Ensure the filename is 'GRN_Report.xlsx' - perhaps make it dynamic with grn_ref and material_code
-  saveAs(blob, `GRN_Report_${data.grn_ref}_${data.material_code}.xlsx`);
+  // Filename format: GRN_Report_{grn_ref}.xlsx
+  saveAs(blob, `GRN_Report_${data.grn_ref}.xlsx`);
 }
 
 // Helper function to determine column for pallet type
@@ -664,6 +664,376 @@ function getPackageColumn(packageType: string | null): string | null {
 // Sheet Font
 // ... existing code ...
 
+export async function exportGrnReportMultiSheet(reportsData: GrnReportPageData[], grnRef: string) {
+  if (!reportsData || reportsData.length === 0) {
+    toast.error('No data provided for GRN report generation.');
+    console.error('exportGrnReportMultiSheet called without data.');
+    return;
+  }
+
+  // Dynamic import ExcelJS
+  const ExcelJS = await import('exceljs');
+  const workbook = new ExcelJS.Workbook();
+
+  // Create a sheet for each material code
+  for (const data of reportsData) {
+    // Use material code as sheet name (Excel limits sheet names to 31 characters)
+    const sheetName = data.material_code.length > 31 
+      ? data.material_code.substring(0, 31) 
+      : data.material_code;
+    
+    const sheet = workbook.addWorksheet(sheetName);
+
+    // Apply the same formatting as exportGrnReport
+    // Define styles
+    const center = {
+      horizontal: 'center' as const,
+      vertical: 'middle' as const,
+      wrapText: true,
+    };
+    const right = { horizontal: 'right' as const, vertical: 'middle' as const };
+    const grayFill = {
+      type: 'pattern' as const,
+      pattern: 'solid' as const,
+      fgColor: { argb: 'FFDCDCDC' },
+    };
+    const thinBorder = {
+      top: { style: 'thin' as const },
+      bottom: { style: 'thin' as const },
+      left: { style: 'thin' as const },
+      right: { style: 'thin' as const },
+    };
+    const thickBorder = {
+      top: { style: 'thick' as const },
+      bottom: { style: 'thick' as const },
+      left: { style: 'thick' as const },
+      right: { style: 'thick' as const },
+    };
+
+    // === Row heights
+    const rowHeights: Record<number, number> = {
+      ...Object.fromEntries(Array.from({ length: 7 }, (_, i) => [i + 1, 24])),
+      8: 14.25,
+      9: 29.25,
+      10: 14.25,
+      ...Object.fromEntries(Array.from({ length: 32 }, (_, i) => [11 + i, 24])),
+      43: 15,
+      44: 20.25,
+      45: 20.25,
+      46: 20.25,
+      47: 20.25,
+      48: 39.75,
+    };
+    Object.entries(rowHeights).forEach(([row, height]) => {
+      sheet.getRow(Number(row)).height = height;
+    });
+
+    // === Column widths A to T
+    const colWidths = [
+      5.25, 9.75, 9.1, 7, 7, 7, 7, 7, // A-H
+      8, 6.15, 6.15, 8, // I-L
+      5, 7, 5, // M-O
+      5.5, 5.5, // P-Q
+      8.25, 9.5, 9.5, // R-T
+    ];
+    colWidths.forEach((w, i) => {
+      sheet.getColumn(i + 1).width = w;
+    });
+
+    // === Merge blocks
+    sheet.mergeCells('A44:E44');
+    sheet.getCell('A44').value = 'Action For Material On Hold :';
+    sheet.getCell('A44').font = { size: 14, bold: true, underline: 'double' };
+    sheet.getCell('A44').alignment = center;
+
+    sheet.mergeCells('A45:I48');
+    sheet.getCell('A45').font = { size: 18, bold: true };
+    sheet.getCell('A45').alignment = center;
+
+    for (let i = 2; i <= 6; i++) {
+      sheet.getCell(`C${i}`).value = [
+        'Code : ',
+        'Description : ',
+        'Supplier Name : ',
+        'Our Order No. : ',
+        'Date : ',
+      ][i - 2];
+      sheet.getCell(`C${i}`).alignment = right;
+      sheet.getCell(`C${i}`).font = { size: 14, bold: true };
+      sheet.mergeCells(`D${i}:J${i}`);
+      const cell = sheet.getCell(`D${i}`);
+      cell.border = { bottom: { style: 'thin' as const } };
+      cell.alignment = center;
+      cell.font = { size: i === 3 ? 12 : 14 };
+    }
+
+    for (let i = 4; i <= 6; i++) {
+      sheet.mergeCells(`S${i}:T${i}`);
+      const cell = sheet.getCell(`S${i}`);
+      cell.border = { bottom: { style: 'thin' as const } };
+      cell.alignment = center;
+      cell.font = { size: 16 };
+    }
+
+    // === Right side labels R1–R6
+    const rightLabels: Record<number, string> = {
+      1: 'G.R.N. Number : ',
+      3: 'Non-Conformance Report Ref No. : ',
+      4: 'Delivery Note No. : ',
+      5: 'Our Order No. : ',
+      6: 'Completed By : ',
+    };
+    for (const [row, value] of Object.entries(rightLabels)) {
+      sheet.getCell(`R${Number(row)}`).value = value;
+      sheet.getCell(`R${Number(row)}`).font = { size: 14, bold: true };
+      sheet.getCell(`R${Number(row)}`).alignment = right;
+    }
+
+    // === Merge + border for S1:T1, S3:T3
+    ['S1:T1', 'S3:T3'].forEach(range => {
+      sheet.mergeCells(range);
+      const cell = sheet.getCell(range.split(':')[0]);
+      cell.border = thickBorder;
+      cell.alignment = center;
+      cell.font = { size: 18, bold: true };
+    });
+    
+    // S2 border
+    sheet.getCell('S2').border = thickBorder;
+    sheet.getCell('S2').value = 'PASS';
+    sheet.getCell('T2').border = thickBorder;
+    sheet.getCell('T2').value = 'FAIL';
+    sheet.getCell('S2').font = { size: 18, bold: true };
+    sheet.getCell('T2').font = { size: 18, bold: true };
+    sheet.getCell('S2').alignment = center;
+    sheet.getCell('T2').alignment = center;
+
+    // === Footer summary rows N44:T48
+    const footer = [
+      'Total Material Delivered',
+      'Total Material On Hold',
+      'Total Material Accepted',
+      'Total Material To Be Sent Back',
+      'Signed Off All Complete And Booked In',
+    ];
+    footer.forEach((label, i) => {
+      const row = 44 + i;
+      sheet.mergeCells(`L${row}:R${row}`);
+      sheet.mergeCells(`S${row}:T${row}`);
+      const cell = sheet.getCell(`L${row}`);
+      cell.value = label;
+      cell.font = { bold: true };
+      cell.alignment = { horizontal: 'right' as const, vertical: 'middle' as const };
+      for (let c = 14; c <= 20; c++) {
+        sheet.getCell(row, c).border = thickBorder;
+      }
+    });
+
+    // === Merge S11:T42
+    for (let row = 11; row <= 42; row++) {
+      sheet.mergeCells(`S${row}:T${row}`);
+    }
+
+    // === Gray fill
+    const grayCols = [1, 3, 9, 10, 11, 12, 16, 17, 19]; // A, C, I, P, S (column numbers)
+    for (let row = 11; row <= 42; row++) {
+      grayCols.forEach(col => {
+        const cell = sheet.getCell(row, col);
+        cell.fill = grayFill;
+      });
+    }
+
+    // === Borders + Alignment A9:T42
+    for (let row = 10; row <= 42; row++) {
+      for (let col = 1; col <= 20; col++) {
+        const cell = sheet.getCell(row, col);
+        let applyThin = true;
+        if (cell.border) {
+          const currentBorder = cell.border as Record<string, Record<string, unknown>>;
+          if (
+            currentBorder.top?.style === 'thick' &&
+            currentBorder.bottom?.style === 'thick' &&
+            currentBorder.left?.style === 'thick' &&
+            currentBorder.right?.style === 'thick'
+          ) {
+            applyThin = false;
+          }
+        }
+        if (applyThin) cell.border = thinBorder;
+        cell.alignment = center;
+        cell.font = { size: 12 };
+      }
+    }
+
+    // Pallet sub-labels
+    const arrPalletLabels = [
+      'White Dry', 'White Wet', 'Chep Dry', 'Chep Wet', 'Euro Pallet',
+      'Stillage', 'Bag', 'Tote Bag', 'Octobin', 'Sunk',
+    ];
+    const arrPalletWeights = [
+      '14kg', '18kg', '26kg', '30kg', '22kg',
+      '50kg', '0kg', '6kg', '14kg', '%',
+    ];
+    for (let i = 0; i < arrPalletLabels.length; i++) {
+      const cellLabel = sheet.getCell(9, 4 + i);
+      cellLabel.value = arrPalletLabels[i];
+      cellLabel.alignment = center;
+      cellLabel.font = { size: 10 };
+      cellLabel.border = thinBorder;
+
+      const cellWeight = sheet.getCell(10, 4 + i);
+      cellWeight.value = arrPalletWeights[i];
+      cellWeight.alignment = center;
+      cellWeight.fill = grayFill;
+      cellWeight.font = { size: 10, bold: true, italic: true };
+    }
+
+    // Group Headers
+    const groupHeaders: Record<string, string> = {
+      'D8:H8': 'Pallets',
+      'I8:L8': 'Packaging',
+      'M8:O8': 'Water Tests',
+      'P8:Q8': 'Trial',
+    };
+    Object.entries(groupHeaders).forEach(([range, title]) => {
+      sheet.mergeCells(range);
+      const cell = sheet.getCell(range.split(':')[0]);
+      cell.value = title;
+      cell.font = { bold: true, size: 10 };
+      cell.alignment = center;
+      cell.fill = grayFill;
+      cell.border = thinBorder;
+    });
+
+    const group2Headers: Record<string, string> = {
+      'N9:O9': 'per 100g Tested',
+      'P9:Q9': 'Production Trial',
+      'S10:T10': 'Comments',
+    };
+    Object.entries(group2Headers).forEach(([range, title]) => {
+      sheet.mergeCells(range);
+      const cell = sheet.getCell(range.split(':')[0]);
+      cell.value = title;
+      cell.font = { size: 10 };
+      cell.alignment = center;
+      cell.border = thinBorder;
+      if (title === 'Comments') {
+        cell.fill = grayFill;
+        cell.font = { bold: true, italic: true };
+      }
+    });
+
+    const group3Headers: Record<string, string> = {
+      N10: 'Pass', O10: 'Fail', P10: 'Pass', Q10: 'Fail', R10: 'On Hold',
+    };
+    Object.entries(group3Headers).forEach(([range, title]) => {
+      const cell = sheet.getCell(range.split(':')[0]);
+      cell.value = title;
+      cell.font = { bold: true, size: 10, italic: true };
+      cell.alignment = center;
+      cell.fill = grayFill;
+      cell.border = thinBorder;
+    });
+
+    const group4Headers: Record<string, string> = {
+      'A9:A10': 'PLT Ct.',
+      'B9:B10': 'Gross Weight',
+      'C9:C10': 'Net Weight',
+    };
+    Object.entries(group4Headers).forEach(([range, title]) => {
+      sheet.mergeCells(range);
+      const cell = sheet.getCell(range.split(':')[0]);
+      cell.value = title;
+      cell.font = { bold: true, size: 11 };
+      cell.alignment = center;
+      cell.border = thinBorder;
+    });
+
+    // === Page setup
+    sheet.pageSetup = {
+      paperSize: 9, // A4
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0,
+      orientation: 'portrait',
+      margins: {
+        left: 0.2,
+        right: 0.2,
+        top: 0.4,
+        bottom: 0.2,
+        header: 0.3,
+        footer: 0.3,
+      },
+    };
+
+    // Sheet Font
+    sheet.eachRow(row => {
+      row.eachCell(cell => {
+        const originalFont = cell.font || {};
+        cell.font = {
+          ...originalFont,
+          name: 'Aptos Narrow',
+        };
+      });
+    });
+
+    // ---- DATA FILLING ----
+    sheet.getCell('S1').value = data.grn_ref;
+    sheet.getCell('S6').value = data.user_id;
+    sheet.getCell('D2').value = data.material_code;
+    sheet.getCell('D3').value = data.material_description;
+    sheet.getCell('D4').value = data.supplier_name;
+    sheet.getCell('D6').value = data.report_date;
+
+    // Data filling section
+    let currentRowNum = 11;
+    data.records.forEach((record, index) => {
+      if (currentRowNum > 42) {
+        console.warn(`Data for record ${index} exceeds max display rows.`);
+        return;
+      }
+      const row = sheet.getRow(currentRowNum);
+      row.getCell('A').value = index + 1;
+      row.getCell('B').value = record.gross_weight;
+      row.getCell('C').value = record.net_weight;
+
+      // Pallet columns
+      const palletCol = getPalletColumn(record.pallet);
+      if (palletCol) {
+        row.getCell(palletCol).value = record.pallet_count;
+      }
+
+      // Package columns
+      const packageColumn = getPackageColumn(record.package_type);
+      if (packageColumn && record.package_count !== null && record.package_count !== undefined) {
+        row.getCell(packageColumn).value = record.package_count;
+      }
+
+      currentRowNum++;
+    });
+
+    // Totals in A45
+    const totalsText = `Total Gross Weight >> ${data.total_gross_weight}
+Total NetWeight >> ${data.total_net_weight}
+Difference >> ${data.weight_difference}`;
+    sheet.getCell('A45').value = totalsText;
+    sheet.getCell('A45').alignment = {
+      ...center,
+      horizontal: 'left',
+      vertical: 'top',
+      wrapText: true,
+    };
+    sheet.getCell('A45').font = { size: 20, bold: false };
+  }
+
+  // Download the workbook
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  saveAs(blob, `GRN_Report_${grnRef}.xlsx`);
+}
+
 export async function buildTransactionReport(reportData?: TransactionReportData): Promise<Buffer> {
   // Dynamic import ExcelJS
   const ExcelJS = await import('exceljs');
@@ -693,14 +1063,7 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
   worksheet.getCell('B2').value = 'Product Movement Sheet';
   worksheet.getCell('B2').font = { size: 36, bold: true };
 
-  // 🆕 如果有報表數據，添加日期範圍資訊
-  if (reportData) {
-    worksheet.mergeCells('B1:AH1');
-    worksheet.getCell('B1').value =
-      `Report Period: ${reportData.date_range.start_date} to ${reportData.date_range.end_date}`;
-    worksheet.getCell('B1').font = { size: 14, bold: true };
-    worksheet.getCell('B1').alignment = { horizontal: 'center' };
-  }
+  // 移除頂部 Report Period 資訊
 
   worksheet.mergeCells('B3:L3');
   worksheet.getCell('B3').value = 'From';
@@ -717,8 +1080,12 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
     };
   });
 
-  // 🆕 移除統計信息，只顯示 Movement Date
-  worksheet.getCell('AF3').value = 'Movement Date : ';
+  // 🆕 修改為顯示 Report Period
+  if (reportData && reportData.date_range && reportData.date_range.start_date && reportData.date_range.end_date) {
+    worksheet.getCell('AF3').value = `Report Period: ${reportData.date_range.start_date} to ${reportData.date_range.end_date}`;
+  } else {
+    worksheet.getCell('AF3').value = 'Report Period: ';
+  }
   worksheet.getCell('AF3').alignment = { horizontal: 'right' };
 
   // Label row
@@ -777,12 +1144,13 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
   worksheet.getCell('AF4').alignment = { wrapText: true, vertical: 'bottom' };
 
   // 🆕 數據填充邏輯
-  if (reportData && reportData.transfers.length > 0) {
+  if (reportData && reportData.transfers && reportData.transfers.length > 0) {
     let currentRow = 5;
     const maxRows = 27;
 
-    // 🆕 計算相同條件的總板數
+    // 🆕 計算相同條件的總板數和總數量
     const groupedTransfers = new Map<string, number>();
+    const groupedQuantitiesByEmployee = new Map<string, number>(); // 🆕 按員工+產品代碼分組
 
     reportData.transfers.forEach(transfer => {
       // 🆕 處理 f_loc 為 "Await" 或 "await_grn" 的特殊條件
@@ -795,8 +1163,14 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
         actualFromLocation = 'Pipe Extrusion';
       }
 
-      const key = `${transfer.product_code}|${transfer.operator_name}|${actualFromLocation}|${transfer.to_location}`;
-      groupedTransfers.set(key, (groupedTransfers.get(key) || 0) + 1);
+      const transferKey = `${transfer.product_code}|${transfer.operator_name}|${actualFromLocation}|${transfer.to_location}`;
+      const employeeProductKey = `${transfer.operator_name}|${transfer.product_code}`; // 🆕 員工+產品代碼組合
+      
+      // 計算板數（按轉移路線分組）
+      groupedTransfers.set(transferKey, (groupedTransfers.get(transferKey) || 0) + 1);
+      
+      // 🆕 計算總數量（按員工+產品代碼分組）- 這才是 TTL Qty 應該顯示的數值
+      groupedQuantitiesByEmployee.set(employeeProductKey, (groupedQuantitiesByEmployee.get(employeeProductKey) || 0) + Number(transfer.quantity));
     });
 
     // 🆕 去重並填充數據
@@ -813,12 +1187,15 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
         actualFromLocation = 'Pipe Extrusion';
       }
 
-      const key = `${transfer.product_code}|${transfer.operator_name}|${actualFromLocation}|${transfer.to_location}`;
-      if (!uniqueTransfers.has(key)) {
-        uniqueTransfers.set(key, {
+      const transferKey = `${transfer.product_code}|${transfer.operator_name}|${actualFromLocation}|${transfer.to_location}`;
+      const employeeProductKey = `${transfer.operator_name}|${transfer.product_code}`;
+      
+      if (!uniqueTransfers.has(transferKey)) {
+        uniqueTransfers.set(transferKey, {
           ...transfer,
           actualFromLocation, // 🆕 保存處理後的位置
-          totalPallets: groupedTransfers.get(key) || 1,
+          totalPallets: groupedTransfers.get(transferKey) || 1,
+          totalQuantity: groupedQuantitiesByEmployee.get(employeeProductKey) || Number(transfer.quantity), // 🆕 該員工該產品代碼的總數量
         });
       }
     });
@@ -852,8 +1229,11 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
 
       // 填充產品資訊
       row.getCell('Z').value = String(transfer.product_code); // Product Code
-      row.getCell('AB').value = Number(transfer.quantity); // Qty
+      
+      // TTL Qty - 顯示該員工該產品代碼的 Transfer 總數量
+      row.getCell('AB').value = Number(transfer.totalQuantity); // 🆕 該員工該產品代碼的總數量
       row.getCell('AB').font = { size: 14 };
+      
       row.getCell('AD').value = Number(transfer.totalPallets); // 🆕 相同條件的總板數
       row.getCell('AD').font = { size: 14 };
       // AF 欄位留空（Pallet Reference No）

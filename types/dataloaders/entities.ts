@@ -24,18 +24,21 @@ export interface UnifiedOperationsKey {
   endDate: string;
   warehouse?: string;
   operationType?: 'grn' | 'transfer' | 'order' | 'all';
+  dateRange?: string;
 }
 
 export interface StockLevelKey {
   productCode: string;
   warehouse: string;
   includeMovements?: boolean;
+  dateRange?: string;
 }
 
 export interface WorkLevelKey {
   departmentId: string;
   startDate: string;
   endDate: string;
+  userId?: string;
 }
 
 export interface GRNAnalyticsKey {
@@ -233,7 +236,7 @@ export type DatabaseEntity = Record<string, unknown>;
 
 /**
  * Type-safe interfaces for database entities used in complex DataLoaders
- * These replace the `(item as any)` patterns for better type safety
+ * These replace the `(item as unknown)` patterns for better type safety
  */
 
 /**
@@ -674,4 +677,57 @@ export function safeString(obj: unknown, key: string, defaultValue = ''): string
 export function safeNumber(obj: unknown, key: string, defaultValue = 0): number {
   const value = safeGet(obj, key, defaultValue);
   return typeof value === 'number' ? value : defaultValue;
+}
+
+/**
+ * Dashboard Stats Data Interface for DataLoader
+ * Maps to GraphQL DashboardStatsResponse type
+ */
+export interface DashboardStatsData {
+  // Basic statistics
+  totalPallets: number;
+  activePallets: number;
+  uniqueProducts: number;
+  todayTransfers: number;
+  pendingOrders: number;
+
+  // Extended statistics (conditional)
+  dailyDonePallets?: number;
+  dailyTransferredPallets?: number;
+  yesterdayDonePallets?: number;
+  yesterdayTransferredPallets?: number;
+  past3DaysGenerated?: number;
+  past3DaysTransferredPallets?: number;
+  past7DaysGenerated?: number;
+  past7DaysTransferredPallets?: number;
+
+  // Performance metrics
+  executionTimeMs: number;
+  
+  // Metadata
+  lastUpdated: string;
+}
+
+/**
+ * Type guard for DashboardStatsData
+ */
+export function isDashboardStatsData(obj: unknown): obj is DashboardStatsData {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'totalPallets' in obj &&
+    'activePallets' in obj &&
+    'uniqueProducts' in obj &&
+    'todayTransfers' in obj &&
+    'pendingOrders' in obj &&
+    'executionTimeMs' in obj &&
+    'lastUpdated' in obj
+  );
+}
+
+/**
+ * Safely convert unknown to DashboardStatsData
+ */
+export function asDashboardStatsData(obj: unknown): DashboardStatsData | null {
+  return isDashboardStatsData(obj) ? obj : null;
 }

@@ -4,8 +4,6 @@
  */
 
 export * from './dashboard';
-export * from './api';
-export * from './widgets';
 export * from './printing';
 export * from './alerts';
 

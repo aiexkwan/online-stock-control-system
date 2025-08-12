@@ -46,7 +46,7 @@ export async function withCache<T>(
   const now = Date.now();
 
   if (cached && now - cached.timestamp < ttlSeconds * 1000) {
-    return cached.data;
+    return cached.data as T;
   }
 
   const data = await fn();

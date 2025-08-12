@@ -43,7 +43,7 @@ interface RPCResponse<T = unknown> {
 // Supabase 客戶端類型
 type SupabaseClientType = SupabaseClient<Database>;
 
-// Dashboard widget types (修復版本)
+// Dashboard card types (修復版本)
 export interface DashboardWidgetData {
   widgetId: string;
   title: string;
@@ -105,7 +105,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
     const startTime = performance.now();
     const widgets: DashboardWidgetData[] = [];
 
-    // Fetch data for each requested widget in parallel
+    // Fetch data for each requested card in parallel
     const widgetPromises = params.widgetIds.map(async widgetId => {
       try {
         const widgetData = await this.fetchWidgetData(widgetId, params, supabase);
@@ -173,7 +173,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
   }
 
   /**
-   * Fetch data for specific widget
+   * Fetch data for specific card
    */
   private async fetchWidgetData(
     widgetId: string,
@@ -281,7 +281,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             dataSource: 'await_location_count',
           };
 
-        // ⚡ 修復：為常見的 widget 數據源添加支援，避免 "Unknown data source" 警告
+        // ⚡ 修復：為常見的 card 數據源添加支援，避免 "Unknown data source" 警告
         case 'top_products':
           return {
             value: 0,
@@ -407,7 +407,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
   }
 
   /**
-   * Get widget title by ID
+   * Get card title by ID
    */
   private getWidgetTitle(widgetId: string): string {
     const titleMap: Record<string, string> = {

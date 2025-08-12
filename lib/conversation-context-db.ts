@@ -214,7 +214,7 @@ export class DatabaseConversationContextManager {
     pronounMappings.forEach(mapping => {
       if (mapping.pattern.test(resolved)) {
         const entity = this.findEntity(context, mapping.type, mapping.position);
-        if (entity) {
+        if (entity && !Array.isArray(entity)) {
           references.push({
             original: resolved.match(mapping.pattern)?.[0],
             resolved: entity.value,
@@ -415,6 +415,30 @@ export class DatabaseConversationContextManager {
     } catch (error) {
       console.error('[getSessionHistory] Error:', error);
       return [];
+    }
+  }
+
+  // 添加互動記錄到對話上下文
+  async addInteraction(question: string, sql: string, answer: string): Promise<void> {
+    try {
+      const supabase = await this.getSupabase();
+      const { error } = await supabase
+        .from('query_record')
+        .insert({
+          session_id: this.sessionId,
+          user_id: this.userEmail,
+          query: question,
+          sql_query: sql,
+          answer: answer,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+
+      if (error) {
+        console.error('[addInteraction] Error:', error);
+      }
+    } catch (error) {
+      console.error('[addInteraction] Error:', error);
     }
   }
 }

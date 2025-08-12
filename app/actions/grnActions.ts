@@ -1,54 +1,19 @@
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/app/utils/supabase/server';
 import { getErrorMessage } from '@/types/core/error';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import {
-  TransactionLogService,
-  TransactionSource,
-  TransactionOperation,
-  TransactionLogEntry,
-} from '@/app/services/transactionLog.service';
+import type { PostgrestError } from '@supabase/supabase-js';
+// 移除 TransactionLogService - 簡化實現
 import { SupplierInfo, DatabaseSupplierInfo, convertDatabaseSupplierInfo } from '@/types';
 
 // V6 includes series generation, no need for separate series utils
 
 // 創建 Supabase 客戶端的函數
-function createSupabaseAdmin() {
-  // 確保環境變數存在
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl) {
-    throw new Error('SUPABASE_URL environment variable is not set');
-  }
-
-  if (!serviceRoleKey) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is not set');
-  }
-
-  // process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[grnActions] 創建服務端 Supabase 客戶端...');
-
-  const client = createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-    db: {
-      schema: 'public',
-    },
-    global: {
-      headers: {
-        apikey: serviceRoleKey,
-        Authorization: `Bearer ${serviceRoleKey}`,
-      },
-    },
-  });
-
-  // process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[grnActions] 服務端客戶端創建完成，應該能夠繞過 RLS');
-
-  return client;
+async function createSupabaseAdmin() {
+  // Use server client which handles service role key internally
+  return await createClient();
 }
 
 // process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log('[grnActions] grnActions 模塊已加載');
@@ -89,7 +54,7 @@ export interface GrnDatabaseEntryPayload {
   grnRecord: GrnRecordPayload;
 }
 
-// RPC Parameters interface
+// RPC Parameters interface with index signature for Supabase compatibility
 interface GrnRpcParams {
   p_count: number;
   p_grn_number: string;
@@ -106,6 +71,7 @@ interface GrnRpcParams {
   p_net_weights?: number[] | null;
   p_quantities?: number[] | null;
   p_pdf_urls?: string[];
+  [key: string]: unknown; // Index signature for Supabase RPC compatibility
 }
 
 // RPC Response interface
@@ -113,6 +79,14 @@ interface GrnRpcResponse {
   success: boolean;
   message?: string;
   data?: GrnRpcResponseData;
+}
+
+// Workflow RPC Response interface
+interface GrnWorkflowResponse {
+  success: boolean;
+  grn_level_result?: string;
+  work_level_result?: string;
+  stock_level_result?: string;
 }
 
 // RPC Response Data interface - 明確定義響應數據結構
@@ -141,45 +115,15 @@ export async function createGrnDatabaseEntries(
   const operatorIdForFunction = clockValidation.data;
 
   // 創建新的 Supabase 客戶端
-  const supabaseAdmin = createSupabaseAdmin();
+  const supabaseAdmin = await createSupabaseAdmin();
 
-  // Initialize transaction tracking
-  const transactionService = new TransactionLogService();
-  const transactionId = transactionService.generateTransactionId();
+  // 簡化：直接生成 transaction ID
+  const transactionId = crypto.randomUUID();
 
-  const transactionEntry: TransactionLogEntry = {
-    transactionId,
-    sourceModule: TransactionSource.GRN_LABEL,
-    sourcePage: 'print-grnlabel',
-    sourceAction: 'create_grn_entries',
-    operationType: TransactionOperation.CREATE,
-    userId: operatorIdForFunction.toString(),
-    userClockNumber: operatorClockNumberStr,
-    metadata: {
-      grnRef: payload.grnRecord.grn_ref,
-      materialCode: payload.grnRecord.material_code,
-      supplierCode: payload.grnRecord.sup_code,
-      labelMode,
-      palletNumber: payload.palletInfo.plt_num,
-    },
-  };
-
+  // 簡化：移除 transaction tracking
+  // record_history 表已經記錄了所有 GRN 操作
+  
   try {
-    // Start transaction tracking
-    try {
-      await transactionService.startTransaction(transactionEntry, {
-        labelMode,
-        operatorClock: operatorClockNumberStr,
-        initialPayload: {
-          grnRef: payload.grnRecord.grn_ref,
-          materialCode: payload.grnRecord.material_code,
-          palletNumber: payload.palletInfo.plt_num,
-        },
-      });
-    } catch (logError) {
-      console.error('[grnActions] Transaction start failed:', logError);
-      // Continue with operation even if logging fails
-    }
 
     // 🚀 新功能：使用統一的 GRN Label RPC 處理所有操作
     process.env.NODE_ENV !== 'production' &&
@@ -235,60 +179,32 @@ export async function createGrnDatabaseEntries(
       return { error: `Failed to process GRN label: ${getErrorMessage(rpcError)}` };
     }
 
-    if (!rpcResult || !rpcResult.success) {
-      const errorMsg = rpcResult?.message || 'Unknown error from unified RPC';
+    // Type assert the result to the expected shape
+    const typedResult = rpcResult as GrnRpcResponse | null;
+    
+    if (!typedResult || !typedResult.success) {
+      const errorMsg = typedResult?.message || 'Unknown error from unified RPC';
       console.error('[grnActions] 統一 GRN RPC 處理失敗:', errorMsg);
       return { error: errorMsg };
     }
 
     process.env.NODE_ENV !== 'production' &&
-      console.log('[grnActions] 統一 GRN RPC 處理成功:', rpcResult);
+      console.log('[grnActions] 統一 GRN RPC 處理成功:', typedResult);
 
     // 提取棧板號碼和系列號
-    const data: GrnRpcResponseData = rpcResult.data || {};
+    const data: GrnRpcResponseData = typedResult.data || {};
     const palletNumber = data.pallet_numbers?.[0] || '';
     const series = data.series?.[0] || '';
 
-    // Complete transaction tracking
-    try {
-      await transactionService.completeTransaction(
-        transactionId,
-        {
-          palletNumber,
-          series,
-          grnRef: payload.grnRecord.grn_ref,
-          materialCode: payload.grnRecord.material_code,
-          success: true,
-        },
-        {
-          recordsAffected: 1,
-          tablesModified: ['record_palletinfo', 'record_grn', 'record_inventory', 'record_history'],
-        }
-      );
-    } catch (logError) {
-      console.error('[grnActions] Transaction completion failed:', logError);
-      // Don't fail the whole operation for logging issues
-    }
+    // 簡化：移除 transaction completion tracking
+    // record_history 表已經記錄了所有操作
 
     return {
       data: `GRN label processed successfully. ${palletNumber ? `Pallet: ${palletNumber}` : ''}`,
     };
   } catch (error: unknown) {
-    // Record transaction error
-    try {
-      await transactionService.recordError(
-        transactionId,
-        error instanceof Error ? error : new Error(String(error)),
-        'GRN_RPC_ERROR',
-        {
-          grnRef: payload.grnRecord.grn_ref,
-          materialCode: payload.grnRecord.material_code,
-          labelMode,
-        }
-      );
-    } catch (logError) {
-      console.error('[grnActions] Error logging failed:', logError);
-    }
+    // 簡化：直接記錄錯誤
+    console.error('[grnActions] Error:', error);
 
     console.error('[grnActions] 統一 GRN RPC 處理異常:', error);
 
@@ -338,7 +254,7 @@ export async function createGrnDatabaseEntriesBatch(
   }
   const operatorIdForFunction = clockValidation.data;
 
-  const supabaseAdmin = createSupabaseAdmin();
+  const supabaseAdmin = await createSupabaseAdmin();
 
   try {
     // 🚀 使用統一的 GRN Label RPC 批量處理所有棧板
@@ -401,18 +317,21 @@ export async function createGrnDatabaseEntriesBatch(
       };
     }
 
-    if (!rpcResult || !rpcResult.success) {
-      const errorMsg = rpcResult?.message || 'Unknown error from unified RPC';
+    // Type assert the result to the expected shape
+    const typedResult = rpcResult as GrnRpcResponse | null;
+    
+    if (!typedResult || !typedResult.success) {
+      const errorMsg = typedResult?.message || 'Unknown error from unified RPC';
       console.error('[grnActions] 統一批量 GRN RPC 處理失敗:', errorMsg);
       return { success: false, error: errorMsg };
     }
 
     process.env.NODE_ENV !== 'production' &&
-      console.log('[grnActions] 統一批量 GRN RPC 處理成功:', rpcResult);
+      console.log('[grnActions] 統一批量 GRN RPC 處理成功:', typedResult);
 
     // 從 RPC 結果提取數據
     // RPC 返回嘅數據結構係 { success: true, data: { pallet_numbers: [...], series: [...] } }
-    const data: GrnRpcResponseData = rpcResult.data || {};
+    const data: GrnRpcResponseData = typedResult.data || {};
     const palletNumbers = data.pallet_numbers || [];
     const series = data.series || [];
 
@@ -452,7 +371,7 @@ async function createGrnDatabaseEntriesLegacy(
   }
   const operatorIdForFunction = clockValidation.data;
 
-  const supabaseAdmin = createSupabaseAdmin();
+  const supabaseAdmin = await createSupabaseAdmin();
 
   try {
     // 🔥 舊版：逐個插入記錄的方式
@@ -508,7 +427,7 @@ async function createGrnDatabaseEntriesLegacy(
     // 4. Insert history record
     const historyRecord = {
       action: 'GRN Receiving',
-      id: operatorIdForFunction.toString(),
+      id: operatorIdForFunction, // id should be number, not string
       plt_num: payload.palletInfo.plt_num,
       loc: 'Await_grn', // 改為 Await_grn
       remark: `GRN: ${payload.grnRecord.grn_ref}, Material: ${payload.grnRecord.material_code}`,
@@ -573,7 +492,7 @@ async function createGrnDatabaseEntriesLegacy(
       const { data: workflowData, error: workflowError } = await supabaseAdmin.rpc(
         'update_grn_workflow',
         workflowParams
-      );
+      ) as { data: GrnWorkflowResponse | null; error: PostgrestError | null };
 
       if (workflowError) {
         console.error('[grnActions] GRN workflow 更新失敗:', workflowError);
@@ -584,6 +503,7 @@ async function createGrnDatabaseEntriesLegacy(
         };
       }
 
+      // Check workflow result
       if (workflowData && !workflowData.success) {
         process.env.NODE_ENV !== 'production' &&
           console.warn('[grnActions] GRN workflow 更新部分失敗:', workflowData);
@@ -626,7 +546,7 @@ export async function updatePalletPdfUrl(
   pdfUrl: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabaseAdmin = createSupabaseAdmin();
+    const supabaseAdmin = await createSupabaseAdmin();
 
     const { error } = await supabaseAdmin
       .from('record_palletinfo')
@@ -667,7 +587,7 @@ export async function uploadPdfToStorage(
       });
 
     // 創建新的 Supabase 客戶端
-    const supabaseAdmin = createSupabaseAdmin();
+    const supabaseAdmin = await createSupabaseAdmin();
 
     // Convert number array back to Uint8Array and then to Blob
     const uint8Array = new Uint8Array(pdfUint8Array);
@@ -679,9 +599,11 @@ export async function uploadPdfToStorage(
         blobType: pdfBlob.type,
       });
 
+    // 修復 RLS 政策問題：檔案必須上傳到 private/ 資料夾
+    const fullPath = `private/${fileName}`;
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from('pallet-label-pdf')
-      .upload(fileName, pdfBlob, {
+      .upload(fullPath, pdfBlob, {
         cacheControl: '3600',
         upsert: true,
         contentType: 'application/pdf',
@@ -735,10 +657,12 @@ export async function uploadPdfToStorage(
 // Legacy interface for backward compatibility
 export interface LegacySupplierInfo {
   supplier_code: string;
-  supplier_name: string;
+  supplier_name: string | null; // Allow null as it comes from database
 }
 
-export interface SupplierSuggestion extends LegacySupplierInfo {
+export interface SupplierSuggestion {
+  supplier_code: string;
+  supplier_name: string; // Required for suggestions
   match_type: 'code' | 'name';
   match_score?: number;
 }
@@ -760,7 +684,7 @@ export async function validateSupplierCode(code: string): Promise<{
       };
     }
 
-    const supabase = createSupabaseAdmin();
+    const supabase = await createSupabaseAdmin();
     const { data, error } = await supabase
       .from('data_supplier')
       .select('supplier_code, supplier_name')
@@ -777,7 +701,7 @@ export async function validateSupplierCode(code: string): Promise<{
     // 轉換為統一的 SupplierInfo 格式
     const supplierInfo = convertDatabaseSupplierInfo({
       supplier_code: data.supplier_code,
-      supplier_name: data.supplier_name,
+      supplier_name: data.supplier_name || '', // Convert null to empty string for the converter
     });
 
     return {
@@ -817,7 +741,7 @@ export async function searchSuppliers(
     }
 
     const { enableFuzzySearch = false, maxSuggestions = 10 } = options;
-    const supabase = createSupabaseAdmin();
+    const supabase = await createSupabaseAdmin();
 
     const upperSearchTerm = searchTerm.toUpperCase();
     let query = supabase.from('data_supplier').select('supplier_code, supplier_name');
@@ -844,20 +768,21 @@ export async function searchSuppliers(
       // Score and sort suggestions
       const scoredSuggestions: SupplierSuggestion[] = data.map(supplier => {
         const codeMatch = supplier.supplier_code.includes(upperSearchTerm);
-        const nameMatch = supplier.supplier_name.toLowerCase().includes(searchTerm.toLowerCase());
+        const nameMatch = supplier.supplier_name ? supplier.supplier_name.toLowerCase().includes(searchTerm.toLowerCase()) : false;
 
         // Calculate match score
         let score = 0;
         if (supplier.supplier_code === upperSearchTerm) score = 100;
         else if (supplier.supplier_code.startsWith(upperSearchTerm)) score = 80;
         else if (codeMatch) score = 60;
-        else if (supplier.supplier_name.toLowerCase().startsWith(searchTerm.toLowerCase()))
+        else if (supplier.supplier_name && supplier.supplier_name.toLowerCase().startsWith(searchTerm.toLowerCase()))
           score = 40;
         else if (nameMatch) score = 20;
 
         return {
-          ...supplier,
-          match_type: codeMatch ? 'code' : 'name',
+          supplier_code: supplier.supplier_code,
+          supplier_name: supplier.supplier_name || '', // Convert null to empty string
+          match_type: codeMatch ? 'code' : 'name' as 'code' | 'name',
           match_score: score,
         };
       });

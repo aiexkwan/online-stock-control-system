@@ -105,7 +105,7 @@ export class MemoryCacheAdapter extends BaseCacheAdapter {
       'Cache hit'
     );
 
-    return item.value;
+    return item.value as T;
   }
 
   /**

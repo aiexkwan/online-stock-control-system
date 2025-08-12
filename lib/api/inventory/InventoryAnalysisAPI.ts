@@ -15,9 +15,16 @@ import type { InventoryOrderedAnalysisInput } from '@/types/generated/graphql';
 
 export class InventoryAnalysisAPI {
   private static instance: InventoryAnalysisAPI;
-  private supabase = createClient();
+  private supabase: ReturnType<typeof createClient> | null = null;
 
   private constructor() {}
+
+  private getSupabase() {
+    if (!this.supabase && typeof window !== 'undefined') {
+      this.supabase = createClient();
+    }
+    return this.supabase;
+  }
 
   public static getInstance(): InventoryAnalysisAPI {
     if (!InventoryAnalysisAPI.instance) {
@@ -39,7 +46,12 @@ export class InventoryAnalysisAPI {
         p_product_type: params?.p_product_type || undefined,
       };
 
-      const { data, error } = await this.supabase.rpc(
+      const supabase = this.getSupabase();
+      if (!supabase) {
+        throw new Error('Supabase client not initialized');
+      }
+      
+      const { data, error } = await supabase.rpc(
         'rpc_get_inventory_ordered_analysis',
         rpcParams
       );

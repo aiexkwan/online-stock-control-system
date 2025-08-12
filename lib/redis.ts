@@ -99,13 +99,13 @@ function setupRedisEventListeners(client: Redis): void {
     );
   });
 
-  client.on('error', error => {
+  client.on('error', (error: unknown) => {
     cacheLogger.error(
       {
         service: 'Redis',
         event: 'error',
-        error: error.message,
-        stack: error.stack,
+        error: (error as Error).message,
+        stack: (error as Error).stack,
       },
       'Redis 連接錯誤'
     );

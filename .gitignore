@@ -9,6 +9,7 @@
 # testing
 /coverage
 /coverage-lib
+/performance-reports
 
 # next.js
 /.next/
@@ -84,3 +85,8 @@ mcp-servers/**/node_modules/
 # Large files to ignore
 any-usages.txt
 docs/Others/Anytype.md
+
+# MCP and config files with sensitive data
+.mcp.json
+claude_desktop_config_macos.json
+.claude/settings.local.json

@@ -1,9 +1,13 @@
 // Learn more: https://github.com/testing-library/jest-dom
-import '@testing-library/jest-dom';
-import './__tests__/utils/custom-matchers';
+require('@testing-library/jest-dom');
+try {
+  require('./__tests__/utils/custom-matchers');
+} catch (error) {
+  // Custom matchers are optional
+}
 
 // Add TextDecoder and TextEncoder polyfills for Node.js environment
-import { TextDecoder, TextEncoder } from 'util';
+const { TextDecoder, TextEncoder } = require('util');
 global.TextDecoder = TextDecoder;
 global.TextEncoder = TextEncoder;
 

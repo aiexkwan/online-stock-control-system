@@ -1,9 +1,21 @@
 /**
  * 供應商類型定義 - 統一管理
  * 從 lib/types/supplier-types.ts 和 lib/types/rpc-supplier-types.ts 遷移
+ * 重構：使用 Zod schema 替換 unknown 類型守衛
  */
 
 import type { Json } from '@/types/database/supabase';
+import {
+  SupplierDataSchema,
+  SupplierInfoSchema,
+  RpcSearchSupplierResponseSchema,
+  RpcSupplierMutationResponseSchema,
+  isValidSupplierData,
+  isValidSupplierInfo,
+  isValidRpcSearchSupplierResponse,
+  isValidRpcSupplierMutationResponse,
+} from '@/lib/validation/zod-schemas';
+import { z } from 'zod';
 
 // ========== 基本供應商類型 ==========
 
@@ -92,94 +104,68 @@ export function convertToDatabase(supplier: SupplierInfo): DatabaseSupplierInfo 
 // ========== 類型守衛函數 ==========
 
 /**
- * 類型守衛：檢查是否為有效的供應商信息
+ * 類型守衛：檢查是否為有效的供應商信息 (基於 Zod)
  */
-export function isValidSupplierInfo(value: unknown): value is SupplierInfo {
-  return (
-    value !== null &&
-    typeof value === 'object' &&
-    (('code' in value &&
-      typeof value.code === 'string' &&
-      'name' in value &&
-      typeof value.name === 'string') ||
-      ('supplier_code' in value &&
-        typeof value.supplier_code === 'string' &&
-        'supplier_name' in value &&
-        typeof value.supplier_name === 'string'))
-  );
+export function isValidSupplierInfoLegacy(value: unknown): value is SupplierInfo {
+  return isValidSupplierInfo(value);
 }
 
 /**
- * 類型守衛函數 - 驗證 RPC 搜索響應結構
+ * 類型守衛函數 - 驗證 RPC 搜索響應結構 (基於 Zod)
  *
  * @param data - Supabase RPC 返回的 Json 數據
  * @returns 是否為有效的搜索響應結構
  */
-export function isRpcSearchSupplierResponse(data: any): data is RpcSearchSupplierResponse {
-  return (
-    data !== null &&
-    typeof data === 'object' &&
-    'exists' in data &&
-    typeof (data as Record<string, unknown>).exists === 'boolean'
-  );
+export function isRpcSearchSupplierResponse(data: unknown): data is RpcSearchSupplierResponse {
+  return isValidRpcSearchSupplierResponse(data);
 }
 
 /**
- * 類型守衛函數 - 驗證 RPC 變更響應結構
+ * 類型守衛函數 - 驗證 RPC 變更響應結構 (基於 Zod)
  *
  * @param data - Supabase RPC 返回的 Json 數據
  * @returns 是否為有效的變更響應結構
  */
-export function isRpcSupplierMutationResponse(data: any): data is RpcSupplierMutationResponse {
-  return (
-    data !== null &&
-    typeof data === 'object' &&
-    'success' in data &&
-    typeof (data as Record<string, unknown>).success === 'boolean'
-  );
+export function isRpcSupplierMutationResponse(data: unknown): data is RpcSupplierMutationResponse {
+  return isValidRpcSupplierMutationResponse(data);
 }
 
 /**
- * 類型守衛：檢查是否為供應商數據
+ * 類型守衛：檢查是否為供應商數據 (基於 Zod)
  */
 export function isSupplierData(value: unknown): value is SupplierData {
-  return (
-    value !== null &&
-    typeof value === 'object' &&
-    'supplier_code' in value &&
-    typeof (value as Record<string, unknown>).supplier_code === 'string' &&
-    'supplier_name' in value &&
-    typeof (value as Record<string, unknown>).supplier_name === 'string'
-  );
+  return isValidSupplierData(value);
 }
 
 // ========== 斷言函數 ==========
 
 /**
- * 斷言函數 - 強制類型轉換 (零運行時成本)
+ * 斷言函數 - 強制類型轉換 (使用 Zod 驗證)
  *
  * @param data - Supabase RPC 返回的 Json 數據
  * @throws 如果數據結構不符合預期
  */
 export function assertRpcSearchSupplierResponse(
-  data: any
+  data: unknown
 ): asserts data is RpcSearchSupplierResponse {
-  if (!isRpcSearchSupplierResponse(data)) {
-    throw new Error('Invalid RPC search supplier response structure');
+  const result = RpcSearchSupplierResponseSchema.safeParse(data);
+  if (!result.success) {
+    throw new Error(`Invalid RPC search supplier response structure: ${result.error.message}`);
   }
 }
 
 /**
- * 斷言函數 - 強制類型轉換 (零運行時成本)
+ * 斷言函數 - 強制類型轉換 (使用 Zod 驗證)
  *
  * @param data - Supabase RPC 返回的 Json 數據
  * @throws 如果數據結構不符合預期
  */
 export function assertRpcSupplierMutationResponse(
-  data: any
+  data: unknown
 ): asserts data is RpcSupplierMutationResponse {
-  if (!isRpcSupplierMutationResponse(data)) {
-    throw new Error('Invalid RPC supplier mutation response structure');
+  const result = RpcSupplierMutationResponseSchema.safeParse(data);
+  if (!result.success) {
+    throw new Error(`Invalid RPC supplier mutation response structure: ${result.error.message}`);
   }
 }
 

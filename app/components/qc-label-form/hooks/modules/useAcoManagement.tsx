@@ -77,8 +77,10 @@ export const useAcoManagement = ({
 
   // 自動獲取 ACO 訂單參考號
   useEffect(() => {
-    fetchAcoOrderRefs();
-  }, [fetchAcoOrderRefs]);
+    if (productInfo?.type === 'ACO' && productInfo?.code) {
+      fetchAcoOrderRefs();
+    }
+  }, [productInfo?.type, productInfo?.code, fetchAcoOrderRefs]);
 
   // 檢查當前輸入數量是否超過 ACO 剩餘數量
   const checkAcoQuantityExcess = useCallback(() => {

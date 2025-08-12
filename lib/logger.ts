@@ -48,7 +48,7 @@ if (isNotProduction() && typeof window === 'undefined') {
 export { logger };
 
 // 為不同模組建立 child logger
-export const createLogger = (module: string) => {
+export const createLogger = (module: string): pino.Logger => {
   return logger.child({ module });
 };
 
@@ -62,7 +62,17 @@ export const reportLogger = createLogger('report');
 export const systemLogger = createLogger('system');
 
 // 新增專用 logger (Re-Structure-8)
-export const middlewareLogger = createLogger('middleware');
+// Middleware logger 使用更高嘅 log level 減少噪音
+const middlewareLoggerBase = createLogger('middleware');
+export const middlewareLogger = new Proxy(middlewareLoggerBase, {
+  get(target, prop) {
+    // 只允許 warn 同 error level 嘅 log
+    if (prop === 'info' || prop === 'debug') {
+      return () => {}; // 返回空函數，唔做任何嘢
+    }
+    return target[prop as keyof typeof target];
+  }
+});
 export const cacheLogger = createLogger('cache');
 export const featureFlagLogger = createLogger('feature-flags');
 export const queryLogger = createLogger('query-optimizer');

@@ -109,12 +109,12 @@ export function useSmartLoading(options: UseSmartLoadingOptions): UseSmartLoadin
       setPerformanceMetrics(metrics);
       updateAdaptiveConfig(metrics);
 
-      logger.debug('Network performance updated', {
+      logger.debug({
         networkType: metrics.networkType,
         effectiveType: metrics.effectiveType,
         downlink: metrics.downlink,
         rtt: metrics.rtt,
-      });
+      }, 'Network performance updated');
     });
 
     return stopMonitoring;
@@ -302,7 +302,7 @@ export function useSmartApiLoading(id: string) {
 }
 
 /**
- * 性能感知 Widget 載入 Hook
+ * 性能感知 Card 載入 Hook
  */
 export function useSmartWidgetLoading(widgetId: string) {
   return useSmartLoading({

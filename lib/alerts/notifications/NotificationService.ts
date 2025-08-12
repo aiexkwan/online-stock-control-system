@@ -32,21 +32,43 @@ interface NotificationProvider {
 }
 
 export class NotificationService {
-  private redis: Redis;
-  private supabase: SupabaseClient;
+  private redis: Redis | null = null;
+  private supabase: SupabaseClient | null = null;
   private providers: Map<NotificationChannel, NotificationProvider> = new Map();
   private templates: Map<string, AlertTemplate> = new Map();
   private rateLimiter: Map<string, number> = new Map();
+  private initialized = false;
 
   constructor() {
-    this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-    this.supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    // Defer initialization to avoid SSR issues
+    if (typeof window !== 'undefined') {
+      this.initialize();
+    }
+  }
 
+  private initialize(): void {
+    if (this.initialized) return;
+    
     this.initializeProviders();
     this.loadTemplates();
+    this.initialized = true;
+  }
+
+  private getRedis(): Redis {
+    if (!this.redis && typeof window !== 'undefined') {
+      this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+    }
+    return this.redis!;
+  }
+
+  private getSupabase(): SupabaseClient {
+    if (!this.supabase && typeof window !== 'undefined') {
+      this.supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+    }
+    return this.supabase!;
   }
 
   /**
@@ -75,8 +97,13 @@ export class NotificationService {
    * 載入通知模板
    */
   private async loadTemplates(): Promise<void> {
+    if (typeof window === 'undefined') {
+      console.log('NotificationService: Skipping template loading in SSR environment');
+      return;
+    }
+    
     try {
-      const { data: templates, error } = await this.supabase.from('alert_templates').select('*');
+      const { data: templates, error } = await this.getSupabase().from('alert_templates').select('*');
 
       if (error) throw error;
 
@@ -279,7 +306,7 @@ export class NotificationService {
   private async isRateLimited(notificationId: string): Promise<boolean> {
     try {
       const key = `rate_limit:${notificationId}`;
-      const count = await this.redis.get(key);
+      const count = await this.getRedis().get(key);
 
       const maxPerMinute = 10; // 每分鐘最多 10 次
       const maxPerHour = 100; // 每小時最多 100 次
@@ -289,7 +316,7 @@ export class NotificationService {
       }
 
       const hourlyKey = `rate_limit:hourly:${notificationId}`;
-      const hourlyCount = await this.redis.get(hourlyKey);
+      const hourlyCount = await this.getRedis().get(hourlyKey);
 
       if (hourlyCount && parseInt(hourlyCount) >= maxPerHour) {
         return true;
@@ -310,7 +337,7 @@ export class NotificationService {
       const key = `rate_limit:${notificationId}`;
       const hourlyKey = `rate_limit:hourly:${notificationId}`;
 
-      await this.redis
+      await this.getRedis()
         .multi()
         .incr(key)
         .expire(key, 60)
@@ -407,7 +434,7 @@ Resolved: {{alert.resolvedAt}}
       alert.notifications.push(history);
 
       // 保存到數據庫
-      await this.supabase.from('notification_history').insert({
+      await this.getSupabase().from('notification_history').insert({
         id: history.id,
         alert_id: alert.id,
         channel: history.channel,
@@ -496,7 +523,7 @@ Resolved: {{alert.resolvedAt}}
         id: this.generateId(),
       };
 
-      const { error } = await this.supabase.from('alert_templates').insert(newTemplate);
+      const { error } = await this.getSupabase().from('alert_templates').insert(newTemplate);
 
       if (error) throw error;
 
@@ -524,7 +551,7 @@ Resolved: {{alert.resolvedAt}}
    */
   public async getNotificationStats(): Promise<NotificationStats> {
     try {
-      const { data: stats, error } = await this.supabase
+      const { data: stats, error } = await this.getSupabase()
         .from('notification_history')
         .select('channel, status, count(*) as count');
 
@@ -586,6 +613,36 @@ Resolved: {{alert.resolvedAt}}
    */
   private generateId(): string {
     return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  /**
+   * 獲取所有通知通道
+   */
+  public async getChannels(): Promise<string[]> {
+    try {
+      return Array.from(this.providers.keys());
+    } catch (error) {
+      console.error('Failed to get channels:', error);
+      return [];
+    }
+  }
+
+  /**
+   * 測試通知通道
+   */
+  public async testChannel(channel: string, config: Record<string, unknown>): Promise<boolean> {
+    try {
+      const provider = this.providers.get(channel as NotificationChannel);
+      if (!provider) {
+        console.error(`Channel ${channel} not found`);
+        return false;
+      }
+
+      return await provider.test(config);
+    } catch (error) {
+      console.error('Failed to test channel:', error);
+      return false;
+    }
   }
 }
 

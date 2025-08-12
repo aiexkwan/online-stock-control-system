@@ -8,8 +8,6 @@ import { grnErrorHandler } from '../services/ErrorHandler';
 import {
   createGrnDatabaseEntries,
   createGrnDatabaseEntriesBatch,
-  uploadPdfToStorage as grnActionsUploadPdfToStorage,
-  updatePalletPdfUrl,
   type GrnPalletInfoPayload,
   type GrnRecordPayload,
 } from '@/app/actions/grnActions';
@@ -18,13 +16,8 @@ import {
   prepareGrnLabelData,
   GrnInputData,
   mergeAndPrintPdfs as pdfUtilsMergeAndPrintPdfs,
-  generatePalletPdfFileName,
 } from '@/lib/pdfUtils';
-import {
-  TransactionLogService,
-  TransactionSource,
-  TransactionOperation,
-} from '@/app/services/transactionLog.service';
+// Transaction types removed - no longer needed
 // Import moved to dynamic import where needed
 import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf';
 import {
@@ -37,12 +30,13 @@ import {
 } from '@/app/constants/grnConstants';
 
 // Import reducer types
-import type { GrnFormState, GrnFormAction } from './useGrnFormReducer';
+import type { GrnFormState, GrnFormAction } from '@/app/(app)/print-grnlabel/hooks/useGrnFormReducer';
 
 // Import custom hooks
-import { useWeightCalculation } from './useWeightCalculation';
-import { usePalletGenerationGrn } from './usePalletGenerationGrn';
+import { useWeightCalculation } from '@/app/(app)/print-grnlabel/hooks/useWeightCalculation';
+import { usePalletGenerationGrn } from '@/app/(app)/print-grnlabel/hooks/usePalletGenerationGrn';
 import { confirmPalletUsage } from '@/app/utils/palletGeneration';
+// Import print integration hook
 import { usePrintIntegration } from './usePrintIntegration';
 
 interface UseGrnLabelBusinessV3Props {
@@ -67,8 +61,8 @@ interface UseGrnLabelBusinessV3Return {
 }
 
 /**
- * Core business logic hook for GRN Label (V3 版本 - 支援事務管理)
- * 管理 GRN 標籤的核心業務邏輯，包含完整的事務追蹤和回滾機制
+ * Core business logic hook for GRN Label (V3 版本 - 簡化版)
+ * 管理 GRN 標籤的核心業務邏輯，使用 RPC 內建的 ACID 事務處理
  */
 export const useGrnLabelBusinessV3 = ({
   state,
@@ -82,6 +76,8 @@ export const useGrnLabelBusinessV3 = ({
     packageType: state.packageType,
   });
   const palletGeneration = usePalletGenerationGrn();
+  
+  // Use print integration hook
   const { printGrnLabels } = usePrintIntegration();
 
   // Main processing function with transaction support
@@ -89,66 +85,31 @@ export const useGrnLabelBusinessV3 = ({
     async (clockNumber: string) => {
       actions.setProcessing(true);
 
-      // Initialize transaction logging
-      const transactionLog = new TransactionLogService();
-      const transactionId = transactionLog.generateTransactionId();
-
       // Declare variables at outer scope for access in catch block
       let palletNumbers: string[] = [];
       let series: string[] = [];
-      let stepSequence = 0;
 
       try {
-        // Start transaction logging
-        await transactionLog.startTransaction(
-          {
-            transactionId,
-            sourceModule: TransactionSource.GRN_LABEL,
-            sourcePage: '/print-grnlabel',
-            sourceAction: 'bulk_print',
-            operationType: TransactionOperation.PRINT_LABEL,
-            userId: currentUserId,
-            userClockNumber: clockNumber,
-            metadata: {
-              grnNumber: state.formData.grnNumber,
-              materialCode: state.productInfo?.code,
-              supplierCode: state.supplierInfo?.code,
-              labelMode: state.labelMode,
-              palletCount: state.grossWeights.filter(gw => gw.trim() !== '').length,
-            },
-          },
-          {
-            formData: state.formData,
-            productInfo: state.productInfo,
-            supplierInfo: state.supplierInfo,
-            grossWeights: state.grossWeights,
-            palletType: state.palletType,
-            packageType: state.packageType,
-          }
-        );
-
         if (!state.productInfo || !state.supplierInfo) {
           const error = new Error('Product or supplier information is missing');
-          await transactionLog.recordError(transactionId, error, 'VALIDATION_ERROR');
           grnErrorHandler.handleValidationError('form', error.message, {
             component: 'useGrnLabelBusinessV3',
             action: 'form_submission',
             clockNumber,
-            transactionId,
           });
+          toast.error('Product or supplier information is missing');
           return;
         }
 
         const filledGrossWeights = state.grossWeights.map(gw => gw.trim()).filter(gw => gw !== '');
         if (filledGrossWeights.length === 0) {
           const error = new Error('Please enter at least one gross weight');
-          await transactionLog.recordError(transactionId, error, 'VALIDATION_ERROR');
           grnErrorHandler.handleValidationError('grossWeights', error.message, {
             component: 'useGrnLabelBusinessV3',
             action: 'form_submission',
             clockNumber,
-            transactionId,
           });
+          toast.error('Please enter at least one gross weight');
           return;
         }
 
@@ -198,6 +159,15 @@ export const useGrnLabelBusinessV3 = ({
         const quantities = netWeights; // 對於 GRN，數量就是淨重
 
         try {
+          console.log('[useGrnLabelBusinessV3ForCard] Calling RPC with data:', {
+            grnNumber: state.formData.grnNumber,
+            productCode: state.productInfo.code,
+            supplierCode: state.supplierInfo.code,
+            grossWeights,
+            netWeights,
+            labelMode: state.labelMode
+          });
+          
           // 調用統一批量處理 RPC
           const batchResult = await createGrnDatabaseEntriesBatch(
             state.formData.grnNumber,
@@ -217,19 +187,9 @@ export const useGrnLabelBusinessV3 = ({
 
           if (batchResult.success) {
             (process.env.NODE_ENV as string) !== 'production' &&
-              console.log('[useGrnLabelBusinessV3] 統一 RPC 批量處理成功:', batchResult);
+              console.log('[useGrnLabelBusinessV3ForCard] 統一 RPC 批量處理成功:', batchResult);
 
-            // Record database creation step
-            await transactionLog.recordStep(transactionId, {
-              name: 'database_records',
-              sequence: ++stepSequence,
-              data: {
-                method: 'unified_rpc',
-                recordCount: numberOfPalletsToProcess,
-                palletNumbers: batchResult.data?.pallet_numbers || batchResult.palletNumbers,
-                transactionData: batchResult.data,
-              },
-            });
+            // Database records created successfully via RPC
 
             // 從統一 RPC 結果中獲取棧板號碼和系列號
             // 策略4: unknown + type narrowing - 安全的陣列類型轉換
@@ -242,16 +202,7 @@ export const useGrnLabelBusinessV3 = ({
               ? batchResult.data.series.filter((item): item is string => typeof item === 'string')
               : [];
 
-            // Record pallet allocation step from RPC result
-            await transactionLog.recordStep(transactionId, {
-              name: 'pallet_allocation',
-              sequence: ++stepSequence,
-              data: {
-                palletNumbers,
-                series,
-                count: numberOfPalletsToProcess,
-              },
-            });
+            // Pallet allocation completed
 
             if (
               palletNumbers.length === numberOfPalletsToProcess &&
@@ -287,6 +238,7 @@ export const useGrnLabelBusinessV3 = ({
                 };
 
                 const pdfProps = await prepareGrnLabelData(grnInputData);
+                console.log('[useGrnLabelBusinessV3ForCard] PDF props:', pdfProps);
 
                 if (pdfProps) {
                   let pdfBlob: Blob;
@@ -295,12 +247,37 @@ export const useGrnLabelBusinessV3 = ({
                       '@/lib/services/unified-pdf-service'
                     );
                     pdfBlob = await renderReactPDFToBlob(<PrintLabelPdf {...pdfProps} />);
+                    console.log('[useGrnLabelBusinessV3ForCard] PDF blob generated:', {
+                      size: pdfBlob.size,
+                      type: pdfBlob.type,
+                      palletNum,
+                      seriesNum
+                    });
+                    
+                    // Validate PDF blob
+                    if (!pdfBlob || pdfBlob.size === 0) {
+                      throw new Error('Generated PDF blob is empty');
+                    }
+                    
                     collectedPdfBlobs.push(pdfBlob);
                     actions.updateProgressStatus(i, 'Success');
                   } catch (error) {
-                    console.error('[useGrnLabelBusinessV3] PDF generation error:', error);
+                    console.error('[useGrnLabelBusinessV3ForCard] PDF generation error:', error);
+                    console.error('[useGrnLabelBusinessV3ForCard] Error details:', {
+                      palletNum,
+                      seriesNum,
+                      grnInputData,
+                      pdfProps,
+                      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+                      errorStack: error instanceof Error ? error.stack : undefined
+                    });
                     actions.updateProgressStatus(i, 'Failed');
                     anyFailure = true;
+                    
+                    // Show error toast for individual pallet failure
+                    toast.error(`Pallet ${i + 1} (${palletNum}) PDF generation failed: ${
+                      error instanceof Error ? error.message : 'Unknown error'
+                    }`);
                   }
                 } else {
                   actions.updateProgressStatus(i, 'Failed');
@@ -308,43 +285,53 @@ export const useGrnLabelBusinessV3 = ({
                 }
               }
             } else {
-              console.error('[useGrnLabelBusinessV3] 統一 RPC 返回的棧板數量不匹配');
+              console.error('[useGrnLabelBusinessV3ForCard] 統一 RPC 返回的棧板數量不匹配');
               throw new Error('統一 RPC 返回的棧板數量不匹配');
             }
           } else {
-            console.error('[useGrnLabelBusinessV3] 統一 RPC 處理失敗:', batchResult.error);
+            console.error('[useGrnLabelBusinessV3ForCard] 統一 RPC 處理失敗:', batchResult.error);
             throw new Error(batchResult.error || '統一 RPC 處理失敗');
           }
 
           // Process collected PDFs
+          console.log('[useGrnLabelBusinessV3ForCard] Collected PDFs:', collectedPdfBlobs.length);
           if (collectedPdfBlobs.length > 0) {
-            // Record PDF generation step
-            await transactionLog.recordStep(transactionId, {
-              name: 'pdf_generation',
-              sequence: ++stepSequence,
-              data: {
-                pdfCount: collectedPdfBlobs.length,
-                totalSize: collectedPdfBlobs.reduce((sum, blob) => sum + blob.size, 0),
-                hasFailures: anyFailure,
-              },
-            });
+            // PDF generation completed
+            console.log('[useGrnLabelBusinessV3ForCard] All PDFs generated successfully');
 
             if (anyFailure) {
+              const successCount = collectedPdfBlobs.length;
+              const failedCount = numberOfPalletsToProcess - successCount;
+              
               grnErrorHandler.handleWarning(
-                `Processed ${collectedPdfBlobs.length} of ${numberOfPalletsToProcess} labels successfully using unified RPC.`,
+                `Processed ${successCount} of ${numberOfPalletsToProcess} labels successfully. ${failedCount} failed.`,
                 {
                   component: 'useGrnLabelBusinessV3',
                   action: 'unified_rpc_processing',
                   clockNumber,
-                  transactionId,
                 }
               );
+              
+              toast.warning(`${successCount} labels generated successfully, ${failedCount} failed.`);
             } else {
               console.log(
-                `[useGrnLabelBusinessV3] 統一 RPC: All ${collectedPdfBlobs.length} labels generated successfully!`
+                `[useGrnLabelBusinessV3ForCard] 統一 RPC: All ${collectedPdfBlobs.length} labels generated successfully!`
               );
+              toast.success(`All ${collectedPdfBlobs.length} GRN labels generated successfully!`);
             }
 
+            // Use generic printing service with GRN type
+            console.log('[useGrnLabelBusinessV3ForCard] Calling printPdfs with GRN type:', {
+              pdfCount: collectedPdfBlobs.length,
+              pdfSizes: collectedPdfBlobs.map(blob => blob.size),
+              metadata: {
+                grnNumber: state.formData.grnNumber,
+                supplierCode: state.supplierInfo.code,
+                productCode: state.productInfo.code,
+                palletNumbers,
+              }
+            });
+            
             // Use unified printing service
             await printGrnLabels(collectedPdfBlobs, {
               grnNumber: state.formData.grnNumber,
@@ -352,25 +339,12 @@ export const useGrnLabelBusinessV3 = ({
               productCode: state.productInfo.code,
               palletNumbers,
               series,
-              userId: clockNumber, // Use clockNumber as userId for operatorClockNum
+              userId: clockNumber,
               clockNumber,
             });
 
-            // Complete transaction
-            await transactionLog.completeTransaction(
-              transactionId,
-              {
-                completedAt: new Date().toISOString(),
-                palletCount: collectedPdfBlobs.length,
-                method: 'unified_rpc',
-                hasWarnings: anyFailure,
-              },
-              {
-                palletNumbers,
-                grnNumber: state.formData.grnNumber,
-                pdfCount: collectedPdfBlobs.length,
-              }
-            );
+            // Processing completed successfully
+            toast.success('GRN labels sent to print queue');
 
             // Reset form after successful print
             setTimeout(() => {
@@ -379,72 +353,34 @@ export const useGrnLabelBusinessV3 = ({
             }, 2000);
 
             return;
+          } else {
+            // No PDFs generated
+            const error = new Error('No PDFs generated successfully');
+            console.error('[useGrnLabelBusinessV3ForCard] No PDFs generated');
+            toast.error('Failed to generate any PDF labels');
+            throw error;
           }
         } catch (batchError) {
-          console.error('[useGrnLabelBusinessV3] 統一 RPC 失敗:', batchError);
+          console.error('[useGrnLabelBusinessV3ForCard] 統一 RPC 失敗:', batchError);
+          
+          const errorMessage = batchError instanceof Error ? batchError.message : 'RPC processing failed';
+          toast.error(`Database operation failed: ${errorMessage}`);
 
-          // Record the batch processing failure
-          await transactionLog.recordStep(transactionId, {
-            name: 'batch_processing_failed',
-            sequence: ++stepSequence,
-            data: {
-              error: batchError instanceof Error ? batchError.message : 'Unknown error',
-              method: 'unified_rpc',
-            },
-          });
-
-          // 這裡可以選擇是否回退到逐個處理方式
-          // 目前直接拋出錯誤
+          // 直接拋出錯誤
           throw batchError;
         }
       } catch (error) {
-        console.error('[useGrnLabelBusinessV3] Processing error:', error);
-
-        // Record error in transaction log
-        const errorLogId = await transactionLog.recordError(
-          transactionId,
-          error as Error,
-          'GRN_PROCESSING_ERROR',
-          {
-            grnNumber: state.formData.grnNumber,
-            palletCount: palletNumbers.length,
-            stepSequence,
-            lastStep: stepSequence > 0 ? `Step ${stepSequence}` : 'Initialization',
-          }
-        );
-
-        // Execute rollback through transaction service
-        try {
-          const rollbackResult = await transactionLog.executeRollback(
-            transactionId,
-            clockNumber,
-            `Processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-          );
-
-          console.log('[useGrnLabelBusinessV3] Rollback result:', rollbackResult);
-
-          if (!rollbackResult.success) {
-            console.error('[useGrnLabelBusinessV3] Rollback had errors:', rollbackResult);
-
-            // No need for manual pallet rollback as pallets are managed by RPC
-          }
-        } catch (rollbackError) {
-          console.error('[useGrnLabelBusinessV3] Failed to execute rollback:', rollbackError);
-
-          // No need for manual pallet rollback as pallets are managed by RPC
-        }
+        console.error('[useGrnLabelBusinessV3ForCard] Processing error:', error);
 
         grnErrorHandler.handleDatabaseError(
           error as Error,
           {
-            component: 'useGrnLabelBusinessV3',
+            component: 'useGrnLabelBusinessV3ForCard',
             action: 'form_submission',
             clockNumber,
             additionalData: {
               grnNumber: state.formData.grnNumber,
               palletCount: palletNumbers.length,
-              transactionId,
-              errorLogId,
             },
           },
           'processPrintRequest'
@@ -453,7 +389,7 @@ export const useGrnLabelBusinessV3 = ({
         actions.setProcessing(false);
       }
     },
-    [state, actions, weightCalculation, currentUserId, printGrnLabels]
+    [state, actions, weightCalculation, printGrnLabels]
   );
 
   return {

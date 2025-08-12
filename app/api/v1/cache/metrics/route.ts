@@ -2,11 +2,15 @@
  * 緩存和性能指標 API 端點
  * Phase 2.1 更新 - 智能緩存適配器支援
  * 專家優化：監控緩存性能和系統健康
+ * Security Update: Added authentication and rate limiting
  */
 
 import { getWarehouseCacheService } from '@/lib/services/warehouse-cache-service';
 import { getCacheAdapter, getCurrentCacheType } from '@/lib/cache/cache-factory';
 import { NextResponse } from 'next/server';
+import { createClient } from '@/app/utils/supabase/server';
+import { cookies } from 'next/headers';
+import { cacheOperationLimiter } from '@/lib/middleware/rate-limit';
 
 /**
  * 獲取緩存性能指標 (智能緩存適配器)
@@ -96,9 +100,81 @@ export async function GET() {
 
 /**
  * 清除指定的緩存 (開發/管理用途) - 智能緩存適配器支援
+ * Security: Requires authentication and admin role
  */
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: Request) {
   try {
+    // Rate limiting check
+    const rateLimitResult = await cacheOperationLimiter(request);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { 
+          status: 'error',
+          message: rateLimitResult.message,
+          retryAfter: rateLimitResult.reset
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': Math.ceil((rateLimitResult.reset!.getTime() - Date.now()) / 1000).toString()
+          }
+        }
+      );
+    }
+
+    // Authentication check
+    const cookieStore = await cookies();
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { 
+          status: 'error',
+          message: 'Authentication required'
+        },
+        { status: 401 }
+      );
+    }
+
+    // Admin role check (in production)
+    if (process.env.NODE_ENV === 'production') {
+      // Check if user has admin role
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      
+      if (!profile || profile.role !== 'admin') {
+        // Log unauthorized attempt
+        console.warn('[SECURITY] Unauthorized cache clear attempt:', {
+          userId: user.id,
+          email: user.email,
+          timestamp: new Date().toISOString(),
+          ip: request.headers.get('x-forwarded-for') || 'unknown'
+        });
+        
+        return NextResponse.json(
+          { 
+            status: 'error',
+            message: 'Admin access required'
+          },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Audit logging
+    console.log('[AUDIT] Cache clear operation:', {
+      userId: user.id,
+      email: user.email,
+      timestamp: new Date().toISOString(),
+      operation: 'CACHE_DELETE_V1',
+      environment: process.env.NODE_ENV
+    });
+
+    // Continue with original logic after authentication
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') as 'summary' | 'dashboard' | 'inventory' | 'all';
     const pattern = searchParams.get('pattern');
@@ -156,9 +232,52 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
 /**
  * 預熱緩存 (管理用途)
+ * Security: Requires authentication
  */
-export async function POST() {
+export async function POST(request: Request) {
   try {
+    // Rate limiting check
+    const rateLimitResult = await cacheOperationLimiter(request);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { 
+          status: 'error',
+          message: rateLimitResult.message,
+          retryAfter: rateLimitResult.reset
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': Math.ceil((rateLimitResult.reset!.getTime() - Date.now()) / 1000).toString()
+          }
+        }
+      );
+    }
+
+    // Authentication check
+    const cookieStore = await cookies();
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { 
+          status: 'error',
+          message: 'Authentication required'
+        },
+        { status: 401 }
+      );
+    }
+
+    // Audit logging
+    console.log('[AUDIT] Cache pre-warm operation:', {
+      userId: user.id,
+      email: user.email,
+      timestamp: new Date().toISOString(),
+      operation: 'CACHE_PREWARM_V1'
+    });
+
+    // Continue with original logic after authentication
     const warehouseService = getWarehouseCacheService();
 
     // 預熱關鍵緩存

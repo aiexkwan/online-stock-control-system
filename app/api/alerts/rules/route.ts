@@ -1,0 +1,323 @@
+/**
+ * Alert Rules API
+ * 告警規則管理 API - 支援規則的 CRUD 操作
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { DatabaseRecord } from '@/types/database/tables';
+import { createClient } from '@supabase/supabase-js';
+import { z } from 'zod';
+import { AlertRuleEngine } from '@/lib/alerts/core/AlertRuleEngine';
+import {
+  AlertRule,
+  AlertLevel,
+  AlertCondition,
+  NotificationChannel,
+  NotificationConfig,
+  EmailConfig,
+  SlackConfig,
+  WebhookConfig,
+  SmsConfig,
+} from '@/lib/alerts/types';
+import { getErrorMessage } from '@/types/core/error';
+import {
+  toRecord,
+  safeGet,
+  safeString,
+  safeBoolean,
+  safeAlertLevel,
+  safeAlertCondition,
+} from '@/types/database/helpers';
+import type { ApiResult } from '@/lib/types/api';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+let alertEngine: AlertRuleEngine;
+
+// 初始化告警引擎
+async function getAlertEngine() {
+  if (!alertEngine) {
+    alertEngine = new AlertRuleEngine();
+  }
+  return alertEngine;
+}
+
+// 創建告警規則的 Schema
+const CreateAlertRuleSchema = z.object({
+  name: z.string().min(1).max(255),
+  description: z.string().max(1000),
+  enabled: z.boolean().default(true),
+  level: z.nativeEnum(AlertLevel),
+  metric: z.string().min(1),
+  condition: z.nativeEnum(AlertCondition),
+  threshold: z.union([z.number(), z.string()]),
+  timeWindow: z.number().min(1),
+  evaluationInterval: z.number().min(1),
+  dependencies: z.array(z.string()).optional(),
+  silenceTime: z.number().min(0).optional(),
+  notifications: z.array(
+    z.object({
+      id: z.string(),
+      channel: z.nativeEnum(NotificationChannel),
+      enabled: z.boolean(),
+      config: z.record(z.unknown()),
+      conditions: z
+        .object({
+          levels: z.array(z.nativeEnum(AlertLevel)).optional(),
+          timeRanges: z
+            .array(
+              z.object({
+                start: z.string(),
+                end: z.string(),
+                timezone: z.string().optional(),
+                daysOfWeek: z.array(z.number().min(0).max(6)).optional(),
+              })
+            )
+            .optional(),
+        })
+        .optional(),
+      template: z.string().optional(),
+    })
+  ),
+  tags: z.record(z.string()).optional(),
+});
+
+// 更新告警規則的 Schema
+const UpdateAlertRuleSchema = CreateAlertRuleSchema.partial();
+
+// 查詢告警規則的 Schema
+const QueryAlertRulesSchema = z.object({
+  enabled: z.boolean().optional(),
+  levels: z.array(z.nativeEnum(AlertLevel)).optional(),
+  tags: z.record(z.string()).optional(),
+  createdBy: z.string().optional(),
+  limit: z.number().min(1).max(1000).default(100),
+  offset: z.number().min(0).default(0),
+  sortBy: z.enum(['name', 'created_at', 'updated_at']).default('created_at'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+
+/**
+ * GET /api/v1/alerts/rules
+ * 查詢告警規則
+ */
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<
+  NextResponse<
+    ApiResult<{
+      data: AlertRule[];
+      pagination: { total: number | null; limit: number; offset: number };
+    }>
+  >
+> {
+  try {
+    const { searchParams } = new URL(request.url);
+    const queryParams = Object.fromEntries(searchParams);
+
+    // 解析查詢參數
+    const query = QueryAlertRulesSchema.parse({
+      enabled: queryParams.enabled ? queryParams.enabled === 'true' : undefined,
+      levels: queryParams.levels ? queryParams.levels.split(',') : undefined,
+      tags: queryParams.tags ? JSON.parse(queryParams.tags) : undefined,
+      createdBy: queryParams.createdBy,
+      limit: queryParams.limit ? parseInt(queryParams.limit) : undefined,
+      offset: queryParams.offset ? parseInt(queryParams.offset) : undefined,
+      sortBy: queryParams.sortBy,
+      sortOrder: queryParams.sortOrder,
+    });
+
+    // 構建查詢
+    let queryBuilder = supabase.from('alert_rules').select('*');
+
+    if (query.enabled !== undefined) {
+      queryBuilder = queryBuilder.eq('enabled', query.enabled);
+    }
+
+    if (query.levels && query.levels.length > 0) {
+      queryBuilder = queryBuilder.in('level', query.levels);
+    }
+
+    if (query.createdBy) {
+      queryBuilder = queryBuilder.eq('created_by', query.createdBy);
+    }
+
+    // 排序
+    queryBuilder = queryBuilder.order(query.sortBy, { ascending: query.sortOrder === 'asc' });
+
+    // 分頁
+    queryBuilder = queryBuilder.range(query.offset, query.offset + query.limit - 1);
+
+    const { data, error, count } = await queryBuilder;
+
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        data: data?.map(deserializeRule) || [],
+        pagination: {
+          total: count,
+          limit: query.limit,
+          offset: query.offset,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Failed to get alert rules:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          error instanceof Error ? (error as { message: string }).message : 'Internal server error',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST /api/v1/alerts/rules
+ * 創建告警規則
+ */
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse<ApiResult<AlertRule>>> {
+  try {
+    const body = await request.json();
+    const validated = CreateAlertRuleSchema.parse(body);
+
+    // 生成規則 ID
+    const ruleId = generateId();
+
+    // 獲取用戶 ID (應該從認證中獲取)
+    const userId = 'system'; // 臨時使用
+
+    const rule: AlertRule = {
+      id: ruleId,
+      name: validated.name,
+      description: validated.description,
+      enabled: validated.enabled,
+      level: validated.level,
+      metric: validated.metric,
+      condition: validated.condition,
+      threshold: validated.threshold,
+      timeWindow: validated.timeWindow,
+      evaluationInterval: validated.evaluationInterval,
+      dependencies: validated.dependencies || [],
+      silenceTime: validated.silenceTime,
+      notifications: validated.notifications.map((n: Record<string, unknown>) => ({
+        ...n,
+        config: n.config as EmailConfig | SlackConfig | WebhookConfig | SmsConfig,
+      })) as NotificationConfig[],
+      tags: validated.tags || {},
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      createdBy: userId,
+    };
+
+    // 保存到數據庫
+    const { error } = await supabase.from('alert_rules').insert(serializeRule(rule));
+
+    if (error) {
+      throw error;
+    }
+
+    // 重新載入告警引擎規則
+    const engine = await getAlertEngine();
+    await engine.reloadRules();
+
+    return NextResponse.json({
+      success: true,
+      data: rule,
+      message: 'Alert rule created successfully',
+    });
+  } catch (error) {
+    console.error('Failed to create alert rule:', error);
+
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Validation error',
+          details: error.errors,
+        },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          error instanceof Error ? (error as { message: string }).message : 'Internal server error',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * 序列化規則
+ */
+function serializeRule(rule: AlertRule): Record<string, unknown> {
+  return {
+    id: rule.id,
+    name: rule.name,
+    description: rule.description,
+    enabled: rule.enabled,
+    level: rule.level,
+    metric: rule.metric,
+    condition: rule.condition,
+    threshold: rule.threshold,
+    time_window: rule.timeWindow,
+    evaluation_interval: rule.evaluationInterval,
+    dependencies: JSON.stringify(rule.dependencies || []),
+    silence_time: rule.silenceTime,
+    notifications: JSON.stringify(rule.notifications),
+    tags: JSON.stringify(rule.tags || {}),
+    created_at: rule.createdAt.toISOString(),
+    updated_at: rule.updatedAt.toISOString(),
+    created_by: rule.createdBy,
+  };
+}
+
+/**
+ * 反序列化規則
+ */
+function deserializeRule(data: unknown): AlertRule {
+  const record = toRecord(data);
+  return {
+    id: safeString(safeGet(record, 'id')) || '',
+    name: safeString(safeGet(record, 'name')) || '',
+    description: safeString(safeGet(record, 'description')) || '',
+    enabled: safeBoolean(safeGet(record, 'enabled')) || false,
+    level: safeAlertLevel(safeGet(record, 'level'), AlertLevel.INFO),
+    metric: safeString(safeGet(record, 'metric')) || '',
+    condition: safeAlertCondition(safeGet(record, 'condition'), AlertCondition.GREATER_THAN),
+    threshold: safeGet(record, 'threshold') || (0 as number),
+    timeWindow: safeGet(record, 'time_window') || (300 as number),
+    evaluationInterval: safeGet(record, 'evaluation_interval') || (60 as number),
+    dependencies: JSON.parse(safeString(safeGet(record, 'dependencies')) || '[]'),
+    silenceTime: safeGet(record, 'silence_time') || (0 as number),
+    notifications: JSON.parse(safeString(safeGet(record, 'notifications')) || '[]'),
+    tags: JSON.parse(safeString(safeGet(record, 'tags')) || '{}'),
+    createdAt: new Date(safeString(safeGet(record, 'created_at')) || new Date().toISOString()),
+    updatedAt: new Date(safeString(safeGet(record, 'updated_at')) || new Date().toISOString()),
+    createdBy: safeString(safeGet(record, 'created_by')) || '',
+  };
+}
+
+/**
+ * 生成 ID
+ */
+function generateId(): string {
+  return `rule_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}

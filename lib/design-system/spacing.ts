@@ -137,20 +137,20 @@ export const componentSpacing = {
 } as const;
 
 /**
- * Widget Spacing
- * Widget 間距規範
+ * Card Spacing
+ * Card 間距規範
  */
 export const widgetSpacing = {
-  // Widget 內部內邊距
+  // Card 內部內邊距
   containerPadding: spacing[4], // 16px
 
-  // Widget 容器內邊距（用於統一 Widget 內部間距）
+  // Card 容器內邊距（用於統一 Card 內部間距）
   container: 'p-4', // 16px - Tailwind 類名
 
-  // Widget 標題與內容間距
+  // Card 標題與內容間距
   headerGap: spacing[4], // 16px
 
-  // Widget 之間的間距
+  // Card 之間的間距
   betweenWidgets: spacing[4], // 16px
 
   // 卡片內部間距
@@ -331,7 +331,7 @@ export const spacingCssVariables = `
     --radius-lg: ${borderRadius.lg};
     --radius-xl: ${borderRadius.xl};
 
-    /* Widget Specific */
+    /* Card Specific */
     --widget-padding: ${widgetSpacing.containerPadding};
     --widget-gap: ${widgetSpacing.headerGap};
     --widget-spacing: ${widgetSpacing.betweenWidgets};
@@ -350,7 +350,7 @@ export const spacingUtilities = {
     wide: 'px-6 md:px-8 lg:px-12',
   } as { [key: string]: string },
 
-  // Widget 類
+  // Card 類
   widget: {
     container: 'p-4',
     header: 'mb-4',

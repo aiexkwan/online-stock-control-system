@@ -3,6 +3,8 @@
  * Combined schema for the NewPennine WMS
  */
 
+// Order Schema - integrated from separate file
+
 export const baseSchema = `
 # Base GraphQL Schema - Core Types
 scalar DateTime
@@ -58,9 +60,12 @@ input PaginationInput {
   offset: Int
 }
 
+# PageInfo for cursor-based pagination
 type PageInfo {
   hasNextPage: Boolean!
   hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
   totalCount: Int!
   totalPages: Int!
   currentPage: Int!
@@ -163,7 +168,6 @@ export const productSchema = `
 type Product {
   code: ID!
   description: String!
-  chinesedescription: String
   colour: String
   type: String
   standardQty: Int
@@ -240,7 +244,6 @@ input ProductFilterInput {
 input CreateProductInput {
   code: String!
   description: String!
-  chinesedescription: String
   colour: String
   type: String
   standardQty: Int
@@ -251,13 +254,84 @@ input CreateProductInput {
 
 input UpdateProductInput {
   description: String
-  chinesedescription: String
   colour: String
   type: String
   standardQty: Int
   unit: String
   weightPerPiece: Float
   volumePerPiece: Float
+}
+
+input CreateSupplierInput {
+  code: String!
+  name: String!
+  address: String
+  contact: String
+  email: String
+  phone: String
+  fax: String
+  status: String
+  leadTime: Int
+  paymentTerms: String
+  minimumOrderQuantity: Int
+}
+
+input UpdateSupplierInput {
+  name: String
+  address: String
+  contact: String
+  email: String
+  phone: String
+  fax: String
+  status: String
+  leadTime: Int
+  paymentTerms: String
+  minimumOrderQuantity: Int
+}
+
+input SupplierFilterInput {
+  code: String
+  name: String
+  status: String
+  contact: String
+}
+
+type SupplierConnection {
+  edges: [SupplierEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type SupplierEdge {
+  node: Supplier!
+  cursor: String!
+}
+
+type SupplierPerformance {
+  deliveryPerformance: DeliveryPerformance!
+  qualityMetrics: QualityMetrics!
+  orderMetrics: OrderMetrics!
+}
+
+type DeliveryPerformance {
+  onTimeDeliveries: Int!
+  lateDeliveries: Int!
+  earlyDeliveries: Int!
+  averageDelayDays: Float
+}
+
+type QualityMetrics {
+  acceptedGRNs: Int!
+  rejectedGRNs: Int!
+  partialGRNs: Int!
+  defectRate: Float
+}
+
+type OrderMetrics {
+  totalOrders: Int!
+  completedOrders: Int!
+  pendingOrders: Int!
+  cancelledOrders: Int!
 }
 `;
 
@@ -951,6 +1025,12 @@ type Query {
   searchProducts(query: String!, limit: Int = 10): [Product!]!
   productStatistics(productCode: ID!, dateRange: DateRangeInput): ProductStatistics!
   
+  # Suppliers
+  supplier(code: String!): Supplier
+  suppliers(filter: SupplierFilterInput, pagination: PaginationInput, sort: SortInput): SupplierConnection!
+  searchSuppliers(query: String!, limit: Int = 10): [Supplier!]!
+  supplierPerformance(supplierCode: String!, dateRange: DateRangeInput): SupplierPerformance!
+  
   # Inventory
   pallet(pltNum: ID!): Pallet
   pallets(filter: PalletFilterInput, pagination: PaginationInput, sort: SortInput): PalletConnection!
@@ -988,6 +1068,11 @@ type Mutation {
   createProduct(input: CreateProductInput!): Product!
   updateProduct(code: ID!, input: UpdateProductInput!): Product!
   deactivateProduct(code: ID!): Product!
+  
+  # Suppliers
+  createSupplier(input: CreateSupplierInput!): Supplier!
+  updateSupplier(code: String!, input: UpdateSupplierInput!): Supplier!
+  deactivateSupplier(code: String!): Supplier!
   
   # Operations
   createTransfer(input: CreateTransferInput!): Transfer!
@@ -1339,7 +1424,7 @@ type StockDistributionItem {
 `;
 
 // Chart Schema (embedded to avoid module resolution issues)
-const chartSchema = `
+export const chartSchema = `
 # Chart Related Types
 enum ChartType {
   AREA
@@ -1595,83 +1680,6 @@ extend type Subscription {
 
 // Table Schema (embedded)
 const tableSchema = `
-# TableCard 核心類型定義
-
-enum TableDataType {
-  STRING
-  NUMBER
-  BOOLEAN
-  DATE
-  DATETIME
-  ARRAY
-  OBJECT
-  JSON
-}
-
-enum ColumnAlign {
-  LEFT
-  CENTER
-  RIGHT
-}
-
-enum FormatterType {
-  DEFAULT
-  CURRENCY
-  PERCENTAGE
-  DATE
-  DATETIME
-  BOOLEAN
-  TRUNCATE
-  LINK
-  BADGE
-  CUSTOM
-}
-
-enum PaginationStyle {
-  OFFSET
-  CURSOR
-  LOAD_MORE
-}
-
-enum StringOperator {
-  EQUALS
-  CONTAINS
-  STARTS_WITH
-  ENDS_WITH
-  NOT_EQUALS
-  NOT_CONTAINS
-}
-
-enum NumberOperator {
-  EQUALS
-  GT
-  GTE
-  LT
-  LTE
-  BETWEEN
-  NOT_EQUALS
-}
-
-enum DateOperator {
-  EQUALS
-  BEFORE
-  AFTER
-  BETWEEN
-  TODAY
-  YESTERDAY
-  LAST_7_DAYS
-  LAST_30_DAYS
-  THIS_MONTH
-  LAST_MONTH
-}
-
-enum ArrayOperator {
-  IN
-  NOT_IN
-  CONTAINS_ANY
-  CONTAINS_ALL
-}
-
 enum ExportFormat {
   CSV
   EXCEL
@@ -1684,25 +1692,6 @@ enum ExportStatus {
   PROCESSING
   COMPLETED
   FAILED
-}
-
-# 表格列配置
-type TableColumn {
-  key: String!
-  header: String!
-  dataType: TableDataType!
-  sortable: Boolean!
-  filterable: Boolean!
-  width: String
-  align: ColumnAlign
-  formatter: ColumnFormatter
-  required: Boolean
-  hidden: Boolean
-}
-
-type ColumnFormatter {
-  type: FormatterType!
-  options: JSON
 }
 
 # 篩選器類型
@@ -2218,19 +2207,6 @@ extend type Query {
   # 預估報表生成時間
   estimateReportTime(input: ReportGenerationInput!): Int!
   
-  # 獲取可用的報表欄位
-  availableReportFields(reportType: ReportType!): [ReportField!]!
-}
-
-# 報表欄位定義
-type ReportField {
-  key: String!
-  label: String!
-  dataType: TableDataType!
-  filterable: Boolean!
-  groupable: Boolean!
-  aggregatable: Boolean!
-  required: Boolean!
 }
 
 # 擴展 Mutation 類型
@@ -2873,1029 +2849,9 @@ type NotificationChannel {
 }
 `;
 
-// List Schema - ListCard with unified list support
-export const listSchema = `
-# List GraphQL Schema
-# ListCard 組件相關類型定義
-# 支援統一的列表數據查詢和管理
 
-# 基礎 ListData interface
-interface ListData {
-  id: ID!
-  listType: ListType!
-  title: String!
-  description: String
-  totalCount: Int!
-  filteredCount: Int!
-  lastUpdated: DateTime!
-  dataSource: String!
-  refreshInterval: Int
-}
-
-# List 類型枚舉
-enum ListType {
-  ORDER_STATE
-  ORDER_RECORD
-  WAREHOUSE_TRANSFER
-  OTHER_FILES
-}
-
-# 訂單狀態列表 (OrderState Lists)
-type OrderStateList implements ListData {
-  id: ID!
-  listType: ListType!
-  title: String!
-  description: String
-  totalCount: Int!
-  filteredCount: Int!
-  lastUpdated: DateTime!
-  dataSource: String!
-  refreshInterval: Int
-  
-  # 訂單狀態特定數據
-  orders: OrderStateConnection!
-  statusSummary: [OrderStatusSummary!]!
-  progressMetrics: OrderProgressMetrics!
-}
-
-type OrderStatusSummary {
-  status: OrderStatus!
-  count: Int!
-  percentage: Float!
-  averageProcessingTime: Int # minutes
-  urgentCount: Int
-}
-
-type OrderProgressMetrics {
-  totalInProgress: Int!
-  averageCompletionRate: Float!
-  bottleneckStage: OrderStatus
-  predictedCompletionTime: DateTime
-}
-
-type OrderStateConnection {
-  edges: [OrderStateEdge!]!
-  pageInfo: PageInfo!
-  totalCount: Int!
-}
-
-type OrderStateEdge {
-  cursor: String!
-  node: OrderState!
-}
-
-type OrderState {
-  order: Order!
-  currentStage: OrderStatus!
-  progress: Float! # 0-100
-  stageHistory: [OrderStageHistory!]!
-  estimatedCompletion: DateTime
-  actualCompletion: DateTime
-  isUrgent: Boolean!
-  bottlenecks: [String!]
-  nextActions: [String!]
-}
-
-type OrderStageHistory {
-  stage: OrderStatus!
-  enteredAt: DateTime!
-  exitedAt: DateTime
-  duration: Int # minutes
-  performedBy: User
-  notes: String
-}
-
-# 訂單記錄列表 (OrderRecord Lists)
-type OrderRecordList implements ListData {
-  id: ID!
-  listType: ListType!
-  title: String!
-  description: String
-  totalCount: Int!
-  filteredCount: Int!
-  lastUpdated: DateTime!
-  dataSource: String!
-  refreshInterval: Int
-  
-  # 訂單記錄特定數據
-  records: OrderRecordConnection!
-  timeline: [OrderTimelineEvent!]!
-  analytics: OrderRecordAnalytics!
-}
-
-type OrderRecordConnection {
-  edges: [OrderRecordEdge!]!
-  pageInfo: PageInfo!
-  totalCount: Int!
-}
-
-type OrderRecordEdge {
-  cursor: String!
-  node: OrderRecord!
-}
-
-type OrderRecord {
-  order: Order!
-  recordType: OrderRecordType!
-  timestamp: DateTime!
-  performedBy: User!
-  details: JSON!
-  impact: OrderRecordImpact
-  relatedRecords: [OrderRecord!]
-}
-
-enum OrderRecordType {
-  CREATED
-  MODIFIED
-  STATUS_CHANGED
-  ALLOCATED
-  PICKED
-  PACKED
-  SHIPPED
-  DELIVERED
-  CANCELLED
-  REFUNDED
-  EXCEPTION
-}
-
-type OrderRecordImpact {
-  delayMinutes: Int
-  costImpact: Float
-  customerSatisfaction: OrderRecordImpactLevel
-  operationalComplexity: OrderRecordImpactLevel
-}
-
-enum OrderRecordImpactLevel {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
-}
-
-type OrderTimelineEvent {
-  timestamp: DateTime!
-  event: String!
-  description: String!
-  actor: String!
-  category: OrderRecordType!
-}
-
-type OrderRecordAnalytics {
-  averageOrderCycle: Int! # minutes
-  commonBottlenecks: [String!]!
-  performanceMetrics: JSON!
-  trendData: [OrderTrendPoint!]!
-}
-
-type OrderTrendPoint {
-  date: DateTime!
-  orderCount: Int!
-  averageCycleTime: Int!
-  completionRate: Float!
-}
-
-# 倉庫轉移列表 (WarehouseTransfer Lists)
-type WarehouseTransferList implements ListData {
-  id: ID!
-  listType: ListType!
-  title: String!
-  description: String
-  totalCount: Int!
-  filteredCount: Int!
-  lastUpdated: DateTime!
-  dataSource: String!
-  refreshInterval: Int
-  
-  # 轉移記錄特定數據
-  transfers: TransferConnection!
-  statusDistribution: [TransferStatusDistribution!]!
-  performanceMetrics: TransferPerformanceMetrics!
-  locationAnalysis: [LocationTransferAnalysis!]!
-}
-
-type TransferStatusDistribution {
-  status: TransferStatus!
-  count: Int!
-  percentage: Float!
-  averageDuration: Int # minutes
-}
-
-type TransferPerformanceMetrics {
-  averageTransferTime: Int! # minutes
-  onTimePercentage: Float!
-  delayedCount: Int!
-  efficiencyScore: Float!
-  resourceUtilization: Float!
-}
-
-type LocationTransferAnalysis {
-  location: Location!
-  incomingCount: Int!
-  outgoingCount: Int!
-  netFlow: Int!
-  averageWaitTime: Int! # minutes
-  congestionLevel: CongestionLevel!
-}
-
-enum CongestionLevel {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
-}
-
-# 其他文件列表 (OtherFiles Lists)
-type OtherFilesList implements ListData {
-  id: ID!
-  listType: ListType!
-  title: String!
-  description: String
-  totalCount: Int!
-  filteredCount: Int!
-  lastUpdated: DateTime!
-  dataSource: String!
-  refreshInterval: Int
-  
-  # 文件列表特定數據
-  files: FileRecordConnection!
-  categorySummary: [FileCategorySummary!]!
-  storageMetrics: FileStorageMetrics!
-}
-
-type FileRecordConnection {
-  edges: [FileRecordEdge!]!
-  pageInfo: PageInfo!
-  totalCount: Int!
-}
-
-type FileRecordEdge {
-  cursor: String!
-  node: FileRecord!
-}
-
-type FileRecord {
-  id: ID!
-  fileName: String!
-  fileType: FileType!
-  fileCategory: FileCategory!
-  size: Int! # bytes
-  mimeType: String!
-  url: String!
-  thumbnailUrl: String
-  
-  # 元數據
-  uploadedAt: DateTime!
-  uploadedBy: User!
-  lastModified: DateTime!
-  version: String!
-  
-  # 狀態和標籤
-  status: FileStatus!
-  tags: [String!]!
-  accessibility: FileAccessibility!
-  
-  # 關聯數據
-  relatedEntity: FileRelatedEntity
-  permissions: [FilePermission!]!
-  downloadCount: Int!
-  lastAccessed: DateTime
-}
-
-enum FileType {
-  DOCUMENT
-  IMAGE
-  SPREADSHEET
-  PDF
-  ARCHIVE
-  VIDEO
-  AUDIO
-  OTHER
-}
-
-enum FileCategory {
-  QC_REPORT
-  GRN_DOCUMENT
-  SHIPPING_LABEL
-  INVOICE
-  CERTIFICATE
-  PHOTO
-  MANUAL
-  TEMPLATE
-  BACKUP
-  LOG
-  OTHER
-}
-
-enum FileStatus {
-  ACTIVE
-  ARCHIVED
-  PENDING_REVIEW
-  EXPIRED
-  DELETED
-}
-
-enum FileAccessibility {
-  PUBLIC
-  INTERNAL
-  RESTRICTED
-  CONFIDENTIAL
-}
-
-type FileRelatedEntity {
-  entityType: String!
-  entityId: String!
-  relationship: String!
-}
-
-type FilePermission {
-  user: User!
-  permission: FilePermissionType!
-  grantedAt: DateTime!
-  grantedBy: User!
-}
-
-enum FilePermissionType {
-  READ
-  WRITE
-  DELETE
-  SHARE
-  ADMIN
-}
-
-type FileCategorySummary {
-  category: FileCategory!
-  count: Int!
-  totalSize: Int! # bytes
-  averageSize: Int! # bytes
-  recentCount: Int! # files added in last 7 days
-}
-
-type FileStorageMetrics {
-  totalSize: Int! # bytes
-  totalFiles: Int!
-  averageFileSize: Int! # bytes
-  storageUtilization: Float! # percentage
-  growthRate: Float! # bytes per day
-  topCategories: [FileCategorySummary!]!
-}
-
-# Union type for different list data types
-union ListDataUnion = OrderStateList | OrderRecordList | WarehouseTransferList | OtherFilesList
-
-# List 輸入參數
-input ListCardInput {
-  listType: ListType!
-  filters: ListFilters
-  pagination: PaginationInput
-  sort: SortInput
-  dateRange: DateRangeInput
-  includeMetrics: Boolean = true
-}
-
-input ListFilters {
-  # 通用過濾器
-  search: String
-  status: [String!]
-  category: [String!]
-  tags: [String!]
-  userId: ID
-  
-  # 特定類型過濾器
-  orderFilters: OrderListFilters
-  transferFilters: TransferListFilters
-  fileFilters: FileListFilters
-}
-
-input OrderListFilters {
-  orderNumbers: [String!]
-  customerCodes: [String!]
-  statuses: [OrderStatus!]
-  priorities: [OrderPriority!]
-  isUrgent: Boolean
-  valueRange: FloatRangeInput
-}
-
-input TransferListFilters {
-  transferNumbers: [String!]
-  palletNumbers: [String!]
-  fromLocations: [String!]
-  toLocations: [String!]
-  statuses: [TransferStatus!]
-  priorities: [TransferPriority!]
-}
-
-input FileListFilters {
-  fileTypes: [FileType!]
-  categories: [FileCategory!]
-  statuses: [FileStatus!]
-  accessibility: [FileAccessibility!]
-  sizeRange: IntRangeInput
-  hasPermissions: [FilePermissionType!]
-}
-
-input FloatRangeInput {
-  min: Float
-  max: Float
-}
-
-input IntRangeInput {
-  min: Int
-  max: Int
-}
-
-enum OrderPriority {
-  LOW
-  NORMAL
-  HIGH
-  URGENT
-  CRITICAL
-}
-
-# 統計和分析輸入
-input ListAnalyticsInput {
-  listType: ListType!
-  dateRange: DateRangeInput!
-  groupBy: AnalyticsGroupBy
-  metrics: [AnalyticsMetric!]
-}
-
-enum AnalyticsGroupBy {
-  HOUR
-  DAY
-  WEEK
-  MONTH
-  STATUS
-  CATEGORY
-  USER
-  LOCATION
-}
-
-enum AnalyticsMetric {
-  COUNT
-  AVERAGE_DURATION
-  SUCCESS_RATE
-  THROUGHPUT
-  EFFICIENCY
-  UTILIZATION
-}
-
-type ListMetadata {
-  listType: ListType!
-  availableFilters: [FilterMetadata!]!
-  availableSorts: [SortMetadata!]!
-  defaultPageSize: Int!
-  maxPageSize: Int!
-  supportedFormats: [ExportFormat!]!
-}
-
-type FilterMetadata {
-  field: String!
-  type: FilterFieldType!
-  options: [String!]
-  required: Boolean!
-}
-
-enum FilterFieldType {
-  STRING
-  NUMBER
-  DATE
-  BOOLEAN
-  ENUM
-  ARRAY
-}
-
-type SortMetadata {
-  field: String!
-  displayName: String!
-  defaultDirection: SortDirection!
-}
-
-enum ExportFormat {
-  CSV
-  EXCEL
-  PDF
-  JSON
-}
-
-# 文件操作輸入類型
-input FileUploadInput {
-  fileName: String!
-  fileType: FileType!
-  category: FileCategory!
-  data: String! # Base64 encoded
-  relatedEntity: FileRelatedEntityInput
-  tags: [String!]
-  accessibility: FileAccessibility
-}
-
-input FileRelatedEntityInput {
-  entityType: String!
-  entityId: String!
-  relationship: String!
-}
-
-input FileMetadataInput {
-  fileName: String
-  category: FileCategory
-  tags: [String!]
-  accessibility: FileAccessibility
-  status: FileStatus
-}
-
-input BatchFileOperationInput {
-  operation: FileOperation!
-  fileIds: [ID!]!
-  metadata: FileMetadataInput
-}
-
-enum FileOperation {
-  DELETE
-  ARCHIVE
-  UPDATE_CATEGORY
-  UPDATE_TAGS
-  CHANGE_ACCESSIBILITY
-}
-
-input ListConfigurationInput {
-  listType: ListType!
-  name: String!
-  filters: ListFilters!
-  sort: SortInput!
-  isDefault: Boolean!
-  isPublic: Boolean!
-}
-`;
-
-// Form Schema - FormCard with unified form support
-export const formSchema = `
-# Form GraphQL Schema
-# FormCard 統一表單系統
-# NewPennine Warehouse Management System
-
-# ==========================================
-# 核心表單類型枚舉
-# ==========================================
-
-enum FormType {
-  # 產品相關表單
-  PRODUCT_EDIT         # 產品編輯表單 (基於 ProductEditForm)
-  PRODUCT_CREATE       # 產品創建表單
-  PRODUCT_BULK_EDIT    # 產品批量編輯
-  
-  # 文件相關表單
-  FILE_UPLOAD          # 文件上傳表單
-  FILE_METADATA_EDIT   # 文件元數據編輯
-  DOCUMENT_UPLOAD      # 文檔上傳表單
-  
-  # 操作確認表單
-  VOID_CONFIRMATION    # 作廢確認表單
-  DELETE_CONFIRMATION  # 刪除確認表單
-  TRANSFER_CONFIRMATION # 轉移確認表單
-  
-  # 庫存相關表單
-  INVENTORY_ADJUST     # 庫存調整表單
-  INVENTORY_TRANSFER   # 庫存轉移表單
-  STOCK_COUNT         # 盤點表單
-  
-  # 訂單相關表單
-  ORDER_CREATE        # 訂單創建表單
-  ORDER_EDIT          # 訂單編輯表單
-  GRN_CREATE          # GRN 創建表單
-  
-  # 系統配置表單
-  USER_PROFILE        # 用戶配置表單
-  SYSTEM_CONFIG       # 系統配置表單
-  NOTIFICATION_CONFIG # 通知配置表單
-}
-
-enum FormFieldType {
-  TEXT
-  EMAIL
-  PASSWORD
-  NUMBER
-  DECIMAL
-  DATE
-  DATETIME
-  TIME
-  SELECT
-  MULTI_SELECT
-  RADIO
-  CHECKBOX
-  TOGGLE
-  TEXTAREA
-  RICH_TEXT
-  FILE_UPLOAD
-  IMAGE_UPLOAD
-  COLOR_PICKER
-  PRODUCT_SELECTOR
-  LOCATION_SELECTOR
-  USER_SELECTOR
-  BARCODE_SCANNER
-}
-
-enum ValidationRuleType {
-  REQUIRED
-  MIN_LENGTH
-  MAX_LENGTH
-  MIN_VALUE
-  MAX_VALUE
-  PATTERN
-  EMAIL
-  URL
-  CUSTOM
-  UNIQUE
-  EXISTS
-}
-
-type ValidationRule {
-  type: ValidationRuleType!
-  value: JSON
-  message: String!
-  errorCode: String
-}
-
-type FormField {
-  id: ID!
-  name: String!
-  label: String!
-  type: FormFieldType!
-  placeholder: String
-  helpText: String
-  defaultValue: JSON
-  validationRules: [ValidationRule!]!
-  isRequired: Boolean!
-  isDisabled: Boolean!
-  isReadOnly: Boolean!
-  isHidden: Boolean!
-  options: [FormFieldOption!]
-  order: Int!
-  gridCols: Int
-}
-
-type FormFieldOption {
-  value: String!
-  label: String!
-  description: String
-  isDefault: Boolean!
-  isDisabled: Boolean!
-}
-
-type FormConfig {
-  id: ID!
-  type: FormType!
-  name: String!
-  title: String!
-  description: String
-  fields: [FormField!]!
-  layout: FormLayout!
-  submitButtonText: String
-  cancelButtonText: String
-  validateOnChange: Boolean!
-  version: String!
-  isActive: Boolean!
-  createdAt: DateTime!
-  updatedAt: DateTime!
-}
-
-enum FormLayout {
-  VERTICAL
-  HORIZONTAL
-  GRID
-  WIZARD
-  TABS
-}
-
-type FormData {
-  formType: FormType!
-  formConfigId: ID!
-  data: JSON!
-  submittedAt: DateTime!
-  submittedBy: String!
-  validation: FormValidationResult
-}
-
-type FormValidationResult {
-  isValid: Boolean!
-  errors: [FormFieldError!]!
-  warnings: [FormFieldWarning!]!
-}
-
-type FormFieldError {
-  fieldName: String!
-  message: String!
-  errorCode: String!
-  value: JSON
-}
-
-type FormFieldWarning {
-  fieldName: String!
-  message: String!
-  warningCode: String!
-  value: JSON
-}
-
-type ProductFormOptions {
-  colours: [FormFieldOption!]!
-  types: [FormFieldOption!]!
-  units: [FormFieldOption!]!
-  suppliers: [FormFieldOption!]!
-}
-
-input FormSubmissionInput {
-  formType: FormType!
-  formConfigId: ID
-  data: JSON!
-  entityId: ID
-  submitMode: FormSubmitMode!
-  validateOnly: Boolean
-}
-
-enum FormSubmitMode {
-  CREATE
-  UPDATE
-  UPSERT
-  DELETE
-}
-
-type FormSubmissionResult {
-  success: Boolean!
-  entityId: ID
-  data: JSON
-  validation: FormValidationResult
-  error: Error
-}
-
-extend type Query {
-  formConfig(type: FormType!): FormConfig
-    @auth(requires: VIEWER)
-    @cache(ttl: 3600, scope: PUBLIC)
-    
-  formConfigs(types: [FormType!]): [FormConfig!]!
-    @auth(requires: VIEWER)
-    @cache(ttl: 3600, scope: PUBLIC)
-    
-  productFormOptions: ProductFormOptions!
-    @auth(requires: VIEWER)
-    @cache(ttl: 3600, scope: PUBLIC)
-    
-  validateFormData(formType: FormType!, data: JSON!): FormValidationResult!
-    @auth(requires: VIEWER)
-    @rateLimit(max: 100, window: "1m")
-    
-  formPrefillData(formType: FormType!, entityId: ID, params: JSON): JSON
-    @auth(requires: VIEWER)
-    @rateLimit(max: 50, window: "1m")
-}
-
-extend type Mutation {
-  submitForm(input: FormSubmissionInput!): FormSubmissionResult!
-    @auth(requires: OPERATOR)
-    @rateLimit(max: 30, window: "1m")
-}
-
-extend type Subscription {
-  formConfigUpdated(formType: FormType!): FormConfig!
-    @auth(requires: VIEWER)
-}
-`;
-
-// Analysis Schema - AnalysisCard with AI Integration
-export const analysisSchema = `
-# Analysis Card Schema - AI-powered analysis and insights
-enum AnalysisType {
-  INVENTORY_ORDER_MATCHING
-  OPERATIONAL_DASHBOARD
-  PERFORMANCE_ANALYSIS
-  TREND_FORECASTING
-  ANOMALY_DETECTION
-}
-
-enum AnalysisUrgency {
-  FAST
-  NORMAL
-  THOROUGH
-}
-
-enum InsightType {
-  TREND_ANALYSIS
-  ANOMALY_DETECTION
-  OPTIMIZATION_SUGGESTION
-  RISK_ASSESSMENT
-  PERFORMANCE_INSIGHT
-  PREDICTIVE_FORECAST
-}
-
-enum InsightSeverity {
-  INFO
-  WARNING
-  CRITICAL
-  OPTIMIZATION
-}
-
-input AnalysisCardInput {
-  analysisType: AnalysisType!
-  timeRange: DateRangeInput
-  filters: AnalysisFilters
-  includeAIInsights: Boolean = true
-  urgency: AnalysisUrgency = NORMAL
-  userId: String
-}
-
-input AnalysisFilters {
-  warehouse: String
-  productCategories: [String!]
-  dateRange: DateRangeInput
-  statusFilters: [String!]
-  customFilters: JSON
-}
-
-input DateRangeInput {
-  start: DateTime!
-  end: DateTime!
-}
-
-type AnalysisCardData {
-  analysisType: AnalysisType!
-  summary: AnalysisSummary!
-  detailData: AnalysisDetailData!
-  aiInsights: [AIInsight!]!
-  visualizations: [AnalysisVisualization!]!
-  metadata: AnalysisMetadata!
-  executionTime: Float!
-  cached: Boolean!
-  lastUpdated: DateTime!
-  refreshInterval: Int
-}
-
-type AnalysisSummary {
-  title: String!
-  description: String!
-  keyMetrics: [KeyMetric!]!
-  overallScore: Float
-  status: String!
-  alertLevel: String!
-}
-
-type KeyMetric {
-  name: String!
-  value: String!
-  change: Float
-  changeDirection: String!
-  unit: String
-  trend: [TrendPoint!]
-}
-
-type AnalysisDetailData {
-  sections: [AnalysisSection!]!
-  dataPoints: [DataPoint!]!
-  comparisons: [Comparison!]!
-  correlations: [Correlation!]!
-}
-
-type AnalysisSection {
-  id: String!
-  title: String!
-  content: String!
-  data: JSON!
-  visualizationType: String
-  importance: String!
-}
-
-type DataPoint {
-  id: String!
-  label: String!
-  value: Float!
-  timestamp: DateTime!
-  category: String
-  metadata: JSON
-}
-
-type Comparison {
-  id: String!
-  title: String!
-  baseline: Float!
-  current: Float!
-  change: Float!
-  changePercent: Float!
-  timeframe: String!
-}
-
-type Correlation {
-  id: String!
-  variables: [String!]!
-  coefficient: Float!
-  strength: String!
-  significance: Float!
-  interpretation: String!
-}
-
-type AIInsight {
-  id: ID!
-  type: InsightType!
-  confidence: Float!
-  title: String!
-  content: String!
-  recommendations: [String!]!
-  severity: InsightSeverity!
-  relatedData: JSON
-  generatedAt: DateTime!
-  modelUsed: String
-  processingTime: Float
-}
-
-type AnalysisVisualization {
-  id: String!
-  type: String!
-  title: String!
-  data: JSON!
-  config: JSON!
-  interactive: Boolean!
-  exportable: Boolean!
-}
-
-type AnalysisMetadata {
-  analysisId: String!
-  userId: String!
-  userEmail: String
-  generatedAt: DateTime!
-  dataSource: String!
-  dataPeriod: String!
-  recordsAnalyzed: Int!
-  aiModelVersion: String
-  processingSteps: [ProcessingStep!]!
-}
-
-type ProcessingStep {
-  step: String!
-  duration: Float!
-  status: String!
-  details: String
-}
-
-# Analysis Generation Inputs
-input AnalysisGenerationInput {
-  analysisType: AnalysisType!
-  title: String
-  description: String
-  filters: AnalysisFilters
-  urgency: AnalysisUrgency = NORMAL
-  includeAI: Boolean = true
-  userId: String!
-}
-
-# Analysis Generation Response
-type AnalysisGenerationResponse {
-  id: ID!
-  analysisId: String
-  success: Boolean!
-  message: String!
-  estimatedCompletionTime: DateTime
-  progress: Float
-}
-
-# Analysis Progress Tracking
-type AnalysisProgress {
-  id: ID!
-  analysisType: AnalysisType!
-  title: String!
-  status: String!
-  progress: Float!
-  estimatedTimeRemaining: Int
-  currentStep: String!
-  error: String
-  startedAt: DateTime!
-  userId: String!
-}
-
-# AI Analysis Configuration
-type AIAnalysisConfig {
-  modelType: String!
-  maxTokens: Int!
-  temperature: Float!
-  enablePredictions: Boolean!
-  enableAnomalyDetection: Boolean!
-  confidenceThreshold: Float!
-  languages: [String!]!
-}
-
-# Query Extensions
-extend type Query {
-  analysisCardData(input: AnalysisCardInput!): AnalysisCardData!
-  analysisProgress(analysisId: ID!): AnalysisProgress
-  aiAnalysisConfig: AIAnalysisConfig!
-}
-
-# Mutation Extensions
-extend type Mutation {
-  generateAnalysis(input: AnalysisGenerationInput!): AnalysisGenerationResponse!
-  cancelAnalysis(analysisId: ID!): Boolean!
-  refreshAnalysis(analysisId: ID!): Boolean!
-  updateAnalysisConfig(config: JSON!): Boolean!
-}
-`;
-
-// Config Schema - ConfigCard with unified configuration management
-export const configSchema = `
+// Config Schema - ConfigCard with unified configuration management (OLD - replaced by imported version)
+export const configSchemaOld = `
 # Config Card Schema
 enum ConfigCategory {
   SYSTEM
@@ -4208,815 +3164,164 @@ enum WorkflowConfigKey {
 }
 `;
 
-// Search Schema - SearchCard with unified search interface
-export const searchSchema = `
-# ================================
-# SearchCard 核心類型定義
-# ================================
+// Import department schema
+import { departmentTypeDefs } from './schema/department';
+import { configSchema as configSchemaImport } from './schema/config';
+import { stockHistorySchema } from './schema/stock-history';
+import { stockLevelSchema } from './schema/stock-level';
+import { recordHistorySchema } from './schema/record-history';
 
-# 可搜索的實體類型
-enum SearchableEntity {
-  PRODUCT           # 產品 (data_code)
-  PALLET           # 托盤 (record_palletinfo)
-  INVENTORY        # 庫存 (record_inventory)
-  ORDER            # 訂單 (record_aco, data_order)
-  GRN              # 物料接收 (record_grn)
-  USER             # 用戶 (data_id)
-  SUPPLIER         # 供應商 (data_supplier)
-  HISTORY          # 歷史記錄 (record_history)
-  TRANSFER         # 轉移記錄 (record_transfer)
-  FILE             # 文件記錄 (doc_upload)
+export const orderSchema = `
+# Warehouse Order Types (Loading-focused)
+type WarehouseOrder {
+  id: ID!
+  orderRef: String!
+  customerName: String
+  status: WarehouseOrderStatus!
+  items: [WarehouseOrderItem!]!
+  totalQuantity: Int!
+  loadedQuantity: Int!
+  remainingQuantity: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  completedAt: DateTime
 }
 
-# 搜索模式
-enum SearchMode {
-  GLOBAL           # 全域搜索
-  ENTITY           # 實體特定搜索
-  MIXED            # 混合搜索
-  SUGGESTION       # 建議搜索
-}
-
-# 搜索類型
-enum SearchType {
-  TEXT             # 文字搜索
-  CODE             # 代碼搜索 (SKU, 托盤號等)
-  BARCODE          # 條碼搜索
-  ADVANCED         # 高級搜索
-  FUZZY            # 模糊搜索
-  EXACT            # 精確搜索
-}
-
-# 搜索結果排序選項
-enum SearchSortField {
-  RELEVANCE        # 相關性
-  NAME             # 名稱
-  CODE             # 代碼
-  DATE_CREATED     # 創建日期
-  DATE_UPDATED     # 更新日期
-  QUANTITY         # 數量
-  STATUS           # 狀態
-}
-
-# ================================
-# SearchCard 輸入類型
-# ================================
-
-# SearchCard 主要輸入
-input SearchCardInput {
-  # 搜索配置
-  query: String!                    # 搜索查詢字串
-  mode: SearchMode!                 # 搜索模式
-  type: SearchType = TEXT           # 搜索類型
-  entities: [SearchableEntity!]     # 要搜索的實體列表
-  
-  # 過濾器
-  filters: SearchFilters            # 搜索過濾器
-  dateRange: DateRangeInput         # 日期範圍
-  
-  # 分頁和排序
-  pagination: PaginationInput       # 分頁參數
-  sort: SearchSortInput            # 排序參數
-  
-  # 搜索選項
-  options: SearchOptions           # 搜索選項
-}
-
-# 搜索過濾器
-input SearchFilters {
-  # 通用過濾器
-  status: [String!]                # 狀態過濾
-  category: [String!]              # 分類過濾
-  location: [LocationType!]        # 位置過濾
-  
-  # 數量範圍
-  quantityRange: QuantityRangeInput
-  
-  # 實體特定過濾器
-  productFilters: ProductSearchFilters
-  palletFilters: PalletSearchFilters
-  inventoryFilters: InventorySearchFilters
-  orderFilters: OrderSearchFilters
-  userFilters: UserSearchFilters
-}
-
-# 產品搜索過濾器
-input ProductSearchFilters {
-  productCodes: [String!]          # 產品代碼列表
-  colours: [String!]               # 顏色過濾
-  types: [String!]                # 類型過濾
-  hasInventory: Boolean            # 是否有庫存
-  isActive: Boolean               # 是否啟用
-}
-
-# 托盤搜索過濾器
-input PalletSearchFilters {
-  series: [String!]               # 系列過濾
-  palletNumbers: [String!]        # 托盤編號列表
-  hasStock: Boolean              # 是否有庫存
-  productCodes: [String!]        # 關聯產品代碼
-}
-
-# 庫存搜索過濾器
-input InventorySearchFilters {
-  locations: [LocationType!]      # 庫存位置
-  hasStock: Boolean              # 是否有庫存
-  quantityRange: QuantityRangeInput # 數量範圍
-}
-
-# 訂單搜索過濾器
-input OrderSearchFilters {
-  orderStatus: [OrderStatus!]     # 訂單狀態
-  customerCodes: [String!]        # 客戶代碼
-  isUrgent: Boolean              # 是否緊急
-  completionRange: CompletionRangeInput # 完成度範圍
-}
-
-# 用戶搜索過濾器
-input UserSearchFilters {
-  departments: [String!]          # 部門過濾
-  positions: [String!]           # 職位過濾
-  isActive: Boolean             # 是否啟用
-}
-
-# 數量範圍輸入
-input QuantityRangeInput {
-  min: Float                     # 最小值
-  max: Float                     # 最大值
-  unit: String                   # 單位
-}
-
-# 完成度範圍輸入
-input CompletionRangeInput {
-  min: Float                     # 最小完成度 (0-100)
-  max: Float                     # 最大完成度 (0-100)
-}
-
-# 搜索排序輸入
-input SearchSortInput {
-  field: SearchSortField!         # 排序欄位
-  direction: SortDirection!       # 排序方向
-  secondary: SearchSortInput      # 次要排序
-}
-
-# 搜索選項
-input SearchOptions {
-  # 性能選項
-  enableFuzzySearch: Boolean = true     # 啟用模糊搜索
-  enableHighlight: Boolean = true       # 啟用結果高亮
-  maxResults: Int = 100                # 最大結果數
-  timeoutMs: Int = 5000               # 搜索超時 (毫秒)
-  
-  # 功能選項
-  includeSuggestions: Boolean = true    # 包含搜索建議
-  includeAnalytics: Boolean = false     # 包含搜索分析
-  includeHistory: Boolean = false       # 包含搜索歷史
-  saveToHistory: Boolean = true         # 保存到搜索歷史
-  
-  # 結果選項
-  groupByEntity: Boolean = true         # 按實體分組結果
-  includeMetadata: Boolean = true       # 包含元數據
-  includeRelated: Boolean = false       # 包含關聯項目
-}
-
-# ================================
-# SearchCard 輸出類型
-# ================================
-
-# SearchCard主要輸出
-type SearchCardData {
-  # 搜索元信息
-  searchMeta: SearchMetadata!      # 搜索元數據
-  
-  # 搜索結果
-  results: SearchResultCollection! # 搜索結果集合
-  
-  # 搜索建議
-  suggestions: [SearchSuggestion!]! # 搜索建議
-  
-  # 搜索分析
-  analytics: SearchAnalytics       # 搜索分析數據
-  
-  # 搜索歷史
-  history: [SearchHistoryItem!]    # 相關搜索歷史
-}
-
-# 搜索元數據
-type SearchMetadata {
-  query: String!                   # 原始查詢
-  processedQuery: String!          # 處理後查詢
-  searchMode: SearchMode!          # 搜索模式
-  searchType: SearchType!          # 搜索類型
-  entities: [SearchableEntity!]!   # 搜索實體
-  totalResults: Int!               # 總結果數
-  searchTime: Float!               # 搜索時間 (毫秒)
-  facets: [SearchFacet!]!         # 搜索面向
-  hasMore: Boolean!               # 是否有更多結果
-}
-
-# 搜索結果集合
-type SearchResultCollection {
-  # 分組結果
-  groups: [SearchResultGroup!]!   # 按實體分組的結果
-  
-  # 統一結果列表
-  items: [SearchResultItem!]!     # 所有結果項目
-  
-  # 分頁信息
-  pageInfo: PageInfo!             # 分頁信息
-}
-
-# 搜索結果分組
-type SearchResultGroup {
-  entity: SearchableEntity!        # 實體類型
-  count: Int!                     # 結果數量
-  items: [SearchResultItem!]!     # 結果項目
-  hasMore: Boolean!               # 是否有更多
-  relevanceScore: Float!          # 相關性分數
-}
-
-# 搜索結果項目
-type SearchResultItem {
-  # 基本信息
-  id: ID!                         # 唯一標識符  
-  entity: SearchableEntity!        # 實體類型
-  title: String!                  # 標題
-  subtitle: String                # 副標題
-  description: String             # 描述
-  
-  # 搜索相關
-  relevanceScore: Float!          # 相關性分數
-  highlights: [TextHighlight!]!   # 高亮文本
-  matchedFields: [String!]!       # 匹配欄位
-  
-  # 實體數據
-  data: SearchResultData!         # 實體特定數據
-  
-  # 元數據
-  metadata: SearchResultMetadata  # 結果元數據
-  
-  # 操作
-  actions: [SearchResultAction!]! # 可執行操作
-}
-
-# 文本高亮
-type TextHighlight {
-  field: String!                  # 欄位名稱
-  text: String!                   # 高亮文本
-  positions: [HighlightPosition!]! # 高亮位置
-}
-
-# 高亮位置
-type HighlightPosition {
-  start: Int!                     # 開始位置
-  end: Int!                       # 結束位置
-  score: Float!                   # 匹配分數
-}
-
-# 搜索結果數據聯合類型
-union SearchResultData = 
-  ProductSearchResult |
-  PalletSearchResult |
-  InventorySearchResult |
-  OrderSearchResult |
-  GRNSearchResult |
-  UserSearchResult |
-  SupplierSearchResult |
-  HistorySearchResult |
-  TransferSearchResult |
-  FileSearchResult
-
-# 產品搜索結果
-type ProductSearchResult {
-  code: String!                   # 產品代碼
-  description: String!            # 產品描述
-  colour: String                  # 顏色
-  type: String                    # 類型
-  standardQty: Float              # 標準數量
-  remark: String                  # 備註
-  
-  # 關聯數據
-  inventory: InventorySummary     # 庫存摘要
-  pallets: PalletSummary         # 托盤摘要
-  orders: OrderSummary           # 訂單摘要
-  
-  # 統計信息
-  totalStock: Float!              # 總庫存
-  totalPallets: Int!             # 總托盤數
-  lastUpdated: DateTime!         # 最後更新時間
-}
-
-# 托盤搜索結果
-type PalletSearchResult {
-  pltNum: String!                 # 托盤編號
-  series: String                  # 系列
-  productCode: String!            # 產品代碼
-  productQty: Float!             # 產品數量
-  generateTime: DateTime!         # 生成時間
-  remark: String                  # 備註
-  
-  # 關聯數據
-  product: ProductSummary!        # 產品摘要
-  inventory: InventoryLocation    # 當前庫存位置
-  transfers: [TransferSummary!]!  # 轉移記錄
-  
-  # 狀態信息
-  currentLocation: LocationType   # 當前位置
-  isAvailable: Boolean!          # 是否可用
-}
-
-# 庫存搜索結果
-type InventorySearchResult {
-  id: ID!                        # 庫存記錄ID
-  productCode: String!           # 產品代碼
-  pltNum: String                 # 托盤編號
-  
-  # 各位置庫存
-  injection: Float!              # 注塑區
-  pipeline: Float!               # 管道區
-  prebook: Float!               # 預訂區
-  await: Float!                 # 等待區
-  fold: Float!                  # 摺疊區
-  bulk: Float!                  # 散裝區
-  backcarpark: Float!           # 後院區
-  damage: Float!                # 損壞區
-  awaitGrn: Float!              # 等待GRN區
-  
-  # 統計信息
-  totalStock: Float!            # 總庫存
-  lastUpdated: DateTime!        # 最後更新時間
-  
-  # 關聯數據
-  product: ProductSummary!       # 產品信息
-  pallet: PalletSummary         # 托盤信息
-}
-
-# 訂單搜索結果
-type OrderSearchResult {
-  orderRef: String!              # 訂單參考
-  customerCode: String           # 客戶代碼
-  productCode: String!           # 產品代碼
-  requiredQty: Float!           # 需求數量
-  finishedQty: Float!           # 完成數量
-  status: OrderStatus!          # 訂單狀態
-  orderDate: DateTime           # 訂單日期
-  
-  # 計算欄位
-  completionRate: Float!        # 完成率
-  remainingQty: Float!          # 剩餘數量
-  isOverdue: Boolean!           # 是否逾期
-  
-  # 關聯數據
-  product: ProductSummary!       # 產品信息
-  customer: CustomerSummary     # 客戶信息
-}
-
-# GRN搜索結果
-type GRNSearchResult {
-  grnRef: String!               # GRN參考
-  pltNum: String                # 托盤編號
-  supCode: String               # 供應商代碼
-  materialCode: String!         # 物料代碼
-  grossWeight: Float            # 毛重
-  netWeight: Float              # 淨重
-  palletCount: Float!           # 托盤數量
-  packageCount: Float!          # 包裝數量
-  createTime: DateTime!         # 創建時間
-  
-  # 關聯數據
-  supplier: SupplierSummary     # 供應商信息
-  material: ProductSummary!     # 物料信息
-  pallet: PalletSummary        # 托盤信息
-}
-
-# 用戶搜索結果
-type UserSearchResult {
-  id: String!                   # 用戶ID
-  name: String!                 # 姓名
-  email: String                 # 電子郵件
-  department: String            # 部門
-  position: String!             # 職位
-  
-  # 統計信息
-  workLevel: WorkLevelSummary   # 工作量統計
-  recentActivity: [ActivitySummary!]! # 最近活動
-}
-
-# 供應商搜索結果
-type SupplierSearchResult {
-  supplierCode: String!         # 供應商代碼
-  supplierName: String!         # 供應商名稱
-  
-  # 統計信息
-  totalGRNs: Int!              # 總GRN數
-  totalMaterials: Int!         # 總物料數
-  lastDelivery: DateTime       # 最後交付時間
-  
-  # 關聯數據
-  grns: [GRNSummary!]!         # GRN摘要
-  materials: [ProductSummary!]! # 物料列表
-}
-
-# 歷史搜索結果
-type HistorySearchResult {
-  id: ID!                      # 記錄ID
-  time: DateTime!              # 操作時間
-  action: String!              # 操作類型
-  pltNum: String               # 托盤編號
-  location: String             # 位置
-  remark: String               # 備註
-  
-  # 關聯數據
-  operator: UserSummary        # 操作員信息
-  pallet: PalletSummary       # 托盤信息
-}
-
-# 轉移搜索結果
-type TransferSearchResult {
-  id: ID!                      # 轉移ID
-  tranDate: DateTime!          # 轉移時間
-  fromLocation: LocationType!   # 起始位置
-  toLocation: LocationType!     # 目標位置
-  pltNum: String!              # 托盤編號
-  
-  # 關聯數據
-  operator: UserSummary!       # 操作員信息
-  pallet: PalletSummary!      # 托盤信息
-}
-
-# 文件搜索結果
-type FileSearchResult {
-  id: ID!                      # 文件ID
-  fileName: String!            # 文件名稱
-  fileType: String             # 文件類型
-  fileSize: Int               # 文件大小
-  uploadBy: String!           # 上傳者
-  createdAt: DateTime!        # 創建時間
-  
-  # 文件信息
-  url: String                 # 文件URL
-  folder: String              # 資料夾
-  description: String         # 描述
-}
-
-# ================================
-# 搜索結果摘要類型
-# ================================
-
-# 產品摘要
-type ProductSummary {
-  code: String!
-  description: String!
-  colour: String
-  type: String
-}
-
-# 托盤摘要
-type PalletSummary {
-  pltNum: String!
-  series: String
+type WarehouseOrderItem {
+  id: ID!
+  orderId: ID!
   productCode: String!
-  productQty: Float!
+  productDesc: String
+  quantity: Int!
+  loadedQuantity: Int!
+  status: WarehouseOrderItemStatus!
 }
 
-# 庫存摘要
-type InventorySummary {
-  totalStock: Float!
-  locations: [LocationStockSummary!]!
+type AcoOrder {
+  orderRef: Int!
+  productCode: String!
+  productDesc: String
+  quantityOrdered: Int!
+  quantityUsed: Int!
+  remainingQuantity: Int!
+  completionStatus: String!
+  lastUpdated: DateTime
 }
 
-# 位置庫存摘要
-type LocationStockSummary {
-  location: LocationType!
-  stock: Float!
-  percentage: Float!
+type OrderLoadingRecord {
+  timestamp: DateTime!
+  orderNumber: String!
+  productCode: String!
+  loadedQty: Int!
+  userName: String!
+  action: String!
 }
 
-# 訂單摘要
-type OrderSummary {
+enum WarehouseOrderStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum WarehouseOrderItemStatus {
+  PENDING
+  PARTIAL
+  COMPLETED
+}
+
+# Input Types
+input WarehouseOrderFilterInput {
+  orderRef: String
+  status: WarehouseOrderStatus
+  dateRange: DateRangeInput
+  customerName: String
+}
+
+input OrderLoadingFilterInput {
+  startDate: String!
+  endDate: String!
+  orderRef: String
+  productCode: String
+  actionBy: String
+}
+
+input UpdateAcoOrderInput {
+  orderRef: Int!
+  productCode: String!
+  quantityUsed: Int!
+  skipUpdate: Boolean
+  orderCompleted: Boolean
+}
+
+# Response Types
+type WarehouseOrdersResponse {
+  items: [WarehouseOrder!]!
+  total: Int!
+  aggregates: WarehouseOrderAggregates
+}
+
+type WarehouseOrderAggregates {
   totalOrders: Int!
   pendingOrders: Int!
   completedOrders: Int!
+  totalQuantity: Int!
+  loadedQuantity: Int!
 }
 
-# 客戶摘要
-type CustomerSummary {
-  customerCode: String!
-  name: String
-  totalOrders: Int!
+type OrderLoadingResponse {
+  records: [OrderLoadingRecord!]!
+  total: Int!
+  summary: LoadingSummary
 }
 
-# 供應商摘要
-type SupplierSummary {
-  supplierCode: String!
-  supplierName: String!
+type LoadingSummary {
+  totalLoaded: Int!
+  uniqueOrders: Int!
+  uniqueProducts: Int!
+  averageLoadPerOrder: Float!
 }
 
-# GRN摘要
-type GRNSummary {
-  grnRef: String!
-  materialCode: String!
-  createTime: DateTime!
+type UpdateAcoOrderResponse {
+  success: Boolean!
+  message: String
+  order: AcoOrder
+  emailSent: Boolean
+  error: Error
 }
 
-# 用戶摘要
-type UserSummary {
-  id: String!
-  name: String!
-  department: String
-  position: String!
+type AcoOrderReportResponse {
+  data: [AcoOrder!]!
+  total: Int!
+  reference: String!
+  generatedAt: DateTime!
 }
 
-# 工作量摘要
-type WorkLevelSummary {
-  qc: Float!
-  move: Float!
-  grn: Float!
-  loading: Float!
-}
-
-# 活動摘要
-type ActivitySummary {
-  action: String!
-  time: DateTime!
-  description: String!
-}
-
-# 庫存位置
-type InventoryLocation {
-  location: LocationType!
-  quantity: Float!
-  lastUpdated: DateTime!
-}
-
-# 轉移摘要
-type TransferSummary {
-  fromLocation: LocationType!
-  toLocation: LocationType!
-  tranDate: DateTime!
-}
-
-# ================================
-# 搜索建議和分析
-# ================================
-
-# 搜索建議
-type SearchSuggestion {
-  text: String!                 # 建議文本
-  type: SuggestionType!         # 建議類型
-  entity: SearchableEntity      # 相關實體
-  count: Int                    # 結果數量預估
-  score: Float!                # 建議分數
-  metadata: JSON               # 額外元數據
-}
-
-# 建議類型
-enum SuggestionType {
-  AUTOCOMPLETE                 # 自動完成
-  SPELLING_CORRECTION          # 拼寫糾正
-  RELATED_SEARCH              # 相關搜索
-  POPULAR_SEARCH              # 熱門搜索
-  RECENT_SEARCH               # 最近搜索
-}
-
-# 搜索分析
-type SearchAnalytics {
-  # 查詢統計
-  queryStats: QueryStats!      # 查詢統計
-  
-  # 結果統計
-  resultStats: ResultStats!    # 結果統計
-  
-  # 性能統計
-  performanceStats: PerformanceStats! # 性能統計
-  
-  # 用戶行為
-  userBehavior: UserBehaviorStats # 用戶行為統計
-}
-
-# 查詢統計
-type QueryStats {
-  totalQueries: Int!           # 總查詢數
-  uniqueQueries: Int!          # 唯一查詢數
-  averageQueryLength: Float!   # 平均查詢長度
-  topQueries: [QueryFrequency!]! # 熱門查詢
-}
-
-# 查詢頻率
-type QueryFrequency {
-  query: String!               # 查詢文本
-  count: Int!                 # 查詢次數
-  lastUsed: DateTime!         # 最後使用時間
-}
-
-# 結果統計
-type ResultStats {
-  totalResults: Int!           # 總結果數
-  averageResults: Float!       # 平均結果數
-  zeroResultQueries: Int!      # 零結果查詢數
-  entityBreakdown: [EntityResultBreakdown!]! # 按實體分解
-}
-
-# 實體結果分解
-type EntityResultBreakdown {
-  entity: SearchableEntity!    # 實體類型
-  resultCount: Int!           # 結果數量
-  percentage: Float!          # 百分比
-}
-
-# 性能統計
-type PerformanceStats {
-  averageResponseTime: Float!  # 平均響應時間
-  slowQueries: [SlowQuery!]!  # 慢查詢
-  cacheHitRate: Float!        # 緩存命中率
-}
-
-# 慢查詢
-type SlowQuery {
-  query: String!              # 查詢文本
-  responseTime: Float!        # 響應時間
-  timestamp: DateTime!        # 時間戳
-}
-
-# 用戶行為統計
-type UserBehaviorStats {
-  clickThroughRate: Float!    # 點擊率
-  abandonmentRate: Float!     # 放棄率
-  refinementRate: Float!      # 細化率
-  commonPatterns: [SearchPattern!]! # 常見模式
-}
-
-# 搜索模式
-type SearchPattern {
-  pattern: String!            # 模式描述
-  frequency: Int!            # 頻率
-  successRate: Float!        # 成功率
-}
-
-# 搜索歷史項目
-type SearchHistoryItem {
-  id: ID!                    # 歷史ID
-  query: String!             # 查詢文本
-  entities: [SearchableEntity!]! # 搜索實體
-  resultCount: Int!          # 結果數量
-  timestamp: DateTime!       # 時間戳
-  userId: ID               # 用戶ID
-  success: Boolean!         # 是否成功
-}
-
-# 搜索面向
-type SearchFacet {
-  field: String!             # 欄位名稱
-  displayName: String!       # 顯示名稱
-  values: [FacetValue!]!     # 面向值
-}
-
-# 面向值
-type FacetValue {
-  value: String!             # 值
-  displayValue: String!      # 顯示值
-  count: Int!               # 數量
-  selected: Boolean!        # 是否選中
-}
-
-# 搜索結果元數據
-type SearchResultMetadata {
-  source: String!            # 數據源
-  freshness: DateTime!       # 數據新鮮度
-  confidence: Float!         # 置信度
-  tags: [String!]!          # 標籤
-  customFields: JSON        # 自定義欄位
-}
-
-# 搜索結果操作
-type SearchResultAction {
-  id: String!               # 操作ID
-  label: String!            # 操作標籤
-  icon: String              # 圖標
-  url: String               # 操作URL
-  action: String!           # 操作類型
-  requiresAuth: Boolean!    # 是否需要認證
-}
-
-# ================================
-# SearchCard Mutations
-# ================================
-
-# 保存搜索配置
-input SaveSearchConfigInput {
-  name: String!                    # 配置名稱
-  query: String!                   # 查詢
-  entities: [SearchableEntity!]!   # 實體
-  filters: SearchFilters           # 過濾器
-  isDefault: Boolean = false       # 是否默認
-  isPublic: Boolean = false        # 是否公開
-}
-
-# 搜索配置
-type SearchConfig {
-  id: ID!                         # 配置ID
-  name: String!                   # 配置名稱
-  query: String!                  # 查詢
-  entities: [SearchableEntity!]!  # 實體
-  filters: JSON                   # 過濾器 (JSON格式)
-  isDefault: Boolean!             # 是否默認
-  isPublic: Boolean!              # 是否公開
-  createdBy: ID!                 # 創建者
-  createdAt: DateTime!           # 創建時間
-  updatedAt: DateTime!           # 更新時間
-  usageCount: Int!               # 使用次數
-}
-
-# ================================
-# SearchCard Queries and Mutations
-# ================================
-
+# Queries
 extend type Query {
-  # 主要搜索查詢
-  searchCard(input: SearchCardInput!): SearchCardData!
-    @auth(requires: VIEWER)
-    @rateLimit(max: 100, window: "1m")
-    @cache(ttl: 300, scope: USER)
+  # Get warehouse orders with filtering and pagination
+  warehouseOrders(input: WarehouseOrderFilterInput): WarehouseOrdersResponse!
   
-  # 批量搜索
-  batchSearch(inputs: [SearchCardInput!]!): [SearchCardData!]!
-    @auth(requires: VIEWER)
-    @rateLimit(max: 20, window: "1m")
+  # Get single warehouse order by ID or reference
+  warehouseOrder(id: ID, orderRef: String): WarehouseOrder
   
-  # 搜索建議
-  searchSuggestions(
-    query: String!
-    entity: SearchableEntity
-    limit: Int = 10
-  ): [SearchSuggestion!]!
-    @auth(requires: VIEWER)
-    @rateLimit(max: 200, window: "1m")
-    @cache(ttl: 600, scope: USER)
+  # Get ACO order report data
+  acoOrderReport(reference: String!): AcoOrderReportResponse!
   
-  # 搜索歷史
-  searchHistory(
-    userId: ID
-    limit: Int = 50
-    offset: Int = 0
-  ): [SearchHistoryItem!]!
-    @auth(requires: VIEWER)
-    @rateLimit(max: 50, window: "1m")
-  
-  # 搜索配置
-  searchConfigs(
-    userId: ID
-    includePublic: Boolean = true
-  ): [SearchConfig!]!
-    @auth(requires: VIEWER)
-    @cache(ttl: 1800, scope: USER)
-  
-  # 搜索分析
-  searchAnalytics(
-    dateRange: DateRangeInput
-    entities: [SearchableEntity!]
-  ): SearchAnalytics!
-    @auth(requires: SUPERVISOR)
-    @cache(ttl: 3600, scope: ADMIN)
+  # Get order loading records
+  orderLoadingRecords(input: OrderLoadingFilterInput!): OrderLoadingResponse!
 }
 
+# Mutations
 extend type Mutation {
-  # 保存搜索配置
-  saveSearchConfig(input: SaveSearchConfigInput!): SearchConfig!
-    @auth(requires: VIEWER)
-    @rateLimit(max: 10, window: "1m")
+  # Update ACO order quantities
+  updateAcoOrder(input: UpdateAcoOrderInput!): UpdateAcoOrderResponse!
   
-  # 刪除搜索配置
-  deleteSearchConfig(id: ID!): Boolean!
-    @auth(requires: VIEWER)
-    @rateLimit(max: 20, window: "1m")
+  # Update warehouse order status
+  updateWarehouseOrderStatus(orderId: ID!, status: WarehouseOrderStatus!): WarehouseOrder!
   
-  # 清除搜索歷史
-  clearSearchHistory(userId: ID, olderThan: DateTime): Boolean!
-    @auth(requires: VIEWER)
-    @rateLimit(max: 5, window: "1m")
-  
-  # 更新搜索偏好
-  updateSearchPreferences(
-    preferences: JSON!
-  ): Boolean!
-    @auth(requires: VIEWER)
-    @rateLimit(max: 10, window: "1m")
-}
-
-# ================================
-# SearchCard Subscriptions
-# ================================
-
-extend type Subscription {
-  # 搜索結果更新
-  searchResultsUpdated(
-    query: String!
-    entities: [SearchableEntity!]!
-  ): SearchCardData!
-  
-  # 新搜索建議
-  searchSuggestionsUpdated(
-    query: String!
-  ): [SearchSuggestion!]!
+  # Cancel warehouse order
+  cancelWarehouseOrder(orderId: ID!, reason: String): WarehouseOrder!
 }
 `;
 
@@ -5029,14 +3334,14 @@ export const typeDefs = `
   ${analyticsSchema}
   ${chartSchema}
   ${statsSchema}
-  ${tableSchema}
   ${reportSchema}
   ${uploadSchema}
   ${alertSchema}
-  ${listSchema}
-  ${analysisSchema}
-  ${configSchema}
-  ${formSchema}
-  ${searchSchema}
+  ${configSchemaImport}
+  ${departmentTypeDefs}
+  ${stockHistorySchema}
+  ${stockLevelSchema}
+  ${recordHistorySchema}
+  ${orderSchema}
   ${mainSchema}
 `;

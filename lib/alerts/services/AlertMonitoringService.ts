@@ -9,8 +9,9 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { AlertRuleEngine } from '../core/AlertRuleEngine';
 import { AlertStateManager } from '../core/AlertStateManager';
 import { NotificationService } from '../notifications/NotificationService';
-import { AlertCondition, isValidAlertCondition } from '../types/alert-types';
+import { isValidAlertCondition } from '../types/alert-types';
 import {
+  AlertCondition,
   AlertRule,
   Alert,
   AlertState,
@@ -25,8 +26,8 @@ import {
 } from '../types';
 
 export class AlertMonitoringService {
-  private redis: Redis;
-  private supabase: SupabaseClient;
+  private redis: Redis | null = null;
+  private supabase: SupabaseClient | null = null;
   private ruleEngine: AlertRuleEngine;
   private stateManager: AlertStateManager;
   private notificationService: NotificationService;
@@ -46,18 +47,37 @@ export class AlertMonitoringService {
   };
 
   constructor() {
-    this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-    this.supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
+    // Defer initialization to avoid SSR issues
     this.ruleEngine = new AlertRuleEngine();
     this.stateManager = new AlertStateManager();
     this.notificationService = new NotificationService();
 
     this.startTime = new Date();
-    this.setupEventListeners();
+    
+    if (typeof window !== 'undefined') {
+      this.initialize();
+    }
+  }
+
+  private initialize(): void {
+    // Initialize Redis and Supabase when needed
+  }
+
+  private getRedis(): Redis {
+    if (!this.redis && typeof window !== 'undefined') {
+      this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+    }
+    return this.redis!;
+  }
+
+  private getSupabase(): SupabaseClient {
+    if (!this.supabase && typeof window !== 'undefined') {
+      this.supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+    }
+    return this.supabase!;
   }
 
   /**
@@ -195,7 +215,7 @@ export class AlertMonitoringService {
       await this.updateMonitoringStats();
 
       // 記錄最後評估時間
-      await this.redis.set('alert:last_evaluation', new Date().toISOString());
+      await this.getRedis().set('alert:last_evaluation', new Date().toISOString());
     } catch (error) {
       console.error('Monitoring cycle error:', error);
     }
@@ -207,10 +227,10 @@ export class AlertMonitoringService {
   private async performHealthCheck(): Promise<void> {
     try {
       // 檢查 Redis 連接
-      await this.redis.ping();
+      await this.getRedis().ping();
 
       // 檢查數據庫連接
-      await this.supabase.from('alert_rules').select('count').limit(1);
+      await this.getSupabase().from('alert_rules').select('count').limit(1);
 
       // 檢查告警引擎狀態
       // 這裡可以添加更多健康檢查邏輯
@@ -226,16 +246,16 @@ export class AlertMonitoringService {
   private async checkAlertSuppression(): Promise<void> {
     try {
       // 獲取已抑制的告警
-      const suppressedAlerts = await this.redis.keys('suppression:*');
+      const suppressedAlerts = await this.getRedis().keys('suppression:*');
 
       for (const key of suppressedAlerts) {
-        const suppression = await this.redis.get(key);
+        const suppression = await this.getRedis().get(key);
         if (suppression) {
           const suppressionData = JSON.parse(suppression);
 
           // 檢查抑制是否過期
           if (suppressionData.expiresAt && new Date(suppressionData.expiresAt) < new Date()) {
-            await this.redis.del(key);
+            await this.getRedis().del(key);
             console.log(`Suppression expired for rule: ${suppressionData.ruleId}`);
           }
         }
@@ -280,7 +300,7 @@ export class AlertMonitoringService {
   private async checkDependencies(dependencies: string[]): Promise<boolean> {
     try {
       const dependencyAlerts = await Promise.all(
-        dependencies.map((dep: string) =>
+        dependencies.map((dep) =>
           this.stateManager.queryAlerts({
             ruleIds: [dep],
             states: [AlertState.ACTIVE],
@@ -344,12 +364,12 @@ export class AlertMonitoringService {
       // 檢查每個升級級別
       for (const level of escalation.levels) {
         const escalationKey = `escalation:${alert.id}:${level.level}`;
-        const escalationProcessed = await this.redis.get(escalationKey);
+        const escalationProcessed = await this.getRedis().get(escalationKey);
 
         if (!escalationProcessed && alertAge >= level.delay * 1000) {
           // 觸發升級
           await this.triggerEscalation(alert, level);
-          await this.redis.setex(escalationKey, 86400, 'processed');
+          await this.getRedis().setex(escalationKey, 86400, 'processed');
         }
       }
     } catch (error) {
@@ -434,12 +454,12 @@ export class AlertMonitoringService {
    */
   private async cleanupExpiredCache(): Promise<void> {
     try {
-      const keys = await this.redis.keys('alert:*');
+      const keys = await this.getRedis().keys('alert:*');
       for (const key of keys) {
-        const ttl = await this.redis.ttl(key);
+        const ttl = await this.getRedis().ttl(key);
         if (ttl === -1) {
           // 沒有設置過期時間的 key，設置默認過期時間
-          await this.redis.expire(key, 86400); // 24 小時
+          await this.getRedis().expire(key, 86400); // 24 小時
         }
       }
     } catch (error) {
@@ -543,7 +563,7 @@ export class AlertMonitoringService {
   private handleNotificationSent(data: AlertEngineEventData): void {
     // 記錄通知統計
     if (data.channel) {
-      this.redis.hincrby('notification:stats', data.channel, 1);
+      this.getRedis().hincrby('notification:stats', data.channel, 1);
     }
   }
 
@@ -554,8 +574,8 @@ export class AlertMonitoringService {
     console.log(`Alert ${alert.id} state changed from ${oldState} to ${alert.state}`);
 
     // 更新統計
-    this.redis.hincrby('alert:state:stats', alert.state, 1);
-    this.redis.hincrby('alert:state:stats', oldState, -1);
+    this.getRedis().hincrby('alert:state:stats', alert.state, 1);
+    this.getRedis().hincrby('alert:state:stats', oldState, -1);
   }
 
   /**
@@ -572,7 +592,7 @@ export class AlertMonitoringService {
   private async updateMonitoringStats(): Promise<void> {
     try {
       const stats = await this.stateManager.getAlertStats();
-      await this.redis.hmset('monitoring:stats', {
+      await this.getRedis().hmset('monitoring:stats', {
         active_alerts: stats.activeCount,
         total_alerts: stats.total,
         avg_resolution_time: stats.avgResolutionTime,
@@ -588,7 +608,7 @@ export class AlertMonitoringService {
    */
   private async getActiveAlertsCount(): Promise<number> {
     try {
-      const { count } = await this.supabase
+      const { count } = await this.getSupabase()
         .from('alerts')
         .select('*', { count: 'exact', head: true })
         .eq('state', AlertState.ACTIVE);
@@ -605,7 +625,7 @@ export class AlertMonitoringService {
    */
   private async getRulesCount(): Promise<number> {
     try {
-      const { count } = await this.supabase
+      const { count } = await this.getSupabase()
         .from('alert_rules')
         .select('*', { count: 'exact', head: true })
         .eq('enabled', true);
@@ -622,7 +642,7 @@ export class AlertMonitoringService {
    */
   private async getLastEvaluationTime(): Promise<Date | undefined> {
     try {
-      const timestamp = await this.redis.get('alert:last_evaluation');
+      const timestamp = await this.getRedis().get('alert:last_evaluation');
       return timestamp ? new Date(timestamp) : undefined;
     } catch (error) {
       console.error('Failed to get last evaluation time:', error);
@@ -635,7 +655,7 @@ export class AlertMonitoringService {
    */
   private async getRuleById(ruleId: string): Promise<AlertRule | null> {
     try {
-      const { data, error } = await this.supabase
+      const { data, error } = await this.getSupabase()
         .from('alert_rules')
         .select('*')
         .eq('id', ruleId)
@@ -655,7 +675,7 @@ export class AlertMonitoringService {
    */
   private async getEscalationConfig(ruleId: string): Promise<AlertEscalation | null> {
     try {
-      const { data, error } = await this.supabase
+      const { data, error } = await this.getSupabase()
         .from('alert_escalations')
         .select('*')
         .eq('rule_id', ruleId)
@@ -671,6 +691,125 @@ export class AlertMonitoringService {
   }
 
   /**
+   * 獲取告警列表
+   */
+  public async getAlerts(filter?: {
+    ruleIds?: string[];
+    states?: AlertState[];
+    levels?: AlertLevel[];
+    metric?: string;
+    tags?: Record<string, string>;
+    startTime?: Date;
+    endTime?: Date;
+    limit?: number;
+    offset?: number;
+  }): Promise<Alert[]> {
+    try {
+      return await this.stateManager.queryAlerts(filter || {});
+    } catch (error) {
+      console.error('Failed to get alerts:', error);
+      return [];
+    }
+  }
+
+  /**
+   * 獲取告警統計
+   */
+  public async getAlertStatistics(): Promise<{
+    total: number;
+    active: number;
+    resolved: number;
+    avgResolutionTime: number;
+  }> {
+    try {
+      const stats = await this.stateManager.getAlertStats();
+      return {
+        total: stats.total,
+        active: stats.activeCount,
+        resolved: stats.total - stats.activeCount,
+        avgResolutionTime: stats.avgResolutionTime,
+      };
+    } catch (error) {
+      console.error('Failed to get alert statistics:', error);
+      return { total: 0, active: 0, resolved: 0, avgResolutionTime: 0 };
+    }
+  }
+
+  /**
+   * 根據 ID 獲取告警
+   */
+  public async getAlertById(alertId: string): Promise<Alert | null> {
+    try {
+      return await this.stateManager.getAlert(alertId);
+    } catch (error) {
+      console.error('Failed to get alert by ID:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 獲取告警歷史
+   */
+  public async getAlertHistory(alertId: string): Promise<{
+    timestamp: Date;
+    action: string;
+    oldState?: AlertState;
+    newState?: AlertState;
+    userId?: string;
+    comment?: string;
+  }[]> {
+    try {
+      // 暫時返回空數組，待實現
+      return [];
+    } catch (error) {
+      console.error('Failed to get alert history:', error);
+      return [];
+    }
+  }
+
+  /**
+   * 創建告警
+   */
+  public async createAlert(data: {
+    ruleId: string;
+    metric: string;
+    value: number | string;
+    message?: string;
+    labels?: Record<string, string>;
+    annotations?: Record<string, string>;
+  }): Promise<Alert | null> {
+    try {
+      // 暫時返回 null，待實現
+      return null;
+    } catch (error) {
+      console.error('Failed to create alert:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 訂閱新告警
+   */
+  public async *subscribeToNewAlerts(): AsyncGenerator<Alert> {
+    // 暫時實現為空生成器
+    yield* [];
+  }
+
+  /**
+   * 訂閱統計更新
+   */
+  public async *subscribeToStatisticsUpdates(): AsyncGenerator<{
+    total: number;
+    active: number;
+    resolved: number;
+    avgResolutionTime: number;
+    timestamp: Date;
+  }> {
+    // 暫時實現為空生成器
+    yield* [];
+  }
+
+  /**
    * 輔助方法 - 反序列化規則
    */
   private deserializeRule(data: AlertDatabaseRecord): AlertRule {
@@ -681,7 +820,7 @@ export class AlertMonitoringService {
       enabled: data.enabled as boolean,
       level: data.level as AlertLevel,
       metric: data.metric as string,
-      condition: (isValidAlertCondition(data.condition) ? data.condition : 'gt') as AlertCondition,
+      condition: (isValidAlertCondition(data.condition) ? data.condition : AlertCondition.GREATER_THAN) as AlertCondition,
       threshold: data.threshold as number | string,
       timeWindow: data.time_window as number,
       evaluationInterval: data.evaluation_interval as number,

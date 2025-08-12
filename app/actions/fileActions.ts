@@ -1,7 +1,6 @@
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
-import { createClient as createServerClient } from '@/app/utils/supabase/server';
+import { createClient } from '@/app/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { safeString } from '@/types/database/helpers';
@@ -24,20 +23,8 @@ const fileValidation = {
 const maxFileSize = 10 * 1024 * 1024; // 10MB
 
 // 創建 Supabase Admin Client
-function createSupabaseAdmin() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('Supabase environment variables are not set');
-  }
-
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
+async function createSupabaseAdmin() {
+  return await createClient();
 }
 
 /**
@@ -77,7 +64,7 @@ export async function uploadFile(formData: FormData) {
     }
 
     // Get current user for audit
-    const supabase = await createServerClient();
+    const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -96,7 +83,7 @@ export async function uploadFile(formData: FormData) {
     const actualUploadBy = userDataByEmail?.id || uploadBy;
 
     // Create admin client for storage operations
-    const supabaseAdmin = createSupabaseAdmin();
+    const supabaseAdmin = await createSupabaseAdmin();
 
     // Convert file to array buffer
     const arrayBuffer = await file.arrayBuffer();
@@ -211,7 +198,7 @@ export async function uploadFile(formData: FormData) {
  */
 export async function deleteFile(fileId: string) {
   try {
-    const supabase = await createServerClient();
+    const supabase = await createClient();
 
     // Get file details
     const { data: fileData, error: fetchError } = await supabase
@@ -233,7 +220,7 @@ export async function deleteFile(fileId: string) {
     }
 
     // Create admin client for storage operations
-    const supabaseAdmin = createSupabaseAdmin();
+    const supabaseAdmin = await createSupabaseAdmin();
 
     // Delete from storage
     const filePath = `${fileData.folder}/${fileData.doc_name}`;

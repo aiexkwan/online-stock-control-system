@@ -34,40 +34,9 @@ interface UseStockUpdatesReturn {
     emailNotification?: { success: boolean };
     error?: string;
   }>;
-  clearCache: () => Promise<void>;
 }
 
 export const useStockUpdates = (): UseStockUpdatesReturn => {
-  // 清除緩存（針對 Vercel 環境）
-  const clearCache = useCallback(async () => {
-    if (typeof window !== 'undefined' && isProduction()) {
-      try {
-        // 清除瀏覽器緩存
-        if ('caches' in window) {
-          const cacheNames = await caches.keys();
-          await Promise.all(cacheNames.map(cacheName => caches.delete(cacheName)));
-        }
-
-        // 調用服務端緩存清除 API
-        try {
-          const cacheResponse = await fetch('/api/clear-cache', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-
-          if (!cacheResponse.ok) {
-            isNotProduction() && console.warn('Cache clear API returned non-OK status');
-          }
-        } catch (apiError) {
-          isNotProduction() && console.warn('Failed to call cache clear API:', apiError);
-        }
-      } catch (cacheError) {
-        console.error('Error clearing cache:', cacheError);
-      }
-    }
-  }, []);
 
   // 更新庫存和工作記錄
   const updateStockAndWorkLevels = useCallback(async (options: StockUpdateOptions) => {
@@ -177,6 +146,5 @@ export const useStockUpdates = (): UseStockUpdatesReturn => {
   return {
     updateStockAndWorkLevels,
     updateAcoOrderStatus,
-    clearCache,
   };
 };

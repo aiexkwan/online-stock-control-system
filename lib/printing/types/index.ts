@@ -36,13 +36,27 @@ export type PrintData = {
   palletNumber?: string;
   productCode?: string;
   palletNum?: string;
+  plt_num?: string;  // Added for print-template-service compatibility
+  product_code?: string;  // Added for print-template-service compatibility
+  product_qty?: number;  // Added for print-template-service compatibility
+  generate_time?: string;  // Added for print-template-service compatibility
   palletNumbers?: string[]; // 批量列印支援
   series?: string | string[]; // 支援單個或多個系列
   operator?: string;
   merged?: boolean; // 合併 PDF 標記
   // GRN Label 數據
   grnNumber?: string;
+  grn_ref?: string | number; // For template service compatibility
   receivedDate?: string;
+  material_code?: string;
+  gross_weight?: number;
+  net_weight?: number;
+  package?: string;
+  package_count?: number;
+  pallet?: string;
+  pallet_count?: number;
+  sup_code?: string;
+  creat_time?: string;
   // Report 數據
   reportData?: Array<Record<string, string | number | boolean | null>>;
   filters?: Record<string, string | number | boolean>;
@@ -57,7 +71,8 @@ export type PrintData = {
 
 export interface PrintRequest {
   type: PrintType;
-  data: PrintData;
+  data?: PrintData;
+  pdfBlobs?: Blob[];
   options: PrintOptions;
   metadata?: PrintMetadata;
 }
@@ -89,6 +104,10 @@ export interface PrintMetadata {
   source?: string;
   timestamp?: string;
   labelCount?: number;
+  // PDF upload options
+  uploadEnabled?: boolean;
+  palletNumbers?: string[];
+  updatePdfUrls?: boolean;
 }
 
 export interface PrintResult {
@@ -98,18 +117,11 @@ export interface PrintResult {
   pdfUrl?: string;
   error?: string;
   message?: string;
+  // PDF upload results
+  uploadedUrls?: string[];
+  uploadErrors?: string[];
 }
 
-export interface PrintHistory {
-  id: string;
-  jobId: string;
-  type: PrintType;
-  data: PrintData;
-  options: PrintOptions;
-  metadata?: PrintMetadata;
-  result: PrintResult;
-  createdAt: string;
-}
 
 export interface PrintStatistics {
   totalJobs: number;

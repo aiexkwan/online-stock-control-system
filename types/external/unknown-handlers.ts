@@ -22,7 +22,7 @@ export class UnknownTypeHandler {
 
     for (const key of keys) {
       if (current && typeof current === 'object' && key in current) {
-        current = (current as any)[key];
+        current = (current as Record<string, unknown>)[key];
       } else {
         return defaultValue;
       }
@@ -292,7 +292,7 @@ export function safeJsonParse<T = unknown>(
   reviver?: (key: string, value: unknown) => unknown
 ): T {
   try {
-    return JSON.parse(json, reviver as any) as T;
+    return JSON.parse(json, reviver) as T;
   } catch {
     return fallback;
   }

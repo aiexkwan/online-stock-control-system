@@ -87,7 +87,7 @@ export class DataSourceConfigManager {
         },
       },
 
-      // 中等優先級：Widget 特定規則
+      // 中等優先級：Card 特定規則
       {
         id: 'widget_chart_graphql',
         name: '圖表 Widget 優先使用 GraphQL',
@@ -152,12 +152,12 @@ export class DataSourceConfigManager {
 
     for (const rule of sortedRules) {
       if (await this.evaluateRule(rule, context)) {
-        logger.debug('Data source rule matched', {
+        logger.debug({
           ruleId: rule.id,
           ruleName: rule.name,
           target: rule.target,
           context,
-        });
+        }, 'Data source rule matched');
 
         return {
           dataSource: rule.target,
@@ -201,9 +201,9 @@ export class DataSourceConfigManager {
         const currentResponseTime = this.metrics.graphqlAvgResponseTime;
         switch (condition.operator) {
           case 'gt':
-            return currentResponseTime > condition.value;
+            return currentResponseTime > (condition.value as number);
           case 'lt':
-            return currentResponseTime < condition.value;
+            return currentResponseTime < (condition.value as number);
           default:
             return false;
         }
@@ -218,11 +218,11 @@ export class DataSourceConfigManager {
 
       case 'feature_flag':
         // 簡單的 feature flag 實現
-        return this.getFeatureFlag(condition.value) === true;
+        return this.getFeatureFlag(condition.value as string) === true;
 
       case 'experiment':
         // 實驗規則評估
-        return this.evaluateExperiment(condition.value, context);
+        return this.evaluateExperiment(condition.value as string, context);
 
       default:
         return false;
@@ -265,11 +265,11 @@ export class DataSourceConfigManager {
           }
         }
 
-        logger.info('A/B test activated', {
+        logger.info({
           experimentId: test.experimentId,
           userId: context.userId,
           targetDataSource: test.targetDataSource,
-        });
+        }, 'A/B test activated');
 
         return {
           dataSource: test.targetDataSource,
@@ -331,7 +331,7 @@ export class DataSourceConfigManager {
       lastUpdated: new Date(),
     } as DataSourceMetrics;
 
-    logger.debug('Data source metrics updated', this.metrics);
+    logger.debug(this.metrics, 'Data source metrics updated');
   }
 
   /**

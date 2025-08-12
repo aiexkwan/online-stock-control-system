@@ -170,7 +170,7 @@ startxref
       }
 
       const mergedPdfBytes = await mergedPdf.save();
-      const mergedPdfBlob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+      const mergedPdfBlob = new Blob([mergedPdfBytes as unknown as ArrayBuffer], { type: 'application/pdf' });
       console.log(`📦 Created merged PDF blob: ${(mergedPdfBlob.size / 1024).toFixed(2)}KB`);
 
       // Send merged PDF to hardware service

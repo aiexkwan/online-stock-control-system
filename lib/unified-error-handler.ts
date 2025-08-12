@@ -71,6 +71,7 @@ interface ErrorContext {
 // 錯誤恢復結果
 export interface RecoveryResult {
   success: boolean;
+  newSql?: string;
   fixedSQL?: string;
   suggestion?: string;
   alternativeApproach?: string;
@@ -254,6 +255,7 @@ async function attemptColumnRecovery(sql: string, error: Error): Promise<Recover
 
     return {
       success: true,
+      newSql: fixedSQL,
       fixedSQL,
       suggestion: `Column '${badColumn}' replaced with '${similarColumn}'`,
     };
@@ -278,6 +280,7 @@ async function attemptTableRecovery(sql: string, error: Error): Promise<Recovery
 
     return {
       success: true,
+      newSql: fixedSQL,
       fixedSQL,
       suggestion: `Table '${badTable}' replaced with '${similarTable}'`,
     };
@@ -315,6 +318,7 @@ async function attemptSyntaxRecovery(sql: string, error: Error): Promise<Recover
   if (fixed) {
     return {
       success: true,
+      newSql: fixedSQL,
       fixedSQL,
       suggestion: 'Added missing quotes around string value',
     };
@@ -387,16 +391,49 @@ function findSimilarTable(tableName: string): string | null {
 }
 
 // 增強錯誤消息（用於開發環境）
-export function enhanceErrorMessage(errorType: ErrorType, originalMessage: string): string {
+export function enhanceErrorMessage(
+  errorType: ErrorType, 
+  originalMessage: string, 
+  sql?: string
+): {
+  userMessage: string;
+  technicalDetails: string;
+  suggestions: string[];
+} {
+  const userMessage = generateUserMessage(errorType);
+  
   if (process.env.NODE_ENV === 'production') {
-    return generateUserMessage(errorType);
+    return {
+      userMessage,
+      technicalDetails: 'Error details hidden in production',
+      suggestions: [userMessage]
+    };
   }
 
   // 開發環境提供更詳細的錯誤信息
   const debugInfo = `[${errorType}] ${originalMessage}`;
-  const userMessage = generateUserMessage(errorType);
+  const suggestions = [];
+  
+  // 根據錯誤類型提供具體建議
+  switch (errorType) {
+    case ErrorType.COLUMN_NOT_EXISTS:
+      suggestions.push('Check the column name spelling', 'Verify the table schema');
+      break;
+    case ErrorType.TABLE_NOT_EXISTS:
+      suggestions.push('Verify the table name', 'Check if the table exists in the database');
+      break;
+    case ErrorType.SYNTAX_ERROR:
+      suggestions.push('Review SQL syntax', 'Check for missing quotes or commas');
+      break;
+    default:
+      suggestions.push('Try a simpler query', 'Contact support if the issue persists');
+  }
 
-  return `${userMessage}\n\nDebug: ${debugInfo}`;
+  return {
+    userMessage,
+    technicalDetails: debugInfo + (sql ? `\nSQL: ${sql}` : ''),
+    suggestions
+  };
 }
 
 // 記錄錯誤模式（用於分析和改進）

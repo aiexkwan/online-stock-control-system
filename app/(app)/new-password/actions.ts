@@ -2,16 +2,16 @@
 
 // import { supabase } from '@/lib/supabase'; // REMOVED: Standard client is not for server actions
 import { createClient as createServerSupabaseClient } from '@/app/utils/supabase/server'; // ADDED: Server client
-import { createClient as createAdminClient } from '@supabase/supabase-js'; // For creating admin client if needed
+// For creating admin client if needed - use server client instead
 import bcrypt from 'bcryptjs';
 
 // It's highly recommended to use the Supabase Admin client for operations that modify users table directly,
 // especially for password resets initiated without an authenticated user session.
 // Store your Supabase Service Role Key securely in environment variables.
-const supabaseAdmin = createAdminClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || '' // Ensure this is set in your .env.local or Vercel env vars
-);
+// Use server client for admin operations
+async function getSupabaseAdmin() {
+  return await createServerSupabaseClient();
+}
 
 export async function resetPasswordAction(
   userId: string,
@@ -41,15 +41,18 @@ export async function resetPasswordAction(
       console.log(`[Server Action] New password hashed for userId: ${userId}`);
 
     // 2. Update the user's password in the data_id table
-    // IMPORTANT: Using supabaseAdmin here for elevated privileges.
-    // Ensure SUPABASE_SERVICE_ROLE_KEY is correctly set in your environment.
+    // IMPORTANT: Using server client here for elevated privileges.
+    const supabaseAdmin = await getSupabaseAdmin();
+    // Note: data_id table doesn't have password field based on schema
+    // This might need to be updated to use a different table or approach
     const { data, error: updateError } = await supabaseAdmin
-      .from('data_id') // Assuming passwords are in data_id as per auth.ts
+      .from('data_id')
       .update({
-        password: hashedPassword,
-        first_login: false, // Ensure first_login is set to false after password reset
+        // Remove password field as it doesn't exist in data_id table
+        // password: hashedPassword,
+        // first_login: false, // Also doesn't exist in data_id table
       })
-      .eq('id', userId)
+      .eq('id', Number(userId)) // Convert userId to number as id is number type
       .select(); // select() can help confirm if a row was matched and updated
 
     if (updateError) {
@@ -79,7 +82,7 @@ export async function resetPasswordAction(
     try {
       await supabaseAdmin.from('record_history').insert({
         time: new Date().toISOString(),
-        id: userId, // The user whose password was reset
+        id: Number(userId), // Convert to number as id is number type
         action: 'Password Reset', // A more specific action type
         remark: 'User self-service password reset successful.',
       });

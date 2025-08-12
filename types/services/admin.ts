@@ -1,5 +1,6 @@
 /**
- * 管理服務類型定義
+ * Admin Service Types
+ * Types for the AdminDataService and related admin functionality
  */
 
 export interface DashboardStats {
@@ -20,20 +21,39 @@ export interface TimeRangeData {
 
 export interface AcoOrderProgress {
   code: string;
-  required_qty: number;
-  remain_qty: number;
-  completed_qty: number;
-  completion_percentage: number;
+  description: string;
+  ordered: number;
+  completed: number;
+  remaining: number;
+  percentage: number;
+  orderRef: number;
+  updatedAt: string;
 }
 
 export interface InventorySearchResult {
-  product_code: string;
-  injection: number;
-  pipeline: number;
-  await: number;
-  fold: number;
-  bulk: number;
-  backcarpark: number;
-  damage: number;
-  total: number;
+  productCode: string;
+  productName: string;
+  totalStock: number;
+  locations: InventoryLocation[];
+  lastUpdated: string;
+}
+
+export interface InventoryLocation {
+  location: string;
+  quantity: number;
+  palletCount: number;
+}
+
+// Additional admin types that might be needed
+export interface AdminStats {
+  dashboard: DashboardStats;
+  timeRange: TimeRangeData;
+}
+
+export type AdminTimeRange = 'today' | 'yesterday' | 'past3days' | 'past7days';
+
+export interface AdminServiceError {
+  code: string;
+  message: string;
+  details?: unknown;
 }

@@ -4,33 +4,29 @@
  */
 
 import { productResolvers } from './product.resolver';
+import { supplierResolvers } from './supplier.resolver';
 import { inventoryResolvers } from './inventory.resolver';
 import { operationsResolvers } from './operations.resolver';
 import { analyticsResolvers } from './analytics.resolver';
-import { widgetResolvers } from './widget.resolver';
 import { statsResolvers } from './stats.resolver';
 import { chartResolvers } from './chart.resolver';
-import { tableResolvers } from './table.resolver';
 import { reportResolvers } from './report.resolver';
-import { uploadResolvers } from './upload.resolver';
-import { analysisResolvers } from './analysis.resolver';
-import { alertResolvers } from './alert.resolver';
-// import { configResolvers } from './config.resolver'; // Temporarily disabled due to SSR issue
-import { searchResolver } from './search.resolver';
+import { configResolvers } from './config.resolver';
+import { navigationResolver } from './navigation.resolver';
+import { dashboardResolvers } from './dashboard.resolver';
+import { inventoryMigrationResolvers } from './inventory-migration.resolver';
+import { orderResolvers } from './order.resolver';
+import { reportGenerationResolvers } from './report-generation.resolver';
+import { transferResolvers } from './transfer.resolver';
+import { unifiedDepartmentResolver } from './DepartmentCards.resolver';
+import { enhancedPipeDepartmentResolver } from './DepartmentPipe.resolver';
+import { stockHistoryResolvers } from './stock-history.resolver';
+import { stockLevelResolvers } from './stock-level.resolver';
+import { recordHistoryResolvers } from './record-history.resolver';
 import { IResolvers } from '@graphql-tools/utils';
 import { GraphQLJSON } from 'graphql-type-json';
 import { DateTimeResolver } from 'graphql-scalars';
 import { DataLoaderContext } from '../dataloaders/base.dataloader';
-
-// Batch widget 請求類型
-interface BatchWidgetRequest {
-  dataSource: string;
-  params?: Record<string, unknown>;
-  timeFrame?: {
-    start: string;
-    end: string;
-  };
-}
 
 // 批量操作結果類型
 interface BatchOperationResult {
@@ -90,95 +86,6 @@ const rootResolvers: IResolvers = {
           lastBackup: null,
         };
       }
-    },
-
-    // Widget data unified entry point
-    widgetData: async (_parent, args, context: GraphQLContext) => {
-      const { dataSource, params, timeFrame } = args;
-
-      // Route to appropriate resolver based on dataSource
-      switch (dataSource) {
-        case 'stock_levels':
-          return context.loaders.stockLevels?.load({
-            warehouse: params?.warehouse,
-            dateRange: timeFrame
-              ? {
-                  start: timeFrame.start,
-                  end: timeFrame.end,
-                }
-              : undefined,
-          });
-
-        case 'unified_operations':
-          return context.loaders.unifiedOperations?.load({
-            warehouse: params?.warehouse,
-            dateRange: timeFrame
-              ? {
-                  start: timeFrame.start,
-                  end: timeFrame.end,
-                }
-              : undefined,
-          });
-
-        case 'work_level':
-          if (!params?.userId || !params?.date) {
-            throw new Error('userId and date are required for work_level');
-          }
-          return context.loaders.workLevel?.load({
-            userId: params.userId,
-            date: params.date,
-          });
-
-        // Add more data sources as they are implemented
-        default:
-          throw new Error(`Unknown data source: ${dataSource}`);
-      }
-    },
-
-    // Batch widget data fetch
-    batchWidgetData: async (_parent, args, context: GraphQLContext) => {
-      const { requests } = args;
-
-      const results = await Promise.all(
-        requests.map(async (request: BatchWidgetRequest) => {
-          const startTime = Date.now();
-          try {
-            const queryResolvers = rootResolvers.Query as Record<string, Function>;
-            const data = await queryResolvers.widgetData(
-              null,
-              {
-                dataSource: request.dataSource,
-                params: request.params,
-                timeFrame: request.timeFrame,
-              },
-              context
-            );
-
-            return {
-              widgetId: request.widgetId,
-              data,
-              error: null,
-              source: 'GRAPHQL',
-              executionTime: Date.now() - startTime,
-              cached: false, // Would need to implement cache detection
-            };
-          } catch (error) {
-            return {
-              widgetId: request.widgetId,
-              data: null,
-              error: {
-                message: error instanceof Error ? error.message : 'Unknown error',
-                code: 'WIDGET_DATA_ERROR',
-              },
-              source: 'GRAPHQL',
-              executionTime: Date.now() - startTime,
-              cached: false,
-            };
-          }
-        })
-      );
-
-      return results;
     },
   },
 
@@ -287,49 +194,78 @@ const rootResolvers: IResolvers = {
     },
   },
 
-  Subscription: {
-    // Placeholder for future real-time features
-    inventoryUpdated: {
-      subscribe: () => {
-        throw new Error('Subscriptions not yet implemented');
-      },
-    },
-    transferStatusChanged: {
-      subscribe: () => {
-        throw new Error('Subscriptions not yet implemented');
-      },
-    },
-    orderStatusChanged: {
-      subscribe: () => {
-        throw new Error('Subscriptions not yet implemented');
-      },
-    },
-    systemAlert: {
-      subscribe: () => {
-        throw new Error('Subscriptions not yet implemented');
-      },
-    },
-  },
 };
+
+// Combine Query resolvers in groups to avoid TypeScript union complexity
+const combinedQueries = Object.assign(
+  {},
+  rootResolvers.Query,
+  inventoryMigrationResolvers.Query,
+  productResolvers.Query,
+  supplierResolvers.Query,
+  inventoryResolvers.Query,
+  operationsResolvers.Query,
+  analyticsResolvers.Query,
+  statsResolvers.Query,
+  chartResolvers.Query,
+  reportResolvers.Query,
+  dashboardResolvers.Query,
+  orderResolvers.Query,
+  reportGenerationResolvers.Query,
+  transferResolvers.Query,
+  unifiedDepartmentResolver.Query,
+  enhancedPipeDepartmentResolver.Query,
+  stockHistoryResolvers.Query || {},
+  stockLevelResolvers.Query || {},
+  recordHistoryResolvers.Query || {},
+  configResolvers.Query || {},
+  navigationResolver.Query || {}
+);
+
+// Combine Mutation resolvers in groups
+const combinedMutations = Object.assign(
+  {},
+  rootResolvers.Mutation,
+  inventoryMigrationResolvers.Mutation,
+  productResolvers.Mutation,
+  supplierResolvers.Mutation,
+  inventoryResolvers.Mutation || {},
+  operationsResolvers.Mutation,
+  analyticsResolvers.Mutation || {},
+  reportResolvers.Mutation,
+  orderResolvers.Mutation,
+  reportGenerationResolvers.Mutation,
+  stockHistoryResolvers.Mutation || {},
+  recordHistoryResolvers.Mutation || {},
+  configResolvers.Mutation || {},
+  navigationResolver.Mutation || {}
+);
 
 // Combine all resolvers
 export const resolvers: IResolvers = {
+  // Scalar types
   ...scalarResolvers,
-  ...rootResolvers,
-  ...productResolvers,
-  ...inventoryResolvers,
-  ...operationsResolvers,
-  ...analyticsResolvers,
-  ...widgetResolvers,
-  ...statsResolvers,
-  ...chartResolvers,
-  ...tableResolvers,
-  ...reportResolvers,
-  ...uploadResolvers,
-  ...analysisResolvers,
-  ...alertResolvers,
-  // ...configResolvers, // Temporarily disabled due to SSR issue
-  ...searchResolver,
+  
+  // Type resolvers (non-Query/Mutation)
+  ...(productResolvers.Product ? { Product: productResolvers.Product } : {}),
+  ...(supplierResolvers.Supplier ? { Supplier: supplierResolvers.Supplier } : {}),
+  ...(inventoryResolvers.Inventory ? { Inventory: inventoryResolvers.Inventory } : {}),
+  ...(inventoryResolvers.Pallet ? { Pallet: inventoryResolvers.Pallet } : {}),
+  ...(operationsResolvers.Transfer ? { Transfer: operationsResolvers.Transfer } : {}),
+  ...(operationsResolvers.GoodsReceipt ? { GoodsReceipt: operationsResolvers.GoodsReceipt } : {}),
+  ...(operationsResolvers.QualityCheck ? { QualityCheck: operationsResolvers.QualityCheck } : {}),
+  ...(stockHistoryResolvers.StockHistoryRecord ? { StockHistoryRecord: stockHistoryResolvers.StockHistoryRecord } : {}),
+  ...(stockHistoryResolvers.PalletHistoryResult ? { PalletHistoryResult: stockHistoryResolvers.PalletHistoryResult } : {}),
+  ...(stockHistoryResolvers.SinglePalletHistoryResult ? { SinglePalletHistoryResult: stockHistoryResolvers.SinglePalletHistoryResult } : {}),
+  ...(stockHistoryResolvers.TransferTimeFlowResult ? { TransferTimeFlowResult: stockHistoryResolvers.TransferTimeFlowResult } : {}),
+  ...(stockLevelResolvers.StockLevelRecord ? { StockLevelRecord: stockLevelResolvers.StockLevelRecord } : {}),
+  
+  // Query and Mutation resolvers
+  Query: combinedQueries,
+  Mutation: combinedMutations,
+  
+  // Subscription resolvers
+  ...(stockHistoryResolvers.Subscription ? { Subscription: stockHistoryResolvers.Subscription } : {}),
 };
 
 // Type guards for context

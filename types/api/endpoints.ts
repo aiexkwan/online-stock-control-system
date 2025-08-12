@@ -83,9 +83,9 @@ export const API_ENDPOINTS = {
   // 系統監控
   MONITORING: {
     HEALTH: '/api/health',
-    DEEP_HEALTH: '/api/v1/health/deep',
-    METRICS: '/api/v1/metrics',
-    ALERTS: '/api/v1/alerts',
+    DEEP_HEALTH: '/api/monitoring/deep',
+    METRICS: '/api/metrics',
+    ALERTS: '/api/alerts',
   },
 
   // 文件上傳

@@ -15,3 +15,16 @@ export type DatabaseEntity = Record<string, unknown>;
 export function isError(value: unknown): value is Error {
   return value instanceof Error;
 }
+
+// Re-export commonly used types for convenience
+export type {
+  DashboardStatsData,
+  TransferEntity,
+  ProductEntity,
+  InventoryEntity,
+  PalletEntity,
+  UserEntity,
+  GRNEntity,
+  HistoryEntity,
+  OrderEntity,
+} from './entities';

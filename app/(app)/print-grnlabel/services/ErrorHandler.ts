@@ -24,10 +24,17 @@ export interface ErrorReport {
 
 export class GrnErrorHandler {
   private static instance: GrnErrorHandler;
-  private supabase = createClient();
+  private supabase: ReturnType<typeof createClient> | null = null;
   private errorReports: ErrorReport[] = [];
 
   private constructor() {}
+
+  private getSupabase() {
+    if (!this.supabase && typeof window !== 'undefined') {
+      this.supabase = createClient();
+    }
+    return this.supabase;
+  }
 
   public static getInstance(): GrnErrorHandler {
     if (!GrnErrorHandler.instance) {
@@ -284,7 +291,9 @@ export class GrnErrorHandler {
     // 記錄到數據庫（可選，用於生產監控）
     try {
       if (context.clockNumber) {
-        await this.supabase.from('record_history').insert({
+        const supabase = this.getSupabase();
+        if (supabase) {
+          await supabase.from('record_history').insert({
           time: errorReport.timestamp,
           id: parseInt(context.clockNumber, 10) || 0,
           plt_num: null,
@@ -292,6 +301,7 @@ export class GrnErrorHandler {
           action: `GRN Error: ${context.component} - ${context.action}`,
           remark: `${severity.toUpperCase()}: ${error.message}`,
         });
+        }
       }
     } catch (dbError) {
       console.error('[GrnErrorHandler] Failed to log error to database:', dbError);
@@ -308,7 +318,9 @@ export class GrnErrorHandler {
   ): Promise<void> {
     try {
       if (context.clockNumber) {
-        await this.supabase.from('record_history').insert({
+        const supabase = this.getSupabase();
+        if (supabase) {
+          await supabase.from('record_history').insert({
           time: new Date().toISOString(),
           id: parseInt(context.clockNumber, 10) || 0,
           plt_num: null,
@@ -316,6 +328,7 @@ export class GrnErrorHandler {
           action: `GRN Success: ${context.component} - ${context.action}`,
           remark: details || message,
         });
+        }
       }
     } catch (dbError) {
       console.error('[GrnErrorHandler] Failed to log success to database:', dbError);
@@ -508,5 +521,27 @@ export class GrnErrorHandler {
   }
 }
 
-// 導出單例實例
-export const grnErrorHandler = GrnErrorHandler.getInstance();
+// 導出單例實例 - lazy initialization to avoid SSR issues
+export const grnErrorHandler = {
+  handleValidationError: (...args: Parameters<GrnErrorHandler['handleValidationError']>) => 
+    GrnErrorHandler.getInstance().handleValidationError(...args),
+  handleSupplierError: (...args: Parameters<GrnErrorHandler['handleSupplierError']>) => 
+    GrnErrorHandler.getInstance().handleSupplierError(...args),
+  handlePalletGenerationError: (...args: Parameters<GrnErrorHandler['handlePalletGenerationError']>) => 
+    GrnErrorHandler.getInstance().handlePalletGenerationError(...args),
+  handleDatabaseError: (...args: Parameters<GrnErrorHandler['handleDatabaseError']>) => 
+    GrnErrorHandler.getInstance().handleDatabaseError(...args),
+  handlePdfError: (...args: Parameters<GrnErrorHandler['handlePdfError']>) => 
+    GrnErrorHandler.getInstance().handlePdfError(...args),
+  handleWeightError: (...args: Parameters<GrnErrorHandler['handleWeightError']>) => 
+    GrnErrorHandler.getInstance().handleWeightError(...args),
+  handleSuccess: (...args: Parameters<GrnErrorHandler['handleSuccess']>) => 
+    GrnErrorHandler.getInstance().handleSuccess(...args),
+  handleWarning: (...args: Parameters<GrnErrorHandler['handleWarning']>) => 
+    GrnErrorHandler.getInstance().handleWarning(...args),
+  handleInfo: (...args: Parameters<GrnErrorHandler['handleInfo']>) => 
+    GrnErrorHandler.getInstance().handleInfo(...args),
+  getErrorReports: () => GrnErrorHandler.getInstance().getErrorReports(),
+  clearErrorReports: () => GrnErrorHandler.getInstance().clearErrorReports(),
+  getErrorStats: () => GrnErrorHandler.getInstance().getErrorStats(),
+};

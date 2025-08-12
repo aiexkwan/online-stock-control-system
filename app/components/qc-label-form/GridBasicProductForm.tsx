@@ -17,6 +17,7 @@ interface ProductInfo {
 interface GridBasicProductFormProps {
   productCode: string;
   onProductCodeChange: (value: string) => void;
+  onProductCodeBlur?: () => void;
   productInfo: ProductInfo | null;
   onProductInfoChange: (productInfo: ProductInfo | null) => void;
   quantity: string;
@@ -37,6 +38,7 @@ export const GridBasicProductForm: React.FC<GridBasicProductFormProps> = React.m
   ({
     productCode,
     onProductCodeChange,
+    onProductCodeBlur,
     productInfo,
     onProductInfoChange,
     quantity,
@@ -75,6 +77,7 @@ export const GridBasicProductForm: React.FC<GridBasicProductFormProps> = React.m
             <ProductCodeInput
               value={productCode}
               onChange={onProductCodeChange}
+              onBlur={onProductCodeBlur}
               onProductInfoChange={onProductInfoChange}
               onQuantityChange={onQuantityChange}
               disabled={disabled}
@@ -207,7 +210,7 @@ export const GridBasicProductForm: React.FC<GridBasicProductFormProps> = React.m
           </button>
         </div>
 
-        {/* Special Notice/Remark - 放喺底部但仍喺 widget 內 */}
+        {/* Special Notice/Remark - 放喺底部但仍喺 card 內 */}
         {shouldShowNotice && (
           <div className='mt-auto animate-pulse rounded-md border-2 border-red-500 bg-black p-4'>
             <div className='flex items-start space-x-3'>

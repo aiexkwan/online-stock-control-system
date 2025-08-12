@@ -242,7 +242,7 @@ export async function getAcoReportData(orderRef: string): Promise<ActionResult<A
     const palletsByProduct = new Map<string, Tables<'record_palletinfo'>[]>();
 
     // 將棧板數據按產品代碼分組
-    (allPalletDetails || []).forEach((pallet: DatabaseRecord) => {
+    (allPalletDetails || []).forEach((pallet: Record<string, unknown>) => {
       const productCode = String(pallet.product_code);
       if (!palletsByProduct.has(productCode)) {
         palletsByProduct.set(productCode, []);
@@ -1197,7 +1197,7 @@ export async function getVoidReasonStats(
     const reasonStats = new Map<string, { count: number; quantity: number }>();
 
     // 安全地處理數據，檢查 record_palletinfo 是否為有效對象
-    (data as DatabaseRecord[]).forEach((item: DatabaseRecord) => {
+    (data as Record<string, unknown>[]).forEach((item: Record<string, unknown>) => {
       if (!isRecord(item)) return;
 
       const reason = extractVoidReason(String(item.remark || ''));
@@ -1368,7 +1368,7 @@ export async function getVoidProductStats(
     >();
 
     // 安全地處理產品統計數據
-    (data as DatabaseRecord[]).forEach((item: DatabaseRecord) => {
+    (data as Record<string, unknown>[]).forEach((item: Record<string, unknown>) => {
       if (!isRecord(item)) return;
 
       const palletInfo = isRecord(item.record_palletinfo) ? item.record_palletinfo : {};
@@ -1991,7 +1991,7 @@ export async function getOrderLoadingSummary(
       }
     >();
 
-    (data as DatabaseRecord[]).forEach((item: DatabaseRecord) => {
+    (data as Record<string, unknown>[]).forEach((item: Record<string, unknown>) => {
       const orderRef = String(item.order_ref || '');
       if (!orderMap.has(orderRef)) {
         orderMap.set(orderRef, {
@@ -2100,7 +2100,7 @@ export async function getOrderProgress(
     // Group by order
     const orderMap = new Map<string, OrderDetails>();
 
-    rawData.forEach((item: DatabaseRecord) => {
+    rawData.forEach((item: Record<string, unknown>) => {
       const orderRef = String(item.order_ref || '');
       if (!orderMap.has(orderRef)) {
         orderMap.set(orderRef, {
@@ -2285,7 +2285,7 @@ export async function getUserPerformance(
       }
     >();
 
-    (data as DatabaseRecord[]).forEach((item: DatabaseRecord) => {
+    (data as Record<string, unknown>[]).forEach((item: Record<string, unknown>) => {
       const userId = String(item.action_by || 'unknown');
 
       if (!userStats.has(userId)) {

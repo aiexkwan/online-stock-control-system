@@ -10,13 +10,6 @@ export {
   LightGlassCard,
 } from './effects/GlassmorphicCard';
 
-export {
-  BorderContainer,
-  PulseBorder,
-  NeonBorder,
-  GlassBorderContainer,
-} from './effects/BorderEffects';
-
 // Navigation - Using existing DynamicActionBar from components/ui/dynamic-action-bar
 
 // Hooks exports

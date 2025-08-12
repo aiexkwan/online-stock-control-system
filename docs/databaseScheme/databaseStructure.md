@@ -18,7 +18,7 @@
   - `standard_qty`: 每棧板標準數量 (預設: 1)
   - `type`: 產品類型 (預設: '-')
   - `remark`: 產品規格說明
-- **關聯表格**：被多個表格外鍵參照 (record_grn, record_palletinfo, stock_level, record_aco, record_slate, record_inventory)
+- **關聯表格**：被多個表格外鍵參照 (record_grn, record_palletinfo, stock_level, record_aco, record_inventory)
 
 #### `data_slateinfo` - 磚板詳細資料庫
 - **主要用途**：儲存磚板產品的詳細規格
@@ -361,26 +361,9 @@
   - `loading`: 今日裝載數量 (預設: 0)
   - `latest_update`: 最後更新時間 (預設: now())
 
-### 1.11 磚板生產表格
+### 1.11 系統管理表格
 
-#### `record_slate` - 磚板生產記錄
-- **主要用途**：記錄磚板生產過程
-- **主鍵**：`uuid`
-- **核心欄位**：
-  - `code`: 產品編號 (外鍵: data_code.code)
-  - `plt_num`: 棧板編號 (外鍵: record_palletinfo.plt_num)
-  - `setter`: 設定員
-  - `mach_num`: 機器編號
-  - `material`: 材料
-  - `batch_num`: 批次編號
-  - `weight`: 重量
-  - `t_thick`/`b_thick`: 頂部/底部厚度
-  - `length`/`width`: 長度/寬度
-  - `centre_hole`: 中心孔位
-  - `colour`/`shape`: 顏色/形狀
-  - `flame_test`: 燃燒測試結果
-  - `remark`: 備註 (可空)
-  - `first_off`: 首檢日期 (可空)
+> **注意**：`record_slate` 磚板生產記錄表格已於 2025-08-11 移除，相關 QC 功能不再使用此表格儲存資料。
 
 ### 1.12 系統管理表格
 
@@ -517,17 +500,6 @@
   - `ts`: 時間戳 (預設: now())
   - `msg`: 除錯訊息
 
-#### `print_history` - 列印歷史記錄
-- **主要用途**：儲存所有列印工作的歷史，用於審計和重新列印
-- **主鍵**：`id`
-- **核心欄位**：
-  - `job_id`: 列印工作唯一標識符
-  - `type`: 列印文檔類型
-  - `data`: 列印數據 (JSONB, 可空)
-  - `options`: 列印選項 (JSONB, 可空)
-  - `metadata`: 附加元數據 (JSONB, 可空)
-  - `result`: 列印工作結果 (JSONB, 可空)
-  - `created_at`: 建立時間 (預設: CURRENT_TIMESTAMP)
 
 ### 1.14 其他業務表格
 
@@ -584,15 +556,6 @@
   - `to_path`: 目標路徑 (主鍵)
   - `transition_count`: 轉換次數 (預設: 1)
   - `last_transition`: 最後轉換時間 (預設: now())
-
-#### `monitoring_tech_debt` - 技術債務監控數據表
-- **主要用途**：監控技術債務相關指標
-- **主鍵**：`id` (自增)
-- **核心欄位**：
-  - `timestamp`: 數據收集時間
-  - `source`: 數據來源 (manual/ci/scheduled)
-  - `metrics`: JSON格式的監控指標數據 (JSONB)
-  - `created_at`: 建立時間 (預設: now())
 
 ## 2. 認證系統表格 (Auth Schema)
 

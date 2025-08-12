@@ -1,18 +1,40 @@
 /**
  * React Hook for Unified Printing Service
+ * Updated to work with new unified print service
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getUnifiedPrintingService } from '../services/unified-printing-service';
-import { getPrintStatusMonitor } from '../services/print-status-monitor';
-import {
-  PrintRequest,
-  PrintResult,
-  PrintType,
-  BatchPrintRequest,
-  BatchPrintResult,
-  PrintJobStatus,
-} from '../types';
+import { getUnifiedPrintService } from '../unified-print-service';
+import type { PrintRequest, PrintResult } from '../unified-print-service';
+import { adaptPrintRequest, isOldPrintRequest, isNewPrintRequest } from '../adapters/print-request-adapter';
+import type { PrintRequest as OldPrintRequest } from '../types';
+
+// Keep compatibility types
+export interface PrintJobStatus {
+  jobId: string;
+  status: 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  message?: string;
+  progress?: number;
+  createdAt?: string;
+  completedAt?: string;
+}
+
+export interface BatchPrintRequest {
+  requests: (PrintRequest | OldPrintRequest)[];
+  options?: {
+    parallel?: boolean;
+    stopOnError?: boolean;
+    groupByType?: boolean;
+  };
+}
+
+export interface BatchPrintResult {
+  totalJobs: number;
+  successful: number;
+  failed: number;
+  results: PrintResult[];
+  duration: number;
+}
 
 export interface UsePrintingOptions {
   autoInitialize?: boolean;
@@ -21,10 +43,9 @@ export interface UsePrintingOptions {
 }
 
 export interface UsePrintingReturn {
-  // Print operations
-  print: (request: PrintRequest) => Promise<PrintResult>;
+  // Print operations - accepts both old and new formats
+  print: (request: PrintRequest | OldPrintRequest) => Promise<PrintResult>;
   batchPrint: (batch: BatchPrintRequest) => Promise<BatchPrintResult>;
-  reprint: (historyId: string) => Promise<PrintResult>;
   cancelJob: (jobId: string) => Promise<boolean>;
 
   // Status
@@ -37,6 +58,8 @@ export interface UsePrintingReturn {
   queueStatus: {
     pending: number;
     processing: number;
+    completed: number;
+    failed: number;
   } | null;
 
   // Error
@@ -53,10 +76,17 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
   const [queueStatus, setQueueStatus] = useState<UsePrintingReturn['queueStatus']>(null);
   const [error, setError] = useState<Error | null>(null);
 
-  const serviceRef = useRef(getUnifiedPrintingService());
-  const monitorRef = useRef(getPrintStatusMonitor());
+  const serviceRef = useRef<ReturnType<typeof getUnifiedPrintService> | null>(null);
   const initRef = useRef(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Lazy initialization for service
+  const getService = () => {
+    if (!serviceRef.current && typeof window !== 'undefined') {
+      serviceRef.current = getUnifiedPrintService();
+    }
+    return serviceRef.current;
+  };
 
   // Initialize service
   useEffect(() => {
@@ -64,7 +94,9 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
 
     const initialize = async () => {
       try {
-        await serviceRef.current.initialize();
+        const service = getService();
+        if (!service) return;
+        await service.initialize();
         initRef.current = true;
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
@@ -76,32 +108,63 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
     initialize();
   }, [autoInitialize, onError]);
 
-  // Subscribe to status updates
+  // Subscribe to status updates from service
   useEffect(() => {
-    const monitor = monitorRef.current;
+    const service = getService();
+    if (!service) return;
 
-    const handleStatusUpdate = (status: PrintJobStatus) => {
-      // Update active jobs
-      setActiveJobs(monitor.getActiveStatuses());
-
-      // Update progress if this is the current job
-      if (status.progress !== undefined) {
-        setProgress(status.progress);
-      }
-
-      // Update status message
-      if (status.message) {
-        setStatus(status.message);
-      }
-
-      // Call custom handler
-      onStatusUpdate?.(status);
+    const handleJobQueued = ({ jobId, request }: { jobId: string; request?: unknown }) => {
+      const job: PrintJobStatus = {
+        jobId,
+        status: 'queued',
+        createdAt: new Date().toISOString(),
+      };
+      setActiveJobs(prev => [...prev, job]);
+      onStatusUpdate?.(job);
     };
 
-    monitor.on('statusUpdate', handleStatusUpdate);
+    const handleJobProcessing = ({ jobId }: { jobId: string }) => {
+      setActiveJobs(prev => 
+        prev.map(job => 
+          job.jobId === jobId ? { ...job, status: 'processing' as const } : job
+        )
+      );
+    };
+
+    const handleJobCompleted = ({ jobId }: { jobId: string }) => {
+      setActiveJobs(prev => 
+        prev.map(job => 
+          job.jobId === jobId 
+            ? { ...job, status: 'completed' as const, completedAt: new Date().toISOString() } 
+            : job
+        )
+      );
+      // Remove completed job after 5 seconds
+      setTimeout(() => {
+        setActiveJobs(prev => prev.filter(job => job.jobId !== jobId));
+      }, 5000);
+    };
+
+    const handleJobFailed = ({ jobId, error }: { jobId: string; error?: Error }) => {
+      setActiveJobs(prev => 
+        prev.map(job => 
+          job.jobId === jobId 
+            ? { ...job, status: 'failed' as const, message: error?.message } 
+            : job
+        )
+      );
+    };
+
+    service.on('job.queued', handleJobQueued);
+    service.on('job.processing', handleJobProcessing);
+    service.on('job.completed', handleJobCompleted);
+    service.on('job.failed', handleJobFailed);
 
     return () => {
-      monitor.off('statusUpdate', handleStatusUpdate);
+      service.off('job.queued', handleJobQueued);
+      service.off('job.processing', handleJobProcessing);
+      service.off('job.completed', handleJobCompleted);
+      service.off('job.failed', handleJobFailed);
     };
   }, [onStatusUpdate]);
 
@@ -112,13 +175,16 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
 
     const updateQueueStatus = async () => {
       try {
+        const service = getService();
+        if (!service) return;
+        
         // Check if service is initialized
-        if (!serviceRef.current.isInitialized()) {
+        if (!service.isInitialized()) {
           console.log('[usePrinting] Service not initialized yet, skipping queue status update');
           return;
         }
 
-        const status = await serviceRef.current.getQueueStatus();
+        const status = await service.getQueueStatus();
         setQueueStatus(status);
       } catch (err) {
         console.warn('[usePrinting] Failed to get queue status:', err);
@@ -145,16 +211,28 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
     };
   }, [autoInitialize]);
 
-  // Print function
+  // Print function - handles both old and new formats
   const print = useCallback(
-    async (request: PrintRequest): Promise<PrintResult> => {
+    async (request: PrintRequest | OldPrintRequest): Promise<PrintResult> => {
       try {
         setPrinting(true);
         setProgress(0);
         setStatus('Preparing print job...');
         setError(null);
 
-        const result = await serviceRef.current.print(request);
+        // Convert old format to new format if needed
+        let printRequest: PrintRequest;
+        if (isOldPrintRequest(request)) {
+          printRequest = adaptPrintRequest(request);
+        } else if (isNewPrintRequest(request)) {
+          printRequest = request;
+        } else {
+          throw new Error('Invalid print request format');
+        }
+
+        const service = getService();
+        if (!service) throw new Error('Printing service not available');
+        const result = await service.print(printRequest);
 
         if (!result.success) {
           throw new Error(result.error || 'Print failed');
@@ -174,40 +252,62 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
     [onError]
   );
 
-  // Batch print function
+  // Batch print function - simulate for compatibility
   const batchPrint = useCallback(
     async (batch: BatchPrintRequest): Promise<BatchPrintResult> => {
+      const startTime = Date.now();
+      const results: PrintResult[] = [];
+      let successful = 0;
+      let failed = 0;
+
       try {
         setPrinting(true);
         setProgress(0);
         setStatus(`Preparing ${batch.requests.length} print jobs...`);
         setError(null);
 
-        // Subscribe to batch progress
-        const progressHandler = ({
-          percentage,
-          current,
-        }: {
-          percentage: number;
-          current: string;
-        }) => {
-          setProgress(percentage);
-          setStatus(current);
+        // Process each request
+        for (let i = 0; i < batch.requests.length; i++) {
+          const request = batch.requests[i];
+          
+          try {
+            const result = await print(request);
+            results.push(result);
+            if (result.success) successful++;
+            else failed++;
+            
+            setProgress(((i + 1) / batch.requests.length) * 100);
+            
+            if (!result.success && batch.options?.stopOnError) {
+              break;
+            }
+          } catch (error) {
+            failed++;
+            results.push({
+              success: false,
+              jobId: `batch-${Date.now()}-${i}`,
+              error: error instanceof Error ? error.message : 'Unknown error'
+            });
+            
+            if (batch.options?.stopOnError) break;
+          }
+        }
+
+        const batchResult: BatchPrintResult = {
+          totalJobs: batch.requests.length,
+          successful,
+          failed,
+          results,
+          duration: Date.now() - startTime
         };
 
-        serviceRef.current.on('progress', progressHandler);
-
-        const result = await serviceRef.current.batchPrint(batch);
-
-        serviceRef.current.off('progress', progressHandler);
-
-        if (result.failed > 0) {
-          setStatus(`Completed with ${result.failed} failures`);
+        if (failed > 0) {
+          setStatus(`Completed with ${failed} failures`);
         } else {
           setStatus('All jobs completed successfully');
         }
 
-        return result;
+        return batchResult;
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         setError(error);
@@ -218,43 +318,17 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
         setProgress(100);
       }
     },
-    [onError]
+    [print, onError]
   );
 
-  // Reprint function
-  const reprint = useCallback(
-    async (historyId: string): Promise<PrintResult> => {
-      try {
-        setPrinting(true);
-        setProgress(0);
-        setStatus('Reprinting...');
-        setError(null);
-
-        const result = await serviceRef.current.reprint(historyId);
-
-        if (!result.success) {
-          throw new Error(result.error || 'Reprint failed');
-        }
-
-        return result;
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error(String(err));
-        setError(error);
-        onError?.(error);
-        throw error;
-      } finally {
-        setPrinting(false);
-        setProgress(100);
-      }
-    },
-    [onError]
-  );
 
   // Cancel job function
   const cancelJob = useCallback(
     async (jobId: string): Promise<boolean> => {
       try {
-        return await serviceRef.current.cancelJob(jobId);
+        const service = getService();
+        if (!service) return false;
+        return await service.cancelJob(jobId);
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         setError(error);
@@ -268,7 +342,6 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
   return {
     print,
     batchPrint,
-    reprint,
     cancelJob,
     printing,
     progress,

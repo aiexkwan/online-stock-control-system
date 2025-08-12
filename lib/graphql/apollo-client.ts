@@ -3,10 +3,11 @@
  * GraphQL client setup for Supabase pg_graphql
  */
 
-import { ApolloClient, InMemoryCache, createHttpLink, ApolloLink } from '@apollo/client';
+import { ApolloClient, InMemoryCache, createHttpLink, ApolloLink, from } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import { createClient } from '@/lib/supabase';
+import { PerformanceLink } from '@/lib/monitoring/graphql-performance-monitor';
 
 // GraphQL endpoint - use custom server or Supabase pg_graphql
 const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_URL || '/api/graphql';
@@ -63,7 +64,7 @@ const authLink = setContext(async (_, { headers }) => {
 
     // Only add apikey for Supabase GraphQL endpoint
     if (USE_SUPABASE_GRAPHQL) {
-      authHeaders.apikey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      authHeaders.apikey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
     }
 
     return { headers: authHeaders };
@@ -121,7 +122,7 @@ const cache = new InMemoryCache({
   typePolicies: {
     Query: {
       fields: {
-        // Widget data caching
+        // Card data caching
         widget: {
           keyArgs: ['id', 'params'],
           merge(existing, incoming) {
@@ -143,16 +144,53 @@ const cache = new InMemoryCache({
         },
       },
     },
-    // Widget-specific cache policies
+    // Card-specific cache policies
     WidgetData: {
       keyFields: ['id'],
+    },
+    // Department-specific cache policies
+    DepartmentPipeData: {
+      keyFields: false, // Single instance per query
+      fields: {
+        stats: {
+          merge: true,
+        },
+        topStocks: {
+          keyArgs: false,
+          merge(existing, incoming, { args, cache }) {
+            return incoming;
+          },
+        },
+        materialStocks: {
+          keyArgs: false,
+          merge(existing, incoming, { args, cache }) {
+            return incoming;
+          },
+        },
+        machineStates: {
+          merge: (existing = [], incoming) => incoming,
+        },
+      },
+    },
+    StockItem: {
+      keyFields: ['stock'],
+    },
+    MachineState: {
+      keyFields: ['machineNumber'],
+    },
+    // History record caching - use uuid as unique identifier
+    HistoryRecord: {
+      keyFields: ['uuid'],
     },
   },
 });
 
+// Phase 3: Add performance monitoring
+const performanceLink = new PerformanceLink();
+
 // Apollo Client instance
 export const apolloClient = new ApolloClient({
-  link: ApolloLink.from([errorLink, authLink, httpLink]),
+  link: from([performanceLink, errorLink, authLink, httpLink]),
   cache,
   defaultOptions: {
     watchQuery: {

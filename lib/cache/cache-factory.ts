@@ -5,11 +5,12 @@
  */
 
 import { CacheAdapter } from './base-cache-adapter';
-// import { RedisCacheAdapter } from './redis-cache-adapter'; // Temporarily disabled - DNS module issue in client-side builds
+// import { RedisCacheAdapter } from './redis-cache-adapter'; // Removed - migrating to Apollo Cache
 import { MemoryCacheAdapter } from './memory-cache-adapter';
+import { ApolloCacheAdapter } from './apollo-cache-adapter';
 import { cacheLogger } from '../logger';
 
-export type CacheType = 'redis' | 'memory' | 'auto';
+export type CacheType = 'redis' | 'memory' | 'apollo' | 'auto';
 
 export interface CacheDecisionFactors {
   hasRedisUrl: boolean;
@@ -52,10 +53,14 @@ class CacheFactory {
 
     const cacheType = this.determineCacheType(finalConfig);
 
-    if (cacheType === 'memory') {
-      return this.createMemoryCache(finalConfig.memory);
-    } else {
-      return this.createRedisCache(finalConfig.redis);
+    switch (cacheType) {
+      case 'apollo':
+        return this.createApolloCache(finalConfig.memory);
+      case 'memory':
+        return this.createMemoryCache(finalConfig.memory);
+      default:
+        // Redis is deprecated, fallback to Apollo
+        return this.createApolloCache(finalConfig.memory);
     }
   }
 
@@ -82,24 +87,33 @@ class CacheFactory {
 
   /**
    * 智能判斷緩存類型
-   * Phase 2.1: 暫時強制使用 MemoryCache 解決客戶端構建問題
+   * Phase 3: Migration to Apollo Cache for serverless compatibility
    */
   private static determineCacheType(config: CacheConfig): CacheType {
-    // Phase 2.1 緊急修復：強制使用 MemoryCache 避免 DNS 模組依賴問題
+    // Phase 3: Redis deprecated - migrate to Apollo
     if (config.type === 'redis') {
       cacheLogger.info(
         {
-          reason: 'phase_2_1_override',
-          type: 'memory',
+          reason: 'redis_deprecated',
+          type: 'apollo',
           originalRequest: 'redis',
-          issue: 'dns_module_client_build_error',
+          migration: 'serverless_compatibility',
         },
-        'Redis requested but using memory cache - Phase 2.1 DNS module fix'
+        'Redis deprecated - using Apollo Cache for serverless compatibility'
       );
-      return 'memory';
+      return 'apollo';
     }
 
-    // 明確指定內存類型
+    // Explicit Apollo type
+    if (config.type === 'apollo') {
+      cacheLogger.info(
+        { reason: 'explicit_config', type: 'apollo' },
+        'Using Apollo cache - explicit configuration'
+      );
+      return 'apollo';
+    }
+
+    // Explicit memory type
     if (config.type === 'memory') {
       cacheLogger.info(
         { reason: 'explicit_config', type: 'memory' },
@@ -108,31 +122,30 @@ class CacheFactory {
       return 'memory';
     }
 
-    // 自動判斷模式 - Phase 2.1 期間強制選擇 MemoryCache
+    // Auto mode - default to Apollo for serverless compatibility
     if (config.type === 'auto') {
       cacheLogger.info(
         {
-          reason: 'phase_2_1_auto_memory',
-          type: 'memory',
-          scale: 'small',
-          benefits: ['lower_latency', 'simplified_deployment', 'no_dns_module_issues'],
-          phase: '2.1_redis_removal',
+          reason: 'auto_apollo',
+          type: 'apollo',
+          benefits: ['serverless_compatible', 'persistent_storage', 'reactive_updates', 'graphql_integration'],
+          phase: '3_apollo_migration',
         },
-        'Auto-selected memory cache - Phase 2.1 strategy (DNS fix + optimal for current scale)'
+        'Auto-selected Apollo cache - optimal for serverless deployment'
       );
-      return 'memory';
+      return 'apollo';
     }
 
-    // 默認回退到內存緩存 (Phase 2.1 默認策略)
+    // Default fallback to Apollo
     cacheLogger.info(
       {
         configType: config.type,
-        fallback: 'memory',
-        reason: 'phase_2_1_fallback',
+        fallback: 'apollo',
+        reason: 'default_apollo',
       },
-      'Using memory cache - Phase 2.1 default strategy'
+      'Using Apollo cache - default strategy for serverless'
     );
-    return 'memory';
+    return 'apollo';
   }
 
   /**
@@ -216,6 +229,18 @@ class CacheFactory {
   }
 
   /**
+   * 創建 Apollo 緩存適配器
+   */
+  private static createApolloCache(config?: CacheConfig['memory']): CacheAdapter {
+    const apolloConfig = {
+      defaultTTL: config?.ttl || 300, // 5 minutes default
+      persist: true, // Enable localStorage persistence
+    };
+
+    return new ApolloCacheAdapter('oscs:cache', apolloConfig);
+  }
+
+  /**
    * 創建內存緩存適配器
    */
   private static createMemoryCache(config?: CacheConfig['memory']): CacheAdapter {
@@ -262,7 +287,7 @@ class CacheFactory {
         'Redis cache creation failed, falling back to memory cache'
       );
 
-      return this.createMemoryCache(config as any);
+      return this.createMemoryCache(config as unknown);
     }
     */
   }

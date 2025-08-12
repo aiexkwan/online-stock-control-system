@@ -34,7 +34,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { loadPalletToOrder, undoLoadPallet, getOrderInfo } from '@/app/actions/orderLoadingActions';
-import { safeNumber } from '@/lib/widgets/types/enhanced-widget-types';
+import { safeNumber } from '@/lib/utils/safe-number';
 import MobileOrderLoading from './components/MobileOrderLoading';
 import { VirtualizedOrderList, virtualScrollStyles } from './components/VirtualizedOrderList';
 import { useOrderDataCache, useOrderSummariesCache } from './hooks/useOrderCache';
@@ -57,6 +57,23 @@ interface OrderData {
   product_desc: string;
   product_qty: string;
   loaded_qty: string;
+}
+
+// Database result types
+interface DatabaseOrderItem {
+  order_ref: string;
+  product_code: string;
+  product_desc: string;
+  product_qty: string;
+  loaded_qty: string;
+}
+
+interface RecordHistoryItem {
+  uuid: string;
+  action: string;
+  plt_num: string | null;
+  remark: string;
+  time: string;
 }
 
 interface RecentLoad {
@@ -87,8 +104,6 @@ interface OrderSummary {
 }
 
 export default function OrderLoadingPage() {
-  const supabase = createClient();
-
   // State management
   const [idNumber, setIdNumber] = useState('');
   const [isIdValid, setIsIdValid] = useState(false);
@@ -101,10 +116,17 @@ export default function OrderLoadingPage() {
   const [searchValue, setSearchValue] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [recentLoads, setRecentLoads] = useState<RecentLoad[]>([]);
-  const [showRecentLoads, setShowRecentLoads] = useState(true);
   const [orderSearchQuery, setOrderSearchQuery] = useState('');
   const [showUndoDialog, setShowUndoDialog] = useState(false);
   const [undoItem, setUndoItem] = useState<UndoItem | null>(null);
+
+  // Lazy initialize Supabase client only on client side
+  const [supabase] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return createClient();
+    }
+    return null;
+  });
 
   // Cache hooks
   const orderDataCache = useOrderDataCache();
@@ -167,6 +189,11 @@ export default function OrderLoadingPage() {
       return;
     }
 
+    if (!supabase) {
+      console.error('Supabase client not initialized');
+      return;
+    }
+
     setIsCheckingId(true);
 
     try {
@@ -218,6 +245,11 @@ export default function OrderLoadingPage() {
         console.log('[OrderCache] Fetching fresh order summaries');
 
       // 直接從數據庫獲取訂單
+      if (!supabase) {
+        console.error('Supabase client not initialized');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('data_order')
         .select('order_ref, product_code, product_desc, product_qty, loaded_qty')
@@ -238,7 +270,7 @@ export default function OrderLoadingPage() {
 
       // Group by order_ref and calculate completion
       const orderMap = new Map<string, OrderSummary>();
-      data.forEach(item => {
+      (data as unknown as DatabaseOrderItem[]).forEach((item: DatabaseOrderItem) => {
         const ref = safeString(item.order_ref);
         if (!orderMap.has(ref)) {
           orderMap.set(ref, {
@@ -263,7 +295,7 @@ export default function OrderLoadingPage() {
       });
 
       // Calculate percentages
-      orderMap.forEach(order => {
+      orderMap.forEach((order: OrderSummary) => {
         order.percentage = order.totalQty > 0 ? (order.loadedQty / order.totalQty) * 100 : 0;
       });
 
@@ -300,6 +332,11 @@ export default function OrderLoadingPage() {
         console.log(`[OrderCache] Fetching fresh data for order: ${orderRef}`);
 
       // 獲取訂單詳情
+      if (!supabase) {
+        console.error('Supabase client not initialized');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('data_order')
         .select('order_ref, product_code, product_desc, product_qty, loaded_qty')
@@ -386,6 +423,11 @@ export default function OrderLoadingPage() {
   // Fetch recent loading history from record_history
   const fetchRecentLoads = async (orderRef: string) => {
     try {
+      if (!supabase) {
+        console.error('Supabase client not initialized');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('record_history')
         .select('*')
@@ -396,7 +438,7 @@ export default function OrderLoadingPage() {
 
       if (!error && data) {
         // Transform data to match expected format
-        const transformedData = data.map(item => {
+        const transformedData = (data as unknown as RecordHistoryItem[]).map((item: RecordHistoryItem) => {
           // Extract details from remark
           const orderMatch = item.remark.match(/Order: ([^,]+)/);
           const productMatch = item.remark.match(/Product: ([^,]+)/);

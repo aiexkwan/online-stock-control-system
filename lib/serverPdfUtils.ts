@@ -38,11 +38,13 @@ export async function generateServerPdf(
 
   // 生成文件名
   const fileName = `${input.palletNum.replace(/\//g, '_')}.pdf`;
+  // 修復 RLS 政策問題：檔案必須上傳到 private/ 資料夾
+  const fullPath = `private/${fileName}`;
 
   // 上傳到 Supabase
   const { data: uploadData, error: uploadError } = await supabaseClient.storage
     .from('pallet-label-pdf')
-    .upload(fileName, blob, {
+    .upload(fullPath, blob, {
       cacheControl: '3600',
       upsert: true,
       contentType: 'application/pdf',

@@ -1,7 +1,7 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useStockTransfer } from '../useStockTransfer';
 import { toast } from 'sonner';
-import type { PalletInfo } from '@/app/services/palletSearchService';
+import type { PalletInfo } from '@/lib/inventory/types';
 
 // Mock dependencies
 jest.mock('@/app/utils/supabase/client', () => ({
@@ -69,10 +69,12 @@ describe('useStockTransfer', () => {
   });
 
   const mockPalletInfo: PalletInfo = {
+    generate_time: new Date().toISOString(),
     plt_num: 'PLT001',
+    plt_remark: null,
+    pdf_url: null,
     product_code: 'PROD001',
     product_qty: 100,
-    current_plt_loc: 'Await',
     series: 'SERIES001'
   };
 

@@ -3,10 +3,11 @@
  * 告警規則引擎 - 負責規則評估、條件匹配、告警觸發
  */
 
-import { Redis } from 'ioredis';
 import { DatabaseRecord } from '@/types/database/tables';
 import { ApiResponse, ApiRequest, QueryParams } from '@/lib/validation/zod-schemas';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { getCacheAdapter } from '@/lib/cache/cache-factory';
+import { CacheAdapter } from '@/lib/cache/base-cache-adapter';
 import {
   AlertRule,
   AlertLevel,
@@ -24,29 +25,53 @@ import {
 } from '../types';
 
 export class AlertRuleEngine {
-  private redis: Redis;
-  private supabase: SupabaseClient;
+  private cache: CacheAdapter | null = null;
+  private supabase: SupabaseClient | null = null;
   private rules: Map<string, AlertRule> = new Map();
   private evaluationTimers: Map<string, NodeJS.Timeout> = new Map();
   private eventListeners: ((event: AlertEngineEvent) => void)[] = [];
+  private initialized = false;
 
   constructor() {
-    this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-    this.supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    // Defer initialization to avoid SSR issues
+    if (typeof window !== 'undefined') {
+      this.initializeEngine();
+    }
+  }
 
-    this.initializeEngine();
+  // Helper method to check if we're in SSR
+  private isSSR(): boolean {
+    return typeof window === 'undefined';
+  }
+
+  private getCache(): CacheAdapter {
+    if (!this.cache && typeof window !== 'undefined') {
+      this.cache = getCacheAdapter();
+    }
+    return this.cache!;
+  }
+
+  private getSupabase(): SupabaseClient {
+    if (!this.supabase && typeof window !== 'undefined') {
+      this.supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+    }
+    // Safe to assert as this is only called in client-side methods
+    return this.supabase!;
   }
 
   /**
    * 初始化引擎
    */
   private async initializeEngine(): Promise<void> {
+    if (this.initialized || this.isSSR()) return;
+    
     try {
       await this.loadRules();
       await this.startEvaluationTimers();
+      this.initialized = true;
       console.log('Alert Rule Engine initialized successfully');
     } catch (error) {
       console.error('Failed to initialize Alert Rule Engine:', error);
@@ -58,8 +83,13 @@ export class AlertRuleEngine {
    * 載入所有告警規則
    */
   private async loadRules(): Promise<void> {
+    if (this.isSSR()) {
+      console.log('AlertRuleEngine: Skipping rule loading in SSR environment');
+      return;
+    }
+    
     try {
-      const { data: rules, error } = await this.supabase
+      const { data: rules, error } = await this.getSupabase()
         .from('alert_rules')
         .select('*')
         .eq('enabled', true);
@@ -345,7 +375,7 @@ export class AlertRuleEngine {
   private async getApiResponseTime(): Promise<number> {
     const start = Date.now();
     try {
-      await this.supabase.from('record_palletinfo').select('id').limit(1);
+      await this.getSupabase().from('record_palletinfo').select('id').limit(1);
       return Date.now() - start;
     } catch (error) {
       return 9999; // 錯誤時返回高值
@@ -357,7 +387,7 @@ export class AlertRuleEngine {
    */
   private async getErrorRate(): Promise<number> {
     try {
-      const { data: errorLogs } = await this.supabase
+      const { data: errorLogs } = await this.getSupabase()
         .from('error_logs')
         .select('id')
         .gte('created_at', new Date(Date.now() - 5 * 60 * 1000).toISOString());
@@ -373,7 +403,7 @@ export class AlertRuleEngine {
    */
   private async getActiveUsers(): Promise<number> {
     try {
-      const { data: users } = await this.supabase
+      const { data: users } = await this.getSupabase()
         .from('user_sessions')
         .select('user_id')
         .gte('last_activity', new Date(Date.now() - 5 * 60 * 1000).toISOString());
@@ -390,7 +420,7 @@ export class AlertRuleEngine {
    */
   private async getDatabaseConnections(): Promise<number> {
     try {
-      const { data } = await this.supabase.rpc('get_database_connections');
+      const { data } = await this.getSupabase().rpc('get_database_connections');
       return data || 0;
     } catch (error) {
       return 0;
@@ -441,12 +471,12 @@ export class AlertRuleEngine {
   private async saveAlert(alert: Alert): Promise<void> {
     try {
       // 保存到數據庫
-      const { error } = await this.supabase.from('alerts').upsert(this.serializeAlert(alert));
+      const { error } = await this.getSupabase().from('alerts').upsert(this.serializeAlert(alert));
 
       if (error) throw error;
 
       // 保存到 Redis 緩存
-      await this.redis.setex(`alert:${alert.id}`, 3600, JSON.stringify(alert));
+      await this.getCache().set(`alert:${alert.id}`, alert, 3600);
     } catch (error) {
       console.error('Failed to save alert:', error);
       throw error;
@@ -459,13 +489,13 @@ export class AlertRuleEngine {
   private async getAlert(alertId: string): Promise<Alert | null> {
     try {
       // 先從 Redis 獲取
-      const cached = await this.redis.get(`alert:${alertId}`);
+      const cached = await this.getCache().get<Alert>(`alert:${alertId}`);
       if (cached) {
-        return JSON.parse(cached);
+        return cached;
       }
 
       // 從數據庫獲取
-      const { data, error } = await this.supabase
+      const { data, error } = await this.getSupabase()
         .from('alerts')
         .select('*')
         .eq('id', alertId)
@@ -485,7 +515,7 @@ export class AlertRuleEngine {
    */
   private async getCurrentAlert(ruleId: string): Promise<Alert | null> {
     try {
-      const { data, error } = await this.supabase
+      const { data, error } = await this.getSupabase()
         .from('alerts')
         .select('*')
         .eq('rule_id', ruleId)
@@ -508,7 +538,7 @@ export class AlertRuleEngine {
    */
   private async updateLastEvaluation(ruleId: string): Promise<void> {
     try {
-      await this.redis.setex(`rule:${ruleId}:last_evaluation`, 3600, new Date().toISOString());
+      await this.getCache().set(`rule:${ruleId}:last_evaluation`, new Date().toISOString(), 3600);
     } catch (error) {
       console.error(`Failed to update last evaluation for rule ${ruleId}:`, error);
     }
@@ -691,7 +721,9 @@ export class AlertRuleEngine {
     this.evaluationTimers.clear();
 
     // 關閉連接
-    await this.redis.quit();
+    if (this.cache) {
+      await this.cache.disconnect();
+    }
 
     console.log('Alert Rule Engine stopped');
   }
@@ -713,6 +745,63 @@ export class AlertRuleEngine {
       return {
         success: false,
         message: 'Failed to reload rules',
+        errors: [error instanceof Error ? error.message : String(error)],
+      };
+    }
+  }
+
+  /**
+   * 獲取所有規則
+   */
+  public async getRules(): Promise<AlertRule[]> {
+    try {
+      return Array.from(this.rules.values());
+    } catch (error) {
+      console.error('Failed to get rules:', error);
+      return [];
+    }
+  }
+
+  /**
+   * 更新規則
+   */
+  public async updateRule(ruleId: string, updates: Partial<AlertRule>): Promise<AlertResponse> {
+    try {
+      const rule = this.rules.get(ruleId);
+      if (!rule) {
+        return {
+          success: false,
+          message: 'Rule not found',
+        };
+      }
+
+      // 更新數據庫
+      const { error } = await this.getSupabase()
+        .from('alert_rules')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', ruleId);
+
+      if (error) throw error;
+
+      // 更新內存中的規則
+      const updatedRule = { ...rule, ...updates };
+      this.rules.set(ruleId, updatedRule);
+
+      // 重新啟動評估計時器
+      await this.startEvaluationTimers();
+
+      return {
+        success: true,
+        message: 'Rule updated successfully',
+        data: { rule: updatedRule },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to update rule',
         errors: [error instanceof Error ? error.message : String(error)],
       };
     }

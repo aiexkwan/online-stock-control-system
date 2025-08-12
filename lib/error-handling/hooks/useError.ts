@@ -307,9 +307,12 @@ export function useErrorAnalytics() {
   return analytics;
 }
 
+// Error recovery types
+type RecoveryAction = 'retry' | 'refresh' | 'redirect' | 'clear_cache' | 'logout';
+
 // Error recovery hook
 export function useErrorRecovery() {
-  const executeRecoveryAction = useCallback((action: string) => {
+  const executeRecoveryAction = useCallback((action: RecoveryAction) => {
     switch (action) {
       case 'retry':
         // Handled by individual components
@@ -321,16 +324,16 @@ export function useErrorRecovery() {
         window.location.href = '/';
         break;
       case 'clear_cache':
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && window) {
           if ('caches' in window) {
             caches
               .keys()
               .then(names => {
                 names.forEach(name => caches.delete(name));
               })
-              .then(() => window.location.reload());
+              .then(() => (window as Window).location.reload());
           } else {
-            window.location.reload();
+            (window as Window).location.reload();
           }
         }
         break;
@@ -341,6 +344,7 @@ export function useErrorRecovery() {
         break;
       default:
         console.warn(`Unknown recovery action: ${action}`);
+        break;
     }
   }, []);
 

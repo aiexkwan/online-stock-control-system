@@ -345,7 +345,7 @@ export class RedisCacheAdapter extends BaseCacheAdapter {
       const responseTime = Date.now() - startTime;
       this.updateMetrics(responseTime);
 
-      return results.map(result => {
+      return results.map((result: string | null) => {
         if (result) {
           this.metrics.hits++;
           return JSON.parse(result);

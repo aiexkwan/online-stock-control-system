@@ -8,17 +8,21 @@ import { GraphQLContext } from './index';
 export const operationsResolvers: IResolvers = {
   Transfer: {
     pallet: async (parent, _args, context: GraphQLContext) => {
-      return context.loaders.pallet.load(parent.plt_num || parent.pltNum);
+      const palletNumber = parent.plt_num || parent.pltNum;
+      if (!palletNumber) return null;
+      return context.loaders.pallet.load(palletNumber);
     },
 
     requestedBy: async (parent, _args, context: GraphQLContext) => {
-      if (!parent.requested_by && !parent.requestedBy) return null;
-      return context.loaders.user.load(parent.requested_by || parent.requestedBy);
+      const userId = parent.requested_by || parent.requestedBy;
+      if (!userId) return null;
+      return context.loaders.user.load(userId);
     },
 
     executedBy: async (parent, _args, context: GraphQLContext) => {
-      if (!parent.executed_by && !parent.executedBy) return null;
-      return context.loaders.user.load(parent.executed_by || parent.executedBy);
+      const userId = parent.executed_by || parent.executedBy;
+      if (!userId) return null;
+      return context.loaders.user.load(userId);
     },
   },
 
@@ -43,8 +47,11 @@ export const operationsResolvers: IResolvers = {
         throw new Error('Unified operations loader not initialized');
       }
 
+      const parsedDateRange = dateRange ? JSON.parse(dateRange) : null;
       return context.loaders.unifiedOperations.load({
         warehouse,
+        startDate: parsedDateRange?.start || new Date().toISOString(),
+        endDate: parsedDateRange?.end || new Date().toISOString(),
         dateRange,
       });
     },
@@ -56,9 +63,12 @@ export const operationsResolvers: IResolvers = {
         throw new Error('Work level loader not initialized');
       }
 
+      const dateStr = date.toISOString().split('T')[0];
       return context.loaders.workLevel.load({
         userId,
-        date: date.toISOString().split('T')[0], // Convert to YYYY-MM-DD
+        departmentId: 'default',
+        startDate: dateStr,
+        endDate: dateStr,
       });
     },
 
@@ -88,7 +98,9 @@ export const operationsResolvers: IResolvers = {
           for (const date of dates) {
             const workLevel = await context.loaders.workLevel.load({
               userId,
-              date,
+              departmentId: 'default',
+              startDate: date,
+              endDate: date,
             });
             if (workLevel) {
               results.push(workLevel);

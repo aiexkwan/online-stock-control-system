@@ -1,7 +1,6 @@
 {
   "extends": [
-    "next/core-web-vitals",
-    "plugin:storybook/recommended"
+    "next/core-web-vitals"
   ],
   "parser": "@typescript-eslint/parser",
   "plugins": ["@typescript-eslint"],
@@ -12,6 +11,23 @@
   "overrides": [
     {
       "files": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off"
+      }
+    },
+    {
+      "files": [
+        "types/generated/**/*.ts",
+        "**/*.d.ts",
+        "**/vitest.setup.ts",
+        "**/__tests__/**/*.ts",
+        "**/__tests__/**/*.tsx",
+        "**/**/handlers.ts",
+        "types/external/unknown-handlers.ts",
+        "types/database/helpers.ts",
+        "scripts/**/*.ts",
+        "supabase/functions/**/*.ts"
+      ],
       "rules": {
         "@typescript-eslint/no-explicit-any": "off"
       }

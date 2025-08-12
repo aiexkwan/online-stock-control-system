@@ -11,6 +11,7 @@ import React from 'react';
 
 // Core Types
 export type * from './types';
+import type { ErrorFallbackProps } from './types';
 
 // Constants
 export * from './constants';
@@ -103,12 +104,12 @@ export class ErrorHandlingUtils {
           component: componentName,
           action: 'render',
         },
-        fallback: options?.fallback,
+        fallback: options?.fallback as React.ComponentType<ErrorFallbackProps> | undefined,
         isolationLevel: options?.isolationLevel || 'component',
         children: React.createElement(Component, props),
       };
 
-      return React.createElement(ErrorBoundary, boundaryProps as ErrorBoundaryProps);
+      return React.createElement(ErrorBoundary, boundaryProps);
     };
   }
 

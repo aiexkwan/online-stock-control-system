@@ -25,7 +25,7 @@ export enum AlertStatus {
   DISMISSED = 'dismissed',
 }
 
-// ===== Widget 相關枚舉 =====
+// ===== Card 相關枚舉 =====
 // WidgetType 已移至 types/components/dashboard.ts 以避免重複定義
 // 請從該文件導入 WidgetType
 

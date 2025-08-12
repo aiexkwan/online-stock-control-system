@@ -11,6 +11,7 @@ import type { Json } from './supabase-generated';
 export interface SupplierData {
   supplier_code: string;
   supplier_name: string;
+  [key: string]: Json | undefined;
 }
 
 /**
@@ -22,8 +23,9 @@ export interface SupplierData {
  */
 export interface RpcSearchSupplierResponse {
   exists: boolean;
-  supplier?: SupplierData;
-  normalized_code?: string;
+  supplier?: SupplierData | undefined;
+  normalized_code?: string | undefined;
+  [key: string]: Json | undefined;
 }
 
 /**
@@ -35,8 +37,9 @@ export interface RpcSearchSupplierResponse {
  */
 export interface RpcSupplierMutationResponse {
   success: boolean;
-  supplier?: SupplierData;
-  error?: string;
+  supplier?: SupplierData | undefined;
+  error?: string | undefined;
+  [key: string]: Json | undefined;
 }
 
 /**

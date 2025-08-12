@@ -9,7 +9,7 @@ import { useFormValidation } from './modules/useFormValidation';
 import { useClockConfirmation, type PrintEvent } from './modules/useClockConfirmation';
 import { useAcoManagement } from './modules/useAcoManagement';
 import { useSlateManagement } from './modules/useSlateManagement';
-import { usePdfGeneration } from './modules/usePdfGeneration';
+import { usePdfGeneration } from '@/app/(app)/admin/hooks/usePdfGeneration';
 import { useStreamingPdfGeneration } from './modules/useStreamingPdfGeneration';
 // Using Server Actions for database operations
 import { createQcDatabaseEntriesWithTransaction } from '@/app/actions/qcActions';
@@ -86,7 +86,7 @@ export const useQcLabelBusiness = ({
 
   const { generatePdfs, printPdfs } = usePdfGeneration();
   const { generatePdfsStream, streamingStatus, cancelStreaming } = useStreamingPdfGeneration();
-  const { updateStockAndWorkLevels, updateAcoOrderStatus, clearCache } = useStockUpdates();
+  const { updateStockAndWorkLevels, updateAcoOrderStatus } = useStockUpdates();
 
   // State for preventing duplicate submissions
   const [isProcessing, setIsProcessing] = useState(false);
@@ -135,9 +135,6 @@ export const useQcLabelBusiness = ({
       // Set processing state
       setIsProcessing(true);
       setCooldownTimer();
-
-      // 清除緩存
-      await clearCache();
 
       // 驗證基本表單數據
       const { isValid, errors } = validateForm();
@@ -221,7 +218,7 @@ export const useQcLabelBusiness = ({
             },
             historyRecord: {
               time: currentTime,
-              id: clockNumber,
+              id: parseInt(clockNumber),
               action: 'Create new pallet',
               plt_num: sortedPalletNumbers[i],
               loc: 'AWAITING AREA',
@@ -459,7 +456,6 @@ export const useQcLabelBusiness = ({
       onProductInfoReset,
       checkCooldownPeriod,
       setCooldownTimer,
-      clearCache,
       validateForm,
       generatePdfs,
       generatePdfsStream,
