@@ -4,5 +4,8 @@
       "main": true
     }
   },
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "installCommand": "npm install --force",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev"
 }
