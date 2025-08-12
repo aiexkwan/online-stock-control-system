@@ -10,6 +10,19 @@
 /coverage
 /coverage-lib
 /performance-reports
+__tests__/
+e2e/
+test-results/
+*.spec.ts
+*.spec.tsx
+*.test.ts
+*.test.tsx
+jest.config.*
+jest.setup.*
+jest-dom.d.ts
+playwright.config.*
+vitest.config.*
+vitest.setup.*
 
 # next.js
 /.next/
