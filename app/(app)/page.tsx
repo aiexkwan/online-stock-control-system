@@ -1,6 +1,15 @@
-import { redirect } from 'next/navigation';
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
-  // 直接重定向到登入頁面
-  redirect('/main-login');
+  const router = useRouter();
+  
+  useEffect(() => {
+    // 客戶端重定向到登入頁面
+    router.push('/main-login');
+  }, [router]);
+  
+  return null;
 }
