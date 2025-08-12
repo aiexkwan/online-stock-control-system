@@ -8,18 +8,18 @@ const nextConfig = {
     maxInactiveAge: 25 * 1000,
     pagesBufferLength: 2,
   },
+  // TypeScript 和 ESLint 配置 - 生產環境不應忽略錯誤
   typescript: {
-    ignoreBuildErrors: true,
+    // 在生產環境中強制類型檢查
+    ignoreBuildErrors: false,
   },
   eslint: {
-    // 暫時忽略 ESLint 錯誤以完成構建
-    ignoreDuringBuilds: true,
+    // 在生產環境中強制 ESLint 檢查
+    ignoreDuringBuilds: false,
   },
   experimental: {
     optimizeCss: false,
   },
-  // Next.js 15 更新的設定名稱
-  serverExternalPackages: [],
   // webpack 配置 - 根據搜索結果嘅最佳實踐
   webpack: (config, { isServer, dev }) => {
     // 根據官方建議添加 fallbacks 來解決 Node.js polyfills 問題

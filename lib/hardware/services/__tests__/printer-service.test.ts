@@ -166,13 +166,7 @@ describe('DefaultPrinterService', () => {
       expect(URL.createObjectURL).toHaveBeenCalledWith(data.pdfBlob);
     });
 
-    it('should print QC label via API when no blob provided', async () => {
-      const mockBlob = new Blob(['pdf-content'], { type: 'application/pdf' });
-      (global.fetch as jest.Mock).mockResolvedValue({
-        ok: true,
-        blob: jest.fn().mockResolvedValue(mockBlob)
-      });
-
+    it('should throw error when no blob provided (legacy API removed)', async () => {
       const job: PrintJob = {
         type: 'qc-label',
         data: {
@@ -183,38 +177,11 @@ describe('DefaultPrinterService', () => {
         priority: 'normal'
       };
 
-      // Mock the triggerPrint method to avoid iframe complications
-      // @ts-expect-error - Accessing private method for testing
-      jest.spyOn(service, 'triggerPrint').mockResolvedValue(undefined);
-
-      const result = await service.print(job);
-
-      expect(result.success).toBe(true);
-      expect(fetch).toHaveBeenCalledWith('/api/print-label-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(job.data)
-      });
+      await expect(service.print(job)).rejects.toThrow(
+        'PDF blob is required for printing. Legacy Puppeteer API has been removed. Please use React PDF generation instead.'
+      );
     });
 
-    it('should handle QC label API errors', async () => {
-      (global.fetch as jest.Mock).mockResolvedValue({
-        ok: false,
-        statusText: 'Internal Server Error'
-      });
-
-      const job: PrintJob = {
-        type: 'qc-label',
-        data: { productCode: 'TEST001' },
-        copies: 1,
-        priority: 'normal'
-      };
-
-      const result = await service.print(job);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('Print failed: Internal Server Error');
-    });
   });
 
   describe('Print Operations - GRN Label', () => {

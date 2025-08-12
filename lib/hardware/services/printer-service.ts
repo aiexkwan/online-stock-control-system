@@ -201,29 +201,11 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
           message: 'QC label printed successfully',
         };
       } else {
-        // Legacy API call if no blob provided
-        const response = await fetch('/api/print-label-pdf', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(job.data),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Print failed: ${response.statusText}`);
-        }
-
-        const pdfBlob = await response.blob();
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-
-        // Trigger actual print dialog
-        await this.triggerPrint(pdfUrl, job.copies);
-
-        return {
-          success: true,
-          jobId: job.id!,
-          pdfUrl,
-          printedAt: new Date().toISOString(),
-        };
+        // Generate PDF using React PDF if no blob provided
+        throw new Error(
+          'PDF blob is required for printing. Legacy Puppeteer API has been removed. ' +
+          'Please use React PDF generation instead.'
+        );
       }
     } catch (error) {
       throw error;
