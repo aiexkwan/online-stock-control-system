@@ -482,6 +482,26 @@ export async function analyzeOrderPDF(
     let tokensUsed: number = 0;
     let extractedText: string = '';
 
+    // 調用內部 API - 修復 URL 構建邏輯
+    function getApiBaseUrl(): string {
+      // 優先使用 VERCEL_URL (生產環境)
+      if (process.env.VERCEL_URL) {
+        const url = process.env.VERCEL_URL;
+        return url.startsWith('https://') ? url : `https://${url}`;
+      }
+      
+      // 備用：NEXT_PUBLIC_APP_URL
+      if (process.env.NEXT_PUBLIC_APP_URL) {
+        return process.env.NEXT_PUBLIC_APP_URL;
+      }
+      
+      // 本地開發
+      return 'http://localhost:3000';
+    }
+    
+    const baseUrl = getApiBaseUrl();
+    const apiUrl = `${baseUrl}/api/pdf-extract`;
+
     // 使用 API Route 提取服務（避免 Server Components 兼容性問題）
     if (useEnhancedExtraction) {
       try {
@@ -492,26 +512,6 @@ export async function analyzeOrderPDF(
         const blob = new Blob([fileData.buffer], { type: 'application/pdf' });
         formData.append('file', blob, fileData.name);
         formData.append('fileName', fileData.name);
-
-        // 調用內部 API - 修復 URL 構建邏輯
-        function getApiBaseUrl(): string {
-          // 優先使用 VERCEL_URL (生產環境)
-          if (process.env.VERCEL_URL) {
-            const url = process.env.VERCEL_URL;
-            return url.startsWith('https://') ? url : `https://${url}`;
-          }
-          
-          // 備用：NEXT_PUBLIC_APP_URL
-          if (process.env.NEXT_PUBLIC_APP_URL) {
-            return process.env.NEXT_PUBLIC_APP_URL;
-          }
-          
-          // 本地開發
-          return 'http://localhost:3000';
-        }
-        
-        const baseUrl = getApiBaseUrl();
-        const apiUrl = `${baseUrl}/api/pdf-extract`;
         
         console.log('[analyzeOrderPDF] Making API request to:', apiUrl);
         
