@@ -4,8 +4,6 @@ import { createClient } from '@/app/utils/supabase/server';
 import { DatabaseRecord } from '@/types/database/tables';
 import type { Database } from '@/types/database/supabase';
 import { getErrorMessage } from '@/types/core/error';
-import { AssistantService } from '@/app/services/assistantService';
-import { SYSTEM_PROMPT } from '@/lib/openai-assistant-config';
 import { EnhancedOrderExtractionService } from '@/app/services/enhancedOrderExtractionService';
 import { sendOrderCreatedEmail } from '../services/emailService';
 import * as crypto from 'crypto';
@@ -484,24 +482,13 @@ export async function analyzeOrderPDF(
     let tokensUsed: number = 0;
     let extractedText: string = '';
 
-    // 嘗試使用增強的提取服務 (通過 API Route)
+    // 嘗試使用增強的提取服務 (直接調用)
     if (useEnhancedExtraction) {
       try {
-        console.log('[analyzeOrderPDF] Using enhanced extraction via API');
+        console.log('[analyzeOrderPDF] Using enhanced extraction service directly');
         
-        // 創建 FormData 發送到 API
-        const formData = new FormData();
-        const blob = new Blob([fileData.buffer], { type: 'application/pdf' });
-        formData.append('file', blob, fileData.name);
-        formData.append('fileName', fileData.name);
-
-        // 調用 PDF 提取 API
-        const response = await fetch('/api/pdf-extract', {
-          method: 'POST',
-          body: formData,
-        });
-
-        const enhancedResult = await response.json();
+        const enhancedService = EnhancedOrderExtractionService.getInstance();
+        const enhancedResult = await enhancedService.extractOrderFromPDF(fileData.buffer, fileData.name);
 
         if (enhancedResult.success && enhancedResult.data) {
 
@@ -514,7 +501,7 @@ export async function analyzeOrderPDF(
             products: enhancedResult.data.products,
           };
 
-          extractionMethod = enhancedResult.metadata?.method || 'pdf-api';
+          extractionMethod = enhancedResult.extractionMethod || 'pdf-direct';
           tokensUsed = enhancedResult.metadata?.tokensUsed || Math.ceil(fileData.buffer.byteLength / 4);
           
           console.log('[analyzeOrderPDF] Enhanced extraction successful:', {
@@ -533,91 +520,13 @@ export async function analyzeOrderPDF(
       }
     }
 
-    // Fallback: 使用原有的 Assistant API
-    if (!useEnhancedExtraction) {
-      console.log('[analyzeOrderPDF] Using Assistant API (fallback)');
-      
-      let threadId: string | undefined;
-      let fileId: string | undefined;
-      
-      try {
-        // 獲取 Assistant 服務
-        const assistantService = AssistantService.getInstance();
-
-        // 獲取或創建 Assistant
-        const assistantId = await assistantService.getAssistant();
-
-        // 創建 Thread
-        threadId = await assistantService.createThread();
-
-        // 上傳文件到 OpenAI
-        const pdfBuffer = Buffer.from(fileData.buffer);
-        fileId = await assistantService.uploadFile(pdfBuffer, fileData.name);
-
-        // 發送消息並附加文件
-        await assistantService.sendMessage(threadId, SYSTEM_PROMPT, fileId);
-
-        // 運行 Assistant 並等待結果
-        const result = await assistantService.runAndWait(threadId, assistantId);
-        extractedText = result; // 保存用於存儲
-
-        // 解析結果
-        const parsedData = assistantService.parseAssistantResponse(result);
-        
-        // 嘗試從原始響應提取額外資訊
-        let accountNum = '-';
-        let deliveryAdd = '-';
-        let invoiceTo = '-';
-        let customerRef = '-';
-        
-        try {
-          let cleanedResult = result;
-          const codeBlockMatch = result.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-          if (codeBlockMatch) {
-            cleanedResult = codeBlockMatch[1].trim();
-          }
-          
-          const rawParsed = JSON.parse(cleanedResult);
-          if (rawParsed.orders && Array.isArray(rawParsed.orders) && rawParsed.orders.length > 0) {
-            const firstOrder = rawParsed.orders[0];
-            accountNum = firstOrder.account_num || '-';
-            deliveryAdd = firstOrder.delivery_add || '-';
-          }
-        } catch (rawParseError) {
-          console.warn('[analyzeOrderPDF] Could not extract extra fields, using defaults');
-        }
-        
-        // 構建訂單數據
-        orderData = {
-          order_ref: parsedData.order_ref || '',
-          account_num: accountNum,
-          delivery_add: deliveryAdd,
-          invoice_to: invoiceTo,
-          customer_ref: customerRef,
-          products: parsedData.products.map(product => ({
-            product_code: product.product_code,
-            product_desc: product.description || '',
-            product_qty: product.quantity,
-            weight: 0,
-            unit_price: product.unit_price?.toString() || '0',
-          })),
-        };
-        
-        extractionMethod = 'assistant-api';
-        tokensUsed = Math.ceil(fileData.buffer.byteLength / 4);
-        
-        // 清理資源
-        await assistantService.cleanup(threadId, fileId).catch(error => {
-          console.error('[analyzeOrderPDF] Cleanup failed:', error);
-        });
-      } catch (assistantError) {
-        // 清理資源
-        if (threadId || fileId) {
-          const assistantService = AssistantService.getInstance();
-          await assistantService.cleanup(threadId, fileId).catch(() => {});
-        }
-        throw assistantError;
-      }
+    // 增強提取失敗，不再使用 Assistant API fallback (地區限制問題)
+    if (!useEnhancedExtraction || !orderData) {
+      console.error('[analyzeOrderPDF] Enhanced extraction failed and Assistant API fallback is disabled due to regional restrictions');
+      return {
+        success: false,
+        error: 'PDF extraction failed. Enhanced extraction service failed and Assistant API is unavailable due to Vercel regional restrictions (403 error).',
+      };
     }
 
     // 確保 orderData 已被賦值

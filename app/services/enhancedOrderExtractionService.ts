@@ -6,9 +6,7 @@
 
 import { PDFExtractionService, ExtractedPDFData } from './pdfExtractionService';
 import { ChatCompletionService, OrderExtractionResult } from './chatCompletionService';
-import { AssistantService } from './assistantService';
 import { systemLogger } from '@/lib/logger';
-import { SYSTEM_PROMPT } from '@/lib/openai-assistant-config';
 
 export interface EnhancedExtractionResult {
   success: boolean;
@@ -41,12 +39,10 @@ export class EnhancedOrderExtractionService {
   private static instance: EnhancedOrderExtractionService;
   private pdfService: PDFExtractionService;
   private chatService: ChatCompletionService;
-  private assistantService: AssistantService;
 
   private constructor() {
     this.pdfService = PDFExtractionService.getInstance();
     this.chatService = ChatCompletionService.getInstance();
-    this.assistantService = AssistantService.getInstance();
   }
 
   public static getInstance(): EnhancedOrderExtractionService {

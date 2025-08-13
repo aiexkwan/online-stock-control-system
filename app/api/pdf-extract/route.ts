@@ -5,6 +5,7 @@
  */
 
 export const runtime = 'nodejs';
+export const preferredRegion = ['lhr1', 'dub1', 'fra1']; // EU/UK 地區優先
 
 import { NextRequest, NextResponse } from 'next/server';
 import { EnhancedOrderExtractionService } from '@/app/services/enhancedOrderExtractionService';

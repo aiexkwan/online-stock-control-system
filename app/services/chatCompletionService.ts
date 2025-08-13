@@ -38,7 +38,13 @@ export class ChatCompletionService {
     if (!apiKey) {
       throw new Error('OPENAI_API_KEY is not configured');
     }
-    this.openai = new OpenAI({ apiKey });
+    
+    // 配置 OpenAI 客戶端，支援 EU 端點
+    this.openai = new OpenAI({ 
+      apiKey,
+      // 如果啟用 EU Data Residency，使用歐盟端點
+      baseURL: process.env.OPENAI_EU_ENDPOINT || 'https://api.openai.com/v1',
+    });
   }
 
   public static getInstance(): ChatCompletionService {
