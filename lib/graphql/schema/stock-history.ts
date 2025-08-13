@@ -14,7 +14,7 @@ type StockHistoryRecord {
   location: String
   fromLocation: String
   toLocation: String
-  operator: User!
+  operator: User
   operatorName: String! # Denormalized for performance
   quantity: Int
   remark: String

@@ -140,11 +140,16 @@ export async function batchQuery<T extends Record<string, unknown> = Record<stri
     return keys.map(() => null);
   }
 
-  // Create a map for O(1) lookup
-  const dataMap = new Map(data?.map((item: unknown) => [(item as Record<string, unknown>)[column] as string, item as T]) || []);
+  // Create a map for O(1) lookup - handle both string and number keys
+  const dataMap = new Map(data?.map((item: unknown) => {
+    const keyValue = (item as Record<string, unknown>)[column];
+    // Convert both number and string keys to string for consistent lookup
+    const normalizedKey = String(keyValue);
+    return [normalizedKey, item as T];
+  }) || []);
 
-  // Return in the same order as keys
-  return keys.map(key => dataMap.get(key) || null);
+  // Return in the same order as keys - ensure keys are strings for lookup
+  return keys.map(key => dataMap.get(String(key)) || null);
 }
 
 /**
@@ -413,11 +418,11 @@ export async function createDataLoaderContext(): Promise<DataLoaderContext> {
       pallet: createSimpleLoader<Pallet>(supabase, 'record_palletinfo', 'plt_num'),
       inventory: createSimpleLoader<Inventory>(supabase, 'record_inventory', 'product_code'),
       user: createSimpleLoader<User>(supabase, 'data_id', 'id'),
-      location: createSimpleLoader<Location>(supabase, 'locations', 'code'),
-      order: createSimpleLoader<Order>(supabase, 'data_order', 'order_number'),
-      transfer: createSimpleLoader<Transfer>(supabase, 'record_transfer', 'id'),
-      customer: createSimpleLoader<Customer>(supabase, 'customers', 'code'),
-      supplier: createSimpleLoader<Supplier>(supabase, 'data_supplier', 'code'),
+      location: createSimpleLoader<Location>(supabase, 'work_level', 'id'), // 修正：work_level 表用 id 欄位
+      order: createSimpleLoader<Order>(supabase, 'data_order', 'order_ref'), // 修正：使用 order_ref 而不是 order_number  
+      transfer: createSimpleLoader<Transfer>(supabase, 'record_transfer', 'uuid'), // 修正：使用 uuid 而不是 id
+      customer: createSimpleLoader<Customer>(supabase, 'data_order', 'customer_ref'), // 修正：使用 customer_ref
+      supplier: createSimpleLoader<Supplier>(supabase, 'data_supplier', 'supplier_code'), // 修正：使用正確的欄位名
       // Pallet specific loaders
       palletByPlateSeries: createPalletBySeriesLoader(supabase),
       userByName: createUserByNameLoader(supabase),

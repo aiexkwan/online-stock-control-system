@@ -232,7 +232,7 @@ export class StockHistoryDataLoader {
                   location: record.loc,
                   remark: record.remark,
                   operatorId: record.id,
-                  operatorName: operatorMap.get(record.id) || 'Unknown',
+                  operatorName: operatorMap.get(record.id) || '',
                   productCode: productCode,
                   description: productInfo?.description || '',
                   chineseDescription: null, // Field not available in database

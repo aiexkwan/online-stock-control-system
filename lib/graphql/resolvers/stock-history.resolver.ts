@@ -116,13 +116,30 @@ export const stockHistoryResolvers: IResolvers<unknown, GraphQLContext> = {
   // Type Resolvers - Optimized with DataLoader
   StockHistoryRecord: {
     pallet: async (parent: StockHistoryRecord, _args: unknown, context: GraphQLContext) => {
-      return context.loaders.pallet?.load(parent.palletNumber) || null;
+      try {
+        if (!parent.palletNumber) return null;
+        const pallet = await context.loaders.pallet?.load(parent.palletNumber);
+        // Handle DataLoader errors gracefully
+        if (pallet instanceof Error) {
+          console.warn(`DataLoader error loading pallet '${parent.palletNumber}':`, pallet.message);
+          return null;
+        }
+        return pallet || null;
+      } catch (error) {
+        console.warn(`Could not load pallet '${parent.palletNumber}':`, error);
+        return null;
+      }
     },
     
     product: async (parent: StockHistoryRecord, _args: unknown, context: GraphQLContext) => {
       try {
         if (!parent.productCode) return null;
         const product = await context.loaders.product?.load(parent.productCode);
+        // Handle DataLoader errors gracefully
+        if (product instanceof Error) {
+          console.warn(`DataLoader error loading product '${parent.productCode}':`, product.message);
+          return null;
+        }
         return product || null;
       } catch (error) {
         console.warn(`Could not load product ${parent.productCode}:`, error);
@@ -135,19 +152,52 @@ export const stockHistoryResolvers: IResolvers<unknown, GraphQLContext> = {
       
       // Try ID first, fallback to name lookup
       if (parent.operatorId) {
-        return context.loaders.user?.load(String(parent.operatorId)) || null;
+        try {
+          const user = await context.loaders.user?.load(String(parent.operatorId));
+          // Handle DataLoader errors gracefully
+          if (user instanceof Error) {
+            console.warn(`DataLoader error loading user by ID '${parent.operatorId}':`, user.message);
+            return null;
+          }
+          return user || null;
+        } catch (error) {
+          console.warn(`Could not load user by ID '${parent.operatorId}':`, error);
+          return null;
+        }
       }
       
-      // Name-based lookup through batch loader
-      if (parent.operatorName) {
-        return context.loaders.userByName?.load(parent.operatorName) || null;
+      // Name-based lookup through batch loader - but skip placeholder values
+      if (parent.operatorName && !['Unknown', 'N/A', 'NULL', 'null', ''].includes(parent.operatorName)) {
+        try {
+          const user = await context.loaders.userByName?.load(parent.operatorName);
+          // Handle DataLoader errors gracefully
+          if (user instanceof Error) {
+            console.warn(`DataLoader error loading user by name '${parent.operatorName}':`, user.message);
+            return null;
+          }
+          return user || null;
+        } catch (error) {
+          console.warn(`Could not load user by name '${parent.operatorName}':`, error);
+          return null;
+        }
       }
       return null;
     },
     
     transfer: async (parent: StockHistoryRecord, _args: unknown, context: GraphQLContext) => {
-      if (!parent.transferId) return null;
-      return context.loaders.transfer?.load(parent.transferId) || null;
+      try {
+        if (!parent.transferId) return null;
+        const transfer = await context.loaders.transfer?.load(parent.transferId);
+        // Handle DataLoader errors gracefully
+        if (transfer instanceof Error) {
+          console.warn(`DataLoader error loading transfer '${parent.transferId}':`, transfer.message);
+          return null;
+        }
+        return transfer || null;
+      } catch (error) {
+        console.warn(`Could not load transfer '${parent.transferId}':`, error);
+        return null;
+      }
     },
     
     actionType: (parent: StockHistoryRecord) => {

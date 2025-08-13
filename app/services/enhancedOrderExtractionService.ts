@@ -107,10 +107,20 @@ export class EnhancedOrderExtractionService {
         result = await this.chatService.retryWithFallbackModel(processedText, extractedData);
       }
 
-      // 步驟 6: 最後的 fallback - 使用原有的 Assistant API
+      // 步驟 6: 如果所有 Chat API 方法都失敗
       if (result.orders.length === 0) {
-        systemLogger.warn('[EnhancedOrderExtraction] All Chat API methods failed, falling back to Assistant API');
-        return await this.fallbackToAssistantAPI(fileBuffer, fileName);
+        systemLogger.error('[EnhancedOrderExtraction] All PDF extraction methods failed');
+        return {
+          success: false,
+          extractionMethod: 'failed',
+          metadata: {
+            productsExtracted: 0,
+            pagesProcessed: extractedData.numPages,
+            processingTime: Date.now() - startTime,
+            fallbackUsed: false,
+          },
+          error: 'Failed to extract any products from PDF using all available methods',
+        };
       }
 
       // 轉換結果格式
@@ -132,8 +142,18 @@ export class EnhancedOrderExtractionService {
         fileName,
       }, '[EnhancedOrderExtraction] Extraction failed');
 
-      // 嘗試 Assistant API 作為最後手段
-      return await this.fallbackToAssistantAPI(fileBuffer, fileName);
+      // 不再使用 Assistant API fallback（地區限制問題）
+      return {
+        success: false,
+        extractionMethod: 'failed',
+        metadata: {
+          productsExtracted: 0,
+          pagesProcessed: 0,
+          processingTime: Date.now() - Date.now(),
+          fallbackUsed: false,
+        },
+        error: `PDF extraction failed: ${errorMessage}`,
+      };
     }
   }
 
@@ -199,91 +219,29 @@ export class EnhancedOrderExtractionService {
   }
 
   /**
-   * Fallback 到 Assistant API
+   * Fallback 到 Assistant API - 已停用（地區限制）
    */
   private async fallbackToAssistantAPI(
     fileBuffer: ArrayBuffer,
     fileName: string
   ): Promise<EnhancedExtractionResult> {
-    const startTime = Date.now();
-    let threadId: string | undefined;
-    let fileId: string | undefined;
+    // Assistant API 在 Vercel 某些部署地區被限制，直接返回失敗
+    systemLogger.warn({
+      fileName,
+      reason: 'regional_restrictions'
+    }, '[EnhancedOrderExtraction] Assistant API fallback skipped due to 403 regional restrictions');
 
-    try {
-      systemLogger.info('[EnhancedOrderExtraction] Using Assistant API as fallback');
-
-      // 獲取 Assistant
-      const assistantId = await this.assistantService.getAssistant();
-      
-      // 創建 Thread
-      threadId = await this.assistantService.createThread();
-      
-      // 上傳文件
-      const pdfBuffer = Buffer.from(fileBuffer);
-      fileId = await this.assistantService.uploadFile(pdfBuffer, fileName);
-      
-      // 發送消息
-      await this.assistantService.sendMessage(threadId, SYSTEM_PROMPT, fileId);
-      
-      // 運行並等待結果
-      const result = await this.assistantService.runAndWait(threadId, assistantId);
-      
-      // 解析結果
-      const parsedData = this.assistantService.parseAssistantResponse(result);
-      
-      // 清理資源
-      await this.assistantService.cleanup(threadId, fileId);
-      
-      // 構建返回結果
-      const products = parsedData.products.map(product => ({
-        product_code: product.product_code,
-        product_desc: product.description || '',
-        product_qty: product.quantity,
-        weight: 0,
-        unit_price: product.unit_price?.toString() || '0',
-      }));
-
-      return {
-        success: true,
-        data: {
-          order_ref: parsedData.order_ref || '',
-          account_num: '-',
-          delivery_add: '-',
-          invoice_to: '-',
-          customer_ref: '-',
-          products,
-        },
-        extractionMethod: 'assistant-fallback',
-        metadata: {
-          productsExtracted: products.length,
-          pagesProcessed: 0, // Assistant API 不提供頁數信息
-          processingTime: Date.now() - startTime,
-          fallbackUsed: true,
-        },
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      systemLogger.error({
-        error: errorMessage,
-      }, '[EnhancedOrderExtraction] Assistant API fallback also failed');
-
-      // 清理資源
-      if (threadId || fileId) {
-        await this.assistantService.cleanup(threadId, fileId).catch(() => {});
-      }
-
-      return {
-        success: false,
-        extractionMethod: 'failed',
-        metadata: {
-          productsExtracted: 0,
-          pagesProcessed: 0,
-          processingTime: Date.now() - startTime,
-          fallbackUsed: true,
-        },
-        error: `All extraction methods failed: ${errorMessage}`,
-      };
-    }
+    return {
+      success: false,
+      extractionMethod: 'failed',
+      metadata: {
+        productsExtracted: 0,
+        pagesProcessed: 0,
+        processingTime: 0,
+        fallbackUsed: true,
+      },
+      error: 'Assistant API unavailable due to Vercel regional restrictions (403 error). System relies on Chat Completions API only.',
+    };
   }
 
   /**
