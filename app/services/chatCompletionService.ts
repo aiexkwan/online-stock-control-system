@@ -224,7 +224,7 @@ export class ChatCompletionService {
         product_code: String(order.product_code || ''),
         product_desc: String(order.product_desc || ''),
         product_qty: parseInt(String(order.product_qty)) || 1,
-        weight: order.weight ? parseFloat(String(order.weight)) : undefined,
+        weight: undefined,
         unit_price: order.unit_price ? String(order.unit_price) : undefined,
       }));
       

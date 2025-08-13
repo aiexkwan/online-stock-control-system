@@ -1,0 +1,49 @@
+# Ignore build outputs
+.next/
+dist/
+build/
+out/
+
+# Ignore test directories
+__tests__/
+test/
+tests/
+**/test/
+**/__tests__/
+
+# Ignore scripts directory
+scripts/
+**/scripts/
+
+# Ignore backend
+backend/
+
+# Ignore Supabase functions
+supabase/
+
+# Ignore configuration files
+*.config.js
+*.config.ts
+vitest.config.ts
+playwright.config.ts
+playwright.a11y.config.ts
+playwright.performance.config.ts
+
+# Ignore generated files
+types/generated/
+**/generated/
+
+# Ignore node_modules
+node_modules/
+
+# Ignore coverage reports
+coverage/
+
+# Ignore test results
+test-results/
+playwright-report/
+reports/
+
+# Ignore temporary files
+.turbo/
+.cache/

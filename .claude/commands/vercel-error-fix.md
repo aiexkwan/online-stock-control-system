@@ -10,3 +10,4 @@
 - [Code Reviewer](../agents/code-reviewer.md)
 - [Error Dective](../agents/error-detective.md)
 - [Debugger](../agents/debugger.md)
+- [Dep-Engineer](../agents/deployment-engineer.md)
