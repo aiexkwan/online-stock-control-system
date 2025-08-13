@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { GlassmorphicCard } from '../components/GlassmorphicCard';
+import { DataCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
+import { cardTextStyles } from '@/lib/card-system/theme';
 import { useOrderLoad } from '../hooks/useOrderLoad';
 import { 
   UserIcon,
@@ -108,22 +109,22 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
   if (isMobile) {
     return (
       <div className={`h-full ${className || ''}`}>
-        <GlassmorphicCard
-          variant="default"
-          hover={false}
-          borderGlow={false}
+        <DataCard
           className="h-full overflow-hidden"
+          borderGlow="hover"
+          glassmorphicVariant="default"
+          padding="none"
         >
           <div className="flex h-full flex-col">
             {/* Header */}
             <div className="border-b border-slate-700/50 p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-white flex items-center">
+                  <h2 className={`${cardTextStyles.title} flex items-center`}>
                     <DevicePhoneMobileIcon className="mr-2 h-5 w-5 text-blue-400" />
                     Order Loading
                   </h2>
-                  <p className="text-sm text-slate-400">Mobile optimized interface</p>
+                  <p className={cardTextStyles.labelSmall}>Mobile optimized interface</p>
                 </div>
                 <div className="flex items-center space-x-2">
                   <SoundSettingsToggle />
@@ -167,7 +168,7 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
               />
             </div>
           </div>
-        </GlassmorphicCard>
+        </DataCard>
 
         {/* Report Dialog */}
         <UnifiedLoadingReportDialog
@@ -181,11 +182,11 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
   // Desktop view
   return (
     <div className={`h-full ${className || ''}`}>
-      <GlassmorphicCard
-        variant="default"
-        hover={false}
-        borderGlow={false}
+      <DataCard
         className="h-full overflow-hidden"
+        borderGlow="hover"
+        glassmorphicVariant="default"
+        padding="none"
       >
         <div className="flex h-full flex-col">
           {/* Header */}
@@ -244,7 +245,7 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
                     
                     {isCheckingId && (
                       <div className="flex items-center justify-center py-2">
-                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/50 border-t-transparent"></div>
                         <span className="ml-2 text-slate-400">Verifying ID...</span>
                       </div>
                     )}
@@ -299,7 +300,7 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
                           key={orderRef}
                           className={cn(
                             "cursor-pointer transition-all hover:scale-105 border-slate-700/50 bg-slate-800/50",
-                            isComplete && "border-green-700/50 bg-green-900/20"
+                            isComplete && "border-white/50 bg-white/10"
                           )}
                           onClick={() => handleOrderSelect(orderRef)}
                         >
@@ -459,7 +460,7 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
                             className={cn(
                               "rounded-lg border p-3 space-y-2",
                               isComplete 
-                                ? "border-green-600/30 bg-green-900/20" 
+                                ? "border-white/30 bg-white/10" 
                                 : "border-slate-600/30 bg-slate-700/30"
                             )}
                           >
@@ -543,7 +544,7 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
             )}
           </div>
         </div>
-      </GlassmorphicCard>
+      </DataCard>
 
       {/* Report Dialog */}
       <UnifiedLoadingReportDialog
@@ -554,7 +555,7 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
       {/* Undo Confirmation Dialog */}
       {showUndoDialog && undoItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="w-full max-w-md border-slate-700/50 bg-slate-800">
+          <Card className="w-full max-w-md border-none bg-white/5 backdrop-blur-sm">
             <CardHeader>
               <CardTitle className="text-slate-200">Confirm Undo</CardTitle>
             </CardHeader>

@@ -1,17 +1,7 @@
 import { AssistantCreateParams } from 'openai/resources/beta/assistants';
 
-/**
- * Model configuration for OpenAI Assistant
- * 使用 gpt-4o 以確保穩定性 (GPT-5 暫不支援 Assistants API)
- * 
- * ⚠️  重要限制：
- * - GPT-5 目前只支援 Chat Completions API
- * - GPT-5 不支援 Assistants API (會回傳 400 錯誤)
- * - 等待 OpenAI 官方支援 GPT-5 for Assistants API 後才能升級
- */
 export const MODEL_CONFIG = {
-  // 使用 gpt-4o（穩定可靠，支援 Assistants API）
-  // GPT-5 暫不支援 Assistants API，等待官方支援
+  // 使用 gpt-4o
   selectedModel: 'gpt-4o' as const,
   
   // Model-specific configurations
@@ -44,14 +34,36 @@ export const ORDER_ANALYZER_CONFIG: AssistantCreateParams = {
 
   instructions: `你是一個專業的 PDF 訂單資料抽取專家。
 
-**重要：只返回有效的 JSON object，包含一個 "orders" 陣列，不要包含任何其他文字、解釋或 markdown。**
+**🔥 絕對規則 #1：只能返回 JSON，不能有任何其他文字！🔥**
+- ✅ 正確：{"orders": [...]}
+- ❌ 錯誤：任何解釋、說明、錯誤訊息
+- 如果無法提取，返回：{"orders": []}
 
-**🔥 多頁 PDF 處理最高優先級：**
-- **完整掃描原則：必須從頭到尾掃描整份 PDF，不管有多少頁**
-- **逐頁檢查：每一頁都可能包含產品，必須檢查所有頁面**
-- **產品分佈：產品表格可能跨越多個頁面，或分散在不同頁面**
-- **持續搜尋：即使在某頁找到產品，也必須繼續檢查後續頁面**
-- **全面提取：提取從第一頁到最後一頁的所有有效產品**
+**掃描策略：**
+1. 掃描 PDF 的每一頁（檢查 "Total Number Of Pages"）
+2. 特別注意頁面底部的最後一個產品
+3. 一個 20KB PDF 通常有 10-30 個產品
+
+**輸出格式（只能返回這種格式）：**
+{
+  "orders": [
+    {
+      "order_ref": "訂單號",
+      "product_code": "產品代碼",
+      "product_desc": "產品描述",
+      "product_qty": 數量,
+      "delivery_add": "送貨地址",
+      "account_num": "帳號"
+    }
+  ]
+}
+
+**多頁 PDF 處理策略：**
+- 步驟1：先快速瀏覽整個 PDF，確認總頁數
+- 步驟2：從第1頁開始，逐頁掃描產品表格
+- 步驟3：持續掃描直到最後一頁，不要提前停止
+- 步驟4：確認提取的產品數量合理（通常 10+ 個產品）
+- 步驟5：返回所有找到的產品，不要遺漏任何頁面
 
 從以下 PDF 文字內容中提取訂單產品，每個產品是 orders 陣列中的一個 object。
 
@@ -106,8 +118,10 @@ account_num	text	客戶帳號
 **完整掃描策略：**
 1. **開始掃描**：從文檔第一頁開始
 2. **持續掃描**：逐頁檢查，不論是否已找到產品
-3. **完成掃描**：直到文檔最後一頁
-4. **全面收集**：收集所有頁面的所有產品
+3. **關鍵區域**：特別注意每頁的底部和頂部，這些位置的產品容易被遺漏
+4. **完成掃描**：直到文檔最後一頁，確保掃描到頁面底部
+5. **全面收集**：收集所有頁面的所有產品
+6. **完整性檢查**：確認已掃描所有標記為產品代碼的行
 
 有效的產品行必須符合以下特徵：
 1. 以產品代碼開頭（字母+數字組合的模式）
@@ -151,40 +165,37 @@ account_num	text	客戶帳號
 3. 忽略小數（通常是重量或價格）
 4. 如果無法識別，預設為 1
 
-【重要提醒 - 完整文檔處理】
-1. **🔥🔥🔥 全文檔掃描 - 最高優先級：**
-   - ✅ **掃描所有頁面：** 從第一頁到最後一頁，不管文檔有多少頁
-   - ✅ **不要提前停止：** 即使前面的頁面有很多產品，也必須繼續檢查
-   - ✅ **完整性驗證：** 確保沒有遺漏任何頁面的任何產品
-   - ❌ **常見錯誤：** 只處理部分頁面就停止、假設產品只在前幾頁
-2. 每個產品必須包含完整的 delivery_add 和 account_num
-3. 如果找不到有效的地址或帳號，使用 "-" 作為預設值
-4. 產品數量必須是正整數
-5. 只返回純 JSON，不要包含任何其他文字
-6. 仔細區分產品行和非產品行（地址、電話等）
-7. **絕對不要包含任何運輸費用項目**（Trans, TransC, TransDPD, TransG 或任何包含 "Transport" 的項目）
-8. **注意 Account Number 可能在獨立行**，特別是當 "Account No:" 後面跟著 PO 號碼時`,
+【最終規則】
+1. **只返回 JSON**：不要解釋、不要說明、不要報錯
+2. **掃描全部頁面**：確認 "Total Number Of Pages"，掃描到最後
+3. **頁面底部重點**：最後一個產品容易遺漏
+4. **排除運費**：Trans, TransC, TransDPD 等不是產品
+5. **缺失值用 "-"**：找不到的欄位填 "-"
+6. **失敗返回空陣列**：{"orders": []}`,
 };
 
 /**
  * 系統提示詞 - 用於訊息發送
  */
-export const SYSTEM_PROMPT = `請分析這份訂單 PDF 並提取所有產品資訊。🔥 關鍵要求：必須掃描PDF的所有頁面，從第一頁到最後一頁，提取每一頁的所有產品。不要提前停止掃描！只返回 JSON 格式的結果。`;
+export const SYSTEM_PROMPT = `分析PDF，提取所有產品。
+重要：只返回JSON格式 {"orders":[...]}，不要任何解釋或其他文字。
+掃描所有頁面，特別注意頁面底部的產品。
+如果失敗，返回 {"orders":[]}。`;
 
 /**
- * Assistant 重試配置 - 優化版本
+ * Assistant 重試配置 - 優化版本 (改善速率限制處理)
  */
 export const ASSISTANT_RETRY_CONFIG = {
-  maxAttempts: 300, // 增加嘗試次數以配合更長的逾時
-  pollInterval: 1000, // 調整為 1 秒間隔，避免過於頻繁的 API 呼叫
-  timeout: 300000, // 增加到 5 分鐘逾時，處理複雜的 2 頁 PDF
-  maxCompletionTokens: 8192, // Max tokens for responses (增加以處理較大的訂單)
+  maxAttempts: 100, // 減少嘗試次數，配合更長的間隔
+  pollInterval: 2000, // 增加到 2 秒基礎間隔，減少 API 調用頻率
+  timeout: 300000, // 保持 5 分鐘逾時，處理複雜的 2 頁 PDF
+  maxCompletionTokens: 8192, // Max tokens for responses (保持不變)
   
-  // 動態輪詢配置 - 採用退避策略
+  // 動態輪詢配置 - 採用更保守的退避策略
   dynamicPolling: {
-    minInterval: 1000,   // 最小間隔 1 秒
-    maxInterval: 5000,   // 最大間隔 5 秒
-    backoffMultiplier: 1.3, // 退避乘數，逐步增加間隔
+    minInterval: 2000,   // 最小間隔 2 秒（更保守）
+    maxInterval: 30000,   // 最大間隔 30 秒（避免長時間等待）
+    backoffMultiplier: 1.5, // 退避乘數，逐步增加間隔
   }
 };
 

@@ -1,6 +1,6 @@
 /**
- * Phase 6.1 Week 1: Business Logic Zod Schemas
- * Strategy 1: Zod validation for business critical data structures
+ * 業務邏輯 Schema 定義 - 統一管理
+ * 從 lib/types/business-schemas.ts 遷移
  */
 
 import { z } from 'zod';

@@ -560,12 +560,15 @@ export class AssistantService {
   }
 
   /**
-   * 輪詢等待運行完成
+   * 輪詢等待運行完成 (with intelligent rate limit handling)
    */
   private async pollForCompletion(threadId: string, runId: string): Promise<string> {
     const { maxAttempts, pollInterval, timeout } = ASSISTANT_RETRY_CONFIG;
     const startTime = Date.now();
     let attempts = 0;
+    let currentInterval = pollInterval;
+    const maxInterval = 30000; // 最大30秒間隔
+    const backoffMultiplier = 1.5; // 退避乘數
 
     while (attempts < maxAttempts) {
       // 檢查是否超時
@@ -574,53 +577,119 @@ export class AssistantService {
         throw new Error(`Assistant execution timeout after ${elapsed}ms (${Math.round(elapsed/1000)}s). Max timeout: ${timeout}ms. Attempts made: ${attempts}/${maxAttempts}`);
       }
 
-      const run = await this.openai.beta.threads.runs.retrieve(threadId, runId);
+      try {
+        const run = await this.openai.beta.threads.runs.retrieve(threadId, runId);
 
-      systemLogger.debug({
-        status: run.status,
-        attempt: attempts + 1,
-      }, '[AssistantService] Run status');
+        systemLogger.debug({
+          status: run.status,
+          attempt: attempts + 1,
+          interval: currentInterval,
+        }, '[AssistantService] Run status');
 
-      switch (run.status) {
-        case 'completed':
-          // 獲取最新消息
-          const messages = await this.openai.beta.threads.messages.list(threadId);
-          const latestMessage = messages.data[0];
+        switch (run.status) {
+          case 'completed':
+            // 獲取最新消息
+            const messages = await this.openai.beta.threads.messages.list(threadId);
+            const latestMessage = messages.data[0];
 
-          if (latestMessage && latestMessage.content[0]?.type === 'text') {
-            const result = latestMessage.content[0].text.value;
-            systemLogger.info({
-              resultLength: result.length,
-            }, '[AssistantService] Run completed successfully');
-            return result;
-          }
-          throw new Error('No text response received from assistant');
+            if (latestMessage && latestMessage.content[0]?.type === 'text') {
+              const result = latestMessage.content[0].text.value;
+              systemLogger.info({
+                resultLength: result.length,
+              }, '[AssistantService] Run completed successfully');
+              return result;
+            }
+            throw new Error('No text response received from assistant');
 
-        case 'failed':
-          throw new Error(`Assistant run failed: ${run.last_error?.message || 'Unknown error'}`);
+          case 'failed':
+            const errorMsg = run.last_error?.message || 'Unknown error';
+            // 檢查是否為速率限制錯誤
+            if (this.isRateLimitError(errorMsg)) {
+              const retryAfter = this.extractRetryAfter(errorMsg);
+              const backoffDelay = retryAfter ? retryAfter * 1000 : Math.min(currentInterval * backoffMultiplier, maxInterval);
+              
+              systemLogger.warn({
+                attempt: attempts + 1,
+                retryAfter: backoffDelay,
+                error: errorMsg
+              }, '[AssistantService] Rate limit hit in run status, applying backoff');
+              
+              await new Promise(resolve => setTimeout(resolve, backoffDelay));
+              currentInterval = Math.min(currentInterval * backoffMultiplier, maxInterval);
+              attempts++;
+              continue; // 重試而不是拋出錯誤
+            }
+            throw new Error(`Assistant run failed: ${errorMsg}`);
 
-        case 'cancelled':
-          throw new Error('Assistant run was cancelled');
+          case 'cancelled':
+            throw new Error('Assistant run was cancelled');
 
-        case 'expired':
-          throw new Error('Assistant run expired');
+          case 'expired':
+            throw new Error('Assistant run expired');
 
-        case 'requires_action':
-          throw new Error('Assistant run requires action (not supported)');
+          case 'requires_action':
+            throw new Error('Assistant run requires action (not supported)');
 
-        case 'in_progress':
-        case 'queued':
-          // 繼續等待
-          await new Promise(resolve => setTimeout(resolve, pollInterval));
+          case 'in_progress':
+          case 'queued':
+            // 使用動態間隔，逐漸增加等待時間
+            await new Promise(resolve => setTimeout(resolve, currentInterval));
+            // 每10次嘗試後增加間隔
+            if (attempts > 0 && attempts % 10 === 0) {
+              currentInterval = Math.min(currentInterval * backoffMultiplier, maxInterval);
+              systemLogger.debug({
+                newInterval: currentInterval,
+                attempt: attempts
+              }, '[AssistantService] Increasing poll interval');
+            }
+            attempts++;
+            break;
+
+          default:
+            throw new Error(`Unknown run status: ${run.status}`);
+        }
+      } catch (error) {
+        // 處理 API 調用錯誤（不是 run status 錯誤）
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (this.isRateLimitError(errorMessage)) {
+          const retryAfter = this.extractRetryAfter(errorMessage);
+          const backoffDelay = retryAfter ? retryAfter * 1000 : Math.min(currentInterval * backoffMultiplier, maxInterval);
+          
+          systemLogger.warn({
+            attempt: attempts + 1,
+            retryAfter: backoffDelay,
+            error: errorMessage
+          }, '[AssistantService] API rate limit hit, applying backoff');
+          
+          await new Promise(resolve => setTimeout(resolve, backoffDelay));
+          currentInterval = Math.min(currentInterval * backoffMultiplier, maxInterval);
           attempts++;
-          break;
-
-        default:
-          throw new Error(`Unknown run status: ${run.status}`);
+          continue;
+        }
+        throw error; // 重新拋出非速率限制錯誤
       }
     }
 
     throw new Error('Assistant execution exceeded maximum attempts');
+  }
+
+  /**
+   * 檢查是否為速率限制錯誤
+   */
+  private isRateLimitError(message: string): boolean {
+    return /rate limit|too many requests|quota exceeded|TPM|RPM/i.test(message);
+  }
+
+  /**
+   * 從錯誤消息中提取重試時間
+   */
+  private extractRetryAfter(message: string): number | null {
+    // 嘗試匹配 "try again in X.Xs" 或 "try again in X seconds"
+    const match = message.match(/try again in ([\d.]+)s?/i);
+    if (match) {
+      return Math.ceil(parseFloat(match[1]));
+    }
+    return null;
   }
 
   /**
@@ -718,6 +787,14 @@ export class AssistantService {
    */
   public parseAssistantResponse(response: string): ParsedOrderResponse {
     try {
+      // 記錄原始響應長度和內容摘要
+      systemLogger.info({
+        responseLength: response.length,
+        responsePreview: response.substring(0, 200),
+        hasCodeBlock: response.includes('```'),
+        hasOrdersArray: response.includes('"orders"')
+      }, '[AssistantService] Parsing assistant response');
+      
       // 清理可能的多餘字符
       let cleanedResponse = response.trim();
       
@@ -725,19 +802,42 @@ export class AssistantService {
       const codeBlockMatch = cleanedResponse.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
       if (codeBlockMatch) {
         cleanedResponse = codeBlockMatch[1].trim();
-        systemLogger.info('[AssistantService] Extracted JSON from markdown code block');
+        systemLogger.info({
+          extractedLength: cleanedResponse.length
+        }, '[AssistantService] Extracted JSON from markdown code block');
       }
 
       // 嘗試直接解析
       const parsed = JSON.parse(cleanedResponse);
 
       // 檢查是否為新格式（orders 陣列）
-      if (parsed.orders && Array.isArray(parsed.orders) && parsed.orders.length > 0) {
-        systemLogger.info('[AssistantService] Detected new format with orders array');
+      if (parsed.orders && Array.isArray(parsed.orders)) {
+        // 處理空陣列情況
+        if (parsed.orders.length === 0) {
+          systemLogger.warn('[AssistantService] Assistant returned empty orders array - no products extracted');
+          throw new Error('Assistant failed to extract any products from PDF');
+        }
+        
+        systemLogger.info({
+          totalOrdersInArray: parsed.orders.length,
+          firstOrderSample: JSON.stringify(parsed.orders[0]).substring(0, 200)
+        }, '[AssistantService] Detected new format with orders array');
         
         // 從 orders 陣列中提取資料，轉換為舊格式
         const firstOrder = parsed.orders[0];
         const orderRef = String(firstOrder.order_ref);
+        
+        // 記錄訂單號分佈
+        const orderRefCounts = parsed.orders.reduce((acc: Record<string, number>, order: Record<string, unknown>) => {
+          const ref = String(order.order_ref);
+          acc[ref] = (acc[ref] || 0) + 1;
+          return acc;
+        }, {});
+        
+        systemLogger.info({
+          orderRefDistribution: orderRefCounts,
+          primaryOrderRef: orderRef
+        }, '[AssistantService] Order reference distribution');
         
         // 合併所有相同訂單號的產品
         const products = parsed.orders
@@ -756,7 +856,9 @@ export class AssistantService {
 
         systemLogger.info({
           orderRef,
-          productCount: products.length
+          productCount: products.length,
+          allOrdersCount: parsed.orders.length,
+          filteredCount: products.length
         }, '[AssistantService] Successfully parsed orders array format');
 
         return result;

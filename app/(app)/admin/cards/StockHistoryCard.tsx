@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,8 @@ import {
   Users
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { GlassmorphicCard } from '../components/GlassmorphicCard';
+import { AnalysisCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
+import { cardTextStyles, cardChartColors } from '@/lib/card-system/theme';
 import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
 import { SearchInput } from '../components/shared';
 import { useStockHistoryGraphQL, type StockHistoryRecord, type ProductInfo, type PalletHistoryResult, type SinglePalletHistoryResult } from '../hooks/useStockHistoryGraphQL';
@@ -80,11 +81,16 @@ export function StockHistoryCard({
 
 
   return (
-    <div className="h-full bg-transparent">
+    <AnalysisCard
+      className="h-full"
+      borderGlow="hover"
+      glassmorphicVariant="default"
+      padding="none"
+    >
       {/* Simplified Header */}
       <div className="p-4 border-b border-gray-700/50">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold flex items-center gap-2 text-white">
+          <h3 className={`${cardTextStyles.title} flex items-center gap-2`}>
             <Package className="h-5 w-5" />
             Stock History
           </h3>
@@ -94,7 +100,7 @@ export function StockHistoryCard({
       
       <div className="p-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-gray-900/30 backdrop-blur-sm">
+          <TabsList className="grid w-full grid-cols-2 bg-white/5 backdrop-blur-sm">
             <TabsTrigger value="stock" className="data-[state=active]:bg-blue-600/30">
               <Search className="h-4 w-4 mr-2" />
               Stock Search
@@ -107,13 +113,7 @@ export function StockHistoryCard({
           
           {/* Stock Search Tab */}
           <TabsContent value="stock" className="space-y-4">
-            <GlassmorphicCard 
-              variant="default"
-              hover={false}
-              borderGlow={false}
-              padding="medium"
-              className="mt-4"
-            >
+            <div className="mt-4 p-4">
               {/* Product Code Input */}
               <SearchInput
                 value={searchTerm}
@@ -124,14 +124,14 @@ export function StockHistoryCard({
                 autoDetect={true}
                 showTypeIndicator={false}
                 isLoading={productHistory.loading}
-                inputClassName="bg-gray-900/30 backdrop-blur-sm border-gray-700/50 text-white placeholder:text-gray-400 focus:ring-1 focus:ring-blue-500/50"
-                buttonClassName="bg-blue-600/20 hover:bg-blue-600/30 backdrop-blur-sm border-blue-500/50 text-white"
+                inputClassName="bg-white/10 backdrop-blur-sm border-none text-white placeholder:text-gray-400 focus:ring-1 focus:ring-white/30"
+                buttonClassName="bg-white/10 hover:bg-white/15 backdrop-blur-sm border-white/30 text-white"
               />
 
 
               {/* Product Info Display (simplified) */}
               {productHistory.data && (
-                <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-700/50 p-4 rounded-lg mt-4">
+                <div className="bg-white/5 backdrop-blur-sm border-none p-4 rounded-lg mt-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Product Code</p>
                     <p className="text-lg font-semibold">{productHistory.data.productCode}</p>
@@ -146,7 +146,7 @@ export function StockHistoryCard({
               {productHistory.data && (
                 <div 
                   ref={tableContainerRef}
-                  className="rounded-md border border-gray-700/50 overflow-auto bg-gray-900/30 backdrop-blur-sm mt-4"
+                  className="rounded-md border-none overflow-auto bg-white/5 backdrop-blur-sm mt-4"
                   style={{ maxHeight: '600px' }}
                 >
                   <Table>
@@ -200,7 +200,7 @@ export function StockHistoryCard({
                       ) : productHistory.data.records.length > 0 ? (
                         <>
                           {productHistory.data.records.map((record: StockHistoryRecord, index: number) => (
-                            <TableRow key={`${record.id}-${index}`} className="border-gray-700/50 hover:bg-gray-800/30">
+                            <TableRow key={`${record.id}-${index}`} className="border-none hover:bg-white/10">
                               <TableCell className="font-mono text-sm text-gray-200">
                                 {utils.formatDate(record.timestamp)}
                               </TableCell>
@@ -252,18 +252,12 @@ export function StockHistoryCard({
                   Enter a product code and click Search to view pallet history
                 </div>
               )}
-            </GlassmorphicCard>
+            </div>
           </TabsContent>
           
           {/* Pallet Search Tab */}
           <TabsContent value="pallet" className="space-y-4">
-            <GlassmorphicCard 
-              variant="default"
-              hover={false}
-              borderGlow={false}
-              padding="medium"
-              className="mt-4"
-            >
+            <div className="mt-4 p-4">
               {/* Pallet Search Input */}
               <SearchInput
                 value={palletSearchTerm}
@@ -276,13 +270,13 @@ export function StockHistoryCard({
                 showQrButton={true}
                 showTypeIndicator={false}
                 isLoading={palletHistory.loading}
-                inputClassName="bg-gray-900/30 backdrop-blur-sm border-gray-700/50 text-white placeholder:text-gray-400 focus:ring-1 focus:ring-blue-500/50"
-                buttonClassName="bg-blue-600/20 hover:bg-blue-600/30 backdrop-blur-sm border-blue-500/50 text-white"
+                inputClassName="bg-white/10 backdrop-blur-sm border-none text-white placeholder:text-gray-400 focus:ring-1 focus:ring-white/30"
+                buttonClassName="bg-white/10 hover:bg-white/15 backdrop-blur-sm border-white/30 text-white"
               />
 
               {/* Pallet Info Panel (simplified) */}
               {palletHistory.data && (
-                <div className="bg-gray-900/30 backdrop-blur-sm border border-gray-700/50 p-4 rounded-lg mt-4">
+                <div className="bg-white/5 backdrop-blur-sm border-none p-4 rounded-lg mt-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Pallet Number</p>
@@ -301,7 +295,7 @@ export function StockHistoryCard({
               {(palletHistory.loading || palletHistory.data) && (
                 <div 
                   ref={palletTableRef}
-                  className="rounded-md border border-gray-700/50 overflow-auto bg-gray-900/30 backdrop-blur-sm mt-4"
+                  className="rounded-md border-none overflow-auto bg-white/5 backdrop-blur-sm mt-4"
                   style={{ maxHeight: '600px' }}
                 >
                   <Table>
@@ -347,7 +341,7 @@ export function StockHistoryCard({
                         ))
                       ) : palletHistory.data?.records && palletHistory.data.records.length > 0 ? (
                         palletHistory.data.records.map((record: StockHistoryRecord, index: number) => (
-                          <TableRow key={`${record.id}-${index}`} className="border-gray-700/50 hover:bg-gray-800/30">
+                          <TableRow key={`${record.id}-${index}`} className="border-none hover:bg-white/10">
                             <TableCell className="font-mono text-sm text-gray-200">
                               {utils.formatDate(record.timestamp)}
                             </TableCell>
@@ -379,7 +373,7 @@ export function StockHistoryCard({
                   Enter a Pallet Number or scan a QR Code to view pallet history
                 </div>
               )}
-            </GlassmorphicCard>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
@@ -391,6 +385,6 @@ export function StockHistoryCard({
         onScan={handleQRScan}
         title="Scan Pallet QR Code"
       />
-    </div>
+    </AnalysisCard>
   );
 }

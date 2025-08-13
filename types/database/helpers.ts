@@ -179,36 +179,6 @@ export function extractCount(response: unknown): number {
 }
 
 /**
- * 枚舉類型守衛和安全轉換函數
+ * Deprecated alert-related functions removed during cleanup (2025-08-13)
+ * Alert system has been permanently removed for security reasons.
  */
-
-// 導入原有枚舉
-import { AlertLevel, AlertCondition } from '@/lib/alerts/types';
-
-// AlertLevel 類型守衛
-export function isAlertLevel(value: unknown): value is AlertLevel {
-  return typeof value === 'string' && Object.values(AlertLevel).includes(value as AlertLevel);
-}
-
-// AlertCondition 類型守衛
-export function isAlertCondition(value: unknown): value is AlertCondition {
-  return (
-    typeof value === 'string' && Object.values(AlertCondition).includes(value as AlertCondition)
-  );
-}
-
-// 安全 AlertLevel 轉換
-export function safeAlertLevel(
-  value: unknown,
-  defaultValue: AlertLevel = AlertLevel.INFO
-): AlertLevel {
-  return isAlertLevel(value) ? value : defaultValue;
-}
-
-// 安全 AlertCondition 轉換
-export function safeAlertCondition(
-  value: unknown,
-  defaultValue: AlertCondition = AlertCondition.GREATER_THAN
-): AlertCondition {
-  return isAlertCondition(value) ? value : defaultValue;
-}

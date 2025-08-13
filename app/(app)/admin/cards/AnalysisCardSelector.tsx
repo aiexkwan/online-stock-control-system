@@ -25,10 +25,27 @@ interface CardProps {
   [key: string]: unknown;
 }
 
-// Removed ID system - now using component names directly
+// Whitelist of allowed components for security
+const ALLOWED_CARDS = [
+  'StockLevelListAndChartCard',
+  'StockHistoryCard',
+  'WorkLevelCard',
+  'VerticalTimelineCard',
+  'UploadCenterCard',
+  'DownloadCenterCard',
+  'PerformanceDashboard',
+  'DataUpdateCard',
+  'DepartInjCard',
+  'DepartPipeCard',
+  'DepartWareCard',
+  'VoidPalletCard',
+  'ChatbotCard',
+] as const;
+
+type AllowedCardType = typeof ALLOWED_CARDS[number];
 
 interface AnalysisCardSelectorProps {
-  selectedCard: string; // 直接使用組件名稱
+  selectedCard: AllowedCardType; // 使用類型安全的組件名稱
   onCardError?: (component: string, error: Error) => void;
   className?: string;
 }
@@ -45,6 +62,12 @@ const DynamicCardLoader: React.FC<{
 
   React.useEffect(() => {
     let isMounted = true;
+
+    // Validate card ID is in whitelist
+    if (!ALLOWED_CARDS.includes(cardId as AllowedCardType)) {
+      setLoadError(new Error(`Unauthorized card type: ${cardId}`));
+      return;
+    }
 
     // Load corresponding Card component based on card ID
     const loadCard = async () => {
@@ -98,13 +121,17 @@ const DynamicCardLoader: React.FC<{
             throw new Error(`No card mapping for: ${cardId}`);
         }
         
-        if (isMounted) {
-          // Handle different export formats
+        if (isMounted && cardModule) {
+          // Handle different export formats with type checking
           const Component = cardModule.default || 
-                          cardModule[cardName] ||
-                          cardModule[Object.keys(cardModule)[0]] ||
-                          Object.values(cardModule)[0];
-          setCardComponent(() => Component as React.ComponentType<unknown>);
+                          (cardName && cardModule[cardName]) ||
+                          null;
+          
+          if (Component && typeof Component === 'function') {
+            setCardComponent(() => Component as React.ComponentType<unknown>);
+          } else {
+            throw new Error(`Invalid component module for ${cardId}`);
+          }
         }
       } catch (error) {
         if (isMounted) {
@@ -439,12 +466,7 @@ export const AnalysisCardSelector: React.FC<AnalysisCardSelectorProps> = ({
       animate='visible'
       variants={containerVariants}
     >
-      {/* Title area */}
-      <div className='mb-4 flex-shrink-0'>
-        <h2 className={cn('text-lg font-bold leading-normal', 'text-foreground')}>
-          {cardConfig.config.name}
-        </h2>
-      </div>
+      {/* Title area - 移除雙重標題，由各Card組件自行處理 */}
 
       {/* Single Card display area - 使用響應式高度，移除多層包裝 */}
       <motion.div className='min-h-0 flex-1' variants={itemVariants}>

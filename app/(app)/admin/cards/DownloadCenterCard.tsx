@@ -6,16 +6,17 @@
 
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, FileText, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
-import { GlassmorphicCard } from '../components/GlassmorphicCard';
+import { ReportCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
+import { cardTextStyles } from '@/lib/card-system/theme';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useQuery } from '@apollo/client';
+import { useLazyQuery } from '@apollo/client';
 import type { DownloadCenterCardProps, DownloadRecord } from '../types/common';
 import { startOfDay, endOfDay } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
@@ -25,8 +26,11 @@ import { extractErrorMessage } from '@/lib/types/api';
 
 // Import GraphQL queries and actions
 import { GRN_OPTIONS_QUERY } from '@/lib/graphql/queries/grnReport.graphql';
+import { 
+  WAREHOUSE_ORDERS_QUERY,
+  type WarehouseOrder
+} from '@/lib/graphql/queries/orderData.graphql';
 import { generateAcoReportExcel, generateGrnReportExcel, generateTransactionReportExcel } from '@/app/actions/DownloadCentre-Actions';
-import { useWarehouseOrders } from '@/lib/hooks/useOrderData';
 import { format } from 'date-fns';
 import { REPORT_TYPES } from '../constants/reportTypes';
 
@@ -74,6 +78,15 @@ export const DownloadCenterCard: React.FC<DownloadCenterCardProps> = ({
   const handleDownloadClick = async (reportId: string) => {
     const report = REPORT_TYPES.find(r => r.id === reportId);
     if (!report || !report.available) return;
+    
+    // Trigger data fetch when user opens dropdown - only then we fetch data
+    if (reportId === 'aco-order') {
+      // Fetch ACO orders on-demand
+      fetchAcoOrders();
+    } else if (reportId === 'grn') {
+      // Fetch GRN options on-demand
+      fetchGrnOptions();
+    }
     
     // Show dropdown overlay for this report type
     setActiveDropdown(reportId);
@@ -173,43 +186,60 @@ export const DownloadCenterCard: React.FC<DownloadCenterCardProps> = ({
     }
   };
 
-  // Fetch options for ACO Orders using standard WarehouseOrders query
-  const { 
-    orders: acoOrders,
-    loading: acoOrdersLoading 
-  } = useWarehouseOrders(
-    // Filter for ACO orders
-    {},
-    // Config
-    {
-      pagination: { limit: 500 },
-      fetchPolicy: activeDropdown === 'aco-order' ? 'cache-and-network' : 'cache-only'
+  // Lazy queries for on-demand data fetching - only when user clicks download
+  const [
+    fetchAcoOrders,
+    { data: acoOrdersData, loading: acoOrdersLoading }
+  ] = useLazyQuery(WAREHOUSE_ORDERS_QUERY, {
+    variables: { input: {} },
+    fetchPolicy: 'cache-first',
+    onError: (error) => {
+      console.error('Failed to fetch ACO orders:', error);
+      toast({
+        title: 'Failed to load orders',
+        description: 'Could not fetch ACO order list. Please try again.',
+        variant: 'destructive',
+      });
     }
-  );
-
-  // Fetch options for GRN
-  const { data: grnOptions } = useQuery(GRN_OPTIONS_QUERY, {
-    variables: { limit: 500 },
-    skip: activeDropdown !== 'grn',
   });
+
+  const [
+    fetchGrnOptions,
+    { data: grnOptionsData, loading: grnOptionsLoading }
+  ] = useLazyQuery(GRN_OPTIONS_QUERY, {
+    variables: { limit: 500 },
+    fetchPolicy: 'cache-first',
+    onError: (error) => {
+      console.error('Failed to fetch GRN options:', error);
+      toast({
+        title: 'Failed to load GRN options',
+        description: 'Could not fetch GRN reference list. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  });
+
+  // Extract data with proper fallbacks
+  const acoOrders = acoOrdersData?.warehouseOrders?.items || [];
+  const grnOptions = grnOptionsData?.grnOptions || [];
 
   return (
     <>
-      <GlassmorphicCard
-        variant='default'
-        hover={false}
+      <ReportCard
+        variant='glass'
+        isHoverable={false}
         borderGlow={false}
         padding='none'
         className={cn("h-full", className)}
       >
       <div className="p-6">
-        <h3 className="text-xl font-semibold text-white mb-4">{title}</h3>
+        <h3 className={cn(cardTextStyles.title, "mb-4")}>{title}</h3>
         <div className="w-full">
         {/* Table header */}
         <div className="grid grid-cols-[1fr,2fr,auto] gap-4 border-b border-slate-600/50 pb-3 mb-4">
-          <div className="text-lg font-medium text-slate-300">Name</div>
-          <div className="text-lg font-medium text-slate-300">Description</div>
-          <div className="text-lg font-medium text-slate-300"></div>
+          <div className={cardTextStyles.body}>Name</div>
+          <div className={cardTextStyles.body}>Description</div>
+          <div className={cardTextStyles.body}></div>
         </div>
 
         {/* Report list */}
@@ -229,16 +259,16 @@ export const DownloadCenterCard: React.FC<DownloadCenterCardProps> = ({
                 {/* Name */}
                 <div className="flex items-center gap-2">
                   <FileText className={cn("h-6 w-6", report.available ? "text-slate-400" : "text-slate-600")} />
-                  <span className={cn("text-lg font-medium", report.available ? "text-white" : "text-slate-500")}>
+                  <span className={cn(cardTextStyles.body, report.available ? "" : "text-slate-500")}>
                     {report.name}
                   </span>
                 </div>
 
                 {/* Description */}
-                <div className={cn("text-lg", report.available ? "text-slate-400" : "text-slate-600")}>
+                <div className={cn(cardTextStyles.bodySmall, report.available ? "text-slate-400" : "text-slate-600")}>
                   {report.description}
                   {!report.available && (
-                    <span className="text-sm text-amber-500 block mt-1">
+                    <span className={cn(cardTextStyles.labelSmall, "text-amber-500 block mt-1")}>
                       (Coming soon)
                     </span>
                   )}
@@ -270,7 +300,7 @@ export const DownloadCenterCard: React.FC<DownloadCenterCardProps> = ({
         </div>
       </div>
       </div>
-      </GlassmorphicCard>
+      </ReportCard>
 
       {/* Full screen overlay dropdown - OriginUI style */}
       <AnimatePresence>
@@ -297,12 +327,12 @@ export const DownloadCenterCard: React.FC<DownloadCenterCardProps> = ({
                 <div className="p-8">
                   <div className="flex items-center justify-between mb-6">
                     <div>
-                      <h3 className="text-2xl font-semibold text-white tracking-tight">
+                      <h3 className={cn(cardTextStyles.title, "text-2xl tracking-tight")}>
                         {activeDropdown === 'aco-order' && 'Select ACO Order'}
                         {activeDropdown === 'grn' && 'Select GRN Reference'}
                         {activeDropdown === 'transfer' && 'Transfer Report'}
                       </h3>
-                      <p className="text-sm text-zinc-400 mt-1">
+                      <p className={cn(cardTextStyles.bodySmall, "text-zinc-400 mt-1")}>
                         {activeDropdown === 'aco-order' && 'Choose an order to generate the report'}
                         {activeDropdown === 'grn' && 'Select a GRN to export all material codes'}
                       </p>
@@ -327,24 +357,35 @@ export const DownloadCenterCard: React.FC<DownloadCenterCardProps> = ({
                           handleSelection('aco-order', value);
                         }}
                       >
-                        <SelectTrigger className="w-full h-12 bg-zinc-800/50 border-zinc-700 text-white hover:bg-zinc-800/70 focus:bg-zinc-800/70 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500/50 transition-all">
-                          <SelectValue placeholder="Choose an ACO order..." />
+                        <SelectTrigger className="w-full h-12 bg-zinc-800/50 border-zinc-700 text-white hover:bg-zinc-800/70 focus:bg-zinc-800/70 focus:ring-2 focus:ring-white/20 focus:border-white/50 transition-all">
+                          <SelectValue placeholder={acoOrdersLoading ? "Loading orders..." : "Choose an ACO order..."} />
                         </SelectTrigger>
                         <SelectContent className="bg-zinc-900/95 backdrop-blur-xl border-zinc-800 max-h-[300px] overflow-y-auto">
-                          {acoOrders?.map((order) => (
-                            <SelectItem 
-                              key={order.orderRef} 
-                              value={order.orderRef}
-                              className="text-zinc-300 hover:text-white hover:bg-zinc-800/50 focus:bg-zinc-800/50 focus:text-white"
-                            >
-                              <div className="flex items-center justify-between w-full">
-                                <span className="font-medium">{order.orderRef}</span>
-                                <span className="text-xs text-zinc-500 ml-2 bg-zinc-800/50 px-2 py-1 rounded">
-                                  {order.status}
-                                </span>
-                              </div>
-                            </SelectItem>
-                          ))}
+                          {acoOrdersLoading ? (
+                            <div className="flex items-center justify-center p-4">
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              <span className="text-zinc-400">Loading orders...</span>
+                            </div>
+                          ) : acoOrders.length === 0 ? (
+                            <div className="flex items-center justify-center p-4">
+                              <span className="text-zinc-500">No orders available</span>
+                            </div>
+                          ) : (
+                            acoOrders.map((order: WarehouseOrder) => (
+                              <SelectItem 
+                                key={order.orderRef} 
+                                value={order.orderRef}
+                                className="text-zinc-300 hover:text-white hover:bg-zinc-800/50 focus:bg-zinc-800/50 focus:text-white"
+                              >
+                                <div className="flex items-center justify-between w-full">
+                                  <span className={cardTextStyles.body}>{order.orderRef}</span>
+                                  <span className={cn(cardTextStyles.labelSmall, "text-zinc-500 ml-2 bg-zinc-800/50 px-2 py-1 rounded")}>
+                                    {order.status}
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
@@ -360,24 +401,35 @@ export const DownloadCenterCard: React.FC<DownloadCenterCardProps> = ({
                           handleSelection('grn', value);
                         }}
                       >
-                        <SelectTrigger className="w-full h-12 bg-zinc-800/50 border-zinc-700 text-white hover:bg-zinc-800/70 focus:bg-zinc-800/70 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500/50 transition-all">
-                          <SelectValue placeholder="Choose a GRN reference..." />
+                        <SelectTrigger className="w-full h-12 bg-zinc-800/50 border-zinc-700 text-white hover:bg-zinc-800/70 focus:bg-zinc-800/70 focus:ring-2 focus:ring-white/20 focus:border-white/50 transition-all">
+                          <SelectValue placeholder={grnOptionsLoading ? "Loading GRN options..." : "Choose a GRN reference..."} />
                         </SelectTrigger>
                         <SelectContent className="bg-zinc-900/95 backdrop-blur-xl border-zinc-800 max-h-[300px] overflow-y-auto">
-                          {grnOptions?.grnOptions?.map((option: { grnRef: string; materialCount: number }) => (
-                            <SelectItem 
-                              key={option.grnRef} 
-                              value={option.grnRef}
-                              className="text-zinc-300 hover:text-white hover:bg-zinc-800/50 focus:bg-zinc-800/50 focus:text-white"
-                            >
-                              <div className="flex items-center justify-between w-full">
-                                <span className="font-medium">{option.grnRef}</span>
-                                <span className="text-xs text-zinc-500 ml-2 bg-zinc-800/50 px-2 py-1 rounded">
-                                  {option.materialCount} materials
-                                </span>
-                              </div>
-                            </SelectItem>
-                          ))}
+                          {grnOptionsLoading ? (
+                            <div className="flex items-center justify-center p-4">
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              <span className="text-zinc-400">Loading GRN options...</span>
+                            </div>
+                          ) : grnOptions.length === 0 ? (
+                            <div className="flex items-center justify-center p-4">
+                              <span className="text-zinc-500">No GRN references available</span>
+                            </div>
+                          ) : (
+                            grnOptions.map((option: { grnRef: string; materialCount: number }) => (
+                              <SelectItem 
+                                key={option.grnRef} 
+                                value={option.grnRef}
+                                className="text-zinc-300 hover:text-white hover:bg-zinc-800/50 focus:bg-zinc-800/50 focus:text-white"
+                              >
+                                <div className="flex items-center justify-between w-full">
+                                  <span className={cardTextStyles.body}>{option.grnRef}</span>
+                                  <span className={cn(cardTextStyles.labelSmall, "text-zinc-500 ml-2 bg-zinc-800/50 px-2 py-1 rounded")}>
+                                    {option.materialCount} materials
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
@@ -505,8 +557,8 @@ export const DownloadCenterCard: React.FC<DownloadCenterCardProps> = ({
                 <div className="absolute inset-0 blur-xl bg-gradient-to-r from-cyan-500/30 to-blue-500/30 rounded-full" />
                 <Loader2 className="h-12 w-12 animate-spin text-cyan-400 relative" />
               </div>
-              <p className="mt-6 text-lg font-medium text-white">Generating report...</p>
-              <p className="mt-2 text-sm text-zinc-400">Please wait while we prepare your download</p>
+              <p className={cn(cardTextStyles.body, "mt-6")}>Generating report...</p>
+              <p className={cn(cardTextStyles.bodySmall, "mt-2 text-zinc-400")}>Please wait while we prepare your download</p>
             </div>
           </motion.div>
         </motion.div>

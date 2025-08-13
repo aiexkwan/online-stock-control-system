@@ -16,7 +16,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CloudArrowUpIcon, DocumentArrowUpIcon, DocumentTextIcon, FolderOpenIcon, CalendarIcon, UserIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
-import { GlassmorphicCard } from '../components/GlassmorphicCard';
+import { DataCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
+import { cardTextStyles, cardChartColors } from '@/lib/card-system/theme';
 
 // Import individual upload components - deleted files
 // import { BaseUploadCard, UploadConfiguration, UploadFile } from './BaseUploadCard';
@@ -89,26 +90,26 @@ export const UploadCenterCard: React.FC<UploadCenterCardProps> = ({
     <div
       key={record.uuid}
       className={cn(
-        "grid grid-cols-3 gap-4 px-3 py-3 hover:bg-gray-700/50 transition-colors rounded",
+        "grid grid-cols-3 gap-4 px-3 py-3 hover:bg-white/10 transition-colors rounded",
         record.doc_url && "cursor-pointer"
       )}
       onClick={() => handlePreviewPDF(record)}
     >
       <div className="flex items-center gap-2">
         <CalendarIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
-        <p className="text-sm text-gray-300">
+        <p className={cardTextStyles.bodySmall}>
           {format(new Date(record.created_at), 'yyyy-MM-dd HH:mm')}
         </p>
       </div>
       <div className="flex items-center gap-2">
         <DocumentTextIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
-        <p className="text-sm text-gray-300 truncate" title={record.doc_name}>
+        <p className={cn(cardTextStyles.bodySmall, "truncate")} title={record.doc_name}>
           {record.doc_name}
         </p>
       </div>
       <div className="flex items-center gap-2">
         <UserIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
-        <p className="text-sm text-gray-300 truncate">
+        <p className={cn(cardTextStyles.bodySmall, "truncate")}>
           {record.upload_by_name}
         </p>
       </div>
@@ -153,15 +154,15 @@ export const UploadCenterCard: React.FC<UploadCenterCardProps> = ({
     return (
       <div className={cn('flex flex-col h-full p-4', className)}>
         <div className="flex items-center gap-2 mb-2">
-          <Icon className="h-5 w-5 text-white/70" />
-          <h3 className="text-sm font-medium text-white">{title}</h3>
+          <Icon className="h-5 w-5 text-green-400" />
+          <h3 className={cardTextStyles.bodySmall}>{title}</h3>
         </div>
-        <p className="text-xs text-gray-400 mb-4">{description}</p>
+        <p className={cardTextStyles.labelSmall}>{description}</p>
         
         <div
           className={cn(
             'flex-1 border-2 border-dashed rounded-lg transition-all flex flex-col items-center justify-center cursor-pointer',
-            isDragging ? 'border-blue-500 bg-blue-500/10' : 'border-gray-600 hover:border-gray-500',
+            isDragging ? 'border-white/50 bg-white/10' : 'border-gray-600 hover:border-gray-500',
             isEditMode && 'opacity-50 cursor-not-allowed'
           )}
           onDragOver={handleDragOver}
@@ -191,18 +192,17 @@ export const UploadCenterCard: React.FC<UploadCenterCardProps> = ({
     <div className={cn('h-full flex gap-4', className)} style={{ height: height || '100%' }}>
           {/* Left side: Upload records list (wider) */}
           <div className="flex-1 h-full">
-            <GlassmorphicCard 
-              variant="default"
-              hover={false}
-              borderGlow={false}
-              padding="none"
+            <DataCard
               className="h-full flex flex-col"
+              borderGlow="hover"
+              glassmorphicVariant="default"
+              padding="none"
             >
               <div className="pb-3 flex-shrink-0 p-4 border-b border-gray-700/50">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-white">Upload Records</h3>
-                    <p className="text-xs text-gray-400">Recent file upload records</p>
+                    <h3 className={cardTextStyles.title}>Upload Records</h3>
+                    <p className={cardTextStyles.labelSmall}>Recent file upload records</p>
                   </div>
                   <Button
                     variant="outline"
@@ -216,7 +216,7 @@ export const UploadCenterCard: React.FC<UploadCenterCardProps> = ({
               </div>
               <div className="p-0 flex-1 min-h-0 flex flex-col">
                 {/* Fixed Header */}
-                <div className="grid grid-cols-3 gap-4 px-3 py-2 border-b border-gray-700 bg-gray-800/50 text-sm font-medium text-gray-400">
+                <div className="grid grid-cols-3 gap-4 px-3 py-2 border-none bg-white/5 backdrop-blur-sm text-sm font-medium text-gray-400">
                   <div className="flex items-center gap-2">
                     <CalendarIcon className="h-4 w-4" />
                     <span>Upload Time</span>
@@ -251,20 +251,24 @@ export const UploadCenterCard: React.FC<UploadCenterCardProps> = ({
                   )}
                 </ScrollArea>
               </div>
-            </GlassmorphicCard>
+            </DataCard>
           </div>
 
           {/* Right side: Three upload areas (vertical layout, narrower) */}
           <div className="w-96 flex flex-col gap-4 h-full">
             {/* Order PDF Upload */}
-            <div className="flex-1 flex flex-col min-h-0 relative rounded-lg overflow-hidden bg-transparent backdrop-blur-[10px] border border-white/20 shadow-[0_8px_32px_0_rgba(31,38,135,0.37)]">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-white/10 pointer-events-none" />
+            <DataCard
+              className="flex-1 flex flex-col min-h-0"
+              borderGlow="hover"
+              glassmorphicVariant="subtle"
+              padding="none"
+            >
               <BaseUploadCard
                 title="Order PDF"
                 description="Upload PDF file for order processing"
                 icon={DocumentArrowUpIcon}
                 height="100%"
-                className="!bg-transparent !border-0 !shadow-none [&>div]:!bg-transparent [&>div]:!border-0 [&>div]:!shadow-none [&_*]:!text-white [&_.text-muted-foreground]:!text-gray-400 [&_.text-xs]:!text-gray-400 [&_.border-dashed]:!border-gray-600"
+                className="relative z-10"
                 uploadConfig={{
                   accept: '.pdf',
                   maxSize: 10 * 1024 * 1024,
@@ -278,17 +282,21 @@ export const UploadCenterCard: React.FC<UploadCenterCardProps> = ({
                 isEditMode={isEditMode}
                 onUpload={handleOrderPDFUpload}
               />
-            </div>
+            </DataCard>
             
             {/* Product Spec Files Upload */}
-            <div className="flex-1 flex flex-col min-h-0 relative rounded-lg overflow-hidden bg-transparent backdrop-blur-[10px] border border-white/20 shadow-[0_8px_32px_0_rgba(31,38,135,0.37)]">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-white/10 pointer-events-none" />
+            <DataCard
+              className="flex-1 flex flex-col min-h-0"
+              borderGlow="hover"
+              glassmorphicVariant="subtle"
+              padding="none"
+            >
               <BaseUploadCard
                 title="Product Spec Files"
                 description="Upload spec files in Excel or PDF format"
                 icon={FolderOpenIcon}
                 height="100%"
-                className="!bg-transparent !border-0 !shadow-none [&>div]:!bg-transparent [&>div]:!border-0 [&>div]:!shadow-none [&_*]:!text-white [&_.text-muted-foreground]:!text-gray-400 [&_.text-xs]:!text-gray-400 [&_.border-dashed]:!border-gray-600"
+                className="relative z-10"
                 uploadConfig={{
                   accept: '.xls,.xlsx,.pdf',
                   maxSize: 10 * 1024 * 1024,
@@ -301,22 +309,26 @@ export const UploadCenterCard: React.FC<UploadCenterCardProps> = ({
                 isEditMode={isEditMode}
                 onUpload={handleSpecFilesUpload}
               />
-            </div>
+            </DataCard>
             
             {/* Others Upload */}
-            <div className="flex-1 flex flex-col min-h-0 relative rounded-lg overflow-hidden bg-transparent backdrop-blur-[10px] border border-white/20 shadow-[0_8px_32px_0_rgba(31,38,135,0.37)]">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-white/10 pointer-events-none" />
+            <DataCard
+              className="flex-1 flex flex-col min-h-0"
+              borderGlow="hover"
+              glassmorphicVariant="subtle"
+              padding="none"
+            >
               <BaseUploadCard
                 title="Others"
                 description="Drop files here or click to upload"
                 icon={CloudArrowUpIcon}
                 height="100%"
-                className="!bg-transparent !border-0 !shadow-none [&>div]:!bg-transparent [&>div]:!border-0 [&>div]:!shadow-none [&_*]:!text-white [&_.text-muted-foreground]:!text-gray-400 [&_.text-xs]:!text-gray-400 [&_.border-dashed]:!border-gray-600"
+                className="relative z-10"
                 uploadConfig={othersUploadConfig}
                 isEditMode={isEditMode}
                 onUpload={handleOthersUpload}
               />
-            </div>
+            </DataCard>
           </div>
           
           {/* Upload Progress Overlay - Using StatusOverlay */}

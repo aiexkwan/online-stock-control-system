@@ -7,7 +7,8 @@ import {
   Package, ClipboardList, TrendingUp, Search, Calendar, Truck, 
   AlertTriangle, RefreshCw, HelpCircle, ChevronDown, ChevronUp
 } from 'lucide-react';
-import { GlassmorphicCard } from '../components/GlassmorphicCard';
+import { SpecialCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
+import { cardTextStyles } from '@/lib/card-system/theme';
 import { cn } from '@/lib/utils';
 import type { AIResponse, AIListItem, AITableRow, ChatMessage, ChatbotCardProps } from '../types/ai-response';
 import { useAuth } from '@/app/hooks/useAuth';
@@ -49,7 +50,7 @@ const renderAIResponse = (response: AIResponse): React.ReactNode => {
       const listData = response.data as AIListItem[];
       return (
         <div className="space-y-3">
-          {response.summary && <p className="text-sm mb-2">{response.summary}</p>}
+          {response.summary && <p className={cn(cardTextStyles.body, "mb-2")}>{response.summary}</p>}
           <div className="space-y-2">
             {listData.map((item, index) => (
               <div key={index} className="flex items-start gap-2">
@@ -59,7 +60,7 @@ const renderAIResponse = (response: AIResponse): React.ReactNode => {
                   </span>
                 )}
                 <div className="flex-1">
-                  <span className="font-medium">{item.label}</span>
+                  <span className={cn(cardTextStyles.body, "font-semibold")}>{item.label}</span>
                   {item.value && (
                     <span className="ml-2 text-purple-300">
                       - {typeof item.value === 'number' ? item.value.toLocaleString() : item.value}
@@ -67,14 +68,14 @@ const renderAIResponse = (response: AIResponse): React.ReactNode => {
                     </span>
                   )}
                   {item.description && (
-                    <p className="text-xs text-slate-400 mt-1">{item.description}</p>
+                    <p className={cn(cardTextStyles.labelSmall, "text-slate-400 mt-1")}>{item.description}</p>
                   )}
                 </div>
               </div>
             ))}
           </div>
           {response.conclusion && (
-            <p className="text-sm mt-3 pt-2 border-t border-slate-700/50">
+            <p className={cn(cardTextStyles.body, "mt-3 pt-2 border-t border-slate-700/50")}>
               {response.conclusion}
             </p>
           )}
@@ -86,7 +87,7 @@ const renderAIResponse = (response: AIResponse): React.ReactNode => {
       const columns = response.columns || [];
       return (
         <div className="space-y-3">
-          {response.summary && <p className="text-sm mb-2">{response.summary}</p>}
+          {response.summary && <p className={cn(cardTextStyles.body, "mb-2")}>{response.summary}</p>}
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -126,7 +127,7 @@ const renderAIResponse = (response: AIResponse): React.ReactNode => {
             </table>
           </div>
           {response.conclusion && (
-            <p className="text-sm mt-3">{response.conclusion}</p>
+            <p className={cn(cardTextStyles.body, "mt-3")}>{response.conclusion}</p>
           )}
         </div>
       );
@@ -134,11 +135,11 @@ const renderAIResponse = (response: AIResponse): React.ReactNode => {
     case 'single':
       return (
         <div className="space-y-2">
-          {response.summary && <p className="text-sm">{response.summary}</p>}
+          {response.summary && <p className={cn(cardTextStyles.body)}>{response.summary}</p>}
           <div className="text-2xl font-bold text-purple-400">
             {String(response.data)}
           </div>
-          {response.conclusion && <p className="text-sm text-slate-400">{response.conclusion}</p>}
+          {response.conclusion && <p className={cn(cardTextStyles.body, "text-slate-400")}>{response.conclusion}</p>}
         </div>
       );
 
@@ -146,11 +147,11 @@ const renderAIResponse = (response: AIResponse): React.ReactNode => {
       return (
         <div className="text-center py-4">
           <AlertCircle className="h-8 w-8 text-slate-500 mx-auto mb-2" />
-          <p className="text-sm text-slate-400">
+          <p className={cn(cardTextStyles.body, "text-slate-400")}>
             {response.summary || 'No data found'}
           </p>
           {response.conclusion && (
-            <p className="text-xs text-slate-500 mt-2">{response.conclusion}</p>
+            <p className={cn(cardTextStyles.labelSmall, "text-slate-500 mt-2")}>{response.conclusion}</p>
           )}
         </div>
       );
@@ -159,9 +160,9 @@ const renderAIResponse = (response: AIResponse): React.ReactNode => {
     default:
       return (
         <div className="space-y-2">
-          {response.summary && <p className="text-sm">{response.summary}</p>}
+          {response.summary && <p className={cn(cardTextStyles.body)}>{response.summary}</p>}
           {response.data && (
-            <p className="text-sm">
+            <p className={cn(cardTextStyles.body)}>
               {typeof response.data === 'string' 
                 ? response.data
                 : typeof response.data === 'number' 
@@ -172,7 +173,7 @@ const renderAIResponse = (response: AIResponse): React.ReactNode => {
             </p>
           )}
           {response.conclusion && (
-            <p className="text-sm text-slate-400 mt-2">{response.conclusion}</p>
+            <p className={cn(cardTextStyles.body, "text-slate-400 mt-2")}>{response.conclusion}</p>
           )}
         </div>
       );
@@ -186,17 +187,17 @@ const EnhancedErrorDisplay: React.FC<{ error: EnhancedError; onRetry: () => void
       <div className="flex items-start gap-3">
         <AlertCircle className='mt-0.5 h-5 w-5 flex-shrink-0 text-red-400' />
         <div className="flex-1">
-          <h4 className='font-medium text-red-400'>{error.message}</h4>
+          <h4 className={cn(cardTextStyles.body, "font-semibold text-red-400")}>{error.message}</h4>
           {error.details && <p className='mt-1 text-sm text-slate-400'>{error.details}</p>}
         </div>
       </div>
 
       {error.alternatives && error.alternatives.length > 0 && (
-        <div className='rounded-lg bg-slate-800/50 p-3'>
+        <div className='rounded-lg bg-white/5 backdrop-blur-sm p-3'>
           <p className='mb-2 text-sm text-slate-300'>Did you mean:</p>
           <div className='flex flex-wrap gap-2'>
             {error.alternatives.map((alt, i) => (
-              <code key={i} className='rounded bg-slate-700 px-2 py-1 text-xs text-purple-300'>
+              <code key={i} className='rounded bg-white/10 backdrop-blur-sm px-2 py-1 text-xs text-purple-300'>
                 {alt}
               </code>
             ))}
@@ -206,7 +207,7 @@ const EnhancedErrorDisplay: React.FC<{ error: EnhancedError; onRetry: () => void
 
       {error.suggestions && error.suggestions.length > 0 && (
         <div className='space-y-2'>
-          <p className='text-sm text-slate-300'>Suggestions:</p>
+          <p className={cn(cardTextStyles.body, "text-slate-300")}>Suggestions:</p>
           <ul className='space-y-1'>
             {error.suggestions.map((suggestion, i) => (
               <li key={i} className='flex items-start gap-2 text-sm text-slate-400'>
@@ -219,7 +220,7 @@ const EnhancedErrorDisplay: React.FC<{ error: EnhancedError; onRetry: () => void
       )}
 
       <div className='flex flex-wrap gap-2 pt-2'>
-        <Button onClick={onRetry} size='sm' variant='outline' className='text-xs'>
+        <Button onClick={onRetry} size='sm' variant='outline' className={cn(cardTextStyles.labelSmall)}>
           <RefreshCw className='mr-1 h-3 w-3' />
           Retry Query
         </Button>
@@ -228,7 +229,7 @@ const EnhancedErrorDisplay: React.FC<{ error: EnhancedError; onRetry: () => void
             onClick={() => window.open('/help/ask-database', '_blank')}
             size='sm'
             variant='outline'
-            className='text-xs'
+            className={cn(cardTextStyles.labelSmall)}
           >
             <HelpCircle className='mr-1 h-3 w-3' />
             View Help
@@ -264,7 +265,7 @@ const formatMessageContent = (content: string | AIResponse | EnhancedError, onRe
   }
   
   // Fallback to simple text display
-  return <div className="text-sm leading-relaxed">{String(content)}</div>;
+  return <div className={cn(cardTextStyles.body, "leading-relaxed")}>{String(content)}</div>;
 };
 
 // Chat Message Component
@@ -302,7 +303,7 @@ const ChatMessageComponent: React.FC<{ message: ChatMessage; onRetry?: () => voi
             : 'bg-slate-800/50 text-slate-200'
         )}
       >
-        <div className="text-sm">{formatMessageContent(message.content, onRetry)}</div>
+        <div className={cn(cardTextStyles.body)}>{formatMessageContent(message.content, onRetry)}</div>
         
         
       </div>
@@ -638,7 +639,12 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
   };
 
   return (
-    <GlassmorphicCard className={cn('flex h-full flex-col p-6', className)}>
+    <SpecialCard 
+      className={cn('flex h-full flex-col', className)}
+      variant="glass"
+      borderGlow="hover"
+      padding="base"
+    >
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -647,14 +653,14 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
             <Sparkles className="absolute -right-1 -top-1 h-3 w-3 text-yellow-400" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-white">Chat with Database</h3>
-            <p className="text-xs text-slate-400">Ask questions about your data</p>
+            <h3 className={cn(cardTextStyles.title, "text-white")}>Chat with Database</h3>
+            <p className={cn(cardTextStyles.labelSmall, "text-slate-400")}>Ask questions about your data</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setUseStreaming(!useStreaming)}
-            className="text-xs text-slate-400 hover:text-purple-400 transition-colors"
+            className={cn(cardTextStyles.labelSmall, "text-slate-400 hover:text-purple-400 transition-colors")}
             title={useStreaming ? 'Streaming enabled' : 'Streaming disabled'}
           >
             {useStreaming ? '⚡ Fast' : '🐢 Normal'}
@@ -664,7 +670,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
       </div>
 
       {/* Messages Container */}
-      <div className="flex-1 overflow-hidden rounded-lg bg-slate-900/30 p-4">
+      <div className="flex-1 overflow-hidden rounded-lg bg-white/5 backdrop-blur-sm p-4">
         <div className="h-full overflow-y-auto space-y-4 pr-2">
           {messages.map((message) => (
             <ChatMessageComponent 
@@ -694,7 +700,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
         <div className="mt-4 space-y-4 max-h-96 overflow-y-auto">
           {/* Recent Queries */}
           {recentQueries.length > 0 && (
-            <div className='rounded-lg border border-slate-700 bg-slate-800 p-4'>
+            <div className='rounded-lg border-none bg-white/5 backdrop-blur-sm p-4'>
               <h3 className='mb-3 flex items-center gap-2 text-sm font-medium text-slate-300'>
                 <Calendar className='h-4 w-4' />
                 Recent Queries
@@ -706,7 +712,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
                     variant='ghost'
                     size='sm'
                     onClick={() => handleSendMessage(query)}
-                    className='w-full justify-start rounded border border-slate-600 bg-slate-700 text-left text-white transition-all hover:bg-slate-600'
+                    className='w-full justify-start rounded border-none bg-white/10 text-left text-white transition-all hover:bg-white/20'
                   >
                     <Search className='mr-2 h-3 w-3 opacity-50' />
                     {query}
@@ -718,7 +724,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
 
           {/* Contextual Suggestions */}
           {contextualSuggestions.length > 0 && (
-            <div className='rounded-lg border border-blue-600 bg-blue-900/50 p-4'>
+            <div className='rounded-lg border-none bg-white/5 backdrop-blur-sm p-4'>
               <h3 className='mb-3 flex items-center gap-2 text-sm font-medium text-blue-300'>
                 <Database className='h-4 w-4' />
                 Related Queries
@@ -730,7 +736,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
                     variant='ghost'
                     size='sm'
                     onClick={() => handleSendMessage(query)}
-                    className='w-full justify-start rounded border border-blue-600 bg-blue-700 text-left text-white transition-all hover:bg-blue-600'
+                    className='w-full justify-start rounded border-none bg-white/10 text-left text-white transition-all hover:bg-white/15'
                   >
                     {query}
                   </Button>
@@ -744,7 +750,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
             {suggestions.map(cat => (
               <Card
                 key={cat.category}
-                className='cursor-pointer border border-slate-600 bg-slate-800 transition-all hover:border-purple-500/50'
+                className='cursor-pointer border-none bg-white/5 backdrop-blur-sm transition-all hover:bg-white/10'
                 onClick={() => setSelectedCategory(selectedCategory === cat.category ? null : cat.category)}
               >
                 <div className='p-3'>
@@ -769,7 +775,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
                             e.stopPropagation();
                             handleSendMessage(query);
                           }}
-                          className='w-full justify-start rounded border border-slate-600 bg-slate-700 px-3 py-2 text-left text-sm text-white transition-all hover:bg-slate-600'
+                          className='w-full justify-start rounded border-none bg-white/10 px-3 py-2 text-left text-sm text-white transition-all hover:bg-white/20'
                         >
                           {query}
                         </Button>
@@ -778,7 +784,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
                   )}
 
                   {selectedCategory !== cat.category && (
-                    <p className='text-xs text-slate-400'>
+                    <p className={cn(cardTextStyles.labelSmall, "text-slate-400")}>
                       Click to view {cat.queries.length} suggestions
                     </p>
                   )}
@@ -793,7 +799,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
               variant='outline'
               size='sm'
               onClick={() => handleSendMessage("Show today's summary")}
-              className='border-slate-600 bg-slate-700 text-xs text-white hover:border-slate-500 hover:bg-slate-600'
+              className='border-none bg-white/10 text-xs text-white hover:bg-white/20'
             >
               <Calendar className='mr-1 h-3 w-3' />
               Today&apos;s Summary
@@ -802,7 +808,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
               variant='outline'
               size='sm'
               onClick={() => handleSendMessage('Show current Await pallets')}
-              className='border-slate-600 bg-slate-700 text-xs text-white hover:border-slate-500 hover:bg-slate-600'
+              className='border-none bg-white/10 text-xs text-white hover:bg-white/20'
             >
               <Package className='mr-1 h-3 w-3' />
               Await Status
@@ -811,7 +817,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
               variant='outline'
               size='sm'
               onClick={() => handleSendMessage('Show pending shipments')}
-              className='border-slate-600 bg-slate-700 text-xs text-white hover:border-slate-500 hover:bg-slate-600'
+              className='border-none bg-white/10 text-xs text-white hover:bg-white/20'
             >
               <Truck className='mr-1 h-3 w-3' />
               Pending Shipments
@@ -824,7 +830,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
                 size='sm'
                 onClick={runAnomalyDetection}
                 disabled={isDetectingAnomalies}
-                className='border-orange-600 bg-orange-600/20 text-orange-400 hover:bg-orange-600/30'
+                className='border-none bg-orange-600/10 text-orange-400 hover:bg-orange-600/20'
               >
                 {isDetectingAnomalies ? (
                   <>
@@ -843,7 +849,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
 
           {/* Anomaly Results Display */}
           {showAnomalies && anomalies && anomalies.length > 0 && (
-            <div className='rounded-lg border border-orange-600 bg-orange-900/20 p-4'>
+            <div className='rounded-lg border-none bg-orange-600/10 backdrop-blur-sm p-4'>
               <div className='mb-3 flex items-center justify-between'>
                 <h3 className='flex items-center gap-2 text-sm font-medium text-orange-300'>
                   <AlertTriangle className='h-4 w-4' />
@@ -853,7 +859,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
                   variant='ghost'
                   size='sm'
                   onClick={() => setShowAnomalies(false)}
-                  className='text-xs text-slate-400 hover:text-white'
+                  className={cn(cardTextStyles.labelSmall, "text-slate-400 hover:text-white")}
                 >
                   Hide
                 </Button>
@@ -863,11 +869,11 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
                   <div
                     key={index}
                     className={cn(
-                      'rounded-lg border p-3 cursor-pointer transition-all',
-                      anomaly.severity === 'critical' && 'border-red-600 bg-red-900/20',
-                      anomaly.severity === 'high' && 'border-orange-600 bg-orange-900/20',
-                      anomaly.severity === 'medium' && 'border-yellow-600 bg-yellow-900/20',
-                      anomaly.severity === 'low' && 'border-blue-600 bg-blue-900/20'
+                      'rounded-lg border-none p-3 cursor-pointer transition-all backdrop-blur-sm',
+                      anomaly.severity === 'critical' && 'bg-red-500/10',
+                      anomaly.severity === 'high' && 'bg-orange-500/10',
+                      anomaly.severity === 'medium' && 'bg-yellow-500/10',
+                      anomaly.severity === 'low' && 'bg-blue-500/10'
                     )}
                     onClick={() => {
                       let query = '';
@@ -887,8 +893,8 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
                   >
                     <div className='flex items-start justify-between'>
                       <div>
-                        <h4 className='font-medium text-white'>{anomaly.title}</h4>
-                        <p className='text-xs text-slate-400'>{anomaly.description}</p>
+                        <h4 className={cn(cardTextStyles.body, "font-semibold text-white")}>{anomaly.title}</h4>
+                        <p className={cn(cardTextStyles.labelSmall, "text-slate-400")}>{anomaly.description}</p>
                         <p className='mt-1 text-xs text-slate-500'>
                           Count: {anomaly.count} | {anomaly.suggestedAction}
                         </p>
@@ -918,7 +924,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
             variant='ghost'
             size='sm'
             onClick={() => setShowSuggestions(!showSuggestions)}
-            className='text-xs text-slate-400 hover:text-purple-400'
+            className={cn(cardTextStyles.labelSmall, "text-slate-400 hover:text-purple-400")}
           >
             {showSuggestions ? (
               <>
@@ -943,7 +949,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
               variant='outline'
               size='sm'
               onClick={() => handleSendMessage("Show today's summary")}
-              className='border-slate-600 bg-slate-700 text-xs text-white hover:border-slate-500 hover:bg-slate-600'
+              className='border-none bg-white/10 text-xs text-white hover:bg-white/20'
             >
               <Calendar className='mr-1 h-3 w-3' />
               Today&apos;s Summary
@@ -952,7 +958,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
               variant='outline'
               size='sm'
               onClick={() => handleSendMessage('Show current Await pallets')}
-              className='border-slate-600 bg-slate-700 text-xs text-white hover:border-slate-500 hover:bg-slate-600'
+              className='border-none bg-white/10 text-xs text-white hover:bg-white/20'
             >
               <Package className='mr-1 h-3 w-3' />
               Await Status
@@ -963,7 +969,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
                 size='sm'
                 onClick={runAnomalyDetection}
                 disabled={isDetectingAnomalies}
-                className='border-orange-600 bg-orange-600/20 text-orange-400 hover:bg-orange-600/30'
+                className='border-none bg-orange-600/10 text-orange-400 hover:bg-orange-600/20'
               >
                 {isDetectingAnomalies ? (
                   <>
@@ -992,7 +998,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
           onKeyDown={handleKeyPress}
           placeholder="Ask a question about your data..."
           disabled={isLoading}
-          className="flex-1 rounded-lg bg-slate-800/50 px-4 py-2 text-sm text-white placeholder-slate-400 outline-none transition-colors focus:bg-slate-800/70 disabled:opacity-50"
+          className="flex-1 rounded-lg bg-white/10 backdrop-blur-sm px-4 py-2 text-sm text-white placeholder-slate-400 outline-none transition-colors focus:bg-white/20 disabled:opacity-50"
         />
         <button
           onClick={() => handleSendMessage()}
@@ -1006,6 +1012,6 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
           )}
         </button>
       </div>
-    </GlassmorphicCard>
+    </SpecialCard>
   );
 }

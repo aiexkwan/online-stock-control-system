@@ -2,7 +2,9 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { ApolloError } from '@apollo/client';
-import { GlassmorphicCard } from '../components/GlassmorphicCard';
+import { SpecialCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
+import { cardTextStyles } from '@/lib/card-system/theme';
+import { cn } from '@/lib/utils';
 import GridBasicProductFormGraphQL from '../components/GridBasicProductFormGraphQL';
 import { CardErrorBoundary } from '@/lib/error-handling';
 import { EnhancedProgressBar } from '../components/EnhancedProgressBar';
@@ -328,17 +330,18 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
 
   return (
     <div className={`h-full ${className || ''}`}>
-      <GlassmorphicCard
-        variant="default"
-        hover={false}
+      <SpecialCard
+        variant="glass"
+        isHoverable={false}
         borderGlow={false}
         className="h-full overflow-hidden"
+        padding="none"
       >
         <div className="flex h-full flex-col">
           {/* Header */}
           <div className="border-b border-slate-700/50 p-4">
-            <h2 className="text-lg font-semibold text-white">QC Label Generation</h2>
-            <p className="text-sm text-slate-400">Printing QC labels</p>
+            <h2 className={cn(cardTextStyles.title, "text-white")}>QC Label Generation</h2>
+            <p className={cn(cardTextStyles.body, "text-slate-400")}>Printing QC labels</p>
           </div>
 
           <div className="min-h-0 flex-1 overflow-auto p-4">
@@ -375,12 +378,12 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
               {productInfo && (productInfo.type === 'ACO' || productInfo.type?.toLowerCase().includes('slate')) && (
                 <div className="space-y-4">
                   {productInfo.type?.toLowerCase().includes('slate') && (
-                    <h3 className="text-base font-medium text-white">Slate Product Details</h3>
+                    <h3 className={cn(cardTextStyles.subtitle, "text-white")}>Slate Product Details</h3>
                   )}
 
                   {productInfo.type === 'ACO' && (
                     <div className="space-y-3">
-                      <label className="block text-sm font-medium text-slate-300">
+                      <label className={cn(cardTextStyles.body, "block text-slate-300 font-semibold")}>
                         ACO Order Reference
                       </label>
                       <div className="flex gap-2">
@@ -392,7 +395,7 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
                               businessLogic.handleAutoAcoConfirm(e.target.value);
                             }
                           }}
-                          className="flex-1 rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="flex-1 rounded-md border-none bg-white/10 backdrop-blur-sm px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-white/30"
                           disabled={formData.isLoading || formData.acoSearchLoading || isLoadingAcoOrders}
                         >
                           <option value="">Select ACO Order...</option>
@@ -403,31 +406,31 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
                           ))}
                         </select>
                         {(formData.acoSearchLoading || isLoadingAcoOrders) && (
-                          <div className="flex items-center text-sm text-slate-400">
+                          <div className={cn(cardTextStyles.body, "flex items-center text-slate-400")}>
                             <span className="animate-pulse">Loading...</span>
                           </div>
                         )}
                       </div>
                       {formData.acoRemain !== null && (
-                        <p className="text-sm text-slate-400">
-                          Remaining Quantity: <span className="font-semibold text-white">{formData.acoRemain}</span>
+                        <p className={cn(cardTextStyles.body, "text-slate-400")}>
+                          Remaining Quantity: <span className={cn(cardTextStyles.body, "text-white font-semibold")}>{formData.acoRemain}</span>
                         </p>
                       )}
                       {touched.acoOrderRef && getFieldError('acoOrderRef') && (
-                        <p className="text-sm text-red-400">{getFieldError('acoOrderRef')}</p>
+                        <p className={cn(cardTextStyles.body, "text-red-400")}>{getFieldError('acoOrderRef')}</p>
                       )}
                       {businessLogic.isAcoOrderExcess && (
-                        <p className="text-sm text-yellow-400">Quantity exceeds remaining order amount</p>
+                        <p className={cn(cardTextStyles.body, "text-yellow-400")}>Quantity exceeds remaining order amount</p>
                       )}
                       {businessLogic.isAcoOrderFulfilled && (
-                        <p className="text-sm text-green-400">This order has been fulfilled</p>
+                        <p className={cn(cardTextStyles.body, "text-green-400")}>This order has been fulfilled</p>
                       )}
                     </div>
                   )}
 
                   {productInfo.type?.toLowerCase().includes('slate') && (
                     <div className="space-y-3">
-                      <label className="block text-sm font-medium text-slate-300">
+                      <label className={cn(cardTextStyles.body, "block text-slate-300 font-semibold")}>
                         Batch Number <span className="text-red-400">*</span>
                       </label>
                       <input
@@ -435,11 +438,11 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
                         value={formData.slateDetail.batchNumber}
                         onChange={(e) => businessLogic.handleSlateDetailChange({ batchNumber: e.target.value })}
                         placeholder="Enter batch number"
-                        className="w-full rounded-md border border-slate-600 bg-slate-800 px-3 py-2 text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full rounded-md border-none bg-white/10 backdrop-blur-sm px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-white/30"
                         disabled={formData.isLoading}
                       />
                       {touched.batchNumber && getFieldError('batchNumber') && (
-                        <p className="text-sm text-red-400">{getFieldError('batchNumber')}</p>
+                        <p className={cn(cardTextStyles.body, "text-red-400")}>{getFieldError('batchNumber')}</p>
                       )}
                     </div>
                   )}
@@ -449,7 +452,7 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
               {/* Progress */}
               {formData.pdfProgress.total > 0 && (
                 <div className="space-y-4">
-                  <h3 className="text-base font-medium text-white">Generation Progress</h3>
+                  <h3 className={cn(cardTextStyles.subtitle, "text-white")}>Generation Progress</h3>
                   <EnhancedProgressBar
                     current={formData.pdfProgress.current}
                     total={formData.pdfProgress.total}
@@ -465,14 +468,14 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
             </div>
           </div>
         </div>
-      </GlassmorphicCard>
+      </SpecialCard>
 
       {/* Light Reminder */}
       {reminder && (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40">
-          <div className="flex items-center gap-2 rounded-lg bg-slate-800/90 px-4 py-3 shadow-lg backdrop-blur-sm border border-red-500/50">
+          <div className="flex items-center gap-2 rounded-lg bg-white/10 px-4 py-3 shadow-lg backdrop-blur-sm border-none">
             <div className="text-red-400">⚠️</div>
-            <div className="text-sm font-medium text-slate-100">{reminder}</div>
+            <div className={cn(cardTextStyles.body, "text-slate-100 font-semibold")}>{reminder}</div>
           </div>
         </div>
       )}
@@ -495,7 +498,7 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
             overlayType === 'error' ? 'bg-red-900/90' : 'bg-yellow-900/90'
           }`}>
             <div className="mb-4 text-6xl">{overlayType === 'error' ? '⚠️' : '⚡'}</div>
-            <div className="whitespace-pre-line text-xl font-semibold text-white">
+            <div className={cn(cardTextStyles.title, "whitespace-pre-line font-semibold text-white")}>
               {errorMessage}
             </div>
             <button

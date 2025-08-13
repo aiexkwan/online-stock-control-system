@@ -9,7 +9,7 @@ import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { dialogAnimationClasses, dialogVariants, type DialogType } from '@/lib/dialog-animation';
+import { dialogAnimationClasses, dialogVariants, type UIDialogVariant } from '@/lib/dialog-system/ui/animation';
 import {
   DialogHeader,
   DialogFooter,
@@ -25,7 +25,7 @@ const DialogTrigger = DialogPrimitive.Trigger;
 const DialogClose = DialogPrimitive.Close;
 
 // 動態邊框組件
-const AnimatedBorder = ({ type = 'form' }: { type?: DialogType }) => {
+const AnimatedBorder = ({ type = 'form' }: { type?: UIDialogVariant }) => {
   const topRef = React.useRef<HTMLDivElement>(null);
   const rightRef = React.useRef<HTMLDivElement>(null);
   const bottomRef = React.useRef<HTMLDivElement>(null);
@@ -197,7 +197,7 @@ const AnimatedBorder = ({ type = 'form' }: { type?: DialogType }) => {
 // 帶動畫邊框的內容容器
 interface AnimatedDialogContentProps
   extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
-  type?: DialogType;
+  type?: UIDialogVariant;
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   enableAnimatedBorder?: boolean;
 }
@@ -288,4 +288,4 @@ export {
   DialogDescription,
 };
 
-export type { DialogType };
+export type { UIDialogVariant as DialogType };

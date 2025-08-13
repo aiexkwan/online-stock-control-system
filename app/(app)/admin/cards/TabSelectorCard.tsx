@@ -11,9 +11,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { GlassmorphicCard } from '../components/GlassmorphicCard';
+import { SpecialCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
+import { cardTextStyles } from '@/lib/card-system/theme';
 import { AnalysisCardSelector } from './AnalysisCardSelector';
 import { createClient } from '@/app/utils/supabase/client';
+import { cn } from '@/lib/utils';
 // Remove legacy card names - use Card components directly
 import {
   ChartBarIcon,
@@ -35,13 +37,16 @@ import {
 import { QCLabelCard, GRNLabelCard, StockTransferCard, OrderLoadCard, StockCountCard } from './index';
 
 // Import types
-import type { HeroIcon, IconComponent } from '@/types/heroicons';
+import type { HeroIcon, IconComponent } from '../types/heroicons';
 import type {
   CardConfig,
   CardCategory,
   TabType,
   OperationMenuItem
 } from '../types/ui-navigation';
+
+// Type definition for allowed cards (matching AnalysisCardSelector)
+type AllowedCardType = 'StockLevelListAndChartCard' | 'StockHistoryCard' | 'WorkLevelCard' | 'VerticalTimelineCard' | 'UploadCenterCard' | 'DownloadCenterCard' | 'PerformanceDashboard' | 'DataUpdateCard' | 'DepartInjCard' | 'DepartPipeCard' | 'DepartWareCard' | 'VoidPalletCard' | 'ChatbotCard';
 import type { UserInfo } from '../types/common';
 import { 
   AVAILABLE_CARDS, 
@@ -57,7 +62,7 @@ export const TabSelectorCard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('admin');
   
   // Simple state management for selected card
-  const [selectedCard, setSelectedCard] = useState<string>(DEFAULT_SELECTED_CARD);
+  const [selectedCard, setSelectedCard] = useState<AllowedCardType>(DEFAULT_SELECTED_CARD as AllowedCardType);
   
   // User info state
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
@@ -115,7 +120,7 @@ export const TabSelectorCard: React.FC = () => {
   
   // Card selection handler - no caching needed for UI state
   const handleCardSelect = useCallback(
-    (component: string) => {
+    (component: AllowedCardType) => {
       // Skip if same card is already selected
       if (selectedCard === component) {
         return;
@@ -199,11 +204,11 @@ export const TabSelectorCard: React.FC = () => {
     <div className='flex h-full w-full gap-4'>
       {/* 左側 Card 選擇區域 */}
       <div className='w-80 flex-shrink-0'>
-        <GlassmorphicCard
-          variant='default'
-          hover={false}
+        <SpecialCard
+          variant="glass"
+          isHoverable={false}
           borderGlow={false}
-          padding='none'
+          padding="none"
           className='flex h-full flex-col'
         >
           {/* Tab Selector */}
@@ -211,21 +216,21 @@ export const TabSelectorCard: React.FC = () => {
             <div className='flex gap-2'>
               <button
                 onClick={() => setActiveTab('operation')}
-                className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all ${
+                className={cn(cardTextStyles.body, `flex-1 rounded-md px-3 py-2 font-medium transition-all ${
                   activeTab === 'operation'
                     ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/50'
                     : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-300'
-                }`}
+                }`)}
               >
                 Operation
               </button>
               <button
                 onClick={() => setActiveTab('admin')}
-                className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all ${
+                className={cn(cardTextStyles.body, `flex-1 rounded-md px-3 py-2 font-medium transition-all ${
                   activeTab === 'admin'
                     ? 'bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/50'
                     : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-300'
-                }`}
+                }`)}
               >
                 Admin
               </button>
@@ -252,17 +257,17 @@ export const TabSelectorCard: React.FC = () => {
                       onClick={() => {
                         // Special handling for chat-database: directly select ChatbotCard
                         if (category.id === 'chat-database') {
-                          handleCardSelect('ChatbotCard');
+                          handleCardSelect('ChatbotCard' as AllowedCardType);
                         }
                       }}
                       className='flex w-full items-center gap-2 rounded-md p-2 cursor-pointer transition-colors hover:bg-slate-700/50'
                       role='button'
                     >
                       <Icon className={`h-4 w-4 ${category.color}`} />
-                      <span className='flex-1 text-left text-sm font-medium text-slate-300'>
+                      <span className={cn(cardTextStyles.body, 'flex-1 text-left text-slate-300 font-semibold')}>
                         {category.label}
                       </span>
-                      <span className='text-xs text-slate-500'>
+                      <span className={cn(cardTextStyles.labelSmall, 'text-slate-500')}>
                         {categoryHasSelected ? '✓' : ''}
                       </span>
                     </div>
@@ -277,7 +282,7 @@ export const TabSelectorCard: React.FC = () => {
                               return (
                                 <motion.button
                                   key={card.component}
-                                  onClick={() => handleCardSelect(card.component)}
+                                  onClick={() => handleCardSelect(card.component as AllowedCardType)}
                                   className={`flex w-full cursor-pointer items-start gap-3 rounded-md p-2 text-left transition-all duration-200 ${
                                     isSelected
                                       ? 'border border-blue-500/50 bg-blue-500/20 ring-1 ring-blue-500/30'
@@ -307,7 +312,7 @@ export const TabSelectorCard: React.FC = () => {
 
                                   <div className='min-w-0 flex-1'>
                                     <div
-                                      className={`text-sm font-medium transition-colors ${isSelected ? 'text-white' : 'text-slate-300'} `}
+                                      className={cn(cardTextStyles.body, `transition-colors font-semibold ${isSelected ? 'text-white' : 'text-slate-300'} `)}
                                     >
                                       {card.displayName}
                                     </div>
@@ -331,7 +336,7 @@ export const TabSelectorCard: React.FC = () => {
                       {item.subItems ? (
                         // Menu with sub-items
                         <>
-                          <div className='flex w-full items-center gap-2 rounded-md p-2 text-sm font-medium text-slate-300'>
+                          <div className={cn(cardTextStyles.body, 'flex w-full items-center gap-2 rounded-md p-2 text-slate-300 font-semibold')}>
                             <WrenchScrewdriverIcon className='h-4 w-4 text-blue-400' />
                             <span>{item.label}</span>
                           </div>
@@ -340,12 +345,12 @@ export const TabSelectorCard: React.FC = () => {
                               <motion.button
                                 key={subItem.id}
                                 onClick={() => handleOperationSelect(subItem.id)}
-                                className='flex w-full cursor-pointer items-center gap-3 rounded-md p-2 text-left text-sm transition-all duration-200 hover:bg-slate-700/30'
+                                className={cn(cardTextStyles.body, 'flex w-full cursor-pointer items-center gap-3 rounded-md p-2 text-left transition-all duration-200 hover:bg-slate-700/30')}
                                 whileHover={{ x: 2 }}
                                 whileTap={{ scale: 0.98 }}
                               >
                                 <div className='h-2 w-2 rounded-full bg-slate-500' />
-                                <span className='text-slate-300'>{subItem.label}</span>
+                                <span className={cn(cardTextStyles.body, 'text-slate-300')}>{subItem.label}</span>
                               </motion.button>
                             ))}
                           </div>
@@ -359,7 +364,7 @@ export const TabSelectorCard: React.FC = () => {
                           whileTap={{ scale: 0.98 }}
                         >
                           <WrenchScrewdriverIcon className='h-4 w-4 text-blue-400' />
-                          <span className='text-sm font-medium text-slate-300'>{item.label}</span>
+                          <span className={cn(cardTextStyles.body, 'text-slate-300 font-semibold')}>{item.label}</span>
                         </motion.button>
                       )}
                     </div>
@@ -386,10 +391,10 @@ export const TabSelectorCard: React.FC = () => {
                     <UserCircleIcon className='h-10 w-10 text-slate-400' />
                   )}
                   <div className='min-w-0 flex-1'>
-                    <div className='truncate text-sm font-medium text-slate-200'>
+                    <div className={cn(cardTextStyles.body, 'truncate text-slate-200 font-semibold')}>
                       {userInfo.name}
                     </div>
-                    <div className='truncate text-xs text-slate-400'>
+                    <div className={cn(cardTextStyles.labelSmall, 'truncate text-slate-400')}>
                       {userInfo.email}
                     </div>
                   </div>
@@ -410,12 +415,12 @@ export const TabSelectorCard: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className='text-sm text-slate-400'>No user info</div>
+                <div className={cn(cardTextStyles.body, 'text-slate-400')}>No user info</div>
               )}
             </div>
           </div>
 
-        </GlassmorphicCard>
+        </SpecialCard>
       </div>
 
       {/* 右側 Card 顯示區域 */}
@@ -447,7 +452,7 @@ export const TabSelectorCard: React.FC = () => {
               <div className='flex h-full items-center justify-center'>
                 <div className='text-center'>
                   <WrenchScrewdriverIcon className='mx-auto h-16 w-16 text-slate-600' />
-                  <p className='mt-4 text-lg text-slate-400'>Select an operation from the left menu</p>
+                  <p className={cn(cardTextStyles.subtitle, 'mt-4 text-slate-400')}>Select an operation from the left menu</p>
                 </div>
               </div>
             )}

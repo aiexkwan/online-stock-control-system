@@ -14,7 +14,8 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GlassmorphicCard } from '../components/GlassmorphicCard';
+import { DataCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
+import { cardTextStyles } from '@/lib/card-system/theme';
 import { cn } from '@/lib/utils';
 import { 
   MagnifyingGlassIcon,
@@ -139,9 +140,9 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
     >
       <div className="flex gap-4 h-full">
         {/* Left: Product Update */}
-        <GlassmorphicCard className="flex-1 p-6">
+        <DataCard className="flex-1" padding="large" borderGlow="hover" glassmorphicVariant="default">
           <div className="h-full flex flex-col">
-            <h3 className="text-lg font-semibold text-white mb-4">Search Product</h3>
+            <h3 className={`${cardTextStyles.title} mb-4`}>Search Product</h3>
             
             {/* Search Bar */}
             <div className="flex gap-2 mb-4">
@@ -154,7 +155,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                   }
                 }}
                 placeholder="Enter product code"
-                className="flex-1 bg-slate-800/50 border-slate-600 text-white"
+                className="flex-1 bg-white/10 backdrop-blur-sm border-none text-white"
                 onKeyPress={(e) => e.key === 'Enter' && handleProductSearch()}
               />
               <Button
@@ -194,27 +195,27 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                   className="flex-1 space-y-3"
                 >
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center p-2 bg-slate-800/30 rounded">
+                    <div className="flex justify-between items-center p-2 bg-white/5 backdrop-blur-sm rounded">
                       <span className="text-slate-400">Code</span>
                       <span className="text-white font-medium">{String(productForm.state.originalData.code || '')}</span>
                     </div>
-                    <div className="flex justify-between items-center p-2 bg-slate-800/30 rounded">
+                    <div className="flex justify-between items-center p-2 bg-white/5 backdrop-blur-sm rounded">
                       <span className="text-slate-400">Description</span>
                       <span className="text-white font-medium">{String(productForm.state.originalData.description || '')}</span>
                     </div>
-                    <div className="flex justify-between items-center p-2 bg-slate-800/30 rounded">
+                    <div className="flex justify-between items-center p-2 bg-white/5 backdrop-blur-sm rounded">
                       <span className="text-slate-400">Type</span>
                       <span className="text-white font-medium">{String(productForm.state.originalData.type || '')}</span>
                     </div>
-                    <div className="flex justify-between items-center p-2 bg-slate-800/30 rounded">
+                    <div className="flex justify-between items-center p-2 bg-white/5 backdrop-blur-sm rounded">
                       <span className="text-slate-400">Colour</span>
                       <span className="text-white font-medium">{String(productForm.state.originalData.colour || '')}</span>
                     </div>
-                    <div className="flex justify-between items-center p-2 bg-slate-800/30 rounded">
+                    <div className="flex justify-between items-center p-2 bg-white/5 backdrop-blur-sm rounded">
                       <span className="text-slate-400">Standard Qty Per Pallet</span>
                       <span className="text-white font-medium">{String(productForm.state.originalData.standard_qty || 0)}</span>
                     </div>
-                    <div className="flex justify-between items-center p-2 bg-slate-800/30 rounded">
+                    <div className="flex justify-between items-center p-2 bg-white/5 backdrop-blur-sm rounded">
                       <span className="text-slate-400">Special notes</span>
                       <span className="text-white font-medium">{String(productForm.state.originalData.remark || '-')}</span>
                     </div>
@@ -242,7 +243,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                     <Input
                       value={String(productForm.state.data.code || '')}
                       disabled
-                      className="bg-slate-800/50 border-slate-600 text-white opacity-50"
+                      className="bg-white/10 backdrop-blur-sm border-none text-white opacity-50"
                     />
                   </div>
 
@@ -251,7 +252,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                     <Input
                       value={String(productForm.state.data.description || '')}
                       onChange={(e) => productForm.actions.setFieldValue('description', e.target.value)}
-                      className="bg-slate-800/50 border-slate-600 text-white"
+                      className="bg-white/10 backdrop-blur-sm border-none text-white"
                     />
                     {productForm.state.errors.description && (
                       <p className="text-sm text-red-400 mt-1">{productForm.state.errors.description}</p>
@@ -263,7 +264,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                     <Input
                       value={String(productForm.state.data.type || '')}
                       onChange={(e) => productForm.actions.setFieldValue('type', e.target.value)}
-                      className="bg-slate-800/50 border-slate-600 text-white"
+                      className="bg-white/10 backdrop-blur-sm border-none text-white"
                     />
                     {productForm.state.errors.type && (
                       <p className="text-sm text-red-400 mt-1">{productForm.state.errors.type}</p>
@@ -275,7 +276,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                     <Input
                       value={String(productForm.state.data.colour || '')}
                       onChange={(e) => productForm.actions.setFieldValue('colour', e.target.value)}
-                      className="bg-slate-800/50 border-slate-600 text-white"
+                      className="bg-white/10 backdrop-blur-sm border-none text-white"
                     />
                     {productForm.state.errors.colour && (
                       <p className="text-sm text-red-400 mt-1">{productForm.state.errors.colour}</p>
@@ -288,7 +289,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                       type="number"
                       value={String(productForm.state.data.standard_qty || 0)}
                       onChange={(e) => productForm.actions.setFieldValue('standard_qty', parseInt(e.target.value) || 0)}
-                      className="bg-slate-800/50 border-slate-600 text-white"
+                      className="bg-white/10 backdrop-blur-sm border-none text-white"
                     />
                     {productForm.state.errors.standard_qty && (
                       <p className="text-sm text-red-400 mt-1">{productForm.state.errors.standard_qty}</p>
@@ -300,7 +301,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                     <Input
                       value={String(productForm.state.data.remark || '')}
                       onChange={(e) => productForm.actions.setFieldValue('remark', e.target.value)}
-                      className="bg-slate-800/50 border-slate-600 text-white"
+                      className="bg-white/10 backdrop-blur-sm border-none text-white"
                     />
                   </div>
 
@@ -331,7 +332,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                     <Input
                       value={String(productForm.state.data.code || '')}
                       onChange={(e) => productForm.actions.setFieldValue('code', e.target.value)}
-                      className="bg-slate-800/50 border-slate-600 text-white"
+                      className="bg-white/10 backdrop-blur-sm border-none text-white"
                     />
                     {productForm.state.errors.code && (
                       <p className="text-sm text-red-400 mt-1">{productForm.state.errors.code}</p>
@@ -343,7 +344,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                     <Input
                       value={String(productForm.state.data.description || '')}
                       onChange={(e) => productForm.actions.setFieldValue('description', e.target.value)}
-                      className="bg-slate-800/50 border-slate-600 text-white"
+                      className="bg-white/10 backdrop-blur-sm border-none text-white"
                     />
                     {productForm.state.errors.description && (
                       <p className="text-sm text-red-400 mt-1">{productForm.state.errors.description}</p>
@@ -355,7 +356,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                     <Input
                       value={String(productForm.state.data.type || '')}
                       onChange={(e) => productForm.actions.setFieldValue('type', e.target.value)}
-                      className="bg-slate-800/50 border-slate-600 text-white"
+                      className="bg-white/10 backdrop-blur-sm border-none text-white"
                     />
                     {productForm.state.errors.type && (
                       <p className="text-sm text-red-400 mt-1">{productForm.state.errors.type}</p>
@@ -367,7 +368,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                     <Input
                       value={String(productForm.state.data.colour || '')}
                       onChange={(e) => productForm.actions.setFieldValue('colour', e.target.value)}
-                      className="bg-slate-800/50 border-slate-600 text-white"
+                      className="bg-white/10 backdrop-blur-sm border-none text-white"
                     />
                     {productForm.state.errors.colour && (
                       <p className="text-sm text-red-400 mt-1">{productForm.state.errors.colour}</p>
@@ -380,7 +381,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                       type="number"
                       value={String(productForm.state.data.standard_qty || 0)}
                       onChange={(e) => productForm.actions.setFieldValue('standard_qty', parseInt(e.target.value) || 0)}
-                      className="bg-slate-800/50 border-slate-600 text-white"
+                      className="bg-white/10 backdrop-blur-sm border-none text-white"
                     />
                     {productForm.state.errors.standard_qty && (
                       <p className="text-sm text-red-400 mt-1">{productForm.state.errors.standard_qty}</p>
@@ -392,7 +393,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                     <Input
                       value={String(productForm.state.data.remark || '')}
                       onChange={(e) => productForm.actions.setFieldValue('remark', e.target.value)}
-                      className="bg-slate-800/50 border-slate-600 text-white"
+                      className="bg-white/10 backdrop-blur-sm border-none text-white"
                     />
                   </div>
 
@@ -411,12 +412,12 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
               )}
             </AnimatePresence>
           </div>
-        </GlassmorphicCard>
+        </DataCard>
 
         {/* Right: Supplier Update */}
-        <GlassmorphicCard className="flex-1 p-6">
+        <DataCard className="flex-1" padding="large" borderGlow="hover" glassmorphicVariant="default">
           <div className="h-full flex flex-col">
-            <h3 className="text-lg font-semibold text-white mb-4">Search Supplier</h3>
+            <h3 className={`${cardTextStyles.title} mb-4`}>Search Supplier</h3>
             
             {/* Search Bar */}
             <div className="flex gap-2 mb-4">
@@ -429,7 +430,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                   }
                 }}
                 placeholder="Enter supplier code"
-                className="flex-1 bg-slate-800/50 border-slate-600 text-white"
+                className="flex-1 bg-white/10 backdrop-blur-sm border-none text-white"
                 onKeyPress={(e) => e.key === 'Enter' && handleSupplierSearch()}
               />
               <Button
@@ -469,11 +470,11 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                   className="flex-1 space-y-3"
                 >
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center p-2 bg-slate-800/30 rounded">
+                    <div className="flex justify-between items-center p-2 bg-white/5 backdrop-blur-sm rounded">
                       <span className="text-slate-400">Supplier Code</span>
                       <span className="text-white font-medium">{String(supplierForm.state.originalData.supplier_code || '')}</span>
                     </div>
-                    <div className="flex justify-between items-center p-2 bg-slate-800/30 rounded">
+                    <div className="flex justify-between items-center p-2 bg-white/5 backdrop-blur-sm rounded">
                       <span className="text-slate-400">Supplier Name</span>
                       <span className="text-white font-medium">{String(supplierForm.state.originalData.supplier_name || '-')}</span>
                     </div>
@@ -501,7 +502,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                     <Input
                       value={String(supplierForm.state.data.supplier_code || '')}
                       disabled
-                      className="bg-slate-800/50 border-slate-600 text-white opacity-50"
+                      className="bg-white/10 backdrop-blur-sm border-none text-white opacity-50"
                     />
                   </div>
 
@@ -510,7 +511,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                     <Input
                       value={String(supplierForm.state.data.supplier_name || '')}
                       onChange={(e) => supplierForm.actions.setFieldValue('supplier_name', e.target.value)}
-                      className="bg-slate-800/50 border-slate-600 text-white"
+                      className="bg-white/10 backdrop-blur-sm border-none text-white"
                     />
                     {supplierForm.state.errors.supplier_name && (
                       <p className="text-sm text-red-400 mt-1">{supplierForm.state.errors.supplier_name}</p>
@@ -544,7 +545,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                     <Input
                       value={String(supplierForm.state.data.supplier_code || '')}
                       onChange={(e) => supplierForm.actions.setFieldValue('supplier_code', e.target.value)}
-                      className="bg-slate-800/50 border-slate-600 text-white"
+                      className="bg-white/10 backdrop-blur-sm border-none text-white"
                     />
                     {supplierForm.state.errors.supplier_code && (
                       <p className="text-sm text-red-400 mt-1">{supplierForm.state.errors.supplier_code}</p>
@@ -556,7 +557,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                     <Input
                       value={String(supplierForm.state.data.supplier_name || '')}
                       onChange={(e) => supplierForm.actions.setFieldValue('supplier_name', e.target.value)}
-                      className="bg-slate-800/50 border-slate-600 text-white"
+                      className="bg-white/10 backdrop-blur-sm border-none text-white"
                     />
                     {supplierForm.state.errors.supplier_name && (
                       <p className="text-sm text-red-400 mt-1">{supplierForm.state.errors.supplier_name}</p>
@@ -578,7 +579,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
               )}
             </AnimatePresence>
           </div>
-        </GlassmorphicCard>
+        </DataCard>
       </div>
     </div>
   );

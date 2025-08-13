@@ -17,7 +17,7 @@ import {
   type DialogType,
 } from './animated-border-dialog';
 import { Button } from './button';
-import { dialogButtonStyles } from '@/lib/dialog-animation';
+import { dialogButtonStyles } from '@/lib/dialog-system/ui/animation';
 import { cn } from '@/lib/utils';
 
 // 通知 Dialog

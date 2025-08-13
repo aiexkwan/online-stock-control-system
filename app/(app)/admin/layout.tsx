@@ -7,7 +7,7 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { DialogProvider } from '@/app/contexts/DialogContext';
+import { BusinessDialogProvider } from '@/lib/dialog-system/business/context';
 import { DynamicApolloProvider } from '@/lib/graphql/apollo-provider-dynamic';
 import { UnifiedBackground } from '@/app/components/visual-system/core/UnifiedBackground';
 
@@ -44,9 +44,9 @@ export default function AdminLayout({ children }: { children?: React.ReactNode }
       <div className='relative z-10 min-h-screen'>
         <DynamicApolloProvider>
           <QueryClientProvider client={queryClient}>
-            <DialogProvider>
+            <BusinessDialogProvider>
               {safeChildren}
-            </DialogProvider>
+            </BusinessDialogProvider>
           </QueryClientProvider>
         </DynamicApolloProvider>
       </div>

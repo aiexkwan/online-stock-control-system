@@ -270,7 +270,45 @@ export function useOrderData(config: OrderDataConfig = {}): UseOrderDataReturn {
     ordersNetworkStatus, ordersError, orderError, acoError, recordsError
   ]);
 
-  // Action Functions
+  // Action Functions with stable references
+  const setFilterCallback = useCallback((filter: WarehouseOrderFilterInput) => {
+    filterRef.current = filter;
+    refetchOrders({ input: filter });
+  }, [refetchOrders]);
+
+  const fetchWarehouseOrderCallback = useCallback(async (variables: WarehouseOrderVariables) => {
+    try {
+      await fetchWarehouseOrderLazy({ variables });
+    } catch (error) {
+      handleError(error as Error, { 
+        component: 'useOrderData', 
+        action: 'fetch_warehouse_order' 
+      });
+    }
+  }, [fetchWarehouseOrderLazy, handleError]);
+
+  const fetchAcoOrderReportCallback = useCallback(async (variables: AcoOrderReportVariables) => {
+    try {
+      await fetchAcoOrderReportLazy({ variables });
+    } catch (error) {
+      handleError(error as Error, { 
+        component: 'useOrderData', 
+        action: 'fetch_aco_order_report' 
+      });
+    }
+  }, [fetchAcoOrderReportLazy, handleError]);
+
+  const fetchOrderLoadingRecordsCallback = useCallback(async (variables: OrderLoadingRecordsVariables) => {
+    try {
+      await fetchOrderLoadingRecordsLazy({ variables });
+    } catch (error) {
+      handleError(error as Error, { 
+        component: 'useOrderData', 
+        action: 'fetch_order_loading_records' 
+      });
+    }
+  }, [fetchOrderLoadingRecordsLazy, handleError]);
+
   const actions: OrderDataActions = useMemo(() => ({
     // Fetch Functions
     fetchWarehouseOrders: async (variables?: WarehouseOrdersVariables) => {
@@ -287,38 +325,11 @@ export function useOrderData(config: OrderDataConfig = {}): UseOrderDataReturn {
       }
     },
 
-    fetchWarehouseOrder: async (variables: WarehouseOrderVariables) => {
-      try {
-        await fetchWarehouseOrderLazy({ variables });
-      } catch (error) {
-        handleError(error as Error, { 
-          component: 'useOrderData', 
-          action: 'fetch_warehouse_order' 
-        });
-      }
-    },
+    fetchWarehouseOrder: fetchWarehouseOrderCallback,
 
-    fetchAcoOrderReport: async (variables: AcoOrderReportVariables) => {
-      try {
-        await fetchAcoOrderReportLazy({ variables });
-      } catch (error) {
-        handleError(error as Error, { 
-          component: 'useOrderData', 
-          action: 'fetch_aco_order_report' 
-        });
-      }
-    },
+    fetchAcoOrderReport: fetchAcoOrderReportCallback,
 
-    fetchOrderLoadingRecords: async (variables: OrderLoadingRecordsVariables) => {
-      try {
-        await fetchOrderLoadingRecordsLazy({ variables });
-      } catch (error) {
-        handleError(error as Error, { 
-          component: 'useOrderData', 
-          action: 'fetch_order_loading_records' 
-        });
-      }
-    },
+    fetchOrderLoadingRecords: fetchOrderLoadingRecordsCallback,
 
     // Mutation Functions
     updateOrderStatus: async (variables: UpdateWarehouseOrderStatusVariables): Promise<boolean> => {
@@ -391,17 +402,14 @@ export function useOrderData(config: OrderDataConfig = {}): UseOrderDataReturn {
       // Implementation depends on Apollo Client setup
     },
 
-    setFilter: (filter: WarehouseOrderFilterInput) => {
-      filterRef.current = filter;
-      refetchOrders({ input: filter });
-    },
+    setFilter: setFilterCallback,
 
     setPagination: (pagination: PaginationConfig) => {
       paginationRef.current = pagination;
       // Implement pagination logic
     },
   }), [
-    refetchOrders, fetchWarehouseOrderLazy, fetchAcoOrderReportLazy, fetchOrderLoadingRecordsLazy,
+    refetchOrders, setFilterCallback, fetchWarehouseOrderCallback, fetchAcoOrderReportCallback, fetchOrderLoadingRecordsCallback,
     updateOrderStatusMutation, updateAcoOrderMutation, cancelOrderMutation,
     handleError
   ]);
@@ -427,7 +435,8 @@ export function useWarehouseOrders(
     if (filter) {
       orderData.setFilter(filter);
     }
-  }, [filter, orderData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, orderData.setFilter]); // Only depend on setFilter function, not entire orderData object
 
   return {
     orders: orderData.warehouseOrders,
@@ -452,7 +461,8 @@ export function useWarehouseOrder(
     if (id || orderRef) {
       orderData.fetchWarehouseOrder({ id, orderRef });
     }
-  }, [id, orderRef, orderData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, orderRef, orderData.fetchWarehouseOrder]);
 
   return {
     order: orderData.warehouseOrder,
@@ -474,7 +484,8 @@ export function useAcoOrderReport(
     if (reference) {
       orderData.fetchAcoOrderReport({ reference });
     }
-  }, [reference, orderData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reference, orderData.fetchAcoOrderReport]);
 
   return {
     report: orderData.acoOrderReport,
@@ -498,7 +509,8 @@ export function useOrderLoadingRecords(
     if (filter.startDate && filter.endDate) {
       orderData.fetchOrderLoadingRecords({ input: filter });
     }
-  }, [filter, orderData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, orderData.fetchOrderLoadingRecords]);
 
   return {
     records: orderData.orderLoadingRecords,

@@ -6,6 +6,7 @@ import type { Database } from '@/types/database/supabase';
 import { getErrorMessage } from '@/types/core/error';
 import { AssistantService } from '@/app/services/assistantService';
 import { SYSTEM_PROMPT } from '@/lib/openai-assistant-config';
+import { sendOrderCreatedEmail } from '../services/emailService';
 import crypto from 'crypto';
 
 // ACO 產品代碼列表
@@ -372,8 +373,6 @@ async function sendEmailNotification(
 ): Promise<{ success: boolean; error?: string; details?: unknown }> {
   try {
     console.log('[sendEmailNotification] Starting email notification process');
-    
-    const { sendOrderCreatedEmail } = await import('../services/emailService');
 
     const emailRequestBody = {
       orderData: orderData.products.map(product => ({

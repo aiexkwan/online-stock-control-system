@@ -6,7 +6,7 @@
 
 'use client';
 
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { useQuery, gql } from '@apollo/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -34,6 +34,8 @@ import {
 } from 'recharts';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
+import { AnalysisCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
+import { getCardTheme, cardTextStyles, cardChartColors } from '@/lib/card-system/theme';
 import {
   ChartType,
   AggregationType,
@@ -126,19 +128,8 @@ const CHART_CARD_QUERY = gql`
   }
 `;
 
-// 默認顏色配置
-const DEFAULT_COLORS = [
-  '#3b82f6', // blue
-  '#10b981', // emerald
-  '#8b5cf6', // violet
-  '#f59e0b', // amber
-  '#ef4444', // red
-  '#06b6d4', // cyan
-  '#ec4899', // pink
-  '#84cc16', // lime
-  '#6366f1', // indigo
-  '#14b8a6', // teal
-];
+// 使用統一的圖表顏色系統
+const DEFAULT_COLORS = cardChartColors.extended;
 
 
 export const WorkLevelCard: React.FC<WorkLevelCardProps> = ({
@@ -163,6 +154,8 @@ export const WorkLevelCard: React.FC<WorkLevelCardProps> = ({
   onChartClick,
   onRefresh,
 }) => {
+  // Cleanup ref for polling interval
+  const cleanupRef = useRef<(() => void) | null>(null);
   // 部門篩選狀態 - 改為單選
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
 
@@ -210,15 +203,24 @@ export const WorkLevelCard: React.FC<WorkLevelCardProps> = ({
   );
 
   // 執行 GraphQL 查詢
-  const { data, loading, error, refetch } = useQuery<{ chartCardData: ChartCardData }>(
+  const { data, loading, error, refetch, stopPolling, startPolling } = useQuery<{ chartCardData: ChartCardData }>(
     CHART_CARD_QUERY,
     {
       variables: { input: queryInput },
       fetchPolicy: 'cache-and-network',
-      pollInterval: 60000, // 每分鐘輪詢
+      pollInterval: isEditMode ? 0 : 60000, // 編輯模式時不輪詢
       skip: isEditMode, // 編輯模式時跳過查詢
     }
   );
+
+  // 確保在組件卸載時清理輪詢
+  useEffect(() => {
+    return () => {
+      if (stopPolling) {
+        stopPolling();
+      }
+    };
+  }, [stopPolling]);
 
   // 處理刷新
   const handleRefresh = () => {
@@ -263,9 +265,12 @@ export const WorkLevelCard: React.FC<WorkLevelCardProps> = ({
           <AreaChart 
             {...commonProps}
             onClick={(data: unknown) => {
-              if (onChartClick && data && typeof data === 'object') {
-                const clickData = data as ChartClickEventData;
-                onChartClick(clickData);
+              if (onChartClick && data && typeof data === 'object' && 'activePayload' in data) {
+                // Type guard to ensure data has the expected structure
+                const chartData = data as { activePayload?: Array<{ payload?: unknown }> };
+                if (chartData.activePayload?.[0]?.payload) {
+                  onChartClick(chartData.activePayload[0].payload as ChartClickEventData);
+                }
               }
             }}
           >
@@ -299,9 +304,12 @@ export const WorkLevelCard: React.FC<WorkLevelCardProps> = ({
           <BarChart 
             {...commonProps}
             onClick={(data: unknown) => {
-              if (onChartClick && data && typeof data === 'object') {
-                const clickData = data as ChartClickEventData;
-                onChartClick(clickData);
+              if (onChartClick && data && typeof data === 'object' && 'activePayload' in data) {
+                // Type guard to ensure data has the expected structure
+                const chartData = data as { activePayload?: Array<{ payload?: unknown }> };
+                if (chartData.activePayload?.[0]?.payload) {
+                  onChartClick(chartData.activePayload[0].payload as ChartClickEventData);
+                }
               }
             }}
           >
@@ -331,9 +339,12 @@ export const WorkLevelCard: React.FC<WorkLevelCardProps> = ({
           <LineChart 
             {...commonProps}
             onClick={(data: unknown) => {
-              if (onChartClick && data && typeof data === 'object') {
-                const clickData = data as ChartClickEventData;
-                onChartClick(clickData);
+              if (onChartClick && data && typeof data === 'object' && 'activePayload' in data) {
+                // Type guard to ensure data has the expected structure
+                const chartData = data as { activePayload?: Array<{ payload?: unknown }> };
+                if (chartData.activePayload?.[0]?.payload) {
+                  onChartClick(chartData.activePayload[0].payload as ChartClickEventData);
+                }
               }
             }}
           >
@@ -447,31 +458,42 @@ export const WorkLevelCard: React.FC<WorkLevelCardProps> = ({
   // 錯誤狀態
   if (error && !data) {
     return (
-      <div
-        className={cn(
-          'flex items-center justify-center rounded-lg bg-transparent backdrop-blur-[10px] border border-white/20 shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] p-8',
-          className
-        )}
+      <AnalysisCard
+        className={className}
+        isLoading={false}
+        status="error"
       >
-        <ExclamationTriangleIcon className='mr-2 h-6 w-6 text-red-500' />
-        <span className='text-red-700 dark:text-red-300'>
-          Failed to load chart: {error.message}
-        </span>
-      </div>
+        <div className='flex items-center justify-center h-full p-8'>
+          <ExclamationTriangleIcon className='mr-2 h-6 w-6 text-red-500' />
+          <span className={cardTextStyles.error}>
+            Failed to load chart: {error.message}
+          </span>
+        </div>
+      </AnalysisCard>
     );
   }
 
   // 加載狀態
   if (loading && !data) {
     return (
-      <div className={cn('animate-pulse bg-transparent backdrop-blur-[10px] border border-white/20 shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] rounded-lg', className)}>
-        <div className='rounded-lg bg-gray-200/20 dark:bg-gray-700/20' style={{ height }} />
-      </div>
+      <AnalysisCard
+        className={className}
+        isLoading={true}
+      >
+        <div className='rounded-lg bg-white/5 backdrop-blur-sm' style={{ height }} />
+      </AnalysisCard>
     );
   }
 
   return (
-    <div className={cn('space-y-4 bg-transparent backdrop-blur-[10px] border border-white/20 shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] rounded-lg p-4', className)}>
+    <AnalysisCard
+      className={className}
+      isLoading={loading}
+      borderGlow="hover"
+      glassmorphicVariant="default"
+      padding="base"
+    >
+      <div className='space-y-4'>
       {/* 性能指標（可選） */}
       {showPerformance && data?.chartCardData.performance && (
         <div className='flex items-center justify-between px-2 text-xs text-gray-500 dark:text-gray-400'>
@@ -500,7 +522,7 @@ export const WorkLevelCard: React.FC<WorkLevelCardProps> = ({
               'rounded-lg p-6 shadow-md',
               data.chartCardData.config.plugins?.backgroundColor === '#000000'
                 ? 'bg-black text-white'
-                : 'bg-white dark:bg-gray-800'
+                : 'bg-transparent'
             )}
           >
             {/* 圖表標題 */}
@@ -589,7 +611,8 @@ export const WorkLevelCard: React.FC<WorkLevelCardProps> = ({
           </button>
         </div>
       )}
-    </div>
+      </div>
+    </AnalysisCard>
   );
 };
 

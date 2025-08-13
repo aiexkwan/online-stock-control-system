@@ -7,7 +7,8 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { SpecialCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
+import { cardTextStyles } from '@/lib/card-system/theme';
 import { motion } from 'framer-motion';
 import { Archive, History, Clock, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -90,17 +91,17 @@ interface StatCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon, trend, trendUp, loading }) => {
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+    <div className="rounded-lg border-none bg-white/5 backdrop-blur-sm p-4">
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <p className="text-sm text-slate-400">{title}</p>
+          <p className={cn(cardTextStyles.labelSmall, "text-slate-400")}>{title}</p>
           {loading ? (
             <Skeleton className="mt-1 h-8 w-20" />
           ) : (
-            <p className="mt-1 text-2xl font-semibold text-white">{value}</p>
+            <p className={cn(cardTextStyles.title, "mt-1 text-white")}>{value}</p>
           )}
           {trend && !loading && (
-            <p className={cn("mt-1 text-sm", trendUp ? "text-green-400" : "text-red-400")}>
+            <p className={cn(cardTextStyles.body, "mt-1", trendUp ? "text-green-400" : "text-red-400")}>
               {trend}
             </p>
           )}
@@ -248,12 +249,17 @@ export const DepartWareCard: React.FC<DepartWareCardProps> = ({
   };
 
   return (
-    <Card className="h-full bg-transparent border-0">
-      <CardHeader>
-        <CardTitle className="text-white">{title}</CardTitle>
-        <CardDescription className="text-slate-400">{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <SpecialCard 
+      className="h-full"
+      variant="glass"
+      borderGlow="hover"
+      padding="base"
+    >
+      <div className="space-y-2 mb-6">
+        <h3 className={cn(cardTextStyles.title, "text-white")}>{title}</h3>
+        <p className={cn(cardTextStyles.bodySmall, "text-slate-400")}>{description}</p>
+      </div>
+      <div className="space-y-6">
         {/* Top Stats Row */}
         <div className="grid grid-cols-3 gap-4">
           {statsDisplay.map((stat, index) => (
@@ -271,9 +277,9 @@ export const DepartWareCard: React.FC<DepartWareCardProps> = ({
         {/* Middle Section - Two columns */}
         <div className="grid grid-cols-2 gap-4">
           {/* Last 24 hours Activity */}
-          <div className="rounded-lg border border-slate-700 bg-slate-800/50 backdrop-blur-sm p-4">
-            <h3 className="mb-4 text-lg font-semibold text-white">Last 24 hours Activity</h3>
-            <div className="mb-3 grid grid-cols-4 gap-2 text-xs font-medium text-slate-400 px-2">
+          <div className="rounded-lg border-none bg-white/5 backdrop-blur-sm p-4">
+            <h3 className={cn(cardTextStyles.subtitle, "mb-4 text-white")}>Last 24 hours Activity</h3>
+            <div className={cn(cardTextStyles.labelSmall, "mb-3 grid grid-cols-4 gap-2 font-medium text-slate-400 px-2")}>
               <span>Time</span>
               <span>Staff</span>
               <span>Action</span>
@@ -283,12 +289,12 @@ export const DepartWareCard: React.FC<DepartWareCardProps> = ({
               {loading ? (
                 <LoadingSkeleton />
               ) : recentActivities.length === 0 ? (
-                <div className="text-center py-4 text-slate-400">No recent activities</div>
+                <div className={cn(cardTextStyles.body, "text-center py-4 text-slate-400")}>No recent activities</div>
               ) : (
                 recentActivities.slice(0, 7).map((activity: RecentActivity, index: number) => (
                   <div
                     key={index}
-                    className="grid grid-cols-4 gap-2 rounded-md bg-slate-700/30 p-2 text-sm"
+                    className={cn(cardTextStyles.body, "grid grid-cols-4 gap-2 rounded-md bg-white/10 p-2")}
                   >
                     <span className="text-slate-300">{activity.time}</span>
                     <span className="text-white">{activity.staff}</span>
@@ -306,9 +312,9 @@ export const DepartWareCard: React.FC<DepartWareCardProps> = ({
           </div>
 
           {/* Order Completion */}
-          <div className="rounded-lg border border-slate-700 bg-slate-800/50 backdrop-blur-sm p-4">
-            <h3 className="mb-4 text-lg font-semibold text-white">Order Completion</h3>
-            <div className="mb-3 grid grid-cols-3 gap-2 text-xs font-medium text-slate-400 px-2">
+          <div className="rounded-lg border-none bg-white/5 backdrop-blur-sm p-4">
+            <h3 className={cn(cardTextStyles.subtitle, "mb-4 text-white")}>Order Completion</h3>
+            <div className={cn(cardTextStyles.labelSmall, "mb-3 grid grid-cols-3 gap-2 font-medium text-slate-400 px-2")}>
               <span>Order</span>
               <span>Completion</span>
               <span>Latest Update</span>
@@ -317,12 +323,12 @@ export const DepartWareCard: React.FC<DepartWareCardProps> = ({
               {loading ? (
                 <LoadingSkeleton />
               ) : orderCompletions.length === 0 ? (
-                <div className="text-center py-4 text-slate-400">No order data available</div>
+                <div className={cn(cardTextStyles.body, "text-center py-4 text-slate-400")}>No order data available</div>
               ) : (
                 orderCompletions.slice(0, 7).map((order: OrderCompletion, index: number) => (
                   <div
                     key={index}
-                    className="grid grid-cols-3 gap-2 rounded-md bg-slate-700/30 p-2 text-sm items-center"
+                    className={cn(cardTextStyles.body, "grid grid-cols-3 gap-2 rounded-md bg-white/10 p-2 items-center")}
                   >
                     <span 
                       className={cn(
@@ -340,9 +346,9 @@ export const DepartWareCard: React.FC<DepartWareCardProps> = ({
                     >
                       <Progress 
                         value={order.completionPercentage} 
-                        className="h-2 bg-slate-700"
+                        className="h-2 bg-white/10"
                       />
-                      <span className="text-xs text-slate-400 mt-1">
+                      <span className={cn(cardTextStyles.labelSmall, "text-slate-400 mt-1")}>
                         {order.completionPercentage}%
                       </span>
                     </div>
@@ -357,31 +363,31 @@ export const DepartWareCard: React.FC<DepartWareCardProps> = ({
         {/* Bottom Section - Coming Soon Areas */}
         <div className="grid grid-cols-2 gap-4">
           {/* Coming Soon - Left */}
-          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4 min-h-[200px] flex items-center justify-center">
+          <div className="rounded-lg border-none bg-white/5 backdrop-blur-sm p-4 min-h-[200px] flex items-center justify-center">
             <div className="text-center">
-              <h3 className="text-lg font-semibold text-slate-400 mb-2">Coming Soon</h3>
-              <p className="text-sm text-slate-500">New features will be available here</p>
+              <h3 className={cn(cardTextStyles.subtitle, "text-slate-400 mb-2")}>Coming Soon</h3>
+              <p className={cn(cardTextStyles.body, "text-slate-500")}>New features will be available here</p>
             </div>
           </div>
 
           {/* Coming Soon - Right */}
-          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4 min-h-[200px] flex items-center justify-center">
+          <div className="rounded-lg border-none bg-white/5 backdrop-blur-sm p-4 min-h-[200px] flex items-center justify-center">
             <div className="text-center">
-              <h3 className="text-lg font-semibold text-slate-400 mb-2">Coming Soon</h3>
-              <p className="text-sm text-slate-500">New features will be available here</p>
+              <h3 className={cn(cardTextStyles.subtitle, "text-slate-400 mb-2")}>Coming Soon</h3>
+              <p className={cn(cardTextStyles.body, "text-slate-500")}>New features will be available here</p>
             </div>
           </div>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="rounded-lg border border-red-700 bg-red-900/20 p-4">
-            <p className="text-red-400 text-sm">
+          <div className="rounded-lg border-none bg-red-500/10 backdrop-blur-sm p-4">
+            <p className={cn(cardTextStyles.body, "text-red-400")}>
               Error loading data. The system will retry automatically.
             </p>
           </div>
         )}
-      </CardContent>
+      </div>
 
       {/* Order Preview Dialog */}
       {selectedOrder && !selectedOrder.showDetails && selectedOrder.docUrl && (
@@ -409,7 +415,7 @@ export const DepartWareCard: React.FC<DepartWareCardProps> = ({
               <DialogTitle>{selectedOrder.orderRef} Details</DialogTitle>
             </DialogHeader>
             <div className="mt-4">
-              <div className="grid grid-cols-5 gap-2 text-sm font-medium text-slate-400 mb-3 px-2">
+              <div className={cn(cardTextStyles.body, "grid grid-cols-5 gap-2 text-slate-400 mb-3 px-2 font-semibold")}>
                 <span>Product Code</span>
                 <span>Description</span>
                 <span>Total Qty</span>
@@ -420,12 +426,12 @@ export const DepartWareCard: React.FC<DepartWareCardProps> = ({
                 {orderDetailsLoading ? (
                   <LoadingSkeleton />
                 ) : orderDetails.length === 0 ? (
-                  <div className="text-center py-4 text-slate-400">No details available</div>
+                  <div className={cn(cardTextStyles.body, "text-center py-4 text-slate-400")}>No details available</div>
                 ) : (
                   orderDetails.map((detail: OrderDetail, index: number) => (
                     <div
                       key={index}
-                      className="grid grid-cols-5 gap-2 rounded-md bg-slate-700/30 p-2 text-sm"
+                      className={cn(cardTextStyles.body, "grid grid-cols-5 gap-2 rounded-md bg-white/10 p-2")}
                     >
                       <span className="text-slate-300">{detail.productCode}</span>
                       <span className="text-white">{detail.productDesc || 'N/A'}</span>
@@ -440,7 +446,7 @@ export const DepartWareCard: React.FC<DepartWareCardProps> = ({
           </DialogContent>
         </Dialog>
       )}
-    </Card>
+    </SpecialCard>
   );
 };
 

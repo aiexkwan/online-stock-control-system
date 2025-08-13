@@ -1,0 +1,200 @@
+/**
+ * Card Icon System Styles
+ * 卡片圖標系統樣式 - 支持純透明設計的圖標差異化
+ * 
+ * Created: 2025-08-13
+ * Purpose: Icon styling system for card type differentiation without colors
+ */
+
+/* 基礎圖標樣式變量 */
+:root {
+  --card-icon-opacity: 0.8;
+  --card-icon-size: 1.5rem;
+  --card-icon-hover-opacity: 1;
+}
+
+/* 圖標樣式類別 */
+.card-icon {
+  width: var(--card-icon-size);
+  height: var(--card-icon-size);
+  opacity: var(--card-icon-opacity);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-icon:hover {
+  opacity: var(--card-icon-hover-opacity);
+}
+
+/* 操作類圖標 - 實心填充 */
+.card-icon--filled {
+  fill: currentColor;
+  stroke: none;
+}
+
+/* 分析類圖標 - 線框樣式 */
+.card-icon--outline {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+/* 數據類圖標 - 點線樣式 */
+.card-icon--dotted {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-dasharray: 2 2;
+}
+
+/* 報表類圖標 - 條紋樣式 */
+.card-icon--striped {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1;
+  mask: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 2px,
+    black 2px,
+    black 4px
+  );
+}
+
+/* 圖表類圖標 - 分段樣式 */
+.card-icon--segmented {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-dasharray: 8 4;
+}
+
+/* 特殊類圖標 - 漸變樣式 */
+.card-icon--gradient {
+  fill: url(#cardIconGradient);
+  stroke: none;
+  opacity: 0.9;
+}
+
+/* 角標指示器樣式 */
+.corner-indicator {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+/* 圓形角標 */
+.corner-indicator--circle {
+  border-radius: 50%;
+}
+
+/* 六邊形角標 */
+.corner-indicator--hexagon {
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+
+/* 方形角標 */
+.corner-indicator--square {
+  border-radius: 2px;
+}
+
+/* 菱形角標 */
+.corner-indicator--diamond {
+  transform: rotate(45deg);
+}
+
+/* 三角形角標 */
+.corner-indicator--triangle {
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+/* 星形角標 */
+.corner-indicator--star {
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+/* 角標位置 */
+.corner-indicator--top-left {
+  top: 12px;
+  left: 12px;
+}
+
+.corner-indicator--top-right {
+  top: 12px;
+  right: 12px;
+}
+
+/* Hover 效果 */
+.enhanced-glassmorphic-card:hover .corner-indicator {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.1);
+}
+
+.enhanced-glassmorphic-card:hover .corner-indicator--diamond {
+  transform: rotate(45deg) scale(1.1);
+}
+
+/* 圖標漸變定義 */
+.card-icon-gradients {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 響應式調整 */
+@media (max-width: 768px) {
+  :root {
+    --card-icon-size: 1.25rem;
+  }
+  
+  .corner-indicator {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .corner-indicator--top-left,
+  .corner-indicator--top-right {
+    top: 8px;
+  }
+  
+  .corner-indicator--top-left {
+    left: 8px;
+  }
+  
+  .corner-indicator--top-right {
+    right: 8px;
+  }
+}
+
+/* 可訪問性增強 */
+@media (prefers-reduced-motion: reduce) {
+  .card-icon,
+  .corner-indicator {
+    transition: none;
+  }
+  
+  .enhanced-glassmorphic-card:hover .corner-indicator {
+    transform: none;
+  }
+  
+  .enhanced-glassmorphic-card:hover .corner-indicator--diamond {
+    transform: rotate(45deg);
+  }
+}
+
+/* 高對比模式支持 */
+@media (prefers-contrast: high) {
+  .corner-indicator {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(255, 255, 255, 0.9);
+  }
+  
+  .card-icon {
+    opacity: 1;
+  }
+}

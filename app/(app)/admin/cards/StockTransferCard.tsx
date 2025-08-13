@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { GlassmorphicCard } from '../components/GlassmorphicCard';
+import { OperationCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { StatusMessage } from '@/components/ui/universal-stock-movement-layout';
 import { Input } from '@/components/ui/input';
 import { SearchInput, SearchInputRef, FormInputGroup, FormOption } from '../components/shared';
@@ -353,9 +353,9 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
 
   return (
     <div className={`h-full ${className || ''}`}>
-      <GlassmorphicCard
-        variant="default"
-        hover={false}
+      <OperationCard
+        variant="glass"
+        isHoverable={false}
         borderGlow={false}
         className={`h-full overflow-hidden transition-all duration-300 ${theme.borderColor} ${theme.glowColor}`}
         padding="small"
@@ -549,7 +549,7 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
             </div>
           </div>
         </div>
-      </GlassmorphicCard>
+      </OperationCard>
     </div>
   );
 };

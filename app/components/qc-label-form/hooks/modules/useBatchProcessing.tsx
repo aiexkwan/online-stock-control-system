@@ -15,7 +15,7 @@ import {
   BatchProcessingResult,
   BusinessSchemaValidator,
   BusinessTypeGuards,
-} from '@/types/business/schemas';
+} from '@/lib/types/business-schemas';
 
 interface BatchItem {
   id: string;

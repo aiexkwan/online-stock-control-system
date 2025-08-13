@@ -765,32 +765,6 @@
           }
         },
         {
-          "file": "lib/recharts-dynamic.ts",
-          "line": 17,
-          "column": 9,
-          "context": "data?: any[];",
-          "category": "api-response",
-          "config": {
-            "priority": "medium",
-            "refactorType": "api-response",
-            "suggestedType": "ApiResponse<T> | unknown",
-            "complexity": "medium"
-          }
-        },
-        {
-          "file": "lib/recharts-dynamic.ts",
-          "line": 93,
-          "column": 9,
-          "context": "data?: any[];",
-          "category": "api-response",
-          "config": {
-            "priority": "medium",
-            "refactorType": "api-response",
-            "suggestedType": "ApiResponse<T> | unknown",
-            "complexity": "medium"
-          }
-        },
-        {
           "file": "lib/inventory/__tests__/test-helpers.ts",
           "line": 115,
           "column": 36,

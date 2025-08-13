@@ -6,7 +6,7 @@
 'use client';
 
 import React, { useCallback, useMemo } from 'react';
-import { GlassmorphicCard } from '@/app/(app)/admin/components/GlassmorphicCard';
+import { DataCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { 
   Activity, 
   TrendingUp, 
@@ -70,10 +70,10 @@ const MetricCard: React.FC<MetricCardProps> = ({
   };
 
   return (
-    <GlassmorphicCard 
-      variant="light" 
+    <DataCard 
+      variant="glass" 
       className={`transition-all duration-300 hover:scale-105 border ${getStatusColor()} ${className}`}
-      padding="medium"
+      padding="base"
     >
       <div className="flex items-center justify-between mb-2">
         <Icon className={`h-5 w-5 ${getStatusColor().split(' ')[0]}`} />
@@ -86,7 +86,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
           {unit && <span className="text-sm ml-1">{unit}</span>}
         </p>
       </div>
-    </GlassmorphicCard>
+    </DataCard>
   );
 };
 
@@ -299,9 +299,9 @@ export function PerformanceDashboard({
       </div>
 
       {/* Alerts Section */}
-      <GlassmorphicCard 
-        variant='default' 
-        hover={false} 
+      <DataCard 
+        variant='glass' 
+        isHoverable={false} 
         borderGlow={false}
         className="transition-all duration-300"
       >
@@ -315,13 +315,13 @@ export function PerformanceDashboard({
           </div>
           <AlertList alerts={alerts} />
         </div>
-      </GlassmorphicCard>
+      </DataCard>
 
       {/* Performance Summary */}
       {report && (
-        <GlassmorphicCard 
-          variant='light' 
-          hover={false} 
+        <DataCard 
+          variant='glass' 
+          isHoverable={false} 
           borderGlow={false}
           className="transition-all duration-300"
         >
@@ -351,14 +351,14 @@ export function PerformanceDashboard({
               </p>
             </div>
           </div>
-        </GlassmorphicCard>
+        </DataCard>
       )}
 
       {/* No Data State */}
       {!isMonitoring && metrics.length === 0 && (
-        <GlassmorphicCard 
-          variant='default' 
-          hover={false} 
+        <DataCard 
+          variant='glass' 
+          isHoverable={false} 
           borderGlow={false}
           className="transition-all duration-300"
         >
@@ -375,7 +375,7 @@ export function PerformanceDashboard({
               Start Monitoring
             </button>
           </div>
-        </GlassmorphicCard>
+        </DataCard>
       )}
     </div>
   );

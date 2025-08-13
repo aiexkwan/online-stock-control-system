@@ -35,7 +35,7 @@ import {
 } from 'lucide-react';
 import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
 // Removed design-system import - using direct Tailwind classes
-import { GlassmorphicCard } from '../components/GlassmorphicCard';
+import { OperationCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { SearchInput, SearchInputRef, StepIndicator, Step } from '../components/shared';
 import {
   AlertDialog,
@@ -396,7 +396,7 @@ export const VoidPalletCard: React.FC<VoidPalletCardProps> = ({
 
   return (
     <>
-      <GlassmorphicCard className={cn('h-full', className)}>
+      <OperationCard className={cn('h-full', className)} borderGlow={false} isHoverable={false}>
         <div className="bg-transparent border-0">
           {/* Step indicator */}
           <StepIndicator
@@ -423,7 +423,7 @@ export const VoidPalletCard: React.FC<VoidPalletCardProps> = ({
               </motion.div>
             </AnimatePresence>
         </div>
-      </GlassmorphicCard>
+      </OperationCard>
 
       {/* QR Scanner */}
       {showQrScanner && (

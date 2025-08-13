@@ -1,3 +1,5 @@
+import 'server-only';
+
 interface OrderItem {
   order_ref: number;
   product_code: string;

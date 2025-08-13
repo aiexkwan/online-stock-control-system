@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 
 // Import our new theme systems
 import { cardThemes, cardAnimations, cardStatusColors, type CardBaseProps } from './theme';
-import { glassmorphicThemes, dynamicBorderGlow, performanceOptimizations, generateGlassmorphicCSSVariables } from './glassmorphic-integration';
+import { glassmorphicThemes, dynamicBorderGlow, performanceOptimizations, generateGlassmorphicCSSVariables, iconStyleSystem } from './glassmorphic-integration';
 import { accessibleCardColors, validateTextContrast } from './accessibility-colors';
 import { responsiveUtils } from './responsive-design';
 import visualGuidelines from './visual-guidelines';
@@ -141,7 +141,7 @@ export const EnhancedGlassmorphicCard: React.FC<EnhancedGlassmorphicCardProps> =
       <div
         className="pointer-events-none absolute inset-[-2px] rounded-[inherit] opacity-60"
         style={{
-          background: `linear-gradient(45deg, ${glassmorphicTheme.glowColor}, transparent, ${glassmorphicTheme.glowColor})`,
+          background: `linear-gradient(45deg, rgba(255, 255, 255, 0.4), transparent, rgba(255, 255, 255, 0.4))`,
           animation: glowConfig.animation,
           WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
           WebkitMaskComposite: 'xor',
@@ -150,7 +150,7 @@ export const EnhancedGlassmorphicCard: React.FC<EnhancedGlassmorphicCardProps> =
         }}
       />
     );
-  }, [borderGlow, perfConfig.enableAnimations, isHovered, isLoading, glassmorphicTheme.glowColor]);
+  }, [borderGlow, perfConfig.enableAnimations, isHovered, isLoading]);
 
   // 狀態指示器
   const statusIndicator = useMemo(() => {
@@ -191,7 +191,7 @@ export const EnhancedGlassmorphicCard: React.FC<EnhancedGlassmorphicCardProps> =
       backgroundColor: glassmorphicTheme.background,
       backdropFilter: perfConfig.useBackdropFilter ? `blur(${glassmorphicTheme.backdropBlur})` : 'none',
       WebkitBackdropFilter: perfConfig.useBackdropFilter ? `blur(${glassmorphicTheme.backdropBlur})` : 'none',
-      border: `1px solid ${glassmorphicTheme.borderColor}`,
+      border: 'none', // 移除所有邊框
       borderRadius: visualConfig.cornerRadius,
       
       // 陰影效果
@@ -216,13 +216,14 @@ export const EnhancedGlassmorphicCard: React.FC<EnhancedGlassmorphicCardProps> =
 
     // 選中狀態
     if (isSelected) {
-      baseStyles.borderColor = accessibleTheme.accent;
-      baseStyles.boxShadow = `${glassmorphicTheme.innerGlow}, 0 0 0 2px ${accessibleTheme.accent}40`;
+      // 移除邊框，只保留陰影效果
+      baseStyles.boxShadow = `${glassmorphicTheme.innerGlow}, 0 0 0 1px ${accessibleTheme.accent}20`;
     }
 
     // 焦點狀態
     if (isFocused) {
-      baseStyles.boxShadow = `${glassmorphicTheme.innerGlow}, 0 0 0 2px ${accessibleTheme.primary}`;
+      // 移除邊框，使用更細微的陰影
+      baseStyles.boxShadow = `${glassmorphicTheme.innerGlow}, 0 0 0 1px ${accessibleTheme.primary}30`;
     }
 
     // Hover 狀態
@@ -245,6 +246,11 @@ export const EnhancedGlassmorphicCard: React.FC<EnhancedGlassmorphicCardProps> =
     currentBreakpoint,
     style,
   ]);
+  
+  // 標題渲染邏輯 - 移除未定義變數
+  const titleElement = useMemo(() => {
+    return null; // 統一由子組件處理標題，避免重複
+  }, []);
 
   // 響應式隱藏檢查
   const shouldHide = responsiveHide.includes(currentBreakpoint);
@@ -254,24 +260,34 @@ export const EnhancedGlassmorphicCard: React.FC<EnhancedGlassmorphicCardProps> =
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      // 創建一個模擬的 mouse event 來觸發 onClick
-      if (onClick) {
-        const simulatedEvent = {
-          currentTarget: event.currentTarget,
-          target: event.target,
-          preventDefault: event.preventDefault.bind(event),
-          stopPropagation: event.stopPropagation.bind(event),
-          nativeEvent: {} as MouseEvent,
+      // Trigger click handler for keyboard activation
+      if (onClick && !isDisabled) {
+        // Create a proper synthetic event
+        const rect = event.currentTarget.getBoundingClientRect();
+        const syntheticEvent = new MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          view: window,
+          detail: 1,
+          screenX: rect.left + rect.width / 2,
+          screenY: rect.top + rect.height / 2,
+          clientX: rect.left + rect.width / 2,
+          clientY: rect.top + rect.height / 2,
+          ctrlKey: event.ctrlKey,
+          altKey: event.altKey,
+          shiftKey: event.shiftKey,
+          metaKey: event.metaKey,
           button: 0,
           buttons: 1,
-          clientX: 0,
-          clientY: 0,
-          ctrlKey: event.ctrlKey,
-          metaKey: event.metaKey,
-          shiftKey: event.shiftKey,
-          altKey: event.altKey,
-        } as unknown as React.MouseEvent<HTMLDivElement>;
-        onClick(simulatedEvent);
+        });
+        
+        // Dispatch as React event
+        Object.defineProperty(syntheticEvent, 'currentTarget', {
+          value: event.currentTarget,
+          enumerable: true,
+        });
+        
+        onClick(syntheticEvent as unknown as React.MouseEvent<HTMLDivElement>);
       }
     }
     onKeyDown?.(event);
@@ -319,16 +335,25 @@ export const EnhancedGlassmorphicCard: React.FC<EnhancedGlassmorphicCardProps> =
       onMouseLeave={() => setIsHovered(false)}
       {...animationProps}
     >
+      {/* 角標指示器已整合到主題系統 */}
+      
       {/* 邊框發光效果 */}
       {glowElement}
       
       {/* 狀態指示器 */}
       {statusIndicator}
       
+      {/* 容器標題（如果需要且無衝突） */}
+      {titleElement}
+      
       {/* 主要內容 */}
       <div 
         className="relative z-10 h-full"
-        style={innerStyle}
+        style={{
+          ...innerStyle,
+          // 應用圖標樣式到內部SVG圖標
+          ['--icon-style' as string]: iconStyleSystem[glassmorphicTheme.iconStyle],
+        }}
       >
         {children}
       </div>

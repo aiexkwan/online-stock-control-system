@@ -11,7 +11,7 @@ import {
   type VoidRecord,
   type InventoryTransaction,
   type BatchProcessingResult,
-} from '../business/schemas';
+} from '@/lib/types/business-schemas';
 
 /**
  * 通用類型守衛類

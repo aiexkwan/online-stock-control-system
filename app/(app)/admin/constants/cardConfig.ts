@@ -19,7 +19,7 @@ import {
   ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 
-import type { HeroIcon } from '@/types/heroicons';
+import type { HeroIcon } from '../types/heroicons';
 import type {
   CardConfig,
   CardCategory,

@@ -25,13 +25,9 @@ export {
   toRecordArray,
   toSupabaseResponse,
   extractCount,
-  isAlertLevel,
-  isAlertCondition,
-  safeAlertLevel,
-  safeAlertCondition,
 } from './database/helpers';
 
-// AlertLevel 和 AlertCondition 從 @/lib/alerts/types 導入
+// Alert types removed during cleanup (2025-08-13) - system deprecated for security
 
 // 認證類型 - 已遷移到其他模塊
 
@@ -58,17 +54,17 @@ export type {
   WarehouseWorkLevelResult,
 } from '@/lib/types/warehouse-work-level';
 
-// 業務邏輯類型
-export type { VoidReason, VoidRecord, VoidReportFilters } from './business/schemas';
+// 業務邏輯類型 - 從 lib/types 導入
+export type { VoidReason, VoidRecord, VoidReportFilters } from '@/lib/types/business-schemas';
 // SupplierInfo 和 DatabaseSupplierInfo 在下方統一導出
 
-// 外部庫類型
-export type {
-  ResponsiveContainerProps,
-  TooltipProps,
-  ChartElementProps,
-  BaseChartProps,
-} from './external/recharts';
+// 外部庫類型 - recharts types temporarily disabled (file missing)
+// export type {
+//   ResponsiveContainerProps,
+//   TooltipProps,
+//   ChartElementProps,
+//   BaseChartProps,
+// } from './external/recharts';
 
 // 庫存分析類型
 export type {
@@ -87,7 +83,7 @@ export type {
   ABC_Analysis,
   ABCProduct,
   InventoryFilters,
-  AlertConfig,
+  InventoryAlertConfig,
   InventoryForecast,
 } from './external/inventory-analysis';
 
@@ -153,47 +149,30 @@ export {
 // API 響應處理器 - 現在從 lib/types 導入
 export { ApiResponseHandler } from '@/lib/types/api-response-handlers';
 
-// 供應商類型和 RPC 響應類型 - Simplified exports to fix build
+// 供應商類型和 RPC 響應類型 - 從 lib/types 導入
 export type {
   SupplierInfo,
   DatabaseSupplierInfo,
-} from './business/supplier';
+} from '@/lib/types/supplier-types';
 export {
   convertDatabaseSupplierInfo,
-} from './business/supplier';
+} from '@/lib/types/supplier-types';
 
-// Context Types
-export type { DialogType, DialogData, DialogContextType, DialogHookResult } from './contexts';
+// Context Types - Migrated to /lib/dialog-system
+// Legacy exports for backward compatibility (deprecated)
+export type { 
+  BusinessDialogType as DialogType, 
+  BusinessDialogData as DialogData, 
+  BusinessDialogContextType as DialogContextType, 
+  BusinessDialogHookResult as DialogHookResult 
+} from '@/lib/dialog-system/business/types';
 
-// Constants Types
-export type {
-  PalletWeights,
-  PackageWeights,
-  SystemLimits,
-  LabelModes,
-  PalletTypeOption,
-  PackageTypeOption,
-  PalletTypeKey,
-  PackageTypeKey,
-  LabelMode,
-} from './constants';
+// Constants Types - Migrated to /lib/types/grn.ts
+// GRN-related types are now imported directly from @/lib/types/grn
 
-// Configuration Types
-export type {
-  ActiveTheme,
-  ThemeMapping,
-  ThemeDisplayNames,
-  ThemeDescriptions,
-  ABTestingControls,
-  DualRunControls,
-  OptimizationControls,
-  MigrationControls,
-  RegistryControls,
-  TestControlsUnion,
-  TestCategory,
-  TestConfig,
-  TestCategoryConfig,
-} from './config';
+// Configuration Types - REMOVED (types/config directory cleaned up)
+// Previously exported unused types: ActiveTheme, ThemeMapping, TestConfig, etc.
+// These types were not used anywhere in the codebase and have been safely removed.
 
 // Utility Types
 // Note: Performance types temporarily disabled pending utils module completion
@@ -226,7 +205,7 @@ export type {
 
 export type {
   HistoryRecord,
-} from './business/schemas';
+} from '@/lib/types/business-schemas';
 
 export type {
   ErrorState,

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { GlassmorphicCard } from '../components/GlassmorphicCard';
+import { DataCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { ClipboardDocumentListIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { useStockCount } from '../hooks/useStockCount';
 import { 
@@ -46,9 +46,9 @@ export const StockCountCard: React.FC<StockCountCardProps> = ({
 
   return (
     <div className={`h-full ${className || ''}`}>
-      <GlassmorphicCard
-        variant="default"
-        hover={false}
+      <DataCard
+        variant="glass"
+        isHoverable={false}
         borderGlow={false}
         className="h-full overflow-hidden"
       >
@@ -162,7 +162,7 @@ export const StockCountCard: React.FC<StockCountCardProps> = ({
           )}
         </div>
         </StockCountErrorBoundary>
-      </GlassmorphicCard>
+      </DataCard>
     </div>
   );
 };

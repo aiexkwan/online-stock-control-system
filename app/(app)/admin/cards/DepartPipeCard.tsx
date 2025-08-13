@@ -7,7 +7,6 @@
 'use client';
 
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { Activity, Package, TrendingUp, Monitor, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -15,6 +14,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useQuery, gql } from '@apollo/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { StockItem, MachineState } from '@/lib/graphql/types/database-types';
+import { ReportCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
+import { cardTextStyles } from '@/lib/card-system/theme';
 
 // GraphQL Query for Pipe Department - Fixed Connection format
 const DEPARTMENT_PIPE_QUERY = gql`
@@ -94,14 +95,14 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, trend, trendUp,
     <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <p className="text-sm text-slate-400">{title}</p>
+          <p className={cn(cardTextStyles.labelSmall, "text-slate-400")}>{title}</p>
           {loading ? (
-            <Skeleton className="h-8 w-20 mt-1" />
+            <Skeleton className="mt-1 h-8 w-20" />
           ) : (
-            <p className="mt-1 text-2xl font-semibold text-white">{value}</p>
+            <p className={cn(cardTextStyles.title, "mt-1")}>{value}</p>
           )}
-          {trend && (
-            <p className={cn("mt-1 text-sm", trendUp ? "text-green-400" : "text-red-400")}>
+          {trend && !loading && (
+            <p className={cn(cardTextStyles.bodySmall, "mt-1", trendUp ? "text-green-400" : "text-red-400")}>
               {trend}
             </p>
           )}
@@ -114,12 +115,11 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, trend, trendUp,
   );
 };
 
-const LoadingRow = () => (
-  <div className="grid grid-cols-4 gap-2 py-2">
+const LoadingSkeleton = () => (
+  <div className="space-y-2">
     <Skeleton className="h-4 w-full" />
     <Skeleton className="h-4 w-full" />
-    <Skeleton className="h-4 w-full" />
-    <Skeleton className="h-4 w-full" />
+    <Skeleton className="h-4 w-3/4" />
   </div>
 );
 
@@ -135,40 +135,23 @@ export const DepartPipeCard: React.FC<DepartPipeCardProps> = ({
 
   const departmentData = data?.departmentPipeData;
 
-  // Error state with better debugging info
+  // Handle error state
   if (error) {
-    return (
-      <Card className="h-full bg-transparent border-0">
-        <CardHeader>
-          <CardTitle className="text-white">{title}</CardTitle>
-          <CardDescription className="text-slate-400">{description}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center h-[400px] text-red-400">
-            <div className="text-center">
-              <AlertCircle className="h-12 w-12 mx-auto mb-4" />
-              <p>Failed to load department data</p>
-              <p className="text-sm mt-2 text-slate-500">{error.message}</p>
-              <div className="mt-4 p-3 bg-slate-800/50 rounded text-xs text-left max-w-md">
-                <p className="text-slate-400 font-semibold mb-2">Debug Info:</p>
-                <p className="text-slate-500">• Check if GraphQL server is running</p>
-                <p className="text-slate-500">• Verify database connection</p>
-                <p className="text-slate-500">• Ensure Pipe products have production records</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    console.error('[DepartPipeCard] GraphQL Error:', error);
   }
 
   return (
-    <Card className="h-full bg-transparent border-0">
-      <CardHeader>
-        <CardTitle className="text-white">{title}</CardTitle>
-        <CardDescription className="text-slate-400">{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <ReportCard
+      className="h-full"
+      borderGlow="hover"
+      variant="glass"
+      padding="base"
+    >
+      <div className="space-y-2 mb-6">
+        <h3 className={cardTextStyles.title}>{title}</h3>
+        <p className={cn(cardTextStyles.bodySmall, "text-slate-400")}>{description}</p>
+      </div>
+      <div className="space-y-6">
         {/* Top Stats Row */}
         <div className="grid grid-cols-3 gap-4">
           <motion.div
@@ -178,7 +161,7 @@ export const DepartPipeCard: React.FC<DepartPipeCardProps> = ({
           >
             <StatCard
               title="Today Finished"
-              value={departmentData?.stats?.todayFinished?.toLocaleString() || '0'}
+              value={loading ? '...' : departmentData?.stats?.todayFinished?.toLocaleString() || '0'}
               icon={<Activity className="h-6 w-6" />}
               loading={loading}
             />
@@ -190,7 +173,7 @@ export const DepartPipeCard: React.FC<DepartPipeCardProps> = ({
           >
             <StatCard
               title="Past 7 days"
-              value={departmentData?.stats?.past7Days?.toLocaleString() || '0'}
+              value={loading ? '...' : departmentData?.stats?.past7Days?.toLocaleString() || '0'}
               icon={<Package className="h-6 w-6" />}
               loading={loading}
             />
@@ -202,7 +185,7 @@ export const DepartPipeCard: React.FC<DepartPipeCardProps> = ({
           >
             <StatCard
               title="Past 14 days"
-              value={departmentData?.stats?.past14Days?.toLocaleString() || '0'}
+              value={loading ? '...' : departmentData?.stats?.past14Days?.toLocaleString() || '0'}
               icon={<TrendingUp className="h-6 w-6" />}
               loading={loading}
             />
@@ -213,90 +196,114 @@ export const DepartPipeCard: React.FC<DepartPipeCardProps> = ({
         <div className="grid grid-cols-2 gap-4">
           {/* Top 10 Stock */}
           <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-            <h3 className="mb-4 text-lg font-semibold text-white">Top 10 Stock</h3>
-            {/* Table Header */}
-            <div className="grid grid-cols-4 gap-2 pb-2 border-b border-slate-700 text-sm font-medium text-slate-400">
-              <div>Product Code</div>
-              <div>Description</div>
-              <div>Latest Update</div>
-              <div className="text-right">Qty</div>
+            <h3 className={cn(cardTextStyles.subtitle, "mb-4")}>Top 10 Stock</h3>
+            <div className="overflow-hidden">
+              <table className="w-full text-sm table-fixed">
+                <thead>
+                  <tr className="border-b border-slate-700">
+                    <th className={cn("text-left pb-2 w-[25%]", cardTextStyles.labelSmall, "text-slate-400")}>Product Code</th>
+                    <th className={cn("text-left pb-2 w-[40%]", cardTextStyles.labelSmall, "text-slate-400")}>Description</th>
+                    <th className={cn("text-left pb-2 w-[20%]", cardTextStyles.labelSmall, "text-slate-400")}>Latest Update</th>
+                    <th className={cn("text-right pb-2 w-[15%]", cardTextStyles.labelSmall, "text-slate-400")}>Qty</th>
+                  </tr>
+                </thead>
+              </table>
+              <ScrollArea className="h-[150px]">
+                <table className="w-full text-sm table-fixed">
+                  <tbody>
+                    {loading ? (
+                      <tr>
+                        <td colSpan={4} className="py-4">
+                          <LoadingSkeleton />
+                        </td>
+                      </tr>
+                    ) : !departmentData?.topStocks?.nodes || departmentData.topStocks.nodes.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="text-center py-4 text-slate-400">No pipe production data available</td>
+                      </tr>
+                    ) : (
+                      departmentData.topStocks.nodes.map((item: StockItem, index: number) => (
+                        <tr key={`${item.stock}-${index}`} className="border-b border-slate-700/50">
+                          <td className={cn("py-2 w-[25%]", cardTextStyles.bodySmall)}>{item.stock}</td>
+                          <td className={cn("py-2 w-[40%] truncate pr-2", cardTextStyles.labelSmall, "text-slate-400")} title={item.description}>
+                            {item.description || '-'}
+                          </td>
+                          <td className={cn("py-2 w-[20%]", cardTextStyles.labelSmall, "text-slate-400")}>
+                            {(() => {
+                              if (!item.updateTime) return '-';
+                              try {
+                                const date = new Date(item.updateTime);
+                                return isNaN(date.getTime()) ? '-' : date.toLocaleDateString();
+                              } catch (e) {
+                                console.error('[DepartPipeCard] Date parsing error for topStock:', item.updateTime, e);
+                                return '-';
+                              }
+                            })()}
+                          </td>
+                          <td className={cn("py-2 text-right w-[15%]", cardTextStyles.bodySmall)}>{item.stockLevel?.toLocaleString() || '0'}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </ScrollArea>
             </div>
-            {/* Table Body */}
-            <ScrollArea className="h-[200px] pr-2">
-              {loading ? (
-                <div className="space-y-1 mt-2">
-                  <LoadingRow />
-                  <LoadingRow />
-                  <LoadingRow />
-                </div>
-              ) : !departmentData?.topStocks?.nodes || departmentData.topStocks.nodes.length === 0 ? (
-                <div className="text-slate-400 text-center py-8">
-                  <Package className="h-8 w-8 mx-auto mb-2 text-slate-600" />
-                  <p>No pipe production data available</p>
-                  <p className="text-xs mt-1 text-slate-500">Check if pipe products are being manufactured</p>
-                </div>
-              ) : (
-                <div className="space-y-1 mt-2">
-                  {departmentData.topStocks.nodes.map((item: StockItem, index: number) => (
-                    <div
-                      key={`${item.stock}-${index}`}
-                      className="grid grid-cols-4 gap-2 py-2 text-sm hover:bg-slate-700/30 rounded"
-                    >
-                      <div className="text-white truncate">{item.stock}</div>
-                      <div className="text-slate-300 truncate">{item.description || '-'}</div>
-                      <div className="text-slate-400">
-                        {item.updateTime ? new Date(item.updateTime).toLocaleDateString() : '-'}
-                      </div>
-                      <div className="text-white text-right">{item.stockLevel.toLocaleString()}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
           </div>
 
           {/* Material Stock */}
           <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-            <h3 className="mb-4 text-lg font-semibold text-white">Material Stock</h3>
-            {/* Table Header */}
-            <div className="grid grid-cols-4 gap-2 pb-2 border-b border-slate-700 text-sm font-medium text-slate-400">
-              <div>Material Code</div>
-              <div>Description</div>
-              <div>Latest Update</div>
-              <div className="text-right">Qty</div>
+            <h3 className={cn(cardTextStyles.subtitle, "mb-4")}>Material Stock</h3>
+            <div className="overflow-hidden">
+              <table className="w-full text-sm table-fixed">
+                <thead>
+                  <tr className="border-b border-slate-700">
+                    <th className={cn("text-left pb-2 w-[25%]", cardTextStyles.labelSmall, "text-slate-400")}>Material Code</th>
+                    <th className={cn("text-left pb-2 w-[40%]", cardTextStyles.labelSmall, "text-slate-400")}>Description</th>
+                    <th className={cn("text-left pb-2 w-[20%]", cardTextStyles.labelSmall, "text-slate-400")}>Latest Update</th>
+                    <th className={cn("text-right pb-2 w-[15%]", cardTextStyles.labelSmall, "text-slate-400")}>Qty</th>
+                  </tr>
+                </thead>
+              </table>
+              <ScrollArea className="h-[150px]">
+                <table className="w-full text-sm table-fixed">
+                  <tbody>
+                    {loading ? (
+                      <tr>
+                        <td colSpan={4} className="py-4">
+                          <LoadingSkeleton />
+                        </td>
+                      </tr>
+                    ) : !departmentData?.materialStocks?.nodes || departmentData.materialStocks.nodes.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="text-center py-4 text-slate-400">No material data available</td>
+                      </tr>
+                    ) : (
+                      departmentData.materialStocks.nodes.map((item: StockItem, index: number) => (
+                        <tr key={`${item.stock}-${index}`} className="border-b border-slate-700/50">
+                          <td className={cn("py-2 w-[25%]", cardTextStyles.bodySmall)}>{item.stock}</td>
+                          <td className={cn("py-2 w-[40%] truncate pr-2", cardTextStyles.labelSmall, "text-slate-400")} title={item.description}>
+                            {item.description || '-'}
+                          </td>
+                          <td className={cn("py-2 w-[20%]", cardTextStyles.labelSmall, "text-slate-400")}>
+                            {(() => {
+                              if (!item.updateTime) return '-';
+                              try {
+                                const date = new Date(item.updateTime);
+                                return isNaN(date.getTime()) ? '-' : date.toLocaleDateString();
+                              } catch (e) {
+                                console.error('[DepartPipeCard] Date parsing error for materialStock:', item.updateTime, e);
+                                return '-';
+                              }
+                            })()}
+                          </td>
+                          <td className={cn("py-2 text-right w-[15%]", cardTextStyles.bodySmall)}>{item.stockLevel?.toLocaleString() || '0'}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </ScrollArea>
             </div>
-            {/* Table Body */}
-            <ScrollArea className="h-[200px] pr-2">
-              {loading ? (
-                <div className="space-y-1 mt-2">
-                  <LoadingRow />
-                  <LoadingRow />
-                  <LoadingRow />
-                </div>
-              ) : !departmentData?.materialStocks?.nodes || departmentData.materialStocks.nodes.length === 0 ? (
-                <div className="text-slate-400 text-center py-8">
-                  <Package className="h-8 w-8 mx-auto mb-2 text-slate-600" />
-                  <p>No material data available</p>
-                  <p className="text-xs mt-1 text-slate-500">Materials used for pipe production</p>
-                </div>
-              ) : (
-                <div className="space-y-1 mt-2">
-                  {departmentData.materialStocks.nodes.map((item: StockItem, index: number) => (
-                    <div
-                      key={`${item.stock}-${index}`}
-                      className="grid grid-cols-4 gap-2 py-2 text-sm hover:bg-slate-700/30 rounded"
-                    >
-                      <div className="text-white truncate">{item.stock}</div>
-                      <div className="text-slate-300 truncate">{item.description || '-'}</div>
-                      <div className="text-slate-400">
-                        {item.updateTime ? new Date(item.updateTime).toLocaleDateString() : '-'}
-                      </div>
-                      <div className="text-white text-right">{item.stockLevel.toLocaleString()}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
           </div>
         </div>
 
@@ -304,64 +311,80 @@ export const DepartPipeCard: React.FC<DepartPipeCardProps> = ({
         <div className="grid grid-cols-2 gap-4">
           {/* Machine State */}
           <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-            <h3 className="mb-4 text-lg font-semibold text-white">Machine State</h3>
-            {/* Table Header */}
-            <div className="grid grid-cols-3 gap-2 pb-2 border-b border-slate-700 text-sm font-medium text-slate-400">
-              <div>Machine Number</div>
-              <div>Latest Active time</div>
-              <div>State</div>
-            </div>
-            {/* Table Body */}
-            <div className="space-y-1 mt-2">
-              {loading ? (
-                <>
-                  <LoadingRow />
-                  <LoadingRow />
-                </>
-              ) : departmentData?.machineStates ? (
-                departmentData.machineStates.map((machine: MachineState, index: number) => (
-                  <div
-                    key={`${machine.machineNumber}-${index}`}
-                    className="grid grid-cols-3 gap-2 py-2 text-sm hover:bg-slate-700/30 rounded"
-                  >
-                    <div className="text-white">{machine.machineNumber}</div>
-                    <div className="text-slate-400">
-                      {machine.lastActiveTime 
-                        ? new Date(machine.lastActiveTime).toLocaleString() 
-                        : 'N/A'}
-                    </div>
-                    <div className={cn(
-                      "font-medium",
-                      machine.state === 'ACTIVE' ? "text-green-400" :
-                      machine.state === 'IDLE' ? "text-yellow-400" :
-                      machine.state === 'MAINTENANCE' ? "text-orange-400" :
-                      machine.state === 'OFFLINE' ? "text-red-400" :
-                      "text-slate-400"
-                    )}>
-                      {machine.state === 'UNKNOWN' ? 'N/A' : machine.state}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-slate-400 text-center py-8">
-                  <Monitor className="h-8 w-8 mx-auto mb-2 text-slate-600" />
-                  <p>No machine data</p>
-                  <p className="text-xs mt-1 text-slate-500">Machine monitoring system not connected</p>
-                </div>
-              )}
+            <h3 className={cn(cardTextStyles.subtitle, "mb-4")}>Machine State</h3>
+            <div className="overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-700">
+                    <th className={cn("text-left pb-2", cardTextStyles.labelSmall, "text-slate-400")}>Machine Number</th>
+                    <th className={cn("text-left pb-2", cardTextStyles.labelSmall, "text-slate-400")}>Latest Active time</th>
+                    <th className={cn("text-left pb-2", cardTextStyles.labelSmall, "text-slate-400")}>State</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={3} className="py-4">
+                        <LoadingSkeleton />
+                      </td>
+                    </tr>
+                  ) : !departmentData?.machineStates || departmentData.machineStates.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="text-center py-8 text-slate-400">
+                        <div>
+                          <Monitor className="h-8 w-8 mx-auto mb-2 text-slate-600" />
+                          <p>No machine data</p>
+                          <p className="text-xs mt-1 text-slate-500">Machine monitoring system not connected</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    departmentData.machineStates.map((machine: MachineState, index: number) => (
+                      <tr key={`${machine.machineNumber}-${index}`} className="border-b border-slate-700/50">
+                        <td className={cn("py-2", cardTextStyles.bodySmall)}>{machine.machineNumber}</td>
+                        <td className={cn("py-2", cardTextStyles.labelSmall, "text-slate-400")}>
+                          {machine.lastActiveTime 
+                            ? new Date(machine.lastActiveTime).toLocaleString() 
+                            : 'N/A'}
+                        </td>
+                        <td className={cn(
+                          "py-2 font-medium",
+                          cardTextStyles.labelSmall,
+                          machine.state === 'ACTIVE' ? "text-green-400" :
+                          machine.state === 'IDLE' ? "text-yellow-400" :
+                          machine.state === 'MAINTENANCE' ? "text-orange-400" :
+                          machine.state === 'OFFLINE' ? "text-red-400" :
+                          "text-slate-400"
+                        )}>
+                          {machine.state === 'UNKNOWN' ? 'N/A' : machine.state}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
 
-          {/* Coming Soon - Empty as required */}
+          {/* Coming Soon */}
           <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-            <h3 className="mb-4 text-lg font-semibold text-white">Coming Soon</h3>
-            <div className="flex items-center justify-center h-[120px]">
-              {/* Empty content as per requirement */}
+            <h3 className={cn(cardTextStyles.subtitle, "mb-2")}>Coming Soon</h3>
+            <div className="h-32">
+              {/* No content to display */}
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+
+        {/* Error Message */}
+        {error && (
+          <div className="rounded-lg border border-red-700 bg-red-900/20 p-4">
+            <p className={cn(cardTextStyles.bodySmall, "text-red-400")}>
+              Error loading data. The system will retry automatically.
+            </p>
+          </div>
+        )}
+      </div>
+    </ReportCard>
   );
 };
 

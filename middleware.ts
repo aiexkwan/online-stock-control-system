@@ -71,6 +71,39 @@ export async function middleware(request: NextRequest) {
   // 記錄路由決策
   logMiddlewareRouting(correlationId, request.nextUrl.pathname, isPublicRoute);
 
+  // EMERGENCY: Alert API endpoints disabled (2025-08-13) - Security cleanup
+  if (request.nextUrl.pathname.startsWith('/api/alerts/') || 
+      request.nextUrl.pathname.startsWith('/api/v1/alerts/')) {
+    middlewareLogger.warn(
+      {
+        correlationId,
+        path: request.nextUrl.pathname,
+        action: 'blocked',
+        reason: 'alert_api_disabled_for_security',
+      },
+      'Alert API endpoint access blocked - system cleanup in progress'
+    );
+    
+    return new Response(
+      JSON.stringify({
+        error: 'Alert API Permanently Disabled',
+        message: 'Alert system has been removed for security reasons',
+        code: 'ALERT_API_REMOVED',
+        timestamp: new Date().toISOString()
+      }),
+      {
+        status: 410, // Gone
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Deprecation': 'Alert API permanently removed',
+          'X-Correlation-ID': correlationId,
+          'Cache-Control': 'no-store, no-cache',
+          'X-Security-Notice': 'Alert system removed for security compliance'
+        }
+      }
+    );
+  }
+
   // API redirect handling for backward compatibility (2025-08-11)
   if (request.nextUrl.pathname.startsWith('/api/')) {
     // Check for API redirects first

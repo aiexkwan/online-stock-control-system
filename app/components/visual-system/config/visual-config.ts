@@ -38,11 +38,11 @@ export const VISUAL_CONFIG = {
       strong: 0.85,
       light: 0.5,
     },
-    // 邊框效果
+    // 邊框效果 - 移除所有邊框
     border: {
-      width: 1,
-      opacity: 0.2,
-      color: 'rgba(255, 255, 255, 0.2)',
+      width: 0,
+      opacity: 0,
+      color: 'transparent',
     },
     // 陰影效果
     shadow: {
@@ -51,56 +51,26 @@ export const VISUAL_CONFIG = {
     },
   },
 
-  // 容器邊框效果預設
+  // 容器邊框效果預設 - 全部移除邊框
   containerBorders: {
     none: {
       border: 'none',
     },
     subtle: {
-      border: '1px solid rgba(255, 255, 255, 0.1)',
+      border: 'none',
       borderRadius: '12px',
     },
     glow: {
-      border: '1px solid rgba(255, 255, 255, 0.2)',
+      border: 'none',
       borderRadius: '16px',
       boxShadow: '0 0 20px rgba(255, 255, 255, 0.1)',
     },
     gradient: {
-      border: '1px solid transparent',
+      border: 'none',
       borderRadius: '16px',
       backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))',
       backgroundOrigin: 'border-box',
       backgroundClip: 'padding-box, border-box',
-    },
-  },
-
-  // 底部導航欄配置
-  bottomNav: {
-    // 顯示規則
-    visibility: {
-      // 不顯示導航欄的路徑
-      hiddenPaths: [
-        '/main-login',
-        '/main-login/register',
-        '/main-login/reset',
-        '/main-login/change',
-        '/new-password',
-        '/change-password',
-      ],
-      // 總是顯示導航欄的路徑（優先級高於hiddenPaths）
-      alwaysShowPaths: ['/admin'],
-    },
-    // 動畫配置
-    animation: {
-      duration: 300, // ms
-      easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-    },
-    // 樣式配置
-    style: {
-      height: 64,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      backdropFilter: 'blur(10px)',
-      borderTop: '1px solid rgba(255, 255, 255, 0.1)',
     },
   },
 

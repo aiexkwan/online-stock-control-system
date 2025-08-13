@@ -7,7 +7,6 @@
 'use client';
 
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { Activity, Package, TrendingUp, Monitor, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -15,6 +14,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useQuery, gql } from '@apollo/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { StockItem, MachineState } from '@/lib/graphql/types/database-types';
+import { ReportCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
+import { cardTextStyles } from '@/lib/card-system/theme';
 
 // GraphQL Query
 const DEPARTMENT_INJECTION_QUERY = gql`
@@ -75,14 +76,14 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, trend, trendUp,
     <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <p className="text-sm text-slate-400">{title}</p>
+          <p className={cn(cardTextStyles.labelSmall, "text-slate-400")}>{title}</p>
           {loading ? (
             <Skeleton className="mt-1 h-8 w-20" />
           ) : (
-            <p className="mt-1 text-2xl font-semibold text-white">{value}</p>
+            <p className={cn(cardTextStyles.title, "mt-1")}>{value}</p>
           )}
           {trend && !loading && (
-            <p className={cn("mt-1 text-sm", trendUp ? "text-green-400" : "text-red-400")}>
+            <p className={cn(cardTextStyles.bodySmall, "mt-1", trendUp ? "text-green-400" : "text-red-400")}>
               {trend}
             </p>
           )}
@@ -156,12 +157,17 @@ export const DepartInjCard: React.FC<DepartInjCardProps> = ({
   }
 
   return (
-    <Card className="h-full bg-transparent border-0">
-      <CardHeader>
-        <CardTitle className="text-white">{title}</CardTitle>
-        <CardDescription className="text-slate-400">{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <ReportCard
+      className="h-full"
+      borderGlow="hover"
+      variant="glass"
+      padding="base"
+    >
+      <div className="space-y-2 mb-6">
+        <h3 className={cardTextStyles.title}>{title}</h3>
+        <p className={cn(cardTextStyles.bodySmall, "text-slate-400")}>{description}</p>
+      </div>
+      <div className="space-y-6">
         {/* Top Stats Row */}
         <div className="grid grid-cols-3 gap-4">
           <motion.div
@@ -206,15 +212,15 @@ export const DepartInjCard: React.FC<DepartInjCardProps> = ({
         <div className="grid grid-cols-2 gap-4">
           {/* Top 10 Stock */}
           <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-            <h3 className="mb-4 text-lg font-semibold text-white">Top 10 Stock</h3>
+            <h3 className={cn(cardTextStyles.subtitle, "mb-4")}>Top 10 Stock</h3>
             <div className="overflow-hidden">
               <table className="w-full text-sm table-fixed">
                 <thead>
                   <tr className="border-b border-slate-700">
-                    <th className="text-left text-xs font-medium text-slate-400 pb-2 w-[25%]">Product Code</th>
-                    <th className="text-left text-xs font-medium text-slate-400 pb-2 w-[40%]">Description</th>
-                    <th className="text-left text-xs font-medium text-slate-400 pb-2 w-[20%]">Latest Update</th>
-                    <th className="text-right text-xs font-medium text-slate-400 pb-2 w-[15%]">Qty</th>
+                    <th className={cn("text-left pb-2 w-[25%]", cardTextStyles.labelSmall, "text-slate-400")}>Product Code</th>
+                    <th className={cn("text-left pb-2 w-[40%]", cardTextStyles.labelSmall, "text-slate-400")}>Description</th>
+                    <th className={cn("text-left pb-2 w-[20%]", cardTextStyles.labelSmall, "text-slate-400")}>Latest Update</th>
+                    <th className={cn("text-right pb-2 w-[15%]", cardTextStyles.labelSmall, "text-slate-400")}>Qty</th>
                   </tr>
                 </thead>
               </table>
@@ -234,11 +240,11 @@ export const DepartInjCard: React.FC<DepartInjCardProps> = ({
                     ) : (
                       topStocks.map((item: StockItem) => (
                         <tr key={item.stock} className="border-b border-slate-700/50">
-                          <td className="py-2 text-white w-[25%]">{item.stock}</td>
-                          <td className="py-2 text-slate-400 text-xs w-[40%] truncate pr-2" title={item.description}>
+                          <td className={cn("py-2 w-[25%]", cardTextStyles.bodySmall)}>{item.stock}</td>
+                          <td className={cn("py-2 w-[40%] truncate pr-2", cardTextStyles.labelSmall, "text-slate-400")} title={item.description}>
                             {item.description}
                           </td>
-                          <td className="py-2 text-slate-400 text-xs w-[20%]">
+                          <td className={cn("py-2 w-[20%]", cardTextStyles.labelSmall, "text-slate-400")}>
                             {(() => {
                               if (!item.updateTime) return '-';
                               try {
@@ -250,7 +256,7 @@ export const DepartInjCard: React.FC<DepartInjCardProps> = ({
                               }
                             })()}
                           </td>
-                          <td className="py-2 text-white text-right w-[15%]">{item.stockLevel?.toLocaleString() || '0'}</td>
+                          <td className={cn("py-2 text-right w-[15%]", cardTextStyles.bodySmall)}>{item.stockLevel?.toLocaleString() || '0'}</td>
                         </tr>
                       ))
                     )}
@@ -262,15 +268,15 @@ export const DepartInjCard: React.FC<DepartInjCardProps> = ({
 
           {/* Material Stock */}
           <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-            <h3 className="mb-4 text-lg font-semibold text-white">Material Stock</h3>
+            <h3 className={cn(cardTextStyles.subtitle, "mb-4")}>Material Stock</h3>
             <div className="overflow-hidden">
               <table className="w-full text-sm table-fixed">
                 <thead>
                   <tr className="border-b border-slate-700">
-                    <th className="text-left text-xs font-medium text-slate-400 pb-2 w-[25%]">Material Code</th>
-                    <th className="text-left text-xs font-medium text-slate-400 pb-2 w-[40%]">Description</th>
-                    <th className="text-left text-xs font-medium text-slate-400 pb-2 w-[20%]">Latest Update</th>
-                    <th className="text-right text-xs font-medium text-slate-400 pb-2 w-[15%]">Qty</th>
+                    <th className={cn("text-left pb-2 w-[25%]", cardTextStyles.labelSmall, "text-slate-400")}>Material Code</th>
+                    <th className={cn("text-left pb-2 w-[40%]", cardTextStyles.labelSmall, "text-slate-400")}>Description</th>
+                    <th className={cn("text-left pb-2 w-[20%]", cardTextStyles.labelSmall, "text-slate-400")}>Latest Update</th>
+                    <th className={cn("text-right pb-2 w-[15%]", cardTextStyles.labelSmall, "text-slate-400")}>Qty</th>
                   </tr>
                 </thead>
               </table>
@@ -290,11 +296,11 @@ export const DepartInjCard: React.FC<DepartInjCardProps> = ({
                     ) : (
                       materialStocks.map((item: StockItem) => (
                         <tr key={item.stock} className="border-b border-slate-700/50">
-                          <td className="py-2 text-white w-[25%]">{item.stock}</td>
-                          <td className="py-2 text-slate-400 text-xs w-[40%] truncate pr-2" title={item.description}>
+                          <td className={cn("py-2 w-[25%]", cardTextStyles.bodySmall)}>{item.stock}</td>
+                          <td className={cn("py-2 w-[40%] truncate pr-2", cardTextStyles.labelSmall, "text-slate-400")} title={item.description}>
                             {item.description}
                           </td>
-                          <td className="py-2 text-slate-400 text-xs w-[20%]">
+                          <td className={cn("py-2 w-[20%]", cardTextStyles.labelSmall, "text-slate-400")}>
                             {(() => {
                               if (!item.updateTime) return '-';
                               try {
@@ -306,7 +312,7 @@ export const DepartInjCard: React.FC<DepartInjCardProps> = ({
                               }
                             })()}
                           </td>
-                          <td className="py-2 text-white text-right w-[15%]">{item.stockLevel?.toLocaleString() || '0'}</td>
+                          <td className={cn("py-2 text-right w-[15%]", cardTextStyles.bodySmall)}>{item.stockLevel?.toLocaleString() || '0'}</td>
                         </tr>
                       ))
                     )}
@@ -320,17 +326,17 @@ export const DepartInjCard: React.FC<DepartInjCardProps> = ({
         {/* Bottom Section - Machine State and Coming Soon */}
         <div className="grid grid-cols-2 gap-4">
           <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-            <h3 className="mb-4 text-lg font-semibold text-white">Machine State</h3>
+            <h3 className={cn(cardTextStyles.subtitle, "mb-4")}>Machine State</h3>
             <div className="overflow-hidden">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-700">
-                    <th className="text-left text-sm font-medium text-slate-400 pb-2">Machine Number</th>
-                    <th className="text-left text-sm font-medium text-slate-400 pb-2">Latest Active time</th>
-                    <th className="text-left text-sm font-medium text-slate-400 pb-2">State</th>
+                    <th className={cn("text-left pb-2", cardTextStyles.labelSmall, "text-slate-400")}>Machine Number</th>
+                    <th className={cn("text-left pb-2", cardTextStyles.labelSmall, "text-slate-400")}>Latest Active time</th>
+                    <th className={cn("text-left pb-2", cardTextStyles.labelSmall, "text-slate-400")}>State</th>
                   </tr>
                 </thead>
-                <tbody className="text-sm">
+                <tbody>
                   {loading ? (
                     <tr>
                       <td colSpan={3} className="py-4">
@@ -340,9 +346,9 @@ export const DepartInjCard: React.FC<DepartInjCardProps> = ({
                   ) : (
                     machineStates.map((machine: MachineState) => (
                       <tr key={machine.machineNumber} className="border-b border-slate-700/50">
-                        <td className="py-2 text-white">{machine.machineNumber}</td>
-                        <td className="py-2 text-slate-400">N/A</td>
-                        <td className="py-2 text-slate-400">N/A</td>
+                        <td className={cn("py-2", cardTextStyles.bodySmall)}>{machine.machineNumber}</td>
+                        <td className={cn("py-2", cardTextStyles.labelSmall, "text-slate-400")}>N/A</td>
+                        <td className={cn("py-2", cardTextStyles.labelSmall, "text-slate-400")}>N/A</td>
                       </tr>
                     ))
                   )}
@@ -352,7 +358,7 @@ export const DepartInjCard: React.FC<DepartInjCardProps> = ({
           </div>
 
           <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
-            <h3 className="mb-2 text-lg font-semibold text-white">Coming Soon</h3>
+            <h3 className={cn(cardTextStyles.subtitle, "mb-2")}>Coming Soon</h3>
             <div className="h-32">
               {/* No content to display */}
             </div>
@@ -362,13 +368,13 @@ export const DepartInjCard: React.FC<DepartInjCardProps> = ({
         {/* Error Message */}
         {error && (
           <div className="rounded-lg border border-red-700 bg-red-900/20 p-4">
-            <p className="text-red-400 text-sm">
+            <p className={cn(cardTextStyles.bodySmall, "text-red-400")}>
               Error loading data. The system will retry automatically.
             </p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </ReportCard>
   );
 };
 

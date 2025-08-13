@@ -15,8 +15,8 @@ import {
   dialogIconColors,
   dialogTitleStyles,
   dialogButtonStyles,
-  type DialogType,
-} from '@/lib/dialog-animation';
+  type UIDialogVariant,
+} from '@/lib/dialog-system/ui/animation';
 
 const Dialog = DialogPrimitive.Root;
 
@@ -46,7 +46,7 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 // 統一的內容容器
 interface DialogContentProps
   extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> {
-  type?: DialogType;
+  type?: UIDialogVariant;
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
 }
 
@@ -79,7 +79,7 @@ DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 // 統一的標題
 interface DialogHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
-  type?: DialogType;
+  type?: UIDialogVariant;
 }
 
 const DialogHeader = ({ className, type = 'form', ...props }: DialogHeaderProps) => (
@@ -89,7 +89,7 @@ DialogHeader.displayName = 'DialogHeader';
 
 // 統一的標題文字
 interface DialogTitleProps extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title> {
-  type?: DialogType;
+  type?: UIDialogVariant;
   icon?: React.ReactNode;
 }
 
@@ -148,5 +148,5 @@ export {
   DialogDescription,
   dialogButtonStyles,
   dialogIconColors,
-  type DialogType,
+  type UIDialogVariant,
 };

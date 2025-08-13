@@ -1,13 +1,14 @@
 /**
  * StockLevelListAndChartCard Component
- * Analytics System Enhancement with Modern UI
+ * Analytics System Enhancement with Unified Card Design System
  * 
  * Features:
  * - Tab-based List and Chart views
  * - Rainbow gradient line charts
- * - Modern animations and transitions
- * - Enhanced statistics display
- * - Dark theme with glowing effects
+ * - Unified DataCard architecture with theme system
+ * - Enhanced statistics display with cardTextStyles
+ * - Glassmorphic design with border glow effects
+ * - Consistent typography and color scheme
  */
 
 'use client';
@@ -33,7 +34,8 @@ import { format, subDays } from 'date-fns';
 import { Package, TrendingUp, AlertCircle, Activity, TrendingDown, BarChart3, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { GlassmorphicCard } from '../components/GlassmorphicCard';
+import { DataCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
+import { cardTextStyles, cardChartColors } from '@/lib/card-system/theme';
 
 // Type definitions for stock level data
 interface ChartDataPoint {
@@ -263,7 +265,7 @@ export interface StockDistributionCardProps {
   description?: string;
 }
 
-// Rainbow color palette for vibrant visualization
+// Enhanced rainbow color palette using theme system
 const RAINBOW_COLORS = [
   '#FF006E', // Hot Pink
   '#FB5607', // Orange Red 
@@ -276,6 +278,11 @@ const RAINBOW_COLORS = [
   '#FFD23F', // Golden Yellow
   '#C77DFF'  // Light Purple
 ];
+
+// Use chart colors from theme system as fallback
+const getChartColor = (index: number): string => {
+  return RAINBOW_COLORS[index % RAINBOW_COLORS.length] || cardChartColors.getColor(index, true);
+};
 
 // Custom Tooltip Component
 interface CustomTooltipProps {
@@ -508,33 +515,36 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
 
   if (hasError) {
     return (
-      <div className={cn("h-full bg-transparent border-0", className)}>
+      <DataCard className={cn("h-full", className)} style={{ height }}>
         <div className="flex items-center justify-center h-full p-4">
-          <div className="bg-slate-800/50 backdrop-blur border border-gray-700 rounded-lg p-8 text-center">
+          <div className="text-center">
             <AlertCircle className="mx-auto mb-2 h-8 w-8 text-destructive" />
-            <p className="text-sm text-destructive">Failed to load stock data</p>
+            <p className={cn(cardTextStyles.bodySmall, "text-destructive")}>Failed to load stock data</p>
           </div>
         </div>
-      </div>
+      </DataCard>
     );
   }
 
   return (
-    <div 
-      className={cn("stock-level-list-chart-card h-full flex flex-col bg-transparent border-0", className)} 
+    <DataCard 
+      className={cn("stock-level-list-chart-card h-full flex flex-col", className)} 
       style={{ height }}
+      variant="glass"
+      isLoading={!!isLoading}
+      borderGlow={selectedType ? 'always' : undefined}
     >
       <div className="pb-3 p-4 border-b border-gray-700/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Package className="h-5 w-5 text-muted-foreground" />
-            <h3 className="text-lg font-semibold text-white">{title}</h3>
+            <h3 className={cardTextStyles.title}>{title}</h3>
           </div>
           <Badge variant="outline" className="text-xs">
             <span className="text-primary">GraphQL</span>
           </Badge>
         </div>
-        <p className="text-sm text-gray-400">{description}</p>
+        <p className={cardTextStyles.subtitle}>{description}</p>
         
         {/* Product Type Selector */}
         <div className="mt-3">
@@ -584,13 +594,13 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
               {/* Product List */}
               <div className="bg-slate-800/50 backdrop-blur border border-gray-700 rounded-lg p-4 w-full">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <h4 className={cn(cardTextStyles.body, "font-semibold text-white flex items-center gap-2")}>
                     <span>Product Stock Levels</span>
                     <Badge variant="outline" className="text-xs">
                       {processedListData.length} items
                     </Badge>
                   </h4>
-                  <span className="text-xs text-gray-400">
+                  <span className={cardTextStyles.labelSmall}>
                     Updated: {format(new Date(summaryStats.lastUpdated), 'MM/dd HH:mm')}
                   </span>
                 </div>
@@ -599,13 +609,13 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
                   <div className="flex items-center justify-center h-[400px]">
                     <div className="text-center">
                       <Package className="mx-auto mb-2 h-8 w-8 text-gray-500" />
-                      <p className="text-sm text-gray-400">Please select a product type to view stock levels</p>
+                      <p className={cardTextStyles.bodySmall}>Please select a product type to view stock levels</p>
                     </div>
                   </div>
                 ) : processedListData.length > 0 ? (
                   <div className="max-h-[500px] overflow-y-auto">
                     {/* Table Header */}
-                    <div className="grid grid-cols-4 gap-4 p-3 bg-gray-900/50 rounded-t-lg border-b border-gray-600 text-xs font-medium text-gray-300">
+                    <div className={cn("grid grid-cols-4 gap-4 p-3 bg-gray-900/50 rounded-t-lg border-b border-gray-600", cardTextStyles.label, "text-gray-300")}>
                       <div>Code</div>
                       <div>Description</div>
                       <div>Latest Update</div>
@@ -628,18 +638,18 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
                           <div className="flex items-center gap-2">
                             <div
                               className="w-2 h-2 rounded-full flex-shrink-0"
-                              style={{ backgroundColor: RAINBOW_COLORS[index % RAINBOW_COLORS.length] }}
+                              style={{ backgroundColor: getChartColor(index) }}
                             />
-                            <span className="text-sm text-white font-mono">{item.productCode}</span>
+                            <span className={cn(cardTextStyles.bodySmall, "text-white font-mono")}>{item.productCode}</span>
                           </div>
-                          <div className="text-sm text-gray-300 truncate" title={item.productName}>
+                          <div className={cn(cardTextStyles.bodySmall, "text-gray-300 truncate")} title={item.productName}>
                             {item.productName}
                           </div>
-                          <div className="text-sm text-gray-400">
+                          <div className={cn(cardTextStyles.bodySmall, "text-gray-400")}>
                             {item.lastUpdated}
                           </div>
                           <div className="text-right">
-                            <span className="text-sm font-medium text-white">
+                            <span className={cn(cardTextStyles.bodySmall, "font-medium text-white")}>
                               {item.currentStock.toLocaleString()}
                             </span>
                           </div>
@@ -651,8 +661,8 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
                   <div className="flex items-center justify-center h-64">
                     <div className="text-center">
                       <Package className="mx-auto mb-2 h-8 w-8 text-gray-500" />
-                      <p className="text-sm text-gray-400">No product data available</p>
-                      <p className="text-xs text-gray-500 mt-1">Try selecting a different product type</p>
+                      <p className={cardTextStyles.bodySmall}>No product data available</p>
+                      <p className={cn(cardTextStyles.labelSmall, "text-gray-500 mt-1")}>Try selecting a different product type</p>
                     </div>
                   </div>
                 )}
@@ -663,11 +673,11 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
               {/* Rainbow Line Chart */}
               <div className="bg-slate-800/50 backdrop-blur border border-gray-700 rounded-lg p-4 w-full relative" style={{ minHeight: '600px' }}>
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <h4 className={cn(cardTextStyles.body, "font-semibold text-white flex items-center gap-2")}>
                     <span>Stock Trend (Last 21 Days)</span>
                   </h4>
                   {chartData?.stockLevelChart && (
-                    <span className="text-xs text-gray-400">
+                    <span className={cardTextStyles.labelSmall}>
                       Updated: {format(new Date(), 'MM/dd HH:mm')}
                     </span>
                   )}
@@ -676,7 +686,7 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
                   <div className="flex items-center justify-center h-[calc(100%-30px)]">
                     <div className="text-center">
                       <BarChart3 className="mx-auto mb-2 h-8 w-8 text-gray-500" />
-                      <p className="text-sm text-gray-400">Please select a product type to view trends</p>
+                      <p className={cardTextStyles.bodySmall}>Please select a product type to view trends</p>
                     </div>
                   </div>
                 ) : processedChartData.length > 0 ? (
@@ -724,14 +734,14 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
                         key={productCode}
                         type="monotone" 
                         dataKey={productCode}
-                        stroke={RAINBOW_COLORS[index % RAINBOW_COLORS.length]}
+                        stroke={getChartColor(index)}
                         strokeWidth={2.5}
                         name={productCode}
                         dot={false}
                         connectNulls={false} // Don't connect null values
                         activeDot={{ 
                           r: 6,
-                          fill: RAINBOW_COLORS[index % RAINBOW_COLORS.length],
+                          fill: getChartColor(index),
                           stroke: 'rgba(255,255,255,0.5)',
                           strokeWidth: 2
                         }}
@@ -745,8 +755,8 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
                   <div className="flex items-center justify-center h-[calc(100%-30px)]">
                     <div className="text-center">
                       <Package className="mx-auto mb-2 h-8 w-8 text-gray-500" />
-                      <p className="text-sm text-gray-400">No stock history data available</p>
-                      <p className="text-xs text-gray-500 mt-1">Try selecting a different product type</p>
+                      <p className={cardTextStyles.bodySmall}>No stock history data available</p>
+                      <p className={cn(cardTextStyles.labelSmall, "text-gray-500 mt-1")}>Try selecting a different product type</p>
                     </div>
                   </div>
                 )}
@@ -755,7 +765,7 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
           </Tabs>
         )}
       </div>
-    </div>
+    </DataCard>
   );
 };
 

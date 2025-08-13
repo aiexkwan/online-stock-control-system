@@ -6,8 +6,10 @@ import { toast } from 'sonner';
 import { grnErrorHandler } from '@/app/(app)/print-grnlabel/services/ErrorHandler';
 import { EnhancedProgressBar } from '../components/EnhancedProgressBar';
 import ClockNumberConfirmDialog from '../components/ClockNumberConfirmDialog';
-import { GlassmorphicCard } from '../components/GlassmorphicCard';
+import { SpecialCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
+import { cardTextStyles } from '@/lib/card-system/theme';
 import { Package } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // Import new modular components from print-grnlabel
 import { GrnDetailCard } from '@/app/(app)/print-grnlabel/components/GrnDetailCard';
@@ -309,25 +311,26 @@ export const GRNLabelCard: React.FC<GRNLabelCardProps> = ({ className }) => {
       </style>
 
       <div className={`h-full ${className || ''}`}>
-        <GlassmorphicCard
-          variant="default"
-          hover={false}
+        <SpecialCard
+          variant="glass"
+          isHoverable={false}
           borderGlow={false}
           className={`h-full overflow-hidden transition-all duration-300 ${theme.borderColor} ${theme.glowColor}`}
+          padding="none"
         >
           <div className="flex h-full flex-col">
             {/* Header */}
             <div className={`border-b border-slate-700/50 p-4 transition-all duration-300 ${theme.headerBg}`}>
               <div className="flex items-center gap-2">
                 <Package className={`h-6 w-6 ${theme.accentColor}`} />
-                <h2 className="text-xl font-semibold text-white">GRN Label Generation</h2>
+                <h2 className={cn(cardTextStyles.title, "text-white")}>GRN Label Generation</h2>
                 {state.grossWeights.filter(w => w.trim() !== '').length > 0 && (
-                  <span className={`ml-auto rounded-full bg-orange-600/80 px-2 py-1 text-sm font-medium text-white`}>
+                  <span className={cn(cardTextStyles.body, `ml-auto rounded-full bg-orange-600/80 px-2 py-1 font-medium text-white`)}>
                     {state.grossWeights.filter(w => w.trim() !== '').length} labels
                   </span>
                 )}
               </div>
-              <p className="text-sm text-slate-300">Generate and print GRN labels for received goods</p>
+              <p className={cn(cardTextStyles.body, "text-slate-300")}>Generate and print GRN labels for received goods</p>
             </div>
 
             {/* Main Content */}
@@ -359,7 +362,7 @@ export const GRNLabelCard: React.FC<GRNLabelCardProps> = ({ className }) => {
 
                 {/* Weight Input Section */}
                 <div className="space-y-4 border-t border-slate-700/30 pt-6">
-                  <h3 className="text-base font-medium text-white">Weight/Quantity Input</h3>
+                  <h3 className={cn(cardTextStyles.subtitle, "text-white")}>Weight/Quantity Input</h3>
                     <WeightInputList
                       grossWeights={state.grossWeights}
                       onChange={handleGrossWeightChange}
@@ -396,7 +399,7 @@ export const GRNLabelCard: React.FC<GRNLabelCardProps> = ({ className }) => {
                 {/* Progress Bar */}
                 {state.progress.total > 0 && (
                   <div className="space-y-4 border-t border-slate-700/30 pt-6">
-                    <h3 className="text-base font-medium text-white">Generation Progress</h3>
+                    <h3 className={cn(cardTextStyles.subtitle, "text-white")}>Generation Progress</h3>
                     <EnhancedProgressBar
                       current={state.progress.current}
                       total={state.progress.total}
@@ -417,7 +420,7 @@ export const GRNLabelCard: React.FC<GRNLabelCardProps> = ({ className }) => {
                     disabled={!isFormValid || state.ui.isProcessing}
                     className={`flex w-full items-center justify-center space-x-2 rounded-lg px-4 py-3 font-medium transition-colors ${
                       !isFormValid || state.ui.isProcessing
-                        ? 'cursor-not-allowed bg-slate-700 text-slate-400'
+                        ? 'cursor-not-allowed bg-white/5 text-slate-400'
                         : 'bg-orange-600 text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500'
                     }`}
                   >
@@ -431,7 +434,7 @@ export const GRNLabelCard: React.FC<GRNLabelCardProps> = ({ className }) => {
                         <Package className="h-4 w-4" />
                         <span>Print GRN Label(s)</span>
                         {state.grossWeights.filter(w => w.trim() !== '').length > 0 && (
-                          <span className="rounded-full bg-orange-800 px-2 py-0.5 text-xs font-bold">
+                          <span className={cn(cardTextStyles.labelSmall, "rounded-full bg-orange-800 px-2 py-0.5 font-bold")}>
                             {state.grossWeights.filter(w => w.trim() !== '').length}
                           </span>
                         )}
@@ -442,7 +445,7 @@ export const GRNLabelCard: React.FC<GRNLabelCardProps> = ({ className }) => {
               </div>
             </div>
           </div>
-        </GlassmorphicCard>
+        </SpecialCard>
       </div>
 
       <ClockNumberConfirmDialog

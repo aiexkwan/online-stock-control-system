@@ -9,68 +9,74 @@
 import { type ClassValue } from 'clsx';
 
 /**
- * Card 類別配色方案
- * 每個類別都有專屬嘅顏色主題
+ * Card 類別配置方案 - 純透明設計
+ * 所有類別使用統一的純透明效果，通過其他元素區分
  */
 export const cardThemes = {
   // 操作類 Cards (Operation Cards)
   operation: {
-    gradient: 'from-blue-500 to-cyan-500',
-    icon: 'text-blue-400',
-    border: 'border-blue-500/30',
-    bg: 'bg-blue-500/10',
-    hover: 'hover:bg-blue-500/20',
-    accent: '#06b6d4',
+    gradient: 'from-white/10 to-white/5',
+    icon: 'text-white/80',
+    border: 'border-none', // 移除邊框none', // 移除邊框10',
+    bg: 'bg-white/5',
+    hover: 'hover:bg-white/8',
+    accent: 'rgba(255, 255, 255, 0.4)',
+    identifier: 'circle-filled',
   },
   
   // 分析類 Cards (Analysis Cards)
   analysis: {
-    gradient: 'from-purple-500 to-pink-500',
-    icon: 'text-purple-400',
-    border: 'border-purple-500/30',
-    bg: 'bg-purple-500/10',
-    hover: 'hover:bg-purple-500/20',
-    accent: '#c084fc',
+    gradient: 'from-white/10 to-white/5',
+    icon: 'text-white/80',
+    border: 'border-none', // 移除邊框none', // 移除邊框10',
+    bg: 'bg-white/5',
+    hover: 'hover:bg-white/8',
+    accent: 'rgba(255, 255, 255, 0.4)',
+    identifier: 'hexagon-outline',
   },
   
   // 數據類 Cards (Data Cards)
   data: {
-    gradient: 'from-green-500 to-emerald-500',
-    icon: 'text-green-400',
-    border: 'border-green-500/30',
-    bg: 'bg-green-500/10',
-    hover: 'hover:bg-green-500/20',
-    accent: '#34d399',
+    gradient: 'from-white/8 to-white/4',
+    icon: 'text-white/75',
+    border: 'border-none', // 移除邊框none', // 移除邊框8',
+    bg: 'bg-white/4',
+    hover: 'hover:bg-white/6',
+    accent: 'rgba(255, 255, 255, 0.3)',
+    identifier: 'square-dotted',
   },
   
   // 報表類 Cards (Report Cards)
   report: {
-    gradient: 'from-orange-500 to-red-500',
-    icon: 'text-orange-400',
-    border: 'border-orange-500/30',
-    bg: 'bg-orange-500/10',
-    hover: 'hover:bg-orange-500/20',
-    accent: '#f97316',
+    gradient: 'from-white/12 to-white/6',
+    icon: 'text-white/85',
+    border: 'border-none', // 移除邊框none', // 移除邊框12',
+    bg: 'bg-white/6',
+    hover: 'hover:bg-white/10',
+    accent: 'rgba(255, 255, 255, 0.5)',
+    identifier: 'diamond-striped',
   },
   
   // 圖表類 Cards (Chart Cards)
   chart: {
-    gradient: 'from-indigo-500 to-purple-500',
-    icon: 'text-indigo-400',
-    border: 'border-indigo-500/30',
-    bg: 'bg-indigo-500/10',
-    hover: 'hover:bg-indigo-500/20',
-    accent: '#6366f1',
+    gradient: 'from-white/10 to-white/5',
+    icon: 'text-white/80',
+    border: 'border-none', // 移除邊框none', // 移除邊框10',
+    bg: 'bg-white/5',
+    hover: 'hover:bg-white/8',
+    accent: 'rgba(255, 255, 255, 0.4)',
+    identifier: 'triangle-segmented',
   },
   
   // 特殊類 Cards (Special Cards)
   special: {
-    gradient: 'from-violet-500 to-purple-500',
-    icon: 'text-violet-400',
-    border: 'border-violet-500/30',
-    bg: 'bg-violet-500/10',
-    hover: 'hover:bg-violet-500/20',
-    accent: '#a78bfa',
+    gradient: 'from-white/14 to-white/7',
+    icon: 'text-white/90',
+    border: 'border-none', // 移除邊框none', // 移除邊框14',
+    bg: 'bg-white/7',
+    hover: 'hover:bg-white/12',
+    accent: 'rgba(255, 255, 255, 0.6)',
+    identifier: 'star-gradient',
   },
 } as const;
 
@@ -107,9 +113,9 @@ export const cardTextStyles = {
  */
 export const cardContainerStyles = {
   // 基礎容器
-  base: 'rounded-lg bg-slate-800/50 backdrop-blur-sm border border-slate-700/50',
-  elevated: 'rounded-lg bg-slate-800/70 backdrop-blur-md border border-slate-600/50 shadow-lg',
-  glass: 'rounded-lg bg-white/5 backdrop-blur-xl border border-white/10',
+  base: 'rounded-lg bg-slate-800/50 backdrop-blur-sm', // 移除邊框
+  elevated: 'rounded-lg bg-slate-800/70 backdrop-blur-md shadow-lg', // 移除邊框
+  glass: 'rounded-lg bg-white/5 backdrop-blur-xl', // 移除邊框
   
   // 內邊距
   padding: {
@@ -154,25 +160,25 @@ export const cardAnimations = {
 export const cardStatusColors = {
   online: {
     bg: 'bg-green-500/10',
-    border: 'border-green-500/30',
+    border: 'border-none', // 移除邊框green-500/30',
     text: 'text-green-400',
     dot: 'bg-green-400',
   },
   offline: {
     bg: 'bg-gray-500/10',
-    border: 'border-gray-500/30',
+    border: 'border-none', // 移除邊框gray-500/30',
     text: 'text-gray-400',
     dot: 'bg-gray-400',
   },
   error: {
     bg: 'bg-red-500/10',
-    border: 'border-red-500/30',
+    border: 'border-none', // 移除邊框red-500/30',
     text: 'text-red-400',
     dot: 'bg-red-400',
   },
   warning: {
     bg: 'bg-yellow-500/10',
-    border: 'border-yellow-500/30',
+    border: 'border-none', // 移除邊框yellow-500/30',
     text: 'text-yellow-400',
     dot: 'bg-yellow-400',
   },

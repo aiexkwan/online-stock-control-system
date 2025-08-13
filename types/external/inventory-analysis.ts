@@ -167,24 +167,24 @@ export interface InventoryFilters {
   includeReserved?: boolean;
 }
 
-// 庫存警報配置
-export interface AlertConfig {
+// 庫存警報配置 (renamed to avoid confusion with removed system alerts)
+export interface InventoryAlertConfig {
   id: string;
   name: string;
   type: 'low_stock' | 'expiry' | 'dead_stock' | 'overstock';
-  conditions: AlertCondition[];
-  actions: AlertAction[];
+  conditions: InventoryAlertCondition[];
+  actions: InventoryAlertAction[];
   enabled: boolean;
   frequency: 'realtime' | 'hourly' | 'daily' | 'weekly';
 }
 
-export interface AlertCondition {
+export interface InventoryAlertCondition {
   field: string;
   operator: 'lt' | 'gt' | 'eq' | 'ne' | 'between';
   value: number | string | [number, number];
 }
 
-export interface AlertAction {
+export interface InventoryAlertAction {
   type: 'email' | 'sms' | 'webhook' | 'notification';
   target: string;
   template?: string;

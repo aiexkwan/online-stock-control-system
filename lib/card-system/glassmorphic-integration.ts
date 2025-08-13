@@ -9,51 +9,69 @@
 import { cardThemes } from './theme';
 
 /**
- * 類別特定的玻璃態效果配置
- * 每個卡片類別都有獨特的玻璃態色調
+ * 純透明玻璃態效果配置
+ * 所有卡片類別使用統一的純透明毛玻璃效果，無色彩污染
  */
 export const glassmorphicThemes = {
   operation: {
-    background: 'rgba(6, 182, 212, 0.08)',      // cyan tint
-    borderColor: 'rgba(6, 182, 212, 0.2)',
-    glowColor: 'rgba(6, 182, 212, 0.3)',
+    background: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'transparent', // 完全透明邊框
     backdropBlur: '16px',
-    innerGlow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+    innerGlow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+    shadowDepth: 'default',
+    cornerIndicator: 'circle-left',
+    iconStyle: 'filled',
+    glowColor: 'rgba(255, 255, 255, 0.4)',
   },
   analysis: {
-    background: 'rgba(192, 132, 252, 0.08)',    // purple tint
-    borderColor: 'rgba(192, 132, 252, 0.2)',
-    glowColor: 'rgba(192, 132, 252, 0.3)',
+    background: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'transparent', // 移除邊框 0.10)',
     backdropBlur: '20px', // 分析類需要更強的背景模糊
-    innerGlow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+    innerGlow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+    shadowDepth: 'strong',
+    cornerIndicator: 'hexagon-right',
+    iconStyle: 'outline',
+    glowColor: 'rgba(255, 255, 255, 0.4)',
   },
   data: {
-    background: 'rgba(52, 211, 153, 0.06)',     // emerald tint (較淡，保持數據清晰)
-    borderColor: 'rgba(52, 211, 153, 0.15)',
-    glowColor: 'rgba(52, 211, 153, 0.2)',
+    background: 'rgba(255, 255, 255, 0.04)',
+    borderColor: 'transparent', // 移除邊框 0.08)',
     backdropBlur: '12px', // 較少模糊，保持數據可讀性
-    innerGlow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+    innerGlow: 'inset 0 1px 0 rgba(255, 255, 255, 0.06)',
+    shadowDepth: 'subtle',
+    cornerIndicator: 'square-left',
+    iconStyle: 'dotted',
+    glowColor: 'rgba(255, 255, 255, 0.3)',
   },
   report: {
-    background: 'rgba(249, 115, 22, 0.1)',      // orange tint
-    borderColor: 'rgba(249, 115, 22, 0.25)',
-    glowColor: 'rgba(249, 115, 22, 0.4)',
+    background: 'rgba(255, 255, 255, 0.06)',
+    borderColor: 'transparent', // 移除邊框 0.12)',
     backdropBlur: '18px',
-    innerGlow: 'inset 0 1px 0 rgba(255, 255, 255, 0.12)',
+    innerGlow: 'inset 0 1px 0 rgba(255, 255, 255, 0.10)',
+    shadowDepth: 'intense',
+    cornerIndicator: 'diamond-right',
+    iconStyle: 'striped',
+    glowColor: 'rgba(255, 255, 255, 0.5)',
   },
   chart: {
-    background: 'rgba(99, 102, 241, 0.08)',     // indigo tint
-    borderColor: 'rgba(99, 102, 241, 0.2)',
-    glowColor: 'rgba(99, 102, 241, 0.3)',
+    background: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'transparent', // 移除邊框 0.10)',
     backdropBlur: '24px', // 圖表背景需要最強模糊
-    innerGlow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+    innerGlow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+    shadowDepth: 'strong',
+    cornerIndicator: 'triangle-left',
+    iconStyle: 'segmented',
+    glowColor: 'rgba(255, 255, 255, 0.4)',
   },
   special: {
-    background: 'rgba(167, 139, 250, 0.1)',     // violet tint
-    borderColor: 'rgba(167, 139, 250, 0.3)',
-    glowColor: 'rgba(167, 139, 250, 0.5)',
+    background: 'rgba(255, 255, 255, 0.07)',
+    borderColor: 'transparent', // 移除邊框 0.14)',
     backdropBlur: '20px',
-    innerGlow: 'inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+    innerGlow: 'inset 0 1px 0 rgba(255, 255, 255, 0.12)',
+    shadowDepth: 'intense',
+    cornerIndicator: 'star-right',
+    iconStyle: 'gradient',
+    glowColor: 'rgba(255, 255, 255, 0.6)',
   },
 } as const;
 
@@ -89,8 +107,90 @@ export const glassmorphicVariants = {
 } as const;
 
 /**
- * 動態邊框發光效果
- * 根據交互狀態和卡片類別調整
+ * 陰影深度配置系統
+ * 通過不同深度的陰影來區分卡片類型，取代色彩區分
+ */
+export const shadowDepthSystem = {
+  subtle: {
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05), 0 1px 4px rgba(0, 0, 0, 0.08)',
+    hoverShadow: '0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.12)',
+  },
+  default: {
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.12)',
+    hoverShadow: '0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.16)',
+  },
+  strong: {
+    boxShadow: '0 8px 20px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.16)',
+    hoverShadow: '0 12px 32px rgba(0, 0, 0, 0.16), 0 6px 16px rgba(0, 0, 0, 0.20)',
+  },
+  intense: {
+    boxShadow: '0 12px 28px rgba(0, 0, 0, 0.15), 0 6px 14px rgba(0, 0, 0, 0.20)',
+    hoverShadow: '0 16px 40px rgba(0, 0, 0, 0.20), 0 8px 20px rgba(0, 0, 0, 0.24)',
+  },
+} as const;
+
+/**
+ * 角標指示器系統
+ * 通過不同形狀和位置的角標來區分卡片類型
+ */
+export const cornerIndicatorSystem = {
+  'circle-left': {
+    shape: 'w-3 h-3 rounded-full',
+    position: 'top-3 left-3',
+    background: 'bg-white/20',
+    border: 'border-none', // 移除邊框
+  },
+  'hexagon-right': {
+    shape: 'w-3 h-3',
+    position: 'top-3 right-3',
+    background: 'bg-white/20',
+    border: 'border-none', // 移除邊框
+    clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+  },
+  'square-left': {
+    shape: 'w-3 h-3 rounded-sm',
+    position: 'top-3 left-3',
+    background: 'bg-white/20',
+    border: 'border-none', // 移除邊框
+  },
+  'diamond-right': {
+    shape: 'w-3 h-3 rotate-45',
+    position: 'top-3 right-3',
+    background: 'bg-white/20',
+    border: 'border-none', // 移除邊框
+  },
+  'triangle-left': {
+    shape: 'w-3 h-3',
+    position: 'top-3 left-3',
+    background: 'bg-white/20',
+    border: 'border-none', // 移除邊框
+    clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
+  },
+  'star-right': {
+    shape: 'w-3 h-3',
+    position: 'top-3 right-3',
+    background: 'bg-white/20',
+    border: 'border-none', // 移除邊框
+    clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
+  },
+} as const;
+
+/**
+ * 圖標樣式系統
+ * 通過不同的圖標樣式來進一步區分卡片類型
+ */
+export const iconStyleSystem = {
+  filled: 'fill-current stroke-none',
+  outline: 'fill-none stroke-current stroke-2',
+  dotted: 'fill-none stroke-current stroke-2 stroke-dasharray-[2,2]',
+  striped: 'fill-current stroke-current stroke-1',
+  segmented: 'fill-none stroke-current stroke-2 stroke-dasharray-[8,4]',
+  gradient: 'fill-current stroke-none opacity-80',
+} as const;
+
+/**
+ * 動態邊框發光效果 (保留用於特殊交互狀態)
+ * 使用純白色發光，不添加任何顏色
  */
 export const dynamicBorderGlow = {
   // 基礎發光動畫關鍵幀
@@ -124,37 +224,37 @@ export const dynamicBorderGlow = {
       @keyframes cardRotateGlow {
         0% { 
           background: linear-gradient(45deg, 
-            rgba(var(--card-glow-rgb), 0.8), 
-            rgba(var(--card-glow-rgb), 0.4), 
-            rgba(var(--card-glow-rgb), 0.8)
+            rgba(255, 255, 255, 0.3), 
+            rgba(255, 255, 255, 0.1), 
+            rgba(255, 255, 255, 0.3)
           );
         }
         25% { 
           background: linear-gradient(135deg, 
-            rgba(var(--card-glow-rgb), 0.8), 
-            rgba(var(--card-glow-rgb), 0.4), 
-            rgba(var(--card-glow-rgb), 0.8)
+            rgba(255, 255, 255, 0.3), 
+            rgba(255, 255, 255, 0.1), 
+            rgba(255, 255, 255, 0.3)
           );
         }
         50% { 
           background: linear-gradient(225deg, 
-            rgba(var(--card-glow-rgb), 0.8), 
-            rgba(var(--card-glow-rgb), 0.4), 
-            rgba(var(--card-glow-rgb), 0.8)
+            rgba(255, 255, 255, 0.3), 
+            rgba(255, 255, 255, 0.1), 
+            rgba(255, 255, 255, 0.3)
           );
         }
         75% { 
           background: linear-gradient(315deg, 
-            rgba(var(--card-glow-rgb), 0.8), 
-            rgba(var(--card-glow-rgb), 0.4), 
-            rgba(var(--card-glow-rgb), 0.8)
+            rgba(255, 255, 255, 0.3), 
+            rgba(255, 255, 255, 0.1), 
+            rgba(255, 255, 255, 0.3)
           );
         }
         100% { 
           background: linear-gradient(45deg, 
-            rgba(var(--card-glow-rgb), 0.8), 
-            rgba(var(--card-glow-rgb), 0.4), 
-            rgba(var(--card-glow-rgb), 0.8)
+            rgba(255, 255, 255, 0.3), 
+            rgba(255, 255, 255, 0.1), 
+            rgba(255, 255, 255, 0.3)
           );
         }
       }
@@ -218,7 +318,7 @@ export const performanceOptimizations = {
 } as const;
 
 /**
- * 工具函數：獲取優化的玻璃態樣式
+ * 工具函數：獲取優化的純透明玻璃態樣式
  */
 export function getOptimizedGlassmorphicStyle(
   cardType: keyof typeof glassmorphicThemes,
@@ -228,18 +328,20 @@ export function getOptimizedGlassmorphicStyle(
   const theme = glassmorphicThemes[cardType];
   const variantConfig = glassmorphicVariants[variant];
   const perfConfig = performanceOptimizations[performanceLevel];
+  const shadowConfig = shadowDepthSystem[theme.shadowDepth];
 
   // 如果是低性能設備，返回簡化樣式
   if (performanceLevel === 'lowPerformance') {
     return {
-      backgroundColor: 'fallbackBackground' in perfConfig ? perfConfig.fallbackBackground : 'rgba(0, 0, 0, 0.8)',
-      border: `1px solid ${theme.borderColor}`,
+      backgroundColor: 'rgba(255, 255, 255, 0.08)',
+      border: 'none', // 移除邊框
       borderRadius: '12px',
       backdropFilter: 'none',
+      boxShadow: shadowConfig.boxShadow,
     };
   }
 
-  // 構建完整的玻璃態樣式
+  // 構建完整的純透明玻璃態樣式
   const blur = perfConfig.useBackdropFilter 
     ? `blur(${Math.min(parseInt(variantConfig.blur), parseInt(perfConfig.maxBlurRadius))}px)`
     : 'none';
@@ -248,9 +350,9 @@ export function getOptimizedGlassmorphicStyle(
     backgroundColor: theme.background,
     backdropFilter: blur,
     WebkitBackdropFilter: blur,
-    border: `1px solid ${theme.borderColor}`,
+    border: 'none', // 移除邊框
     borderRadius: '12px',
-    boxShadow: theme.innerGlow,
+    boxShadow: `${theme.innerGlow}, ${shadowConfig.boxShadow}`,
     position: 'relative' as const,
     overflow: 'hidden' as const,
   };
@@ -262,32 +364,29 @@ export function getOptimizedGlassmorphicStyle(
  */
 export function generateGlassmorphicCSSVariables(cardType: keyof typeof glassmorphicThemes) {
   const theme = glassmorphicThemes[cardType];
-  const cardTheme = cardThemes[cardType];
-  
-  // 提取 RGB 值用於 CSS 變量
-  const hexToRgb = (hex: string) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-      r: parseInt(result[1], 16),
-      g: parseInt(result[2], 16),
-      b: parseInt(result[3], 16)
-    } : null;
-  };
-
-  const accentRgb = hexToRgb(cardTheme.accent);
+  const shadowConfig = shadowDepthSystem[theme.shadowDepth];
+  const cornerConfig = cornerIndicatorSystem[theme.cornerIndicator];
   
   return {
-    '--card-glow-rgb': accentRgb ? `${accentRgb.r}, ${accentRgb.g}, ${accentRgb.b}` : '99, 102, 241',
+    '--card-glow-rgb': '255, 255, 255', // 統一使用純白色
     '--card-bg': theme.background,
     '--card-border': theme.borderColor,
     '--card-blur': theme.backdropBlur,
     '--card-inner-glow': theme.innerGlow,
+    '--card-shadow': shadowConfig.boxShadow,
+    '--card-hover-shadow': shadowConfig.hoverShadow,
+    '--card-corner-shape': cornerConfig.shape,
+    '--card-corner-position': cornerConfig.position,
+    '--card-icon-style': iconStyleSystem[theme.iconStyle],
   };
 }
 
 const glassmorphicIntegration = {
   themes: glassmorphicThemes,
   variants: glassmorphicVariants,
+  shadowDepth: shadowDepthSystem,
+  cornerIndicators: cornerIndicatorSystem,
+  iconStyles: iconStyleSystem,
   borderGlow: dynamicBorderGlow,
   performance: performanceOptimizations,
   getOptimizedStyle: getOptimizedGlassmorphicStyle,

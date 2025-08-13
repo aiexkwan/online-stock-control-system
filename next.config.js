@@ -51,8 +51,14 @@ const nextConfig = {
       };
     }
 
-    // 讓 Next.js 處理其他配置，移除 webpack 警告抑制
-    // 因為我哋已經通過 Supabase client 配置解決根本問題
+    // 修復動態導入和緩存問題
+    if (dev) {
+      config.cache = false; // 開發環境禁用緩存，避免 chunk 文件問題
+    }
+
+    // 優化模塊解析
+    config.resolve.symlinks = false;
+    
     return config;
   },
   images: {

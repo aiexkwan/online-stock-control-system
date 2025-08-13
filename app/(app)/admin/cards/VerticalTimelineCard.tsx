@@ -15,6 +15,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { VerticalTimelineCardProps } from '../types/ui-navigation';
+import { ReportCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
+import { cardTextStyles } from '@/lib/card-system/theme';
 
 // Merged timeline item interface from GraphQL
 interface MergedTimelineItem {
@@ -270,25 +272,20 @@ export const VerticalTimelineCard: React.FC<VerticalTimelineCardProps> = ({
   }, [refetch]);
 
   return (
-    <div 
-      className={cn(
-        "flex flex-col rounded-lg border",
-        className
-      )}
+    <ReportCard
+      className={cn("flex flex-col", className)}
       style={{
-        height: typeof height === 'number' ? `${height}px` : height,
-        backgroundColor: 'transparent',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-        background: 'rgba(255, 255, 255, 0.05)',
-        borderColor: 'rgba(255, 255, 255, 0.1)'
+        height: typeof height === 'number' ? `${height}px` : height
       }}
+      borderGlow="hover"
+      variant="glass"
+      padding="none"
     >
-      <div className="p-4 pb-3 border-b" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+      <div className="p-4 pb-3 border-b border-white/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-white/70" />
-            <span className="font-semibold text-white">Record History</span>
+            <span className={cardTextStyles.title}>Record History</span>
           </div>
           <Button
             onClick={handleRefresh}
@@ -308,21 +305,21 @@ export const VerticalTimelineCard: React.FC<VerticalTimelineCardProps> = ({
             placeholder="ID/Name filter"
             value={nameFilter}
             onChange={(e) => setNameFilter(e.target.value)}
-            className="flex-1 px-3 py-1.5 text-sm bg-white/10 border border-white/20 rounded-md text-white placeholder-white/50 focus:outline-none focus:border-white/40"
+            className={cn("flex-1 px-3 py-1.5 bg-white/10 border border-white/20 rounded-md text-white placeholder-white/50 focus:outline-none focus:border-white/40", cardTextStyles.bodySmall)}
           />
           <input
             type="text"
             placeholder="Action filter"
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value)}
-            className="flex-1 px-3 py-1.5 text-sm bg-white/10 border border-white/20 rounded-md text-white placeholder-white/50 focus:outline-none focus:border-white/40"
+            className={cn("flex-1 px-3 py-1.5 bg-white/10 border border-white/20 rounded-md text-white placeholder-white/50 focus:outline-none focus:border-white/40", cardTextStyles.bodySmall)}
           />
           <input
             type="text"
             placeholder="Pallet filter"
             value={palletFilter}
             onChange={(e) => setPalletFilter(e.target.value)}
-            className="flex-1 px-3 py-1.5 text-sm bg-white/10 border border-white/20 rounded-md text-white placeholder-white/50 focus:outline-none focus:border-white/40"
+            className={cn("flex-1 px-3 py-1.5 bg-white/10 border border-white/20 rounded-md text-white placeholder-white/50 focus:outline-none focus:border-white/40", cardTextStyles.bodySmall)}
           />
         </div>
       </div>
@@ -337,15 +334,15 @@ export const VerticalTimelineCard: React.FC<VerticalTimelineCardProps> = ({
         {error && (
           <div className="h-full flex items-center justify-center">
             <div className="text-center">
-              <p className="text-sm text-red-400">Error loading data</p>
-              <p className="text-xs text-white/60 mt-1">{error.message}</p>
+              <p className={cn(cardTextStyles.bodySmall, "text-red-400")}>Error loading data</p>
+              <p className={cn(cardTextStyles.labelSmall, "text-white/60 mt-1")}>{error.message}</p>
             </div>
           </div>
         )}
         
         {!loading && !error && timelineItems.length === 0 && (
           <div className="h-full flex items-center justify-center">
-            <p className="text-white/60">No records found</p>
+            <p className={cn(cardTextStyles.bodySmall, "text-white/60")}>No records found</p>
           </div>
         )}
         
@@ -376,14 +373,14 @@ export const VerticalTimelineCard: React.FC<VerticalTimelineCardProps> = ({
             
             {/* End of list indicator */}
             {displayCount >= 100 && (
-              <div className="text-center py-4 text-sm text-white/60">
+              <div className={cn("text-center py-4", cardTextStyles.bodySmall, "text-white/60")}>
                 Maximum 100 records displayed
               </div>
             )}
           </div>
         )}
       </div>
-    </div>
+    </ReportCard>
   );
 };
 

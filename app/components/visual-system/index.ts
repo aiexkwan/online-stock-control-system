@@ -2,15 +2,13 @@
 export { VisualSystemProvider, useVisualSystem } from './core/VisualSystemProvider';
 export { UnifiedBackground } from './core/UnifiedBackground';
 
-// Effects exports
+// Effects exports - 使用統一的 EnhancedGlassmorphicCard 系統
 export {
-  GlassmorphicCard,
-  GlassCard,
-  StrongGlassCard,
-  LightGlassCard,
-} from './effects/GlassmorphicCard';
-
-// Navigation - Using existing DynamicActionBar from components/ui/dynamic-action-bar
+  EnhancedGlassmorphicCard as GlassmorphicCard,
+  OperationCard as GlassCard,
+  SpecialCard as StrongGlassCard,
+  DataCard as LightGlassCard,
+} from '@/lib/card-system/EnhancedGlassmorphicCard';
 
 // Hooks exports
 export { usePerformanceMonitor, withPerformanceOptimization } from './hooks/usePerformanceMonitor';
