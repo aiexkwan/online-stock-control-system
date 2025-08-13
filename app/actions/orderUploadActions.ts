@@ -493,10 +493,24 @@ export async function analyzeOrderPDF(
         formData.append('file', blob, fileData.name);
         formData.append('fileName', fileData.name);
 
-        // 調用內部 API - 使用絕對路徑避免環境變數依賴
-        const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
-                       process.env.NEXT_PUBLIC_APP_URL || 
-                       'http://localhost:3000';
+        // 調用內部 API - 修復 URL 構建邏輯
+        function getApiBaseUrl(): string {
+          // 優先使用 VERCEL_URL (生產環境)
+          if (process.env.VERCEL_URL) {
+            const url = process.env.VERCEL_URL;
+            return url.startsWith('https://') ? url : `https://${url}`;
+          }
+          
+          // 備用：NEXT_PUBLIC_APP_URL
+          if (process.env.NEXT_PUBLIC_APP_URL) {
+            return process.env.NEXT_PUBLIC_APP_URL;
+          }
+          
+          // 本地開發
+          return 'http://localhost:3000';
+        }
+        
+        const baseUrl = getApiBaseUrl();
         const apiUrl = `${baseUrl}/api/pdf-extract`;
         
         console.log('[analyzeOrderPDF] Making API request to:', apiUrl);
@@ -507,7 +521,17 @@ export async function analyzeOrderPDF(
         });
 
         if (!response.ok) {
-          throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+          const errorText = await response.text();
+          console.error('[analyzeOrderPDF] API request failed:', {
+            status: response.status,
+            statusText: response.statusText,
+            url: apiUrl,
+            errorBody: errorText,
+            baseUrl,
+            vercelUrl: process.env.VERCEL_URL,
+            nextPublicAppUrl: process.env.NEXT_PUBLIC_APP_URL,
+          });
+          throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
         }
 
         const enhancedResult = await response.json();
@@ -522,7 +546,7 @@ export async function analyzeOrderPDF(
             products: enhancedResult.data.products,
           };
 
-          extractionMethod = enhancedResult.metadata?.extractionMethod || 'api-route';
+          extractionMethod = enhancedResult.metadata?.method || enhancedResult.extractionMethod || 'api-route';
           tokensUsed = enhancedResult.metadata?.tokensUsed || Math.ceil(fileData.buffer.byteLength / 4);
           
           console.log('[analyzeOrderPDF] API Route extraction successful:', {
@@ -535,7 +559,13 @@ export async function analyzeOrderPDF(
           throw new Error(enhancedResult.error || 'API Route extraction failed');
         }
       } catch (enhancedError) {
-        console.error('[analyzeOrderPDF] API Route extraction failed:', enhancedError);
+        console.error('[analyzeOrderPDF] API Route extraction failed:', {
+          error: enhancedError instanceof Error ? enhancedError.message : enhancedError,
+          url: apiUrl,
+          baseUrl,
+          vercelUrl: process.env.VERCEL_URL,
+          nextPublicAppUrl: process.env.NEXT_PUBLIC_APP_URL,
+        });
         useEnhancedExtraction = false; // 標記為失敗，使用 fallback
       }
     }
