@@ -4,7 +4,7 @@
  * 替代 OpenAI Assistant API 的文件處理
  */
 
-import pdf from 'pdf-parse';
+const pdf = require('pdf-parse');
 import { systemLogger } from '@/lib/logger';
 
 export interface ExtractedPDFData {
@@ -100,7 +100,7 @@ export class PDFExtractionService {
   /**
    * 自定義頁面渲染函數（用於提取結構化文本）
    */
-  private renderPage(pageData: any): string {
+  private renderPage(pageData: { getTextContent: (options: Record<string, boolean>) => Promise<{ items: Array<{ str: string; transform: number[] }> }> }): Promise<string> {
     // 這個函數會被 pdf-parse 為每一頁調用
     let render_options = {
       normalizeWhitespace: false,
@@ -108,7 +108,7 @@ export class PDFExtractionService {
     };
 
     return pageData.getTextContent(render_options)
-      .then((textContent: any) => {
+      .then((textContent: { items: Array<{ str: string; transform: number[] }> }) => {
         let text = '';
         let lastY = null;
         
@@ -263,7 +263,14 @@ export class PDFExtractionService {
     numProducts?: number;
     hasMultiplePages: boolean;
   } {
-    const metadata: any = {};
+    const metadata = {
+      hasMultiplePages: false
+    } as {
+      orderRef?: string;
+      accountNum?: string;
+      numProducts?: number;
+      hasMultiplePages: boolean;
+    };
     
     // 提取訂單號
     const orderRefMatch = text.match(/Order\s+Reference[:\s]+([0-9]+)/i);

@@ -215,7 +215,7 @@ export class ChatCompletionService {
       }
       
       // 清理和標準化數據
-      const orders = parsed.orders.map((order: any) => ({
+      const orders = parsed.orders.map((order: Record<string, unknown>) => ({
         order_ref: String(order.order_ref || '').replace(/^0+/, ''), // 去除前導零
         account_num: String(order.account_num || '-'),
         delivery_add: String(order.delivery_add || '-'),
@@ -223,8 +223,8 @@ export class ChatCompletionService {
         customer_ref: String(order.customer_ref || '-'),
         product_code: String(order.product_code || ''),
         product_desc: String(order.product_desc || ''),
-        product_qty: parseInt(order.product_qty) || 1,
-        weight: order.weight ? parseFloat(order.weight) : undefined,
+        product_qty: parseInt(String(order.product_qty)) || 1,
+        weight: order.weight ? parseFloat(String(order.weight)) : undefined,
         unit_price: order.unit_price ? String(order.unit_price) : undefined,
       }));
       

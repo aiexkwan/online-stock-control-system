@@ -8,7 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 import { AssistantService } from '@/app/services/assistantService';
 import { SYSTEM_PROMPT } from '@/lib/openai-assistant-config';
 import { apiLogger, logApiRequest, logApiResponse, systemLogger } from '@/lib/logger';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 // 簡單的內存緩存（與現有系統一致）
 interface CachedAssistantResult {

@@ -4,7 +4,7 @@
  * 提供多層 fallback 機制確保高可靠性
  */
 
-import { PDFExtractionService } from './pdfExtractionService';
+import { PDFExtractionService, ExtractedPDFData } from './pdfExtractionService';
 import { ChatCompletionService, OrderExtractionResult } from './chatCompletionService';
 import { AssistantService } from './assistantService';
 import { systemLogger } from '@/lib/logger';
@@ -142,7 +142,7 @@ export class EnhancedOrderExtractionService {
    */
   private convertToEnhancedResult(
     result: OrderExtractionResult,
-    extractedData: any,
+    extractedData: ExtractedPDFData,
     startTime: number
   ): EnhancedExtractionResult {
     if (!result.orders || result.orders.length === 0) {

@@ -8,7 +8,7 @@ import { AssistantService } from '@/app/services/assistantService';
 import { SYSTEM_PROMPT } from '@/lib/openai-assistant-config';
 import { EnhancedOrderExtractionService } from '@/app/services/enhancedOrderExtractionService';
 import { sendOrderCreatedEmail } from '../services/emailService';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 // ACO 產品代碼列表
 const ACO_PRODUCT_CODES = [
@@ -479,7 +479,7 @@ export async function analyzeOrderPDF(
       };
     }
 
-    let orderData: EnhancedOrderData;
+    let orderData: EnhancedOrderData | undefined;
     let extractionMethod: string = 'unknown';
     let tokensUsed: number = 0;
     let extractedText: string = '';
@@ -611,6 +611,11 @@ export async function analyzeOrderPDF(
         }
         throw assistantError;
       }
+    }
+
+    // 確保 orderData 已被賦值
+    if (!orderData) {
+      throw new Error('Failed to extract order data from PDF');
     }
 
     // 存儲到資料庫

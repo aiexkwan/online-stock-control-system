@@ -8,7 +8,7 @@ const browserLogger = pino({
     asObject: true,
     transmit: {
       level: 'error',
-      send: function (level, logEvent) {
+      send: function (level: string, logEvent: pino.LogEvent) {
         // 可以發送錯誤到監控服務
         if (level === 'error') {
           // 例如: 發送到 Sentry, LogRocket 等

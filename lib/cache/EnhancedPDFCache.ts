@@ -3,7 +3,7 @@
  * Improved caching for 40-50 PDFs/day with better hit tracking
  */
 
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 interface CacheEntry<T> {
   data: T;
