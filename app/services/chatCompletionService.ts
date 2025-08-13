@@ -4,6 +4,7 @@
  * 提供更穩定和快速的響應
  */
 
+
 import OpenAI from 'openai';
 import { systemLogger } from '@/lib/logger';
 import { ExtractedPDFData } from './pdfExtractionService';
@@ -144,7 +145,6 @@ export class ChatCompletionService {
       "product_code": "產品代碼",
       "product_desc": "產品描述",
       "product_qty": 數量（整數）,
-      "weight": 重量（可選）,
       "unit_price": "單價（可選）"
     }
   ]

@@ -484,19 +484,26 @@ export async function analyzeOrderPDF(
     let tokensUsed: number = 0;
     let extractedText: string = '';
 
-    // 嘗試使用增強的提取服務
+    // 嘗試使用增強的提取服務 (通過 API Route)
     if (useEnhancedExtraction) {
       try {
-        console.log('[analyzeOrderPDF] Using enhanced extraction service');
-        const enhancedService = EnhancedOrderExtractionService.getInstance();
-        const enhancedResult = await enhancedService.extractOrderFromPDF(fileData.buffer, fileData.name);
+        console.log('[analyzeOrderPDF] Using enhanced extraction via API');
+        
+        // 創建 FormData 發送到 API
+        const formData = new FormData();
+        const blob = new Blob([fileData.buffer], { type: 'application/pdf' });
+        formData.append('file', blob, fileData.name);
+        formData.append('fileName', fileData.name);
+
+        // 調用 PDF 提取 API
+        const response = await fetch('/api/pdf-extract', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const enhancedResult = await response.json();
 
         if (enhancedResult.success && enhancedResult.data) {
-          // 驗證結果
-          const validation = enhancedService.validateExtractionResult(enhancedResult);
-          if (validation.issues.length > 0) {
-            console.warn('[analyzeOrderPDF] Extraction validation issues:', validation.issues);
-          }
 
           orderData = {
             order_ref: enhancedResult.data.order_ref,
@@ -507,8 +514,8 @@ export async function analyzeOrderPDF(
             products: enhancedResult.data.products,
           };
 
-          extractionMethod = enhancedResult.extractionMethod;
-          tokensUsed = enhancedResult.metadata.tokensUsed || Math.ceil(fileData.buffer.byteLength / 4);
+          extractionMethod = enhancedResult.metadata?.method || 'pdf-api';
+          tokensUsed = enhancedResult.metadata?.tokensUsed || Math.ceil(fileData.buffer.byteLength / 4);
           
           console.log('[analyzeOrderPDF] Enhanced extraction successful:', {
             orderRef: orderData.order_ref,

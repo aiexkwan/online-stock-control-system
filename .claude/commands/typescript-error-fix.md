@@ -3,10 +3,6 @@
 ## Target
 - Fix all Typescript issue
 
-## Workflow
-- Run `npm run typecheck` for existing TypeScript error
-- Fix error
-
 ## Rules
 - Never use `any` type during fixing
 - Which will only lead to more `Eslint` error
@@ -15,3 +11,8 @@
 - [Code Reviewer](../agents/code-reviewer.md)
 - [TypeScript-Pro](../agents/typescript-pro.md)
 - [Error Dective](../agents/error-detective.md)
+
+## Workflow
+- Invoke agenst
+- Run `npm run typecheck` for existing TypeScript error
+- Fix error
