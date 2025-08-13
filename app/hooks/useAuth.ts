@@ -9,23 +9,24 @@ import type { User, PostgrestError } from '@supabase/supabase-js';
 import { AuthState, UserRole } from '@/lib/types/auth';
 
 // 基於 department 和 position 的用戶角色映射
+// 所有用戶統一導向 /admin/analytics，並且可以訪問所有頁面
 const USER_ROUTING_MAP: Record<
   string,
   { defaultPath: string; allowedPaths: string[]; navigationRestricted: boolean }
 > = {
   // Admin 用戶 (無限制)
   Injection_Admin: {
-    defaultPath: '/admin/injection',
+    defaultPath: '/admin/analytics',
     allowedPaths: [],
     navigationRestricted: false,
   },
   Office_Admin: {
-    defaultPath: '/admin/upload',
+    defaultPath: '/admin/analytics',
     allowedPaths: [],
     navigationRestricted: false,
   },
   Pipeline_Admin: {
-    defaultPath: '/admin/pipeline',
+    defaultPath: '/admin/analytics',
     allowedPaths: [],
     navigationRestricted: false,
   },
@@ -35,31 +36,31 @@ const USER_ROUTING_MAP: Record<
     navigationRestricted: false,
   },
   Warehouse_Admin: {
-    defaultPath: '/stock-transfer',
+    defaultPath: '/admin/analytics',
     allowedPaths: [],
     navigationRestricted: false,
   },
 
-  // User 用戶 (有限制)
+  // User 用戶 (現在也無限制)
   Injection_User: {
-    defaultPath: '/print-label',
-    allowedPaths: ['/print-label'],
-    navigationRestricted: true,
+    defaultPath: '/admin/analytics',
+    allowedPaths: [],
+    navigationRestricted: false,
   },
   Office_User: {
-    defaultPath: '/admin/upload',
-    allowedPaths: ['/admin/upload', '/admin/system'],
-    navigationRestricted: true,
+    defaultPath: '/admin/analytics',
+    allowedPaths: [],
+    navigationRestricted: false,
   },
   Pipeline_User: {
-    defaultPath: '/print-label',
-    allowedPaths: ['/print-label'],
-    navigationRestricted: true,
+    defaultPath: '/admin/analytics',
+    allowedPaths: [],
+    navigationRestricted: false,
   },
   Warehouse_User: {
-    defaultPath: '/stock-transfer',
-    allowedPaths: ['/stock-transfer'],
-    navigationRestricted: true,
+    defaultPath: '/admin/analytics',
+    allowedPaths: [],
+    navigationRestricted: false,
   },
 };
 
@@ -71,7 +72,7 @@ export const getUserRoleByDepartmentAndPosition = (
   const config = USER_ROUTING_MAP[key];
 
   if (!config) {
-    // 降級處理：未知組合預設為受限用戶
+    // 降級處理：未知組合也統一導向 /admin/analytics 且無限制
     console.warn(
       `[getUserRoleByDepartmentAndPosition] Unknown combination: ${department}_${position}`
     );
@@ -79,9 +80,9 @@ export const getUserRoleByDepartmentAndPosition = (
       type: 'user',
       department,
       position,
-      allowedPaths: ['/admin/analytics'],
+      allowedPaths: [],
       defaultPath: '/admin/analytics',
-      navigationRestricted: true,
+      navigationRestricted: false,
     };
   }
 
@@ -154,24 +155,25 @@ export const getUserRoleFromDatabase = async (email: string): Promise<UserRole |
 };
 
 // 向後兼容的舊版本函數（降級使用）
+// 所有用戶統一導向 /admin/analytics 且無限制
 export const getUserRole = (email: string): UserRole => {
   if (email === 'production@pennineindustries.com') {
     return {
       type: 'user',
       department: 'Pipeline',
       position: 'User',
-      allowedPaths: ['/print-label'],
-      defaultPath: '/print-label',
-      navigationRestricted: true,
+      allowedPaths: [],
+      defaultPath: '/admin/analytics',
+      navigationRestricted: false,
     };
   } else if (email === 'warehouse@pennineindustries.com') {
     return {
       type: 'user',
       department: 'Warehouse',
       position: 'User',
-      allowedPaths: ['/stock-transfer'],
-      defaultPath: '/stock-transfer',
-      navigationRestricted: true,
+      allowedPaths: [],
+      defaultPath: '/admin/analytics',
+      navigationRestricted: false,
     };
   } else {
     return {

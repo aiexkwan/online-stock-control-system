@@ -6,6 +6,7 @@ import type { Database } from '@/types/database/supabase';
 import { getErrorMessage } from '@/types/core/error';
 import { AssistantService } from '@/app/services/assistantService';
 import { SYSTEM_PROMPT } from '@/lib/openai-assistant-config';
+import { EnhancedOrderExtractionService } from '@/app/services/enhancedOrderExtractionService';
 import { sendOrderCreatedEmail } from '../services/emailService';
 import crypto from 'crypto';
 
@@ -426,7 +427,7 @@ async function sendEmailNotification(
 
 /**
  * 分析訂單 PDF 文件
- * 使用 OpenAI Assistant API 提取訂單信息
+ * 使用增強的 PDF 提取服務（優先）或 OpenAI Assistant API（備用）
  */
 export async function analyzeOrderPDF(
   fileData: {
@@ -437,8 +438,7 @@ export async function analyzeOrderPDF(
   saveToStorage: boolean = true
 ): Promise<OrderAnalysisResult> {
   const startTime = Date.now();
-  let threadId: string | undefined;
-  let fileId: string | undefined;
+  let useEnhancedExtraction = true; // 功能開關
 
   try {
     // 檢查必要參數
@@ -479,93 +479,142 @@ export async function analyzeOrderPDF(
       };
     }
 
-    // 獲取 Assistant 服務
-    const assistantService = AssistantService.getInstance();
-
-    // 獲取或創建 Assistant
-    const assistantId = await assistantService.getAssistant();
-
-    // 創建 Thread
-    threadId = await assistantService.createThread();
-
-    // 上傳文件到 OpenAI (使用簡單上傳，避免 vector store 問題)
-    const pdfBuffer = Buffer.from(fileData.buffer);
-    fileId = await assistantService.uploadFile(pdfBuffer, fileData.name);
-
-    // 發送消息並附加文件
-    await assistantService.sendMessage(threadId, SYSTEM_PROMPT, fileId);
-
-    // 運行 Assistant 並等待結果
-    const result = await assistantService.runAndWait(threadId, assistantId);
-
-    // 解析結果
     let orderData: EnhancedOrderData;
-    try {
-      // 調試日誌（僅在開發環境）
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[analyzeOrderPDF] Raw assistant response length:', result.length);
-      }
-      
-      // 使用 assistantService 來解析響應（它會處理新舊格式）
-      const parsedData = assistantService.parseAssistantResponse(result);
-      
-      // 如果是新格式（orders 陣列），嘗試從原始響應提取額外資訊
-      let accountNum = '-';
-      let deliveryAdd = '-';
-      let invoiceTo = '-';
-      let customerRef = '-';
-      
+    let extractionMethod: string = 'unknown';
+    let tokensUsed: number = 0;
+    let extractedText: string = '';
+
+    // 嘗試使用增強的提取服務
+    if (useEnhancedExtraction) {
       try {
-        // 先清理 markdown 代碼塊
-        let cleanedResult = result;
-        const codeBlockMatch = result.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-        if (codeBlockMatch) {
-          cleanedResult = codeBlockMatch[1].trim();
+        console.log('[analyzeOrderPDF] Using enhanced extraction service');
+        const enhancedService = EnhancedOrderExtractionService.getInstance();
+        const enhancedResult = await enhancedService.extractOrderFromPDF(fileData.buffer, fileData.name);
+
+        if (enhancedResult.success && enhancedResult.data) {
+          // 驗證結果
+          const validation = enhancedService.validateExtractionResult(enhancedResult);
+          if (validation.issues.length > 0) {
+            console.warn('[analyzeOrderPDF] Extraction validation issues:', validation.issues);
+          }
+
+          orderData = {
+            order_ref: enhancedResult.data.order_ref,
+            account_num: enhancedResult.data.account_num,
+            delivery_add: enhancedResult.data.delivery_add,
+            invoice_to: enhancedResult.data.invoice_to,
+            customer_ref: enhancedResult.data.customer_ref,
+            products: enhancedResult.data.products,
+          };
+
+          extractionMethod = enhancedResult.extractionMethod;
+          tokensUsed = enhancedResult.metadata.tokensUsed || Math.ceil(fileData.buffer.byteLength / 4);
+          
+          console.log('[analyzeOrderPDF] Enhanced extraction successful:', {
+            orderRef: orderData.order_ref,
+            productCount: orderData.products.length,
+            method: extractionMethod,
+            tokensUsed,
+          });
+        } else {
+          // 如果增強服務失敗，拋出錯誤以觸發 fallback
+          throw new Error(enhancedResult.error || 'Enhanced extraction failed');
         }
-        
-        const rawParsed = JSON.parse(cleanedResult);
-        if (rawParsed.orders && Array.isArray(rawParsed.orders) && rawParsed.orders.length > 0) {
-          const firstOrder = rawParsed.orders[0];
-          accountNum = firstOrder.account_num || '-';
-          deliveryAdd = firstOrder.delivery_add || '-';
-        }
-      } catch (rawParseError) {
-        // 如果原始解析失敗，使用默認值
-        console.warn('[analyzeOrderPDF] Could not extract extra fields, using defaults');
+      } catch (enhancedError) {
+        console.error('[analyzeOrderPDF] Enhanced extraction failed, falling back to Assistant API:', enhancedError);
+        useEnhancedExtraction = false; // 標記為失敗，使用 fallback
       }
-      
-      // 構建增強的訂單數據
-      orderData = {
-        order_ref: parsedData.order_ref || '',
-        account_num: accountNum,
-        delivery_add: deliveryAdd,
-        invoice_to: invoiceTo,
-        customer_ref: customerRef,
-        products: parsedData.products.map(product => ({
-          product_code: product.product_code,
-          product_desc: product.description || '',
-          product_qty: product.quantity,
-          weight: 0, // 默認重量
-          unit_price: product.unit_price?.toString() || '0',
-        })),
-      };
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[analyzeOrderPDF] Successfully parsed order data:', {
-          orderRef: orderData.order_ref,
-          productCount: orderData.products.length
-        });
-      }
-    } catch (parseError: unknown) {
-      console.error('[analyzeOrderPDF] Parse error details:', parseError);
-      throw new Error(`Failed to parse assistant response: ${getErrorMessage(parseError)}`);
     }
 
-    // 估算 token 使用量
-    const estimatedTokens = Math.ceil(fileData.buffer.byteLength / 4);
+    // Fallback: 使用原有的 Assistant API
+    if (!useEnhancedExtraction) {
+      console.log('[analyzeOrderPDF] Using Assistant API (fallback)');
+      
+      let threadId: string | undefined;
+      let fileId: string | undefined;
+      
+      try {
+        // 獲取 Assistant 服務
+        const assistantService = AssistantService.getInstance();
+
+        // 獲取或創建 Assistant
+        const assistantId = await assistantService.getAssistant();
+
+        // 創建 Thread
+        threadId = await assistantService.createThread();
+
+        // 上傳文件到 OpenAI
+        const pdfBuffer = Buffer.from(fileData.buffer);
+        fileId = await assistantService.uploadFile(pdfBuffer, fileData.name);
+
+        // 發送消息並附加文件
+        await assistantService.sendMessage(threadId, SYSTEM_PROMPT, fileId);
+
+        // 運行 Assistant 並等待結果
+        const result = await assistantService.runAndWait(threadId, assistantId);
+        extractedText = result; // 保存用於存儲
+
+        // 解析結果
+        const parsedData = assistantService.parseAssistantResponse(result);
+        
+        // 嘗試從原始響應提取額外資訊
+        let accountNum = '-';
+        let deliveryAdd = '-';
+        let invoiceTo = '-';
+        let customerRef = '-';
+        
+        try {
+          let cleanedResult = result;
+          const codeBlockMatch = result.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+          if (codeBlockMatch) {
+            cleanedResult = codeBlockMatch[1].trim();
+          }
+          
+          const rawParsed = JSON.parse(cleanedResult);
+          if (rawParsed.orders && Array.isArray(rawParsed.orders) && rawParsed.orders.length > 0) {
+            const firstOrder = rawParsed.orders[0];
+            accountNum = firstOrder.account_num || '-';
+            deliveryAdd = firstOrder.delivery_add || '-';
+          }
+        } catch (rawParseError) {
+          console.warn('[analyzeOrderPDF] Could not extract extra fields, using defaults');
+        }
+        
+        // 構建訂單數據
+        orderData = {
+          order_ref: parsedData.order_ref || '',
+          account_num: accountNum,
+          delivery_add: deliveryAdd,
+          invoice_to: invoiceTo,
+          customer_ref: customerRef,
+          products: parsedData.products.map(product => ({
+            product_code: product.product_code,
+            product_desc: product.description || '',
+            product_qty: product.quantity,
+            weight: 0,
+            unit_price: product.unit_price?.toString() || '0',
+          })),
+        };
+        
+        extractionMethod = 'assistant-api';
+        tokensUsed = Math.ceil(fileData.buffer.byteLength / 4);
+        
+        // 清理資源
+        await assistantService.cleanup(threadId, fileId).catch(error => {
+          console.error('[analyzeOrderPDF] Cleanup failed:', error);
+        });
+      } catch (assistantError) {
+        // 清理資源
+        if (threadId || fileId) {
+          const assistantService = AssistantService.getInstance();
+          await assistantService.cleanup(threadId, fileId).catch(() => {});
+        }
+        throw assistantError;
+      }
+    }
 
     // 存儲到資料庫
-    await storeEnhancedOrderData(orderData, uploadedBy, estimatedTokens);
+    await storeEnhancedOrderData(orderData, uploadedBy, tokensUsed);
 
     // 記錄操作歷史
     await recordOrderUploadHistory(orderData.order_ref, uploadedBy);
@@ -575,16 +624,15 @@ export async function analyzeOrderPDF(
     
     if (!emailResult.success) {
       console.error('[analyzeOrderPDF] Email notification failed:', emailResult.error);
-      // 即使電郵失敗，也繼續處理（但會在結果中標記）
     } else {
       console.log('[analyzeOrderPDF] Email sent successfully:', emailResult.details);
     }
 
-    // 背景存儲 - 改為等待完成以便除錯
+    // 背景存儲
     if (saveToStorage) {
       try {
         console.log('[analyzeOrderPDF] Starting background storage upload');
-        const storageUrl = await uploadToStorageAsync(fileData, uploadedBy, result);
+        const storageUrl = await uploadToStorageAsync(fileData, uploadedBy, extractedText || JSON.stringify(orderData));
         if (storageUrl) {
           console.log('[analyzeOrderPDF] Background storage completed successfully:', storageUrl);
         } else {
@@ -592,7 +640,6 @@ export async function analyzeOrderPDF(
         }
       } catch (error) {
         console.error('[analyzeOrderPDF] Background storage failed:', error);
-        // 背景存儲失敗不應影響主要功能，繼續返回成功
       }
     }
 
@@ -600,11 +647,6 @@ export async function analyzeOrderPDF(
     setCachedResult(fileHash, {
       success: true,
       orderData,
-    });
-
-    // 清理資源
-    assistantService.cleanup(threadId, fileId).catch(error => {
-      console.error('[analyzeOrderPDF] Cleanup failed:', error);
     });
 
     const processingTime = Date.now() - startTime;
@@ -623,6 +665,14 @@ export async function analyzeOrderPDF(
       unit_price: product.unit_price,
     }));
 
+    console.log('[analyzeOrderPDF] Analysis completed successfully:', {
+      orderRef: orderData.order_ref,
+      productCount: orderData.products.length,
+      method: extractionMethod,
+      processingTime,
+      tokensUsed,
+    });
+
     return {
       success: true,
       data: orderData,
@@ -640,14 +690,6 @@ export async function analyzeOrderPDF(
     };
   } catch (error: unknown) {
     console.error('[analyzeOrderPDF] Analysis failed:', error);
-
-    // 清理資源
-    if (threadId || fileId) {
-      const assistantService = AssistantService.getInstance();
-      assistantService.cleanup(threadId, fileId).catch(cleanupError => {
-        console.error('[analyzeOrderPDF] Cleanup failed after error:', cleanupError);
-      });
-    }
 
     return {
       success: false,
