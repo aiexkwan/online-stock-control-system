@@ -1,10 +1,11 @@
 'use server';
 
 import { createClient } from '@/app/utils/supabase/server';
+import { createClient as createAdminSupabaseClient } from '@supabase/supabase-js';
 import { DatabaseRecord } from '@/types/database/tables';
 import type { Database } from '@/types/database/supabase';
 import { getErrorMessage } from '@/types/core/error';
-import { EnhancedOrderExtractionService } from '@/app/services/enhancedOrderExtractionService';
+// Removed EnhancedOrderExtractionService import - now using API Route to avoid Server Components compatibility issues
 import { sendOrderCreatedEmail } from '../services/emailService';
 import * as crypto from 'crypto';
 
@@ -214,7 +215,6 @@ async function storeEnhancedOrderData(
 
 // Admin client 用於背景任務
 const getAdminClient = () => {
-  const { createClient: createAdminSupabaseClient } = require('@supabase/supabase-js');
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -482,16 +482,37 @@ export async function analyzeOrderPDF(
     let tokensUsed: number = 0;
     let extractedText: string = '';
 
-    // 嘗試使用增強的提取服務 (直接調用)
+    // 使用 API Route 提取服務（避免 Server Components 兼容性問題）
     if (useEnhancedExtraction) {
       try {
-        console.log('[analyzeOrderPDF] Using enhanced extraction service directly');
+        console.log('[analyzeOrderPDF] Using API Route for PDF extraction to avoid serverless compatibility issues');
         
-        const enhancedService = EnhancedOrderExtractionService.getInstance();
-        const enhancedResult = await enhancedService.extractOrderFromPDF(fileData.buffer, fileData.name);
+        // 準備 FormData
+        const formData = new FormData();
+        const blob = new Blob([fileData.buffer], { type: 'application/pdf' });
+        formData.append('file', blob, fileData.name);
+        formData.append('fileName', fileData.name);
+
+        // 調用內部 API - 使用絕對路徑避免環境變數依賴
+        const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
+                       process.env.NEXT_PUBLIC_APP_URL || 
+                       'http://localhost:3000';
+        const apiUrl = `${baseUrl}/api/pdf-extract`;
+        
+        console.log('[analyzeOrderPDF] Making API request to:', apiUrl);
+        
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+        }
+
+        const enhancedResult = await response.json();
 
         if (enhancedResult.success && enhancedResult.data) {
-
           orderData = {
             order_ref: enhancedResult.data.order_ref,
             account_num: enhancedResult.data.account_num,
@@ -501,21 +522,20 @@ export async function analyzeOrderPDF(
             products: enhancedResult.data.products,
           };
 
-          extractionMethod = enhancedResult.extractionMethod || 'pdf-direct';
+          extractionMethod = enhancedResult.metadata?.extractionMethod || 'api-route';
           tokensUsed = enhancedResult.metadata?.tokensUsed || Math.ceil(fileData.buffer.byteLength / 4);
           
-          console.log('[analyzeOrderPDF] Enhanced extraction successful:', {
+          console.log('[analyzeOrderPDF] API Route extraction successful:', {
             orderRef: orderData.order_ref,
             productCount: orderData.products.length,
             method: extractionMethod,
             tokensUsed,
           });
         } else {
-          // 如果增強服務失敗，拋出錯誤以觸發 fallback
-          throw new Error(enhancedResult.error || 'Enhanced extraction failed');
+          throw new Error(enhancedResult.error || 'API Route extraction failed');
         }
       } catch (enhancedError) {
-        console.error('[analyzeOrderPDF] Enhanced extraction failed, falling back to Assistant API:', enhancedError);
+        console.error('[analyzeOrderPDF] API Route extraction failed:', enhancedError);
         useEnhancedExtraction = false; // 標記為失敗，使用 fallback
       }
     }

@@ -5,7 +5,7 @@
  */
 
 
-const pdf = require('pdf-parse');
+import pdf from 'pdf-parse';
 import { systemLogger } from '@/lib/logger';
 
 export interface ExtractedPDFData {
