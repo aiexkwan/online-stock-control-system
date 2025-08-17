@@ -212,34 +212,42 @@ export const useAdminQcLabelBusiness = ({
           },
         }));
 
-        console.log('[Admin QC Label] Calling RPC handle_qc_label_print_fixed...');
+        console.log('[Admin QC Label] Calling RPC process_qc_label_unified...');
         console.log('[Admin QC Label] Product info:', {
           code: productInfo.code,
           type: productInfo.type,
           description: productInfo.description
         });
 
-        // Log RPC parameters for debugging
+        // Prepare RPC parameters matching the fixed function signature
         const rpcParams = {
-          p_product_code: productInfo.code,
-          p_quantity: quantity,
           p_count: count,
-          p_user_id: parseInt(clockNumber, 10),  // QC 員工編號
+          p_product_code: productInfo.code,
+          p_product_qty: quantity,
+          p_clock_number: clockNumber,  // 使用字符串格式的 clock number
+          p_plt_remark: formData.operator?.trim() || null,  // Operator as remark
+          p_session_id: null,
           p_aco_order_ref: productInfo.type === 'ACO' && formData.acoOrderRef?.trim() 
             ? formData.acoOrderRef.trim() 
             : null,
-          p_batch_number: productInfo.type?.toLowerCase().includes('slate') && formData.slateDetail?.batchNumber?.trim()
+          p_aco_quantity_used: productInfo.type === 'ACO' && formData.acoOrderRef?.trim()
+            ? quantity * count  // Total quantity for ACO
+            : null,
+          p_slate_batch_number: productInfo.type?.toLowerCase().includes('slate') && formData.slateDetail?.batchNumber?.trim()
             ? formData.slateDetail.batchNumber.trim()
             : null,
-          p_operator_clock: formData.operator?.trim() || null  // 生產員工編號
+          p_pdf_urls: null  // PDFs will be handled separately
         };
         
         console.log('[Admin QC Label] RPC parameters:', rpcParams);
 
         // Step 1: Call RPC to handle all database operations
-        // TODO: In future phase, migrate ACO order update to use GraphQL updateAcoOrder mutation
-        // Currently ACO order updates are handled within the RPC function
-        const rpcResult = await supabase.rpc('handle_qc_label_print', rpcParams);
+        // This RPC now handles:
+        // - Getting pallet numbers from buffer
+        // - Writing to record_palletinfo, record_inventory, record_history
+        // - Updating stock_level and work_level
+        // - Updating ACO orders if applicable
+        const rpcResult = await supabase.rpc('process_qc_label_unified', rpcParams);
 
         console.log('[Admin QC Label] Raw RPC result:', rpcResult);
 

@@ -148,52 +148,9 @@ export class UnifiedAPIClient {
   /**
    * 執行 REST API 請求
    */
-  private async executeRestRequest<T>(request: APIRequest): Promise<APIResponse<T>> {
-    const startTime = Date.now();
-
-    if (!request.endpoint) {
-      throw new Error('REST API endpoint is required');
-    }
-
-    const url = new URL(request.endpoint, 'http://localhost:3001/api');
-
-    if (request.params && request.method === 'GET') {
-      Object.entries(request.params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          url.searchParams.append(key, String(value));
-        }
-      });
-    }
-
-    const fetchOptions: RequestInit = {
-      method: request.method || 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...request.headers,
-      },
-      signal: AbortSignal.timeout(this.config.timeout!),
-    };
-
-    if (request.data && request.method !== 'GET') {
-      fetchOptions.body = JSON.stringify(request.data);
-    }
-
-    const response = await fetch(url.toString(), fetchOptions);
-    const responseTime = Date.now() - startTime;
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-
-    return {
-      data,
-      success: true,
-      apiType: 'rest',
-      responseTime,
-    };
+  private async executeRestRequest<T>(_request: APIRequest): Promise<APIResponse<T>> {
+    // REST API backend has been removed - use GraphQL instead
+    throw new Error('REST API backend has been deprecated. Please use GraphQL API.');
   }
 
   /**

@@ -1,5 +1,140 @@
 # 歷史記錄
 
+## 2025-08-17 清理 backend/newpennine-api 目錄 🗑️
+
+### 執行內容
+**NestJS Backend 清理操作**
+- 目標：移除未採用的實驗性 NestJS REST API backend
+- 執行時間：2025-08-17
+- 操作：刪除完整的 backend/newpennine-api 目錄
+
+**清理成果**
+- ✅ 刪除 `/backend/newpennine-api/` 完整目錄
+  - 63 個 TypeScript 檔案
+  - 包含 Auth, Orders, Inventory, Products, Transfers 等模組
+  - NestJS 11.0.1 實驗性 REST API 實現
+- ✅ 更新 `/lib/api/unified-api-client.ts`
+  - 移除 localhost:3001 硬編碼引用
+  - 添加棄用錯誤訊息引導使用 GraphQL
+
+**影響評估**
+- 🟢 **影響等級：低**
+- 生產系統完全不依賴此 backend
+- 所有功能已在主應用通過 GraphQL 實現
+- REST API 功能已被 feature flag 禁用
+- Card System 和 QC Label 系統完全不受影響
+
+**清理效益**
+- 📉 減少架構複雜度和混淆
+- 🛡️ 降低安全風險（移除未維護代碼）
+- 💾 節省約 50MB 儲存空間
+- 🚀 簡化系統維護
+
+## 2025-08-16 清理 types/services 目錄 🗑️
+
+### 執行內容
+**目錄清理操作**
+- 目標：移除完全廢棄的 `/types/services` 目錄及相關服務文件
+- 執行時間：2025-08-16
+- 操作：刪除孤立的類型定義和未使用的服務文件
+
+**清理成果**
+- ✅ 刪除 `/types/services/admin.ts`
+  - 定義但未使用的 admin service 類型
+  - DashboardStats、AcoOrderProgress 等已在 GraphQL 重新定義
+- ✅ 刪除 `/types/services/auth.ts`
+  - 已被 Supabase Auth 完全取代
+  - UserData 類型在其他模組有獨立定義
+- ✅ 刪除 `/app/(app)/admin/services/AdminDataService.ts`
+  - 孤立代碼，零消費者
+  - 功能已被 GraphQL DataLoaders 取代
+- ✅ 刪除 `/lib/services/auth.ts`
+  - authenticateUser 函數從未被調用
+  - 系統已遷移到 Supabase Auth
+
+**驗證項目**
+- ✅ TypeScript 編譯測試通過 (0 errors)
+- ✅ 無 UI 組件依賴
+- ✅ 無 API routes 引用
+- ✅ 無測試文件使用
+- ✅ Card System 完全不受影響
+- ✅ 第二輪深度檢查確認安全
+
+**影響評估**
+- **系統影響**：🟢 Low - 純技術債務清理
+- **安全性**：無影響
+- **代碼整潔**：消除重複類型定義
+
+---
+
+## 2025-08-16 清理 types/utils 目錄 🗑️
+
+### 執行內容
+**目錄清理操作**
+- 目標：移除完全廢棄的 `/types/utils` 目錄
+- 執行時間：2025-08-16
+- 操作：刪除空目錄及其內容
+
+**清理成果**
+- ✅ 刪除 `/types/utils/` 目錄
+  - 只包含一個空的 `index.ts` 文件
+  - 零引用、零依賴
+  - Performance types 早已移除
+  - 完全廢棄狀態
+
+**驗證項目**
+- ✅ 無直接 imports
+- ✅ 無間接依賴
+- ✅ 不影響 Card System
+- ✅ 不影響 TypeScript 編譯
+- ✅ 不影響構建流程
+- ✅ 無測試文件引用
+- ✅ 無動態路徑訪問
+
+**影響評估**
+- **系統影響**：零（移除的是空目錄）
+- **安全性**：無影響
+- **代碼整潔**：消除混淆源頭
+
+---
+
+## 2025-08-16 清理未使用的監控配置 🧹
+
+### 執行內容
+**配置文件清理操作**
+- 目標：移除未使用的 Cards 遷移監控配置
+- 執行時間：2025-08-16
+- 操作：清理 `/config` 目錄中的死代碼
+
+**清理成果**
+- ✅ 移除 `config/cards-migration-monitoring.json`
+  - 零引用、零實際使用
+  - 數據已過時（硬編碼數字不準確）
+  - Cards 遷移已完成，監控無意義
+- ✅ 移除 `lib/monitoring/cards-migration-monitor.ts`
+  - 只在自己文件中被定義，無外部引用
+  - 沒有任何 npm script 或應用調用
+- ✅ 移除 `config/page-theme.ts`
+  - 舊頁面主題系統，但完全未被使用
+  - 舊頁面（print-label 等）存在但不使用主題
+  - 零引用、完全的死代碼
+- ✅ 移除 `components/ui/page-theme-provider.tsx`
+  - 主題提供器組件，但無任何頁面使用
+  - 只引用 page-theme.ts，自己也未被引用
+  - 完整的"孤兒"系統
+
+**保留文件分析**
+- ✅ 保留 `config/tech-debt-thresholds.json`
+  - 技術債務治理系統依賴
+  - 與 Card System 無直接關係
+
+**影響評估**
+- **系統影響**：零（移除的是從未使用的代碼）
+- **安全改進**：消除架構信息洩漏風險
+- **代碼減少**：~600 行未使用代碼（含主題系統）
+
+---
+
 ## 2025-08-13 GRN 類型清理及架構優化 🏗️
 
 ### 執行內容

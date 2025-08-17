@@ -16,7 +16,7 @@
 
 ## MCP Tools Required
 - Supabase MCP
-- Playwright MCP
+- Playwright
 
 ## Reminder Before Start
 - Your goal is only write test and run til success.
