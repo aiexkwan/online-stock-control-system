@@ -1,18 +1,14 @@
-# Run Testing For QC Card Label
+# Run Testing For GRN Card Label
 
 ## Target
-- Using Playwright MCP to run test for [QCLabelCard](../../app/(app)/admin/cards/QCLabelCard.tsx)
+- Using Playwright MCP to run test for [GRNLabelCard](../../app/(app)/admin/cards/GRNLabelCard.tsx)
 
 ## Revoke Multi-agents
 - [Backend-Arc](../../.claude/agents/backend-architect.md)
-- [Business-Anly](../../.claude/agents/business-analyst.md)
 - [Test-automator](../../.claude/agents/test-automator.md)
 - [Code-Reviewer](../agents/code-reviewer.md)
-- [Context-Manager](../agents/context-manager.md)
-- [Doc-Architech](../agents/docs-architect.md)
-- [UI-UX-Designer](../agents/ui-ux-designer.md)
-- [Frontend-Dev](../agents/frontend-developer.md)
 - [Database-Admin](../agents/database-admin.md)
+- [Graphql-Arc](../agents/graphql-architect.md)
 
 ## Tools Required
 - Supabase MCP
@@ -21,14 +17,15 @@
 ## Reminder Before Start
 - Your goal is only write test and run til success.
 - All test relate file/doc must save into [Testfolder](/Users/chun/Documents/PennineWMS/online-stock-control-system/__tests__)
+- You can also check within [Testfolder] if any previous test file
 - Simuilate single worker operating continously on Chrome browser
-- Always use environment setting, never hard code .env.local or sensitive date within test file
+- Always use environment setting, never hard coding $.env.local or sensitive date within test file
 - If any print function involved, no need for physical print
 
 ## Testflow
 0. Invoke aganets to thought codebase and related to have a fully understand of target components working logic
-    - RPC function
-    - Related table update
+    - RPC function (need to state out within report docuement)
+    - Related table update (need to state out within report docuement)
     - UI/UX flow at frontend
     - etc
 
@@ -43,40 +40,68 @@
 3. Run test for 4 times
 
 - 1st time
+    - `GRN Number` field : `123456`
+    - `Material Supplier` field : `AM`
     - `Product Code` field : `MEP9090150`
-    - `Quantity` field : `20`
-    - `Pallet Count` field : `1`
-    - `Operator` field : [Empty]
-    - Press `Print Label` button
+    - `Count Method` section : Select `Weight`
+    - `Pallet Type` selector
+        - Choose `Pallet Type`=`White Dry`, `Quantity`=1
+    - `Package Type` selector
+        - Choose `Package Type`=`Still`, `Quantity`=1
+    - `Weight/Quantity Input` section
+        - `GROSS Weight/QTY` field
+        - 1st pallet : `1000`
+        - 2nd pallet : `1100`
+        - 3rd pallet : `1200`
+        - 4th pallet : `1300`
     - `Verified Clock ID` field : `5997`
 
 - 2nd time
-    - `Product Code` field : `ME4545150`
-    - `Quantity` field : `20`
-    - `Pallet Count` field : `2`
-    - `Operator` field : [Empty]
-    - Press `Print Label` button
-    - `Verified Clock ID` field : `6001`
+    - `GRN Number` field : `123456`
+    - `Material Supplier` field : `AM`
+    - `Product Code` field : `MEL4545A`
+    - `Count Method` section : Select `Weight`
+    - `Pallet Type` selector
+        - Choose `Pallet Type`=`White Dry`, `Quantity`=1
+    - `Package Type` selector
+        - Choose `Package Type`=`Still`, `Quantity`=1
+    - `Weight/Quantity Input` section
+        - `GROSS Weight/QTY` field
+        - 1st pallet : `2000`
+        - 2nd pallet : `2100`
+        - 3rd pallet : `2200`
+        - 4th pallet : `2300`
+    - `Verified Clock ID` field : `5942`
 
 - 3rd time
-    - `Product Code` field : `MEL4545A`
-    - `Quantity` field : `20`
-    - `Pallet Count` field : `3`
-    - `Operator` field : [Empty]
-    - Press `Print Label` button
-    - `Verified Clock ID` field : `5667`
+    - `GRN Number` field : `123456`
+    - `Material Supplier` field : `AM`
+    - `Product Code` field : `MEP9090150`
+    - `Count Method` section : Select `Quantity`
+    - `Weight/Quantity Input` section
+        - `GROSS Weight/QTY` field
+            - 1st pallet : `1000`
+            - 2nd pallet : `1100`
+            - 3rd pallet : `1200`
+            - 4th pallet : `1300`
+    - `Verified Clock ID` field : `6001`
 
 - 4th time
-    - `Product Code` field : `MEL6060A`
-    - `Quantity` field : `20`
-    - `Pallet Count` field : `2`
-    - `Operator` field : [Empty]
-    - Press `Print Label` button
+    - `GRN Number` field : `123456`
+    - `Material Supplier` field : `AM`
+    - `Product Code` field : `MEL4545A`
+    - `Count Method` section : Select `Quantity`
+    - `Weight/Quantity Input` section
+        - `GROSS Weight/QTY` field
+        - 1st pallet : `2000`
+        - 2nd pallet : `2100`
+        - 3rd pallet : `2200`
+        - 4th pallet : `2300`
     - `Verified Clock ID` field : `5997`
 
 4. Using Supabase MCP to check database table update accurancy.
 
-5. Write report as below template as save into [QC-Label-TestResult](/Users/chun/Documents/PennineWMS/online-stock-control-system/docs/test/qc-label) folder
+5. Write report as below template as save into [GRN-Label-TestResult](/Users/chun/Documents/PennineWMS/online-stock-control-system/docs/test/GRN-label) folder
     - Docuement name : `YYYY-MM-DD Test Result`
 
 # QCLabelCard 測試報告
@@ -88,9 +113,9 @@
 ## 📋 測試概覽
 
 ### 測試目標
-- **組件名稱**: `QCLabelCard`
+- **組件名稱**: `GRNLabelCard`
 - **測試工具**: `Playwright MCP`
-- **測試目的**: 驗證 QC 標籤卡功能嘅正確性，穩定性及資料庫更新情況
+- **測試目的**: 驗證 GRN 標籤卡功能嘅正確性，穩定性及資料庫更新情況
 
 ### 參與代理
 | 代理名稱 | 角色 |
@@ -151,11 +176,13 @@
 ### 測試案例 #1
 | 欄位 | 輸入值 | 預期結果 | 實際結果 | 狀態 |
 |-----|--------|---------|---------|------|
-| **Product Code** | `[Code]` | `[成功/失敗輸入]` | `[實際結果]` | `[✅ 成功 / ❌ 失敗]` |
-| **Quantity** | `[Quantity]` | `[成功/失敗輸入]` | `[實際結果]` | `[✅ 成功 / ❌ 失敗]` |
-| **Pallet Count** | `[Pallet Count]` | `[成功/失敗輸入]` | `[實際結果]` | `[✅ 成功 / ❌ 失敗]` |
-| **Operator** | `[Operator]` | `[成功/失敗輸入]` | `[實際結果]` | `[✅ 成功 / ❌ 失敗]` |
-| **Print Label 按鈕** | `True` | `[成功/失敗輸入]` | `[實際結果]` | `[✅ 成功 / ❌ 失敗]` |
+| **GRN Number** | `[Code]` | `[成功/失敗輸入]` | `[實際結果]` | `[✅ 成功 / ❌ 失敗]` |
+| **Material Supplier** | `[Quantity]` | `[成功/失敗輸入]` | `[實際結果]` | `[✅ 成功 / ❌ 失敗]` |
+| **Product Code** | `[Pallet Count]` | `[成功/失敗輸入]` | `[實際結果]` | `[✅ 成功 / ❌ 失敗]` |
+| **Count Method** | `[Count Method]` | `[成功/失敗輸入]` | `[實際結果]` | `[✅ 成功 / ❌ 失敗]` |
+| **pallet type** | `[pallet type]` | `[成功/失敗輸入]` | `[實際結果]` | `[✅ 成功 / ❌ 失敗]` |
+| **package type** | `[package type]` | `[成功/失敗輸入]` | `[實際結果]` | `[✅ 成功 / ❌ 失敗]` |
+| **GROSS Weight/QTY** | `[GROSS Weight/QTY]` | `[成功/失敗輸入]` | `[實際結果]` | `[✅ 成功 / ❌ 失敗]` |
 | **Verified Clock ID** | `[Verified Clock ID]` | `[成功/失敗輸入]` | `[實際結果]` | `[✅ 成功 / ❌ 失敗]` |
 
 **執行耗時**: `[HH:MM:SS]`  
