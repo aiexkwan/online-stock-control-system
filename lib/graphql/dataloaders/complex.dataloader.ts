@@ -34,7 +34,7 @@ import {
   safeGet,
   safeString,
   safeNumber,
-} from '@/types/dataloaders/entities';
+} from '@/lib/types/dataloaders';
 
 // 對於 complex.dataloader.ts 的具體類型定義
 interface InventoryWithRelations extends InventoryEntity {

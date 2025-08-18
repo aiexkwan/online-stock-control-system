@@ -35,7 +35,7 @@ import type {
   StockDistributionKey,
   StockDistributionData,
   DatabaseEntity,
-} from '@/types/dataloaders';
+} from '@/lib/types/dataloaders';
 
 // Import Record History types
 import type { RecordHistoryKey, RecordHistoryData } from './record-history.dataloader';
