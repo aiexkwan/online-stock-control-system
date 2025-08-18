@@ -11,6 +11,7 @@
     "app/globals.css"
   ],
   "scripts": {
+    "postinstall": "node scripts/patch-pdf-parse.js",
     "dev": "next dev",
     "dev-c": "npm run kill-localhost && npm run clean && next dev",
     "dev-clean": "next dev",
