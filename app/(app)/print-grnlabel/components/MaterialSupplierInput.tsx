@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getErrorMessage } from '@/lib/types/error-handling';
 import { validateSupplierCode } from '@/app/actions/grnActions';
-import { SupplierInfo, convertDatabaseSupplierInfo } from '@/types';
+import { SupplierInfo, convertDatabaseSupplierInfo } from '@/lib/types/supplier-types';
 
 interface MaterialSupplierInputProps {
   value: string;

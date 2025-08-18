@@ -6,7 +6,22 @@
   "plugins": ["@typescript-eslint"],
   "rules": {
     "@typescript-eslint/no-explicit-any": "warn",
-    "@typescript-eslint/prefer-as-const": "error"
+    "@typescript-eslint/prefer-as-const": "error",
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "@/types",
+            "message": "請使用直接路徑導入：@/types/database/* 或 @/lib/types/*"
+          },
+          {
+            "name": "@/types/index",
+            "message": "請使用直接路徑導入：@/types/database/* 或 @/lib/types/*"
+          }
+        ]
+      }
+    ]
   },
   "overrides": [
     {

@@ -12,7 +12,7 @@ import {
 } from '@/app/constants/grnConstants';
 import { PalletTypeSelector } from './PalletTypeSelector';
 import { PackageTypeSelector } from './PackageTypeSelector';
-import { SupplierInfo } from '@/types';
+import { SupplierInfo } from '@/lib/types/supplier-types';
 
 interface FormData {
   grnNumber: string;

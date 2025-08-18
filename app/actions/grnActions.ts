@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import type { PostgrestError } from '@supabase/supabase-js';
 // 移除 TransactionLogService - 簡化實現
-import { SupplierInfo, DatabaseSupplierInfo, convertDatabaseSupplierInfo } from '@/types';
+import { SupplierInfo, DatabaseSupplierInfo, convertDatabaseSupplierInfo } from '@/lib/types/supplier-types';
 
 // V6 includes series generation, no need for separate series utils
 
