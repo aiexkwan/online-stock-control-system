@@ -10,10 +10,12 @@ import type { Transfer } from '../types/database-types';
 export const transferResolvers: IResolvers<unknown, GraphQLContext> = {
   Transfer: {
     // Field resolvers for Transfer type from schema
-    id: (parent: Transfer) => parent.id,
-    fromLocation: (parent: Transfer) => parent.from_location || parent.fromLocation,
-    toLocation: (parent: Transfer) => parent.to_location || parent.toLocation,
-    createdAt: (parent: Transfer) => parent.created_at || parent.createdAt,
+    uuid: (parent: Transfer) => parent.uuid || parent.id,
+    pltNum: (parent: Transfer) => parent.plt_num,
+    fromLocation: (parent: Transfer) => parent.f_loc || parent.from_location,
+    toLocation: (parent: Transfer) => parent.t_loc || parent.to_location,
+    operatorId: (parent: Transfer) => parent.operator_id,
+    tranDate: (parent: Transfer) => parent.tran_date,
   },
 
   Query: {
@@ -50,7 +52,7 @@ export const transferResolvers: IResolvers<unknown, GraphQLContext> = {
         }
 
         if (after) {
-          query = query.gt('id', after);
+          query = query.gt('uuid', after);
         }
 
         const { data, error } = await query;
@@ -62,13 +64,13 @@ export const transferResolvers: IResolvers<unknown, GraphQLContext> = {
         return {
           edges: (data || []).map((item) => ({
             node: item,
-            cursor: item.id.toString(),
+            cursor: item.uuid.toString(),
           })),
           pageInfo: {
             hasNextPage: data && data.length === first,
             hasPreviousPage: !!after,
-            startCursor: data && data.length > 0 ? data[0].id.toString() : null,
-            endCursor: data && data.length > 0 ? data[data.length - 1].id.toString() : null,
+            startCursor: data && data.length > 0 ? data[0].uuid.toString() : null,
+            endCursor: data && data.length > 0 ? data[data.length - 1].uuid.toString() : null,
           },
           totalCount: data?.length || 0,
         };
@@ -87,7 +89,7 @@ export const transferResolvers: IResolvers<unknown, GraphQLContext> = {
         const { data, error } = await supabase
           .from('record_transfer')
           .select('*')
-          .eq('id', id)
+          .eq('uuid', id)
           .single();
 
         if (error) {

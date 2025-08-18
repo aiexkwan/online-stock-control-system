@@ -81,11 +81,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const validationResult = ValidationRequestSchema.safeParse(body);
     if (!validationResult.success) {
       const errorMessage = 'Invalid request format';
-      apiLogger.warn('Request validation failed', {
+      apiLogger.warn({
         requestId,
         errors: validationResult.error.errors,
         body: typeof body === 'object' ? Object.keys(body) : body,
-      });
+      }, 'Request validation failed');
       
       logApiResponse('POST', '/api/product-code-validation', 400, Date.now() - startTime);
       
@@ -106,12 +106,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const { codes, options } = validationResult.data;
     
-    apiLogger.info('Processing validation request', {
+    apiLogger.info({
       requestId,
       codeCount: codes.length,
       includeCacheStats: options?.includeCacheStats,
       includeHealthCheck: options?.includeHealthCheck,
-    });
+    }, 'Processing validation request');
 
     // 執行產品代碼驗證
     const validationResults = await ProductCodeValidator.validateAndEnrichCodes(codes);
@@ -133,14 +133,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const processingTime = Date.now() - startTime;
     
-    apiLogger.info('Validation request completed', {
+    apiLogger.info({
       requestId,
       total: validationResults.summary.total,
       valid: validationResults.summary.valid,
       corrected: validationResults.summary.corrected,
       invalid: validationResults.summary.invalid,
       processingTime,
-    });
+    }, 'Validation request completed');
 
     logApiResponse('POST', '/api/product-code-validation', 200, processingTime);
 
@@ -157,12 +157,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } catch (error) {
     const processingTime = Date.now() - startTime;
     
-    apiLogger.error('Validation request failed', {
+    apiLogger.error({
       requestId,
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
       processingTime,
-    });
+    }, 'Validation request failed');
 
     logApiResponse('POST', '/api/product-code-validation', 500, processingTime);
 
@@ -219,11 +219,11 @@ export async function GET(): Promise<NextResponse> {
   } catch (error) {
     const processingTime = Date.now() - startTime;
     
-    apiLogger.error('Status request failed', {
+    apiLogger.error({
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
       processingTime,
-    });
+    }, 'Status request failed');
 
     logApiResponse('GET', '/api/product-code-validation', 500, processingTime);
 

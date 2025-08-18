@@ -20,11 +20,52 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean };
   Int: { input: number; output: number };
   Float: { input: number; output: number };
+  Date: { input: any; output: any };
   DateTime: { input: any; output: any };
   File: { input: any; output: any };
   JSON: { input: any; output: any };
   Upload: { input: any; output: any };
 };
+
+export type ApiConfig = {
+  __typename?: 'APIConfig';
+  configType: ApiConfigType;
+  createdAt: Scalars['DateTime']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  isActive: Scalars['Boolean']['output'];
+  name: Scalars['String']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+  uuid: Scalars['ID']['output'];
+  value: Scalars['String']['output'];
+};
+
+export type ApiConfigConnection = {
+  __typename?: 'APIConfigConnection';
+  edges: Array<ApiConfigEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type ApiConfigEdge = {
+  __typename?: 'APIConfigEdge';
+  cursor: Scalars['String']['output'];
+  node: ApiConfig;
+};
+
+export type ApiConfigFilterInput = {
+  configType?: InputMaybe<ApiConfigType>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+};
+
+export enum ApiConfigType {
+  Database = 'DATABASE',
+  FeatureFlag = 'FEATURE_FLAG',
+  Integration = 'INTEGRATION',
+  Performance = 'PERFORMANCE',
+  Security = 'SECURITY',
+  System = 'SYSTEM',
+}
 
 export type AcoOrder = {
   __typename?: 'AcoOrder';
@@ -44,6 +85,62 @@ export type AcoOrderReportResponse = {
   generatedAt: Scalars['DateTime']['output'];
   reference: Scalars['String']['output'];
   total: Scalars['Int']['output'];
+};
+
+export type AcoProductSummary = {
+  __typename?: 'AcoProductSummary';
+  completionRate: Scalars['Float']['output'];
+  orderCount: Scalars['Int']['output'];
+  productCode: Scalars['String']['output'];
+  totalFinished: Scalars['Int']['output'];
+  totalRequired: Scalars['Int']['output'];
+};
+
+export type AcoRecord = {
+  __typename?: 'AcoRecord';
+  code: Scalars['String']['output'];
+  completionRate: Scalars['Float']['output'];
+  finishedQty?: Maybe<Scalars['Int']['output']>;
+  latestUpdate: Scalars['DateTime']['output'];
+  orderRef: Scalars['Int']['output'];
+  product?: Maybe<Product>;
+  remainingQty: Scalars['Int']['output'];
+  requiredQty: Scalars['Int']['output'];
+  uuid: Scalars['ID']['output'];
+};
+
+export type AcoRecordConnection = {
+  __typename?: 'AcoRecordConnection';
+  edges: Array<AcoRecordEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type AcoRecordEdge = {
+  __typename?: 'AcoRecordEdge';
+  cursor: Scalars['String']['output'];
+  node: AcoRecord;
+};
+
+export type AcoRecordFilterInput = {
+  code?: InputMaybe<Scalars['String']['input']>;
+  completionStatus?: InputMaybe<CompletionStatus>;
+  dateRange?: InputMaybe<DateRangeInput>;
+  maxRequiredQty?: InputMaybe<Scalars['Int']['input']>;
+  minRequiredQty?: InputMaybe<Scalars['Int']['input']>;
+  orderRef?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type AcoRecordSummary = {
+  __typename?: 'AcoRecordSummary';
+  averageCompletionRate: Scalars['Float']['output'];
+  completedOrders: Scalars['Int']['output'];
+  overdeliveredOrders: Scalars['Int']['output'];
+  pendingOrders: Scalars['Int']['output'];
+  topProductsByVolume: Array<AcoProductSummary>;
+  totalFinishedQty: Scalars['Int']['output'];
+  totalOrders: Scalars['Int']['output'];
+  totalRequiredQty: Scalars['Int']['output'];
 };
 
 export type ActionSummary = {
@@ -143,7 +240,7 @@ export type AlertActionInput = {
   type: Scalars['String']['input'];
 };
 
-export type AlertCardData = WidgetData & {
+export type AlertCardData = CardData & {
   __typename?: 'AlertCardData';
   alerts: Array<Alert>;
   dataSource: Scalars['String']['output'];
@@ -363,6 +460,31 @@ export type BatchResult = {
   success: Scalars['Int']['output'];
 };
 
+export type BatchStocktakeError = {
+  __typename?: 'BatchStocktakeError';
+  error: Scalars['String']['output'];
+  record?: Maybe<StocktakeRecord>;
+  uuid: Scalars['ID']['output'];
+};
+
+export type BatchStocktakeResult = {
+  __typename?: 'BatchStocktakeResult';
+  errors?: Maybe<Array<BatchStocktakeError>>;
+  failed: Scalars['Int']['output'];
+  records: Array<StocktakeRecord>;
+  successful: Scalars['Int']['output'];
+  totalVariance: Scalars['Int']['output'];
+  totalVarianceValue?: Maybe<Scalars['Float']['output']>;
+};
+
+export type BatchStocktakeUpdateInput = {
+  countedId?: InputMaybe<Scalars['Int']['input']>;
+  countedName?: InputMaybe<Scalars['String']['input']>;
+  countedQty: Scalars['Int']['input'];
+  remark?: InputMaybe<Scalars['String']['input']>;
+  uuid: Scalars['ID']['input'];
+};
+
 export type BatchUploadInput = {
   files: Array<Scalars['Upload']['input']>;
   folder?: InputMaybe<UploadFolder>;
@@ -382,12 +504,83 @@ export type BatchUploadResult = {
   uploadIds: Array<Scalars['ID']['output']>;
 };
 
+export type BatchWorkLevelUpdateInput = {
+  updates: UpdateWorkLevelInput;
+  uuid: Scalars['ID']['input'];
+};
+
 export enum BottleneckSeverity {
   Critical = 'CRITICAL',
   High = 'HIGH',
   Low = 'LOW',
   Medium = 'MEDIUM',
 }
+
+export type BulkStockLevelUpdateInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  stockLevel: Scalars['Int']['input'];
+  uuid: Scalars['ID']['input'];
+};
+
+export type CacheInvalidationEvent = {
+  __typename?: 'CacheInvalidationEvent';
+  cacheKeys?: Maybe<Array<Scalars['String']['output']>>;
+  changedColumns?: Maybe<Array<Scalars['String']['output']>>;
+  createdAt?: Maybe<Scalars['DateTime']['output']>;
+  eventType: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  isProcessed: Scalars['Boolean']['output'];
+  operation: Scalars['String']['output'];
+  processed?: Maybe<Scalars['Boolean']['output']>;
+  processingDelay?: Maybe<Scalars['Int']['output']>;
+  recordId?: Maybe<Scalars['String']['output']>;
+  tableName: Scalars['String']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+export type CacheInvalidationEventConnection = {
+  __typename?: 'CacheInvalidationEventConnection';
+  edges: Array<CacheInvalidationEventEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type CacheInvalidationEventEdge = {
+  __typename?: 'CacheInvalidationEventEdge';
+  cursor: Scalars['String']['output'];
+  node: CacheInvalidationEvent;
+};
+
+export type CacheInvalidationEventFilterInput = {
+  dateRange?: InputMaybe<DateRangeInput>;
+  eventType?: InputMaybe<Scalars['String']['input']>;
+  isProcessed?: InputMaybe<Scalars['Boolean']['input']>;
+  operation?: InputMaybe<Scalars['String']['input']>;
+  tableName?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type CardData = {
+  dataSource: Scalars['String']['output'];
+  lastUpdated: Scalars['DateTime']['output'];
+  refreshInterval?: Maybe<Scalars['Int']['output']>;
+};
+
+export type CardDataRequest = {
+  cardId: Scalars['String']['input'];
+  dataSource: Scalars['String']['input'];
+  params?: InputMaybe<Scalars['JSON']['input']>;
+  timeFrame?: InputMaybe<DateRangeInput>;
+};
+
+export type CardDataResponse = {
+  __typename?: 'CardDataResponse';
+  cached: Scalars['Boolean']['output'];
+  cardId: Scalars['String']['output'];
+  data?: Maybe<Scalars['JSON']['output']>;
+  error?: Maybe<Error>;
+  executionTime: Scalars['Float']['output'];
+  source: DataSourceType;
+};
 
 export enum ChangeType {
   Decrease = 'DECREASE',
@@ -406,7 +599,7 @@ export type ChartAxis = {
   type: Scalars['String']['output'];
 };
 
-export type ChartCardData = WidgetData & {
+export type ChartCardData = CardData & {
   __typename?: 'ChartCardData';
   config: ChartConfig;
   dataSource: Scalars['String']['output'];
@@ -507,12 +700,32 @@ export type Colour = {
   colour: Scalars['String']['output'];
 };
 
+export type ColourCount = {
+  __typename?: 'ColourCount';
+  colour: Scalars['String']['output'];
+  count: Scalars['Int']['output'];
+  percentage: Scalars['Float']['output'];
+};
+
 export type ComparisonData = {
   __typename?: 'ComparisonData';
   change: Scalars['Float']['output'];
   changePercentage: Scalars['Float']['output'];
   previousLabel: Scalars['String']['output'];
   previousValue: Scalars['Float']['output'];
+};
+
+export enum CompletionStatus {
+  Completed = 'COMPLETED',
+  Overdelivered = 'OVERDELIVERED',
+  Pending = 'PENDING',
+}
+
+export type ComplexityPerformance = {
+  __typename?: 'ComplexityPerformance';
+  averageExecutionTime: Scalars['Float']['output'];
+  complexity: Scalars['String']['output'];
+  queryCount: Scalars['Int']['output'];
 };
 
 export enum ConfigAccessLevel {
@@ -746,6 +959,19 @@ export type Connection = {
   totalCount: Scalars['Int']['output'];
 };
 
+export type CreateApiConfigInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+  value: Scalars['String']['input'];
+};
+
+export type CreateAcoRecordInput = {
+  code: Scalars['String']['input'];
+  finishedQty?: InputMaybe<Scalars['Int']['input']>;
+  orderRef: Scalars['Int']['input'];
+  requiredQty: Scalars['Int']['input'];
+};
+
 export type CreateAlertInput = {
   affectedEntities?: InputMaybe<Array<AffectedEntityInput>>;
   details?: InputMaybe<Scalars['JSON']['input']>;
@@ -758,6 +984,79 @@ export type CreateAlertInput = {
   type: AlertType;
 };
 
+export type CreateCacheInvalidationEventInput = {
+  cacheKeys?: InputMaybe<Array<Scalars['String']['input']>>;
+  changedColumns?: InputMaybe<Array<Scalars['String']['input']>>;
+  eventType: Scalars['String']['input'];
+  operation: Scalars['String']['input'];
+  recordId?: InputMaybe<Scalars['String']['input']>;
+  tableName: Scalars['String']['input'];
+};
+
+export type CreateDatabasePerformanceMetricInput = {
+  executionTimeMs?: InputMaybe<Scalars['Float']['input']>;
+  metadata?: InputMaybe<Scalars['JSON']['input']>;
+  metricName: Scalars['String']['input'];
+  metricUnit?: InputMaybe<Scalars['String']['input']>;
+  metricValue: Scalars['Float']['input'];
+  queryType?: InputMaybe<Scalars['String']['input']>;
+  tableName?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type CreateFileInfoInput = {
+  docName: Scalars['String']['input'];
+  docType?: InputMaybe<Scalars['String']['input']>;
+  docUrl?: InputMaybe<Scalars['String']['input']>;
+  fileSize?: InputMaybe<Scalars['Int']['input']>;
+  folder?: InputMaybe<Scalars['String']['input']>;
+  jsonTxt?: InputMaybe<Scalars['String']['input']>;
+  uploadBy: Scalars['Int']['input'];
+};
+
+export type CreateGrnRecordInput = {
+  grnRef: Scalars['Int']['input'];
+  grossWeight: Scalars['Int']['input'];
+  materialCode: Scalars['String']['input'];
+  netWeight: Scalars['Int']['input'];
+  package: Scalars['String']['input'];
+  packageCount: Scalars['Float']['input'];
+  pallet: Scalars['String']['input'];
+  palletCount: Scalars['Float']['input'];
+  pltNum: Scalars['String']['input'];
+  supCode: Scalars['String']['input'];
+};
+
+export type CreateGrnLevelInput = {
+  grnRef?: InputMaybe<Scalars['Int']['input']>;
+  totalGross: Scalars['Int']['input'];
+  totalNet?: InputMaybe<Scalars['Int']['input']>;
+  totalUnit: Scalars['Int']['input'];
+};
+
+export type CreateHistoryRecordInput = {
+  action: Scalars['String']['input'];
+  id: Scalars['Int']['input'];
+  location?: InputMaybe<Scalars['String']['input']>;
+  pltNum?: InputMaybe<Scalars['String']['input']>;
+  remark?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type CreateOrderLoadingHistoryInput = {
+  actionBy: Scalars['String']['input'];
+  actionType: OrderLoadingActionType;
+  orderRef: Scalars['String']['input'];
+  palletNum: Scalars['String']['input'];
+  productCode: Scalars['String']['input'];
+  quantity: Scalars['Int']['input'];
+  remark?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type CreatePalletNumberBufferInput = {
+  dateStr: Scalars['String']['input'];
+  palletNumber: Scalars['String']['input'];
+  series: Scalars['String']['input'];
+};
+
 export type CreateProductInput = {
   code: Scalars['String']['input'];
   colour?: InputMaybe<Scalars['String']['input']>;
@@ -767,6 +1066,34 @@ export type CreateProductInput = {
   unit?: InputMaybe<Scalars['String']['input']>;
   volumePerPiece?: InputMaybe<Scalars['Float']['input']>;
   weightPerPiece?: InputMaybe<Scalars['Float']['input']>;
+};
+
+export type CreateQueryPerformanceMetricInput = {
+  cacheHit?: InputMaybe<Scalars['Boolean']['input']>;
+  errorMessage?: InputMaybe<Scalars['String']['input']>;
+  errorOccurred?: InputMaybe<Scalars['Boolean']['input']>;
+  executionTimeMs: Scalars['Float']['input'];
+  functionName: Scalars['String']['input'];
+  memoryUsageMb?: InputMaybe<Scalars['Float']['input']>;
+  parameters?: InputMaybe<Scalars['JSON']['input']>;
+  queryComplexity?: InputMaybe<Scalars['String']['input']>;
+  resultCount?: InputMaybe<Scalars['Int']['input']>;
+  sessionId?: InputMaybe<Scalars['String']['input']>;
+  userId?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type CreateQueryRecordInput = {
+  answer: Scalars['String']['input'];
+  complexity?: InputMaybe<Scalars['String']['input']>;
+  executionTime?: InputMaybe<Scalars['Int']['input']>;
+  query: Scalars['String']['input'];
+  queryHash?: InputMaybe<Scalars['String']['input']>;
+  resultJson?: InputMaybe<Scalars['JSON']['input']>;
+  rowCount?: InputMaybe<Scalars['Int']['input']>;
+  sessionId?: InputMaybe<Scalars['String']['input']>;
+  sqlQuery?: InputMaybe<Scalars['String']['input']>;
+  token: Scalars['Int']['input'];
+  user: Scalars['String']['input'];
 };
 
 export type CreateRecordHistoryInput = {
@@ -788,6 +1115,42 @@ export type CreateReportTemplateInput = {
   reportType: ReportType;
 };
 
+export type CreateReportVoidInput = {
+  damageQty: Scalars['Int']['input'];
+  pltNum: Scalars['String']['input'];
+  reason: Scalars['String']['input'];
+};
+
+export type CreateSlateInfoInput = {
+  colour?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  holeToBottom?: InputMaybe<Scalars['String']['input']>;
+  length?: InputMaybe<Scalars['String']['input']>;
+  productCode: Scalars['String']['input'];
+  shapes?: InputMaybe<Scalars['String']['input']>;
+  thicknessBottom?: InputMaybe<Scalars['String']['input']>;
+  thicknessTop?: InputMaybe<Scalars['String']['input']>;
+  toolNum?: InputMaybe<Scalars['String']['input']>;
+  weight?: InputMaybe<Scalars['String']['input']>;
+  width?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type CreateStockLevelInput = {
+  description: Scalars['String']['input'];
+  stock: Scalars['String']['input'];
+  stockLevel: Scalars['Int']['input'];
+};
+
+export type CreateStocktakeRecordInput = {
+  countedId?: InputMaybe<Scalars['Int']['input']>;
+  countedName?: InputMaybe<Scalars['String']['input']>;
+  countedQty?: InputMaybe<Scalars['Int']['input']>;
+  pltNum?: InputMaybe<Scalars['String']['input']>;
+  productCode: Scalars['String']['input'];
+  productDesc: Scalars['String']['input'];
+  remainQty?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export type CreateSupplierInput = {
   address?: InputMaybe<Scalars['String']['input']>;
   code: Scalars['String']['input'];
@@ -802,12 +1165,28 @@ export type CreateSupplierInput = {
   status?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type CreateThreatStatInput = {
+  eventDate: Scalars['Date']['input'];
+  eventType: Scalars['String']['input'];
+  ipAddress: Scalars['String']['input'];
+  occurrenceCount?: InputMaybe<Scalars['Int']['input']>;
+  severity: Scalars['String']['input'];
+};
+
 export type CreateTransferInput = {
   pltNum: Scalars['String']['input'];
   priority?: InputMaybe<TransferPriority>;
   quantity: Scalars['Int']['input'];
   reason?: InputMaybe<Scalars['String']['input']>;
   toLocation: Scalars['String']['input'];
+};
+
+export type CreateWorkLevelInput = {
+  grn?: InputMaybe<Scalars['Int']['input']>;
+  id: Scalars['Int']['input'];
+  loading?: InputMaybe<Scalars['Int']['input']>;
+  move?: InputMaybe<Scalars['Int']['input']>;
+  qc?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type Customer = {
@@ -823,6 +1202,15 @@ export type Customer = {
   phone?: Maybe<Scalars['String']['output']>;
 };
 
+export type DailyLoadingActivity = {
+  __typename?: 'DailyLoadingActivity';
+  date: Scalars['DateTime']['output'];
+  totalActions: Scalars['Int']['output'];
+  totalQuantity: Scalars['Int']['output'];
+  uniqueOperators: Scalars['Int']['output'];
+  uniqueOrders: Scalars['Int']['output'];
+};
+
 export type DailyTrend = {
   __typename?: 'DailyTrend';
   avgEfficiency: Scalars['Float']['output'];
@@ -832,12 +1220,60 @@ export type DailyTrend = {
   uniqueOperators: Scalars['Int']['output'];
 };
 
+export type DailyVoidCount = {
+  __typename?: 'DailyVoidCount';
+  count: Scalars['Int']['output'];
+  date: Scalars['Date']['output'];
+  totalDamage: Scalars['Int']['output'];
+};
+
 export enum DataSourceType {
   Auto = 'AUTO',
   Cache = 'CACHE',
   Graphql = 'GRAPHQL',
   Rest = 'REST',
 }
+
+export type DatabasePerformanceMetric = {
+  __typename?: 'DatabasePerformanceMetric';
+  createdAt: Scalars['DateTime']['output'];
+  executionTimeMs?: Maybe<Scalars['Float']['output']>;
+  id: Scalars['ID']['output'];
+  isSlowQuery: Scalars['Boolean']['output'];
+  metadata?: Maybe<Scalars['JSON']['output']>;
+  metricName: Scalars['String']['output'];
+  metricUnit?: Maybe<Scalars['String']['output']>;
+  metricValue: Scalars['Float']['output'];
+  performanceRating: PerformanceRating;
+  queryType?: Maybe<Scalars['String']['output']>;
+  recordedAt?: Maybe<Scalars['DateTime']['output']>;
+  tableName?: Maybe<Scalars['String']['output']>;
+  updatedAt: Scalars['DateTime']['output'];
+};
+
+export type DatabasePerformanceMetricConnection = {
+  __typename?: 'DatabasePerformanceMetricConnection';
+  edges: Array<DatabasePerformanceMetricEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type DatabasePerformanceMetricEdge = {
+  __typename?: 'DatabasePerformanceMetricEdge';
+  cursor: Scalars['String']['output'];
+  node: DatabasePerformanceMetric;
+};
+
+export type DatabasePerformanceMetricFilterInput = {
+  dateRange?: InputMaybe<DateRangeInput>;
+  isSlowQuery?: InputMaybe<Scalars['Boolean']['input']>;
+  maxExecutionTime?: InputMaybe<Scalars['Float']['input']>;
+  metricName?: InputMaybe<Scalars['String']['input']>;
+  minExecutionTime?: InputMaybe<Scalars['Float']['input']>;
+  performanceRating?: InputMaybe<PerformanceRating>;
+  queryType?: InputMaybe<Scalars['String']['input']>;
+  tableName?: InputMaybe<Scalars['String']['input']>;
+};
 
 export type DateRange = {
   __typename?: 'DateRange';
@@ -922,7 +1358,7 @@ export type DepartmentWarehouseData = {
   topStocks: StockItemConnection;
 };
 
-export type EfficiencyMetrics = WidgetData & {
+export type EfficiencyMetrics = CardData & {
   __typename?: 'EfficiencyMetrics';
   averageOperationsPerMinute: Scalars['Float']['output'];
   averageTaskTime: Scalars['Float']['output'];
@@ -1007,18 +1443,54 @@ export type FieldChange = {
 
 export type FileInfo = {
   __typename?: 'FileInfo';
+  analysisData?: Maybe<Scalars['JSON']['output']>;
   checksum?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTime']['output'];
+  docName: Scalars['String']['output'];
+  docType?: Maybe<Scalars['String']['output']>;
+  docUrl?: Maybe<Scalars['String']['output']>;
+  downloadCount?: Maybe<Scalars['Int']['output']>;
   extension: Scalars['String']['output'];
   fileName: Scalars['String']['output'];
-  folder: UploadFolder;
+  fileSize?: Maybe<Scalars['Int']['output']>;
+  folder?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
+  isImage: Scalars['Boolean']['output'];
+  isPdf: Scalars['Boolean']['output'];
+  isProcessed: Scalars['Boolean']['output'];
+  jsonTxt?: Maybe<Scalars['String']['output']>;
+  lastAccessed?: Maybe<Scalars['DateTime']['output']>;
   mimeType: Scalars['String']['output'];
   originalName: Scalars['String']['output'];
   size: Scalars['Int']['output'];
   thumbnailUrl?: Maybe<Scalars['String']['output']>;
+  uploadBy: Scalars['Int']['output'];
   uploadedAt: Scalars['DateTime']['output'];
   uploadedBy: Scalars['String']['output'];
+  uploader?: Maybe<User>;
   url?: Maybe<Scalars['String']['output']>;
+  uuid: Scalars['ID']['output'];
+};
+
+export type FileInfoConnection = {
+  __typename?: 'FileInfoConnection';
+  edges: Array<FileInfoEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type FileInfoEdge = {
+  __typename?: 'FileInfoEdge';
+  cursor: Scalars['String']['output'];
+  node: FileInfo;
+};
+
+export type FileInfoFilterInput = {
+  dateRange?: InputMaybe<DateRangeInput>;
+  docType?: InputMaybe<Scalars['String']['input']>;
+  folder?: InputMaybe<Scalars['String']['input']>;
+  hasAnalysisData?: InputMaybe<Scalars['Boolean']['input']>;
+  uploadBy?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type FileSearchInput = {
@@ -1077,22 +1549,42 @@ export type FlowMetrics = {
   totalThroughput: Scalars['Int']['output'];
 };
 
+/**
+ * 收貨單 (Goods Received Note) - 商業層級類型
+ * 代表完整的收貨作業，包含多個收貨項目的彙總資訊
+ * 這是一個虛擬類型，用於提供商業邏輯層的抽象
+ */
 export type Grn = {
   __typename?: 'GRN';
+  /** 完成日期 (可選) */
   completedDate?: Maybe<Scalars['DateTime']['output']>;
+  /** 創建時間 */
   createdAt: Scalars['DateTime']['output'];
+  /** 創建人員 */
   createdBy: User;
+  /** 收貨單編號 */
   grnNumber: Scalars['String']['output'];
+  /** 收貨單唯一標識符 */
   id: Scalars['ID']['output'];
+  /** 收貨項目清單 (關聯到 GRNRecord) */
   items: Array<GrnItem>;
+  /** 品質檢查人員 (可選) */
   qcBy?: Maybe<User>;
+  /** 品質檢查完成日期 (可選) */
   qcCompletedDate?: Maybe<Scalars['DateTime']['output']>;
+  /** 品質檢查狀態 (可選) */
   qcStatus?: Maybe<QcStatus>;
+  /** 收貨日期 */
   receivedDate: Scalars['DateTime']['output'];
+  /** 收貨單狀態 */
   status: GrnStatus;
+  /** 供應商資訊 (關聯查詢) */
   supplier: Supplier;
+  /** 供應商代碼 */
   supplierCode: Scalars['String']['output'];
+  /** 總項目數量 (計算欄位) */
   totalItems: Scalars['Int']['output'];
+  /** 總收貨數量 (計算欄位) */
   totalQuantity: Scalars['Int']['output'];
 };
 
@@ -1127,6 +1619,100 @@ export type GrnItem = {
   remarks?: Maybe<Scalars['String']['output']>;
 };
 
+/**
+ * 收貨記錄項目 (record_grn 表) - 數據庫層級類型
+ * 代表收貨單中的單一項目記錄，直接對應數據庫表結構
+ * 每一筆記錄代表一個托盤的收貨資訊，包含重量、包裝等詳細數據
+ */
+export type GrnRecord = {
+  __typename?: 'GRNRecord';
+  /** 記錄創建時間 (注意：資料庫欄位名稱為 creat_time) */
+  creatTime: Scalars['DateTime']['output'];
+  /** 發現的差異或問題清單 */
+  discrepancies?: Maybe<Array<Scalars['String']['output']>>;
+  /** 收貨單參考號碼，關聯到主收貨單 */
+  grnRef: Scalars['Int']['output'];
+  /** 毛重 (包含包裝重量) */
+  grossWeight: Scalars['Int']['output'];
+  /** 重量數據是否通過驗證 */
+  isWeightValid: Scalars['Boolean']['output'];
+  /** 材料/產品代碼，外鍵關聯 data_code 表 */
+  materialCode: Scalars['String']['output'];
+  /** 淨重 (實際產品重量) */
+  netWeight: Scalars['Int']['output'];
+  /** 包裝資訊描述 */
+  package: Scalars['String']['output'];
+  /** 包裝數量 (數值型，支援小數) */
+  packageCount: Scalars['Float']['output'];
+  /** 包裝效率指標，綜合評估包裝品質 */
+  packagingEfficiency?: Maybe<Scalars['Float']['output']>;
+  /** 托盤資訊描述 */
+  pallet: Scalars['String']['output'];
+  /** 托盤數量 (數值型，支援小數) */
+  palletCount: Scalars['Float']['output'];
+  /** 關聯的托盤詳細資訊 */
+  palletInfo: Pallet;
+  /** 托盤號碼，外鍵關聯 record_palletinfo 表 */
+  pltNum: Scalars['String']['output'];
+  /** 關聯的產品資訊 */
+  product: Product;
+  /** 品質檢查備註 */
+  qualityNotes?: Maybe<Scalars['String']['output']>;
+  /** 記錄處理狀態 */
+  status: GrnRecordStatus;
+  /** 供應商代碼，外鍵關聯 data_supplier 表 */
+  supCode: Scalars['String']['output'];
+  /** 關聯的供應商資訊 */
+  supplier: Supplier;
+  /** 單位重量 (毛重/包裝數量)，用於標準化比較 */
+  unitWeight?: Maybe<Scalars['Float']['output']>;
+  /** 記錄唯一標識符 (主鍵) */
+  uuid: Scalars['ID']['output'];
+  /** 重量比率 (淨重/毛重)，用於評估包裝效率 */
+  weightRatio?: Maybe<Scalars['Float']['output']>;
+};
+
+export type GrnRecordConnection = {
+  __typename?: 'GRNRecordConnection';
+  edges: Array<GrnRecordEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type GrnRecordCorrectionInput = {
+  correctedBy: Scalars['String']['input'];
+  correctionReason: Scalars['String']['input'];
+  grossWeight?: InputMaybe<Scalars['Int']['input']>;
+  netWeight?: InputMaybe<Scalars['Int']['input']>;
+  packageCount?: InputMaybe<Scalars['Float']['input']>;
+  palletCount?: InputMaybe<Scalars['Float']['input']>;
+};
+
+export type GrnRecordEdge = {
+  __typename?: 'GRNRecordEdge';
+  cursor: Scalars['String']['output'];
+  node: GrnRecord;
+};
+
+export type GrnRecordFilterInput = {
+  dateRange?: InputMaybe<DateRangeInput>;
+  grnRef?: InputMaybe<Scalars['Int']['input']>;
+  hasDiscrepancies?: InputMaybe<Scalars['Boolean']['input']>;
+  materialCode?: InputMaybe<Scalars['String']['input']>;
+  pltNum?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<GrnRecordStatus>;
+  supCode?: InputMaybe<Scalars['String']['input']>;
+  weightRange?: InputMaybe<WeightRangeInput>;
+};
+
+export enum GrnRecordStatus {
+  Cancelled = 'CANCELLED',
+  Corrected = 'CORRECTED',
+  Discrepancy = 'DISCREPANCY',
+  Recorded = 'RECORDED',
+  Verified = 'VERIFIED',
+}
+
 export enum GrnStatus {
   Completed = 'COMPLETED',
   Pending = 'PENDING',
@@ -1158,6 +1744,71 @@ export type GeneratedReport = {
   reportType: ReportType;
   status: ReportStatus;
   title: Scalars['String']['output'];
+};
+
+export type GrnLevel = {
+  __typename?: 'GrnLevel';
+  averageWeight?: Maybe<Scalars['Float']['output']>;
+  grn?: Maybe<Grn>;
+  grnRef?: Maybe<Scalars['Int']['output']>;
+  latestUpdate: Scalars['DateTime']['output'];
+  netToGrossRatio?: Maybe<Scalars['Float']['output']>;
+  totalGross: Scalars['Int']['output'];
+  totalNet?: Maybe<Scalars['Int']['output']>;
+  totalUnit: Scalars['Int']['output'];
+  uuid: Scalars['ID']['output'];
+};
+
+export type GrnLevelConnection = {
+  __typename?: 'GrnLevelConnection';
+  edges: Array<GrnLevelEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type GrnLevelEdge = {
+  __typename?: 'GrnLevelEdge';
+  cursor: Scalars['String']['output'];
+  node: GrnLevel;
+};
+
+export type GrnLevelFilterInput = {
+  dateRange?: InputMaybe<DateRangeInput>;
+  grnRef?: InputMaybe<Scalars['Int']['input']>;
+  maxTotalUnit?: InputMaybe<Scalars['Int']['input']>;
+  minTotalUnit?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type GrnLevelSummary = {
+  __typename?: 'GrnLevelSummary';
+  averageGrossWeight: Scalars['Float']['output'];
+  averageNetToGrossRatio: Scalars['Float']['output'];
+  averageNetWeight: Scalars['Float']['output'];
+  byGrnRef: Array<GrnRefSummary>;
+  lastUpdated: Scalars['DateTime']['output'];
+  totalGrossWeight: Scalars['Int']['output'];
+  totalNetWeight: Scalars['Int']['output'];
+  totalRecords: Scalars['Int']['output'];
+  totalUnits: Scalars['Int']['output'];
+};
+
+export type GrnRefSummary = {
+  __typename?: 'GrnRefSummary';
+  grnRef: Scalars['Int']['output'];
+  lastUpdated: Scalars['DateTime']['output'];
+  recordCount: Scalars['Int']['output'];
+  totalGross: Scalars['Int']['output'];
+  totalNet: Scalars['Int']['output'];
+  totalUnits: Scalars['Int']['output'];
+};
+
+export type HighRiskIp = {
+  __typename?: 'HighRiskIP';
+  ipAddress: Scalars['String']['output'];
+  lastActivity: Scalars['DateTime']['output'];
+  riskLevel: ThreatRiskLevel;
+  threatTypes: Array<Scalars['String']['output']>;
+  totalOccurrences: Scalars['Int']['output'];
 };
 
 export type HistoryEntry = {
@@ -1192,19 +1843,43 @@ export type HistoryProduct = {
 export type HistoryRecord = {
   __typename?: 'HistoryRecord';
   action: Scalars['String']['output'];
-  changes?: Maybe<Array<FieldChange>>;
   entityData?: Maybe<Scalars['JSON']['output']>;
-  entityId: Scalars['String']['output'];
-  entityType: Scalars['String']['output'];
-  id: Scalars['ID']['output'];
-  ipAddress?: Maybe<Scalars['String']['output']>;
-  newValue?: Maybe<Scalars['JSON']['output']>;
+  entityId?: Maybe<Scalars['String']['output']>;
+  entityType?: Maybe<Scalars['String']['output']>;
+  id: Scalars['Int']['output'];
+  location?: Maybe<Scalars['String']['output']>;
   notes?: Maybe<Scalars['String']['output']>;
-  performedBy: User;
-  previousValue?: Maybe<Scalars['JSON']['output']>;
-  recordType: HistoryType;
+  pallet?: Maybe<Pallet>;
+  performedBy?: Maybe<User>;
+  pltNum?: Maybe<Scalars['String']['output']>;
+  recordType?: Maybe<HistoryType>;
+  remark: Scalars['String']['output'];
+  time: Scalars['DateTime']['output'];
   timestamp: Scalars['DateTime']['output'];
-  userAgent?: Maybe<Scalars['String']['output']>;
+  user?: Maybe<User>;
+  uuid: Scalars['ID']['output'];
+};
+
+export type HistoryRecordConnection = {
+  __typename?: 'HistoryRecordConnection';
+  edges: Array<HistoryRecordEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type HistoryRecordEdge = {
+  __typename?: 'HistoryRecordEdge';
+  cursor: Scalars['String']['output'];
+  node: HistoryRecord;
+};
+
+export type HistoryRecordFilterInput = {
+  action?: InputMaybe<Scalars['String']['input']>;
+  dateRange?: InputMaybe<DateRangeInput>;
+  location?: InputMaybe<Scalars['String']['input']>;
+  pltNum?: InputMaybe<Scalars['String']['input']>;
+  recordType?: InputMaybe<HistoryType>;
+  userId?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type HistoryTreeFilters = {
@@ -1262,14 +1937,17 @@ export enum HistoryTreeSortField {
 }
 
 export enum HistoryType {
+  FileUpload = 'FILE_UPLOAD',
   Grn = 'GRN',
   Inventory = 'INVENTORY',
   Order = 'ORDER',
   Pallet = 'PALLET',
   Product = 'PRODUCT',
+  RecordGrn = 'RECORD_GRN',
   System = 'SYSTEM',
   Transfer = 'TRANSFER',
   User = 'USER',
+  WorkLevel = 'WORK_LEVEL',
 }
 
 export type HistoryUser = {
@@ -1298,17 +1976,23 @@ export type HourlyTrend = {
 
 export type Inventory = {
   __typename?: 'Inventory';
-  availableQuantity: Scalars['Int']['output'];
-  awaitQuantity: Scalars['Int']['output'];
-  id: Scalars['ID']['output'];
-  lastMovement?: Maybe<Scalars['DateTime']['output']>;
-  lastStocktake?: Maybe<Scalars['DateTime']['output']>;
-  lastUpdate: Scalars['DateTime']['output'];
+  await: Scalars['Int']['output'];
+  await_grn?: Maybe<Scalars['Int']['output']>;
+  backcarpark: Scalars['Int']['output'];
+  bulk: Scalars['Int']['output'];
+  damage: Scalars['Int']['output'];
+  fold: Scalars['Int']['output'];
+  injection: Scalars['Int']['output'];
+  latestUpdate?: Maybe<Scalars['DateTime']['output']>;
   locationQuantities: LocationInventory;
+  pallet: Pallet;
+  pipeline: Scalars['Int']['output'];
+  pltNum: Scalars['String']['output'];
+  prebook: Scalars['Int']['output'];
   product: Product;
   productCode: Scalars['String']['output'];
-  reservedQuantity: Scalars['Int']['output'];
   totalQuantity: Scalars['Int']['output'];
+  uuid: Scalars['ID']['output'];
 };
 
 export type InventoryAnalysisItem = {
@@ -1399,14 +2083,9 @@ export type LoadingSummary = {
 
 export type Location = {
   __typename?: 'Location';
-  capacity?: Maybe<Scalars['Int']['output']>;
   code: Scalars['String']['output'];
-  currentOccupancy?: Maybe<Scalars['Int']['output']>;
-  id: Scalars['ID']['output'];
-  isActive: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
   type: LocationType;
-  warehouse: Warehouse;
 };
 
 export type LocationBottleneck = {
@@ -1443,6 +2122,7 @@ export type LocationCount = {
 export type LocationInventory = {
   __typename?: 'LocationInventory';
   await: Scalars['Int']['output'];
+  await_grn?: Maybe<Scalars['Int']['output']>;
   backcarpark: Scalars['Int']['output'];
   bulk: Scalars['Int']['output'];
   damage: Scalars['Int']['output'];
@@ -1465,6 +2145,7 @@ export type LocationJourney = {
 
 export enum LocationType {
   Await = 'AWAIT',
+  AwaitGrn = 'AWAIT_GRN',
   Backcarpark = 'BACKCARPARK',
   Bulk = 'BULK',
   Damage = 'DAMAGE',
@@ -1543,66 +2224,152 @@ export type MergingStats = {
 export type Mutation = {
   __typename?: 'Mutation';
   acknowledgeAlert: Alert;
+  activateAPIConfig: ApiConfig;
   applyConfigTemplate: ConfigBatchResult;
+  approveStocktakeRecord: StocktakeRecord;
   batchAcknowledgeAlerts: BatchAlertResult;
+  batchCreateHistoryRecords: Array<HistoryRecord>;
+  batchDeleteFiles: Scalars['Boolean']['output'];
   batchOperation: BatchOperationResult;
   batchReportOperation: BatchReportResult;
   batchResolveAlerts: BatchAlertResult;
   batchUpdateConfigs: ConfigBatchResult;
+  batchUpdateStocktakeRecords: BatchStocktakeResult;
+  batchUpdateWorkLevels: Array<WorkLevel>;
+  blockIpAddress: Scalars['Boolean']['output'];
+  bulkCreateDatabaseMetrics: Array<DatabasePerformanceMetric>;
+  bulkCreateQueryMetrics: Array<QueryPerformanceMetric>;
   bulkCreateRecordHistory: BatchResult;
+  bulkDeleteQueryRecords: Scalars['Int']['output'];
+  bulkProcessCacheEvents: Array<CacheInvalidationEvent>;
+  bulkUpdateStockLevels: Array<StockLevel>;
   cancelReportGeneration: Scalars['Boolean']['output'];
   cancelTransfer: Transfer;
   cancelUpload: Scalars['Boolean']['output'];
   cancelWarehouseOrder: WarehouseOrder;
   clearCache: Scalars['Boolean']['output'];
   clearRecordHistoryCache: Scalars['Boolean']['output'];
+  completeAcoRecord: AcoRecord;
+  correctGRNRecord: GrnRecord;
+  correctOrderLoadingHistory: OrderLoadingHistory;
+  createAPIConfig: ApiConfig;
+  createAcoRecord: AcoRecord;
+  createCacheInvalidationEvent: CacheInvalidationEvent;
   createConfig: ConfigItem;
   createConfigTemplate: ConfigTemplate;
   createCustomAlert: Alert;
+  createDatabasePerformanceMetric: DatabasePerformanceMetric;
+  createFileInfo: FileInfo;
+  createGRNRecord: GrnRecord;
+  createGrnLevel: GrnLevel;
+  createHistoryRecord: HistoryRecord;
+  createOrderLoadingHistory: OrderLoadingHistory;
+  createPalletNumberBuffer: PalletNumberBuffer;
   createProduct: Product;
+  createQueryPerformanceMetric: QueryPerformanceMetric;
+  createQueryRecord: QueryRecord;
   createRecordHistoryEntry: RecordHistoryEntry;
   createReportTemplate: ReportTemplate;
+  createReportVoid: ReportVoid;
+  createSlateInfo: SlateInfo;
+  createStockLevel: StockLevel;
+  createStocktakeRecord: StocktakeRecord;
   createSupplier: Supplier;
+  createThreatStat: ThreatStat;
   createTransfer: Transfer;
+  createWorkLevel: WorkLevel;
+  deactivateAPIConfig: ApiConfig;
   deactivateProduct: Product;
   deactivateSupplier: Supplier;
+  deleteAPIConfig: Scalars['Boolean']['output'];
+  deleteAcoRecord: Scalars['Boolean']['output'];
+  deleteCacheInvalidationEvent: Scalars['Boolean']['output'];
   deleteConfig: Scalars['Boolean']['output'];
+  deleteDatabasePerformanceMetric: Scalars['Boolean']['output'];
+  deleteExpiredQueryRecords: Scalars['Int']['output'];
   deleteFile: Scalars['Boolean']['output'];
+  deleteFileInfo: Scalars['Boolean']['output'];
   deleteFiles: BatchResult;
+  deleteGRNRecord: Scalars['Boolean']['output'];
+  deleteGrnLevel: Scalars['Boolean']['output'];
+  deleteHistoryRecord: Scalars['Boolean']['output'];
+  deleteOldDatabaseMetrics: Scalars['Int']['output'];
+  deleteOldQueryMetrics: Scalars['Int']['output'];
+  deleteOldThreatStats: Scalars['Int']['output'];
+  deletePalletNumberBuffer: Scalars['Boolean']['output'];
+  deleteProcessedCacheEvents: Scalars['Int']['output'];
+  deleteQueryPerformanceMetric: Scalars['Boolean']['output'];
+  deleteQueryRecord: Scalars['Boolean']['output'];
   deleteReport: Scalars['Boolean']['output'];
   deleteReportTemplate: Scalars['Boolean']['output'];
+  deleteReportVoid: Scalars['Boolean']['output'];
+  deleteSlateInfo: Scalars['Boolean']['output'];
+  deleteStockLevel: Scalars['Boolean']['output'];
+  deleteThreatStat: Scalars['Boolean']['output'];
   dismissAlert: Scalars['Boolean']['output'];
   exportConfigs: Scalars['String']['output'];
   exportRecordHistory: RecordHistoryExportResult;
   extendReportExpiry: GeneratedReport;
+  generatePalletNumbers: Array<PalletNumberBuffer>;
   generateReport: ReportGenerationResult;
   importConfigs: ConfigBatchResult;
+  incrementThreatOccurrence: ThreatStat;
+  incrementWorkLevel: WorkLevel;
+  markCacheEventAsProcessed: CacheInvalidationEvent;
+  markPalletNumberAsUnused: PalletNumberBuffer;
+  markPalletNumberAsUsed: PalletNumberBuffer;
+  markQueryRecordAsExpired: QueryRecord;
   reanalyzeOrderPDF: OrderAnalysisResult;
   refreshCache: Scalars['Boolean']['output'];
   regenerateReport: ReportGenerationResult;
+  rejectStocktakeRecord: StocktakeRecord;
+  reportDiscrepancy: GrnRecord;
   resetConfig: ConfigItem;
   resetConfigCategory: ConfigBatchResult;
+  resetWorkLevel: WorkLevel;
   resolveAlert: Alert;
   retryUpload: SingleUploadResult;
   shareReport: Scalars['Boolean']['output'];
   testAlertChannel: Scalars['Boolean']['output'];
+  unblockIpAddress: Scalars['Boolean']['output'];
+  updateAPIConfig: ApiConfig;
   updateAcoOrder: UpdateAcoOrderResponse;
+  updateAcoRecord: AcoRecord;
+  updateAcoRecordProgress: AcoRecord;
   updateAlertRule: AlertRule;
   updateConfig: ConfigItem;
+  updateFileAnalysis: FileInfo;
+  updateFileInfo: FileInfo;
   updateFileMetadata: FileInfo;
+  updateGRNRecord: GrnRecord;
+  updateGrnLevel: GrnLevel;
+  updateHistoryRecord: HistoryRecord;
   updateMergingConfig: Scalars['Boolean']['output'];
+  updatePalletNumberBuffer: PalletNumberBuffer;
   updateProduct: Product;
   updateReportTemplate: ReportTemplate;
+  updateReportVoid: ReportVoid;
+  updateSlateInfo: SlateInfo;
+  updateStockLevel: StockLevel;
+  updateStockLevelQuantity: StockLevel;
+  updateStocktakeRecord: StocktakeRecord;
   updateSupplier: Supplier;
+  updateThreatStat: ThreatStat;
   updateTransferStatus: Transfer;
   updateWarehouseOrderStatus: WarehouseOrder;
+  updateWorkLevel: WorkLevel;
   uploadBatchFiles: BatchUploadResult;
   uploadSingleFile: SingleUploadResult;
+  verifyGRNRecord: GrnRecord;
 };
 
 export type MutationAcknowledgeAlertArgs = {
   alertId: Scalars['ID']['input'];
   note?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type MutationActivateApiConfigArgs = {
+  uuid: Scalars['ID']['input'];
 };
 
 export type MutationApplyConfigTemplateArgs = {
@@ -1611,9 +2378,22 @@ export type MutationApplyConfigTemplateArgs = {
   templateId: Scalars['ID']['input'];
 };
 
+export type MutationApproveStocktakeRecordArgs = {
+  approvedBy: Scalars['String']['input'];
+  uuid: Scalars['ID']['input'];
+};
+
 export type MutationBatchAcknowledgeAlertsArgs = {
   alertIds: Array<Scalars['ID']['input']>;
   note?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type MutationBatchCreateHistoryRecordsArgs = {
+  records: Array<CreateHistoryRecordInput>;
+};
+
+export type MutationBatchDeleteFilesArgs = {
+  uuids: Array<Scalars['ID']['input']>;
 };
 
 export type MutationBatchOperationArgs = {
@@ -1633,8 +2413,41 @@ export type MutationBatchUpdateConfigsArgs = {
   input: ConfigBatchUpdateInput;
 };
 
+export type MutationBatchUpdateStocktakeRecordsArgs = {
+  records: Array<BatchStocktakeUpdateInput>;
+};
+
+export type MutationBatchUpdateWorkLevelsArgs = {
+  updates: Array<BatchWorkLevelUpdateInput>;
+};
+
+export type MutationBlockIpAddressArgs = {
+  ipAddress: Scalars['String']['input'];
+  reason: Scalars['String']['input'];
+};
+
+export type MutationBulkCreateDatabaseMetricsArgs = {
+  metrics: Array<CreateDatabasePerformanceMetricInput>;
+};
+
+export type MutationBulkCreateQueryMetricsArgs = {
+  metrics: Array<CreateQueryPerformanceMetricInput>;
+};
+
 export type MutationBulkCreateRecordHistoryArgs = {
   entries: Array<CreateRecordHistoryInput>;
+};
+
+export type MutationBulkDeleteQueryRecordsArgs = {
+  uuids: Array<Scalars['ID']['input']>;
+};
+
+export type MutationBulkProcessCacheEventsArgs = {
+  ids: Array<Scalars['ID']['input']>;
+};
+
+export type MutationBulkUpdateStockLevelsArgs = {
+  updates: Array<BulkStockLevelUpdateInput>;
 };
 
 export type MutationCancelReportGenerationArgs = {
@@ -1655,6 +2468,34 @@ export type MutationCancelWarehouseOrderArgs = {
   reason?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type MutationCompleteAcoRecordArgs = {
+  uuid: Scalars['ID']['input'];
+};
+
+export type MutationCorrectGrnRecordArgs = {
+  corrections: GrnRecordCorrectionInput;
+  uuid: Scalars['ID']['input'];
+};
+
+export type MutationCorrectOrderLoadingHistoryArgs = {
+  correctedBy: Scalars['String']['input'];
+  correctedQuantity: Scalars['Int']['input'];
+  reason: Scalars['String']['input'];
+  uuid: Scalars['ID']['input'];
+};
+
+export type MutationCreateApiConfigArgs = {
+  input: CreateApiConfigInput;
+};
+
+export type MutationCreateAcoRecordArgs = {
+  input: CreateAcoRecordInput;
+};
+
+export type MutationCreateCacheInvalidationEventArgs = {
+  input: CreateCacheInvalidationEventInput;
+};
+
 export type MutationCreateConfigArgs = {
   input: ConfigItemInput;
 };
@@ -1672,8 +2513,44 @@ export type MutationCreateCustomAlertArgs = {
   input: CreateAlertInput;
 };
 
+export type MutationCreateDatabasePerformanceMetricArgs = {
+  input: CreateDatabasePerformanceMetricInput;
+};
+
+export type MutationCreateFileInfoArgs = {
+  input: CreateFileInfoInput;
+};
+
+export type MutationCreateGrnRecordArgs = {
+  input: CreateGrnRecordInput;
+};
+
+export type MutationCreateGrnLevelArgs = {
+  input: CreateGrnLevelInput;
+};
+
+export type MutationCreateHistoryRecordArgs = {
+  input: CreateHistoryRecordInput;
+};
+
+export type MutationCreateOrderLoadingHistoryArgs = {
+  input: CreateOrderLoadingHistoryInput;
+};
+
+export type MutationCreatePalletNumberBufferArgs = {
+  input: CreatePalletNumberBufferInput;
+};
+
 export type MutationCreateProductArgs = {
   input: CreateProductInput;
+};
+
+export type MutationCreateQueryPerformanceMetricArgs = {
+  input: CreateQueryPerformanceMetricInput;
+};
+
+export type MutationCreateQueryRecordArgs = {
+  input: CreateQueryRecordInput;
 };
 
 export type MutationCreateRecordHistoryEntryArgs = {
@@ -1684,12 +2561,40 @@ export type MutationCreateReportTemplateArgs = {
   input: CreateReportTemplateInput;
 };
 
+export type MutationCreateReportVoidArgs = {
+  input: CreateReportVoidInput;
+};
+
+export type MutationCreateSlateInfoArgs = {
+  input: CreateSlateInfoInput;
+};
+
+export type MutationCreateStockLevelArgs = {
+  input: CreateStockLevelInput;
+};
+
+export type MutationCreateStocktakeRecordArgs = {
+  input: CreateStocktakeRecordInput;
+};
+
 export type MutationCreateSupplierArgs = {
   input: CreateSupplierInput;
 };
 
+export type MutationCreateThreatStatArgs = {
+  input: CreateThreatStatInput;
+};
+
 export type MutationCreateTransferArgs = {
   input: CreateTransferInput;
+};
+
+export type MutationCreateWorkLevelArgs = {
+  input: CreateWorkLevelInput;
+};
+
+export type MutationDeactivateApiConfigArgs = {
+  uuid: Scalars['ID']['input'];
 };
 
 export type MutationDeactivateProductArgs = {
@@ -1700,7 +2605,23 @@ export type MutationDeactivateSupplierArgs = {
   code: Scalars['String']['input'];
 };
 
+export type MutationDeleteApiConfigArgs = {
+  uuid: Scalars['ID']['input'];
+};
+
+export type MutationDeleteAcoRecordArgs = {
+  uuid: Scalars['ID']['input'];
+};
+
+export type MutationDeleteCacheInvalidationEventArgs = {
+  id: Scalars['ID']['input'];
+};
+
 export type MutationDeleteConfigArgs = {
+  id: Scalars['ID']['input'];
+};
+
+export type MutationDeleteDatabasePerformanceMetricArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -1708,8 +2629,52 @@ export type MutationDeleteFileArgs = {
   fileId: Scalars['ID']['input'];
 };
 
+export type MutationDeleteFileInfoArgs = {
+  uuid: Scalars['ID']['input'];
+};
+
 export type MutationDeleteFilesArgs = {
   fileIds: Array<Scalars['ID']['input']>;
+};
+
+export type MutationDeleteGrnRecordArgs = {
+  uuid: Scalars['ID']['input'];
+};
+
+export type MutationDeleteGrnLevelArgs = {
+  uuid: Scalars['ID']['input'];
+};
+
+export type MutationDeleteHistoryRecordArgs = {
+  uuid: Scalars['ID']['input'];
+};
+
+export type MutationDeleteOldDatabaseMetricsArgs = {
+  olderThanDays?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type MutationDeleteOldQueryMetricsArgs = {
+  olderThanDays?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type MutationDeleteOldThreatStatsArgs = {
+  olderThanDays?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type MutationDeletePalletNumberBufferArgs = {
+  id: Scalars['Int']['input'];
+};
+
+export type MutationDeleteProcessedCacheEventsArgs = {
+  olderThanDays?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type MutationDeleteQueryPerformanceMetricArgs = {
+  id: Scalars['ID']['input'];
+};
+
+export type MutationDeleteQueryRecordArgs = {
+  uuid: Scalars['ID']['input'];
 };
 
 export type MutationDeleteReportArgs = {
@@ -1718,6 +2683,22 @@ export type MutationDeleteReportArgs = {
 
 export type MutationDeleteReportTemplateArgs = {
   templateId: Scalars['ID']['input'];
+};
+
+export type MutationDeleteReportVoidArgs = {
+  uuid: Scalars['ID']['input'];
+};
+
+export type MutationDeleteSlateInfoArgs = {
+  productCode: Scalars['String']['input'];
+};
+
+export type MutationDeleteStockLevelArgs = {
+  uuid: Scalars['ID']['input'];
+};
+
+export type MutationDeleteThreatStatArgs = {
+  id: Scalars['Int']['input'];
 };
 
 export type MutationDismissAlertArgs = {
@@ -1740,6 +2721,12 @@ export type MutationExtendReportExpiryArgs = {
   reportId: Scalars['ID']['input'];
 };
 
+export type MutationGeneratePalletNumbersArgs = {
+  count: Scalars['Int']['input'];
+  dateStr: Scalars['String']['input'];
+  series: Scalars['String']['input'];
+};
+
 export type MutationGenerateReportArgs = {
   input: ReportGenerationInput;
 };
@@ -1748,6 +2735,33 @@ export type MutationImportConfigsArgs = {
   data: Scalars['String']['input'];
   format: ExportFormat;
   overwrite?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+export type MutationIncrementThreatOccurrenceArgs = {
+  id: Scalars['Int']['input'];
+};
+
+export type MutationIncrementWorkLevelArgs = {
+  count?: InputMaybe<Scalars['Int']['input']>;
+  operationType: WorkOperationType;
+  userId: Scalars['Int']['input'];
+};
+
+export type MutationMarkCacheEventAsProcessedArgs = {
+  id: Scalars['ID']['input'];
+};
+
+export type MutationMarkPalletNumberAsUnusedArgs = {
+  id: Scalars['Int']['input'];
+};
+
+export type MutationMarkPalletNumberAsUsedArgs = {
+  id: Scalars['Int']['input'];
+};
+
+export type MutationMarkQueryRecordAsExpiredArgs = {
+  expiredReason: Scalars['String']['input'];
+  uuid: Scalars['ID']['input'];
 };
 
 export type MutationReanalyzeOrderPdfArgs = {
@@ -1762,6 +2776,18 @@ export type MutationRegenerateReportArgs = {
   reportId: Scalars['ID']['input'];
 };
 
+export type MutationRejectStocktakeRecordArgs = {
+  reason: Scalars['String']['input'];
+  rejectedBy: Scalars['String']['input'];
+  uuid: Scalars['ID']['input'];
+};
+
+export type MutationReportDiscrepancyArgs = {
+  discrepancy: Scalars['String']['input'];
+  reportedBy: Scalars['String']['input'];
+  uuid: Scalars['ID']['input'];
+};
+
 export type MutationResetConfigArgs = {
   id: Scalars['ID']['input'];
 };
@@ -1770,6 +2796,10 @@ export type MutationResetConfigCategoryArgs = {
   category: ConfigCategory;
   scope: ConfigScope;
   scopeId?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type MutationResetWorkLevelArgs = {
+  uuid: Scalars['ID']['input'];
 };
 
 export type MutationResolveAlertArgs = {
@@ -1791,8 +2821,27 @@ export type MutationTestAlertChannelArgs = {
   channelId: Scalars['ID']['input'];
 };
 
+export type MutationUnblockIpAddressArgs = {
+  ipAddress: Scalars['String']['input'];
+};
+
+export type MutationUpdateApiConfigArgs = {
+  input: UpdateApiConfigInput;
+  uuid: Scalars['ID']['input'];
+};
+
 export type MutationUpdateAcoOrderArgs = {
   input: UpdateAcoOrderInput;
+};
+
+export type MutationUpdateAcoRecordArgs = {
+  input: UpdateAcoRecordInput;
+  uuid: Scalars['ID']['input'];
+};
+
+export type MutationUpdateAcoRecordProgressArgs = {
+  finishedQty: Scalars['Int']['input'];
+  uuid: Scalars['ID']['input'];
 };
 
 export type MutationUpdateAlertRuleArgs = {
@@ -1804,13 +2853,43 @@ export type MutationUpdateConfigArgs = {
   input: ConfigUpdateInput;
 };
 
+export type MutationUpdateFileAnalysisArgs = {
+  analysisData: Scalars['JSON']['input'];
+  uuid: Scalars['ID']['input'];
+};
+
+export type MutationUpdateFileInfoArgs = {
+  input: UpdateFileInfoInput;
+  uuid: Scalars['ID']['input'];
+};
+
 export type MutationUpdateFileMetadataArgs = {
   fileId: Scalars['ID']['input'];
   metadata: Scalars['JSON']['input'];
 };
 
+export type MutationUpdateGrnRecordArgs = {
+  input: UpdateGrnRecordInput;
+  uuid: Scalars['ID']['input'];
+};
+
+export type MutationUpdateGrnLevelArgs = {
+  input: UpdateGrnLevelInput;
+  uuid: Scalars['ID']['input'];
+};
+
+export type MutationUpdateHistoryRecordArgs = {
+  input: UpdateHistoryRecordInput;
+  uuid: Scalars['ID']['input'];
+};
+
 export type MutationUpdateMergingConfigArgs = {
   config: MergingConfig;
+};
+
+export type MutationUpdatePalletNumberBufferArgs = {
+  id: Scalars['Int']['input'];
+  input: UpdatePalletNumberBufferInput;
 };
 
 export type MutationUpdateProductArgs = {
@@ -1823,9 +2902,39 @@ export type MutationUpdateReportTemplateArgs = {
   templateId: Scalars['ID']['input'];
 };
 
+export type MutationUpdateReportVoidArgs = {
+  input: UpdateReportVoidInput;
+  uuid: Scalars['ID']['input'];
+};
+
+export type MutationUpdateSlateInfoArgs = {
+  input: UpdateSlateInfoInput;
+  productCode: Scalars['String']['input'];
+};
+
+export type MutationUpdateStockLevelArgs = {
+  input: UpdateStockLevelInput;
+  uuid: Scalars['ID']['input'];
+};
+
+export type MutationUpdateStockLevelQuantityArgs = {
+  stockLevel: Scalars['Int']['input'];
+  uuid: Scalars['ID']['input'];
+};
+
+export type MutationUpdateStocktakeRecordArgs = {
+  input: UpdateStocktakeRecordInput;
+  uuid: Scalars['ID']['input'];
+};
+
 export type MutationUpdateSupplierArgs = {
   code: Scalars['String']['input'];
   input: UpdateSupplierInput;
+};
+
+export type MutationUpdateThreatStatArgs = {
+  id: Scalars['Int']['input'];
+  input: UpdateThreatStatInput;
 };
 
 export type MutationUpdateTransferStatusArgs = {
@@ -1839,12 +2948,22 @@ export type MutationUpdateWarehouseOrderStatusArgs = {
   status: WarehouseOrderStatus;
 };
 
+export type MutationUpdateWorkLevelArgs = {
+  input: UpdateWorkLevelInput;
+  uuid: Scalars['ID']['input'];
+};
+
 export type MutationUploadBatchFilesArgs = {
   input: BatchUploadInput;
 };
 
 export type MutationUploadSingleFileArgs = {
   input: SingleFileUploadInput;
+};
+
+export type MutationVerifyGrnRecordArgs = {
+  uuid: Scalars['ID']['input'];
+  verifiedBy: Scalars['String']['input'];
 };
 
 export type NotificationChannel = {
@@ -1868,6 +2987,13 @@ export enum NotificationConfigKey {
   QuietHours = 'QUIET_HOURS',
   SmsEnabled = 'SMS_ENABLED',
 }
+
+export type OperationBreakdown = {
+  __typename?: 'OperationBreakdown';
+  count: Scalars['Int']['output'];
+  operationType: WorkOperationType;
+  percentage: Scalars['Float']['output'];
+};
 
 export type OperationResult = {
   __typename?: 'OperationResult';
@@ -1912,6 +3038,16 @@ export type OperatorEfficiency = {
   totalOperations: Scalars['Int']['output'];
 };
 
+export type OperatorLoadingSummary = {
+  __typename?: 'OperatorLoadingSummary';
+  lastActivity: Scalars['DateTime']['output'];
+  loadActions: Scalars['Int']['output'];
+  operatorName: Scalars['String']['output'];
+  totalActions: Scalars['Int']['output'];
+  totalQuantity: Scalars['Int']['output'];
+  unloadActions: Scalars['Int']['output'];
+};
+
 export type OperatorPerformance = {
   __typename?: 'OperatorPerformance';
   averageDuration: Scalars['Float']['output'];
@@ -1940,27 +3076,22 @@ export type OperatorTrend = {
 
 export type Order = {
   __typename?: 'Order';
-  billingAddress?: Maybe<Address>;
+  accountNum: Scalars['String']['output'];
   createdAt: Scalars['DateTime']['output'];
-  createdBy: User;
-  customer: Customer;
-  customerCode: Scalars['String']['output'];
-  deliveredDate?: Maybe<Scalars['DateTime']['output']>;
-  id: Scalars['ID']['output'];
-  items: Array<OrderItem>;
-  orderDate: Scalars['DateTime']['output'];
-  orderNumber: Scalars['String']['output'];
-  paymentStatus?: Maybe<PaymentStatus>;
-  requiredDate?: Maybe<Scalars['DateTime']['output']>;
-  shippedDate?: Maybe<Scalars['DateTime']['output']>;
-  shippingAddress: Address;
-  shippingStatus?: Maybe<ShippingStatus>;
-  status: OrderStatus;
-  totalItems: Scalars['Int']['output'];
-  totalQuantity: Scalars['Int']['output'];
-  totalValue: Scalars['Float']['output'];
-  trackingNumber?: Maybe<Scalars['String']['output']>;
-  updatedAt: Scalars['DateTime']['output'];
+  customerRef?: Maybe<Scalars['String']['output']>;
+  deliveryAdd: Scalars['String']['output'];
+  invoiceTo: Scalars['String']['output'];
+  loadedQty: Scalars['String']['output'];
+  orderRef: Scalars['String']['output'];
+  product?: Maybe<Product>;
+  productCode: Scalars['String']['output'];
+  productDesc: Scalars['String']['output'];
+  productQty: Scalars['Int']['output'];
+  token: Scalars['Int']['output'];
+  unitPrice: Scalars['String']['output'];
+  uploadedBy: Scalars['String']['output'];
+  uuid: Scalars['ID']['output'];
+  weight?: Maybe<Scalars['Int']['output']>;
 };
 
 export type OrderAnalysisResult = {
@@ -2056,12 +3187,57 @@ export enum OrderItemStatus {
   Shipped = 'SHIPPED',
 }
 
+export enum OrderLoadingActionType {
+  Adjust = 'ADJUST',
+  Load = 'LOAD',
+  Transfer = 'TRANSFER',
+  Unload = 'UNLOAD',
+}
+
 export type OrderLoadingFilterInput = {
   actionBy?: InputMaybe<Scalars['String']['input']>;
   endDate: Scalars['String']['input'];
   orderRef?: InputMaybe<Scalars['String']['input']>;
   productCode?: InputMaybe<Scalars['String']['input']>;
   startDate: Scalars['String']['input'];
+};
+
+export type OrderLoadingHistory = {
+  __typename?: 'OrderLoadingHistory';
+  actionBy: Scalars['String']['output'];
+  actionTime?: Maybe<Scalars['DateTime']['output']>;
+  actionType: Scalars['String']['output'];
+  operator?: Maybe<User>;
+  orderRef: Scalars['String']['output'];
+  pallet?: Maybe<Pallet>;
+  palletNum: Scalars['String']['output'];
+  product?: Maybe<Product>;
+  productCode: Scalars['String']['output'];
+  quantity: Scalars['Int']['output'];
+  remark?: Maybe<Scalars['String']['output']>;
+  uuid: Scalars['ID']['output'];
+};
+
+export type OrderLoadingHistoryConnection = {
+  __typename?: 'OrderLoadingHistoryConnection';
+  edges: Array<OrderLoadingHistoryEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type OrderLoadingHistoryEdge = {
+  __typename?: 'OrderLoadingHistoryEdge';
+  cursor: Scalars['String']['output'];
+  node: OrderLoadingHistory;
+};
+
+export type OrderLoadingHistoryFilterInput = {
+  actionBy?: InputMaybe<Scalars['String']['input']>;
+  actionType?: InputMaybe<OrderLoadingActionType>;
+  dateRange?: InputMaybe<DateRangeInput>;
+  orderRef?: InputMaybe<Scalars['String']['input']>;
+  palletNum?: InputMaybe<Scalars['String']['input']>;
+  productCode?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type OrderLoadingRecord = {
@@ -2079,6 +3255,19 @@ export type OrderLoadingResponse = {
   records: Array<OrderLoadingRecord>;
   summary?: Maybe<LoadingSummary>;
   total: Scalars['Int']['output'];
+};
+
+export type OrderLoadingSummary = {
+  __typename?: 'OrderLoadingSummary';
+  dailyActivity: Array<DailyLoadingActivity>;
+  netQuantityChange: Scalars['Int']['output'];
+  topOperators: Array<OperatorLoadingSummary>;
+  totalQuantityLoaded: Scalars['Int']['output'];
+  totalQuantityUnloaded: Scalars['Int']['output'];
+  totalRecords: Scalars['Int']['output'];
+  uniqueOrders: Scalars['Int']['output'];
+  uniquePallets: Scalars['Int']['output'];
+  uniqueProducts: Scalars['Int']['output'];
 };
 
 export type OrderMetrics = {
@@ -2121,23 +3310,16 @@ export type PaginationInput = {
 
 export type Pallet = {
   __typename?: 'Pallet';
-  batchNumber?: Maybe<Scalars['String']['output']>;
-  createdAt: Scalars['DateTime']['output'];
-  createdBy: User;
-  expiryDate?: Maybe<Scalars['DateTime']['output']>;
-  grn?: Maybe<Grn>;
-  grnNumber?: Maybe<Scalars['String']['output']>;
+  generateTime: Scalars['DateTime']['output'];
   history: Array<HistoryRecord>;
-  lastModifiedBy?: Maybe<User>;
-  location?: Maybe<Location>;
-  manufactureDate?: Maybe<Scalars['DateTime']['output']>;
+  pdfUrl?: Maybe<Scalars['String']['output']>;
   pltNum: Scalars['ID']['output'];
+  pltRemark?: Maybe<Scalars['String']['output']>;
   product: Product;
   productCode: Scalars['String']['output'];
   quantity: Scalars['Int']['output'];
-  status: PalletStatus;
+  series: Scalars['String']['output'];
   transfers: TransferConnection;
-  updatedAt: Scalars['DateTime']['output'];
 };
 
 export type PalletHistoryArgs = {
@@ -2212,6 +3394,40 @@ export type PalletHistoryResult = {
   totalRecords: Scalars['Int']['output'];
 };
 
+export type PalletNumberBuffer = {
+  __typename?: 'PalletNumberBuffer';
+  createdAt: Scalars['DateTime']['output'];
+  dateStr: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  isExpired: Scalars['Boolean']['output'];
+  isUsed: Scalars['Boolean']['output'];
+  palletNumber: Scalars['String']['output'];
+  series: Scalars['String']['output'];
+  updatedAt?: Maybe<Scalars['DateTime']['output']>;
+  used: Scalars['String']['output'];
+};
+
+export type PalletNumberBufferConnection = {
+  __typename?: 'PalletNumberBufferConnection';
+  edges: Array<PalletNumberBufferEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type PalletNumberBufferEdge = {
+  __typename?: 'PalletNumberBufferEdge';
+  cursor: Scalars['String']['output'];
+  node: PalletNumberBuffer;
+};
+
+export type PalletNumberBufferFilterInput = {
+  dateRange?: InputMaybe<DateRangeInput>;
+  dateStr?: InputMaybe<Scalars['String']['input']>;
+  isExpired?: InputMaybe<Scalars['Boolean']['input']>;
+  isUsed?: InputMaybe<Scalars['Boolean']['input']>;
+  series?: InputMaybe<Scalars['String']['input']>;
+};
+
 export enum PalletStatus {
   Active = 'ACTIVE',
   Damaged = 'DAMAGED',
@@ -2230,6 +3446,14 @@ export type PalletTimeline = {
   totalMovements: Scalars['Int']['output'];
 };
 
+export type PalletVoidSummary = {
+  __typename?: 'PalletVoidSummary';
+  lastVoidDate: Scalars['DateTime']['output'];
+  pltNum: Scalars['String']['output'];
+  totalDamage: Scalars['Int']['output'];
+  voidCount: Scalars['Int']['output'];
+};
+
 export enum PaymentStatus {
   Cancelled = 'CANCELLED',
   Paid = 'PAID',
@@ -2246,26 +3470,37 @@ export type PerformanceMetrics = {
   totalQueries: Scalars['Int']['output'];
 };
 
+export enum PerformanceRating {
+  Average = 'AVERAGE',
+  Critical = 'CRITICAL',
+  Excellent = 'EXCELLENT',
+  Good = 'GOOD',
+  Poor = 'POOR',
+}
+
+export type PeriodComparison = {
+  __typename?: 'PeriodComparison';
+  currentPeriodTotal: Scalars['Int']['output'];
+  growthPercentage: Scalars['Float']['output'];
+  previousPeriodTotal: Scalars['Int']['output'];
+};
+
 export type Product = {
   __typename?: 'Product';
   chinese_description?: Maybe<Scalars['String']['output']>;
   code: Scalars['ID']['output'];
-  colour?: Maybe<Scalars['String']['output']>;
-  createdAt: Scalars['DateTime']['output'];
+  colour: Scalars['String']['output'];
   description: Scalars['String']['output'];
   inventory?: Maybe<InventorySummary>;
-  isActive: Scalars['Boolean']['output'];
   pallets: PalletConnection;
   prod_type?: Maybe<Scalars['String']['output']>;
   product_code: Scalars['String']['output'];
   product_description?: Maybe<Scalars['String']['output']>;
-  standardQty?: Maybe<Scalars['Int']['output']>;
+  remark?: Maybe<Scalars['String']['output']>;
+  standardQty: Scalars['Int']['output'];
   statistics?: Maybe<ProductStatistics>;
-  type?: Maybe<Scalars['String']['output']>;
+  type: Scalars['String']['output'];
   unit?: Maybe<Scalars['String']['output']>;
-  updatedAt: Scalars['DateTime']['output'];
-  volumePerPiece?: Maybe<Scalars['Float']['output']>;
-  weightPerPiece?: Maybe<Scalars['Float']['output']>;
 };
 
 export type ProductPalletsArgs = {
@@ -2386,7 +3621,7 @@ export enum QcStatus {
   Pending = 'PENDING',
 }
 
-export type QualityMetrics = WidgetData & {
+export type QualityMetrics = CardData & {
   __typename?: 'QualityMetrics';
   acceptedGRNs: Scalars['Int']['output'];
   dataSource: Scalars['String']['output'];
@@ -2409,14 +3644,30 @@ export type QualityMetrics = WidgetData & {
 export type Query = {
   __typename?: 'Query';
   acoOrderReport: AcoOrderReportResponse;
+  acoRecord?: Maybe<AcoRecord>;
+  acoRecordSummary: AcoRecordSummary;
+  acoRecords: AcoRecordConnection;
+  acoRecordsByOrder: Array<AcoRecord>;
+  acoRecordsByProduct: Array<AcoRecord>;
+  activeApiConfigs: Array<ApiConfig>;
   alertCardData: AlertCardData;
   alertChannels: Array<NotificationChannel>;
   alertDetails?: Maybe<Alert>;
   alertHistory: Array<Alert>;
   alertRules: Array<AlertRule>;
+  apiConfig?: Maybe<ApiConfig>;
+  apiConfigs: ApiConfigConnection;
+  apiConfigsByType: Array<ApiConfig>;
   availableCharts: Array<ChartConfig>;
+  availablePalletNumbers: Array<PalletNumberBuffer>;
   availableStats: Array<StatsConfig>;
-  batchWidgetData: Array<WidgetDataResponse>;
+  batchCardData: Array<CardDataResponse>;
+  blockedIpAddresses: Array<ThreatStat>;
+  cacheEventsByTable: Array<CacheInvalidationEvent>;
+  cacheInvalidationEvent?: Maybe<CacheInvalidationEvent>;
+  cacheInvalidationEvents: CacheInvalidationEventConnection;
+  cacheOptimizedQueries: Array<QueryPerformanceMetric>;
+  cardData: Scalars['JSON']['output'];
   chartCardData: ChartCardData;
   chartData: ChartCardData;
   configCardData: ConfigCardData;
@@ -2424,36 +3675,93 @@ export type Query = {
   configHistory: Array<ConfigHistory>;
   configItem?: Maybe<ConfigItem>;
   configTemplates: Array<ConfigTemplate>;
+  criticalStockItems: Array<StockLevel>;
+  criticalThreatStats: Array<ThreatStat>;
+  databaseMetricsByTable: Array<DatabasePerformanceMetric>;
+  databaseMetricsByType: Array<DatabasePerformanceMetric>;
+  databasePerformanceMetric?: Maybe<DatabasePerformanceMetric>;
+  databasePerformanceMetrics: DatabasePerformanceMetricConnection;
+  databasePerformanceTrends: Array<DatabasePerformanceMetric>;
   departmentInjectionData: DepartmentInjectionData;
   departmentPipeData: DepartmentPipeData;
   departmentPipeDataAdvanced: DepartmentPipeData;
   departmentWarehouseData: DepartmentWarehouseData;
   efficiencyMetrics: EfficiencyMetrics;
   estimateReportTime: Scalars['Int']['output'];
+  expiredPalletNumbers: Array<PalletNumberBuffer>;
+  expiredQueryRecords: Array<QueryRecord>;
   fileInfo?: Maybe<FileInfo>;
+  fileInfos: FileInfoConnection;
+  fileInfosByFolder: Array<FileInfo>;
+  fileInfosByType: Array<FileInfo>;
+  fileInfosByUploader: Array<FileInfo>;
+  grnLevel?: Maybe<GrnLevel>;
+  grnLevelSummary: GrnLevelSummary;
+  grnLevels: GrnLevelConnection;
+  grnLevelsByRef: Array<GrnLevel>;
+  grnRecord?: Maybe<GrnRecord>;
+  grnRecords: GrnRecordConnection;
+  grnRecordsByPallet: Array<GrnRecord>;
+  grnRecordsByProduct: Array<GrnRecord>;
+  grnRecordsByRef: Array<GrnRecord>;
+  grnRecordsBySupplier: Array<GrnRecord>;
+  grnRecordsWithDiscrepancies: Array<GrnRecord>;
   health: SystemStatus;
+  highRiskThreatStats: Array<ThreatStat>;
+  historyRecord?: Maybe<HistoryRecord>;
+  historyRecords: HistoryRecordConnection;
+  historyRecordsByAction: Array<HistoryRecord>;
+  historyRecordsByPallet: Array<HistoryRecord>;
+  historyRecordsByUser: Array<HistoryRecord>;
   historyTree: HistoryTreeResult;
   inventories: Array<Inventory>;
   inventory?: Maybe<Inventory>;
   inventoryOrderedAnalysis: InventoryOrderedAnalysisResult;
+  lowStockItems: Array<StockLevel>;
   machineStatusRealTime: Array<MachineState>;
   mergedRecord?: Maybe<MergedRecordHistory>;
   operatorActivity: Array<OperatorSummary>;
   order?: Maybe<Order>;
   orderAnalysisResult?: Maybe<OrderAnalysisResult>;
+  orderLoadingHistories: OrderLoadingHistoryConnection;
+  orderLoadingHistory?: Maybe<OrderLoadingHistory>;
+  orderLoadingHistoryByOperator: Array<OrderLoadingHistory>;
+  orderLoadingHistoryByOrder: Array<OrderLoadingHistory>;
+  orderLoadingHistoryByPallet: Array<OrderLoadingHistory>;
   orderLoadingRecords: OrderLoadingResponse;
+  orderLoadingSummary: OrderLoadingSummary;
   orders: OrderConnection;
   pallet?: Maybe<Pallet>;
   palletHistoryByNumber: SinglePalletHistoryResult;
   palletHistoryByProduct: PalletHistoryResult;
+  palletNumberBuffer?: Maybe<PalletNumberBuffer>;
+  palletNumberBuffers: PalletNumberBufferConnection;
+  palletNumberBuffersBySeries: Array<PalletNumberBuffer>;
   pallets: PalletConnection;
   product?: Maybe<Product>;
   productFormOptions: ProductFormOptions;
   productStatistics: ProductStatistics;
   products: ProductConnection;
   qualityMetrics: QualityMetrics;
+  queryPerformanceAnalysis: QueryPerformanceAnalysis;
+  queryPerformanceByFunction: Array<QueryPerformanceMetric>;
+  queryPerformanceBySession: Array<QueryPerformanceMetric>;
+  queryPerformanceByUser: Array<QueryPerformanceMetric>;
+  queryPerformanceMetric?: Maybe<QueryPerformanceMetric>;
+  queryPerformanceMetrics: QueryPerformanceMetricConnection;
+  queryPerformanceTrends: QueryPerformanceAnalysis;
+  queryPerformanceWithErrors: Array<QueryPerformanceMetric>;
+  queryRecord?: Maybe<QueryRecord>;
+  queryRecords: QueryRecordConnection;
+  queryRecordsBySession: Array<QueryRecord>;
+  queryRecordsByUser: Array<QueryRecord>;
+  queryRecordsWithResults: Array<QueryRecord>;
   rawRecordHistory: Array<RecordHistoryEntry>;
   realTimeStockLevels: StockItemConnection;
+  recentCacheEvents: Array<CacheInvalidationEvent>;
+  recentHistoryRecords: Array<HistoryRecord>;
+  recentThreatStats: Array<ThreatStat>;
+  recentUploads: Array<FileInfo>;
   recordHistory: RecordHistoryResult;
   recordHistorySearchSuggestions: Array<Scalars['String']['output']>;
   recordHistoryTrends: RecordHistoryTrends;
@@ -2462,41 +3770,101 @@ export type Query = {
   reportDetails?: Maybe<GeneratedReport>;
   reportProgress: Array<ReportGenerationProgress>;
   reportTemplates: Array<ReportTemplate>;
+  reportVoid?: Maybe<ReportVoid>;
+  reportVoidSummary: ReportVoidSummary;
+  reportVoids: ReportVoidConnection;
+  reportVoidsByDateRange: Array<ReportVoid>;
+  reportVoidsByPallet: Array<ReportVoid>;
+  reportVoidsByReason: Array<ReportVoid>;
   searchFiles: FileSearchResult;
   searchProducts: Array<Product>;
   searchReports: ReportSearchResult;
+  searchSlateInfos: Array<SlateInfo>;
   searchSuppliers: Array<Supplier>;
+  slateInfo?: Maybe<SlateInfo>;
+  slateInfoStatistics: SlateInfoStatistics;
+  slateInfos: SlateInfoConnection;
+  slowDatabaseQueries: Array<DatabasePerformanceMetric>;
+  slowQueryPerformances: Array<QueryPerformanceMetric>;
+  slowQueryRecords: Array<QueryRecord>;
   statData: StatsData;
   statsCardData: StatsCardData;
   stockDistribution: StockDistributionResult;
   stockHistoryStats: StockHistoryStats;
+  stockLevelAnalysis: StockLevelAnalysis;
+  stockLevelByCode?: Maybe<StockLevel>;
   stockLevelChart: StockLevelChartResult;
+  stockLevelData?: Maybe<StockLevel>;
+  stockLevelDatas: StockLevelConnection;
   stockLevelList: StockLevelListResult;
   stockLevelStats: StockLevelStats;
   stockLevels: StockLevelData;
+  stocktakeRecord?: Maybe<StocktakeRecord>;
+  stocktakeRecords: StocktakeRecordConnection;
+  stocktakeRecordsByPallet: Array<StocktakeRecord>;
+  stocktakeRecordsByProduct: Array<StocktakeRecord>;
+  stocktakeVarianceReport: Array<StocktakeRecord>;
+  stocktakeVarianceSummary: StocktakeVarianceSummary;
   supplier?: Maybe<Supplier>;
   supplierPerformance: SupplierPerformance;
   suppliers: SupplierConnection;
+  systemApiConfigs: Array<ApiConfig>;
   systemPerformance: SystemPerformance;
+  threatAnalysis: ThreatAnalysis;
+  threatStat?: Maybe<ThreatStat>;
+  threatStats: ThreatStatConnection;
+  threatStatsByIpAddress: Array<ThreatStat>;
+  threatStatsBySeverity: Array<ThreatStat>;
+  threatStatsByType: Array<ThreatStat>;
+  topPerformers: Array<WorkLevel>;
   topProductsByQuantity: TopProductsResult;
   transfer?: Maybe<Transfer>;
   transfers: TransferConnection;
   unifiedOperations: UnifiedOperationsData;
+  unprocessedCacheEvents: Array<CacheInvalidationEvent>;
   updateStatistics: UpdateStatistics;
   uploadCardData: UploadCardData;
   uploadConfig: UploadConfig;
   uploadProgress: Array<UploadProgress>;
   uploadStatistics: UploadStatistics;
+  usedPalletNumbers: Array<PalletNumberBuffer>;
   validateConfig: ConfigValidation;
   warehouseOrder?: Maybe<WarehouseOrder>;
   warehouseOrders: WarehouseOrdersResponse;
-  widgetData: Scalars['JSON']['output'];
   workLevel?: Maybe<WorkLevel>;
+  workLevelEnhanced?: Maybe<WorkLevel>;
   workLevels: Array<WorkLevel>;
+  workLevelsByUser: Array<WorkLevel>;
+  workLevelsEnhanced: WorkLevelConnection;
+  workLevelsSummary: WorkLevelSummary;
 };
 
 export type QueryAcoOrderReportArgs = {
   reference: Scalars['String']['input'];
+};
+
+export type QueryAcoRecordArgs = {
+  code?: InputMaybe<Scalars['String']['input']>;
+  orderRef?: InputMaybe<Scalars['Int']['input']>;
+  uuid?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type QueryAcoRecordSummaryArgs = {
+  dateRange?: InputMaybe<DateRangeInput>;
+};
+
+export type QueryAcoRecordsArgs = {
+  filter?: InputMaybe<AcoRecordFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<SortInput>;
+};
+
+export type QueryAcoRecordsByOrderArgs = {
+  orderRef: Scalars['Int']['input'];
+};
+
+export type QueryAcoRecordsByProductArgs = {
+  code: Scalars['String']['input'];
 };
 
 export type QueryAlertCardDataArgs = {
@@ -2513,8 +3881,28 @@ export type QueryAlertHistoryArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type QueryApiConfigArgs = {
+  name?: InputMaybe<Scalars['String']['input']>;
+  uuid?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type QueryApiConfigsArgs = {
+  filter?: InputMaybe<ApiConfigFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<SortInput>;
+};
+
+export type QueryApiConfigsByTypeArgs = {
+  configType: ApiConfigType;
+};
+
 export type QueryAvailableChartsArgs = {
   category?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type QueryAvailablePalletNumbersArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  series?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type QueryAvailableStatsArgs = {
@@ -2522,8 +3910,28 @@ export type QueryAvailableStatsArgs = {
   includeDisabled?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
-export type QueryBatchWidgetDataArgs = {
-  requests: Array<WidgetDataRequest>;
+export type QueryBatchCardDataArgs = {
+  requests: Array<CardDataRequest>;
+};
+
+export type QueryCacheEventsByTableArgs = {
+  tableName: Scalars['String']['input'];
+};
+
+export type QueryCacheInvalidationEventArgs = {
+  id: Scalars['ID']['input'];
+};
+
+export type QueryCacheInvalidationEventsArgs = {
+  filter?: InputMaybe<CacheInvalidationEventFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<SortInput>;
+};
+
+export type QueryCardDataArgs = {
+  dataSource: Scalars['String']['input'];
+  params?: InputMaybe<Scalars['JSON']['input']>;
+  timeFrame?: InputMaybe<DateRangeInput>;
 };
 
 export type QueryChartCardDataArgs = {
@@ -2559,6 +3967,29 @@ export type QueryConfigTemplatesArgs = {
   scope?: InputMaybe<ConfigScope>;
 };
 
+export type QueryDatabaseMetricsByTableArgs = {
+  tableName: Scalars['String']['input'];
+};
+
+export type QueryDatabaseMetricsByTypeArgs = {
+  queryType: Scalars['String']['input'];
+};
+
+export type QueryDatabasePerformanceMetricArgs = {
+  id: Scalars['ID']['input'];
+};
+
+export type QueryDatabasePerformanceMetricsArgs = {
+  filter?: InputMaybe<DatabasePerformanceMetricFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<SortInput>;
+};
+
+export type QueryDatabasePerformanceTrendsArgs = {
+  dateRange?: InputMaybe<DateRangeInput>;
+  metricName: Scalars['String']['input'];
+};
+
 export type QueryDepartmentPipeDataAdvancedArgs = {
   materialFilter?: InputMaybe<StockFilterInput>;
   materialPagination?: InputMaybe<PaginationInput>;
@@ -2577,8 +4008,98 @@ export type QueryEstimateReportTimeArgs = {
   input: ReportGenerationInput;
 };
 
+export type QueryExpiredPalletNumbersArgs = {
+  dateStr?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type QueryFileInfoArgs = {
   id: Scalars['ID']['input'];
+  uuid: Scalars['ID']['input'];
+};
+
+export type QueryFileInfosArgs = {
+  filter?: InputMaybe<FileInfoFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<SortInput>;
+};
+
+export type QueryFileInfosByFolderArgs = {
+  folder: Scalars['String']['input'];
+};
+
+export type QueryFileInfosByTypeArgs = {
+  docType: Scalars['String']['input'];
+};
+
+export type QueryFileInfosByUploaderArgs = {
+  uploadBy: Scalars['Int']['input'];
+};
+
+export type QueryGrnLevelArgs = {
+  grnRef?: InputMaybe<Scalars['Int']['input']>;
+  uuid?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type QueryGrnLevelSummaryArgs = {
+  dateRange?: InputMaybe<DateRangeInput>;
+};
+
+export type QueryGrnLevelsArgs = {
+  filter?: InputMaybe<GrnLevelFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<SortInput>;
+};
+
+export type QueryGrnLevelsByRefArgs = {
+  grnRef: Scalars['Int']['input'];
+};
+
+export type QueryGrnRecordArgs = {
+  uuid: Scalars['ID']['input'];
+};
+
+export type QueryGrnRecordsArgs = {
+  filter?: InputMaybe<GrnRecordFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<SortInput>;
+};
+
+export type QueryGrnRecordsByPalletArgs = {
+  pltNum: Scalars['String']['input'];
+};
+
+export type QueryGrnRecordsByProductArgs = {
+  materialCode: Scalars['String']['input'];
+};
+
+export type QueryGrnRecordsByRefArgs = {
+  grnRef: Scalars['Int']['input'];
+};
+
+export type QueryGrnRecordsBySupplierArgs = {
+  supCode: Scalars['String']['input'];
+};
+
+export type QueryHistoryRecordArgs = {
+  uuid: Scalars['ID']['input'];
+};
+
+export type QueryHistoryRecordsArgs = {
+  filter?: InputMaybe<HistoryRecordFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<SortInput>;
+};
+
+export type QueryHistoryRecordsByActionArgs = {
+  action: Scalars['String']['input'];
+};
+
+export type QueryHistoryRecordsByPalletArgs = {
+  pltNum: Scalars['String']['input'];
+};
+
+export type QueryHistoryRecordsByUserArgs = {
+  userId: Scalars['Int']['input'];
 };
 
 export type QueryHistoryTreeArgs = {
@@ -2596,6 +4117,10 @@ export type QueryInventoryArgs = {
 
 export type QueryInventoryOrderedAnalysisArgs = {
   input?: InputMaybe<InventoryOrderedAnalysisInput>;
+};
+
+export type QueryLowStockItemsArgs = {
+  threshold?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type QueryMachineStatusRealTimeArgs = {
@@ -2619,8 +4144,35 @@ export type QueryOrderAnalysisResultArgs = {
   uploadId: Scalars['ID']['input'];
 };
 
+export type QueryOrderLoadingHistoriesArgs = {
+  filter?: InputMaybe<OrderLoadingHistoryFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<SortInput>;
+};
+
+export type QueryOrderLoadingHistoryArgs = {
+  uuid: Scalars['ID']['input'];
+};
+
+export type QueryOrderLoadingHistoryByOperatorArgs = {
+  actionBy: Scalars['String']['input'];
+  dateRange?: InputMaybe<DateRangeInput>;
+};
+
+export type QueryOrderLoadingHistoryByOrderArgs = {
+  orderRef: Scalars['String']['input'];
+};
+
+export type QueryOrderLoadingHistoryByPalletArgs = {
+  palletNum: Scalars['String']['input'];
+};
+
 export type QueryOrderLoadingRecordsArgs = {
   input: OrderLoadingFilterInput;
+};
+
+export type QueryOrderLoadingSummaryArgs = {
+  dateRange?: InputMaybe<DateRangeInput>;
 };
 
 export type QueryOrdersArgs = {
@@ -2644,6 +4196,20 @@ export type QueryPalletHistoryByProductArgs = {
   pagination?: InputMaybe<StockHistoryPagination>;
   productCode: Scalars['String']['input'];
   sort?: InputMaybe<StockHistorySort>;
+};
+
+export type QueryPalletNumberBufferArgs = {
+  id: Scalars['Int']['input'];
+};
+
+export type QueryPalletNumberBuffersArgs = {
+  filter?: InputMaybe<PalletNumberBufferFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<SortInput>;
+};
+
+export type QueryPalletNumberBuffersBySeriesArgs = {
+  series: Scalars['String']['input'];
 };
 
 export type QueryPalletsArgs = {
@@ -2672,6 +4238,55 @@ export type QueryQualityMetricsArgs = {
   productCodes?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
+export type QueryQueryPerformanceAnalysisArgs = {
+  dateRange?: InputMaybe<DateRangeInput>;
+};
+
+export type QueryQueryPerformanceByFunctionArgs = {
+  functionName: Scalars['String']['input'];
+};
+
+export type QueryQueryPerformanceBySessionArgs = {
+  sessionId: Scalars['String']['input'];
+};
+
+export type QueryQueryPerformanceByUserArgs = {
+  userId: Scalars['Int']['input'];
+};
+
+export type QueryQueryPerformanceMetricArgs = {
+  id: Scalars['ID']['input'];
+};
+
+export type QueryQueryPerformanceMetricsArgs = {
+  filter?: InputMaybe<QueryPerformanceMetricFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<SortInput>;
+};
+
+export type QueryQueryPerformanceTrendsArgs = {
+  dateRange?: InputMaybe<DateRangeInput>;
+  functionName?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type QueryQueryRecordArgs = {
+  uuid: Scalars['ID']['input'];
+};
+
+export type QueryQueryRecordsArgs = {
+  filter?: InputMaybe<QueryRecordFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<SortInput>;
+};
+
+export type QueryQueryRecordsBySessionArgs = {
+  sessionId: Scalars['String']['input'];
+};
+
+export type QueryQueryRecordsByUserArgs = {
+  user: Scalars['String']['input'];
+};
+
 export type QueryRawRecordHistoryArgs = {
   filters?: InputMaybe<RecordHistoryFilters>;
   pagination?: InputMaybe<RecordHistoryPagination>;
@@ -2682,6 +4297,22 @@ export type QueryRealTimeStockLevelsArgs = {
   filter?: InputMaybe<StockFilterInput>;
   pagination?: InputMaybe<PaginationInput>;
   sort?: InputMaybe<StockSortInput>;
+};
+
+export type QueryRecentCacheEventsArgs = {
+  hours?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type QueryRecentHistoryRecordsArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type QueryRecentThreatStatsArgs = {
+  days?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type QueryRecentUploadsArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type QueryRecordHistoryArgs = {
@@ -2723,6 +4354,32 @@ export type QueryReportTemplatesArgs = {
   userId?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type QueryReportVoidArgs = {
+  uuid: Scalars['ID']['input'];
+};
+
+export type QueryReportVoidSummaryArgs = {
+  dateRange?: InputMaybe<DateRangeInput>;
+};
+
+export type QueryReportVoidsArgs = {
+  filter?: InputMaybe<ReportVoidFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<SortInput>;
+};
+
+export type QueryReportVoidsByDateRangeArgs = {
+  dateRange: DateRangeInput;
+};
+
+export type QueryReportVoidsByPalletArgs = {
+  pltNum: Scalars['String']['input'];
+};
+
+export type QueryReportVoidsByReasonArgs = {
+  reason: Scalars['String']['input'];
+};
+
 export type QuerySearchFilesArgs = {
   input: FileSearchInput;
 };
@@ -2736,9 +4393,37 @@ export type QuerySearchReportsArgs = {
   input: ReportSearchInput;
 };
 
+export type QuerySearchSlateInfosArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  query: Scalars['String']['input'];
+};
+
 export type QuerySearchSuppliersArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
   query: Scalars['String']['input'];
+};
+
+export type QuerySlateInfoArgs = {
+  productCode?: InputMaybe<Scalars['String']['input']>;
+  uuid?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type QuerySlateInfosArgs = {
+  filter?: InputMaybe<SlateInfoFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<SortInput>;
+};
+
+export type QuerySlowDatabaseQueriesArgs = {
+  minExecutionTime?: InputMaybe<Scalars['Float']['input']>;
+};
+
+export type QuerySlowQueryPerformancesArgs = {
+  minExecutionTime?: InputMaybe<Scalars['Float']['input']>;
+};
+
+export type QuerySlowQueryRecordsArgs = {
+  minExecutionTime?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type QueryStatDataArgs = {
@@ -2759,9 +4444,27 @@ export type QueryStockHistoryStatsArgs = {
   trendsInterval?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type QueryStockLevelAnalysisArgs = {
+  dateRange?: InputMaybe<DateRangeInput>;
+};
+
+export type QueryStockLevelByCodeArgs = {
+  stock: Scalars['String']['input'];
+};
+
 export type QueryStockLevelChartArgs = {
   days?: InputMaybe<Scalars['Int']['input']>;
   productType?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type QueryStockLevelDataArgs = {
+  uuid: Scalars['ID']['input'];
+};
+
+export type QueryStockLevelDatasArgs = {
+  filter?: InputMaybe<StockLevelFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<SortInput>;
 };
 
 export type QueryStockLevelListArgs = {
@@ -2775,6 +4478,34 @@ export type QueryStockLevelStatsArgs = {
 export type QueryStockLevelsArgs = {
   dateRange?: InputMaybe<DateRangeInput>;
   warehouse?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type QueryStocktakeRecordArgs = {
+  uuid: Scalars['ID']['input'];
+};
+
+export type QueryStocktakeRecordsArgs = {
+  filter?: InputMaybe<StocktakeRecordFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<SortInput>;
+};
+
+export type QueryStocktakeRecordsByPalletArgs = {
+  pltNum: Scalars['String']['input'];
+};
+
+export type QueryStocktakeRecordsByProductArgs = {
+  productCode: Scalars['String']['input'];
+};
+
+export type QueryStocktakeVarianceReportArgs = {
+  dateRange?: InputMaybe<DateRangeInput>;
+  minVariancePercentage?: InputMaybe<Scalars['Float']['input']>;
+};
+
+export type QueryStocktakeVarianceSummaryArgs = {
+  dateRange?: InputMaybe<DateRangeInput>;
+  minVariancePercentage?: InputMaybe<Scalars['Float']['input']>;
 };
 
 export type QuerySupplierArgs = {
@@ -2794,6 +4525,37 @@ export type QuerySuppliersArgs = {
 
 export type QuerySystemPerformanceArgs = {
   timeWindow?: InputMaybe<TimeWindow>;
+};
+
+export type QueryThreatAnalysisArgs = {
+  dateRange?: InputMaybe<DateRangeInput>;
+};
+
+export type QueryThreatStatArgs = {
+  id: Scalars['Int']['input'];
+};
+
+export type QueryThreatStatsArgs = {
+  filter?: InputMaybe<ThreatStatFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<SortInput>;
+};
+
+export type QueryThreatStatsByIpAddressArgs = {
+  ipAddress: Scalars['String']['input'];
+};
+
+export type QueryThreatStatsBySeverityArgs = {
+  severity: Scalars['String']['input'];
+};
+
+export type QueryThreatStatsByTypeArgs = {
+  eventType: Scalars['String']['input'];
+};
+
+export type QueryTopPerformersArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  operationType?: InputMaybe<WorkOperationType>;
 };
 
 export type QueryTopProductsByQuantityArgs = {
@@ -2835,6 +4597,10 @@ export type QueryUploadStatisticsArgs = {
   dateRange?: InputMaybe<DateRangeInput>;
 };
 
+export type QueryUsedPalletNumbersArgs = {
+  dateRange?: InputMaybe<DateRangeInput>;
+};
+
 export type QueryValidateConfigArgs = {
   input: ConfigItemInput;
 };
@@ -2848,20 +4614,158 @@ export type QueryWarehouseOrdersArgs = {
   input?: InputMaybe<WarehouseOrderFilterInput>;
 };
 
-export type QueryWidgetDataArgs = {
-  dataSource: Scalars['String']['input'];
-  params?: InputMaybe<Scalars['JSON']['input']>;
-  timeFrame?: InputMaybe<DateRangeInput>;
-};
-
 export type QueryWorkLevelArgs = {
   date: Scalars['DateTime']['input'];
   userId: Scalars['ID']['input'];
 };
 
+export type QueryWorkLevelEnhancedArgs = {
+  uuid: Scalars['ID']['input'];
+};
+
 export type QueryWorkLevelsArgs = {
   dateRange?: InputMaybe<DateRangeInput>;
   userIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+export type QueryWorkLevelsByUserArgs = {
+  userId: Scalars['Int']['input'];
+};
+
+export type QueryWorkLevelsEnhancedArgs = {
+  filter?: InputMaybe<WorkLevelFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+  sort?: InputMaybe<SortInput>;
+};
+
+export type QueryWorkLevelsSummaryArgs = {
+  dateRange?: InputMaybe<DateRangeInput>;
+};
+
+export type QueryPerformanceAnalysis = {
+  __typename?: 'QueryPerformanceAnalysis';
+  averageExecutionTime: Scalars['Float']['output'];
+  cacheHitRate: Scalars['Float']['output'];
+  errorRate: Scalars['Float']['output'];
+  performanceByComplexity: Array<ComplexityPerformance>;
+  slowQueryCount: Scalars['Int']['output'];
+  topSlowFunctions: Array<SlowFunctionSummary>;
+  totalQueries: Scalars['Int']['output'];
+};
+
+export type QueryPerformanceMetric = {
+  __typename?: 'QueryPerformanceMetric';
+  cacheHit?: Maybe<Scalars['Boolean']['output']>;
+  createdAt?: Maybe<Scalars['DateTime']['output']>;
+  errorMessage?: Maybe<Scalars['String']['output']>;
+  errorOccurred?: Maybe<Scalars['Boolean']['output']>;
+  executionTimeMs: Scalars['Float']['output'];
+  functionName: Scalars['String']['output'];
+  hasError: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  isCacheOptimized: Scalars['Boolean']['output'];
+  memoryUsageMb?: Maybe<Scalars['Float']['output']>;
+  parameters?: Maybe<Scalars['JSON']['output']>;
+  performanceScore: Scalars['Float']['output'];
+  queryComplexity?: Maybe<Scalars['String']['output']>;
+  resultCount?: Maybe<Scalars['Int']['output']>;
+  sessionId?: Maybe<Scalars['String']['output']>;
+  updatedAt: Scalars['DateTime']['output'];
+  userId?: Maybe<Scalars['Int']['output']>;
+};
+
+export type QueryPerformanceMetricConnection = {
+  __typename?: 'QueryPerformanceMetricConnection';
+  edges: Array<QueryPerformanceMetricEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type QueryPerformanceMetricEdge = {
+  __typename?: 'QueryPerformanceMetricEdge';
+  cursor: Scalars['String']['output'];
+  node: QueryPerformanceMetric;
+};
+
+export type QueryPerformanceMetricFilterInput = {
+  cacheHit?: InputMaybe<Scalars['Boolean']['input']>;
+  dateRange?: InputMaybe<DateRangeInput>;
+  functionName?: InputMaybe<Scalars['String']['input']>;
+  hasError?: InputMaybe<Scalars['Boolean']['input']>;
+  maxExecutionTime?: InputMaybe<Scalars['Float']['input']>;
+  maxMemoryUsage?: InputMaybe<Scalars['Float']['input']>;
+  minExecutionTime?: InputMaybe<Scalars['Float']['input']>;
+  minMemoryUsage?: InputMaybe<Scalars['Float']['input']>;
+  queryComplexity?: InputMaybe<Scalars['String']['input']>;
+  sessionId?: InputMaybe<Scalars['String']['input']>;
+  userId?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type QueryRecord = {
+  __typename?: 'QueryRecord';
+  answer: Scalars['String']['output'];
+  complexity?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['DateTime']['output'];
+  executionTime?: Maybe<Scalars['Int']['output']>;
+  expiredAt?: Maybe<Scalars['DateTime']['output']>;
+  expiredReason?: Maybe<Scalars['String']['output']>;
+  fuzzyHash?: Maybe<Scalars['String']['output']>;
+  hasResults: Scalars['Boolean']['output'];
+  isExpired: Scalars['Boolean']['output'];
+  query: Scalars['String']['output'];
+  queryHash?: Maybe<Scalars['String']['output']>;
+  queryType: QueryType;
+  resultJson?: Maybe<Scalars['JSON']['output']>;
+  rowCount?: Maybe<Scalars['Int']['output']>;
+  sessionId?: Maybe<Scalars['String']['output']>;
+  sqlQuery: Scalars['String']['output'];
+  token: Scalars['Int']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+  user: Scalars['String']['output'];
+  uuid: Scalars['ID']['output'];
+};
+
+export type QueryRecordConnection = {
+  __typename?: 'QueryRecordConnection';
+  edges: Array<QueryRecordEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type QueryRecordEdge = {
+  __typename?: 'QueryRecordEdge';
+  cursor: Scalars['String']['output'];
+  node: QueryRecord;
+};
+
+export type QueryRecordFilterInput = {
+  complexity?: InputMaybe<Scalars['String']['input']>;
+  dateRange?: InputMaybe<DateRangeInput>;
+  hasResults?: InputMaybe<Scalars['Boolean']['input']>;
+  isExpired?: InputMaybe<Scalars['Boolean']['input']>;
+  maxExecutionTime?: InputMaybe<Scalars['Int']['input']>;
+  minExecutionTime?: InputMaybe<Scalars['Int']['input']>;
+  queryType?: InputMaybe<QueryType>;
+  sessionId?: InputMaybe<Scalars['String']['input']>;
+  user?: InputMaybe<Scalars['String']['input']>;
+};
+
+export enum QueryType {
+  Analysis = 'ANALYSIS',
+  Delete = 'DELETE',
+  Insert = 'INSERT',
+  Report = 'REPORT',
+  Select = 'SELECT',
+  System = 'SYSTEM',
+  Update = 'UPDATE',
+}
+
+export type ReasonSummary = {
+  __typename?: 'ReasonSummary';
+  count: Scalars['Int']['output'];
+  percentage: Scalars['Float']['output'];
+  reason: Scalars['String']['output'];
+  totalDamage: Scalars['Int']['output'];
 };
 
 export type RecentActivity = {
@@ -3026,7 +4930,7 @@ export type ReportAggregation = {
   function: AggregationFunction;
 };
 
-export type ReportCardData = WidgetData & {
+export type ReportCardData = CardData & {
   __typename?: 'ReportCardData';
   activeGenerations: Array<ReportGenerationProgress>;
   config: ReportConfig;
@@ -3249,6 +5153,47 @@ export type ReportTypeStats = {
   type: ReportType;
 };
 
+export type ReportVoid = {
+  __typename?: 'ReportVoid';
+  createdAt: Scalars['DateTime']['output'];
+  damageQty: Scalars['Int']['output'];
+  pltNum: Scalars['String']['output'];
+  reason: Scalars['String']['output'];
+  time: Scalars['DateTime']['output'];
+  updatedAt: Scalars['DateTime']['output'];
+  uuid: Scalars['ID']['output'];
+};
+
+export type ReportVoidConnection = {
+  __typename?: 'ReportVoidConnection';
+  edges: Array<ReportVoidEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type ReportVoidEdge = {
+  __typename?: 'ReportVoidEdge';
+  cursor: Scalars['String']['output'];
+  node: ReportVoid;
+};
+
+export type ReportVoidFilterInput = {
+  dateRange?: InputMaybe<DateRangeInput>;
+  maxDamageQty?: InputMaybe<Scalars['Int']['input']>;
+  minDamageQty?: InputMaybe<Scalars['Int']['input']>;
+  pltNum?: InputMaybe<Scalars['String']['input']>;
+  reason?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type ReportVoidSummary = {
+  __typename?: 'ReportVoidSummary';
+  dailyVoidCounts: Array<DailyVoidCount>;
+  topPallets: Array<PalletVoidSummary>;
+  topReasons: Array<ReasonSummary>;
+  totalDamageQuantity: Scalars['Int']['output'];
+  totalRecords: Scalars['Int']['output'];
+};
+
 export type RouteMetric = {
   __typename?: 'RouteMetric';
   averageDuration: Scalars['Float']['output'];
@@ -3278,6 +5223,13 @@ export type SeverityCount = {
   count: Scalars['Int']['output'];
   percentage: Scalars['Float']['output'];
   severity: AlertSeverity;
+};
+
+export type ShapeCount = {
+  __typename?: 'ShapeCount';
+  count: Scalars['Int']['output'];
+  percentage: Scalars['Float']['output'];
+  shape: Scalars['String']['output'];
 };
 
 export type ShiftEfficiency = {
@@ -3344,6 +5296,66 @@ export type SingleUploadResult = {
   success: Scalars['Boolean']['output'];
 };
 
+export type SlateInfo = {
+  __typename?: 'SlateInfo';
+  colour?: Maybe<Scalars['String']['output']>;
+  description?: Maybe<Scalars['String']['output']>;
+  holeToBottom?: Maybe<Scalars['String']['output']>;
+  length?: Maybe<Scalars['String']['output']>;
+  product?: Maybe<Product>;
+  productCode: Scalars['String']['output'];
+  shapes?: Maybe<Scalars['String']['output']>;
+  thicknessBottom?: Maybe<Scalars['String']['output']>;
+  thicknessTop?: Maybe<Scalars['String']['output']>;
+  toolNum?: Maybe<Scalars['String']['output']>;
+  uuid: Scalars['ID']['output'];
+  weight?: Maybe<Scalars['String']['output']>;
+  width?: Maybe<Scalars['String']['output']>;
+};
+
+export type SlateInfoConnection = {
+  __typename?: 'SlateInfoConnection';
+  edges: Array<SlateInfoEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type SlateInfoEdge = {
+  __typename?: 'SlateInfoEdge';
+  cursor: Scalars['String']['output'];
+  node: SlateInfo;
+};
+
+export type SlateInfoFilterInput = {
+  colour?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  hasDimensions?: InputMaybe<Scalars['Boolean']['input']>;
+  hasWeight?: InputMaybe<Scalars['Boolean']['input']>;
+  productCode?: InputMaybe<Scalars['String']['input']>;
+  shapes?: InputMaybe<Scalars['String']['input']>;
+  toolNum?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type SlateInfoStatistics = {
+  __typename?: 'SlateInfoStatistics';
+  averageThickness?: Maybe<Scalars['Float']['output']>;
+  averageWeight?: Maybe<Scalars['Float']['output']>;
+  commonColours: Array<ColourCount>;
+  commonShapes: Array<ShapeCount>;
+  productsWithDimensions: Scalars['Int']['output'];
+  productsWithWeight: Scalars['Int']['output'];
+  totalProducts: Scalars['Int']['output'];
+};
+
+export type SlowFunctionSummary = {
+  __typename?: 'SlowFunctionSummary';
+  averageExecutionTime: Scalars['Float']['output'];
+  cacheHitRate: Scalars['Float']['output'];
+  callCount: Scalars['Int']['output'];
+  errorCount: Scalars['Int']['output'];
+  functionName: Scalars['String']['output'];
+};
+
 export enum SortDirection {
   Asc = 'ASC',
   Desc = 'DESC',
@@ -3363,7 +5375,7 @@ export type StatMetric = {
   value: Scalars['Float']['output'];
 };
 
-export type StatsCardData = WidgetData & {
+export type StatsCardData = CardData & {
   __typename?: 'StatsCardData';
   configs: Array<StatsConfig>;
   dataSource: Scalars['String']['output'];
@@ -3466,6 +5478,13 @@ export enum StockActionType {
   SystemAction = 'SYSTEM_ACTION',
 }
 
+export type StockDistribution = {
+  __typename?: 'StockDistribution';
+  count: Scalars['Int']['output'];
+  percentage: Scalars['Float']['output'];
+  status: StockStatus;
+};
+
 export type StockDistributionInput = {
   includeInactive?: InputMaybe<Scalars['Boolean']['input']>;
   limit?: InputMaybe<Scalars['Int']['input']>;
@@ -3538,7 +5557,7 @@ export type StockHistoryRecord = {
   id: Scalars['ID']['output'];
   location?: Maybe<Scalars['String']['output']>;
   metadata?: Maybe<Scalars['JSON']['output']>;
-  operator: User;
+  operator?: Maybe<User>;
   operatorName: Scalars['String']['output'];
   pallet?: Maybe<Pallet>;
   palletNumber: Scalars['String']['output'];
@@ -3623,6 +5642,41 @@ export type StockItemEdge = {
   node: StockItem;
 };
 
+/**
+ * 庫存水平記錄 (stock_level 表) - 產品庫存管理
+ * 記錄系統中各產品的當前庫存水平，用於庫存監控和補貨決策
+ * 每筆記錄代表一個產品的庫存狀況快照
+ */
+export type StockLevel = {
+  __typename?: 'StockLevel';
+  /** 產品描述或名稱 */
+  description: Scalars['String']['output'];
+  /** 低庫存警告標誌，基於預設的庫存閾值判定 */
+  isLowStock: Scalars['Boolean']['output'];
+  /** 產品庫存代碼，用於識別不同的產品 */
+  stock: Scalars['String']['output'];
+  /** 當前庫存數量 */
+  stockLevel: Scalars['Int']['output'];
+  /** 庫存狀態分類 (正常/低庫存/缺貨/超庫存等) */
+  stockStatus: StockStatus;
+  /** 最後更新時間，反映庫存數據的時效性 */
+  updateTime: Scalars['DateTime']['output'];
+  /** 記錄唯一標識符 (主鍵) */
+  uuid: Scalars['ID']['output'];
+};
+
+export type StockLevelAnalysis = {
+  __typename?: 'StockLevelAnalysis';
+  averageStockLevel: Scalars['Float']['output'];
+  criticalStockCount: Scalars['Int']['output'];
+  lowStockCount: Scalars['Int']['output'];
+  outOfStockCount: Scalars['Int']['output'];
+  overstockCount: Scalars['Int']['output'];
+  stockDistribution: Array<StockDistribution>;
+  totalProducts: Scalars['Int']['output'];
+  totalStockValue?: Maybe<Scalars['Float']['output']>;
+};
+
 export type StockLevelChartPoint = {
   __typename?: 'StockLevelChartPoint';
   date: Scalars['DateTime']['output'];
@@ -3638,7 +5692,14 @@ export type StockLevelChartResult = {
   productCodes: Array<Scalars['String']['output']>;
 };
 
-export type StockLevelData = WidgetData & {
+export type StockLevelConnection = {
+  __typename?: 'StockLevelConnection';
+  edges: Array<StockLevelEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type StockLevelData = CardData & {
   __typename?: 'StockLevelData';
   dataSource: Scalars['String']['output'];
   items: Array<StockLevelItem>;
@@ -3648,12 +5709,28 @@ export type StockLevelData = WidgetData & {
   totalQuantity: Scalars['Int']['output'];
 };
 
+export type StockLevelEdge = {
+  __typename?: 'StockLevelEdge';
+  cursor: Scalars['String']['output'];
+  node: StockLevel;
+};
+
 export type StockLevelFilter = {
   dateRange?: InputMaybe<DateRangeInput>;
   maxStockLevel?: InputMaybe<Scalars['Int']['input']>;
   minStockLevel?: InputMaybe<Scalars['Int']['input']>;
   productCodes?: InputMaybe<Array<Scalars['String']['input']>>;
   productType?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type StockLevelFilterInput = {
+  dateRange?: InputMaybe<DateRangeInput>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  isLowStock?: InputMaybe<Scalars['Boolean']['input']>;
+  maxStockLevel?: InputMaybe<Scalars['Int']['input']>;
+  minStockLevel?: InputMaybe<Scalars['Int']['input']>;
+  stock?: InputMaybe<Scalars['String']['input']>;
+  stockStatus?: InputMaybe<StockStatus>;
 };
 
 export type StockLevelItem = {
@@ -3713,6 +5790,15 @@ export type StockSortInput = {
   field: StockSortField;
 };
 
+export enum StockStatus {
+  Critical = 'CRITICAL',
+  Low = 'LOW',
+  Normal = 'NORMAL',
+  OutOfStock = 'OUT_OF_STOCK',
+  Overstock = 'OVERSTOCK',
+  Reserved = 'RESERVED',
+}
+
 export type StockTrendPoint = {
   __typename?: 'StockTrendPoint';
   label?: Maybe<Scalars['String']['output']>;
@@ -3728,31 +5814,137 @@ export enum StockUpdateType {
   VoidOperation = 'VOID_OPERATION',
 }
 
+export type StocktakeRecord = {
+  __typename?: 'StocktakeRecord';
+  countedId?: Maybe<Scalars['Int']['output']>;
+  countedName?: Maybe<Scalars['String']['output']>;
+  countedQty?: Maybe<Scalars['Int']['output']>;
+  counter?: Maybe<User>;
+  createdAt?: Maybe<Scalars['DateTime']['output']>;
+  pallet?: Maybe<Pallet>;
+  pltNum?: Maybe<Scalars['String']['output']>;
+  product?: Maybe<Product>;
+  productCode: Scalars['String']['output'];
+  productDesc: Scalars['String']['output'];
+  remainQty?: Maybe<Scalars['Int']['output']>;
+  status: StocktakeStatus;
+  uuid: Scalars['ID']['output'];
+  variance?: Maybe<Scalars['Int']['output']>;
+  variancePercentage?: Maybe<Scalars['Float']['output']>;
+};
+
+export type StocktakeRecordConnection = {
+  __typename?: 'StocktakeRecordConnection';
+  edges: Array<StocktakeRecordEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type StocktakeRecordEdge = {
+  __typename?: 'StocktakeRecordEdge';
+  cursor: Scalars['String']['output'];
+  node: StocktakeRecord;
+};
+
+export type StocktakeRecordFilterInput = {
+  countedBy?: InputMaybe<Scalars['String']['input']>;
+  dateRange?: InputMaybe<DateRangeInput>;
+  hasVariance?: InputMaybe<Scalars['Boolean']['input']>;
+  minVariancePercentage?: InputMaybe<Scalars['Float']['input']>;
+  pltNum?: InputMaybe<Scalars['String']['input']>;
+  productCode?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<StocktakeStatus>;
+};
+
+export enum StocktakeStatus {
+  Approved = 'APPROVED',
+  Counted = 'COUNTED',
+  NotCounted = 'NOT_COUNTED',
+  Rejected = 'REJECTED',
+  Variance = 'VARIANCE',
+}
+
+export type StocktakeVarianceSummary = {
+  __typename?: 'StocktakeVarianceSummary';
+  averageVariancePercentage: Scalars['Float']['output'];
+  recordsWithVariance: Scalars['Int']['output'];
+  topVarianceProducts: Array<VarianceProductSummary>;
+  totalRecords: Scalars['Int']['output'];
+  totalVariance: Scalars['Int']['output'];
+  totalVarianceValue?: Maybe<Scalars['Float']['output']>;
+};
+
 export type Subscription = {
   __typename?: 'Subscription';
+  acoRecordCompleted: AcoRecord;
+  acoRecordProgressUpdated: AcoRecord;
   alertStatisticsUpdated: AlertStatistics;
   alertStatusChanged: Alert;
   analysisCompleted: OrderAnalysisResult;
+  apiConfigActivated: ApiConfig;
+  apiConfigDeactivated: ApiConfig;
+  apiConfigUpdated: ApiConfig;
+  cacheInvalidationEventCreated: CacheInvalidationEvent;
+  cacheInvalidationEventProcessed: CacheInvalidationEvent;
+  cacheInvalidationRequired: CacheInvalidationEvent;
+  cachePerformanceUpdate: QueryPerformanceMetric;
   chartUpdated: ChartCardData;
   configBatchChanged: Array<ConfigItem>;
   configChanged: ConfigItem;
   configValidationChanged: ConfigValidation;
+  criticalThreatDetected: ThreatStat;
+  databaseMetricCreated: DatabasePerformanceMetric;
+  databasePerformanceAlert: DatabasePerformanceMetric;
   fileUploaded: FileInfo;
+  grnLevelUpdated: GrnLevel;
   highFrequencyAlert: MergedRecordHistory;
+  highRiskIpDetected: ThreatStat;
   inventoryUpdated: Inventory;
   newAlert: Alert;
   newReportAvailable: GeneratedReport;
   operatorActivityAlert: OperatorEfficiency;
+  orderLoadingActivity: OrderLoadingHistory;
   orderStatusChanged: Order;
+  palletNumberBufferCreated: PalletNumberBuffer;
+  palletNumberBufferExpired: PalletNumberBuffer;
+  palletNumberBufferUsed: PalletNumberBuffer;
+  queryErrorDetected: QueryPerformanceMetric;
+  queryPerformanceAlert: QueryPerformanceMetric;
+  queryRecordCreated: QueryRecord;
+  queryRecordExpired: QueryRecord;
   recordHistoryUpdated: RecordHistoryUpdate;
   reportGenerated: GeneratedReport;
   reportGenerationError: Scalars['String']['output'];
   reportProgressUpdated: ReportGenerationProgress;
+  reportVoidCreated: ReportVoid;
+  reportVoidDeleted: ReportVoid;
+  reportVoidUpdated: ReportVoid;
+  slateInfoUpdated: SlateInfo;
+  slowDatabaseQueryDetected: DatabasePerformanceMetric;
+  slowQueryDetected: QueryRecord;
+  slowQueryPerformanceDetected: QueryPerformanceMetric;
   statsUpdated: StatsData;
+  stockLevelChanged: StockLevel;
+  stockLevelCriticalAlert: StockLevel;
+  stockLevelLowAlert: StockLevel;
+  stockLevelUpdated: StockLevel;
+  stocktakeRecordApproved: StocktakeRecord;
+  stocktakeRecordUpdated: StocktakeRecord;
   systemAlert: SystemAlert;
+  threatStatCreated: ThreatStat;
+  threatStatDeleted: ThreatStat;
+  threatStatUpdated: ThreatStat;
   transferStatusChanged: Transfer;
   uploadError: Scalars['String']['output'];
   uploadProgressUpdated: UploadProgress;
+};
+
+export type SubscriptionAcoRecordCompletedArgs = {
+  productCodes?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type SubscriptionAcoRecordProgressUpdatedArgs = {
+  orderRefs?: InputMaybe<Array<Scalars['Int']['input']>>;
 };
 
 export type SubscriptionAlertStatusChangedArgs = {
@@ -3761,6 +5953,18 @@ export type SubscriptionAlertStatusChangedArgs = {
 
 export type SubscriptionAnalysisCompletedArgs = {
   uploadId: Scalars['ID']['input'];
+};
+
+export type SubscriptionApiConfigUpdatedArgs = {
+  configNames?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type SubscriptionCacheInvalidationEventCreatedArgs = {
+  tableNames?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type SubscriptionCacheInvalidationRequiredArgs = {
+  tableNames?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type SubscriptionChartUpdatedArgs = {
@@ -3778,8 +5982,20 @@ export type SubscriptionConfigChangedArgs = {
   scope?: InputMaybe<ConfigScope>;
 };
 
+export type SubscriptionDatabaseMetricCreatedArgs = {
+  tableNames?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type SubscriptionDatabasePerformanceAlertArgs = {
+  minExecutionTime?: InputMaybe<Scalars['Float']['input']>;
+};
+
 export type SubscriptionFileUploadedArgs = {
   folder?: InputMaybe<UploadFolder>;
+};
+
+export type SubscriptionGrnLevelUpdatedArgs = {
+  grnRefs?: InputMaybe<Array<Scalars['Int']['input']>>;
 };
 
 export type SubscriptionHighFrequencyAlertArgs = {
@@ -3805,8 +6021,32 @@ export type SubscriptionOperatorActivityAlertArgs = {
   thresholdOperationsPerMinute?: InputMaybe<Scalars['Float']['input']>;
 };
 
+export type SubscriptionOrderLoadingActivityArgs = {
+  orderRefs?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
 export type SubscriptionOrderStatusChangedArgs = {
   orderNumbers?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type SubscriptionPalletNumberBufferCreatedArgs = {
+  series?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type SubscriptionPalletNumberBufferUsedArgs = {
+  series?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type SubscriptionQueryErrorDetectedArgs = {
+  functionNames?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type SubscriptionQueryPerformanceAlertArgs = {
+  functionNames?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type SubscriptionQueryRecordCreatedArgs = {
+  users?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type SubscriptionRecordHistoryUpdatedArgs = {
@@ -3827,12 +6067,52 @@ export type SubscriptionReportProgressUpdatedArgs = {
   generationIds: Array<Scalars['ID']['input']>;
 };
 
+export type SubscriptionReportVoidUpdatedArgs = {
+  pltNums?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type SubscriptionSlateInfoUpdatedArgs = {
+  productCodes?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type SubscriptionSlowQueryDetectedArgs = {
+  minExecutionTime?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export type SubscriptionStatsUpdatedArgs = {
   types: Array<StatsType>;
 };
 
+export type SubscriptionStockLevelChangedArgs = {
+  stockCodes?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type SubscriptionStockLevelLowAlertArgs = {
+  threshold?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type SubscriptionStockLevelUpdatedArgs = {
+  stockCodes?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type SubscriptionStocktakeRecordApprovedArgs = {
+  productCodes?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type SubscriptionStocktakeRecordUpdatedArgs = {
+  productCodes?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
 export type SubscriptionSystemAlertArgs = {
   severity?: InputMaybe<AlertSeverity>;
+};
+
+export type SubscriptionThreatStatCreatedArgs = {
+  eventTypes?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
+export type SubscriptionThreatStatUpdatedArgs = {
+  ipAddresses?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type SubscriptionTransferStatusChangedArgs = {
@@ -3849,26 +6129,8 @@ export type SubscriptionUploadProgressUpdatedArgs = {
 
 export type Supplier = {
   __typename?: 'Supplier';
-  address?: Maybe<Scalars['String']['output']>;
-  code: Scalars['String']['output'];
-  contact?: Maybe<Scalars['String']['output']>;
-  createdAt: Scalars['DateTime']['output'];
-  email?: Maybe<Scalars['String']['output']>;
-  grns: GrnConnection;
-  id: Scalars['ID']['output'];
-  isActive: Scalars['Boolean']['output'];
-  name: Scalars['String']['output'];
-  phone?: Maybe<Scalars['String']['output']>;
-  products?: Maybe<Array<Product>>;
-  statistics?: Maybe<SupplierStatistics>;
   supplier_code: Scalars['String']['output'];
   supplier_name?: Maybe<Scalars['String']['output']>;
-  updatedAt: Scalars['DateTime']['output'];
-};
-
-export type SupplierGrnsArgs = {
-  filter?: InputMaybe<GrnFilterInput>;
-  pagination?: InputMaybe<PaginationInput>;
 };
 
 export type SupplierConnection = {
@@ -3942,7 +6204,7 @@ export enum SystemConfigKey {
   TwoFactorAuth = 'TWO_FACTOR_AUTH',
 }
 
-export type SystemPerformance = WidgetData & {
+export type SystemPerformance = CardData & {
   __typename?: 'SystemPerformance';
   averageResponseTime: Scalars['Float']['output'];
   cpuUsage: Scalars['Float']['output'];
@@ -3968,6 +6230,81 @@ export type SystemStatus = {
   lastBackup?: Maybe<Scalars['DateTime']['output']>;
   uptime: Scalars['Int']['output'];
   version: Scalars['String']['output'];
+};
+
+export type ThreatAnalysis = {
+  __typename?: 'ThreatAnalysis';
+  criticalThreatCount: Scalars['Int']['output'];
+  highRiskIpList: Array<HighRiskIp>;
+  threatTrends: Array<ThreatTrend>;
+  topThreatTypes: Array<ThreatTypeSummary>;
+  totalThreatEvents: Scalars['Int']['output'];
+  uniqueIpCount: Scalars['Int']['output'];
+};
+
+export enum ThreatRiskLevel {
+  Critical = 'CRITICAL',
+  High = 'HIGH',
+  Low = 'LOW',
+  Medium = 'MEDIUM',
+}
+
+export type ThreatStat = {
+  __typename?: 'ThreatStat';
+  createdAt?: Maybe<Scalars['DateTime']['output']>;
+  eventDate: Scalars['Date']['output'];
+  eventType: Scalars['String']['output'];
+  firstOccurrence?: Maybe<Scalars['DateTime']['output']>;
+  id: Scalars['Int']['output'];
+  ipAddress: Scalars['String']['output'];
+  isBlocked: Scalars['Boolean']['output'];
+  isRecent: Scalars['Boolean']['output'];
+  lastOccurrence?: Maybe<Scalars['DateTime']['output']>;
+  occurrenceCount?: Maybe<Scalars['Int']['output']>;
+  riskLevel: ThreatRiskLevel;
+  severity: Scalars['String']['output'];
+  updatedAt?: Maybe<Scalars['DateTime']['output']>;
+};
+
+export type ThreatStatConnection = {
+  __typename?: 'ThreatStatConnection';
+  edges: Array<ThreatStatEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type ThreatStatEdge = {
+  __typename?: 'ThreatStatEdge';
+  cursor: Scalars['String']['output'];
+  node: ThreatStat;
+};
+
+export type ThreatStatFilterInput = {
+  dateRange?: InputMaybe<DateRangeInput>;
+  eventType?: InputMaybe<Scalars['String']['input']>;
+  ipAddress?: InputMaybe<Scalars['String']['input']>;
+  isBlocked?: InputMaybe<Scalars['Boolean']['input']>;
+  isRecent?: InputMaybe<Scalars['Boolean']['input']>;
+  maxOccurrenceCount?: InputMaybe<Scalars['Int']['input']>;
+  minOccurrenceCount?: InputMaybe<Scalars['Int']['input']>;
+  riskLevel?: InputMaybe<ThreatRiskLevel>;
+  severity?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type ThreatTrend = {
+  __typename?: 'ThreatTrend';
+  criticalCount: Scalars['Int']['output'];
+  date: Scalars['Date']['output'];
+  threatCount: Scalars['Int']['output'];
+  uniqueIpCount: Scalars['Int']['output'];
+};
+
+export type ThreatTypeSummary = {
+  __typename?: 'ThreatTypeSummary';
+  averageSeverity: Scalars['String']['output'];
+  count: Scalars['Int']['output'];
+  eventType: Scalars['String']['output'];
+  percentage: Scalars['Float']['output'];
 };
 
 export enum TimeGranularity {
@@ -4050,25 +6387,14 @@ export type TopProductsResult = {
 
 export type Transfer = {
   __typename?: 'Transfer';
-  actualDuration?: Maybe<Scalars['Int']['output']>;
-  approvedBy?: Maybe<User>;
-  completedAt?: Maybe<Scalars['DateTime']['output']>;
-  estimatedDuration?: Maybe<Scalars['Int']['output']>;
-  executedBy?: Maybe<User>;
-  fromLocation: Location;
-  id: Scalars['ID']['output'];
-  notes?: Maybe<Scalars['String']['output']>;
+  fromLocation: Scalars['String']['output'];
+  operator?: Maybe<User>;
+  operatorId: Scalars['Int']['output'];
   pallet: Pallet;
   pltNum: Scalars['String']['output'];
-  priority?: Maybe<TransferPriority>;
-  quantity: Scalars['Int']['output'];
-  reason?: Maybe<Scalars['String']['output']>;
-  requestedAt: Scalars['DateTime']['output'];
-  requestedBy: User;
-  startedAt?: Maybe<Scalars['DateTime']['output']>;
-  status: TransferStatus;
-  toLocation: Location;
-  transferNumber: Scalars['String']['output'];
+  toLocation: Scalars['String']['output'];
+  tranDate: Scalars['DateTime']['output'];
+  uuid: Scalars['ID']['output'];
 };
 
 export type TransferConnection = {
@@ -4169,7 +6495,7 @@ export type TypeCount = {
   type: AlertType;
 };
 
-export type UnifiedOperationsData = WidgetData & {
+export type UnifiedOperationsData = CardData & {
   __typename?: 'UnifiedOperationsData';
   dataSource: Scalars['String']['output'];
   lastUpdated: Scalars['DateTime']['output'];
@@ -4179,6 +6505,11 @@ export type UnifiedOperationsData = WidgetData & {
   summary: OperationsSummary;
   transfers: Array<Transfer>;
   workLevels: Array<WorkLevel>;
+};
+
+export type UpdateApiConfigInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  value?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateAcoOrderInput = {
@@ -4198,6 +6529,11 @@ export type UpdateAcoOrderResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type UpdateAcoRecordInput = {
+  finishedQty?: InputMaybe<Scalars['Int']['input']>;
+  requiredQty?: InputMaybe<Scalars['Int']['input']>;
+};
+
 export type UpdateAlertRuleInput = {
   actions?: InputMaybe<Array<AlertActionInput>>;
   conditions?: InputMaybe<Scalars['JSON']['input']>;
@@ -4205,6 +6541,41 @@ export type UpdateAlertRuleInput = {
   name?: InputMaybe<Scalars['String']['input']>;
   severity?: InputMaybe<AlertSeverity>;
   throttle?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type UpdateFileInfoInput = {
+  docName?: InputMaybe<Scalars['String']['input']>;
+  docType?: InputMaybe<Scalars['String']['input']>;
+  docUrl?: InputMaybe<Scalars['String']['input']>;
+  folder?: InputMaybe<Scalars['String']['input']>;
+  jsonTxt?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateGrnRecordInput = {
+  grossWeight?: InputMaybe<Scalars['Int']['input']>;
+  netWeight?: InputMaybe<Scalars['Int']['input']>;
+  package?: InputMaybe<Scalars['String']['input']>;
+  packageCount?: InputMaybe<Scalars['Float']['input']>;
+  pallet?: InputMaybe<Scalars['String']['input']>;
+  palletCount?: InputMaybe<Scalars['Float']['input']>;
+  qualityNotes?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<GrnRecordStatus>;
+};
+
+export type UpdateGrnLevelInput = {
+  totalGross?: InputMaybe<Scalars['Int']['input']>;
+  totalNet?: InputMaybe<Scalars['Int']['input']>;
+  totalUnit?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type UpdateHistoryRecordInput = {
+  action?: InputMaybe<Scalars['String']['input']>;
+  location?: InputMaybe<Scalars['String']['input']>;
+  remark?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdatePalletNumberBufferInput = {
+  used?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateProductInput = {
@@ -4226,7 +6597,25 @@ export type UpdateReportTemplateInput = {
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type UpdateStatistics = WidgetData & {
+export type UpdateReportVoidInput = {
+  damageQty?: InputMaybe<Scalars['Int']['input']>;
+  reason?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateSlateInfoInput = {
+  colour?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  holeToBottom?: InputMaybe<Scalars['String']['input']>;
+  length?: InputMaybe<Scalars['String']['input']>;
+  shapes?: InputMaybe<Scalars['String']['input']>;
+  thicknessBottom?: InputMaybe<Scalars['String']['input']>;
+  thicknessTop?: InputMaybe<Scalars['String']['input']>;
+  toolNum?: InputMaybe<Scalars['String']['input']>;
+  weight?: InputMaybe<Scalars['String']['input']>;
+  width?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateStatistics = CardData & {
   __typename?: 'UpdateStatistics';
   averageCompletionTime: Scalars['Float']['output'];
   backlogTrend: Array<TrendPoint>;
@@ -4249,6 +6638,18 @@ export type UpdateStatusMetric = {
   status: Scalars['String']['output'];
 };
 
+export type UpdateStockLevelInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  stockLevel?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type UpdateStocktakeRecordInput = {
+  countedId?: InputMaybe<Scalars['Int']['input']>;
+  countedName?: InputMaybe<Scalars['String']['input']>;
+  countedQty?: InputMaybe<Scalars['Int']['input']>;
+  remark?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type UpdateSupplierInput = {
   address?: InputMaybe<Scalars['String']['input']>;
   contact?: InputMaybe<Scalars['String']['input']>;
@@ -4262,6 +6663,12 @@ export type UpdateSupplierInput = {
   status?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type UpdateThreatStatInput = {
+  eventType?: InputMaybe<Scalars['String']['input']>;
+  occurrenceCount?: InputMaybe<Scalars['Int']['input']>;
+  severity?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type UpdateTypeMetric = {
   __typename?: 'UpdateTypeMetric';
   averageTime: Scalars['Float']['output'];
@@ -4270,7 +6677,14 @@ export type UpdateTypeMetric = {
   type: Scalars['String']['output'];
 };
 
-export type UploadCardData = WidgetData & {
+export type UpdateWorkLevelInput = {
+  grn?: InputMaybe<Scalars['Int']['input']>;
+  loading?: InputMaybe<Scalars['Int']['input']>;
+  move?: InputMaybe<Scalars['Int']['input']>;
+  qc?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type UploadCardData = CardData & {
   __typename?: 'UploadCardData';
   activeUploads: Array<UploadProgress>;
   config: UploadConfig;
@@ -4346,7 +6760,7 @@ export type UploadProgress = {
   uploadSpeed?: Maybe<Scalars['Float']['output']>;
 };
 
-export type UploadStatistics = WidgetData & {
+export type UploadStatistics = CardData & {
   __typename?: 'UploadStatistics';
   averageProcessingTime: Scalars['Float']['output'];
   averageUploadTime: Scalars['Float']['output'];
@@ -4393,14 +6807,16 @@ export type UploadTypeMetric = {
 
 export type User = {
   __typename?: 'User';
-  createdAt: Scalars['DateTime']['output'];
-  department?: Maybe<Scalars['String']['output']>;
-  email: Scalars['String']['output'];
+  department: Scalars['String']['output'];
+  email?: Maybe<Scalars['String']['output']>;
+  iconUrl?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   isActive: Scalars['Boolean']['output'];
   lastLogin?: Maybe<Scalars['DateTime']['output']>;
   name: Scalars['String']['output'];
+  position: Scalars['String']['output'];
   role: UserRole;
+  uuid: Scalars['String']['output'];
 };
 
 export type UserReportStats = {
@@ -4426,6 +6842,15 @@ export type UserUploadMetric = {
   successRate: Scalars['Float']['output'];
   uploadCount: Scalars['Int']['output'];
   user: User;
+};
+
+export type VarianceProductSummary = {
+  __typename?: 'VarianceProductSummary';
+  averageVariancePercentage: Scalars['Float']['output'];
+  productCode: Scalars['String']['output'];
+  productDesc: Scalars['String']['output'];
+  recordCount: Scalars['Int']['output'];
+  totalVariance: Scalars['Int']['output'];
 };
 
 export type Warehouse = {
@@ -4501,44 +6926,72 @@ export type WarehouseOrdersResponse = {
   total: Scalars['Int']['output'];
 };
 
-export type WidgetData = {
-  dataSource: Scalars['String']['output'];
-  lastUpdated: Scalars['DateTime']['output'];
-  refreshInterval?: Maybe<Scalars['Int']['output']>;
-};
-
-export type WidgetDataRequest = {
-  dataSource: Scalars['String']['input'];
-  params?: InputMaybe<Scalars['JSON']['input']>;
-  timeFrame?: InputMaybe<DateRangeInput>;
-  widgetId: Scalars['String']['input'];
-};
-
-export type WidgetDataResponse = {
-  __typename?: 'WidgetDataResponse';
-  cached: Scalars['Boolean']['output'];
-  data?: Maybe<Scalars['JSON']['output']>;
-  error?: Maybe<Error>;
-  executionTime: Scalars['Float']['output'];
-  source: DataSourceType;
-  widgetId: Scalars['String']['output'];
+export type WeightRangeInput = {
+  maxGrossWeight?: InputMaybe<Scalars['Int']['input']>;
+  maxNetWeight?: InputMaybe<Scalars['Int']['input']>;
+  minGrossWeight?: InputMaybe<Scalars['Int']['input']>;
+  minNetWeight?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type WorkLevel = {
   __typename?: 'WorkLevel';
-  averageTransferTime: Scalars['Float']['output'];
+  dailyAverage?: Maybe<Scalars['Float']['output']>;
   date: Scalars['DateTime']['output'];
-  efficiency: Scalars['Float']['output'];
-  errorRate: Scalars['Float']['output'];
-  productivityScore: Scalars['Float']['output'];
+  efficiency?: Maybe<Scalars['Float']['output']>;
+  grn: Scalars['Int']['output'];
+  id: Scalars['Int']['output'];
+  latestUpdate: Scalars['DateTime']['output'];
+  loading: Scalars['Int']['output'];
+  mostActiveOperation: WorkOperationType;
+  move: Scalars['Int']['output'];
+  productivityScore?: Maybe<Scalars['Float']['output']>;
+  qc: Scalars['Int']['output'];
+  totalOperations: Scalars['Int']['output'];
   totalPalletsHandled: Scalars['Int']['output'];
   totalQuantityMoved: Scalars['Int']['output'];
   totalTransfers: Scalars['Int']['output'];
-  transfersByHour: Array<HourlyBreakdown>;
-  transfersByLocation: Array<LocationBreakdown>;
   user: User;
   userId: Scalars['ID']['output'];
+  uuid: Scalars['ID']['output'];
+  weeklyTrend?: Maybe<Scalars['Float']['output']>;
 };
+
+export type WorkLevelConnection = {
+  __typename?: 'WorkLevelConnection';
+  edges: Array<WorkLevelEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type WorkLevelEdge = {
+  __typename?: 'WorkLevelEdge';
+  cursor: Scalars['String']['output'];
+  node: WorkLevel;
+};
+
+export type WorkLevelFilterInput = {
+  dateRange?: InputMaybe<DateRangeInput>;
+  minOperations?: InputMaybe<Scalars['Int']['input']>;
+  operationType?: InputMaybe<WorkOperationType>;
+  userId?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type WorkLevelSummary = {
+  __typename?: 'WorkLevelSummary';
+  averageOperationsPerUser: Scalars['Float']['output'];
+  operationBreakdown: Array<OperationBreakdown>;
+  periodComparison?: Maybe<PeriodComparison>;
+  topOperationType: WorkOperationType;
+  totalOperations: Scalars['Int']['output'];
+  totalUsers: Scalars['Int']['output'];
+};
+
+export enum WorkOperationType {
+  Grn = 'GRN',
+  Loading = 'LOADING',
+  Move = 'MOVE',
+  Qc = 'QC',
+}
 
 export enum WorkflowConfigKey {
   AutoApproveOrders = 'AUTO_APPROVE_ORDERS',

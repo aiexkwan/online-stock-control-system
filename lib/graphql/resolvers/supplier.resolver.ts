@@ -116,10 +116,13 @@ function buildSupplierFilter<T>(
 export const supplierResolvers: IResolvers = {
   Supplier: {
     // Map database fields to GraphQL schema
-    code: (parent) => parent.supplier_code,
-    name: (parent) => parent.supplier_name,
+    supplier_code: (parent) => parent.supplier_code,
+    supplier_name: (parent) => parent.supplier_name,
     
-    // Field resolvers for related data
+    // Removed statistics, products, grns field resolvers since they don't exist in the simplified schema
+    // The data_supplier table only has supplier_code and supplier_name fields
+    
+    /* Commented out - these fields don't exist in the simplified Supplier schema
     statistics: async (parent, _args, context: GraphQLContext) => {
       try {
         // Get supplier statistics from multiple sources
@@ -282,6 +285,7 @@ export const supplierResolvers: IResolvers = {
         throw error instanceof GraphQLError ? error : new GraphQLError(`Failed to load GRNs for supplier ${parent.supplier_code}`);
       }
     },
+    End of commented out field resolvers */
   },
 
   Query: {
@@ -345,9 +349,9 @@ export const supplierResolvers: IResolvers = {
         const edges = (data || []).map((supplier, index) => ({
           cursor: Buffer.from(supplier.supplier_code).toString('base64'),
           node: {
-            code: supplier.supplier_code,
-            name: supplier.supplier_name,
-            // Map other fields as needed
+            supplier_code: supplier.supplier_code,
+            supplier_name: supplier.supplier_name,
+            // Only these two fields exist in the simplified schema
           },
         }));
 

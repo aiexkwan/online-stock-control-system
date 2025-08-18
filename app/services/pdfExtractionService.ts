@@ -11,6 +11,7 @@ import { systemLogger } from '@/lib/logger';
 export interface ExtractedPDFData {
   text: string;
   numPages: number;
+  fileName?: string;
   info: {
     title?: string;
     author?: string;

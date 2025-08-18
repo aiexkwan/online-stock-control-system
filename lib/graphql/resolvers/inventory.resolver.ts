@@ -56,7 +56,7 @@ export const inventoryResolvers: IResolvers = {
           .limit(first);
 
         if (after) {
-          query = query.gt('id', after);
+          query = query.gt('uuid', after);
         }
 
         const { data, error } = await query;
@@ -68,13 +68,13 @@ export const inventoryResolvers: IResolvers = {
         return {
           edges: (data || []).map((item) => ({
             node: item,
-            cursor: item.id.toString(),
+            cursor: item.uuid.toString(),
           })),
           pageInfo: {
             hasNextPage: data && data.length === first,
             hasPreviousPage: !!after,
-            startCursor: data && data.length > 0 ? data[0].id.toString() : null,
-            endCursor: data && data.length > 0 ? data[data.length - 1].id.toString() : null,
+            startCursor: data && data.length > 0 ? data[0].uuid.toString() : null,
+            endCursor: data && data.length > 0 ? data[data.length - 1].uuid.toString() : null,
           },
           totalCount: data?.length || 0,
         };
@@ -93,7 +93,7 @@ export const inventoryResolvers: IResolvers = {
         const { data, error } = await supabase
           .from('record_inventory')
           .select('*')
-          .eq('id', id)
+          .eq('uuid', id)
           .single();
 
         if (error) {

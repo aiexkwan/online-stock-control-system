@@ -7,10 +7,12 @@ import type { Database } from '@/types/database/supabase';
 import { getErrorMessage } from '@/lib/types/error-handling';
 // Removed EnhancedOrderExtractionService import - now using API Route to avoid Server Components compatibility issues
 import { sendOrderCreatedEmail } from '../services/emailService';
+import acoProductService from '../services/acoProductService';
 import * as crypto from 'crypto';
 
-// ACO 產品代碼列表
-const ACO_PRODUCT_CODES = [
+// ACO 產品現在從資料庫動態載入 (type='ACO')
+// 舊的硬編碼列表保留作為備份參考
+const LEGACY_ACO_PRODUCT_CODES = [
   'MHALFWG',
   'MHALFWG15',
   'MHALFWG20',
@@ -191,8 +193,13 @@ async function storeEnhancedOrderData(
 
   insertResults = data || [];
 
-  // 處理 ACO 產品
-  const acoProducts = orderData.products.filter(p => ACO_PRODUCT_CODES.includes(p.product_code));
+  // 處理 ACO 產品 (從資料庫動態判斷 type='ACO')
+  const acoProductCodes = await acoProductService.filterACOProducts(
+    orderData.products.map(p => p.product_code)
+  );
+  const acoProducts = orderData.products.filter(p => 
+    acoProductCodes.includes(p.product_code)
+  );
 
   if (acoProducts.length > 0) {
     const acoRecords = acoProducts.map(product => ({

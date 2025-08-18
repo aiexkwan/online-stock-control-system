@@ -298,8 +298,8 @@ export const productResolvers: IResolvers = {
           // Get stock level data
           context.supabase
             .from('stock_level')
-            .select('qty, update_time')
-            .eq('product_code', parent.code)
+            .select('stock_level, update_time')
+            .eq('stock', parent.code)
             .single(),
           
           // Get pallet statistics
@@ -310,7 +310,7 @@ export const productResolvers: IResolvers = {
             .not('status', 'eq', 'VOID'),
         ]);
 
-        const totalQuantity = stockData.data?.qty || 0;
+        const totalQuantity = stockData.data?.stock_level || 0;
         const pallets = palletData.data || [];
         const totalPallets = pallets.length;
         const uniqueLocations = new Set(pallets.map(p => p.location).filter(Boolean)).size;
@@ -504,8 +504,8 @@ export const productResolvers: IResolvers = {
           // Inventory statistics
           context.supabase
             .from('stock_level')
-            .select('qty, update_time')
-            .eq('product_code', productCode)
+            .select('stock_level, update_time')
+            .eq('stock', productCode)
             .order('update_time', { ascending: false })
             .limit(1),
           
@@ -522,7 +522,7 @@ export const productResolvers: IResolvers = {
         const totalPallets = palletStats.count || 0;
         const totalQuantity = palletStats.data?.reduce((sum, p) => sum + (p.product_qty || 0), 0) || 0;
         const uniqueLocations = new Set(palletStats.data?.map(p => p.location).filter(Boolean)).size;
-        const currentStock = inventoryStats.data?.[0]?.qty || 0;
+        const currentStock = inventoryStats.data?.[0]?.stock_level || 0;
         const lastMovement = movementStats.data?.[0]?.created_at || null;
 
         return {

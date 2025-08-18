@@ -251,7 +251,9 @@ export const resolvers: IResolvers = {
   ...(supplierResolvers.Supplier ? { Supplier: supplierResolvers.Supplier } : {}),
   ...(inventoryResolvers.Inventory ? { Inventory: inventoryResolvers.Inventory } : {}),
   ...(inventoryResolvers.Pallet ? { Pallet: inventoryResolvers.Pallet } : {}),
-  ...(operationsResolvers.Transfer ? { Transfer: operationsResolvers.Transfer } : {}),
+  // Use Transfer resolvers (prioritize transferResolvers over operationsResolvers)
+  ...(transferResolvers.Transfer ? { Transfer: transferResolvers.Transfer } : 
+      operationsResolvers.Transfer ? { Transfer: operationsResolvers.Transfer } : {}),
   ...(operationsResolvers.GoodsReceipt ? { GoodsReceipt: operationsResolvers.GoodsReceipt } : {}),
   ...(operationsResolvers.QualityCheck ? { QualityCheck: operationsResolvers.QualityCheck } : {}),
   ...(stockHistoryResolvers.StockHistoryRecord ? { StockHistoryRecord: stockHistoryResolvers.StockHistoryRecord } : {}),

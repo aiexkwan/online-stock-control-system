@@ -13,17 +13,16 @@ export const operationsResolvers: IResolvers = {
       return context.loaders.pallet.load(palletNumber);
     },
 
-    requestedBy: async (parent, _args, context: GraphQLContext) => {
-      const userId = parent.requested_by || parent.requestedBy;
-      if (!userId) return null;
-      return context.loaders.user.load(userId);
+    operator: async (parent, _args, context: GraphQLContext) => {
+      // 對應實際的 operator_id 欄位
+      const operatorId = parent.operator_id || parent.operatorId;
+      if (!operatorId) return null;
+      return context.loaders.user.load(operatorId);
     },
 
-    executedBy: async (parent, _args, context: GraphQLContext) => {
-      const userId = parent.executed_by || parent.executedBy;
-      if (!userId) return null;
-      return context.loaders.user.load(userId);
-    },
+    // 註釋掉不存在的欄位
+    // requestedBy 和 executedBy 在 record_transfer 表中不存在
+    // 只有 operator_id 欄位
   },
 
   Order: {

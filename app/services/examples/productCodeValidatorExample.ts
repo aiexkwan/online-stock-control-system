@@ -52,7 +52,7 @@ export async function basicUsageExample(): Promise<void> {
     });
 
   } catch (error) {
-    exampleLogger.error('Basic usage example failed:', error);
+    exampleLogger.error(error, 'Basic usage example failed');
   }
 }
 
@@ -95,7 +95,7 @@ export async function batchProcessingExample(): Promise<void> {
     }
 
   } catch (error) {
-    exampleLogger.error('Batch processing example failed:', error);
+    exampleLogger.error(error, 'Batch processing example failed');
   }
 }
 
@@ -146,7 +146,7 @@ export async function similarityMatchingExample(): Promise<void> {
     }
 
   } catch (error) {
-    exampleLogger.error('Similarity matching example failed:', error);
+    exampleLogger.error(error, 'Similarity matching example failed');
   }
 }
 
@@ -202,7 +202,7 @@ export async function performanceMonitoringExample(): Promise<void> {
     });
 
   } catch (error) {
-    exampleLogger.error('Performance monitoring example failed:', error);
+    exampleLogger.error(error, 'Performance monitoring example failed');
   }
 }
 
@@ -225,7 +225,7 @@ export async function errorHandlingExample(): Promise<void> {
       },
       {
         name: '無效輸入類型',
-        test: () => ProductCodeValidator.validateAndEnrichCodes(null as any),
+        test: () => ProductCodeValidator.validateAndEnrichCodes(null as any), // eslint-disable-line @typescript-eslint/no-explicit-any -- Testing invalid input types intentionally
       },
     ];
 
@@ -246,7 +246,7 @@ export async function errorHandlingExample(): Promise<void> {
     console.log('詳細信息:', health.details);
 
   } catch (error) {
-    exampleLogger.error('Error handling example failed:', error);
+    exampleLogger.error(error, 'Error handling example failed');
   }
 }
 
@@ -338,7 +338,7 @@ export async function orderProcessingScenarioExample(): Promise<void> {
     console.log(`問題項目值: $${problemOrderValue.toFixed(2)} (${((problemOrderValue / totalOrderValue) * 100).toFixed(1)}%)`);
 
   } catch (error) {
-    exampleLogger.error('Order processing scenario example failed:', error);
+    exampleLogger.error(error, 'Order processing scenario example failed');
   }
 }
 

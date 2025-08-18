@@ -142,11 +142,14 @@ export interface StockLevelRecord {
 }
 
 export interface Transfer {
-  id: string;
+  id?: string;
+  uuid?: string;
   from_location?: string;
   fromLocation?: string;
+  f_loc?: string;
   to_location?: string;
   toLocation?: string;
+  t_loc?: string;
   created_at?: Date;
   createdAt?: Date;
   tran_date?: Date;

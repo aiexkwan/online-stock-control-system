@@ -23,6 +23,11 @@ import type {
   DocUploadRecord,
   UploadToastState,
 } from '../types/data-management';
+import type {
+  ExtractedOrderItem,
+  DataExtractionOverlayState,
+} from '@/lib/types/order-extraction';
+
 
 // Hook state interface
 export interface UploadManagerState {
@@ -31,6 +36,12 @@ export interface UploadManagerState {
   refreshKey: number;
   uploadToast: UploadToastState;
   isDragging: boolean;
+  pdfPreview: {
+    isOpen: boolean;
+    url?: string;
+    fileName?: string;
+  };
+  dataExtraction: DataExtractionOverlayState;
 }
 
 // Hook actions interface
@@ -38,6 +49,9 @@ export interface UploadManagerActions {
   fetchUploadRecords: () => Promise<void>;
   handleRefresh: () => void;
   handlePreviewPDF: (record: DocUploadRecord) => void;
+  closePDFPreview: () => void;
+  openDataExtractionOverlay: (data: ExtractedOrderItem[], orderRef: string, fileName: string) => void;
+  closeDataExtractionOverlay: () => void;
   handleDragOver: (e: React.DragEvent) => void;
   handleDragLeave: (e: React.DragEvent) => void;
   handleDrop: (e: React.DragEvent, onUpload?: (files: File[]) => Promise<void>) => Promise<void>;
@@ -80,6 +94,27 @@ export const useUploadManager = ({
     error: undefined,
   });
   const [isDragging, setIsDragging] = useState(false);
+  const [pdfPreview, setPDFPreview] = useState({
+    isOpen: false,
+    url: undefined as string | undefined,
+    fileName: undefined as string | undefined,
+  });
+  const [dataExtraction, setDataExtraction] = useState<DataExtractionOverlayState>({
+    isOpen: false,
+    data: [],
+    summary: {
+      totalItems: 0,
+      uniqueProducts: 0,
+      totalQuantity: 0,
+      dataQuality: {
+        complete: 0,
+        corrected: 0,
+        lowConfidence: 0,
+      },
+    },
+    fileName: '',
+    orderRef: '',
+  });
 
   const supabase = createClient();
 
@@ -152,15 +187,83 @@ export const useUploadManager = ({
     setRefreshKey(prev => prev + 1);
   }, []);
 
-  // Handle PDF preview
+  // Handle PDF preview - new overlay implementation
   const handlePreviewPDF = useCallback((record: DocUploadRecord) => {
-    if (record.doc_url && record.doc_type === 'application/pdf') {
-      window.open(record.doc_url, '_blank');
-    } else if (record.doc_url) {
-      window.open(record.doc_url, '_blank');
-    } else {
+    if (!record.doc_url) {
       toast.error('No preview available for this file');
+      return;
     }
+
+    // For PDF files, open in overlay
+    if (record.doc_type === 'application/pdf' || record.doc_name.toLowerCase().endsWith('.pdf')) {
+      setPDFPreview({
+        isOpen: true,
+        url: record.doc_url,
+        fileName: record.doc_name
+      });
+    } else {
+      // For non-PDF files, still open in new tab
+      window.open(record.doc_url, '_blank');
+    }
+  }, []);
+
+  // Close PDF preview
+  const closePDFPreview = useCallback(() => {
+    setPDFPreview({
+      isOpen: false,
+      url: undefined,
+      fileName: undefined
+    });
+  }, []);
+
+  // Open data extraction overlay
+  const openDataExtractionOverlay = useCallback((data: ExtractedOrderItem[], orderRef: string, fileName: string) => {
+    // Calculate summary statistics
+    const totalItems = data.length;
+    const uniqueProducts = new Set(data.map(item => item.product_code)).size;
+    const totalQuantity = data.reduce((sum, item) => sum + (item.product_qty || 0), 0);
+    
+    const dataQuality = data.reduce(
+      (acc, item) => ({
+        complete: acc.complete + (item.unit_price && item.weight ? 1 : 0),
+        corrected: acc.corrected + (item.was_corrected ? 1 : 0),
+        lowConfidence: acc.lowConfidence + ((item.confidence_score || 1) < 0.8 ? 1 : 0),
+      }),
+      { complete: 0, corrected: 0, lowConfidence: 0 }
+    );
+
+    setDataExtraction({
+      isOpen: true,
+      data,
+      summary: {
+        totalItems,
+        uniqueProducts,
+        totalQuantity,
+        dataQuality,
+      },
+      fileName,
+      orderRef,
+    });
+  }, []);
+
+  // Close data extraction overlay
+  const closeDataExtractionOverlay = useCallback(() => {
+    setDataExtraction({
+      isOpen: false,
+      data: [],
+      summary: {
+        totalItems: 0,
+        uniqueProducts: 0,
+        totalQuantity: 0,
+        dataQuality: {
+          complete: 0,
+          corrected: 0,
+          lowConfidence: 0,
+        },
+      },
+      fileName: '',
+      orderRef: '',
+    });
   }, []);
 
   // Drag and drop handlers
@@ -270,10 +373,39 @@ export const useUploadManager = ({
         
         const recordCount = result.recordCount || 0;
         
-        // Auto close upload toast after 3 seconds
+        // Auto close upload toast after 2 seconds
         setTimeout(() => {
           setUploadToast(prev => ({ ...prev, isOpen: false }));
-        }, 3000);
+        }, 2000);
+        
+        // Open data extraction overlay with results
+        setTimeout(() => {
+          if (result.extractedData && result.data) {
+            // Transform extractedData to match ExtractedOrderItem interface
+            const transformedData: ExtractedOrderItem[] = result.extractedData.map((item: Partial<ExtractedOrderItem>) => ({
+              order_ref: item.order_ref || result.data?.order_ref || '',
+              account_num: item.account_num || result.data?.account_num || '',
+              delivery_add: item.delivery_add || result.data?.delivery_add || '',
+              invoice_to: item.invoice_to || result.data?.invoice_to || '',
+              customer_ref: item.customer_ref || result.data?.customer_ref,
+              product_code: item.product_code || '',
+              product_desc: item.product_desc || '',
+              product_qty: item.product_qty || 0,
+              weight: item.weight,
+              unit_price: item.unit_price,
+              // Add data quality fields if available
+              was_corrected: item.was_corrected || false,
+              original_code: item.original_code,
+              confidence_score: item.confidence_score || 1,
+            }));
+
+            openDataExtractionOverlay(
+              transformedData,
+              result.data.order_ref || 'Unknown Order',
+              file.name
+            );
+          }
+        }, 2500);
         
         // Show additional success notification
         setTimeout(() => {
@@ -330,7 +462,7 @@ export const useUploadManager = ({
         onUploadError(error instanceof Error ? error : new Error('Failed to process PDF'));
       }
     }
-  }, [handleRefresh, onUploadComplete, onUploadError]);
+  }, [handleRefresh, onUploadComplete, onUploadError, openDataExtractionOverlay]);
 
   // Product spec files upload handler
   const handleSpecFilesUpload = useCallback(async (files: File[]) => {
@@ -360,6 +492,8 @@ export const useUploadManager = ({
     refreshKey,
     uploadToast,
     isDragging,
+    pdfPreview,
+    dataExtraction,
   };
 
   // Actions object
@@ -367,6 +501,7 @@ export const useUploadManager = ({
     fetchUploadRecords,
     handleRefresh,
     handlePreviewPDF,
+    closePDFPreview,
     handleDragOver,
     handleDragLeave,
     handleDrop,
@@ -376,6 +511,8 @@ export const useUploadManager = ({
     handleOthersUpload,
     setUploadToast,
     setIsDragging,
+    openDataExtractionOverlay,
+    closeDataExtractionOverlay,
   };
 
   return { state, actions };

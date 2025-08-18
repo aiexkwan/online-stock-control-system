@@ -18,6 +18,7 @@ import { CloudArrowUpIcon, DocumentArrowUpIcon, DocumentTextIcon, FolderOpenIcon
 import { format } from 'date-fns';
 import { DataCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { cardTextStyles, cardChartColors } from '@/lib/card-system/theme';
+import { PDFPreviewDialog } from '@/components/ui/pdf-preview-dialog';
 
 // Import individual upload components - deleted files
 // import { BaseUploadCard, UploadConfiguration, UploadFile } from './BaseUploadCard';
@@ -37,6 +38,8 @@ import type { UserInfo } from '../types/common';
 import { formatFileSize as formatFileSizeUtil } from '../utils/formatters';
 import { StatusOverlay } from '../components/shared';
 import { useUploadManager } from '../hooks/useUploadManager';
+import { PDFPreviewOverlay } from '@/components/ui/pdf-preview-overlay';
+import { DataExtractionOverlay } from '@/components/ui/data-extraction-overlay';
 
 export const UploadCenterCard: React.FC<UploadCenterCardProps> = ({
   title = 'Upload Center',
@@ -63,12 +66,15 @@ export const UploadCenterCard: React.FC<UploadCenterCardProps> = ({
     refreshKey,
     uploadToast,
     isDragging,
+    pdfPreview,
+    dataExtraction,
   } = state;
   
   const {
     fetchUploadRecords,
     handleRefresh,
     handlePreviewPDF,
+    closePDFPreview,
     handleDragOver,
     handleDragLeave,
     handleDrop,
@@ -78,6 +84,8 @@ export const UploadCenterCard: React.FC<UploadCenterCardProps> = ({
     handleOthersUpload,
     setUploadToast,
     setIsDragging,
+    openDataExtractionOverlay,
+    closeDataExtractionOverlay,
   } = actions;
 
   // Initial load
@@ -364,6 +372,23 @@ export const UploadCenterCard: React.FC<UploadCenterCardProps> = ({
               progress: 0, 
               status: 'uploading' 
             })}
+          />
+
+          {/* PDF Preview Overlay - Full screen overlay instead of new tab */}
+          <PDFPreviewOverlay
+            isOpen={pdfPreview.isOpen}
+            pdfUrl={pdfPreview.url || ''}
+            fileName={pdfPreview.fileName || 'PDF Document'}
+            onClose={closePDFPreview}
+          />
+
+          {/* Data Extraction Results Overlay */}
+          <DataExtractionOverlay
+            isOpen={dataExtraction.isOpen}
+            data={dataExtraction.data}
+            fileName={dataExtraction.fileName}
+            orderRef={dataExtraction.orderRef}
+            onClose={closeDataExtractionOverlay}
           />
     </div>
   );
