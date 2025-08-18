@@ -1,227 +1,69 @@
 /**
- * Phase 6.1 Week 3: Unknown 類型處理模式
+ * Phase 6.1 Week 3: Unknown 類型處理模式 - 重新導出
  * 策略 4: unknown + type narrowing - 安全的未知類型處理
+ * 
+ * 此檔案現在重新導出 types/external/unknown-handlers.ts 的所有功能
+ * 以保持向後相容性並避免重複代碼
  */
 
-export class UnknownTypeHandler {
-  /**
-   * 安全的屬性訪問
-   * @param obj 未知對象
-   * @param path 屬性路徑 (支援 'a.b.c' 格式)
-   * @param defaultValue 默認值
-   * @returns 安全提取的值或默認值
-   */
-  static safeGet<T = unknown>(obj: unknown, path: string, defaultValue: T): T {
-    if (typeof obj !== 'object' || obj === null) {
-      return defaultValue;
-    }
+// 重新導出所有功能
+export { UnknownTypeHandler } from '../../types/external/unknown-handlers';
 
-    const keys = path.split('.');
-    let current: unknown = obj;
+// 重新導出基本類型檢查函數
+export {
+  isNull,
+  isUndefined,
+  isNullish,
+  isPrimitive,
+  isFunction,
+  isSymbol,
+  isBigInt,
+  isPlainObject,
+  isEmptyObject,
+  hasOwnProperty,
+  isNonEmptyArray,
+  isArrayOf,
+} from '../../types/external/unknown-handlers';
 
-    for (const key of keys) {
-      if (current && typeof current === 'object' && key in current) {
-        current = (current as Record<string, unknown>)[key];
-      } else {
-        return defaultValue;
-      }
-    }
+// 重新導出安全轉換函數
+export {
+  toSafeString,
+  toSafeNumber,
+  toSafeBoolean,
+  toSafeArray,
+  toSafeObject,
+} from '../../types/external/unknown-handlers';
 
-    return (current ?? defaultValue) as T;
-  }
+// 重新導出深度處理函數
+export {
+  deepClone,
+  deepEquals,
+  safeExecute,
+  safeAsync,
+} from '../../types/external/unknown-handlers';
 
-  /**
-   * 批量數據轉換
-   * @param data 未知數據
-   * @param transformer 轉換函數
-   * @returns 轉換後的有效數據陣列
-   */
-  static transformUnknownArray<T>(data: unknown, transformer: (item: unknown) => T | null): T[] {
-    if (!Array.isArray(data)) return [];
+// 重新導出 JSON 處理函數
+export {
+  safeJsonParse,
+  safeJsonStringify,
+} from '../../types/external/unknown-handlers';
 
-    return data.map(transformer).filter((item): item is T => item !== null);
-  }
+// 重新導出屬性訪問函數
+export {
+  safeGet,
+  safeSet,
+} from '../../types/external/unknown-handlers';
 
-  /**
-   * 條件類型轉換
-   * @param data 未知數據
-   * @param condition 類型守衛條件
-   * @param transform 轉換函數
-   * @param fallback 回退值
-   * @returns 轉換結果或回退值
-   */
-  static conditionalTransform<T, R>(
-    data: unknown,
-    condition: (data: unknown) => data is T,
-    transform: (data: T) => R,
-    fallback: R
-  ): R {
-    return condition(data) ? transform(data) : fallback;
-  }
+// 重新導出集合操作
+export {
+  unique,
+  groupBy,
+} from '../../types/external/unknown-handlers';
 
-  /**
-   * 安全的數字轉換
-   * @param value 未知值
-   * @param defaultValue 默認值
-   * @returns 數字或默認值
-   */
-  static toNumber(value: unknown, defaultValue: number = 0): number {
-    if (typeof value === 'number' && !isNaN(value)) {
-      return value;
-    }
-    if (typeof value === 'string') {
-      const parsed = parseFloat(value);
-      return isNaN(parsed) ? defaultValue : parsed;
-    }
-    return defaultValue;
-  }
-
-  /**
-   * 安全的字符串轉換
-   * @param value 未知值
-   * @param defaultValue 默認值
-   * @returns 字符串或默認值
-   */
-  static toString(value: unknown, defaultValue: string = ''): string {
-    if (typeof value === 'string') {
-      return value;
-    }
-    if (typeof value === 'number' || typeof value === 'boolean') {
-      return String(value);
-    }
-    if (value === null || value === undefined) {
-      return defaultValue;
-    }
-    return defaultValue;
-  }
-
-  /**
-   * 安全的布林轉換
-   * @param value 未知值
-   * @param defaultValue 默認值
-   * @returns 布林值或默認值
-   */
-  static toBoolean(value: unknown, defaultValue: boolean = false): boolean {
-    if (typeof value === 'boolean') {
-      return value;
-    }
-    if (typeof value === 'string') {
-      return value.toLowerCase() === 'true' || value === '1';
-    }
-    if (typeof value === 'number') {
-      return value !== 0;
-    }
-    return defaultValue;
-  }
-
-  /**
-   * 安全的陣列轉換
-   * @param value 未知值
-   * @param itemGuard 項目類型守衛
-   * @returns 類型安全的陣列
-   */
-  static toArray<T>(value: unknown, itemGuard: (item: unknown) => item is T): T[] {
-    if (!Array.isArray(value)) {
-      return [];
-    }
-    return value.filter(itemGuard);
-  }
-
-  /**
-   * 安全的對象屬性提取
-   * @param obj 未知對象
-   * @param keys 要提取的鍵
-   * @returns 安全的對象
-   */
-  static pickProperties<T extends Record<string, unknown>>(
-    obj: unknown,
-    keys: string[]
-  ): Partial<T> {
-    if (typeof obj !== 'object' || obj === null) {
-      return {};
-    }
-
-    const result: Partial<T> = {};
-    const objRecord = obj as Record<string, unknown>;
-
-    for (const key of keys) {
-      if (key in objRecord) {
-        (result as Record<string, unknown>)[key] = objRecord[key];
-      }
-    }
-
-    return result;
-  }
-
-  /**
-   * 深度安全克隆
-   * @param obj 未知對象
-   * @returns 安全克隆的對象
-   */
-  static safeClone<T>(obj: unknown): T | null {
-    try {
-      if (obj === null || obj === undefined) {
-        return null;
-      }
-
-      if (typeof obj !== 'object') {
-        return obj as T;
-      }
-
-      return JSON.parse(JSON.stringify(obj)) as T;
-    } catch (error) {
-      console.warn('Safe clone failed:', error);
-      return null;
-    }
-  }
-
-  /**
-   * 類型斷言工具
-   * @param value 未知值
-   * @param predicate 斷言函數
-   * @param errorMessage 錯誤訊息
-   * @returns 斷言成功的值
-   * @throws 斷言失敗時拋出錯誤
-   */
-  static assert<T>(
-    value: unknown,
-    predicate: (value: unknown) => value is T,
-    errorMessage: string = 'Type assertion failed'
-  ): T {
-    if (!predicate(value)) {
-      throw new Error(errorMessage);
-    }
-    return value;
-  }
-
-  /**
-   * 批量類型檢查
-   * @param items 未知項目陣列
-   * @param guards 類型守衛陣列
-   * @returns 分類後的結果
-   */
-  static categorizeItems<T extends Record<string, unknown>>(
-    items: unknown[],
-    guards: Record<keyof T, (item: unknown) => boolean>
-  ): T {
-    const result = {} as T;
-    const guardKeys = Object.keys(guards) as Array<keyof T>;
-
-    // 初始化結果對象
-    for (const key of guardKeys) {
-      (result[key] as unknown[]) = [];
-    }
-
-    // 分類項目
-    for (const item of items) {
-      for (const key of guardKeys) {
-        if (guards[key](item)) {
-          (result[key] as unknown[]).push(item);
-          break; // 每個項目只分類到第一個匹配的類別
-        }
-      }
-    }
-
-    return result;
-  }
-}
+// 重新導出類型斷言函數
+export {
+  assertIsString,
+  assertIsNumber,
+  assertIsObject,
+  assertIsArray,
+} from '../../types/external/unknown-handlers';

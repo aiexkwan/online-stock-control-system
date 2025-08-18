@@ -40,11 +40,23 @@ export class ChatCompletionService {
       throw new Error('OPENAI_API_KEY is not configured');
     }
     
+    // 診斷 API key 格式
+    systemLogger.info({
+      apiKeyLength: apiKey.length,
+      apiKeyPrefix: apiKey.substring(0, 10),
+      apiKeySuffix: apiKey.substring(apiKey.length - 4),
+      hasCorrectPrefix: apiKey.startsWith('sk-'),
+      nodeEnv: process.env.NODE_ENV,
+    }, '[ChatCompletionService] Initializing with API key');
+    
     // 配置 OpenAI 客戶端，支援 EU 端點
     this.openai = new OpenAI({ 
       apiKey,
       // 如果啟用 EU Data Residency，使用歐盟端點
       baseURL: process.env.OPENAI_EU_ENDPOINT || 'https://api.openai.com/v1',
+      // 增加 timeout 同 retry 設定
+      maxRetries: 3,
+      timeout: 30000, // 30 seconds
     });
   }
 
@@ -78,12 +90,14 @@ export class ChatCompletionService {
 
       // 調用 Chat Completions API
       // 使用 gpt-4o (如果有權限) 或 gpt-4-turbo
-      const modelToUse = process.env.OPENAI_MODEL || 'gpt-4-turbo-preview';
+      const modelToUse = process.env.OPENAI_MODEL || 'gpt-4o-mini'; // 改用更穩定嘅 mini model
       
       systemLogger.info({
         model: modelToUse,
         apiKeyPresent: !!process.env.OPENAI_API_KEY,
         apiKeyPrefix: process.env.OPENAI_API_KEY?.substring(0, 10),
+        baseURL: this.openai.baseURL,
+        region: process.env.VERCEL_REGION || 'unknown',
       }, '[ChatCompletionService] Using model');
       
       const completion = await this.openai.chat.completions.create({
@@ -134,6 +148,15 @@ export class ChatCompletionService {
         errorDetails.status = error.response.status;
         errorDetails.statusText = error.response.statusText;
         errorDetails.data = error.response.data;
+        
+        // 更詳細嘅錯誤診斷
+        if (error.response.status === 401) {
+          errorDetails.hint = 'Invalid API key. Please check OPENAI_API_KEY in Vercel dashboard';
+        } else if (error.response.status === 429) {
+          errorDetails.hint = 'Rate limit exceeded or quota exhausted';
+        } else if (error.response.status === 404) {
+          errorDetails.hint = `Model not found. You may not have access to this model`;
+        }
       }
       
       // 檢查是否是 API Key 問題
@@ -151,6 +174,13 @@ export class ChatCompletionService {
         errorDetails.hint = 'Network connection issue or OpenAI API is unreachable';
         errorDetails.apiKeyPresent = !!process.env.OPENAI_API_KEY;
         errorDetails.apiKeyPrefix = process.env.OPENAI_API_KEY?.substring(0, 10);
+        errorDetails.vercelRegion = process.env.VERCEL_REGION;
+        errorDetails.suggestions = [
+          '1. Verify API key is valid at platform.openai.com',
+          '2. Check if your OpenAI account has available credits',
+          '3. Try using gpt-3.5-turbo or gpt-4o-mini model',
+          '4. Check OpenAI API status at status.openai.com',
+        ];
       }
       
       systemLogger.error(errorDetails, '[ChatCompletionService] Failed to extract orders');
