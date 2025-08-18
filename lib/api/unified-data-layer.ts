@@ -137,24 +137,6 @@ const WIDGET_MAPPINGS: WidgetDataMapping = {
     },
     preferredSource: DataSourceType.GRAPHQL,
   },
-  warehouse_summary: {
-    graphql: {
-      query: gql`
-        query GetWarehouseSummary($timeRange: String) {
-          warehouseSummary(timeRange: $timeRange) {
-            totalItems
-            pendingTransfers
-            completedToday
-            averageProcessingTime
-          }
-        }
-      `,
-    },
-    rest: {
-      endpoint: '/api/warehouse/summary',
-    },
-    preferredSource: DataSourceType.REST, // REST 更穩定用於總覽數據
-  },
   analytics_charts: {
     graphql: {
       query: gql`
