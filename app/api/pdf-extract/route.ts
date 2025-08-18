@@ -16,24 +16,42 @@ export async function POST(request: NextRequest) {
     // 安全檢查：限制檔案大小 (10MB)
     const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
     
-    // 檢查來源：只接受內部調用或已認證請求
+    // 檢查來源：使用更寬鬆的檢查以支援 Server Action 調用
     const origin = request.headers.get('origin');
     const referer = request.headers.get('referer');
-    const isInternalCall = origin?.includes(process.env.NEXT_PUBLIC_APP_URL || '') ||
-                          referer?.includes(process.env.NEXT_PUBLIC_APP_URL || '') ||
-                          request.headers.get('x-internal-request') === 'true';
+    const internalHeader = request.headers.get('x-internal-request');
     
-    if (!isInternalCall && process.env.NODE_ENV === 'production') {
-      systemLogger.warn({
-        origin,
-        referer,
-        ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
-      }, '[PDF Extract API] Unauthorized access attempt');
+    // 在 production 環境中，允許以下情況：
+    // 1. 有 x-internal-request header
+    // 2. 來自 Vercel 域名
+    // 3. 沒有 origin/referer（Server Action 調用）
+    const isInternalCall = 
+      internalHeader === 'true' ||
+      origin?.includes('.vercel.app') ||
+      referer?.includes('.vercel.app') ||
+      (!origin && !referer); // Server Action 調用通常沒有這些 headers
+    
+    // 只在有明確外部來源時才拒絕
+    if (process.env.NODE_ENV === 'production' && origin && !isInternalCall) {
+      // 檢查是否來自外部域名
+      const isExternalOrigin = origin && 
+        !origin.includes('localhost') && 
+        !origin.includes('vercel.app') &&
+        !origin.includes(process.env.NEXT_PUBLIC_APP_URL || '');
       
-      return NextResponse.json(
-        { error: 'Unauthorized access' },
-        { status: 403 }
-      );
+      if (isExternalOrigin) {
+        systemLogger.warn({
+          origin,
+          referer,
+          internalHeader,
+          ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
+        }, '[PDF Extract API] External access blocked');
+        
+        return NextResponse.json(
+          { error: 'Unauthorized access' },
+          { status: 403 }
+        );
+      }
     }
     
     // 檢查 Content-Type

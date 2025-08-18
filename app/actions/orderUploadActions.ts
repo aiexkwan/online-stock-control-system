@@ -515,12 +515,20 @@ export async function analyzeOrderPDF(
         
         console.log('[analyzeOrderPDF] Making API request to:', apiUrl);
         
+        // 添加 Vercel bypass token 如果存在
+        const headers: HeadersInit = {
+          'x-internal-request': 'true', // 標記為內部請求
+        };
+        
+        // 如果有 Vercel Protection Bypass Token，加入 header
+        if (process.env.VERCEL_PROTECTION_BYPASS) {
+          headers['x-vercel-protection-bypass'] = process.env.VERCEL_PROTECTION_BYPASS;
+        }
+        
         const response = await fetch(apiUrl, {
           method: 'POST',
           body: formData,
-          headers: {
-            'x-internal-request': 'true', // 標記為內部請求
-          },
+          headers,
         });
 
         if (!response.ok) {
