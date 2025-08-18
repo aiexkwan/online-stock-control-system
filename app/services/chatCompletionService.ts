@@ -76,8 +76,17 @@ export class ChatCompletionService {
       const userMessage = this.buildUserMessage(pdfText, extractedData);
 
       // 調用 Chat Completions API
+      // 使用 gpt-4o (如果有權限) 或 gpt-4-turbo
+      const modelToUse = process.env.OPENAI_MODEL || 'gpt-4-turbo-preview';
+      
+      systemLogger.info({
+        model: modelToUse,
+        apiKeyPresent: !!process.env.OPENAI_API_KEY,
+        apiKeyPrefix: process.env.OPENAI_API_KEY?.substring(0, 10),
+      }, '[ChatCompletionService] Using model');
+      
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o',
+        model: modelToUse,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage }
@@ -401,11 +410,17 @@ export class ChatCompletionService {
     pdfText: string,
     extractedData: ExtractedPDFData
   ): Promise<OrderExtractionResult> {
-    systemLogger.info('[ChatCompletionService] Retrying with fallback model gpt-4o-mini');
+    // 使用 fallback model - 預設 gpt-3.5-turbo 更穩定
+    const fallbackModel = process.env.OPENAI_FALLBACK_MODEL || 'gpt-3.5-turbo';
+    
+    systemLogger.info({
+      model: fallbackModel,
+      reason: 'Primary model failed, trying fallback',
+    }, '[ChatCompletionService] Using fallback model');
     
     try {
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini', // 更快更便宜的備用模型
+        model: fallbackModel,
         messages: [
           { role: 'system', content: this.buildSystemPrompt() },
           { role: 'user', content: this.buildUserMessage(pdfText, extractedData) }
@@ -432,7 +447,7 @@ export class ChatCompletionService {
       let errorDetails: any = {
         error: errorMessage,
         type: error?.constructor?.name,
-        model: 'gpt-4o-mini',
+        model: fallbackModel,
       };
       
       if (error?.response) {
