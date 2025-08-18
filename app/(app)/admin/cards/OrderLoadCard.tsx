@@ -10,7 +10,6 @@ import {
   TruckIcon,
   ChartBarIcon,
   SpeakerWaveIcon,
-  DocumentArrowDownIcon,
   DevicePhoneMobileIcon,
   ComputerDesktopIcon
 } from '@heroicons/react/24/outline';
@@ -26,7 +25,6 @@ import BatchLoadPanel from '@/app/(app)/order-loading/components/BatchLoadPanel'
 import { LoadingProgressChart } from '@/app/(app)/order-loading/components/LoadingProgressChart';
 import MobileOrderLoading from '@/app/(app)/order-loading/components/MobileOrderLoading';
 import { SoundSettingsToggle } from '@/app/(app)/order-loading/components/SoundSettingsToggle';
-import { UnifiedLoadingReportDialog } from '@/app/(app)/order-loading/components/UnifiedLoadingReportDialog';
 
 export interface OrderLoadCardProps {
   className?: string;
@@ -56,7 +54,6 @@ const useMobileDetection = () => {
 
 export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
   const isMobile = useMobileDetection();
-  const [showReportDialog, setShowReportDialog] = useState(false);
   
   const {
     // State
@@ -128,14 +125,6 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <SoundSettingsToggle />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowReportDialog(true)}
-                    className="text-slate-400 hover:text-white"
-                  >
-                    <DocumentArrowDownIcon className="h-5 w-5" />
-                  </Button>
                 </div>
               </div>
             </div>
@@ -170,11 +159,6 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
           </div>
         </DataCard>
 
-        {/* Report Dialog */}
-        <UnifiedLoadingReportDialog
-          isOpen={showReportDialog}
-          onClose={() => setShowReportDialog(false)}
-        />
       </div>
     );
   }
@@ -201,15 +185,6 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
               </div>
               <div className="flex items-center space-x-2">
                 <SoundSettingsToggle />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowReportDialog(true)}
-                  className="text-slate-400 hover:text-white"
-                  title="Generate loading reports"
-                >
-                  <DocumentArrowDownIcon className="h-5 w-5" />
-                </Button>
               </div>
             </div>
           </div>
@@ -545,12 +520,6 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
           </div>
         </div>
       </DataCard>
-
-      {/* Report Dialog */}
-      <UnifiedLoadingReportDialog
-        isOpen={showReportDialog}
-        onClose={() => setShowReportDialog(false)}
-      />
 
       {/* Undo Confirmation Dialog */}
       {showUndoDialog && undoItem && (

@@ -16,8 +16,6 @@ export { performanceMonitor } from './PerformanceMonitor';
 export { PDFPerformanceMonitor, pdfPerformanceMonitor } from './pdf-performance-monitor';
 export { PDFCacheOptimizer, pdfCacheOptimizer } from './pdf-cache-optimizer';
 export { PDFRequestBatcher, pdfRequestBatcher } from './pdf-request-batcher';
-export { PDFBenchmark, pdfBenchmark } from './pdf-benchmark';
-export { PDFPerformanceService, pdfPerformanceService } from './pdf-performance-service';
 
 // PDF Performance Types
 export type {
@@ -38,14 +36,3 @@ export type {
   BatchConfig,
   BatchStatistics,
 } from './pdf-request-batcher';
-
-export type {
-  BenchmarkConfig,
-  BenchmarkResult,
-  ComparisonResult,
-} from './pdf-benchmark';
-
-export type {
-  OptimizedExtractionResult,
-  PerformanceConfig,
-} from './pdf-performance-service';

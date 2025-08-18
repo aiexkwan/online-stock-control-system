@@ -21,6 +21,8 @@ import {
   AlertTriangle,
   X,
 } from 'lucide-react';
+import { SoundSettingsToggle } from '@/app/(app)/order-loading/components/SoundSettingsToggle';
+import { useSoundFeedback, useSoundSettings } from '@/app/hooks/useSoundFeedback';
 import { LOCATION_DESTINATIONS, DESTINATION_CONFIG } from '../constants/stockTransfer';
 import { useStockTransfer } from '../hooks/useStockTransfer';
 import { LocationStandardizer } from '../utils/locationStandardizer';
@@ -180,6 +182,13 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
   const searchInputRef = useRef<SearchInputRef>(null);
   const clockNumberRef = useRef<HTMLInputElement>(null);
   
+  // Sound setup
+  const soundSettings = useSoundSettings();
+  const sound = useSoundFeedback({ 
+    enabled: soundSettings.getSoundEnabled(), 
+    volume: soundSettings.getSoundVolume() 
+  });
+  
   // Simplified state management
   const [transferState, setTransferState] = useState<{
     isLoading: boolean;
@@ -222,10 +231,12 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
     searchInputRef,
     onTransferComplete: (pallet, destination) => {
       console.log('Transfer completed:', pallet.plt_num, 'to', destination);
+      sound.playSuccess(); // Play success sound
       loadTransferHistory(); // Refresh history after transfer
     },
     onTransferError: (error) => {
       console.error('Transfer error:', error);
+      sound.playError(); // Play error sound
       // Check if it's an illegal transfer
       if (error.includes('Voided') || error.includes('already at location')) {
         setUiState(prev => ({
@@ -237,6 +248,31 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
       }
     },
   });
+  
+  // Original actions with sound feedback
+  const enhancedActions = {
+    ...actions,
+    handleSearchSelect: (result: any) => {
+      sound.playScan(); // Play scan sound when pallet is selected
+      actions.handleSearchSelect(result);
+    },
+    handleClockNumberChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      actions.handleClockNumberChange(e);
+      // Play success sound when clock number is verified (4 digits)
+      if (value.length === 4 && /^\d{4}$/.test(value)) {
+        setTimeout(() => {
+          if (state.verifiedClockNumber) {
+            sound.playSuccess();
+          }
+        }, 500);
+      }
+    },
+    onDestinationChange: (destination: string) => {
+      sound.playScan(); // Play feedback when destination is selected
+      actions.onDestinationChange(destination);
+    }
+  };
   
   // Load transfer history from database
   const loadTransferHistory = useCallback(async () => {
@@ -264,7 +300,15 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
     }));
   }, [state.isLoading, state.isSearching, state.isTransferring, state.selectedPallet, state.selectedDestination, state.currentLocation]);
   
+  // Play sound when pallet is found
   useEffect(() => {
+    if (state.selectedPallet && !transferState.selectedPallet) {
+      sound.playScan(); // Play scan sound when pallet is successfully found
+    }
+  }, [state.selectedPallet, transferState.selectedPallet, sound]);
+  
+  useEffect(() => {
+    const prevVerified = operatorState.verifiedClockNumber;
     setOperatorState(prev => ({
       ...prev,
       clockNumber: state.clockNumber,
@@ -273,7 +317,15 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
       isVerifying: state.isVerifying,
       error: state.clockError,
     }));
-  }, [state.clockNumber, state.verifiedClockNumber, state.verifiedName, state.isVerifying, state.clockError]);
+    // Play success sound when clock number is verified
+    if (state.verifiedClockNumber && !prevVerified) {
+      sound.playSuccess();
+    }
+    // Play error sound when verification fails
+    if (state.clockError && !state.isVerifying) {
+      sound.playWarning();
+    }
+  }, [state.clockNumber, state.verifiedClockNumber, state.verifiedName, state.isVerifying, state.clockError, operatorState.verifiedClockNumber, sound]);
   
   useEffect(() => {
     // Only update if values actually changed to prevent loops
@@ -363,14 +415,17 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
         <div className="flex h-full flex-col">
           {/* Header */}
           <div className={`border-b border-slate-700/50 p-4 transition-all duration-300 ${theme.headerBg}`}>
-            <div className="flex items-center gap-2">
-              <ArrowLeftRight className={`h-6 w-6 ${theme.accentColor}`} />
-              <h2 className={cn("text-xl", cardTextStyles.title)}>Stock Transfer</h2>
-              {transferState.selectedDestination && (
-                <span className={`ml-auto text-base font-medium ${theme.accentColor}`}>
-                  → {transferState.selectedDestination}
-                </span>
-              )}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ArrowLeftRight className={`h-6 w-6 ${theme.accentColor}`} />
+                <h2 className={cn("text-xl", cardTextStyles.title)}>Stock Transfer</h2>
+                {transferState.selectedDestination && (
+                  <span className={`ml-2 text-base font-medium ${theme.accentColor}`}>
+                    → {transferState.selectedDestination}
+                  </span>
+                )}
+              </div>
+              <SoundSettingsToggle />
             </div>
             <p className="text-sm text-slate-300">Transfer stock between locations</p>
           </div>
@@ -407,7 +462,7 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
                 <TransferDestinationSelector
                   currentLocation={transferState.currentLocation}
                   selectedDestination={transferState.selectedDestination}
-                  onDestinationChange={actions.onDestinationChange}
+                  onDestinationChange={enhancedActions.onDestinationChange}
                   disabled={transferState.isLoading}
                 />
               </div>
@@ -425,7 +480,7 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
                     inputMode="numeric"
                     pattern="[0-9]*"
                     value={operatorState.clockNumber}
-                    onChange={actions.handleClockNumberChange}
+                    onChange={enhancedActions.handleClockNumberChange}
                     placeholder="Enter 4-digit clock number"
                     className={`w-full border-gray-600 bg-gray-700 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500 ${
                       operatorState.error ? 'border-red-500 focus:ring-red-500' : ''
@@ -463,7 +518,7 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
                     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
                       // Trigger search on blur if value exists
                       if (uiState.searchValue.trim()) {
-                        actions.handleSearchSelect({ 
+                        enhancedActions.handleSearchSelect({ 
                           id: uiState.searchValue, 
                           title: uiState.searchValue, 
                           subtitle: '', 
