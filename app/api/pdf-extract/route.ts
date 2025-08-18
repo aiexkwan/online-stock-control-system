@@ -13,6 +13,29 @@ import { systemLogger } from '@/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
+    // 安全檢查：限制檔案大小 (10MB)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    
+    // 檢查來源：只接受內部調用或已認證請求
+    const origin = request.headers.get('origin');
+    const referer = request.headers.get('referer');
+    const isInternalCall = origin?.includes(process.env.NEXT_PUBLIC_APP_URL || '') ||
+                          referer?.includes(process.env.NEXT_PUBLIC_APP_URL || '') ||
+                          request.headers.get('x-internal-request') === 'true';
+    
+    if (!isInternalCall && process.env.NODE_ENV === 'production') {
+      systemLogger.warn({
+        origin,
+        referer,
+        ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
+      }, '[PDF Extract API] Unauthorized access attempt');
+      
+      return NextResponse.json(
+        { error: 'Unauthorized access' },
+        { status: 403 }
+      );
+    }
+    
     // 檢查 Content-Type
     const contentType = request.headers.get('content-type');
     if (!contentType?.includes('multipart/form-data')) {
@@ -31,6 +54,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'No file provided' },
         { status: 400 }
+      );
+    }
+    
+    // 檢查檔案大小
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: `File size exceeds limit (${MAX_FILE_SIZE / 1024 / 1024}MB)` },
+        { status: 413 }
       );
     }
 

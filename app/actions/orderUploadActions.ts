@@ -518,6 +518,9 @@ export async function analyzeOrderPDF(
         const response = await fetch(apiUrl, {
           method: 'POST',
           body: formData,
+          headers: {
+            'x-internal-request': 'true', // 標記為內部請求
+          },
         });
 
         if (!response.ok) {
