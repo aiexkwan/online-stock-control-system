@@ -35,7 +35,7 @@ export interface StockTransferCardProps {
 
 // Import types from actions
 import type { TransferHistoryItem } from '@/app/actions/stockTransferActions';
-import type { PalletInfo } from '../hooks/useStockTransfer';
+import type { PalletInfo, SearchResult } from '../hooks/useStockTransfer';
 
 // Error overlay component for illegal transfers
 const ErrorOverlay: React.FC<{
@@ -252,7 +252,7 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
   // Original actions with sound feedback
   const enhancedActions = {
     ...actions,
-    handleSearchSelect: (result: any) => {
+    handleSearchSelect: (result: SearchResult) => {
       sound.playScan(); // Play scan sound when pallet is selected
       actions.handleSearchSelect(result);
     },
