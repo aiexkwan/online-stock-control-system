@@ -14,7 +14,7 @@
     }
   },
   "crons": [],
-  "regions": ["lhr1"],
+  "regions": ["iad1"],
   "headers": [
     {
       "source": "/api/(.*)",
