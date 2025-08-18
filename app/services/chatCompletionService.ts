@@ -26,6 +26,7 @@ export interface OrderExtractionResult {
     totalPages: number;
     extractionMethod: string;
     tokensUsed?: number;
+    error?: string; // Optional error message for failed extractions
   };
 }
 
