@@ -10,7 +10,7 @@ import {
 import { createClient as createServerSideClient } from '@/app/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { getErrorMessage } from '@/types/core/error';
+import { getErrorMessage } from '@/lib/types/error-handling';
 
 interface ActionResult {
   success: boolean;

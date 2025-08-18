@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@/app/utils/supabase/server';
-import { getErrorMessage } from '@/types/core/error';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { z } from 'zod';
 
 import {

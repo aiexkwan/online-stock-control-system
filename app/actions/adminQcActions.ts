@@ -2,7 +2,7 @@
 
 import { createClient } from '@/app/utils/supabase/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { getErrorMessage } from '@/types/core/error';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { z } from 'zod';
 
 import {

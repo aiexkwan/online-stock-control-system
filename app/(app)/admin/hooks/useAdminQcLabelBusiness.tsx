@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { getErrorMessage } from '@/types/core/error';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { MIN_ACO_ORDER_REF_LENGTH } from '../components/qc-label-constants';
 // 導入新的模組化 hooks
 import { useUserId } from '@/app/hooks/useUserId';

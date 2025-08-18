@@ -9,7 +9,7 @@ import { format, isValid } from 'date-fns'; // 用於日期格式化
 import { isDevelopment } from '@/lib/utils/env';
 import { DatabaseRecord, convertToReportItem } from '@/types/database/tables';
 import { isRecord } from '@/types/database/helpers';
-import { getErrorMessage } from '@/types/core/error';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { Tables } from '@/types/database/supabase';
 import type { ActionResult } from '@/lib/types/api';
 import { writeFile, readFile, unlink } from 'fs/promises';

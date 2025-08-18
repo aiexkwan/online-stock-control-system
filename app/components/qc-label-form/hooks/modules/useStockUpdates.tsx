@@ -4,7 +4,7 @@
  */
 
 import { useCallback } from 'react';
-import { getErrorMessage } from '@/types/core/error';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { toast } from 'sonner';
 import type { ProductInfo } from '../../types';
 import { isProduction, isNotProduction } from '@/lib/utils/env';

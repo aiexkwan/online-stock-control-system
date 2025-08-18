@@ -1,5 +1,5 @@
 import { createClient } from './supabase/client';
-import { getErrorMessage } from '@/types/core/error';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { isNotProduction } from '@/lib/utils/env';
 

@@ -4,7 +4,7 @@ import { createClient } from '@/app/utils/supabase/server';
 import { createClient as createAdminSupabaseClient } from '@supabase/supabase-js';
 import { DatabaseRecord } from '@/types/database/tables';
 import type { Database } from '@/types/database/supabase';
-import { getErrorMessage } from '@/types/core/error';
+import { getErrorMessage } from '@/lib/types/error-handling';
 // Removed EnhancedOrderExtractionService import - now using API Route to avoid Server Components compatibility issues
 import { sendOrderCreatedEmail } from '../services/emailService';
 import * as crypto from 'crypto';

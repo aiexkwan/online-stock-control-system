@@ -16,7 +16,7 @@ import {
   safeOptionalString,
   safeOptionalNumber,
   safeCountStatus,
-} from '@/types/core/guards';
+} from '@/lib/types/type-guards';
 import { extractErrorMessage } from '@/lib/types/api';
 
 // Stock Take Summary data source

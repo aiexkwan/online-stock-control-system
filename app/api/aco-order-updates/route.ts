@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getErrorMessage } from '@/types/core/error';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { createClient } from '@/app/utils/supabase/server';
 import type { AcoOrderUpdateResponse } from '@/lib/types/aco-order';
 

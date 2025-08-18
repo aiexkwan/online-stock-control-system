@@ -9,6 +9,32 @@ import OpenAI from 'openai';
 import { systemLogger } from '@/lib/logger';
 import { ExtractedPDFData } from './pdfExtractionService';
 
+// Type definitions for error handling
+interface OpenAIApiError extends Error {
+  response?: {
+    status: number;
+    statusText?: string;
+    data?: unknown;
+  };
+  constructor: {
+    name: string;
+  };
+}
+
+interface ErrorDetails {
+  error: string;
+  type?: string;
+  status?: number;
+  statusText?: string;
+  data?: unknown;
+  hint?: string;
+  apiKeyPresent?: boolean;
+  apiKeyPrefix?: string;
+  vercelRegion?: string;
+  suggestions?: string[];
+  model?: string;
+}
+
 export interface OrderExtractionResult {
   orders: Array<{
     order_ref: string;
@@ -134,27 +160,28 @@ export class ChatCompletionService {
       this.validateResult(result, extractedData);
 
       return result;
-    } catch (error: any) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    } catch (error: unknown) {
+      const apiError = error as OpenAIApiError;
+      const errorMessage = apiError instanceof Error ? apiError.message : 'Unknown error';
       
       // 提供更詳細的錯誤診斷
-      let errorDetails: any = {
+      let errorDetails: ErrorDetails = {
         error: errorMessage,
-        type: error?.constructor?.name,
+        type: apiError?.constructor?.name,
       };
       
       // 檢查 OpenAI 特定錯誤
-      if (error?.response) {
-        errorDetails.status = error.response.status;
-        errorDetails.statusText = error.response.statusText;
-        errorDetails.data = error.response.data;
+      if (apiError?.response) {
+        errorDetails.status = apiError.response.status;
+        errorDetails.statusText = apiError.response.statusText;
+        errorDetails.data = apiError.response.data;
         
         // 更詳細嘅錯誤診斷
-        if (error.response.status === 401) {
+        if (apiError.response.status === 401) {
           errorDetails.hint = 'Invalid API key. Please check OPENAI_API_KEY in Vercel dashboard';
-        } else if (error.response.status === 429) {
+        } else if (apiError.response.status === 429) {
           errorDetails.hint = 'Rate limit exceeded or quota exhausted';
-        } else if (error.response.status === 404) {
+        } else if (apiError.response.status === 404) {
           errorDetails.hint = `Model not found. You may not have access to this model`;
         }
       }
@@ -471,19 +498,20 @@ export class ChatCompletionService {
       };
       
       return result;
-    } catch (error: any) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    } catch (error: unknown) {
+      const apiError = error as OpenAIApiError;
+      const errorMessage = apiError instanceof Error ? apiError.message : 'Unknown error';
       
       // 詳細錯誤診斷
-      let errorDetails: any = {
+      let errorDetails: ErrorDetails = {
         error: errorMessage,
-        type: error?.constructor?.name,
+        type: apiError?.constructor?.name,
         model: fallbackModel,
       };
       
-      if (error?.response) {
-        errorDetails.status = error.response.status;
-        errorDetails.data = error.response.data;
+      if (apiError?.response) {
+        errorDetails.status = apiError.response.status;
+        errorDetails.data = apiError.response.data;
       }
       
       if (errorMessage.includes('Connection')) {

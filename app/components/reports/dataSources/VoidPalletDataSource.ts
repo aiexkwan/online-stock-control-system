@@ -12,7 +12,7 @@ import {
   getVoidProductStats,
   type VoidPalletFilters,
 } from '@/app/actions/DownloadCentre-Actions';
-import { safeString, safeOptionalString, safeOptionalNumber } from '@/types/core/guards';
+import { safeString, safeOptionalString, safeOptionalNumber } from '@/lib/types/type-guards';
 import { extractErrorMessage } from '@/lib/types/api';
 
 // Void Pallet Summary data source

@@ -4,7 +4,7 @@
 
 import { ReportDataSource } from '../core/ReportConfig';
 import { createClient } from '@/app/utils/supabase/client';
-import { safeString } from '@/types/core/guards';
+import { safeString } from '@/lib/types/type-guards';
 
 // 定義變換後的數據介面
 interface TransactionTransformedData {

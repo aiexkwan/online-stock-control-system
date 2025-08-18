@@ -6,7 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'; // 只導入類型
 import { createClient as createServerSupabaseClient } from '@/app/utils/supabase/server'; // 新的服務器客戶端
 
 import bcrypt from 'bcryptjs';
-import { getErrorMessage } from '@/types/core/error';
+import { getErrorMessage } from '@/lib/types/error-handling';
 
 // Admin client 保持不變，它用於特殊權限操作，不依賴用戶會話
 const getAdminClient = () => {

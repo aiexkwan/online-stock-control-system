@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useRef, useState } from 'react';
-import { getErrorMessage } from '@/types/core/error';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { toast } from 'sonner';
 // Import moved to dynamic import in generatePdfStream function
 import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf';

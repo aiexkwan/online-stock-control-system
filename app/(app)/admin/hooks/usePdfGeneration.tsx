@@ -5,7 +5,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
-import { getErrorMessage } from '@/types/core/error';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { toast } from 'sonner';
 import { renderReactPDFToBlob, loadPDF } from '@/lib/services/unified-pdf-service';
 import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf';

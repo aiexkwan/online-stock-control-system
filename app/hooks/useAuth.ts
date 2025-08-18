@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { getErrorMessage } from '@/types/core/error';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { createClient } from '@/app/utils/supabase/client';
 import { unifiedAuth } from '@/app/(auth)/main-login/utils/unified-auth';
 import type { User, PostgrestError } from '@supabase/supabase-js';

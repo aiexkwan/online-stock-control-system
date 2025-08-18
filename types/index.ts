@@ -4,8 +4,7 @@
  * 使用具名導出避免重複定義衝突
  */
 
-// 核心類型 - 優先導出避免循環依賴
-export * from './core';
+// 核心類型 - 移除不存在的 core 導出
 
 // 數據庫類型
 export type { Database } from './database/supabase';
@@ -85,7 +84,44 @@ export type {
   InventoryFilters,
   InventoryAlertConfig,
   InventoryForecast,
-} from './external/inventory-analysis';
+} from '../lib/types/inventory-analysis';
+
+// Excel 類型
+export type {
+  ExcelAlignment,
+  ExcelBorder,
+  ExcelBorderStyle,
+  ExcelFont,
+  ExcelFill,
+  ExcelColor,
+  ExcelPosition,
+  ExcelGradientStop,
+  ExcelPageSetup,
+  ExcelWorksheetProtection,
+  ExcelColumn,
+  ExcelCellStyle,
+  ExcelDataValidation,
+  ReportConfig,
+} from '../lib/types/excel';
+
+// PDF 類型
+export type {
+  PdfGenerationOptions,
+  PdfFormat,
+  PdfMargin,
+  LabelPdfConfig,
+  LabelTemplate,
+  LabelData,
+  ReportPdfConfig,
+  ReportType,
+  PdfStyle,
+  PdfTable,
+  PdfTableStyle,
+  PdfChart,
+  ChartData,
+  BarcodeConfig,
+  PdfGenerationResult,
+} from '../lib/types/pdf';
 
 // 報表類型守衛 - 重新命名避免衝突
 export {
@@ -109,7 +145,7 @@ export {
   safeParseNumber,
   safeParseDate,
   safeParseString,
-} from './external/report-type-guards';
+} from '../lib/types/report-type-guards';
 
 // 未知類型處理器 - 重新命名避免衝突
 export {
@@ -144,7 +180,7 @@ export {
   assertIsNumber,
   assertIsObject,
   assertIsArray,
-} from './external/unknown-handlers';
+} from '../lib/types/unknown-handlers';
 
 // API 響應處理器 - 現在從 lib/types 導入
 export { ApiResponseHandler } from '@/lib/types/api-response-handlers';
@@ -209,7 +245,7 @@ export type {
 
 export type {
   ErrorState,
-} from './core/common';
+} from '../lib/error-handling/types';
 
 // SearchResult export removed - type not found in lib/types
 // export type {

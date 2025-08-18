@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { getErrorMessage } from '@/types/core/error';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { useSearchProductByCode } from '@/lib/graphql/hooks/useProduct';
 import type { Product } from '@/types/generated/graphql';
 import type { ApolloError } from '@apollo/client';

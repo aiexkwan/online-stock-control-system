@@ -25,7 +25,7 @@
 	- Investigate whether $ARGUMENTS are still in use, have been recently updated or modified
 
 1. [Code Reviewer](../agents/code-reviewer.md)
-	- Analysis if still refered or related to old widget system
+	- Analysis if still refered or related to old widget system, duplication within codebase or tech debit
 
 2. [Code Reviewer](../agents/code-reviewer.md)
 	- Determine whether $ARGUMENTS are being imported/exported by any components

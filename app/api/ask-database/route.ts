@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseRecord } from '@/types/database/tables';
-import { getErrorMessage } from '@/types/core/error';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { safeGet, safeNumber, toRecordArray } from '@/types/database/helpers';
 import { createClient } from '@/app/utils/supabase/server';
 import { LRUCache } from 'lru-cache';

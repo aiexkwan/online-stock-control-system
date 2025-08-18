@@ -9,11 +9,59 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
+// Type definitions for OpenAI diagnostics
+interface ApiKeyInfo {
+  present: boolean;
+  length: number;
+  prefix: string;
+  suffix: string;
+  startsWithSK: boolean;
+}
+
+interface EnvironmentInfo {
+  NODE_ENV?: string;
+  VERCEL?: string;
+  VERCEL_ENV?: string;
+  VERCEL_REGION?: string;
+  VERCEL_URL?: string;
+}
+
+interface TestResult {
+  success: boolean;
+  responseTime?: number;
+  response?: string;
+  tokensUsed?: number;
+  modelCount?: number;
+  sampleModels?: string[];
+  error?: string;
+  code?: number;
+  type?: string;
+}
+
+interface DiagnosticsInfo {
+  timestamp: string;
+  environment: EnvironmentInfo;
+  apiKey: ApiKeyInfo;
+  tests: Record<string, TestResult>;
+  recommendations?: string[];
+}
+
+interface OpenAIError extends Error {
+  response?: {
+    status: number;
+    statusText?: string;
+    data?: unknown;
+  };
+  constructor: {
+    name: string;
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
     const apiKey = process.env.OPENAI_API_KEY;
     
-    const diagnostics: any = {
+    const diagnostics: DiagnosticsInfo = {
       timestamp: new Date().toISOString(),
       environment: {
         NODE_ENV: process.env.NODE_ENV,
@@ -66,12 +114,13 @@ export async function GET(request: NextRequest) {
         response: completion.choices[0]?.message?.content?.trim(),
         tokensUsed: completion.usage?.total_tokens,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const openaiError = error as OpenAIError;
       diagnostics.tests['gpt-3.5-turbo'] = {
         success: false,
-        error: error.message || 'Unknown error',
-        code: error.response?.status,
-        type: error.constructor?.name,
+        error: openaiError.message || 'Unknown error',
+        code: openaiError.response?.status,
+        type: openaiError.constructor?.name,
       };
     }
 
@@ -94,12 +143,13 @@ export async function GET(request: NextRequest) {
         response: completion.choices[0]?.message?.content?.trim(),
         tokensUsed: completion.usage?.total_tokens,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const openaiError = error as OpenAIError;
       diagnostics.tests['gpt-4o-mini'] = {
         success: false,
-        error: error.message || 'Unknown error',
-        code: error.response?.status,
-        type: error.constructor?.name,
+        error: openaiError.message || 'Unknown error',
+        code: openaiError.response?.status,
+        type: openaiError.constructor?.name,
       };
     }
 
@@ -107,25 +157,26 @@ export async function GET(request: NextRequest) {
     try {
       const startTime = Date.now();
       const models = await openai.models.list();
-      const modelArray = Array.from(models);
+      const modelArray = models.data;
       
       diagnostics.tests.listModels = {
         success: true,
         responseTime: Date.now() - startTime,
         modelCount: modelArray.length,
-        sampleModels: modelArray.slice(0, 3).map((m: any) => m.id),
+        sampleModels: modelArray.slice(0, 3).map((m: OpenAI.Model) => m.id),
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const openaiError = error as OpenAIError;
       diagnostics.tests.listModels = {
         success: false,
-        error: error.message || 'Unknown error',
-        code: error.response?.status,
-        type: error.constructor?.name,
+        error: openaiError.message || 'Unknown error',
+        code: openaiError.response?.status,
+        type: openaiError.constructor?.name,
       };
     }
 
     // Determine overall success
-    const anyTestSucceeded = Object.values(diagnostics.tests).some((test: any) => test.success);
+    const anyTestSucceeded = Object.values(diagnostics.tests).some((test: TestResult) => test.success);
     
     // Add recommendations
     diagnostics.recommendations = [];

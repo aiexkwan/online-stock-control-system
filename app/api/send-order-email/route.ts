@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getErrorMessage } from '@/types/core/error';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { safeGet, safeString, safeNumber } from '@/types/database/helpers';
 
 interface OrderItem {

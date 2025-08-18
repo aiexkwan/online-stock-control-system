@@ -23,7 +23,7 @@
         "**/__tests__/**/*.ts",
         "**/__tests__/**/*.tsx",
         "**/**/handlers.ts",
-        "types/external/unknown-handlers.ts",
+        "lib/types/unknown-handlers.ts",
         "types/database/helpers.ts",
         "scripts/**/*.ts",
         "supabase/functions/**/*.ts"

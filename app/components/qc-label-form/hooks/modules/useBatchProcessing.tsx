@@ -7,7 +7,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { getErrorMessage } from '@/types/core/error';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { toast } from 'sonner';
 import { createClient } from '@/app/utils/supabase/client';
 import type { ProductInfo } from '../../types';

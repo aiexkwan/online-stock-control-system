@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { getErrorMessage } from '@/types/core/error';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { validateSupplierCode } from '@/app/actions/grnActions';
 import { SupplierInfo, convertDatabaseSupplierInfo } from '@/types';
 
