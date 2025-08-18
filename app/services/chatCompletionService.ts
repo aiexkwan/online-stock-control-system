@@ -75,11 +75,35 @@ export class ChatCompletionService {
       nodeEnv: process.env.NODE_ENV,
     }, '[ChatCompletionService] Initializing with API key');
     
-    // 配置 OpenAI 客戶端，支援 EU 端點
+    // 配置 OpenAI 客戶端 - 根據 Vercel 區域自動選擇最佳端點
+    const getOptimalBaseURL = () => {
+      const vercelRegion = process.env.VERCEL_REGION;
+      
+      // 如果明確設定了 EU endpoint，使用它
+      if (process.env.OPENAI_EU_ENDPOINT) {
+        return process.env.OPENAI_EU_ENDPOINT;
+      }
+      
+      // 根據 Vercel 區域選擇最佳端點
+      if (vercelRegion?.startsWith('eu-') || vercelRegion === 'lhr1' || vercelRegion === 'fra1') {
+        return 'https://api.openai.com/v1'; // 歐洲區域用標準端點
+      }
+      
+      // 默認使用標準美國端點
+      return 'https://api.openai.com/v1';
+    };
+    
+    const baseURL = getOptimalBaseURL();
+    
+    systemLogger.info({
+      baseURL,
+      vercelRegion: process.env.VERCEL_REGION,
+      hasEuEndpoint: !!process.env.OPENAI_EU_ENDPOINT,
+    }, '[ChatCompletionService] OpenAI endpoint selected');
+    
     this.openai = new OpenAI({ 
       apiKey,
-      // 如果啟用 EU Data Residency，使用歐盟端點
-      baseURL: process.env.OPENAI_EU_ENDPOINT || 'https://api.openai.com/v1',
+      baseURL,
       // 增加 timeout 同 retry 設定
       maxRetries: 3,
       timeout: 30000, // 30 seconds
