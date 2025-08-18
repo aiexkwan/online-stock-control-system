@@ -110,11 +110,40 @@ export class ChatCompletionService {
       this.validateResult(result, extractedData);
 
       return result;
-    } catch (error) {
+    } catch (error: any) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      systemLogger.error({
+      
+      // 提供更詳細的錯誤診斷
+      let errorDetails: any = {
         error: errorMessage,
-      }, '[ChatCompletionService] Failed to extract orders');
+        type: error?.constructor?.name,
+      };
+      
+      // 檢查 OpenAI 特定錯誤
+      if (error?.response) {
+        errorDetails.status = error.response.status;
+        errorDetails.statusText = error.response.statusText;
+        errorDetails.data = error.response.data;
+      }
+      
+      // 檢查是否是 API Key 問題
+      if (errorMessage.includes('apikey') || errorMessage.includes('API key') || errorMessage.includes('Incorrect API key')) {
+        errorDetails.hint = 'Check if OPENAI_API_KEY is valid in Vercel Environment Variables';
+      }
+      
+      // 檢查是否是額度問題
+      if (errorMessage.includes('quota') || errorMessage.includes('limit') || errorMessage.includes('insufficient')) {
+        errorDetails.hint = 'OpenAI API quota may be exceeded';
+      }
+      
+      // 檢查網絡問題
+      if (errorMessage.includes('ECONNREFUSED') || errorMessage.includes('ETIMEDOUT') || errorMessage.includes('Connection')) {
+        errorDetails.hint = 'Network connection issue or OpenAI API is unreachable';
+        errorDetails.apiKeyPresent = !!process.env.OPENAI_API_KEY;
+        errorDetails.apiKeyPrefix = process.env.OPENAI_API_KEY?.substring(0, 10);
+      }
+      
+      systemLogger.error(errorDetails, '[ChatCompletionService] Failed to extract orders');
       
       // 返回空結果而不是拋出錯誤
       return {
@@ -122,6 +151,7 @@ export class ChatCompletionService {
         metadata: {
           totalPages: extractedData.numPages,
           extractionMethod: 'chat-completion-failed',
+          error: errorDetails.hint || errorMessage,
         },
       };
     }
@@ -395,10 +425,27 @@ export class ChatCompletionService {
       };
       
       return result;
-    } catch (error) {
-      systemLogger.error({
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }, '[ChatCompletionService] Fallback model also failed');
+    } catch (error: any) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // 詳細錯誤診斷
+      let errorDetails: any = {
+        error: errorMessage,
+        type: error?.constructor?.name,
+        model: 'gpt-4o-mini',
+      };
+      
+      if (error?.response) {
+        errorDetails.status = error.response.status;
+        errorDetails.data = error.response.data;
+      }
+      
+      if (errorMessage.includes('Connection')) {
+        errorDetails.hint = 'Both primary and fallback models failed - check OpenAI API status';
+        errorDetails.apiKeyPresent = !!process.env.OPENAI_API_KEY;
+      }
+      
+      systemLogger.error(errorDetails, '[ChatCompletionService] Fallback model also failed');
       
       return {
         orders: [],

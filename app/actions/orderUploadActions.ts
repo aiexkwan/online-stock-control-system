@@ -537,12 +537,22 @@ export async function analyzeOrderPDF(
             status: response.status,
             statusText: response.statusText,
             url: apiUrl,
-            errorBody: errorText,
+            errorBody: errorText.substring(0, 500), // Limit error body for logging
             baseUrl,
             vercelUrl: process.env.VERCEL_URL,
             nextPublicAppUrl: process.env.NEXT_PUBLIC_APP_URL,
           });
-          throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
+          
+          // 根據不同錯誤提供更具體的錯誤信息
+          if (response.status === 401) {
+            throw new Error('Authentication failed. The Vercel deployment may have password protection enabled. Please check Vercel dashboard settings.');
+          } else if (response.status === 403) {
+            throw new Error('Access forbidden. Please check API security settings.');
+          } else if (response.status === 413) {
+            throw new Error('File too large. Maximum file size is 10MB.');
+          }
+          
+          throw new Error(`API request failed: ${response.status} ${response.statusText}`);
         }
 
         const enhancedResult = await response.json();
