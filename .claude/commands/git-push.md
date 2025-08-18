@@ -3,24 +3,19 @@
 ## Target
 - Fix all TypeScript,Eslint and Build issue, lastly push to github
 
-## Agent Assign
-- [Code Reviewer](../agents/code-reviewer.md)
-- [TypeScript-Pro](../agents/typescript-pro.md)
-- [Error Dective](../agents/error-detective.md)
+## Workflow for agent
+1. [Eslint Fixer](../agents/eslint-fixer.md)
+    - Run `npm run lint` for existing `Eslint` error
+    - Run fix if any
 
-## Workflow
-1. Run `npm run lint` for existing `Eslint` error
+2. [TypeScript-Pro](../agents/typescript-pro.md)
+    - Run `npm run typecheck` for existing `TypeScript` error
+    - Run fix if any
 
-2. [*If Any Error*]Invoke agents and fix `Eslint` error
+3. [Build Error Resolver](../agents/build-error-resolver.md)
+    - Run `npm run build` for existing build error
+    - Run fix if any
 
-3. Run `npm run typecheck` for existing `TypeScript` error
+4. Make second check and ensure every error been fixed
 
-4. [*If Any Error*]Invoke agents and fix `TypeScript` error
-
-5. Run `npm run build` for existing build error
-
-6. [*If Any Error*]Invoke agents and fix `Build `error
-
-7. Make second check and ensure every error been fixed
-
-8. Ask user permission if push to Github, or do other else
+5. Ask user permission if push to Github, or do other else

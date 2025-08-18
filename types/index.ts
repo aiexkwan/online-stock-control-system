@@ -226,11 +226,7 @@ export type {
   UserRole,
 } from '@/lib/types/auth';
 
-// Domain Types - Only export types that actually exist
-export type {
-  SearchType,
-  ErrorType as VoidErrorType,
-} from './domains';
+// Domain Types - Removed unused domains.ts exports
 
 // Import types from correct locations
 export type {
