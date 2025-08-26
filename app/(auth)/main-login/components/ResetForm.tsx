@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import React, { useState, useCallback, memo } from 'react';
+import { EyeIcon, EyeSlashIcon } from './icons';
 import EmailValidator from './EmailValidator';
 import PasswordValidator from './PasswordValidator';
 import { unifiedAuth } from '../utils/unified-auth';
@@ -24,7 +24,7 @@ interface ResetPasswordData {
   confirmPassword: string;
 }
 
-export default function ResetForm({
+const ResetForm = memo(function ResetForm({
   step,
   token,
   onSuccess,
@@ -45,7 +45,7 @@ export default function ResetForm({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
-  const validateRequestForm = (): boolean => {
+  const validateRequestForm = useCallback((): boolean => {
     const errors: { [key: string]: string } = {};
 
     if (!requestData.email) {
@@ -56,9 +56,9 @@ export default function ResetForm({
 
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
-  };
+  }, [requestData.email]);
 
-  const validateResetForm = (): boolean => {
+  const validateResetForm = useCallback((): boolean => {
     const errors: { [key: string]: string } = {};
 
     // Password validation
@@ -76,79 +76,88 @@ export default function ResetForm({
 
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
-  };
+  }, [resetData.password, resetData.confirmPassword]);
 
-  const handleRequestSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleRequestSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
 
-    if (!validateRequestForm()) {
-      return;
-    }
+      if (!validateRequestForm()) {
+        return;
+      }
 
-    setIsLoading(true);
-    onError('');
+      setIsLoading(true);
+      onError('');
 
-    try {
-      // 使用 Supabase Auth 發送密碼重設 email
-      await unifiedAuth.resetPassword(requestData.email);
+      try {
+        // 使用 Supabase Auth 發送密碼重設 email
+        await unifiedAuth.resetPassword(requestData.email);
 
-      // 發送成功
-      onSuccess();
-    } catch (error) {
-      onError(
-        error instanceof Error ? error.message : 'Failed to send reset email. Please try again.'
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        // 發送成功
+        onSuccess();
+      } catch (error) {
+        onError(
+          error instanceof Error ? error.message : 'Failed to send reset email. Please try again.'
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [validateRequestForm, setIsLoading, onError, onSuccess, requestData.email]
+  );
 
-  const handleResetSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleResetSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
 
-    if (!validateResetForm()) {
-      return;
-    }
+      if (!validateResetForm()) {
+        return;
+      }
 
-    if (!token) {
-      onError('Invalid reset token. Please request a new password reset.');
-      return;
-    }
+      if (!token) {
+        onError('Invalid reset token. Please request a new password reset.');
+        return;
+      }
 
-    setIsLoading(true);
-    onError('');
+      setIsLoading(true);
+      onError('');
 
-    try {
-      // 使用 Supabase Auth 更新密碼
-      await unifiedAuth.updatePassword(resetData.password);
+      try {
+        // 使用 Supabase Auth 更新密碼
+        await unifiedAuth.updatePassword(resetData.password);
 
-      // 密碼重設成功
-      onSuccess();
-    } catch (error) {
-      onError(
-        error instanceof Error ? error.message : 'Failed to reset password. Please try again.'
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        // 密碼重設成功
+        onSuccess();
+      } catch (error) {
+        onError(
+          error instanceof Error ? error.message : 'Failed to reset password. Please try again.'
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [validateResetForm, token, onError, setIsLoading, onSuccess, resetData.password]
+  );
 
-  const handleInputChange = (field: string, value: string) => {
-    if (step === 'request') {
-      setRequestData(prev => ({ ...prev, [field]: value }));
-    } else {
-      setResetData(prev => ({ ...prev, [field]: value }));
-    }
+  const handleInputChange = useCallback(
+    (field: string, value: string) => {
+      if (step === 'request') {
+        setRequestData(prev => ({ ...prev, [field]: value }));
+      } else {
+        setResetData(prev => ({ ...prev, [field]: value }));
+      }
 
-    // Clear field error when user starts typing
-    if (fieldErrors[field]) {
-      setFieldErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
-    }
-  };
+      // Clear field error when user starts typing
+      if (fieldErrors[field]) {
+        setFieldErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[field];
+          return newErrors;
+        });
+      }
+    },
+    [step, fieldErrors]
+  );
 
   if (step === 'request') {
     return (
@@ -166,7 +175,7 @@ export default function ResetForm({
             className={`w-full rounded-md border bg-gray-700 px-3 py-2 text-white placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               fieldErrors.email ? 'border-red-500' : 'border-gray-600'
             }`}
-            placeholder='your.name@pennineindustries.com'
+            placeholder='your.name@company.com'
             disabled={isLoading}
           />
           {fieldErrors.email && <p className='mt-1 text-sm text-red-400'>{fieldErrors.email}</p>}
@@ -222,9 +231,7 @@ export default function ResetForm({
         {fieldErrors.password && (
           <p className='mt-1 text-sm text-red-400'>{fieldErrors.password}</p>
         )}
-        <p className='mt-1 text-xs text-gray-400'>
-          Password must be at least 6 characters with letters and numbers only
-        </p>
+        <p className='mt-1 text-xs text-gray-400'>Password must be at least 6 characters</p>
       </div>
 
       {/* Confirm Password Field */}
@@ -279,4 +286,6 @@ export default function ResetForm({
       </button>
     </form>
   );
-}
+});
+
+export default ResetForm;

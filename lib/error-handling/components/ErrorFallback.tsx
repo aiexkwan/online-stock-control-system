@@ -7,7 +7,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useMemo, memo, useCallback } from 'react';
 import { AlertTriangle, RefreshCw, Home, AlertCircle, Info, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { ErrorFallbackProps, ErrorSeverity } from '../types';
 
 // Base Error Fallback Component
-export function ErrorFallback({
+export const ErrorFallback = memo(function ErrorFallback({
   error,
   errorReport,
   retry,
@@ -24,60 +24,71 @@ export function ErrorFallback({
   customActions = [],
 }: ErrorFallbackProps) {
   const severity = errorReport?.severity || 'medium';
-  const category = errorReport?.category || 'unknown';
   const userMessage = errorReport?.userMessage || error.message;
 
-  const getSeverityIcon = (severity: ErrorSeverity) => {
-    switch (severity) {
-      case 'critical':
-        return <AlertTriangle className='h-6 w-6 text-red-500' />;
-      case 'high':
-        return <AlertCircle className='h-6 w-6 text-orange-500' />;
-      case 'medium':
-        return <AlertTriangle className='h-6 w-6 text-yellow-500' />;
-      case 'low':
-        return <Info className='h-6 w-6 text-blue-500' />;
-      default:
-        return <AlertTriangle className='h-6 w-6 text-gray-500' />;
-    }
-  };
+  const getSeverityIcon = useMemo(
+    () =>
+      function getSeverityIconFn(severity: ErrorSeverity) {
+        switch (severity) {
+          case 'critical':
+            return <AlertTriangle className='h-6 w-6 text-red-500' />;
+          case 'high':
+            return <AlertCircle className='h-6 w-6 text-orange-500' />;
+          case 'medium':
+            return <AlertTriangle className='h-6 w-6 text-yellow-500' />;
+          case 'low':
+            return <Info className='h-6 w-6 text-blue-500' />;
+          default:
+            return <AlertTriangle className='h-6 w-6 text-gray-500' />;
+        }
+      },
+    []
+  );
 
-  const getSeverityColors = (severity: ErrorSeverity) => {
-    switch (severity) {
-      case 'critical':
-        return {
-          bg: 'bg-red-950/20',
-          border: 'border-red-500/50',
-          text: 'text-red-400',
-        };
-      case 'high':
-        return {
-          bg: 'bg-orange-950/20',
-          border: 'border-orange-500/50',
-          text: 'text-orange-400',
-        };
-      case 'medium':
-        return {
-          bg: 'bg-yellow-950/20',
-          border: 'border-yellow-500/50',
-          text: 'text-yellow-400',
-        };
-      case 'low':
-        return {
-          bg: 'bg-blue-950/20',
-          border: 'border-blue-500/50',
-          text: 'text-blue-400',
-        };
-      default:
-        return {
-          bg: 'bg-gray-950/20',
-          border: 'border-gray-500/50',
-          text: 'text-gray-400',
-        };
-    }
-  };
+  const getSeverityColors = useMemo(
+    () =>
+      function getSeverityColorsFn(severity: ErrorSeverity) {
+        switch (severity) {
+          case 'critical':
+            return {
+              bg: 'bg-red-950/20',
+              border: 'border-red-500/50',
+              text: 'text-red-400',
+            };
+          case 'high':
+            return {
+              bg: 'bg-orange-950/20',
+              border: 'border-orange-500/50',
+              text: 'text-orange-400',
+            };
+          case 'medium':
+            return {
+              bg: 'bg-yellow-950/20',
+              border: 'border-yellow-500/50',
+              text: 'text-yellow-400',
+            };
+          case 'low':
+            return {
+              bg: 'bg-blue-950/20',
+              border: 'border-blue-500/50',
+              text: 'text-blue-400',
+            };
+          default:
+            return {
+              bg: 'bg-gray-950/20',
+              border: 'border-gray-500/50',
+              text: 'text-gray-400',
+            };
+        }
+      },
+    []
+  );
 
-  const colors = getSeverityColors(severity);
+  const colors = useMemo(() => getSeverityColors(severity), [getSeverityColors, severity]);
+
+  const handleGoHome = useCallback(() => {
+    window.location.href = '/';
+  }, []);
 
   return (
     <div
@@ -139,12 +150,7 @@ export function ErrorFallback({
               </Button>
 
               {severity === 'critical' && (
-                <Button
-                  onClick={() => (window.location.href = '/')}
-                  variant='outline'
-                  size='sm'
-                  className='w-full'
-                >
+                <Button onClick={handleGoHome} variant='outline' size='sm' className='w-full'>
                   <Home className='mr-2 h-4 w-4' />
                   Go Home
                 </Button>
@@ -155,21 +161,24 @@ export function ErrorFallback({
       </div>
     </div>
   );
-}
+});
 
 // Compact Error Fallback for small components
-export function CompactErrorFallback({
+export const CompactErrorFallback = memo(function CompactErrorFallback({
   error,
   errorReport,
   retry,
 }: Pick<ErrorFallbackProps, 'error' | 'errorReport' | 'retry'>) {
   const severity = errorReport?.severity || 'medium';
-  const colors = {
-    critical: 'text-red-400 border-red-500/50',
-    high: 'text-orange-400 border-orange-500/50',
-    medium: 'text-yellow-400 border-yellow-500/50',
-    low: 'text-blue-400 border-blue-500/50',
-  };
+  const colors = useMemo(
+    () => ({
+      critical: 'text-red-400 border-red-500/50',
+      high: 'text-orange-400 border-orange-500/50',
+      medium: 'text-yellow-400 border-yellow-500/50',
+      low: 'text-blue-400 border-blue-500/50',
+    }),
+    []
+  );
 
   return (
     <div
@@ -184,10 +193,10 @@ export function CompactErrorFallback({
       </Button>
     </div>
   );
-}
+});
 
 // Card-specific Error Fallback
-export function CardErrorFallback({
+export const CardErrorFallback = memo(function CardErrorFallback({
   error,
   errorReport,
   retry,
@@ -226,11 +235,20 @@ export function CardErrorFallback({
       </CardContent>
     </Card>
   );
-}
+});
 
 // Page-level Error Fallback
-export function PageErrorFallback({ error, errorReport, retry, reset }: ErrorFallbackProps) {
+export const PageErrorFallback = memo(function PageErrorFallback({
+  error,
+  errorReport,
+  retry,
+  reset,
+}: ErrorFallbackProps) {
   const severity = errorReport?.severity || 'high';
+
+  const handleGoHome = useCallback(() => {
+    window.location.href = '/';
+  }, []);
 
   return (
     <div className='flex min-h-screen items-center justify-center bg-gray-900 p-6'>
@@ -262,7 +280,7 @@ export function PageErrorFallback({ error, errorReport, retry, reset }: ErrorFal
               <RefreshCw className='mr-2 h-4 w-4' />
               Try Again
             </Button>
-            <Button onClick={() => (window.location.href = '/')} variant='outline'>
+            <Button onClick={handleGoHome} variant='outline'>
               <Home className='mr-2 h-4 w-4' />
               Home
             </Button>
@@ -271,10 +289,10 @@ export function PageErrorFallback({ error, errorReport, retry, reset }: ErrorFal
       </Card>
     </div>
   );
-}
+});
 
 // Inline Error Message Component
-export function InlineErrorMessage({
+export const InlineErrorMessage = memo(function InlineErrorMessage({
   message,
   severity = 'medium',
   showIcon = true,
@@ -288,7 +306,7 @@ export function InlineErrorMessage({
     onClick: () => void;
   };
 }) {
-  const getIcon = () => {
+  const getIcon = useMemo(() => {
     switch (severity) {
       case 'critical':
       case 'high':
@@ -300,9 +318,9 @@ export function InlineErrorMessage({
       default:
         return <AlertTriangle className='h-4 w-4' />;
     }
-  };
+  }, [severity]);
 
-  const getColors = () => {
+  const getColors = useMemo(() => {
     switch (severity) {
       case 'critical':
         return 'text-red-400 bg-red-950/20 border-red-500/50';
@@ -315,12 +333,12 @@ export function InlineErrorMessage({
       default:
         return 'text-gray-400 bg-gray-950/20 border-gray-500/50';
     }
-  };
+  }, [severity]);
 
   return (
-    <div className={`flex items-center justify-between rounded-lg border p-3 ${getColors()}`}>
+    <div className={`flex items-center justify-between rounded-lg border p-3 ${getColors}`}>
       <div className='flex items-center gap-2'>
-        {showIcon && getIcon()}
+        {showIcon && getIcon}
         <span className='text-sm'>{message}</span>
       </div>
       {action && (
@@ -330,10 +348,10 @@ export function InlineErrorMessage({
       )}
     </div>
   );
-}
+});
 
 // Success Message Component
-export function SuccessMessage({
+export const SuccessMessage = memo(function SuccessMessage({
   message,
   description,
   action,
@@ -366,4 +384,4 @@ export function SuccessMessage({
       )}
     </div>
   );
-}
+});

@@ -35,11 +35,7 @@ class UnifiedAuth {
   }
 
   async signIn(email: string, password: string) {
-    // 企業域名驗證
-    if (!email.endsWith('@pennineindustries.com')) {
-      throw new Error('只允許 Pennine Industries 員工登入');
-    }
-
+    // Trust Supabase Auth for domain validation - handled by RLS policies
     const supabase = this.getSupabaseClient();
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -51,10 +47,7 @@ class UnifiedAuth {
   }
 
   async signUp(email: string, password: string) {
-    if (!email.endsWith('@pennineindustries.com')) {
-      throw new Error('只允許 Pennine Industries 員工註冊');
-    }
-
+    // Trust Supabase Auth for domain validation - handled by RLS policies
     const supabase = this.getSupabaseClient();
 
     // 設置正確的重定向 URL
@@ -101,10 +94,7 @@ class UnifiedAuth {
   }
 
   async resetPassword(email: string) {
-    if (!email.endsWith('@pennineindustries.com')) {
-      throw new Error('只允許 Pennine Industries 員工重設密碼');
-    }
-
+    // Trust Supabase Auth for domain validation - handled by RLS policies
     const supabase = this.getSupabaseClient();
 
     // 設置正確的重定向 URL

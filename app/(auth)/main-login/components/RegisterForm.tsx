@@ -1,332 +1,229 @@
 'use client';
 
-import React, { useState } from 'react';
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import React, { useCallback, memo } from 'react';
 import EmailValidator from './EmailValidator';
 import PasswordValidator from './PasswordValidator';
-import { unifiedAuth } from '../utils/unified-auth';
+import { useLoginContext } from '../context/LoginContext';
+import { useAuthEvents, useAuthEventListener } from '../events/useAuthEvents';
+import { CompoundForm } from './compound/CompoundForm';
 
 interface RegisterFormProps {
-  onSuccess: () => void;
-  onError: (error: string) => void;
-  isLoading: boolean;
-  setIsLoading: (loading: boolean) => void;
+  onRegistrationSuccess: (email: string) => void;
 }
 
-interface RegisterFormData {
-  email: string;
-  password: string;
-  confirmPassword: string;
-  firstName: string;
-  lastName: string;
-  department: string;
-  agreeToTerms: boolean;
-}
+// Memoized RegisterForm to prevent unnecessary re-renders
+const RegisterForm = memo(function RegisterForm({ onRegistrationSuccess }: RegisterFormProps) {
+  // Use the centralized login context
+  const {
+    loading,
+    error,
+    registerFormData,
+    uiState,
+    register,
+    updateRegisterForm,
+    setShowPassword,
+    setShowConfirmPassword,
+    clearAllErrors,
+  } = useLoginContext();
 
-interface RegisterFormErrors {
-  email?: string;
-  password?: string;
-  confirmPassword?: string;
-  firstName?: string;
-  lastName?: string;
-  department?: string;
-  agreeToTerms?: string;
-}
+  // Event-driven communication
+  const {
+    emitRegisterAttempt,
+    emitRegisterSuccess,
+    emitRegisterError,
+    emitFormFieldChange,
+  } = useAuthEvents({ namespace: 'RegisterForm' });
 
-export default function RegisterForm({
-  onSuccess,
-  onError,
-  isLoading,
-  setIsLoading,
-}: RegisterFormProps) {
-  const [formData, setFormData] = useState<RegisterFormData>({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    firstName: '',
-    lastName: '',
-    department: '',
-    agreeToTerms: false,
+  // Listen to external events
+  useAuthEventListener('ERROR_CLEAR', () => {
+    clearAllErrors();
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<RegisterFormErrors>({});
 
-  const validateForm = (): boolean => {
-    const errors: RegisterFormErrors = {};
-
-    // Email validation
-    if (!formData.email) {
-      errors.email = 'Email is required';
-    } else if (!EmailValidator.validate(formData.email)) {
-      errors.email = EmailValidator.getErrorMessage(formData.email);
+  useAuthEventListener('FORM_CLEAR', (event) => {
+    if (event.payload.formType === 'register' || event.payload.formType === 'all') {
+      updateRegisterForm('email', '');
+      updateRegisterForm('password', '');
+      updateRegisterForm('confirmPassword', '');
     }
+  });
 
-    // Password validation
-    const passwordErrors = PasswordValidator.validate(formData.password);
-    if (passwordErrors.length > 0) {
-      errors.password = passwordErrors[0]; // Show first error
-    }
+  // Memoized handlers to prevent re-renders
+  const handleSubmit = useCallback(
+    async (formData: { email: string; password: string; confirmPassword: string }) => {
+      clearAllErrors();
+      
+      // Emit register attempt event
+      emitRegisterAttempt(formData);
 
-    // Confirm password validation
-    if (!formData.confirmPassword) {
-      errors.confirmPassword = 'Please confirm your password';
-    } else if (formData.password !== formData.confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
-    }
+      const result = await register(formData);
 
-    // First name validation
-    if (!formData.firstName.trim()) {
-      errors.firstName = 'First name is required';
-    } else if (formData.firstName.trim().length < 2) {
-      errors.firstName = 'First name must be at least 2 characters';
-    }
+      if (result.success) {
+        // Registration successful, notify parent and emit event
+        emitRegisterSuccess(formData.email);
+        onRegistrationSuccess(formData.email);
+      } else {
+        emitRegisterError(result.error || 'Registration failed');
+      }
+    },
+    [clearAllErrors, register, onRegistrationSuccess, emitRegisterAttempt, emitRegisterSuccess, emitRegisterError]
+  );
 
-    // Last name validation
-    if (!formData.lastName.trim()) {
-      errors.lastName = 'Last name is required';
-    } else if (formData.lastName.trim().length < 2) {
-      errors.lastName = 'Last name must be at least 2 characters';
-    }
+  const handleFieldChange = useCallback((field: string, value: string) => {
+    updateRegisterForm(field as keyof typeof registerFormData, value);
+    emitFormFieldChange(field, value, 'register');
+  }, [updateRegisterForm, emitFormFieldChange]);
 
-    // Terms agreement validation
-    if (!formData.agreeToTerms) {
-      errors.agreeToTerms = 'You must agree to the terms and conditions';
-    }
+  const handlePasswordToggle = useCallback(() => {
+    setShowPassword(!uiState.showPassword);
+  }, [setShowPassword, uiState.showPassword]);
 
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+  const handleConfirmPasswordToggle = useCallback(() => {
+    setShowConfirmPassword(!uiState.showConfirmPassword);
+  }, [setShowConfirmPassword, uiState.showConfirmPassword]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Calculate email validation error
+  const emailError = registerFormData.email && !EmailValidator.validate(registerFormData.email)
+    ? EmailValidator.getErrorMessage(registerFormData.email)
+    : undefined;
 
-    if (!validateForm()) {
-      return;
-    }
+  // Calculate password validation errors
+  const passwordErrors = registerFormData.password 
+    ? PasswordValidator.validate(registerFormData.password)
+    : [];
 
-    setIsLoading(true);
-    onError(''); // Clear previous errors
-
-    try {
-      // 使用 Supabase Auth 進行註冊
-      await unifiedAuth.signUp(formData.email, formData.password);
-
-      // 註冊成功
-      onSuccess();
-    } catch (error) {
-      onError(error instanceof Error ? error.message : 'Registration failed. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleInputChange = (field: keyof RegisterFormData, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-
-    // Clear field error when user starts typing
-    if (fieldErrors[field]) {
-      setFieldErrors(prev => ({ ...prev, [field]: undefined }));
-    }
-  };
+  const passwordMismatchError = registerFormData.confirmPassword && 
+    registerFormData.password !== registerFormData.confirmPassword
+    ? 'Passwords do not match'
+    : undefined;
 
   return (
-    <form onSubmit={handleSubmit} className='space-y-4'>
-      {/* Email Field */}
-      <div>
-        <label htmlFor='email' className='mb-2 block text-sm font-medium text-gray-300'>
-          Email Address *
-        </label>
-        <input
-          id='email'
-          type='email'
-          value={formData.email}
-          onChange={e => handleInputChange('email', e.target.value)}
-          className={`w-full rounded-md border bg-gray-700 px-3 py-2 text-white placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            fieldErrors.email ? 'border-red-500' : 'border-gray-600'
-          }`}
-          placeholder='your.name@pennineindustries.com'
-          disabled={isLoading}
-        />
-        {fieldErrors.email && <p className='mt-1 text-sm text-red-400'>{fieldErrors.email}</p>}
-      </div>
-
-      {/* Name Fields */}
-      <div className='grid grid-cols-2 gap-4'>
-        <div>
-          <label htmlFor='firstName' className='mb-2 block text-sm font-medium text-gray-300'>
-            First Name *
-          </label>
-          <input
-            id='firstName'
-            type='text'
-            value={formData.firstName}
-            onChange={e => handleInputChange('firstName', e.target.value)}
-            className={`w-full rounded-md border bg-gray-700 px-3 py-2 text-white placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              fieldErrors.firstName ? 'border-red-500' : 'border-gray-600'
-            }`}
-            placeholder='John'
-            disabled={isLoading}
-          />
-          {fieldErrors.firstName && (
-            <p className='mt-1 text-sm text-red-400'>{fieldErrors.firstName}</p>
-          )}
-        </div>
-
-        <div>
-          <label htmlFor='lastName' className='mb-2 block text-sm font-medium text-gray-300'>
-            Last Name *
-          </label>
-          <input
-            id='lastName'
-            type='text'
-            value={formData.lastName}
-            onChange={e => handleInputChange('lastName', e.target.value)}
-            className={`w-full rounded-md border bg-gray-700 px-3 py-2 text-white placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              fieldErrors.lastName ? 'border-red-500' : 'border-gray-600'
-            }`}
-            placeholder='Doe'
-            disabled={isLoading}
-          />
-          {fieldErrors.lastName && (
-            <p className='mt-1 text-sm text-red-400'>{fieldErrors.lastName}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Department Field */}
-      <div>
-        <label htmlFor='department' className='mb-2 block text-sm font-medium text-gray-300'>
-          Department
-        </label>
-        <select
-          id='department'
-          value={formData.department}
-          onChange={e => handleInputChange('department', e.target.value)}
-          className='w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500'
-          disabled={isLoading}
-        >
-          <option value=''>Select Department</option>
-          <option value='production'>Production</option>
-          <option value='warehouse'>Warehouse</option>
-          <option value='quality'>Quality Control</option>
-          <option value='logistics'>Logistics</option>
-          <option value='management'>Management</option>
-          <option value='it'>IT</option>
-          <option value='other'>Other</option>
-        </select>
-      </div>
-
-      {/* Password Field */}
-      <div>
-        <label htmlFor='password' className='mb-2 block text-sm font-medium text-gray-300'>
-          Password *
-        </label>
-        <div className='relative'>
-          <input
-            id='password'
-            type={showPassword ? 'text' : 'password'}
-            value={formData.password}
-            onChange={e => handleInputChange('password', e.target.value)}
-            className={`w-full rounded-md border bg-gray-700 px-3 py-2 pr-10 text-white placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              fieldErrors.password ? 'border-red-500' : 'border-gray-600'
-            }`}
-            placeholder='Enter your password'
-            disabled={isLoading}
-          />
-          <button
-            type='button'
-            onClick={() => setShowPassword(!showPassword)}
-            className='absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-300'
-            disabled={isLoading}
-          >
-            {showPassword ? <EyeSlashIcon className='h-5 w-5' /> : <EyeIcon className='h-5 w-5' />}
-          </button>
-        </div>
-        {fieldErrors.password && (
-          <p className='mt-1 text-sm text-red-400'>{fieldErrors.password}</p>
-        )}
-        <p className='mt-1 text-xs text-gray-400'>
-          Password must be at least 6 characters with letters and numbers only
-        </p>
-      </div>
-
-      {/* Confirm Password Field */}
-      <div>
-        <label htmlFor='confirmPassword' className='mb-2 block text-sm font-medium text-gray-300'>
-          Confirm Password *
-        </label>
-        <div className='relative'>
-          <input
-            id='confirmPassword'
-            type={showConfirmPassword ? 'text' : 'password'}
-            value={formData.confirmPassword}
-            onChange={e => handleInputChange('confirmPassword', e.target.value)}
-            className={`w-full rounded-md border bg-gray-700 px-3 py-2 pr-10 text-white placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              fieldErrors.confirmPassword ? 'border-red-500' : 'border-gray-600'
-            }`}
-            placeholder='Confirm your password'
-            disabled={isLoading}
-          />
-          <button
-            type='button'
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className='absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-300'
-            disabled={isLoading}
-          >
-            {showConfirmPassword ? (
-              <EyeSlashIcon className='h-5 w-5' />
-            ) : (
-              <EyeIcon className='h-5 w-5' />
-            )}
-          </button>
-        </div>
-        {fieldErrors.confirmPassword && (
-          <p className='mt-1 text-sm text-red-400'>{fieldErrors.confirmPassword}</p>
-        )}
-      </div>
-
-      {/* Terms Agreement */}
-      <div>
-        <label className='flex items-start space-x-3'>
-          <input
-            type='checkbox'
-            checked={formData.agreeToTerms}
-            onChange={e => handleInputChange('agreeToTerms', e.target.checked)}
-            className='mt-1 h-4 w-4 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-blue-500'
-            disabled={isLoading}
-          />
-          <span className='text-sm text-gray-300'>
-            I agree to the{' '}
-            <a href='#' className='text-blue-400 hover:text-blue-300'>
-              Terms and Conditions
-            </a>{' '}
-            and{' '}
-            <a href='#' className='text-blue-400 hover:text-blue-300'>
-              Privacy Policy
-            </a>
-          </span>
-        </label>
-        {fieldErrors.agreeToTerms && (
-          <p className='mt-1 text-sm text-red-400'>{fieldErrors.agreeToTerms}</p>
-        )}
-      </div>
-
-      {/* Submit Button */}
-      <button
-        type='submit'
-        disabled={isLoading}
-        className='w-full rounded-md bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:cursor-not-allowed disabled:bg-blue-800'
-      >
-        {isLoading ? (
-          <div className='flex items-center justify-center'>
-            <div className='mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white'></div>
-            Creating Account...
+    <CompoundForm
+      formType="register"
+      onSubmit={handleSubmit}
+      onFieldChange={handleFieldChange}
+      isSubmitting={loading}
+      hasErrors={!!error}
+    >
+      <CompoundForm.Body className="space-y-6">
+        {/* Global Error Display */}
+        {error && (
+          <div className='mb-4 rounded-lg border border-red-500/50 bg-red-900/50 p-3'>
+            <p className='text-sm text-red-300'>{error}</p>
           </div>
-        ) : (
-          'Create Account'
         )}
-      </button>
-    </form>
+
+        {/* Email Field with Validation */}
+        <CompoundForm.FieldGroup>
+          <CompoundForm.Label htmlFor='register-email' required>
+            Email Address
+          </CompoundForm.Label>
+          <CompoundForm.Input
+            name="email"
+            type="email"
+            value={registerFormData.email}
+            onChange={(value) => handleFieldChange('email', value)}
+            placeholder="your.name@pennineindustries.com"
+            error={emailError}
+            autoComplete="email"
+            className="border border-slate-600 bg-slate-700/50 backdrop-blur-sm focus:border-blue-500 focus:ring-blue-500/50"
+            required
+          />
+          <CompoundForm.Error error={emailError} />
+        </CompoundForm.FieldGroup>
+
+        {/* Password Field with Validation */}
+        <CompoundForm.FieldGroup>
+          <CompoundForm.Label htmlFor='register-password' required>
+            Password
+          </CompoundForm.Label>
+          <CompoundForm.Input
+            name="password"
+            type="password"
+            value={registerFormData.password}
+            onChange={(value) => handleFieldChange('password', value)}
+            placeholder="Enter your password"
+            error={passwordErrors.length > 0 ? passwordErrors[0] : undefined}
+            autoComplete="new-password"
+            showPasswordToggle
+            passwordVisible={uiState.showPassword}
+            onPasswordToggle={handlePasswordToggle}
+            className="border border-slate-600 bg-slate-700/50 backdrop-blur-sm focus:border-blue-500 focus:ring-blue-500/50"
+            required
+          />
+          
+          {/* Password validation errors */}
+          {passwordErrors.length > 0 && (
+            <div className='mt-1 space-y-1'>
+              {passwordErrors.map((error, index) => (
+                <CompoundForm.Error key={index} error={error} />
+              ))}
+            </div>
+          )}
+          
+          {/* Password strength indicator */}
+          {registerFormData.password && (
+            <div className='mt-2 flex items-center space-x-2'>
+              <div className='flex-1'>
+                <div className='h-1 rounded bg-slate-600'>
+                  <div
+                    className={`h-1 rounded transition-all duration-300 ${
+                      PasswordValidator.getStrengthColor(
+                        PasswordValidator.getStrength(registerFormData.password)
+                      ).replace('text-', 'bg-')
+                    }`}
+                    style={{ width: `${PasswordValidator.getStrength(registerFormData.password)}%` }}
+                  />
+                </div>
+              </div>
+              <span
+                className={`text-xs ${
+                  PasswordValidator.getStrengthColor(
+                    PasswordValidator.getStrength(registerFormData.password)
+                  )
+                }`}
+              >
+                {PasswordValidator.getStrengthLabel(
+                  PasswordValidator.getStrength(registerFormData.password)
+                )}
+              </span>
+            </div>
+          )}
+        </CompoundForm.FieldGroup>
+
+        {/* Confirm Password Field */}
+        <CompoundForm.FieldGroup>
+          <CompoundForm.Label htmlFor='register-confirm-password' required>
+            Confirm Password
+          </CompoundForm.Label>
+          <CompoundForm.Input
+            name="confirmPassword"
+            type="password"
+            value={registerFormData.confirmPassword}
+            onChange={(value) => handleFieldChange('confirmPassword', value)}
+            placeholder="Confirm your password"
+            error={passwordMismatchError}
+            autoComplete="new-password"
+            showPasswordToggle
+            passwordVisible={uiState.showConfirmPassword}
+            onPasswordToggle={handleConfirmPasswordToggle}
+            className="border border-slate-600 bg-slate-700/50 backdrop-blur-sm focus:border-blue-500 focus:ring-blue-500/50"
+            required
+          />
+          <CompoundForm.Error error={passwordMismatchError} />
+        </CompoundForm.FieldGroup>
+
+        {/* Submit Button */}
+        <CompoundForm.Button
+          type="submit"
+          variant="primary"
+          loading={loading}
+          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:ring-blue-500/50"
+        >
+          {loading ? 'Creating Account...' : 'Create Account'}
+        </CompoundForm.Button>
+      </CompoundForm.Body>
+    </CompoundForm>
   );
-}
+});
+
+export default RegisterForm;

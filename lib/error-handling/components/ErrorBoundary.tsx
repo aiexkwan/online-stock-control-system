@@ -58,7 +58,6 @@ class ErrorBoundaryClass extends Component<ErrorBoundaryProps, ErrorBoundaryStat
       component: this.props.context?.component || 'UnknownComponent',
       action: this.props.context?.action || 'render',
       ...this.props.context,
-      category: 'rendering',
     };
 
     // Handle auto-retry for certain error types
@@ -139,23 +138,6 @@ class ErrorBoundaryClass extends Component<ErrorBoundaryProps, ErrorBoundaryStat
       case 'refresh':
         window.location.reload();
         break;
-      case 'clear_cache':
-        if (typeof window !== 'undefined') {
-          if ('caches' in window) {
-            caches
-              .keys()
-              .then(names => {
-                names.forEach(name => caches.delete(name));
-              })
-              .then(() => window.location.reload());
-          } else {
-            (window as { location: { reload: () => void } }).location.reload();
-          }
-        }
-        break;
-      case 'redirect':
-        window.location.href = '/';
-        break;
       case 'logout':
         // This would need to be implemented based on your auth system
         localStorage.clear();
@@ -171,7 +153,7 @@ class ErrorBoundaryClass extends Component<ErrorBoundaryProps, ErrorBoundaryStat
     if (this.state.hasError && this.state.error) {
       const FallbackComponent = this.props.fallback || ErrorFallback;
 
-      const recoveryActions = this.props.recoveryStrategy?.secondaryActions || ['retry', 'refresh'];
+      const recoveryActions: ErrorRecoveryAction[] = ['retry', 'refresh'];
 
       const fallbackProps: ErrorFallbackProps = {
         error: this.state.error,

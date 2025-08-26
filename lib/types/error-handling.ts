@@ -1,16 +1,14 @@
 /**
- * 錯誤處理類型定義和工具函數
+ * 簡化錯誤處理類型定義
  *
- * 多專家協作設計：
- * - 分析師：錯誤分類和模式識別
- * - 架構專家：類型系統設計
- * - 代碼品質專家：最佳實踐實施
+ * 移除複雜分類，使用 Supabase Auth 標準錯誤訊息
+ * 保持簡單的成功/失敗狀態管理
  */
 
 /**
- * 標準錯誤類型
+ * 簡化錯誤類型 - 基於標準 Error
  */
-export interface StandardError {
+export interface SimpleError {
   message: string;
   code?: string;
   stack?: string;
@@ -18,47 +16,12 @@ export interface StandardError {
 }
 
 /**
- * API 錯誤類型
+ * 應用錯誤類型 - 統一處理
  */
-export interface ApiError extends StandardError {
-  status?: number;
-  statusText?: string;
-  data?: unknown;
-}
+export type AppError = Error | SimpleError;
 
 /**
- * 數據庫錯誤類型
- */
-export interface DatabaseError extends StandardError {
-  table?: string;
-  operation?: string;
-  constraint?: string;
-}
-
-/**
- * 驗證錯誤類型
- */
-export interface ValidationError extends StandardError {
-  field?: string;
-  value?: unknown;
-  rule?: string;
-}
-
-/**
- * 業務邏輯錯誤類型
- */
-export interface BusinessError extends StandardError {
-  businessCode?: string;
-  context?: Record<string, unknown>;
-}
-
-/**
- * 聯合錯誤類型
- */
-export type AppError = StandardError | ApiError | DatabaseError | ValidationError | BusinessError;
-
-/**
- * 錯誤類型守衛函數
+ * 簡化錯誤類型守衛函數
  */
 export function isError(error: unknown): error is Error {
   return error instanceof Error;
@@ -73,32 +36,11 @@ export function isErrorWithMessage(error: unknown): error is { message: string }
   );
 }
 
-export function isApiError(error: unknown): error is ApiError {
-  return (
-    isErrorWithMessage(error) &&
-    'status' in error &&
-    typeof (error as Record<string, unknown>).status === 'number'
-  );
-}
-
-export function isDatabaseError(error: unknown): error is DatabaseError {
-  return (
-    isErrorWithMessage(error) && ('table' in error || 'operation' in error || 'constraint' in error)
-  );
-}
-
-export function isValidationError(error: unknown): error is ValidationError {
-  return isErrorWithMessage(error) && ('field' in error || 'value' in error || 'rule' in error);
-}
-
-export function isBusinessError(error: unknown): error is BusinessError {
-  return isErrorWithMessage(error) && ('businessCode' in error || 'context' in error);
-}
-
 /**
- * 錯誤消息提取函數
+ * 錯誤消息提取函數 - 使用 Supabase 標準格式
  */
 export function getErrorMessage(error: unknown): string {
+  // Handle Supabase Auth errors
   if (isErrorWithMessage(error)) {
     return error.message;
   }
@@ -111,13 +53,13 @@ export function getErrorMessage(error: unknown): string {
     return error;
   }
 
-  return 'An unknown error occurred';
+  return 'An unexpected error occurred';
 }
 
 /**
- * 錯誤轉換函數
+ * 錯誤轉換函數 - 簡化版本
  */
-export function toStandardError(error: unknown): StandardError {
+export function toSimpleError(error: unknown): SimpleError {
   if (isError(error)) {
     return {
       message: error.message,
@@ -129,18 +71,18 @@ export function toStandardError(error: unknown): StandardError {
   if (isErrorWithMessage(error)) {
     return {
       message: error.message,
-      name: 'UnknownError',
+      name: 'Error',
     };
   }
 
   return {
     message: String(error),
-    name: 'UnknownError',
+    name: 'Error',
   };
 }
 
 /**
- * 安全錯誤處理包裝器
+ * 簡化安全錯誤處理包裝器
  */
 export function safeErrorHandler<T>(
   operation: () => T,
@@ -180,7 +122,7 @@ export async function safeAsyncErrorHandler<T>(
 }
 
 /**
- * 錯誤記錄函數
+ * 簡化錯誤記錄函數
  */
 export function logError(error: unknown, context?: string): void {
   const errorMessage = getErrorMessage(error);
@@ -194,64 +136,85 @@ export function logError(error: unknown, context?: string): void {
 }
 
 /**
- * 結構化錯誤記錄
- */
-export function logStructuredError(error: unknown, metadata?: Record<string, unknown>): void {
-  const structuredError = {
-    message: getErrorMessage(error),
-    timestamp: new Date().toISOString(),
-    type: isError(error) ? error.name : 'Unknown',
-    stack: isError(error) ? error.stack : undefined,
-    metadata,
-  };
-
-  console.error('Structured error:', JSON.stringify(structuredError, null, 2));
-}
-
-/**
- * 錯誤分類器
+ * 簡化錯誤分類器 - 只返回基本信息
  */
 export function categorizeError(error: unknown): {
-  category: 'api' | 'database' | 'validation' | 'business' | 'unknown';
   severity: 'low' | 'medium' | 'high' | 'critical';
   retryable: boolean;
 } {
-  if (isApiError(error)) {
-    const status = error.status || 500;
-    return {
-      category: 'api',
-      severity: status >= 500 ? 'critical' : status >= 400 ? 'high' : 'medium',
-      retryable: status >= 500 || status === 429,
-    };
+  const message = getErrorMessage(error).toLowerCase();
+
+  // Critical errors
+  if (
+    message.includes('auth') ||
+    message.includes('unauthorized') ||
+    message.includes('forbidden')
+  ) {
+    return { severity: 'critical', retryable: false };
   }
 
-  if (isDatabaseError(error)) {
-    return {
-      category: 'database',
-      severity: 'high',
-      retryable: true,
-    };
+  // High severity errors
+  if (
+    message.includes('server error') ||
+    message.includes('network') ||
+    message.includes('timeout')
+  ) {
+    return { severity: 'high', retryable: true };
   }
 
-  if (isValidationError(error)) {
-    return {
-      category: 'validation',
-      severity: 'medium',
-      retryable: false,
-    };
+  // Medium severity (default)
+  return { severity: 'medium', retryable: true };
+}
+
+/**
+ * Supabase Auth 錯誤訊息標準化
+ */
+export function normalizeAuthError(error: unknown): string {
+  const message = getErrorMessage(error);
+
+  // Common Supabase Auth error patterns
+  if (message.includes('Invalid login credentials')) {
+    return 'Invalid email or password';
   }
 
-  if (isBusinessError(error)) {
-    return {
-      category: 'business',
-      severity: 'medium',
-      retryable: false,
-    };
+  if (message.includes('Email not confirmed')) {
+    return 'Please confirm your email address';
   }
 
+  if (message.includes('JWT expired')) {
+    return 'Your session has expired. Please log in again';
+  }
+
+  if (message.includes('refresh_token_not_found')) {
+    return 'Session expired. Please log in again';
+  }
+
+  // Return original message if no pattern matches
+  return message;
+}
+
+/**
+ * 成功/失敗狀態類型
+ */
+export type OperationResult<T = unknown> = {
+  success: boolean;
+  data?: T;
+  error?: string;
+};
+
+/**
+ * 創建成功結果
+ */
+export function createSuccess<T>(data?: T): OperationResult<T> {
+  return { success: true, data };
+}
+
+/**
+ * 創建失敗結果
+ */
+export function createError(error: unknown): OperationResult {
   return {
-    category: 'unknown',
-    severity: 'medium',
-    retryable: false,
+    success: false,
+    error: normalizeAuthError(error),
   };
 }

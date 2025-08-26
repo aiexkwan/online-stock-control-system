@@ -1,69 +1,41 @@
 /**
- * Unified Error Handling Types
- * 統一錯誤處理類型定義
+ * 簡化錯誤處理類型定義
  *
- * 提供完整的錯誤處理類型系統，支援錯誤分類、用戶友好訊息和恢復策略
+ * 移除複雜分類，保持基本成功/失敗狀態管理
+ * 維持現有UI視覺效果
  */
 
 import { ReactNode } from 'react';
 
-// Error Severity Levels
+// Error Severity Levels - 簡化但保持UI兼容性
 export type ErrorSeverity = 'low' | 'medium' | 'high' | 'critical';
 
-// Error Categories
-export type ErrorCategory =
-  | 'network'
-  | 'auth'
-  | 'validation'
-  | 'api'
-  | 'permission'
-  | 'timeout'
-  | 'rendering'
-  | 'unknown';
+// Error Recovery Actions - 簡化
+export type ErrorRecoveryAction = 'retry' | 'refresh' | 'logout';
 
-// Error Recovery Actions
-export type ErrorRecoveryAction =
-  | 'retry'
-  | 'refresh'
-  | 'redirect'
-  | 'clear_cache'
-  | 'logout'
-  | 'manual';
-
-// Error Context Interface
+// 簡化錯誤上下文
 export interface ErrorContext {
   /** Component name where error occurred */
   component: string;
   /** Action being performed when error occurred */
   action: string;
-  /** User ID if available */
-  userId?: string;
   /** Additional context data */
   additionalData?: Record<string, unknown>;
-  /** Error category */
-  category?: ErrorCategory;
-  /** Error severity override */
-  severity?: ErrorSeverity;
 }
 
-// Error Recovery Strategy
+// 簡化恢復策略
 export interface ErrorRecoveryStrategy {
   /** Primary recovery action */
   primaryAction: ErrorRecoveryAction;
-  /** Secondary recovery actions */
-  secondaryActions?: ErrorRecoveryAction[];
   /** Auto retry settings */
   autoRetry?: {
     enabled: boolean;
     maxAttempts: number;
     delayMs: number;
-    backoffMultiplier?: number;
   };
-  /** Custom recovery function */
-  customRecovery?: () => void | Promise<void>;
 }
 
-// Enhanced Error Report
+// 簡化錯誤報告
 export interface ErrorReport {
   /** Unique error ID */
   id: string;
@@ -75,12 +47,8 @@ export interface ErrorReport {
   error: Error;
   /** Error severity */
   severity: ErrorSeverity;
-  /** Error category */
-  category: ErrorCategory;
   /** User-friendly message */
   userMessage: string;
-  /** Technical message */
-  technicalMessage: string;
   /** Recovery strategy */
   recoveryStrategy: ErrorRecoveryStrategy;
   /** Retry count */
@@ -101,18 +69,14 @@ export interface ErrorState {
   lastErrorTime?: string;
 }
 
-// Error Handler Options
+// 簡化錯誤處理選項
 export interface ErrorHandlerOptions {
   /** Show toast notification */
   showToast?: boolean;
-  /** Toast duration override */
-  toastDuration?: number;
   /** Custom user message */
   userMessage?: string;
   /** Recovery strategy override */
   recoveryStrategy?: Partial<ErrorRecoveryStrategy>;
-  /** Log to database */
-  logToDatabase?: boolean;
   /** Silent mode (no UI feedback) */
   silent?: boolean;
 }
@@ -152,7 +116,7 @@ export interface ErrorFallbackProps {
   }>;
 }
 
-// Error Provider Context Value
+// 簡化錯誤上下文值
 export interface ErrorContextValue {
   /** Current error state */
   errorState: ErrorState;
@@ -182,67 +146,11 @@ export interface ErrorContextValue {
   hasComponentErrors: (component: string) => boolean;
 }
 
-// Error Notification Types
-export type ErrorNotificationType = 'toast' | 'dialog' | 'banner' | 'inline';
+// 保持最小必要的通知類型以維持UI兼容性
+export type ErrorNotificationType = 'toast' | 'banner';
 
 export interface ErrorNotificationConfig {
   type: ErrorNotificationType;
-  position?: 'top' | 'bottom' | 'center';
   duration?: number;
   persistent?: boolean;
-  showDetails?: boolean;
-  showRecoveryActions?: boolean;
-}
-
-// Error Analytics
-export interface ErrorAnalytics {
-  /** Error frequency by component */
-  frequencyByComponent: Record<string, number>;
-  /** Error frequency by category */
-  frequencyByCategory: Record<ErrorCategory, number>;
-  /** Error frequency by severity */
-  frequencySeverity: Record<ErrorSeverity, number>;
-  /** Average resolution time */
-  averageResolutionTime: number;
-  /** Most common errors */
-  commonErrors: Array<{
-    message: string;
-    count: number;
-    lastOccurred: string;
-  }>;
-}
-
-// Error Configuration
-export interface ErrorConfig {
-  /** Global error settings */
-  global: {
-    /** Enable error reporting */
-    enableReporting: boolean;
-    /** Enable auto recovery */
-    enableAutoRecovery: boolean;
-    /** Max error history */
-    maxErrorHistory: number;
-    /** Default notification config */
-    defaultNotification: ErrorNotificationConfig;
-  };
-  /** Category-specific settings */
-  categorySettings: Partial<
-    Record<
-      ErrorCategory,
-      {
-        severity: ErrorSeverity;
-        notification: ErrorNotificationConfig;
-        recoveryStrategy: ErrorRecoveryStrategy;
-      }
-    >
-  >;
-  /** Component-specific settings */
-  componentSettings: Record<
-    string,
-    {
-      isolationLevel: 'component' | 'page' | 'app';
-      recoveryStrategy?: ErrorRecoveryStrategy;
-      notification?: ErrorNotificationConfig;
-    }
-  >;
 }

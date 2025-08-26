@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { unifiedAuth } from '../utils/unified-auth';
 
 interface SecurityMonitorProps {
@@ -8,42 +8,49 @@ interface SecurityMonitorProps {
   onSessionExpired?: () => void;
 }
 
-export default function SecurityMonitor({
+const SecurityMonitor = memo(function SecurityMonitor({
   onSessionExpiring,
   onSessionExpired,
 }: SecurityMonitorProps) {
   const [showWarning, setShowWarning] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
-  const securityInfo = unifiedAuth.getSecurityInfo();
+
+  const securityInfo = useMemo(() => unifiedAuth.getSecurityInfo(), []);
+
+  const checkSession = useCallback(() => {
+    try {
+      const isExpiringSoon = unifiedAuth.isSessionExpiringSoon();
+
+      if (isExpiringSoon && !showWarning) {
+        setShowWarning(true);
+        onSessionExpiring?.();
+      }
+
+      // 計算剩餘時間（如果有的話）
+      if (securityInfo.useLocalStorage && 'isSessionExpiringSoon' in unifiedAuth) {
+        // 這裡可以添加更精確的時間計算
+        const sessionTimeout = securityInfo.sessionTimeout;
+        const remaining = Math.max(0, sessionTimeout - sessionTimeout * 0.8);
+        const minutes = Math.floor(remaining / (60 * 1000));
+        setTimeRemaining(`${minutes} minutes`);
+      }
+    } catch (error) {
+      console.error('Session check failed:', error);
+      onSessionExpired?.();
+    }
+  }, [
+    showWarning,
+    securityInfo.sessionTimeout,
+    securityInfo.useLocalStorage,
+    onSessionExpiring,
+    onSessionExpired,
+  ]);
 
   useEffect(() => {
     // 只在使用 localStorage 的模式下監控 session
     if (!securityInfo.useLocalStorage) {
       return;
     }
-
-    const checkSession = () => {
-      try {
-        const isExpiringSoon = unifiedAuth.isSessionExpiringSoon();
-
-        if (isExpiringSoon && !showWarning) {
-          setShowWarning(true);
-          onSessionExpiring?.();
-        }
-
-        // 計算剩餘時間（如果有的話）
-        if (securityInfo.useLocalStorage && 'isSessionExpiringSoon' in unifiedAuth) {
-          // 這裡可以添加更精確的時間計算
-          const sessionTimeout = securityInfo.sessionTimeout;
-          const remaining = Math.max(0, sessionTimeout - sessionTimeout * 0.8);
-          const minutes = Math.floor(remaining / (60 * 1000));
-          setTimeRemaining(`${minutes} minutes`);
-        }
-      } catch (error) {
-        console.error('Session check failed:', error);
-        onSessionExpired?.();
-      }
-    };
 
     // 每分鐘檢查一次
     const interval = setInterval(checkSession, 60 * 1000);
@@ -52,7 +59,11 @@ export default function SecurityMonitor({
     checkSession();
 
     return () => clearInterval(interval);
-  }, [securityInfo, showWarning, onSessionExpiring, onSessionExpired]);
+  }, [securityInfo.useLocalStorage, checkSession]);
+
+  const handleDismiss = useCallback(() => {
+    setShowWarning(false);
+  }, []);
 
   if (!showWarning || !securityInfo.useLocalStorage) {
     return null;
@@ -81,10 +92,7 @@ export default function SecurityMonitor({
               Your session will expire in approximately {timeRemaining}. Please save your work and
               refresh the page to extend your session.
             </p>
-            <button
-              onClick={() => setShowWarning(false)}
-              className='mt-2 text-xs underline hover:no-underline'
-            >
+            <button onClick={handleDismiss} className='mt-2 text-xs underline hover:no-underline'>
               Dismiss
             </button>
           </div>
@@ -92,4 +100,6 @@ export default function SecurityMonitor({
       </div>
     </div>
   );
-}
+});
+
+export default SecurityMonitor;

@@ -7,7 +7,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { RefreshCw, AlertTriangle, CheckCircle, Clock, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -16,7 +16,7 @@ import { useErrorRetry } from '../hooks/useError';
 import type { ErrorRecoveryStrategy, ErrorReport } from '../types';
 
 // Auto Recovery Component
-export function AutoRecovery({
+export const AutoRecovery = memo(function AutoRecovery({
   error,
   strategy,
   onRecovery,
@@ -37,7 +37,7 @@ export function AutoRecovery({
   // Progress calculation
   useEffect(() => {
     if (isRetrying && autoRetry) {
-      const delay = autoRetry.delayMs * Math.pow(autoRetry.backoffMultiplier || 1, retryCount);
+      const delay = autoRetry.delayMs;
       setTimeRemaining(delay);
 
       const interval = setInterval(() => {
@@ -57,12 +57,7 @@ export function AutoRecovery({
     if (canAutoRetry && !isRetrying) {
       const attemptRetry = async () => {
         try {
-          await retry(
-            onRecovery,
-            autoRetry.maxAttempts,
-            autoRetry.delayMs,
-            autoRetry.backoffMultiplier
-          );
+          await retry(onRecovery, autoRetry.maxAttempts, autoRetry.delayMs);
         } catch (error) {
           onFailed();
         }
@@ -114,10 +109,10 @@ export function AutoRecovery({
       </CardContent>
     </Card>
   );
-}
+});
 
 // Manual Recovery Component
-export function ManualRecovery({
+export const ManualRecovery = memo(function ManualRecovery({
   error,
   strategy,
   onRecovery,
@@ -135,9 +130,7 @@ export function ManualRecovery({
       setIsExecuting(true);
 
       try {
-        if (strategy.customRecovery) {
-          await strategy.customRecovery();
-        }
+        // Custom recovery removed in simplified version
         onRecovery(action);
       } catch (error) {
         console.error('Recovery action failed:', error);
@@ -146,7 +139,7 @@ export function ManualRecovery({
         setSelectedAction(null);
       }
     },
-    [strategy, onRecovery]
+    [onRecovery]
   );
 
   const getActionLabel = (action: string) => {
@@ -190,7 +183,7 @@ export function ManualRecovery({
     }
   };
 
-  const allActions = [strategy.primaryAction, ...(strategy.secondaryActions || [])];
+  const allActions = [strategy.primaryAction];
 
   return (
     <Card className='border-orange-500/50 bg-orange-950/20'>
@@ -228,10 +221,10 @@ export function ManualRecovery({
       </CardContent>
     </Card>
   );
-}
+});
 
 // Recovery Status Component
-export function RecoveryStatus({
+export const RecoveryStatus = memo(function RecoveryStatus({
   isRecovering,
   recoveryType,
   progress,
@@ -257,10 +250,10 @@ export function RecoveryStatus({
       </div>
     </div>
   );
-}
+});
 
 // Recovery Success Component
-export function RecoverySuccess({
+export const RecoverySuccess = memo(function RecoverySuccess({
   message,
   onDismiss,
 }: {
@@ -285,10 +278,10 @@ export function RecoverySuccess({
       )}
     </div>
   );
-}
+});
 
 // Comprehensive Error Recovery Component
-export function ErrorRecoveryPanel({
+export const ErrorRecoveryPanel = memo(function ErrorRecoveryPanel({
   error,
   onRecovered,
 }: {
@@ -352,4 +345,4 @@ export function ErrorRecoveryPanel({
       )}
     </div>
   );
-}
+});

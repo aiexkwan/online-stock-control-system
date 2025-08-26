@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import React, { useState, useCallback, memo } from 'react';
+import { EyeIcon, EyeSlashIcon } from './icons';
 import PasswordValidator from './PasswordValidator';
 import { unifiedAuth } from '../utils/unified-auth';
 
@@ -18,7 +18,7 @@ interface ChangePasswordData {
   confirmPassword: string;
 }
 
-export default function ChangePasswordForm({
+const ChangePasswordForm = memo(function ChangePasswordForm({
   onSuccess,
   onError,
   isLoading,
@@ -35,7 +35,7 @@ export default function ChangePasswordForm({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
-  const validateForm = (): boolean => {
+  const validateForm = useCallback((): boolean => {
     const errors: { [key: string]: string } = {};
 
     // Current password validation
@@ -67,60 +67,66 @@ export default function ChangePasswordForm({
 
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
-  };
+  }, [formData]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
 
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsLoading(true);
-    onError('');
-
-    try {
-      // 首先驗證當前密碼（通過重新登入）
-      const user = await unifiedAuth.getCurrentUser();
-      if (!user?.email) {
-        throw new Error('User not found');
+      if (!validateForm()) {
+        return;
       }
 
-      // 嘗試用當前密碼登入來驗證
-      await unifiedAuth.signIn(user.email, formData.currentPassword);
+      setIsLoading(true);
+      onError('');
 
-      // 如果驗證成功，更新密碼
-      await unifiedAuth.updatePassword(formData.newPassword);
-
-      // 密碼修改成功
-      onSuccess();
-    } catch (error) {
-      if (error instanceof Error) {
-        if (error.message.includes('Invalid login credentials')) {
-          onError('Current password is incorrect');
-        } else {
-          onError(error.message);
+      try {
+        // 首先驗證當前密碼（通過重新登入）
+        const user = await unifiedAuth.getCurrentUser();
+        if (!user?.email) {
+          throw new Error('User not found');
         }
-      } else {
-        onError('Failed to change password. Please try again.');
+
+        // 嘗試用當前密碼登入來驗證
+        await unifiedAuth.signIn(user.email, formData.currentPassword);
+
+        // 如果驗證成功，更新密碼
+        await unifiedAuth.updatePassword(formData.newPassword);
+
+        // 密碼修改成功
+        onSuccess();
+      } catch (error) {
+        if (error instanceof Error) {
+          if (error.message.includes('Invalid login credentials')) {
+            onError('Current password is incorrect');
+          } else {
+            onError(error.message);
+          }
+        } else {
+          onError('Failed to change password. Please try again.');
+        }
+      } finally {
+        setIsLoading(false);
       }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    [validateForm, setIsLoading, onError, onSuccess, formData.currentPassword, formData.newPassword]
+  );
 
-  const handleInputChange = (field: keyof ChangePasswordData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleInputChange = useCallback(
+    (field: keyof ChangePasswordData, value: string) => {
+      setFormData(prev => ({ ...prev, [field]: value }));
 
-    // Clear field error when user starts typing
-    if (fieldErrors[field]) {
-      setFieldErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
-    }
-  };
+      // Clear field error when user starts typing
+      if (fieldErrors[field]) {
+        setFieldErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[field];
+          return newErrors;
+        });
+      }
+    },
+    [fieldErrors]
+  );
 
   return (
     <form onSubmit={handleSubmit} className='space-y-4'>
@@ -192,9 +198,7 @@ export default function ChangePasswordForm({
         {fieldErrors.newPassword && (
           <p className='mt-1 text-sm text-red-400'>{fieldErrors.newPassword}</p>
         )}
-        <p className='mt-1 text-xs text-gray-400'>
-          Password must be at least 6 characters with letters and numbers only
-        </p>
+        <p className='mt-1 text-xs text-gray-400'>Password must be at least 6 characters</p>
       </div>
 
       {/* Confirm New Password Field */}
@@ -249,4 +253,6 @@ export default function ChangePasswordForm({
       </button>
     </form>
   );
-}
+});
+
+export default ChangePasswordForm;

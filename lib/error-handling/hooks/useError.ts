@@ -9,13 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useError as useErrorContext } from '../ErrorContext';
-import type {
-  ErrorContext,
-  ErrorHandlerOptions,
-  ErrorReport,
-  ErrorSeverity,
-  ErrorCategory,
-} from '../types';
+import type { ErrorContext, ErrorHandlerOptions, ErrorReport, ErrorSeverity } from '../types';
 
 // Main useError hook (re-export from context)
 export { useError } from '../ErrorContext';
@@ -227,12 +221,7 @@ export function useComponentErrorState(componentName: string) {
     [localErrors]
   );
 
-  const getErrorsByCategory = useCallback(
-    (category: ErrorCategory) => {
-      return localErrors.filter(err => err.category === category);
-    },
-    [localErrors]
-  );
+  // Simplified - remove category-based filtering
 
   return {
     errors: localErrors,
@@ -242,17 +231,15 @@ export function useComponentErrorState(componentName: string) {
     hasCriticalErrors,
     resolveError: resolveComponentError,
     getErrorsBySeverity,
-    getErrorsByCategory,
   };
 }
 
-// Error analytics hook
+// 簡化錯誤分析 hook
 export function useErrorAnalytics() {
   const { errorState } = useErrorContext();
   const [analytics, setAnalytics] = useState({
     totalErrors: 0,
     errorsByComponent: {} as Record<string, number>,
-    errorsByCategory: {} as Record<ErrorCategory, number>,
     errorsBySeverity: {} as Record<ErrorSeverity, number>,
     recentErrors: [] as ErrorReport[],
   });
@@ -261,16 +248,6 @@ export function useErrorAnalytics() {
     const errors = Array.from(errorState.errors.values());
 
     const errorsByComponent: Record<string, number> = {};
-    const errorsByCategory: Record<ErrorCategory, number> = {
-      network: 0,
-      auth: 0,
-      validation: 0,
-      api: 0,
-      permission: 0,
-      timeout: 0,
-      rendering: 0,
-      unknown: 0,
-    };
     const errorsBySeverity: Record<ErrorSeverity, number> = {
       low: 0,
       medium: 0,
@@ -282,9 +259,6 @@ export function useErrorAnalytics() {
       // By component
       errorsByComponent[error.context.component] =
         (errorsByComponent[error.context.component] || 0) + 1;
-
-      // By category
-      errorsByCategory[error.category] = (errorsByCategory[error.category] || 0) + 1;
 
       // By severity
       errorsBySeverity[error.severity] = (errorsBySeverity[error.severity] || 0) + 1;
@@ -298,7 +272,6 @@ export function useErrorAnalytics() {
     setAnalytics({
       totalErrors: errors.length,
       errorsByComponent,
-      errorsByCategory,
       errorsBySeverity,
       recentErrors,
     });

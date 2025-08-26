@@ -1,249 +1,130 @@
 ---
-allowed-tools: Bash(date:*), Bash(mkdir:*), Task, Write
 argument-hint: [target_path]
-description: Execute comprehensive file analysis and safe cleanup through multi-agent workflow
+description: 對指定的檔案或組件進行全面的循序深度分析，以生成一份關於其是否可被安全移除的詳盡報告。
 ---
 
-# 系統檔案清理執行指令
+# 系統檔案清理分析指令
 
-深度思考並執行全面的檔案分析與安全清理，通過並行調用所有相關分析代理，直接清理冗餘檔案和優化專案結構。
+此指令旨在回答一個核心問題：「這個檔案/組件可以被安全地刪除嗎？」它通過一個由總指揮代理主導的、循序的、多層次的深度分析流程，來評估目標檔案的技術債務情況及其在系統中的影響，最終生成一份詳盡的分析報告，但**不執行任何實際的刪除操作**。
 
-## 上下文記憶系統
+## 代理目錄
 
-- 任務開始：執行[尋找相關對話紀錄](scripts/hooks/find_relevant_context_hook.py)
-- 任務完畢、代理執行完成：執行[保存對話紀錄](scripts/hooks/context_summary_hook.py)
+- [代理目錄](/Users/chun/Documents/PennineWMS/online-stock-control-system/.claude/agents)
 
 ## 變數
 
-- **TARGET_PATH**: $ARGUMENTS[0] 或必需參數
-  - 要分析的檔案、資料夾或模式 (例如：src/legacy/_、_.bak、**tests**/old-\*)
-  - 支援 glob patterns
-  - 使用者：所有分析代理
+- **TARGET_PATH**: $ARGUMENTS[0] - 需要分析的檔案、目錄或 glob 模式。
 
-## 執行代理群組
+## 核心原則：循序深度分析
 
-### 依賴分析代理群組
+- **安全第一**: 指令的唯一目標是分析與報告，絕不修改或刪除任何檔案。
+- **循序深入**: 模仿專家的分析流程，從靜態檢查到依賴關係，再到運行時影響，層層遞進。
+- **單一職責**: 每次分析只調用一個最合適的專家代理，確保分析的深度和準確性。
+- **結論導向**: 所有分析步驟都為最終的「可否刪除」結論提供數據支持。
 
-- [frontend-developer](../agents/frontend-developer.md)：追蹤 import/export、React 組件依賴
-- [backend-architect](../agents/backend-architect.md)：檢查 API routes、middleware 依賴
-- [data-architect](../agents/data-architect.md)：驗證 Supabase schema、Prisma 模型依賴
-- [api-documenter](../agents/api-documenter.md)：檢查 GraphQL 查詢和 mutations 依賴
-- **→ 執行完畢後立即調用 @progress-auditor 審查依賴分析結果**
+## 執行流程
 
-### 影響評估代理群組
+**總指揮**: [architect-review](../agents/architect-review.md)
 
-- [code-reviewer](../agents/code-reviewer.md)：識別技術債務、重複代碼模式
-- [deployment-engineer](../agents/deployment-engineer.md)：檢查 git 歷史、部署相關檔案
-- [performance-engineer](../agents/performance-engineer.md)：分析 bundle 大小、代碼分割影響
-- [security-auditor](../agents/security-auditor.md)：識別安全功能依賴、認證授權影響
-- **→ 執行完畢後立即調用 @progress-auditor 審查影響評估結果**
+總指揮代理將按以下順序，調度各專家對 `$TARGET_PATH` 進行分析，並將每一步的結果記錄下來，供最終報告使用。
 
-### 架構驗證代理群組
+0. 建立報告文檔：`/Users/chun/Documents/PennineWMS/online-stock-control-system/docs/PlanningDocument/clearance_plan/[$ARGUMENTS].md`
 
-- [architect-reviewer](../agents/architect-reviewer.md)：評估整體架構影響、設計模式一致性
-- [test-automator](../agents/test-automator.md)：檢查測試檔案依賴、覆蓋率影響
-- [error-detective](../agents/error-detective.md)：搜尋錯誤日誌中的檔案引用
-- **→ 執行完畢後立即調用 @progress-auditor 審查架構驗證結果**
+1. **第1步：靜態分析 (由 [code-reviewer](../agents/code-reviewer.md) 執行)**
+   - **目標**: 檢查檔案本身的屬性，判斷其是否符合已知的「技術債務」特徵。
+   - **檢查點**:
+     - 是否符合「清理對象識別標準」（如命名包含 `_legacy`, `_bak`）。
+     - 是否使用了已被棄用的技術或庫。
 
-### 清理執行代理群組
+2. **第2步：依賴分析 (由 [frontend-developer](../agents/frontend-developer.md) 和 [backend-architect](../agents/backend-architect.md) 協同執行)**
+   - **目標**: 追蹤目標檔案在整個代碼庫中的所有引用關係。
+   - **檢查點**:
+     - 是否有任何直接的 `import` 或 `require` 語句指向該檔案？
+     - 是否在任何路由、中間件或配置文件中被引用？
+     - GraphQL schema 或 Supabase 遷移中是否存在對此檔案的依賴？
 
-- [legacy-modernizer](../agents/legacy-modernizer.md)：執行實際檔案刪除/移動/重構操作
-- [docs-architect](../agents/docs-architect.md)：更新清理記錄和歷史文檔
-- **→ 執行完畢後立即調用 @progress-auditor 驗證清理完成狀態**
+3. **第3步：運行時分析 (由 [test-automator](../agents/test-automator.md) 和 [error-detective](../agents/error-detective.md) 協同執行)**
+   - **目標**: 評估檔案在系統實際運行時的潛在影響。
+   - **檢查點**:
+     - （模擬刪除後）運行相關的單元測試和 E2E 測試，是否會導致失敗？
+     - 在生產環境的錯誤日誌中，是否能搜索到對此檔案的引用記錄？
 
-## 🚨 清理執行規則
+4. **第4步：影響評估 (由 [security-auditor](../agents/security-auditor.md) 和 [performance-engineer](../agents/performance-engineer.md) 協同執行)**
+   - **目標**: 綜合所有信息，評估刪除檔案後對非功能性需求的影響。
+   - **檢查點**:
+     - 該檔案是否包含任何與安全、認證、授權相關的邏輯？
+     - 刪除後是否會對應用的 Bundle 大小、加載性能產生正面或負面影響？
 
-### 安全清理原則
+5. **第5步：生成分析報告 (由 [docs-architect](../agents/docs-architect.md) 執行)**
+   - **目標**: 匯總以上所有分析步驟的結果，根據預設模版，生成一份統一的、詳盡的分析報告。
 
-1. **預覽優先**：所有操作均為預覽模式
-2. **用戶確認**：明確用戶確認前絕不執行刪除
-3. **備份建議**：刪除前建議創建備份
-4. **分級清理**：按影響等級分批處理
-5. **技術安全**：
-   - 保護 Next.js 核心配置
-   - 保護 TypeScript 配置檔案
-   - 保護 Supabase schema 和 migrations
-   - 保護環境變數檔案
-6. **測試驗證**：清理後建議執行全面測試
-
-## 🎯 清理對象識別標準
+## 清理對象識別標準
 
 在分析階段，代理應根據以下一個或多個標準，將檔案或組件標記為潛在的清理對象：
 
 - **零引用 (Zero-Reference)**: 檔案在專案中沒有任何有效的 import 或引用。
 - **命名約定 (Naming Convention)**: 檔案或目錄名稱包含 `_legacy`, `_bak`, `_old`, `v1`, `archive` 等關鍵字。
-- **過時技術 (Outdated Technology)**:
-  - 使用了已被官方棄用的函式庫或 API。
-  - 使用了舊的寫法，例如 React Class Components 而非 Hooks。
-- **長期未變更 (Long-Term Inactivity)**:
-  - 根據 Git 歷史，檔案在過去 18-24 個月內無任何修改。
-  - 相關功能的主要貢獻者已非活躍開發者。
-- **關聯的功能已下線 (Disabled Feature Association)**:
-  - 代碼僅被一個已經下線或永久停用的功能標記 (Feature Flag) 所使用。
-- **低測試覆蓋率 (Low Test Coverage)**:
-  - 關鍵邏輯缺乏單元測試或整合測試，暗示其重要性可能較低或已被遺忘。
+- **過時技術 (Outdated Technology)**: 使用了已被官方棄用的函式庫或 API。
+- **關聯的功能已下線 (Disabled Feature Association)**: 代碼僅被一個已經下線或永久停用的功能標記 (Feature Flag) 所使用。
 
-## 上下文記憶系統
+## 輸出：清理分析報告
 
-- 每次用戶對話開始：執行[尋找相關對話紀錄](scripts/hooks/find_relevant_context_hook.py)
-- 每次任務執行完畢、代理執行完成：執行[保存對話紀錄](scripts/hooks/context_summary_hook.py)
+指令的唯一輸出是一份 Markdown 格式的分析報告，嚴格遵循以下模版。
 
-## 執行指令
+### 清理分析報告模版
 
-0. 讀取[通用規則](../../CLAUDE.local.md)
-1. 建立分析記錄目錄：`docs/System-Cleanup/`
-2. **解析目標路徑和選項參數**
+```markdown
+# 系統清理分析報告
 
-### 階段一：依賴分析執行
-
-4. **並行調用依賴分析代理群組**
-   - [frontend-developer](../agents/frontend-developer.md)
-   - [backend-architect](../agents/backend-architect.md)
-   - [data-architect](../agents/data-architect.md)
-   - [api-documenter](../agents/api-documenter.md)
-   - **掃描所有 import/export 關係和依賴鏈**
-5. **立即調用 @progress-auditor 審查依賴分析結果**
-   - 驗證依賴關係完整性、引用計數準確性
-   - **分析記錄寫入 docs/System-Cleanup/.../dependency-analysis/**
-   - 未通過 ≥95% 準確性則重新分析
-
-### 階段二：影響評估執行
-
-6. **並行調用影響評估代理群組**
-   - [code-reviewer](../agents/code-reviewer.md)
-   - [deployment-engineer](../agents/deployment-engineer.md)
-   - [performance-engineer](../agents/performance-engineer.md)
-   - [security-auditor](../agents/security-auditor.md)
-   - **評估檔案刪除對系統各層面的影響**
-7. **立即調用 @progress-auditor 審查影響評估結果**
-   - 驗證影響評估完整性、風險等級準確性
-   - **分析記錄寫入 docs/System-Cleanup/.../impact-assessment/**
-   - 未通過 ≥90% 標準則重新評估
-
-### 階段三：架構驗證執行
-
-8. **並行調用架構驗證代理群組**
-   - [architect-reviewer](../agents/architect-reviewer.md)
-   - [test-automator](../agents/test-automator.md)
-   - [error-detective](../agents/error-detective.md)
-   - **驗證整體架構完整性和測試覆蓋影響**
-9. **立即調用 @progress-auditor 審查架構驗證結果**
-   - 驗證架構一致性、測試完整性
-   - **分析記錄寫入 docs/System-Cleanup/.../architecture-verification/**
-   - 未通過 ≥85% 標準則重新驗證
-
-### 階段四：清理執行 (必需用戶確認)
-
-10. **用戶確認後調用清理執行代理群組**
-    - [legacy-modernizer](../agents/legacy-modernizer.md)：執行實際檔案刪除/移動/重構操作
-    - [docs-architect](../agents/docs-architect.md)：更新記錄和文檔
-    - **實際檔案刪除/移動操作**
-
-11. **記錄任務摘要**
-    - [context-manager](../agents/context-manager.md)：執行[任務摘要](context_summary.md)指令
-
-## 分階段影響等級矩陣
-
-| 影響等級      | 特徵描述                       | 處理策略    | 確認要求     |
-| ------------- | ------------------------------ | ----------- | ------------ |
-| **🔴 高影響** | Next.js 核心配置、5+ 組件引用  | ❌ 禁止刪除 | 需架構師確認 |
-| **🟠 中影響** | 2-4 組件使用、部分 legacy 代碼 | ⚠️ 謹慎審查 | 需詳細評估   |
-| **🟢 低影響** | 零引用、備份檔案、空資料夾     | ✅ 安全刪除 | 批量確認即可 |
-
-## 分階段清理標準
-
-### 依賴分析階段標準
-
-```yaml
-依賴完整性: ≥95% (所有引用關係完整追蹤)
-引用計數準確性: ≥95% (import/export 計數正確)
-動態引用檢測: ≥85% (lazy loading、動態 import)
-```
-
-### 影響評估階段標準
-
-```yaml
-風險評估完整性: ≥90% (所有影響層面覆蓋)
-等級分類準確性: ≥90% (高/中/低影響正確分類)
-技術棧特殊性: ≥85% (Next.js、Supabase 特殊考量)
-```
-
-### 架構驗證階段標準
-
-```yaml
-架構一致性: ≥85% (整體設計模式保持)
-測試覆蓋維護: ≥85% (測試功能不受影響)
-錯誤處理完整: ≥90% (無遺留錯誤引用)
-```
-
-## 輸出格式
-
-### 分析記錄位置
-
-```
-docs/System-Cleanup/
-└── <target>/
-      ├── dependency-analysis/
-      │   ├── frontend-developer.md
-      │   ├── backend-architect.md
-      │   ├── data-architect.md
-      │   └── progress-audit-dependency.md
-      ├── impact-assessment/
-      │   ├── code-reviewer.md
-      │   ├── deployment-engineer.md
-      │   ├── performance-engineer.md
-      │   ├── security-auditor.md
-      │   └── progress-audit-impact.md
-      ├── architecture-verification/
-      │   ├── architect-reviewer.md
-      │   ├── test-automator.md
-      │   ├── error-detective.md
-      │   └── progress-audit-architecture.md
-      └── cleanup-execution/
-            ├── legacy-modernizer.md      # 實際清理操作記錄
-            ├── docs-architect.md         # 文檔更新記錄
-            └── cleanup-report.md         # 最終清理報告
-
-```
-
-### 實際清理操作
-
-```
-專案根目錄/
-├── backups/                  # 清理前備份檔案
-├── src/                      # 清理後的源代碼
-├── docs/System-Cleanup/      # 清理記錄和分析
-```
-
-## 受保護檔案清單
-
-```yaml
-永久保護:
-  - package.json, package-lock.json
-  - tsconfig.json, next.config.js
-  - .env.*, .env.example
-  - app/layout.tsx, middleware.ts
-  - supabase/, prisma/
-  - src/lib/supabase/*
-  - src/lib/auth/*
-
-條件保護:
-  - node_modules/ (除非明確要求)
-  - .next/, .vercel/ (構建產物)
-  - public/ (靜態資源)
-```
-
-## 清理完成報告
-
-當所有分析階段完成並由 [legacy-modernizer](../agents/legacy-modernizer.md) 執行清理後，提供：
-
-- **已清理檔案清單**：具體的檔案路徑和刪除原因
-- **空間節省統計**：釋放的磁碟空間和檔案數量
-- **依賴關係變更**：受影響的 import/export 關係
-- **架構完整性確認**：系統架構保持完整
-- **測試覆蓋狀態**：測試功能維持正常
-- **建議後續行動**：進一步優化建議
+- **分析目標**: `[TARGET_PATH]`
+- **分析時間**: `[YYYY-MM-DD HH:MM:SS]`
 
 ---
 
-**記住**：此指令專注於**安全且高效的檔案清理**。目標是通過 [legacy-modernizer](../agents/legacy-modernizer.md) 等代理在保證系統功能完整的前提下，清理冗餘檔案並優化專案結構。疑慮時優先保留檔案，確保系統穩定性。
+## 最終結論
+
+**[ ✅ 可以安全刪除 | ⚠️ 有風險，不建議刪除 | ❌ 高風險，嚴禁刪除 ]**
+
+### 核心理由
+
+> [對最終結論的簡短總結，例如：此組件在代碼庫中零引用，且相關功能已下線。]
+
+---
+
+## 詳細分析證據
+
+### 1. 靜態分析結果
+
+- **命名/位置符合清理標準**: `[是/否]`
+- **使用過時技術**: `[是/否, 如是請說明]`
+- **Git 歷史**: `[例如：最後修改於 26 個月前]`
+- **靜態分析結論**: `[潛在的技術債務 | 看起來仍在使用]`
+
+### 2. 依賴分析結果
+
+- **直接引用數量**: `[Number]`
+- **引用來源**:
+  - `[path/to/referencing/file1.ts]`
+  - `[path/to/referencing/file2.tsx]`
+- **依賴分析結論**: `[零引用 | 被 N 個模組依賴]`
+
+### 3. 運行時分析結果
+
+- **關聯測試結果**: `[通過 | N/A | X 個測試失敗]`
+- **錯誤日誌關聯**: `[是/否]`
+- **運行時分析結論**: `[移除後無明顯運行時影響 | 移除後將導致測試失敗]`
+
+### 4. 影響評估結果
+
+- **安全影響**: `[無 | 低 | 中 | 高, 請說明]`
+- **性能影響**: `[正面 (Bundle -25KB) | 負面 | 無]`
+- **影響評估結論**: `[移除後對系統無負面影響 | 移除將影響安全策略]`
+
+---
+
+## 建議後續步驟
+
+- **如果可以刪除**: `建議執行 'git rm [TARGET_PATH]'，並在合併前執行一次完整的 E2E 測試。`
+- **如果不建議刪除**: `建議重構此組件，解決其依賴問題，或為其補充單元測試。`
+- **如果嚴禁刪除**: `此組件為核心模組，請勿修改。`
+```

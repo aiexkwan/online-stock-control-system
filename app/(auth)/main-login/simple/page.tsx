@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { LoginProvider } from '../context/LoginContext';
 import LoginForm from '../components/LoginForm';
 
 export default function SimpleLoginPage() {
@@ -10,7 +11,9 @@ export default function SimpleLoginPage() {
         <h1 className='mb-8 text-center text-2xl font-bold text-white'>Pennine Login</h1>
 
         <div className='rounded-lg bg-slate-800 p-6 shadow-xl'>
-          <LoginForm />
+          <LoginProvider initialView='login' enablePersistence={false}>
+            <LoginForm />
+          </LoginProvider>
         </div>
 
         <p className='mt-4 text-center text-sm text-gray-500'>© 2025 Pennine Industries</p>

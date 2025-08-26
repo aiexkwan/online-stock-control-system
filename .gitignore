@@ -38,6 +38,7 @@ vitest.setup.*
 .env.local
 .env.development.local
 .env.test.local
+.env.test
 .env.production.local
 
 # debug
@@ -107,3 +108,4 @@ docs/Others/Anytype.md
 .mcp.json
 claude_desktop_config_macos.json
 .claude/settings.local.json
+.claude/settings.json

@@ -12,7 +12,11 @@ def init_clients():
     """
     Initializes and returns OpenAI and Supabase clients.
     """
-    load_dotenv(dotenv_path=".env")
+    # Find project root directory (where .env is located)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.abspath(os.path.join(script_dir, "../../../"))
+    env_path = os.path.join(project_root, ".env")
+    load_dotenv(dotenv_path=env_path)
     
     openai_api_key = os.getenv("OPENAI_API_KEY")
     supabase_url = os.getenv("SUPABASE_URL")

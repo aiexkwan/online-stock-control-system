@@ -287,9 +287,7 @@ export function isSuccessResult<T>(
 /**
  * 類型守衛：檢查是否為錯誤響應
  */
-export function isErrorResult(
-  result: ApiResult<unknown>
-): result is {
+export function isErrorResult(result: ApiResult<unknown>): result is {
   success: false;
   error: string | ApiError;
   details?: unknown;

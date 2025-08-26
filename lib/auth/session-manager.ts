@@ -16,7 +16,7 @@ interface SessionConfig {
 
 const DEFAULT_CONFIG: SessionConfig = {
   maxAge: 2 * 60 * 60 * 1000, // 2 hours
-  refreshThreshold: 30 * 60 * 1000, // 30 minutes
+  refreshThreshold: 15 * 60 * 1000, // 15 minutes (優化：提前刷新會話)
   rotateOnLogin: true,
   secureCookie: process.env.NODE_ENV === 'production',
   sameSite: 'strict',
@@ -50,7 +50,7 @@ export class SessionManager {
   }
 
   /**
-   * Validate session
+   * Validate session with parallel checks for improved performance
    */
   async validateSession(request: NextRequest): Promise<{
     valid: boolean;
@@ -59,7 +59,7 @@ export class SessionManager {
     user?: unknown;
   }> {
     try {
-      // Get Supabase session
+      // Get Supabase session with parallel validation approaches
       const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -74,35 +74,58 @@ export class SessionManager {
         }
       );
 
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession();
+      // 並行會話驗證：同時檢查 session 和 user 狀態
+      const validationResults = await Promise.allSettled([
+        supabase.auth.getSession(),
+        supabase.auth.getUser(),
+      ]);
 
-      if (error || !session) {
+      let session = null;
+      let user = null;
+
+      // 處理會話檢查結果
+      if (validationResults[0].status === 'fulfilled' && !validationResults[0].value.error) {
+        session = validationResults[0].value.data.session;
+      }
+
+      // 處理用戶檢查結果
+      if (validationResults[1].status === 'fulfilled' && !validationResults[1].value.error) {
+        user = validationResults[1].value.data.user;
+      }
+
+      // 如果沒有 session 但有 user，或者都沒有，視為無效
+      if (!session && !user) {
+        return { valid: false, expired: true };
+      }
+
+      // 優先使用 session，但如果沒有 session 但有 user，也可接受
+      const validSession = session || user;
+      const sessionUser = session?.user || user;
+
+      if (!validSession || !sessionUser) {
         return { valid: false, expired: true };
       }
 
       // Check session age (use expires_at as fallback if created_at is not available)
-      const sessionTime = session.expires_at;
-      let sessionAge = 0;
       let needsRefresh = false;
+      if (session?.expires_at) {
+        const expiresAt = new Date(session.expires_at).getTime();
+        const now = Date.now();
+        const timeUntilExpiry = expiresAt - now;
 
-      if (sessionTime) {
-        sessionAge = Date.now() - new Date(sessionTime).getTime();
+        // 如果距離過期時間小於刷新閾值，需要刷新
+        needsRefresh = timeUntilExpiry < this.config.refreshThreshold;
 
-        if (sessionAge > this.config.maxAge) {
+        // 如果已經過期，返回無效
+        if (timeUntilExpiry <= 0) {
           return { valid: false, expired: true };
         }
-
-        // Check if needs refresh
-        needsRefresh = sessionAge > this.config.refreshThreshold;
       }
 
       return {
         valid: true,
         needsRefresh,
-        user: session.user,
+        user: sessionUser,
       };
     } catch (error) {
       console.error('Session validation error:', error);
@@ -111,31 +134,62 @@ export class SessionManager {
   }
 
   /**
-   * Refresh session
+   * Refresh session with retry mechanism and improved error handling
    */
-  async refreshSession(request: NextRequest): Promise<boolean> {
-    try {
-      const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-          cookies: {
-            get(name: string) {
-              return request.cookies.get(name)?.value;
-            },
-            set() {},
-            remove() {},
+  async refreshSession(request: NextRequest, retryAttempts: number = 2): Promise<boolean> {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value;
           },
+          set() {},
+          remove() {},
+        },
+      }
+    );
+
+    // 重試機制：最多嘗試指定次數，間隔時間遞增
+    for (let attempt = 0; attempt <= retryAttempts; attempt++) {
+      try {
+        const { error } = await supabase.auth.refreshSession();
+
+        if (!error) {
+          if (attempt > 0) {
+            console.log(`[SessionManager] Session refresh succeeded on attempt ${attempt + 1}`);
+          }
+          return true;
         }
-      );
 
-      const { error } = await supabase.auth.refreshSession();
+        // 如果是最後一次嘗試，記錄錯誤並返回失敗
+        if (attempt === retryAttempts) {
+          console.error('Session refresh failed after all attempts:', error);
+          return false;
+        }
 
-      return !error;
-    } catch (error) {
-      console.error('Session refresh error:', error);
-      return false;
+        // 等待遞增的時間後重試 (200ms, 400ms, 800ms)
+        const waitTime = 200 * Math.pow(2, attempt);
+        console.warn(
+          `[SessionManager] Session refresh attempt ${attempt + 1} failed, retrying in ${waitTime}ms:`,
+          error
+        );
+
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      } catch (error) {
+        if (attempt === retryAttempts) {
+          console.error('Session refresh error after all attempts:', error);
+          return false;
+        }
+
+        // 等待後重試
+        const waitTime = 200 * Math.pow(2, attempt);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
     }
+
+    return false;
   }
 
   /**
@@ -221,55 +275,23 @@ export class SessionManager {
 export const sessionManager = new SessionManager();
 
 /**
- * Session activity tracker
+ * Simplified Session activity tracker - relies on Supabase Auth's built-in session management
  */
 export class SessionActivityTracker {
-  private static readonly ACTIVITY_KEY = 'session-activity';
-  private static readonly IDLE_TIMEOUT = 15 * 60 * 1000; // 15 minutes
-
   /**
-   * Track user activity
-   */
-  static trackActivity(): void {
-    if (typeof window === 'undefined') return;
-
-    const now = Date.now();
-    localStorage.setItem(this.ACTIVITY_KEY, now.toString());
-  }
-
-  /**
-   * Check if session is idle
-   */
-  static isIdle(): boolean {
-    if (typeof window === 'undefined') return false;
-
-    const lastActivity = localStorage.getItem(this.ACTIVITY_KEY);
-    if (!lastActivity) return true;
-
-    const elapsed = Date.now() - parseInt(lastActivity, 10);
-    return elapsed > this.IDLE_TIMEOUT;
-  }
-
-  /**
-   * Setup activity listeners
+   * Setup minimal activity tracking - rely on Supabase Auth for session refresh
    */
   static setupListeners(): void {
     if (typeof window === 'undefined') return;
 
+    // Minimal activity tracking - let Supabase handle session refresh automatically
     const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
 
     events.forEach(event => {
       document.addEventListener(event, () => {
-        this.trackActivity();
+        // Just trigger a custom event for other components that might need it
+        window.dispatchEvent(new CustomEvent('user-activity'));
       });
     });
-
-    // Check for idle timeout periodically
-    setInterval(() => {
-      if (this.isIdle()) {
-        // Trigger idle warning or logout
-        window.dispatchEvent(new CustomEvent('session-idle'));
-      }
-    }, 60 * 1000); // Check every minute
   }
 }

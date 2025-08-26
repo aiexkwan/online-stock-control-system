@@ -31,6 +31,12 @@ const getSecurityHeaders = (isDevelopment = false) => {
   return baseHeaders;
 };
 
+// Bundle analyzer configuration
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+  openAnalyzer: false,
+});
+
 const nextConfig = {
   // 基本配置
   reactStrictMode: false,
@@ -77,8 +83,22 @@ const nextConfig = {
   compress: true,
   experimental: {
     optimizeCss: false,
-    // Vercel 部署優化
-    optimizePackageImports: ['@apollo/client', '@heroicons/react'],
+    // Vercel 部署優化 - 增加更多包的優化
+    optimizePackageImports: [
+      '@apollo/client',
+      '@heroicons/react',
+      '@supabase/supabase-js',
+      'react-hook-form',
+      '@tanstack/react-query',
+      'date-fns',
+      'lucide-react'
+    ],
+    // 關鍵路徑優先載入
+    webVitalsAttribution: ['CLS', 'LCP', 'FCP'],
+    // 預載關鍵資源
+    fetchCacheKeyPrefix: 'pennine-wms',
+    // 開啟增量靜態重新生成優化
+    isrFlushToDisk: true,
   },
   // 外部套件配置 (已移出 experimental)
   serverExternalPackages: ['@prisma/client'],
@@ -123,7 +143,21 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
+    // Image 優化配置
+    formats: ['image/webp', 'image/avif'],
+    minimumCacheTTL: 60,
+    dangerouslyAllowSVG: false,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    // 圖片載入優化
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+  },
+  // 靜態資源優化
+  assetPrefix: process.env.NODE_ENV === 'production' ? process.env.ASSET_PREFIX : '',
+  // 預載關鍵資源
+  async rewrites() {
+    return [];
   },
 };
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer(nextConfig);

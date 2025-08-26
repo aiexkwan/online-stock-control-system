@@ -5,7 +5,7 @@
  * User-friendly error messages for consistent error handling across the application
  */
 
-import { ErrorCategory, ErrorSeverity } from './types';
+import { ErrorSeverity } from './types';
 
 /**
  * User-friendly error messages organized by category
@@ -109,22 +109,18 @@ export const RECOVERY_LABELS = {
 /**
  * Get user-friendly message based on error
  */
-export function getUserFriendlyMessage(
-  error: Error,
-  category?: ErrorCategory,
-  fallback?: string
-): string {
+export function getUserFriendlyMessage(error: Error, fallback?: string): string {
   const message = error.message.toLowerCase();
 
   // Network errors
-  if (category === 'network' || message.includes('network') || message.includes('fetch')) {
+  if (message.includes('network') || message.includes('fetch')) {
     if (message.includes('timeout')) return ERROR_MESSAGES.NETWORK.TIMEOUT;
     if (message.includes('offline')) return ERROR_MESSAGES.NETWORK.OFFLINE;
     return ERROR_MESSAGES.NETWORK.GENERAL;
   }
 
   // Auth errors
-  if (category === 'auth' || message.includes('auth') || message.includes('unauthorized')) {
+  if (message.includes('auth') || message.includes('unauthorized')) {
     if (message.includes('expired')) return ERROR_MESSAGES.AUTH.SESSION_EXPIRED;
     if (message.includes('unauthorized') || message.includes('401'))
       return ERROR_MESSAGES.AUTH.UNAUTHORIZED;
@@ -134,7 +130,7 @@ export function getUserFriendlyMessage(
   }
 
   // Validation errors
-  if (category === 'validation' || message.includes('validation') || message.includes('invalid')) {
+  if (message.includes('validation') || message.includes('invalid')) {
     if (message.includes('required')) return ERROR_MESSAGES.VALIDATION.REQUIRED_FIELD;
     if (message.includes('email')) return ERROR_MESSAGES.VALIDATION.INVALID_EMAIL;
     if (message.includes('date')) return ERROR_MESSAGES.VALIDATION.INVALID_DATE;
@@ -143,7 +139,7 @@ export function getUserFriendlyMessage(
   }
 
   // API errors
-  if (category === 'api' || message.includes('api') || message.includes('request')) {
+  if (message.includes('api') || message.includes('request')) {
     if (message.includes('rate')) return ERROR_MESSAGES.API.RATE_LIMITED;
     if (message.includes('maintenance')) return ERROR_MESSAGES.API.MAINTENANCE;
     if (message.includes('save')) return ERROR_MESSAGES.API.SAVE_FAILED;
@@ -153,7 +149,7 @@ export function getUserFriendlyMessage(
   }
 
   // Permission errors
-  if (category === 'permission' || message.includes('permission') || message.includes('denied')) {
+  if (message.includes('permission') || message.includes('denied')) {
     if (message.includes('view')) return ERROR_MESSAGES.PERMISSION.VIEW_DENIED;
     if (message.includes('edit')) return ERROR_MESSAGES.PERMISSION.EDIT_DENIED;
     if (message.includes('delete')) return ERROR_MESSAGES.PERMISSION.DELETE_DENIED;
@@ -162,7 +158,7 @@ export function getUserFriendlyMessage(
   }
 
   // Rendering errors
-  if (category === 'rendering' || message.includes('render') || message.includes('component')) {
+  if (message.includes('render') || message.includes('component')) {
     if (message.includes('chart')) return ERROR_MESSAGES.RENDERING.CHART_FAILED;
     if (message.includes('table')) return ERROR_MESSAGES.RENDERING.TABLE_FAILED;
     if (message.includes('widget')) return ERROR_MESSAGES.RENDERING.WIDGET_FAILED;

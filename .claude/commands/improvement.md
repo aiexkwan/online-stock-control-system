@@ -27,8 +27,8 @@
 
 1. 建立文檔資料夾 `docs\PlanningDocument\$Arguments_component`
 2. 所有建立的報告，均勿須，及只能儲存在`docs\PlanningDocument\$Arguments_component`內
-3. 只需建立計劃書，無需執行任何代碼修改
-4. 所有console必須使用LoggerSanitizer保護
+3. 只需建立計劃書，無需執行任何代碼修改4.
+4. **嚴格遵守**：`KISS`，`DRY`，`YAGNI`同`SOLID`四大原則
 
 ## 專項工作流程
 

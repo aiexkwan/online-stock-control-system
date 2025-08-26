@@ -1,43 +1,23 @@
 /**
- * Email domain validator for Pennine Industries
- * Only allows @pennineindustries.com email addresses
+ * Email format validator - simplified to trust Supabase Auth for domain validation
+ * Basic email format validation only
  */
 
-const ALLOWED_DOMAIN = '@pennineindustries.com';
-
-export const validateEmailDomain = (email: string): boolean => {
-  if (!email || typeof email !== 'string') {
-    return false;
-  }
-
-  return email.toLowerCase().endsWith(ALLOWED_DOMAIN.toLowerCase());
-};
+// Memoized regex for better performance
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const validateEmailFormat = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  return EMAIL_REGEX.test(email);
 };
 
 const EmailValidator = {
   /**
-   * Validates if email is from allowed domain
+   * Validates basic email format only - domain validation handled by Supabase Auth
    * @param email - Email address to validate
-   * @returns boolean - true if valid, false otherwise
+   * @returns boolean - true if valid format, false otherwise
    */
   validate: (email: string): boolean => {
-    if (!validateEmailFormat(email)) {
-      return false;
-    }
-
-    return validateEmailDomain(email);
-  },
-
-  /**
-   * Gets the allowed domain
-   * @returns string - The allowed email domain
-   */
-  getAllowedDomain: (): string => {
-    return ALLOWED_DOMAIN;
+    return validateEmailFormat(email);
   },
 
   /**
@@ -52,10 +32,6 @@ const EmailValidator = {
 
     if (!validateEmailFormat(email)) {
       return 'Please enter a valid email address';
-    }
-
-    if (!validateEmailDomain(email)) {
-      return `Only ${ALLOWED_DOMAIN} email addresses are allowed`;
     }
 
     return 'Invalid email address';

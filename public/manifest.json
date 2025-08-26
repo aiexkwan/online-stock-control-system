@@ -1,0 +1,38 @@
+{
+  "name": "Pennine WMS - Stock Control System",
+  "short_name": "Pennine WMS",
+  "description": "Warehouse Management System for stock control and inventory management",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#1e293b",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity"],
+  "lang": "en",
+  "dir": "ltr",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Login",
+      "short_name": "Login",
+      "description": "Access your account",
+      "url": "/main-login",
+      "icons": [{ "src": "/images/logo.png", "sizes": "96x96" }]
+    }
+  ],
+  "prefer_related_applications": false
+}

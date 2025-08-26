@@ -1,20 +1,20 @@
 /**
- * Error Context
- * 統一錯誤處理 Context
+ * 簡化錯誤上下文
  *
- * 提供全局錯誤狀態管理、錯誤處理和恢復機制
+ * 提供基本錯誤狀態管理，使用 Supabase Auth 標準錯誤訊息
+ * 保持現有UI視覺效果
  */
 
 'use client';
 
 import React, { createContext, useContext, useReducer, useCallback, useMemo } from 'react';
+import { normalizeAuthError, categorizeError } from '../types/error-handling';
 import type {
   ErrorContextValue,
   ErrorState,
   ErrorReport,
   ErrorContext as ErrorContextType,
   ErrorHandlerOptions,
-  ErrorCategory,
   ErrorSeverity,
   ErrorRecoveryStrategy,
 } from './types';
@@ -119,188 +119,38 @@ function errorReducer(state: ErrorState, action: ErrorAction): ErrorState {
   }
 }
 
-// Error Utilities
+// 簡化錯誤工具類
 class ErrorUtils {
   /**
-   * Determine error category from error object
+   * 生成用戶友好的錯誤訊息 - 使用 Supabase 標準化
    */
-  static categorizeError(error: Error): ErrorCategory {
-    const message = error.message.toLowerCase();
-    const stack = error.stack?.toLowerCase() || '';
-
-    if (
-      message.includes('network') ||
-      message.includes('fetch failed') ||
-      message.includes('connection')
-    ) {
-      return 'network';
-    }
-
-    if (
-      message.includes('auth') ||
-      message.includes('unauthorized') ||
-      message.includes('forbidden')
-    ) {
-      return 'auth';
-    }
-
-    if (
-      message.includes('validation') ||
-      message.includes('invalid') ||
-      message.includes('required')
-    ) {
-      return 'validation';
-    }
-
-    if (message.includes('permission') || message.includes('access denied')) {
-      return 'permission';
-    }
-
-    if (message.includes('timeout') || message.includes('timed out')) {
-      return 'timeout';
-    }
-
-    if (stack.includes('render') || message.includes('render') || message.includes('component')) {
-      return 'rendering';
-    }
-
-    if (message.includes('api') || message.includes('server') || message.includes('database')) {
-      return 'api';
-    }
-
-    return 'unknown';
+  static generateUserMessage(error: Error, context: ErrorContextType): string {
+    return normalizeAuthError(error);
   }
 
   /**
-   * Determine error severity
+   * 創建默認恢復策略 - 簡化版本
    */
-  static determineSeverity(error: Error, category: ErrorCategory): ErrorSeverity {
-    const message = error.message.toLowerCase();
-
-    // Critical errors
-    if (category === 'auth' && message.includes('token expired')) return 'critical';
-    if (category === 'permission' && message.includes('access denied')) return 'critical';
-    if (message.includes('system') || message.includes('fatal')) return 'critical';
-
-    // High severity errors
-    if (category === 'auth') return 'high';
-    if (category === 'api' && message.includes('server error')) return 'high';
-    if (category === 'rendering') return 'high';
-
-    // Medium severity errors
-    if (category === 'network') return 'medium';
-    if (category === 'timeout') return 'medium';
-    if (category === 'api') return 'medium';
-
-    // Low severity errors
-    if (category === 'validation') return 'low';
-
-    return 'low';
-  }
-
-  /**
-   * Generate user-friendly error message
-   */
-  static generateUserMessage(
-    error: Error,
-    context: ErrorContextType,
-    category: ErrorCategory
-  ): string {
-    const message = error.message.toLowerCase();
-
-    switch (category) {
-      case 'network':
-        return 'Network connection issue. Please check your internet connection and try again.';
-
-      case 'auth':
-        if (message.includes('token expired') || message.includes('unauthorized')) {
-          return 'Your session has expired. Please log in again.';
-        }
-        return 'Authentication failed. Please try logging in again.';
-
-      case 'permission':
-        return 'You do not have permission to perform this action.';
-
-      case 'validation':
-        return 'Please check your input and try again.';
-
-      case 'timeout':
-        return 'The operation timed out. Please try again.';
-
-      case 'api':
-        if (message.includes('not found')) {
-          return 'The requested information was not found.';
-        }
-        if (message.includes('server error')) {
-          return 'Server error occurred. Please try again later.';
-        }
-        return 'An error occurred while processing your request.';
-
-      case 'rendering':
-        return 'There was an issue loading this component. Please try refreshing the page.';
-
-      default:
-        return 'An unexpected error occurred. Please try again or contact support if the problem persists.';
+  static createRecoveryStrategy(severity: ErrorSeverity): ErrorRecoveryStrategy {
+    if (severity === 'critical') {
+      return {
+        primaryAction: 'logout',
+        autoRetry: { enabled: false, maxAttempts: 0, delayMs: 0 },
+      };
     }
+
+    return {
+      primaryAction: 'retry',
+      autoRetry: {
+        enabled: true,
+        maxAttempts: 3,
+        delayMs: 1000,
+      },
+    };
   }
 
   /**
-   * Create default recovery strategy
-   */
-  static createRecoveryStrategy(category: ErrorCategory): ErrorRecoveryStrategy {
-    switch (category) {
-      case 'network':
-        return {
-          primaryAction: 'retry',
-          secondaryActions: ['refresh'],
-          autoRetry: {
-            enabled: true,
-            maxAttempts: 3,
-            delayMs: 1000,
-            backoffMultiplier: 2,
-          },
-        };
-
-      case 'auth':
-        return {
-          primaryAction: 'logout',
-          secondaryActions: ['refresh'],
-          autoRetry: { enabled: false, maxAttempts: 0, delayMs: 0 },
-        };
-
-      case 'rendering':
-        return {
-          primaryAction: 'refresh',
-          secondaryActions: ['retry'],
-          autoRetry: {
-            enabled: true,
-            maxAttempts: 2,
-            delayMs: 500,
-          },
-        };
-
-      case 'timeout':
-        return {
-          primaryAction: 'retry',
-          secondaryActions: ['refresh'],
-          autoRetry: {
-            enabled: true,
-            maxAttempts: 2,
-            delayMs: 2000,
-          },
-        };
-
-      default:
-        return {
-          primaryAction: 'retry',
-          secondaryActions: ['refresh'],
-          autoRetry: { enabled: false, maxAttempts: 0, delayMs: 0 },
-        };
-    }
-  }
-
-  /**
-   * Generate unique error ID
+   * 生成唯一錯誤ID
    */
   static generateErrorId(): string {
     return `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -353,27 +203,23 @@ export function ErrorProvider({
     return () => clearInterval(interval);
   }, [enableAutoCleanup, cleanupInterval, errorState.errors]);
 
-  // Handle Error
+  // Handle Error - 簡化版本
   const handleError = useCallback(
     (error: Error, context: ErrorContextType, options: ErrorHandlerOptions = {}) => {
-      const category = context.category || ErrorUtils.categorizeError(error);
-      const severity = context.severity || ErrorUtils.determineSeverity(error, category);
-      const userMessage =
-        options.userMessage || ErrorUtils.generateUserMessage(error, context, category);
+      const { severity, retryable } = categorizeError(error);
+      const userMessage = options.userMessage || ErrorUtils.generateUserMessage(error, context);
       const recoveryStrategy = {
-        ...ErrorUtils.createRecoveryStrategy(category),
+        ...ErrorUtils.createRecoveryStrategy(severity),
         ...options.recoveryStrategy,
       };
 
       const errorReport: ErrorReport = {
         id: ErrorUtils.generateErrorId(),
         timestamp: new Date().toISOString(),
-        context: { ...context, category, severity },
+        context,
         error,
         severity,
-        category,
         userMessage,
-        technicalMessage: error.message,
         recoveryStrategy,
         retryCount: 0,
         resolved: false,

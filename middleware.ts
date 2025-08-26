@@ -21,11 +21,19 @@ import {
   isDeprecatedApiPath,
   getDeprecationHeaders,
 } from '@/lib/middleware/apiRedirects';
+import { securityMiddleware, securityHeaders } from '@/lib/security/security-middleware';
 // import { emailToClockNumber } from './app/utils/authUtils'; // 可能不再需要在中間件中直接使用
 
 // 認證中間件 - 處理用戶會話和路由保護
 // 更新：修復 API 路由匹配問題 - 2025-01-09
 export async function middleware(request: NextRequest) {
+  // Run security middleware first
+  const securityResponse = await securityMiddleware(request);
+  if (securityResponse.status !== 200 && securityResponse.status !== 0) {
+    // Security check failed, return the security response
+    return securityResponse;
+  }
+
   // 生成或獲取 correlation ID
   const correlationId = getCorrelationId(request.headers);
 

@@ -96,16 +96,11 @@ export const getUserRoleByDepartmentAndPosition = (
   };
 };
 
-// 添加重試計數器以防止無限循環
-const retryCounters = new Map<string, number>();
-const MAX_RETRIES = 2;
+// Simplified auth - removed retry counters
 
 export const getUserRoleFromDatabase = async (email: string): Promise<UserRole | null> => {
   try {
     const supabase = createClient();
-
-    // 快速測試資料庫連接
-    const startTime = Date.now();
 
     const { data, error } = await supabase
       .from('data_id')
@@ -113,21 +108,13 @@ export const getUserRoleFromDatabase = async (email: string): Promise<UserRole |
       .eq('email', email)
       .single();
 
-    const queryTime = Date.now() - startTime;
-
     if (error) {
       if ((error as PostgrestError).code === 'PGRST116') {
         // 用戶不存在，這是正常情況
         return null;
       }
-
-      // 如果查詢時間過長，記錄警告
-      if (queryTime > 3000) {
-        console.warn(`[getUserRoleFromDatabase] Slow database query (${queryTime}ms) for ${email}`);
-      }
-
       console.error(`[getUserRoleFromDatabase] Database error for ${email}:`, error);
-      throw error;
+      return null;
     }
 
     if (!data?.department || !data?.position) {
@@ -135,21 +122,9 @@ export const getUserRoleFromDatabase = async (email: string): Promise<UserRole |
       return null;
     }
 
-    // 成功查詢後清除重試計數器
-    retryCounters.delete(email);
-
     return getUserRoleByDepartmentAndPosition(data.department, data.position);
   } catch (error: unknown) {
-    if (getErrorMessage(error) === 'Database query timeout') {
-      console.warn(
-        `[getUserRoleFromDatabase] Database query timeout for ${email}, falling back to legacy auth`
-      );
-    } else {
-      console.error('[getUserRoleFromDatabase] Error:', error);
-    }
-
-    // 清除重試計數器
-    retryCounters.delete(email);
+    console.error('[getUserRoleFromDatabase] Error:', error);
     return null;
   }
 };
@@ -187,14 +162,14 @@ export const getUserRole = (email: string): UserRole => {
   }
 };
 
-// 定義公開路由（不需要認證檢查）
-const PUBLIC_ROUTES = [
+// 定義公開路由（不需要認證檢查） - Memoized for performance
+const PUBLIC_ROUTES = Object.freeze([
   '/main-login',
   '/main-login/register',
   '/main-login/reset',
   '/main-login/simple',
   '/main-login/change',
-];
+] as const);
 
 export function useAuth(): AuthState {
   const [user, setUser] = useState<User | null>(null);
@@ -202,7 +177,6 @@ export function useAuth(): AuthState {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [hasError, setHasError] = useState(false);
-  const lastAuthCheckRef = useRef<number>(0);
   const isCheckingAuthRef = useRef<boolean>(false);
 
   const supabase = useMemo(() => {
@@ -220,43 +194,33 @@ export function useAuth(): AuthState {
     }
   }, []);
 
-  // 統一的用戶認證和角色設置函數 - 優化版
-  const setAuthenticatedUser = useCallback((user: User) => {
+  // Simplified user authentication and role setting function
+  const setAuthenticatedUser = useCallback(async (user: User) => {
     console.log('[useAuth] Setting authenticated user:', user.email);
 
-    // 立即設置認證狀態 - 不等待任何異步操作
+    // Set authenticated state immediately
     setIsAuthenticated(true);
     setUser(user);
     setLoading(false);
 
-    // 完全異步的角色查詢（使用 setTimeout 確保不阻塞主流程）
-    setTimeout(() => {
-      const loadUserRole = async () => {
-        try {
-          console.log('[useAuth] Starting role query for:', user.email);
-          const role = (await Promise.race([
-            getUserRoleFromDatabase(user.email || ''),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Role fetch timeout')), 2000)
-            ), // 進一步減少到 2 秒
-          ])) as UserRole | null;
-
-          if (role) {
-            console.log('[useAuth] Role loaded from database:', role);
-            setUserRole(role);
-          } else {
-            throw new Error('No role found in database');
-          }
-        } catch (error) {
-          // 降級到舊版本邏輯
-          console.log('[useAuth] Using legacy role mapping for:', user.email);
-          const legacyRole = getUserRole(user.email || '');
-          setUserRole(legacyRole);
-        }
-      };
-
-      loadUserRole();
-    }, 0); // 在下一個事件循環中執行，確保主流程不被阻塞
+    // Load user role directly without complex timeout/retry logic
+    try {
+      const role = await getUserRoleFromDatabase(user.email || '');
+      if (role) {
+        console.log('[useAuth] Role loaded from database:', role);
+        setUserRole(role);
+      } else {
+        // Fallback to legacy role mapping
+        console.log('[useAuth] Using legacy role mapping for:', user.email);
+        const legacyRole = getUserRole(user.email || '');
+        setUserRole(legacyRole);
+      }
+    } catch (error) {
+      console.error('[useAuth] Error loading user role:', error);
+      // Fallback to legacy role mapping
+      const legacyRole = getUserRole(user.email || '');
+      setUserRole(legacyRole);
+    }
   }, []);
 
   // 統一的登出處理函數
@@ -277,34 +241,52 @@ export function useAuth(): AuthState {
     }
 
     // 檢查是否在公開路由 - 如果是，跳過認證檢查
-    if (typeof window !== 'undefined' && PUBLIC_ROUTES.includes(window.location.pathname)) {
+    if (
+      typeof window !== 'undefined' &&
+      PUBLIC_ROUTES.includes(window.location.pathname as (typeof PUBLIC_ROUTES)[number])
+    ) {
       console.log('[useAuth] Skipping auth check for public route:', window.location.pathname);
       setLoading(false);
       return;
     }
 
-    // 防止多次同時檢查認證
+    // Simplified auth check - trust Supabase's built-in session management
     if (isCheckingAuthRef.current) {
-      return;
-    }
-
-    // 防止過於頻繁的認證檢查（最少間隔 5 秒）
-    const now = Date.now();
-    if (now - lastAuthCheckRef.current < 5000) {
       return;
     }
 
     const checkAuth = async () => {
       isCheckingAuthRef.current = true;
-      lastAuthCheckRef.current = now;
       try {
-        console.log('[useAuth] Initial auth check');
+        console.log('[useAuth] Initial auth check with parallel verification');
 
-        // 使用統一認證系統進行檢查
-        const user = await unifiedAuth.getCurrentUser();
+        // 並行會話檢查：同時使用多種方法驗證用戶身份，提升響應速度
+        const authChecks = await Promise.allSettled([
+          // 方法1：統一認證系統檢查
+          unifiedAuth.getCurrentUser(),
+          // 方法2：直接從 Supabase 客戶端獲取會話
+          supabase
+            ? supabase.auth
+                .getSession()
+                .then(({ data, error }) => (error ? null : data.session?.user))
+            : Promise.resolve(null),
+          // 方法3：獲取當前用戶狀態
+          supabase
+            ? supabase.auth.getUser().then(({ data, error }) => (error ? null : data.user))
+            : Promise.resolve(null),
+        ]);
 
-        if (user) {
-          setAuthenticatedUser(user);
+        // 找到第一個成功的認證結果
+        let authenticatedUser = null;
+        for (const result of authChecks) {
+          if (result.status === 'fulfilled' && result.value) {
+            authenticatedUser = result.value;
+            break;
+          }
+        }
+
+        if (authenticatedUser) {
+          await setAuthenticatedUser(authenticatedUser);
         } else {
           clearAuthState();
         }
@@ -421,22 +403,22 @@ export const usePagePermission = (pagePath: string) => {
 
   return useMemo(() => {
     if (!userRole) {
-      return { allowed: false, type: 'deny' };
+      return { allowed: false, type: 'deny' } as const;
     }
 
     // Admin 用戶無限制
     if (userRole.type === 'admin') {
-      return { allowed: true, type: 'full' };
+      return { allowed: true, type: 'full' } as const;
     }
 
     // User 用戶檢查允許的頁面
     if (userRole.allowedPaths.length === 0) {
-      return { allowed: false, type: 'deny' };
+      return { allowed: false, type: 'deny' } as const;
     }
 
     // 檢查精確匹配
     if (userRole.allowedPaths.includes(pagePath)) {
-      return { allowed: true, type: 'full' };
+      return { allowed: true, type: 'full' } as const;
     }
 
     // 檢查通配符匹配 (例如 /admin/* 匹配 /admin/anything)
@@ -451,7 +433,7 @@ export const usePagePermission = (pagePath: string) => {
     return {
       allowed: isAllowed,
       type: isAllowed ? 'full' : 'deny',
-    };
+    } as const;
   }, [userRole, pagePath]);
 };
 

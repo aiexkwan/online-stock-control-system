@@ -3,12 +3,39 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { forceCleanupAllAuth } from './utils/cleanup-legacy-auth';
-import LoginForm from './components/LoginForm';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
+import { useCriticalLoading } from '@/lib/performance/use-critical-loading';
+import { LoginProvider } from './context/LoginContext';
+import Image from 'next/image';
+
+// Dynamic import for LoginPageContent to reduce initial bundle size
+const LoginPageContent = dynamic(() => import('./components/LoginPageContent'), {
+  loading: () => (
+    <div className='animate-pulse space-y-4'>
+      <div className='h-6 rounded bg-slate-700/50 mb-4'></div>
+      <div className='h-10 rounded bg-slate-700/50'></div>
+      <div className='h-10 rounded bg-slate-700/50'></div>
+      <div className='h-10 rounded bg-slate-700/50'></div>
+    </div>
+  ),
+  ssr: false,
+});
 
 export default function MainLoginPage() {
-  const [showConfirmation, setShowConfirmation] = useState(false);
   const [hasError, setHasError] = useState(false);
+
+  // 關鍵路徑載入優化
+  const {
+    isReady,
+    loadingProgress,
+    error: loadingError,
+  } = useCriticalLoading({
+    criticalResources: ['/api/auth/session', '/_next/static/css/app/(auth)/layout.css'],
+    deferredResources: ['/_next/static/js/chunks/framework.js', '/images/background-assets.webp'],
+    criticalTimeout: 2000,
+    enableProgressiveEnhancement: true,
+  });
 
   // 🚀 性能優化：URL參數解析優化
   const urlSearchParams = useMemo(() => {
@@ -20,11 +47,7 @@ export default function MainLoginPage() {
     if (!urlSearchParams) return;
 
     try {
-      if (urlSearchParams.get('confirmed') === 'true') {
-        setShowConfirmation(true);
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
-
+      // Handle cleanup parameter at page level (not in context)
       if (urlSearchParams.get('cleanup') === 'force') {
         console.log('[MainLoginPage] Force cleanup requested');
         forceCleanupAllAuth();
@@ -35,6 +58,30 @@ export default function MainLoginPage() {
       setHasError(true);
     }
   }, [urlSearchParams]);
+
+  // 顯示載入進度（僅在關鍵資源未載入完成時）
+  if (!isReady && loadingProgress < 50) {
+    return (
+      <div className='flex min-h-screen items-center justify-center bg-slate-900 px-4'>
+        <div className='text-center text-white'>
+          <div className='mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent'></div>
+          <h2 className='mb-2 text-xl font-semibold'>Loading Critical Resources</h2>
+          <div className='mb-2 h-2 w-64 rounded-full bg-slate-700'>
+            <div
+              className='h-2 rounded-full bg-blue-600 transition-all duration-300'
+              style={{ width: `${loadingProgress}%` }}
+            ></div>
+          </div>
+          <p className='text-sm text-slate-400'>{loadingProgress}% loaded</p>
+          {loadingError && (
+            <p className='mt-2 text-sm text-red-400'>
+              Fallback mode - Some features may be limited
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // 如果有錯誤，提供備用登入
   if (hasError) {
@@ -77,20 +124,16 @@ export default function MainLoginPage() {
             <div className='absolute inset-0 rounded-xl bg-gradient-to-r from-slate-800/50 to-blue-900/30 blur-xl' />
 
             <div className='relative rounded-xl border border-slate-700/50 bg-slate-800/40 p-6 shadow-2xl backdrop-blur-xl'>
-              <div className='mb-6 text-center'>
-                <h2 className='text-xl font-semibold text-white'>Sign In</h2>
-                <p className='mt-1 text-slate-400'>Access your account</p>
-              </div>
-
-              {/* 電郵確認訊息 */}
-              {showConfirmation && (
-                <div className='mb-4 rounded-lg border border-green-500/50 bg-green-900/50 p-3'>
-                  <p className='text-sm text-green-300'>✓ Email confirmed! You can now sign in.</p>
-                </div>
-              )}
-
-              {/* 登入表單 */}
-              <LoginForm />
+              {/* Login Provider Context */}
+              <LoginProvider 
+                initialView='login' 
+                enablePersistence={true}
+              >
+                <LoginPageContent 
+                  urlSearchParams={urlSearchParams}
+                  onError={setHasError}
+                />
+              </LoginProvider>
             </div>
           </div>
 

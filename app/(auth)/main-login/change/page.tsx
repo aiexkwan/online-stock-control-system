@@ -39,10 +39,10 @@ export default function ChangePasswordPage() {
     setSuccess(true);
     setError(null);
 
-    // 3秒後跳轉到 admin/analytics 頁面
+    // 1秒後跳轉到 admin/analytics 頁面（優化後的響應時間）
     setTimeout(() => {
       router.push('/admin/analytics');
-    }, 3000);
+    }, 1000);
   };
 
   const handleChangeError = (errorMessage: string) => {
