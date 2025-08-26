@@ -31,11 +31,18 @@ const getSecurityHeaders = (isDevelopment = false) => {
   return baseHeaders;
 };
 
-// Bundle analyzer configuration
-const withBundleAnalyzer = require('@next/bundle-analyzer')({
-  enabled: process.env.ANALYZE === 'true',
-  openAnalyzer: false,
-});
+// Bundle analyzer configuration - make it optional
+let withBundleAnalyzer;
+try {
+  withBundleAnalyzer = require('@next/bundle-analyzer')({
+    enabled: process.env.ANALYZE === 'true',
+    openAnalyzer: false,
+  });
+} catch (error) {
+  // Fallback if @next/bundle-analyzer is not installed
+  console.warn('Bundle analyzer not available, skipping...');
+  withBundleAnalyzer = (config) => config;
+}
 
 const nextConfig = {
   // 基本配置
