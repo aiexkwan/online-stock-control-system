@@ -13,7 +13,7 @@ import Image from 'next/image';
 const LoginPageContent = dynamic(() => import('./components/LoginPageContent'), {
   loading: () => (
     <div className='animate-pulse space-y-4'>
-      <div className='h-6 rounded bg-slate-700/50 mb-4'></div>
+      <div className='mb-4 h-6 rounded bg-slate-700/50'></div>
       <div className='h-10 rounded bg-slate-700/50'></div>
       <div className='h-10 rounded bg-slate-700/50'></div>
       <div className='h-10 rounded bg-slate-700/50'></div>
@@ -125,14 +125,8 @@ export default function MainLoginPage() {
 
             <div className='relative rounded-xl border border-slate-700/50 bg-slate-800/40 p-6 shadow-2xl backdrop-blur-xl'>
               {/* Login Provider Context */}
-              <LoginProvider 
-                initialView='login' 
-                enablePersistence={true}
-              >
-                <LoginPageContent 
-                  urlSearchParams={urlSearchParams}
-                  onError={setHasError}
-                />
+              <LoginProvider initialView='login' enablePersistence={true}>
+                <LoginPageContent urlSearchParams={urlSearchParams} onError={setHasError} />
               </LoginProvider>
             </div>
           </div>

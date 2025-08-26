@@ -58,6 +58,7 @@
 ### 刪除準備
 
 1. **Git 操作**
+
    ```bash
    cd /Users/chun/Documents/PennineWMS/online-stock-control-system
    git rm -r pennine

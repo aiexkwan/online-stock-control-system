@@ -1,5 +1,0 @@
-
-> pennine-stock@0.1.0 lint
-> next lint --format=json
-
-✔ No ESLint warnings or errors

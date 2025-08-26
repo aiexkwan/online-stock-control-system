@@ -1,6 +1,6 @@
 /**
  * Compound Component Utilities
- * 
+ *
  * Helper functions and utilities for creating and managing compound components
  * in the authentication system.
  */
@@ -54,7 +54,7 @@ export function withCompoundComponents<T>(
   subComponents: Record<string, React.ComponentType<any>>
 ) {
   const CompoundComponent = BaseComponent as any;
-  
+
   Object.keys(subComponents).forEach(key => {
     CompoundComponent[key] = subComponents[key];
   });
@@ -91,14 +91,14 @@ export const defaultTheme: ThemeContext = {
   },
   spacing: {
     xs: '0.25rem', // 1
-    sm: '0.5rem',  // 2
-    md: '1rem',    // 4
-    lg: '1.5rem',  // 6
-    xl: '2rem',    // 8
+    sm: '0.5rem', // 2
+    md: '1rem', // 4
+    lg: '1.5rem', // 6
+    xl: '2rem', // 8
   },
   borderRadius: {
     sm: '0.25rem', // rounded-sm
-    md: '0.5rem',  // rounded-lg
+    md: '0.5rem', // rounded-lg
     lg: '0.75rem', // rounded-xl
   },
   shadows: {
@@ -118,7 +118,7 @@ export function findChildrenByType(
   const typesArray = Array.isArray(types) ? types : [types];
   const result: React.ReactElement[] = [];
 
-  React.Children.forEach(children, (child) => {
+  React.Children.forEach(children, child => {
     if (isValidElement(child) && typesArray.some(type => child.type === type)) {
       result.push(child);
     }
@@ -137,12 +137,14 @@ export function findChildrenByDisplayName(
   const names = Array.isArray(displayName) ? displayName : [displayName];
   const result: React.ReactElement[] = [];
 
-  React.Children.forEach(children, (child) => {
-    if (isValidElement(child) && 
-        child.type && 
-        typeof child.type !== 'string' &&
-        'displayName' in child.type &&
-        names.includes((child.type as any).displayName)) {
+  React.Children.forEach(children, child => {
+    if (
+      isValidElement(child) &&
+      child.type &&
+      typeof child.type !== 'string' &&
+      'displayName' in child.type &&
+      names.includes((child.type as any).displayName)
+    ) {
       result.push(child);
     }
   });
@@ -157,7 +159,7 @@ export function cloneChildrenWithProps(
   children: React.ReactNode,
   additionalProps: Record<string, any>
 ): React.ReactNode {
-  return React.Children.map(children, (child) => {
+  return React.Children.map(children, child => {
     if (isValidElement(child)) {
       return React.cloneElement(child, additionalProps);
     }
@@ -235,26 +237,26 @@ export function mergeClasses(baseClasses: string, additionalClasses?: string): s
  */
 export const validationUtils = {
   isRequired: (value: string): boolean => value.trim().length > 0,
-  
+
   isEmail: (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   },
-  
+
   isStrongPassword: (password: string): boolean => {
     const minLength = password.length >= 8;
     const hasUppercase = /[A-Z]/.test(password);
     const hasLowercase = /[a-z]/.test(password);
     const hasNumber = /\d/.test(password);
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-    
+
     return minLength && hasUppercase && hasLowercase && hasNumber && hasSpecialChar;
   },
-  
+
   passwordsMatch: (password: string, confirmPassword: string): boolean => {
     return password === confirmPassword && password.length > 0;
   },
-  
+
   isCompanyEmail: (email: string): boolean => {
     return email.endsWith('@pennineindustries.com');
   },
@@ -267,33 +269,33 @@ export const a11yUtils = {
   generateId: (prefix: string = 'component'): string => {
     return `${prefix}-${Math.random().toString(36).substr(2, 9)}`;
   },
-  
+
   announceToScreenReader: (message: string): void => {
     const announcement = document.createElement('div');
     announcement.setAttribute('aria-live', 'polite');
     announcement.setAttribute('aria-atomic', 'true');
     announcement.className = 'sr-only';
     announcement.textContent = message;
-    
+
     document.body.appendChild(announcement);
     setTimeout(() => document.body.removeChild(announcement), 1000);
   },
-  
+
   focusElement: (elementId: string): void => {
     const element = document.getElementById(elementId);
     if (element) {
       element.focus();
     }
   },
-  
-  trapFocus: (containerElement: HTMLElement): () => void => {
+
+  trapFocus: (containerElement: HTMLElement): (() => void) => {
     const focusableElements = containerElement.querySelectorAll(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
-    
+
     const firstElement = focusableElements[0] as HTMLElement;
     const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
-    
+
     const handleTabKey = (e: KeyboardEvent) => {
       if (e.key === 'Tab') {
         if (e.shiftKey) {
@@ -309,9 +311,9 @@ export const a11yUtils = {
         }
       }
     };
-    
+
     containerElement.addEventListener('keydown', handleTabKey);
-    
+
     return () => {
       containerElement.removeEventListener('keydown', handleTabKey);
     };
@@ -332,7 +334,7 @@ export const performanceUtils = {
       timeout = setTimeout(() => func(...args), wait);
     };
   },
-  
+
   throttle: <T extends (...args: any[]) => any>(
     func: T,
     limit: number
@@ -342,11 +344,11 @@ export const performanceUtils = {
       if (!inThrottle) {
         func(...args);
         inThrottle = true;
-        setTimeout(() => inThrottle = false, limit);
+        setTimeout(() => (inThrottle = false), limit);
       }
     };
   },
-  
+
   memoize: <T extends (...args: any[]) => any>(func: T): T => {
     const cache = new Map();
     return ((...args: any[]) => {

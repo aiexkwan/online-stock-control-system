@@ -23,11 +23,11 @@ export interface UseLoginReturn {
     minLength: number;
     description: string;
   };
-  
+
   // State from submission hook
   loading: boolean;
   error: string;
-  
+
   // Actions
   login: (email: string, password: string) => Promise<LoginResult>;
   validateEmail: (email: string) => string | undefined;
@@ -38,12 +38,12 @@ export interface UseLoginReturn {
 
 /**
  * Composed authentication hook that combines specialized hooks
- * 
+ *
  * This hook orchestrates three specialized hooks:
  * - useAuthValidation: Form validation logic
  * - useAuthSubmission: API calls and submission handling
  * - useAuthRedirect: Post-auth redirect logic
- * 
+ *
  * Maintains backward compatibility with existing LoginForm component
  * while providing clear separation of concerns internally.
  */
@@ -67,7 +67,7 @@ export function useLogin(): UseLoginReturn {
 
       // Perform authentication
       const authResult = await submission.performLogin({ email, password });
-      
+
       if (!authResult.success) {
         return { success: false, error: authResult.error };
       }
@@ -75,13 +75,13 @@ export function useLogin(): UseLoginReturn {
       try {
         // Handle post-auth redirect
         const redirectPath = await redirect.redirectToUserPage(email);
-        
+
         return { success: true, redirectPath };
       } catch (error) {
         // If redirect fails, still consider login successful
         const fallbackPath = await redirect.getUserRedirectPath(email);
         console.warn('[useLogin] Redirect failed, providing fallback path:', error);
-        
+
         return { success: true, redirectPath: fallbackPath };
       }
     },
@@ -98,16 +98,16 @@ export function useLogin(): UseLoginReturn {
     // State from validation hook
     fieldErrors: validation.fieldErrors,
     passwordRules: validation.passwordRules,
-    
-    // State from submission hook  
+
+    // State from submission hook
     loading: submission.loading,
     error: submission.error,
-    
+
     // Actions - expose validation actions directly
     validateEmail: validation.validateEmail,
     validatePassword: validation.validatePassword,
     clearFieldError: validation.clearFieldError,
-    
+
     // Composed actions
     login,
     clearErrors,

@@ -415,10 +415,11 @@ export class ProductionSecurityMonitor extends EventEmitter {
       crypto.getRandomValues(array);
       return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
     }
-    
+
     // Fallback for environments without Web Crypto API
-    return Math.random().toString(36).substring(2, 15) + 
-           Math.random().toString(36).substring(2, 15);
+    return (
+      Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+    );
   }
 
   private detectPattern(input: string, patterns: RegExp[]): boolean {

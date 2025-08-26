@@ -27,19 +27,15 @@ const RegisterForm = memo(function RegisterForm({ onRegistrationSuccess }: Regis
   } = useLoginContext();
 
   // Event-driven communication
-  const {
-    emitRegisterAttempt,
-    emitRegisterSuccess,
-    emitRegisterError,
-    emitFormFieldChange,
-  } = useAuthEvents({ namespace: 'RegisterForm' });
+  const { emitRegisterAttempt, emitRegisterSuccess, emitRegisterError, emitFormFieldChange } =
+    useAuthEvents({ namespace: 'RegisterForm' });
 
   // Listen to external events
   useAuthEventListener('ERROR_CLEAR', () => {
     clearAllErrors();
   });
 
-  useAuthEventListener('FORM_CLEAR', (event) => {
+  useAuthEventListener('FORM_CLEAR', event => {
     if (event.payload.formType === 'register' || event.payload.formType === 'all') {
       updateRegisterForm('email', '');
       updateRegisterForm('password', '');
@@ -51,7 +47,7 @@ const RegisterForm = memo(function RegisterForm({ onRegistrationSuccess }: Regis
   const handleSubmit = useCallback(
     async (formData: { email: string; password: string; confirmPassword: string }) => {
       clearAllErrors();
-      
+
       // Emit register attempt event
       emitRegisterAttempt(formData);
 
@@ -65,13 +61,23 @@ const RegisterForm = memo(function RegisterForm({ onRegistrationSuccess }: Regis
         emitRegisterError(result.error || 'Registration failed');
       }
     },
-    [clearAllErrors, register, onRegistrationSuccess, emitRegisterAttempt, emitRegisterSuccess, emitRegisterError]
+    [
+      clearAllErrors,
+      register,
+      onRegistrationSuccess,
+      emitRegisterAttempt,
+      emitRegisterSuccess,
+      emitRegisterError,
+    ]
   );
 
-  const handleFieldChange = useCallback((field: string, value: string) => {
-    updateRegisterForm(field as keyof typeof registerFormData, value);
-    emitFormFieldChange(field, value, 'register');
-  }, [updateRegisterForm, emitFormFieldChange]);
+  const handleFieldChange = useCallback(
+    (field: string, value: string) => {
+      updateRegisterForm(field as keyof typeof registerFormData, value);
+      emitFormFieldChange(field, value, 'register');
+    },
+    [updateRegisterForm, emitFormFieldChange]
+  );
 
   const handlePasswordToggle = useCallback(() => {
     setShowPassword(!uiState.showPassword);
@@ -82,29 +88,31 @@ const RegisterForm = memo(function RegisterForm({ onRegistrationSuccess }: Regis
   }, [setShowConfirmPassword, uiState.showConfirmPassword]);
 
   // Calculate email validation error
-  const emailError = registerFormData.email && !EmailValidator.validate(registerFormData.email)
-    ? EmailValidator.getErrorMessage(registerFormData.email)
-    : undefined;
+  const emailError =
+    registerFormData.email && !EmailValidator.validate(registerFormData.email)
+      ? EmailValidator.getErrorMessage(registerFormData.email)
+      : undefined;
 
   // Calculate password validation errors
-  const passwordErrors = registerFormData.password 
+  const passwordErrors = registerFormData.password
     ? PasswordValidator.validate(registerFormData.password)
     : [];
 
-  const passwordMismatchError = registerFormData.confirmPassword && 
+  const passwordMismatchError =
+    registerFormData.confirmPassword &&
     registerFormData.password !== registerFormData.confirmPassword
-    ? 'Passwords do not match'
-    : undefined;
+      ? 'Passwords do not match'
+      : undefined;
 
   return (
     <CompoundForm
-      formType="register"
+      formType='register'
       onSubmit={handleSubmit}
       onFieldChange={handleFieldChange}
       isSubmitting={loading}
       hasErrors={!!error}
     >
-      <CompoundForm.Body className="space-y-6">
+      <CompoundForm.Body className='space-y-6'>
         {/* Global Error Display */}
         {error && (
           <div className='mb-4 rounded-lg border border-red-500/50 bg-red-900/50 p-3'>
@@ -118,14 +126,14 @@ const RegisterForm = memo(function RegisterForm({ onRegistrationSuccess }: Regis
             Email Address
           </CompoundForm.Label>
           <CompoundForm.Input
-            name="email"
-            type="email"
+            name='email'
+            type='email'
             value={registerFormData.email}
-            onChange={(value) => handleFieldChange('email', value)}
-            placeholder="your.name@pennineindustries.com"
+            onChange={value => handleFieldChange('email', value)}
+            placeholder='your.name@pennineindustries.com'
             error={emailError}
-            autoComplete="email"
-            className="border border-slate-600 bg-slate-700/50 backdrop-blur-sm focus:border-blue-500 focus:ring-blue-500/50"
+            autoComplete='email'
+            className='border border-slate-600 bg-slate-700/50 backdrop-blur-sm focus:border-blue-500 focus:ring-blue-500/50'
             required
           />
           <CompoundForm.Error error={emailError} />
@@ -137,20 +145,20 @@ const RegisterForm = memo(function RegisterForm({ onRegistrationSuccess }: Regis
             Password
           </CompoundForm.Label>
           <CompoundForm.Input
-            name="password"
-            type="password"
+            name='password'
+            type='password'
             value={registerFormData.password}
-            onChange={(value) => handleFieldChange('password', value)}
-            placeholder="Enter your password"
+            onChange={value => handleFieldChange('password', value)}
+            placeholder='Enter your password'
             error={passwordErrors.length > 0 ? passwordErrors[0] : undefined}
-            autoComplete="new-password"
+            autoComplete='new-password'
             showPasswordToggle
             passwordVisible={uiState.showPassword}
             onPasswordToggle={handlePasswordToggle}
-            className="border border-slate-600 bg-slate-700/50 backdrop-blur-sm focus:border-blue-500 focus:ring-blue-500/50"
+            className='border border-slate-600 bg-slate-700/50 backdrop-blur-sm focus:border-blue-500 focus:ring-blue-500/50'
             required
           />
-          
+
           {/* Password validation errors */}
           {passwordErrors.length > 0 && (
             <div className='mt-1 space-y-1'>
@@ -159,28 +167,26 @@ const RegisterForm = memo(function RegisterForm({ onRegistrationSuccess }: Regis
               ))}
             </div>
           )}
-          
+
           {/* Password strength indicator */}
           {registerFormData.password && (
             <div className='mt-2 flex items-center space-x-2'>
               <div className='flex-1'>
                 <div className='h-1 rounded bg-slate-600'>
                   <div
-                    className={`h-1 rounded transition-all duration-300 ${
-                      PasswordValidator.getStrengthColor(
-                        PasswordValidator.getStrength(registerFormData.password)
-                      ).replace('text-', 'bg-')
-                    }`}
-                    style={{ width: `${PasswordValidator.getStrength(registerFormData.password)}%` }}
+                    className={`h-1 rounded transition-all duration-300 ${PasswordValidator.getStrengthColor(
+                      PasswordValidator.getStrength(registerFormData.password)
+                    ).replace('text-', 'bg-')}`}
+                    style={{
+                      width: `${PasswordValidator.getStrength(registerFormData.password)}%`,
+                    }}
                   />
                 </div>
               </div>
               <span
-                className={`text-xs ${
-                  PasswordValidator.getStrengthColor(
-                    PasswordValidator.getStrength(registerFormData.password)
-                  )
-                }`}
+                className={`text-xs ${PasswordValidator.getStrengthColor(
+                  PasswordValidator.getStrength(registerFormData.password)
+                )}`}
               >
                 {PasswordValidator.getStrengthLabel(
                   PasswordValidator.getStrength(registerFormData.password)
@@ -196,17 +202,17 @@ const RegisterForm = memo(function RegisterForm({ onRegistrationSuccess }: Regis
             Confirm Password
           </CompoundForm.Label>
           <CompoundForm.Input
-            name="confirmPassword"
-            type="password"
+            name='confirmPassword'
+            type='password'
             value={registerFormData.confirmPassword}
-            onChange={(value) => handleFieldChange('confirmPassword', value)}
-            placeholder="Confirm your password"
+            onChange={value => handleFieldChange('confirmPassword', value)}
+            placeholder='Confirm your password'
             error={passwordMismatchError}
-            autoComplete="new-password"
+            autoComplete='new-password'
             showPasswordToggle
             passwordVisible={uiState.showConfirmPassword}
             onPasswordToggle={handleConfirmPasswordToggle}
-            className="border border-slate-600 bg-slate-700/50 backdrop-blur-sm focus:border-blue-500 focus:ring-blue-500/50"
+            className='border border-slate-600 bg-slate-700/50 backdrop-blur-sm focus:border-blue-500 focus:ring-blue-500/50'
             required
           />
           <CompoundForm.Error error={passwordMismatchError} />
@@ -214,10 +220,10 @@ const RegisterForm = memo(function RegisterForm({ onRegistrationSuccess }: Regis
 
         {/* Submit Button */}
         <CompoundForm.Button
-          type="submit"
-          variant="primary"
+          type='submit'
+          variant='primary'
           loading={loading}
-          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:ring-blue-500/50"
+          className='bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:ring-blue-500/50'
         >
           {loading ? 'Creating Account...' : 'Create Account'}
         </CompoundForm.Button>

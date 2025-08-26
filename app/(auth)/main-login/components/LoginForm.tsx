@@ -26,19 +26,16 @@ const LoginForm = memo(function LoginForm({ onSuccess, onError }: LoginFormProps
   } = useLoginContext();
 
   // Event-driven communication
-  const {
-    emitLoginAttempt,
-    emitLoginSuccess,
-    emitLoginError,
-    emitFormFieldChange,
-  } = useAuthEvents({ namespace: 'LoginForm' });
+  const { emitLoginAttempt, emitLoginSuccess, emitLoginError, emitFormFieldChange } = useAuthEvents(
+    { namespace: 'LoginForm' }
+  );
 
   // Listen to external events
   useAuthEventListener('ERROR_CLEAR', () => {
     clearAllErrors();
   });
 
-  useAuthEventListener('FORM_CLEAR', (event) => {
+  useAuthEventListener('FORM_CLEAR', event => {
     if (event.payload.formType === 'login' || event.payload.formType === 'all') {
       updateLoginForm('email', '');
       updateLoginForm('password', '');
@@ -53,26 +50,32 @@ const LoginForm = memo(function LoginForm({ onSuccess, onError }: LoginFormProps
     }
   }, [error, onError, emitLoginError]);
 
-  const handleSubmit = useCallback(async (formData: { email: string; password: string }) => {
-    clearAllErrors();
-    
-    // Emit login attempt event
-    emitLoginAttempt(formData.email, formData.password);
+  const handleSubmit = useCallback(
+    async (formData: { email: string; password: string }) => {
+      clearAllErrors();
 
-    const result = await login(formData.email, formData.password);
+      // Emit login attempt event
+      emitLoginAttempt(formData.email, formData.password);
 
-    if (result.success) {
-      emitLoginSuccess(formData.email, result.user, result.redirectPath);
-      onSuccess?.();
-    } else {
-      emitLoginError(result.error || 'Login failed');
-    }
-  }, [clearAllErrors, login, onSuccess, emitLoginAttempt, emitLoginSuccess, emitLoginError]);
+      const result = await login(formData.email, formData.password);
 
-  const handleFieldChange = useCallback((field: string, value: string) => {
-    updateLoginForm(field as keyof typeof loginFormData, value);
-    emitFormFieldChange(field, value, 'login');
-  }, [updateLoginForm, emitFormFieldChange]);
+      if (result.success) {
+        emitLoginSuccess(formData.email, result.user, result.redirectPath);
+        onSuccess?.();
+      } else {
+        emitLoginError(result.error || 'Login failed');
+      }
+    },
+    [clearAllErrors, login, onSuccess, emitLoginAttempt, emitLoginSuccess, emitLoginError]
+  );
+
+  const handleFieldChange = useCallback(
+    (field: string, value: string) => {
+      updateLoginForm(field as keyof typeof loginFormData, value);
+      emitFormFieldChange(field, value, 'login');
+    },
+    [updateLoginForm, emitFormFieldChange]
+  );
 
   const handlePasswordToggle = useCallback(() => {
     setShowPassword(!uiState.showPassword);
@@ -81,7 +84,7 @@ const LoginForm = memo(function LoginForm({ onSuccess, onError }: LoginFormProps
   // Using compound component pattern for better composition and decoupling
   return (
     <CompoundForm
-      formType="login"
+      formType='login'
       onSubmit={handleSubmit}
       onFieldChange={handleFieldChange}
       isSubmitting={loading}
@@ -90,48 +93,51 @@ const LoginForm = memo(function LoginForm({ onSuccess, onError }: LoginFormProps
       <CompoundForm.Body>
         {/* Email Field Group */}
         <CompoundForm.FieldGroup>
-          <CompoundForm.Label htmlFor="email" required>
+          <CompoundForm.Label htmlFor='email' required>
             Email Address
           </CompoundForm.Label>
           <CompoundForm.Input
-            name="email"
-            type="email"
+            name='email'
+            type='email'
             value={loginFormData.email}
-            onChange={(value) => handleFieldChange('email', value)}
-            placeholder="user@company.com"
+            onChange={value => handleFieldChange('email', value)}
+            placeholder='user@company.com'
             error={fieldErrors.email}
-            autoComplete="email"
+            autoComplete='email'
             required
+            data-testid='email-input'
           />
           <CompoundForm.Error error={fieldErrors.email} />
         </CompoundForm.FieldGroup>
 
         {/* Password Field Group */}
         <CompoundForm.FieldGroup>
-          <CompoundForm.Label htmlFor="password" required>
+          <CompoundForm.Label htmlFor='password' required>
             Password
           </CompoundForm.Label>
           <CompoundForm.Input
-            name="password"
-            type="password"
+            name='password'
+            type='password'
             value={loginFormData.password}
-            onChange={(value) => handleFieldChange('password', value)}
+            onChange={value => handleFieldChange('password', value)}
             placeholder={passwordRules.description}
             error={fieldErrors.password}
-            autoComplete="current-password"
+            autoComplete='current-password'
             showPasswordToggle
             passwordVisible={uiState.showPassword}
             onPasswordToggle={handlePasswordToggle}
             required
+            data-testid='password-input'
           />
           <CompoundForm.Error error={fieldErrors.password} />
         </CompoundForm.FieldGroup>
 
         {/* Submit Button */}
         <CompoundForm.Button
-          type="submit"
-          variant="primary"
+          type='submit'
+          variant='primary'
           loading={loading}
+          data-testid='login-submit'
         >
           Sign In
         </CompoundForm.Button>
@@ -139,12 +145,8 @@ const LoginForm = memo(function LoginForm({ onSuccess, onError }: LoginFormProps
 
       {/* Footer Links */}
       <CompoundForm.Footer>
-        <CompoundForm.Link href="/main-login/reset">
-          Forgot password?
-        </CompoundForm.Link>
-        <CompoundForm.Link href="/main-login/register">
-          Create account
-        </CompoundForm.Link>
+        <CompoundForm.Link href='/main-login/reset'>Forgot password?</CompoundForm.Link>
+        <CompoundForm.Link href='/main-login/register'>Create account</CompoundForm.Link>
       </CompoundForm.Footer>
     </CompoundForm>
   );

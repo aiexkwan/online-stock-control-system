@@ -1,6 +1,6 @@
 /**
  * Event Manager for Login System
- * 
+ *
  * Centralized event management system that enables loose coupling
  * between components through event-driven architecture.
  */
@@ -35,10 +35,7 @@ export class EventManager {
   /**
    * Unsubscribe from an event type
    */
-  public off<K extends keyof EventMap>(
-    eventType: K,
-    listener: EventListener<EventMap[K]>
-  ): void {
+  public off<K extends keyof EventMap>(eventType: K, listener: EventListener<EventMap[K]>): void {
     const listeners = this.listeners.get(eventType);
     if (listeners) {
       listeners.delete(listener as EventListener);
@@ -47,7 +44,9 @@ export class EventManager {
       }
 
       if (this.isDebugMode) {
-        console.debug(`[EventManager] Listener removed for ${eventType}. Remaining: ${listeners.size}`);
+        console.debug(
+          `[EventManager] Listener removed for ${eventType}. Remaining: ${listeners.size}`
+        );
       }
     }
   }
@@ -91,7 +90,7 @@ export class EventManager {
 
     const listeners = this.listeners.get(eventType);
     if (listeners) {
-      const promises = Array.from(listeners).map(async (listener) => {
+      const promises = Array.from(listeners).map(async listener => {
         try {
           await listener(event);
         } catch (error) {
@@ -107,9 +106,7 @@ export class EventManager {
    * Get event history
    */
   public getHistory(eventType?: keyof EventMap, limit?: number): AuthEvent[] {
-    let events = eventType 
-      ? this.history.filter(event => event.type === eventType)
-      : this.history;
+    let events = eventType ? this.history.filter(event => event.type === eventType) : this.history;
 
     if (limit) {
       events = events.slice(-limit);
@@ -154,7 +151,9 @@ export class EventManager {
     }
 
     if (this.isDebugMode) {
-      console.debug(`[EventManager] ${eventType ? `Listeners for ${eventType}` : 'All listeners'} removed`);
+      console.debug(
+        `[EventManager] ${eventType ? `Listeners for ${eventType}` : 'All listeners'} removed`
+      );
     }
   }
 
@@ -163,25 +162,17 @@ export class EventManager {
    */
   public createNamespace(namespace: string) {
     return {
-      emit: <K extends keyof EventMap>(
-        eventType: K,
-        payload: EventMap[K]['payload']
-      ) => this.emit(eventType, payload, namespace),
+      emit: <K extends keyof EventMap>(eventType: K, payload: EventMap[K]['payload']) =>
+        this.emit(eventType, payload, namespace),
 
-      on: <K extends keyof EventMap>(
-        eventType: K,
-        listener: EventListener<EventMap[K]>
-      ) => this.on(eventType, listener),
+      on: <K extends keyof EventMap>(eventType: K, listener: EventListener<EventMap[K]>) =>
+        this.on(eventType, listener),
 
-      once: <K extends keyof EventMap>(
-        eventType: K,
-        listener: EventListener<EventMap[K]>
-      ) => this.once(eventType, listener),
+      once: <K extends keyof EventMap>(eventType: K, listener: EventListener<EventMap[K]>) =>
+        this.once(eventType, listener),
 
-      off: <K extends keyof EventMap>(
-        eventType: K,
-        listener: EventListener<EventMap[K]>
-      ) => this.off(eventType, listener),
+      off: <K extends keyof EventMap>(eventType: K, listener: EventListener<EventMap[K]>) =>
+        this.off(eventType, listener),
     };
   }
 
@@ -190,7 +181,7 @@ export class EventManager {
    */
   private addToHistory(event: AuthEvent): void {
     this.history.push(event);
-    
+
     if (this.history.length > this.maxHistorySize) {
       this.history = this.history.slice(-this.maxHistorySize);
     }
@@ -227,7 +218,11 @@ export function getEventManager(): EventManager {
 /**
  * Utility function to create event payload
  */
-export function createEvent<T>(type: string, payload: T, source?: string): { type: string; payload: T; timestamp: number; source?: string } {
+export function createEvent<T>(
+  type: string,
+  payload: T,
+  source?: string
+): { type: string; payload: T; timestamp: number; source?: string } {
   return {
     type,
     payload,
@@ -243,14 +238,22 @@ export { EVENT_TYPES };
 export const createLoginAttemptEvent = (email: string, password: string, source?: string) =>
   createEvent(EVENT_TYPES.LOGIN_ATTEMPT, { email, password }, source);
 
-export const createLoginSuccessEvent = (email: string, user: any, redirectPath?: string, source?: string) =>
-  createEvent(EVENT_TYPES.LOGIN_SUCCESS, { email, user, redirectPath }, source);
+export const createLoginSuccessEvent = (
+  email: string,
+  user: any,
+  redirectPath?: string,
+  source?: string
+) => createEvent(EVENT_TYPES.LOGIN_SUCCESS, { email, user, redirectPath }, source);
 
 export const createLoginErrorEvent = (error: string, field?: string, source?: string) =>
   createEvent(EVENT_TYPES.LOGIN_ERROR, { error, field }, source);
 
-export const createFormFieldChangeEvent = (field: string, value: string, formType: 'login' | 'register', source?: string) =>
-  createEvent(EVENT_TYPES.FORM_FIELD_CHANGE, { field, value, formType }, source);
+export const createFormFieldChangeEvent = (
+  field: string,
+  value: string,
+  formType: 'login' | 'register',
+  source?: string
+) => createEvent(EVENT_TYPES.FORM_FIELD_CHANGE, { field, value, formType }, source);
 
 export const createViewChangeEvent = (from: string, to: string, source?: string) =>
   createEvent(EVENT_TYPES.VIEW_CHANGE, { from, to }, source);

@@ -1,6 +1,6 @@
 /**
  * Compound Component Types
- * 
+ *
  * Type definitions for compound component patterns in the login system.
  * These types enable flexible composition while maintaining type safety.
  */
@@ -177,12 +177,13 @@ export interface RenderProps<T = any> {
 }
 
 export interface FormRenderProps extends RenderProps<FormCompoundContext> {}
-export interface FieldRenderProps extends RenderProps<{
-  value: string;
-  onChange: (value: string) => void;
-  error?: string;
-  isValid: boolean;
-}> {}
+export interface FieldRenderProps
+  extends RenderProps<{
+    value: string;
+    onChange: (value: string) => void;
+    error?: string;
+    isValid: boolean;
+  }> {}
 
 // Animation and transition props
 export interface TransitionProps {

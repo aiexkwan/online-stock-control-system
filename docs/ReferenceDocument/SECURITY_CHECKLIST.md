@@ -1,6 +1,7 @@
 # Security Checklist for Production Deployment
 
 ## Overview
+
 This checklist provides comprehensive security verification steps for manual security audits. It covers critical security areas including authentication, authorization, data protection, and vulnerability prevention.
 
 Last Updated: 2025-08-26
@@ -13,6 +14,7 @@ Version: 1.0.0
 ### 1. Authentication & Session Management
 
 #### Password Security
+
 - [ ] Minimum password length enforced (≥ 8 characters)
 - [ ] Password complexity requirements implemented
 - [ ] Password history tracking (prevent reuse of last 5 passwords)
@@ -21,6 +23,7 @@ Version: 1.0.0
 - [ ] Multi-factor authentication available for admin accounts
 
 #### Session Security
+
 - [ ] Session tokens use secure random generation
 - [ ] Session timeout configured (30 minutes idle)
 - [ ] Session invalidation on logout
@@ -31,6 +34,7 @@ Version: 1.0.0
 ### 2. Authorization & Access Control
 
 #### Role-Based Access Control
+
 - [ ] User roles properly defined and documented
 - [ ] Least privilege principle applied
 - [ ] Admin functions restricted to admin roles
@@ -38,6 +42,7 @@ Version: 1.0.0
 - [ ] Privilege escalation protection in place
 
 #### API Access Control
+
 - [ ] All API endpoints require authentication
 - [ ] API rate limiting implemented
 - [ ] API keys rotated regularly (every 90 days)
@@ -47,6 +52,7 @@ Version: 1.0.0
 ### 3. Input Validation & Sanitization
 
 #### SQL Injection Prevention
+
 - [ ] All database queries use parameterized statements
 - [ ] Stored procedures validated for SQL injection
 - [ ] Input validation on all user inputs
@@ -54,6 +60,7 @@ Version: 1.0.0
 - [ ] Database user permissions restricted
 
 **Test Commands:**
+
 ```bash
 # Test SQL injection protection
 npm run test:sql-injection
@@ -65,6 +72,7 @@ curl -X POST http://localhost:3000/api/test \
 ```
 
 #### Cross-Site Scripting (XSS) Prevention
+
 - [ ] Output encoding for all user-generated content
 - [ ] Content Security Policy (CSP) headers configured
 - [ ] JavaScript execution in user content disabled
@@ -72,6 +80,7 @@ curl -X POST http://localhost:3000/api/test \
 - [ ] DOM-based XSS protection in place
 
 **Test Vectors:**
+
 ```javascript
 // Common XSS test strings
 const xssTestVectors = [
@@ -79,11 +88,12 @@ const xssTestVectors = [
   '"><script>alert(1)</script>',
   '<img src=x onerror=alert(1)>',
   'javascript:alert(1)',
-  '<svg onload=alert(1)>'
+  '<svg onload=alert(1)>',
 ];
 ```
 
 #### Cross-Site Request Forgery (CSRF) Protection
+
 - [ ] CSRF tokens generated for all state-changing operations
 - [ ] CSRF tokens validated on server-side
 - [ ] SameSite cookie attribute configured
@@ -93,6 +103,7 @@ const xssTestVectors = [
 ### 4. Data Protection
 
 #### Sensitive Data Handling
+
 - [ ] PII data encrypted at rest
 - [ ] PII data encrypted in transit (TLS 1.2+)
 - [ ] Sensitive data masked in logs
@@ -100,6 +111,7 @@ const xssTestVectors = [
 - [ ] Personal data deletion policy implemented
 
 #### Encryption Standards
+
 - [ ] Strong encryption algorithms used (AES-256)
 - [ ] Secure key management system in place
 - [ ] Keys rotated regularly
@@ -109,6 +121,7 @@ const xssTestVectors = [
 ### 5. Error Handling & Logging
 
 #### Error Messages
+
 - [ ] Generic error messages for users
 - [ ] Detailed errors logged server-side only
 - [ ] Stack traces never exposed to users
@@ -116,6 +129,7 @@ const xssTestVectors = [
 - [ ] File paths not revealed in errors
 
 #### Security Logging
+
 - [ ] Authentication attempts logged
 - [ ] Authorization failures logged
 - [ ] Input validation failures logged
@@ -125,6 +139,7 @@ const xssTestVectors = [
 ### 6. File Upload Security
 
 #### Upload Validation
+
 - [ ] File type validation (whitelist approach)
 - [ ] File size limits enforced
 - [ ] Filename sanitization
@@ -132,10 +147,19 @@ const xssTestVectors = [
 - [ ] Upload directory outside webroot
 
 **Allowed File Types:**
+
 ```javascript
 const ALLOWED_EXTENSIONS = [
-  '.pdf', '.png', '.jpg', '.jpeg', '.gif',
-  '.doc', '.docx', '.xls', '.xlsx', '.csv'
+  '.pdf',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.doc',
+  '.docx',
+  '.xls',
+  '.xlsx',
+  '.csv',
 ];
 
 const ALLOWED_MIME_TYPES = [
@@ -147,13 +171,14 @@ const ALLOWED_MIME_TYPES = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.ms-excel',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'text/csv'
+  'text/csv',
 ];
 ```
 
 ### 7. Security Headers
 
 #### HTTP Security Headers
+
 - [ ] X-Frame-Options: DENY
 - [ ] X-Content-Type-Options: nosniff
 - [ ] X-XSS-Protection: 1; mode=block
@@ -162,6 +187,7 @@ const ALLOWED_MIME_TYPES = [
 - [ ] Referrer-Policy: strict-origin-when-cross-origin
 
 **Verification Command:**
+
 ```bash
 # Check security headers
 curl -I https://your-domain.com | grep -E "X-Frame-Options|X-Content-Type-Options|X-XSS-Protection|Strict-Transport-Security|Content-Security-Policy"
@@ -170,6 +196,7 @@ curl -I https://your-domain.com | grep -E "X-Frame-Options|X-Content-Type-Option
 ### 8. Database Security
 
 #### Database Configuration
+
 - [ ] Default database accounts disabled
 - [ ] Strong passwords for database users
 - [ ] Database connections use SSL/TLS
@@ -177,6 +204,7 @@ curl -I https://your-domain.com | grep -E "X-Frame-Options|X-Content-Type-Option
 - [ ] Regular database backups configured
 
 #### Row-Level Security (RLS)
+
 - [ ] RLS policies defined for all tables
 - [ ] RLS policies tested for each role
 - [ ] Service role usage minimized
@@ -184,20 +212,22 @@ curl -I https://your-domain.com | grep -E "X-Frame-Options|X-Content-Type-Option
 - [ ] Policy bypass scenarios documented
 
 **RLS Test Queries:**
+
 ```sql
 -- Test user access restrictions
 SET ROLE authenticated_user;
 SELECT * FROM sensitive_table;
 
 -- Verify RLS is enabled
-SELECT tablename, rowsecurity 
-FROM pg_tables 
+SELECT tablename, rowsecurity
+FROM pg_tables
 WHERE schemaname = 'public';
 ```
 
 ### 9. Third-Party Dependencies
 
 #### Dependency Management
+
 - [ ] All dependencies from trusted sources
 - [ ] Dependencies regularly updated
 - [ ] Security vulnerabilities scanned (npm audit)
@@ -205,6 +235,7 @@ WHERE schemaname = 'public';
 - [ ] Unused dependencies removed
 
 **Security Scanning Commands:**
+
 ```bash
 # Check for vulnerabilities
 npm audit
@@ -222,6 +253,7 @@ npx license-checker --summary
 ### 10. API Security
 
 #### GraphQL Security
+
 - [ ] Query depth limiting implemented
 - [ ] Query complexity analysis enabled
 - [ ] Introspection disabled in production
@@ -229,6 +261,7 @@ npx license-checker --summary
 - [ ] Field-level authorization implemented
 
 #### REST API Security
+
 - [ ] Input validation on all endpoints
 - [ ] Output filtering for sensitive data
 - [ ] Proper HTTP methods used (GET, POST, PUT, DELETE)
@@ -238,6 +271,7 @@ npx license-checker --summary
 ### 11. Infrastructure Security
 
 #### Server Configuration
+
 - [ ] Unnecessary services disabled
 - [ ] Firewall rules configured
 - [ ] SSH key-based authentication only
@@ -245,6 +279,7 @@ npx license-checker --summary
 - [ ] Intrusion detection system active
 
 #### Container Security
+
 - [ ] Base images from trusted sources
 - [ ] Container images regularly updated
 - [ ] Secrets not hardcoded in images
@@ -254,6 +289,7 @@ npx license-checker --summary
 ### 12. Incident Response
 
 #### Preparedness
+
 - [ ] Incident response plan documented
 - [ ] Security contact list maintained
 - [ ] Backup restoration tested
@@ -267,6 +303,7 @@ npx license-checker --summary
 ### Manual Penetration Testing
 
 #### 1. Authentication Bypass Attempts
+
 ```bash
 # Test direct access to protected routes
 curl -X GET http://localhost:3000/admin
@@ -281,6 +318,7 @@ curl -X GET http://localhost:3000/admin \
 ```
 
 #### 2. SQL Injection Testing
+
 ```bash
 # Test various injection patterns
 curl -X POST http://localhost:3000/api/search \
@@ -293,6 +331,7 @@ curl -X POST http://localhost:3000/api/search \
 ```
 
 #### 3. XSS Testing
+
 ```bash
 # Test reflected XSS
 curl -X GET "http://localhost:3000/search?q=<script>alert(1)</script>"
@@ -304,16 +343,20 @@ curl -X POST http://localhost:3000/api/comments \
 ```
 
 #### 4. CSRF Testing
+
 ```html
 <!-- Test CSRF attack -->
 <form action="http://localhost:3000/api/transfer" method="POST">
-  <input type="hidden" name="amount" value="1000">
-  <input type="hidden" name="to" value="attacker">
+  <input type="hidden" name="amount" value="1000" />
+  <input type="hidden" name="to" value="attacker" />
 </form>
-<script>document.forms[0].submit();</script>
+<script>
+  document.forms[0].submit();
+</script>
 ```
 
 #### 5. File Upload Testing
+
 ```bash
 # Test malicious file upload
 curl -X POST http://localhost:3000/api/upload \
@@ -328,6 +371,7 @@ curl -X POST http://localhost:3000/api/upload \
 ### Automated Security Scanning
 
 #### 1. Dependency Scanning
+
 ```bash
 # npm audit
 npm audit --audit-level=moderate
@@ -340,6 +384,7 @@ dependency-check --scan . --format HTML --out dependency-report.html
 ```
 
 #### 2. Code Security Analysis
+
 ```bash
 # ESLint security plugin
 npx eslint . --ext .js,.jsx,.ts,.tsx
@@ -353,6 +398,7 @@ gh codeql database analyze mydb javascript-security-extended
 ```
 
 #### 3. Infrastructure Scanning
+
 ```bash
 # Port scanning
 nmap -p- localhost
@@ -399,24 +445,28 @@ python -m http.client your-domain.com 443
 ## Security Review Schedule
 
 ### Daily Checks
+
 - [ ] Review security monitoring dashboards
 - [ ] Check for failed authentication attempts
 - [ ] Review security alert notifications
 - [ ] Monitor API rate limiting violations
 
 ### Weekly Reviews
+
 - [ ] Analyze security logs
 - [ ] Review user access patterns
 - [ ] Check for dependency updates
 - [ ] Verify backup integrity
 
 ### Monthly Audits
+
 - [ ] Comprehensive security scan
 - [ ] Penetration testing
 - [ ] Security policy review
 - [ ] Incident response drill
 
 ### Quarterly Assessments
+
 - [ ] Full security audit
 - [ ] Third-party security assessment
 - [ ] Security training review
@@ -456,18 +506,19 @@ python -m http.client your-domain.com 443
 
 ## Security Contacts
 
-| Role | Contact | Escalation |
-|------|---------|------------|
-| Security Lead | security@company.com | Primary |
-| DevOps Lead | devops@company.com | Secondary |
-| CTO | cto@company.com | Executive |
-| External Security | vendor@security.com | Third-party |
+| Role              | Contact              | Escalation  |
+| ----------------- | -------------------- | ----------- |
+| Security Lead     | security@company.com | Primary     |
+| DevOps Lead       | devops@company.com   | Secondary   |
+| CTO               | cto@company.com      | Executive   |
+| External Security | vendor@security.com  | Third-party |
 
 ---
 
 ## Compliance Requirements
 
 ### Regulatory Compliance
+
 - [ ] GDPR compliance verified
 - [ ] PCI-DSS requirements met
 - [ ] SOC 2 controls implemented
@@ -475,6 +526,7 @@ python -m http.client your-domain.com 443
 - [ ] Industry-specific regulations addressed
 
 ### Documentation Requirements
+
 - [ ] Security policies documented
 - [ ] Incident response plan updated
 - [ ] Data retention policies defined
@@ -486,6 +538,7 @@ python -m http.client your-domain.com 443
 ## Security Tools & Resources
 
 ### Recommended Security Tools
+
 - **Vulnerability Scanning**: OWASP ZAP, Burp Suite
 - **Dependency Checking**: Snyk, npm audit, Dependabot
 - **Code Analysis**: SonarQube, Semgrep, CodeQL
@@ -493,6 +546,7 @@ python -m http.client your-domain.com 443
 - **Secret Management**: HashiCorp Vault, AWS Secrets Manager
 
 ### Security References
+
 - OWASP Top 10: https://owasp.org/Top10/
 - CWE Top 25: https://cwe.mitre.org/top25/
 - NIST Cybersecurity Framework: https://www.nist.gov/cyberframework
@@ -502,18 +556,18 @@ python -m http.client your-domain.com 443
 
 ## Version History
 
-| Version | Date | Changes | Author |
-|---------|------|---------|--------|
-| 1.0.0 | 2025-08-26 | Initial security checklist | Security Team |
+| Version | Date       | Changes                    | Author        |
+| ------- | ---------- | -------------------------- | ------------- |
+| 1.0.0   | 2025-08-26 | Initial security checklist | Security Team |
 
 ---
 
 ## Checklist Completion
 
-**Reviewer:** _______________________
-**Date:** _______________________
-**Signature:** _______________________
+**Reviewer:** \***\*\*\*\*\***\_\_\_\***\*\*\*\*\***
+**Date:** \***\*\*\*\*\***\_\_\_\***\*\*\*\*\***
+**Signature:** \***\*\*\*\*\***\_\_\_\***\*\*\*\*\***
 
-**Approval:** _______________________
-**Date:** _______________________
-**Signature:** _______________________
+**Approval:** \***\*\*\*\*\***\_\_\_\***\*\*\*\*\***
+**Date:** \***\*\*\*\*\***\_\_\_\***\*\*\*\*\***
+**Signature:** \***\*\*\*\*\***\_\_\_\***\*\*\*\*\***

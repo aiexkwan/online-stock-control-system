@@ -40,7 +40,7 @@ export interface UseAuthValidationReturn extends AuthValidationState, AuthValida
 
 /**
  * Specialized hook for handling authentication form validation
- * 
+ *
  * Responsibilities:
  * - Email format validation using EmailValidator
  * - Password strength validation

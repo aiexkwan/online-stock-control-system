@@ -91,7 +91,7 @@ const nextConfig = {
       'react-hook-form',
       '@tanstack/react-query',
       'date-fns',
-      'lucide-react'
+      'lucide-react',
     ],
     // 關鍵路徑優先載入
     webVitalsAttribution: ['CLS', 'LCP', 'FCP'],

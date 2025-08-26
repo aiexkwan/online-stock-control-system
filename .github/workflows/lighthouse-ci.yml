@@ -17,26 +17,26 @@ on:
 jobs:
   lighthouse:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Build application
         run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          
+
       - name: Start application server
         run: |
           npm run start &
@@ -44,12 +44,12 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          
+
       - name: Run Lighthouse CI
         run: npm run lighthouse
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
-          
+
       - name: Upload Lighthouse results
         uses: actions/upload-artifact@v4
         if: always()
@@ -58,7 +58,7 @@ jobs:
           path: |
             lighthouse-ci-reports/
             .lighthouseci/
-            
+
       - name: Comment PR with results
         uses: actions/github-script@v7
         if: github.event_name == 'pull_request'
@@ -67,14 +67,14 @@ jobs:
           script: |
             const fs = require('fs');
             const path = require('path');
-            
+
             // Read the Lighthouse results
             const reportDir = './lighthouse-ci-reports';
             const files = fs.readdirSync(reportDir);
             const jsonFiles = files.filter(f => f.endsWith('.json'));
-            
+
             let comment = '## 🚨 Lighthouse Performance Report\n\n';
-            
+
             for (const file of jsonFiles) {
               const data = JSON.parse(fs.readFileSync(path.join(reportDir, file), 'utf-8'));
               
@@ -100,19 +100,19 @@ jobs:
                 comment += `- Speed Index: ${Math.round(audits['speed-index'].numericValue)}ms\n\n`;
               }
             }
-            
+
             // Create or update comment
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            
+
             const botComment = comments.find(comment => 
               comment.user.type === 'Bot' && 
               comment.body.includes('Lighthouse Performance Report')
             );
-            
+
             if (botComment) {
               await github.rest.issues.updateComment({
                 owner: context.repo.owner,
@@ -128,7 +128,7 @@ jobs:
                 body: comment
               });
             }
-            
+
       - name: Performance regression check
         run: |
           node -e "

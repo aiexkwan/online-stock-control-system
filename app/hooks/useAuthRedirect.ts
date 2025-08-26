@@ -13,7 +13,7 @@ export interface UseAuthRedirectReturn extends AuthRedirectActions {}
 
 /**
  * Specialized hook for handling post-authentication redirects
- * 
+ *
  * Responsibilities:
  * - Determine user redirect path based on role from database
  * - Fallback to legacy role mapping when database lookup fails
@@ -41,14 +41,17 @@ export function useAuthRedirect(): UseAuthRedirectReturn {
   }, []);
 
   // Redirect to user-specific page after authentication
-  const redirectToUserPage = useCallback(async (email: string): Promise<string> => {
-    const redirectPath = await getUserRedirectPath(email);
-    
-    // Execute the redirect
-    router.push(redirectPath);
-    
-    return redirectPath;
-  }, [router, getUserRedirectPath]);
+  const redirectToUserPage = useCallback(
+    async (email: string): Promise<string> => {
+      const redirectPath = await getUserRedirectPath(email);
+
+      // Execute the redirect
+      router.push(redirectPath);
+
+      return redirectPath;
+    },
+    [router, getUserRedirectPath]
+  );
 
   return {
     getUserRedirectPath,

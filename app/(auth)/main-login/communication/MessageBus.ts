@@ -1,21 +1,24 @@
 /**
  * Message Bus Implementation
- * 
+ *
  * Centralized message bus for component communication that supports
  * multiple communication channels and middleware processing.
  */
 
-import { 
-  MessageBus, 
-  CommunicationMessage, 
-  CommunicationChannel, 
+import {
+  MessageBus,
+  CommunicationMessage,
+  CommunicationChannel,
   CommunicationMiddleware,
   CommunicationError,
-  CommunicationMetrics 
+  CommunicationMetrics,
 } from './interfaces';
 
 export class MessageBusImpl implements MessageBus {
-  private subscribers = new Map<string, Set<(message: CommunicationMessage) => void | Promise<void>>>();
+  private subscribers = new Map<
+    string,
+    Set<(message: CommunicationMessage) => void | Promise<void>>
+  >();
   private channels = new Map<string, CommunicationChannel>();
   private middleware: CommunicationMiddleware[] = [];
   private messageHistory: CommunicationMessage[] = [];
@@ -28,15 +31,15 @@ export class MessageBusImpl implements MessageBus {
     peakThroughput: 0,
     channelUsage: {
       'direct-props': 0,
-      'context': 0,
-      'events': 0,
-      'callback': 0,
-      'ref': 0,
+      context: 0,
+      events: 0,
+      callback: 0,
+      ref: 0,
       'global-state': 0,
     },
     componentInteractions: {},
   };
-  
+
   private isDebugMode = false;
   private maxHistorySize = 1000;
   private processingTimes: number[] = [];
@@ -49,11 +52,11 @@ export class MessageBusImpl implements MessageBus {
   // Publishing methods
   async publish<T>(message: CommunicationMessage<T>): Promise<void> {
     const startTime = performance.now();
-    
+
     try {
       await this.processMessage(message);
       this.updateMetrics('sent', startTime);
-      
+
       if (this.isDebugMode) {
         console.debug('[MessageBus] Message published:', message);
       }
@@ -72,7 +75,7 @@ export class MessageBusImpl implements MessageBus {
       }, 5000); // 5 second timeout
 
       // Subscribe once for the response
-      const unsubscribe = this.subscribeOnce(responseType, (responseMessage) => {
+      const unsubscribe = this.subscribeOnce(responseType, responseMessage => {
         clearTimeout(timeout);
         if (responseMessage.correlationId === message.id) {
           resolve(responseMessage.payload as R);
@@ -80,12 +83,11 @@ export class MessageBusImpl implements MessageBus {
       });
 
       // Publish the original message
-      this.publish({ ...message, requiresResponse: true })
-        .catch((error) => {
-          clearTimeout(timeout);
-          unsubscribe();
-          reject(error);
-        });
+      this.publish({ ...message, requiresResponse: true }).catch(error => {
+        clearTimeout(timeout);
+        unsubscribe();
+        reject(error);
+      });
     });
   }
 
@@ -127,7 +129,7 @@ export class MessageBusImpl implements MessageBus {
   // Channel management
   createChannel(name: string, type: CommunicationChannel): void {
     this.channels.set(name, type);
-    
+
     if (this.isDebugMode) {
       console.debug(`[MessageBus] Channel created: ${name} (${type})`);
     }
@@ -135,7 +137,7 @@ export class MessageBusImpl implements MessageBus {
 
   destroyChannel(name: string): void {
     this.channels.delete(name);
-    
+
     if (this.isDebugMode) {
       console.debug(`[MessageBus] Channel destroyed: ${name}`);
     }
@@ -155,7 +157,7 @@ export class MessageBusImpl implements MessageBus {
 
   clearHistory(): void {
     this.messageHistory = [];
-    
+
     if (this.isDebugMode) {
       console.debug('[MessageBus] Message history cleared');
     }
@@ -170,9 +172,11 @@ export class MessageBusImpl implements MessageBus {
   addMiddleware(middleware: CommunicationMiddleware): void {
     this.middleware.push(middleware);
     this.middleware.sort((a, b) => b.priority - a.priority); // Higher priority first
-    
+
     if (this.isDebugMode) {
-      console.debug(`[MessageBus] Middleware added: ${middleware.name} (priority: ${middleware.priority})`);
+      console.debug(
+        `[MessageBus] Middleware added: ${middleware.name} (priority: ${middleware.priority})`
+      );
     }
   }
 
@@ -180,7 +184,7 @@ export class MessageBusImpl implements MessageBus {
     const index = this.middleware.findIndex(m => m.name === name);
     if (index !== -1) {
       this.middleware.splice(index, 1);
-      
+
       if (this.isDebugMode) {
         console.debug(`[MessageBus] Middleware removed: ${name}`);
       }
@@ -202,10 +206,10 @@ export class MessageBusImpl implements MessageBus {
       peakThroughput: 0,
       channelUsage: {
         'direct-props': 0,
-        'context': 0,
-        'events': 0,
-        'callback': 0,
-        'ref': 0,
+        context: 0,
+        events: 0,
+        callback: 0,
+        ref: 0,
         'global-state': 0,
       },
       componentInteractions: {},
@@ -217,7 +221,7 @@ export class MessageBusImpl implements MessageBus {
   private async processMessage<T>(message: CommunicationMessage<T>): Promise<void> {
     // Add to history
     this.addToHistory(message);
-    
+
     // Process through middleware chain
     let currentMessage = message;
     let middlewareIndex = 0;
@@ -237,13 +241,13 @@ export class MessageBusImpl implements MessageBus {
 
   private async deliverMessage<T>(message: CommunicationMessage<T>): Promise<void> {
     const handlers = this.subscribers.get(message.type);
-    
+
     if (handlers && handlers.size > 0) {
       this.metrics.messagesReceived++;
-      
+
       // Update channel usage
       this.metrics.channelUsage[message.channel]++;
-      
+
       // Track component interactions
       if (message.target) {
         if (!this.metrics.componentInteractions[message.source]) {
@@ -256,7 +260,7 @@ export class MessageBusImpl implements MessageBus {
       }
 
       // Deliver to all handlers
-      const promises = Array.from(handlers).map(async (handler) => {
+      const promises = Array.from(handlers).map(async handler => {
         try {
           await handler(message);
           this.metrics.messagesProcessed++;
@@ -272,7 +276,7 @@ export class MessageBusImpl implements MessageBus {
 
   private addToHistory<T>(message: CommunicationMessage<T>): void {
     this.messageHistory.push(message);
-    
+
     if (this.messageHistory.length > this.maxHistorySize) {
       this.messageHistory = this.messageHistory.slice(-this.maxHistorySize);
     }
@@ -281,17 +285,17 @@ export class MessageBusImpl implements MessageBus {
   private updateMetrics(type: 'sent' | 'received', startTime: number): void {
     const processingTime = performance.now() - startTime;
     this.processingTimes.push(processingTime);
-    
+
     if (type === 'sent') {
       this.metrics.messagesSent++;
     }
-    
+
     // Calculate average processing time
     if (this.processingTimes.length > 100) {
       this.processingTimes = this.processingTimes.slice(-100); // Keep last 100 samples
     }
-    
-    this.metrics.averageProcessingTime = 
+
+    this.metrics.averageProcessingTime =
       this.processingTimes.reduce((sum, time) => sum + time, 0) / this.processingTimes.length;
   }
 
@@ -307,7 +311,7 @@ export class MessageBusImpl implements MessageBus {
     };
 
     console.error('[MessageBus] Communication error:', communicationError);
-    
+
     // Emit error event
     this.publish({
       id: `error-${Date.now()}`,
@@ -325,7 +329,10 @@ export class MessageBusImpl implements MessageBus {
 // Global message bus instance
 let globalMessageBus: MessageBusImpl | null = null;
 
-export function getMessageBus(options?: { debugMode?: boolean; maxHistorySize?: number }): MessageBusImpl {
+export function getMessageBus(options?: {
+  debugMode?: boolean;
+  maxHistorySize?: number;
+}): MessageBusImpl {
   if (!globalMessageBus) {
     globalMessageBus = new MessageBusImpl(options);
   }
@@ -350,11 +357,11 @@ export const validationMiddleware: CommunicationMiddleware = {
     if (!message.id || !message.type || !message.source) {
       throw new Error('Invalid message format: missing required fields');
     }
-    
+
     if (!message.timestamp) {
       message.timestamp = Date.now();
     }
-    
+
     await next(message);
   },
 };
@@ -368,11 +375,11 @@ export const securityMiddleware: CommunicationMiddleware = {
       // Remove sensitive data from logs
       const sanitizedMessage = {
         ...message,
-        payload: message.type.includes('PASSWORD') 
+        payload: message.type.includes('PASSWORD')
           ? { ...message.payload, password: '[REDACTED]' }
           : message.payload,
       };
-      
+
       await next(sanitizedMessage);
     } else {
       await next(message);

@@ -1,6 +1,6 @@
 /**
  * Component Communication Standards
- * 
+ *
  * Defines standardized interfaces and contracts for component communication
  * in the authentication system. These interfaces ensure consistent and
  * type-safe communication between components.
@@ -21,13 +21,13 @@ export interface ComponentContract<TProps = any, TState = any, TEvents = any> {
 }
 
 // Communication Channel Types
-export type CommunicationChannel = 
-  | 'direct-props'      // Direct prop passing
-  | 'context'          // React Context
-  | 'events'           // Event-driven
-  | 'callback'         // Callback functions
-  | 'ref'              // React refs
-  | 'global-state';    // Global state management
+export type CommunicationChannel =
+  | 'direct-props' // Direct prop passing
+  | 'context' // React Context
+  | 'events' // Event-driven
+  | 'callback' // Callback functions
+  | 'ref' // React refs
+  | 'global-state'; // Global state management
 
 // Communication Message Structure
 export interface CommunicationMessage<T = any> {
@@ -69,13 +69,9 @@ export interface LoginFormComponentInterface extends ComponentContract {
       'form:clear',
       'auth:login-attempt',
       'auth:login-success',
-      'auth:login-error'
+      'auth:login-error',
     ];
-    listens: [
-      'auth:logout',
-      'form:reset',
-      'validation:error-clear'
-    ];
+    listens: ['auth:logout', 'form:reset', 'validation:error-clear'];
   };
 }
 
@@ -104,13 +100,9 @@ export interface RegisterFormComponentInterface extends ComponentContract {
       'auth:register-attempt',
       'auth:register-success',
       'auth:register-error',
-      'password:strength-change'
+      'password:strength-change',
     ];
-    listens: [
-      'form:reset',
-      'validation:error-clear',
-      'password:visibility-toggle'
-    ];
+    listens: ['form:reset', 'validation:error-clear', 'password:visibility-toggle'];
   };
 }
 
@@ -133,11 +125,9 @@ export interface PasswordResetComponentInterface extends ComponentContract {
       'form:submit',
       'auth:password-reset-attempt',
       'auth:password-reset-success',
-      'auth:password-reset-error'
+      'auth:password-reset-error',
     ];
-    listens: [
-      'form:reset'
-    ];
+    listens: ['form:reset'];
   };
 }
 
@@ -195,7 +185,7 @@ export interface FormCommunicationProtocol {
   onFormValidate: (formId: string, field?: string) => Promise<boolean>;
   onFormReset: (formId: string) => void;
   onFormClear: (formId: string) => void;
-  
+
   // Field-level events
   onFieldFocus: (formId: string, field: string) => void;
   onFieldBlur: (formId: string, field: string) => void;
@@ -211,15 +201,15 @@ export interface AuthCommunicationProtocol {
   onLoginAttempt: (credentials: LoginFormData) => Promise<void>;
   onLoginSuccess: (user: any, redirectPath?: string) => void;
   onLoginError: (error: string, field?: string) => void;
-  
+
   onRegisterAttempt: (data: RegisterFormData) => Promise<void>;
   onRegisterSuccess: (email: string) => void;
   onRegisterError: (error: string, field?: string) => void;
-  
+
   onPasswordResetAttempt: (email: string) => Promise<void>;
   onPasswordResetSuccess: (email: string) => void;
   onPasswordResetError: (error: string) => void;
-  
+
   onLogout: () => Promise<void>;
   onSessionExpired: () => void;
   onAuthStateChange: (isAuthenticated: boolean, user?: any) => void;
@@ -231,15 +221,15 @@ export interface UICommunicationProtocol {
   onViewChange: (from: string, to: string) => void;
   onModalOpen: (modalId: string, props?: any) => void;
   onModalClose: (modalId: string) => void;
-  
+
   // Notifications
   onNotificationShow: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
   onNotificationHide: (notificationId: string) => void;
-  
+
   // Loading states
   onLoadingStart: (operation?: string) => void;
   onLoadingStop: (operation?: string) => void;
-  
+
   // Error handling
   onErrorShow: (error: string, context?: string) => void;
   onErrorHide: (errorId?: string) => void;
@@ -251,17 +241,17 @@ export interface ComponentRegistry {
   // Register components
   register<T extends ComponentContract>(contract: T): void;
   unregister(name: string): void;
-  
+
   // Discover components
   findByName(name: string): ComponentContract | undefined;
   findByCapability(capability: string): ComponentContract[];
   findDependents(name: string): ComponentContract[];
   findDependencies(name: string): ComponentContract[];
-  
+
   // Validation
   validateContract(contract: ComponentContract): boolean;
   validateDependencies(name: string): boolean;
-  
+
   // Events
   onComponentRegistered: (contract: ComponentContract) => void;
   onComponentUnregistered: (name: string) => void;
@@ -272,23 +262,23 @@ export interface MessageBus {
   // Publishing
   publish<T>(message: CommunicationMessage<T>): Promise<void>;
   publishAndWait<T, R>(message: CommunicationMessage<T>): Promise<R>;
-  
+
   // Subscribing
   subscribe<T>(
     type: string,
     handler: (message: CommunicationMessage<T>) => void | Promise<void>
   ): () => void;
-  
+
   subscribeOnce<T>(
     type: string,
     handler: (message: CommunicationMessage<T>) => void | Promise<void>
   ): () => void;
-  
+
   // Channel management
   createChannel(name: string, type: CommunicationChannel): void;
   destroyChannel(name: string): void;
   getChannel(name: string): CommunicationChannel | undefined;
-  
+
   // Message history and debugging
   getMessageHistory(limit?: number): CommunicationMessage[];
   clearHistory(): void;
@@ -335,21 +325,21 @@ export const NAMING_CONVENTIONS = {
     format: /^[a-z]+:[a-z-]+$/,
     domains: ['form', 'auth', 'ui', 'validation', 'error', 'loading'] as const,
   },
-  
+
   // Component names
   components: {
     // Format: PascalCase
     format: /^[A-Z][A-Za-z0-9]*$/,
     suffixes: ['Form', 'Display', 'Indicator', 'Button', 'Input', 'Modal'] as const,
   },
-  
+
   // Message types
   messages: {
     // Format: UPPER_SNAKE_CASE
     format: /^[A-Z][A-Z0-9_]*$/,
     prefixes: ['REQUEST_', 'RESPONSE_', 'EVENT_', 'NOTIFICATION_'] as const,
   },
-  
+
   // Props and state properties
   properties: {
     // Format: camelCase
@@ -365,11 +355,13 @@ export function isComponentContract(obj: any): obj is ComponentContract {
 }
 
 export function isCommunicationMessage(obj: any): obj is CommunicationMessage {
-  return obj && 
-    typeof obj.id === 'string' && 
+  return (
+    obj &&
+    typeof obj.id === 'string' &&
     typeof obj.type === 'string' &&
     typeof obj.source === 'string' &&
-    typeof obj.timestamp === 'number';
+    typeof obj.timestamp === 'number'
+  );
 }
 
 export function isCommunicationError(obj: any): obj is CommunicationError {

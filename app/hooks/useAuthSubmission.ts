@@ -34,7 +34,7 @@ export interface UseAuthSubmissionReturn extends AuthSubmissionState, AuthSubmis
 
 /**
  * Specialized hook for handling authentication form submission
- * 
+ *
  * Responsibilities:
  * - Execute login via unifiedAuth
  * - Handle parallel session validation with timeout
@@ -91,7 +91,9 @@ export function useAuthSubmission(): UseAuthSubmissionReturn {
 
       if (!sessionResult.success) {
         if ('timeout' in sessionResult) {
-          console.warn('[useAuthSubmission] Session validation timed out after 1s, proceeding anyway');
+          console.warn(
+            '[useAuthSubmission] Session validation timed out after 1s, proceeding anyway'
+          );
         } else {
           console.warn('[useAuthSubmission] Session validation failed, but proceeding with login');
         }
@@ -99,10 +101,10 @@ export function useAuthSubmission(): UseAuthSubmissionReturn {
 
       // Login successful
       setState({ loading: false, error: '' });
-      
-      return { 
-        success: true, 
-        user: 'user' in sessionResult ? sessionResult.user : null 
+
+      return {
+        success: true,
+        user: 'user' in sessionResult ? sessionResult.user : null,
       };
     } catch (error) {
       const errorMessage =
