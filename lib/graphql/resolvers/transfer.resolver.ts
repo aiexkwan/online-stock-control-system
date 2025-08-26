@@ -62,7 +62,7 @@ export const transferResolvers: IResolvers<unknown, GraphQLContext> = {
         }
 
         return {
-          edges: (data || []).map((item) => ({
+          edges: (data || []).map(item => ({
             node: item,
             cursor: item.uuid.toString(),
           })),

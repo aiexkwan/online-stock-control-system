@@ -174,11 +174,7 @@ export const SEARCH_PRODUCTS = gql`
 
 // Query: Get products with pagination
 export const GET_PRODUCTS = gql`
-  query GetProducts(
-    $filter: ProductFilterInput
-    $pagination: PaginationInput
-    $sort: SortInput
-  ) {
+  query GetProducts($filter: ProductFilterInput, $pagination: PaginationInput, $sort: SortInput) {
     products(filter: $filter, pagination: $pagination, sort: $sort) {
       edges {
         cursor
@@ -219,7 +215,11 @@ export const GET_PRODUCT_STATISTICS = gql`
 // Query: Get products with inventory by type (for StockLevelListAndChartCard)
 export const GET_PRODUCTS_WITH_INVENTORY_BY_TYPE = gql`
   query GetProductsWithInventoryByType($type: String!, $limit: Int = 50) {
-    products(filter: { type: $type }, pagination: { limit: $limit }, sort: { field: "code", order: ASC }) {
+    products(
+      filter: { type: $type }
+      pagination: { limit: $limit }
+      sort: { field: "code", order: ASC }
+    ) {
       edges {
         node {
           code
@@ -357,7 +357,12 @@ export function useSearchProductByCode(options?: QueryOptions<SearchProductByCod
 }
 
 // Hook: Use products list
-export function useProducts(filter?: FilterOptions, pagination?: PaginationOptions, sort?: SortOptions, options?: QueryOptions) {
+export function useProducts(
+  filter?: FilterOptions,
+  pagination?: PaginationOptions,
+  sort?: SortOptions,
+  options?: QueryOptions
+) {
   return useQuery(GET_PRODUCTS, {
     variables: { filter, pagination, sort },
     ...options,
@@ -365,7 +370,11 @@ export function useProducts(filter?: FilterOptions, pagination?: PaginationOptio
 }
 
 // Hook: Use product statistics
-export function useProductStatistics(productCode: string, dateRange?: { start: Date; end: Date }, options?: QueryOptions) {
+export function useProductStatistics(
+  productCode: string,
+  dateRange?: { start: Date; end: Date },
+  options?: QueryOptions
+) {
   return useQuery(GET_PRODUCT_STATISTICS, {
     variables: { productCode, dateRange },
     skip: !productCode,
@@ -374,7 +383,11 @@ export function useProductStatistics(productCode: string, dateRange?: { start: D
 }
 
 // Hook: Use products with inventory by type (for StockLevelListAndChartCard)
-export function useProductsWithInventoryByType(type: string, limit: number = 50, options?: QueryOptions) {
+export function useProductsWithInventoryByType(
+  type: string,
+  limit: number = 50,
+  options?: QueryOptions
+) {
   return useQuery(GET_PRODUCTS_WITH_INVENTORY_BY_TYPE, {
     variables: { type, limit },
     skip: !type || type === '',

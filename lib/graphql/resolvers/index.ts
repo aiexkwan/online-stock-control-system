@@ -193,7 +193,6 @@ const rootResolvers: IResolvers = {
       return results;
     },
   },
-
 };
 
 // Combine Query resolvers in groups to avoid TypeScript union complexity
@@ -245,29 +244,44 @@ const combinedMutations = Object.assign(
 export const resolvers: IResolvers = {
   // Scalar types
   ...scalarResolvers,
-  
+
   // Type resolvers (non-Query/Mutation)
   ...(productResolvers.Product ? { Product: productResolvers.Product } : {}),
   ...(supplierResolvers.Supplier ? { Supplier: supplierResolvers.Supplier } : {}),
   ...(inventoryResolvers.Inventory ? { Inventory: inventoryResolvers.Inventory } : {}),
   ...(inventoryResolvers.Pallet ? { Pallet: inventoryResolvers.Pallet } : {}),
   // Use Transfer resolvers (prioritize transferResolvers over operationsResolvers)
-  ...(transferResolvers.Transfer ? { Transfer: transferResolvers.Transfer } : 
-      operationsResolvers.Transfer ? { Transfer: operationsResolvers.Transfer } : {}),
+  ...(transferResolvers.Transfer
+    ? { Transfer: transferResolvers.Transfer }
+    : operationsResolvers.Transfer
+      ? { Transfer: operationsResolvers.Transfer }
+      : {}),
   ...(operationsResolvers.GoodsReceipt ? { GoodsReceipt: operationsResolvers.GoodsReceipt } : {}),
   ...(operationsResolvers.QualityCheck ? { QualityCheck: operationsResolvers.QualityCheck } : {}),
-  ...(stockHistoryResolvers.StockHistoryRecord ? { StockHistoryRecord: stockHistoryResolvers.StockHistoryRecord } : {}),
-  ...(stockHistoryResolvers.PalletHistoryResult ? { PalletHistoryResult: stockHistoryResolvers.PalletHistoryResult } : {}),
-  ...(stockHistoryResolvers.SinglePalletHistoryResult ? { SinglePalletHistoryResult: stockHistoryResolvers.SinglePalletHistoryResult } : {}),
-  ...(stockHistoryResolvers.TransferTimeFlowResult ? { TransferTimeFlowResult: stockHistoryResolvers.TransferTimeFlowResult } : {}),
-  ...(stockLevelResolvers.StockLevelRecord ? { StockLevelRecord: stockLevelResolvers.StockLevelRecord } : {}),
-  
+  ...(stockHistoryResolvers.StockHistoryRecord
+    ? { StockHistoryRecord: stockHistoryResolvers.StockHistoryRecord }
+    : {}),
+  ...(stockHistoryResolvers.PalletHistoryResult
+    ? { PalletHistoryResult: stockHistoryResolvers.PalletHistoryResult }
+    : {}),
+  ...(stockHistoryResolvers.SinglePalletHistoryResult
+    ? { SinglePalletHistoryResult: stockHistoryResolvers.SinglePalletHistoryResult }
+    : {}),
+  ...(stockHistoryResolvers.TransferTimeFlowResult
+    ? { TransferTimeFlowResult: stockHistoryResolvers.TransferTimeFlowResult }
+    : {}),
+  ...(stockLevelResolvers.StockLevelRecord
+    ? { StockLevelRecord: stockLevelResolvers.StockLevelRecord }
+    : {}),
+
   // Query and Mutation resolvers
   Query: combinedQueries,
   Mutation: combinedMutations,
-  
+
   // Subscription resolvers
-  ...(stockHistoryResolvers.Subscription ? { Subscription: stockHistoryResolvers.Subscription } : {}),
+  ...(stockHistoryResolvers.Subscription
+    ? { Subscription: stockHistoryResolvers.Subscription }
+    : {}),
 };
 
 // Type guards for context

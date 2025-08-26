@@ -2791,12 +2791,14 @@ export function createStockDistributionLoader(
             // First get all stock levels grouped by stock code to get latest update
             const { data: stockData, error: stockError } = await supabase
               .from('stock_level')
-              .select(`
+              .select(
+                `
                 stock,
                 description,
                 stock_level,
                 update_time
-              `)
+              `
+              )
               .order('update_time', { ascending: false });
 
             if (stockError) {
@@ -2809,14 +2811,18 @@ export function createStockDistributionLoader(
             (stockData || []).forEach((item: DatabaseEntity) => {
               const stock = safeString(item, 'stock', '');
               const existing = latestStockMap.get(stock);
-              if (!existing || new Date(safeString(item, 'update_time', '')) > new Date(safeString(existing, 'update_time', ''))) {
+              if (
+                !existing ||
+                new Date(safeString(item, 'update_time', '')) >
+                  new Date(safeString(existing, 'update_time', ''))
+              ) {
                 latestStockMap.set(stock, item);
               }
             });
 
             // Get product codes for type lookup
             const productCodes = Array.from(latestStockMap.keys());
-            
+
             // Get product types from data_code table
             const { data: typeData, error: typeError } = await supabase
               .from('data_code')
@@ -2832,7 +2838,7 @@ export function createStockDistributionLoader(
             (typeData || []).forEach((item: DatabaseEntity) => {
               productTypeMap.set(safeString(item, 'code', ''), {
                 type: safeString(item, 'type', 'Unknown'),
-                colour: safeString(item, 'colour', '')
+                colour: safeString(item, 'colour', ''),
               });
             });
 
@@ -2973,17 +2979,17 @@ export function createStockDistributionLoader(
 
 /**
  * Transfer Details Loader with Single Query optimization
- * 
+ *
  * This loader implements the Single Query pattern to solve the N+1 problem
  * by using field resolvers to fetch pallet data on demand.
- * 
+ *
  * Performance improvement: Avoids N+1 queries by using field-level optimization
  */
 export function createTransferDetailsLoader(supabase: SupabaseClient) {
   return createBatchLoader(
     async (transferIds: readonly string[]) => {
       console.log(`[TransferDetailsLoader] Loading ${transferIds.length} transfer details`);
-      
+
       try {
         // Fetch transfers - pallet data will be loaded via field resolver for optimization
         const { data, error } = await supabase
@@ -3006,7 +3012,7 @@ export function createTransferDetailsLoader(supabase: SupabaseClient) {
 
         // Transform the data to match GraphQL schema and create a map for efficient lookup
         const transferMap = new Map<string, TransferEntity>();
-        
+
         data.forEach((transfer: DatabaseEntity) => {
           const transformedTransfer = {
             ...transfer,
@@ -3020,13 +3026,12 @@ export function createTransferDetailsLoader(supabase: SupabaseClient) {
             completedAt: safeString(transfer.completed_at, ''),
             pallet: null, // Will be loaded via field resolver
           };
-          
+
           transferMap.set(String(transfer.id), transformedTransfer as TransferEntity);
         });
 
         // Return results in the same order as requested IDs
         return transferIds.map(id => transferMap.get(id) || null);
-        
       } catch (error) {
         console.error('[TransferDetailsLoader] Processing error:', error);
         throw new Error(`Transfer details processing failed: ${(error as Error).message}`);

@@ -7,13 +7,13 @@
 export const ANIMATION_CLASSES = {
   // Spin animations
   SPIN: 'animate-spin',
-  
+
   // Pulse animations
   PULSE: 'animate-pulse',
-  
+
   // Fade animations
   FADE_IN: 'animate-fadeIn',
-  
+
   // Bounce animations
   BOUNCE: 'animate-bounce',
 } as const;
@@ -22,13 +22,13 @@ export const ANIMATION_CLASSES = {
 export const TRANSITION_CLASSES = {
   // Colors transitions
   COLORS: 'transition-colors',
-  
+
   // All properties transitions
   ALL: 'transition-all',
-  
+
   // Opacity transitions
   OPACITY: 'transition-opacity',
-  
+
   // Transform transitions
   TRANSFORM: 'transition-transform',
 } as const;
@@ -54,22 +54,22 @@ export const EASE_CLASSES = {
 export const ANIMATION_PATTERNS = {
   // Loading spinner
   LOADING_SPINNER: 'animate-spin rounded-full border-b-2 border-primary',
-  
+
   // Loading spinner with custom color
   LOADING_SPINNER_WHITE: 'animate-spin rounded-full border-b-2 border-white',
-  
+
   // Button hover effect
   BUTTON_HOVER: 'transition-all hover:scale-105',
-  
+
   // Card hover effect
   CARD_HOVER: 'transition-all hover:shadow-lg',
-  
+
   // Text hover effect
   TEXT_HOVER: 'transition-colors hover:text-primary',
-  
+
   // Smooth color transition
   SMOOTH_COLOR: 'transition-colors duration-300',
-  
+
   // Smooth all transition
   SMOOTH_ALL: 'transition-all duration-300 ease-out',
 } as const;

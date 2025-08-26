@@ -16,7 +16,11 @@ import {
   recordVersionUsage,
   type ApiVersion,
 } from '@/lib/middleware/apiVersioning';
-import { handleApiRedirect, isDeprecatedApiPath, getDeprecationHeaders } from '@/lib/middleware/apiRedirects';
+import {
+  handleApiRedirect,
+  isDeprecatedApiPath,
+  getDeprecationHeaders,
+} from '@/lib/middleware/apiRedirects';
 // import { emailToClockNumber } from './app/utils/authUtils'; // 可能不再需要在中間件中直接使用
 
 // 認證中間件 - 處理用戶會話和路由保護
@@ -73,8 +77,10 @@ export async function middleware(request: NextRequest) {
   logMiddlewareRouting(correlationId, request.nextUrl.pathname, isPublicRoute);
 
   // EMERGENCY: Alert API endpoints disabled (2025-08-13) - Security cleanup
-  if (request.nextUrl.pathname.startsWith('/api/alerts/') || 
-      request.nextUrl.pathname.startsWith('/api/v1/alerts/')) {
+  if (
+    request.nextUrl.pathname.startsWith('/api/alerts/') ||
+    request.nextUrl.pathname.startsWith('/api/v1/alerts/')
+  ) {
     middlewareLogger.warn(
       {
         correlationId,
@@ -84,13 +90,13 @@ export async function middleware(request: NextRequest) {
       },
       'Alert API endpoint access blocked - system cleanup in progress'
     );
-    
+
     return new Response(
       JSON.stringify({
         error: 'Alert API Permanently Disabled',
         message: 'Alert system has been removed for security reasons',
         code: 'ALERT_API_REMOVED',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       }),
       {
         status: 410, // Gone
@@ -99,8 +105,8 @@ export async function middleware(request: NextRequest) {
           'X-Deprecation': 'Alert API permanently removed',
           'X-Correlation-ID': correlationId,
           'Cache-Control': 'no-store, no-cache',
-          'X-Security-Notice': 'Alert system removed for security compliance'
-        }
+          'X-Security-Notice': 'Alert system removed for security compliance',
+        },
       }
     );
   }
@@ -178,7 +184,11 @@ export async function middleware(request: NextRequest) {
 
     // 添加 API 版本 headers (v1.8 新增)
     if (processedRequest.nextUrl.pathname.startsWith('/api/')) {
-      response = addVersionHeadersToResponse(response, apiVersion, versionInfo as unknown as ApiVersion | undefined);
+      response = addVersionHeadersToResponse(
+        response,
+        apiVersion,
+        versionInfo as unknown as ApiVersion | undefined
+      );
     }
 
     // 記錄請求完成時間
@@ -435,7 +445,11 @@ export async function middleware(request: NextRequest) {
 
     // 添加 API 版本 headers (v1.8 新增)
     if (processedRequest.nextUrl.pathname.startsWith('/api/')) {
-      response = addVersionHeadersToResponse(response, apiVersion, versionInfo as unknown as ApiVersion | undefined);
+      response = addVersionHeadersToResponse(
+        response,
+        apiVersion,
+        versionInfo as unknown as ApiVersion | undefined
+      );
     }
 
     // 記錄請求完成
@@ -469,7 +483,11 @@ export async function middleware(request: NextRequest) {
 
     // 添加 API 版本 headers (v1.8 新增)
     if (processedRequest.nextUrl.pathname.startsWith('/api/')) {
-      response = addVersionHeadersToResponse(response, apiVersion, versionInfo as unknown as ApiVersion | undefined);
+      response = addVersionHeadersToResponse(
+        response,
+        apiVersion,
+        versionInfo as unknown as ApiVersion | undefined
+      );
     }
 
     return response;

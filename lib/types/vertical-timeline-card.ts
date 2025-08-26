@@ -3,7 +3,7 @@
  * @packageDocumentation
  */
 
-/** 
+/**
  * Interface for Vertical Timeline Card Properties
  * @public
  */
@@ -43,7 +43,7 @@ export interface VerticalTimelineCardProps {
   limit?: number;
 }
 
-/** 
+/**
  * Interface for Merged Timeline Item
  * @public
  */
@@ -76,7 +76,7 @@ export interface MergedTimelineItem {
   timestamp: string;
 }
 
-/** 
+/**
  * Interface for Raw History Item
  * @public
  */

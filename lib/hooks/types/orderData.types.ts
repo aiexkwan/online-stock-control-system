@@ -234,27 +234,27 @@ export interface OrderDataState {
   warehouseOrder: WarehouseOrder | null;
   warehouseOrdersTotal: number;
   warehouseOrdersAggregates: WarehouseOrderAggregates | null;
-  
+
   // ACO Orders
   acoOrderReport: AcoOrder[];
   acoOrderReportTotal: number;
   acoOrderReference: string;
-  
+
   // Loading Records
   orderLoadingRecords: OrderLoadingRecord[];
   orderLoadingTotal: number;
   orderLoadingSummary: LoadingSummary | null;
-  
+
   // Loading States
   loading: boolean;
   loadingOrders: boolean;
   loadingOrder: boolean;
   loadingAcoReport: boolean;
   loadingRecords: boolean;
-  
+
   // Network Status
   networkStatus: NetworkStatus;
-  
+
   // Error States
   error: ApolloError | null;
   ordersError: ApolloError | null;
@@ -269,12 +269,12 @@ export interface OrderDataActions {
   fetchWarehouseOrder: (variables: WarehouseOrderVariables) => Promise<void>;
   fetchAcoOrderReport: (variables: AcoOrderReportVariables) => Promise<void>;
   fetchOrderLoadingRecords: (variables: OrderLoadingRecordsVariables) => Promise<void>;
-  
+
   // Mutation Functions
   updateOrderStatus: (variables: UpdateWarehouseOrderStatusVariables) => Promise<boolean>;
   updateAcoOrder: (variables: UpdateAcoOrderVariables) => Promise<boolean>;
   cancelOrder: (variables: CancelWarehouseOrderVariables) => Promise<boolean>;
-  
+
   // Utility Functions
   refetchAll: () => Promise<void>;
   refetchOrders: () => Promise<void>;
@@ -334,11 +334,11 @@ export interface OrderUpdateSubscription {
 }
 
 // Utility Types
-export type OrderDataHookVariant = 
-  | 'complete' 
-  | 'warehouseOrders' 
-  | 'warehouseOrder' 
-  | 'acoReport' 
+export type OrderDataHookVariant =
+  | 'complete'
+  | 'warehouseOrders'
+  | 'warehouseOrder'
+  | 'acoReport'
   | 'loadingRecords';
 
 export interface OrderDataMetrics {
@@ -360,9 +360,9 @@ export interface OrderDataError extends Error {
 }
 
 // Event Types
-export type OrderDataEvent = 
+export type OrderDataEvent =
   | 'orderCreated'
-  | 'orderUpdated' 
+  | 'orderUpdated'
   | 'orderCompleted'
   | 'orderCancelled'
   | 'itemLoaded'

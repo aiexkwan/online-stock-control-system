@@ -19,7 +19,13 @@ interface UseAdminFormValidationReturn {
   validateAcoOrderDetails: () => boolean;
 }
 
-export const useAdminFormValidation = ({ formData, productInfo }: { formData: AdminFormData; productInfo: ProductInfo | null }): UseAdminFormValidationReturn => {
+export const useAdminFormValidation = ({
+  formData,
+  productInfo,
+}: {
+  formData: AdminFormData;
+  productInfo: ProductInfo | null;
+}): UseAdminFormValidationReturn => {
   // Simple validation without useMemo to avoid dependencies
   const validateForm = () => {
     const errors: Record<string, string> = {};
@@ -80,7 +86,7 @@ export const useAdminFormValidation = ({ formData, productInfo }: { formData: Ad
 
   // Get current errors and validation state
   const validationResult = validateForm();
-  
+
   return {
     errors: validationResult.errors,
     isValid: validationResult.isValid,

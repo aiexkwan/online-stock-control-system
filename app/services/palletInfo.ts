@@ -34,7 +34,7 @@ export async function getLatestPalletInfo(): Promise<PalletInfo[]> {
     if (!client) {
       throw new Error('Supabase client is not available in SSR environment');
     }
-    
+
     const { data, error } = await client
       .from('record_palletinfo')
       .select('generate_time, plt_num, product_code, product_qty')
@@ -46,10 +46,12 @@ export async function getLatestPalletInfo(): Promise<PalletInfo[]> {
       throw error;
     }
 
-    return (data as PalletInfoRecord[]).map((record: PalletInfoRecord): PalletInfo => ({
-      ...record,
-      generate_time: format(new Date(record.generate_time), 'dd-MMM-yy HH:mm'),
-    }));
+    return (data as PalletInfoRecord[]).map(
+      (record: PalletInfoRecord): PalletInfo => ({
+        ...record,
+        generate_time: format(new Date(record.generate_time), 'dd-MMM-yy HH:mm'),
+      })
+    );
   } catch (error) {
     console.error('Error in getLatestPalletInfo:', error);
     throw error;

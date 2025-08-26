@@ -12,15 +12,15 @@ const safeDownloadFile = (content: string, filename: string, mimeType: string): 
   try {
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
-    
+
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
-    
+
     // Trigger download
     document.body.appendChild(link);
     link.click();
-    
+
     // Cleanup
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
@@ -35,20 +35,20 @@ const safeDownloadFile = (content: string, filename: string, mimeType: string): 
  */
 const escapeCsvValue = (value: string | number | undefined): string => {
   if (value === undefined || value === null) return '';
-  
+
   const stringValue = String(value);
-  
+
   // Remove any potential malicious content
   const sanitized = stringValue
     .replace(/[=@+\-]/g, '') // Remove formula prefixes
     .replace(/[\r\n]/g, ' ') // Replace line breaks with spaces
     .trim();
-  
+
   // Escape quotes and wrap in quotes if contains comma or quotes
   if (sanitized.includes(',') || sanitized.includes('"')) {
     return `"${sanitized.replace(/"/g, '""')}"`;
   }
-  
+
   return sanitized;
 };
 
@@ -62,7 +62,7 @@ export const exportToCSV = (data: ExtractedOrderItem[], filename: string = 'orde
 
   const headers = [
     'Order Ref',
-    'Product Code', 
+    'Product Code',
     'Product Description',
     'Quantity',
     'Unit Price',
@@ -70,23 +70,25 @@ export const exportToCSV = (data: ExtractedOrderItem[], filename: string = 'orde
     'Customer Ref',
     'Account Number',
     'Delivery Address',
-    'Invoice To'
+    'Invoice To',
   ];
 
   const csvRows = [
     headers.join(','),
-    ...data.map(item => [
-      escapeCsvValue(item.order_ref),
-      escapeCsvValue(item.product_code),
-      escapeCsvValue(item.product_desc),
-      escapeCsvValue(item.product_qty),
-      escapeCsvValue(item.unit_price),
-      escapeCsvValue(item.weight),
-      escapeCsvValue(item.customer_ref),
-      escapeCsvValue(item.account_num),
-      escapeCsvValue(item.delivery_add),
-      escapeCsvValue(item.invoice_to)
-    ].join(','))
+    ...data.map(item =>
+      [
+        escapeCsvValue(item.order_ref),
+        escapeCsvValue(item.product_code),
+        escapeCsvValue(item.product_desc),
+        escapeCsvValue(item.product_qty),
+        escapeCsvValue(item.unit_price),
+        escapeCsvValue(item.weight),
+        escapeCsvValue(item.customer_ref),
+        escapeCsvValue(item.account_num),
+        escapeCsvValue(item.delivery_add),
+        escapeCsvValue(item.invoice_to),
+      ].join(',')
+    ),
   ];
 
   const csvContent = csvRows.join('\n');
@@ -119,7 +121,7 @@ export const exportToJSON = (data: ExtractedOrderItem[], filename: string = 'ord
       ...(item.was_corrected && { was_corrected: true }),
       ...(item.original_code && { original_code: item.original_code }),
       ...(item.confidence_score && { confidence_score: item.confidence_score }),
-    }))
+    })),
   };
 
   const jsonContent = JSON.stringify(exportData, null, 2);
@@ -136,9 +138,10 @@ export const copyToClipboard = async (data: ExtractedOrderItem[]): Promise<void>
 
   const csvContent = [
     'Product Code\tDescription\tQuantity\tUnit Price',
-    ...data.map(item => 
-      `${item.product_code}\t${item.product_desc}\t${item.product_qty}\t${item.unit_price || 'N/A'}`
-    )
+    ...data.map(
+      item =>
+        `${item.product_code}\t${item.product_desc}\t${item.product_qty}\t${item.unit_price || 'N/A'}`
+    ),
   ].join('\n');
 
   try {
@@ -169,9 +172,10 @@ export const shareData = async (data: ExtractedOrderItem[], orderRef: string): P
     throw new Error('No data to share');
   }
 
-  const summary = `Order ${orderRef}\n${data.length} items extracted\n\nProducts:\n${
-    data.slice(0, 5).map(item => `• ${item.product_code}: ${item.product_qty}x ${item.product_desc}`).join('\n')
-  }${data.length > 5 ? '\n...and more' : ''}`;
+  const summary = `Order ${orderRef}\n${data.length} items extracted\n\nProducts:\n${data
+    .slice(0, 5)
+    .map(item => `• ${item.product_code}: ${item.product_qty}x ${item.product_desc}`)
+    .join('\n')}${data.length > 5 ? '\n...and more' : ''}`;
 
   try {
     if (navigator.share) {
@@ -220,14 +224,15 @@ export const validateExportData = (data: unknown): data is ExtractedOrderItem[] 
     return false;
   }
 
-  return data.every(item => 
-    item && 
-    typeof item === 'object' && 
-    typeof item.product_code === 'string' &&
-    typeof item.product_desc === 'string' &&
-    typeof item.product_qty === 'number' &&
-    item.product_code.length > 0 &&
-    item.product_desc.length > 0 &&
-    item.product_qty >= 0
+  return data.every(
+    item =>
+      item &&
+      typeof item === 'object' &&
+      typeof item.product_code === 'string' &&
+      typeof item.product_desc === 'string' &&
+      typeof item.product_qty === 'number' &&
+      item.product_code.length > 0 &&
+      item.product_desc.length > 0 &&
+      item.product_qty >= 0
   );
 };

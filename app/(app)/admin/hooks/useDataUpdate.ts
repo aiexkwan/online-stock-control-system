@@ -1,10 +1,10 @@
 /**
  * useDataUpdate Hook
- * 
+ *
  * Extracted form management logic from various card components.
  * Provides unified state management, validation logic, and submission handling
  * for data update operations.
- * 
+ *
  * Components this hook was extracted from:
  * - DataUpdateCard.tsx (product/supplier management)
  * - QCLabelCard.tsx (QC label form management)
@@ -58,14 +58,14 @@ export interface FormActions {
   setMultipleFields: (fields: Record<string, unknown>) => void;
   resetForm: () => void;
   setFormData: (data: Record<string, unknown>) => void;
-  
+
   // Mode management
   setMode: (mode: FormMode) => void;
   switchToEdit: () => void;
   switchToAdd: () => void;
   switchToDisplay: () => void;
   switchToInitial: () => void;
-  
+
   // Validation
   validateField: (field: string) => string | null;
   validateForm: () => boolean;
@@ -73,16 +73,16 @@ export interface FormActions {
   markAllFieldsTouched: () => void;
   clearErrors: () => void;
   setError: (field: string, error: string) => void;
-  
+
   // Search operations
   search: (searchTerm: string) => Promise<void>;
   setSearchTerm: (term: string) => void;
-  
+
   // CRUD operations
   create: () => Promise<boolean>;
   update: () => Promise<boolean>;
   delete?: (id: string) => Promise<boolean>;
-  
+
   // UI helpers
   showSuccess: (message: string) => void;
   showError: (message: string) => void;
@@ -115,12 +115,12 @@ export const useDataUpdate = (options: UseDataUpdateOptions): UseDataUpdateRetur
     onError,
     enableSearch = true,
     enableConfirmation = true,
-    customValidation
+    customValidation,
   } = options;
 
   // Initialize supabase client
   const supabase = createClient();
-  
+
   // State management
   const [state, setState] = useState<FormState>({
     mode: 'initial',
@@ -140,62 +140,72 @@ export const useDataUpdate = (options: UseDataUpdateOptions): UseDataUpdateRetur
   stateRef.current = state;
 
   // Helper to show overlays (extracted from original components)
-  const showOverlay = useCallback((type: 'success' | 'error' | 'warning', message: string, duration = 3000) => {
-    const overlay = document.createElement('div');
-    overlay.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm';
-    
-    const colorClass = type === 'success' ? 'border-green-500/30 text-green-400' 
-                     : type === 'error' ? 'border-red-500/30 text-red-400'
-                     : 'border-yellow-500/30 text-yellow-400';
-    
-    overlay.innerHTML = `
+  const showOverlay = useCallback(
+    (type: 'success' | 'error' | 'warning', message: string, duration = 3000) => {
+      const overlay = document.createElement('div');
+      overlay.className =
+        'fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm';
+
+      const colorClass =
+        type === 'success'
+          ? 'border-green-500/30 text-green-400'
+          : type === 'error'
+            ? 'border-red-500/30 text-red-400'
+            : 'border-yellow-500/30 text-yellow-400';
+
+      overlay.innerHTML = `
       <div class="bg-slate-800/90 backdrop-blur-md border ${colorClass} rounded-lg p-8 text-center">
         <div class="text-xl font-bold mb-2">${message}</div>
       </div>
     `;
-    
-    document.body.appendChild(overlay);
-    setTimeout(() => overlay.remove(), duration);
-  }, []);
+
+      document.body.appendChild(overlay);
+      setTimeout(() => overlay.remove(), duration);
+    },
+    []
+  );
 
   // Field validation
-  const validateField = useCallback((field: string): string | null => {
-    const fieldConfig = config.fields.find(f => f.name === field);
-    const value = stateRef.current.data[field];
-    
-    if (!fieldConfig) return null;
-    
-    // Required field validation
-    if (fieldConfig.required && (!value || (typeof value === 'string' && !value.trim()))) {
-      return `${fieldConfig.label} is required`;
-    }
-    
-    // Custom validation
-    if (fieldConfig.validation) {
-      return fieldConfig.validation(value);
-    }
-    
-    // Type-specific validation
-    if (fieldConfig.type === 'email' && value) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(String(value))) {
-        return `${fieldConfig.label} must be a valid email`;
+  const validateField = useCallback(
+    (field: string): string | null => {
+      const fieldConfig = config.fields.find(f => f.name === field);
+      const value = stateRef.current.data[field];
+
+      if (!fieldConfig) return null;
+
+      // Required field validation
+      if (fieldConfig.required && (!value || (typeof value === 'string' && !value.trim()))) {
+        return `${fieldConfig.label} is required`;
       }
-    }
-    
-    if (fieldConfig.type === 'number' && value !== '' && value !== null && value !== undefined) {
-      if (isNaN(Number(value))) {
-        return `${fieldConfig.label} must be a number`;
+
+      // Custom validation
+      if (fieldConfig.validation) {
+        return fieldConfig.validation(value);
       }
-    }
-    
-    return null;
-  }, [config]);
+
+      // Type-specific validation
+      if (fieldConfig.type === 'email' && value) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(String(value))) {
+          return `${fieldConfig.label} must be a valid email`;
+        }
+      }
+
+      if (fieldConfig.type === 'number' && value !== '' && value !== null && value !== undefined) {
+        if (isNaN(Number(value))) {
+          return `${fieldConfig.label} must be a number`;
+        }
+      }
+
+      return null;
+    },
+    [config]
+  );
 
   // Form validation
   const validateForm = useCallback((): boolean => {
     const errors: Record<string, string> = {};
-    
+
     // Validate each field
     config.fields.forEach(field => {
       const error = validateField(field.name);
@@ -203,71 +213,74 @@ export const useDataUpdate = (options: UseDataUpdateOptions): UseDataUpdateRetur
         errors[field.name] = error;
       }
     });
-    
+
     // Custom form-level validation
     if (customValidation) {
       const customErrors = customValidation(stateRef.current.data);
       Object.assign(errors, customErrors);
     }
-    
+
     // Config-level validation
     if (config.validateForm) {
       const configErrors = config.validateForm(stateRef.current.data);
       Object.assign(errors, configErrors);
     }
-    
+
     setState(prev => ({ ...prev, errors }));
     return Object.keys(errors).length === 0;
   }, [config, customValidation, validateField]);
 
   // CRUD Operations
-  const search = useCallback(async (searchTerm: string) => {
-    if (!enableSearch || !config.tableName || !searchTerm.trim()) {
-      return;
-    }
-
-    setState(prev => ({ ...prev, isSearching: true, searchTerm }));
-    
-    try {
-      const primaryKey = config.primaryKey || 'id';
-      const { data, error } = await supabase
-        .from(config.tableName)
-        .select('*')
-        .eq(primaryKey, searchTerm.trim())
-        .single();
-
-      if (error || !data) {
-        // Not found - switch to add mode
-        setState(prev => ({
-          ...prev,
-          mode: 'add',
-          data: { ...initialData, [primaryKey]: searchTerm.trim() },
-          originalData: null,
-          isSearching: false,
-          errors: {},
-        }));
-      } else {
-        // Found - switch to display mode
-        setState(prev => ({
-          ...prev,
-          mode: 'display',
-          data: { ...data },
-          originalData: { ...data },
-          isSearching: false,
-          errors: {},
-        }));
+  const search = useCallback(
+    async (searchTerm: string) => {
+      if (!enableSearch || !config.tableName || !searchTerm.trim()) {
+        return;
       }
-    } catch (error) {
-      console.error('Search error:', error);
-      setState(prev => ({ 
-        ...prev, 
-        isSearching: false, 
-        mode: 'error',
-        errors: { search: 'Failed to search. Please try again.' }
-      }));
-      onError?.(error as Error, 'search');
-    }
-  }, [config, enableSearch, initialData, onError, supabase]);
+
+      setState(prev => ({ ...prev, isSearching: true, searchTerm }));
+
+      try {
+        const primaryKey = config.primaryKey || 'id';
+        const { data, error } = await supabase
+          .from(config.tableName)
+          .select('*')
+          .eq(primaryKey, searchTerm.trim())
+          .single();
+
+        if (error || !data) {
+          // Not found - switch to add mode
+          setState(prev => ({
+            ...prev,
+            mode: 'add',
+            data: { ...initialData, [primaryKey]: searchTerm.trim() },
+            originalData: null,
+            isSearching: false,
+            errors: {},
+          }));
+        } else {
+          // Found - switch to display mode
+          setState(prev => ({
+            ...prev,
+            mode: 'display',
+            data: { ...data },
+            originalData: { ...data },
+            isSearching: false,
+            errors: {},
+          }));
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+        setState(prev => ({
+          ...prev,
+          isSearching: false,
+          mode: 'error',
+          errors: { search: 'Failed to search. Please try again.' },
+        }));
+        onError?.(error as Error, 'search');
+      }
+    },
+    [config, enableSearch, initialData, onError, supabase]
+  );
 
   const create = useCallback(async (): Promise<boolean> => {
     if (!config.tableName) {
@@ -280,17 +293,15 @@ export const useDataUpdate = (options: UseDataUpdateOptions): UseDataUpdateRetur
     }
 
     setState(prev => ({ ...prev, isUpdating: true }));
-    
+
     try {
-      const { error } = await supabase
-        .from(config.tableName)
-        .insert([stateRef.current.data]);
+      const { error } = await supabase.from(config.tableName).insert([stateRef.current.data]);
 
       if (error) throw error;
 
       showOverlay('success', 'Record created successfully!');
       onSuccess?.('create', stateRef.current.data);
-      
+
       // Reset form
       setState(prev => ({
         ...prev,
@@ -302,7 +313,7 @@ export const useDataUpdate = (options: UseDataUpdateOptions): UseDataUpdateRetur
         isUpdating: false,
         searchTerm: '',
       }));
-      
+
       return true;
     } catch (error) {
       console.error('Create error:', error);
@@ -324,11 +335,11 @@ export const useDataUpdate = (options: UseDataUpdateOptions): UseDataUpdateRetur
     }
 
     setState(prev => ({ ...prev, isUpdating: true }));
-    
+
     try {
       const primaryKey = config.primaryKey;
       const primaryKeyValue = stateRef.current.data[primaryKey];
-      
+
       if (!primaryKeyValue) {
         throw new Error(`No ${primaryKey} found for update`);
       }
@@ -346,7 +357,7 @@ export const useDataUpdate = (options: UseDataUpdateOptions): UseDataUpdateRetur
 
       showOverlay('success', 'Record updated successfully!');
       onSuccess?.('update', stateRef.current.data);
-      
+
       // Switch back to display mode with updated data
       setState(prev => ({
         ...prev,
@@ -354,7 +365,7 @@ export const useDataUpdate = (options: UseDataUpdateOptions): UseDataUpdateRetur
         originalData: { ...stateRef.current.data },
         isUpdating: false,
       }));
-      
+
       return true;
     } catch (error) {
       console.error('Update error:', error);
@@ -373,7 +384,7 @@ export const useDataUpdate = (options: UseDataUpdateOptions): UseDataUpdateRetur
         ...prev,
         data: { ...prev.data, [field]: value },
         touched: { ...prev.touched, [field]: true },
-        errors: { ...prev.errors, [field]: '' } // Clear field error on change
+        errors: { ...prev.errors, [field]: '' }, // Clear field error on change
       }));
     }, []),
 
@@ -381,7 +392,10 @@ export const useDataUpdate = (options: UseDataUpdateOptions): UseDataUpdateRetur
       setState(prev => ({
         ...prev,
         data: { ...prev.data, ...fields },
-        touched: { ...prev.touched, ...Object.keys(fields).reduce((acc, key) => ({ ...acc, [key]: true }), {}) }
+        touched: {
+          ...prev.touched,
+          ...Object.keys(fields).reduce((acc, key) => ({ ...acc, [key]: true }), {}),
+        },
       }));
     }, []),
 
@@ -455,23 +469,31 @@ export const useDataUpdate = (options: UseDataUpdateOptions): UseDataUpdateRetur
     update,
 
     // UI helpers
-    showSuccess: useCallback((message: string) => {
-      showOverlay('success', message);
-    }, [showOverlay]),
+    showSuccess: useCallback(
+      (message: string) => {
+        showOverlay('success', message);
+      },
+      [showOverlay]
+    ),
 
-    showError: useCallback((message: string) => {
-      showOverlay('error', message);
-    }, [showOverlay]),
+    showError: useCallback(
+      (message: string) => {
+        showOverlay('error', message);
+      },
+      [showOverlay]
+    ),
 
-    showConfirmation: useCallback((message: string, onConfirm: () => void) => {
-      if (!enableConfirmation) {
-        onConfirm();
-        return;
-      }
+    showConfirmation: useCallback(
+      (message: string, onConfirm: () => void) => {
+        if (!enableConfirmation) {
+          onConfirm();
+          return;
+        }
 
-      const overlay = document.createElement('div');
-      overlay.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm';
-      overlay.innerHTML = `
+        const overlay = document.createElement('div');
+        overlay.className =
+          'fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm';
+        overlay.innerHTML = `
         <div class="bg-slate-800/90 backdrop-blur-md border border-yellow-500/30 rounded-lg p-8 text-center">
           <div class="text-yellow-400 text-xl font-bold mb-4">${message}</div>
           <div class="flex gap-4 justify-center">
@@ -480,20 +502,22 @@ export const useDataUpdate = (options: UseDataUpdateOptions): UseDataUpdateRetur
           </div>
         </div>
       `;
-      document.body.appendChild(overlay);
+        document.body.appendChild(overlay);
 
-      const confirmBtn = overlay.querySelector('#confirm-btn');
-      const cancelBtn = overlay.querySelector('#cancel-btn');
+        const confirmBtn = overlay.querySelector('#confirm-btn');
+        const cancelBtn = overlay.querySelector('#cancel-btn');
 
-      confirmBtn?.addEventListener('click', () => {
-        overlay.remove();
-        onConfirm();
-      });
+        confirmBtn?.addEventListener('click', () => {
+          overlay.remove();
+          onConfirm();
+        });
 
-      cancelBtn?.addEventListener('click', () => {
-        overlay.remove();
-      });
-    }, [enableConfirmation]),
+        cancelBtn?.addEventListener('click', () => {
+          overlay.remove();
+        });
+      },
+      [enableConfirmation]
+    ),
   };
 
   return {

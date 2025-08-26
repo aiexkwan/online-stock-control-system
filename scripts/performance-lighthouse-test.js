@@ -20,11 +20,11 @@ const TEST_PAGES = [
 
 // 性能指標目標 (毫秒)
 const PERFORMANCE_TARGETS = {
-  FCP: 1500,   // First Contentful Paint < 1.5s
-  LCP: 2500,   // Largest Contentful Paint < 2.5s
-  TTI: 3800,   // Time to Interactive < 3.8s
-  TBT: 200,    // Total Blocking Time < 200ms
-  CLS: 0.1,    // Cumulative Layout Shift < 0.1
+  FCP: 1500, // First Contentful Paint < 1.5s
+  LCP: 2500, // Largest Contentful Paint < 2.5s
+  TTI: 3800, // Time to Interactive < 3.8s
+  TBT: 200, // Total Blocking Time < 200ms
+  CLS: 0.1, // Cumulative Layout Shift < 0.1
 };
 
 // 測量 Web Vitals
@@ -32,7 +32,7 @@ async function measureWebVitals(page, url) {
   console.log(`\n📊 測量 ${url} 的性能指標...`);
 
   const metrics = await page.evaluate(() => {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const metrics = {
         navigationStart: 0,
         FCP: 0,
@@ -49,7 +49,7 @@ async function measureWebVitals(page, url) {
       metrics.navigationStart = performance.timeOrigin;
 
       // 觀察 FCP
-      const fcpObserver = new PerformanceObserver((list) => {
+      const fcpObserver = new PerformanceObserver(list => {
         const entries = list.getEntries();
         const fcp = entries.find(entry => entry.name === 'first-contentful-paint');
         if (fcp) {
@@ -59,7 +59,7 @@ async function measureWebVitals(page, url) {
       fcpObserver.observe({ entryTypes: ['paint'] });
 
       // 觀察 LCP
-      const lcpObserver = new PerformanceObserver((list) => {
+      const lcpObserver = new PerformanceObserver(list => {
         const entries = list.getEntries();
         const lastEntry = entries[entries.length - 1];
         metrics.LCP = lastEntry.startTime;
@@ -68,7 +68,7 @@ async function measureWebVitals(page, url) {
 
       // 觀察 CLS
       let clsScore = 0;
-      const clsObserver = new PerformanceObserver((list) => {
+      const clsObserver = new PerformanceObserver(list => {
         for (const entry of list.getEntries()) {
           if (!entry.hadRecentInput) {
             clsScore += entry.value;
@@ -79,7 +79,7 @@ async function measureWebVitals(page, url) {
       clsObserver.observe({ entryTypes: ['layout-shift'] });
 
       // 記錄資源加載時間
-      const resourceObserver = new PerformanceObserver((list) => {
+      const resourceObserver = new PerformanceObserver(list => {
         const entries = list.getEntries();
         entries.forEach(entry => {
           if (entry.name.includes('.js') || entry.name.includes('.css')) {
@@ -129,8 +129,8 @@ async function testPage(browser, pageConfig) {
   await client.send('Network.enable');
   await client.send('Network.emulateNetworkConditions', {
     offline: false,
-    downloadThroughput: 1.5 * 1024 * 1024 / 8, // 1.5 Mbps
-    uploadThroughput: 750 * 1024 / 8,          // 750 Kbps
+    downloadThroughput: (1.5 * 1024 * 1024) / 8, // 1.5 Mbps
+    uploadThroughput: (750 * 1024) / 8, // 750 Kbps
     latency: 40,
   });
 
@@ -239,25 +239,41 @@ function generateReport(results) {
   const validResults = results.filter(r => !r.error);
   if (validResults.length > 0) {
     report.summary.averageScores = {
-      FCP: (validResults.reduce((sum, r) => sum + r.scores.FCP, 0) / validResults.length).toFixed(1),
-      LCP: (validResults.reduce((sum, r) => sum + r.scores.LCP, 0) / validResults.length).toFixed(1),
-      TTI: (validResults.reduce((sum, r) => sum + r.scores.TTI, 0) / validResults.length).toFixed(1),
-      CLS: (validResults.reduce((sum, r) => sum + r.scores.CLS, 0) / validResults.length).toFixed(1),
-      overall: (validResults.reduce((sum, r) => sum + parseFloat(r.overallScore), 0) / validResults.length).toFixed(1),
+      FCP: (validResults.reduce((sum, r) => sum + r.scores.FCP, 0) / validResults.length).toFixed(
+        1
+      ),
+      LCP: (validResults.reduce((sum, r) => sum + r.scores.LCP, 0) / validResults.length).toFixed(
+        1
+      ),
+      TTI: (validResults.reduce((sum, r) => sum + r.scores.TTI, 0) / validResults.length).toFixed(
+        1
+      ),
+      CLS: (validResults.reduce((sum, r) => sum + r.scores.CLS, 0) / validResults.length).toFixed(
+        1
+      ),
+      overall: (
+        validResults.reduce((sum, r) => sum + parseFloat(r.overallScore), 0) / validResults.length
+      ).toFixed(1),
     };
 
     // 生成建議
     if (report.summary.averageScores.FCP < 70) {
-      report.summary.recommendations.push('🎯 First Contentful Paint 需要優化，考慮減少初始 bundle 大小');
+      report.summary.recommendations.push(
+        '🎯 First Contentful Paint 需要優化，考慮減少初始 bundle 大小'
+      );
     }
     if (report.summary.averageScores.LCP < 70) {
-      report.summary.recommendations.push('🖼️ Largest Contentful Paint 需要優化，檢查大型圖片或組件的加載');
+      report.summary.recommendations.push(
+        '🖼️ Largest Contentful Paint 需要優化，檢查大型圖片或組件的加載'
+      );
     }
     if (report.summary.averageScores.TTI < 70) {
       report.summary.recommendations.push('⚡ Time to Interactive 需要優化，減少主線程阻塞時間');
     }
     if (report.summary.averageScores.CLS < 70) {
-      report.summary.recommendations.push('📐 Cumulative Layout Shift 需要優化，確保元素有固定尺寸');
+      report.summary.recommendations.push(
+        '📐 Cumulative Layout Shift 需要優化，確保元素有固定尺寸'
+      );
     }
   }
 
@@ -303,10 +319,15 @@ async function main() {
   // 打印摘要
   console.log('\n📊 性能測試摘要');
   console.log('================');
-  console.log(`總體評分: ${report.summary.averageScores.overall}/100 ${
-    report.summary.averageScores.overall >= 90 ? '✅ 優秀' :
-    report.summary.averageScores.overall >= 70 ? '⚠️ 需要改進' : '❌ 較差'
-  }`);
+  console.log(
+    `總體評分: ${report.summary.averageScores.overall}/100 ${
+      report.summary.averageScores.overall >= 90
+        ? '✅ 優秀'
+        : report.summary.averageScores.overall >= 70
+          ? '⚠️ 需要改進'
+          : '❌ 較差'
+    }`
+  );
   console.log(`\n各項指標平均分:`);
   console.log(`- FCP: ${report.summary.averageScores.FCP}/100`);
   console.log(`- LCP: ${report.summary.averageScores.LCP}/100`);
@@ -338,27 +359,31 @@ function updatePerformanceDoc(report) {
 
 | 頁面 | FCP | LCP | TTI | CLS | 總分 | 狀態 |
 |------|-----|-----|-----|-----|------|------|
-${report.results.map(r => {
-  if (r.error) {
-    return `| ${r.name} | - | - | - | - | - | ❌ 錯誤 |`;
-  }
-  return `| ${r.name} | ${r.scores.FCP.toFixed(0)} | ${r.scores.LCP.toFixed(0)} | ${r.scores.TTI.toFixed(0)} | ${r.scores.CLS.toFixed(0)} | ${r.overallScore} | ${r.status} |`;
-}).join('\n')}
+${report.results
+  .map(r => {
+    if (r.error) {
+      return `| ${r.name} | - | - | - | - | - | ❌ 錯誤 |`;
+    }
+    return `| ${r.name} | ${r.scores.FCP.toFixed(0)} | ${r.scores.LCP.toFixed(0)} | ${r.scores.TTI.toFixed(0)} | ${r.scores.CLS.toFixed(0)} | ${r.overallScore} | ${r.status} |`;
+  })
+  .join('\n')}
 
 ### 性能指標詳情
 
-${report.results.map(r => {
-  if (r.error) {
-    return `#### ${r.name}
+${report.results
+  .map(r => {
+    if (r.error) {
+      return `#### ${r.name}
 - 錯誤: ${r.error}`;
-  }
-  return `#### ${r.name}
+    }
+    return `#### ${r.name}
 - FCP: ${r.metrics.FCP.toFixed(0)}ms (目標: <${PERFORMANCE_TARGETS.FCP}ms)
 - LCP: ${r.metrics.LCP.toFixed(0)}ms (目標: <${PERFORMANCE_TARGETS.LCP}ms)
 - TTI: ${r.metrics.TTI.toFixed(0)}ms (目標: <${PERFORMANCE_TARGETS.TTI}ms)
 - CLS: ${r.metrics.CLS.toFixed(3)} (目標: <${PERFORMANCE_TARGETS.CLS})
 - Bundle Coverage: ${r.metrics.bundleStats.coverage}`;
-}).join('\n\n')}
+  })
+  .join('\n\n')}
 
 ### 優化建議
 

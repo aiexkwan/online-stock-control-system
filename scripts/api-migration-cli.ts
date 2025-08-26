@@ -25,24 +25,21 @@ interface RestEndpoint {
   handler: string;
 }
 
-program
-  .name('api-migration')
-  .description('API 遷移管理工具')
-  .version('1.0.0');
+program.name('api-migration').description('API 遷移管理工具').version('1.0.0');
 
 // 掃描所有 REST API endpoints
 program
   .command('scan')
   .description('掃描項目中的所有 REST API endpoints')
   .option('-o, --output <file>', '將結果輸出到文件')
-  .action(async (options) => {
+  .action(async options => {
     console.log(chalk.blue('🔍 掃描項目中的 REST API endpoints...'));
-    
+
     const endpoints = await scanRestEndpoints();
-    
+
     const table = new Table({
       head: ['File', 'Method', 'Path', 'Line', 'Handler'],
-      colWidths: [30, 8, 25, 6, 20]
+      colWidths: [30, 8, 25, 6, 20],
     });
 
     endpoints.forEach(endpoint => {
@@ -51,7 +48,7 @@ program
         chalk.yellow(endpoint.method),
         chalk.cyan(endpoint.path),
         endpoint.line.toString(),
-        endpoint.handler
+        endpoint.handler,
       ]);
     });
 
@@ -70,39 +67,46 @@ program
   .description('查看 API 使用統計')
   .option('-e, --endpoint <path>', '查看特定 endpoint 的使用情況')
   .option('-d, --days <number>', '查看最近 N 天的數據', '7')
-  .action(async (options) => {
+  .action(async options => {
     console.log(chalk.blue('📊 獲取 API 使用統計...'));
-    
+
     const days = parseInt(options.days);
     const timeRange = {
       from: new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString(),
-      to: new Date().toISOString()
+      to: new Date().toISOString(),
     };
 
     const stats = await monitor.getUsageStats(options.endpoint, timeRange);
-    
+
     if (stats.length === 0) {
       console.log(chalk.yellow('⚠️  未找到使用記錄'));
       return;
     }
 
     const table = new Table({
-      head: ['Endpoint', 'Total Calls', 'Unique Users', 'Avg Response Time', 'Error Rate', 'Last Used'],
-      colWidths: [35, 12, 13, 18, 12, 20]
+      head: [
+        'Endpoint',
+        'Total Calls',
+        'Unique Users',
+        'Avg Response Time',
+        'Error Rate',
+        'Last Used',
+      ],
+      colWidths: [35, 12, 13, 18, 12, 20],
     });
 
     stats.forEach(stat => {
       const errorRate = (stat.errorRate * 100).toFixed(1) + '%';
       const avgTime = stat.avgResponseTime.toFixed(0) + 'ms';
       const lastUsed = new Date(stat.lastUsed).toLocaleDateString();
-      
+
       table.push([
         chalk.cyan(stat.endpoint),
         stat.totalCalls.toString(),
         stat.uniqueUsers.toString(),
         avgTime,
         stat.errorRate > 0.1 ? chalk.red(errorRate) : chalk.green(errorRate),
-        lastUsed
+        lastUsed,
       ]);
     });
 
@@ -114,11 +118,11 @@ program
   .command('report')
   .description('生成 API 遷移狀態報告')
   .option('-o, --output <file>', '將報告保存到文件')
-  .action(async (options) => {
+  .action(async options => {
     console.log(chalk.blue('📈 生成 API 遷移報告...'));
-    
+
     const report = await monitor.generateReport();
-    
+
     console.log(chalk.green('\n📋 遷移狀態摘要:'));
     console.log(`總 endpoints: ${report.summary.totalEndpoints}`);
     console.log(`活躍 endpoints: ${report.summary.activeEndpoints}`);
@@ -155,21 +159,23 @@ program
   .option('--dry-run', '模擬執行，不實際修改文件')
   .action(async (endpoint, options) => {
     console.log(chalk.blue(`🗑️  準備移除 endpoint: ${endpoint}`));
-    
+
     // 安全檢查
     if (!options.force) {
       const safetyCheck = await monitor.isSafeToRemove(endpoint);
-      
+
       if (!safetyCheck.safe) {
         console.log(chalk.red(`❌ 不安全移除: ${safetyCheck.reason}`));
-        
-        const { confirm } = await inquirer.prompt([{
-          type: 'confirm',
-          name: 'confirm',
-          message: '是否強制移除此 endpoint？',
-          default: false
-        }]);
-        
+
+        const { confirm } = await inquirer.prompt([
+          {
+            type: 'confirm',
+            name: 'confirm',
+            message: '是否強制移除此 endpoint？',
+            default: false,
+          },
+        ]);
+
         if (!confirm) {
           console.log(chalk.yellow('❌ 取消移除操作'));
           return;
@@ -182,7 +188,7 @@ program
     // 查找並移除 endpoint
     const endpoints = await scanRestEndpoints();
     const targetEndpoint = endpoints.find(ep => ep.path === endpoint);
-    
+
     if (!targetEndpoint) {
       console.log(chalk.red(`❌ 未找到 endpoint: ${endpoint}`));
       return;
@@ -211,12 +217,12 @@ program
   .command('batch-remove')
   .description('批量移除所有安全的 REST API endpoints')
   .option('--dry-run', '模擬執行，不實際修改文件')
-  .action(async (options) => {
+  .action(async options => {
     console.log(chalk.blue('🗂️  批量移除安全的 REST API endpoints...'));
-    
+
     const report = await monitor.generateReport();
     const safeEndpoints = report.recommendations.safeToRemove;
-    
+
     if (safeEndpoints.length === 0) {
       console.log(chalk.yellow('⚠️  沒有發現可安全移除的 endpoints'));
       return;
@@ -232,12 +238,14 @@ program
       return;
     }
 
-    const { confirm } = await inquirer.prompt([{
-      type: 'confirm',
-      name: 'confirm',
-      message: `確定要移除這 ${safeEndpoints.length} 個 endpoints 嗎？`,
-      default: false
-    }]);
+    const { confirm } = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'confirm',
+        message: `確定要移除這 ${safeEndpoints.length} 個 endpoints 嗎？`,
+        default: false,
+      },
+    ]);
 
     if (!confirm) {
       console.log(chalk.yellow('❌ 取消批量移除操作'));
@@ -252,7 +260,7 @@ program
       try {
         const endpoints = await scanRestEndpoints();
         const targetEndpoint = endpoints.find(ep => ep.path === endpoint);
-        
+
         if (targetEndpoint) {
           await removeEndpointFromFile(targetEndpoint);
           console.log(chalk.green(`✅ 已移除: ${endpoint}`));
@@ -275,32 +283,34 @@ program
 async function scanRestEndpoints(): Promise<RestEndpoint[]> {
   const endpoints: RestEndpoint[] = [];
   const pattern = ['app/api/**/*.ts', '!app/api/graphql/**'];
-  
+
   const files = await new Glob(pattern, { cwd: process.cwd() }).walk();
-  
+
   for await (const file of files) {
     const filePath = path.join(process.cwd(), file);
     const content = await fs.readFile(filePath, 'utf-8');
     const lines = content.split('\n');
-    
+
     lines.forEach((line, index) => {
       // 匹配 Next.js API 路由格式
-      const exportMatch = line.match(/export\s+async\s+function\s+(GET|POST|PUT|DELETE|PATCH)\s*\(/);
+      const exportMatch = line.match(
+        /export\s+async\s+function\s+(GET|POST|PUT|DELETE|PATCH)\s*\(/
+      );
       if (exportMatch) {
         const method = exportMatch[1];
         const relativePath = file.replace(/^app\/api/, '').replace(/\/route\.ts$/, '') || '/';
-        
+
         endpoints.push({
           file: file,
           path: relativePath,
           method,
           line: index + 1,
-          handler: `${method} handler`
+          handler: `${method} handler`,
         });
       }
     });
   }
-  
+
   return endpoints;
 }
 
@@ -310,29 +320,31 @@ async function confirmRemoval(endpoint: RestEndpoint): Promise<boolean> {
   console.log(`路徑: ${endpoint.path}`);
   console.log(`方法: ${endpoint.method}`);
   console.log(`行號: ${endpoint.line}`);
-  
-  const { confirm } = await inquirer.prompt([{
-    type: 'confirm',
-    name: 'confirm',
-    message: '確定要移除此 endpoint 嗎？',
-    default: false
-  }]);
-  
+
+  const { confirm } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'confirm',
+      message: '確定要移除此 endpoint 嗎？',
+      default: false,
+    },
+  ]);
+
   return confirm;
 }
 
 async function removeEndpointFromFile(endpoint: RestEndpoint): Promise<void> {
   const filePath = path.join(process.cwd(), endpoint.file);
-  
+
   // 檢查文件是否只包含要移除的處理器
   const content = await fs.readFile(filePath, 'utf-8');
   const lines = content.split('\n');
-  
+
   // 計算有多少個導出的處理器
-  const handlerCount = lines.filter(line => 
+  const handlerCount = lines.filter(line =>
     line.match(/export\s+async\s+function\s+(GET|POST|PUT|DELETE|PATCH)\s*\(/)
   ).length;
-  
+
   if (handlerCount === 1) {
     // 如果只有一個處理器，刪除整個文件
     await fs.remove(filePath);
@@ -340,7 +352,9 @@ async function removeEndpointFromFile(endpoint: RestEndpoint): Promise<void> {
   } else {
     // 如果有多個處理器，只移除指定的處理器
     // 這需要更複雜的 AST 解析，暫時標記為需要手動處理
-    console.log(chalk.yellow(`⚠️  ${endpoint.file} 包含多個處理器，需要手動移除 ${endpoint.method} 處理器`));
+    console.log(
+      chalk.yellow(`⚠️  ${endpoint.file} 包含多個處理器，需要手動移除 ${endpoint.method} 處理器`)
+    );
   }
 }
 

@@ -204,7 +204,7 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
         // Generate PDF using React PDF if no blob provided
         throw new Error(
           'PDF blob is required for printing. Legacy Puppeteer API has been removed. ' +
-          'Please use React PDF generation instead.'
+            'Please use React PDF generation instead.'
         );
       }
     } catch (error) {

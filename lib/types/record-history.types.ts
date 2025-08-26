@@ -71,7 +71,7 @@ export interface RecordHistoryPagination {
 }
 
 // Sorting options
-export type RecordHistorySortField = 
+export type RecordHistorySortField =
   | 'TIME_START'
   | 'TIME_END'
   | 'OPERATOR_NAME'
@@ -175,10 +175,7 @@ export interface RecordHistoryResult {
 }
 
 // Real-time update types
-export type RecordHistoryUpdateType = 
-  | 'NEW_RECORD'
-  | 'MERGED_UPDATE'
-  | 'OPERATOR_ACTIVITY';
+export type RecordHistoryUpdateType = 'NEW_RECORD' | 'MERGED_UPDATE' | 'OPERATOR_ACTIVITY';
 
 export interface RecordHistoryUpdate {
   type: RecordHistoryUpdateType;
@@ -267,7 +264,7 @@ export interface CreateRecordHistoryInput {
 }
 
 // Error types
-export type RecordHistoryErrorCode = 
+export type RecordHistoryErrorCode =
   | 'INVALID_OPERATOR'
   | 'INVALID_TIMERANGE'
   | 'EXPORT_FAILED'

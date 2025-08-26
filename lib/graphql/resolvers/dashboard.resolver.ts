@@ -23,7 +23,7 @@ export const dashboardResolvers = {
         // 權限檢查
         if (!context.user) {
           throw new GraphQLError('Unauthorized', {
-            extensions: { code: 'UNAUTHENTICATED' }
+            extensions: { code: 'UNAUTHENTICATED' },
           });
         }
 
@@ -46,7 +46,7 @@ export const dashboardResolvers = {
               { label: 'Friday', value: 200, category: 'weekday' },
             ] as unknown[];
             break;
-          
+
           case 'inventory':
             title = 'Inventory Levels';
             type = 'LINE';
@@ -71,7 +71,7 @@ export const dashboardResolvers = {
 
           default:
             throw new GraphQLError(`Unknown chart type: ${args.chartType}`, {
-              extensions: { code: 'BAD_REQUEST' }
+              extensions: { code: 'BAD_REQUEST' },
             });
         }
 
@@ -92,10 +92,10 @@ export const dashboardResolvers = {
         console.error(`[GraphQL-${requestId}] Error:`, error);
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch chart data';
         throw new GraphQLError(errorMessage, {
-          extensions: { 
+          extensions: {
             code: 'INTERNAL_SERVER_ERROR',
-            requestId 
-          }
+            requestId,
+          },
         });
       }
     },

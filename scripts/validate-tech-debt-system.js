@@ -17,14 +17,14 @@ const execAsync = promisify(exec);
  * 驗證項目列表
  */
 const validationChecks = {
-  'dashboard': '技術債務監控 Dashboard',
-  'cicd': 'CI/CD 類型檢查增強',
-  'precommit': 'Pre-commit hooks 設置',
-  'codeReview': '代碼審查流程自動化',
-  'thresholds': '預警閾值設定',
-  'documentation': '團隊最佳實踐文檔化',
-  'scripts': '自動化腳本功能',
-  'configuration': '配置文件完整性'
+  dashboard: '技術債務監控 Dashboard',
+  cicd: 'CI/CD 類型檢查增強',
+  precommit: 'Pre-commit hooks 設置',
+  codeReview: '代碼審查流程自動化',
+  thresholds: '預警閾值設定',
+  documentation: '團隊最佳實踐文檔化',
+  scripts: '自動化腳本功能',
+  configuration: '配置文件完整性',
 };
 
 /**
@@ -37,7 +37,7 @@ function log(message, level = 'info') {
     success: '✅',
     warning: '⚠️',
     error: '❌',
-    test: '🧪'
+    test: '🧪',
   }[level];
 
   console.log(`${prefix} ${message}`);
@@ -78,7 +78,7 @@ async function validateDashboard() {
     // Dashboard 頁面
     ['app/admin/tech-debt-monitoring/page.tsx', 'Dashboard 頁面'],
     // 數據收集腳本
-    ['scripts/collect-tech-debt-metrics.js', '數據收集腳本']
+    ['scripts/collect-tech-debt-metrics.js', '數據收集腳本'],
   ];
 
   let passed = 0;
@@ -99,7 +99,7 @@ async function validateCICD() {
     // GitHub Actions workflows
     ['.github/workflows/tech-debt-monitoring.yml', '技術債務監控工作流'],
     ['.github/workflows/code-review-automation.yml', '代碼審查自動化工作流'],
-    ['.github/workflows/test.yml', '測試工作流']
+    ['.github/workflows/test.yml', '測試工作流'],
   ];
 
   let passed = 0;
@@ -120,7 +120,7 @@ async function validatePrecommit() {
     // 配置文件
     ['.pre-commit-config.yaml', 'Pre-commit 配置'],
     ['scripts/setup-pre-commit.sh', '安裝腳本'],
-    ['PRE_COMMIT_GUIDE.md', '使用指南']
+    ['PRE_COMMIT_GUIDE.md', '使用指南'],
   ];
 
   let passed = 0;
@@ -147,9 +147,7 @@ async function validatePrecommit() {
 async function validateCodeReview() {
   log('驗證代碼審查自動化...', 'test');
 
-  const checks = [
-    ['.github/workflows/code-review-automation.yml', '自動化代碼審查工作流']
-  ];
+  const checks = [['.github/workflows/code-review-automation.yml', '自動化代碼審查工作流']];
 
   let passed = 0;
   checks.forEach(([file, desc]) => {
@@ -168,7 +166,7 @@ async function validateThresholds() {
   const checks = [
     // 配置文件
     ['config/tech-debt-thresholds.json', '閾值配置'],
-    ['scripts/apply-tech-debt-thresholds.js', '閾值應用腳本']
+    ['scripts/apply-tech-debt-thresholds.js', '閾值應用腳本'],
   ];
 
   let passed = 0;
@@ -204,7 +202,7 @@ async function validateDocumentation() {
   const checks = [
     ['docs/team-best-practices.md', '團隊最佳實踐指南'],
     ['PRE_COMMIT_GUIDE.md', 'Pre-commit 使用指南'],
-    ['CLAUDE.md', '項目開發指南']
+    ['CLAUDE.md', '項目開發指南'],
   ];
 
   let passed = 0;
@@ -224,7 +222,7 @@ async function validateScripts() {
   const scriptChecks = [
     ['npm run tech-debt:collect:fast', '技術債務收集'],
     ['npm run tech-debt:check', '閾值檢查'],
-    ['npm run pre-commit:run', 'Pre-commit 檢查']
+    ['npm run pre-commit:run', 'Pre-commit 檢查'],
   ];
 
   let passed = 0;
@@ -246,7 +244,7 @@ async function validateConfiguration() {
   const checks = [
     ['package.json', 'Package 配置'],
     ['tsconfig.json', 'TypeScript 配置'],
-    ['.eslintrc.json', 'ESLint 配置']
+    ['.eslintrc.json', 'ESLint 配置'],
   ];
 
   let passed = 0;
@@ -257,8 +255,8 @@ async function validateConfiguration() {
   // 檢查 package.json 中的技術債務相關腳本
   try {
     const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-    const techDebtScripts = Object.keys(packageJson.scripts).filter(script =>
-      script.includes('tech-debt') || script.includes('pre-commit')
+    const techDebtScripts = Object.keys(packageJson.scripts).filter(
+      script => script.includes('tech-debt') || script.includes('pre-commit')
     );
 
     if (techDebtScripts.length >= 5) {
@@ -288,17 +286,17 @@ function generateValidationReport(results) {
       totalChecks,
       totalPassed,
       successRate: parseFloat(successRate),
-      status: successRate >= 90 ? 'PASS' : successRate >= 70 ? 'WARNING' : 'FAIL'
+      status: successRate >= 90 ? 'PASS' : successRate >= 70 ? 'WARNING' : 'FAIL',
     },
     components: results.reduce((acc, result) => {
       acc[result.component] = {
         passed: result.passed,
         total: result.total,
-        rate: ((result.passed / result.total) * 100).toFixed(1)
+        rate: ((result.passed / result.total) * 100).toFixed(1),
       };
       return acc;
     }, {}),
-    recommendations: []
+    recommendations: [],
   };
 
   // 生成建議
@@ -350,13 +348,18 @@ async function runValidation() {
   log(`   總檢查項目: ${report.summary.totalChecks}`, 'info');
   log(`   通過項目: ${report.summary.totalPassed}`, 'info');
   log(`   成功率: ${report.summary.successRate}%`, 'info');
-  log(`   整體狀態: ${report.summary.status}`, report.summary.status === 'PASS' ? 'success' : 'warning');
+  log(
+    `   整體狀態: ${report.summary.status}`,
+    report.summary.status === 'PASS' ? 'success' : 'warning'
+  );
 
   log('', 'info');
   log('📋 組件詳情:', 'info');
   Object.entries(report.components).forEach(([component, data]) => {
-    log(`   ${component}: ${data.passed}/${data.total} (${data.rate}%)`,
-         data.rate >= 90 ? 'success' : 'warning');
+    log(
+      `   ${component}: ${data.passed}/${data.total} (${data.rate}%)`,
+      data.rate >= 90 ? 'success' : 'warning'
+    );
   });
 
   if (report.recommendations.length > 0) {
@@ -394,5 +397,5 @@ if (require.main === module) {
 module.exports = {
   runValidation,
   generateValidationReport,
-  validationChecks
+  validationChecks,
 };

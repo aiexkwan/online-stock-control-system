@@ -1,27 +1,27 @@
 overwrite: true
-schema: "./lib/graphql/export-schema.js"
-documents: 
-  - "./app/**/*.tsx"
-  - "./lib/graphql/queries/**/*.graphql"
-  - "!./lib/api/unified-data-layer.ts"
-  - "!./lib/graphql/schema/**"
+schema: './lib/graphql/export-schema.js'
+documents:
+  - './app/**/*.tsx'
+  - './lib/graphql/queries/**/*.graphql'
+  - '!./lib/api/unified-data-layer.ts'
+  - '!./lib/graphql/schema/**'
 generates:
   ./types/generated/graphql.ts:
     plugins:
-      - "typescript"
-      - "typescript-operations"
-      - "typescript-react-apollo"
+      - 'typescript'
+      - 'typescript-operations'
+      - 'typescript-react-apollo'
     config:
       withHooks: true
       withComponent: false
       withHOC: false
       skipTypename: false
-      apolloReactHooksImportFrom: "@apollo/client"
-      
+      apolloReactHooksImportFrom: '@apollo/client'
+
   ./lib/graphql/introspection.json:
     plugins:
-      - "introspection"
-      
+      - 'introspection'
+
 hooks:
   afterAllFileWrite:
     - prettier --write

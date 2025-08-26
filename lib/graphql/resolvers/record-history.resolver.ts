@@ -116,28 +116,28 @@ const DEFAULT_MERGING_CONFIG: MergingConfig = {
  */
 function normalizeAction(action: string): string {
   const actionLower = action.toLowerCase().trim();
-  
+
   // Group all QC-related actions (including "Finished QC")
   if (actionLower.includes('qc') || actionLower.includes('quality')) return 'QC';
-  
+
   // Group all upload-related actions
   if (actionLower.includes('upload')) {
     if (actionLower.includes('order')) return 'Order Upload';
     return 'Upload';
   }
-  
+
   // Group all GRN-related actions (including "GRN Receiving")
   if (actionLower.includes('grn') || actionLower.includes('receiving')) return 'GRN';
-  
+
   // Group all transfer-related actions
   if (actionLower.includes('transfer')) return 'Transfer';
-  
+
   // Group all void-related actions
   if (actionLower.includes('void')) return 'Void';
-  
+
   // Group all print-related actions
   if (actionLower.includes('print') || actionLower.includes('label')) return 'Print';
-  
+
   return action.trim(); // Return original if no match
 }
 
@@ -154,8 +154,8 @@ function mergeRecords(
   config: MergingConfig
 ): MergedGroup[] {
   const groups: MergedGroup[] = [];
-  const sortedRecords = [...records].sort((a, b) => 
-    new Date(a.time).getTime() - new Date(b.time).getTime()
+  const sortedRecords = [...records].sort(
+    (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()
   );
 
   let currentGroup: RawRecordHistoryEntry[] = [];
@@ -168,10 +168,11 @@ function mergeRecords(
 
     // Check if this record continues the current group
     // Merge if same operator AND same action type (consecutive events)
-    const canMerge = currentGroup.length > 0 &&
-                     operatorId === currentOperatorId &&
-                     actionType === currentActionType &&
-                     currentGroup.length < config.maxOperationsPerGroup;
+    const canMerge =
+      currentGroup.length > 0 &&
+      operatorId === currentOperatorId &&
+      actionType === currentActionType &&
+      currentGroup.length < config.maxOperationsPerGroup;
 
     if (!canMerge && currentGroup.length > 0) {
       // Different operator or action type - finalize current group
@@ -235,7 +236,7 @@ function createMergedGroup(
       .map(r => r.remark.trim())
       .filter(r => r.length > 0)
       .filter((r, index, arr) => arr.indexOf(r) === index);
-    
+
     if (uniqueRemarks.length > 1) {
       remark = uniqueRemarks.join(' | ');
     } else if (uniqueRemarks.length === 1) {
@@ -263,7 +264,7 @@ function createMergedGroup(
 function calculateEfficiencyMetrics(group: MergedGroup) {
   const durationMinutes = (group.timeEnd.getTime() - group.timeStart.getTime()) / (1000 * 60);
   const operationsPerMinute = group.records.length / Math.max(durationMinutes, 0.1); // Avoid division by zero
-  
+
   // Calculate average time between operations
   let averageTimeBetweenOps = 0;
   if (group.records.length > 1) {
@@ -273,7 +274,8 @@ function calculateEfficiencyMetrics(group: MergedGroup) {
       const currTime = new Date(group.records[i].time);
       intervals.push((currTime.getTime() - prevTime.getTime()) / 1000); // seconds
     }
-    averageTimeBetweenOps = intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
+    averageTimeBetweenOps =
+      intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
   }
 
   return {
@@ -434,9 +436,7 @@ export const recordHistoryResolvers: IResolvers = {
         const startTime = Date.now();
 
         // Build and execute query using Supabase query builder instead of raw SQL
-        let query = context.supabase
-          .from('record_history')
-          .select(`
+        let query = context.supabase.from('record_history').select(`
             uuid,
             time,
             id,
@@ -457,7 +457,7 @@ export const recordHistoryResolvers: IResolvers = {
         if (filters.operatorId) {
           query = query.eq('id', filters.operatorId);
         }
-        
+
         if (filters.operatorName) {
           query = query.ilike('data_id.name', `%${filters.operatorName}%`);
         }
@@ -491,28 +491,31 @@ export const recordHistoryResolvers: IResolvers = {
         let sortField = 'time';
         if (sorting.field === 'OPERATOR_NAME') sortField = 'data_id.name';
         else if (sorting.field === 'ACTION') sortField = 'action';
-        
+
         // Fetch more records than requested to account for merging
         // After merging, the number of groups will be less than raw records
         // Increase fetch limit to ensure we get all records that might be merged
         const fetchLimit = Math.min((pagination.limit || 10) * 50, 5000); // Fetch up to 50x requested or max 5000
-        query = query.order(sortField, { ascending: sorting.direction === 'ASC' }).limit(fetchLimit);
+        query = query
+          .order(sortField, { ascending: sorting.direction === 'ASC' })
+          .limit(fetchLimit);
 
         const { data: rawRecords, error } = await query;
 
         if (error) throw error;
 
         // Transform raw records to expected format
-        const transformedRecords = rawRecords?.map((r: RawDatabaseRecord) => ({
-          id: r.uuid,
-          time: r.time,
-          id_operator: r.id,
-          action: r.action,
-          plt_num: r.plt_num,
-          loc: r.loc,
-          remark: r.remark || '',
-          uuid: r.uuid,
-        })) || [];
+        const transformedRecords =
+          rawRecords?.map((r: RawDatabaseRecord) => ({
+            id: r.uuid,
+            time: r.time,
+            id_operator: r.id,
+            action: r.action,
+            plt_num: r.plt_num,
+            loc: r.loc,
+            remark: r.remark || '',
+            uuid: r.uuid,
+          })) || [];
 
         // Build operator map from joined data
         const operators = new Map<number, OperatorInfo>();
@@ -535,7 +538,7 @@ export const recordHistoryResolvers: IResolvers = {
         // Sort merged groups based on sorting configuration
         mergedGroups.sort((a, b) => {
           let comparison = 0;
-          
+
           switch (sorting.field) {
             case 'TIME_START':
               comparison = new Date(a.timeStart).getTime() - new Date(b.timeStart).getTime();
@@ -555,7 +558,7 @@ export const recordHistoryResolvers: IResolvers = {
             default:
               comparison = new Date(a.timeStart).getTime() - new Date(b.timeStart).getTime();
           }
-          
+
           // Apply sort direction
           return sorting.direction === 'DESC' ? -comparison : comparison;
         });
@@ -569,7 +572,7 @@ export const recordHistoryResolvers: IResolvers = {
         // Convert to GraphQL format
         const mergedRecords = paginatedGroups.map(group => {
           const metrics = calculateEfficiencyMetrics(group);
-          
+
           return {
             id: group.id,
             operatorId: group.operatorId,
@@ -598,33 +601,55 @@ export const recordHistoryResolvers: IResolvers = {
           uniqueOperators: operators.size,
           uniqueActions: [...new Set(transformedRecords.map(r => r.action))].length,
           uniqueLocations: [...new Set(transformedRecords.map(r => r.loc).filter(Boolean))].length,
-          uniquePallets: [...new Set(transformedRecords.map(r => r.plt_num).filter(Boolean))].length,
-          timeSpan: transformedRecords.length > 0 ? {
-            start: new Date(Math.min(...transformedRecords.map(r => new Date(r.time).getTime()))).toISOString(),
-            end: new Date(Math.max(...transformedRecords.map(r => new Date(r.time).getTime()))).toISOString(),
-            durationHours: (Math.max(...transformedRecords.map(r => new Date(r.time).getTime())) - 
-                           Math.min(...transformedRecords.map(r => new Date(r.time).getTime()))) / (1000 * 60 * 60),
-          } : {
-            start: new Date().toISOString(),
-            end: new Date().toISOString(),
-            durationHours: 0,
-          },
+          uniquePallets: [...new Set(transformedRecords.map(r => r.plt_num).filter(Boolean))]
+            .length,
+          timeSpan:
+            transformedRecords.length > 0
+              ? {
+                  start: new Date(
+                    Math.min(...transformedRecords.map(r => new Date(r.time).getTime()))
+                  ).toISOString(),
+                  end: new Date(
+                    Math.max(...transformedRecords.map(r => new Date(r.time).getTime()))
+                  ).toISOString(),
+                  durationHours:
+                    (Math.max(...transformedRecords.map(r => new Date(r.time).getTime())) -
+                      Math.min(...transformedRecords.map(r => new Date(r.time).getTime()))) /
+                    (1000 * 60 * 60),
+                }
+              : {
+                  start: new Date().toISOString(),
+                  end: new Date().toISOString(),
+                  durationHours: 0,
+                },
           topOperators: [], // TODO: Implement detailed operator statistics
           topActions: [], // TODO: Implement detailed action statistics
           efficiencyMetrics: {
             averageOperationsPerMinute: 0, // TODO: Calculate
-            fastestOperator: { operatorId: 0, operatorName: '', operationsPerMinute: 0, totalOperations: 0 },
-            slowestOperator: { operatorId: 0, operatorName: '', operationsPerMinute: 0, totalOperations: 0 },
+            fastestOperator: {
+              operatorId: 0,
+              operatorName: '',
+              operationsPerMinute: 0,
+              totalOperations: 0,
+            },
+            slowestOperator: {
+              operatorId: 0,
+              operatorName: '',
+              operationsPerMinute: 0,
+              totalOperations: 0,
+            },
             peakHour: 0, // TODO: Calculate
             quietHour: 0, // TODO: Calculate
           },
           mergingStats: {
             totalOriginalRecords: transformedRecords.length,
             totalMergedGroups: totalCount,
-            compressionRatio: transformedRecords.length > 0 ? totalCount / transformedRecords.length : 1,
+            compressionRatio:
+              transformedRecords.length > 0 ? totalCount / transformedRecords.length : 1,
             averageGroupSize: totalCount > 0 ? transformedRecords.length / totalCount : 0,
             largestGroupSize: Math.max(...mergedGroups.map(g => g.records.length), 0),
-            sequentialGroups: mergedGroups.filter(g => calculateEfficiencyMetrics(g).isSequential).length,
+            sequentialGroups: mergedGroups.filter(g => calculateEfficiencyMetrics(g).isSequential)
+              .length,
           },
         };
 
@@ -636,7 +661,10 @@ export const recordHistoryResolvers: IResolvers = {
           hasNextPage: end < totalCount,
           hasPreviousPage: start > 0,
           nextCursor: end < totalCount ? Buffer.from(`${end}`).toString('base64') : null,
-          previousCursor: start > 0 ? Buffer.from(`${Math.max(0, start - pagination.limit)}`).toString('base64') : null,
+          previousCursor:
+            start > 0
+              ? Buffer.from(`${Math.max(0, start - pagination.limit)}`).toString('base64')
+              : null,
           summary,
           queryTime,
           cacheHit: false,
@@ -647,7 +675,9 @@ export const recordHistoryResolvers: IResolvers = {
         };
       } catch (error) {
         console.error('[RecordHistory] Query error:', error);
-        throw new Error(`Failed to fetch record history: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(
+          `Failed to fetch record history: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
       }
     },
 
@@ -657,15 +687,14 @@ export const recordHistoryResolvers: IResolvers = {
     rawRecordHistory: async (_parent, args, context: GraphQLContext) => {
       try {
         const { filters = {}, pagination = { limit: 50, offset: 0 } } = args;
-        
+
         const { query, params } = buildRecordHistoryQuery(filters);
         const finalQuery = `${query} ORDER BY rh.time DESC LIMIT ${pagination.limit} OFFSET ${pagination.offset}`;
 
-        const { data, error } = await context.supabase
-          .rpc('execute_sql', {
-            query: finalQuery,
-            params
-          });
+        const { data, error } = await context.supabase.rpc('execute_sql', {
+          query: finalQuery,
+          params,
+        });
 
         if (error) throw error;
 
@@ -685,7 +714,9 @@ export const recordHistoryResolvers: IResolvers = {
         }));
       } catch (error) {
         console.error('[RawRecordHistory] Query error:', error);
-        throw new Error(`Failed to fetch raw record history: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(
+          `Failed to fetch raw record history: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
       }
     },
 
@@ -695,11 +726,11 @@ export const recordHistoryResolvers: IResolvers = {
     recordHistorySearchSuggestions: async (_parent, args, context: GraphQLContext) => {
       try {
         const { field, query: searchQuery, limit = 10 } = args;
-        
+
         let column: string;
         let table = 'record_history rh';
         let joinClause = '';
-        
+
         switch (field) {
           case 'operator':
             column = 'di.name';
@@ -727,18 +758,19 @@ export const recordHistoryResolvers: IResolvers = {
           LIMIT $2
         `;
 
-        const { data, error } = await context.supabase
-          .rpc('execute_sql', {
-            query: sqlQuery,
-            params: [`%${searchQuery}%`, limit]
-          });
+        const { data, error } = await context.supabase.rpc('execute_sql', {
+          query: sqlQuery,
+          params: [`%${searchQuery}%`, limit],
+        });
 
         if (error) throw error;
 
         return data.map((row: { suggestion: string }) => row.suggestion).filter(Boolean);
       } catch (error) {
         console.error('[SearchSuggestions] Error:', error);
-        throw new Error(`Failed to fetch suggestions: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(
+          `Failed to fetch suggestions: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
       }
     },
   },
@@ -784,7 +816,9 @@ export const recordHistoryResolvers: IResolvers = {
         };
       } catch (error) {
         console.error('[CreateRecordHistory] Error:', error);
-        throw new Error(`Failed to create record history entry: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(
+          `Failed to create record history entry: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
       }
     },
 

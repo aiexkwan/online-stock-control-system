@@ -21,7 +21,7 @@ export const STOCK_HISTORY_RECORD_FRAGMENT = gql`
     remark
     actionType
     actionCategory
-    
+
     # Relations (only fetch when needed)
     operator {
       id
@@ -80,7 +80,7 @@ export const PALLET_HISTORY_BY_PRODUCT = gql`
   ${PRODUCT_BASIC_INFO_FRAGMENT}
   ${PAGE_INFO_FRAGMENT}
   ${PALLET_HISTORY_AGGREGATIONS_FRAGMENT}
-  
+
   query PalletHistoryByProduct(
     $productCode: String!
     $filter: StockHistoryFilter
@@ -135,7 +135,7 @@ export const PALLET_HISTORY_BY_NUMBER = gql`
   ${STOCK_HISTORY_RECORD_FRAGMENT}
   ${PRODUCT_BASIC_INFO_FRAGMENT}
   ${PAGE_INFO_FRAGMENT}
-  
+
   query PalletHistoryByNumber(
     $palletNumber: String!
     $includeJourney: Boolean = true
@@ -204,7 +204,7 @@ export const CACHE_CONFIGURATIONS = {
     errorPolicy: 'all' as const,
     notifyOnNetworkStatusChange: true,
   },
-  
+
   // Single pallet history - cache for 10 minutes (more stable)
   palletHistoryByNumber: {
     fetchPolicy: 'cache-first' as const,
@@ -242,10 +242,24 @@ export interface PalletHistoryVariables {
     useCursor?: boolean;
   };
   sort?: {
-    field: 'TIMESTAMP' | 'PALLET_NUMBER' | 'PRODUCT_CODE' | 'ACTION' | 'LOCATION' | 'OPERATOR' | 'QUANTITY';
+    field:
+      | 'TIMESTAMP'
+      | 'PALLET_NUMBER'
+      | 'PRODUCT_CODE'
+      | 'ACTION'
+      | 'LOCATION'
+      | 'OPERATOR'
+      | 'QUANTITY';
     direction: 'ASC' | 'DESC';
     secondary?: {
-      field: 'TIMESTAMP' | 'PALLET_NUMBER' | 'PRODUCT_CODE' | 'ACTION' | 'LOCATION' | 'OPERATOR' | 'QUANTITY';
+      field:
+        | 'TIMESTAMP'
+        | 'PALLET_NUMBER'
+        | 'PRODUCT_CODE'
+        | 'ACTION'
+        | 'LOCATION'
+        | 'OPERATOR'
+        | 'QUANTITY';
       direction: 'ASC' | 'DESC';
     };
   };

@@ -193,13 +193,15 @@ export class UnifiedInventoryService implements IInventoryService {
       const txResult = await this.transactionService.executeBatchOperations<
         TransactionResult<void>
       >(
-        operations.map((op: () => Promise<TransactionResult<void>>) => async (client: SupabaseClient) => {
-          const result = await op();
-          if (!result.success) {
-            throw new Error(result.error);
+        operations.map(
+          (op: () => Promise<TransactionResult<void>>) => async (client: SupabaseClient) => {
+            const result = await op();
+            if (!result.success) {
+              throw new Error(result.error);
+            }
+            return result;
           }
-          return result;
-        }),
+        ),
         {
           description: `Batch transfer: ${batch.transfers.length} pallets`,
           logTransaction: true,
@@ -231,7 +233,9 @@ export class UnifiedInventoryService implements IInventoryService {
 
       // Invalidate cache for all transferred pallets
       if (successCount > 0) {
-        await Promise.all(batch.transfers.map((t: StockTransferDto) => this.invalidateCache(t.palletNum)));
+        await Promise.all(
+          batch.transfers.map((t: StockTransferDto) => this.invalidateCache(t.palletNum))
+        );
       }
 
       return {

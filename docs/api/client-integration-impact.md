@@ -9,27 +9,30 @@ This document analyzes the impact of Alert System API changes on various client 
 ### 1. Web Frontend Applications
 
 #### Current Integrations Analysis
+
 Based on common web frontend patterns in warehouse management systems:
 
 **JavaScript/TypeScript SPA Applications**
+
 - **Impact Level**: 🔴 **Critical**
 - **Affected Areas**: All API calls, response handling, error management
 - **Estimated Migration Time**: 16-32 hours per application
 
 **Frontend Framework Integrations**
 
-| Framework | Common Pattern | Migration Complexity | Estimated Effort |
-|-----------|----------------|---------------------|------------------|
-| **React** | Custom hooks + fetch | High | 20-30 hours |
-| **Vue.js** | Composables + axios | High | 18-25 hours |
-| **Angular** | Services + HttpClient | High | 25-35 hours |
-| **Svelte** | Stores + fetch | Medium | 15-20 hours |
+| Framework   | Common Pattern        | Migration Complexity | Estimated Effort |
+| ----------- | --------------------- | -------------------- | ---------------- |
+| **React**   | Custom hooks + fetch  | High                 | 20-30 hours      |
+| **Vue.js**  | Composables + axios   | High                 | 18-25 hours      |
+| **Angular** | Services + HttpClient | High                 | 25-35 hours      |
+| **Svelte**  | Stores + fetch        | Medium               | 15-20 hours      |
 
 #### Migration Impact Details
 
 **React Integration Example**
 
-*Legacy Code*:
+_Legacy Code_:
+
 ```typescript
 // Custom hook for alert rules (Legacy)
 function useAlertRules() {
@@ -42,7 +45,7 @@ function useAlertRules() {
     try {
       const response = await fetch('/api/alerts/rules');
       const data = await response.json();
-      
+
       if (data.status === 'success') {
         setRules(data.rules || []);
         setError(null);
@@ -60,7 +63,8 @@ function useAlertRules() {
 }
 ```
 
-*Migrated V1 Code*:
+_Migrated V1 Code_:
+
 ```typescript
 // Custom hook for alert rules (V1)
 interface UseAlertRulesOptions {
@@ -100,11 +104,11 @@ function useAlertRules(options: UseAlertRulesOptions = {}) {
         data: AlertRule[];
         pagination: Pagination;
       }> = await response.json();
-      
+
       if (apiResult.success) {
         setData({
           rules: apiResult.data!.data,
-          pagination: apiResult.data!.pagination
+          pagination: apiResult.data!.pagination,
         });
         setError(null);
       } else {
@@ -122,19 +126,20 @@ function useAlertRules(options: UseAlertRulesOptions = {}) {
     }
   }, [options.enabled, options.levels, options.limit, options.offset]);
 
-  return { 
-    rules: data?.rules || [], 
+  return {
+    rules: data?.rules || [],
     pagination: data?.pagination,
-    loading, 
-    error, 
-    fetchRules 
+    loading,
+    error,
+    fetchRules,
   };
 }
 ```
 
 **Vue.js Integration Example**
 
-*Legacy Composable*:
+_Legacy Composable_:
+
 ```typescript
 // Vue composable (Legacy)
 export function useAlerts() {
@@ -162,12 +167,13 @@ export function useAlerts() {
     rules: readonly(rules),
     loading: readonly(loading),
     error: readonly(error),
-    fetchRules
+    fetchRules,
   };
 }
 ```
 
-*Migrated V1 Composable*:
+_Migrated V1 Composable_:
+
 ```typescript
 // Vue composable (V1)
 export function useAlerts(options: UseAlertsOptions = {}) {
@@ -191,17 +197,13 @@ export function useAlerts(options: UseAlertsOptions = {}) {
       });
 
       const { data } = await axios.get(`/api/v1/alerts/rules?${params}`);
-      
+
       if (data.success) {
         rules.value = data.data.data;
         pagination.value = data.data.pagination;
         error.value = null;
       } else {
-        error.value = new ApiError(
-          data.error,
-          data.code,
-          data.details
-        );
+        error.value = new ApiError(data.error, data.code, data.details);
       }
     } catch (err) {
       error.value = new ApiError(err.message, 'NETWORK_ERROR');
@@ -215,7 +217,7 @@ export function useAlerts(options: UseAlertsOptions = {}) {
     pagination: readonly(pagination),
     loading: readonly(loading),
     error: readonly(error),
-    fetchRules
+    fetchRules,
   };
 }
 ```
@@ -227,7 +229,8 @@ export function useAlerts(options: UseAlertsOptions = {}) {
 **Impact Level**: 🔴 **Critical**  
 **Estimated Migration Time**: 20-30 hours per application
 
-*Legacy Mobile Code*:
+_Legacy Mobile Code_:
+
 ```typescript
 // React Native service (Legacy)
 class AlertService {
@@ -236,10 +239,10 @@ class AlertService {
   async getRules(): Promise<LegacyAlertRule[]> {
     const response = await fetch(`${this.baseUrl}/rules`, {
       headers: {
-        'Authorization': `Bearer ${await AsyncStorage.getItem('token')}`
-      }
+        Authorization: `Bearer ${await AsyncStorage.getItem('token')}`,
+      },
     });
-    
+
     const data = await response.json();
     if (data.status === 'success') {
       return data.rules || [];
@@ -253,9 +256,9 @@ class AlertService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${await AsyncStorage.getItem('token')}`
+        Authorization: `Bearer ${await AsyncStorage.getItem('token')}`,
       },
-      body: JSON.stringify(rule)
+      body: JSON.stringify(rule),
     });
 
     const data = await response.json();
@@ -268,18 +271,21 @@ class AlertService {
 }
 ```
 
-*Migrated V1 Mobile Code*:
+_Migrated V1 Mobile Code_:
+
 ```typescript
 // React Native service (V1)
 class AlertServiceV1 {
   private baseUrl = 'https://wms.newpennine.com/api/v1/alerts';
 
-  async getRules(options: {
-    enabled?: boolean;
-    levels?: AlertLevel[];
-    limit?: number;
-    offset?: number;
-  } = {}): Promise<{ rules: AlertRule[]; pagination: Pagination }> {
+  async getRules(
+    options: {
+      enabled?: boolean;
+      levels?: AlertLevel[];
+      limit?: number;
+      offset?: number;
+    } = {}
+  ): Promise<{ rules: AlertRule[]; pagination: Pagination }> {
     const queryParams = new URLSearchParams();
     Object.entries(options).forEach(([key, value]) => {
       if (value !== undefined) {
@@ -293,26 +299,22 @@ class AlertServiceV1 {
 
     const response = await fetch(`${this.baseUrl}/rules?${queryParams}`, {
       headers: {
-        'Authorization': `Bearer ${await AsyncStorage.getItem('token')}`
-      }
+        Authorization: `Bearer ${await AsyncStorage.getItem('token')}`,
+      },
     });
-    
+
     const data: ApiResult<{
       data: AlertRule[];
       pagination: Pagination;
     }> = await response.json();
-    
+
     if (data.success) {
       return {
         rules: data.data!.data,
-        pagination: data.data!.pagination
+        pagination: data.data!.pagination,
       };
     } else {
-      throw new ApiError(
-        data.error || 'Failed to fetch rules',
-        data.code,
-        data.details
-      );
+      throw new ApiError(data.error || 'Failed to fetch rules', data.code, data.details);
     }
   }
 
@@ -321,20 +323,16 @@ class AlertServiceV1 {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${await AsyncStorage.getItem('token')}`
+        Authorization: `Bearer ${await AsyncStorage.getItem('token')}`,
       },
-      body: JSON.stringify(rule)
+      body: JSON.stringify(rule),
     });
 
     const data: ApiResult<AlertRule> = await response.json();
     if (data.success) {
       return data.data!;
     } else {
-      throw new ApiError(
-        data.error || 'Failed to create rule',
-        data.code,
-        data.details
-      );
+      throw new ApiError(data.error || 'Failed to create rule', data.code, data.details);
     }
   }
 }
@@ -345,7 +343,8 @@ class AlertServiceV1 {
 **Impact Level**: 🔴 **Critical**  
 **Estimated Migration Time**: 25-35 hours per application
 
-*Legacy Dart Code*:
+_Legacy Dart Code_:
+
 ```dart
 // Flutter service (Legacy)
 class AlertService {
@@ -356,7 +355,7 @@ class AlertService {
     try {
       final response = await _dio.get('$_baseUrl/rules');
       final data = response.data;
-      
+
       if (data['status'] == 'success') {
         return (data['rules'] as List)
             .map((json) => LegacyAlertRule.fromJson(json))
@@ -371,7 +370,8 @@ class AlertService {
 }
 ```
 
-*Migrated V1 Dart Code*:
+_Migrated V1 Dart Code_:
+
 ```dart
 // Flutter service (V1)
 class AlertServiceV1 {
@@ -397,12 +397,12 @@ class AlertServiceV1 {
         '$_baseUrl/rules',
         queryParameters: queryParams,
       );
-      
+
       final apiResult = ApiResult<AlertRulesData>.fromJson(
         response.data,
         (json) => AlertRulesData.fromJson(json as Map<String, dynamic>),
       );
-      
+
       if (apiResult.success) {
         return AlertRulesResponse(
           rules: apiResult.data!.data,
@@ -430,7 +430,8 @@ class AlertServiceV1 {
 **Impact Level**: 🟡 **Medium**  
 **Estimated Migration Time**: 8-16 hours per service
 
-*Legacy Backend Code*:
+_Legacy Backend Code_:
+
 ```typescript
 // Node.js service (Legacy)
 import axios from 'axios';
@@ -438,11 +439,7 @@ import axios from 'axios';
 class AlertApiClient {
   private baseUrl = process.env.ALERT_API_URL || 'https://wms.newpennine.com/api/alerts';
 
-  async createSystemAlert(alertData: {
-    name: string;
-    metric: string;
-    threshold: number;
-  }) {
+  async createSystemAlert(alertData: { name: string; metric: string; threshold: number }) {
     try {
       const response = await axios.post(`${this.baseUrl}/config`, {
         name: alertData.name,
@@ -453,15 +450,15 @@ class AlertApiClient {
           metric: alertData.metric,
           operator: 'gt',
           value: alertData.threshold,
-          duration: 300
+          duration: 300,
         },
         actions: [
           {
             type: 'email',
-            target: process.env.ADMIN_EMAIL
-          }
+            target: process.env.ADMIN_EMAIL,
+          },
         ],
-        cooldown: 1800
+        cooldown: 1800,
       });
 
       if (response.data.status === 'success') {
@@ -477,7 +474,8 @@ class AlertApiClient {
 }
 ```
 
-*Migrated V1 Backend Code*:
+_Migrated V1 Backend Code_:
+
 ```typescript
 // Node.js service (V1)
 import axios, { AxiosResponse } from 'axios';
@@ -509,16 +507,16 @@ class AlertApiClientV1 {
             enabled: true,
             config: {
               recipients: [process.env.ADMIN_EMAIL!],
-              subject: `System Alert: ${alertData.name}`
-            }
-          }
+              subject: `System Alert: ${alertData.name}`,
+            },
+          },
         ],
         silenceTime: 1800,
         tags: {
           source: 'automated',
           category: 'system',
-          environment: process.env.NODE_ENV || 'development'
-        }
+          environment: process.env.NODE_ENV || 'development',
+        },
       };
 
       const response: AxiosResponse<ApiResult<AlertRule>> = await axios.post(
@@ -537,7 +535,7 @@ class AlertApiClientV1 {
       }
     } catch (error) {
       console.error('Failed to create alert:', error);
-      
+
       // Enhanced error handling for V1
       if (error instanceof ApiError) {
         if (error.isValidationError) {
@@ -554,22 +552,24 @@ class AlertApiClientV1 {
           );
         }
       }
-      
+
       throw new ApiError(error.message || 'Unknown error', 'UNKNOWN_ERROR');
     }
   }
 
-  async getAlertHistory(filters: {
-    ruleIds?: string[];
-    levels?: AlertLevel[];
-    startTime?: Date;
-    endTime?: Date;
-    limit?: number;
-    offset?: number;
-  } = {}): Promise<{ alerts: AlertHistoryItem[]; pagination: PaginationWithMore }> {
+  async getAlertHistory(
+    filters: {
+      ruleIds?: string[];
+      levels?: AlertLevel[];
+      startTime?: Date;
+      endTime?: Date;
+      limit?: number;
+      offset?: number;
+    } = {}
+  ): Promise<{ alerts: AlertHistoryItem[]; pagination: PaginationWithMore }> {
     try {
       const queryParams = new URLSearchParams();
-      
+
       if (filters.ruleIds?.length) {
         queryParams.set('ruleIds', filters.ruleIds.join(','));
       }
@@ -596,7 +596,7 @@ class AlertApiClientV1 {
       if (response.data.success) {
         return {
           alerts: response.data.data!,
-          pagination: response.data.pagination as PaginationWithMore
+          pagination: response.data.pagination as PaginationWithMore,
         };
       } else {
         throw new ApiError(
@@ -621,7 +621,8 @@ class AlertApiClientV1 {
 
 Alert data sent via webhooks will have updated format:
 
-*Legacy Webhook Payload*:
+_Legacy Webhook Payload_:
+
 ```json
 {
   "timestamp": "2025-01-15T10:30:00Z",
@@ -640,7 +641,8 @@ Alert data sent via webhooks will have updated format:
 }
 ```
 
-*V1 Webhook Payload*:
+_V1 Webhook Payload_:
+
 ```json
 {
   "timestamp": "2025-01-15T10:30:00Z",
@@ -673,7 +675,8 @@ Alert data sent via webhooks will have updated format:
 **Impact Level**: 🟡 **Medium**  
 **Estimated Migration Time**: 4-8 hours per integration
 
-*Legacy Grafana Dashboard Query*:
+_Legacy Grafana Dashboard Query_:
+
 ```json
 {
   "targets": [
@@ -685,7 +688,8 @@ Alert data sent via webhooks will have updated format:
 }
 ```
 
-*V1 Grafana Dashboard Query*:
+_V1 Grafana Dashboard Query_:
+
 ```json
 {
   "targets": [
@@ -708,14 +712,17 @@ Alert data sent via webhooks will have updated format:
 **Impact Level**: 🔴 **Critical**  
 **Estimated Migration Time**: 30-50 hours
 
-*Legacy SDK Structure*:
+_Legacy SDK Structure_:
+
 ```typescript
 // Legacy SDK
 export class NewPennineAlertSDK {
-  constructor(private config: {
-    baseUrl: string;
-    apiKey: string;
-  }) {}
+  constructor(
+    private config: {
+      baseUrl: string;
+      apiKey: string;
+    }
+  ) {}
 
   async getRules(): Promise<LegacyAlertRule[]> {
     const response = await this.request('GET', '/alerts/rules');
@@ -731,10 +738,10 @@ export class NewPennineAlertSDK {
     const response = await fetch(`${this.config.baseUrl}/api${endpoint}`, {
       method,
       headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${this.config.apiKey}`,
+        'Content-Type': 'application/json',
       },
-      body: data ? JSON.stringify(data) : undefined
+      body: data ? JSON.stringify(data) : undefined,
     });
 
     const result = await response.json();
@@ -746,30 +753,35 @@ export class NewPennineAlertSDK {
 }
 ```
 
-*V1 SDK Structure*:
+_V1 SDK Structure_:
+
 ```typescript
 // V1 SDK
 export class NewPennineAlertSDKV1 {
-  constructor(private config: {
-    baseUrl: string;
-    apiKey: string;
-    version?: string;
-  }) {
+  constructor(
+    private config: {
+      baseUrl: string;
+      apiKey: string;
+      version?: string;
+    }
+  ) {
     this.config.version = this.config.version || 'v1';
   }
 
-  async getRules(options: {
-    enabled?: boolean;
-    levels?: AlertLevel[];
-    pagination?: {
-      limit?: number;
-      offset?: number;
-    };
-    sort?: {
-      by?: 'name' | 'created_at' | 'updated_at';
-      order?: 'asc' | 'desc';
-    };
-  } = {}): Promise<{
+  async getRules(
+    options: {
+      enabled?: boolean;
+      levels?: AlertLevel[];
+      pagination?: {
+        limit?: number;
+        offset?: number;
+      };
+      sort?: {
+        by?: 'name' | 'created_at' | 'updated_at';
+        order?: 'asc' | 'desc';
+      };
+    } = {}
+  ): Promise<{
     rules: AlertRule[];
     pagination: Pagination;
   }> {
@@ -778,10 +790,10 @@ export class NewPennineAlertSDKV1 {
       data: AlertRule[];
       pagination: Pagination;
     }>('GET', `/alerts/rules${queryParams}`);
-    
+
     return {
       rules: response.data,
-      pagination: response.pagination
+      pagination: response.pagination,
     };
   }
 
@@ -796,33 +808,26 @@ export class NewPennineAlertSDKV1 {
     testMessage?: string;
   }): Promise<TestNotificationResult> {
     const response = await this.request<TestNotificationResult>(
-      'POST', 
-      '/alerts/notifications/test', 
+      'POST',
+      '/alerts/notifications/test',
       config
     );
     return response;
   }
 
-  private async request<T>(
-    method: string, 
-    endpoint: string, 
-    data?: any
-  ): Promise<T> {
-    const response = await fetch(
-      `${this.config.baseUrl}/api/${this.config.version}${endpoint}`, 
-      {
-        method,
-        headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
-          'Content-Type': 'application/json',
-          'User-Agent': 'NewPennine-Alert-SDK/1.0.0'
-        },
-        body: data ? JSON.stringify(data) : undefined
-      }
-    );
+  private async request<T>(method: string, endpoint: string, data?: any): Promise<T> {
+    const response = await fetch(`${this.config.baseUrl}/api/${this.config.version}${endpoint}`, {
+      method,
+      headers: {
+        Authorization: `Bearer ${this.config.apiKey}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'NewPennine-Alert-SDK/1.0.0',
+      },
+      body: data ? JSON.stringify(data) : undefined,
+    });
 
     const result: ApiResult<T> = await response.json();
-    
+
     if (!result.success) {
       throw new AlertSDKError(
         result.error || 'API request failed',
@@ -831,13 +836,13 @@ export class NewPennineAlertSDKV1 {
         response.status
       );
     }
-    
+
     return result.data!;
   }
 
   private buildQueryParams(options: any): string {
     const params = new URLSearchParams();
-    
+
     Object.entries(options).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         if (key === 'pagination') {
@@ -893,28 +898,28 @@ export class AlertSDKError extends Error {
 
 ### High Priority (Migrate First)
 
-| Integration Type | Priority | Risk | Business Impact |
-|-----------------|----------|------|-----------------|
-| **Production Web Apps** | 🔴 Critical | High | Service disruption |
-| **Mobile Apps** | 🔴 Critical | High | User experience impact |
-| **Core Backend Services** | 🔴 Critical | High | System functionality |
-| **Official SDKs** | 🔴 Critical | Medium | Developer adoption |
+| Integration Type          | Priority    | Risk   | Business Impact        |
+| ------------------------- | ----------- | ------ | ---------------------- |
+| **Production Web Apps**   | 🔴 Critical | High   | Service disruption     |
+| **Mobile Apps**           | 🔴 Critical | High   | User experience impact |
+| **Core Backend Services** | 🔴 Critical | High   | System functionality   |
+| **Official SDKs**         | 🔴 Critical | Medium | Developer adoption     |
 
 ### Medium Priority (Migrate Second)
 
-| Integration Type | Priority | Risk | Business Impact |
-|-----------------|----------|------|-----------------|
-| **Internal Tools** | 🟡 Medium | Medium | Operational efficiency |
-| **Monitoring Dashboards** | 🟡 Medium | Low | Visibility impact |
-| **Automation Scripts** | 🟡 Medium | Low | Process automation |
+| Integration Type          | Priority  | Risk   | Business Impact        |
+| ------------------------- | --------- | ------ | ---------------------- |
+| **Internal Tools**        | 🟡 Medium | Medium | Operational efficiency |
+| **Monitoring Dashboards** | 🟡 Medium | Low    | Visibility impact      |
+| **Automation Scripts**    | 🟡 Medium | Low    | Process automation     |
 
 ### Low Priority (Migrate Last)
 
-| Integration Type | Priority | Risk | Business Impact |
-|-----------------|----------|------|-----------------|
-| **Development Tools** | 🟢 Low | Low | Development productivity |
-| **Testing Utilities** | 🟢 Low | Low | QA processes |
-| **Documentation Examples** | 🟢 Low | Low | Developer resources |
+| Integration Type           | Priority | Risk | Business Impact          |
+| -------------------------- | -------- | ---- | ------------------------ |
+| **Development Tools**      | 🟢 Low   | Low  | Development productivity |
+| **Testing Utilities**      | 🟢 Low   | Low  | QA processes             |
+| **Documentation Examples** | 🟢 Low   | Low  | Developer resources      |
 
 ## Testing Strategies
 
@@ -929,10 +934,10 @@ describe('Alert API Contract Tests', () => {
   test('should return equivalent data from both endpoints', async () => {
     const legacyRules = await legacyClient.getRules();
     const v1Result = await v1Client.getRules({ limit: 1000 });
-    
+
     // Verify count matches
     expect(v1Result.rules).toHaveLength(legacyRules.length);
-    
+
     // Verify data integrity with mapping
     legacyRules.forEach((legacyRule, index) => {
       const v1Rule = v1Result.rules[index];
@@ -957,7 +962,7 @@ const loadTestConfig = {
       exec: 'testLegacyEndpoint',
     },
     v1_endpoint: {
-      executor: 'constant-vus', 
+      executor: 'constant-vus',
       vus: 50,
       duration: '5m',
       exec: 'testV1Endpoint',
@@ -968,16 +973,16 @@ const loadTestConfig = {
 export function testLegacyEndpoint() {
   const response = http.get('https://wms.newpennine.com/api/alerts/rules');
   check(response, {
-    'legacy status is 200': (r) => r.status === 200,
-    'legacy response time < 500ms': (r) => r.timings.duration < 500,
+    'legacy status is 200': r => r.status === 200,
+    'legacy response time < 500ms': r => r.timings.duration < 500,
   });
 }
 
 export function testV1Endpoint() {
   const response = http.get('https://wms.newpennine.com/api/v1/alerts/rules');
   check(response, {
-    'v1 status is 200': (r) => r.status === 200,
-    'v1 response time < 500ms': (r) => r.timings.duration < 500,
+    'v1 status is 200': r => r.status === 200,
+    'v1 response time < 500ms': r => r.timings.duration < 500,
   });
 }
 ```
@@ -993,12 +998,10 @@ class IntegrationTestSuite {
       this.testMobileApp,
       this.testBackendService,
       this.testWebhookConsumer,
-      this.testSDK
+      this.testSDK,
     ];
 
-    const results = await Promise.allSettled(
-      tests.map(test => test.call(this))
-    );
+    const results = await Promise.allSettled(tests.map(test => test.call(this)));
 
     this.reportResults(results);
   }
@@ -1007,24 +1010,21 @@ class IntegrationTestSuite {
     // Test React app integration
     const page = await browser.newPage();
     await page.goto('http://localhost:3000/alerts');
-    
+
     // Wait for rules to load
     await page.waitForSelector('[data-testid="alert-rules-list"]');
-    
-    const rulesCount = await page.$$eval(
-      '[data-testid="alert-rule-item"]',
-      items => items.length
-    );
-    
+
+    const rulesCount = await page.$$eval('[data-testid="alert-rule-item"]', items => items.length);
+
     expect(rulesCount).toBeGreaterThan(0);
   }
 
   async testMobileApp() {
     // Test React Native app
     const response = await fetch('http://localhost:8081/api/v1/alerts/rules', {
-      headers: { 'X-Platform': 'react-native' }
+      headers: { 'X-Platform': 'react-native' },
     });
-    
+
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data.success).toBe(true);
@@ -1034,7 +1034,7 @@ class IntegrationTestSuite {
     // Test Node.js service integration
     const alertClient = new AlertApiClientV1();
     const rules = await alertClient.getRules({ limit: 10 });
-    
+
     expect(rules.rules).toHaveLength(10);
     expect(rules.pagination.total).toBeGreaterThan(0);
   }
@@ -1051,7 +1051,7 @@ class IntegrationHealthMonitor {
     legacyRequests: 0,
     v1Requests: 0,
     migrationErrors: 0,
-    integrationFailures: 0
+    integrationFailures: 0,
   };
 
   trackLegacyRequest() {
@@ -1077,22 +1077,23 @@ class IntegrationHealthMonitor {
     return {
       migrationProgress: this.getMigrationProgress(),
       totalRequests: this.metrics.legacyRequests + this.metrics.v1Requests,
-      errorRate: this.metrics.migrationErrors / (this.metrics.legacyRequests + this.metrics.v1Requests),
-      recommendations: this.getRecommendations()
+      errorRate:
+        this.metrics.migrationErrors / (this.metrics.legacyRequests + this.metrics.v1Requests),
+      recommendations: this.getRecommendations(),
     };
   }
 
   private getRecommendations(): string[] {
     const recommendations: string[] = [];
-    
+
     if (this.getMigrationProgress() < 50) {
       recommendations.push('Accelerate migration to V1 endpoints');
     }
-    
+
     if (this.metrics.migrationErrors > 0) {
       recommendations.push('Review and fix migration errors');
     }
-    
+
     return recommendations;
   }
 }
@@ -1101,6 +1102,7 @@ class IntegrationHealthMonitor {
 ### 2. Support Documentation Templates
 
 **Issue Report Template**:
+
 ```markdown
 ## Alert API Migration Issue
 
@@ -1108,22 +1110,28 @@ class IntegrationHealthMonitor {
 **Priority**: (Critical / High / Medium / Low)
 
 ### Problem Description
+
 [Describe the issue encountered during migration]
 
 ### Current Behavior
+
 [What is currently happening]
 
-### Expected Behavior  
+### Expected Behavior
+
 [What should happen after migration]
 
 ### Steps to Reproduce
+
 1. [Step 1]
 2. [Step 2]
 3. [Step 3]
 
 ### Error Messages
 ```
+
 [Include any error messages or logs]
+
 ```
 
 ### Environment
@@ -1141,17 +1149,18 @@ class IntegrationHealthMonitor {
 ### 1. Developer Communications
 
 **Email Template for Teams**:
+
 ```
 Subject: Alert System API Migration - Action Required
 
 Dear Development Team,
 
-The Alert System API is being upgraded from legacy endpoints (/api/alerts/*) to 
+The Alert System API is being upgraded from legacy endpoints (/api/alerts/*) to
 v1 endpoints (/api/v1/alerts/*). Your application may be affected.
 
 TIMELINE:
 - Phase 1 (Current): Legacy endpoints deprecated but functional
-- Phase 2 (Q2 2025): Deprecation warnings added to responses  
+- Phase 2 (Q2 2025): Deprecation warnings added to responses
 - Phase 3 (Q3 2025): Legacy endpoints removed
 
 ACTION REQUIRED:
@@ -1174,33 +1183,40 @@ NewPennine Development Team
 ### 2. Stakeholder Updates
 
 **Status Report Template**:
+
 ```markdown
 # Alert System API Migration Status Report
 
 ## Executive Summary
+
 Migration from legacy Alert API endpoints to v1 endpoints is X% complete.
 
 ## Progress by Integration Type
+
 - Web Applications: X/Y migrated (Z%)
-- Mobile Applications: X/Y migrated (Z%)  
+- Mobile Applications: X/Y migrated (Z%)
 - Backend Services: X/Y migrated (Z%)
 - Third-party Integrations: X/Y migrated (Z%)
 
 ## Risks and Mitigation
+
 - **Risk**: [Description]
   **Mitigation**: [Plan]
 
 ## Timeline
+
 - **Current Phase**: [Phase description]
 - **Next Milestone**: [Date and description]
 - **Completion Target**: [Date]
 
 ## Support Activity
+
 - Migration requests handled: X
 - Issues resolved: Y
 - Critical issues pending: Z
 
 ## Next Steps
+
 1. [Next step 1]
 2. [Next step 2]
 3. [Next step 3]
@@ -1209,6 +1225,7 @@ Migration from legacy Alert API endpoints to v1 endpoints is X% complete.
 ---
 
 **Related Documentation**:
+
 - [Migration Guide](./alert-system-migration-guide.md)
 - [Breaking Changes](./alert-system-breaking-changes.md)
 - [Error Code Reference](./alert-system-error-codes.md)

@@ -15,22 +15,27 @@ All Alert System endpoints (`/api/alerts/*` and `/api/v1/alerts/*`) have been co
 ### Core API Endpoints
 
 #### Authentication APIs
+
 - `/api/auth/*` - User authentication and session management
 - `/api/v1/auth/*` - Enhanced authentication with OAuth integration
 
-#### Inventory Management APIs  
+#### Inventory Management APIs
+
 - `/api/inventory/*` - Stock control and inventory management
 - `/api/v1/inventory/*` - Advanced inventory operations with real-time updates
 
 #### Printing Services APIs
+
 - `/api/printing/*` - Label printing and document generation
 - `/api/v1/printing/*` - Enhanced printing with template management
 
 #### System Management APIs
+
 - `/api/system/*` - System configuration and health monitoring
 - `/api/v1/system/*` - Advanced system management features
 
 ### API Versioning Strategy
+
 - **Legacy APIs** (`/api/*`): Stable versions for backward compatibility
 - **V1 APIs** (`/api/v1/*`): Enhanced versions with improved security and features
 - **GraphQL Endpoint**: `/api/graphql` - For complex queries and real-time subscriptions
@@ -38,18 +43,20 @@ All Alert System endpoints (`/api/alerts/*` and `/api/v1/alerts/*`) have been co
 ## 🚀 Quick Start Guide
 
 ### 1. API Authentication
+
 ```javascript
 // Authenticate using JWT tokens
 const response = await fetch('/api/v1/auth/login', {
   method: 'POST',
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
   },
-  body: JSON.stringify({ email, password })
+  body: JSON.stringify({ email, password }),
 });
 ```
 
 ### 2. Making API Calls
+
 ```javascript
 // Standard API response format
 const response = await fetch('/api/v1/inventory/items');
@@ -63,6 +70,7 @@ if (data.success) {
 ```
 
 ### 3. Error Handling
+
 ```javascript
 try {
   const result = await apiCall();
@@ -80,11 +88,13 @@ try {
 ## 🛠️ Development Tools
 
 ### API Testing Tools
+
 - **GraphQL Playground**: Interactive GraphQL query interface
 - **Swagger UI**: Auto-generated API documentation and testing
 - **Postman Collection**: Complete API collection for all endpoints
 
 ### Code Generation Tools
+
 ```bash
 # Generate TypeScript types from GraphQL schema
 npm run codegen
@@ -97,6 +107,7 @@ npm run api:validate
 ```
 
 ### Development Scripts
+
 ```bash
 # Start development server
 npm run dev
@@ -110,13 +121,14 @@ npm run build
 
 ## 📅 System Architecture History
 
-| Phase | Date Range | Status | Description |
-|-------|------------|---------|-------------|
-| **Alert System** | 2024-2025 | ✅ Completed | Alert system completely removed for security reasons |
-| **GraphQL Integration** | Q2 2025 | ✅ Active | Full GraphQL API implementation completed |
-| **API V2 Planning** | Q4 2025 | 📅 Planned | Next generation API with enhanced performance |
+| Phase                   | Date Range | Status       | Description                                          |
+| ----------------------- | ---------- | ------------ | ---------------------------------------------------- |
+| **Alert System**        | 2024-2025  | ✅ Completed | Alert system completely removed for security reasons |
+| **GraphQL Integration** | Q2 2025    | ✅ Active    | Full GraphQL API implementation completed            |
+| **API V2 Planning**     | Q4 2025    | 📅 Planned   | Next generation API with enhanced performance        |
 
 ### Recent Changes
+
 - **August 13, 2025**: Alert System permanently removed
 - **July 2025**: GraphQL API reached 100% feature coverage
 - **June 2025**: Enhanced security implementation completed
@@ -124,17 +136,20 @@ npm run build
 ## 🆘 Support & Resources
 
 ### Getting Help
+
 - **API Support Team**: api-support@newpennine.com
 - **Development Team**: dev@newpennine.com
 - **Slack Channel**: #api-support
 - **Emergency Support**: Available through support channels
 
 ### Development Assistance
+
 - **Documentation**: Comprehensive API documentation available
 - **Code Examples**: Sample implementations for common use cases
 - **Testing Support**: Access to staging environments for development
 
 ### Community Resources
+
 - **Developer Portal**: https://developer.newpennine.com
 - **API Status Page**: https://status.newpennine.com
 - **Release Notes**: https://docs.newpennine.com/releases
@@ -143,17 +158,20 @@ npm run build
 ## 🔍 Additional Resources
 
 ### API Documentation
+
 - [OpenAPI Interactive Explorer](https://api.newpennine.com/docs)
 - [GraphQL Playground](https://api.newpennine.com/graphql) (v1.2+)
 - [WebSocket API Docs](https://docs.newpennine.com/websocket) (v2.0+)
 
 ### SDK Documentation
+
 - [JavaScript SDK](https://github.com/newpennine/js-sdk)
 - [Python SDK](https://github.com/newpennine/python-sdk)
 - [Go SDK](https://github.com/newpennine/go-sdk)
 - [.NET SDK](https://github.com/newpennine/dotnet-sdk)
 
 ### Integration Examples
+
 - [React Integration Example](https://github.com/newpennine/examples/tree/main/react-alerts)
 - [Vue.js Integration Example](https://github.com/newpennine/examples/tree/main/vue-alerts)
 - [Node.js Backend Example](https://github.com/newpennine/examples/tree/main/node-alerts)
@@ -162,6 +180,7 @@ npm run build
 ## 🧪 Testing Your Migration
 
 ### Integration Testing Checklist
+
 - [ ] Authentication flow working correctly
 - [ ] API response format validation
 - [ ] Error handling for all HTTP status codes
@@ -171,6 +190,7 @@ npm run build
 - [ ] Real-time subscriptions (if applicable)
 
 ### Performance Testing
+
 - [ ] Response times within acceptable limits
 - [ ] Memory usage optimized
 - [ ] Error rates below 0.1%
@@ -178,6 +198,7 @@ npm run build
 - [ ] Database query performance
 
 ### Business Logic Testing
+
 - [ ] Inventory management operations
 - [ ] User authentication and authorization
 - [ ] Printing service functionality
@@ -196,10 +217,12 @@ npm run api:usage-report
 ```
 
 ### API Monitoring Dashboard
+
 Access the API monitoring dashboard at:
 https://console.newpennine.com/api/monitoring
 
 **Dashboard Features**:
+
 - Real-time API usage statistics
 - Performance metrics and trends
 - Error rates and response times
@@ -219,11 +242,11 @@ https://console.newpennine.com/api/monitoring
 
 ## 📝 Document Changelog
 
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0.0 | 2025-01-15 | Initial documentation release |
-| 1.0.1 | 2025-01-20 | Added migration tools section |
-| 1.0.2 | 2025-01-25 | Updated testing checklist |
+| Version | Date       | Changes                       |
+| ------- | ---------- | ----------------------------- |
+| 1.0.0   | 2025-01-15 | Initial documentation release |
+| 1.0.1   | 2025-01-20 | Added migration tools section |
+| 1.0.2   | 2025-01-25 | Updated testing checklist     |
 
 ---
 

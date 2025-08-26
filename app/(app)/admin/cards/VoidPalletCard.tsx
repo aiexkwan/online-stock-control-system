@@ -2,7 +2,7 @@
  * VoidPalletCard Component
  * 基於 BaseOperationCard 的托盤作廢卡片
  * 遷移自 VoidPalletWidget
- * 
+ *
  * Features:
  * - 托盤搜尋（掃描/輸入）
  * - 作廢確認流程
@@ -16,23 +16,24 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { 
-  getCardTheme, 
-  cardTextStyles, 
+import {
+  getCardTheme,
+  cardTextStyles,
   cardStatusColors,
-  cardContainerStyles 
+  cardContainerStyles,
 } from '@/lib/card-system/theme';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import {
-  AlertTriangle,
-  XCircle,
-  List,
-  Package2,
-} from 'lucide-react';
+import { AlertTriangle, XCircle, List, Package2 } from 'lucide-react';
 import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
 // Removed design-system import - using direct Tailwind classes
 import { OperationCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
@@ -54,13 +55,11 @@ import type {
   VoidResult,
   BatchItem,
   OperationChildProps,
-  VoidPalletCardProps
+  VoidPalletCardProps,
 } from '../types/data-management';
 import { VOID_REASONS } from '../constants/voidPallet';
 import { StatusOverlay } from '../components/shared';
 import { useVoidPallet } from '../hooks/useVoidPallet';
-
-
 
 // Step configuration
 const voidSteps: Step[] = [
@@ -77,16 +76,16 @@ export const VoidPalletCard: React.FC<VoidPalletCardProps> = ({
 }) => {
   // Refs
   const searchInputRef = useRef<SearchInputRef>(null);
-  
+
   // Use the void pallet hook
   const { state, actions } = useVoidPallet({
     searchInputRef,
     onVoidComplete: onVoidComplete,
-    onVoidError: (error) => {
+    onVoidError: error => {
       console.error('Void error:', error);
     },
   });
-  
+
   // Destructure state and actions for easier access
   const {
     currentStep,
@@ -103,7 +102,7 @@ export const VoidPalletCard: React.FC<VoidPalletCardProps> = ({
     batchItems,
     isLoading,
   } = state;
-  
+
   const {
     setCurrentStep,
     setVoidMode,
@@ -125,121 +124,109 @@ export const VoidPalletCard: React.FC<VoidPalletCardProps> = ({
     focusSearchInput,
   } = actions;
 
-
   // Render content based on step
   const renderContent = () => {
     switch (currentStep) {
       case 'search':
         return (
-          <div className="space-y-4">
+          <div className='space-y-4'>
             {/* Mode toggle */}
-            <div className="flex gap-2">
+            <div className='flex gap-2'>
               <Button
                 variant={voidMode === 'single' ? 'default' : 'outline'}
-                size="sm"
+                size='sm'
                 onClick={() => {
                   setVoidMode('single');
                   setBatchItems([]);
                 }}
                 disabled={isLoading || isEditMode}
-                className="flex-1"
+                className='flex-1'
               >
-                <Package2 className="mr-2 h-4 w-4" />
+                <Package2 className='mr-2 h-4 w-4' />
                 Single Mode
               </Button>
               <Button
                 variant={voidMode === 'batch' ? 'default' : 'outline'}
-                size="sm"
+                size='sm'
                 onClick={() => {
                   setVoidMode('batch');
                   setFoundPallet(null);
                 }}
                 disabled={isLoading || isEditMode}
-                className="flex-1"
+                className='flex-1'
               >
-                <List className="mr-2 h-4 w-4" />
+                <List className='mr-2 h-4 w-4' />
                 Batch Mode
               </Button>
             </div>
 
             {/* Search input */}
-            <div className="space-y-2">
-              <Label className="text-white">Pallet Number</Label>
+            <div className='space-y-2'>
+              <Label className='text-white'>Pallet Number</Label>
               <SearchInput
                 ref={searchInputRef}
                 value={searchValue}
                 onChange={setSearchValue}
                 onSearch={() => handleSearch()}
                 onQrScan={() => setShowQrScanner(true)}
-                placeholder="Enter pallet number or scan QR..."
-                searchType="pallet"
+                placeholder='Enter pallet number or scan QR...'
+                searchType='pallet'
                 autoDetect={true}
                 showQrButton={true}
                 showTypeIndicator={false}
                 isLoading={isLoading}
                 disabled={isEditMode}
-                className=""
+                className=''
               />
             </div>
 
             {/* Batch list */}
             {voidMode === 'batch' && batchItems.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-white">
-                    Batch List ({batchItems.length} items, {batchItems.filter(item => item.selected).length} selected)
+              <div className='space-y-2'>
+                <div className='flex items-center justify-between'>
+                  <Label className='text-white'>
+                    Batch List ({batchItems.length} items,{' '}
+                    {batchItems.filter(item => item.selected).length} selected)
                   </Label>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => selectAllBatchItems(true)}
-                    >
+                  <div className='flex gap-2'>
+                    <Button variant='ghost' size='sm' onClick={() => selectAllBatchItems(true)}>
                       Select All
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => selectAllBatchItems(false)}
-                    >
+                    <Button variant='ghost' size='sm' onClick={() => selectAllBatchItems(false)}>
                       Clear All
                     </Button>
                   </div>
                 </div>
-                <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg border bg-muted/30 p-2">
+                <div className='max-h-40 space-y-1 overflow-y-auto rounded-lg border bg-muted/30 p-2'>
                   {batchItems.map(item => (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between rounded p-2 hover:bg-muted/50"
+                      className='flex items-center justify-between rounded p-2 hover:bg-muted/50'
                     >
-                      <div className="flex items-center gap-2">
+                      <div className='flex items-center gap-2'>
                         <input
-                          type="checkbox"
+                          type='checkbox'
                           checked={item.selected}
                           onChange={() => toggleBatchItemSelection(item.id)}
-                          className="h-4 w-4"
+                          className='h-4 w-4'
                         />
-                        <span className="text-sm font-medium">{item.palletId}</span>
-                        <Badge variant="secondary" className="text-xs">
+                        <span className='text-sm font-medium'>{item.palletId}</span>
+                        <Badge variant='secondary' className='text-xs'>
                           {item.product_code}
                         </Badge>
-                        <span className="text-xs text-muted-foreground">
+                        <span className='text-xs text-muted-foreground'>
                           {item.product_qty} units
                         </span>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeBatchItem(item.id)}
-                      >
-                        <XCircle className="h-4 w-4" />
+                      <Button variant='ghost' size='sm' onClick={() => removeBatchItem(item.id)}>
+                        <XCircle className='h-4 w-4' />
                       </Button>
                     </div>
                   ))}
                 </div>
                 <Button
-                  variant="default"
-                  className="w-full"
+                  variant='default'
+                  className='w-full'
                   onClick={() => {
                     setVoidReason('Print Extra Label'); // 批量模式自動設置
                     setCurrentStep('confirm');
@@ -255,65 +242,63 @@ export const VoidPalletCard: React.FC<VoidPalletCardProps> = ({
 
       case 'confirm':
         return (
-          <div className="space-y-4">
+          <div className='space-y-4'>
             {/* Pallet info (single mode) */}
             {voidMode === 'single' && foundPallet && (
-              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-                <h4 className={cn(cardTextStyles.label, 'mb-3 text-white')}>
-                  Pallet Information
-                </h4>
-                <div className="grid grid-cols-2 gap-3">
+              <div className='rounded-lg border border-white/10 bg-white/5 p-4'>
+                <h4 className={cn(cardTextStyles.label, 'mb-3 text-white')}>Pallet Information</h4>
+                <div className='grid grid-cols-2 gap-3'>
                   <div>
-                    <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>
-                      Pallet Number
-                    </p>
+                    <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>Pallet Number</p>
                     <p className={cn(cardTextStyles.body, 'font-medium text-white')}>
                       {foundPallet.plt_num}
                     </p>
                   </div>
                   <div>
-                    <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>
-                      Product Code
+                    <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>Product Code</p>
+                    <p className={cn(cardTextStyles.body, 'text-white')}>
+                      {foundPallet.product_code}
                     </p>
-                    <p className={cn(cardTextStyles.body, 'text-white')}>{foundPallet.product_code}</p>
                   </div>
                   <div>
-                    <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>
-                      Product Name
+                    <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>Product Name</p>
+                    <p className={cn(cardTextStyles.body, 'text-white')}>
+                      {foundPallet.description || 'N/A'}
                     </p>
-                    <p className={cn(cardTextStyles.body, 'text-white')}>{foundPallet.description || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>
-                      Product Type
+                    <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>Product Type</p>
+                    <p className={cn(cardTextStyles.body, 'text-white')}>
+                      {foundPallet.type || 'N/A'}
                     </p>
-                    <p className={cn(cardTextStyles.body, 'text-white')}>{foundPallet.type || 'N/A'}</p>
                   </div>
                   <div>
                     <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>
                       Pallet Quantity
                     </p>
-                    <p className={cn(cardTextStyles.body, 'text-white')}>{foundPallet.product_qty} units</p>
+                    <p className={cn(cardTextStyles.body, 'text-white')}>
+                      {foundPallet.product_qty} units
+                    </p>
                   </div>
                   <div>
-                    <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>
-                      Pallet Remark
+                    <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>Pallet Remark</p>
+                    <p className={cn(cardTextStyles.body, 'text-white')}>
+                      {foundPallet.plt_remark || 'N/A'}
                     </p>
-                    <p className={cn(cardTextStyles.body, 'text-white')}>{foundPallet.plt_remark || 'N/A'}</p>
                   </div>
                   <div>
                     <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>
                       Pallet Current Location
                     </p>
-                    <p className={cn(cardTextStyles.body, 'text-white')}>{foundPallet.plt_loc || 'N/A'}</p>
+                    <p className={cn(cardTextStyles.body, 'text-white')}>
+                      {foundPallet.plt_loc || 'N/A'}
+                    </p>
                   </div>
                   <div>
-                    <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>
-                      Created At
-                    </p>
+                    <p className={cn(cardTextStyles.labelSmall, 'text-white/60')}>Created At</p>
                     <p className={cn(cardTextStyles.body, 'text-white')}>
-                      {foundPallet.generate_time 
-                        ? new Date(foundPallet.generate_time).toLocaleString() 
+                      {foundPallet.generate_time
+                        ? new Date(foundPallet.generate_time).toLocaleString()
                         : 'N/A'}
                     </p>
                   </div>
@@ -323,30 +308,30 @@ export const VoidPalletCard: React.FC<VoidPalletCardProps> = ({
 
             {/* Batch info */}
             {voidMode === 'batch' && (
-              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+              <div className='rounded-lg border border-white/10 bg-white/5 p-4'>
                 <h4 className={cn(cardTextStyles.label, 'mb-3 text-white')}>
                   Batch Void Confirmation
                 </h4>
-                <p className="text-sm text-white/70">
+                <p className='text-sm text-white/70'>
                   {batchItems.filter(item => item.selected).length} pallets selected for void
                 </p>
               </div>
             )}
 
             {/* Void reason */}
-            <div className="space-y-2">
-              <Label className="text-white">Void Reason</Label>
+            <div className='space-y-2'>
+              <Label className='text-white'>Void Reason</Label>
               <Select
                 value={voidReason}
                 onValueChange={setVoidReason}
                 disabled={isEditMode || voidMode === 'batch'}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select reason..." />
+                  <SelectValue placeholder='Select reason...' />
                 </SelectTrigger>
                 <SelectContent>
                   {voidMode === 'batch' ? (
-                    <SelectItem value="Print Extra Label">Print Extra Label (Batch)</SelectItem>
+                    <SelectItem value='Print Extra Label'>Print Extra Label (Batch)</SelectItem>
                   ) : (
                     VOID_REASONS.map(reason => (
                       <SelectItem key={reason.value} value={reason.value}>
@@ -358,27 +343,23 @@ export const VoidPalletCard: React.FC<VoidPalletCardProps> = ({
               </Select>
             </div>
 
-
             {/* Actions */}
-            <div className="flex gap-2">
+            <div className='flex gap-2'>
               <Button
-                variant="outline"
+                variant='outline'
                 onClick={resetToSearch}
                 disabled={isLoading}
-                className="flex-1"
+                className='flex-1'
               >
                 Back to Search
               </Button>
               <Button
-                variant="destructive"
+                variant='destructive'
                 onClick={() => setShowConfirmDialog(true)}
-                disabled={
-                  isLoading ||
-                  (voidMode === 'single' && !voidReason)
-                }
-                className="flex-1"
+                disabled={isLoading || (voidMode === 'single' && !voidReason)}
+                className='flex-1'
               >
-                <AlertTriangle className="mr-2 h-4 w-4" />
+                <AlertTriangle className='mr-2 h-4 w-4' />
                 Confirm Void
               </Button>
             </div>
@@ -397,31 +378,31 @@ export const VoidPalletCard: React.FC<VoidPalletCardProps> = ({
   return (
     <>
       <OperationCard className={cn('h-full', className)} borderGlow={false} isHoverable={false}>
-        <div className="bg-transparent border-0">
+        <div className='border-0 bg-transparent'>
           {/* Step indicator */}
           <StepIndicator
             steps={voidSteps}
             currentStepId={currentStep}
-            className="mb-6"
-            completedColor="green-400"
-            activeColor="white"
-            pendingColor="white/60"
+            className='mb-6'
+            completedColor='green-400'
+            activeColor='white'
+            pendingColor='white/60'
           />
-            
-            <Separator className="mb-4" />
-            
-            {/* Step content */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentStep}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-              >
-                {renderContent()}
-              </motion.div>
-            </AnimatePresence>
+
+          <Separator className='mb-4' />
+
+          {/* Step content */}
+          <AnimatePresence mode='wait'>
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              {renderContent()}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </OperationCard>
 
@@ -431,44 +412,45 @@ export const VoidPalletCard: React.FC<VoidPalletCardProps> = ({
           open={showQrScanner}
           onClose={() => setShowQrScanner(false)}
           onScan={handleQrScan}
-          title="Scan Pallet QR Code"
+          title='Scan Pallet QR Code'
         />
       )}
-      
+
       {/* Confirmation Dialog */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent className="max-w-md">
+        <AlertDialogContent className='max-w-md'>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="h-5 w-5" />
+            <AlertDialogTitle className='flex items-center gap-2 text-red-600'>
+              <AlertTriangle className='h-5 w-5' />
               Void Action Cannot Be Undo
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="text-base">
+              <div className='text-base'>
                 <p>Please Confirm Before Execute</p>
                 {voidMode === 'single' && foundPallet && (
-                  <div className="mt-4 space-y-2 rounded-lg bg-gray-100 p-3 text-sm">
+                  <div className='mt-4 space-y-2 rounded-lg bg-gray-100 p-3 text-sm'>
                     <div>
-                      <span className="font-medium">Pallet:</span> {foundPallet.plt_num}
+                      <span className='font-medium'>Pallet:</span> {foundPallet.plt_num}
                     </div>
                     <div>
-                      <span className="font-medium">Product:</span> {foundPallet.product_code}
+                      <span className='font-medium'>Product:</span> {foundPallet.product_code}
                     </div>
                     <div>
-                      <span className="font-medium">Quantity:</span> {foundPallet.product_qty} units
+                      <span className='font-medium'>Quantity:</span> {foundPallet.product_qty} units
                     </div>
                     <div>
-                      <span className="font-medium">Reason:</span> {voidReason}
+                      <span className='font-medium'>Reason:</span> {voidReason}
                     </div>
                   </div>
                 )}
                 {voidMode === 'batch' && (
-                  <div className="mt-4 rounded-lg bg-gray-100 p-3 text-sm">
+                  <div className='mt-4 rounded-lg bg-gray-100 p-3 text-sm'>
                     <div>
-                      <span className="font-medium">Selected Pallets:</span> {batchItems.filter(item => item.selected).length}
+                      <span className='font-medium'>Selected Pallets:</span>{' '}
+                      {batchItems.filter(item => item.selected).length}
                     </div>
                     <div>
-                      <span className="font-medium">Reason:</span> {voidReason || 'Print Extra'}
+                      <span className='font-medium'>Reason:</span> {voidReason || 'Print Extra'}
                     </div>
                   </div>
                 )}
@@ -478,7 +460,7 @@ export const VoidPalletCard: React.FC<VoidPalletCardProps> = ({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-red-600 hover:bg-red-700"
+              className='bg-red-600 hover:bg-red-700'
               onClick={() => {
                 setShowConfirmDialog(false);
                 handleVoid();
@@ -489,18 +471,20 @@ export const VoidPalletCard: React.FC<VoidPalletCardProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
+
       {/* Already Voided Dialog */}
       <AlertDialog open={showAlreadyVoidedDialog} onOpenChange={setShowAlreadyVoidedDialog}>
-        <AlertDialogContent className="max-w-md">
+        <AlertDialogContent className='max-w-md'>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
-              <XCircle className="h-5 w-5" />
+            <AlertDialogTitle className='flex items-center gap-2 text-red-600'>
+              <XCircle className='h-5 w-5' />
               Pallet Already Been Voided
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-base space-y-2">
-              <span className="block font-medium">Pallet {alreadyVoidedPalletNum} Already Been Voided</span>
-              <span className="block">Please Check Again</span>
+            <AlertDialogDescription className='space-y-2 text-base'>
+              <span className='block font-medium'>
+                Pallet {alreadyVoidedPalletNum} Already Been Voided
+              </span>
+              <span className='block'>Please Check Again</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -520,7 +504,7 @@ export const VoidPalletCard: React.FC<VoidPalletCardProps> = ({
       <StatusOverlay
         open={currentStep === 'result' && !!voidResult}
         status={voidResult?.success ? 'success' : 'error'}
-        mode="fullscreen"
+        mode='fullscreen'
         title={voidResult?.success ? 'Success' : 'Failed'}
         message={voidResult?.message}
         onClose={resetToSearch}

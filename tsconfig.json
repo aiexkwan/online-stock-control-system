@@ -44,7 +44,7 @@
     "e2e/**",
     "**/*.test.ts",
     "**/*.test.tsx",
-    "**/*.spec.ts", 
+    "**/*.spec.ts",
     "**/*.spec.tsx",
     "playwright.config.ts",
     "playwright.a11y.config.ts",

@@ -41,7 +41,7 @@ const endpointTests: EndpointTest[] = [
       }
     `,
     variables: { input: { timeRange: 'today' } },
-    description: '儀表板統計數據'
+    description: '儀表板統計數據',
   },
   {
     name: 'Stock Levels',
@@ -66,13 +66,13 @@ const endpointTests: EndpointTest[] = [
         }
       }
     `,
-    variables: { 
-      input: { 
+    variables: {
+      input: {
         filter: { includeZeroStock: false },
-        limit: 10 
-      } 
+        limit: 10,
+      },
     },
-    description: '庫存水平查詢'
+    description: '庫存水平查詢',
   },
   {
     name: 'Stock Transfers',
@@ -93,7 +93,7 @@ const endpointTests: EndpointTest[] = [
       }
     `,
     variables: { status: 'PENDING', limit: 10 },
-    description: '庫存轉移記錄'
+    description: '庫存轉移記錄',
   },
   {
     name: 'Transfer Detail',
@@ -120,7 +120,7 @@ const endpointTests: EndpointTest[] = [
       }
     `,
     variables: { id: 'test-transfer-id' },
-    description: '轉移詳情查詢'
+    description: '轉移詳情查詢',
   },
   {
     name: 'Inventory Analysis',
@@ -171,13 +171,13 @@ const endpointTests: EndpointTest[] = [
         }
       }
     `,
-    variables: { 
-      input: { 
+    variables: {
+      input: {
         timeRange: 'LAST_30_DAYS',
-        includeZeroStock: false 
-      } 
+        includeZeroStock: false,
+      },
     },
-    description: '庫存分析報告'
+    description: '庫存分析報告',
   },
   {
     name: 'Create Transfer',
@@ -204,11 +204,11 @@ const endpointTests: EndpointTest[] = [
         quantity: 10,
         fromLocation: 'A001',
         toLocation: 'B001',
-        notes: 'Test transfer'
-      }
+        notes: 'Test transfer',
+      },
     },
-    description: '創建庫存轉移'
-  }
+    description: '創建庫存轉移',
+  },
 ];
 
 async function testGraphQLEndpoint(test: EndpointTest): Promise<{
@@ -218,12 +218,12 @@ async function testGraphQLEndpoint(test: EndpointTest): Promise<{
   dataReceived?: boolean;
 }> {
   const startTime = Date.now();
-  
+
   try {
     const result = await client.query({
       query: test.graphqlQuery,
       variables: test.variables,
-      fetchPolicy: 'network-only' // 確保不使用緩存
+      fetchPolicy: 'network-only', // 確保不使用緩存
     });
 
     const responseTime = Date.now() - startTime;
@@ -233,21 +233,21 @@ async function testGraphQLEndpoint(test: EndpointTest): Promise<{
       success: !result.error,
       responseTime,
       dataReceived,
-      error: result.error?.message
+      error: result.error?.message,
     };
   } catch (error) {
     return {
       success: false,
       error: error instanceof Error ? error.message : String(error),
       responseTime: Date.now() - startTime,
-      dataReceived: false
+      dataReceived: false,
     };
   }
 }
 
 async function verifyGraphQLCoverage(): Promise<void> {
   console.log(chalk.blue('🔍 開始驗證 GraphQL 功能覆蓋...'));
-  
+
   let passedTests = 0;
   let failedTests = 0;
   const results: Array<{
@@ -259,7 +259,7 @@ async function verifyGraphQLCoverage(): Promise<void> {
     console.log(chalk.yellow(`\n🧪 測試: ${test.name}`));
     console.log(chalk.gray(`   替代: ${test.restEndpoint}`));
     console.log(chalk.gray(`   描述: ${test.description}`));
-    
+
     const result = await testGraphQLEndpoint(test);
     results.push({ test, result });
 
@@ -283,10 +283,11 @@ async function verifyGraphQLCoverage(): Promise<void> {
   console.log(`成功率: ${((passedTests / endpointTests.length) * 100).toFixed(1)}%`);
 
   // 性能分析
-  const avgResponseTime = results
-    .filter(r => r.result.responseTime)
-    .reduce((sum, r) => sum + (r.result.responseTime || 0), 0) / results.length;
-  
+  const avgResponseTime =
+    results
+      .filter(r => r.result.responseTime)
+      .reduce((sum, r) => sum + (r.result.responseTime || 0), 0) / results.length;
+
   console.log(`\n⏱️  平均響應時間: ${avgResponseTime.toFixed(0)}ms`);
 
   // 失敗的測試詳情
@@ -310,7 +311,7 @@ async function verifyGraphQLCoverage(): Promise<void> {
   // 遷移就緒評估
   const readinessScore = (passedTests / endpointTests.length) * 100;
   console.log(chalk.blue('\n🚀 遷移就緒評估:'));
-  
+
   if (readinessScore >= 90) {
     console.log(chalk.green(`✅ 系統就緒 (${readinessScore.toFixed(1)}%)`));
     console.log(chalk.green('   可以安全地開始移除 REST API endpoints'));
@@ -325,7 +326,7 @@ async function verifyGraphQLCoverage(): Promise<void> {
 
 async function testServerConnection(): Promise<boolean> {
   console.log(chalk.blue('🔌 測試 GraphQL 服務器連接...'));
-  
+
   try {
     const result = await client.query({
       query: gql`
@@ -337,7 +338,7 @@ async function testServerConnection(): Promise<boolean> {
           }
         }
       `,
-      fetchPolicy: 'network-only'
+      fetchPolicy: 'network-only',
     });
 
     if (result.data && result.data.__schema) {
@@ -355,7 +356,7 @@ async function testServerConnection(): Promise<boolean> {
 
 async function main() {
   console.log(chalk.blue('🚀 開始 GraphQL 功能覆蓋驗證'));
-  
+
   // 測試服務器連接
   const serverConnected = await testServerConnection();
   if (!serverConnected) {

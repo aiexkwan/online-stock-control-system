@@ -150,11 +150,7 @@ export const REAL_TIME_STOCK_LEVELS_QUERY = gql`
     $filter: StockFilterInput
     $sort: StockSortInput
   ) {
-    realTimeStockLevels(
-      pagination: $pagination
-      filter: $filter
-      sort: $sort
-    ) {
+    realTimeStockLevels(pagination: $pagination, filter: $filter, sort: $sort) {
       nodes {
         stock
         description

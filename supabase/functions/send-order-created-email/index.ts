@@ -1,112 +1,120 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
 interface OrderItem {
-  order_ref: number
-  product_code: string
-  product_desc: string
-  product_qty: number
+  order_ref: number;
+  product_code: string;
+  product_desc: string;
+  product_qty: number;
 }
 
 interface EmailRequest {
-  orderData: OrderItem[]
-  to?: string[]
-  cc?: string[]
-  from?: string
+  orderData: OrderItem[];
+  to?: string[];
+  cc?: string[];
+  from?: string;
 }
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
-serve(async (req) => {
+serve(async req => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    console.log('=== Order Created Email Function Started ===')
-    console.log('Request method:', req.method)
-    console.log('Request headers:', Object.fromEntries(req.headers.entries()))
+    console.log('=== Order Created Email Function Started ===');
+    console.log('Request method:', req.method);
+    console.log('Request headers:', Object.fromEntries(req.headers.entries()));
 
     // Validate API key
     if (!RESEND_API_KEY) {
-      console.error('❌ RESEND_API_KEY is not set in environment variables')
+      console.error('❌ RESEND_API_KEY is not set in environment variables');
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'Email service not configured - RESEND_API_KEY missing'
+          error: 'Email service not configured - RESEND_API_KEY missing',
         }),
         {
           status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
-      )
+      );
     }
 
-    console.log('✅ RESEND_API_KEY is available, length:', RESEND_API_KEY.length)
+    console.log('✅ RESEND_API_KEY is available, length:', RESEND_API_KEY.length);
 
     // Parse request body
     let requestBody;
     try {
-      requestBody = await req.json()
-      console.log('📥 Request body received:', requestBody)
+      requestBody = await req.json();
+      console.log('📥 Request body received:', requestBody);
     } catch (parseError) {
-      console.error('❌ Failed to parse request body:', parseError)
+      console.error('❌ Failed to parse request body:', parseError);
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'Invalid JSON in request body'
+          error: 'Invalid JSON in request body',
         }),
         {
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
-      )
+      );
     }
 
-    const { orderData, to, cc, from }: EmailRequest = requestBody
+    const { orderData, to, cc, from }: EmailRequest = requestBody;
 
     // Validate required fields
     if (!orderData || !Array.isArray(orderData) || orderData.length === 0) {
-      console.error('❌ Order data is missing or empty')
+      console.error('❌ Order data is missing or empty');
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'Order data is required and must be a non-empty array'
+          error: 'Order data is required and must be a non-empty array',
         }),
         {
           status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
-      )
+      );
     }
 
     // Set default email addresses
-    const fromEmail = from || 'ordercreated@pennine.cc'
+    const fromEmail = from || 'ordercreated@pennine.cc';
 
     // Determine email recipients based on product codes
-    const hasUProducts = orderData.some(item => item.product_code.startsWith('U'))
-    const hasNonUProducts = orderData.some(item => !item.product_code.startsWith('U'))
+    const hasUProducts = orderData.some(item => item.product_code.startsWith('U'));
+    const hasNonUProducts = orderData.some(item => !item.product_code.startsWith('U'));
 
-    let toEmails: string[]
-    let ccEmails: string[]
+    let toEmails: string[];
+    let ccEmails: string[];
 
     if (hasUProducts && hasNonUProducts) {
       // Mixed U and non-U products
-      toEmails = to || ['grobinson@pennineindustries.com', 'kjones@pennineindustries.com']
-      ccEmails = cc || ['akwan@pennineindustries.com', 'alyon@pennineindustries.com']
+      toEmails = to || ['grobinson@pennineindustries.com', 'kjones@pennineindustries.com'];
+      ccEmails = cc || ['akwan@pennineindustries.com', 'alyon@pennineindustries.com'];
     } else if (hasUProducts) {
       // Only U products
-      toEmails = to || ['grobinson@pennineindustries.com']
-      ccEmails = cc || ['akwan@pennineindustries.com', 'alyon@pennineindustries.com', 'kjones@pennineindustries.com']
+      toEmails = to || ['grobinson@pennineindustries.com'];
+      ccEmails = cc || [
+        'akwan@pennineindustries.com',
+        'alyon@pennineindustries.com',
+        'kjones@pennineindustries.com',
+      ];
     } else {
       // Normal case (no U products)
-      toEmails = to || ['alyon@pennineindustries.com']
-      ccEmails = cc || ['akwan@pennineindustries.com', 'kjones@pennineindustries.com', 'grobinson@pennineindustries.com']
+      toEmails = to || ['alyon@pennineindustries.com'];
+      ccEmails = cc || [
+        'akwan@pennineindustries.com',
+        'kjones@pennineindustries.com',
+        'grobinson@pennineindustries.com',
+      ];
     }
 
     console.log('📧 Email details:', {
@@ -115,20 +123,24 @@ serve(async (req) => {
       cc: ccEmails,
       orderCount: orderData.length,
       hasUProducts,
-      hasNonUProducts
-    })
+      hasNonUProducts,
+    });
 
     // Get unique order references
-    const orderRefs = [...new Set(orderData.map(item => item.order_ref))]
+    const orderRefs = [...new Set(orderData.map(item => item.order_ref))];
 
     // Generate order summary table
-    const orderSummaryHtml = orderData.map(item => `
+    const orderSummaryHtml = orderData
+      .map(
+        item => `
       <tr style="border-bottom: 1px solid #ddd;">
         <td style="padding: 12px; text-align: left; font-family: 'Courier New', monospace; background-color: #f8f9fa; font-weight: bold;">${item.product_code}</td>
         <td style="padding: 12px; text-align: left;">${item.product_desc}</td>
         <td style="padding: 12px; text-align: center; font-weight: bold; color: #007bff;">${item.product_qty}</td>
       </tr>
-    `).join('')
+    `
+      )
+      .join('');
 
     // Prepare email content
     const emailData = {
@@ -176,7 +188,9 @@ serve(async (req) => {
               </table>
             </div>
 
-            ${hasUProducts ? `
+            ${
+              hasUProducts
+                ? `
             <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin: 25px 0;">
               <h4 style="color: #856404; margin: 0 0 8px 0; font-size: 16px;">
                 ⚠️ Special Product Notice
@@ -185,7 +199,9 @@ serve(async (req) => {
                 This order contains products with codes starting with "U" which require special handling.
               </p>
             </div>
-            ` : ''}
+            `
+                : ''
+            }
 
             <div style="background-color: #e8f4fd; border: 1px solid #bee5eb; border-radius: 8px; padding: 20px; margin: 25px 0;">
               <h4 style="color: #0c5460; margin: 0 0 10px 0; font-size: 16px;">📋 Next Steps</h4>
@@ -207,7 +223,7 @@ serve(async (req) => {
                 day: '2-digit',
                 hour: '2-digit',
                 minute: '2-digit',
-                second: '2-digit'
+                second: '2-digit',
               })}
             </p>
           </div>
@@ -217,41 +233,41 @@ serve(async (req) => {
 New Order Created - ${orderRefs.join(', ')}
 
 Order Summary:
-${orderData.map(item =>
-  `${item.product_code}: ${item.product_desc} (Qty: ${item.product_qty})`
-).join('\n')}
+${orderData
+  .map(item => `${item.product_code}: ${item.product_desc} (Qty: ${item.product_qty})`)
+  .join('\n')}
 
 Total Items: ${orderData.length}
 Total Quantity: ${orderData.reduce((sum, item) => sum + item.product_qty, 0)}
 
 This is an automated notification from the Pennine Stock Control System.
-      `
-    }
+      `,
+    };
 
-    console.log('📤 Sending email to Resend API...')
+    console.log('📤 Sending email to Resend API...');
 
     // Send email using Resend API
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        Authorization: `Bearer ${RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(emailData),
-    })
+    });
 
-    console.log('📨 Resend API response status:', response.status)
-    console.log('📨 Resend API response headers:', Object.fromEntries(response.headers.entries()))
+    console.log('📨 Resend API response status:', response.status);
+    console.log('📨 Resend API response headers:', Object.fromEntries(response.headers.entries()));
 
-    const result = await response.json()
-    console.log('📨 Resend API response body:', result)
+    const result = await response.json();
+    console.log('📨 Resend API response body:', result);
 
     if (!response.ok) {
       console.error('❌ Resend API error:', {
         status: response.status,
         statusText: response.statusText,
-        result
-      })
+        result,
+      });
       return new Response(
         JSON.stringify({
           success: false,
@@ -259,17 +275,17 @@ This is an automated notification from the Pennine Stock Control System.
           details: {
             status: response.status,
             statusText: response.statusText,
-            apiResponse: result
-          }
+            apiResponse: result,
+          },
         }),
         {
           status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
-      )
+      );
     }
 
-    console.log('✅ Email sent successfully:', result)
+    console.log('✅ Email sent successfully:', result);
 
     return new Response(
       JSON.stringify({
@@ -278,27 +294,26 @@ This is an automated notification from the Pennine Stock Control System.
         emailId: result.id,
         recipients: {
           to: toEmails,
-          cc: ccEmails
-        }
+          cc: ccEmails,
+        },
       }),
       {
         status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
-    )
-
+    );
   } catch (error) {
-    console.error('💥 Unexpected error in send-order-created-email function:', error)
+    console.error('💥 Unexpected error in send-order-created-email function:', error);
     return new Response(
       JSON.stringify({
         success: false,
         error: 'Internal server error',
-        details: error.message
+        details: error.message,
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
-    )
+    );
   }
-})
+});

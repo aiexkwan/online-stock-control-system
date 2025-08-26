@@ -6,9 +6,9 @@
 import { NextResponse } from 'next/server';
 
 interface RateLimitOptions {
-  windowMs?: number;  // Time window in milliseconds
-  max?: number;       // Max requests per window
-  message?: string;   // Error message
+  windowMs?: number; // Time window in milliseconds
+  max?: number; // Max requests per window
+  message?: string; // Error message
   keyGenerator?: (request: Request) => string; // Custom key generator
 }
 
@@ -37,49 +37,49 @@ export function rateLimit(options: RateLimitOptions = {}) {
       const ip = forwarded ? forwarded.split(',')[0] : 'unknown';
       const url = new URL(request.url);
       return `${ip}:${url.pathname}`;
-    }
+    },
   } = options;
 
   return async (request: Request): Promise<RateLimitResult> => {
     const key = keyGenerator(request);
     const now = Date.now();
-    
+
     // Clean up expired entries
     for (const [k, v] of rateLimitStore.entries()) {
       if (v.resetTime < now) {
         rateLimitStore.delete(k);
       }
     }
-    
+
     // Get or create rate limit entry
     let entry = rateLimitStore.get(key);
-    
+
     if (!entry || entry.resetTime < now) {
       // Create new window
       entry = {
         count: 1,
-        resetTime: now + windowMs
+        resetTime: now + windowMs,
       };
       rateLimitStore.set(key, entry);
     } else {
       // Increment counter
       entry.count++;
     }
-    
+
     // Check if limit exceeded
     if (entry.count > max) {
       return {
         success: false,
         message,
         remaining: 0,
-        reset: new Date(entry.resetTime)
+        reset: new Date(entry.resetTime),
       };
     }
-    
+
     return {
       success: true,
       remaining: max - entry.count,
-      reset: new Date(entry.resetTime)
+      reset: new Date(entry.resetTime),
     };
   };
 }
@@ -99,7 +99,7 @@ export const cacheOperationLimiter = rateLimit({
     const url = new URL(request.url);
     // Could enhance this to include user ID from auth token
     return `cache:${ip}:${url.pathname}`;
-  }
+  },
 });
 
 /**
@@ -111,12 +111,12 @@ export async function rateLimitMiddleware(
 ): Promise<NextResponse | null> {
   const limiter = rateLimit(options);
   const result = await limiter(request);
-  
+
   if (!result.success) {
     return NextResponse.json(
       {
         error: result.message,
-        retryAfter: result.reset
+        retryAfter: result.reset,
       },
       {
         status: 429,
@@ -124,11 +124,11 @@ export async function rateLimitMiddleware(
           'Retry-After': Math.ceil((result.reset!.getTime() - Date.now()) / 1000).toString(),
           'X-RateLimit-Limit': options?.max?.toString() || '100',
           'X-RateLimit-Remaining': result.remaining?.toString() || '0',
-          'X-RateLimit-Reset': result.reset!.toISOString()
-        }
+          'X-RateLimit-Reset': result.reset!.toISOString(),
+        },
       }
     );
   }
-  
+
   return null;
 }

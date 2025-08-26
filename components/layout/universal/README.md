@@ -13,63 +13,58 @@
 ## 📦 核心組件
 
 ### UniversalContainer
+
 統一容器組件，支援各種佈局模式：
+
 ```tsx
 import { UniversalContainer } from '@/components/layout/universal';
 
-<UniversalContainer
-  variant="page"
-  background="starfield"
-  padding="lg"
-  maxWidth="7xl"
->
+<UniversalContainer variant='page' background='starfield' padding='lg' maxWidth='7xl'>
   {children}
-</UniversalContainer>
+</UniversalContainer>;
 ```
 
 ### UniversalGrid
+
 響應式網格系統：
+
 ```tsx
 import { UniversalGrid } from '@/components/layout/universal';
 
-<UniversalGrid
-  preset="qcForm"
-  gap="lg"
-  align="stretch"
->
+<UniversalGrid preset='qcForm' gap='lg' align='stretch'>
   {children}
-</UniversalGrid>
+</UniversalGrid>;
 ```
 
 ### UniversalCard
+
 統一卡片組件：
+
 ```tsx
 import { UniversalCard } from '@/components/layout/universal';
 
 <UniversalCard
-  variant="form"
-  theme="qc"
-  title="Quality Control"
-  subtitle="Label Generation"
+  variant='form'
+  theme='qc'
+  title='Quality Control'
+  subtitle='Label Generation'
   glass={true}
   glow={true}
 >
   {children}
-</UniversalCard>
+</UniversalCard>;
 ```
 
 ### UniversalStack
+
 堆疊佈局組件：
+
 ```tsx
 import { UniversalStack } from '@/components/layout/universal';
 
-<UniversalStack
-  direction="responsive"
-  spacing="lg"
-  align="center"
->
+<UniversalStack direction='responsive' spacing='lg' align='center'>
   {children}
-</UniversalStack>
+</UniversalStack>;
 ```
 
 ## 🔄 向後兼容性
@@ -82,16 +77,17 @@ import { ResponsiveLayout, ResponsiveGrid, ResponsiveCard } from '@/components/l
 
 <ResponsiveLayout>
   <ResponsiveGrid columns={{ sm: 1, md: 2, lg: 3 }} gap={6}>
-    <ResponsiveCard title="Example" padding="lg">
+    <ResponsiveCard title='Example' padding='lg'>
       Content
     </ResponsiveCard>
   </ResponsiveGrid>
-</ResponsiveLayout>
+</ResponsiveLayout>;
 ```
 
 ## 🎨 主題系統
 
 預定義主題：
+
 - `admin` - 管理面板 (藍紫色系)
 - `warehouse` - 倉庫作業 (綠色系)
 - `production` - 生產管理 (橙色系)
@@ -102,14 +98,15 @@ import { ResponsiveLayout, ResponsiveGrid, ResponsiveCard } from '@/components/l
 ```tsx
 import { UniversalProvider } from '@/components/layout/universal';
 
-<UniversalProvider defaultTheme="admin" animationsEnabled={true}>
+<UniversalProvider defaultTheme='admin' animationsEnabled={true}>
   <App />
-</UniversalProvider>
+</UniversalProvider>;
 ```
 
 ## 📱 響應式斷點
 
 與 Tailwind 完全一致：
+
 - `xs`: 475px
 - `sm`: 640px
 - `md`: 768px
@@ -129,9 +126,7 @@ export default function RootLayout({ children }) {
   return (
     <html>
       <body>
-        <UniversalProvider defaultTheme="admin">
-          {children}
-        </UniversalProvider>
+        <UniversalProvider defaultTheme='admin'>{children}</UniversalProvider>
       </body>
     </html>
   );
@@ -161,6 +156,7 @@ function MyComponent() {
 現有組件可以漸進式遷移：
 
 **階段 1**: 直接替換 import (零修改)
+
 ```tsx
 // 從
 import { ResponsiveLayout } from '../../components/qc-label-form/ResponsiveLayout';
@@ -170,18 +166,21 @@ import { ResponsiveLayout } from '@/components/layout/universal';
 ```
 
 **階段 2**: 使用新的 API (獲得更多功能)
+
 ```tsx
 // 從
 <ResponsiveCard title="Form" padding="lg">
 
-// 改為  
+// 改為
 <UniversalCard variant="form" theme="qc" title="Form" padding="xl">
 ```
 
 ## 🔧 配置選項
 
 ### GRID_PRESETS
+
 預定義網格配置：
+
 - `single` - 單列
 - `responsive` - 響應式雙列
 - `qcForm` - QC表單專用
@@ -190,7 +189,9 @@ import { ResponsiveLayout } from '@/components/layout/universal';
 - `quad` - 四列
 
 ### THEMES
+
 完整主題配置，包含：
+
 - 顏色方案
 - 效果設置 (blur, glow, gradient, animation)
 - 文字顏色
@@ -205,6 +206,7 @@ import { ResponsiveLayout } from '@/components/layout/universal';
 ## 📋 檢查清單
 
 遷移前檢查：
+
 - [ ] 現有功能是否完全保留
 - [ ] 響應式行為是否一致
 - [ ] 動畫效果是否正確
@@ -214,6 +216,7 @@ import { ResponsiveLayout } from '@/components/layout/universal';
 ## 🐛 調試
 
 啟用調試模式：
+
 ```tsx
 <UniversalProvider debugMode={true}>
   <App />
@@ -221,6 +224,7 @@ import { ResponsiveLayout } from '@/components/layout/universal';
 ```
 
 會在控制台輸出：
+
 - 斷點變化
 - 主題切換
 - 配置更新

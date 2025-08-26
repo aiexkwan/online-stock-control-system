@@ -482,7 +482,6 @@ export const reportResolvers = {
     ): Promise<number> => {
       return REPORT_CONFIGS[input.reportType]?.estimatedGenerationTime || 60;
     },
-
   },
 
   Mutation: {

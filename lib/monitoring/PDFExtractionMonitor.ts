@@ -8,11 +8,11 @@ import { EventEmitter } from 'events';
 
 // Performance thresholds
 interface PerformanceThresholds {
-  maxExtractionTime: number;    // ms
+  maxExtractionTime: number; // ms
   maxTokensPerRequest: number;
-  targetCacheHitRate: number;    // percentage
-  maxErrorRate: number;          // percentage
-  maxMemoryUsage: number;        // MB
+  targetCacheHitRate: number; // percentage
+  maxErrorRate: number; // percentage
+  maxMemoryUsage: number; // MB
 }
 
 // Metric snapshot
@@ -57,25 +57,25 @@ interface TimeSeriesData {
 
 export class PDFExtractionMonitor extends EventEmitter {
   private static instance: PDFExtractionMonitor;
-  
+
   private metrics: MetricSnapshot[] = [];
   private readonly maxMetricsHistory = 1000;
   private readonly aggregationWindow = 5 * 60 * 1000; // 5 minutes
-  
+
   private thresholds: PerformanceThresholds = {
-    maxExtractionTime: 5000,      // 5 seconds
+    maxExtractionTime: 5000, // 5 seconds
     maxTokensPerRequest: 2000,
-    targetCacheHitRate: 60,       // 60% cache hit rate
-    maxErrorRate: 5,               // 5% error rate
-    maxMemoryUsage: 500,           // 500MB
+    targetCacheHitRate: 60, // 60% cache hit rate
+    maxErrorRate: 5, // 5% error rate
+    maxMemoryUsage: 500, // 500MB
   };
-  
+
   // Cost tracking (OpenAI pricing)
   private readonly tokenCosts = {
-    'gpt-4o': { input: 0.005, output: 0.015 },      // per 1K tokens
+    'gpt-4o': { input: 0.005, output: 0.015 }, // per 1K tokens
     'gpt-4o-mini': { input: 0.00015, output: 0.0006 }, // per 1K tokens
   };
-  
+
   private alertThrottles = new Map<string, number>();
   private readonly alertThrottleMs = 60000; // 1 minute
 
@@ -100,22 +100,25 @@ export class PDFExtractionMonitor extends EventEmitter {
       ...metric,
       timestamp: Date.now(),
     };
-    
+
     this.metrics.push(snapshot);
-    
+
     // Maintain history limit
     if (this.metrics.length > this.maxMetricsHistory) {
       this.metrics.shift();
     }
-    
+
     // Check thresholds and emit alerts
     this.checkThresholds(snapshot);
-    
+
     // Log if verbose mode
     if (process.env.PDF_MONITOR_VERBOSE === 'true') {
-      systemLogger.debug({
-        metric: snapshot
-      }, '[PDFMonitor] Metric recorded');
+      systemLogger.debug(
+        {
+          metric: snapshot,
+        },
+        '[PDFMonitor] Metric recorded'
+      );
     }
   }
 
@@ -126,38 +129,38 @@ export class PDFExtractionMonitor extends EventEmitter {
     const window = windowMs || this.aggregationWindow;
     const cutoff = Date.now() - window;
     const relevantMetrics = this.metrics.filter(m => m.timestamp >= cutoff);
-    
+
     if (relevantMetrics.length === 0) {
       return this.getEmptyStats();
     }
-    
+
     // Calculate basic counts
     const totalRequests = relevantMetrics.length;
     const successfulRequests = relevantMetrics.filter(m => m.success).length;
     const failedRequests = totalRequests - successfulRequests;
-    
+
     // Calculate extraction time statistics
     const extractionTimes = relevantMetrics
       .filter(m => m.success)
       .map(m => m.extractionTime)
       .sort((a, b) => a - b);
-    
+
     const avgExtractionTime = this.average(extractionTimes);
     const p50 = this.percentile(extractionTimes, 50);
     const p95 = this.percentile(extractionTimes, 95);
     const p99 = this.percentile(extractionTimes, 99);
-    
+
     // Calculate token usage
     const totalTokens = relevantMetrics.reduce((sum, m) => sum + m.tokensUsed, 0);
     const avgTokens = totalRequests > 0 ? totalTokens / totalRequests : 0;
-    
+
     // Calculate cache hit rate
     const cacheHits = relevantMetrics.filter(m => m.cacheHit).length;
     const cacheHitRate = totalRequests > 0 ? (cacheHits / totalRequests) * 100 : 0;
-    
+
     // Calculate error rate
     const errorRate = totalRequests > 0 ? (failedRequests / totalRequests) * 100 : 0;
-    
+
     // Aggregate errors
     const errorCounts = new Map<string, number>();
     relevantMetrics
@@ -166,12 +169,12 @@ export class PDFExtractionMonitor extends EventEmitter {
         const count = errorCounts.get(m.error!) || 0;
         errorCounts.set(m.error!, count + 1);
       });
-    
+
     const topErrors = Array.from(errorCounts.entries())
       .map(([error, count]) => ({ error, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
-    
+
     // Method distribution
     const methodCounts = new Map<string, number>();
     relevantMetrics.forEach(m => {
@@ -179,13 +182,13 @@ export class PDFExtractionMonitor extends EventEmitter {
       methodCounts.set(m.method, count + 1);
     });
     const methodDistribution = Object.fromEntries(methodCounts);
-    
+
     // Memory usage
     const memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024;
-    
+
     // Cost estimate (simplified)
     const costEstimate = this.estimateCost(totalTokens);
-    
+
     return {
       totalRequests,
       successfulRequests,
@@ -212,47 +215,47 @@ export class PDFExtractionMonitor extends EventEmitter {
     const window = windowMs || this.aggregationWindow;
     const cutoff = Date.now() - window;
     const relevantMetrics = this.metrics.filter(m => m.timestamp >= cutoff);
-    
+
     // Create time buckets
     const buckets = new Map<number, MetricSnapshot[]>();
-    
+
     relevantMetrics.forEach(metric => {
       const bucketTime = Math.floor(metric.timestamp / bucketSizeMs) * bucketSizeMs;
       const bucket = buckets.get(bucketTime) || [];
       bucket.push(metric);
       buckets.set(bucketTime, bucket);
     });
-    
+
     // Sort buckets by time
     const sortedBuckets = Array.from(buckets.entries()).sort((a, b) => a[0] - b[0]);
-    
+
     // Aggregate per bucket
     const timestamps: number[] = [];
     const extractionTimes: number[] = [];
     const tokenUsage: number[] = [];
     const cacheHitRates: number[] = [];
     const errorRates: number[] = [];
-    
+
     sortedBuckets.forEach(([time, metrics]) => {
       timestamps.push(time);
-      
+
       // Average extraction time
       const times = metrics.filter(m => m.success).map(m => m.extractionTime);
       extractionTimes.push(times.length > 0 ? this.average(times) : 0);
-      
+
       // Average token usage
       const tokens = metrics.map(m => m.tokensUsed);
       tokenUsage.push(this.average(tokens));
-      
+
       // Cache hit rate
       const hits = metrics.filter(m => m.cacheHit).length;
       cacheHitRates.push(metrics.length > 0 ? (hits / metrics.length) * 100 : 0);
-      
+
       // Error rate
       const errors = metrics.filter(m => !m.success).length;
       errorRates.push(metrics.length > 0 ? (errors / metrics.length) * 100 : 0);
     });
-    
+
     return {
       timestamps,
       extractionTimes,
@@ -274,7 +277,7 @@ export class PDFExtractionMonitor extends EventEmitter {
         fileName: metric.fileName,
       });
     }
-    
+
     // Check token usage
     if (metric.tokensUsed > this.thresholds.maxTokensPerRequest) {
       this.emitAlert('high-token-usage', {
@@ -283,10 +286,10 @@ export class PDFExtractionMonitor extends EventEmitter {
         fileName: metric.fileName,
       });
     }
-    
+
     // Check aggregated metrics
     const stats = this.getStats(60000); // Last minute
-    
+
     // Check cache hit rate
     if (stats.totalRequests >= 10 && stats.cacheHitRate < this.thresholds.targetCacheHitRate) {
       this.emitAlert('low-cache-hit-rate', {
@@ -294,7 +297,7 @@ export class PDFExtractionMonitor extends EventEmitter {
         threshold: this.thresholds.targetCacheHitRate,
       });
     }
-    
+
     // Check error rate
     if (stats.totalRequests >= 10 && stats.errorRate > this.thresholds.maxErrorRate) {
       this.emitAlert('high-error-rate', {
@@ -303,7 +306,7 @@ export class PDFExtractionMonitor extends EventEmitter {
         topErrors: stats.topErrors,
       });
     }
-    
+
     // Check memory usage
     if (stats.memoryUsage > this.thresholds.maxMemoryUsage) {
       this.emitAlert('high-memory-usage', {
@@ -319,18 +322,21 @@ export class PDFExtractionMonitor extends EventEmitter {
   private emitAlert(type: string, data: Record<string, unknown>): void {
     const now = Date.now();
     const lastAlert = this.alertThrottles.get(type) || 0;
-    
+
     if (now - lastAlert < this.alertThrottleMs) {
       return; // Throttled
     }
-    
+
     this.alertThrottles.set(type, now);
-    
-    systemLogger.warn({
-      alertType: type,
-      ...data
-    }, `[PDFMonitor] Alert: ${type}`);
-    
+
+    systemLogger.warn(
+      {
+        alertType: type,
+        ...data,
+      },
+      `[PDFMonitor] Alert: ${type}`
+    );
+
     this.emit('alert', { type, data, timestamp: now });
   }
 
@@ -341,7 +347,7 @@ export class PDFExtractionMonitor extends EventEmitter {
     setInterval(() => {
       const usage = process.memoryUsage();
       const heapUsedMB = usage.heapUsed / 1024 / 1024;
-      
+
       if (heapUsedMB > this.thresholds.maxMemoryUsage) {
         this.emitAlert('memory-threshold', {
           heapUsedMB,
@@ -358,16 +364,22 @@ export class PDFExtractionMonitor extends EventEmitter {
     if (process.env.PDF_MONITOR_REPORTING !== 'true') {
       return;
     }
-    
-    setInterval(() => {
-      const stats = this.getStats(5 * 60 * 1000); // Last 5 minutes
-      
-      systemLogger.info({
-        stats
-      }, '[PDFMonitor] Periodic Report');
-      
-      this.emit('report', { stats, timestamp: Date.now() });
-    }, 5 * 60 * 1000); // Report every 5 minutes
+
+    setInterval(
+      () => {
+        const stats = this.getStats(5 * 60 * 1000); // Last 5 minutes
+
+        systemLogger.info(
+          {
+            stats,
+          },
+          '[PDFMonitor] Periodic Report'
+        );
+
+        this.emit('report', { stats, timestamp: Date.now() });
+      },
+      5 * 60 * 1000
+    ); // Report every 5 minutes
   }
 
   /**
@@ -378,10 +390,10 @@ export class PDFExtractionMonitor extends EventEmitter {
     const costs = this.tokenCosts['gpt-4o-mini'];
     const inputTokens = totalTokens * 0.7; // Assume 70% input
     const outputTokens = totalTokens * 0.3; // Assume 30% output
-    
+
     const inputCost = (inputTokens / 1000) * costs.input;
     const outputCost = (outputTokens / 1000) * costs.output;
-    
+
     return inputCost + outputCost;
   }
 
@@ -444,13 +456,17 @@ export class PDFExtractionMonitor extends EventEmitter {
    * Export metrics for analysis
    */
   public exportMetrics(): string {
-    return JSON.stringify({
-      metrics: this.metrics,
-      stats: this.getStats(),
-      timeSeries: this.getTimeSeries(),
-      thresholds: this.thresholds,
-      timestamp: Date.now(),
-    }, null, 2);
+    return JSON.stringify(
+      {
+        metrics: this.metrics,
+        stats: this.getStats(),
+        timeSeries: this.getTimeSeries(),
+        thresholds: this.thresholds,
+        timestamp: Date.now(),
+      },
+      null,
+      2
+    );
   }
 
   /**
@@ -459,10 +475,10 @@ export class PDFExtractionMonitor extends EventEmitter {
   public generateReport(): string {
     const stats = this.getStats(60 * 60 * 1000); // Last hour
     const timeSeries = this.getTimeSeries(60 * 60 * 1000);
-    
+
     let report = '# PDF Extraction Performance Report\n\n';
     report += `Generated: ${new Date().toISOString()}\n\n`;
-    
+
     report += '## Summary Statistics (Last Hour)\n';
     report += `- Total Requests: ${stats.totalRequests}\n`;
     report += `- Success Rate: ${(100 - stats.errorRate).toFixed(1)}%\n`;
@@ -471,19 +487,19 @@ export class PDFExtractionMonitor extends EventEmitter {
     report += `- P95 Extraction Time: ${stats.p95ExtractionTime}ms\n`;
     report += `- Avg Tokens/Request: ${stats.averageTokensPerRequest}\n`;
     report += `- Estimated Cost: $${stats.costEstimate}\n\n`;
-    
+
     report += '## Performance Metrics\n';
     report += `- P50 Latency: ${stats.p50ExtractionTime}ms\n`;
     report += `- P95 Latency: ${stats.p95ExtractionTime}ms\n`;
     report += `- P99 Latency: ${stats.p99ExtractionTime}ms\n\n`;
-    
+
     report += '## Method Distribution\n';
     for (const [method, count] of Object.entries(stats.methodDistribution)) {
       const percentage = ((count / stats.totalRequests) * 100).toFixed(1);
       report += `- ${method}: ${count} (${percentage}%)\n`;
     }
     report += '\n';
-    
+
     if (stats.topErrors.length > 0) {
       report += '## Top Errors\n';
       stats.topErrors.forEach(({ error, count }) => {
@@ -491,29 +507,29 @@ export class PDFExtractionMonitor extends EventEmitter {
       });
       report += '\n';
     }
-    
+
     report += '## Resource Usage\n';
     report += `- Memory: ${stats.memoryUsage}MB\n`;
     report += `- Total Tokens Used: ${stats.totalTokensUsed}\n\n`;
-    
+
     report += '## Recommendations\n';
-    
+
     if (stats.cacheHitRate < this.thresholds.targetCacheHitRate) {
       report += `- ⚠️ Cache hit rate (${stats.cacheHitRate}%) is below target (${this.thresholds.targetCacheHitRate}%). Consider increasing cache size or TTL.\n`;
     }
-    
+
     if (stats.p95ExtractionTime > this.thresholds.maxExtractionTime) {
       report += `- ⚠️ P95 extraction time (${stats.p95ExtractionTime}ms) exceeds threshold (${this.thresholds.maxExtractionTime}ms). Consider optimization.\n`;
     }
-    
+
     if (stats.averageTokensPerRequest > this.thresholds.maxTokensPerRequest) {
       report += `- ⚠️ Average token usage (${stats.averageTokensPerRequest}) exceeds threshold (${this.thresholds.maxTokensPerRequest}). Optimize prompts.\n`;
     }
-    
+
     if (stats.errorRate > this.thresholds.maxErrorRate) {
       report += `- ⚠️ Error rate (${stats.errorRate}%) exceeds threshold (${this.thresholds.maxErrorRate}%). Investigate failures.\n`;
     }
-    
+
     return report;
   }
 }

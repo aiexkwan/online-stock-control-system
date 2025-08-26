@@ -6,7 +6,11 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import type { PostgrestError } from '@supabase/supabase-js';
 // 移除 TransactionLogService - 簡化實現
-import { SupplierInfo, DatabaseSupplierInfo, convertDatabaseSupplierInfo } from '@/lib/types/supplier-types';
+import {
+  SupplierInfo,
+  DatabaseSupplierInfo,
+  convertDatabaseSupplierInfo,
+} from '@/lib/types/supplier-types';
 
 // V6 includes series generation, no need for separate series utils
 
@@ -122,9 +126,8 @@ export async function createGrnDatabaseEntries(
 
   // 簡化：移除 transaction tracking
   // record_history 表已經記錄了所有 GRN 操作
-  
-  try {
 
+  try {
     // 🚀 新功能：使用統一的 GRN Label RPC 處理所有操作
     process.env.NODE_ENV !== 'production' &&
       console.log('[grnActions] 使用統一 GRN Label RPC 處理...', {
@@ -181,7 +184,7 @@ export async function createGrnDatabaseEntries(
 
     // Type assert the result to the expected shape
     const typedResult = rpcResult as GrnRpcResponse | null;
-    
+
     if (!typedResult || !typedResult.success) {
       const errorMsg = typedResult?.message || 'Unknown error from unified RPC';
       console.error('[grnActions] 統一 GRN RPC 處理失敗:', errorMsg);
@@ -319,7 +322,7 @@ export async function createGrnDatabaseEntriesBatch(
 
     // Type assert the result to the expected shape
     const typedResult = rpcResult as GrnRpcResponse | null;
-    
+
     if (!typedResult || !typedResult.success) {
       const errorMsg = typedResult?.message || 'Unknown error from unified RPC';
       console.error('[grnActions] 統一批量 GRN RPC 處理失敗:', errorMsg);
@@ -489,10 +492,10 @@ async function createGrnDatabaseEntriesLegacy(
         workflowParams.p_quantity = payload.palletInfo.product_qty;
       }
 
-      const { data: workflowData, error: workflowError } = await supabaseAdmin.rpc(
+      const { data: workflowData, error: workflowError } = (await supabaseAdmin.rpc(
         'update_grn_workflow',
         workflowParams
-      ) as { data: GrnWorkflowResponse | null; error: PostgrestError | null };
+      )) as { data: GrnWorkflowResponse | null; error: PostgrestError | null };
 
       if (workflowError) {
         console.error('[grnActions] GRN workflow 更新失敗:', workflowError);
@@ -768,21 +771,26 @@ export async function searchSuppliers(
       // Score and sort suggestions
       const scoredSuggestions: SupplierSuggestion[] = data.map(supplier => {
         const codeMatch = supplier.supplier_code.includes(upperSearchTerm);
-        const nameMatch = supplier.supplier_name ? supplier.supplier_name.toLowerCase().includes(searchTerm.toLowerCase()) : false;
+        const nameMatch = supplier.supplier_name
+          ? supplier.supplier_name.toLowerCase().includes(searchTerm.toLowerCase())
+          : false;
 
         // Calculate match score
         let score = 0;
         if (supplier.supplier_code === upperSearchTerm) score = 100;
         else if (supplier.supplier_code.startsWith(upperSearchTerm)) score = 80;
         else if (codeMatch) score = 60;
-        else if (supplier.supplier_name && supplier.supplier_name.toLowerCase().startsWith(searchTerm.toLowerCase()))
+        else if (
+          supplier.supplier_name &&
+          supplier.supplier_name.toLowerCase().startsWith(searchTerm.toLowerCase())
+        )
           score = 40;
         else if (nameMatch) score = 20;
 
         return {
           supplier_code: supplier.supplier_code,
           supplier_name: supplier.supplier_name || '', // Convert null to empty string
-          match_type: codeMatch ? 'code' : 'name' as 'code' | 'name',
+          match_type: codeMatch ? 'code' : ('name' as 'code' | 'name'),
           match_score: score,
         };
       });

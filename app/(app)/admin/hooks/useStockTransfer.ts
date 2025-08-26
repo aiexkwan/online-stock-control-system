@@ -1,9 +1,9 @@
 /**
  * useStockTransfer Hook
- * 
+ *
  * Extracted from StockTransferCard component for better reusability and testability
  * Handles stock transfer business logic, validation, and state management
- * 
+ *
  * Features:
  * - Pallet search and validation
  * - Transfer execution with optimistic updates
@@ -77,7 +77,11 @@ export interface StockTransferActions {
   setSelectedDestination: (destination: string) => void;
   setClockNumber: (number: string) => void;
   setStatusMessage: (message: StockTransferState['statusMessage']) => void;
-  executeStockTransfer: (palletInfo: PalletInfo, toLocation: string, operatorId: string) => Promise<boolean>;
+  executeStockTransfer: (
+    palletInfo: PalletInfo,
+    toLocation: string,
+    operatorId: string
+  ) => Promise<boolean>;
   validateClockNumberLocal: (clockNum: string) => Promise<boolean>;
   handleSearchSelect: (result: SearchResult) => void;
   handleClockNumberChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -161,7 +165,13 @@ export const useStockTransfer = ({
       try {
         const validation = await validateTransferDestination(palletInfo.plt_num, toLocation);
         if (!validation.valid) {
-          throw new Error(validation.message || 'Invalid transfer');
+          const errorMessage = validation.message || 'Invalid transfer';
+          toast.error(errorMessage);
+          setIsTransferring(false);
+          if (onTransferError) {
+            onTransferError(errorMessage);
+          }
+          return false; // Return false for validation failure
         }
 
         const result = await transferPallet(palletInfo.plt_num, toLocation);
@@ -172,39 +182,39 @@ export const useStockTransfer = ({
           );
 
           toast.success(result.message);
-          
+
           // Callback for successful transfer
           if (onTransferComplete) {
             onTransferComplete(palletInfo, toLocation);
           }
-          
+
           return true;
         } else {
           setOptimisticTransfers(prev =>
             prev.map(t => (t.id === transferId ? { ...t, status: 'failed' } : t))
           );
-          
+
           const errorMessage = result.error || 'Transfer failed';
           toast.error(errorMessage);
-          
+
           if (onTransferError) {
             onTransferError(errorMessage);
           }
-          
+
           return false;
         }
       } catch (error) {
         setOptimisticTransfers(prev =>
           prev.map(t => (t.id === transferId ? { ...t, status: 'failed' } : t))
         );
-        
+
         const errorMessage = error instanceof Error ? error.message : 'Transfer failed';
         toast.error(errorMessage);
-        
+
         if (onTransferError) {
           onTransferError(errorMessage);
         }
-        
+
         return false;
       } finally {
         setIsTransferring(false);
@@ -236,33 +246,39 @@ export const useStockTransfer = ({
   }, []);
 
   // Handle clock number verification
-  const handleVerifyClockNumber = useCallback(async (numberToVerify?: string) => {
-    const clockNum = numberToVerify || clockNumber;
-    if (!clockNum || clockNum.length !== 4) {
-      return;
-    }
-    setIsVerifying(true);
-    await validateClockNumberLocal(clockNum);
-    setIsVerifying(false);
-  }, [clockNumber, validateClockNumberLocal]);
+  const handleVerifyClockNumber = useCallback(
+    async (numberToVerify?: string) => {
+      const clockNum = numberToVerify || clockNumber;
+      if (!clockNum || clockNum.length !== 4) {
+        return;
+      }
+      setIsVerifying(true);
+      await validateClockNumberLocal(clockNum);
+      setIsVerifying(false);
+    },
+    [clockNumber, validateClockNumberLocal]
+  );
 
   // Handle clock number input change
-  const handleClockNumberChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (/^\d*$/.test(value) && value.length <= 4) {
-      setClockNumber(value);
-      if (clockError) {
-        setClockError('');
+  const handleClockNumberChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      if (/^\d*$/.test(value) && value.length <= 4) {
+        setClockNumber(value);
+        if (clockError) {
+          setClockError('');
+        }
+        if (verifiedClockNumber && value !== verifiedClockNumber) {
+          setVerifiedClockNumber('');
+          setVerifiedName('');
+        }
+        if (value.length === 4) {
+          handleVerifyClockNumber(value);
+        }
       }
-      if (verifiedClockNumber && value !== verifiedClockNumber) {
-        setVerifiedClockNumber('');
-        setVerifiedName('');
-      }
-      if (value.length === 4) {
-        handleVerifyClockNumber(value);
-      }
-    }
-  }, [clockError, verifiedClockNumber, handleVerifyClockNumber]);
+    },
+    [clockError, verifiedClockNumber, handleVerifyClockNumber]
+  );
 
   // Handle search result selection
   const handleSearchSelect = useCallback((result: SearchResult) => {
@@ -275,7 +291,7 @@ export const useStockTransfer = ({
 
     if (searchValueExtracted) {
       setIsSearching(true);
-      
+
       searchPalletAuto(searchValueExtracted)
         .then(searchResult => {
           if (searchResult.success && searchResult.data) {
@@ -294,10 +310,16 @@ export const useStockTransfer = ({
     }
   }, []);
 
-  // Destination change handler
+  // Destination change handler with enhanced stability
+  const destinationChangeRef = useRef(selectedDestination);
+  destinationChangeRef.current = selectedDestination;
+
   const onDestinationChange = useCallback((destination: string) => {
-    setSelectedDestination(destination);
-  }, []);
+    // Prevent unnecessary updates and potential loops
+    if (destination !== destinationChangeRef.current && destination) {
+      setSelectedDestination(destination);
+    }
+  }, []); // Empty dependencies for maximum stability
 
   // Reset to search state
   const resetToSearch = useCallback(() => {
@@ -309,20 +331,36 @@ export const useStockTransfer = ({
     setClockNumber('');
     setClockError('');
     setSelectedDestination('');
-    focusSearchInput();
-  }, [focusSearchInput]);
+    // Direct focus without dependency
+    setTimeout(() => {
+      if (searchInputRef?.current) {
+        searchInputRef.current.focus();
+      }
+    }, 100);
+  }, [searchInputRef]); // Include searchInputRef dependency
 
-  // Auto-execute transfer when all conditions are met
+  // Auto-execute transfer when all conditions are met with enhanced guards
   const executeTransferRef = useRef<boolean>(false);
-  
+  const lastExecutedTransferRef = useRef<string>('');
+
   useEffect(() => {
-    if (selectedPallet && selectedDestination && verifiedClockNumber && !isTransferring && !executeTransferRef.current) {
+    const transferKey = `${selectedPallet?.plt_num || ''}-${selectedDestination}-${verifiedClockNumber}`;
+    const shouldExecute =
+      selectedPallet &&
+      selectedDestination &&
+      verifiedClockNumber &&
+      !isTransferring &&
+      !executeTransferRef.current &&
+      lastExecutedTransferRef.current !== transferKey; // Prevent duplicate executions
+
+    if (shouldExecute) {
       executeTransferRef.current = true;
-      
-      executeStockTransfer(selectedPallet, selectedDestination, verifiedClockNumber).then(
-        success => {
+      lastExecutedTransferRef.current = transferKey;
+
+      executeStockTransfer(selectedPallet, selectedDestination, verifiedClockNumber)
+        .then(success => {
           executeTransferRef.current = false;
-          
+
           if (success) {
             setStatusMessage({
               type: 'success',
@@ -330,23 +368,38 @@ export const useStockTransfer = ({
             });
             setSearchValue('');
             setSelectedPallet(null);
-            focusSearchInput();
+            // Reset transfer key after successful transfer
+            lastExecutedTransferRef.current = '';
+            // Direct focus without dependency
+            setTimeout(() => {
+              if (searchInputRef?.current) {
+                searchInputRef.current.focus();
+              }
+            }, 100);
           } else {
             setStatusMessage({
               type: 'error',
               message: `✗ Failed to transfer pallet ${selectedPallet.plt_num}`,
             });
           }
-        }
-      ).catch(() => {
-        // Ensure ref is reset even on error
-        executeTransferRef.current = false;
-      });
+        })
+        .catch(() => {
+          // Ensure refs are reset even on error
+          executeTransferRef.current = false;
+          lastExecutedTransferRef.current = '';
+        });
     } else if (!selectedPallet || !selectedDestination || !verifiedClockNumber) {
-      // Reset the ref when conditions are not met
+      // Reset refs when conditions are not met
       executeTransferRef.current = false;
     }
-  }, [selectedPallet, selectedDestination, verifiedClockNumber, isTransferring, executeStockTransfer, focusSearchInput]);
+  }, [
+    selectedPallet,
+    selectedDestination,
+    verifiedClockNumber,
+    isTransferring,
+    executeStockTransfer,
+    searchInputRef,
+  ]); // Include missing dependencies
 
   // Update current location based on selected pallet
   useEffect(() => {
@@ -357,9 +410,17 @@ export const useStockTransfer = ({
     }
   }, [selectedPallet]);
 
-  // Set default destination based on current location
+  // Set default destination based on current location - only when currentLocation changes
+  // Use refs to avoid circular dependency with selectedDestination
+  const lastCurrentLocation = useRef(currentLocation);
+  const selectedDestinationRef = useRef(selectedDestination);
+
+  // Update ref on every render to keep it in sync
+  selectedDestinationRef.current = selectedDestination;
+
   useEffect(() => {
-    if (!selectedDestination) {
+    // Only update if current location actually changed and no destination is already selected
+    if (lastCurrentLocation.current !== currentLocation && !selectedDestinationRef.current) {
       const getDefaultDestination = (location: string): string => {
         switch (location) {
           case 'Await':
@@ -372,80 +433,90 @@ export const useStockTransfer = ({
             return 'Fold Mill';
         }
       };
-      onDestinationChange(getDefaultDestination(currentLocation));
+
+      const defaultDest = getDefaultDestination(currentLocation);
+      // Only update if the new default is different from current selection
+      if (defaultDest !== selectedDestinationRef.current) {
+        setSelectedDestination(defaultDest);
+      }
+      lastCurrentLocation.current = currentLocation;
     }
-  }, [currentLocation, selectedDestination, onDestinationChange]);
+  }, [currentLocation]); // Removed selectedDestination from dependencies to break cycle
 
   // Cleanup optimistic transfers
   useEffect(() => {
     const interval = setInterval(() => {
       setOptimisticTransfers(prev =>
-        prev.filter(
-          t => t.status === 'pending' || Date.now() - t.timestamp < 5000
-        )
+        prev.filter(t => t.status === 'pending' || Date.now() - t.timestamp < 5000)
       );
     }, 1000);
     return () => clearInterval(interval);
   }, []);
 
   // Memoize state object to prevent recreation on every render
-  const state: StockTransferState = useMemo(() => ({
-    isLoading,
-    isSearching,
-    isTransferring,
-    optimisticTransfers,
-    searchValue,
-    statusMessage,
-    selectedPallet,
-    selectedDestination,
-    verifiedClockNumber,
-    verifiedName,
-    clockNumber,
-    clockError,
-    isVerifying,
-    currentLocation,
-  }), [
-    isLoading,
-    isSearching,
-    isTransferring,
-    optimisticTransfers,
-    searchValue,
-    statusMessage,
-    selectedPallet,
-    selectedDestination,
-    verifiedClockNumber,
-    verifiedName,
-    clockNumber,
-    clockError,
-    isVerifying,
-    currentLocation,
-  ]);
+  const state: StockTransferState = useMemo(
+    () => ({
+      isLoading,
+      isSearching,
+      isTransferring,
+      optimisticTransfers,
+      searchValue,
+      statusMessage,
+      selectedPallet,
+      selectedDestination,
+      verifiedClockNumber,
+      verifiedName,
+      clockNumber,
+      clockError,
+      isVerifying,
+      currentLocation,
+    }),
+    [
+      isLoading,
+      isSearching,
+      isTransferring,
+      optimisticTransfers,
+      searchValue,
+      statusMessage,
+      selectedPallet,
+      selectedDestination,
+      verifiedClockNumber,
+      verifiedName,
+      clockNumber,
+      clockError,
+      isVerifying,
+      currentLocation,
+    ]
+  );
 
   // Memoize actions object to prevent recreation on every render
-  const actions: StockTransferActions = useMemo(() => ({
-    setIsLoading,
-    setSearchValue,
-    setSelectedDestination,
-    setClockNumber,
-    setStatusMessage,
-    executeStockTransfer,
-    validateClockNumberLocal,
-    handleSearchSelect,
-    handleClockNumberChange,
-    handleVerifyClockNumber,
-    focusSearchInput,
-    resetToSearch,
-    onDestinationChange,
-  }), [
-    executeStockTransfer,
-    validateClockNumberLocal,
-    handleSearchSelect,
-    handleClockNumberChange,
-    handleVerifyClockNumber,
-    focusSearchInput,
-    resetToSearch,
-    onDestinationChange,
-  ]);
+  const actions: StockTransferActions = useMemo(
+    () => ({
+      setIsLoading,
+      setSearchValue,
+      setSelectedDestination,
+      setClockNumber,
+      setStatusMessage,
+      executeStockTransfer,
+      validateClockNumberLocal,
+      handleSearchSelect,
+      handleClockNumberChange,
+      handleVerifyClockNumber,
+      focusSearchInput,
+      resetToSearch,
+      onDestinationChange,
+    }),
+    [
+      handleSearchSelect,
+      handleClockNumberChange,
+      handleVerifyClockNumber,
+      onDestinationChange,
+      executeStockTransfer,
+      focusSearchInput,
+      resetToSearch,
+      validateClockNumberLocal,
+    ]
+  ); // Include all dependencies
 
   return { state, actions };
 };

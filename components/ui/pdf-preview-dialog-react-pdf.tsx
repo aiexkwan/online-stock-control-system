@@ -4,16 +4,16 @@ import React, { useState, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading/LoadingSpinner';
-import { 
-  X, 
-  Download, 
-  ZoomIn, 
-  ZoomOut, 
-  RotateCw, 
-  Maximize2, 
-  ChevronLeft, 
+import {
+  X,
+  Download,
+  ZoomIn,
+  ZoomOut,
+  RotateCw,
+  Maximize2,
+  ChevronLeft,
   ChevronRight,
-  FileText
+  FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -33,7 +33,7 @@ export interface PDFPreviewDialogReactPDFProps {
   className?: string;
   /** 最大寬度 */
   maxWidth?: string;
-  /** 最大高度 */  
+  /** 最大高度 */
   maxHeight?: string;
 }
 
@@ -49,18 +49,18 @@ export interface PDFState {
 
 /**
  * PDF預覽Dialog組件 - react-pdf版本
- * 
+ *
  * 優點：
  * - 更好的PDF渲染控制
  * - 客戶端PDF處理，無需iframe
  * - 頁面導航功能
  * - 更好的縮放和旋轉控制
- * 
+ *
  * 缺點：
  * - 需要額外依賴
  * - 構建包更大
  * - 需要配置webpack
- * 
+ *
  * 使用前需要：
  * 1. npm install react-pdf
  * 2. 在next.config.js中添加webpack配置
@@ -73,7 +73,7 @@ export const PDFPreviewDialogReactPDF: React.FC<PDFPreviewDialogReactPDFProps> =
   onOpenChange,
   className,
   maxWidth = '95vw',
-  maxHeight = '95vh'
+  maxHeight = '95vh',
 }) => {
   const [state, setState] = useState<PDFState>({
     loading: true,
@@ -90,21 +90,21 @@ export const PDFPreviewDialogReactPDF: React.FC<PDFPreviewDialogReactPDFProps> =
 
   // PDF載入處理
   const handleDocumentLoad = useCallback(({ numPages }: { numPages: number }) => {
-    setState(prev => ({ 
-      ...prev, 
-      loading: false, 
-      error: null, 
+    setState(prev => ({
+      ...prev,
+      loading: false,
+      error: null,
       numPages,
-      currentPage: 1 
+      currentPage: 1,
     }));
   }, []);
 
   const handleDocumentError = useCallback((error: Error) => {
     console.error('[PDFPreviewDialog] PDF load error:', error);
-    setState(prev => ({ 
-      ...prev, 
-      loading: false, 
-      error: error.message 
+    setState(prev => ({
+      ...prev,
+      loading: false,
+      error: error.message,
     }));
   }, []);
 
@@ -126,15 +126,15 @@ export const PDFPreviewDialogReactPDF: React.FC<PDFPreviewDialogReactPDFProps> =
   }, []);
 
   const handlePageChange = useCallback((page: number) => {
-    setState(prev => ({ 
-      ...prev, 
-      currentPage: Math.max(1, Math.min(page, prev.numPages || 1)) 
+    setState(prev => ({
+      ...prev,
+      currentPage: Math.max(1, Math.min(page, prev.numPages || 1)),
     }));
   }, []);
 
   const handleDownload = useCallback(async () => {
     if (!url) return;
-    
+
     try {
       const link = document.createElement('a');
       link.href = url;
@@ -211,7 +211,17 @@ export const PDFPreviewDialogReactPDF: React.FC<PDFPreviewDialogReactPDFProps> =
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [open, onOpenChange, handleZoomIn, handleZoomOut, handleRotate, handleFullscreen, handlePageChange, state.numPages, state.currentPage]);
+  }, [
+    open,
+    onOpenChange,
+    handleZoomIn,
+    handleZoomOut,
+    handleRotate,
+    handleFullscreen,
+    handlePageChange,
+    state.numPages,
+    state.currentPage,
+  ]);
 
   const dialogClass = cn(
     'p-0 max-w-none w-full h-full',
@@ -219,147 +229,147 @@ export const PDFPreviewDialogReactPDF: React.FC<PDFPreviewDialogReactPDFProps> =
     className
   );
 
-  const contentStyle: React.CSSProperties = state.isFullscreen 
+  const contentStyle: React.CSSProperties = state.isFullscreen
     ? { width: '100vw', height: '100vh', maxWidth: 'none', maxHeight: 'none' }
     : { maxWidth, maxHeight, width: '90vw', height: '90vh' };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
+      <DialogContent
         className={dialogClass}
         style={contentStyle}
-        aria-describedby="pdf-preview-description"
+        aria-describedby='pdf-preview-description'
       >
         {/* Header with Controls */}
-        <DialogHeader className="flex-row items-center justify-between p-4 border-b bg-background/95 backdrop-blur">
-          <DialogTitle className="text-lg font-semibold truncate flex-1 mr-4">
+        <DialogHeader className='flex-row items-center justify-between border-b bg-background/95 p-4 backdrop-blur'>
+          <DialogTitle className='mr-4 flex-1 truncate text-lg font-semibold'>
             {fileName}
             {state.numPages && (
-              <span className="text-sm font-normal text-muted-foreground ml-2">
+              <span className='ml-2 text-sm font-normal text-muted-foreground'>
                 Page {state.currentPage} of {state.numPages}
               </span>
             )}
           </DialogTitle>
-          
-          <div className="flex items-center gap-2 flex-shrink-0">
+
+          <div className='flex flex-shrink-0 items-center gap-2'>
             {/* Page Navigation */}
             {state.numPages && state.numPages > 1 && (
-              <div className="flex items-center gap-1 bg-muted rounded-md p-1">
+              <div className='flex items-center gap-1 rounded-md bg-muted p-1'>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant='ghost'
+                  size='sm'
                   onClick={() => handlePageChange(state.currentPage - 1)}
                   disabled={state.currentPage <= 1}
-                  title="Previous Page (←)"
-                  className="h-8 w-8 p-0"
+                  title='Previous Page (←)'
+                  className='h-8 w-8 p-0'
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className='h-4 w-4' />
                 </Button>
-                <span className="text-sm min-w-[4rem] text-center">
+                <span className='min-w-[4rem] text-center text-sm'>
                   {state.currentPage}/{state.numPages}
                 </span>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant='ghost'
+                  size='sm'
                   onClick={() => handlePageChange(state.currentPage + 1)}
                   disabled={state.currentPage >= state.numPages}
-                  title="Next Page (→)"
-                  className="h-8 w-8 p-0"
+                  title='Next Page (→)'
+                  className='h-8 w-8 p-0'
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className='h-4 w-4' />
                 </Button>
               </div>
             )}
 
             {/* Zoom Controls */}
-            <div className="flex items-center gap-1 bg-muted rounded-md p-1">
+            <div className='flex items-center gap-1 rounded-md bg-muted p-1'>
               <Button
-                variant="ghost"
-                size="sm"
+                variant='ghost'
+                size='sm'
                 onClick={handleZoomOut}
                 disabled={state.zoom <= 0.25}
-                title="Zoom Out (Ctrl + -)"
-                className="h-8 w-8 p-0"
+                title='Zoom Out (Ctrl + -)'
+                className='h-8 w-8 p-0'
               >
-                <ZoomOut className="h-4 w-4" />
+                <ZoomOut className='h-4 w-4' />
               </Button>
-              <span className="text-sm min-w-[3rem] text-center">
+              <span className='min-w-[3rem] text-center text-sm'>
                 {Math.round(state.zoom * 100)}%
               </span>
               <Button
-                variant="ghost"
-                size="sm"
+                variant='ghost'
+                size='sm'
                 onClick={handleZoomIn}
                 disabled={state.zoom >= 3}
-                title="Zoom In (Ctrl + +)"
-                className="h-8 w-8 p-0"
+                title='Zoom In (Ctrl + +)'
+                className='h-8 w-8 p-0'
               >
-                <ZoomIn className="h-4 w-4" />
+                <ZoomIn className='h-4 w-4' />
               </Button>
             </div>
 
             {/* Additional Controls */}
             <Button
-              variant="ghost"
-              size="sm"
+              variant='ghost'
+              size='sm'
               onClick={handleRotate}
-              title="Rotate (Ctrl + R)"
-              className="h-8 w-8 p-0"
+              title='Rotate (Ctrl + R)'
+              className='h-8 w-8 p-0'
             >
-              <RotateCw className="h-4 w-4" />
+              <RotateCw className='h-4 w-4' />
             </Button>
 
             <Button
-              variant="ghost"
-              size="sm"
+              variant='ghost'
+              size='sm'
               onClick={handleFullscreen}
-              title="Fullscreen (Ctrl + F)"
-              className="h-8 w-8 p-0"
+              title='Fullscreen (Ctrl + F)'
+              className='h-8 w-8 p-0'
             >
-              <Maximize2 className="h-4 w-4" />
+              <Maximize2 className='h-4 w-4' />
             </Button>
 
             <Button
-              variant="ghost"
-              size="sm"
+              variant='ghost'
+              size='sm'
               onClick={handleDownload}
-              title="Download"
-              className="h-8 w-8 p-0"
+              title='Download'
+              className='h-8 w-8 p-0'
             >
-              <Download className="h-4 w-4" />
+              <Download className='h-4 w-4' />
             </Button>
 
             <Button
-              variant="ghost"
-              size="sm"
+              variant='ghost'
+              size='sm'
               onClick={() => onOpenChange(false)}
-              title="Close (Escape)"
-              className="h-8 w-8 p-0"
+              title='Close (Escape)'
+              className='h-8 w-8 p-0'
             >
-              <X className="h-4 w-4" />
+              <X className='h-4 w-4' />
             </Button>
           </div>
         </DialogHeader>
 
         {/* Content Area */}
-        <div className="flex-1 flex items-center justify-center p-4 bg-muted/20">
+        <div className='flex flex-1 items-center justify-center bg-muted/20 p-4'>
           {state.loading && (
-            <div className="flex flex-col items-center gap-4">
-              <LoadingSpinner size="lg" />
-              <p className="text-sm text-muted-foreground">Loading PDF...</p>
+            <div className='flex flex-col items-center gap-4'>
+              <LoadingSpinner size='lg' />
+              <p className='text-sm text-muted-foreground'>Loading PDF...</p>
             </div>
           )}
 
           {state.error && (
-            <div className="flex flex-col items-center gap-4 text-center max-w-md">
-              <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center">
-                <FileText className="h-8 w-8 text-destructive" />
+            <div className='flex max-w-md flex-col items-center gap-4 text-center'>
+              <div className='bg-destructive/10 flex h-16 w-16 items-center justify-center rounded-full'>
+                <FileText className='text-destructive h-8 w-8' />
               </div>
               <div>
-                <h3 className="text-lg font-semibold mb-2">Failed to Load PDF</h3>
-                <p className="text-sm text-muted-foreground mb-4">{state.error}</p>
-                <Button 
-                  variant="outline" 
+                <h3 className='mb-2 text-lg font-semibold'>Failed to Load PDF</h3>
+                <p className='mb-4 text-sm text-muted-foreground'>{state.error}</p>
+                <Button
+                  variant='outline'
                   onClick={() => setState(prev => ({ ...prev, loading: true, error: null }))}
                 >
                   Retry
@@ -369,21 +379,27 @@ export const PDFPreviewDialogReactPDF: React.FC<PDFPreviewDialogReactPDFProps> =
           )}
 
           {!state.loading && !state.error && url && (
-            <div className="w-full h-full flex items-center justify-center overflow-auto">
+            <div className='flex h-full w-full items-center justify-center overflow-auto'>
               {/* 這裡應該是react-pdf的Document和Page組件 */}
               {/* 由於沒有安裝react-pdf，我們使用iframe作為fallback */}
               <iframe
                 src={`${url}#page=${state.currentPage}&zoom=${Math.round(state.zoom * 100)}&view=FitH&toolbar=0&navpanes=0&scrollbar=1`}
-                className="w-full h-full border-0 bg-white shadow-lg"
+                className='h-full w-full border-0 bg-white shadow-lg'
                 title={`PDF Preview: ${fileName}`}
                 onLoad={() => setState(prev => ({ ...prev, loading: false, error: null }))}
-                onError={() => setState(prev => ({ ...prev, loading: false, error: 'Failed to load PDF document' }))}
-                sandbox="allow-scripts allow-same-origin"
+                onError={() =>
+                  setState(prev => ({
+                    ...prev,
+                    loading: false,
+                    error: 'Failed to load PDF document',
+                  }))
+                }
+                sandbox='allow-scripts allow-same-origin'
                 style={{
                   minHeight: '600px',
                   minWidth: '400px',
                   transform: `scale(${state.zoom}) rotate(${state.rotation}deg)`,
-                  transition: 'transform 0.2s ease-in-out'
+                  transition: 'transform 0.2s ease-in-out',
                 }}
               />
             </div>
@@ -391,10 +407,10 @@ export const PDFPreviewDialogReactPDF: React.FC<PDFPreviewDialogReactPDFProps> =
         </div>
 
         {/* Invisible description for accessibility */}
-        <div id="pdf-preview-description" className="sr-only">
-          PDF document viewer with zoom, rotation, page navigation and download controls. 
-          Use arrow keys to navigate pages, Ctrl+Plus/Minus to zoom, Ctrl+R to rotate, 
-          Ctrl+F for fullscreen, and Escape to close.
+        <div id='pdf-preview-description' className='sr-only'>
+          PDF document viewer with zoom, rotation, page navigation and download controls. Use arrow
+          keys to navigate pages, Ctrl+Plus/Minus to zoom, Ctrl+R to rotate, Ctrl+F for fullscreen,
+          and Escape to close.
         </div>
       </DialogContent>
     </Dialog>

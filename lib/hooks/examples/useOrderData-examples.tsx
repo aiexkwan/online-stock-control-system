@@ -4,14 +4,14 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { 
-  useOrderData, 
-  useWarehouseOrders, 
-  useWarehouseOrder, 
-  useAcoOrderReport, 
+import {
+  useOrderData,
+  useWarehouseOrders,
+  useWarehouseOrder,
+  useAcoOrderReport,
   useOrderLoadingRecords,
   WarehouseOrderFilterInput,
-  OrderLoadingFilterInput 
+  OrderLoadingFilterInput,
 } from '../useOrderData';
 import { WarehouseOrderStatus } from '../types/orderData.types';
 
@@ -28,69 +28,71 @@ export function OrderManagementCard() {
     subscriptions: true, // Enable real-time updates
     optimisticUpdates: true, // Enable optimistic UI updates
     fetchPolicy: 'cache-and-network',
-    pagination: { limit: 20 }
+    pagination: { limit: 20 },
   });
 
-  const handleStatusUpdate = useCallback(async (orderId: string, status: WarehouseOrderStatus) => {
-    const success = await orderData.updateOrderStatus({ orderId, status });
-    if (success) {
-      console.log('Order status updated successfully');
-      // Optionally refetch data
-      await orderData.refetchOrders();
-    }
-  }, [orderData]);
+  const handleStatusUpdate = useCallback(
+    async (orderId: string, status: WarehouseOrderStatus) => {
+      const success = await orderData.updateOrderStatus({ orderId, status });
+      if (success) {
+        console.log('Order status updated successfully');
+        // Optionally refetch data
+        await orderData.refetchOrders();
+      }
+    },
+    [orderData]
+  );
 
-  const handleFilterChange = useCallback((newFilter: WarehouseOrderFilterInput) => {
-    setFilter(newFilter);
-    orderData.setFilter(newFilter);
-  }, [orderData]);
+  const handleFilterChange = useCallback(
+    (newFilter: WarehouseOrderFilterInput) => {
+      setFilter(newFilter);
+      orderData.setFilter(newFilter);
+    },
+    [orderData]
+  );
 
   return (
-    <div className="order-management-card">
+    <div className='order-management-card'>
       <h2>Order Management</h2>
-      
+
       {/* Filter Controls */}
-      <div className="filters">
+      <div className='filters'>
         <input
-          type="text"
-          placeholder="Order Reference"
-          onChange={(e) => handleFilterChange({ ...filter, orderRef: e.target.value })}
+          type='text'
+          placeholder='Order Reference'
+          onChange={e => handleFilterChange({ ...filter, orderRef: e.target.value })}
         />
-        <select 
-          onChange={(e) => handleFilterChange({ ...filter, status: e.target.value as WarehouseOrderStatus })}
+        <select
+          onChange={e =>
+            handleFilterChange({ ...filter, status: e.target.value as WarehouseOrderStatus })
+          }
         >
-          <option value="">All Status</option>
-          <option value="PENDING">Pending</option>
-          <option value="IN_PROGRESS">In Progress</option>
-          <option value="COMPLETED">Completed</option>
+          <option value=''>All Status</option>
+          <option value='PENDING'>Pending</option>
+          <option value='IN_PROGRESS'>In Progress</option>
+          <option value='COMPLETED'>Completed</option>
         </select>
       </div>
 
       {/* Loading State */}
       {orderData.loading && <div>Loading orders...</div>}
-      
+
       {/* Error State */}
-      {orderData.error && (
-        <div className="error">
-          Error: {orderData.error.message}
-        </div>
-      )}
+      {orderData.error && <div className='error'>Error: {orderData.error.message}</div>}
 
       {/* Orders List */}
-      <div className="orders-list">
-        {orderData.warehouseOrders.map((order) => (
-          <div 
-            key={order.id} 
-            className="order-item"
-            onClick={() => setSelectedOrderId(order.id)}
-          >
+      <div className='orders-list'>
+        {orderData.warehouseOrders.map(order => (
+          <div key={order.id} className='order-item' onClick={() => setSelectedOrderId(order.id)}>
             <h3>{order.orderRef}</h3>
             <p>Customer: {order.customerName}</p>
             <p>Status: {order.status}</p>
-            <p>Progress: {order.loadedQuantity}/{order.totalQuantity}</p>
-            
+            <p>
+              Progress: {order.loadedQuantity}/{order.totalQuantity}
+            </p>
+
             <button
-              onClick={(e) => {
+              onClick={e => {
                 e.stopPropagation();
                 handleStatusUpdate(order.id, 'COMPLETED');
               }}
@@ -103,7 +105,7 @@ export function OrderManagementCard() {
 
       {/* Aggregates */}
       {orderData.warehouseOrdersAggregates && (
-        <div className="aggregates">
+        <div className='aggregates'>
           <p>Total Orders: {orderData.warehouseOrdersAggregates.totalOrders}</p>
           <p>Pending: {orderData.warehouseOrdersAggregates.pendingOrders}</p>
           <p>Completed: {orderData.warehouseOrdersAggregates.completedOrders}</p>
@@ -118,40 +120,48 @@ export function OrderManagementCard() {
  */
 export function WarehouseOrdersListCard() {
   const [filter, setFilter] = useState<WarehouseOrderFilterInput>({
-    status: 'PENDING'
+    status: 'PENDING',
   });
 
   // Use the specialized hook for warehouse orders only
-  const { orders, total, loading, error, setFilter: updateFilter } = useWarehouseOrders(filter, {
+  const {
+    orders,
+    total,
+    loading,
+    error,
+    setFilter: updateFilter,
+  } = useWarehouseOrders(filter, {
     fetchPolicy: 'cache-first',
-    polling: 60000 // Poll every minute
+    polling: 60000, // Poll every minute
   });
 
   return (
-    <div className="warehouse-orders-card">
+    <div className='warehouse-orders-card'>
       <h2>Pending Warehouse Orders ({total})</h2>
-      
+
       {loading && <div>Loading...</div>}
       {error && <div>Error: {error.message}</div>}
-      
-      <div className="orders-grid">
-        {orders.map((order) => (
-          <div key={order.id} className="order-card">
+
+      <div className='orders-grid'>
+        {orders.map(order => (
+          <div key={order.id} className='order-card'>
             <h3>{order.orderRef}</h3>
             <p>{order.customerName}</p>
-            <div className="progress-bar">
-              <div 
-                className="progress-fill"
-                style={{ 
-                  width: `${(order.loadedQuantity / order.totalQuantity) * 100}%` 
+            <div className='progress-bar'>
+              <div
+                className='progress-fill'
+                style={{
+                  width: `${(order.loadedQuantity / order.totalQuantity) * 100}%`,
                 }}
               />
             </div>
-            <p>{order.loadedQuantity} / {order.totalQuantity}</p>
+            <p>
+              {order.loadedQuantity} / {order.totalQuantity}
+            </p>
           </div>
         ))}
       </div>
-      
+
       <button onClick={() => updateFilter({ ...filter, status: 'IN_PROGRESS' })}>
         Show In Progress
       </button>
@@ -165,7 +175,7 @@ export function WarehouseOrdersListCard() {
 export function OrderDetailCard({ orderId }: { orderId: string }) {
   // Use the specialized hook for single order
   const { order, loading, error, refetch } = useWarehouseOrder(orderId, undefined, {
-    fetchPolicy: 'cache-and-network'
+    fetchPolicy: 'cache-and-network',
   });
 
   if (loading) return <div>Loading order details...</div>;
@@ -173,37 +183,47 @@ export function OrderDetailCard({ orderId }: { orderId: string }) {
   if (!order) return <div>Order not found</div>;
 
   return (
-    <div className="order-detail-card">
-      <div className="header">
+    <div className='order-detail-card'>
+      <div className='header'>
         <h2>Order {order.orderRef}</h2>
         <button onClick={() => refetch()}>Refresh</button>
       </div>
-      
-      <div className="order-info">
-        <p><strong>Customer:</strong> {order.customerName}</p>
-        <p><strong>Status:</strong> {order.status}</p>
-        <p><strong>Created:</strong> {new Date(order.createdAt).toLocaleDateString()}</p>
+
+      <div className='order-info'>
+        <p>
+          <strong>Customer:</strong> {order.customerName}
+        </p>
+        <p>
+          <strong>Status:</strong> {order.status}
+        </p>
+        <p>
+          <strong>Created:</strong> {new Date(order.createdAt).toLocaleDateString()}
+        </p>
         {order.completedAt && (
-          <p><strong>Completed:</strong> {new Date(order.completedAt).toLocaleDateString()}</p>
+          <p>
+            <strong>Completed:</strong> {new Date(order.completedAt).toLocaleDateString()}
+          </p>
         )}
       </div>
 
-      <div className="order-items">
+      <div className='order-items'>
         <h3>Items</h3>
-        {order.items.map((item) => (
-          <div key={item.id} className="item-row">
+        {order.items.map(item => (
+          <div key={item.id} className='item-row'>
             <span>{item.productCode}</span>
             <span>{item.productDesc}</span>
-            <span>{item.loadedQuantity} / {item.quantity}</span>
-            <span className={`status ${item.status.toLowerCase()}`}>
-              {item.status}
+            <span>
+              {item.loadedQuantity} / {item.quantity}
             </span>
+            <span className={`status ${item.status.toLowerCase()}`}>{item.status}</span>
           </div>
         ))}
       </div>
-      
-      <div className="order-summary">
-        <p>Total Progress: {order.loadedQuantity} / {order.totalQuantity}</p>
+
+      <div className='order-summary'>
+        <p>
+          Total Progress: {order.loadedQuantity} / {order.totalQuantity}
+        </p>
         <p>Remaining: {order.remainingQuantity}</p>
       </div>
     </div>
@@ -216,7 +236,7 @@ export function OrderDetailCard({ orderId }: { orderId: string }) {
 export function AcoOrderReportCard() {
   const [reference, setReference] = useState<string>('');
   const { report, total, loading, error, refetch } = useAcoOrderReport(reference, {
-    fetchPolicy: 'no-cache' // Always fetch fresh data for reports
+    fetchPolicy: 'no-cache', // Always fetch fresh data for reports
   });
 
   const handleGenerateReport = useCallback(() => {
@@ -226,15 +246,15 @@ export function AcoOrderReportCard() {
   }, [reference, refetch]);
 
   return (
-    <div className="aco-order-report-card">
+    <div className='aco-order-report-card'>
       <h2>ACO Order Report</h2>
-      
-      <div className="report-controls">
+
+      <div className='report-controls'>
         <input
-          type="text"
-          placeholder="Order Reference"
+          type='text'
+          placeholder='Order Reference'
           value={reference}
-          onChange={(e) => setReference(e.target.value)}
+          onChange={e => setReference(e.target.value)}
         />
         <button onClick={handleGenerateReport} disabled={!reference || loading}>
           Generate Report
@@ -245,11 +265,11 @@ export function AcoOrderReportCard() {
       {error && <div>Error: {error.message}</div>}
 
       {report.length > 0 && (
-        <div className="report-results">
+        <div className='report-results'>
           <h3>Report Results ({total} items)</h3>
-          <div className="report-table">
+          <div className='report-table'>
             {report.map((item, index) => (
-              <div key={index} className="report-row">
+              <div key={index} className='report-row'>
                 <span>{item.productCode}</span>
                 <span>{item.productDesc}</span>
                 <span>{item.quantityOrdered}</span>
@@ -273,32 +293,32 @@ export function AcoOrderReportCard() {
 export function OrderLoadingRecordsCard() {
   const [dateRange, setDateRange] = useState({
     startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0]
+    endDate: new Date().toISOString().split('T')[0],
   });
 
   const filter: OrderLoadingFilterInput = {
     startDate: dateRange.startDate,
-    endDate: dateRange.endDate
+    endDate: dateRange.endDate,
   };
 
   const { records, total, summary, loading, error, refetch } = useOrderLoadingRecords(filter, {
-    fetchPolicy: 'cache-and-network'
+    fetchPolicy: 'cache-and-network',
   });
 
   return (
-    <div className="loading-records-card">
+    <div className='loading-records-card'>
       <h2>Order Loading Records</h2>
-      
-      <div className="date-filter">
+
+      <div className='date-filter'>
         <input
-          type="date"
+          type='date'
           value={dateRange.startDate}
-          onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+          onChange={e => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
         />
         <input
-          type="date"
+          type='date'
           value={dateRange.endDate}
-          onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+          onChange={e => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
         />
         <button onClick={() => refetch(filter)}>Refresh</button>
       </div>
@@ -307,30 +327,30 @@ export function OrderLoadingRecordsCard() {
       {error && <div>Error: {error.message}</div>}
 
       {summary && (
-        <div className="summary">
-          <div className="summary-item">
+        <div className='summary'>
+          <div className='summary-item'>
             <h4>Total Loaded</h4>
             <span>{summary.totalLoaded}</span>
           </div>
-          <div className="summary-item">
+          <div className='summary-item'>
             <h4>Unique Orders</h4>
             <span>{summary.uniqueOrders}</span>
           </div>
-          <div className="summary-item">
+          <div className='summary-item'>
             <h4>Unique Products</h4>
             <span>{summary.uniqueProducts}</span>
           </div>
-          <div className="summary-item">
+          <div className='summary-item'>
             <h4>Avg Load/Order</h4>
             <span>{summary.averageLoadPerOrder.toFixed(2)}</span>
           </div>
         </div>
       )}
 
-      <div className="records-list">
+      <div className='records-list'>
         <h3>Records ({total})</h3>
         {records.map((record, index) => (
-          <div key={index} className="record-item">
+          <div key={index} className='record-item'>
             <span>{new Date(record.timestamp).toLocaleString()}</span>
             <span>{record.orderNumber}</span>
             <span>{record.productCode}</span>
@@ -350,7 +370,7 @@ export function OrderLoadingRecordsCard() {
 export function OrderMutationsCard() {
   const orderData = useOrderData({
     optimisticUpdates: true,
-    subscriptions: true
+    subscriptions: true,
   });
 
   const handleUpdateAcoOrder = async () => {
@@ -359,10 +379,10 @@ export function OrderMutationsCard() {
         orderRef: 12345,
         productCode: 'ABC123',
         quantityUsed: 100,
-        orderCompleted: false
-      }
+        orderCompleted: false,
+      },
     });
-    
+
     if (success) {
       console.log('ACO order updated successfully');
     }
@@ -371,9 +391,9 @@ export function OrderMutationsCard() {
   const handleCancelOrder = async (orderId: string) => {
     const success = await orderData.cancelOrder({
       orderId,
-      reason: 'Customer request'
+      reason: 'Customer request',
     });
-    
+
     if (success) {
       console.log('Order cancelled successfully');
       await orderData.refetchOrders();
@@ -381,32 +401,23 @@ export function OrderMutationsCard() {
   };
 
   return (
-    <div className="order-mutations-card">
+    <div className='order-mutations-card'>
       <h2>Order Actions</h2>
-      
-      <div className="actions">
-        <button 
-          onClick={handleUpdateAcoOrder}
-          disabled={orderData.loading}
-        >
+
+      <div className='actions'>
+        <button onClick={handleUpdateAcoOrder} disabled={orderData.loading}>
           Update ACO Order
         </button>
-        
-        <button 
-          onClick={() => handleCancelOrder('order-123')}
-          disabled={orderData.loading}
-        >
+
+        <button onClick={() => handleCancelOrder('order-123')} disabled={orderData.loading}>
           Cancel Order
         </button>
-        
-        <button 
-          onClick={orderData.refetchAll}
-          disabled={orderData.loading}
-        >
+
+        <button onClick={orderData.refetchAll} disabled={orderData.loading}>
           Refresh All Data
         </button>
       </div>
-      
+
       {orderData.loading && <div>Processing...</div>}
       {orderData.error && <div>Error: {orderData.error.message}</div>}
     </div>

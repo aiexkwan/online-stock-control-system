@@ -12,10 +12,14 @@ import type { PrintRequest as NewPrintRequest } from '../unified-print-service';
 export function adaptPrintRequest(oldRequest: OldPrintRequest): NewPrintRequest {
   // Extract PDF blob from data
   let pdfBlobs: Blob[] = [];
-  
+
   if (oldRequest.data && 'pdfBlob' in oldRequest.data && oldRequest.data.pdfBlob instanceof Blob) {
     pdfBlobs = [oldRequest.data.pdfBlob];
-  } else if (oldRequest.data && 'pdfBlobs' in oldRequest.data && Array.isArray(oldRequest.data.pdfBlobs)) {
+  } else if (
+    oldRequest.data &&
+    'pdfBlobs' in oldRequest.data &&
+    Array.isArray(oldRequest.data.pdfBlobs)
+  ) {
     pdfBlobs = oldRequest.data.pdfBlobs;
   }
 
@@ -59,7 +63,7 @@ export function adaptPrintRequest(oldRequest: OldPrintRequest): NewPrintRequest 
       copies: oldRequest.options.copies,
       paperSize: oldRequest.options.paperSize === PaperSize.LETTER ? 'Letter' : 'A4',
       orientation: oldRequest.options.orientation,
-    }
+    },
   };
 }
 
@@ -67,20 +71,24 @@ export function adaptPrintRequest(oldRequest: OldPrintRequest): NewPrintRequest 
  * Check if request is in old format
  */
 export function isOldPrintRequest(request: unknown): request is OldPrintRequest {
-  return request !== null && 
-    typeof request === 'object' && 
-    'data' in request && 
-    'options' in request && 
-    'type' in request;
+  return (
+    request !== null &&
+    typeof request === 'object' &&
+    'data' in request &&
+    'options' in request &&
+    'type' in request
+  );
 }
 
 /**
  * Check if request is in new format
  */
 export function isNewPrintRequest(request: unknown): request is NewPrintRequest {
-  return request !== null && 
-    typeof request === 'object' && 
-    'pdfBlobs' in request && 
-    'metadata' in request && 
-    'type' in request;
+  return (
+    request !== null &&
+    typeof request === 'object' &&
+    'pdfBlobs' in request &&
+    'metadata' in request &&
+    'type' in request
+  );
 }

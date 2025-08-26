@@ -1,7 +1,7 @@
 /**
  * StockLevelListAndChartCard Component
  * Analytics System Enhancement with Unified Card Design System
- * 
+ *
  * Features:
  * - Tab-based List and Chart views
  * - Rainbow gradient line charts
@@ -15,23 +15,37 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery, gql } from '@apollo/client';
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  Legend
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
 } from 'recharts';
 import { format, subDays } from 'date-fns';
-import { Package, TrendingUp, AlertCircle, Activity, TrendingDown, BarChart3, List } from 'lucide-react';
+import {
+  Package,
+  TrendingUp,
+  AlertCircle,
+  Activity,
+  TrendingDown,
+  BarChart3,
+  List,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { DataCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
@@ -268,7 +282,7 @@ export interface StockDistributionCardProps {
 // Enhanced rainbow color palette using theme system
 const RAINBOW_COLORS = [
   '#FF006E', // Hot Pink
-  '#FB5607', // Orange Red 
+  '#FB5607', // Orange Red
   '#FFBE0B', // Yellow
   '#8338EC', // Purple
   '#3A86FF', // Blue
@@ -276,7 +290,7 @@ const RAINBOW_COLORS = [
   '#FF4365', // Pink Red
   '#00F5FF', // Electric Blue
   '#FFD23F', // Golden Yellow
-  '#C77DFF'  // Light Purple
+  '#C77DFF', // Light Purple
 ];
 
 // Use chart colors from theme system as fallback
@@ -298,22 +312,20 @@ interface CustomTooltipProps {
 const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     // Filter out entries with null, undefined, or 0 values
-    const validEntries = payload.filter(entry => 
-      entry.value !== null && 
-      entry.value !== undefined && 
-      entry.value !== 0
+    const validEntries = payload.filter(
+      entry => entry.value !== null && entry.value !== undefined && entry.value !== 0
     );
-    
+
     // Only show tooltip if there are valid entries
     if (validEntries.length === 0) {
       return null;
     }
-    
+
     return (
-      <div className="custom-tooltip">
-        <p className="recharts-tooltip-label">{label}</p>
+      <div className='custom-tooltip'>
+        <p className='recharts-tooltip-label'>{label}</p>
         {validEntries.map((entry, index) => (
-          <p key={index} className="recharts-tooltip-item" style={{ color: entry.color }}>
+          <p key={index} className='recharts-tooltip-item' style={{ color: entry.color }}>
             {entry.name}: {entry.value?.toLocaleString()}
           </p>
         ))}
@@ -328,11 +340,11 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
   className,
   isEditMode = false,
   title = 'Rainbow Stock Distribution',
-  description = 'Beautiful rainbow-themed stock trend visualization'
+  description = 'Beautiful rainbow-themed stock trend visualization',
 }) => {
   const [selectedType, setSelectedType] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('list');
-  
+
   // Inject styles once when component mounts
   React.useEffect(() => {
     const styleId = 'stock-distribution-styles';
@@ -342,7 +354,7 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
       style.textContent = inlineStyles;
       document.head.appendChild(style);
     }
-    
+
     return () => {
       // Clean up styles when component unmounts
       const existingStyle = document.getElementById(styleId);
@@ -351,36 +363,36 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
       }
     };
   }, []);
-  
+
   // GraphQL Queries
-  const { 
-    data: typesData, 
+  const {
+    data: typesData,
     loading: typesLoading,
-    error: typesError 
+    error: typesError,
   } = useQuery(PRODUCT_TYPES_QUERY, {
     skip: isEditMode,
-    fetchPolicy: 'cache-and-network'
+    fetchPolicy: 'cache-and-network',
   });
 
-  const { 
-    data: listData, 
+  const {
+    data: listData,
     loading: listLoading,
     error: listError,
-    refetch: refetchList
+    refetch: refetchList,
   } = useQuery(STOCK_LEVEL_LIST_QUERY, {
     variables: {
       productType: selectedType || '',
     },
     skip: isEditMode || !selectedType || selectedType === '', // Skip if no type selected
     fetchPolicy: 'cache-and-network',
-    errorPolicy: 'ignore' // Ignore errors when skipped
+    errorPolicy: 'ignore', // Ignore errors when skipped
   });
 
-  const { 
-    data: chartData, 
+  const {
+    data: chartData,
     loading: chartLoading,
     error: chartError,
-    refetch: refetchChart
+    refetch: refetchChart,
   } = useQuery(STOCK_LEVEL_CHART_QUERY, {
     variables: {
       productType: selectedType || '',
@@ -388,17 +400,21 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
     },
     skip: isEditMode || !selectedType || selectedType === '', // Skip if no type selected
     fetchPolicy: 'cache-and-network',
-    errorPolicy: 'ignore' // Ignore errors when skipped
+    errorPolicy: 'ignore', // Ignore errors when skipped
   });
 
   // 產品類型選項
   const productTypes = useMemo(() => {
-    return typesData?.productFormOptions?.types
-      ?.filter((pt: { value: string; label: string }) => pt.value && pt.value !== '' && pt.value !== '-')
-      ?.map((pt: { value: string; label: string }) => ({
-        value: pt.value,
-        label: pt.label
-      })) || [];
+    return (
+      typesData?.productFormOptions?.types
+        ?.filter(
+          (pt: { value: string; label: string }) => pt.value && pt.value !== '' && pt.value !== '-'
+        )
+        ?.map((pt: { value: string; label: string }) => ({
+          value: pt.value,
+          label: pt.label,
+        })) || []
+    );
   }, [typesData]);
 
   // Summary statistics from list data
@@ -407,59 +423,62 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
       return {
         totalRecords: 0,
         totalCount: 0,
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
       };
     }
     return {
       totalRecords: listData.stockLevelList.totalCount,
       totalCount: listData.stockLevelList.totalCount,
-      lastUpdated: listData.stockLevelList.lastUpdated
+      lastUpdated: listData.stockLevelList.lastUpdated,
     };
   }, [listData]);
 
   // 處理類型選擇變更
-  const handleTypeChange = useCallback(async (type: string) => {
-    if (!type || type === '') return; // Guard against empty selection
-    
-    setSelectedType(type);
-    window.dispatchEvent(
-      new CustomEvent('stockTypeChanged', {
-        detail: { type },
-      })
-    );
-    
-    // Only refetch if we have a valid type
-    try {
-      await Promise.all([
-        refetchList && refetchList(),
-        refetchChart && refetchChart()
-      ]);
-      toast.success(`Stock filter updated: ${type}`);
-    } catch (error) {
-      console.error('Error fetching stock data:', error);
-      // Don't show error toast here as queries handle their own errors
-    }
-  }, [refetchList, refetchChart]);
+  const handleTypeChange = useCallback(
+    async (type: string) => {
+      if (!type || type === '') return; // Guard against empty selection
+
+      setSelectedType(type);
+      window.dispatchEvent(
+        new CustomEvent('stockTypeChanged', {
+          detail: { type },
+        })
+      );
+
+      // Only refetch if we have a valid type
+      try {
+        await Promise.all([refetchList && refetchList(), refetchChart && refetchChart()]);
+        toast.success(`Stock filter updated: ${type}`);
+      } catch (error) {
+        console.error('Error fetching stock data:', error);
+        // Don't show error toast here as queries handle their own errors
+      }
+    },
+    [refetchList, refetchChart]
+  );
 
   // 準備折線圖數據：使用正確的 chart 數據
   const processedChartData = useMemo(() => {
-    if (!chartData?.stockLevelChart?.chartData || chartData.stockLevelChart.chartData.length === 0) {
+    if (
+      !chartData?.stockLevelChart?.chartData ||
+      chartData.stockLevelChart.chartData.length === 0
+    ) {
       return [];
     }
 
     // Group data by date for the chart
     const dataByDate = new Map<string, GroupedChartData>();
-    
+
     chartData.stockLevelChart.chartData.forEach((point: ChartDataPoint) => {
       const dateKey = format(new Date(point.date), 'MM/dd');
-      
+
       if (!dataByDate.has(dateKey)) {
         dataByDate.set(dateKey, {
           date: dateKey,
-          fullDate: point.date
+          fullDate: point.date,
         });
       }
-      
+
       // Add stock level for each product code
       const dateEntry = dataByDate.get(dateKey);
       if (dateEntry) {
@@ -467,8 +486,9 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
       }
     });
 
-    return Array.from(dataByDate.values()).sort((a: GroupedChartData, b: GroupedChartData) => 
-      new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime()
+    return Array.from(dataByDate.values()).sort(
+      (a: GroupedChartData, b: GroupedChartData) =>
+        new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime()
     );
   }, [chartData]);
 
@@ -477,16 +497,16 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
     if (!chartData?.stockLevelChart?.chartData) {
       return [];
     }
-    
+
     // Get unique product codes that have at least one non-zero value
     const codesWithData = new Set<string>();
-    
+
     chartData.stockLevelChart.chartData.forEach((point: ChartDataPoint) => {
       if (point.stockLevel > 0) {
         codesWithData.add(point.stockCode);
       }
     });
-    
+
     return Array.from(codesWithData).sort();
   }, [chartData]);
 
@@ -496,18 +516,24 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
       return [];
     }
 
-    return listData.stockLevelList.records.map((record: StockRecord): ProcessedListItem => ({
-      productCode: record.stock,
-      productName: record.productInfo?.description || record.description || 'Unknown',
-      productType: record.productInfo?.type || 'Unknown',
-      lastUpdated: format(new Date(record.updateTime), 'yyyy-MM-dd HH:mm'),
-      currentStock: record.stockLevel,
-      maxStock: record.stockLevel,
-      minStock: 0,
-      trend: 0, // Could be calculated based on historical data if needed
-      colour: record.productInfo?.colour || 'Unknown',
-      standardQty: record.productInfo?.standardQty || 0
-    })).sort((a: ProcessedListItem, b: ProcessedListItem) => a.productCode.localeCompare(b.productCode));
+    return listData.stockLevelList.records
+      .map(
+        (record: StockRecord): ProcessedListItem => ({
+          productCode: record.stock,
+          productName: record.productInfo?.description || record.description || 'Unknown',
+          productType: record.productInfo?.type || 'Unknown',
+          lastUpdated: format(new Date(record.updateTime), 'yyyy-MM-dd HH:mm'),
+          currentStock: record.stockLevel,
+          maxStock: record.stockLevel,
+          minStock: 0,
+          trend: 0, // Could be calculated based on historical data if needed
+          colour: record.productInfo?.colour || 'Unknown',
+          standardQty: record.productInfo?.standardQty || 0,
+        })
+      )
+      .sort((a: ProcessedListItem, b: ProcessedListItem) =>
+        a.productCode.localeCompare(b.productCode)
+      );
   }, [listData]);
 
   const isLoading = typesLoading || (listLoading && selectedType) || (chartLoading && selectedType);
@@ -515,11 +541,13 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
 
   if (hasError) {
     return (
-      <DataCard className={cn("h-full", className)} style={{ height }}>
-        <div className="flex items-center justify-center h-full p-4">
-          <div className="text-center">
-            <AlertCircle className="mx-auto mb-2 h-8 w-8 text-destructive" />
-            <p className={cn(cardTextStyles.bodySmall, "text-destructive")}>Failed to load stock data</p>
+      <DataCard className={cn('h-full', className)} style={{ height }}>
+        <div className='flex h-full items-center justify-center p-4'>
+          <div className='text-center'>
+            <AlertCircle className='text-destructive mx-auto mb-2 h-8 w-8' />
+            <p className={cn(cardTextStyles.bodySmall, 'text-destructive')}>
+              Failed to load stock data
+            </p>
           </div>
         </div>
       </DataCard>
@@ -527,34 +555,34 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
   }
 
   return (
-    <DataCard 
-      className={cn("stock-level-list-chart-card h-full flex flex-col", className)} 
+    <DataCard
+      className={cn('stock-level-list-chart-card flex h-full flex-col', className)}
       style={{ height }}
-      variant="glass"
+      variant='glass'
       isLoading={!!isLoading}
       borderGlow={selectedType ? 'always' : undefined}
     >
-      <div className="pb-3 p-4 border-b border-gray-700/50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-muted-foreground" />
+      <div className='border-b border-gray-700/50 p-4 pb-3'>
+        <div className='flex items-center justify-between'>
+          <div className='flex items-center gap-2'>
+            <Package className='h-5 w-5 text-muted-foreground' />
             <h3 className={cardTextStyles.title}>{title}</h3>
           </div>
-          <Badge variant="outline" className="text-xs">
-            <span className="text-primary">GraphQL</span>
+          <Badge variant='outline' className='text-xs'>
+            <span className='text-primary'>GraphQL</span>
           </Badge>
         </div>
         <p className={cardTextStyles.subtitle}>{description}</p>
-        
+
         {/* Product Type Selector */}
-        <div className="mt-3">
+        <div className='mt-3'>
           <Select
             value={selectedType}
             onValueChange={handleTypeChange}
             disabled={Boolean(isLoading || isEditMode)}
           >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select Product From Below..." />
+            <SelectTrigger className='w-full'>
+              <SelectValue placeholder='Select Product From Below...' />
             </SelectTrigger>
             <SelectContent>
               {productTypes.map((type: { value: string; label: string }) => (
@@ -567,36 +595,41 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
         </div>
       </div>
 
-      <div className="flex-1 pb-3">
+      <div className='flex-1 pb-3'>
         {isLoading ? (
-          <div className="h-full space-y-4">
-            <div className="grid grid-cols-4 gap-3">
+          <div className='h-full space-y-4'>
+            <div className='grid grid-cols-4 gap-3'>
               {[...Array(4)].map((_, i) => (
-                <Skeleton key={i} className="h-20 shimmer-skeleton" />
+                <Skeleton key={i} className='shimmer-skeleton h-20' />
               ))}
             </div>
-            <Skeleton className="h-full shimmer-skeleton" />
+            <Skeleton className='shimmer-skeleton h-full' />
           </div>
         ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="list" className="flex items-center gap-2">
-                <List className="h-4 w-4" />
+          <Tabs value={activeTab} onValueChange={setActiveTab} className='h-full w-full'>
+            <TabsList className='mb-4 grid w-full grid-cols-2'>
+              <TabsTrigger value='list' className='flex items-center gap-2'>
+                <List className='h-4 w-4' />
                 List
               </TabsTrigger>
-              <TabsTrigger value="chart" className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
+              <TabsTrigger value='chart' className='flex items-center gap-2'>
+                <BarChart3 className='h-4 w-4' />
                 Chart
               </TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="list" className="w-full" style={{ minHeight: '400px' }}>
+
+            <TabsContent value='list' className='w-full' style={{ minHeight: '400px' }}>
               {/* Product List */}
-              <div className="bg-slate-800/50 backdrop-blur border border-gray-700 rounded-lg p-4 w-full">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className={cn(cardTextStyles.body, "font-semibold text-white flex items-center gap-2")}>
+              <div className='w-full rounded-lg border border-gray-700 bg-slate-800/50 p-4 backdrop-blur'>
+                <div className='mb-4 flex items-center justify-between'>
+                  <h4
+                    className={cn(
+                      cardTextStyles.body,
+                      'flex items-center gap-2 font-semibold text-white'
+                    )}
+                  >
                     <span>Product Stock Levels</span>
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant='outline' className='text-xs'>
                       {processedListData.length} items
                     </Badge>
                   </h4>
@@ -604,76 +637,112 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
                     Updated: {format(new Date(summaryStats.lastUpdated), 'MM/dd HH:mm')}
                   </span>
                 </div>
-                
+
                 {!selectedType ? (
-                  <div className="flex items-center justify-center h-[400px]">
-                    <div className="text-center">
-                      <Package className="mx-auto mb-2 h-8 w-8 text-gray-500" />
-                      <p className={cardTextStyles.bodySmall}>Please select a product type to view stock levels</p>
+                  <div className='flex h-[400px] items-center justify-center'>
+                    <div className='text-center'>
+                      <Package className='mx-auto mb-2 h-8 w-8 text-gray-500' />
+                      <p className={cardTextStyles.bodySmall}>
+                        Please select a product type to view stock levels
+                      </p>
                     </div>
                   </div>
                 ) : processedListData.length > 0 ? (
-                  <div className="max-h-[500px] overflow-y-auto">
+                  <div className='max-h-[500px] overflow-y-auto'>
                     {/* Table Header */}
-                    <div className={cn("grid grid-cols-4 gap-4 p-3 bg-gray-900/50 rounded-t-lg border-b border-gray-600", cardTextStyles.label, "text-gray-300")}>
+                    <div
+                      className={cn(
+                        'grid grid-cols-4 gap-4 rounded-t-lg border-b border-gray-600 bg-gray-900/50 p-3',
+                        cardTextStyles.label,
+                        'text-gray-300'
+                      )}
+                    >
                       <div>Code</div>
                       <div>Description</div>
                       <div>Latest Update</div>
-                      <div className="text-right">Stock Level</div>
+                      <div className='text-right'>Stock Level</div>
                     </div>
                     {/* Table Body */}
-                    <div className="space-y-1">
-                      {processedListData.map((item: {
-                        productCode: string;
-                        productName: string;
-                        lastUpdated: string;
-                        currentStock: number;
-                        maxStock: number;
-                        trend: number;
-                      }, index: number) => (
-                        <div
-                          key={item.productCode}
-                          className="grid grid-cols-4 gap-4 p-3 bg-gray-800/30 hover:bg-gray-800/50 transition-colors border-b border-gray-700/50"
-                        >
-                          <div className="flex items-center gap-2">
+                    <div className='space-y-1'>
+                      {processedListData.map(
+                        (
+                          item: {
+                            productCode: string;
+                            productName: string;
+                            lastUpdated: string;
+                            currentStock: number;
+                            maxStock: number;
+                            trend: number;
+                          },
+                          index: number
+                        ) => (
+                          <div
+                            key={item.productCode}
+                            className='grid grid-cols-4 gap-4 border-b border-gray-700/50 bg-gray-800/30 p-3 transition-colors hover:bg-gray-800/50'
+                          >
+                            <div className='flex items-center gap-2'>
+                              <div
+                                className='h-2 w-2 flex-shrink-0 rounded-full'
+                                style={{ backgroundColor: getChartColor(index) }}
+                              />
+                              <span
+                                className={cn(cardTextStyles.bodySmall, 'font-mono text-white')}
+                              >
+                                {item.productCode}
+                              </span>
+                            </div>
                             <div
-                              className="w-2 h-2 rounded-full flex-shrink-0"
-                              style={{ backgroundColor: getChartColor(index) }}
-                            />
-                            <span className={cn(cardTextStyles.bodySmall, "text-white font-mono")}>{item.productCode}</span>
+                              className={cn(cardTextStyles.bodySmall, 'truncate text-gray-300')}
+                              title={item.productName}
+                            >
+                              {item.productName}
+                            </div>
+                            <div className={cn(cardTextStyles.bodySmall, 'text-gray-400')}>
+                              {item.lastUpdated}
+                            </div>
+                            <div className='text-right'>
+                              <span
+                                className={cn(cardTextStyles.bodySmall, 'font-medium text-white')}
+                              >
+                                {item.currentStock.toLocaleString()}
+                              </span>
+                            </div>
                           </div>
-                          <div className={cn(cardTextStyles.bodySmall, "text-gray-300 truncate")} title={item.productName}>
-                            {item.productName}
-                          </div>
-                          <div className={cn(cardTextStyles.bodySmall, "text-gray-400")}>
-                            {item.lastUpdated}
-                          </div>
-                          <div className="text-right">
-                            <span className={cn(cardTextStyles.bodySmall, "font-medium text-white")}>
-                              {item.currentStock.toLocaleString()}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                        )
+                      )}
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center h-64">
-                    <div className="text-center">
-                      <Package className="mx-auto mb-2 h-8 w-8 text-gray-500" />
+                  <div className='flex h-64 items-center justify-center'>
+                    <div className='text-center'>
+                      <Package className='mx-auto mb-2 h-8 w-8 text-gray-500' />
                       <p className={cardTextStyles.bodySmall}>No product data available</p>
-                      <p className={cn(cardTextStyles.labelSmall, "text-gray-500 mt-1")}>Try selecting a different product type</p>
+                      <p className={cn(cardTextStyles.labelSmall, 'mt-1 text-gray-500')}>
+                        Try selecting a different product type
+                      </p>
                     </div>
                   </div>
                 )}
               </div>
             </TabsContent>
 
-            <TabsContent value="chart" className="w-full rainbow-chart-container" style={{ minHeight: '400px' }}>
+            <TabsContent
+              value='chart'
+              className='rainbow-chart-container w-full'
+              style={{ minHeight: '400px' }}
+            >
               {/* Rainbow Line Chart */}
-              <div className="bg-slate-800/50 backdrop-blur border border-gray-700 rounded-lg p-4 w-full relative" style={{ minHeight: '600px' }}>
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className={cn(cardTextStyles.body, "font-semibold text-white flex items-center gap-2")}>
+              <div
+                className='relative w-full rounded-lg border border-gray-700 bg-slate-800/50 p-4 backdrop-blur'
+                style={{ minHeight: '600px' }}
+              >
+                <div className='mb-4 flex items-center justify-between'>
+                  <h4
+                    className={cn(
+                      cardTextStyles.body,
+                      'flex items-center gap-2 font-semibold text-white'
+                    )}
+                  >
                     <span>Stock Trend (Last 21 Days)</span>
                   </h4>
                   {chartData?.stockLevelChart && (
@@ -683,80 +752,94 @@ export const StockLevelListAndChartCard: React.FC<StockDistributionCardProps> = 
                   )}
                 </div>
                 {!selectedType ? (
-                  <div className="flex items-center justify-center h-[calc(100%-30px)]">
-                    <div className="text-center">
-                      <BarChart3 className="mx-auto mb-2 h-8 w-8 text-gray-500" />
-                      <p className={cardTextStyles.bodySmall}>Please select a product type to view trends</p>
+                  <div className='flex h-[calc(100%-30px)] items-center justify-center'>
+                    <div className='text-center'>
+                      <BarChart3 className='mx-auto mb-2 h-8 w-8 text-gray-500' />
+                      <p className={cardTextStyles.bodySmall}>
+                        Please select a product type to view trends
+                      </p>
                     </div>
                   </div>
                 ) : processedChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={550}>
-                  <LineChart data={processedChartData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
-                    <defs>
-                      {/* Create gradient for trend line */}
-                      <linearGradient key="gradient-trend" id="gradient-trend" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor={RAINBOW_COLORS[0]} stopOpacity={0.8} />
-                        <stop offset="100%" stopColor={RAINBOW_COLORS[1]} stopOpacity={0.8} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                    <XAxis 
-                      dataKey="date" 
-                      stroke="rgba(255,255,255,0.5)"
-                      fontSize={10}
-                      tick={{ fill: 'rgba(255,255,255,0.7)' }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
-                      interval="preserveStartEnd"
-                    />
-                    <YAxis 
-                      stroke="rgba(255,255,255,0.5)"
-                      fontSize={11}
-                      tick={{ fill: 'rgba(255,255,255,0.7)' }}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    {/* Only show legend if there are product codes with data */}
-                    {productCodesForChart.length > 0 && (
-                      <Legend 
-                        wrapperStyle={{ 
-                          fontSize: '12px',
-                          paddingTop: '20px',
-                          color: '#ffffff'
-                        }}
-                        formatter={(value) => value.split(' - ')[0]}
-                        iconType="line"
+                  <ResponsiveContainer width='100%' height={550}>
+                    <LineChart
+                      data={processedChartData}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 60 }}
+                    >
+                      <defs>
+                        {/* Create gradient for trend line */}
+                        <linearGradient
+                          key='gradient-trend'
+                          id='gradient-trend'
+                          x1='0'
+                          y1='0'
+                          x2='1'
+                          y2='0'
+                        >
+                          <stop offset='0%' stopColor={RAINBOW_COLORS[0]} stopOpacity={0.8} />
+                          <stop offset='100%' stopColor={RAINBOW_COLORS[1]} stopOpacity={0.8} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray='3 3' stroke='rgba(255,255,255,0.1)' />
+                      <XAxis
+                        dataKey='date'
+                        stroke='rgba(255,255,255,0.5)'
+                        fontSize={10}
+                        tick={{ fill: 'rgba(255,255,255,0.7)' }}
+                        angle={-45}
+                        textAnchor='end'
+                        height={60}
+                        interval='preserveStartEnd'
                       />
-                    )}
-                    {/* Individual product lines - only render those with data */}
-                    {productCodesForChart.map((productCode: string, index: number) => (
-                      <Line 
-                        key={productCode}
-                        type="monotone" 
-                        dataKey={productCode}
-                        stroke={getChartColor(index)}
-                        strokeWidth={2.5}
-                        name={productCode}
-                        dot={false}
-                        connectNulls={false} // Don't connect null values
-                        activeDot={{ 
-                          r: 6,
-                          fill: getChartColor(index),
-                          stroke: 'rgba(255,255,255,0.5)',
-                          strokeWidth: 2
-                        }}
-                        animationDuration={1500}
-                        animationEasing="ease-in-out"
+                      <YAxis
+                        stroke='rgba(255,255,255,0.5)'
+                        fontSize={11}
+                        tick={{ fill: 'rgba(255,255,255,0.7)' }}
                       />
-                    ))}
-                  </LineChart>
-                </ResponsiveContainer>
+                      <Tooltip content={<CustomTooltip />} />
+                      {/* Only show legend if there are product codes with data */}
+                      {productCodesForChart.length > 0 && (
+                        <Legend
+                          wrapperStyle={{
+                            fontSize: '12px',
+                            paddingTop: '20px',
+                            color: '#ffffff',
+                          }}
+                          formatter={value => value.split(' - ')[0]}
+                          iconType='line'
+                        />
+                      )}
+                      {/* Individual product lines - only render those with data */}
+                      {productCodesForChart.map((productCode: string, index: number) => (
+                        <Line
+                          key={productCode}
+                          type='monotone'
+                          dataKey={productCode}
+                          stroke={getChartColor(index)}
+                          strokeWidth={2.5}
+                          name={productCode}
+                          dot={false}
+                          connectNulls={false} // Don't connect null values
+                          activeDot={{
+                            r: 6,
+                            fill: getChartColor(index),
+                            stroke: 'rgba(255,255,255,0.5)',
+                            strokeWidth: 2,
+                          }}
+                          animationDuration={1500}
+                          animationEasing='ease-in-out'
+                        />
+                      ))}
+                    </LineChart>
+                  </ResponsiveContainer>
                 ) : (
-                  <div className="flex items-center justify-center h-[calc(100%-30px)]">
-                    <div className="text-center">
-                      <Package className="mx-auto mb-2 h-8 w-8 text-gray-500" />
+                  <div className='flex h-[calc(100%-30px)] items-center justify-center'>
+                    <div className='text-center'>
+                      <Package className='mx-auto mb-2 h-8 w-8 text-gray-500' />
                       <p className={cardTextStyles.bodySmall}>No stock history data available</p>
-                      <p className={cn(cardTextStyles.labelSmall, "text-gray-500 mt-1")}>Try selecting a different product type</p>
+                      <p className={cn(cardTextStyles.labelSmall, 'mt-1 text-gray-500')}>
+                        Try selecting a different product type
+                      </p>
                     </div>
                   </div>
                 )}

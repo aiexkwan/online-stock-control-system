@@ -471,7 +471,6 @@ export async function getGrnReportData(
   let supplierCode: string | null = null;
 
   try {
-
     // 1. Fetch GRN records for the given grn_ref and material_code
     const { data: grnRecords, error: grnError } = await supabase
       .from('record_grn')
@@ -516,9 +515,7 @@ export async function getGrnReportData(
     // DEBUGGING LOG START
     isDevelopment() &&
       isDevelopment() &&
-      console.log(
-        `[DEBUG] GRN Ref: ${grnRefNum}, Material: ${trimmedMaterialCode}`
-      );
+      console.log(`[DEBUG] GRN Ref: ${grnRefNum}, Material: ${trimmedMaterialCode}`);
     isDevelopment() &&
       isDevelopment() &&
       console.log('[DEBUG] grnRecords from DB:', JSON.stringify(grnRecords, null, 2));
@@ -2330,7 +2327,9 @@ export async function getUserPerformance(
  * Generate ACO Report Excel file on server
  * Returns base64 encoded file data
  */
-export async function generateAcoReportExcel(orderRef: string): Promise<ActionResult<{ fileData: string; fileName: string }>> {
+export async function generateAcoReportExcel(
+  orderRef: string
+): Promise<ActionResult<{ fileData: string; fileName: string }>> {
   try {
     // Get report data
     const result = await getAcoReportData(orderRef);
@@ -2344,14 +2343,14 @@ export async function generateAcoReportExcel(orderRef: string): Promise<ActionRe
     // Dynamic import ExcelJS
     const ExcelJS = await import('exceljs');
     const { exportAcoReportBuffer } = await import('@/lib/DownloadCenter-server');
-    
+
     // Generate Excel buffer
     const buffer = await exportAcoReportBuffer(result.data, orderRef);
-    
+
     // Convert to base64
     const fileData = buffer.toString('base64');
     const fileName = `ACO_Report_${orderRef}_${format(new Date(), 'yyyyMMdd')}.xlsx`;
-    
+
     return { success: true, data: { fileData, fileName } };
   } catch (error) {
     console.error('Error generating ACO report Excel:', error);
@@ -2363,7 +2362,9 @@ export async function generateAcoReportExcel(orderRef: string): Promise<ActionRe
  * Generate GRN Report Excel file on server (multi-sheet)
  * Returns base64 encoded file data
  */
-export async function generateGrnReportExcel(grnRef: string): Promise<ActionResult<{ fileData: string; fileName: string }>> {
+export async function generateGrnReportExcel(
+  grnRef: string
+): Promise<ActionResult<{ fileData: string; fileName: string }>> {
   try {
     // Get all material codes for this GRN
     const materialCodesResult = await getMaterialCodesForGrnRef(grnRef);
@@ -2389,11 +2390,11 @@ export async function generateGrnReportExcel(grnRef: string): Promise<ActionResu
     // Dynamic import and generate Excel
     const { exportGrnReportMultiSheetBuffer } = await import('@/lib/DownloadCenter-server');
     const buffer = await exportGrnReportMultiSheetBuffer(allReportsData, grnRef);
-    
+
     // Convert to base64
     const fileData = buffer.toString('base64');
     const fileName = `GRN_Report_${grnRef}_${format(new Date(), 'yyyyMMdd')}.xlsx`;
-    
+
     return { success: true, data: { fileData, fileName } };
   } catch (error) {
     console.error('Error generating GRN report Excel:', error);
@@ -2405,7 +2406,10 @@ export async function generateGrnReportExcel(grnRef: string): Promise<ActionResu
  * Generate Transaction Report Excel file on server
  * Returns base64 encoded file data
  */
-export async function generateTransactionReportExcel(startDate: string, endDate: string): Promise<ActionResult<{ fileData: string; fileName: string }>> {
+export async function generateTransactionReportExcel(
+  startDate: string,
+  endDate: string
+): Promise<ActionResult<{ fileData: string; fileName: string }>> {
   try {
     // Get report data
     const result = await getTransactionReportData(startDate, endDate);
@@ -2419,13 +2423,13 @@ export async function generateTransactionReportExcel(startDate: string, endDate:
     // Dynamic import and generate Excel
     const { buildTransactionReportBuffer } = await import('@/lib/DownloadCenter-server');
     const buffer = await buildTransactionReportBuffer(result.data);
-    
+
     // Convert to base64
     const fileData = buffer.toString('base64');
     const startDateStr = format(new Date(startDate), 'yyyyMMdd');
     const endDateStr = format(new Date(endDate), 'yyyyMMdd');
     const fileName = `Transaction_Report_${startDateStr}_to_${endDateStr}.xlsx`;
-    
+
     return { success: true, data: { fileData, fileName } };
   } catch (error) {
     console.error('Error generating transaction report Excel:', error);

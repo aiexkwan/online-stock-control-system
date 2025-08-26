@@ -108,16 +108,18 @@ export async function DELETE(request: Request) {
     const rateLimitResult = await cacheOperationLimiter(request);
     if (!rateLimitResult.success) {
       return NextResponse.json(
-        { 
+        {
           status: 'error',
           message: rateLimitResult.message,
-          retryAfter: rateLimitResult.reset
+          retryAfter: rateLimitResult.reset,
         },
-        { 
+        {
           status: 429,
           headers: {
-            'Retry-After': Math.ceil((rateLimitResult.reset!.getTime() - Date.now()) / 1000).toString()
-          }
+            'Retry-After': Math.ceil(
+              (rateLimitResult.reset!.getTime() - Date.now()) / 1000
+            ).toString(),
+          },
         }
       );
     }
@@ -125,13 +127,16 @@ export async function DELETE(request: Request) {
     // Authentication check
     const cookieStore = await cookies();
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
     if (authError || !user) {
       return NextResponse.json(
-        { 
+        {
           status: 'error',
-          message: 'Authentication required'
+          message: 'Authentication required',
         },
         { status: 401 }
       );
@@ -145,20 +150,20 @@ export async function DELETE(request: Request) {
         .select('role')
         .eq('id', user.id)
         .single();
-      
+
       if (!profile || profile.role !== 'admin') {
         // Log unauthorized attempt
         console.warn('[SECURITY] Unauthorized cache clear attempt:', {
           userId: user.id,
           email: user.email,
           timestamp: new Date().toISOString(),
-          ip: request.headers.get('x-forwarded-for') || 'unknown'
+          ip: request.headers.get('x-forwarded-for') || 'unknown',
         });
-        
+
         return NextResponse.json(
-          { 
+          {
             status: 'error',
-            message: 'Admin access required'
+            message: 'Admin access required',
           },
           { status: 403 }
         );
@@ -171,7 +176,7 @@ export async function DELETE(request: Request) {
       email: user.email,
       timestamp: new Date().toISOString(),
       operation: 'CACHE_DELETE',
-      environment: process.env.NODE_ENV
+      environment: process.env.NODE_ENV,
     });
 
     // Continue with original logic after authentication
@@ -240,16 +245,18 @@ export async function POST(request: Request) {
     const rateLimitResult = await cacheOperationLimiter(request);
     if (!rateLimitResult.success) {
       return NextResponse.json(
-        { 
+        {
           status: 'error',
           message: rateLimitResult.message,
-          retryAfter: rateLimitResult.reset
+          retryAfter: rateLimitResult.reset,
         },
-        { 
+        {
           status: 429,
           headers: {
-            'Retry-After': Math.ceil((rateLimitResult.reset!.getTime() - Date.now()) / 1000).toString()
-          }
+            'Retry-After': Math.ceil(
+              (rateLimitResult.reset!.getTime() - Date.now()) / 1000
+            ).toString(),
+          },
         }
       );
     }
@@ -257,13 +264,16 @@ export async function POST(request: Request) {
     // Authentication check
     const cookieStore = await cookies();
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
     if (authError || !user) {
       return NextResponse.json(
-        { 
+        {
           status: 'error',
-          message: 'Authentication required'
+          message: 'Authentication required',
         },
         { status: 401 }
       );
@@ -274,7 +284,7 @@ export async function POST(request: Request) {
       userId: user.id,
       email: user.email,
       timestamp: new Date().toISOString(),
-      operation: 'CACHE_PREWARM'
+      operation: 'CACHE_PREWARM',
     });
 
     // Continue with original logic after authentication

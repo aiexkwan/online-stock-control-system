@@ -59,12 +59,12 @@ export async function getApolloServer() {
       try {
         // Reuse existing server instance if available but not started
         let server = globalThis.apolloServer;
-        
+
         if (!server) {
           if (process.env.NODE_ENV === 'development') {
             console.log('[Apollo Server] Creating new server instance...');
           }
-          
+
           server = new ApolloServer({
             schema,
             introspection: process.env.NODE_ENV !== 'production',
@@ -89,40 +89,40 @@ export async function getApolloServer() {
               return err;
             },
           });
-          
+
           // Store the server instance globally
           globalThis.apolloServer = server;
           globalThis.apolloServerStarted = false;
         }
-        
+
         // Only start if not already started
         if (!globalThis.apolloServerStarted) {
           try {
             if (process.env.NODE_ENV === 'development') {
               console.log('[Apollo Server] Starting server...');
             }
-            
+
             // Use startInBackgroundHandlingStartupErrorsByLoggingAndFailingAllRequests for serverless
             await server.startInBackgroundHandlingStartupErrorsByLoggingAndFailingAllRequests();
             globalThis.apolloServerStarted = true;
-            
+
             if (process.env.NODE_ENV === 'development') {
               console.log('[Apollo Server] ✅ Server started successfully');
             }
           } catch (error) {
             // If the error is about already being started, just return the server
-            if (error instanceof Error && error.message.includes("once on your ApolloServer")) {
+            if (error instanceof Error && error.message.includes('once on your ApolloServer')) {
               console.log('[Apollo Server] Server already started, reusing instance');
               globalThis.apolloServerStarted = true;
               return server;
             }
-            
+
             // Clear the started flag on other errors
             globalThis.apolloServerStarted = false;
             throw error;
           }
         }
-        
+
         return server;
       } catch (error) {
         // Clear state on error to allow retry

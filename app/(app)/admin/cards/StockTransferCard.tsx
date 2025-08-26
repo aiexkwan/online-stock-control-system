@@ -1,39 +1,26 @@
 'use client';
 
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { OperationCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { StatusMessage } from '@/components/ui/universal-stock-movement-layout';
 import { Input } from '@/components/ui/input';
 import { SearchInput, SearchInputRef, FormInputGroup, FormOption } from '../components/shared';
-import { Label } from '@/components/ui/label';
-import { 
-  getCardTheme, 
-  cardTextStyles, 
-  cardStatusColors,
-  cardContainerStyles 
-} from '@/lib/card-system/theme';
+import { getCardTheme, cardTextStyles, cardStatusColors } from '@/lib/card-system/theme';
 import { cn } from '@/lib/utils';
-import {
-  Loader2,
-  Package,
-  Package2,
-  ArrowLeftRight,
-  AlertTriangle,
-  X,
-} from 'lucide-react';
+import { Loader2, Package, Package2, ArrowLeftRight, AlertTriangle } from 'lucide-react';
 import { SoundSettingsToggle } from '@/app/(app)/order-loading/components/SoundSettingsToggle';
 import { useSoundFeedback, useSoundSettings } from '@/app/hooks/useSoundFeedback';
 import { LOCATION_DESTINATIONS, DESTINATION_CONFIG } from '../constants/stockTransfer';
 import { useStockTransfer } from '../hooks/useStockTransfer';
 import { LocationStandardizer } from '../utils/locationStandardizer';
 import { getTransferHistory } from '@/app/actions/stockTransferActions';
+import StockTransferErrorBoundary from './components/StockTransferErrorBoundary';
 
 export interface StockTransferCardProps {
   className?: string;
 }
 
-
-// Import types from actions
+// Import types
 import type { TransferHistoryItem } from '@/app/actions/stockTransferActions';
 import type { PalletInfo, SearchResult } from '../hooks/useStockTransfer';
 
@@ -45,25 +32,27 @@ const ErrorOverlay: React.FC<{
   onConfirm: () => void;
 }> = ({ show, message, details, onConfirm }) => {
   if (!show) return null;
-  
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className={cn(
-        "relative w-full max-w-md rounded-lg border p-6 shadow-2xl",
-        cardStatusColors.error.border,
-        "bg-slate-900 shadow-red-500/20"
-      )}>
-        <div className="mb-4 flex items-center gap-3">
-          <AlertTriangle className="h-8 w-8 text-red-500" />
-          <h2 className={cn("text-2xl font-bold", cardStatusColors.error.text)}>Error</h2>
+    <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm'>
+      <div
+        className={cn(
+          'relative w-full max-w-md rounded-lg border p-6 shadow-2xl',
+          cardStatusColors.error.border,
+          'bg-slate-900 shadow-red-500/20'
+        )}
+      >
+        <div className='mb-4 flex items-center gap-3'>
+          <AlertTriangle className='h-8 w-8 text-red-500' />
+          <h2 className={cn('text-2xl font-bold', cardStatusColors.error.text)}>Error</h2>
         </div>
-        <div className="space-y-3">
-          <p className={cn("text-lg font-medium", "text-white")}>Reason: {message}</p>
-          <p className="text-base text-gray-300">Details: {details}</p>
+        <div className='space-y-3'>
+          <p className={cn('text-lg font-medium', 'text-white')}>Reason: {message}</p>
+          <p className='text-base text-gray-300'>Details: {details}</p>
         </div>
         <button
           onClick={onConfirm}
-          className="mt-6 w-full rounded-lg bg-red-600 px-4 py-3 font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+          className='mt-6 w-full rounded-lg bg-red-600 px-4 py-3 font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500'
         >
           Confirm
         </button>
@@ -78,35 +67,32 @@ const TransferLogItem: React.FC<{
 }> = React.memo(({ record }) => {
   const formatTime = (time: string) => {
     const date = new Date(time);
-    return date.toLocaleString('en-GB', { 
+    return date.toLocaleString('en-GB', {
       day: '2-digit',
       month: '2-digit',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
   return (
-    <div className={cn(
-      "flex items-start space-x-2 rounded-lg border p-2",
-      getCardTheme('operation').border,
-      getCardTheme('operation').bg
-    )}>
-      <div className={cn(
-        "mt-2 h-2 w-2 flex-shrink-0 rounded-full",
-        "bg-blue-400"
-      )} />
-      <div className="min-w-0 flex-1">
-        <div className="mb-1 flex items-center gap-2">
-          <span className="font-mono text-xs text-slate-400">
-            {formatTime(record.time)}
-          </span>
-          <span className="text-xs text-slate-500">by {record.id}</span>
+    <div
+      className={cn(
+        'flex items-start space-x-2 rounded-lg border p-2',
+        getCardTheme('operation').border,
+        getCardTheme('operation').bg
+      )}
+    >
+      <div className={cn('mt-2 h-2 w-2 flex-shrink-0 rounded-full', 'bg-blue-400')} />
+      <div className='min-w-0 flex-1'>
+        <div className='mb-1 flex items-center gap-2'>
+          <span className='font-mono text-xs text-slate-400'>{formatTime(record.time)}</span>
+          <span className='text-xs text-slate-500'>by {record.id}</span>
         </div>
-        <p className="text-sm text-white">
+        <p className='text-sm text-white'>
           {record.plt_num} → {record.loc}
           {record.remark && record.remark !== '-' && (
-            <span className="ml-2 text-xs text-slate-400">({record.remark})</span>
+            <span className='ml-2 text-xs text-slate-400'>({record.remark})</span>
           )}
         </p>
       </div>
@@ -122,7 +108,7 @@ const getDestinationOptions = (currentLocation: string): FormOption[] => {
   const standardizedLocation = LocationStandardizer.standardizeForUI(currentLocation);
   const availableDestinations = LocationStandardizer.getValidDestinations(currentLocation);
   const filteredDestinations = availableDestinations.filter(dest => dest !== standardizedLocation);
-  
+
   return filteredDestinations.map(destination => {
     const config = DESTINATION_CONFIG[destination as keyof typeof DESTINATION_CONFIG];
     return {
@@ -148,13 +134,13 @@ const TransferDestinationSelector: React.FC<{
   if (destinationOptions.length === 0) {
     const debugInfo = LocationStandardizer.getLocationDebugInfo(currentLocation);
     return (
-      <div className="text-xs text-red-400">
+      <div className='text-xs text-red-400'>
         <div>⚠️ No valid destinations available</div>
-        <div className="text-xs text-gray-500 mt-1">
+        <div className='mt-1 text-xs text-gray-500'>
           Location: &quot;{debugInfo.original}&quot; → &quot;{debugInfo.standardized}&quot;
         </div>
         {process.env.NODE_ENV === 'development' && (
-          <div className="text-xs text-gray-600 mt-1">
+          <div className='mt-1 text-xs text-gray-600'>
             Debug: {JSON.stringify(debugInfo, null, 2)}
           </div>
         )}
@@ -164,44 +150,38 @@ const TransferDestinationSelector: React.FC<{
 
   return (
     <FormInputGroup
-      type="radio"
-      label="Select Destination"
+      type='radio'
+      label='Select Destination'
       options={destinationOptions}
       value={selectedDestination}
-      onChange={(value) => onDestinationChange(value as string)}
+      onChange={value => onDestinationChange(value as string)}
       disabled={disabled}
-      size="sm"
-      layout="horizontal"
-      className="flex flex-wrap gap-2"
+      size='sm'
+      layout='horizontal'
+      className='flex flex-wrap gap-2'
     />
   );
 };
 
-export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className }) => {
+const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className }) => {
   // Refs
   const searchInputRef = useRef<SearchInputRef>(null);
   const clockNumberRef = useRef<HTMLInputElement>(null);
-  
-  // Sound setup
+
+  // Sound setup with cleanup tracking and safety checks
   const soundSettings = useSoundSettings();
-  const sound = useSoundFeedback({ 
-    enabled: soundSettings.getSoundEnabled(), 
-    volume: soundSettings.getSoundVolume() 
+  const soundEnabled = soundSettings?.getSoundEnabled?.() ?? false;
+  const soundVolume = soundSettings?.getSoundVolume?.() ?? 0.5;
+
+  const sound = useSoundFeedback({
+    enabled: soundEnabled,
+    volume: soundVolume,
   });
-  
-  // Simplified state management
-  const [transferState, setTransferState] = useState<{
-    isLoading: boolean;
-    selectedPallet: PalletInfo | null;
-    selectedDestination: string;
-    currentLocation: string;
-  }>({
-    isLoading: false,
-    selectedPallet: null,
-    selectedDestination: '',
-    currentLocation: 'Await',
-  });
-  
+
+  // Component lifecycle tracking
+  const cleanupRef = useRef<(() => void)[]>([]);
+  const mountedRef = useRef(true);
+
   const [operatorState, setOperatorState] = useState({
     clockNumber: '',
     verifiedClockNumber: null as string | null,
@@ -209,7 +189,7 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
     isVerifying: false,
     error: '',
   });
-  
+
   const [uiState, setUiState] = useState<{
     statusMessage: { type: 'success' | 'error' | 'warning' | 'info'; message: string } | null;
     searchValue: string;
@@ -225,19 +205,21 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
     errorMessage: '',
     errorDetails: '',
   });
-  
-  // Use the stock transfer hook for core functionality
-  const { state, actions } = useStockTransfer({
+
+  // Use the stock transfer hook for core functionality with safety checks
+  const stockTransferHook = useStockTransfer({
     searchInputRef,
     onTransferComplete: (pallet, destination) => {
-      console.log('Transfer completed:', pallet.plt_num, 'to', destination);
-      sound.playSuccess(); // Play success sound
-      loadTransferHistory(); // Refresh history after transfer
+      if (sound?.playSuccess) {
+        sound.playSuccess();
+      }
+      const refreshController = new AbortController();
+      loadTransferHistory(refreshController.signal);
     },
-    onTransferError: (error) => {
-      console.error('Transfer error:', error);
-      sound.playError(); // Play error sound
-      // Check if it's an illegal transfer
+    onTransferError: error => {
+      if (sound?.playError) {
+        sound.playError();
+      }
       if (error.includes('Voided') || error.includes('already at location')) {
         setUiState(prev => ({
           ...prev,
@@ -248,127 +230,258 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
       }
     },
   });
-  
-  // Original actions with sound feedback
-  const enhancedActions = {
-    ...actions,
-    handleSearchSelect: (result: SearchResult) => {
-      sound.playScan(); // Play scan sound when pallet is selected
-      actions.handleSearchSelect(result);
-    },
-    handleClockNumberChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      actions.handleClockNumberChange(e);
-      // Play success sound when clock number is verified (4 digits)
-      if (value.length === 4 && /^\d{4}$/.test(value)) {
-        setTimeout(() => {
-          if (state.verifiedClockNumber) {
-            sound.playSuccess();
-          }
-        }, 500);
-      }
-    },
-    onDestinationChange: (destination: string) => {
-      sound.playScan(); // Play feedback when destination is selected
-      actions.onDestinationChange(destination);
-    }
+
+  // Extract state and actions with safety checks using useMemo
+  const state = useMemo(
+    () =>
+      stockTransferHook?.state ?? {
+        isLoading: false,
+        isSearching: false,
+        isTransferring: false,
+        searchValue: '',
+        statusMessage: null,
+        selectedPallet: null,
+        selectedDestination: '',
+        verifiedClockNumber: null,
+        verifiedName: null,
+        clockNumber: '',
+        clockError: '',
+        isVerifying: false,
+        currentLocation: 'Await',
+      },
+    [stockTransferHook?.state]
+  );
+
+  const actions = stockTransferHook?.actions ?? {
+    setIsLoading: () => {},
+    setSearchValue: () => {},
+    setSelectedDestination: () => {},
+    setClockNumber: () => {},
+    setStatusMessage: () => {},
+    executeStockTransfer: async () => false,
+    validateClockNumberLocal: async () => false,
+    handleSearchSelect: () => {},
+    handleClockNumberChange: () => {},
+    handleVerifyClockNumber: async () => {},
+    focusSearchInput: () => {},
+    resetToSearch: () => {},
+    onDestinationChange: () => {},
   };
-  
-  // Load transfer history from database
-  const loadTransferHistory = useCallback(async () => {
+
+  // Create stable destination change handler using useRef to avoid dependency cycles
+  const actionsRef = useRef(actions);
+  const selectedDestinationRef = useRef(state?.selectedDestination);
+
+  // Update refs on each render
+  actionsRef.current = actions;
+  selectedDestinationRef.current = state?.selectedDestination;
+
+  const handleDestinationChange = useCallback((value: string | string[]) => {
+    if (!mountedRef.current || !actionsRef.current?.onDestinationChange) return;
+
+    const stringValue = Array.isArray(value) ? value[0] : value;
+    if (!stringValue) return;
+
+    // Prevent same value updates to avoid potential loops
+    if (stringValue === selectedDestinationRef.current) return;
+
     try {
-      const history = await getTransferHistory(20); // Get latest 20 records
-      setUiState(prev => ({ ...prev, transferHistory: history }));
+      actionsRef.current.onDestinationChange(stringValue);
     } catch (error) {
-      console.error('Failed to load transfer history:', error);
+      console.error('Error in destination change:', error);
+    }
+  }, []); // No dependencies for completely stable reference
+
+  // Load transfer history with enhanced error handling and AbortController support
+  const loadTransferHistory = useCallback(async (signal?: AbortSignal) => {
+    if (!mountedRef.current) return;
+
+    try {
+      // Check if request was aborted before making the call
+      if (signal?.aborted) {
+        return;
+      }
+
+      const history = await getTransferHistory(20); // Get latest 20 records
+
+      // Check again after async operation completes
+      if (signal?.aborted || !mountedRef.current) {
+        return;
+      }
+
+      // Ensure history is always an array to prevent render errors
+      const safeHistory = Array.isArray(history) ? history : [];
+
+      setUiState(prev => ({
+        ...prev,
+        transferHistory: safeHistory,
+        // Clear any previous error messages on successful load
+        statusMessage: null,
+      }));
+    } catch (error) {
+      // Only handle non-abort errors
+      if (error instanceof Error && error.name !== 'AbortError') {
+        console.error('Failed to load transfer history:', error);
+
+        if (mountedRef.current) {
+          setUiState(prev => ({
+            ...prev,
+            // Preserve existing transfer history on error
+            transferHistory: prev.transferHistory || [],
+            statusMessage: {
+              type: 'warning',
+              message: 'Unable to refresh transfer history. Previous data shown.',
+            },
+          }));
+        }
+      }
     }
   }, []);
-  
-  // Load history on mount
+
+  // Safe transfer history with fallback
+  const safeTransferHistory = useMemo(() => {
+    return Array.isArray(uiState.transferHistory) ? uiState.transferHistory : [];
+  }, [uiState.transferHistory]);
+
+  // Load history on mount with cleanup and AbortController
   useEffect(() => {
-    loadTransferHistory();
+    const abortController = new AbortController();
+
+    // Load history with abort signal
+    loadTransferHistory(abortController.signal);
+
+    // Component cleanup
+    return () => {
+      // Abort any pending history load request
+      abortController.abort();
+
+      mountedRef.current = false;
+      // Execute all registered cleanup functions
+      cleanupRef.current.forEach(cleanup => {
+        try {
+          cleanup();
+        } catch (error) {
+          console.error('Cleanup error in StockTransferCard:', error);
+        }
+      });
+      cleanupRef.current = [];
+    };
   }, [loadTransferHistory]);
-  
-  // Sync with hook state - use specific dependencies to avoid infinite loops
+
+  // Calculate loading state with safe fallbacks
+  const isLoading = Boolean(state?.isLoading || state?.isSearching || state?.isTransferring);
+
+  // Play sound when pallet is found - using ref to avoid sound loop with safety checks
+  const lastSelectedPalletRef = useRef<string | null>(null);
   useEffect(() => {
-    setTransferState(prev => ({
-      ...prev,
-      isLoading: state.isLoading || state.isSearching || state.isTransferring,
-      selectedPallet: state.selectedPallet,
-      selectedDestination: state.selectedDestination,
-      currentLocation: state.currentLocation,
-    }));
-  }, [state.isLoading, state.isSearching, state.isTransferring, state.selectedPallet, state.selectedDestination, state.currentLocation]);
-  
-  // Play sound when pallet is found
-  useEffect(() => {
-    if (state.selectedPallet && !transferState.selectedPallet) {
-      sound.playScan(); // Play scan sound when pallet is successfully found
+    if (state?.selectedPallet && state.selectedPallet.plt_num !== lastSelectedPalletRef.current) {
+      if (sound?.playScan) {
+        sound.playScan(); // Play scan sound when pallet is successfully found
+      }
+      lastSelectedPalletRef.current = state.selectedPallet.plt_num;
+    } else if (!state?.selectedPallet) {
+      lastSelectedPalletRef.current = null;
     }
-  }, [state.selectedPallet, transferState.selectedPallet, sound]);
-  
+  }, [state?.selectedPallet, sound]);
+
+  const prevVerifiedRef = useRef<string | null>(null);
+
   useEffect(() => {
-    const prevVerified = operatorState.verifiedClockNumber;
-    setOperatorState(prev => ({
-      ...prev,
-      clockNumber: state.clockNumber,
-      verifiedClockNumber: state.verifiedClockNumber,
-      verifiedName: state.verifiedName,
-      isVerifying: state.isVerifying,
-      error: state.clockError,
-    }));
+    if (!state) return;
+
+    const prevVerified = prevVerifiedRef.current;
+
+    // Only update if values have actually changed to prevent infinite loops
+    setOperatorState(prev => {
+      const clockNumber = state.clockNumber || '';
+      const verifiedClockNumber = state.verifiedClockNumber;
+      const verifiedName = state.verifiedName;
+      const isVerifying = state.isVerifying || false;
+      const error = state.clockError || '';
+
+      // Skip update if values haven't changed
+      if (
+        prev.clockNumber === clockNumber &&
+        prev.verifiedClockNumber === verifiedClockNumber &&
+        prev.verifiedName === verifiedName &&
+        prev.isVerifying === isVerifying &&
+        prev.error === error
+      ) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        clockNumber,
+        verifiedClockNumber,
+        verifiedName,
+        isVerifying,
+        error,
+      };
+    });
+
     // Play success sound when clock number is verified
     if (state.verifiedClockNumber && !prevVerified) {
-      sound.playSuccess();
+      if (sound?.playSuccess) {
+        sound.playSuccess();
+      }
     }
     // Play error sound when verification fails
     if (state.clockError && !state.isVerifying) {
-      sound.playWarning();
+      if (sound?.playWarning) {
+        sound.playWarning();
+      }
     }
-  }, [state.clockNumber, state.verifiedClockNumber, state.verifiedName, state.isVerifying, state.clockError, operatorState.verifiedClockNumber, sound]);
-  
+
+    // Update the ref after processing
+    prevVerifiedRef.current = state.verifiedClockNumber;
+  }, [state, sound]);
+
+  // Removed complex state comparison refs - using direct state sync instead
+
+  // Simplified state synchronization to prevent loops
   useEffect(() => {
-    // Only update if values actually changed to prevent loops
-    setUiState(prev => {
-      const updates: Partial<typeof prev> = {};
-      
-      // Only update statusMessage if it's different
-      if (JSON.stringify(prev.statusMessage) !== JSON.stringify(state.statusMessage)) {
-        updates.statusMessage = state.statusMessage;
-      }
-      
-      // Only update searchValue if it's different
-      if (prev.searchValue !== state.searchValue) {
-        updates.searchValue = state.searchValue;
-      }
-      
-      // Only return new state if there are updates
-      if (Object.keys(updates).length > 0) {
-        return { ...prev, ...updates };
-      }
-      return prev;
+    if (!mountedRef.current) return;
+
+    // Direct state updates without complex comparison logic
+    setUiState(prevState => {
+      if (!mountedRef.current) return prevState;
+
+      const needsUpdate =
+        prevState.statusMessage !== state?.statusMessage ||
+        prevState.searchValue !== state?.searchValue;
+
+      if (!needsUpdate) return prevState;
+
+      return {
+        ...prevState,
+        statusMessage: state?.statusMessage || null,
+        searchValue: state?.searchValue || '',
+      };
     });
-  }, [state.statusMessage, state.searchValue]);
+  }, [state?.statusMessage, state?.searchValue]);
 
-  // Get destination-based theme colors
-  const getDestinationTheme = () => {
-    if (!transferState.selectedDestination) return {
-      borderColor: 'border-slate-700/50',
-      headerBg: 'bg-gradient-to-r from-slate-800 to-slate-700',
-      accentColor: 'text-blue-400',
-      glowColor: '',
-    };
+  // Memoized destination-based theme colors to prevent recalculation on every render
+  const theme = useMemo(() => {
+    if (!state?.selectedDestination)
+      return {
+        borderColor: 'border-slate-700/50',
+        headerBg: 'bg-gradient-to-r from-slate-800 to-slate-700',
+        accentColor: 'text-blue-400',
+        glowColor: '',
+      };
 
-    const config = DESTINATION_CONFIG[transferState.selectedDestination as keyof typeof DESTINATION_CONFIG];
-    if (!config) return {
-      borderColor: 'border-slate-700/50',
-      headerBg: 'bg-gradient-to-r from-slate-800 to-slate-700',
-      accentColor: 'text-blue-400',
-      glowColor: '',
-    };
+    const config = DESTINATION_CONFIG[state.selectedDestination as keyof typeof DESTINATION_CONFIG];
+    if (!config)
+      return {
+        borderColor: 'border-slate-700/50',
+        headerBg: 'bg-gradient-to-r from-slate-800 to-slate-700',
+        accentColor: 'text-blue-400',
+        glowColor: '',
+      };
 
     // Define theme based on destination
-    switch (transferState.selectedDestination) {
+    switch (state.selectedDestination) {
       case 'Fold Mill':
         return {
           borderColor: 'border-blue-500/50',
@@ -398,41 +511,99 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
           glowColor: 'shadow-lg shadow-amber-500/20',
         };
     }
-  };
+  }, [state?.selectedDestination]);
 
-  const theme = getDestinationTheme();
+  // Memoized destination options based on current location - with stable references
+  const destinationOptions = useMemo((): FormOption[] => {
+    const currentLoc = state?.currentLocation || 'Await';
+    const availableDestinations = LOCATION_DESTINATIONS[currentLoc] || [];
 
+    // Create stable options to prevent unnecessary re-renders
+    return availableDestinations.map(destination => {
+      const config = DESTINATION_CONFIG[destination as keyof typeof DESTINATION_CONFIG];
+      return {
+        value: destination,
+        label: destination,
+        description: config?.description || `Transfer to ${destination}`,
+        // Don't include icon to avoid reference issues
+        color: config?.color,
+        bgColor: config?.bgColor,
+        borderColor: config?.borderColor,
+      };
+    });
+  }, [state?.currentLocation]);
+
+  // Memoized description to avoid string template recreation
+  const destinationDescription = useMemo(
+    () => `Moving from: ${state?.currentLocation || 'Await'}`,
+    [state?.currentLocation]
+  );
+
+  // Early return if critical dependencies are not available
+  if (!state || !actions || !soundSettings) {
+    return (
+      <div className={`h-full ${className || ''}`}>
+        <OperationCard
+          variant='glass'
+          isHoverable={false}
+          borderGlow={false}
+          className='h-full border-slate-700/50'
+          padding='small'
+        >
+          <div className='flex h-full flex-col'>
+            <div className='border-b border-slate-700/50 bg-gradient-to-r from-slate-800 to-slate-700 p-4'>
+              <div className='flex items-center gap-2'>
+                <ArrowLeftRight className='h-6 w-6 text-blue-400' />
+                <h2 className={cn('text-xl', cardTextStyles.title)}>Stock Transfer</h2>
+              </div>
+              <p className='text-sm text-slate-300'>Transfer stock between locations</p>
+            </div>
+            <div className='flex flex-1 items-center justify-center'>
+              <div className='space-y-4 text-center'>
+                <div className='flex justify-center'>
+                  <Loader2 className='h-8 w-8 animate-spin text-blue-400' />
+                </div>
+                <p className='text-white'>Initializing stock transfer...</p>
+              </div>
+            </div>
+          </div>
+        </OperationCard>
+      </div>
+    );
+  }
 
   return (
     <div className={`h-full ${className || ''}`}>
       <OperationCard
-        variant="glass"
+        variant='glass'
         isHoverable={false}
         borderGlow={false}
         className={`h-full overflow-hidden transition-all duration-300 ${theme.borderColor} ${theme.glowColor}`}
-        padding="small"
+        padding='small'
       >
-        <div className="flex h-full flex-col">
+        <div className='flex h-full flex-col'>
           {/* Header */}
-          <div className={`border-b border-slate-700/50 p-4 transition-all duration-300 ${theme.headerBg}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+          <div
+            className={`border-b border-slate-700/50 p-4 transition-all duration-300 ${theme.headerBg}`}
+          >
+            <div className='flex items-center justify-between'>
+              <div className='flex items-center gap-2'>
                 <ArrowLeftRight className={`h-6 w-6 ${theme.accentColor}`} />
-                <h2 className={cn("text-xl", cardTextStyles.title)}>Stock Transfer</h2>
-                {transferState.selectedDestination && (
+                <h2 className={cn('text-xl', cardTextStyles.title)}>Stock Transfer</h2>
+                {state?.selectedDestination && (
                   <span className={`ml-2 text-base font-medium ${theme.accentColor}`}>
-                    → {transferState.selectedDestination}
+                    → {state.selectedDestination}
                   </span>
                 )}
               </div>
               <SoundSettingsToggle />
             </div>
-            <p className="text-sm text-slate-300">Transfer stock between locations</p>
+            <p className='text-sm text-slate-300'>Transfer stock between locations</p>
           </div>
 
           {/* Status Message */}
           {uiState.statusMessage && (
-            <div className="p-2">
+            <div className='p-2'>
               <StatusMessage
                 type={uiState.statusMessage.type}
                 message={uiState.statusMessage.message}
@@ -440,7 +611,7 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
               />
             </div>
           )}
-          
+
           {/* Error Overlay for illegal transfers */}
           <ErrorOverlay
             show={uiState.showErrorOverlay}
@@ -450,55 +621,73 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
           />
 
           {/* Main Content */}
-          <div className="flex flex-1 flex-col gap-4 p-3">
+          <div className='flex flex-1 flex-col gap-4 p-3'>
             {/* Top Row: Destination and Operator side by side */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
               {/* Step 1: Destination Selection */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className={`flex h-6 w-6 items-center justify-center rounded-full ${transferState.selectedDestination ? theme.headerBg : 'bg-blue-500'} text-xs font-bold text-white`}>1</span>
+              <div className='space-y-3'>
+                <div className='flex items-center gap-2'>
+                  <span
+                    className={`flex h-6 w-6 items-center justify-center rounded-full ${state?.selectedDestination ? theme.headerBg : 'bg-blue-500'} text-xs font-bold text-white`}
+                  >
+                    1
+                  </span>
                   <h3 className={cardTextStyles.subtitle}>Select Destination</h3>
                 </div>
-                <TransferDestinationSelector
-                  currentLocation={transferState.currentLocation}
-                  selectedDestination={transferState.selectedDestination}
-                  onDestinationChange={enhancedActions.onDestinationChange}
-                  disabled={transferState.isLoading}
+                <FormInputGroup
+                  type='radio'
+                  label='Select Destination'
+                  description={destinationDescription}
+                  options={destinationOptions}
+                  value={state?.selectedDestination || ''}
+                  onChange={handleDestinationChange}
+                  disabled={isLoading || destinationOptions.length === 0}
+                  loading={isLoading}
+                  layout='vertical'
+                  size='sm'
+                  showValidationIcons={true}
+                  className='w-full'
                 />
               </div>
 
               {/* Step 2: Operator Verification */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className={`flex h-6 w-6 items-center justify-center rounded-full ${operatorState.verifiedClockNumber ? 'bg-green-500' : theme.headerBg} text-xs font-bold text-white`}>2</span>
+              <div className='space-y-3'>
+                <div className='flex items-center gap-2'>
+                  <span
+                    className={`flex h-6 w-6 items-center justify-center rounded-full ${operatorState.verifiedClockNumber ? 'bg-green-500' : theme.headerBg} text-xs font-bold text-white`}
+                  >
+                    2
+                  </span>
                   <h3 className={cardTextStyles.subtitle}>Verify Operator</h3>
                 </div>
-                <div className="space-y-2">
+                <div className='space-y-2'>
                   <Input
                     ref={clockNumberRef}
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
+                    type='text'
+                    inputMode='numeric'
+                    pattern='[0-9]*'
                     value={operatorState.clockNumber}
-                    onChange={enhancedActions.handleClockNumberChange}
-                    placeholder="Enter 4-digit clock number"
+                    onChange={actions.handleClockNumberChange}
+                    placeholder='Enter 4-digit clock number'
                     className={`w-full border-gray-600 bg-gray-700 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500 ${
                       operatorState.error ? 'border-red-500 focus:ring-red-500' : ''
                     } ${operatorState.isVerifying ? 'opacity-50' : ''}`}
-                    disabled={!transferState.selectedDestination || transferState.isLoading}
-                    autoComplete="off"
+                    disabled={!state?.selectedDestination || isLoading}
+                    autoComplete='off'
                     maxLength={4}
                   />
                   {operatorState.isVerifying && (
                     <p className={`flex items-center gap-1 text-xs ${theme.accentColor}`}>
-                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <Loader2 className='h-3 w-3 animate-spin' />
                       Verifying...
                     </p>
                   )}
-                  {operatorState.error && !operatorState.isVerifying && <p className="text-xs text-red-400">{operatorState.error}</p>}
+                  {operatorState.error && !operatorState.isVerifying && (
+                    <p className='text-xs text-red-400'>{operatorState.error}</p>
+                  )}
                   {operatorState.verifiedName && !operatorState.isVerifying && (
-                    <p className="text-xs text-green-400">
-                      ✓ Verified: <span className="font-medium">{operatorState.verifiedName}</span>
+                    <p className='text-xs text-green-400'>
+                      ✓ Verified: <span className='font-medium'>{operatorState.verifiedName}</span>
                     </p>
                   )}
                 </div>
@@ -506,23 +695,27 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
             </div>
 
             {/* Step 3: Pallet Search - Only show after operator is verified */}
-            {transferState.selectedDestination && operatorState.verifiedClockNumber && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className={`flex h-6 w-6 items-center justify-center rounded-full ${transferState.selectedPallet ? 'bg-green-500' : theme.headerBg} text-xs font-bold text-white`}>3</span>
+            {state?.selectedDestination && operatorState.verifiedClockNumber && (
+              <div className='space-y-3'>
+                <div className='flex items-center gap-2'>
+                  <span
+                    className={`flex h-6 w-6 items-center justify-center rounded-full ${state?.selectedPallet ? 'bg-green-500' : theme.headerBg} text-xs font-bold text-white`}
+                  >
+                    3
+                  </span>
                   <h3 className={cardTextStyles.subtitle}>Scan/Search Pallet</h3>
                 </div>
-                <div 
-                  onBlur={(e) => {
+                <div
+                  onBlur={e => {
                     // Check if blur event is leaving the search input area
                     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
                       // Trigger search on blur if value exists
                       if (uiState.searchValue.trim()) {
-                        enhancedActions.handleSearchSelect({ 
-                          id: uiState.searchValue, 
-                          title: uiState.searchValue, 
-                          subtitle: '', 
-                          data: [{value: uiState.searchValue}] 
+                        actions.handleSearchSelect({
+                          id: uiState.searchValue,
+                          title: uiState.searchValue,
+                          subtitle: '',
+                          data: [{ value: uiState.searchValue }],
                         });
                       }
                     }
@@ -531,52 +724,62 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
                   <SearchInput
                     ref={searchInputRef}
                     value={uiState.searchValue}
-                    onChange={(value) => actions.setSearchValue(value)}
-                    placeholder="Enter or scan pallet number"
-                    searchType="pallet"
+                    onChange={value => actions.setSearchValue(value)}
+                    placeholder='Enter or scan pallet number'
+                    searchType='pallet'
                     autoDetect={true}
                     showTypeIndicator={false}
                     searchOnEnter={true}
-                    isLoading={transferState.isLoading}
-                    disabled={transferState.isLoading}
+                    isLoading={isLoading}
+                    disabled={isLoading}
                   />
                 </div>
-                
+
                 {/* Selected Pallet Info */}
-                {transferState.selectedPallet && (
+                {state?.selectedPallet && (
                   <div className={`rounded-lg border ${theme.borderColor} bg-slate-900/30 p-3`}>
-                    <div className="mb-2 flex items-center gap-2">
+                    <div className='mb-2 flex items-center gap-2'>
                       <Package className={`h-4 w-4 ${theme.accentColor}`} />
-                      <h4 className={`text-sm font-medium ${theme.accentColor}`}>Selected Pallet</h4>
-                      {transferState.isLoading && (
-                        <span className="ml-auto flex items-center gap-1 text-xs text-amber-400">
-                          <Loader2 className="h-3 w-3 animate-spin" />
+                      <h4 className={`text-sm font-medium ${theme.accentColor}`}>
+                        Selected Pallet
+                      </h4>
+                      {isLoading && (
+                        <span className='ml-auto flex items-center gap-1 text-xs text-amber-400'>
+                          <Loader2 className='h-3 w-3 animate-spin' />
                           Transferring...
                         </span>
                       )}
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className='grid grid-cols-2 gap-2 text-xs'>
                       <div>
-                        <span className="text-gray-500">Pallet:</span>
-                        <span className="ml-1 font-medium text-white">{transferState.selectedPallet.plt_num}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Product:</span>
-                        <span className="ml-1 font-medium text-white">{transferState.selectedPallet.product_code}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Quantity:</span>
-                        <span className="ml-1 font-medium text-white">{transferState.selectedPallet.product_qty}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">From:</span>
-                        <span className="ml-1 font-medium text-white">
-                          {transferState.selectedPallet.current_plt_loc || 'Await'}
+                        <span className='text-gray-500'>Pallet:</span>
+                        <span className='ml-1 font-medium text-white'>
+                          {state?.selectedPallet?.plt_num || ''}
                         </span>
                       </div>
-                      <div className="col-span-2">
-                        <span className="text-gray-500">To:</span>
-                        <span className={`ml-1 font-medium ${theme.accentColor}`}>{transferState.selectedDestination}</span>
+                      <div>
+                        <span className='text-gray-500'>Product:</span>
+                        <span className='ml-1 font-medium text-white'>
+                          {state?.selectedPallet?.product_code || ''}
+                        </span>
+                      </div>
+                      <div>
+                        <span className='text-gray-500'>Quantity:</span>
+                        <span className='ml-1 font-medium text-white'>
+                          {state?.selectedPallet?.product_qty || 0}
+                        </span>
+                      </div>
+                      <div>
+                        <span className='text-gray-500'>From:</span>
+                        <span className='ml-1 font-medium text-white'>
+                          {state?.selectedPallet?.current_plt_loc || 'Await'}
+                        </span>
+                      </div>
+                      <div className='col-span-2'>
+                        <span className='text-gray-500'>To:</span>
+                        <span className={`ml-1 font-medium ${theme.accentColor}`}>
+                          {state?.selectedDestination || ''}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -585,15 +788,17 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
             )}
 
             {/* Transfer Log - Always visible with real database records */}
-            <div className="flex-1">
-              <h3 className={cn("mb-2", cardTextStyles.subtitle)}>Transfer Log</h3>
-              <div className={`h-40 space-y-2 overflow-y-auto rounded-lg border ${theme.borderColor} bg-slate-900/50 p-3`}>
-                {uiState.transferHistory.length === 0 ? (
-                  <div className="flex h-full items-center justify-center text-slate-400">
-                    <p className="text-sm">No transfer records</p>
+            <div className='flex-1'>
+              <h3 className={cn('mb-2', cardTextStyles.subtitle)}>Transfer Log</h3>
+              <div
+                className={`h-40 space-y-2 overflow-y-auto rounded-lg border ${theme.borderColor} bg-slate-900/50 p-3`}
+              >
+                {safeTransferHistory.length === 0 ? (
+                  <div className='flex h-full items-center justify-center text-slate-400'>
+                    <p className='text-sm'>No transfer records</p>
                   </div>
                 ) : (
-                  uiState.transferHistory.map((record) => (
+                  safeTransferHistory.map(record => (
                     <TransferLogItem
                       key={`${record.time}-${record.plt_num}-${record.uuid}`}
                       record={record}
@@ -606,6 +811,15 @@ export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className 
         </div>
       </OperationCard>
     </div>
+  );
+};
+
+// Main component wrapped with error boundary
+export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className }) => {
+  return (
+    <StockTransferErrorBoundary>
+      <StockTransferCardInternal className={className} />
+    </StockTransferErrorBoundary>
   );
 };
 

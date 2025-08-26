@@ -197,9 +197,7 @@ async function storeEnhancedOrderData(
   const acoProductCodes = await acoProductService.filterACOProducts(
     orderData.products.map(p => p.product_code)
   );
-  const acoProducts = orderData.products.filter(p => 
-    acoProductCodes.includes(p.product_code)
-  );
+  const acoProducts = orderData.products.filter(p => acoProductCodes.includes(p.product_code));
 
   if (acoProducts.length > 0) {
     const acoRecords = acoProducts.map(product => ({
@@ -239,19 +237,21 @@ async function uploadToStorageAsync(
 ): Promise<string | null> {
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 1000; // 1秒
-  
+
   // 重試機制輔助函數
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-  
+
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const buffer = Buffer.from(fileData.buffer);
-      
+
       // 使用 Admin client 繞過 RLS 限制，確保背景任務能正常執行
       const adminSupabase = getAdminClient();
-      
-      console.log(`[uploadToStorageAsync] Attempt ${attempt}/${MAX_RETRIES} - Starting file upload and doc_upload record creation using Admin client`);
-      
+
+      console.log(
+        `[uploadToStorageAsync] Attempt ${attempt}/${MAX_RETRIES} - Starting file upload and doc_upload record creation using Admin client`
+      );
+
       // Admin client 不需要用戶身份驗證，直接開始上傳
       console.log('[uploadToStorageAsync] Using Service Role client, skipping user auth check');
 
@@ -265,7 +265,10 @@ async function uploadToStorageAsync(
         });
 
       if (uploadError) {
-        console.error(`[uploadToStorageAsync] Attempt ${attempt} - Storage upload failed:`, uploadError);
+        console.error(
+          `[uploadToStorageAsync] Attempt ${attempt} - Storage upload failed:`,
+          uploadError
+        );
         if (attempt < MAX_RETRIES) {
           await sleep(RETRY_DELAY * attempt);
           continue;
@@ -285,28 +288,30 @@ async function uploadToStorageAsync(
       }
 
       // 除錯：輸出要插入的資料
-      console.log(`[uploadToStorageAsync] Attempt ${attempt} - Preparing to insert doc_upload using Service Role:`, {
-        doc_name: fileData.name,
-        upload_by: parsedUploadedBy,
-        doc_url: urlData.publicUrl,
-        file_size: buffer.length,
-        folder: 'orderpdf',
-        has_json_txt: !!extractedText,
-        using_admin_client: true
-      });
+      console.log(
+        `[uploadToStorageAsync] Attempt ${attempt} - Preparing to insert doc_upload using Service Role:`,
+        {
+          doc_name: fileData.name,
+          upload_by: parsedUploadedBy,
+          doc_url: urlData.publicUrl,
+          file_size: buffer.length,
+          folder: 'orderpdf',
+          has_json_txt: !!extractedText,
+          using_admin_client: true,
+        }
+      );
 
       // 使用 Database Function 安全地寫入 doc_upload 表
       // 呢個方法更安全，因為只授予特定操作權限，而唔係完整嘅 Service Role 權限
-      const { data: insertResult, error: docError } = await adminSupabase
-        .rpc('insert_doc_upload', {
-          p_doc_name: fileData.name,
-          p_upload_by: parsedUploadedBy,
-          p_doc_type: 'application/pdf',
-          p_doc_url: urlData.publicUrl,
-          p_file_size: buffer.length,
-          p_folder: 'orderpdf',
-          p_json_txt: extractedText || null
-        });
+      const { data: insertResult, error: docError } = await adminSupabase.rpc('insert_doc_upload', {
+        p_doc_name: fileData.name,
+        p_upload_by: parsedUploadedBy,
+        p_doc_type: 'application/pdf',
+        p_doc_url: urlData.publicUrl,
+        p_file_size: buffer.length,
+        p_folder: 'orderpdf',
+        p_json_txt: extractedText || null,
+      });
 
       if (docError) {
         console.error(`[uploadToStorageAsync] Attempt ${attempt} - doc_upload insert failed:`, {
@@ -325,15 +330,19 @@ async function uploadToStorageAsync(
             folder: 'orderpdf',
             uploadedBy_raw: uploadedBy,
             uploadedBy_parsed: parsedUploadedBy,
-          }
+          },
         });
-        
+
         // 如果是權限錯誤或數據驗證錯誤，不需要重試
-        if (docError.code === 'PGRST116' || docError.code === 'PGRST301' || docError.code === '42501') {
+        if (
+          docError.code === 'PGRST116' ||
+          docError.code === 'PGRST301' ||
+          docError.code === '42501'
+        ) {
           console.error('[uploadToStorageAsync] Non-retryable error detected, aborting retries');
           return null;
         }
-        
+
         if (attempt < MAX_RETRIES) {
           console.log(`[uploadToStorageAsync] Retrying in ${RETRY_DELAY * attempt}ms...`);
           await sleep(RETRY_DELAY * attempt);
@@ -341,13 +350,16 @@ async function uploadToStorageAsync(
         }
         return null;
       } else {
-        console.log(`[uploadToStorageAsync] Attempt ${attempt} - Successfully created doc_upload record using Database Function:`, {
-          uuid: insertResult,
-          doc_name: fileData.name,
-          executionTime: `${Date.now()}ms`,
-          function_call_success: true
-        });
-        
+        console.log(
+          `[uploadToStorageAsync] Attempt ${attempt} - Successfully created doc_upload record using Database Function:`,
+          {
+            uuid: insertResult,
+            doc_name: fileData.name,
+            executionTime: `${Date.now()}ms`,
+            function_call_success: true,
+          }
+        );
+
         return urlData.publicUrl;
       }
     } catch (error) {
@@ -355,9 +367,9 @@ async function uploadToStorageAsync(
         error: error instanceof Error ? error.message : error,
         stack: error instanceof Error ? error.stack : undefined,
         uploadedBy,
-        fileName: fileData.name
+        fileName: fileData.name,
       });
-      
+
       if (attempt < MAX_RETRIES) {
         console.log(`[uploadToStorageAsync] Retrying in ${RETRY_DELAY * attempt}ms...`);
         await sleep(RETRY_DELAY * attempt);
@@ -366,7 +378,7 @@ async function uploadToStorageAsync(
       return null;
     }
   }
-  
+
   console.error('[uploadToStorageAsync] All retry attempts exhausted');
   return null;
 }
@@ -401,25 +413,25 @@ async function sendEmailNotification(
     });
 
     const emailResponse = await sendOrderCreatedEmail(emailRequestBody);
-    
+
     console.log('[sendEmailNotification] Email service response:', {
       success: emailResponse.success,
       emailId: emailResponse.emailId,
       recipients: emailResponse.recipients,
       resendResponseKeys: Object.keys(emailResponse.resendResponse || {}),
     });
-    
+
     // 檢查 Resend API 實際響應
     if (emailResponse.resendResponse && !emailResponse.resendResponse.id) {
       console.warn('[sendEmailNotification] Warning: No email ID in Resend response');
     }
-    
+
     return {
       success: emailResponse.success,
       details: {
         emailId: emailResponse.emailId,
         recipients: emailResponse.recipients,
-      }
+      },
     };
   } catch (error: unknown) {
     console.error('[sendEmailNotification] Error details:', {
@@ -496,42 +508,44 @@ export async function analyzeOrderPDF(
         const url = process.env.VERCEL_URL;
         return url.startsWith('https://') ? url : `https://${url}`;
       }
-      
+
       // 備用：NEXT_PUBLIC_APP_URL
       if (process.env.NEXT_PUBLIC_APP_URL) {
         return process.env.NEXT_PUBLIC_APP_URL;
       }
-      
+
       // 本地開發
       return 'http://localhost:3000';
     }
-    
+
     const baseUrl = getApiBaseUrl();
     const apiUrl = `${baseUrl}/api/pdf-extract`;
 
     // 使用 API Route 提取服務（避免 Server Components 兼容性問題）
     if (useEnhancedExtraction) {
       try {
-        console.log('[analyzeOrderPDF] Using API Route for PDF extraction to avoid serverless compatibility issues');
-        
+        console.log(
+          '[analyzeOrderPDF] Using API Route for PDF extraction to avoid serverless compatibility issues'
+        );
+
         // 準備 FormData
         const formData = new FormData();
         const blob = new Blob([fileData.buffer], { type: 'application/pdf' });
         formData.append('file', blob, fileData.name);
         formData.append('fileName', fileData.name);
-        
+
         console.log('[analyzeOrderPDF] Making API request to:', apiUrl);
-        
+
         // 添加 Vercel bypass token 如果存在
         const headers: HeadersInit = {
           'x-internal-request': 'true', // 標記為內部請求
         };
-        
+
         // 如果有 Vercel Protection Bypass Token，加入 header
         if (process.env.VERCEL_PROTECTION_BYPASS) {
           headers['x-vercel-protection-bypass'] = process.env.VERCEL_PROTECTION_BYPASS;
         }
-        
+
         const response = await fetch(apiUrl, {
           method: 'POST',
           body: formData,
@@ -549,16 +563,18 @@ export async function analyzeOrderPDF(
             vercelUrl: process.env.VERCEL_URL,
             nextPublicAppUrl: process.env.NEXT_PUBLIC_APP_URL,
           });
-          
+
           // 根據不同錯誤提供更具體的錯誤信息
           if (response.status === 401) {
-            throw new Error('Authentication failed. The Vercel deployment may have password protection enabled. Please check Vercel dashboard settings.');
+            throw new Error(
+              'Authentication failed. The Vercel deployment may have password protection enabled. Please check Vercel dashboard settings.'
+            );
           } else if (response.status === 403) {
             throw new Error('Access forbidden. Please check API security settings.');
           } else if (response.status === 413) {
             throw new Error('File too large. Maximum file size is 10MB.');
           }
-          
+
           throw new Error(`API request failed: ${response.status} ${response.statusText}`);
         }
 
@@ -574,9 +590,11 @@ export async function analyzeOrderPDF(
             products: enhancedResult.data.products,
           };
 
-          extractionMethod = enhancedResult.metadata?.method || enhancedResult.extractionMethod || 'api-route';
-          tokensUsed = enhancedResult.metadata?.tokensUsed || Math.ceil(fileData.buffer.byteLength / 4);
-          
+          extractionMethod =
+            enhancedResult.metadata?.method || enhancedResult.extractionMethod || 'api-route';
+          tokensUsed =
+            enhancedResult.metadata?.tokensUsed || Math.ceil(fileData.buffer.byteLength / 4);
+
           console.log('[analyzeOrderPDF] API Route extraction successful:', {
             orderRef: orderData.order_ref,
             productCount: orderData.products.length,
@@ -600,10 +618,13 @@ export async function analyzeOrderPDF(
 
     // 增強提取失敗，不再使用 Assistant API fallback (地區限制問題)
     if (!useEnhancedExtraction || !orderData) {
-      console.error('[analyzeOrderPDF] Enhanced extraction failed and Assistant API fallback is disabled due to regional restrictions');
+      console.error(
+        '[analyzeOrderPDF] Enhanced extraction failed and Assistant API fallback is disabled due to regional restrictions'
+      );
       return {
         success: false,
-        error: 'PDF extraction failed. Enhanced extraction service failed and Assistant API is unavailable due to Vercel regional restrictions (403 error).',
+        error:
+          'PDF extraction failed. Enhanced extraction service failed and Assistant API is unavailable due to Vercel regional restrictions (403 error).',
       };
     }
 
@@ -620,7 +641,7 @@ export async function analyzeOrderPDF(
 
     // 發送電郵通知
     const emailResult = await sendEmailNotification(orderData, fileData, uploadedBy);
-    
+
     if (!emailResult.success) {
       console.error('[analyzeOrderPDF] Email notification failed:', emailResult.error);
     } else {
@@ -631,7 +652,11 @@ export async function analyzeOrderPDF(
     if (saveToStorage) {
       try {
         console.log('[analyzeOrderPDF] Starting background storage upload');
-        const storageUrl = await uploadToStorageAsync(fileData, uploadedBy, extractedText || JSON.stringify(orderData));
+        const storageUrl = await uploadToStorageAsync(
+          fileData,
+          uploadedBy,
+          extractedText || JSON.stringify(orderData)
+        );
         if (storageUrl) {
           console.log('[analyzeOrderPDF] Background storage completed successfully:', storageUrl);
         } else {

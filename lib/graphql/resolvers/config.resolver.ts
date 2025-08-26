@@ -357,14 +357,19 @@ class ConfigService {
 
     // Required fields validation
     const inputWithRequired = input as ConfigCreateInput | ConfigUpdateInput;
-    if (!('key' in inputWithRequired) || !inputWithRequired.key) errors.push({ message: 'Key is required' });
-    if (!('category' in inputWithRequired) || !inputWithRequired.category) errors.push({ message: 'Category is required' });
-    if (!('scope' in inputWithRequired) || !inputWithRequired.scope) errors.push({ message: 'Scope is required' });
-    if (!('dataType' in inputWithRequired) || !inputWithRequired.dataType) errors.push({ message: 'Data type is required' });
+    if (!('key' in inputWithRequired) || !inputWithRequired.key)
+      errors.push({ message: 'Key is required' });
+    if (!('category' in inputWithRequired) || !inputWithRequired.category)
+      errors.push({ message: 'Category is required' });
+    if (!('scope' in inputWithRequired) || !inputWithRequired.scope)
+      errors.push({ message: 'Scope is required' });
+    if (!('dataType' in inputWithRequired) || !inputWithRequired.dataType)
+      errors.push({ message: 'Data type is required' });
 
     // Data type validation
     if (input.value !== null && input.value !== undefined) {
-      const dataType = ('dataType' in inputWithRequired) ? inputWithRequired.dataType : ConfigDataType.STRING;
+      const dataType =
+        'dataType' in inputWithRequired ? inputWithRequired.dataType : ConfigDataType.STRING;
       const typeValidation = this.validateDataType(input.value as ConfigValue, dataType);
       if (!typeValidation.isValid) {
         errors.push({ message: typeValidation.error || 'Invalid data type' });
@@ -373,19 +378,27 @@ class ConfigService {
 
     // Custom validation rules
     if (input.validation) {
-      const validation = ('validation' in inputWithRequired) ? inputWithRequired.validation : undefined;
+      const validation =
+        'validation' in inputWithRequired ? inputWithRequired.validation : undefined;
       if (validation) {
         const customValidation = await this.runCustomValidation(
-          input.value as ConfigValue, 
+          input.value as ConfigValue,
           validation as ValidationRules
         );
         if (!customValidation.isValid) {
-          errors.push(...(customValidation.errors || []).filter(e => e && typeof e.message === 'string').map(e => ({ ...e, message: e.message as string })));
+          errors.push(
+            ...(customValidation.errors || [])
+              .filter(e => e && typeof e.message === 'string')
+              .map(e => ({ ...e, message: e.message as string }))
+          );
         }
       }
     }
 
-    return { isValid: errors.length === 0, errors: errors as { field?: string; message: string; code?: string }[] };
+    return {
+      isValid: errors.length === 0,
+      errors: errors as { field?: string; message: string; code?: string }[],
+    };
   }
 
   // Validate config value
@@ -463,9 +476,9 @@ class ConfigService {
 
   // Export configurations
   async exportConfigs(category?: string, scope?: string, format: string = 'JSON'): Promise<string> {
-    const configs = await this.getConfigs({ 
-      category: category as ConfigCategory | undefined, 
-      scope: scope as ConfigScope | undefined 
+    const configs = await this.getConfigs({
+      category: category as ConfigCategory | undefined,
+      scope: scope as ConfigScope | undefined,
     });
 
     switch (format) {
@@ -597,7 +610,19 @@ export const getConfigService = () => ConfigService.getInstance();
 const configService = getConfigService();
 
 // Database config type with snake_case fields
-interface DatabaseConfig extends Omit<ConfigItem, 'defaultValue' | 'scopeId' | 'dataType' | 'accessLevel' | 'isInherited' | 'inheritedFrom' | 'createdAt' | 'updatedAt' | 'updatedBy'> {
+interface DatabaseConfig
+  extends Omit<
+    ConfigItem,
+    | 'defaultValue'
+    | 'scopeId'
+    | 'dataType'
+    | 'accessLevel'
+    | 'isInherited'
+    | 'inheritedFrom'
+    | 'createdAt'
+    | 'updatedAt'
+    | 'updatedBy'
+  > {
   default_value?: ConfigValue;
   scope_id?: string | null;
   data_type?: ConfigDataType;
@@ -610,11 +635,14 @@ interface DatabaseConfig extends Omit<ConfigItem, 'defaultValue' | 'scopeId' | '
 }
 
 // Helper function to map database config to GraphQL type
-function mapConfigToGraphQL(config: ConfigItem | DatabaseConfig, permissions?: ConfigPermissions): ConfigItem {
+function mapConfigToGraphQL(
+  config: ConfigItem | DatabaseConfig,
+  permissions?: ConfigPermissions
+): ConfigItem {
   const isConfigItem = 'defaultValue' in config;
   const dbConfig = config as DatabaseConfig;
   const configItem = config as ConfigItem;
-  
+
   return {
     id: config.id,
     key: config.key,
@@ -622,18 +650,24 @@ function mapConfigToGraphQL(config: ConfigItem | DatabaseConfig, permissions?: C
     defaultValue: isConfigItem ? configItem.defaultValue : dbConfig.default_value,
     category: config.category,
     scope: config.scope,
-    scopeId: isConfigItem ? configItem.scopeId : dbConfig.scope_id ?? undefined,
+    scopeId: isConfigItem ? configItem.scopeId : (dbConfig.scope_id ?? undefined),
     description: config.description,
-    dataType: isConfigItem ? configItem.dataType : dbConfig.data_type ?? ConfigDataType.STRING,
+    dataType: isConfigItem ? configItem.dataType : (dbConfig.data_type ?? ConfigDataType.STRING),
     validation: config.validation,
     metadata: config.metadata,
     tags: config.tags || [],
-    accessLevel: isConfigItem ? configItem.accessLevel : dbConfig.access_level ?? ConfigAccessLevel.READ_WRITE,
-    isEditable: Boolean(permissions?.canWrite && !dbConfig.is_inherited && !(isConfigItem && configItem.isInherited)),
-    isInherited: isConfigItem ? configItem.isInherited ?? false : dbConfig.is_inherited ?? false,
-    inheritedFrom: isConfigItem ? configItem.inheritedFrom : dbConfig.inherited_from ?? undefined,
-    createdAt: isConfigItem ? configItem.createdAt : dbConfig.created_at ?? new Date(),
-    updatedAt: isConfigItem ? configItem.updatedAt : dbConfig.updated_at ?? new Date(),
+    accessLevel: isConfigItem
+      ? configItem.accessLevel
+      : (dbConfig.access_level ?? ConfigAccessLevel.READ_WRITE),
+    isEditable: Boolean(
+      permissions?.canWrite && !dbConfig.is_inherited && !(isConfigItem && configItem.isInherited)
+    ),
+    isInherited: isConfigItem
+      ? (configItem.isInherited ?? false)
+      : (dbConfig.is_inherited ?? false),
+    inheritedFrom: isConfigItem ? configItem.inheritedFrom : (dbConfig.inherited_from ?? undefined),
+    createdAt: isConfigItem ? configItem.createdAt : (dbConfig.created_at ?? new Date()),
+    updatedAt: isConfigItem ? configItem.updatedAt : (dbConfig.updated_at ?? new Date()),
     updatedBy: isConfigItem ? configItem.updatedBy : dbConfig.updated_by,
   };
 }
@@ -649,7 +683,7 @@ export const configResolvers = {
     ) => {
       try {
         const supabase = context.supabase;
-        
+
         // Fetch all product types directly from data_code table
         const { data: typeData, error: typeError } = await supabase
           .from('data_code')
@@ -658,54 +692,62 @@ export const configResolvers = {
           .neq('type', '')
           .neq('type', '-')
           .order('type');
-          
+
         if (typeError) throw typeError;
-        
+
         // Get unique types - already filtered at database level
         const uniqueTypes = [...new Set(typeData?.map(item => item.type) || [])];
-        
+
         const types = uniqueTypes.map(type => ({
           value: type,
           label: type,
           description: null,
           isDefault: false,
-          isDisabled: false
+          isDisabled: false,
         }));
-        
+
         // Fetch colours
         const { data: colourData, error: colourError } = await supabase
           .from('data_code')
           .select('colour')
           .not('colour', 'is', null)
           .order('colour');
-          
+
         if (colourError) throw colourError;
-        
+
         // Get unique colours
         const uniqueColours = [...new Set(colourData?.map(item => item.colour) || [])];
-        const colours = uniqueColours.filter(colour => colour).map(colour => ({
-          value: colour,
-          label: colour,
-          description: null,
-          isDefault: false,
-          isDisabled: false
-        }));
-        
+        const colours = uniqueColours
+          .filter(colour => colour)
+          .map(colour => ({
+            value: colour,
+            label: colour,
+            description: null,
+            isDefault: false,
+            isDisabled: false,
+          }));
+
         // Units (hardcoded for now - could be from config table)
         const units = [
           { value: 'PCS', label: 'Pieces', description: null, isDefault: true, isDisabled: false },
           { value: 'BOX', label: 'Box', description: null, isDefault: false, isDisabled: false },
-          { value: 'PALLET', label: 'Pallet', description: null, isDefault: false, isDisabled: false }
+          {
+            value: 'PALLET',
+            label: 'Pallet',
+            description: null,
+            isDefault: false,
+            isDisabled: false,
+          },
         ];
-        
+
         // Suppliers - not needed for Stock Distribution Card, return empty array
         const suppliers: unknown[] = [];
-        
+
         return {
           colours,
           types,
           units,
-          suppliers
+          suppliers,
         };
       } catch (error) {
         console.error('[productFormOptions] Error:', error);
@@ -796,7 +838,10 @@ export const configResolvers = {
             // Validate all configs
             const validationResults = await Promise.all(
               configs.map(async config => {
-                const validation = await configService.validateConfigValue(config, config.value as ConfigValue);
+                const validation = await configService.validateConfigValue(
+                  config,
+                  config.value as ConfigValue
+                );
                 return { configId: config.id, validation };
               })
             );
@@ -995,10 +1040,7 @@ export const configResolvers = {
         }
 
         const supabase = await configService.getSupabase();
-        const { error } = await supabase
-          .from('system_configs')
-          .delete()
-          .eq('id', args.id);
+        const { error } = await supabase.from('system_configs').delete().eq('id', args.id);
 
         if (error) throw error;
 
@@ -1024,7 +1066,12 @@ export const configResolvers = {
 
         const results = await Promise.allSettled(
           args.input.updates.map(update =>
-            configService.updateConfig(update.id, update.value as ConfigValue, context.user!.id, update.metadata)
+            configService.updateConfig(
+              update.id,
+              update.value as ConfigValue,
+              context.user!.id,
+              update.metadata
+            )
           )
         );
 
@@ -1114,9 +1161,14 @@ export const configResolvers = {
           configs
             .filter(c => c.defaultValue !== null && c.defaultValue !== undefined)
             .map(config =>
-              configService.updateConfig(config.id, config.defaultValue as ConfigValue, context.user!.id, {
-                resetAt: new Date(),
-              })
+              configService.updateConfig(
+                config.id,
+                config.defaultValue as ConfigValue,
+                context.user!.id,
+                {
+                  resetAt: new Date(),
+                }
+              )
             )
         );
 

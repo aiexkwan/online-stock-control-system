@@ -13,7 +13,7 @@ const path = require('path');
 const CONFIG = {
   reportPath: process.env.TECH_DEBT_REPORT_PATH || './tech-debt-report.json',
   apiUrl: process.env.TECH_DEBT_API_URL || 'http://localhost:3000/api/monitoring/tech-debt',
-  verbose: process.env.VERBOSE === 'true'
+  verbose: process.env.VERBOSE === 'true',
 };
 
 function log(message, level = 'info') {
@@ -41,9 +41,9 @@ async function pushMetrics() {
     const response = await fetch(CONFIG.apiUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(reportData)
+      body: JSON.stringify(reportData),
     });
 
     if (response.ok) {
@@ -55,7 +55,6 @@ async function pushMetrics() {
       log(`推送失敗 (${response.status}): ${errorText}`, 'error');
       process.exit(1);
     }
-
   } catch (error) {
     log(`推送過程發生錯誤: ${error.message}`, 'error');
     process.exit(1);

@@ -122,7 +122,7 @@ function getDepartmentConfig(type: DepartmentType): DepartmentConfig {
         statsField: 'todayFinished',
         statsTable: 'record_palletinfo',
         statsDateField: 'generate_time',
-        productFilter: (productType) => {
+        productFilter: productType => {
           // Filter out these types: Material, Pipe, Parts, Test, TEST, Tools, TOOLS
           const excludeTypes = ['Material', 'Pipe', 'Parts', 'Test', 'TEST', 'Tools', 'TOOLS'];
           return !excludeTypes.includes(productType?.trim());
@@ -136,16 +136,16 @@ function getDepartmentConfig(type: DepartmentType): DepartmentConfig {
           { machineNumber: 'Machine No.14', lastActiveTime: null, state: 'UNKNOWN' },
         ],
         hasRecentActivities: false,
-        hasOrderCompletions: false
+        hasOrderCompletions: false,
       };
-    
+
     case 'PIPE':
       return {
         type,
         statsField: 'todayFinished',
         statsTable: 'record_palletinfo',
         statsDateField: 'generate_time',
-        productFilter: (productType) => productType === 'Pipe',
+        productFilter: productType => productType === 'Pipe',
         machines: [
           { machineNumber: 'Machine No.01', lastActiveTime: null, state: 'UNKNOWN' },
           { machineNumber: 'Machine No.02', lastActiveTime: null, state: 'UNKNOWN' },
@@ -153,9 +153,9 @@ function getDepartmentConfig(type: DepartmentType): DepartmentConfig {
           { machineNumber: 'Machine No.04', lastActiveTime: null, state: 'UNKNOWN' },
         ],
         hasRecentActivities: false,
-        hasOrderCompletions: false
+        hasOrderCompletions: false,
       };
-    
+
     case 'WAREHOUSE':
       return {
         type,
@@ -166,9 +166,9 @@ function getDepartmentConfig(type: DepartmentType): DepartmentConfig {
         materialPattern: 'MAT%',
         machines: [],
         hasRecentActivities: true,
-        hasOrderCompletions: true
+        hasOrderCompletions: true,
       };
-    
+
     default:
       throw new Error(`Unknown department type: ${type}`);
   }
@@ -218,10 +218,13 @@ class UnifiedDataLoaders {
       }
 
       const productMap = new Map(
-        data?.map((p: DataCodeRow) => [p.code, { description: p.description || 'Unknown', type: p.type || 'Unknown' }]) || []
+        data?.map((p: DataCodeRow) => [
+          p.code,
+          { description: p.description || 'Unknown', type: p.type || 'Unknown' },
+        ]) || []
       );
-      return productCodes.map(code => 
-        productMap.get(code) || { description: 'Unknown', type: 'Unknown' }
+      return productCodes.map(
+        code => productMap.get(code) || { description: 'Unknown', type: 'Unknown' }
       );
     });
 
@@ -237,7 +240,9 @@ class UnifiedDataLoaders {
         return palletNums.map(() => 0);
       }
 
-      const palletMap = new Map(data?.map((p: RecordPalletinfoRow) => [p.plt_num, p.product_qty || 0]) || []);
+      const palletMap = new Map(
+        data?.map((p: RecordPalletinfoRow) => [p.plt_num, p.product_qty || 0]) || []
+      );
       return palletNums.map(num => palletMap.get(num) || 0);
     });
 
@@ -270,7 +275,7 @@ class UnifiedDataLoaders {
 
       // Process details using other loaders
       const results = await Promise.all(
-        orderRefs.map(async (orderRef) => {
+        orderRefs.map(async orderRef => {
           const items = orderDetailsMap.get(orderRef) || [];
           const processedDetails: OrderDetail[] = [];
 
@@ -278,7 +283,7 @@ class UnifiedDataLoaders {
             const [productQty, productData, staffName] = await Promise.all([
               this.palletInfoLoader.load(item.pallet_num),
               this.productLoader.load(item.product_code),
-              this.staffLoader.load(item.action_by)
+              this.staffLoader.load(item.action_by),
             ]);
 
             processedDetails.push({
@@ -286,12 +291,12 @@ class UnifiedDataLoaders {
                 month: 'short',
                 day: 'numeric',
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
               }),
               palletNum: item.pallet_num,
               description: productData.description,
               productQty,
-              loadedBy: staffName
+              loadedBy: staffName,
             });
           }
 
@@ -306,9 +311,9 @@ class UnifiedDataLoaders {
     this.documentLoader = new DataLoader(async (orderRefs: readonly string[]) => {
       try {
         const docMap = new Map<string, string>();
-        
+
         // Use parallel queries for better performance
-        const queryPromises = orderRefs.map(async (ref) => {
+        const queryPromises = orderRefs.map(async ref => {
           // Try exact match first
           let { data: exactMatch } = await this.supabase
             .from('doc_upload')
@@ -316,12 +321,12 @@ class UnifiedDataLoaders {
             .eq('doc_type', 'order')
             .eq('doc_name', `${ref} Picking List.pdf`)
             .single();
-          
+
           if (exactMatch?.doc_url) {
             console.log(`Found exact document for order ${ref}: ${exactMatch.doc_name}`);
             return { ref, url: exactMatch.doc_url };
           }
-          
+
           // Try partial match with LIKE operator
           const { data: partialMatches } = await this.supabase
             .from('doc_upload')
@@ -329,30 +334,33 @@ class UnifiedDataLoaders {
             .eq('doc_type', 'order')
             .like('doc_name', `%${ref}%`)
             .like('doc_name', '%Picking List%');
-          
+
           if (partialMatches && partialMatches.length > 0) {
             // Find the best match - prefer exact order_ref match
-            const bestMatch = partialMatches.find(d => 
-              (d.doc_name as string)?.startsWith(ref) && (d.doc_name as string)?.includes('Picking List')
-            ) || partialMatches[0];
-            
+            const bestMatch =
+              partialMatches.find(
+                d =>
+                  (d.doc_name as string)?.startsWith(ref) &&
+                  (d.doc_name as string)?.includes('Picking List')
+              ) || partialMatches[0];
+
             if (bestMatch?.doc_url) {
               console.log(`Found partial document for order ${ref}: ${bestMatch.doc_name}`);
               return { ref, url: bestMatch.doc_url };
             }
           }
-          
+
           console.log(`No document found for order ${ref}`);
           return { ref, url: null };
         });
-        
+
         const results = await Promise.all(queryPromises);
         results.forEach(result => {
           if (result.url && typeof result.ref === 'string' && typeof result.url === 'string') {
             docMap.set(result.ref, result.url);
           }
         });
-        
+
         return orderRefs.map(ref => docMap.get(ref) || null);
       } catch (error) {
         console.error('Error in documentLoader:', error);
@@ -387,7 +395,7 @@ export const unifiedDepartmentResolver = {
         const [stats, topStocks, materialStocks] = await Promise.all([
           fetchStats(supabase, config),
           fetchTopStocks(supabase, loaders, config),
-          fetchMaterialStocks(supabase, loaders, config)
+          fetchMaterialStocks(supabase, loaders, config),
         ]);
 
         // Clear loaders after use
@@ -398,34 +406,40 @@ export const unifiedDepartmentResolver = {
           topStocks: {
             edges: topStocks.map((item, index) => ({
               node: item,
-              cursor: Buffer.from(`${index}`).toString('base64')
+              cursor: Buffer.from(`${index}`).toString('base64'),
             })),
             nodes: topStocks,
             pageInfo: {
               hasNextPage: false,
               hasPreviousPage: false,
               startCursor: topStocks.length > 0 ? Buffer.from('0').toString('base64') : null,
-              endCursor: topStocks.length > 0 ? Buffer.from(`${topStocks.length - 1}`).toString('base64') : null
+              endCursor:
+                topStocks.length > 0
+                  ? Buffer.from(`${topStocks.length - 1}`).toString('base64')
+                  : null,
             },
-            totalCount: topStocks.length
+            totalCount: topStocks.length,
           },
           materialStocks: {
             edges: materialStocks.map((item, index) => ({
               node: item,
-              cursor: Buffer.from(`${index}`).toString('base64')
+              cursor: Buffer.from(`${index}`).toString('base64'),
             })),
             nodes: materialStocks,
             pageInfo: {
               hasNextPage: false,
               hasPreviousPage: false,
               startCursor: materialStocks.length > 0 ? Buffer.from('0').toString('base64') : null,
-              endCursor: materialStocks.length > 0 ? Buffer.from(`${materialStocks.length - 1}`).toString('base64') : null
+              endCursor:
+                materialStocks.length > 0
+                  ? Buffer.from(`${materialStocks.length - 1}`).toString('base64')
+                  : null,
             },
-            totalCount: materialStocks.length
+            totalCount: materialStocks.length,
           },
           machineStates: config.machines,
           loading: false,
-          error: null
+          error: null,
         };
       } catch (error) {
         console.error('[departmentInjectionData] Error:', error);
@@ -434,7 +448,7 @@ export const unifiedDepartmentResolver = {
             todayFinished: 0,
             past7Days: 0,
             past14Days: 0,
-            lastUpdated: new Date().toISOString()
+            lastUpdated: new Date().toISOString(),
           },
           topStocks: {
             edges: [],
@@ -443,9 +457,9 @@ export const unifiedDepartmentResolver = {
               hasNextPage: false,
               hasPreviousPage: false,
               startCursor: null,
-              endCursor: null
+              endCursor: null,
             },
-            totalCount: 0
+            totalCount: 0,
           },
           materialStocks: {
             edges: [],
@@ -454,13 +468,13 @@ export const unifiedDepartmentResolver = {
               hasNextPage: false,
               hasPreviousPage: false,
               startCursor: null,
-              endCursor: null
+              endCursor: null,
             },
-            totalCount: 0
+            totalCount: 0,
           },
           machineStates: [],
           loading: false,
-          error: error instanceof Error ? error.message : 'Unknown error occurred'
+          error: error instanceof Error ? error.message : 'Unknown error occurred',
         };
       }
     },
@@ -476,7 +490,7 @@ export const unifiedDepartmentResolver = {
         const [stats, topStocks, materialStocks] = await Promise.all([
           fetchStats(supabase, config),
           fetchTopStocks(supabase, loaders, config),
-          fetchMaterialStocks(supabase, loaders, config)
+          fetchMaterialStocks(supabase, loaders, config),
         ]);
 
         loaders.clearAll();
@@ -486,34 +500,40 @@ export const unifiedDepartmentResolver = {
           topStocks: {
             edges: topStocks.map((item, index) => ({
               node: item,
-              cursor: Buffer.from(`${index}`).toString('base64')
+              cursor: Buffer.from(`${index}`).toString('base64'),
             })),
             nodes: topStocks,
             pageInfo: {
               hasNextPage: false,
               hasPreviousPage: false,
               startCursor: topStocks.length > 0 ? Buffer.from('0').toString('base64') : null,
-              endCursor: topStocks.length > 0 ? Buffer.from(`${topStocks.length - 1}`).toString('base64') : null
+              endCursor:
+                topStocks.length > 0
+                  ? Buffer.from(`${topStocks.length - 1}`).toString('base64')
+                  : null,
             },
-            totalCount: topStocks.length
+            totalCount: topStocks.length,
           },
           materialStocks: {
             edges: materialStocks.map((item, index) => ({
               node: item,
-              cursor: Buffer.from(`${index}`).toString('base64')
+              cursor: Buffer.from(`${index}`).toString('base64'),
             })),
             nodes: materialStocks,
             pageInfo: {
               hasNextPage: false,
               hasPreviousPage: false,
               startCursor: materialStocks.length > 0 ? Buffer.from('0').toString('base64') : null,
-              endCursor: materialStocks.length > 0 ? Buffer.from(`${materialStocks.length - 1}`).toString('base64') : null
+              endCursor:
+                materialStocks.length > 0
+                  ? Buffer.from(`${materialStocks.length - 1}`).toString('base64')
+                  : null,
             },
-            totalCount: materialStocks.length
+            totalCount: materialStocks.length,
           },
           machineStates: config.machines,
           loading: false,
-          error: null
+          error: null,
         };
       } catch (error) {
         console.error('[departmentPipeData] Error:', error);
@@ -522,7 +542,7 @@ export const unifiedDepartmentResolver = {
             todayFinished: 0,
             past7Days: 0,
             past14Days: 0,
-            lastUpdated: new Date().toISOString()
+            lastUpdated: new Date().toISOString(),
           },
           topStocks: {
             edges: [],
@@ -531,9 +551,9 @@ export const unifiedDepartmentResolver = {
               hasNextPage: false,
               hasPreviousPage: false,
               startCursor: null,
-              endCursor: null
+              endCursor: null,
             },
-            totalCount: 0
+            totalCount: 0,
           },
           materialStocks: {
             edges: [],
@@ -542,13 +562,13 @@ export const unifiedDepartmentResolver = {
               hasNextPage: false,
               hasPreviousPage: false,
               startCursor: null,
-              endCursor: null
+              endCursor: null,
             },
-            totalCount: 0
+            totalCount: 0,
           },
           machineStates: [],
           loading: false,
-          error: error instanceof Error ? error.message : 'Unknown error occurred'
+          error: error instanceof Error ? error.message : 'Unknown error occurred',
         };
       }
     },
@@ -561,13 +581,14 @@ export const unifiedDepartmentResolver = {
         const loaders = new UnifiedDataLoaders(supabase);
         const config = getDepartmentConfig('WAREHOUSE');
 
-        const [stats, topStocks, materialStocks, recentActivities, orderCompletions] = await Promise.all([
-          fetchStats(supabase, config),
-          fetchTopStocks(supabase, loaders, config),
-          fetchMaterialStocks(supabase, loaders, config),
-          fetchRecentActivities(supabase, loaders),
-          fetchOrderCompletions(supabase, loaders)
-        ]);
+        const [stats, topStocks, materialStocks, recentActivities, orderCompletions] =
+          await Promise.all([
+            fetchStats(supabase, config),
+            fetchTopStocks(supabase, loaders, config),
+            fetchMaterialStocks(supabase, loaders, config),
+            fetchRecentActivities(supabase, loaders),
+            fetchOrderCompletions(supabase, loaders),
+          ]);
 
         loaders.clearAll();
 
@@ -576,35 +597,41 @@ export const unifiedDepartmentResolver = {
           topStocks: {
             edges: topStocks.map((item, index) => ({
               node: item,
-              cursor: Buffer.from(`${index}`).toString('base64')
+              cursor: Buffer.from(`${index}`).toString('base64'),
             })),
             nodes: topStocks,
             pageInfo: {
               hasNextPage: false,
               hasPreviousPage: false,
               startCursor: topStocks.length > 0 ? Buffer.from('0').toString('base64') : null,
-              endCursor: topStocks.length > 0 ? Buffer.from(`${topStocks.length - 1}`).toString('base64') : null
+              endCursor:
+                topStocks.length > 0
+                  ? Buffer.from(`${topStocks.length - 1}`).toString('base64')
+                  : null,
             },
-            totalCount: topStocks.length
+            totalCount: topStocks.length,
           },
           materialStocks: {
             edges: materialStocks.map((item, index) => ({
               node: item,
-              cursor: Buffer.from(`${index}`).toString('base64')
+              cursor: Buffer.from(`${index}`).toString('base64'),
             })),
             nodes: materialStocks,
             pageInfo: {
               hasNextPage: false,
               hasPreviousPage: false,
               startCursor: materialStocks.length > 0 ? Buffer.from('0').toString('base64') : null,
-              endCursor: materialStocks.length > 0 ? Buffer.from(`${materialStocks.length - 1}`).toString('base64') : null
+              endCursor:
+                materialStocks.length > 0
+                  ? Buffer.from(`${materialStocks.length - 1}`).toString('base64')
+                  : null,
             },
-            totalCount: materialStocks.length
+            totalCount: materialStocks.length,
           },
           recentActivities,
           orderCompletions,
           loading: false,
-          error: null
+          error: null,
         };
       } catch (error) {
         console.error('[departmentWarehouseData] Error:', error);
@@ -613,7 +640,7 @@ export const unifiedDepartmentResolver = {
             todayTransferred: 0,
             past7Days: 0,
             past14Days: 0,
-            lastUpdated: new Date().toISOString()
+            lastUpdated: new Date().toISOString(),
           },
           topStocks: {
             edges: [],
@@ -622,9 +649,9 @@ export const unifiedDepartmentResolver = {
               hasNextPage: false,
               hasPreviousPage: false,
               startCursor: null,
-              endCursor: null
+              endCursor: null,
             },
-            totalCount: 0
+            totalCount: 0,
           },
           materialStocks: {
             edges: [],
@@ -633,18 +660,18 @@ export const unifiedDepartmentResolver = {
               hasNextPage: false,
               hasPreviousPage: false,
               startCursor: null,
-              endCursor: null
+              endCursor: null,
             },
-            totalCount: 0
+            totalCount: 0,
           },
           recentActivities: [],
           orderCompletions: [],
           loading: false,
-          error: error instanceof Error ? error.message : 'Unknown error occurred'
+          error: error instanceof Error ? error.message : 'Unknown error occurred',
         };
       }
-    }
-  }
+    },
+  },
 };
 
 /**
@@ -676,16 +703,16 @@ async function fetchStats(
         .from(config.statsTable)
         .select('*', { count: 'exact', head: true })
         .gte(config.statsDateField, today.toISOString()),
-      
+
       supabase
         .from(config.statsTable)
         .select('*', { count: 'exact', head: true })
         .gte(config.statsDateField, past7Days.toISOString()),
-      
+
       supabase
         .from(config.statsTable)
         .select('*', { count: 'exact', head: true })
-        .gte(config.statsDateField, past14Days.toISOString())
+        .gte(config.statsDateField, past14Days.toISOString()),
     ]);
 
     return {
@@ -693,7 +720,7 @@ async function fetchStats(
       todayFinished: undefined,
       past7Days: past7Result.count || 0,
       past14Days: past14Result.count || 0,
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
     };
   } else {
     // Count finished pallets for injection/pipe
@@ -702,7 +729,7 @@ async function fetchStats(
       [key: string]: string | number | Date;
     }
     let allRecords: StatsRecord[] = [];
-    
+
     if (config.statsTable === 'record_palletinfo') {
       const { data } = await supabase
         .from(config.statsTable)
@@ -715,7 +742,7 @@ async function fetchStats(
         .from(config.statsTable)
         .select(`${config.statsDateField}, plt_num, record_palletinfo!inner(product_code)`)
         .gte(config.statsDateField, past14Days.toISOString());
-      
+
       // Type the data properly based on field selection
       type TransferRecord = {
         [key: string]: string | number | Date | { product_code: string };
@@ -724,13 +751,18 @@ async function fetchStats(
           product_code: string;
         };
       } & Record<string, unknown>;
-      
+
       allRecords = ((data || []) as TransferRecord[])
-        .filter((r): r is TransferRecord => typeof r === 'object' && r !== null && 'record_palletinfo' in r)
-        .map((r): StatsRecord => ({
-          product_code: r.record_palletinfo?.product_code || '',
-          [config.statsDateField]: r[config.statsDateField] as string | number | Date
-        }));
+        .filter(
+          (r): r is TransferRecord =>
+            typeof r === 'object' && r !== null && 'record_palletinfo' in r
+        )
+        .map(
+          (r): StatsRecord => ({
+            product_code: r.record_palletinfo?.product_code || '',
+            [config.statsDateField]: r[config.statsDateField] as string | number | Date,
+          })
+        );
     }
 
     if (!allRecords || allRecords.length === 0) {
@@ -739,18 +771,22 @@ async function fetchStats(
         todayTransferred: undefined,
         past7Days: 0,
         past14Days: 0,
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
       };
     }
 
     // Get product types for filtering
-    const productCodes = [...new Set(allRecords.map(r => r.product_code as string).filter(Boolean))];
+    const productCodes = [
+      ...new Set(allRecords.map(r => r.product_code as string).filter(Boolean)),
+    ];
     const { data: productData } = await supabase
       .from('data_code')
       .select('code, type')
       .in('code', productCodes);
 
-    const productTypeMap = new Map(productData?.map((p: Record<string, unknown>) => [p.code as string, p.type as string]) || []);
+    const productTypeMap = new Map(
+      productData?.map((p: Record<string, unknown>) => [p.code as string, p.type as string]) || []
+    );
 
     // Apply department filter
     const filteredRecords = allRecords.filter(r => {
@@ -759,12 +795,12 @@ async function fetchStats(
     });
 
     // Count by time period
-    const todayFinished = filteredRecords.filter(r => 
-      new Date(r[config.statsDateField] as string) >= today
+    const todayFinished = filteredRecords.filter(
+      r => new Date(r[config.statsDateField] as string) >= today
     ).length;
 
-    const past7DaysCount = filteredRecords.filter(r => 
-      new Date(r[config.statsDateField] as string) >= past7Days
+    const past7DaysCount = filteredRecords.filter(
+      r => new Date(r[config.statsDateField] as string) >= past7Days
     ).length;
 
     return {
@@ -772,7 +808,7 @@ async function fetchStats(
       todayTransferred: undefined,
       past7Days: past7DaysCount,
       past14Days: filteredRecords.length,
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
     };
   }
 }
@@ -792,18 +828,20 @@ async function fetchTopStocks(
   if (error || !latestStocks) return [];
 
   // Get unique stocks with their latest values
-  const stockMap = new Map<string, { level: number, updateTime: string, description: string }>();
+  const stockMap = new Map<string, { level: number; updateTime: string; description: string }>();
   for (const item of latestStocks) {
     if (!stockMap.has(item.stock as string)) {
       // Ensure update_time is a proper ISO string
-      const updateTime = item.update_time 
-        ? (typeof item.update_time === 'string' ? item.update_time : new Date(item.update_time as string | Date).toISOString())
+      const updateTime = item.update_time
+        ? typeof item.update_time === 'string'
+          ? item.update_time
+          : new Date(item.update_time as string | Date).toISOString()
         : new Date().toISOString();
-      
+
       stockMap.set(item.stock as string, {
         level: (item.stock_level as number) || 0,
         updateTime: updateTime,
-        description: (item.description as string) || ''
+        description: (item.description as string) || '',
       });
     }
   }
@@ -818,21 +856,24 @@ async function fetchTopStocks(
     const code = productCodes[i];
     const info = productInfos[i];
     const stockData = stockMap.get(code);
-    
-    if (stockData && typeof info === 'object' && 'type' in info && config.productFilter(info.type)) {
+
+    if (
+      stockData &&
+      typeof info === 'object' &&
+      'type' in info &&
+      config.productFilter(info.type)
+    ) {
       stockItems.push({
         stock: code,
         description: info.description || stockData.description,
         stockLevel: stockData.level,
         updateTime: stockData.updateTime || new Date().toISOString(),
-        type: info.type
+        type: info.type,
       });
     }
   }
 
-  return stockItems
-    .sort((a, b) => b.stockLevel - a.stockLevel)
-    .slice(0, 10);
+  return stockItems.sort((a, b) => b.stockLevel - a.stockLevel).slice(0, 10);
 }
 
 async function fetchMaterialStocks(
@@ -856,18 +897,20 @@ async function fetchMaterialStocks(
   if (error || !latestStocks) return [];
 
   // Get unique stocks with their latest values
-  const stockMap = new Map<string, { level: number, updateTime: string, description: string }>();
+  const stockMap = new Map<string, { level: number; updateTime: string; description: string }>();
   for (const item of latestStocks) {
     if (!stockMap.has(item.stock as string)) {
       // Ensure update_time is a proper ISO string
-      const updateTime = item.update_time 
-        ? (typeof item.update_time === 'string' ? item.update_time : new Date(item.update_time as string | Date).toISOString())
+      const updateTime = item.update_time
+        ? typeof item.update_time === 'string'
+          ? item.update_time
+          : new Date(item.update_time as string | Date).toISOString()
         : new Date().toISOString();
-      
+
       stockMap.set(item.stock as string, {
         level: (item.stock_level as number) || 0,
         updateTime: updateTime,
-        description: (item.description as string) || ''
+        description: (item.description as string) || '',
       });
     }
   }
@@ -882,7 +925,7 @@ async function fetchMaterialStocks(
     const code = materialCodes[i];
     const info = materialInfos[i];
     const stockData = stockMap.get(code);
-    
+
     if (stockData && typeof info === 'object' && 'type' in info) {
       // For INJECTION department: Only show Material type items
       if (config.type === 'INJECTION' && info.type !== 'Material') {
@@ -892,19 +935,18 @@ async function fetchMaterialStocks(
       if (config.type === 'PIPE' && info.type !== 'Material') {
         continue;
       }
-      
+
       materialItems.push({
         stock: code,
         description: info.description || stockData.description,
         stockLevel: stockData.level,
         updateTime: stockData.updateTime || new Date().toISOString(),
-        type: config.type === 'WAREHOUSE' ? 'MATERIAL' : info.type
+        type: config.type === 'WAREHOUSE' ? 'MATERIAL' : info.type,
       });
     }
   }
 
-  return materialItems
-    .sort((a, b) => b.stockLevel - a.stockLevel);
+  return materialItems.sort((a, b) => b.stockLevel - a.stockLevel);
 }
 
 async function fetchRecentActivities(
@@ -924,20 +966,27 @@ async function fetchRecentActivities(
   if (error || !historyData) return [];
 
   // Get staff names
-  const staffIds = [...new Set(historyData.map((h: Record<string, unknown>) => h.id as number).filter((id): id is number => id !== null))];
+  const staffIds = [
+    ...new Set(
+      historyData
+        .map((h: Record<string, unknown>) => h.id as number)
+        .filter((id): id is number => id !== null)
+    ),
+  ];
   const staffNames = await loaders.staffLoader.loadMany(staffIds);
   const staffMap = new Map(staffIds.map((id, index) => [id, staffNames[index] as string]));
 
   return historyData.slice(0, 7).map((activity: Record<string, unknown>) => ({
-    time: new Date(activity.time as string).toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    time: new Date(activity.time as string).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
     }),
-    staff: activity.id && typeof staffMap.get(activity.id as number) === 'string' 
-      ? staffMap.get(activity.id as number) as string 
-      : 'Unknown',
+    staff:
+      activity.id && typeof staffMap.get(activity.id as number) === 'string'
+        ? (staffMap.get(activity.id as number) as string)
+        : 'Unknown',
     action: activity.action as string,
-    detail: `${(activity.plt_num as string) || ''}-${(activity.remark as string) || ''}`
+    detail: `${(activity.plt_num as string) || ''}-${(activity.remark as string) || ''}`,
   }));
 }
 
@@ -965,8 +1014,11 @@ async function fetchOrderCompletions(
     // Group by order_ref and calculate totals with proper type conversion
     const orderMap = new Map<string, { totalProductQty: number; totalLoadedQty: number }>();
     ordersData.forEach((order: Record<string, unknown>) => {
-      const existing = orderMap.get(order.order_ref as string) || { totalProductQty: 0, totalLoadedQty: 0 };
-      
+      const existing = orderMap.get(order.order_ref as string) || {
+        totalProductQty: 0,
+        totalLoadedQty: 0,
+      };
+
       // Robust number conversion with fallbacks
       const loadedQty = (() => {
         if (typeof order.loaded_qty === 'number') return order.loaded_qty;
@@ -976,7 +1028,7 @@ async function fetchOrderCompletions(
         }
         return 0;
       })();
-      
+
       const productQty = (() => {
         if (typeof order.product_qty === 'number') return order.product_qty;
         if (typeof order.product_qty === 'string') {
@@ -985,24 +1037,24 @@ async function fetchOrderCompletions(
         }
         return 0;
       })();
-      
+
       orderMap.set(order.order_ref as string, {
         totalProductQty: existing.totalProductQty + productQty,
-        totalLoadedQty: existing.totalLoadedQty + loadedQty
+        totalLoadedQty: existing.totalLoadedQty + loadedQty,
       });
     });
 
     console.log('Order totals:', Array.from(orderMap.entries()).slice(0, 3));
 
     const uniqueOrderRefs = Array.from(orderMap.keys()).slice(0, 7);
-    
+
     // Fetch latest update for each order from order_loading_history
     const orderDataPromises = uniqueOrderRefs.map(async (orderRef: string) => {
       const orderTotals = orderMap.get(orderRef)!;
-      
+
       // Get latest action_time from order_loading_history (fallback to data_order created_at if no history)
       let latestUpdate = 'N/A';
-      
+
       // First try order_loading_history
       const { data: loadingHistory } = await supabase
         .from('order_loading_history')
@@ -1021,7 +1073,7 @@ async function fetchOrderCompletions(
           .eq('order_ref', orderRef)
           .order('created_at', { ascending: false })
           .limit(1);
-        
+
         if (orderData && orderData.length > 0) {
           latestUpdate = orderData[0].created_at as string;
         }
@@ -1031,17 +1083,17 @@ async function fetchOrderCompletions(
         orderRef,
         totalProductQty: orderTotals.totalProductQty,
         totalLoadedQty: orderTotals.totalLoadedQty,
-        latestUpdate
+        latestUpdate,
       };
     });
 
     const orderResults = await Promise.all(orderDataPromises);
-    
+
     // Check for PDFs in doc_upload table
     const docUrls = await loaders.documentLoader.loadMany(uniqueOrderRefs);
-    
+
     console.log('DocUrls result:', docUrls);
-    
+
     // Build results
     const orderCompletions: OrderCompletion[] = [];
     for (let i = 0; i < orderResults.length; i++) {
@@ -1053,28 +1105,29 @@ async function fetchOrderCompletions(
       const completionPercentage = (() => {
         if (result.totalProductQty <= 0) return 0;
         if (result.totalLoadedQty <= 0) return 0;
-        
+
         const percentage = (result.totalLoadedQty / result.totalProductQty) * 100;
-        
+
         // Ensure percentage is within valid range and is an integer
         return Math.min(100, Math.max(0, Math.round(percentage)));
       })();
-      
+
       orderCompletions.push({
         orderRef: result.orderRef,
         productQty: result.totalProductQty,
         loadedQty: result.totalLoadedQty,
         completionPercentage,
-        latestUpdate: result.latestUpdate && result.latestUpdate !== 'N/A'
-          ? new Date(result.latestUpdate).toLocaleString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })
-          : 'N/A',
+        latestUpdate:
+          result.latestUpdate && result.latestUpdate !== 'N/A'
+            ? new Date(result.latestUpdate).toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : 'N/A',
         hasPdf: typeof docUrl === 'string' && docUrl.length > 0,
-        docUrl: typeof docUrl === 'string' && docUrl.length > 0 ? docUrl : null
+        docUrl: typeof docUrl === 'string' && docUrl.length > 0 ? docUrl : null,
       });
     }
 

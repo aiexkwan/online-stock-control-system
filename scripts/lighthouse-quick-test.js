@@ -49,10 +49,12 @@ async function measurePerformance(page, url) {
       resourceCount: performance.getEntriesByType('resource').length,
 
       // 記憶體使用
-      memory: performance.memory ? {
-        usedJSHeapSize: Math.round(performance.memory.usedJSHeapSize / 1048576),
-        totalJSHeapSize: Math.round(performance.memory.totalJSHeapSize / 1048576),
-      } : null,
+      memory: performance.memory
+        ? {
+            usedJSHeapSize: Math.round(performance.memory.usedJSHeapSize / 1048576),
+            totalJSHeapSize: Math.round(performance.memory.totalJSHeapSize / 1048576),
+          }
+        : null,
     };
   });
 
@@ -61,23 +63,29 @@ async function measurePerformance(page, url) {
   const cssCoverage = await page.coverage.stopCSSCoverage();
 
   // 計算 bundle 大小和使用率
-  const jsStats = jsCoverage.reduce((acc, entry) => {
-    const total = entry.text.length;
-    const used = entry.ranges.reduce((sum, range) => sum + (range.end - range.start), 0);
-    return {
-      total: acc.total + total,
-      used: acc.used + used,
-    };
-  }, { total: 0, used: 0 });
+  const jsStats = jsCoverage.reduce(
+    (acc, entry) => {
+      const total = entry.text.length;
+      const used = entry.ranges.reduce((sum, range) => sum + (range.end - range.start), 0);
+      return {
+        total: acc.total + total,
+        used: acc.used + used,
+      };
+    },
+    { total: 0, used: 0 }
+  );
 
-  const cssStats = cssCoverage.reduce((acc, entry) => {
-    const total = entry.text.length;
-    const used = entry.ranges.reduce((sum, range) => sum + (range.end - range.start), 0);
-    return {
-      total: acc.total + total,
-      used: acc.used + used,
-    };
-  }, { total: 0, used: 0 });
+  const cssStats = cssCoverage.reduce(
+    (acc, entry) => {
+      const total = entry.text.length;
+      const used = entry.ranges.reduce((sum, range) => sum + (range.end - range.start), 0);
+      return {
+        total: acc.total + total,
+        used: acc.used + used,
+      };
+    },
+    { total: 0, used: 0 }
+  );
 
   const totalTime = Date.now() - startTime;
 
@@ -93,7 +101,8 @@ async function measurePerformance(page, url) {
       css: {
         total: Math.round(cssStats.total / 1024) + ' KB',
         used: Math.round(cssStats.used / 1024) + ' KB',
-        coverage: cssStats.total > 0 ? Math.round((cssStats.used / cssStats.total) * 100) + '%' : '0%',
+        coverage:
+          cssStats.total > 0 ? Math.round((cssStats.used / cssStats.total) * 100) + '%' : '0%',
       },
     },
   };
@@ -129,7 +138,6 @@ async function main() {
       console.log(`   - LCP: ${metrics.LCP.toFixed(0)}ms`);
       console.log(`   - Load: ${metrics.loadComplete.toFixed(0)}ms`);
       console.log(`   - JS Coverage: ${metrics.bundleStats.js.coverage}\n`);
-
     } catch (error) {
       console.error(`❌ ${pageConfig.name} 失敗: ${error.message}\n`);
       results.push({
@@ -191,13 +199,21 @@ function generateSummary(results) {
   }
 
   const avgMetrics = {
-    FCP: Math.round(successResults.reduce((sum, r) => sum + r.metrics.FCP, 0) / successResults.length),
-    LCP: Math.round(successResults.reduce((sum, r) => sum + r.metrics.LCP, 0) / successResults.length),
-    loadComplete: Math.round(successResults.reduce((sum, r) => sum + r.metrics.loadComplete, 0) / successResults.length),
-    jsCoverage: Math.round(successResults.reduce((sum, r) => {
-      const coverage = parseInt(r.metrics.bundleStats.js.coverage);
-      return sum + coverage;
-    }, 0) / successResults.length),
+    FCP: Math.round(
+      successResults.reduce((sum, r) => sum + r.metrics.FCP, 0) / successResults.length
+    ),
+    LCP: Math.round(
+      successResults.reduce((sum, r) => sum + r.metrics.LCP, 0) / successResults.length
+    ),
+    loadComplete: Math.round(
+      successResults.reduce((sum, r) => sum + r.metrics.loadComplete, 0) / successResults.length
+    ),
+    jsCoverage: Math.round(
+      successResults.reduce((sum, r) => {
+        const coverage = parseInt(r.metrics.bundleStats.js.coverage);
+        return sum + coverage;
+      }, 0) / successResults.length
+    ),
   };
 
   return {
@@ -229,28 +245,37 @@ function updatePerformanceDoc(report) {
 
 | 頁面 | FCP (ms) | LCP (ms) | 加載時間 (ms) | JS 覆蓋率 | 狀態 |
 |------|----------|----------|---------------|-----------|------|
-${report.results.map(r => {
-  if (r.status === 'error') {
-    return `| ${r.name} | - | - | - | - | ❌ |`;
-  }
-  const m = r.metrics;
-  return `| ${r.name} | ${m.FCP.toFixed(0)} | ${m.LCP.toFixed(0)} | ${m.loadComplete.toFixed(0)} | ${m.bundleStats.js.coverage} | ✅ |`;
-}).join('\n')}
+${report.results
+  .map(r => {
+    if (r.status === 'error') {
+      return `| ${r.name} | - | - | - | - | ❌ |`;
+    }
+    const m = r.metrics;
+    return `| ${r.name} | ${m.FCP.toFixed(0)} | ${m.LCP.toFixed(0)} | ${m.loadComplete.toFixed(0)} | ${m.bundleStats.js.coverage} | ✅ |`;
+  })
+  .join('\n')}
 
 ### Bundle 統計
 
-${report.results.filter(r => r.status === 'success').map(r => {
-  const m = r.metrics;
-  return `**${r.name}**
+${report.results
+  .filter(r => r.status === 'success')
+  .map(r => {
+    const m = r.metrics;
+    return `**${r.name}**
 - JS: ${m.bundleStats.js.used} / ${m.bundleStats.js.total} (${m.bundleStats.js.coverage})
 - CSS: ${m.bundleStats.css.used} / ${m.bundleStats.css.total} (${m.bundleStats.css.coverage})`;
-}).join('\n\n')}
+  })
+  .join('\n\n')}
 
-${report.summary.avgMetrics ? `### 平均指標
+${
+  report.summary.avgMetrics
+    ? `### 平均指標
 - FCP: ${report.summary.avgMetrics.FCP}ms
 - LCP: ${report.summary.avgMetrics.LCP}ms
 - 完全加載: ${report.summary.avgMetrics.loadComplete}ms
-- JS 覆蓋率: ${report.summary.avgMetrics.jsCoverage}%` : ''}
+- JS 覆蓋率: ${report.summary.avgMetrics.jsCoverage}%`
+    : ''
+}
 
 ---
 `;

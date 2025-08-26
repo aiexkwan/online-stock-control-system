@@ -99,7 +99,7 @@ export const orderResolvers = {
         // 權限檢查
         if (!context.user) {
           throw new GraphQLError('Unauthorized', {
-            extensions: { code: 'UNAUTHENTICATED' }
+            extensions: { code: 'UNAUTHENTICATED' },
           });
         }
 
@@ -116,7 +116,9 @@ export const orderResolvers = {
           query = query.eq('order_ref', input.orderRef);
         }
         if (input.customerName) {
-          query = query.or(`invoice_to.ilike.%${input.customerName}%,delivery_add.ilike.%${input.customerName}%`);
+          query = query.or(
+            `invoice_to.ilike.%${input.customerName}%,delivery_add.ilike.%${input.customerName}%`
+          );
         }
         if (input.dateRange) {
           query = query
@@ -131,29 +133,32 @@ export const orderResolvers = {
 
         if (error) {
           throw new GraphQLError(`Database error: ${error.message}`, {
-            extensions: { code: 'INTERNAL_SERVER_ERROR' }
+            extensions: { code: 'INTERNAL_SERVER_ERROR' },
           });
         }
 
         // 獲取訂單的載入歷史以計算載入數量
         const typedOrders = (orders || []) as unknown as DataOrderRecord[];
-        const orderRefs = typedOrders.map((o) => o.order_ref);
+        const orderRefs = typedOrders.map(o => o.order_ref);
         let loadingHistory: OrderLoadingHistoryRecord[] = [];
-        
+
         if (orderRefs.length > 0) {
           const { data: historyData } = await supabase
             .from('order_loading_history')
             .select('*')
             .in('order_ref', orderRefs);
-          
+
           loadingHistory = (historyData || []) as unknown as OrderLoadingHistoryRecord[];
         }
 
         // 計算每個訂單的載入數量
-        const loadingByOrder = loadingHistory.reduce((acc: Record<string, number>, record: OrderLoadingHistoryRecord) => {
-          acc[record.order_ref] = (acc[record.order_ref] || 0) + record.quantity;
-          return acc;
-        }, {});
+        const loadingByOrder = loadingHistory.reduce(
+          (acc: Record<string, number>, record: OrderLoadingHistoryRecord) => {
+            acc[record.order_ref] = (acc[record.order_ref] || 0) + record.quantity;
+            return acc;
+          },
+          {}
+        );
 
         // Group orders by order_ref to get order items
         const orderGroups = typedOrders.reduce((acc: Record<string, DataOrderRecord[]>, order) => {
@@ -171,21 +176,25 @@ export const orderResolvers = {
           const loadedQuantity = loadingByOrder[orderRef] || 0;
           const loadedQtyFromString = parseInt(firstItem.loaded_qty) || 0;
           const actualLoadedQty = Math.max(loadedQuantity, loadedQtyFromString);
-          
+
           return {
             id: firstItem.uuid,
             orderRef: orderRef,
             customerName: firstItem.invoice_to || firstItem.delivery_add,
-            status: actualLoadedQty >= totalQuantity ? 'COMPLETED' : 
-                   actualLoadedQty > 0 ? 'IN_PROGRESS' : 'PENDING',
-            items: orderItems.map((item) => ({
+            status:
+              actualLoadedQty >= totalQuantity
+                ? 'COMPLETED'
+                : actualLoadedQty > 0
+                  ? 'IN_PROGRESS'
+                  : 'PENDING',
+            items: orderItems.map(item => ({
               id: item.uuid,
               productCode: item.product_code,
               productDescription: item.product_desc,
               quantity: item.product_qty,
               loadedQuantity: 0, // Will be calculated from loading history
               unitPrice: parseFloat(item.unit_price) || 0,
-              status: 'PENDING'
+              status: 'PENDING',
             })),
             totalQuantity: totalQuantity,
             loadedQuantity: actualLoadedQty,
@@ -218,24 +227,28 @@ export const orderResolvers = {
       }
     },
 
-    warehouseOrder: async (_: unknown, args: { id?: string; orderRef?: string }, context: GraphQLContext) => {
+    warehouseOrder: async (
+      _: unknown,
+      args: { id?: string; orderRef?: string },
+      context: GraphQLContext
+    ) => {
       if (!context.user) {
         throw new GraphQLError('Unauthorized', {
-          extensions: { code: 'UNAUTHENTICATED' }
+          extensions: { code: 'UNAUTHENTICATED' },
         });
       }
 
       if (!args.id && !args.orderRef) {
         throw new GraphQLError('Either id or orderRef must be provided', {
-          extensions: { code: 'BAD_USER_INPUT' }
+          extensions: { code: 'BAD_USER_INPUT' },
         });
       }
 
       const supabase = await createClient();
-      
+
       // Query data_order table for the actual order
       let query = supabase.from('data_order').select('*');
-      
+
       if (args.id) {
         // Query by UUID
         query = query.eq('uuid', args.id);
@@ -248,39 +261,43 @@ export const orderResolvers = {
 
       if (error || !orders || orders.length === 0) {
         throw new GraphQLError('Order not found', {
-          extensions: { code: 'NOT_FOUND' }
+          extensions: { code: 'NOT_FOUND' },
         });
       }
 
       // Type the orders array
       const typedOrders = orders as unknown as DataOrderRecord[];
-      
+
       // Group items by order_ref (in case of multiple items in same order)
       const orderRef = typedOrders[0].order_ref;
-      const orderItems = typedOrders.filter((o) => o.order_ref === orderRef);
-      
+      const orderItems = typedOrders.filter(o => o.order_ref === orderRef);
+
       // Get loading history for this order
       const { data: loadingHistory } = await supabase
         .from('order_loading_history')
         .select('*')
         .eq('order_ref', orderRef);
-      
+
       const typedLoadingHistory = (loadingHistory || []) as unknown as OrderLoadingHistoryRecord[];
       const loadedQuantity = typedLoadingHistory.reduce(
-        (sum: number, record) => sum + record.quantity, 
+        (sum: number, record) => sum + record.quantity,
         0
       );
-      
+
       const totalQuantity = orderItems.reduce((sum: number, item) => sum + item.product_qty, 0);
       const loadedQtyFromString = parseInt(orderItems[0].loaded_qty) || 0;
       const actualLoadedQty = Math.max(loadedQuantity, loadedQtyFromString);
-      
+
       return {
         id: orderItems[0].uuid,
         orderRef: orderRef,
         customerName: orderItems[0].invoice_to || orderItems[0].delivery_add,
-        status: actualLoadedQty >= totalQuantity ? 'COMPLETED' : 
-               actualLoadedQty > 0 ? 'IN_PROGRESS' : 'PENDING',
+        status:
+          actualLoadedQty >= totalQuantity
+            ? 'COMPLETED'
+            : actualLoadedQty > 0
+              ? 'IN_PROGRESS'
+              : 'PENDING',
         items: orderItems.map((item: DataOrderRecord) => ({
           id: item.uuid,
           productCode: item.product_code,
@@ -288,7 +305,7 @@ export const orderResolvers = {
           quantity: item.product_qty,
           loadedQuantity: 0, // Will be calculated from loading history
           unitPrice: parseFloat(item.unit_price) || 0,
-          status: 'PENDING'
+          status: 'PENDING',
         })),
         totalQuantity: totalQuantity,
         loadedQuantity: actualLoadedQty,
@@ -302,22 +319,25 @@ export const orderResolvers = {
     acoOrderReport: async (_: unknown, args: { reference: string }, context: GraphQLContext) => {
       if (!context.user) {
         throw new GraphQLError('Unauthorized', {
-          extensions: { code: 'UNAUTHENTICATED' }
+          extensions: { code: 'UNAUTHENTICATED' },
         });
       }
 
       const reportResult = await getAcoReportData(args.reference);
 
       if (!reportResult.success) {
-        throw new GraphQLError(toGraphQLErrorMessage(reportResult.error || 'Failed to fetch ACO order data'), {
-          extensions: { code: 'INTERNAL_SERVER_ERROR' }
-        });
+        throw new GraphQLError(
+          toGraphQLErrorMessage(reportResult.error || 'Failed to fetch ACO order data'),
+          {
+            extensions: { code: 'INTERNAL_SERVER_ERROR' },
+          }
+        );
       }
 
       const reportData = reportResult.data;
       if (!reportData || reportData.length === 0) {
         throw new GraphQLError('No data found for the selected ACO order', {
-          extensions: { code: 'NOT_FOUND' }
+          extensions: { code: 'NOT_FOUND' },
         });
       }
 
@@ -338,20 +358,24 @@ export const orderResolvers = {
       };
     },
 
-    orderLoadingRecords: async (_: unknown, args: OrderLoadingFilterArgs, context: GraphQLContext) => {
+    orderLoadingRecords: async (
+      _: unknown,
+      args: OrderLoadingFilterArgs,
+      context: GraphQLContext
+    ) => {
       if (!context.user) {
         throw new GraphQLError('Unauthorized', {
-          extensions: { code: 'UNAUTHENTICATED' }
+          extensions: { code: 'UNAUTHENTICATED' },
         });
       }
 
       const { input } = args;
-      
+
       // 使用 DataSource 架構
       const dataSource = orderLoadingDataSources.get('loading-details');
       if (!dataSource) {
         throw new GraphQLError('Loading details data source not found', {
-          extensions: { code: 'INTERNAL_SERVER_ERROR' }
+          extensions: { code: 'INTERNAL_SERVER_ERROR' },
         });
       }
 
@@ -367,7 +391,7 @@ export const orderResolvers = {
 
       if (!rawData) {
         throw new GraphQLError('No data found for the specified criteria', {
-          extensions: { code: 'NOT_FOUND' }
+          extensions: { code: 'NOT_FOUND' },
         });
       }
 
@@ -378,7 +402,10 @@ export const orderResolvers = {
 
       // 計算摘要
       const summary = {
-        totalLoaded: records.reduce((sum: number, r: LoadingRecord) => sum + (r.loaded_qty || 0), 0),
+        totalLoaded: records.reduce(
+          (sum: number, r: LoadingRecord) => sum + (r.loaded_qty || 0),
+          0
+        ),
         uniqueOrders: new Set(records.map((r: LoadingRecord) => r.order_number)).size,
         uniqueProducts: new Set(records.map((r: LoadingRecord) => r.product_code)).size,
         averageLoadPerOrder: 0,
@@ -407,7 +434,7 @@ export const orderResolvers = {
     updateAcoOrder: async (_: unknown, args: UpdateAcoOrderArgs, context: GraphQLContext) => {
       if (!context.user) {
         throw new GraphQLError('Unauthorized', {
-          extensions: { code: 'UNAUTHENTICATED' }
+          extensions: { code: 'UNAUTHENTICATED' },
         });
       }
 
@@ -439,7 +466,7 @@ export const orderResolvers = {
 
         if (error) {
           throw new GraphQLError(`Failed to update ACO order: ${error.message}`, {
-            extensions: { code: 'INTERNAL_SERVER_ERROR' }
+            extensions: { code: 'INTERNAL_SERVER_ERROR' },
           });
         }
 
@@ -471,23 +498,27 @@ export const orderResolvers = {
           throw error;
         }
         throw new GraphQLError('Failed to update ACO order', {
-          extensions: { 
+          extensions: {
             code: 'INTERNAL_SERVER_ERROR',
-            originalError: error instanceof Error ? error.message : String(error)
-          }
+            originalError: error instanceof Error ? error.message : String(error),
+          },
         });
       }
     },
 
-    updateWarehouseOrderStatus: async (_: unknown, args: { orderId: string; status: string }, context: GraphQLContext) => {
+    updateWarehouseOrderStatus: async (
+      _: unknown,
+      args: { orderId: string; status: string },
+      context: GraphQLContext
+    ) => {
       if (!context.user) {
         throw new GraphQLError('Unauthorized', {
-          extensions: { code: 'UNAUTHENTICATED' }
+          extensions: { code: 'UNAUTHENTICATED' },
         });
       }
 
       const supabase = await createClient();
-      
+
       // First, get the order
       const { data: orders } = await supabase
         .from('data_order')
@@ -496,14 +527,14 @@ export const orderResolvers = {
 
       if (!orders || orders.length === 0) {
         throw new GraphQLError('Order not found', {
-          extensions: { code: 'NOT_FOUND' }
+          extensions: { code: 'NOT_FOUND' },
         });
       }
 
       const typedOrders = orders as unknown as DataOrderRecord[];
       const orderRef = typedOrders[0].order_ref;
-      const orderItems = typedOrders.filter((o) => o.order_ref === orderRef);
-      
+      const orderItems = typedOrders.filter(o => o.order_ref === orderRef);
+
       // Update loaded_qty based on status
       let updateData: Partial<DataOrderRecord> = {};
       if (args.status === 'COMPLETED') {
@@ -512,13 +543,10 @@ export const orderResolvers = {
       } else if (args.status === 'CANCELLED') {
         updateData.loaded_qty = '0';
       }
-      
+
       // Update all items in the order
       if (Object.keys(updateData).length > 0) {
-        await supabase
-          .from('data_order')
-          .update(updateData)
-          .eq('order_ref', orderRef);
+        await supabase.from('data_order').update(updateData).eq('order_ref', orderRef);
       }
 
       // Get loading history for this order
@@ -526,19 +554,22 @@ export const orderResolvers = {
         .from('order_loading_history')
         .select('*')
         .eq('order_ref', orderRef);
-      
+
       const typedLoadingHistory = (loadingHistory || []) as unknown as OrderLoadingHistoryRecord[];
       const loadedQuantity = typedLoadingHistory.reduce(
-        (sum: number, record) => sum + record.quantity, 
+        (sum: number, record) => sum + record.quantity,
         0
       );
-      
+
       const totalQuantity = orderItems.reduce((sum, item) => sum + item.product_qty, 0);
       const loadedQtyFromString = parseInt(orderItems[0].loaded_qty) || 0;
-      const actualLoadedQty = args.status === 'COMPLETED' ? totalQuantity : 
-                             args.status === 'CANCELLED' ? 0 :
-                             Math.max(loadedQuantity, loadedQtyFromString);
-      
+      const actualLoadedQty =
+        args.status === 'COMPLETED'
+          ? totalQuantity
+          : args.status === 'CANCELLED'
+            ? 0
+            : Math.max(loadedQuantity, loadedQtyFromString);
+
       return {
         id: orderItems[0].uuid,
         orderRef: orderRef,
@@ -551,7 +582,7 @@ export const orderResolvers = {
           quantity: item.product_qty,
           loadedQuantity: 0, // Will be calculated from loading history
           unitPrice: parseFloat(item.unit_price) || 0,
-          status: 'PENDING'
+          status: 'PENDING',
         })),
         totalQuantity: totalQuantity,
         loadedQuantity: actualLoadedQty,
@@ -562,15 +593,19 @@ export const orderResolvers = {
       };
     },
 
-    cancelWarehouseOrder: async (_: unknown, args: { orderId: string; reason?: string }, context: GraphQLContext) => {
+    cancelWarehouseOrder: async (
+      _: unknown,
+      args: { orderId: string; reason?: string },
+      context: GraphQLContext
+    ) => {
       if (!context.user) {
         throw new GraphQLError('Unauthorized', {
-          extensions: { code: 'UNAUTHENTICATED' }
+          extensions: { code: 'UNAUTHENTICATED' },
         });
       }
 
       const supabase = await createClient();
-      
+
       // Get the order
       const { data: orders } = await supabase
         .from('data_order')
@@ -579,41 +614,39 @@ export const orderResolvers = {
 
       if (!orders || orders.length === 0) {
         throw new GraphQLError('Order not found', {
-          extensions: { code: 'NOT_FOUND' }
+          extensions: { code: 'NOT_FOUND' },
         });
       }
 
       const typedOrders = orders as unknown as DataOrderRecord[];
       const orderRef = typedOrders[0].order_ref;
-      const orderItems = typedOrders.filter((o) => o.order_ref === orderRef);
-      
+      const orderItems = typedOrders.filter(o => o.order_ref === orderRef);
+
       // Update customer_ref field with cancellation reason
       const cancelReason = `CANCELLED: ${args.reason || 'No reason provided'} at ${new Date().toISOString()}`;
-      
+
       await supabase
         .from('data_order')
-        .update({ 
+        .update({
           customer_ref: cancelReason,
-          loaded_qty: '0' // Reset loaded quantity
+          loaded_qty: '0', // Reset loaded quantity
         })
         .eq('order_ref', orderRef);
 
       // Add cancellation record to loading history
-      await supabase
-        .from('order_loading_history')
-        .insert({
-          order_ref: orderRef,
-          pallet_num: 'N/A',
-          product_code: orderItems[0].product_code,
-          quantity: 0,
-          action_type: 'CANCELLED',
-          action_by: context.user.id || 'system',
-          action_time: new Date().toISOString(),
-          remark: args.reason || 'Order cancelled via GraphQL'
-        });
-      
+      await supabase.from('order_loading_history').insert({
+        order_ref: orderRef,
+        pallet_num: 'N/A',
+        product_code: orderItems[0].product_code,
+        quantity: 0,
+        action_type: 'CANCELLED',
+        action_by: context.user.id || 'system',
+        action_time: new Date().toISOString(),
+        remark: args.reason || 'Order cancelled via GraphQL',
+      });
+
       const totalQuantity = orderItems.reduce((sum, item) => sum + item.product_qty, 0);
-      
+
       return {
         id: orderItems[0].uuid,
         orderRef: orderRef,
@@ -626,7 +659,7 @@ export const orderResolvers = {
           quantity: item.product_qty,
           loadedQuantity: 0, // Cancelled orders have no loaded quantity
           unitPrice: parseFloat(item.unit_price) || 0,
-          status: 'CANCELLED'
+          status: 'CANCELLED',
         })),
         totalQuantity: totalQuantity,
         loadedQuantity: 0,

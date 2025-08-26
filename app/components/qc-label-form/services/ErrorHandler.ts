@@ -351,21 +351,21 @@ export class ErrorHandler {
 
 // Export singleton instance - lazy initialization to avoid SSR issues
 export const errorHandler = {
-  handleValidationError: (...args: Parameters<ErrorHandler['handleValidationError']>) => 
+  handleValidationError: (...args: Parameters<ErrorHandler['handleValidationError']>) =>
     ErrorHandler.getInstance().handleValidationError(...args),
-  handleApiError: (...args: Parameters<ErrorHandler['handleApiError']>) => 
+  handleApiError: (...args: Parameters<ErrorHandler['handleApiError']>) =>
     ErrorHandler.getInstance().handleApiError(...args),
-  handleNetworkError: (...args: Parameters<ErrorHandler['handleNetworkError']>) => 
+  handleNetworkError: (...args: Parameters<ErrorHandler['handleNetworkError']>) =>
     ErrorHandler.getInstance().handleNetworkError(...args),
-  handleAuthError: (...args: Parameters<ErrorHandler['handleAuthError']>) => 
+  handleAuthError: (...args: Parameters<ErrorHandler['handleAuthError']>) =>
     ErrorHandler.getInstance().handleAuthError(...args),
-  handlePdfError: (...args: Parameters<ErrorHandler['handlePdfError']>) => 
+  handlePdfError: (...args: Parameters<ErrorHandler['handlePdfError']>) =>
     ErrorHandler.getInstance().handlePdfError(...args),
-  handleSuccess: (...args: Parameters<ErrorHandler['handleSuccess']>) => 
+  handleSuccess: (...args: Parameters<ErrorHandler['handleSuccess']>) =>
     ErrorHandler.getInstance().handleSuccess(...args),
-  handleWarning: (...args: Parameters<ErrorHandler['handleWarning']>) => 
+  handleWarning: (...args: Parameters<ErrorHandler['handleWarning']>) =>
     ErrorHandler.getInstance().handleWarning(...args),
-  handleInfo: (...args: Parameters<ErrorHandler['handleInfo']>) => 
+  handleInfo: (...args: Parameters<ErrorHandler['handleInfo']>) =>
     ErrorHandler.getInstance().handleInfo(...args),
   getErrorReports: () => ErrorHandler.getInstance().getErrorReports(),
   clearErrorReports: () => ErrorHandler.getInstance().clearErrorReports(),

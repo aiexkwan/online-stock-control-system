@@ -187,7 +187,10 @@ export class InventoryAnalysisService {
   /**
    * 主要查詢方法 - 整合 Supabase RPC 的 Single Query 實現
    */
-  async getAnalysis(input: InventoryAnalysisInput, requestId: string): Promise<InventoryAnalysisResult> {
+  async getAnalysis(
+    input: InventoryAnalysisInput,
+    requestId: string
+  ): Promise<InventoryAnalysisResult> {
     const startTime = Date.now();
 
     try {
@@ -196,7 +199,7 @@ export class InventoryAnalysisService {
       // 檢查快取
       const cacheKey = this.generateCacheKey(input);
       const cachedResult = await this.getFromCache(cacheKey);
-      
+
       if (cachedResult) {
         console.log(`[InventoryAnalysisService-${requestId}] Cache hit`);
         return {
@@ -205,32 +208,33 @@ export class InventoryAnalysisService {
             ...cachedResult.metadata,
             requestId,
             cacheStatus: 'HIT' as const,
-          }
+          },
         };
       }
 
       // 調用 Supabase RPC
       const rpcResult = await this.callInventoryAnalysisRPC(input, requestId);
-      
+
       // 轉換數據格式
       const analysisResult = await this.transformRPCResponse(rpcResult, requestId, startTime);
 
       // 存儲到快取
       await this.saveToCache(cacheKey, analysisResult);
 
-      console.log(`[InventoryAnalysisService-${requestId}] Analysis completed in ${Date.now() - startTime}ms`);
-      
-      return analysisResult;
+      console.log(
+        `[InventoryAnalysisService-${requestId}] Analysis completed in ${Date.now() - startTime}ms`
+      );
 
+      return analysisResult;
     } catch (error) {
       console.error(`[InventoryAnalysisService-${requestId}] Error:`, error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to analyze inventory';
       throw new GraphQLError(toGraphQLErrorMessage(errorMessage), {
-        extensions: { 
+        extensions: {
           code: 'INVENTORY_ANALYSIS_ERROR',
           requestId,
-          executionTime: Date.now() - startTime
-        }
+          executionTime: Date.now() - startTime,
+        },
       });
     }
   }
@@ -264,13 +268,13 @@ export class InventoryAnalysisService {
 
     if (error) {
       throw new GraphQLError(toGraphQLErrorMessage(`RPC call failed: ${error.message}`), {
-        extensions: { code: 'RPC_ERROR' }
+        extensions: { code: 'RPC_ERROR' },
       });
     }
 
     if (!data) {
       throw new GraphQLError(toGraphQLErrorMessage('No data returned from RPC'), {
-        extensions: { code: 'NO_DATA' }
+        extensions: { code: 'NO_DATA' },
       });
     }
 
@@ -280,7 +284,11 @@ export class InventoryAnalysisService {
   /**
    * 轉換 RPC 響應為 GraphQL 格式
    */
-  private async transformRPCResponse(rpcData: RPCResponse, requestId: string, startTime: number): Promise<InventoryAnalysisResult> {
+  private async transformRPCResponse(
+    rpcData: RPCResponse,
+    requestId: string,
+    startTime: number
+  ): Promise<InventoryAnalysisResult> {
     const products = this.transformProducts(rpcData.products || []);
     const aggregation = this.transformAggregation(rpcData.aggregation || {});
     const totalCount = safeNumber(rpcData.total_count, products.length);
@@ -349,7 +357,9 @@ export class InventoryAnalysisService {
   /**
    * 轉換聚合數據
    */
-  private transformAggregation(aggregation: NonNullable<RPCResponse['aggregation']>): InventoryAnalysisAggregation {
+  private transformAggregation(
+    aggregation: NonNullable<RPCResponse['aggregation']>
+  ): InventoryAnalysisAggregation {
     return {
       totalProducts: safeNumber(aggregation.total_products, 0),
       totalQuantity: safeNumber(aggregation.total_quantity, 0),
@@ -368,12 +378,12 @@ export class InventoryAnalysisService {
     return breakdown.map((item: unknown) => {
       const itemData = item as CategoryBreakdownItem;
       return {
-      category: safeString(itemData.category, ''),
-      productCount: safeNumber(itemData.product_count, 0),
-      totalQuantity: safeNumber(itemData.total_quantity, 0),
-      totalValue: safeNumber(itemData.total_value, 0),
-      percentage: safeNumber(itemData.percentage, 0),
-    };
+        category: safeString(itemData.category, ''),
+        productCount: safeNumber(itemData.product_count, 0),
+        totalQuantity: safeNumber(itemData.total_quantity, 0),
+        totalValue: safeNumber(itemData.total_value, 0),
+        percentage: safeNumber(itemData.percentage, 0),
+      };
     });
   }
 
@@ -384,12 +394,12 @@ export class InventoryAnalysisService {
     return breakdown.map((item: unknown) => {
       const itemData = item as WarehouseBreakdownItem;
       return {
-      warehouse: safeString(itemData.warehouse, ''),
-      productCount: safeNumber(itemData.product_count, 0),
-      totalQuantity: safeNumber(itemData.total_quantity, 0),
-      totalValue: safeNumber(itemData.total_value, 0),
-      percentage: safeNumber(itemData.percentage, 0),
-    };
+        warehouse: safeString(itemData.warehouse, ''),
+        productCount: safeNumber(itemData.product_count, 0),
+        totalQuantity: safeNumber(itemData.total_quantity, 0),
+        totalValue: safeNumber(itemData.total_value, 0),
+        percentage: safeNumber(itemData.percentage, 0),
+      };
     });
   }
 
@@ -408,7 +418,10 @@ export class InventoryAnalysisService {
   /**
    * 決定庫存狀態
    */
-  private determineStockStatus(quantity: number, movement: number): InventoryAnalysisProduct['stockStatus'] {
+  private determineStockStatus(
+    quantity: number,
+    movement: number
+  ): InventoryAnalysisProduct['stockStatus'] {
     if (quantity === 0) return 'OUT_OF_STOCK';
     if (quantity < 10) return 'LOW_STOCK';
     if (movement > 0 && quantity / movement > 100) return 'OVERSTOCK';
@@ -428,7 +441,10 @@ export class InventoryAnalysisService {
       hasNextPage: currentPage < totalPages,
       hasPreviousPage: currentPage > 1,
       startCursor: offset > 0 ? Buffer.from(`offset:${offset}`).toString('base64') : undefined,
-      endCursor: offset + limit < totalCount ? Buffer.from(`offset:${offset + limit}`).toString('base64') : undefined,
+      endCursor:
+        offset + limit < totalCount
+          ? Buffer.from(`offset:${offset + limit}`).toString('base64')
+          : undefined,
       totalCount,
       totalPages,
       currentPage,
@@ -440,12 +456,12 @@ export class InventoryAnalysisService {
    */
   private calculateComplexity(rpcData: RPCResponse): number {
     let complexity = 1;
-    
+
     // 根據數據量增加複雜度
     if ((rpcData.products?.length ?? 0) > 100) complexity += 2;
     if ((rpcData.aggregation?.category_breakdown?.length ?? 0) > 5) complexity += 1;
     if ((rpcData.aggregation?.warehouse_breakdown?.length ?? 0) > 3) complexity += 1;
-    
+
     return complexity;
   }
 
@@ -460,7 +476,7 @@ export class InventoryAnalysisService {
       sorting: input.sorting,
       pagination: { ...input.pagination, after: undefined }, // 忽略 cursor
     };
-    
+
     const hash = Buffer.from(JSON.stringify(keyData)).toString('base64');
     return `${this.CACHE_PREFIX}:${hash}`;
   }
@@ -470,7 +486,7 @@ export class InventoryAnalysisService {
    */
   private async getFromCache(key: string): Promise<InventoryAnalysisResult | null> {
     if (!this.cacheAdapter) return null;
-    
+
     try {
       return await this.cacheAdapter.get<InventoryAnalysisResult>(key);
     } catch (error) {
@@ -484,7 +500,7 @@ export class InventoryAnalysisService {
    */
   private async saveToCache(key: string, data: InventoryAnalysisResult): Promise<void> {
     if (!this.cacheAdapter) return;
-    
+
     try {
       await this.cacheAdapter.set(key, data, this.CACHE_TTL);
     } catch (error) {

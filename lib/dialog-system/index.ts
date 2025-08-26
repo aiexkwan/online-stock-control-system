@@ -1,25 +1,21 @@
 /**
  * Dialog System Unified Exports
  * Centralized exports for the reorganized dialog system
- * 
+ *
  * This module provides clear separation between:
  * - Business Dialog Types: Used for business logic dialogs (askDatabase, loadStock, etc.)
  * - UI Dialog Variants: Used for UI styling and animation variants (notification, error, etc.)
  */
 
 // Business Dialog System - For business logic dialogs
-export type { 
+export type {
   BusinessDialogType,
   BusinessDialogData,
   BusinessDialogContextType,
-  BusinessDialogHookResult
+  BusinessDialogHookResult,
 } from './business/types';
 
-export { 
-  BusinessDialogProvider,
-  useBusinessDialog,
-  useUploadDialog
-} from './business/context';
+export { BusinessDialogProvider, useBusinessDialog, useUploadDialog } from './business/context';
 
 // UI Dialog System - For UI styling and animations
 export {
@@ -29,7 +25,7 @@ export {
   dialogTitleStyles,
   dialogButtonStyles,
   type DialogVariants,
-  type UIDialogVariant
+  type UIDialogVariant,
 } from './ui/animation';
 
 // Legacy exports for backward compatibility (deprecated)
@@ -38,10 +34,10 @@ export type {
   BusinessDialogType as DialogType,
   BusinessDialogData as DialogData,
   BusinessDialogContextType as DialogContextType,
-  BusinessDialogHookResult as DialogHookResult
+  BusinessDialogHookResult as DialogHookResult,
 } from './business/types';
 
 export {
   BusinessDialogProvider as DialogProvider,
-  useBusinessDialog as useDialog
+  useBusinessDialog as useDialog,
 } from './business/context';

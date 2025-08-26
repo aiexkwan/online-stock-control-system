@@ -7,7 +7,7 @@
 export * from './useProduct';
 export { default as productHooks } from './useProduct';
 
-// Supplier hooks  
+// Supplier hooks
 export * from './useSupplier';
 export { default as supplierHooks } from './useSupplier';
 

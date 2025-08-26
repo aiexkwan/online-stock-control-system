@@ -126,7 +126,7 @@ export const GrnLabelFormV2: React.FC = () => {
           console.error('Supabase client not initialized');
           return;
         }
-        
+
         const {
           data: { user },
         } = await supabase.auth.getUser();

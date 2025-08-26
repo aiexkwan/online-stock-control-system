@@ -13,7 +13,7 @@ const path = require('path');
  */
 async function testPDFExtraction() {
   console.log('🧪 開始測試 PDF 提取功能...\n');
-  
+
   // 檢查必要的服務文件是否存在
   const requiredFiles = [
     'app/services/pdfExtractionService.ts',
@@ -21,7 +21,7 @@ async function testPDFExtraction() {
     'app/services/enhancedOrderExtractionService.ts',
     'app/actions/orderUploadActions.ts',
   ];
-  
+
   console.log('📋 檢查必要文件:');
   for (const file of requiredFiles) {
     const filePath = path.join(__dirname, '..', file);
@@ -32,14 +32,14 @@ async function testPDFExtraction() {
       return;
     }
   }
-  
+
   // 檢查 Assistant API 相關文件狀態
   const assistantFiles = [
     'app/services/assistantService.ts',
     'app/api/analyze-order-pdf-assistant/route.ts',
     'lib/openai-assistant-config.ts',
   ];
-  
+
   console.log('\n📋 Assistant API 文件狀態（應該存在但不被調用）:');
   for (const file of assistantFiles) {
     const filePath = path.join(__dirname, '..', file);
@@ -49,7 +49,7 @@ async function testPDFExtraction() {
       console.log(`   ✅ ${file} - 已移除`);
     }
   }
-  
+
   // 檢查環境變數要求
   console.log('\n🔧 環境變數檢查:');
   const requiredEnvVars = [
@@ -57,7 +57,7 @@ async function testPDFExtraction() {
     'NEXT_PUBLIC_SUPABASE_URL',
     'SUPABASE_SERVICE_ROLE_KEY',
   ];
-  
+
   for (const envVar of requiredEnvVars) {
     if (process.env[envVar]) {
       console.log(`   ✅ ${envVar} - 已設置`);
@@ -65,7 +65,7 @@ async function testPDFExtraction() {
       console.log(`   ⚠️  ${envVar} - 未設置（生產環境需要）`);
     }
   }
-  
+
   console.log('\n📊 系統架構總結:');
   console.log('   🔄 PDF 處理流程:');
   console.log('      1. PDFExtractionService - 提取 PDF 文本');
@@ -73,7 +73,7 @@ async function testPDFExtraction() {
   console.log('      3. EnhancedOrderExtractionService - 整合和 fallback');
   console.log('      4. orderUploadActions - 存儲到數據庫');
   console.log('   ❌ 已移除: Assistant API fallback（避免地區限制）');
-  
+
   console.log('\n✅ 測試完成！');
   console.log('🎉 系統已正確配置為只使用 Chat Completions API');
   console.log('💡 不會再出現 "403 Country, region, or territory not supported" 錯誤');
@@ -84,7 +84,7 @@ async function testPDFExtraction() {
  */
 function verifyAPICallChain() {
   console.log('\n🔗 API 調用鏈驗證:');
-  
+
   const callChain = [
     {
       step: 1,
@@ -123,7 +123,7 @@ function verifyAPICallChain() {
       api: 'sendOrderCreatedEmail()',
     },
   ];
-  
+
   for (const step of callChain) {
     console.log(`   ${step.step}. ${step.component}`);
     console.log(`      ${step.description}`);

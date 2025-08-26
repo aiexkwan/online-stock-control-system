@@ -1,7 +1,7 @@
 /**
  * Visual Design Guidelines for Card System
  * 卡片系統視覺設計指南 - 確保所有6個類別的一致性
- * 
+ *
  * Created: 2025-08-12
  * Purpose: Unified visual language across all card categories
  */
@@ -88,12 +88,12 @@ export const cardVisualGuidelines = {
    * 保持視覺韻律的一致性
    */
   spacing: {
-    micro: '2px',    // 細微調整
-    tiny: '4px',     // 圖標與文字間距
-    small: '8px',    // 組件內部間距
-    base: '16px',    // 標準間距
-    large: '24px',   // 區塊間距
-    huge: '32px',    // 卡片間距
+    micro: '2px', // 細微調整
+    tiny: '4px', // 圖標與文字間距
+    small: '8px', // 組件內部間距
+    base: '16px', // 標準間距
+    large: '24px', // 區塊間距
+    huge: '32px', // 卡片間距
     massive: '48px', // 頁面級間距
   },
 
@@ -161,11 +161,11 @@ export const responsiveVisualAdjustments = {
 export const animationConsistency = {
   // 基礎動畫時長
   durations: {
-    instant: '0.1s',    // 點擊反饋
-    quick: '0.2s',      // Hover 效果
-    normal: '0.3s',     // 標準過渡
-    slow: '0.5s',       // 載入狀態
-    ambient: '3s',      // 環境動畫
+    instant: '0.1s', // 點擊反饋
+    quick: '0.2s', // Hover 效果
+    normal: '0.3s', // 標準過渡
+    slow: '0.5s', // 載入狀態
+    ambient: '3s', // 環境動畫
   },
 
   // 緩動函數
@@ -179,9 +179,9 @@ export const animationConsistency = {
 
   // 動畫編排
   orchestration: {
-    stagger: '0.05s',     // 多個元素依序出現的間隔
-    cascade: '0.1s',      // 層級動畫間隔
-    parallel: '0s',       // 同步動畫
+    stagger: '0.05s', // 多個元素依序出現的間隔
+    cascade: '0.1s', // 層級動畫間隔
+    parallel: '0s', // 同步動畫
   },
 } as const;
 
@@ -192,24 +192,24 @@ export const animationConsistency = {
 export const accessibilityGuidelines = {
   // 顏色對比度最低要求
   contrastRatios: {
-    normalText: 4.5,      // WCAG AA 標準
-    largeText: 3.0,       // 18pt+ 或 14pt+ bold
-    uiComponents: 3.0,    // 圖形和 UI 元素
-    focus: 3.0,           // 焦點指示器
+    normalText: 4.5, // WCAG AA 標準
+    largeText: 3.0, // 18pt+ 或 14pt+ bold
+    uiComponents: 3.0, // 圖形和 UI 元素
+    focus: 3.0, // 焦點指示器
   },
 
   // 互動區域最小尺寸
   touchTargets: {
-    minimum: '44px',      // WCAG AAA 標準
-    recommended: '48px',  // Material Design 建議
-    comfortable: '56px',  // 舒適操作尺寸
+    minimum: '44px', // WCAG AAA 標準
+    recommended: '48px', // Material Design 建議
+    comfortable: '56px', // 舒適操作尺寸
   },
 
   // 動畫無障礙
   motionAccessibility: {
     respectsPrefersReducedMotion: true,
     providesAlternativeIndicators: true, // 為動畫提供非動畫替代方案
-    maintainsCoreFunction: true,         // 關閉動畫不影響核心功能
+    maintainsCoreFunction: true, // 關閉動畫不影響核心功能
   },
 } as const;
 

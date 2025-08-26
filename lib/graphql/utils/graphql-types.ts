@@ -71,7 +71,10 @@ export function isValidMaybe<T>(value: Maybe<T>): value is T {
  * @param defaultValue 預設對象
  * @returns object
  */
-export function ensureObject<T extends Record<string, unknown>>(value: Maybe<T>, defaultValue: T): T {
+export function ensureObject<T extends Record<string, unknown>>(
+  value: Maybe<T>,
+  defaultValue: T
+): T {
   return value ?? defaultValue;
 }
 

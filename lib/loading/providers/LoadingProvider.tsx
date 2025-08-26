@@ -184,12 +184,15 @@ export function LoadingProvider({
           dispatch({ type: 'START_LOADING', payload: loadingState });
           timeoutsRef.current.delete(id);
 
-          logger.debug({
-            id,
-            type,
-            priority,
-            debounceTime: strategy.debounceTime,
-          }, 'Loading started after debounce');
+          logger.debug(
+            {
+              id,
+              type,
+              priority,
+              debounceTime: strategy.debounceTime,
+            },
+            'Loading started after debounce'
+          );
         }, strategy.debounceTime);
 
         timeoutsRef.current.set(id, debounceTimeout);
@@ -253,11 +256,14 @@ export function LoadingProvider({
       // 立即結束載入
       dispatch({ type: 'STOP_LOADING', payload: id });
 
-      logger.debug({
-        id,
-        elapsedTime,
-        estimatedDuration: state.estimatedDuration,
-      }, 'Loading stopped');
+      logger.debug(
+        {
+          id,
+          elapsedTime,
+          estimatedDuration: state.estimatedDuration,
+        },
+        'Loading stopped'
+      );
     },
     [loadingStates]
   );

@@ -1,7 +1,7 @@
 /**
  * Card System Theme Configuration
  * 統一 Card 系統主題配置 - 適用於所有 Cards
- * 
+ *
  * Created: 2025-08-12
  * Purpose: Centralized theme system for all Card components
  */
@@ -23,7 +23,7 @@ export const cardThemes = {
     accent: 'rgba(255, 255, 255, 0.4)',
     identifier: 'circle-filled',
   },
-  
+
   // 分析類 Cards (Analysis Cards)
   analysis: {
     gradient: 'from-white/10 to-white/5',
@@ -34,7 +34,7 @@ export const cardThemes = {
     accent: 'rgba(255, 255, 255, 0.4)',
     identifier: 'hexagon-outline',
   },
-  
+
   // 數據類 Cards (Data Cards)
   data: {
     gradient: 'from-white/8 to-white/4',
@@ -45,7 +45,7 @@ export const cardThemes = {
     accent: 'rgba(255, 255, 255, 0.3)',
     identifier: 'square-dotted',
   },
-  
+
   // 報表類 Cards (Report Cards)
   report: {
     gradient: 'from-white/12 to-white/6',
@@ -56,7 +56,7 @@ export const cardThemes = {
     accent: 'rgba(255, 255, 255, 0.5)',
     identifier: 'diamond-striped',
   },
-  
+
   // 圖表類 Cards (Chart Cards)
   chart: {
     gradient: 'from-white/10 to-white/5',
@@ -67,7 +67,7 @@ export const cardThemes = {
     accent: 'rgba(255, 255, 255, 0.4)',
     identifier: 'triangle-segmented',
   },
-  
+
   // 特殊類 Cards (Special Cards)
   special: {
     gradient: 'from-white/14 to-white/7',
@@ -88,19 +88,19 @@ export const cardTextStyles = {
   // 標題
   title: 'text-lg font-semibold leading-tight text-white',
   subtitle: 'text-sm font-normal leading-normal text-white/70',
-  
+
   // 內容
   body: 'text-base font-normal leading-normal',
   bodySmall: 'text-sm font-normal leading-normal',
-  
+
   // 標籤
   label: 'text-xs font-medium leading-tight tracking-wide',
   labelSmall: 'text-xs font-normal leading-tight',
-  
+
   // 數值
   metric: 'text-2xl font-bold leading-tight',
   metricSmall: 'text-xl font-semibold leading-tight',
-  
+
   // 狀態
   success: 'text-green-400',
   warning: 'text-yellow-400',
@@ -116,7 +116,7 @@ export const cardContainerStyles = {
   base: 'rounded-lg bg-slate-800/50 backdrop-blur-sm', // 移除邊框
   elevated: 'rounded-lg bg-slate-800/70 backdrop-blur-md shadow-lg', // 移除邊框
   glass: 'rounded-lg bg-white/5 backdrop-blur-xl', // 移除邊框
-  
+
   // 內邊距
   padding: {
     none: '',
@@ -124,7 +124,7 @@ export const cardContainerStyles = {
     base: 'p-4',
     large: 'p-6',
   },
-  
+
   // 間距
   spacing: {
     tight: 'space-y-2',
@@ -143,13 +143,13 @@ export const cardAnimations = {
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.3 },
   },
-  
+
   // Hover 效果
   hover: {
     whileHover: { scale: 1.02 },
     transition: { type: 'spring', stiffness: 300 },
   },
-  
+
   // 載入動畫
   skeleton: 'animate-pulse bg-slate-700/50',
 } as const;
@@ -209,9 +209,10 @@ export function getCardContainerStyle(
   variant: keyof typeof cardContainerStyles = 'base',
   padding: keyof typeof cardContainerStyles.padding = 'base'
 ): string {
-  const baseStyle = typeof cardContainerStyles[variant] === 'string' 
-    ? cardContainerStyles[variant] 
-    : cardContainerStyles.base;
+  const baseStyle =
+    typeof cardContainerStyles[variant] === 'string'
+      ? cardContainerStyles[variant]
+      : cardContainerStyles.base;
   const paddingStyle = cardContainerStyles.padding[padding];
   return `${baseStyle} ${paddingStyle}`;
 }
@@ -274,7 +275,7 @@ export const cardChartColors = {
     '#c084fc', // purple
     '#fbbf24', // yellow
   ],
-  
+
   // 獲取圖表顏色
   getColor: (index: number, extended = false): string => {
     const colors = extended ? cardChartColors.extended : cardChartColors.primary;

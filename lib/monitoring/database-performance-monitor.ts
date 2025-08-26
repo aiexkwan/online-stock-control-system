@@ -13,23 +13,23 @@ interface DatabaseMetrics {
   activeConnections: number;
   maxConnections: number;
   connectionUtilization: number;
-  
+
   // Query performance
   avgQueryTime: number;
   slowQueryCount: number;
   totalQueries: number;
   queriesPerSecond: number;
-  
+
   // Table metrics
   tableSize: number;
   indexEfficiency: number;
   cacheHitRatio: number;
-  
+
   // System health
   diskUsage: number;
   replicationLag?: number;
   lockCount: number;
-  
+
   // Timestamps
   timestamp: Date;
   period: string;
@@ -53,7 +53,7 @@ const DEFAULT_ALERT_THRESHOLDS: AlertThreshold[] = [
     value: 80,
     severity: 'high',
     message: 'Database connection utilization exceeded 80%',
-    enabled: true
+    enabled: true,
   },
   {
     metric: 'avgQueryTime',
@@ -61,7 +61,7 @@ const DEFAULT_ALERT_THRESHOLDS: AlertThreshold[] = [
     value: 1000,
     severity: 'medium',
     message: 'Average query time exceeded 1 second',
-    enabled: true
+    enabled: true,
   },
   {
     metric: 'slowQueryCount',
@@ -69,7 +69,7 @@ const DEFAULT_ALERT_THRESHOLDS: AlertThreshold[] = [
     value: 10,
     severity: 'medium',
     message: 'High number of slow queries detected',
-    enabled: true
+    enabled: true,
   },
   {
     metric: 'cacheHitRatio',
@@ -77,7 +77,7 @@ const DEFAULT_ALERT_THRESHOLDS: AlertThreshold[] = [
     value: 95,
     severity: 'low',
     message: 'Database cache hit ratio below 95%',
-    enabled: true
+    enabled: true,
   },
   {
     metric: 'diskUsage',
@@ -85,7 +85,7 @@ const DEFAULT_ALERT_THRESHOLDS: AlertThreshold[] = [
     value: 85,
     severity: 'high',
     message: 'Database disk usage exceeded 85%',
-    enabled: true
+    enabled: true,
   },
   {
     metric: 'lockCount',
@@ -93,8 +93,8 @@ const DEFAULT_ALERT_THRESHOLDS: AlertThreshold[] = [
     value: 50,
     severity: 'medium',
     message: 'High number of database locks detected',
-    enabled: true
-  }
+    enabled: true,
+  },
 ];
 
 /**
@@ -107,7 +107,7 @@ export class DatabasePerformanceMonitor {
   private monitoringInterval: NodeJS.Timeout | null = null;
   private alertCallbacks: ((alert: AlertEvent) => void)[] = [];
   private metricsHistory: DatabaseMetrics[] = [];
-  
+
   constructor(alertThresholds: AlertThreshold[] = DEFAULT_ALERT_THRESHOLDS) {
     this.alertThresholds = alertThresholds;
   }
@@ -171,26 +171,26 @@ export class DatabasePerformanceMonitor {
       activeConnections: connectionStats.activeConnections,
       maxConnections: 100, // Could be made configurable
       connectionUtilization: (connectionStats.activeConnections / 100) * 100,
-      
+
       // Query performance
       avgQueryTime: queryMetrics.avgQueryTime,
       slowQueryCount: connectionStats.slowQueries,
       totalQueries: connectionStats.totalQueries,
       queriesPerSecond: this.calculateQPS(connectionStats.totalQueries, timestamp),
-      
+
       // Table metrics
       tableSize: tableMetrics.totalSize,
       indexEfficiency: tableMetrics.indexEfficiency,
       cacheHitRatio: systemMetrics.cacheHitRatio,
-      
+
       // System health
       diskUsage: systemMetrics.diskUsage,
       replicationLag: systemMetrics.replicationLag,
       lockCount: systemMetrics.lockCount,
-      
+
       // Metadata
       timestamp,
-      period: '1m'
+      period: '1m',
     };
   }
 
@@ -201,10 +201,10 @@ export class DatabasePerformanceMonitor {
     if (!this.supabase) {
       throw new Error('DatabasePerformanceMonitor not initialized');
     }
-    
+
     try {
       const { data, error } = await this.supabase.rpc('get_database_system_metrics');
-      
+
       if (error) {
         console.warn('[DatabaseMonitor] Could not get system metrics:', error);
         return this.getDefaultSystemMetrics();
@@ -221,7 +221,7 @@ export class DatabasePerformanceMonitor {
         cacheHitRatio: (data as SystemMetricsData)?.cache_hit_ratio || 95,
         diskUsage: (data as SystemMetricsData)?.disk_usage_percent || 50,
         replicationLag: (data as SystemMetricsData)?.replication_lag_ms || 0,
-        lockCount: (data as SystemMetricsData)?.active_locks || 0
+        lockCount: (data as SystemMetricsData)?.active_locks || 0,
       };
     } catch (error) {
       console.warn('[DatabaseMonitor] Error getting system metrics:', error);
@@ -236,17 +236,17 @@ export class DatabasePerformanceMonitor {
     if (!this.supabase) {
       throw new Error('DatabasePerformanceMonitor not initialized');
     }
-    
+
     try {
       const { data, error } = await this.supabase.rpc('get_query_performance_metrics');
-      
+
       if (error) {
         console.warn('[DatabaseMonitor] Could not get query metrics:', error);
         return { avgQueryTime: 0 };
       }
 
       return {
-        avgQueryTime: (data as { avg_execution_time_ms?: number })?.avg_execution_time_ms || 0
+        avgQueryTime: (data as { avg_execution_time_ms?: number })?.avg_execution_time_ms || 0,
       };
     } catch (error) {
       console.warn('[DatabaseMonitor] Error getting query metrics:', error);
@@ -261,18 +261,21 @@ export class DatabasePerformanceMonitor {
     if (!this.supabase) {
       throw new Error('DatabasePerformanceMonitor not initialized');
     }
-    
+
     try {
       const { data, error } = await this.supabase.rpc('get_table_metrics');
-      
+
       if (error) {
         console.warn('[DatabaseMonitor] Could not get table metrics:', error);
         return { totalSize: 0, indexEfficiency: 100 };
       }
 
       return {
-        totalSize: (data as { total_size_mb?: number; index_usage_percent?: number })?.total_size_mb || 0,
-        indexEfficiency: (data as { total_size_mb?: number; index_usage_percent?: number })?.index_usage_percent || 100
+        totalSize:
+          (data as { total_size_mb?: number; index_usage_percent?: number })?.total_size_mb || 0,
+        indexEfficiency:
+          (data as { total_size_mb?: number; index_usage_percent?: number })?.index_usage_percent ||
+          100,
       };
     } catch (error) {
       console.warn('[DatabaseMonitor] Error getting table metrics:', error);
@@ -284,15 +287,14 @@ export class DatabasePerformanceMonitor {
    * Calculate queries per second
    */
   private calculateQPS(totalQueries: number, currentTime: Date): number {
-    const previousMetric = this.metricsHistory.length > 0 
-      ? this.metricsHistory[this.metricsHistory.length - 1] 
-      : null;
+    const previousMetric =
+      this.metricsHistory.length > 0 ? this.metricsHistory[this.metricsHistory.length - 1] : null;
 
     if (!previousMetric) return 0;
 
     const timeDiffSeconds = (currentTime.getTime() - previousMetric.timestamp.getTime()) / 1000;
     const queryDiff = totalQueries - previousMetric.totalQueries;
-    
+
     return timeDiffSeconds > 0 ? queryDiff / timeDiffSeconds : 0;
   }
 
@@ -302,10 +304,10 @@ export class DatabasePerformanceMonitor {
   private async collectAndAnalyzeMetrics() {
     try {
       const metrics = await this.collectDatabaseMetrics();
-      
+
       // Store metrics for trend analysis
       this.metricsHistory.push(metrics);
-      
+
       // Keep only last 100 entries for memory efficiency
       if (this.metricsHistory.length > 100) {
         this.metricsHistory = this.metricsHistory.slice(-100);
@@ -317,13 +319,14 @@ export class DatabasePerformanceMonitor {
       // Check for alerts - disabled (tables removed)
       // await this.checkAlerts(metrics);
 
-      console.log(`[DatabaseMonitor] Metrics collected: ${JSON.stringify({
-        connections: metrics.activeConnections,
-        avgQuery: metrics.avgQueryTime,
-        slowQueries: metrics.slowQueryCount,
-        qps: metrics.queriesPerSecond.toFixed(2)
-      })}`);
-
+      console.log(
+        `[DatabaseMonitor] Metrics collected: ${JSON.stringify({
+          connections: metrics.activeConnections,
+          avgQuery: metrics.avgQueryTime,
+          slowQueries: metrics.slowQueryCount,
+          qps: metrics.queriesPerSecond.toFixed(2),
+        })}`
+      );
     } catch (error) {
       console.error('[DatabaseMonitor] Error collecting metrics:', error);
     }
@@ -359,7 +362,7 @@ export class DatabasePerformanceMonitor {
           currentValue: metricValue,
           thresholdValue: threshold.value,
           timestamp: new Date(),
-          resolved: false
+          resolved: false,
         };
 
         await this.triggerAlert(alertEvent);
@@ -384,8 +387,9 @@ export class DatabasePerformanceMonitor {
         }
       });
 
-      console.warn(`[DatabaseMonitor] ALERT [${alertEvent.severity.toUpperCase()}]: ${alertEvent.message} (Current: ${alertEvent.currentValue}, Threshold: ${alertEvent.thresholdValue})`);
-
+      console.warn(
+        `[DatabaseMonitor] ALERT [${alertEvent.severity.toUpperCase()}]: ${alertEvent.message} (Current: ${alertEvent.currentValue}, Threshold: ${alertEvent.thresholdValue})`
+      );
     } catch (error) {
       console.error('[DatabaseMonitor] Error triggering alert:', error);
     }
@@ -398,26 +402,24 @@ export class DatabasePerformanceMonitor {
     if (!this.supabase) {
       throw new Error('DatabasePerformanceMonitor not initialized');
     }
-    
+
     try {
-      const { error } = await this.supabase
-        .from('db_performance_metrics')
-        .insert({
-          active_connections: metrics.activeConnections,
-          connection_utilization: metrics.connectionUtilization,
-          avg_query_time: metrics.avgQueryTime,
-          slow_query_count: metrics.slowQueryCount,
-          total_queries: metrics.totalQueries,
-          queries_per_second: metrics.queriesPerSecond,
-          table_size_mb: metrics.tableSize,
-          index_efficiency: metrics.indexEfficiency,
-          cache_hit_ratio: metrics.cacheHitRatio,
-          disk_usage: metrics.diskUsage,
-          replication_lag: metrics.replicationLag,
-          lock_count: metrics.lockCount,
-          recorded_at: metrics.timestamp.toISOString(),
-          period: metrics.period
-        });
+      const { error } = await this.supabase.from('db_performance_metrics').insert({
+        active_connections: metrics.activeConnections,
+        connection_utilization: metrics.connectionUtilization,
+        avg_query_time: metrics.avgQueryTime,
+        slow_query_count: metrics.slowQueryCount,
+        total_queries: metrics.totalQueries,
+        queries_per_second: metrics.queriesPerSecond,
+        table_size_mb: metrics.tableSize,
+        index_efficiency: metrics.indexEfficiency,
+        cache_hit_ratio: metrics.cacheHitRatio,
+        disk_usage: metrics.diskUsage,
+        replication_lag: metrics.replicationLag,
+        lock_count: metrics.lockCount,
+        recorded_at: metrics.timestamp.toISOString(),
+        period: metrics.period,
+      });
 
       if (error) {
         console.error('[DatabaseMonitor] Error storing metrics:', error);
@@ -434,21 +436,19 @@ export class DatabasePerformanceMonitor {
     if (!this.supabase) {
       throw new Error('DatabasePerformanceMonitor not initialized');
     }
-    
+
     try {
-      const { error } = await this.supabase
-        .from('db_performance_alerts')
-        .insert({
-          alert_id: alertEvent.id,
-          alert_type: alertEvent.type,
-          severity: alertEvent.severity,
-          message: alertEvent.message,
-          metric_name: alertEvent.metric,
-          current_value: alertEvent.currentValue,
-          threshold_value: alertEvent.thresholdValue,
-          triggered_at: alertEvent.timestamp.toISOString(),
-          resolved: alertEvent.resolved
-        });
+      const { error } = await this.supabase.from('db_performance_alerts').insert({
+        alert_id: alertEvent.id,
+        alert_type: alertEvent.type,
+        severity: alertEvent.severity,
+        message: alertEvent.message,
+        metric_name: alertEvent.metric,
+        current_value: alertEvent.currentValue,
+        threshold_value: alertEvent.thresholdValue,
+        triggered_at: alertEvent.timestamp.toISOString(),
+        resolved: alertEvent.resolved,
+      });
 
       if (error) {
         console.error('[DatabaseMonitor] Error storing alert:', error);
@@ -475,7 +475,7 @@ export class DatabasePerformanceMonitor {
       cacheHitRatio: 95,
       diskUsage: 50,
       replicationLag: 0,
-      lockCount: 0
+      lockCount: 0,
     };
   }
 
@@ -511,7 +511,7 @@ export class DatabasePerformanceMonitor {
       averageQPS: Math.round(avgQPS * 100) / 100,
       maxActiveConnections: maxConnections,
       totalSlowQueries: recent[recent.length - 1].slowQueryCount,
-      isHealthy: avgQueryTime < 1000 && maxConnections < 80
+      isHealthy: avgQueryTime < 1000 && maxConnections < 80,
     };
   }
 }

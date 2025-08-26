@@ -42,14 +42,8 @@ export const ACO_ORDER_REPORT_QUERY = gql`
 `;
 
 export const ACO_ORDER_OPTIONS_QUERY = gql`
-  query AcoOrderOptions(
-    $limit: Int = 100
-    $status: OrderStatus
-  ) {
-    acoOrderOptions(
-      limit: $limit
-      status: $status
-    ) {
+  query AcoOrderOptions($limit: Int = 100, $status: OrderStatus) {
+    acoOrderOptions(limit: $limit, status: $status) {
       orderRef
       description
       status
@@ -89,7 +83,7 @@ export const ACO_PALLET_FRAGMENT = gql`
 // Query with fragments (for better performance)
 export const ACO_ORDER_REPORT_WITH_FRAGMENTS = gql`
   ${ACO_PRODUCT_FRAGMENT}
-  
+
   query AcoOrderReportAnalyticsWithFragments(
     $orderRef: String!
     $includeProgress: Boolean = true

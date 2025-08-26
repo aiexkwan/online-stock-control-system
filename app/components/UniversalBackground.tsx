@@ -18,11 +18,9 @@ export const UniversalBackground: React.FC<UniversalBackgroundProps> = ({
       <div className='fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'>
         <StarfieldBackground />
       </div>
-      
+
       {/* Content layer - must be above background */}
-      <div className='relative z-10'>
-        {children}
-      </div>
+      <div className='relative z-10'>{children}</div>
     </div>
   );
 };

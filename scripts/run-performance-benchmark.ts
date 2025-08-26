@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 console.log('🚀 Performance Benchmark Tool');
-console.log('=' .repeat(50));
+console.log('='.repeat(50));
 
 async function main() {
   try {
@@ -21,7 +21,7 @@ async function main() {
     // Generate markdown report
     const timestamp = new Date().toISOString().split('T')[0];
     const reportPath = path.join(reportsDir, `benchmark-${timestamp}.md`);
-    
+
     const markdownReport = `
 # Performance Benchmark Report
 Date: ${timestamp}
@@ -51,7 +51,7 @@ ${report.overallRecommendations.map(r => `- ${r}`).join('\n')}
     fs.writeFileSync(reportPath, markdownReport);
 
     console.log('\n📊 Summary Results:');
-    console.log('=' .repeat(50));
+    console.log('='.repeat(50));
     console.log(`Performance Grade: ${report.performanceGrade}`);
     console.log(`Dashboard Avg Response: ${report.dashboard.summary.avgResponseTime.toFixed(2)}ms`);
     console.log(`Inventory Avg Response: ${report.inventory.summary.avgResponseTime.toFixed(2)}ms`);

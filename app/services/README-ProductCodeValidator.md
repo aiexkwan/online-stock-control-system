@@ -7,18 +7,21 @@ ProductCodeValidator 是一個高性能、安全的產品代碼驗證和豐富�
 ## 主要特性
 
 ### 🏗️ 架構特點
+
 - **單例模式**：確保全應用程序唯一實例，避免資源重複
 - **LRU快取**：智能快取管理，5分鐘過期時間，防止內存洩漏
 - **批量處理**：支援最多100筆/批的高效批量驗證
 - **高精度匹配**：使用Levenshtein距離算法，≥0.85相似度閾值
 
 ### 🛡️ 安全特性
+
 - **SQL注入防護**：使用參數化查詢和Supabase安全層
 - **內存保護**：LRU快取限制10,000條記錄，防止內存溢出
 - **輸入驗證**：嚴格的數據驗證和清理
 - **降級策略**：數據庫故障時的優雅降級處理
 
 ### ⚡ 性能指標
+
 - 快取命中：< 1ms
 - 批量驗證：< 100ms
 - 內存使用：< 10MB
@@ -44,9 +47,9 @@ console.log(result.enrichedOrders[0]);
 // 批量驗證
 const batchResult = await ProductCodeValidator.validateAndEnrichCodes([
   'ABC123',
-  'xyz789',    // 將自動轉為大寫
-  'abc124',    // 可能被修正為 'ABC123'
-  'INVALID999' // 標記為無效
+  'xyz789', // 將自動轉為大寫
+  'abc124', // 可能被修正為 'ABC123'
+  'INVALID999', // 標記為無效
 ]);
 
 console.log(batchResult.summary);
@@ -83,10 +86,10 @@ curl http://localhost:3000/api/product-code-validation
 ```typescript
 // 自動處理大小寫、空格和特殊字符
 const codes = [
-  'abc123',     // → 'ABC123'
+  'abc123', // → 'ABC123'
   '  XYZ789  ', // → 'XYZ789'
-  'AB-C123',    // → 'AB-C123' (保留連字符)
-  'AB@C123',    // → 'ABC123' (移除特殊字符)
+  'AB-C123', // → 'AB-C123' (保留連字符)
+  'AB@C123', // → 'ABC123' (移除特殊字符)
 ];
 
 const result = await ProductCodeValidator.validateAndEnrichCodes(codes);
@@ -146,7 +149,7 @@ console.log(health);
 
 ```typescript
 // 處理大量數據時使用分批策略
-const allCodes = ['ABC001', 'ABC002', /* ... 1000+ codes */];
+const allCodes = ['ABC001', 'ABC002' /* ... 1000+ codes */];
 const batchSize = 100;
 
 const results = [];
@@ -154,7 +157,7 @@ for (let i = 0; i < allCodes.length; i += batchSize) {
   const batch = allCodes.slice(i, i + batchSize);
   const batchResult = await ProductCodeValidator.validateAndEnrichCodes(batch);
   results.push(...batchResult.enrichedOrders);
-  
+
   // 可選：添加短暫延遲避免過載
   if (i + batchSize < allCodes.length) {
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -167,19 +170,18 @@ for (let i = 0; i < allCodes.length; i += batchSize) {
 ```typescript
 try {
   const result = await ProductCodeValidator.validateAndEnrichCodes(codes);
-  
+
   // 檢查是否有需要人工處理的項目
-  const needsAttention = result.enrichedOrders.filter(order => 
-    !order.is_valid || order.was_corrected
+  const needsAttention = result.enrichedOrders.filter(
+    order => !order.is_valid || order.was_corrected
   );
-  
+
   if (needsAttention.length > 0) {
     console.log('需要注意的項目:', needsAttention);
   }
-  
 } catch (error) {
   console.error('驗證失敗:', error.message);
-  
+
   // 使用降級策略
   if (error.message.includes('Database')) {
     // 數據庫故障，使用本地快取或離線模式
@@ -208,11 +210,11 @@ if (processingTime > 100) {
 ```typescript
 // 內部配置 (在 ProductCodeValidator 類中)
 interface BatchProcessingConfig {
-  maxBatchSize: number;        // 100 - 最大批量大小
+  maxBatchSize: number; // 100 - 最大批量大小
   similarityThreshold: number; // 0.85 - 相似度閾值
-  cacheExpireTime: number;     // 300000ms - 快取過期時間 (5分鐘)
-  maxCacheSize: number;        // 10000 - 最大快取條目
-  queryTimeout: number;        // 30000ms - 查詢超時時間
+  cacheExpireTime: number; // 300000ms - 快取過期時間 (5分鐘)
+  maxCacheSize: number; // 10000 - 最大快取條目
+  queryTimeout: number; // 30000ms - 查詢超時時間
 }
 ```
 
@@ -223,18 +225,18 @@ interface BatchProcessingConfig {
 ```typescript
 interface ValidationResult {
   enrichedOrders: Array<{
-    product_code: string;        // 驗證後的產品代碼
-    product_desc: string;        // 產品描述
-    is_valid: boolean;           // 是否有效
-    was_corrected: boolean;      // 是否被修正
-    original_code?: string;      // 原始代碼 (如果被修正)
-    confidence_score?: number;   // 信心分數 (0-1)
+    product_code: string; // 驗證後的產品代碼
+    product_desc: string; // 產品描述
+    is_valid: boolean; // 是否有效
+    was_corrected: boolean; // 是否被修正
+    original_code?: string; // 原始代碼 (如果被修正)
+    confidence_score?: number; // 信心分數 (0-1)
   }>;
   summary: {
-    total: number;      // 總數
-    valid: number;      // 有效數量
-    corrected: number;  // 修正數量
-    invalid: number;    // 無效數量
+    total: number; // 總數
+    valid: number; // 有效數量
+    corrected: number; // 修正數量
+    invalid: number; // 無效數量
   };
 }
 ```

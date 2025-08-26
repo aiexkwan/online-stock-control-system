@@ -4,9 +4,7 @@
  */
 
 import { z } from 'zod';
-import type {
-  Scalars,
-} from '@/types/generated/graphql';
+import type { Scalars } from '@/types/generated/graphql';
 
 // Define local enums since they don't exist in GraphQL generated types
 export enum ConfigCategory {

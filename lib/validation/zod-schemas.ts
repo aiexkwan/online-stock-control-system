@@ -18,35 +18,37 @@ export const SafeDatabaseValueSchema = z.union([
   z.boolean(),
   z.date(),
   z.null(),
-  z.undefined()
+  z.undefined(),
 ]);
 
 // 關聯查詢結果 Schema（如 data_code, data_supplier, data_id）
-export const RelationResultSchema = z.object({
-  description: z.string().optional(),
-  colour: z.string().optional(),
-  type: z.string().optional(),
-  name: z.string().optional(),
-  id: z.number().optional(),
-  code: z.string().optional(),
-  supplier_code: z.string().optional(),
-  supplier_name: z.string().optional(),
-  email: z.string().optional(),
-  department: z.string().optional(),
-  position: z.string().optional(),
-  uuid: z.string().optional(),
-  icon_url: z.string().optional(),
-  // 允許其他字符串鍵的安全值
-}).catchall(SafeDatabaseValueSchema);
+export const RelationResultSchema = z
+  .object({
+    description: z.string().optional(),
+    colour: z.string().optional(),
+    type: z.string().optional(),
+    name: z.string().optional(),
+    id: z.number().optional(),
+    code: z.string().optional(),
+    supplier_code: z.string().optional(),
+    supplier_name: z.string().optional(),
+    email: z.string().optional(),
+    department: z.string().optional(),
+    position: z.string().optional(),
+    uuid: z.string().optional(),
+    icon_url: z.string().optional(),
+    // 允許其他字符串鍵的安全值
+  })
+  .catchall(SafeDatabaseValueSchema);
 
 // Forward declare the type
-export type DatabaseValue = 
-  | string 
-  | number 
-  | boolean 
-  | Date 
-  | null 
-  | undefined 
+export type DatabaseValue =
+  | string
+  | number
+  | boolean
+  | Date
+  | null
+  | undefined
   | { [key: string]: DatabaseValue }
   | DatabaseValue[];
 
@@ -358,18 +360,22 @@ export const RpcSupplierMutationResponseSchema = z.object({
 // ===== 轉換和驗證工具函數 =====
 
 // Enhanced Database Record Schema - 用於複雜查詢結果（支援關聯物件）
-export const EnhancedDatabaseRecordSchema = z.object({
-  data_code: RelationResultSchema.optional(),
-  data_supplier: RelationResultSchema.optional(),
-  data_id: RelationResultSchema.optional(),
-  // 允許其他關聯欄位
-  users: RelationResultSchema.optional(),
-  error: z.object({
-    message: z.string(),
-    code: z.string().optional(),
-    details: DatabaseValueSchema.optional(),
-  }).optional(),
-}).catchall(DatabaseValueSchema); // 允許其他 DatabaseValue 欄位
+export const EnhancedDatabaseRecordSchema = z
+  .object({
+    data_code: RelationResultSchema.optional(),
+    data_supplier: RelationResultSchema.optional(),
+    data_id: RelationResultSchema.optional(),
+    // 允許其他關聯欄位
+    users: RelationResultSchema.optional(),
+    error: z
+      .object({
+        message: z.string(),
+        code: z.string().optional(),
+        details: DatabaseValueSchema.optional(),
+      })
+      .optional(),
+  })
+  .catchall(DatabaseValueSchema); // 允許其他 DatabaseValue 欄位
 
 // Stock Level History 分析數據 Schema
 export const StockLevelHistoryDataSchema = z.object({
@@ -551,7 +557,7 @@ export function safeParseBasicValue(value: unknown): SafeDatabaseValue | null {
 // 轉換 Legacy Record 到新格式
 export function convertLegacyDatabaseRecord(legacy: Record<string, unknown>): DatabaseRecord {
   const converted: DatabaseRecord = {};
-  
+
   for (const [key, value] of Object.entries(legacy)) {
     const parsedValue = safeParseDatabaseValue(value);
     if (parsedValue !== null) {
@@ -562,7 +568,7 @@ export function convertLegacyDatabaseRecord(legacy: Record<string, unknown>): Da
       converted[key] = value as DatabaseValue;
     }
   }
-  
+
   return converted;
 }
 
@@ -571,12 +577,12 @@ export function safeCastToDatabaseRecord(data: unknown): DatabaseRecord {
   if (!data || typeof data !== 'object') {
     return {};
   }
-  
+
   const result = DatabaseRecordSchema.safeParse(data);
   if (result.success) {
     return result.data;
   }
-  
+
   // 如果驗證失敗，嘗試轉換
   return convertLegacyDatabaseRecord(data as Record<string, unknown>);
 }
@@ -586,12 +592,12 @@ export function safeCastToEnhancedDatabaseRecord(data: unknown): EnhancedDatabas
   if (!data || typeof data !== 'object') {
     return {};
   }
-  
+
   const result = EnhancedDatabaseRecordSchema.safeParse(data);
   if (result.success) {
     return result.data;
   }
-  
+
   // 如果驗證失敗，嘗試轉換
   const basicRecord = convertLegacyDatabaseRecord(data as Record<string, unknown>);
   return basicRecord as EnhancedDatabaseRecord;
@@ -624,10 +630,14 @@ export function isValidSupplierData(value: unknown): value is SupplierData {
   return SupplierDataSchema.safeParse(value).success;
 }
 
-export function isValidRpcSearchSupplierResponse(value: unknown): value is RpcSearchSupplierResponse {
+export function isValidRpcSearchSupplierResponse(
+  value: unknown
+): value is RpcSearchSupplierResponse {
   return RpcSearchSupplierResponseSchema.safeParse(value).success;
 }
 
-export function isValidRpcSupplierMutationResponse(value: unknown): value is RpcSupplierMutationResponse {
+export function isValidRpcSupplierMutationResponse(
+  value: unknown
+): value is RpcSupplierMutationResponse {
   return RpcSupplierMutationResponseSchema.safeParse(value).success;
 }

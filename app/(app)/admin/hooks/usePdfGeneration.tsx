@@ -341,8 +341,20 @@ export const usePdfGeneration = (): UsePdfGenerationReturn => {
 
             const mergedPdfBytes = await mergedPdf.save();
             // Convert to proper ArrayBuffer for Blob constructor
-            const buffer = mergedPdfBytes instanceof Uint8Array ? mergedPdfBytes.buffer as ArrayBuffer : mergedPdfBytes as ArrayBuffer;
-            const mergedPdfBlob = new Blob([buffer.slice(mergedPdfBytes.byteOffset || 0, (mergedPdfBytes.byteOffset || 0) + (mergedPdfBytes.byteLength || buffer.byteLength))], { type: 'application/pdf' });
+            const buffer =
+              mergedPdfBytes instanceof Uint8Array
+                ? (mergedPdfBytes.buffer as ArrayBuffer)
+                : (mergedPdfBytes as ArrayBuffer);
+            const mergedPdfBlob = new Blob(
+              [
+                buffer.slice(
+                  mergedPdfBytes.byteOffset || 0,
+                  (mergedPdfBytes.byteOffset || 0) +
+                    (mergedPdfBytes.byteLength || buffer.byteLength)
+                ),
+              ],
+              { type: 'application/pdf' }
+            );
 
             // Use unified printing service to print merged PDF
             const printRequest: PrintRequest = {
@@ -420,8 +432,20 @@ export const usePdfGeneration = (): UsePdfGenerationReturn => {
 
             const mergedPdfBytes = await mergedPdf.save();
             // Convert to proper ArrayBuffer for Blob constructor
-            const buffer = mergedPdfBytes instanceof Uint8Array ? mergedPdfBytes.buffer as ArrayBuffer : mergedPdfBytes as ArrayBuffer;
-            const mergedPdfBlob = new Blob([buffer.slice(mergedPdfBytes.byteOffset || 0, (mergedPdfBytes.byteOffset || 0) + (mergedPdfBytes.byteLength || buffer.byteLength))], { type: 'application/pdf' });
+            const buffer =
+              mergedPdfBytes instanceof Uint8Array
+                ? (mergedPdfBytes.buffer as ArrayBuffer)
+                : (mergedPdfBytes as ArrayBuffer);
+            const mergedPdfBlob = new Blob(
+              [
+                buffer.slice(
+                  mergedPdfBytes.byteOffset || 0,
+                  (mergedPdfBytes.byteOffset || 0) +
+                    (mergedPdfBytes.byteLength || buffer.byteLength)
+                ),
+              ],
+              { type: 'application/pdf' }
+            );
 
             const printJob = {
               type: 'qc-label' as const,

@@ -1,15 +1,15 @@
 /**
  * Product Code Validation API
- * 
+ *
  * 提供產品代碼驗證和豐富化服務的 REST API 端點
- * 
+ *
  * 端點: POST /api/product-code-validation
- * 
+ *
  * 請求格式:
  * {
  *   "codes": ["ABC123", "XYZ789", "invalid001"]
  * }
- * 
+ *
  * 回應格式:
  * {
  *   "success": true,
@@ -32,11 +32,16 @@ const apiLogger = createLogger('ProductCodeValidationAPI');
 
 // 請求驗證 Schema
 const ValidationRequestSchema = z.object({
-  codes: z.array(z.string()).min(1, 'Codes array cannot be empty').max(100, 'Maximum 100 codes per request'),
-  options: z.object({
-    includeCacheStats: z.boolean().default(false),
-    includeHealthCheck: z.boolean().default(false),
-  }).optional(),
+  codes: z
+    .array(z.string())
+    .min(1, 'Codes array cannot be empty')
+    .max(100, 'Maximum 100 codes per request'),
+  options: z
+    .object({
+      includeCacheStats: z.boolean().default(false),
+      includeHealthCheck: z.boolean().default(false),
+    })
+    .optional(),
 });
 
 type ValidationRequest = z.infer<typeof ValidationRequestSchema>;
@@ -69,53 +74,62 @@ interface ValidationApiResponse extends ValidationResult {
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
-  
+
   try {
     // 記錄請求
     logApiRequest('POST', '/api/product-code-validation', {}, 'ProductCodeValidation');
-    
+
     // 解析請求體
     const body = await request.json();
-    
+
     // 驗證請求格式
     const validationResult = ValidationRequestSchema.safeParse(body);
     if (!validationResult.success) {
       const errorMessage = 'Invalid request format';
-      apiLogger.warn({
-        requestId,
-        errors: validationResult.error.errors,
-        body: typeof body === 'object' ? Object.keys(body) : body,
-      }, 'Request validation failed');
-      
-      logApiResponse('POST', '/api/product-code-validation', 400, Date.now() - startTime);
-      
-      return NextResponse.json<ApiResponse>({
-        success: false,
-        error: {
-          code: 'INVALID_REQUEST',
-          message: errorMessage,
-          details: validationResult.error.errors,
-        },
-        meta: {
-          processingTime: Date.now() - startTime,
-          timestamp: new Date().toISOString(),
+      apiLogger.warn(
+        {
           requestId,
+          errors: validationResult.error.errors,
+          body: typeof body === 'object' ? Object.keys(body) : body,
         },
-      }, { status: 400 });
+        'Request validation failed'
+      );
+
+      logApiResponse('POST', '/api/product-code-validation', 400, Date.now() - startTime);
+
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          error: {
+            code: 'INVALID_REQUEST',
+            message: errorMessage,
+            details: validationResult.error.errors,
+          },
+          meta: {
+            processingTime: Date.now() - startTime,
+            timestamp: new Date().toISOString(),
+            requestId,
+          },
+        },
+        { status: 400 }
+      );
     }
 
     const { codes, options } = validationResult.data;
-    
-    apiLogger.info({
-      requestId,
-      codeCount: codes.length,
-      includeCacheStats: options?.includeCacheStats,
-      includeHealthCheck: options?.includeHealthCheck,
-    }, 'Processing validation request');
+
+    apiLogger.info(
+      {
+        requestId,
+        codeCount: codes.length,
+        includeCacheStats: options?.includeCacheStats,
+        includeHealthCheck: options?.includeHealthCheck,
+      },
+      'Processing validation request'
+    );
 
     // 執行產品代碼驗證
     const validationResults = await ProductCodeValidator.validateAndEnrichCodes(codes);
-    
+
     // 構建回應數據
     const responseData: ValidationApiResponse = {
       ...validationResults,
@@ -132,15 +146,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const processingTime = Date.now() - startTime;
-    
-    apiLogger.info({
-      requestId,
-      total: validationResults.summary.total,
-      valid: validationResults.summary.valid,
-      corrected: validationResults.summary.corrected,
-      invalid: validationResults.summary.invalid,
-      processingTime,
-    }, 'Validation request completed');
+
+    apiLogger.info(
+      {
+        requestId,
+        total: validationResults.summary.total,
+        valid: validationResults.summary.valid,
+        corrected: validationResults.summary.corrected,
+        invalid: validationResults.summary.invalid,
+        processingTime,
+      },
+      'Validation request completed'
+    );
 
     logApiResponse('POST', '/api/product-code-validation', 200, processingTime);
 
@@ -153,32 +170,37 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         requestId,
       },
     });
-
   } catch (error) {
     const processingTime = Date.now() - startTime;
-    
-    apiLogger.error({
-      requestId,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      processingTime,
-    }, 'Validation request failed');
+
+    apiLogger.error(
+      {
+        requestId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        processingTime,
+      },
+      'Validation request failed'
+    );
 
     logApiResponse('POST', '/api/product-code-validation', 500, processingTime);
 
-    return NextResponse.json<ApiResponse>({
-      success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Internal server error occurred',
-        details: process.env.NODE_ENV === 'development' ? error : undefined,
+    return NextResponse.json<ApiResponse>(
+      {
+        success: false,
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: 'Internal server error occurred',
+          details: process.env.NODE_ENV === 'development' ? error : undefined,
+        },
+        meta: {
+          processingTime,
+          timestamp: new Date().toISOString(),
+          requestId,
+        },
       },
-      meta: {
-        processingTime,
-        timestamp: new Date().toISOString(),
-        requestId,
-      },
-    }, { status: 500 });
+      { status: 500 }
+    );
   }
 }
 
@@ -188,14 +210,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
  */
 export async function GET(): Promise<NextResponse> {
   const startTime = Date.now();
-  
+
   try {
     logApiRequest('GET', '/api/product-code-validation');
 
     // 獲取系統狀態
     const healthCheck = await ProductCodeValidator.healthCheck();
     const cacheStats = ProductCodeValidator.getCacheStats();
-    
+
     const responseData = {
       status: healthCheck.status,
       timestamp: new Date().toISOString(),
@@ -215,30 +237,35 @@ export async function GET(): Promise<NextResponse> {
         requestId: crypto.randomUUID(),
       },
     });
-
   } catch (error) {
     const processingTime = Date.now() - startTime;
-    
-    apiLogger.error({
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      processingTime,
-    }, 'Status request failed');
+
+    apiLogger.error(
+      {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        processingTime,
+      },
+      'Status request failed'
+    );
 
     logApiResponse('GET', '/api/product-code-validation', 500, processingTime);
 
-    return NextResponse.json<ApiResponse>({
-      success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Failed to retrieve service status',
+    return NextResponse.json<ApiResponse>(
+      {
+        success: false,
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: 'Failed to retrieve service status',
+        },
+        meta: {
+          processingTime,
+          timestamp: new Date().toISOString(),
+          requestId: crypto.randomUUID(),
+        },
       },
-      meta: {
-        processingTime,
-        timestamp: new Date().toISOString(),
-        requestId: crypto.randomUUID(),
-      },
-    }, { status: 500 });
+      { status: 500 }
+    );
   }
 }
 

@@ -1,7 +1,7 @@
 /**
  * Glassmorphic Integration with Card Theme System
  * 玻璃態效果與卡片主題系統整合
- * 
+ *
  * Created: 2025-08-12
  * Purpose: Seamless integration of glassmorphic effects with the new card theme system
  */
@@ -171,7 +171,8 @@ export const cornerIndicatorSystem = {
     position: 'top-3 right-3',
     background: 'bg-white/20',
     border: 'border-none', // 移除邊框
-    clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
+    clipPath:
+      'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
   },
 } as const;
 
@@ -342,7 +343,7 @@ export function getOptimizedGlassmorphicStyle(
   }
 
   // 構建完整的純透明玻璃態樣式
-  const blur = perfConfig.useBackdropFilter 
+  const blur = perfConfig.useBackdropFilter
     ? `blur(${Math.min(parseInt(variantConfig.blur), parseInt(perfConfig.maxBlurRadius))}px)`
     : 'none';
 
@@ -366,7 +367,7 @@ export function generateGlassmorphicCSSVariables(cardType: keyof typeof glassmor
   const theme = glassmorphicThemes[cardType];
   const shadowConfig = shadowDepthSystem[theme.shadowDepth];
   const cornerConfig = cornerIndicatorSystem[theme.cornerIndicator];
-  
+
   return {
     '--card-glow-rgb': '255, 255, 255', // 統一使用純白色
     '--card-bg': theme.background,

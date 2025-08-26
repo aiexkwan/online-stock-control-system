@@ -27,13 +27,13 @@ export class UserInputError extends GraphQLError {
 // Error types for department queries
 export class DepartmentDataError extends GraphQLError {
   constructor(message: string, department: string, originalError?: Error) {
-    super(message, { 
-      extensions: { 
+    super(message, {
+      extensions: {
         code: 'DEPARTMENT_DATA_ERROR',
         department,
         originalError: originalError?.message,
         timestamp: new Date().toISOString(),
-      }
+      },
     });
   }
 }
@@ -47,7 +47,7 @@ export class DatabaseConnectionError extends GraphQLError {
         operation,
         originalError: originalError?.message,
         timestamp: new Date().toISOString(),
-      }
+      },
     });
   }
 }
@@ -62,7 +62,7 @@ export class DataLoaderError extends GraphQLError {
         sampleKeys: keys.slice(0, 3),
         originalError: originalError?.message,
         timestamp: new Date().toISOString(),
-      }
+      },
     });
   }
 }
@@ -83,13 +83,13 @@ export function createPartialResponse<T>(
   errors: Error[],
   defaultData: T
 ): PartialDepartmentResponse<T> {
-  const graphqlErrors = errors.map(error => 
+  const graphqlErrors = errors.map(error =>
     error instanceof GraphQLError ? error : new GraphQLError(error.message)
   );
 
   // Merge partial data with defaults
   const mergedData = { ...defaultData, ...data };
-  
+
   return {
     data: mergedData,
     errors: graphqlErrors,
@@ -156,9 +156,10 @@ export function handleDatabaseError(
   operation: string
 ): DatabaseConnectionError {
   const errorObj = error as Record<string, unknown>;
-  const errorMessage = (error instanceof Error ? error.message : errorObj?.message) || 'Unknown database error';
+  const errorMessage =
+    (error instanceof Error ? error.message : errorObj?.message) || 'Unknown database error';
   const errorCode = errorObj?.code || 'UNKNOWN';
-  
+
   console.error(`[Database] Error in ${table}.${operation}:`, {
     message: errorMessage,
     code: errorCode,
@@ -177,17 +178,21 @@ export function formatError(error: GraphQLFormattedError): GraphQLFormattedError
   if (process.env.NODE_ENV === 'production') {
     // Remove stack traces and internal details
     const { message, locations, path, extensions } = error;
-    
+
     return {
       message,
       locations,
       path,
-      extensions: extensions ? {
-        code: extensions.code,
-        timestamp: extensions.timestamp,
-        // Remove sensitive data
-        ...(typeof extensions.department === 'string' ? { department: extensions.department } : {}),
-      } : undefined,
+      extensions: extensions
+        ? {
+            code: extensions.code,
+            timestamp: extensions.timestamp,
+            // Remove sensitive data
+            ...(typeof extensions.department === 'string'
+              ? { department: extensions.department }
+              : {}),
+          }
+        : undefined,
     };
   }
 
@@ -196,7 +201,7 @@ export function formatError(error: GraphQLFormattedError): GraphQLFormattedError
     ...error,
     extensions: {
       ...error.extensions,
-    }
+    },
   };
 }
 
@@ -348,7 +353,9 @@ export class DepartmentValidation {
   static validateDepartmentType(departmentType: string) {
     const validTypes = ['INJECTION', 'PIPE', 'WAREHOUSE'];
     if (!validTypes.includes(departmentType)) {
-      throw new UserInputError(`Invalid department type "${departmentType}". Must be one of: ${validTypes.join(', ')}`);
+      throw new UserInputError(
+        `Invalid department type "${departmentType}". Must be one of: ${validTypes.join(', ')}`
+      );
     }
   }
 }
@@ -367,8 +374,8 @@ export function createErrorHandlingPlugin() {
       return {
         didEncounterErrors(requestContext: {
           errors?: unknown[];
-          request: { 
-            query?: string; 
+          request: {
+            query?: string;
             variables?: Record<string, unknown>;
             operationName?: string;
           };
@@ -376,7 +383,7 @@ export function createErrorHandlingPlugin() {
         }) {
           // Log errors for monitoring
           if (requestContext.errors) {
-            requestContext.errors.forEach((error) => {
+            requestContext.errors.forEach(error => {
               const graphQLError = error as GraphQLError;
               console.error('[GraphQL Error]', {
                 message: graphQLError.message,
@@ -405,7 +412,12 @@ export function withErrorHandling<TArgs = unknown, TContext = unknown, TReturn =
     fallback: TReturn;
   }
 ) {
-  return async (parent: unknown, args: TArgs, context: TContext, info: unknown): Promise<TReturn> => {
+  return async (
+    parent: unknown,
+    args: TArgs,
+    context: TContext,
+    info: unknown
+  ): Promise<TReturn> => {
     try {
       // Validate input arguments
       if (args && typeof args === 'object') {
@@ -424,12 +436,12 @@ export function withErrorHandling<TArgs = unknown, TContext = unknown, TReturn =
           };
           departmentType?: string;
         }
-        
+
         const { pagination, filter, departmentType } = args as ArgsWithValidation;
-        
+
         DepartmentValidation.validatePaginationInput(pagination);
         DepartmentValidation.validateStockFilter(filter);
-        
+
         if (departmentType) {
           DepartmentValidation.validateDepartmentType(departmentType);
         }
@@ -439,7 +451,11 @@ export function withErrorHandling<TArgs = unknown, TContext = unknown, TReturn =
     } catch (error) {
       console.error(`[${options.department}] ${options.operation} error:`, error);
 
-      if (error instanceof UserInputError || error instanceof AuthenticationError || error instanceof ForbiddenError) {
+      if (
+        error instanceof UserInputError ||
+        error instanceof AuthenticationError ||
+        error instanceof ForbiddenError
+      ) {
         // Re-throw client errors
         throw error;
       }

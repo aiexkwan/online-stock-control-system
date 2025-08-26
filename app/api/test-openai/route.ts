@@ -60,7 +60,7 @@ interface OpenAIError extends Error {
 export async function GET(request: NextRequest) {
   try {
     const apiKey = process.env.OPENAI_API_KEY;
-    
+
     const diagnostics: DiagnosticsInfo = {
       timestamp: new Date().toISOString(),
       environment: {
@@ -81,15 +81,18 @@ export async function GET(request: NextRequest) {
     };
 
     if (!apiKey) {
-      return NextResponse.json({
-        success: false,
-        error: 'OPENAI_API_KEY not configured',
-        diagnostics,
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'OPENAI_API_KEY not configured',
+          diagnostics,
+        },
+        { status: 500 }
+      );
     }
 
     // Initialize OpenAI client
-    const openai = new OpenAI({ 
+    const openai = new OpenAI({
       apiKey,
       maxRetries: 1,
       timeout: 15000,
@@ -102,7 +105,7 @@ export async function GET(request: NextRequest) {
         model: 'gpt-3.5-turbo',
         messages: [
           { role: 'system', content: 'You are a test assistant.' },
-          { role: 'user', content: 'Reply with OK' }
+          { role: 'user', content: 'Reply with OK' },
         ],
         max_tokens: 10,
         temperature: 0,
@@ -131,7 +134,7 @@ export async function GET(request: NextRequest) {
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: 'You are a test assistant.' },
-          { role: 'user', content: 'Reply with OK' }
+          { role: 'user', content: 'Reply with OK' },
         ],
         max_tokens: 10,
         temperature: 0,
@@ -158,7 +161,7 @@ export async function GET(request: NextRequest) {
       const startTime = Date.now();
       const models = await openai.models.list();
       const modelArray = models.data;
-      
+
       diagnostics.tests.listModels = {
         success: true,
         responseTime: Date.now() - startTime,
@@ -176,21 +179,29 @@ export async function GET(request: NextRequest) {
     }
 
     // Determine overall success
-    const anyTestSucceeded = Object.values(diagnostics.tests).some((test: TestResult) => test.success);
-    
+    const anyTestSucceeded = Object.values(diagnostics.tests).some(
+      (test: TestResult) => test.success
+    );
+
     // Add recommendations
     diagnostics.recommendations = [];
-    
+
     if (!anyTestSucceeded) {
       if (diagnostics.tests['gpt-3.5-turbo']?.error?.includes('Connection')) {
-        diagnostics.recommendations.push('Network issue detected. OpenAI API may be blocked from this Vercel region.');
+        diagnostics.recommendations.push(
+          'Network issue detected. OpenAI API may be blocked from this Vercel region.'
+        );
         diagnostics.recommendations.push('Try changing Vercel deployment region in vercel.json');
       }
       if (diagnostics.tests['gpt-3.5-turbo']?.code === 401) {
-        diagnostics.recommendations.push('Invalid API key. Check OPENAI_API_KEY in Vercel dashboard.');
+        diagnostics.recommendations.push(
+          'Invalid API key. Check OPENAI_API_KEY in Vercel dashboard.'
+        );
       }
       if (diagnostics.tests['gpt-3.5-turbo']?.code === 429) {
-        diagnostics.recommendations.push('Rate limit or quota exceeded. Check OpenAI usage dashboard.');
+        diagnostics.recommendations.push(
+          'Rate limit or quota exceeded. Check OpenAI usage dashboard.'
+        );
       }
     }
 
@@ -199,17 +210,19 @@ export async function GET(request: NextRequest) {
       message: anyTestSucceeded ? 'OpenAI API connection successful' : 'All tests failed',
       diagnostics,
     });
-
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
-    return NextResponse.json({
-      success: false,
-      error: `Test endpoint error: ${errorMessage}`,
-      diagnostics: {
-        timestamp: new Date().toISOString(),
-        error: errorMessage,
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: `Test endpoint error: ${errorMessage}`,
+        diagnostics: {
+          timestamp: new Date().toISOString(),
+          error: errorMessage,
+        },
       },
-    }, { status: 500 });
+      { status: 500 }
+    );
   }
 }

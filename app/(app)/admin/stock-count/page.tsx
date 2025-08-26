@@ -27,10 +27,10 @@ export default function AdminStockCountPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   // 處理表單提交
-  const handleFormSubmit = async (formData: { 
-    qrCode?: string; 
-    pallet?: string; 
-    productCode?: string; 
+  const handleFormSubmit = async (formData: {
+    qrCode?: string;
+    pallet?: string;
+    productCode?: string;
     quantity?: number;
   }) => {
     setIsLoading(true);
@@ -46,7 +46,7 @@ export default function AdminStockCountPage() {
         requestBody = {
           plt_num: formData.pallet,
           product_code: formData.productCode,
-          counted_qty: formData.quantity
+          counted_qty: formData.quantity,
         };
       }
 
@@ -70,15 +70,17 @@ export default function AdminStockCountPage() {
         product_desc: result.data.product_desc,
         remain_qty: result.data.remain_qty || 0,
         current_remain_qty: result.data.current_remain_qty,
-        need_input: result.data.need_input
+        need_input: result.data.need_input,
       };
 
       setCountData(data);
-      
+
       if (data.need_input) {
         setState('input');
         if (result.data.is_first_count) {
-          toast.info(`First count for ${data.product_code}. Current stock: ${data.current_remain_qty}`);
+          toast.info(
+            `First count for ${data.product_code}. Current stock: ${data.current_remain_qty}`
+          );
         }
       } else {
         setState('result');
@@ -95,7 +97,7 @@ export default function AdminStockCountPage() {
   // 處理數量提交
   const handleQuantitySubmit = async () => {
     if (!countData || !countedQuantity) return;
-    
+
     const countedQty = parseInt(countedQuantity);
     if (isNaN(countedQty) || countedQty < 0) {
       toast.error('Please enter a valid quantity');
@@ -122,12 +124,16 @@ export default function AdminStockCountPage() {
         return;
       }
 
-      setCountData(prev => prev ? {
-        ...prev,
-        remain_qty: result.data.remain_qty,
-        product_desc: result.data.product_desc || prev.product_desc,
-        need_input: false
-      } : null);
+      setCountData(prev =>
+        prev
+          ? {
+              ...prev,
+              remain_qty: result.data.remain_qty,
+              product_desc: result.data.product_desc || prev.product_desc,
+              need_input: false,
+            }
+          : null
+      );
 
       setState('result');
       setCountedQuantity('');
@@ -149,16 +155,13 @@ export default function AdminStockCountPage() {
 
   return (
     <UniversalBackground>
-      <PageErrorBoundary pageName="StockCount">
-        <div className="text-white">
-          <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-            <div className="space-y-8">
+      <PageErrorBoundary pageName='StockCount'>
+        <div className='text-white'>
+          <div className='mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8'>
+            <div className='space-y-8'>
               {/* 表單區域 */}
               {state === 'form' && (
-                <StockCountForm 
-                  onSubmit={handleFormSubmit}
-                  isLoading={isLoading}
-                />
+                <StockCountForm onSubmit={handleFormSubmit} isLoading={isLoading} />
               )}
 
               {/* 結果顯示區域 */}

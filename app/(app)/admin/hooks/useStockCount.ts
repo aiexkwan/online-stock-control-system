@@ -71,7 +71,7 @@ export function useStockCount(): UseStockCountReturn {
         requestBody = {
           plt_num: formData.pallet,
           product_code: formData.productCode,
-          counted_qty: formData.quantity
+          counted_qty: formData.quantity,
         };
       }
 
@@ -98,15 +98,17 @@ export function useStockCount(): UseStockCountReturn {
         remain_qty: result.data.remain_qty || 0,
         current_remain_qty: result.data.current_remain_qty,
         need_input: result.data.need_input,
-        is_first_count: result.data.is_first_count
+        is_first_count: result.data.is_first_count,
       };
 
       setCountData(data);
-      
+
       if (data.need_input) {
         setState('input');
         if (result.data.is_first_count) {
-          toast.info(`First count for ${data.product_code}. Current stock: ${data.current_remain_qty}`);
+          toast.info(
+            `First count for ${data.product_code}. Current stock: ${data.current_remain_qty}`
+          );
         }
       } else {
         setState('result');
@@ -125,7 +127,7 @@ export function useStockCount(): UseStockCountReturn {
   // Handle quantity submission
   const handleQuantitySubmit = useCallback(async () => {
     if (!countData || !countedQuantity) return;
-    
+
     const countedQty = parseInt(countedQuantity);
     if (isNaN(countedQty) || countedQty < 0) {
       const errorMessage = 'Please enter a valid quantity';
@@ -162,7 +164,7 @@ export function useStockCount(): UseStockCountReturn {
         remain_qty: result.data.remain_qty,
         product_desc: result.data.product_desc || countData.product_desc,
         counted_qty: countedQty,
-        need_input: false
+        need_input: false,
       });
 
       setState('result');

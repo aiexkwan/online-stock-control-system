@@ -23,21 +23,21 @@ class CredentialsManager {
       envVar: 'SUPABASE_URL',
       required: true,
       sensitive: false,
-      validator: (value) => value.startsWith('https://') && value.includes('.supabase.co')
+      validator: value => value.startsWith('https://') && value.includes('.supabase.co'),
     },
     {
       name: 'SUPABASE_ANON_KEY',
       envVar: 'SUPABASE_ANON_KEY',
       required: true,
       sensitive: true,
-      validator: (value) => value.startsWith('eyJ') && value.length > 100
+      validator: value => value.startsWith('eyJ') && value.length > 100,
     },
     {
       name: 'SUPABASE_SERVICE_KEY',
       envVar: 'SUPABASE_SERVICE_ROLE_KEY',
       required: false,
       sensitive: true,
-      validator: (value) => value.startsWith('eyJ') && value.length > 100
+      validator: value => value.startsWith('eyJ') && value.length > 100,
     },
     // Test Credentials
     {
@@ -45,14 +45,14 @@ class CredentialsManager {
       envVar: 'TEST_LOGIN_EMAIL',
       required: false,
       sensitive: false,
-      validator: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+      validator: value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
     },
     {
       name: 'TEST_LOGIN_PASSWORD',
       envVar: 'TEST_LOGIN_PASSWORD',
       required: false,
       sensitive: true,
-      validator: (value) => value.length >= 6
+      validator: value => value.length >= 6,
     },
     // API Keys
     {
@@ -60,15 +60,15 @@ class CredentialsManager {
       envVar: 'OPENAI_API_KEY',
       required: false,
       sensitive: true,
-      validator: (value) => value.startsWith('sk-') && value.length > 40
+      validator: value => value.startsWith('sk-') && value.length > 40,
     },
     {
       name: 'RESEND_API_KEY',
       envVar: 'RESEND_API_KEY',
       required: false,
       sensitive: true,
-      validator: (value) => value.startsWith('re_') && value.length > 20
-    }
+      validator: value => value.startsWith('re_') && value.length > 20,
+    },
   ];
 
   constructor() {
@@ -202,7 +202,7 @@ class CredentialsManager {
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -217,7 +217,7 @@ class CredentialsManager {
       status[config.name] = {
         exists: !!value,
         valid: !value || !config.validator || config.validator(value),
-        sensitive: config.sensitive
+        sensitive: config.sensitive,
       };
     }
 

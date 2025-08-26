@@ -1,10 +1,13 @@
 # Card System Migration Context Management Strategy
-*Version: 1.0.0 | Date: 2025-08-12*
+
+_Version: 1.0.0 | Date: 2025-08-12_
 
 ## Executive Summary
+
 Comprehensive context management strategy for migrating 19 card components from widget-based to card-based architecture across 5 phases, ensuring zero production disruption and maintaining full system consistency.
 
 ## Current Migration Status
+
 - **Total Components**: 19 Cards
 - **Completion Rate**: 88.2% (as per monitoring config)
 - **Phase 1**: ✅ Complete (3 operation cards)
@@ -14,6 +17,7 @@ Comprehensive context management strategy for migrating 19 card components from 
 ## 1. Migration Tracking Strategy
 
 ### 1.1 Component Inventory System
+
 ```typescript
 interface MigrationTracker {
   componentId: string;
@@ -31,12 +35,14 @@ interface MigrationTracker {
 ```
 
 ### 1.2 Tracking Dashboard
+
 - **Real-time Progress**: `/lib/migration-context/dashboard.tsx`
 - **Component Matrix**: Visual grid showing all 19 cards with status indicators
 - **Dependency Graph**: Interactive visualization of card relationships
 - **Performance Comparison**: Side-by-side metrics (old vs new)
 
 ### 1.3 Automated Tracking
+
 ```json
 {
   "tracking_automation": {
@@ -57,6 +63,7 @@ interface MigrationTracker {
 ## 2. Context Preservation Between Phases
 
 ### 2.1 Context Store Structure
+
 ```typescript
 interface PhaseContext {
   phaseNumber: number;
@@ -80,12 +87,14 @@ interface PhaseContext {
 ```
 
 ### 2.2 Context Persistence
+
 - **Primary Store**: Supabase table `migration_context`
 - **Backup**: Local JSON files in `/lib/migration-context/snapshots/`
 - **Version Control**: Git tags for each phase completion
 - **Documentation**: Auto-generated phase reports
 
 ### 2.3 Context Transfer Protocol
+
 1. **Phase Completion Checklist**
    - All components tested
    - Performance benchmarks met
@@ -101,19 +110,20 @@ interface PhaseContext {
 ## 3. Dependencies Mapping
 
 ### 3.1 Dependency Categories
+
 ```typescript
 interface DependencyMap {
   cardId: string;
   dependencies: {
     data: {
-      apis: string[];      // REST/GraphQL endpoints
-      tables: string[];    // Supabase tables
-      queries: string[];   // GraphQL queries
+      apis: string[]; // REST/GraphQL endpoints
+      tables: string[]; // Supabase tables
+      queries: string[]; // GraphQL queries
     };
     components: {
-      shared: string[];    // Shared UI components
-      cards: string[];     // Other card dependencies
-      hooks: string[];     // Custom hooks
+      shared: string[]; // Shared UI components
+      cards: string[]; // Other card dependencies
+      hooks: string[]; // Custom hooks
     };
     services: {
       auth: boolean;
@@ -127,6 +137,7 @@ interface DependencyMap {
 ```
 
 ### 3.2 Migration Order (Based on Dependencies)
+
 ```
 Phase 1 (Complete):
 1. StockCountCard (base operation)
@@ -161,20 +172,22 @@ Phase 5 (Specialized Cards):
 ## 4. Risk Assessment Matrix
 
 ### 4.1 Risk Categories
-| Risk Level | Description | Mitigation Strategy |
-|------------|-------------|-------------------|
-| 🔴 Critical | Production breaking | Feature flags, immediate rollback |
-| 🟠 High | Performance degradation | Canary deployment, monitoring |
-| 🟡 Medium | UX inconsistency | A/B testing, user feedback |
-| 🟢 Low | Minor issues | Standard testing, fixes |
+
+| Risk Level  | Description             | Mitigation Strategy               |
+| ----------- | ----------------------- | --------------------------------- |
+| 🔴 Critical | Production breaking     | Feature flags, immediate rollback |
+| 🟠 High     | Performance degradation | Canary deployment, monitoring     |
+| 🟡 Medium   | UX inconsistency        | A/B testing, user feedback        |
+| 🟢 Low      | Minor issues            | Standard testing, fixes           |
 
 ### 4.2 Phase-Specific Risks
+
 ```yaml
 Phase 2 (Current):
   - Risk: GraphQL query performance
     Level: High
     Mitigation: Query optimization, caching layer
-  
+
   - Risk: Chart rendering issues
     Level: Medium
     Mitigation: Progressive enhancement, fallbacks
@@ -198,14 +211,11 @@ Phase 5:
 ## 5. Rollback Strategy
 
 ### 5.1 Rollback Mechanisms
+
 ```typescript
 interface RollbackStrategy {
   automatic: {
-    triggers: [
-      'error_rate > 5%',
-      'response_time > 2000ms',
-      'availability < 99.5%'
-    ];
+    triggers: ['error_rate > 5%', 'response_time > 2000ms', 'availability < 99.5%'];
     action: 'revert_to_previous_version';
     notification: ['slack', 'pager'];
   };
@@ -218,6 +228,7 @@ interface RollbackStrategy {
 ```
 
 ### 5.2 Rollback Checkpoints
+
 1. **Pre-deployment snapshot**
 2. **Feature flag toggle**
 3. **Database migration reversal**
@@ -227,6 +238,7 @@ interface RollbackStrategy {
 ## 6. Testing Context Requirements
 
 ### 6.1 Test Coverage Matrix
+
 ```typescript
 interface TestContext {
   unitTests: {
@@ -250,6 +262,7 @@ interface TestContext {
 ```
 
 ### 6.2 Phase-Specific Test Requirements
+
 - **Phase 1-2**: Focus on data integrity and API compatibility
 - **Phase 3**: File operation reliability and error handling
 - **Phase 4**: Department-specific business logic validation
@@ -258,6 +271,7 @@ interface TestContext {
 ## 7. Documentation Context Needs
 
 ### 7.1 Documentation Structure
+
 ```
 /docs/migration/
 ├── overview.md              # High-level strategy
@@ -271,6 +285,7 @@ interface TestContext {
 ```
 
 ### 7.2 Auto-generated Documentation
+
 - **Component API docs**: Using TypeDoc
 - **GraphQL schema docs**: Using GraphQL Codegen
 - **Performance reports**: Using Lighthouse CI
@@ -279,6 +294,7 @@ interface TestContext {
 ## 8. Performance Baseline Tracking
 
 ### 8.1 Key Metrics
+
 ```typescript
 interface PerformanceBaseline {
   renderTime: {
@@ -287,23 +303,24 @@ interface PerformanceBaseline {
     p95: number; // Target: <500ms
   };
   apiLatency: {
-    rest: number;    // Current baseline
+    rest: number; // Current baseline
     graphql: number; // Target: REST - 20%
   };
   bundleSize: {
-    initial: number;    // KB
-    lazy: number;       // KB
-    total: number;      // Target: <500KB
+    initial: number; // KB
+    lazy: number; // KB
+    total: number; // Target: <500KB
   };
   memoryUsage: {
-    initial: number;    // MB
-    peak: number;       // MB
-    average: number;    // Target: <50MB
+    initial: number; // MB
+    peak: number; // MB
+    average: number; // Target: <50MB
   };
 }
 ```
 
 ### 8.2 Monitoring Implementation
+
 - **Real-time dashboard**: Grafana integration
 - **Alerting**: Threshold-based alerts via Slack
 - **Reporting**: Weekly performance comparison reports
@@ -312,6 +329,7 @@ interface PerformanceBaseline {
 ## 9. Breaking Change Management
 
 ### 9.1 Breaking Change Categories
+
 1. **API Changes**: Endpoint deprecation, schema changes
 2. **Component Props**: Interface modifications
 3. **State Management**: Store structure changes
@@ -319,57 +337,61 @@ interface PerformanceBaseline {
 5. **Styling**: Theme system migration
 
 ### 9.2 Change Communication Protocol
+
 ```yaml
 notification_timeline:
-  - 2_weeks_before: 
-      action: "Announce in team meeting"
-      document: "Create migration guide"
+  - 2_weeks_before:
+      action: 'Announce in team meeting'
+      document: 'Create migration guide'
   - 1_week_before:
-      action: "Send email to stakeholders"
-      test: "Run compatibility tests"
+      action: 'Send email to stakeholders'
+      test: 'Run compatibility tests'
   - deployment_day:
-      action: "Enable feature flags"
-      monitor: "Watch error rates"
+      action: 'Enable feature flags'
+      monitor: 'Watch error rates'
   - 1_week_after:
-      action: "Gather feedback"
-      optimize: "Performance tuning"
+      action: 'Gather feedback'
+      optimize: 'Performance tuning'
 ```
 
 ## 10. Team Communication Strategy
 
 ### 10.1 Communication Channels
+
 ```typescript
 interface CommunicationPlan {
   channels: {
     slack: {
-      migration_updates: '#card-migration',
-      alerts: '#system-alerts',
-      discussions: '#architecture'
+      migration_updates: '#card-migration';
+      alerts: '#system-alerts';
+      discussions: '#architecture';
     };
     meetings: {
-      daily_standup: '10:00 AM',
-      weekly_review: 'Friday 2:00 PM',
-      phase_retrospective: 'Phase completion'
+      daily_standup: '10:00 AM';
+      weekly_review: 'Friday 2:00 PM';
+      phase_retrospective: 'Phase completion';
     };
     documentation: {
-      confluence: 'Migration Wiki',
-      github: 'Migration Issues',
-      dashboards: 'Grafana boards'
+      confluence: 'Migration Wiki';
+      github: 'Migration Issues';
+      dashboards: 'Grafana boards';
     };
   };
 }
 ```
 
 ### 10.2 Stakeholder Matrix
-| Stakeholder | Information Needs | Frequency | Format |
-|-------------|------------------|-----------|---------|
-| Dev Team | Technical details | Daily | Standup, Slack |
-| Product | Progress, issues | Weekly | Reports, meetings |
-| Management | High-level status | Bi-weekly | Dashboard, email |
-| QA Team | Test requirements | Per phase | Docs, sessions |
-| DevOps | Deployment plans | Pre-deploy | Runbooks, alerts |
+
+| Stakeholder | Information Needs | Frequency  | Format            |
+| ----------- | ----------------- | ---------- | ----------------- |
+| Dev Team    | Technical details | Daily      | Standup, Slack    |
+| Product     | Progress, issues  | Weekly     | Reports, meetings |
+| Management  | High-level status | Bi-weekly  | Dashboard, email  |
+| QA Team     | Test requirements | Per phase  | Docs, sessions    |
+| DevOps      | Deployment plans  | Pre-deploy | Runbooks, alerts  |
 
 ### 10.3 Knowledge Transfer
+
 1. **Pair Programming**: Senior/junior pairing for complex migrations
 2. **Documentation Days**: Dedicated time for writing guides
 3. **Lunch & Learn**: Weekly knowledge sharing sessions
@@ -411,4 +433,4 @@ gantt
 
 ---
 
-*This strategy document should be reviewed and updated weekly during active migration phases.*
+_This strategy document should be reviewed and updated weekly during active migration phases._

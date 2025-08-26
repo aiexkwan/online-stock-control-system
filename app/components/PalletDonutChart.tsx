@@ -133,7 +133,7 @@ export default function PalletDonutChart({
             <TooltipContent className='rounded-lg border-slate-600 bg-slate-800 p-4 text-white shadow-xl'>
               <div className='space-y-2'>
                 <div className='mb-2 text-center font-semibold'>Performance Overview</div>
-                <div className='grid grid-cols-2 gap-4 text-xxxs'>
+                <div className='text-xxxs grid grid-cols-2 gap-4'>
                   <div className='text-center'>
                     <div className='text-xxxs font-bold text-blue-400'>{palletsGenerated}</div>
                     <div className='text-slate-300'>Pallets Generated</div>

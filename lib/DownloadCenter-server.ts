@@ -63,9 +63,16 @@ export async function exportAcoReportBuffer(
 
   // === Merge cells for product blocks ===
   const mergeGroups = [
-    'A4:D4', 'E4:H4', 'I4:L4', 'M4:P4',
-    'A5:D5', 'E5:H5', 'I5:L5', 'M5:P5',
-    'M1:P1', 'M2:P2',
+    'A4:D4',
+    'E4:H4',
+    'I4:L4',
+    'M4:P4',
+    'A5:D5',
+    'E5:H5',
+    'I5:L5',
+    'M5:P5',
+    'M1:P1',
+    'M2:P2',
   ];
   mergeGroups.forEach(range => {
     try {
@@ -129,11 +136,14 @@ export async function exportAcoReportBuffer(
   }
 
   // === Populate Product Data ===
-  const productGroups = reportData.reduce((acc, item) => {
-    if (!acc[item.product_code]) acc[item.product_code] = [];
-    acc[item.product_code].push(item);
-    return acc;
-  }, {} as Record<string, AcoProductData[]>);
+  const productGroups = reportData.reduce(
+    (acc, item) => {
+      if (!acc[item.product_code]) acc[item.product_code] = [];
+      acc[item.product_code].push(item);
+      return acc;
+    },
+    {} as Record<string, AcoProductData[]>
+  );
 
   const productCodes = Object.keys(productGroups).slice(0, MAX_PRODUCT_BLOCKS);
 
@@ -161,8 +171,10 @@ export async function exportAcoReportBuffer(
 
       sheet.getCell(dataRow, baseCol).value = idx + 1;
       sheet.getCell(dataRow, baseCol + 1).value = (item.pallets && item.pallets[0]?.plt_num) || '';
-      sheet.getCell(dataRow, baseCol + 2).value = (item.pallets && item.pallets[0]?.product_qty) || 0;
-      sheet.getCell(dataRow, baseCol + 3).value = (item.pallets && item.pallets[0]?.generate_time) || '';
+      sheet.getCell(dataRow, baseCol + 2).value =
+        (item.pallets && item.pallets[0]?.product_qty) || 0;
+      sheet.getCell(dataRow, baseCol + 3).value =
+        (item.pallets && item.pallets[0]?.generate_time) || '';
     });
   });
 
@@ -218,20 +230,20 @@ export async function exportGrnReportMultiSheetBuffer(
       'Net',
       'Count',
       'Pallet',
-      'Package'
+      'Package',
     ]);
     headerRow.font = { bold: true };
-    headerRow.eachCell((cell) => {
+    headerRow.eachCell(cell => {
       cell.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FFE0E0E0' }
+        fgColor: { argb: 'FFE0E0E0' },
       };
       cell.border = {
         top: { style: 'thin' },
         left: { style: 'thin' },
         bottom: { style: 'thin' },
-        right: { style: 'thin' }
+        right: { style: 'thin' },
       };
     });
 
@@ -244,14 +256,14 @@ export async function exportGrnReportMultiSheetBuffer(
         record.net_weight,
         record.pallet_count,
         record.pallet,
-        record.package_type
+        record.package_type,
       ]);
-      row.eachCell((cell) => {
+      row.eachCell(cell => {
         cell.border = {
           top: { style: 'thin' },
           left: { style: 'thin' },
           bottom: { style: 'thin' },
-          right: { style: 'thin' }
+          right: { style: 'thin' },
         };
       });
     });
@@ -265,7 +277,7 @@ export async function exportGrnReportMultiSheetBuffer(
       reportData.total_net_weight,
       reportData.records.reduce((sum, r) => sum + (r.pallet_count || 0), 0),
       '',
-      ''
+      '',
     ]);
     totalsRow.font = { bold: true };
     totalsRow.eachCell((cell, colNumber) => {
@@ -273,7 +285,7 @@ export async function exportGrnReportMultiSheetBuffer(
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: 'FFFFFFE0' }
+          fgColor: { argb: 'FFFFFFE0' },
         };
       }
     });
@@ -286,9 +298,7 @@ export async function exportGrnReportMultiSheetBuffer(
 /**
  * Generate Transaction Report Excel as buffer
  */
-export async function buildTransactionReportBuffer(
-  data: TransactionReportData
-): Promise<Buffer> {
+export async function buildTransactionReportBuffer(data: TransactionReportData): Promise<Buffer> {
   const ExcelJS = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet('Transaction Report');
@@ -321,24 +331,24 @@ export async function buildTransactionReportBuffer(
   // Location Summary
   sheet.addRow(['Location Summary']);
   sheet.getCell('A8').font = { size: 14, bold: true };
-  
-  const summaryHeaderRow = sheet.addRow(['Location', 'Transfers In', 'Transfers Out', 'Net Change']);
+
+  const summaryHeaderRow = sheet.addRow([
+    'Location',
+    'Transfers In',
+    'Transfers Out',
+    'Net Change',
+  ]);
   summaryHeaderRow.font = { bold: true };
-  summaryHeaderRow.eachCell((cell) => {
+  summaryHeaderRow.eachCell(cell => {
     cell.fill = {
       type: 'pattern',
       pattern: 'solid',
-      fgColor: { argb: 'FFE0E0E0' }
+      fgColor: { argb: 'FFE0E0E0' },
     };
   });
 
   Object.entries(data.summary).forEach(([location, stats]) => {
-    sheet.addRow([
-      location,
-      stats.transfers_in,
-      stats.transfers_out,
-      stats.net_change
-    ]);
+    sheet.addRow([location, stats.transfers_in, stats.transfers_out, stats.net_change]);
   });
 
   sheet.addRow([]);
@@ -349,27 +359,19 @@ export async function buildTransactionReportBuffer(
   const detailsTitleCell = sheet.getCell(`A${sheet.rowCount}`);
   detailsTitleCell.font = { size: 14, bold: true };
 
-  const headerRow = sheet.addRow([
-    'Date',
-    'Pallet',
-    'Product',
-    'Qty',
-    'From',
-    'To',
-    'Operator'
-  ]);
+  const headerRow = sheet.addRow(['Date', 'Pallet', 'Product', 'Qty', 'From', 'To', 'Operator']);
   headerRow.font = { bold: true };
-  headerRow.eachCell((cell) => {
+  headerRow.eachCell(cell => {
     cell.fill = {
       type: 'pattern',
       pattern: 'solid',
-      fgColor: { argb: 'FFE0E0E0' }
+      fgColor: { argb: 'FFE0E0E0' },
     };
     cell.border = {
       top: { style: 'thin' },
       left: { style: 'thin' },
       bottom: { style: 'thin' },
-      right: { style: 'thin' }
+      right: { style: 'thin' },
     };
   });
 
@@ -382,14 +384,14 @@ export async function buildTransactionReportBuffer(
       transfer.quantity,
       transfer.from_location,
       transfer.to_location,
-      transfer.operator_name
+      transfer.operator_name,
     ]);
-    row.eachCell((cell) => {
+    row.eachCell(cell => {
       cell.border = {
         top: { style: 'thin' },
         left: { style: 'thin' },
         bottom: { style: 'thin' },
-        right: { style: 'thin' }
+        right: { style: 'thin' },
       };
     });
   });

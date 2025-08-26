@@ -99,35 +99,49 @@ interface LocalQueryResult {
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
-  
+
   try {
     // Parse request body
-    const body = await request.json() as UnifiedRequest;
+    const body = (await request.json()) as UnifiedRequest;
     const { question, sessionId: providedSessionId, stream = false, features = {} } = body;
-    
+
     // Detect streaming mode from headers or parameter
     const acceptHeader = request.headers.get('accept');
     const isStreaming = stream || acceptHeader === 'text/event-stream';
-    
+
     // Set default features
     const enableCache = features.enableCache !== false;
     const enableOptimization = features.enableOptimization !== false;
     const enableAnalysis = features.enableAnalysis !== false;
-    
-    isNotProduction() && console.log('[Unified Ask Database] Mode:', isStreaming ? 'STREAMING' : 'STANDARD');
-    isNotProduction() && console.log('[Unified Ask Database] Features:', { enableCache, enableOptimization, enableAnalysis });
-    
+
+    isNotProduction() &&
+      console.log('[Unified Ask Database] Mode:', isStreaming ? 'STREAMING' : 'STANDARD');
+    isNotProduction() &&
+      console.log('[Unified Ask Database] Features:', {
+        enableCache,
+        enableOptimization,
+        enableAnalysis,
+      });
+
     // Generate session ID if not provided
-    const sessionId = providedSessionId || `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    
+    const sessionId =
+      providedSessionId || `session_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
     // Handle streaming mode
     if (isStreaming) {
-      return handleStreamingMode(question, sessionId, { enableCache, enableOptimization, enableAnalysis });
+      return handleStreamingMode(question, sessionId, {
+        enableCache,
+        enableOptimization,
+        enableAnalysis,
+      });
     }
-    
+
     // Handle standard mode
-    return handleStandardMode(question, sessionId, { enableCache, enableOptimization, enableAnalysis });
-    
+    return handleStandardMode(question, sessionId, {
+      enableCache,
+      enableOptimization,
+      enableAnalysis,
+    });
   } catch (error) {
     console.error('[Unified Ask Database] Error:', error);
     return NextResponse.json(
@@ -141,104 +155,123 @@ export async function POST(request: NextRequest) {
  * Handle streaming mode with Server-Sent Events
  */
 async function handleStreamingMode(
-  question: string, 
+  question: string,
   sessionId: string,
   features: { enableCache: boolean; enableOptimization: boolean; enableAnalysis: boolean }
 ) {
   const encoder = new TextEncoder();
   const stream = new TransformStream();
   const writer = stream.writable.getWriter();
-  
+
   // Start async processing
   (async () => {
     try {
       // Send initial progress
       await writer.write(
-        encoder.encode(`data: ${JSON.stringify({ type: 'progress', message: 'Authenticating...' })}\n\n`)
+        encoder.encode(
+          `data: ${JSON.stringify({ type: 'progress', message: 'Authenticating...' })}\n\n`
+        )
       );
-      
+
       // Check permission
       const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user?.email) {
         await writer.write(
-          encoder.encode(`data: ${JSON.stringify({ type: 'error', message: 'Not authenticated' })}\n\n`)
+          encoder.encode(
+            `data: ${JSON.stringify({ type: 'error', message: 'Not authenticated' })}\n\n`
+          )
         );
         await writer.close();
         return;
       }
-      
+
       // Check if user is blocked
       if (BLOCKED_USERS.includes(user.email)) {
         await writer.write(
-          encoder.encode(`data: ${JSON.stringify({ 
-            type: 'error', 
-            message: 'You do not have permission to use the database query feature' 
-          })}\n\n`)
+          encoder.encode(
+            `data: ${JSON.stringify({
+              type: 'error',
+              message: 'You do not have permission to use the database query feature',
+            })}\n\n`
+          )
         );
         await writer.close();
         return;
       }
-      
+
       // Quick cache check for streaming mode (L1 only)
       if (features.enableCache) {
         await writer.write(
-          encoder.encode(`data: ${JSON.stringify({ type: 'progress', message: 'Checking cache...' })}\n\n`)
+          encoder.encode(
+            `data: ${JSON.stringify({ type: 'progress', message: 'Checking cache...' })}\n\n`
+          )
         );
-        
+
         const cacheKey = generateCacheKey(question, CACHE_VERSION);
         const cached = queryCache.get(cacheKey);
-        
+
         if (cached && cached.answer) {
           // Stream cached result
           await writer.write(
             encoder.encode(`data: ${JSON.stringify({ type: 'cache_hit', level: 'L1' })}\n\n`)
           );
-          
+
           // Stream the cached answer in chunks
           const chunks = cached.answer.match(/.{1,50}/g) || [];
           for (const chunk of chunks) {
             await writer.write(
-              encoder.encode(`data: ${JSON.stringify({ type: 'answer_chunk', content: chunk })}\n\n`)
+              encoder.encode(
+                `data: ${JSON.stringify({ type: 'answer_chunk', content: chunk })}\n\n`
+              )
             );
             await new Promise(resolve => setTimeout(resolve, 10)); // Small delay for effect
           }
-          
+
           // Send complete message
           await writer.write(
-            encoder.encode(`data: ${JSON.stringify({ 
-              type: 'complete', 
-              answer: cached.answer,
-              sql: cached.sql,
-              rowCount: cached.result?.rowCount || 0,
-              cached: true
-            })}\n\n`)
+            encoder.encode(
+              `data: ${JSON.stringify({
+                type: 'complete',
+                answer: cached.answer,
+                sql: cached.sql,
+                rowCount: cached.result?.rowCount || 0,
+                cached: true,
+              })}\n\n`
+            )
           );
-          
+
           await writer.write(encoder.encode('data: [DONE]\n\n'));
           await writer.close();
           return;
         }
       }
-      
+
       // Send progress
       await writer.write(
-        encoder.encode(`data: ${JSON.stringify({ type: 'progress', message: 'Generating SQL query...' })}\n\n`)
+        encoder.encode(
+          `data: ${JSON.stringify({ type: 'progress', message: 'Generating SQL query...' })}\n\n`
+        )
       );
-      
+
       // Create context manager
       const contextManager = new DatabaseConversationContextManager(sessionId, user.email);
-      
+
       // Resolve references
-      const { resolved: resolvedQuestion, references } = await contextManager.resolveReferences(question);
-      
+      const { resolved: resolvedQuestion, references } =
+        await contextManager.resolveReferences(question);
+
       if (references.length > 0) {
         await writer.write(
-          encoder.encode(`data: ${JSON.stringify({ type: 'references', count: references.length })}\n\n`)
+          encoder.encode(
+            `data: ${JSON.stringify({ type: 'references', count: references.length })}\n\n`
+          )
         );
       }
-      
+
       // Generate SQL with streaming
       const messages: ChatCompletionMessageParam[] = [
         {
@@ -250,7 +283,7 @@ async function handleStreamingMode(
           content: enhanceQueryWithTemplate(resolvedQuestion).template || resolvedQuestion,
         },
       ];
-      
+
       const sqlStream = await openai.chat.completions.create({
         model: 'gpt-4o-mini',
         messages,
@@ -258,7 +291,7 @@ async function handleStreamingMode(
         max_tokens: 500,
         stream: true,
       });
-      
+
       let sql = '';
       for await (const chunk of sqlStream) {
         const content = chunk.choices[0]?.delta?.content;
@@ -270,50 +303,62 @@ async function handleStreamingMode(
           );
         }
       }
-      
+
       // Clean SQL
-      sql = sql.replace(/```sql\n?/g, '').replace(/```\n?/g, '').replace(/;/g, '').trim();
-      
+      sql = sql
+        .replace(/```sql\n?/g, '')
+        .replace(/```\n?/g, '')
+        .replace(/;/g, '')
+        .trim();
+
       // Optimize SQL if enabled
       if (features.enableOptimization) {
         await writer.write(
-          encoder.encode(`data: ${JSON.stringify({ type: 'progress', message: 'Optimizing query...' })}\n\n`)
+          encoder.encode(
+            `data: ${JSON.stringify({ type: 'progress', message: 'Optimizing query...' })}\n\n`
+          )
         );
         // Simple SQL optimization: clean up formatting
         sql = sql.replace(/\\s+/g, ' ').trim();
       }
-      
+
       // Send progress
       await writer.write(
-        encoder.encode(`data: ${JSON.stringify({ type: 'progress', message: 'Executing query...' })}\n\n`)
+        encoder.encode(
+          `data: ${JSON.stringify({ type: 'progress', message: 'Executing query...' })}\n\n`
+        )
       );
-      
+
       // Execute SQL
       const executionStart = Date.now();
       const { data, error } = await supabase.rpc('execute_sql_query', { query_text: sql });
       const executionTime = Date.now() - executionStart;
-      
+
       if (error) {
         // Handle error with recovery
         const classified = classifyError(error, sql);
         const enhanced = enhanceErrorMessage(classified.errorType, error.message, sql);
-        
+
         await writer.write(
-          encoder.encode(`data: ${JSON.stringify({ 
-            type: 'error', 
-            message: enhanced.userMessage,
-            details: enhanced.technicalDetails
-          })}\n\n`)
+          encoder.encode(
+            `data: ${JSON.stringify({
+              type: 'error',
+              message: enhanced.userMessage,
+              details: enhanced.technicalDetails,
+            })}\n\n`
+          )
         );
         await writer.close();
         return;
       }
-      
+
       // Send progress
       await writer.write(
-        encoder.encode(`data: ${JSON.stringify({ type: 'progress', message: 'Generating response...' })}\n\n`)
+        encoder.encode(
+          `data: ${JSON.stringify({ type: 'progress', message: 'Generating response...' })}\n\n`
+        )
       );
-      
+
       // Generate answer with streaming
       const answerMessages: ChatCompletionMessageParam[] = [
         {
@@ -332,7 +377,7 @@ async function handleStreamingMode(
           content: `Question: ${question}\nResults: ${JSON.stringify(data)}`,
         },
       ];
-      
+
       const answerStream = await openai.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: answerMessages,
@@ -341,7 +386,7 @@ async function handleStreamingMode(
         response_format: { type: 'json_object' },
         stream: true,
       });
-      
+
       let answer = '';
       for await (const chunk of answerStream) {
         const content = chunk.choices[0]?.delta?.content;
@@ -353,7 +398,7 @@ async function handleStreamingMode(
           );
         }
       }
-      
+
       // Cache the result if caching is enabled
       if (features.enableCache) {
         const cacheKey = generateCacheKey(question, CACHE_VERSION);
@@ -373,53 +418,58 @@ async function handleStreamingMode(
         };
         queryCache.set(cacheKey, cacheEntry);
       }
-      
+
       // Add to conversation context
       await contextManager.addInteraction(question, sql, answer);
-      
+
       // Send performance analysis if enabled
       if (features.enableAnalysis) {
         const analysis = await analyzeQueryWithPlan(sql);
         await writer.write(
-          encoder.encode(`data: ${JSON.stringify({ 
-            type: 'analysis', 
-            performanceScore: analysis.performanceScore,
-            bottlenecks: analysis.bottlenecks
-          })}\n\n`)
+          encoder.encode(
+            `data: ${JSON.stringify({
+              type: 'analysis',
+              performanceScore: analysis.performanceScore,
+              bottlenecks: analysis.bottlenecks,
+            })}\n\n`
+          )
         );
       }
-      
+
       // Send final result
       await writer.write(
-        encoder.encode(`data: ${JSON.stringify({ 
-          type: 'complete', 
-          answer,
-          sql,
-          rowCount: Array.isArray(data) ? data.length : 0,
-          executionTime,
-        })}\n\n`)
+        encoder.encode(
+          `data: ${JSON.stringify({
+            type: 'complete',
+            answer,
+            sql,
+            rowCount: Array.isArray(data) ? data.length : 0,
+            executionTime,
+          })}\n\n`
+        )
       );
-      
+
       await writer.write(encoder.encode('data: [DONE]\n\n'));
-      
     } catch (error) {
       console.error('[Streaming API] Error:', error);
       await writer.write(
-        encoder.encode(`data: ${JSON.stringify({ 
-          type: 'error', 
-          message: error instanceof Error ? error.message : 'Unknown error' 
-        })}\n\n`)
+        encoder.encode(
+          `data: ${JSON.stringify({
+            type: 'error',
+            message: error instanceof Error ? error.message : 'Unknown error',
+          })}\n\n`
+        )
       );
     } finally {
       await writer.close();
     }
   })();
-  
+
   return new Response(stream.readable, {
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
+      Connection: 'keep-alive',
     },
   });
 }
@@ -433,19 +483,18 @@ async function handleStandardMode(
   features: { enableCache: boolean; enableOptimization: boolean; enableAnalysis: boolean }
 ) {
   const startTime = Date.now();
-  
+
   try {
     // Get user info
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (!user?.email) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
-    
+
     // Check if user is blocked
     if (BLOCKED_USERS.includes(user.email)) {
       return NextResponse.json(
@@ -453,7 +502,7 @@ async function handleStandardMode(
         { status: 403 }
       );
     }
-    
+
     // Get user name
     let userName = userNameCache.get(user.email);
     if (!userName) {
@@ -465,15 +514,20 @@ async function handleStandardMode(
       userName = (userData?.name as string) || user.email;
       userNameCache.set(user.email, userName);
     }
-    
+
     // Create context manager
     const contextManager = new DatabaseConversationContextManager(sessionId, user.email);
-    
+
     // Check conversation history patterns
     if (isAskingForConversationHistory(question)) {
-      return handleConversationHistoryRequest(question, sessionId, userName || user.email, contextManager);
+      return handleConversationHistoryRequest(
+        question,
+        sessionId,
+        userName || user.email,
+        contextManager
+      );
     }
-    
+
     // Full cache check for standard mode
     if (features.enableCache) {
       const cachedResult = await checkIntelligentCache(question, user.email);
@@ -487,10 +541,11 @@ async function handleStandardMode(
         });
       }
     }
-    
+
     // Resolve references
-    const { resolved: resolvedQuestion, references } = await contextManager.resolveReferences(question);
-    
+    const { resolved: resolvedQuestion, references } =
+      await contextManager.resolveReferences(question);
+
     // Generate SQL
     const messages: ChatCompletionMessageParam[] = [
       {
@@ -502,52 +557,59 @@ async function handleStandardMode(
         content: enhanceQueryWithTemplate(resolvedQuestion).template || resolvedQuestion,
       },
     ];
-    
+
     const sqlCompletion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages,
       temperature: 0.1,
       max_tokens: 500,
     });
-    
+
     let sql = sqlCompletion.choices[0].message.content || '';
-    sql = sql.replace(/```sql\n?/g, '').replace(/```\n?/g, '').replace(/;/g, '').trim();
-    
+    sql = sql
+      .replace(/```sql\n?/g, '')
+      .replace(/```\n?/g, '')
+      .replace(/;/g, '')
+      .trim();
+
     // Optimize SQL if enabled
     if (features.enableOptimization) {
       // Simple SQL optimization: clean up formatting
       sql = sql.replace(/\\s+/g, ' ').trim();
     }
-    
+
     // Execute SQL
     const executionStart = Date.now();
     const { data, error } = await supabase.rpc('execute_sql_query', { query_text: sql });
     const executionTime = Date.now() - executionStart;
-    
+
     if (error) {
       // Error recovery
       const classified = classifyError(error, sql);
       const recovery = await attemptErrorRecovery(classified.errorType, sql, error as Error);
-      
+
       if (recovery.success && recovery.newSql) {
         // Retry with recovered SQL
-        const { data: recoveredData, error: recoveredError } = await supabase.rpc('execute_sql_query', { 
-          query_text: recovery.newSql 
-        });
-        
+        const { data: recoveredData, error: recoveredError } = await supabase.rpc(
+          'execute_sql_query',
+          {
+            query_text: recovery.newSql,
+          }
+        );
+
         if (!recoveredError && recoveredData) {
           sql = recovery.newSql;
           // Validate recovered data
-          const validatedRecoveredData = Array.isArray(recoveredData) 
+          const validatedRecoveredData = Array.isArray(recoveredData)
             ? recoveredData.filter(item => {
                 if (!item || typeof item !== 'object') return false;
                 const record = item as Record<string, unknown>;
                 return Object.values(record).every(val => safeParseDatabaseValue(val) !== null);
               })
             : [];
-          
+
           const dataToUse = validatedRecoveredData;
-          
+
           // Continue with answer generation using the recovered data
           const answerMessages: ChatCompletionMessageParam[] = [
             {
@@ -566,7 +628,7 @@ async function handleStandardMode(
               content: `Question: ${question}\nResults: ${JSON.stringify(dataToUse)}`,
             },
           ];
-          
+
           const answerCompletion = await openai.chat.completions.create({
             model: 'gpt-4o-mini',
             messages: answerMessages,
@@ -574,32 +636,34 @@ async function handleStandardMode(
             max_tokens: 600,
             response_format: { type: 'json_object' },
           });
-          
+
           const answer = answerCompletion.choices[0].message.content || '{}';
           const tokensUsed = answerCompletion.usage?.total_tokens || 0;
-          
+
           // Performance analysis if enabled
           let performanceAnalysis;
           if (features.enableAnalysis) {
             const analysis = await analyzeQueryWithPlan(sql);
             performanceAnalysis = generatePerformanceReport(analysis);
           }
-          
+
           // Build result with Zod validation
           const resultData: LocalQueryResult = {
             question,
             sql,
             result: {
-              data: Array.isArray(dataToUse) ? dataToUse.map((item: unknown) => {
-                const safeRecord: Record<string, SafeDatabaseValue> = {};
-                for (const [key, value] of Object.entries(item as Record<string, unknown>)) {
-                  const safeValue = safeParseBasicValue(value);
-                  if (safeValue !== null) {
-                    safeRecord[key] = safeValue;
-                  }
-                }
-                return safeRecord;
-              }) : [],
+              data: Array.isArray(dataToUse)
+                ? dataToUse.map((item: unknown) => {
+                    const safeRecord: Record<string, SafeDatabaseValue> = {};
+                    for (const [key, value] of Object.entries(item as Record<string, unknown>)) {
+                      const safeValue = safeParseBasicValue(value);
+                      if (safeValue !== null) {
+                        safeRecord[key] = safeValue;
+                      }
+                    }
+                    return safeRecord;
+                  })
+                : [],
               rowCount: Array.isArray(dataToUse) ? dataToUse.length : 0,
               executionTime,
             },
@@ -610,25 +674,25 @@ async function handleStandardMode(
             timestamp: new Date().toISOString(),
             performanceAnalysis,
           };
-          
+
           // Note: Result validation would be performed here
-          
+
           const result = resultData;
-          
+
           // Cache the result if caching is enabled
           if (features.enableCache) {
             const cacheKey = generateCacheKey(question, CACHE_VERSION);
             queryCache.set(cacheKey, result as CacheEntry);
-            
+
             // Also save to database for intelligent caching
             await saveQueryRecord(result, userName || user.email, sessionId);
           }
-          
+
           // Add to conversation context
           await contextManager.addInteraction(question, sql, answer);
-          
+
           const responseTime = Date.now() - startTime;
-          
+
           return NextResponse.json({
             ...result,
             responseTime,
@@ -636,10 +700,10 @@ async function handleStandardMode(
         } else {
           const enhanced = enhanceErrorMessage(classified.errorType, error.message, sql);
           return NextResponse.json(
-            { 
+            {
               error: enhanced.userMessage,
               details: enhanced.technicalDetails,
-              suggestions: enhanced.suggestions
+              suggestions: enhanced.suggestions,
             },
             { status: 400 }
           );
@@ -647,16 +711,16 @@ async function handleStandardMode(
       } else {
         const enhanced = enhanceErrorMessage(classified.errorType, error.message, sql);
         return NextResponse.json(
-          { 
+          {
             error: enhanced.userMessage,
             details: enhanced.technicalDetails,
-            suggestions: enhanced.suggestions
+            suggestions: enhanced.suggestions,
           },
           { status: 400 }
         );
       }
     }
-    
+
     // Generate natural language answer
     const answerMessages: ChatCompletionMessageParam[] = [
       {
@@ -675,7 +739,7 @@ async function handleStandardMode(
         content: `Question: ${question}\nResults: ${JSON.stringify(data)}`,
       },
     ];
-    
+
     const answerCompletion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: answerMessages,
@@ -683,26 +747,27 @@ async function handleStandardMode(
       max_tokens: 600,
       response_format: { type: 'json_object' },
     });
-    
+
     const answer = answerCompletion.choices[0].message.content || '{}';
-    const tokensUsed = (sqlCompletion.usage?.total_tokens || 0) + (answerCompletion.usage?.total_tokens || 0);
-    
+    const tokensUsed =
+      (sqlCompletion.usage?.total_tokens || 0) + (answerCompletion.usage?.total_tokens || 0);
+
     // Performance analysis if enabled
     let performanceAnalysis;
     if (features.enableAnalysis) {
       const analysis = await analyzeQueryWithPlan(sql);
       performanceAnalysis = generatePerformanceReport(analysis);
     }
-    
+
     // Validate and build result with Zod
-    const validatedMainData = Array.isArray(data) 
+    const validatedMainData = Array.isArray(data)
       ? data.filter(item => {
           if (!item || typeof item !== 'object') return false;
           const record = item as Record<string, unknown>;
           return Object.values(record).every(val => safeParseDatabaseValue(val) !== null);
         })
       : [];
-    
+
     const resultData: LocalQueryResult = {
       question,
       sql,
@@ -726,42 +791,44 @@ async function handleStandardMode(
       cached: false,
       timestamp: new Date().toISOString(),
       resolvedQuestion: references.length > 0 ? resolvedQuestion : undefined,
-      references: references.length > 0 ? references.map(ref => {
-        const safeRef: Record<string, SafeDatabaseValue> = {};
-        for (const [key, value] of Object.entries(ref as Record<string, unknown>)) {
-          const safeValue = safeParseBasicValue(value);
-          if (safeValue !== null) {
-            safeRef[key] = safeValue;
-          }
-        }
-        return safeRef;
-      }) : undefined,
+      references:
+        references.length > 0
+          ? references.map(ref => {
+              const safeRef: Record<string, SafeDatabaseValue> = {};
+              for (const [key, value] of Object.entries(ref as Record<string, unknown>)) {
+                const safeValue = safeParseBasicValue(value);
+                if (safeValue !== null) {
+                  safeRef[key] = safeValue;
+                }
+              }
+              return safeRef;
+            })
+          : undefined,
       performanceAnalysis,
     };
-    
+
     // Note: Result validation would be performed here
-    
+
     const result = resultData;
-    
+
     // Cache the result if caching is enabled
     if (features.enableCache) {
       const cacheKey = generateCacheKey(question, CACHE_VERSION);
       queryCache.set(cacheKey, result as CacheEntry);
-      
+
       // Also save to database for intelligent caching
       await saveQueryRecord(result, userName || user.email, sessionId);
     }
-    
+
     // Add to conversation context
     await contextManager.addInteraction(question, sql, answer);
-    
+
     const responseTime = Date.now() - startTime;
-    
+
     return NextResponse.json({
       ...result,
       responseTime,
     });
-    
   } catch (error) {
     console.error('[Standard Mode] Error:', error);
     return NextResponse.json(
@@ -778,7 +845,7 @@ export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const action = url.searchParams.get('action');
-    
+
     // Default status response
     if (!action) {
       return NextResponse.json({
@@ -795,7 +862,7 @@ export async function GET(request: NextRequest) {
         timestamp: new Date().toISOString(),
       });
     }
-    
+
     // Cache warming
     if (action === 'warm-cache') {
       // Implementation would go here
@@ -805,17 +872,17 @@ export async function GET(request: NextRequest) {
         timestamp: new Date().toISOString(),
       });
     }
-    
+
     // Query analysis
     if (action === 'analyze-query') {
       const sql = url.searchParams.get('sql');
       if (!sql) {
         return NextResponse.json({ error: 'SQL query parameter is required' }, { status: 400 });
       }
-      
+
       const analysis = await analyzeQueryWithPlan(sql);
       const report = generatePerformanceReport(analysis);
-      
+
       return NextResponse.json({
         success: true,
         analysis,
@@ -823,12 +890,14 @@ export async function GET(request: NextRequest) {
         timestamp: new Date().toISOString(),
       });
     }
-    
-    return NextResponse.json({
-      error: 'Unknown action',
-      validActions: ['warm-cache', 'analyze-query'],
-    }, { status: 400 });
-    
+
+    return NextResponse.json(
+      {
+        error: 'Unknown action',
+        validActions: ['warm-cache', 'analyze-query'],
+      },
+      { status: 400 }
+    );
   } catch (error) {
     console.error('[GET Handler] Error:', error);
     return NextResponse.json(
@@ -841,13 +910,16 @@ export async function GET(request: NextRequest) {
 // Helper functions
 
 function generateCacheKey(question: string, version: string): string {
-  return crypto.createHash('sha256').update(`${version}:${question.toLowerCase().trim()}`).digest('hex');
+  return crypto
+    .createHash('sha256')
+    .update(`${version}:${question.toLowerCase().trim()}`)
+    .digest('hex');
 }
 
 function determineComplexity(sql: string): 'simple' | 'medium' | 'complex' {
   const joinCount = (sql.match(/JOIN/gi) || []).length;
   const subqueryCount = (sql.match(/SELECT.*FROM.*SELECT/gi) || []).length;
-  
+
   if (joinCount > 2 || subqueryCount > 0) return 'complex';
   if (joinCount > 0) return 'medium';
   return 'simple';
@@ -863,7 +935,7 @@ function isAskingForConversationHistory(question: string): boolean {
     /conversation.*history/i,
     /show.*chat.*history/i,
   ];
-  
+
   return patterns.some(pattern => pattern.test(question));
 }
 
@@ -874,7 +946,7 @@ async function handleConversationHistoryRequest(
   contextManager: DatabaseConversationContextManager
 ) {
   const history = await contextManager.getSessionHistory(10);
-  
+
   if (history.length === 0) {
     return NextResponse.json({
       question,
@@ -887,14 +959,14 @@ async function handleConversationHistoryRequest(
       timestamp: new Date().toISOString(),
     });
   }
-  
+
   let historyResponse = "Here's what we've discussed:\n\n";
   history.forEach((entry, index) => {
     historyResponse += `${index + 1}. "${entry.question}"\n`;
     const shortAnswer = entry.answer.split('\n')[0].substring(0, 80);
     historyResponse += `   → ${shortAnswer}${entry.answer.length > 80 ? '...' : ''}\n\n`;
   });
-  
+
   return NextResponse.json({
     question,
     sql: '',
@@ -914,10 +986,10 @@ async function checkIntelligentCache(question: string, userEmail: string) {
   if (cached) {
     return { ...cached, cacheLevel: 'L1' };
   }
-  
+
   // L2 & L3 would require database queries for fuzzy and semantic matching
   // Implementation would go here based on the original code
-  
+
   return null;
 }
 

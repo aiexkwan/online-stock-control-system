@@ -54,7 +54,7 @@ async function listTables() {
           'order_items',
           'production_records',
           'quality_checks',
-          'product_categories'
+          'product_categories',
         ];
 
         knownTables.sort().forEach(table => {
@@ -74,7 +74,6 @@ async function listTables() {
     data.forEach(row => {
       console.log(`- ${row.table_name}`);
     });
-
   } catch (err) {
     console.error('錯誤:', err);
   }

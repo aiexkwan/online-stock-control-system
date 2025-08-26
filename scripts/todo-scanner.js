@@ -71,23 +71,23 @@ function scanFile(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
   const lines = content.split('\n');
   const relativePath = path.relative(process.cwd(), filePath);
-  
+
   if (argv.verbose) {
     console.log(`Scanning: ${relativePath}`);
   }
-  
+
   let fileHasTodos = false;
-  
+
   // Check each pattern
   Object.entries(config.patterns).forEach(([key, patternConfig]) => {
     const { pattern, fields, category } = patternConfig;
     const regex = new RegExp(pattern, 'gm');
     let match;
-    
+
     while ((match = regex.exec(content)) !== null) {
       const lineNumber = content.substring(0, match.index).split('\n').length;
       const line = lines[lineNumber - 1].trim();
-      
+
       // Extract fields
       const todo = {
         file: relativePath,
@@ -96,12 +96,12 @@ function scanFile(filePath) {
         text: line,
         match: match[0],
       };
-      
+
       // Map captured groups to fields
       fields.forEach((field, index) => {
         todo[field] = match[index + 1] || null;
       });
-      
+
       // Determine priority
       if (todo.priority) {
         todo.priorityLabel = config.priorityMap[`P${todo.priority}`]?.label || 'Unknown';
@@ -115,10 +115,10 @@ function scanFile(filePath) {
         todo.priorityLabel = 'Nice to have';
         todo.priorityWeight = 10;
       }
-      
+
       todos.push(todo);
       fileHasTodos = true;
-      
+
       // Update stats
       stats.totalTodos++;
       stats.byCategory[category] = (stats.byCategory[category] || 0) + 1;
@@ -129,7 +129,7 @@ function scanFile(filePath) {
       }
     }
   });
-  
+
   if (fileHasTodos) {
     stats.totalFiles++;
   }
@@ -138,16 +138,16 @@ function scanFile(filePath) {
 // Generate markdown report
 function generateMarkdown() {
   const report = [];
-  
+
   report.push('# TODO Scanner Report\n');
   report.push(`Generated: ${new Date().toISOString()}\n`);
-  
+
   // Summary stats
   report.push('## Summary\n');
   report.push(`- Total TODOs: ${stats.totalTodos}`);
   report.push(`- Files with TODOs: ${stats.totalFiles}`);
   report.push('');
-  
+
   // By priority
   report.push('### By Priority\n');
   report.push('| Priority | Count | Percentage |');
@@ -161,7 +161,7 @@ function generateMarkdown() {
       report.push(`| ${label} (${priority}) | ${count} | ${percentage}% |`);
     });
   report.push('');
-  
+
   // By category
   report.push('### By Category\n');
   report.push('| Category | Count | Percentage |');
@@ -173,10 +173,10 @@ function generateMarkdown() {
       report.push(`| ${category} | ${count} | ${percentage}% |`);
     });
   report.push('');
-  
+
   // Detailed list
   report.push('## Detailed TODO List\n');
-  
+
   // Group by category then priority
   const grouped = {};
   todos.forEach(todo => {
@@ -188,16 +188,18 @@ function generateMarkdown() {
     }
     grouped[todo.category][todo.priority].push(todo);
   });
-  
+
   Object.entries(grouped).forEach(([category, priorities]) => {
     report.push(`### ${category}\n`);
-    
+
     Object.entries(priorities)
-      .sort(([a], [b]) => (config.priorityMap[b]?.weight || 0) - (config.priorityMap[a]?.weight || 0))
+      .sort(
+        ([a], [b]) => (config.priorityMap[b]?.weight || 0) - (config.priorityMap[a]?.weight || 0)
+      )
       .forEach(([priority, todoList]) => {
         const label = config.priorityMap[priority]?.label || priority;
         report.push(`#### ${label} (${priority})\n`);
-        
+
         todoList
           .sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line)
           .forEach(todo => {
@@ -217,7 +219,7 @@ function generateMarkdown() {
           });
       });
   });
-  
+
   // Top files
   report.push('## Top Files with TODOs\n');
   report.push('| File | TODO Count |');
@@ -228,21 +230,27 @@ function generateMarkdown() {
     .forEach(([file, count]) => {
       report.push(`| ${file} | ${count} |`);
     });
-  
+
   return report.join('\n');
 }
 
 // Generate JSON report
 function generateJSON() {
-  return JSON.stringify({
-    metadata: {
-      generated: new Date().toISOString(),
-      totalTodos: stats.totalTodos,
-      totalFiles: stats.totalFiles,
+  return JSON.stringify(
+    {
+      metadata: {
+        generated: new Date().toISOString(),
+        totalTodos: stats.totalTodos,
+        totalFiles: stats.totalFiles,
+      },
+      statistics: stats,
+      todos: todos.sort(
+        (a, b) => b.priorityWeight - a.priorityWeight || a.file.localeCompare(b.file)
+      ),
     },
-    statistics: stats,
-    todos: todos.sort((a, b) => b.priorityWeight - a.priorityWeight || a.file.localeCompare(b.file)),
-  }, null, 2);
+    null,
+    2
+  );
 }
 
 // Generate HTML report
@@ -318,7 +326,9 @@ function generateHTML() {
         </tr>
       </thead>
       <tbody>
-        ${todos.map(todo => `
+        ${todos
+          .map(
+            todo => `
           <tr class="todo-row priority-${todo.priority}" data-priority="${todo.priority}">
             <td><span class="file-link">${todo.file}</span></td>
             <td>${todo.line}</td>
@@ -328,7 +338,9 @@ function generateHTML() {
             <td>${todo.owner || '-'}</td>
             <td>${todo.target || '-'}</td>
           </tr>
-        `).join('')}
+        `
+          )
+          .join('')}
       </tbody>
     </table>
   </div>
@@ -352,7 +364,7 @@ function generateHTML() {
   </script>
 </body>
 </html>`;
-  
+
   return html;
 }
 
@@ -364,14 +376,14 @@ function main() {
     const matches = glob.sync(pattern, { ignore: config.exclude });
     files.push(...matches);
   });
-  
+
   if (argv.verbose) {
     console.log(`Found ${files.length} files to scan`);
   }
-  
+
   // Scan all files
   files.forEach(scanFile);
-  
+
   // Generate report
   let output;
   switch (argv.format) {
@@ -385,7 +397,7 @@ function main() {
     default:
       output = generateMarkdown();
   }
-  
+
   // Output result
   if (argv.output) {
     fs.writeFileSync(argv.output, output);
@@ -393,7 +405,7 @@ function main() {
   } else {
     console.log(output);
   }
-  
+
   // Exit with appropriate code
   if (stats.byPriority.P1 > (config.thresholds?.pullRequest?.maxP1 || 5)) {
     process.exit(1); // Fail if too many P1s

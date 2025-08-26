@@ -100,7 +100,10 @@ export function safeJsonParse<T = unknown>(jsonString: string, fallback: T): T {
 }
 
 // Type assertion helpers
-export function assertDefined<T>(value: T | null | undefined, message = 'Value is null or undefined'): T {
+export function assertDefined<T>(
+  value: T | null | undefined,
+  message = 'Value is null or undefined'
+): T {
   if (value === null || value === undefined) {
     throw new Error(message);
   }
@@ -121,9 +124,7 @@ export function typedMap<T, U>(arr: T[], mapper: (item: T) => U): U[] {
 export type AsyncResult<T> = { data: T } | { error: ErrorWithMessage };
 
 // Helper for async error handling
-export async function tryCatch<T>(
-  fn: () => Promise<T>
-): Promise<AsyncResult<T>> {
+export async function tryCatch<T>(fn: () => Promise<T>): Promise<AsyncResult<T>> {
   try {
     const data = await fn();
     return { data };

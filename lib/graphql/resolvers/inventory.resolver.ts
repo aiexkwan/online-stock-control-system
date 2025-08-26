@@ -20,8 +20,8 @@ export const inventoryResolvers: IResolvers = {
       if (!productCode) return null;
       return context.loaders.product.load(productCode);
     },
-    
-    quantity: (parent) => {
+
+    quantity: parent => {
       // Map database field 'product_qty' to GraphQL field 'quantity'
       return parent.product_qty || parent.quantity || 0;
     },
@@ -33,13 +33,15 @@ export const inventoryResolvers: IResolvers = {
       if (!pltNum) {
         throw new Error('Pallet number is required');
       }
-      
+
       try {
         const pallet = await context.loaders.pallet.load(pltNum);
         return pallet;
       } catch (error) {
         console.error(`Error loading pallet ${pltNum}:`, error);
-        throw new Error(`Failed to load pallet: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(
+          `Failed to load pallet: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
       }
     },
 
@@ -66,7 +68,7 @@ export const inventoryResolvers: IResolvers = {
         }
 
         return {
-          edges: (data || []).map((item) => ({
+          edges: (data || []).map(item => ({
             node: item,
             cursor: item.uuid.toString(),
           })),
@@ -114,21 +116,21 @@ export const inventoryResolvers: IResolvers = {
 
       try {
         let query;
-        
+
         // Apply filters if provided
         if (filter?.productType) {
           // Join with data_code table to filter by type
           query = supabase
             .from('stock_level')
-            .select(`
+            .select(
+              `
               *,
               data_code!inner(type)
-            `)
+            `
+            )
             .eq('data_code.type', filter.productType);
         } else {
-          query = supabase
-            .from('stock_level')
-            .select('*');
+          query = supabase.from('stock_level').select('*');
         }
 
         if (filter?.minLevel) {

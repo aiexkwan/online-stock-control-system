@@ -98,7 +98,11 @@
     "api:test-monitor": "tsx scripts/test-api-monitor.ts",
     "api:verify-graphql": "tsx scripts/verify-graphql-coverage.ts",
     "migrate:phase4-prepare": "npm run api:test-monitor && npm run api:verify-graphql && npm run api:report",
-    "migrate:phase4-execute": "npm run api:batch-remove --dry-run && echo 'Review and run without --dry-run when ready'"
+    "migrate:phase4-execute": "npm run api:batch-remove --dry-run && echo 'Review and run without --dry-run when ready'",
+    "deploy:stock-transfer": "node scripts/deployment/deploy-stock-transfer.js",
+    "deploy:pre-check": "node scripts/deployment/pre-deploy-check.js",
+    "deploy:health-check": "node scripts/deployment/deploy-health-check.js",
+    "deploy:rollback": "node scripts/deployment/rollback-plan.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.40.1",

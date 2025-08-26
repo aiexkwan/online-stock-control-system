@@ -103,7 +103,6 @@ export const PrintJobSchema = z.object({
     .optional(),
 });
 
-
 // 列印服務響應
 export const PrintServiceResponseSchema = z.object({
   success: z.boolean(),

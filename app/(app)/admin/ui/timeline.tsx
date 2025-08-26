@@ -62,13 +62,13 @@ function DesktopTimelineEntry({
       {/* 左側內容 */}
       <div className={cn('text-right', !isLeft && 'invisible')}>
         {isLeft && (
-          <div 
-            className='space-y-1 p-3 rounded-lg transition-all hover:scale-[1.02]'
+          <div
+            className='space-y-1 rounded-lg p-3 transition-all hover:scale-[1.02]'
             style={{
               backgroundColor: 'rgba(255, 255, 255, 0.05)',
               backdropFilter: 'blur(10px)',
               WebkitBackdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)'
+              border: '1px solid rgba(255, 255, 255, 0.1)',
             }}
           >
             <h3
@@ -81,14 +81,7 @@ function DesktopTimelineEntry({
               {item.title}
             </h3>
             {item.description && (
-              <p
-                className={cn(
-                  'text-sm',
-                  descriptionClassName
-                )}
-              >
-                {item.description}
-              </p>
+              <p className={cn('text-sm', descriptionClassName)}>{item.description}</p>
             )}
           </div>
         )}
@@ -96,7 +89,7 @@ function DesktopTimelineEntry({
 
       {/* 中間線同點 */}
       <div className='relative flex flex-col items-center'>
-        <div className={cn('h-16 border-l border-border', lineClassName)} />
+        <div className={cn('border-border h-16 border-l', lineClassName)} />
         <div
           className={cn(
             'absolute top-[1.6875rem] flex h-5 w-5 items-center justify-center rounded-full transition-colors',
@@ -111,13 +104,13 @@ function DesktopTimelineEntry({
       {/* 右側內容 */}
       <div className={cn('text-left', isLeft && 'invisible')}>
         {!isLeft && (
-          <div 
-            className='space-y-1 p-3 rounded-lg transition-all hover:scale-[1.02]'
+          <div
+            className='space-y-1 rounded-lg p-3 transition-all hover:scale-[1.02]'
             style={{
               backgroundColor: 'rgba(255, 255, 255, 0.05)',
               backdropFilter: 'blur(10px)',
               WebkitBackdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)'
+              border: '1px solid rgba(255, 255, 255, 0.1)',
             }}
           >
             <h3
@@ -130,14 +123,7 @@ function DesktopTimelineEntry({
               {item.title}
             </h3>
             {item.description && (
-              <p
-                className={cn(
-                  'text-sm',
-                  descriptionClassName
-                )}
-              >
-                {item.description}
-              </p>
+              <p className={cn('text-sm', descriptionClassName)}>{item.description}</p>
             )}
           </div>
         )}
@@ -172,7 +158,7 @@ function MobileTimelineEntry({
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
         backdropFilter: 'blur(10px)',
         WebkitBackdropFilter: 'blur(10px)',
-        border: '1px solid rgba(255, 255, 255, 0.1)'
+        border: '1px solid rgba(255, 255, 255, 0.1)',
       }}
     >
       <div className='relative flex-shrink-0'>
@@ -192,14 +178,9 @@ function MobileTimelineEntry({
           {item.title}
         </h3>
         {item.description && (
-          <p className={cn('text-sm', descriptionClassName)}>
-            {item.description}
-          </p>
+          <p className={cn('text-sm', descriptionClassName)}>{item.description}</p>
         )}
-        <time
-          dateTime={item.date}
-          className={cn('text-xs')}
-        >
+        <time dateTime={item.date} className={cn('text-xs')}>
           {(() => {
             const date = new Date(item.date);
             const day = date.getDate().toString().padStart(2, '0');
@@ -287,7 +268,7 @@ export function Timeline({
                     lineClassName={lineClassName}
                     titleClassName={titleClassName}
                     descriptionClassName={descriptionClassName}
-                      />
+                  />
                   <MobileTimelineEntry
                     item={item}
                     index={initialCount + index}
@@ -295,7 +276,7 @@ export function Timeline({
                     lineClassName={lineClassName}
                     titleClassName={titleClassName}
                     descriptionClassName={descriptionClassName}
-                      />
+                  />
                 </motion.li>
               ))}
           </AnimatePresence>

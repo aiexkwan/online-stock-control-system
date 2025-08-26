@@ -65,12 +65,15 @@ export class APIMonitor {
     // 檢查告警條件
     this.checkAlerts(metric);
 
-    logger.debug({
-      apiType: metric.apiType,
-      endpoint: metric.endpoint,
-      responseTime: metric.responseTime,
-      success: metric.success,
-    }, 'API metric recorded');
+    logger.debug(
+      {
+        apiType: metric.apiType,
+        endpoint: metric.endpoint,
+        responseTime: metric.responseTime,
+        success: metric.success,
+      },
+      'API metric recorded'
+    );
   }
 
   /**
@@ -268,12 +271,15 @@ export class APIMonitor {
   private checkAlerts(metric: APIMetrics): void {
     // 檢查響應時間告警
     if (metric.responseTime > this.alertThresholds.responseTime) {
-      logger.warn({
-        apiType: metric.apiType,
-        endpoint: metric.endpoint,
-        responseTime: metric.responseTime,
-        threshold: this.alertThresholds.responseTime,
-      }, 'API response time alert');
+      logger.warn(
+        {
+          apiType: metric.apiType,
+          endpoint: metric.endpoint,
+          responseTime: metric.responseTime,
+          threshold: this.alertThresholds.responseTime,
+        },
+        'API response time alert'
+      );
     }
 
     // 檢查錯誤率告警 (基於最近 100 個請求)
@@ -284,11 +290,14 @@ export class APIMonitor {
       const errorRate = sameTypeMetrics.filter(m => !m.success).length / sameTypeMetrics.length;
 
       if (errorRate > this.alertThresholds.errorRate) {
-        logger.warn({
-          apiType: metric.apiType,
-          errorRate: errorRate * 100,
-          threshold: this.alertThresholds.errorRate * 100,
-        }, 'API error rate alert');
+        logger.warn(
+          {
+            apiType: metric.apiType,
+            errorRate: errorRate * 100,
+            threshold: this.alertThresholds.errorRate * 100,
+          },
+          'API error rate alert'
+        );
       }
     }
   }

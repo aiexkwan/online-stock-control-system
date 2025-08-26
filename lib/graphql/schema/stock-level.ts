@@ -21,7 +21,7 @@ type ProductInfo {
   description: String!
   type: String!
   colour: String!
-  standardQty: Int!
+  standardQty: Int
 }
 
 type StockLevelListResult {

@@ -76,13 +76,13 @@ export const PDFPreviewOverlay: React.FC<PDFPreviewOverlayProps> = ({
       setScale(100);
       setRotation(0);
       document.body.style.overflow = 'hidden';
-      
+
       // Set a shorter timeout to handle cases where onLoad never fires
       const timeout = setTimeout(() => {
         console.log('PDF load timeout reached, stopping loading state');
         setLoading(false);
       }, 3000); // 3 second timeout
-      
+
       return () => {
         clearTimeout(timeout);
       };
@@ -110,7 +110,6 @@ export const PDFPreviewOverlay: React.FC<PDFPreviewOverlayProps> = ({
   const handleRotate = () => {
     setRotation(prev => (prev + 90) % 360);
   };
-
 
   const handleFullscreen = async () => {
     const container = document.getElementById('pdf-preview-container');
@@ -150,33 +149,35 @@ export const PDFPreviewOverlay: React.FC<PDFPreviewOverlayProps> = ({
         'bg-black/85 backdrop-blur-xl',
         'animate-in fade-in-0 duration-200'
       )}
-      id="pdf-preview-container"
-      role="dialog"
-      aria-labelledby="pdf-title"
-      aria-modal="true"
+      id='pdf-preview-container'
+      role='dialog'
+      aria-labelledby='pdf-title'
+      aria-modal='true'
     >
       {/* Top toolbar */}
-      <div className={cn(
-        'flex items-center justify-between px-4 py-3',
-        'bg-gray-900/80 backdrop-blur-md',
-        'border-b border-green-500/20'
-      )}>
+      <div
+        className={cn(
+          'flex items-center justify-between px-4 py-3',
+          'bg-gray-900/80 backdrop-blur-md',
+          'border-b border-green-500/20'
+        )}
+      >
         {/* Left section */}
-        <div className="flex items-center gap-4">
+        <div className='flex items-center gap-4'>
           <Button
-            variant="ghost"
-            size="sm"
+            variant='ghost'
+            size='sm'
             onClick={onClose}
-            className="text-gray-300 hover:text-white hover:bg-white/10"
+            className='text-gray-300 hover:bg-white/10 hover:text-white'
           >
-            <ChevronLeftIcon className="h-4 w-4 mr-2" />
+            <ChevronLeftIcon className='mr-2 h-4 w-4' />
             Back
           </Button>
-          <div className="flex items-center gap-2">
-            <DocumentTextIcon className="h-5 w-5 text-green-400" />
-            <h1 
-              id="pdf-title" 
-              className="text-sm font-medium text-white truncate max-w-[300px] md:max-w-[500px]"
+          <div className='flex items-center gap-2'>
+            <DocumentTextIcon className='h-5 w-5 text-green-400' />
+            <h1
+              id='pdf-title'
+              className='max-w-[300px] truncate text-sm font-medium text-white md:max-w-[500px]'
               title={fileName}
             >
               {fileName}
@@ -185,39 +186,39 @@ export const PDFPreviewOverlay: React.FC<PDFPreviewOverlayProps> = ({
         </div>
 
         {/* Right section */}
-        <div className="flex items-center gap-2">
+        <div className='flex items-center gap-2'>
           <Button
-            variant="ghost"
-            size="icon"
+            variant='ghost'
+            size='icon'
             onClick={onClose}
-            className="text-gray-300 hover:text-white hover:bg-white/10"
-            aria-label="Close PDF preview"
+            className='text-gray-300 hover:bg-white/10 hover:text-white'
+            aria-label='Close PDF preview'
           >
-            <XMarkIcon className="h-5 w-5" />
+            <XMarkIcon className='h-5 w-5' />
           </Button>
         </div>
       </div>
 
       {/* PDF content area */}
-      <div className="flex-1 relative overflow-hidden bg-gray-950/50">
+      <div className='relative flex-1 overflow-hidden bg-gray-950/50'>
         {loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-            <Skeleton className="w-[600px] h-[800px] max-w-[90%] max-h-[80%]" />
-            <p className="text-gray-400 text-sm">Loading PDF...</p>
+          <div className='absolute inset-0 flex flex-col items-center justify-center gap-4'>
+            <Skeleton className='h-[800px] max-h-[80%] w-[600px] max-w-[90%]' />
+            <p className='text-sm text-gray-400'>Loading PDF...</p>
           </div>
         )}
 
         {error && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-            <div className="text-center p-8 max-w-md">
-              <DocumentTextIcon className="h-16 w-16 text-gray-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-white mb-2">Unable to load PDF</h2>
-              <p className="text-gray-400 text-sm mb-6">{error}</p>
-              <div className="flex gap-3 justify-center">
+          <div className='absolute inset-0 flex flex-col items-center justify-center gap-4'>
+            <div className='max-w-md p-8 text-center'>
+              <DocumentTextIcon className='mx-auto mb-4 h-16 w-16 text-gray-500' />
+              <h2 className='mb-2 text-xl font-semibold text-white'>Unable to load PDF</h2>
+              <p className='mb-6 text-sm text-gray-400'>{error}</p>
+              <div className='flex justify-center gap-3'>
                 <Button
-                  variant="outline"
+                  variant='outline'
                   onClick={() => window.open(pdfUrl, '_blank')}
-                  className="border-gray-600 text-gray-300 hover:bg-white/10"
+                  className='border-gray-600 text-gray-300 hover:bg-white/10'
                 >
                   Open in new tab
                 </Button>
@@ -230,10 +231,7 @@ export const PDFPreviewOverlay: React.FC<PDFPreviewOverlayProps> = ({
           <iframe
             key={pdfUrl} // Force re-render when URL changes
             src={pdfUrl}
-            className={cn(
-              'w-full h-full border-0',
-              loading && 'invisible'
-            )}
+            className={cn('h-full w-full border-0', loading && 'invisible')}
             style={{
               transform: `scale(${scale / 100}) rotate(${rotation}deg)`,
               transformOrigin: 'center center',
@@ -241,7 +239,7 @@ export const PDFPreviewOverlay: React.FC<PDFPreviewOverlayProps> = ({
             title={`PDF Preview: ${fileName}`}
             onLoad={handleIframeLoad}
             onError={handleIframeError}
-            ref={(iframe) => {
+            ref={iframe => {
               // Additional load detection
               if (iframe && pdfUrl) {
                 iframe.addEventListener('load', () => {
@@ -255,66 +253,66 @@ export const PDFPreviewOverlay: React.FC<PDFPreviewOverlayProps> = ({
       </div>
 
       {/* Bottom control bar */}
-      <div className={cn(
-        'flex items-center justify-center gap-4 px-4 py-3',
-        'bg-gray-900/80 backdrop-blur-md',
-        'border-t border-green-500/20'
-      )}>
+      <div
+        className={cn(
+          'flex items-center justify-center gap-4 px-4 py-3',
+          'bg-gray-900/80 backdrop-blur-md',
+          'border-t border-green-500/20'
+        )}
+      >
         {/* Zoom controls */}
-        <div className="flex items-center gap-2">
+        <div className='flex items-center gap-2'>
           <Button
-            variant="ghost"
-            size="icon"
+            variant='ghost'
+            size='icon'
             onClick={handleZoomOut}
             disabled={scale <= 25}
-            className="text-gray-300 hover:text-white hover:bg-white/10 disabled:opacity-50"
-            aria-label="Zoom out"
+            className='text-gray-300 hover:bg-white/10 hover:text-white disabled:opacity-50'
+            aria-label='Zoom out'
           >
-            <MagnifyingGlassMinusIcon className="h-4 w-4" />
+            <MagnifyingGlassMinusIcon className='h-4 w-4' />
           </Button>
-          <span className="text-sm text-gray-300 min-w-[60px] text-center">
-            {scale}%
-          </span>
+          <span className='min-w-[60px] text-center text-sm text-gray-300'>{scale}%</span>
           <Button
-            variant="ghost"
-            size="icon"
+            variant='ghost'
+            size='icon'
             onClick={handleZoomIn}
             disabled={scale >= 300}
-            className="text-gray-300 hover:text-white hover:bg-white/10 disabled:opacity-50"
-            aria-label="Zoom in"
+            className='text-gray-300 hover:bg-white/10 hover:text-white disabled:opacity-50'
+            aria-label='Zoom in'
           >
-            <MagnifyingGlassPlusIcon className="h-4 w-4" />
+            <MagnifyingGlassPlusIcon className='h-4 w-4' />
           </Button>
         </div>
 
-        <div className="w-px h-6 bg-gray-700" />
+        <div className='h-6 w-px bg-gray-700' />
 
         {/* Other controls */}
         <Button
-          variant="ghost"
-          size="sm"
+          variant='ghost'
+          size='sm'
           onClick={handleResetZoom}
-          className="text-gray-300 hover:text-white hover:bg-white/10"
+          className='text-gray-300 hover:bg-white/10 hover:text-white'
         >
           Reset Zoom
         </Button>
         <Button
-          variant="ghost"
-          size="icon"
+          variant='ghost'
+          size='icon'
           onClick={handleRotate}
-          className="text-gray-300 hover:text-white hover:bg-white/10"
-          aria-label="Rotate PDF"
+          className='text-gray-300 hover:bg-white/10 hover:text-white'
+          aria-label='Rotate PDF'
         >
-          <ArrowPathIcon className="h-4 w-4" />
+          <ArrowPathIcon className='h-4 w-4' />
         </Button>
         <Button
-          variant="ghost"
-          size="icon"
+          variant='ghost'
+          size='icon'
           onClick={handleFullscreen}
-          className="text-gray-300 hover:text-white hover:bg-white/10"
-          aria-label="Toggle fullscreen"
+          className='text-gray-300 hover:bg-white/10 hover:text-white'
+          aria-label='Toggle fullscreen'
         >
-          <ArrowsPointingOutIcon className="h-4 w-4" />
+          <ArrowsPointingOutIcon className='h-4 w-4' />
         </Button>
       </div>
     </div>

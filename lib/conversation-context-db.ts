@@ -422,17 +422,15 @@ export class DatabaseConversationContextManager {
   async addInteraction(question: string, sql: string, answer: string): Promise<void> {
     try {
       const supabase = await this.getSupabase();
-      const { error } = await supabase
-        .from('query_record')
-        .insert({
-          session_id: this.sessionId,
-          user_id: this.userEmail,
-          query: question,
-          sql_query: sql,
-          answer: answer,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
+      const { error } = await supabase.from('query_record').insert({
+        session_id: this.sessionId,
+        user_id: this.userEmail,
+        query: question,
+        sql_query: sql,
+        answer: answer,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
 
       if (error) {
         console.error('[addInteraction] Error:', error);

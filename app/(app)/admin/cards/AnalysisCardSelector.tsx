@@ -42,7 +42,7 @@ const ALLOWED_CARDS = [
   'ChatbotCard',
 ] as const;
 
-type AllowedCardType = typeof ALLOWED_CARDS[number];
+type AllowedCardType = (typeof ALLOWED_CARDS)[number];
 
 interface AnalysisCardSelectorProps {
   selectedCard: AllowedCardType; // 使用類型安全的組件名稱
@@ -57,7 +57,9 @@ const DynamicCardLoader: React.FC<{
   cardId: string;
   cardName: string;
 }> = ({ cardId, cardName }) => {
-  const [CardComponent, setCardComponent] = React.useState<React.ComponentType<CardProps> | null>(null);
+  const [CardComponent, setCardComponent] = React.useState<React.ComponentType<CardProps> | null>(
+    null
+  );
   const [loadError, setLoadError] = React.useState<Error | null>(null);
 
   React.useEffect(() => {
@@ -72,61 +74,147 @@ const DynamicCardLoader: React.FC<{
     // Load corresponding Card component based on card ID
     const loadCard = async () => {
       try {
-        let cardModule: { default?: React.ComponentType<unknown>; [key: string]: React.ComponentType<unknown> | undefined };
+        let cardModule: {
+          default?: React.ComponentType<unknown>;
+          [key: string]: React.ComponentType<unknown> | undefined;
+        };
         switch (cardId) {
           case 'StockLevelListAndChartCard':
             const stockModule = await import('../cards/StockLevelListAndChartCard');
-            cardModule = { default: (stockModule as { StockLevelListAndChartCard?: React.ComponentType<unknown>; default?: React.ComponentType<unknown> }).StockLevelListAndChartCard || (stockModule as { StockLevelListAndChartCard?: React.ComponentType<unknown>; default?: React.ComponentType<unknown> }).default };
+            cardModule = {
+              default:
+                (
+                  stockModule as {
+                    StockLevelListAndChartCard?: React.ComponentType<unknown>;
+                    default?: React.ComponentType<unknown>;
+                  }
+                ).StockLevelListAndChartCard ||
+                (
+                  stockModule as {
+                    StockLevelListAndChartCard?: React.ComponentType<unknown>;
+                    default?: React.ComponentType<unknown>;
+                  }
+                ).default,
+            };
             break;
           case 'StockHistoryCard':
             const stockHistoryModule = await import('../cards/StockHistoryCard');
-            cardModule = { default: (stockHistoryModule as { default?: React.ComponentType<unknown>; StockHistoryCard?: React.ComponentType<unknown> }).default || (stockHistoryModule as { default?: React.ComponentType<unknown>; StockHistoryCard?: React.ComponentType<unknown> }).StockHistoryCard };
+            cardModule = {
+              default:
+                (
+                  stockHistoryModule as {
+                    default?: React.ComponentType<unknown>;
+                    StockHistoryCard?: React.ComponentType<unknown>;
+                  }
+                ).default ||
+                (
+                  stockHistoryModule as {
+                    default?: React.ComponentType<unknown>;
+                    StockHistoryCard?: React.ComponentType<unknown>;
+                  }
+                ).StockHistoryCard,
+            };
             break;
           case 'WorkLevelCard':
             const workLevelModule = await import('../cards/WorkLevelCard');
-            cardModule = { default: (workLevelModule as { default?: React.ComponentType<unknown>; WorkLevelCard?: React.ComponentType<unknown> }).default || (workLevelModule as { default?: React.ComponentType<unknown>; WorkLevelCard?: React.ComponentType<unknown> }).WorkLevelCard };
+            cardModule = {
+              default:
+                (
+                  workLevelModule as {
+                    default?: React.ComponentType<unknown>;
+                    WorkLevelCard?: React.ComponentType<unknown>;
+                  }
+                ).default ||
+                (
+                  workLevelModule as {
+                    default?: React.ComponentType<unknown>;
+                    WorkLevelCard?: React.ComponentType<unknown>;
+                  }
+                ).WorkLevelCard,
+            };
             break;
           case 'VerticalTimelineCard':
-            cardModule = await import('../cards/VerticalTimelineCard') as { default?: React.ComponentType<unknown>; [key: string]: React.ComponentType<unknown> | undefined };
+            cardModule = (await import('../cards/VerticalTimelineCard')) as {
+              default?: React.ComponentType<unknown>;
+              [key: string]: React.ComponentType<unknown> | undefined;
+            };
             break;
           case 'UploadCenterCard':
-            cardModule = await import('../cards/UploadCenterCard') as { default?: React.ComponentType<unknown>; [key: string]: React.ComponentType<unknown> | undefined };
+            cardModule = (await import('../cards/UploadCenterCard')) as {
+              default?: React.ComponentType<unknown>;
+              [key: string]: React.ComponentType<unknown> | undefined;
+            };
             break;
           case 'DownloadCenterCard':
-            cardModule = await import('../cards/DownloadCenterCard') as { default?: React.ComponentType<unknown>; [key: string]: React.ComponentType<unknown> | undefined };
+            cardModule = (await import('../cards/DownloadCenterCard')) as {
+              default?: React.ComponentType<unknown>;
+              [key: string]: React.ComponentType<unknown> | undefined;
+            };
             break;
           case 'PerformanceDashboard':
-            const perfModule = await import('@/lib/performance/components/PerformanceDashboardSimple');
-            cardModule = { default: (perfModule as { default?: React.ComponentType<unknown>; PerformanceDashboard?: React.ComponentType<unknown> }).default || (perfModule as { default?: React.ComponentType<unknown>; PerformanceDashboard?: React.ComponentType<unknown> }).PerformanceDashboard };
+            const perfModule = await import(
+              '@/lib/performance/components/PerformanceDashboardSimple'
+            );
+            cardModule = {
+              default:
+                (
+                  perfModule as {
+                    default?: React.ComponentType<unknown>;
+                    PerformanceDashboard?: React.ComponentType<unknown>;
+                  }
+                ).default ||
+                (
+                  perfModule as {
+                    default?: React.ComponentType<unknown>;
+                    PerformanceDashboard?: React.ComponentType<unknown>;
+                  }
+                ).PerformanceDashboard,
+            };
             break;
           case 'DataUpdateCard':
-            cardModule = await import('../cards/DataUpdateCard') as { default?: React.ComponentType<unknown>; [key: string]: React.ComponentType<unknown> | undefined };
+            cardModule = (await import('../cards/DataUpdateCard')) as {
+              default?: React.ComponentType<unknown>;
+              [key: string]: React.ComponentType<unknown> | undefined;
+            };
             break;
           case 'DepartInjCard':
-            cardModule = await import('../cards/DepartInjCard') as { default?: React.ComponentType<unknown>; [key: string]: React.ComponentType<unknown> | undefined };
+            cardModule = (await import('../cards/DepartInjCard')) as {
+              default?: React.ComponentType<unknown>;
+              [key: string]: React.ComponentType<unknown> | undefined;
+            };
             break;
           case 'DepartPipeCard':
-            cardModule = await import('../cards/DepartPipeCard') as { default?: React.ComponentType<unknown>; [key: string]: React.ComponentType<unknown> | undefined };
+            cardModule = (await import('../cards/DepartPipeCard')) as {
+              default?: React.ComponentType<unknown>;
+              [key: string]: React.ComponentType<unknown> | undefined;
+            };
             break;
           case 'DepartWareCard':
-            cardModule = await import('../cards/DepartWareCard') as { default?: React.ComponentType<unknown>; [key: string]: React.ComponentType<unknown> | undefined };
+            cardModule = (await import('../cards/DepartWareCard')) as {
+              default?: React.ComponentType<unknown>;
+              [key: string]: React.ComponentType<unknown> | undefined;
+            };
             break;
           case 'VoidPalletCard':
-            cardModule = await import('../cards/VoidPalletCard') as { default?: React.ComponentType<unknown>; [key: string]: React.ComponentType<unknown> | undefined };
+            cardModule = (await import('../cards/VoidPalletCard')) as {
+              default?: React.ComponentType<unknown>;
+              [key: string]: React.ComponentType<unknown> | undefined;
+            };
             break;
           case 'ChatbotCard':
-            cardModule = await import('../cards/ChatbotCard') as { default?: React.ComponentType<unknown>; [key: string]: React.ComponentType<unknown> | undefined };
+            cardModule = (await import('../cards/ChatbotCard')) as {
+              default?: React.ComponentType<unknown>;
+              [key: string]: React.ComponentType<unknown> | undefined;
+            };
             break;
           default:
             throw new Error(`No card mapping for: ${cardId}`);
         }
-        
+
         if (isMounted && cardModule) {
           // Handle different export formats with type checking
-          const Component = cardModule.default || 
-                          (cardName && cardModule[cardName]) ||
-                          null;
-          
+          const Component = cardModule.default || (cardName && cardModule[cardName]) || null;
+
           if (Component && typeof Component === 'function') {
             setCardComponent(() => Component as React.ComponentType<unknown>);
           } else {
@@ -150,7 +238,7 @@ const DynamicCardLoader: React.FC<{
 
   if (loadError) {
     return (
-      <div className='flex h-full items-center justify-center text-destructive'>
+      <div className='text-destructive flex h-full items-center justify-center'>
         <div className='text-center'>
           <AlertTriangle className='mx-auto mb-2 h-8 w-8' />
           <p className='text-sm'>Failed to load card component</p>
@@ -171,26 +259,39 @@ const DynamicCardLoader: React.FC<{
   // Prepare appropriate props based on cardId
   const getComponentProps = () => {
     // Map cardId to display name
-    const displayName = cardId === 'StockLevelListAndChartCard' ? 'Stock Level' :
-                       cardId === 'StockHistoryCard' ? 'Stock History' :
-                       cardId === 'VoidPalletCard' ? 'Void Pallet' :
-                       cardId === 'VerticalTimelineCard' ? 'Transfer History' :
-                       cardId === 'WorkLevelCard' ? 'Work Level' :
-                       cardId === 'DownloadCenterCard' ? 'Download Center' :
-                       cardId === 'UploadCenterCard' ? 'Upload Center' :
-                       cardId === 'PerformanceDashboard' ? 'System Performance' :
-                       cardId === 'DataUpdateCard' ? 'Data Update' :
-                       cardId === 'DepartInjCard' ? 'Injection Department' :
-                       cardId === 'DepartPipeCard' ? 'Pipe Line Department' :
-                       cardId === 'DepartWareCard' ? 'Warehouse Department' :
-                       cardId === 'ChatbotCard' ? 'Chat with Database' :
-                       cardId;
-    
+    const displayName =
+      cardId === 'StockLevelListAndChartCard'
+        ? 'Stock Level'
+        : cardId === 'StockHistoryCard'
+          ? 'Stock History'
+          : cardId === 'VoidPalletCard'
+            ? 'Void Pallet'
+            : cardId === 'VerticalTimelineCard'
+              ? 'Transfer History'
+              : cardId === 'WorkLevelCard'
+                ? 'Work Level'
+                : cardId === 'DownloadCenterCard'
+                  ? 'Download Center'
+                  : cardId === 'UploadCenterCard'
+                    ? 'Upload Center'
+                    : cardId === 'PerformanceDashboard'
+                      ? 'System Performance'
+                      : cardId === 'DataUpdateCard'
+                        ? 'Data Update'
+                        : cardId === 'DepartInjCard'
+                          ? 'Injection Department'
+                          : cardId === 'DepartPipeCard'
+                            ? 'Pipe Line Department'
+                            : cardId === 'DepartWareCard'
+                              ? 'Warehouse Department'
+                              : cardId === 'ChatbotCard'
+                                ? 'Chat with Database'
+                                : cardId;
+
     const baseProps = {
       title: displayName,
       isEditMode: false,
     };
-
 
     // Add specific configuration for StockLevelListAndChartCard
     if (cardId === 'StockLevelListAndChartCard') {
@@ -228,7 +329,7 @@ const DynamicCardLoader: React.FC<{
         animationEnabled: true,
         filters: {
           chartId: 'WorkLevelCard',
-          dataSource: 'work_level'
+          dataSource: 'work_level',
         },
         height: 605, // 使用整個card可使用的空間，增加10%
       };
@@ -311,7 +412,7 @@ const CardErrorBoundary: React.FC<{
       <div
         className={cn(
           'flex h-48 flex-col items-center justify-center',
-          'rounded-lg border border-destructive/20 bg-destructive/5',
+          'border-destructive/20 bg-destructive/5 rounded-lg border',
           'text-destructive'
         )}
       >
@@ -362,11 +463,11 @@ export const AnalysisCardSelector: React.FC<AnalysisCardSelectorProps> = ({
   const cardConfig = useMemo(() => {
     // Check if it's a supported analysis card
     // No longer needed - all cards are valid
-    
+
     // Use direct Card mapping with proper type checking
     let cardName: string | null = null;
     let displayName: string = selectedCard;
-    
+
     switch (selectedCard) {
       case 'StockLevelListAndChartCard':
         cardName = 'StockLevelListAndChartCard';
@@ -423,16 +524,16 @@ export const AnalysisCardSelector: React.FC<AnalysisCardSelectorProps> = ({
       default:
         cardName = null;
     }
-    
+
     if (!cardName) return null;
-    
+
     // Create a config for compatibility
     return {
       config: {
         name: displayName,
         cardType: cardName,
-        description: ''
-      }
+        description: '',
+      },
     };
   }, [selectedCard]);
 
@@ -479,10 +580,7 @@ export const AnalysisCardSelector: React.FC<AnalysisCardSelectorProps> = ({
             }
           >
             {/* Dynamically load corresponding Card component - 直接載入，無額外包裝 */}
-            <DynamicCardLoader 
-              cardId={selectedCard}
-              cardName={cardConfig.config.name}
-            />
+            <DynamicCardLoader cardId={selectedCard} cardName={cardConfig.config.name} />
           </React.Suspense>
         </CardErrorBoundary>
       </motion.div>

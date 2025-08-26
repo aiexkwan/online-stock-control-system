@@ -6,11 +6,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import type { 
-  BusinessDialogType, 
-  BusinessDialogData, 
-  BusinessDialogContextType 
-} from './types';
+import type { BusinessDialogType, BusinessDialogData, BusinessDialogContextType } from './types';
 
 // 創建 Business Dialog Context
 const BusinessDialogContext = createContext<BusinessDialogContextType | undefined>(undefined);

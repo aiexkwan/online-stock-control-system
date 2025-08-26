@@ -1,0 +1,186 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+# 系統全局規則
+
+0. 必須遵守
+   - 嚴禁未經許可：新增文檔、建立文檔、刪除文檔、修改文檔
+   - 嚴禁未經許可：建立一次性測試用檔案
+   - 嚴格遵守：`KISS`，`DRY`，`YAGNI`同`SOLID`四大原則
+
+1. 語言
+   - 與使用者對話／思考時，必須使用繁體中文
+   - 系統內所有 UI 與註解，必須使用英語
+
+2. 修改代碼前必須留意
+   - 不容許任何未驗證修改情況
+   - 代碼內容必須反映事實
+   - 代碼內容必須經過工具驗證
+     - 資料庫表格相關：Supabase MCP 工具
+     - 其他可用工具：GraphQL Schema, Zod Schemas
+
+3. 所有[一次性]／[測試用]檔案在使用後**必須**刪除
+
+4. 只需集中於使用者要求的任務
+   - 不容許自作主張
+
+5. 上下文記憶系統
+   - 每次用戶對話開始：執行[尋找相關對話紀錄](scripts/hooks/user_prompt_hook.py)
+   - 每次任務執行完畢、代理執行完成：執行[對話紀錄](scripts/hooks/save_context_hook.py)[對話總結紀錄](scripts/hooks/context_summary_hook.py)
+
+# 1. 總覽 (Overview)
+
+- **最後更新日期**: 2025-08-24 22:45:00
+- **系統版本號**: v2.9.0
+- **整體架構圖**:
+
+```mermaid
+graph TB
+    subgraph "前端層 Frontend"
+        A[Next.js 15.4.4 App Router]
+        B[19張管理卡片]
+        C[React 18.3.1 + TypeScript 5.8.3]
+        D[Tailwind CSS 3.4.17 + Radix UI]
+    end
+
+    subgraph "API層 API Layer"
+        E[28個REST端點]
+        F[1個GraphQL端點]
+        G[Apollo Server 5.0.0]
+    end
+
+    subgraph "業務邏輯層 Business Logic"
+        H[65個GraphQL檔案]
+        I[統一權限系統]
+        J[錯誤處理系統]
+        K[安全模組 2個]
+    end
+
+    subgraph "數據層 Data Layer"
+        L[Supabase 2.49.8]
+        M[30個表 (public schema)]
+        N[Apollo Client 3.13.8]
+        O[React Query 5.62.11]
+    end
+
+    subgraph "AI功能層 AI Services"
+        P[OpenAI SDK 4.104.0]
+        Q[Anthropic SDK 0.40.1]
+        R[ChatbotCard]
+        S[PDF分析服務]
+    end
+
+    A --> E
+    A --> F
+    E --> H
+    F --> G
+    G --> H
+    H --> I
+    H --> J
+    H --> K
+    I --> L
+    J --> L
+    K --> L
+    L --> M
+    A --> N
+    N --> O
+    A --> P
+    P --> R
+    P --> S
+```
+
+# 2. 技術棧 (Technology Stack)
+
+## 前端 (Frontend)
+
+- **框架**: Next.js 15.4.4, React 18.3.1
+- **語言**: TypeScript 5.8.3
+- **UI**: Tailwind CSS 3.4.17, Radix UI, Framer Motion 11.18.2
+- **狀態管理**: Zustand 5.0.5, @tanstack/react-query 5.62.11
+- **資料請求**: Apollo Client 3.13.8
+
+## 後端 (Backend)
+
+- **運行環境**: Node.js
+- **框架**: Next.js API Routes
+- **API**: Apollo Server 5.0.0, GraphQL 16.11.0
+- **外部服務**: Resend 4.0.1
+
+## 資料庫 (Database)
+
+- **供應商**: Supabase 2.49.8 (PostgreSQL)
+- **表格數量**: 30個表 (public schema)
+- **關係**: 17個外鍵關係
+
+## 測試 (Testing)
+
+- **E2E 測試**: Playwright 1.54.1
+- **單元/整合測試**: Vitest 3.2.4, Jest 29.7.0, React Testing Library 16.3.0
+- **API 測試**: MSW 2.10.3
+- **無障礙性測試**: @axe-core/playwright 4.10.2
+
+## 開發工具 (Dev Tools)
+
+- **包管理器**: npm
+- **代碼檢查與格式化**: ESLint 8.57.1, Prettier 3.4.2
+- **GraphQL**: @graphql-codegen/cli 5.0.7
+- **依賴分析**: Madge 8.0.0
+
+# 3. 系統架構 (System Architecture)
+
+## 前端架構
+
+- **目錄結構**: app/ 目錄核心結構 - (app)/(auth) 分組路由
+- **路由機制**: Next.js App Router 配置
+- **組件設計**: 19張管理卡片 + 模組化共用組件
+- **核心通用組件**: components/ui/ (44個組件), lib/card-system/
+
+## 後端架構
+
+- **API 類型**: GraphQL (主要), REST (輔助)
+- **GraphQL Schema**: lib/graphql/ 目錄下65個TypeScript檔案
+- **無伺服器函數**: app/api/ 下28個REST端點 + 1個GraphQL端點
+- **中間件**: middleware.ts 認證與路由保護
+
+## 數據庫架構
+
+- **資料庫關係**: 30個表，17個外鍵關係
+- **行級安全策略 (RLS)**: 88個RLS策略
+
+# 4. 部署與維運 (Deployment & DevOps)
+
+- **部署平台**: Vercel
+- **構建流程**: package.json 中的 build 指令
+- **配置文件**: vercel.json, next.config.js
+
+# 5. 安全性 (Security)
+
+- **認證機制**: Supabase Auth (JWT)
+- **授權機制**: RLS, 中間件權限檢查
+- **敏感資訊管理**: enhanced-logger-sanitizer.ts (302行), credentials-manager.ts (242行)
+
+# 6. AI 整合 (AI Integration)
+
+- **使用模型**: OpenAI GPT-4o-mini, GPT-4o, GPT-3.5-turbo
+- **SDK**: openai 4.104.0, @anthropic-ai/sdk 0.40.1
+- **核心功能**: ChatbotCard, ask-database API, PDF分析服務
+
+# 7. UI/UX 與設計系統
+
+- **組件庫**: components/ui/ 基於 Radix UI
+- **樣式配置**: tailwind.config.js 自定義主題配置
+- **視覺特效**: Glassmorphic 設計語言, Spotlight 效果
+
+- Supabase MCP 工具可驗證資料庫狀態
+- GraphQL 代碼產生：`npm run codegen`
+
+## 測試指令
+
+- `npm run typecheck` - TypeScript編譯檢查
+- `npm run build` - 系統建置
+- `npm run vitest` - 單元測試
+- `npm run test:e2e` - 端對端測試
+- `npm run test` - Jest 測試套件

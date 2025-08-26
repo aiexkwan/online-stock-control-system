@@ -141,12 +141,14 @@ export async function batchQuery<T extends Record<string, unknown> = Record<stri
   }
 
   // Create a map for O(1) lookup - handle both string and number keys
-  const dataMap = new Map(data?.map((item: unknown) => {
-    const keyValue = (item as Record<string, unknown>)[column];
-    // Convert both number and string keys to string for consistent lookup
-    const normalizedKey = String(keyValue);
-    return [normalizedKey, item as T];
-  }) || []);
+  const dataMap = new Map(
+    data?.map((item: unknown) => {
+      const keyValue = (item as Record<string, unknown>)[column];
+      // Convert both number and string keys to string for consistent lookup
+      const normalizedKey = String(keyValue);
+      return [normalizedKey, item as T];
+    }) || []
+  );
 
   // Return in the same order as keys - ensure keys are strings for lookup
   return keys.map(key => dataMap.get(String(key)) || null);
@@ -166,7 +168,7 @@ export async function batchDashboardStats(
 
   for (const key of keys) {
     const startTime = Date.now();
-    
+
     try {
       const { data, error } = await supabase.rpc('get_dashboard_stats', {
         p_use_estimated_count: key.useEstimatedCount,
@@ -179,13 +181,13 @@ export async function batchDashboardStats(
       }
 
       const executionTime = Date.now() - startTime;
-      
+
       // Map RPC response to DataLoader format
       const basicStats = data?.basic_stats || {};
       const inventoryStats = data?.inventory_stats || {};
       const activityStats = data?.activity_stats || {};
       const performanceStats = data?.performance || {};
-      
+
       const statsData: DashboardStatsData = {
         // 基本統計
         totalPallets: basicStats.total_pallets || 0,
@@ -193,20 +195,27 @@ export async function batchDashboardStats(
         uniqueProducts: basicStats.total_products || 0,
         todayTransfers: activityStats?.totals?.today || 0,
         pendingOrders: 0, // TODO: 需要在RPC中添加pending orders統計
-        
+
         // 詳細統計 (條件性返回)
         ...(key.includeDetailedStats && {
           dailyDonePallets: activityStats?.totals?.today || 0,
           dailyTransferredPallets: activityStats?.totals?.today || 0,
-          yesterdayDonePallets: Math.max(0, (activityStats?.totals?.this_week || 0) - (activityStats?.totals?.today || 0)),
-          yesterdayTransferredPallets: Math.max(0, (activityStats?.totals?.this_week || 0) - (activityStats?.totals?.today || 0)),
+          yesterdayDonePallets: Math.max(
+            0,
+            (activityStats?.totals?.this_week || 0) - (activityStats?.totals?.today || 0)
+          ),
+          yesterdayTransferredPallets: Math.max(
+            0,
+            (activityStats?.totals?.this_week || 0) - (activityStats?.totals?.today || 0)
+          ),
           past3DaysGenerated: Math.floor((activityStats?.totals?.this_week || 0) * 0.6),
           past3DaysTransferredPallets: Math.floor((activityStats?.totals?.this_week || 0) * 0.6),
           past7DaysGenerated: activityStats?.totals?.this_week || 0,
           past7DaysTransferredPallets: activityStats?.totals?.this_week || 0,
         }),
-        
-        executionTimeMs: parseFloat(performanceStats.calculation_time?.replace('ms', '') || '0') || executionTime,
+
+        executionTimeMs:
+          parseFloat(performanceStats.calculation_time?.replace('ms', '') || '0') || executionTime,
         lastUpdated: data?.generated_at || new Date().toISOString(),
       };
 
@@ -222,7 +231,9 @@ export async function batchDashboardStats(
 /**
  * Create Dashboard Stats DataLoader
  */
-export function createDashboardStatsLoader(supabase: SupabaseClient): DataLoader<DashboardStatsKey, DashboardStatsData> {
+export function createDashboardStatsLoader(
+  supabase: SupabaseClient
+): DataLoader<DashboardStatsKey, DashboardStatsData> {
   return new DataLoader<DashboardStatsKey, DashboardStatsData>(
     (keys: readonly DashboardStatsKey[]) => batchDashboardStats(supabase, keys),
     {
@@ -278,7 +289,7 @@ export function createSimpleLoader<T extends Record<string, unknown> = Record<st
             .select('*')
             .ilike(keyColumn, key)
             .maybeSingle();
-          
+
           if (error) {
             console.error(`[DataLoader] Error loading from ${table}:`, error);
             return null;
@@ -287,7 +298,7 @@ export function createSimpleLoader<T extends Record<string, unknown> = Record<st
         })
       );
       return results.map(result =>
-        result === null ? new Error(`Not found in ${table}`) : result as T
+        result === null ? new Error(`Not found in ${table}`) : (result as T)
       ) as (T | Error)[];
     } else {
       // Use batch query for exact matches
@@ -408,7 +419,7 @@ export async function createDataLoaderContext(): Promise<DataLoaderContext> {
     createTopProductsLoader,
     createStockDistributionLoader,
   } = await import('./complex.dataloader');
-  
+
   const { createRecordHistoryDataLoader } = await import('./record-history.dataloader');
 
   return {
@@ -419,7 +430,7 @@ export async function createDataLoaderContext(): Promise<DataLoaderContext> {
       inventory: createSimpleLoader<Inventory>(supabase, 'record_inventory', 'product_code'),
       user: createSimpleLoader<User>(supabase, 'data_id', 'id'),
       location: createSimpleLoader<Location>(supabase, 'work_level', 'id'), // 修正：work_level 表用 id 欄位
-      order: createSimpleLoader<Order>(supabase, 'data_order', 'order_ref'), // 修正：使用 order_ref 而不是 order_number  
+      order: createSimpleLoader<Order>(supabase, 'data_order', 'order_ref'), // 修正：使用 order_ref 而不是 order_number
       transfer: createSimpleLoader<Transfer>(supabase, 'record_transfer', 'uuid'), // 修正：使用 uuid 而不是 id
       customer: createSimpleLoader<Customer>(supabase, 'data_order', 'customer_ref'), // 修正：使用 customer_ref
       supplier: createSimpleLoader<Supplier>(supabase, 'data_supplier', 'supplier_code'), // 修正：使用正確的欄位名
@@ -427,22 +438,48 @@ export async function createDataLoaderContext(): Promise<DataLoaderContext> {
       palletByPlateSeries: createPalletBySeriesLoader(supabase),
       userByName: createUserByNameLoader(supabase),
       // Complex loaders for handling JOINs
-      unifiedOperations: createUnifiedOperationsLoader(supabase) as unknown as DataLoader<UnifiedOperationsKey, UnifiedOperationsData>,
-      stockLevels: createStockLevelsLoader(supabase) as unknown as DataLoader<StockLevelKey, StockLevelData>,
-      workLevel: createWorkLevelLoader(supabase) as unknown as DataLoader<WorkLevelKey, WorkLevelData>,
-      grnAnalytics: createGRNAnalyticsLoader(supabase) as unknown as DataLoader<GRNAnalyticsKey, GRNAnalyticsData>,
-      performanceMetrics: createPerformanceMetricsLoader(supabase) as unknown as DataLoader<PerformanceMetricsKey, PerformanceMetricsData>,
-      inventoryOrderedAnalysis: createInventoryOrderedAnalysisLoader(supabase) as unknown as DataLoader<InventoryOrderedAnalysisKey, InventoryOrderedAnalysisData>,
-      historyTree: createHistoryTreeLoader(supabase) as unknown as DataLoader<HistoryTreeKey, HistoryTreeData>,
-      topProducts: createTopProductsLoader(supabase) as unknown as DataLoader<TopProductsKey, TopProductsData>,
-      stockDistribution: createStockDistributionLoader(supabase) as unknown as DataLoader<StockDistributionKey, StockDistributionData>,
+      unifiedOperations: createUnifiedOperationsLoader(supabase) as unknown as DataLoader<
+        UnifiedOperationsKey,
+        UnifiedOperationsData
+      >,
+      stockLevels: createStockLevelsLoader(supabase) as unknown as DataLoader<
+        StockLevelKey,
+        StockLevelData
+      >,
+      workLevel: createWorkLevelLoader(supabase) as unknown as DataLoader<
+        WorkLevelKey,
+        WorkLevelData
+      >,
+      grnAnalytics: createGRNAnalyticsLoader(supabase) as unknown as DataLoader<
+        GRNAnalyticsKey,
+        GRNAnalyticsData
+      >,
+      performanceMetrics: createPerformanceMetricsLoader(supabase) as unknown as DataLoader<
+        PerformanceMetricsKey,
+        PerformanceMetricsData
+      >,
+      inventoryOrderedAnalysis: createInventoryOrderedAnalysisLoader(
+        supabase
+      ) as unknown as DataLoader<InventoryOrderedAnalysisKey, InventoryOrderedAnalysisData>,
+      historyTree: createHistoryTreeLoader(supabase) as unknown as DataLoader<
+        HistoryTreeKey,
+        HistoryTreeData
+      >,
+      topProducts: createTopProductsLoader(supabase) as unknown as DataLoader<
+        TopProductsKey,
+        TopProductsData
+      >,
+      stockDistribution: createStockDistributionLoader(supabase) as unknown as DataLoader<
+        StockDistributionKey,
+        StockDistributionData
+      >,
       // Record History DataLoader
       recordHistory: new DataLoader<RecordHistoryKey, RecordHistoryData>(
         async (keys: readonly RecordHistoryKey[]) => {
           const loader = createRecordHistoryDataLoader(supabase);
           const stringKeys = keys.map(key => JSON.stringify(key));
           const results = await loader.recordHistoryLoader.loadMany(stringKeys);
-          return results.map(result => result instanceof Error ? result : result);
+          return results.map(result => (result instanceof Error ? result : result));
         }
       ),
     },

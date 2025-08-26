@@ -1836,7 +1836,7 @@ export type HistoryProduct = {
   code: Scalars['String']['output'];
   colour: Scalars['String']['output'];
   description: Scalars['String']['output'];
-  standardQty: Scalars['Int']['output'];
+  standardQty?: Maybe<Scalars['Int']['output']>;
   type: Scalars['String']['output'];
 };
 
@@ -3497,7 +3497,7 @@ export type Product = {
   product_code: Scalars['String']['output'];
   product_description?: Maybe<Scalars['String']['output']>;
   remark?: Maybe<Scalars['String']['output']>;
-  standardQty: Scalars['Int']['output'];
+  standardQty?: Maybe<Scalars['Int']['output']>;
   statistics?: Maybe<ProductStatistics>;
   type: Scalars['String']['output'];
   unit?: Maybe<Scalars['String']['output']>;
@@ -3575,7 +3575,7 @@ export type ProductInfo = {
   code: Scalars['String']['output'];
   colour: Scalars['String']['output'];
   description: Scalars['String']['output'];
-  standardQty: Scalars['Int']['output'];
+  standardQty?: Maybe<Scalars['Int']['output']>;
   type: Scalars['String']['output'];
 };
 
@@ -6347,7 +6347,7 @@ export type TopProduct = {
   productCode: Scalars['String']['output'];
   productName: Scalars['String']['output'];
   productType: Scalars['String']['output'];
-  standardQty: Scalars['Int']['output'];
+  standardQty?: Maybe<Scalars['Int']['output']>;
   totalQuantity: Scalars['Int']['output'];
 };
 
@@ -7204,7 +7204,7 @@ export type GetStockLevelListQuery = {
         description: string;
         type: string;
         colour: string;
-        standardQty: number;
+        standardQty?: number | null;
       } | null;
     }>;
   };

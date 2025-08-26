@@ -46,7 +46,7 @@ export const searchPallet = async (value: string): Promise<PalletSearchResult | 
   try {
     const supabase = createClient();
     let plt_num = value;
-    
+
     // Check if it's a QR Code (series format)
     if (value.includes('-') && value.length > 10) {
       // Search series field
@@ -55,13 +55,13 @@ export const searchPallet = async (value: string): Promise<PalletSearchResult | 
         .select('plt_num')
         .eq('series', value)
         .maybeSingle();
-        
+
       if (seriesError || !seriesData) {
         return null;
       }
       plt_num = seriesData.plt_num;
     }
-    
+
     // Search in record_palletinfo table
     const { data: palletData, error } = await supabase
       .from('record_palletinfo')
@@ -88,7 +88,7 @@ export const searchPallet = async (value: string): Promise<PalletSearchResult | 
 export const searchProduct = async (query: string): Promise<ProductSearchResult[]> => {
   try {
     const supabase = createClient();
-    
+
     const { data, error } = await supabase
       .from('data_product')
       .select('product_code, product_name, product_description, category')
@@ -115,7 +115,7 @@ export const searchProduct = async (query: string): Promise<ProductSearchResult[
 export const searchSupplier = async (query: string): Promise<SupplierSearchResult[]> => {
   try {
     const supabase = createClient();
-    
+
     const { data, error } = await supabase
       .from('data_supplier')
       .select('supplier_code, supplier_name')

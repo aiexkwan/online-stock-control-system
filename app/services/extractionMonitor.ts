@@ -1,13 +1,13 @@
 /**
  * Extraction Monitor - 訂單提取監控服務
- * 
+ *
  * 功能特點：
  * - 實時監控 AI 提取性能
  * - Token 使用量追蹤和成本分析
  * - 準確性指標監控
  * - 健康檢查和警報機制
  * - A/B Testing 支援
- * 
+ *
  * @version 1.0.0
  * @author Extraction Monitoring System
  */
@@ -72,11 +72,11 @@ export interface PromptVariant {
 
 // 性能閾值配置
 interface PerformanceThresholds {
-  maxExtractionTime: number;    // ms
+  maxExtractionTime: number; // ms
   maxTokensPerOrder: number;
-  minSuccessRate: number;       // percentage
-  maxErrorRate: number;         // percentage
-  minCacheHitRate: number;      // percentage
+  minSuccessRate: number; // percentage
+  maxErrorRate: number; // percentage
+  minCacheHitRate: number; // percentage
 }
 
 /**
@@ -84,24 +84,27 @@ interface PerformanceThresholds {
  */
 export class ExtractionMonitor extends EventEmitter {
   private static instance: ExtractionMonitor;
-  
+
   private extractions: (ExtractionResult & { timestamp: number })[] = [];
   private readonly maxHistorySize = 1000;
   private readonly reportingInterval = 5 * 60 * 1000; // 5 minutes
-  
+
   // A/B Testing 變體
   private promptVariants: PromptVariant[] = [];
-  private variantStats = new Map<string, { used: number; success: number; totalTime: number; totalTokens: number }>();
-  
+  private variantStats = new Map<
+    string,
+    { used: number; success: number; totalTime: number; totalTokens: number }
+  >();
+
   // 性能閾值
   private thresholds: PerformanceThresholds = {
-    maxExtractionTime: 10000,   // 10 seconds
-    maxTokensPerOrder: 50,      // 50 tokens per order
-    minSuccessRate: 95,         // 95% success rate
-    maxErrorRate: 5,            // 5% error rate
-    minCacheHitRate: 70,        // 70% cache hit rate
+    maxExtractionTime: 10000, // 10 seconds
+    maxTokensPerOrder: 50, // 50 tokens per order
+    minSuccessRate: 95, // 95% success rate
+    maxErrorRate: 5, // 5% error rate
+    minCacheHitRate: 70, // 70% cache hit rate
   };
-  
+
   // Token 成本 (OpenAI 定價，美元/1K tokens)
   private readonly tokenCosts = {
     'gpt-4o': { input: 0.005, output: 0.015 },
@@ -131,34 +134,37 @@ export class ExtractionMonitor extends EventEmitter {
       ...result,
       timestamp: Date.now(),
     };
-    
+
     this.extractions.push(timestampedResult);
-    
+
     // 維護歷史記錄大小
     if (this.extractions.length > this.maxHistorySize) {
       this.extractions.shift();
     }
-    
+
     // 更新 A/B 測試統計
     if (result.promptVariant) {
       this.updateVariantStats(result);
     }
-    
+
     // 檢查性能閾值
     this.checkPerformanceThresholds(result);
-    
+
     // 詳細日誌記錄
-    systemLogger.info({
-      success: result.success,
-      extractionTime: result.extractionTime,
-      tokensUsed: result.tokensUsed,
-      orderCount: result.orderCount,
-      method: result.method,
-      model: result.model,
-      promptVariant: result.promptVariant,
-      complexity: result.complexity,
-      tokenEfficiency: result.orderCount > 0 ? result.tokensUsed / result.orderCount : 0,
-    }, '[ExtractionMonitor] Tracking extraction result');
+    systemLogger.info(
+      {
+        success: result.success,
+        extractionTime: result.extractionTime,
+        tokensUsed: result.tokensUsed,
+        orderCount: result.orderCount,
+        method: result.method,
+        model: result.model,
+        promptVariant: result.promptVariant,
+        complexity: result.complexity,
+        tokenEfficiency: result.orderCount > 0 ? result.tokensUsed / result.orderCount : 0,
+      },
+      '[ExtractionMonitor] Tracking extraction result'
+    );
   }
 
   /**
@@ -167,46 +173,46 @@ export class ExtractionMonitor extends EventEmitter {
   public getMetrics(windowMs: number = 60 * 60 * 1000): MonitoringMetrics {
     const cutoff = Date.now() - windowMs;
     const recentExtractions = this.extractions.filter(r => r.timestamp >= cutoff);
-    
+
     if (recentExtractions.length === 0) {
       return this.getEmptyMetrics();
     }
-    
+
     const successful = recentExtractions.filter(r => r.success);
     const failed = recentExtractions.filter(r => !r.success);
-    
+
     // 基本統計
     const totalExtractions = recentExtractions.length;
     const successRate = (successful.length / totalExtractions) * 100;
-    
+
     // 時間統計
     const extractionTimes = successful.map(r => r.extractionTime).sort((a, b) => a - b);
     const averageExtractionTime = this.calculateAverage(extractionTimes);
     const p95ExtractionTime = this.calculatePercentile(extractionTimes, 95);
-    
+
     // Token 效率
     const totalTokens = recentExtractions.reduce((sum, r) => sum + r.tokensUsed, 0);
     const totalOrders = recentExtractions.reduce((sum, r) => sum + r.orderCount, 0);
     const tokenEfficiency = totalOrders > 0 ? totalTokens / totalOrders : 0;
-    
+
     // 準確性計算
     const totalCorrected = recentExtractions.reduce((sum, r) => sum + (r.correctedCount || 0), 0);
     const totalInvalid = recentExtractions.reduce((sum, r) => sum + (r.invalidCount || 0), 0);
     const accuracyRate = totalOrders > 0 ? ((totalOrders - totalInvalid) / totalOrders) * 100 : 0;
-    
+
     // 快取命中率
     const totalCacheHits = recentExtractions.reduce((sum, r) => sum + (r.cacheHitCount || 0), 0);
     const cacheHitRate = totalOrders > 0 ? (totalCacheHits / totalOrders) * 100 : 0;
-    
+
     // 成本估算
     const costEstimate = this.calculateCostEstimate(recentExtractions);
-    
+
     // 每小時提取數量
-    const hourlyExtractions = (totalExtractions / (windowMs / (60 * 60 * 1000)));
-    
+    const hourlyExtractions = totalExtractions / (windowMs / (60 * 60 * 1000));
+
     // 失敗原因統計
     const failureReasons = this.analyzeFailureReasons(failed);
-    
+
     return {
       totalExtractions,
       successRate: Math.round(successRate * 10) / 10,
@@ -227,43 +233,51 @@ export class ExtractionMonitor extends EventEmitter {
   public async checkHealthThresholds(): Promise<HealthCheck> {
     const metrics = this.getMetrics(15 * 60 * 1000); // 15分鐘窗口
     const recommendations: string[] = [];
-    
+
     let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
-    
+
     // 檢查成功率
     if (metrics.successRate < this.thresholds.minSuccessRate) {
       status = metrics.successRate < 80 ? 'unhealthy' : 'degraded';
-      recommendations.push(`Success rate (${metrics.successRate}%) below threshold (${this.thresholds.minSuccessRate}%)`);
+      recommendations.push(
+        `Success rate (${metrics.successRate}%) below threshold (${this.thresholds.minSuccessRate}%)`
+      );
     }
-    
+
     // 檢查響應時間
     if (metrics.p95ExtractionTime > this.thresholds.maxExtractionTime) {
       if (status === 'healthy') status = 'degraded';
-      recommendations.push(`P95 response time (${metrics.p95ExtractionTime}ms) exceeds threshold (${this.thresholds.maxExtractionTime}ms)`);
+      recommendations.push(
+        `P95 response time (${metrics.p95ExtractionTime}ms) exceeds threshold (${this.thresholds.maxExtractionTime}ms)`
+      );
     }
-    
+
     // 檢查 Token 效率
     if (metrics.tokenEfficiency > this.thresholds.maxTokensPerOrder) {
       if (status === 'healthy') status = 'degraded';
-      recommendations.push(`Token efficiency (${metrics.tokenEfficiency} tokens/order) exceeds threshold (${this.thresholds.maxTokensPerOrder})`);
+      recommendations.push(
+        `Token efficiency (${metrics.tokenEfficiency} tokens/order) exceeds threshold (${this.thresholds.maxTokensPerOrder})`
+      );
     }
-    
+
     // 檢查快取命中率
     if (metrics.cacheHitRate < this.thresholds.minCacheHitRate) {
       if (status === 'healthy') status = 'degraded';
-      recommendations.push(`Cache hit rate (${metrics.cacheHitRate}%) below threshold (${this.thresholds.minCacheHitRate}%)`);
+      recommendations.push(
+        `Cache hit rate (${metrics.cacheHitRate}%) below threshold (${this.thresholds.minCacheHitRate}%)`
+      );
     }
-    
+
     // 檢查最近失敗數量
-    const recentFailures = this.extractions
-      .filter(r => r.timestamp > Date.now() - 5 * 60 * 1000 && !r.success)
-      .length;
-    
+    const recentFailures = this.extractions.filter(
+      r => r.timestamp > Date.now() - 5 * 60 * 1000 && !r.success
+    ).length;
+
     if (recentFailures > 5) {
       status = 'unhealthy';
       recommendations.push(`Too many recent failures (${recentFailures} in last 5 minutes)`);
     }
-    
+
     return {
       status,
       extractionRate: metrics.hourlyExtractions,
@@ -281,11 +295,11 @@ export class ExtractionMonitor extends EventEmitter {
     if (this.promptVariants.length === 0) {
       return null;
     }
-    
+
     // 基於權重的隨機選擇
     const totalWeight = this.promptVariants.reduce((sum, v) => sum + v.weight, 0);
     const random = Math.random() * totalWeight;
-    
+
     let currentWeight = 0;
     for (const variant of this.promptVariants) {
       currentWeight += variant.weight;
@@ -293,7 +307,7 @@ export class ExtractionMonitor extends EventEmitter {
         return variant;
       }
     }
-    
+
     // 後備選項
     return this.promptVariants[0];
   }
@@ -312,8 +326,13 @@ export class ExtractionMonitor extends EventEmitter {
     };
   }> {
     return this.promptVariants.map(variant => {
-      const stats = this.variantStats.get(variant.id) || { used: 0, success: 0, totalTime: 0, totalTokens: 0 };
-      
+      const stats = this.variantStats.get(variant.id) || {
+        used: 0,
+        success: 0,
+        totalTime: 0,
+        totalTokens: 0,
+      };
+
       return {
         variant,
         stats: {
@@ -333,12 +352,15 @@ export class ExtractionMonitor extends EventEmitter {
   public addPromptVariant(variant: PromptVariant): void {
     this.promptVariants.push(variant);
     this.variantStats.set(variant.id, { used: 0, success: 0, totalTime: 0, totalTokens: 0 });
-    
-    systemLogger.info({
-      variantId: variant.id,
-      variantName: variant.name,
-      weight: variant.weight,
-    }, '[ExtractionMonitor] Added new prompt variant');
+
+    systemLogger.info(
+      {
+        variantId: variant.id,
+        variantName: variant.name,
+        weight: variant.weight,
+      },
+      '[ExtractionMonitor] Added new prompt variant'
+    );
   }
 
   /**
@@ -347,10 +369,13 @@ export class ExtractionMonitor extends EventEmitter {
   public removePromptVariant(variantId: string): void {
     this.promptVariants = this.promptVariants.filter(v => v.id !== variantId);
     this.variantStats.delete(variantId);
-    
-    systemLogger.info({
-      variantId,
-    }, '[ExtractionMonitor] Removed prompt variant');
+
+    systemLogger.info(
+      {
+        variantId,
+      },
+      '[ExtractionMonitor] Removed prompt variant'
+    );
   }
 
   /**
@@ -358,10 +383,13 @@ export class ExtractionMonitor extends EventEmitter {
    */
   public updateThresholds(newThresholds: Partial<PerformanceThresholds>): void {
     this.thresholds = { ...this.thresholds, ...newThresholds };
-    
-    systemLogger.info({
-      thresholds: this.thresholds,
-    }, '[ExtractionMonitor] Updated performance thresholds');
+
+    systemLogger.info(
+      {
+        thresholds: this.thresholds,
+      },
+      '[ExtractionMonitor] Updated performance thresholds'
+    );
   }
 
   /**
@@ -371,10 +399,10 @@ export class ExtractionMonitor extends EventEmitter {
     const metrics = this.getMetrics(24 * 60 * 60 * 1000); // 24小時
     const health = await this.checkHealthThresholds();
     const variantStats = this.getVariantStats();
-    
+
     let report = '# Extraction Monitoring Report\n\n';
     report += `Generated: ${new Date().toISOString()}\n\n`;
-    
+
     // 健康狀態
     report += `## Health Status: ${health.status.toUpperCase()}\n\n`;
     if (health.recommendations.length > 0) {
@@ -384,7 +412,7 @@ export class ExtractionMonitor extends EventEmitter {
       });
       report += '\n';
     }
-    
+
     // 核心指標
     report += '## Core Metrics (Last 24 Hours)\n';
     report += `- Total Extractions: ${metrics.totalExtractions}\n`;
@@ -396,7 +424,7 @@ export class ExtractionMonitor extends EventEmitter {
     report += `- Cache Hit Rate: ${metrics.cacheHitRate}%\n`;
     report += `- Estimated Cost: $${metrics.costEstimate}\n`;
     report += `- Hourly Rate: ${metrics.hourlyExtractions} extractions/hour\n\n`;
-    
+
     // A/B 測試結果
     if (variantStats.length > 0) {
       report += '## A/B Testing Results\n';
@@ -409,7 +437,7 @@ export class ExtractionMonitor extends EventEmitter {
         report += `- Statistical Confidence: ${stats.confidence.toFixed(1)}%\n\n`;
       });
     }
-    
+
     // 失敗分析
     if (metrics.failureReasons.length > 0) {
       report += '## Failure Analysis\n';
@@ -419,7 +447,7 @@ export class ExtractionMonitor extends EventEmitter {
       });
       report += '\n';
     }
-    
+
     return report;
   }
 
@@ -434,7 +462,7 @@ export class ExtractionMonitor extends EventEmitter {
       weight: 80,
       prompt: '', // 將由 ChatCompletionService 填充
     });
-    
+
     this.addPromptVariant({
       id: 'simplified',
       name: 'Simplified Prompt',
@@ -450,14 +478,19 @@ export class ExtractionMonitor extends EventEmitter {
 
   private updateVariantStats(result: ExtractionResult): void {
     if (!result.promptVariant) return;
-    
-    const stats = this.variantStats.get(result.promptVariant) || { used: 0, success: 0, totalTime: 0, totalTokens: 0 };
-    
+
+    const stats = this.variantStats.get(result.promptVariant) || {
+      used: 0,
+      success: 0,
+      totalTime: 0,
+      totalTokens: 0,
+    };
+
     stats.used++;
     if (result.success) stats.success++;
     stats.totalTime += result.extractionTime;
     stats.totalTokens += result.tokensUsed;
-    
+
     this.variantStats.set(result.promptVariant, stats);
   }
 
@@ -470,8 +503,9 @@ export class ExtractionMonitor extends EventEmitter {
         result,
       });
     }
-    
-    const tokensPerOrder = result.orderCount > 0 ? result.tokensUsed / result.orderCount : result.tokensUsed;
+
+    const tokensPerOrder =
+      result.orderCount > 0 ? result.tokensUsed / result.orderCount : result.tokensUsed;
     if (tokensPerOrder > this.thresholds.maxTokensPerOrder) {
       this.emit('threshold-exceeded', {
         type: 'token-efficiency',
@@ -486,16 +520,19 @@ export class ExtractionMonitor extends EventEmitter {
     if (process.env.EXTRACTION_MONITOR_REPORTING !== 'true') {
       return;
     }
-    
+
     setInterval(() => {
       const metrics = this.getMetrics();
       const health = this.checkHealthThresholds();
-      
-      systemLogger.info({
-        metrics,
-        health,
-      }, '[ExtractionMonitor] Periodic health report');
-      
+
+      systemLogger.info(
+        {
+          metrics,
+          health,
+        },
+        '[ExtractionMonitor] Periodic health report'
+      );
+
       this.emit('health-report', { metrics, health });
     }, this.reportingInterval);
   }
@@ -504,24 +541,27 @@ export class ExtractionMonitor extends EventEmitter {
     return extractions.reduce((total, extraction) => {
       const modelCosts = this.tokenCosts[extraction.model as keyof typeof this.tokenCosts];
       if (!modelCosts) return total;
-      
+
       // 簡化假設：70% input, 30% output
       const inputTokens = extraction.tokensUsed * 0.7;
       const outputTokens = extraction.tokensUsed * 0.3;
-      
-      const cost = (inputTokens / 1000) * modelCosts.input + (outputTokens / 1000) * modelCosts.output;
+
+      const cost =
+        (inputTokens / 1000) * modelCosts.input + (outputTokens / 1000) * modelCosts.output;
       return total + cost;
     }, 0);
   }
 
-  private analyzeFailureReasons(failedExtractions: ExtractionResult[]): Array<{ reason: string; count: number }> {
+  private analyzeFailureReasons(
+    failedExtractions: ExtractionResult[]
+  ): Array<{ reason: string; count: number }> {
     const reasonCounts = new Map<string, number>();
-    
+
     failedExtractions.forEach(extraction => {
       const reason = extraction.error || 'Unknown error';
       reasonCounts.set(reason, (reasonCounts.get(reason) || 0) + 1);
     });
-    
+
     return Array.from(reasonCounts.entries())
       .map(([reason, count]) => ({ reason, count }))
       .sort((a, b) => b.count - a.count)
@@ -570,7 +610,7 @@ export class ExtractionMonitor extends EventEmitter {
     this.extractions = [];
     this.variantStats.clear();
     this.removeAllListeners();
-    
+
     systemLogger.info('ExtractionMonitor cleaned up');
   }
 }

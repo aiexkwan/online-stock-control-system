@@ -6,17 +6,14 @@
 'use client';
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { 
-  useLazyQuery, 
-  useApolloClient 
-} from '@apollo/client';
-import { 
+import { useLazyQuery, useApolloClient } from '@apollo/client';
+import {
   PALLET_HISTORY_BY_PRODUCT,
   PALLET_HISTORY_BY_NUMBER,
   CACHE_CONFIGURATIONS,
   DEFAULT_QUERY_VARIABLES,
 } from '@/lib/graphql/queries/stock-history.graphql';
-import type { 
+import type {
   PalletHistoryVariables,
   SinglePalletHistoryVariables,
 } from '@/lib/graphql/queries/stock-history.graphql';
@@ -82,11 +79,11 @@ export interface PalletHistoryResult {
     actions: Array<{ action: string; count: number; percentage: number }>;
   }>;
   locationDistribution: Array<{ location: string; count: number; percentage: number }>;
-  operatorDistribution: Array<{ 
-    operatorName: string; 
-    operatorId: string; 
-    count: number; 
-    percentage: number; 
+  operatorDistribution: Array<{
+    operatorName: string;
+    operatorId: string;
+    count: number;
+    percentage: number;
     efficiency?: number;
   }>;
 }
@@ -172,7 +169,10 @@ export interface UseStockHistoryGraphQLReturn {
   // Actions (simplified)
   actions: {
     searchByProductCode: (productCode: string, options?: Partial<PalletHistoryVariables>) => void;
-    searchByPalletNumber: (palletNumber: string, options?: Partial<SinglePalletHistoryVariables>) => void;
+    searchByPalletNumber: (
+      palletNumber: string,
+      options?: Partial<SinglePalletHistoryVariables>
+    ) => void;
   };
 
   // Utility functions (simplified)
@@ -194,75 +194,69 @@ export const useStockHistoryGraphQL = (
   const [currentPalletNumber, setCurrentPalletNumber] = useState<string>('');
 
   // Lazy queries for on-demand loading (simplified)
-  const [getProductHistory, productHistoryQuery] = useLazyQuery(
-    PALLET_HISTORY_BY_PRODUCT,
-    {
-      ...CACHE_CONFIGURATIONS.palletHistoryByProduct,
-      onError: (error) => {
-        console.error('Product history query error:', error);
-        onError?.(error);
-      },
-    }
-  );
+  const [getProductHistory, productHistoryQuery] = useLazyQuery(PALLET_HISTORY_BY_PRODUCT, {
+    ...CACHE_CONFIGURATIONS.palletHistoryByProduct,
+    onError: error => {
+      console.error('Product history query error:', error);
+      onError?.(error);
+    },
+  });
 
-  const [getPalletHistory, palletHistoryQuery] = useLazyQuery(
-    PALLET_HISTORY_BY_NUMBER,
-    {
-      ...CACHE_CONFIGURATIONS.palletHistoryByNumber,
-      onError: (error) => {
-        console.error('Pallet history query error:', error);
-        onError?.(error);
-      },
-    }
-  );
+  const [getPalletHistory, palletHistoryQuery] = useLazyQuery(PALLET_HISTORY_BY_NUMBER, {
+    ...CACHE_CONFIGURATIONS.palletHistoryByNumber,
+    onError: error => {
+      console.error('Pallet history query error:', error);
+      onError?.(error);
+    },
+  });
 
   // Removed: Transfer flow, search, stats queries, subscriptions, and mutations
   // This simplification focuses only on core pallet history functionality
 
   // Action handlers (simplified)
-  const searchByProductCode = useCallback((
-    productCode: string, 
-    options: Partial<PalletHistoryVariables> = {}
-  ) => {
-    if (!productCode.trim()) return;
-    
-    setCurrentProductCode(productCode);
-    
-    const variables: PalletHistoryVariables = {
-      productCode,
-      ...DEFAULT_QUERY_VARIABLES,
-      ...options,
-    };
-    
-    getProductHistory({ variables });
-  }, [getProductHistory]);
+  const searchByProductCode = useCallback(
+    (productCode: string, options: Partial<PalletHistoryVariables> = {}) => {
+      if (!productCode.trim()) return;
 
-  const searchByPalletNumber = useCallback((
-    palletNumber: string,
-    options: Partial<SinglePalletHistoryVariables> = {}
-  ) => {
-    if (!palletNumber.trim()) return;
-    
-    setCurrentPalletNumber(palletNumber);
-    
-    const variables: SinglePalletHistoryVariables = {
-      palletNumber,
-      includeJourney: false, // Simplified: no journey needed
-      includeSeries: true,
-      ...options,
-    };
-    
-    getPalletHistory({ variables });
-  }, [getPalletHistory]);
+      setCurrentProductCode(productCode);
+
+      const variables: PalletHistoryVariables = {
+        productCode,
+        ...DEFAULT_QUERY_VARIABLES,
+        ...options,
+      };
+
+      getProductHistory({ variables });
+    },
+    [getProductHistory]
+  );
+
+  const searchByPalletNumber = useCallback(
+    (palletNumber: string, options: Partial<SinglePalletHistoryVariables> = {}) => {
+      if (!palletNumber.trim()) return;
+
+      setCurrentPalletNumber(palletNumber);
+
+      const variables: SinglePalletHistoryVariables = {
+        palletNumber,
+        includeJourney: false, // Simplified: no journey needed
+        includeSeries: true,
+        ...options,
+      };
+
+      getPalletHistory({ variables });
+    },
+    [getPalletHistory]
+  );
 
   // Fetch more for pagination
   const fetchMore = useCallback(() => {
     const { data, fetchMore } = productHistoryQuery;
-    
+
     if (!data?.palletHistoryByProduct?.pageInfo?.hasNextPage || !fetchMore) {
       return;
     }
-    
+
     fetchMore({
       variables: {
         pagination: {
@@ -292,7 +286,7 @@ export const useStockHistoryGraphQL = (
       DAMAGED: 'red',
       ADJUSTED: 'orange',
     };
-    
+
     return colorMap[action] || 'gray';
   }, []);
 
@@ -309,50 +303,54 @@ export const useStockHistoryGraphQL = (
       DAMAGED: '⚠️',
       ADJUSTED: '⚙️',
     };
-    
+
     return iconMap[action] || '📋';
   }, []);
 
   // Removed: Export, real-time toggle, and prefetching functionality
 
   // Memoized return object (simplified)
-  return useMemo(() => ({
-    productHistory: {
-      data: productHistoryQuery.data?.palletHistoryByProduct || null,
-      loading: productHistoryQuery.loading,
-      error: productHistoryQuery.error || null,
-      refetch: () => productHistoryQuery.refetch?.(),
-      fetchMore,
-      hasNextPage: productHistoryQuery.data?.palletHistoryByProduct?.pageInfo?.hasNextPage || false,
-    },
+  return useMemo(
+    () => ({
+      productHistory: {
+        data: productHistoryQuery.data?.palletHistoryByProduct || null,
+        loading: productHistoryQuery.loading,
+        error: productHistoryQuery.error || null,
+        refetch: () => productHistoryQuery.refetch?.(),
+        fetchMore,
+        hasNextPage:
+          productHistoryQuery.data?.palletHistoryByProduct?.pageInfo?.hasNextPage || false,
+      },
 
-    palletHistory: {
-      data: palletHistoryQuery.data?.palletHistoryByNumber || null,
-      loading: palletHistoryQuery.loading,
-      error: palletHistoryQuery.error || null,
-      refetch: () => palletHistoryQuery.refetch?.(),
-    },
+      palletHistory: {
+        data: palletHistoryQuery.data?.palletHistoryByNumber || null,
+        loading: palletHistoryQuery.loading,
+        error: palletHistoryQuery.error || null,
+        refetch: () => palletHistoryQuery.refetch?.(),
+      },
 
-    actions: {
+      actions: {
+        searchByProductCode,
+        searchByPalletNumber,
+      },
+
+      utils: {
+        formatDate,
+        getStatusColor,
+        getActionIcon,
+      },
+    }),
+    [
+      productHistoryQuery,
+      palletHistoryQuery,
       searchByProductCode,
       searchByPalletNumber,
-    },
-
-    utils: {
+      fetchMore,
       formatDate,
       getStatusColor,
       getActionIcon,
-    },
-  }), [
-    productHistoryQuery,
-    palletHistoryQuery,
-    searchByProductCode,
-    searchByPalletNumber,
-    fetchMore,
-    formatDate,
-    getStatusColor,
-    getActionIcon,
-  ]);
+    ]
+  );
 };
 
 export default useStockHistoryGraphQL;

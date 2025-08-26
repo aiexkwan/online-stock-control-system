@@ -59,10 +59,15 @@ function createRecordHistoryKey(
   mergingConfig = { timeWindowMinutes: 5, sameOperatorOnly: true, sameActionOnly: true }
 ): string {
   return JSON.stringify({
-    filters: Object.keys(filters).sort().reduce((sorted, key) => {
-      sorted[key] = filters[key];
-      return sorted;
-    }, {} as Record<string, unknown>),
+    filters: Object.keys(filters)
+      .sort()
+      .reduce(
+        (sorted, key) => {
+          sorted[key] = filters[key];
+          return sorted;
+        },
+        {} as Record<string, unknown>
+      ),
     pagination,
     mergingConfig,
   });
@@ -78,7 +83,7 @@ function buildOptimizedQuery(keys: RecordHistoryKey[]): {
 } {
   // For simplicity, we'll batch similar queries together
   // In a more complex implementation, we could optimize for overlapping date ranges
-  
+
   const baseQuery = `
     WITH operator_info AS (
       SELECT id, name, department, position, email
@@ -107,7 +112,7 @@ function buildOptimizedQuery(keys: RecordHistoryKey[]): {
   const subQueries: string[] = [];
   const allParams: unknown[] = [];
   const keyMappings: Array<{ key: string; startIndex: number; count: number }> = [];
-  
+
   let paramIndex = 1;
   let resultOffset = 0;
 
@@ -127,12 +132,22 @@ function buildOptimizedQuery(keys: RecordHistoryKey[]): {
       params.push(filters.action);
     }
 
-    if (filters.dateRange && typeof filters.dateRange === 'object' && 'start' in filters.dateRange && filters.dateRange.start) {
+    if (
+      filters.dateRange &&
+      typeof filters.dateRange === 'object' &&
+      'start' in filters.dateRange &&
+      filters.dateRange.start
+    ) {
       subQuery += ` AND rh.time >= $${paramIndex++}`;
       params.push(filters.dateRange.start);
     }
 
-    if (filters.dateRange && typeof filters.dateRange === 'object' && 'end' in filters.dateRange && filters.dateRange.end) {
+    if (
+      filters.dateRange &&
+      typeof filters.dateRange === 'object' &&
+      'end' in filters.dateRange &&
+      filters.dateRange.end
+    ) {
       subQuery += ` AND rh.time <= $${paramIndex++}`;
       params.push(filters.dateRange.end);
     }
@@ -140,7 +155,7 @@ function buildOptimizedQuery(keys: RecordHistoryKey[]): {
     // Add more filters as needed...
 
     subQuery += `) SELECT * FROM record_data WHERE row_num > ${key.pagination.offset} AND row_num <= ${key.pagination.offset + key.pagination.limit}`;
-    
+
     subQueries.push(`(${subQuery})`);
     allParams.push(...params);
 
@@ -172,13 +187,12 @@ export function createRecordHistoryDataLoader(supabase: SupabaseClient) {
       try {
         // Parse keys back to objects
         const parsedKeys = keys.map(key => JSON.parse(key) as RecordHistoryKey);
-        
+
         // Build optimized batch query
         const { query, params, keyMappings } = buildOptimizedQuery(parsedKeys);
 
         // Execute batch query
-        const { data: rawResults, error } = await supabase
-          .rpc('execute_sql', { query, params });
+        const { data: rawResults, error } = await supabase.rpc('execute_sql', { query, params });
 
         if (error) {
           console.error('RecordHistory DataLoader error:', error);
@@ -186,11 +200,13 @@ export function createRecordHistoryDataLoader(supabase: SupabaseClient) {
         }
 
         // Get all unique operator IDs for operator info lookup
-        const operatorIds = [...new Set(
-          rawResults
-            .map((r: { operator_id: number }) => r.operator_id)
-            .filter((id: number | null | undefined) => id !== null && id !== undefined)
-        )];
+        const operatorIds = [
+          ...new Set(
+            rawResults
+              .map((r: { operator_id: number }) => r.operator_id)
+              .filter((id: number | null | undefined) => id !== null && id !== undefined)
+          ),
+        ];
 
         // Fetch operator information in batch
         const { data: operatorData, error: operatorError } = await supabase
@@ -216,35 +232,37 @@ export function createRecordHistoryDataLoader(supabase: SupabaseClient) {
 
         // Distribute results back to each key
         const resultBatches: RecordHistoryBatch[] = [];
-        
+
         keyMappings.forEach(mapping => {
           const keyResults = rawResults.slice(
-            mapping.startIndex, 
+            mapping.startIndex,
             mapping.startIndex + mapping.count
           );
 
-          const records: RecordHistoryEntry[] = keyResults.map((r: {
-            uuid: string;
-            time: string;
-            operator_id?: number;
-            operator_name?: string;
-            operator_department?: string;
-            action: string;
-            plt_num?: string;
-            loc?: string;
-            remark: string;
-          }) => ({
-            id: r.uuid,
-            time: r.time,
-            operatorId: r.operator_id,
-            operatorName: r.operator_name,
-            operatorDepartment: r.operator_department,
-            action: r.action,
-            pltNum: r.plt_num,
-            location: r.loc,
-            remark: r.remark,
-            uuid: r.uuid,
-          }));
+          const records: RecordHistoryEntry[] = keyResults.map(
+            (r: {
+              uuid: string;
+              time: string;
+              operator_id?: number;
+              operator_name?: string;
+              operator_department?: string;
+              action: string;
+              plt_num?: string;
+              loc?: string;
+              remark: string;
+            }) => ({
+              id: r.uuid,
+              time: r.time,
+              operatorId: r.operator_id,
+              operatorName: r.operator_name,
+              operatorDepartment: r.operator_department,
+              action: r.action,
+              pltNum: r.plt_num,
+              location: r.loc,
+              remark: r.remark,
+              uuid: r.uuid,
+            })
+          );
 
           resultBatches.push({
             records,
@@ -266,7 +284,7 @@ export function createRecordHistoryDataLoader(supabase: SupabaseClient) {
       // DataLoader options
       maxBatchSize: 50, // Limit batch size
       cacheKeyFn: (key: string) => key, // Use the key as-is for caching
-      batchScheduleFn: (callback) => setTimeout(callback, 10), // Small delay to batch requests
+      batchScheduleFn: callback => setTimeout(callback, 10), // Small delay to batch requests
     }
   );
 
@@ -313,25 +331,24 @@ export function createRecordHistoryDataLoader(supabase: SupabaseClient) {
         const conditions = prefixes.map((_, index) => `action ILIKE $${index + 1}`).join(' OR ');
         const params = prefixes.map(prefix => `${prefix}%`);
 
-        const { data, error } = await supabase
-          .rpc('execute_sql', {
-            query: `
+        const { data, error } = await supabase.rpc('execute_sql', {
+          query: `
               SELECT DISTINCT action 
               FROM record_history 
               WHERE ${conditions}
               ORDER BY action 
               LIMIT 100
             `,
-            params
-          });
+          params,
+        });
 
         if (error) throw error;
 
         const allActions = data.map((row: { action: string }) => row.action);
 
         // Return matching actions for each prefix
-        return prefixes.map(prefix => 
-          allActions.filter((action: string) => 
+        return prefixes.map(prefix =>
+          allActions.filter((action: string) =>
             action.toLowerCase().startsWith(prefix.toLowerCase())
           )
         );
@@ -346,7 +363,7 @@ export function createRecordHistoryDataLoader(supabase: SupabaseClient) {
     recordHistoryLoader,
     operatorLoader,
     actionStatsLoader,
-    
+
     // Utility methods
     loadRecordHistory: (
       filters: Record<string, unknown> = {},
@@ -375,7 +392,11 @@ export function createRecordHistoryDataLoader(supabase: SupabaseClient) {
     clearRecordHistory: (
       filters?: Record<string, unknown>,
       pagination?: { limit: number; offset: number },
-      mergingConfig?: { timeWindowMinutes: number; sameOperatorOnly: boolean; sameActionOnly: boolean }
+      mergingConfig?: {
+        timeWindowMinutes: number;
+        sameOperatorOnly: boolean;
+        sameActionOnly: boolean;
+      }
     ) => {
       if (filters || pagination || mergingConfig) {
         const key = createRecordHistoryKey(filters, pagination, mergingConfig);
@@ -390,10 +411,7 @@ export function createRecordHistoryDataLoader(supabase: SupabaseClient) {
     },
 
     // Prime cache with data
-    primeRecordHistory: (
-      key: string,
-      data: RecordHistoryBatch
-    ) => {
+    primeRecordHistory: (key: string, data: RecordHistoryBatch) => {
       recordHistoryLoader.prime(key, data);
     },
 

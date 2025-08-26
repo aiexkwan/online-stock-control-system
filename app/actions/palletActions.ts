@@ -139,4 +139,3 @@ export async function releasePalletReservation(palletNumbers: string[]): Promise
     };
   }
 }
-

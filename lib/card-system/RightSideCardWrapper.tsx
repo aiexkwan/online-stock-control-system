@@ -1,7 +1,7 @@
 /**
  * Right Side Card Wrapper
  * 右側佈局卡片包裝器 - 自動解決雙重標題問題
- * 
+ *
  * Created: 2025-08-13
  * Purpose: Automatically handle double title issues for right-side layout cards
  */
@@ -9,7 +9,10 @@
 'use client';
 
 import React from 'react';
-import { EnhancedGlassmorphicCard, EnhancedGlassmorphicCardProps } from './EnhancedGlassmorphicCard';
+import {
+  EnhancedGlassmorphicCard,
+  EnhancedGlassmorphicCardProps,
+} from './EnhancedGlassmorphicCard';
 
 interface RightSideCardWrapperProps extends EnhancedGlassmorphicCardProps {
   /**
@@ -58,7 +61,7 @@ export function withRightSideCard<T extends object>(
   });
 
   WrappedComponent.displayName = `withRightSideCard(${Component.displayName || Component.name})`;
-  
+
   return WrappedComponent;
 }
 

@@ -42,7 +42,7 @@ class GraphQLPerformanceMonitor {
    */
   recordMetrics(metrics: GraphQLMetrics) {
     this.metrics.push(metrics);
-    
+
     // 限制記錄數量
     if (this.metrics.length > this.maxMetricsSize) {
       this.metrics.shift();
@@ -57,25 +57,31 @@ class GraphQLPerformanceMonitor {
         operation: metrics.operationName,
         duration: `${metrics.duration}ms`,
         cacheHit: metrics.cacheHit,
-        errors: metrics.errors?.length || 0
+        errors: metrics.errors?.length || 0,
       });
     }
 
     // 記錄慢查詢
     if (metrics.duration > 1000) {
-      logger.warn({
-        operation: metrics.operationName,
-        duration: metrics.duration,
-        variables: metrics.variables
-      }, 'Slow GraphQL query detected');
+      logger.warn(
+        {
+          operation: metrics.operationName,
+          duration: metrics.duration,
+          variables: metrics.variables,
+        },
+        'Slow GraphQL query detected'
+      );
     }
 
     // 記錄錯誤
     if (metrics.errors && metrics.errors.length > 0) {
-      logger.error({
-        operation: metrics.operationName,
-        errors: metrics.errors
-      }, 'GraphQL errors');
+      logger.error(
+        {
+          operation: metrics.operationName,
+          errors: metrics.errors,
+        },
+        'GraphQL errors'
+      );
     }
   }
 
@@ -96,7 +102,7 @@ class GraphQLPerformanceMonitor {
         maxDuration: 0,
         errorCount: 0,
         cacheHitRate: 0,
-        operationCounts: {}
+        operationCounts: {},
       };
     }
 
@@ -104,10 +110,13 @@ class GraphQLPerformanceMonitor {
     const errorCount = filteredMetrics.filter(m => m.errors && m.errors.length > 0).length;
     const cacheHits = filteredMetrics.filter(m => m.cacheHit).length;
 
-    const operationCounts = filteredMetrics.reduce((acc, m) => {
-      acc[m.operationName] = (acc[m.operationName] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const operationCounts = filteredMetrics.reduce(
+      (acc, m) => {
+        acc[m.operationName] = (acc[m.operationName] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     return {
       totalOperations: filteredMetrics.length,
@@ -117,7 +126,7 @@ class GraphQLPerformanceMonitor {
       maxDuration: Math.max(...durations),
       errorCount,
       cacheHitRate: (cacheHits / filteredMetrics.length) * 100,
-      operationCounts
+      operationCounts,
     };
   }
 
@@ -135,7 +144,7 @@ class GraphQLPerformanceMonitor {
   } {
     // 這裡需要與 REST API 監控集成來比較
     const graphqlStats = this.getStats('AcoOrderProgressCards');
-    
+
     // 模擬 REST API 統計（實際應從 API Monitor 獲取）
     const restStats: PerformanceStats = {
       totalOperations: 100,
@@ -145,16 +154,19 @@ class GraphQLPerformanceMonitor {
       maxDuration: 1200,
       errorCount: 5,
       cacheHitRate: 30,
-      operationCounts: { 'aco-order-progress-cards': 100 }
+      operationCounts: { 'aco-order-progress-cards': 100 },
     };
 
-    const speedImprovement = restStats.averageDuration > 0
-      ? ((restStats.averageDuration - graphqlStats.averageDuration) / restStats.averageDuration) * 100
-      : 0;
+    const speedImprovement =
+      restStats.averageDuration > 0
+        ? ((restStats.averageDuration - graphqlStats.averageDuration) / restStats.averageDuration) *
+          100
+        : 0;
 
-    const errorReduction = restStats.errorCount > 0
-      ? ((restStats.errorCount - graphqlStats.errorCount) / restStats.errorCount) * 100
-      : 0;
+    const errorReduction =
+      restStats.errorCount > 0
+        ? ((restStats.errorCount - graphqlStats.errorCount) / restStats.errorCount) * 100
+        : 0;
 
     const cacheEfficiency = graphqlStats.cacheHitRate - restStats.cacheHitRate;
 
@@ -164,8 +176,8 @@ class GraphQLPerformanceMonitor {
       comparison: {
         speedImprovement,
         errorReduction,
-        cacheEfficiency
-      }
+        cacheEfficiency,
+      },
     };
   }
 
@@ -204,13 +216,14 @@ export class PerformanceLink extends ApolloLink {
   request(operation: Operation, forward: NextLink): Observable<FetchResult> {
     const startTime = Date.now();
     const operationName = operation.operationName || 'unnamed';
-    const operationType = operation.query.definitions[0]?.kind === 'OperationDefinition'
-      ? operation.query.definitions[0].operation
-      : 'query';
+    const operationType =
+      operation.query.definitions[0]?.kind === 'OperationDefinition'
+        ? operation.query.definitions[0].operation
+        : 'query';
 
     return new Observable(observer => {
       const subscription = forward(operation).subscribe({
-        next: (result) => {
+        next: result => {
           const endTime = Date.now();
           const duration = endTime - startTime;
 
@@ -227,12 +240,12 @@ export class PerformanceLink extends ApolloLink {
             variables: operation.variables,
             errors: result.errors ? [...result.errors] : undefined,
             dataSize: JSON.stringify(result.data || {}).length,
-            cacheHit
+            cacheHit,
           });
 
           observer.next(result);
         },
-        error: (error) => {
+        error: error => {
           const endTime = Date.now();
           const duration = endTime - startTime;
 
@@ -246,14 +259,14 @@ export class PerformanceLink extends ApolloLink {
             variables: operation.variables,
             errors: [error],
             dataSize: 0,
-            cacheHit: false
+            cacheHit: false,
           });
 
           observer.error(error);
         },
         complete: () => {
           observer.complete();
-        }
+        },
       });
 
       return () => {
@@ -293,4 +306,3 @@ ${Object.entries(stats.operationCounts)
   .join('\n')}
 `;
 }
-

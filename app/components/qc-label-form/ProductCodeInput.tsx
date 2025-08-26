@@ -126,7 +126,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
           description: data.description,
           standard_qty: data.standard_qty.toString(),
           type: data.type,
-          remark: data.remark || '-'
+          remark: data.remark || '-',
         };
         onProductInfoChange(productData);
         onChange(productData.code); // 使用資料庫中的標準化代碼
@@ -182,7 +182,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
       setProductError(null);
       onProductInfoChange(null);
     }
-    
+
     // 呼叫父組件的 onBlur（如果有）
     if (onBlur) {
       onBlur();

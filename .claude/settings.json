@@ -1,0 +1,252 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(rg:*)",
+      "Bash(npm run build:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git config:*)",
+      "Bash(ls:*)",
+      "mcp__supabase__list_projects",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__execute_sql",
+      "Bash(npm install:*)",
+      "Bash(grep:*)",
+      "Bash(cat:*)",
+      "Bash(touch:*)",
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__list_extensions",
+      "Bash(rm:*)",
+      "Bash(npm run dev:*)",
+      "Bash(cp:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(true)",
+      "Bash(npx tsc:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm test)",
+      "Bash(npm test:*)",
+      "Bash(mv:*)",
+      "Bash(npm i:*)",
+      "Bash(sudo npm i -g @anthropic-ai/claude-code)",
+      "Bash(claude doctor)",
+      "Bash(npm run lint)",
+      "Bash(git stash:*)",
+      "Bash(npm run:*)",
+      "Bash(npx mcp query:*)",
+      "Bash(node:*)",
+      "Bash(npx supabase table list:*)",
+      "Bash(npx tsx:*)",
+      "Bash(env)",
+      "Bash(npm search supabase mcp)",
+      "Bash(sudo npm install:*)",
+      "Bash(pip install:*)",
+      "Bash(pip uninstall:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(pkill:*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(npx supabase db dump:*)",
+      "Bash(npx supabase db push:*)",
+      "Bash(git pull:*)",
+      "Bash(chmod:*)",
+      "Bash(./update-widgets.sh:*)",
+      "Bash(git push:*)",
+      "Bash(python3:*)",
+      "Bash(npx supabase migration:*)",
+      "Bash(npx eslint:*)",
+      "Bash(dos2unix:*)",
+      "Bash(sed:*)",
+      "Bash(awk:*)",
+      "Bash(kill:*)",
+      "WebFetch(domain:v0.dev)",
+      "WebFetch(domain:v0-futuristic-dashboard-roan-two.vercel.app)",
+      "WebFetch(domain:browsermcp.io)",
+      "WebFetch(domain:docs.browsermcp.io)",
+      "WebFetch(domain:github.com)",
+      "Bash(npm search:*)",
+      "Bash(curl:*)",
+      "Bash(npx jest:*)",
+      "Bash(npx playwright test:*)",
+      "WebFetch(domain:21st.dev)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(npx shadcn-ui@latest add calendar:*)",
+      "WebFetch(domain:www.reactbits.dev)",
+      "Bash(npx jsrepo add:*)",
+      "WebFetch(domain:reactbits.dev)",
+      "Bash(claude mcp env:*)",
+      "Bash(claude mcp:*)",
+      "Bash(npx supabase db query:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(npm uninstall:*)",
+      "WebFetch(domain:supabase.com)",
+      "mcp__supabase__search_docs",
+      "Bash(npm view:*)",
+      "Bash(npx graphql-codegen:*)",
+      "Bash(diff:*)",
+      "WebFetch(domain:aurachat.io)",
+      "Bash(md5sum:*)",
+      "Bash(for file in *.tsx)",
+      "Bash(do if ! grep -q \"UniversalWidgetCard\\|WidgetCard\" \"$file\")",
+      "Bash(then echo \"$file\")",
+      "Bash(fi done)",
+      "mcp__supabase__list_organizations",
+      "Bash(npm ls:*)",
+      "Bash(app/api/reports/grn/route.ts )",
+      "Bash(app/api/reports/export-all/route.ts )",
+      "Bash(app/api/reports/transaction/route.ts )",
+      "Bash(app/api/reports/stock-take/route.ts )",
+      "Bash(app/api/reports/order-loading/route.ts )",
+      "Bash(app/api/reports/void-pallet/route.ts )",
+      "Bash(app/api/tables/route.ts )",
+      "Bash(app/api/stock-count/scan/route.ts )",
+      "Bash(app/api/stock-count/process/route.ts )",
+      "Bash(app/api/print-label-updates/route.ts)",
+      "Bash(npx swc:*)",
+      "mcp__supabase__get_logs",
+      "Bash(jq:*)",
+      "Bash(npx prettier:*)",
+      "Bash(ANALYZE=true npm run build)",
+      "Bash(npx playwright:*)",
+      "Bash(timeout 30s npm run dev)",
+      "Bash(npx next build:*)",
+      "Bash(npx supabase db remote commit:*)",
+      "Bash(supabase db remote query:*)",
+      "Bash(for widget in \"OtherFilesListGraphQL\" \"OrdersListGraphQL\" \"ProductDistributionChartGraphQL\" \"ProductionDetailsGraphQL\" \"ProductionStatsGraphQL\" \"StaffWorkloadGraphQL\" \"StillInAwaitWidgetGraphQL\" \"TopProductsChartGraphQL\" \"WarehouseTransferListWidgetGraphQL\")",
+      "Bash(do echo \"=== $widget ===\")",
+      "Bash(for widget in \"OtherFilesListWidget\" \"OrdersListWidgetV2\" \"ProductDistributionChart\" \"StillInAwaitWidget\" \"TopProductsChart\" \"WarehouseTransferListWidget\")",
+      "Bash(do echo \"--- $widget ---\")",
+      "Bash(npx graphql-schema-linter:*)",
+      "Bash(git checkout:*)",
+      "Bash(perl:*)",
+      "Bash(bash:*)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(dotenv -e .env.codegen -- graphql-codegen:*)",
+      "Bash(npx dotenv-cli -e .env.codegen -- graphql-codegen:*)",
+      "Bash(npx dotenv -e .env.codegen -- graphql-codegen:*)",
+      "Bash(npx:*)",
+      "Bash(SUPABASE_URL=https://bbmkuiplnzvpudszrend.supabase.co SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJibWt1aXBsbnp2cHVkc3pyZW5kIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NTcxNTYwNCwiZXhwIjoyMDYxMjkxNjA0fQ.B0pQF2V0kWdrU2_2VEYXR6qxZzt2oMDvwxD7qiR3huM npx @supabase/mcp-server-supabase)",
+      "Bash(for widget in \"ProductUpdateWidgetV2\" \"UploadOrdersWidgetV2\" \"AnalysisPagedWidgetV2\" \"Folder3D\" \"GoogleDriveUploadToast\")",
+      "Bash(do echo:*)",
+      "Bash(if [ -f \"app/admin/components/dashboard/widgets/$widget.tsx\" ])",
+      "Bash(then echo \"存在\")",
+      "Bash(else echo \"不存在\")",
+      "Bash(fi)",
+      "Bash(sudo apt install:*)",
+      "Bash(timeout 15 npm run dev)",
+      "Bash(SKIP_LINT=true npm run build)",
+      "Bash(# Check each widget for ChartSkeleton usage vs custom skeleton\nwidgets=(\n\"\"StockDistributionChartV2.tsx\"\"\n\"\"WarehouseWorkLevelAreaChart.tsx\"\"\n\"\"TopProductsByQuantityWidget.tsx\"\"\n\"\"TopProductsDistributionWidget.tsx\"\"\n\"\"StaffWorkloadWidget.tsx\"\"\n\"\"TransferTimeDistributionWidget.tsx\"\"\n\"\"StockLevelHistoryChart.tsx\"\"\n\"\"InventoryOrderedAnalysisWidget.tsx\"\"\n\"\"AcoOrderProgressWidget.tsx\"\"\n\"\"AnalysisExpandableCards.tsx\"\"\n\"\"AnalysisPagedWidgetV2.tsx\"\"\n\"\"ProductDistributionChartWidget.tsx\"\"\n\"\"InjectionProductionStatsWidget.tsx\"\"\n\"\"HistoryTreeV2.tsx\"\"\n\"\"GrnReportWidgetV2.tsx\"\"\n\"\"SupplierUpdateWidgetV2.tsx\"\"\n\"\"StockTypeSelector.tsx\"\"\n)\n\necho \"\"Widget Migration Status Check:\"\"\necho \"\"==============================\"\"\nfor widget in \"\"${widgets[@]}\"\"; do\n    file=\"\"app/admin/components/dashboard/widgets/$widget\"\"\n    if [ -f \"\"$file\"\" ]; then\n        echo -n \"\"$widget: \"\"\n        if grep -q \"\"ChartSkeleton\"\" \"\"$file\"\" 2>/dev/null; then\n            echo \"\"✅ Migrated to ChartSkeleton\"\"\n        elif grep -q \"\"loadingContent\\|LoadingState\\|animate-pulse\\|Skeleton\"\" \"\"$file\"\" 2>/dev/null; then\n            echo \"\"❌ Still using custom skeleton\"\"\n        else\n            echo \"\"⚠️  No skeleton found\"\"\n        fi\n    else\n        echo \"\"$widget: ❓ File not found\"\"\n    fi\ndone)",
+      "Bash(# Check each widget for ChartSkeleton usage vs custom skeleton\necho \"\"Widget Migration Status Check:\"\"\necho \"\"==============================\"\"\n\n# Check each widget individually\necho -n \"\"1. StockDistributionChartV2.tsx: \"\"\ngrep -q \"\"ChartSkeleton\"\" \"\"app/admin/components/dashboard/widgets/StockDistributionChartV2.tsx\"\" 2>/dev/null && echo \"\"✅ Migrated to ChartSkeleton\"\" || echo \"\"❌ Still using custom skeleton\"\"\n\necho -n \"\"2. WarehouseWorkLevelAreaChart.tsx: \"\"\ngrep -q \"\"ChartSkeleton\"\" \"\"app/admin/components/dashboard/widgets/WarehouseWorkLevelAreaChart.tsx\"\" 2>/dev/null && echo \"\"✅ Migrated to ChartSkeleton\"\" || echo \"\"❌ Still using custom skeleton\"\"\n\necho -n \"\"3. TopProductsByQuantityWidget.tsx: \"\"\ngrep -q \"\"ChartSkeleton\"\" \"\"app/admin/components/dashboard/widgets/TopProductsByQuantityWidget.tsx\"\" 2>/dev/null && echo \"\"✅ Migrated to ChartSkeleton\"\" || echo \"\"❌ Still using custom skeleton\"\"\n\necho -n \"\"4. TopProductsDistributionWidget.tsx: \"\"\ngrep -q \"\"ChartSkeleton\"\" \"\"app/admin/components/dashboard/widgets/TopProductsDistributionWidget.tsx\"\" 2>/dev/null && echo \"\"✅ Migrated to ChartSkeleton\"\" || echo \"\"❌ Still using custom skeleton\"\"\n\necho -n \"\"5. StaffWorkloadWidget.tsx: \"\"\ngrep -q \"\"ChartSkeleton\"\" \"\"app/admin/components/dashboard/widgets/StaffWorkloadWidget.tsx\"\" 2>/dev/null && echo \"\"✅ Migrated to ChartSkeleton\"\" || echo \"\"❌ Still using custom skeleton\"\"\n\necho -n \"\"6. TransferTimeDistributionWidget.tsx: \"\"\ngrep -q \"\"ChartSkeleton\"\" \"\"app/admin/components/dashboard/widgets/TransferTimeDistributionWidget.tsx\"\" 2>/dev/null && echo \"\"✅ Migrated to ChartSkeleton\"\" || echo \"\"❌ Still using custom skeleton\"\"\n\necho -n \"\"7. StockLevelHistoryChart.tsx: \"\"\ngrep -q \"\"ChartSkeleton\"\" \"\"app/admin/components/dashboard/widgets/StockLevelHistoryChart.tsx\"\" 2>/dev/null && echo \"\"✅ Migrated to ChartSkeleton\"\" || echo \"\"❌ Still using custom skeleton\"\"\n\necho -n \"\"8. InventoryOrderedAnalysisWidget.tsx: \"\"\ngrep -q \"\"ChartSkeleton\"\" \"\"app/admin/components/dashboard/widgets/InventoryOrderedAnalysisWidget.tsx\"\" 2>/dev/null && echo \"\"✅ Migrated to ChartSkeleton\"\" || echo \"\"❌ Still using custom skeleton\"\"\n\necho -n \"\"9. AcoOrderProgressWidget.tsx: \"\"\ngrep -q \"\"ChartSkeleton\"\" \"\"app/admin/components/dashboard/widgets/AcoOrderProgressWidget.tsx\"\" 2>/dev/null && echo \"\"✅ Migrated to ChartSkeleton\"\" || echo \"\"❌ Still using custom skeleton\"\"\n\necho -n \"\"10. AnalysisExpandableCards.tsx: \"\"\ngrep -q \"\"ChartSkeleton\"\" \"\"app/admin/components/dashboard/widgets/AnalysisExpandableCards.tsx\"\" 2>/dev/null && echo \"\"✅ Migrated to ChartSkeleton\"\" || echo \"\"❌ Still using custom skeleton\"\"\n\necho -n \"\"11. AnalysisPagedWidgetV2.tsx: \"\"\ngrep -q \"\"ChartSkeleton\"\" \"\"app/admin/components/dashboard/widgets/AnalysisPagedWidgetV2.tsx\"\" 2>/dev/null && echo \"\"✅ Migrated to ChartSkeleton\"\" || echo \"\"❌ Still using custom skeleton\"\"\n\necho -n \"\"12. ProductDistributionChartWidget.tsx: \"\"\nif [ -f \"\"app/admin/components/dashboard/widgets/ProductDistributionChartWidget.tsx\"\" ]; then\n    grep -q \"\"ChartSkeleton\"\" \"\"app/admin/components/dashboard/widgets/ProductDistributionChartWidget.tsx\"\" 2>/dev/null && echo \"\"✅ Migrated to ChartSkeleton\"\" || echo \"\"❌ Still using custom skeleton\"\"\nelse\n    echo \"\"❓ File not found\"\"\nfi\n\necho -n \"\"13. InjectionProductionStatsWidget.tsx: \"\"\ngrep -q \"\"ChartSkeleton\"\" \"\"app/admin/components/dashboard/widgets/InjectionProductionStatsWidget.tsx\"\" 2>/dev/null && echo \"\"✅ Migrated to ChartSkeleton\"\" || echo \"\"❌ Still using custom skeleton\"\"\n\necho -n \"\"14. HistoryTreeV2.tsx: \"\"\ngrep -q \"\"ChartSkeleton\"\" \"\"app/admin/components/dashboard/widgets/HistoryTreeV2.tsx\"\" 2>/dev/null && echo \"\"✅ Migrated to ChartSkeleton\"\" || echo \"\"❌ Still using custom skeleton\"\"\n\necho -n \"\"15. GrnReportWidgetV2.tsx: \"\"\ngrep -q \"\"ChartSkeleton\"\" \"\"app/admin/components/dashboard/widgets/GrnReportWidgetV2.tsx\"\" 2>/dev/null && echo \"\"✅ Migrated to ChartSkeleton\"\" || echo \"\"❌ Still using custom skeleton\"\"\n\necho -n \"\"16. SupplierUpdateWidgetV2.tsx: \"\"\ngrep -q \"\"ChartSkeleton\"\" \"\"app/admin/components/dashboard/widgets/SupplierUpdateWidgetV2.tsx\"\" 2>/dev/null && echo \"\"✅ Migrated to ChartSkeleton\"\" || echo \"\"❌ Still using custom skeleton\"\"\n\necho -n \"\"17. StockTypeSelector.tsx: \"\"\nif [ -f \"\"app/admin/components/dashboard/widgets/StockTypeSelector.tsx\"\" ]; then\n    grep -q \"\"ChartSkeleton\"\" \"\"app/admin/components/dashboard/widgets/StockTypeSelector.tsx\"\" 2>/dev/null && echo \"\"✅ Migrated to ChartSkeleton\"\" || echo \"\"❌ Still using custom skeleton\"\"\nelse\n    echo \"\"❓ File not found\"\"\nfi)",
+      "Bash(E2E_TEST_EMAIL=\"akwan@pennineindustries.com\" E2E_TEST_PASSWORD=\"X315Y316\" npx playwright test e2e/auth/login.spec.ts --reporter=line)",
+      "Bash(source:*)",
+      "Bash(for file in ./app/admin/utils/performanceTestBatchQuery.ts ./app/admin/hooks/useWidgetPerformanceTracking.ts ./app/admin/hooks/useGraphQLFallback.ts ./app/admin/hooks/useDashboardBatchQuery.ts)",
+      "Bash(timeout 30s npm run test:e2e:debug -- --grep \"simple login\")",
+      "Bash(timeout:*)",
+      "Bash(./test-api-simple.sh:*)",
+      "Bash(PLAYWRIGHT_TEST=true npm run test:e2e)",
+      "Bash(claude --version)",
+      "Bash(claude config get installation-method)",
+      "Bash(./start-nestjs.sh:*)",
+      "Bash(tree:*)",
+      "Bash(npm start)",
+      "Bash(echo $NODE_ENV)",
+      "Bash(ss:*)",
+      "mcp__supabase__get_project",
+      "Bash(./fix_dto_properties.sh:*)",
+      "Bash(for:*)",
+      "Bash(tsx scripts/test-fixes-verification.ts:*)",
+      "Bash(git rm:*)",
+      "Bash(time curl:*)",
+      "Bash(/dev/null)",
+      "Bash(tsc --noEmit)",
+      "Bash(# 統計各類錯誤類型數量\necho \"\"=== TypeScript 錯誤類型統計 ===\"\"\necho \"\"\"\"\necho \"\"1. 各錯誤類型數量：\"\"\ncat tsc_errors.log | grep -E \"\"error TS[0-9]+\"\" | sed -E ''s/.*error (TS[0-9]+).*/\\1/'' | sort | uniq -c | sort -nr\n\necho \"\"\"\"\necho \"\"2. 錯誤總數：\"\"\ncat tsc_errors.log | grep -E \"\"error TS[0-9]+\"\" | wc -l\n\necho \"\"\"\"\necho \"\"3. 受影響文件數量：\"\"\ncat tsc_errors.log | grep -E \"\"error TS[0-9]+\"\" | cut -d''('' -f1 | sort | uniq | wc -l)",
+      "Bash(# 找出錯誤最多的前 20 個文件\necho \"\"=== 錯誤最多的文件 (前 20 個) ===\"\"\necho \"\"\"\"\ncat tsc_errors.log | grep -E \"\"error TS[0-9]+\"\" | cut -d''('' -f1 | sort | uniq -c | sort -nr | head -20\n\necho \"\"\"\"\necho \"\"=== 各錯誤類型詳細說明 ===\"\"\necho \"\"\"\"\necho \"\"主要錯誤類型：\"\"\necho \"\"- TS1240 (801個): 模塊語法錯誤 - Unable to resolve signature of expression decorator when called as an expression\"\"\necho \"\"- TS2339 (205個): 屬性不存在錯誤 - Property ''...'' does not exist on type ''...''\"\"\necho \"\"- TS2345 (132個): 參數類型不匹配 - Argument of type ''...'' is not assignable to parameter of type ''...''\"\"\necho \"\"- TS1270 (98個): 裝飾器相關錯誤 - Decorator function return type ''...'' is not assignable to type ''...''\"\"\necho \"\"- TS1241 (98個): 無法解析方法裝飾器簽名\"\"\necho \"\"- TS2322 (82個): 類型賦值錯誤 - Type ''...'' is not assignable to type ''...''\"\"\necho \"\"- TS2367 (57個): 條件比較錯誤 - This comparison appears to be unintentional\"\")",
+      "Bash(# 分析 components.backup 目錄的錯誤\necho \"\"=== components.backup 目錄錯誤分析 ===\"\"\necho \"\"\"\"\necho \"\"1. components.backup 目錄錯誤數量：\"\"\ncat tsc_errors.log | grep -E \"\"error TS[0-9]+\"\" | grep \"\"components.backup\"\" | wc -l\n\necho \"\"\"\"\necho \"\"2. components.backup 目錄受影響文件：\"\"\ncat tsc_errors.log | grep -E \"\"error TS[0-9]+\"\" | grep \"\"components.backup\"\" | cut -d''('' -f1 | sort | uniq -c | sort -nr | head -10\n\necho \"\"\"\"\necho \"\"3. components.backup 目錄主要錯誤類型：\"\"\ncat tsc_errors.log | grep -E \"\"error TS[0-9]+\"\" | grep \"\"components.backup\"\" | sed -E ''s/.*error (TS[0-9]+).*/\\1/'' | sort | uniq -c | sort -nr)",
+      "Bash(# 分析 NestJS 裝飾器相關錯誤\necho \"\"=== NestJS 裝飾器錯誤分析 ===\"\"\necho \"\"\"\"\necho \"\"1. TS1240 錯誤的具體內容（前 5 個）：\"\"\ncat tsc_errors.log | grep \"\"TS1240\"\" | head -5 | cut -d: -f3-\n\necho \"\"\"\"\necho \"\"2. 受 TS1240 影響的文件類型：\"\"\ncat tsc_errors.log | grep \"\"TS1240\"\" | cut -d''('' -f1 | grep -E \"\"\\.(controller|service|dto)\\.ts$\"\" | sed -E ''s/.*\\.(controller|service|dto)\\.ts$/\\1/'' | sort | uniq -c\n\necho \"\"\"\"\necho \"\"3. 特定文件的 TS1240 錯誤示例：\"\"\necho \"\"--- widgets.controller.ts 的錯誤：\"\"\ncat tsc_errors.log | grep \"\"widgets.controller.ts\"\" | grep \"\"TS1240\"\" | head -3)",
+      "Bash(git tag:*)",
+      "Bash(git branch:*)",
+      "Bash(typescript-generator:*)",
+      "Bash(PLAYWRIGHT_BASE_URL=http://localhost:3002 npm run test:e2e -- --grep \"Simple Login and Error Check\")",
+      "Bash(PLAYWRIGHT_BASE_URL=http://localhost:3002 npx playwright test e2e/admin/data-management-theme.spec.ts --timeout=30000)",
+      "Bash(PLAYWRIGHT_BASE_URL=http://localhost:3002 npx playwright test e2e/admin/data-management-theme.spec.ts --timeout=60000)",
+      "Bash(PLAYWRIGHT_BASE_URL=http://localhost:3002 npx playwright test e2e/admin-themes-quick-test.spec.ts --grep=\"data-management\" --timeout=30000)",
+      "Bash(PLAYWRIGHT_BASE_URL=http://localhost:3002 npx playwright test e2e/admin/data-management-theme.spec.ts --timeout=60000 --project=chromium)",
+      "Bash(PLAYWRIGHT_BASE_URL=http://localhost:3002 npx playwright test e2e/admin-themes-quick-test.spec.ts --timeout=60000 --project=chromium)",
+      "Bash(ANALYZE=false NODE_ENV=production npm run build)",
+      "Bash(tsx scripts/type-refactor-tool.ts:*)",
+      "Bash(tsx scripts/replace-any-with-types.ts:*)",
+      "Bash(supabase gen types:*)",
+      "mcp__supabase__list_migrations",
+      "Bash(osascript:*)",
+      "Bash(open:*)",
+      "Bash(pip3 list:*)",
+      "Bash(pip3 install:*)",
+      "mcp__graphiti-memory__add_memory",
+      "Bash(wc:*)",
+      "mcp__graphiti-memory__search_memory_nodes",
+      "mcp__mem0__search-memories",
+      "mcp__graphiti-memory__search_memory_facts",
+      "Bash(/Users/chun/.local/bin/uv run:*)",
+      "Bash(/Users/chun/.local/bin/uv pip list)",
+      "mcp__graphiti-memory__add_episode",
+      "mcp__context7__resolve-library-id",
+      "mcp__playwright__playwright_navigate",
+      "mcp__playwright__playwright_close"
+    ],
+    "deny": []
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": ["supabase", "sequential-thinking", "context7", "playwright"],
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/chun/Documents/PennineWMS/online-stock-control-system/scripts/hooks/user_prompt_hook.py"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/chun/Documents/PennineWMS/online-stock-control-system/scripts/hooks/save_context_hook.py"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/chun/Documents/PennineWMS/online-stock-control-system/scripts/hooks/user_prompt_hook.py"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/chun/Documents/PennineWMS/online-stock-control-system/scripts/hooks/save_context_hook.py"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/chun/Documents/PennineWMS/online-stock-control-system/scripts/hooks/save_context_hook.py"
+          }
+        ]
+      }
+    ]
+  }
+}

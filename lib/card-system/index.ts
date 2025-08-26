@@ -1,13 +1,13 @@
 /**
  * Card System - Unified Export
  * 統一卡片系統 - 純透明毛玻璃設計
- * 
+ *
  * Created: 2025-08-13
  * Purpose: Central export for the new pure transparent glassmorphic card system
  */
 
 // 核心卡片組件
-export { 
+export {
   EnhancedGlassmorphicCard,
   type EnhancedGlassmorphicCardProps,
   // 預設變體導出
@@ -20,10 +20,7 @@ export {
 } from './EnhancedGlassmorphicCard';
 
 // 右側佈局專用包裝器
-export {
-  RightSideCardWrapper,
-  withRightSideCard,
-} from './RightSideCardWrapper';
+export { RightSideCardWrapper, withRightSideCard } from './RightSideCardWrapper';
 
 // 主題和樣式系統
 export {
@@ -57,22 +54,24 @@ export {
 } from './glassmorphic-integration';
 
 // 無障礙設計
-export {
-  accessibleCardColors,
-  validateTextContrast,
-} from './accessibility-colors';
+export { accessibleCardColors, validateTextContrast } from './accessibility-colors';
 
 // 響應式設計
-export {
-  responsiveUtils,
-} from './responsive-design';
+export { responsiveUtils } from './responsive-design';
 
 // 視覺指導原則
 export { default as visualGuidelines } from './visual-guidelines';
 
 // 導入類型定義需要的模塊
 import { cardThemes } from './theme';
-import { glassmorphicThemes, glassmorphicVariants, shadowDepthSystem, cornerIndicatorSystem, iconStyleSystem, performanceOptimizations } from './glassmorphic-integration';
+import {
+  glassmorphicThemes,
+  glassmorphicVariants,
+  shadowDepthSystem,
+  cornerIndicatorSystem,
+  iconStyleSystem,
+  performanceOptimizations,
+} from './glassmorphic-integration';
 import { EnhancedGlassmorphicCard } from './EnhancedGlassmorphicCard';
 import { RightSideCardWrapper } from './RightSideCardWrapper';
 
@@ -89,16 +88,16 @@ export type IconStyle = keyof typeof iconStyleSystem;
 export const CARD_SYSTEM_CONFIG = {
   // 支持的卡片類型
   CARD_TYPES: ['operation', 'analysis', 'data', 'report', 'chart', 'special'] as const,
-  
+
   // 默認配置
   DEFAULT_THEME: 'operation' as const,
   DEFAULT_VARIANT: 'glass' as const,
   DEFAULT_PADDING: 'base' as const,
   DEFAULT_GLASSMORPHIC_VARIANT: 'default' as const,
-  
+
   // 性能級別
   PERFORMANCE_LEVELS: ['low', 'medium', 'high'] as const,
-  
+
   // 響應式斷點
   BREAKPOINTS: {
     mobile: 768,
@@ -139,14 +138,14 @@ const cardSystem = {
   // 組件
   EnhancedGlassmorphicCard,
   RightSideCardWrapper,
-  
+
   // 配置
   themes: cardThemes,
   glassmorphicThemes,
   shadowDepthSystem,
   cornerIndicatorSystem,
   iconStyleSystem,
-  
+
   // 工具
   utils: cardSystemUtils,
   config: CARD_SYSTEM_CONFIG,

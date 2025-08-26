@@ -678,10 +678,9 @@ export async function exportGrnReportMultiSheet(reportsData: GrnReportPageData[]
   // Create a sheet for each material code
   for (const data of reportsData) {
     // Use material code as sheet name (Excel limits sheet names to 31 characters)
-    const sheetName = data.material_code.length > 31 
-      ? data.material_code.substring(0, 31) 
-      : data.material_code;
-    
+    const sheetName =
+      data.material_code.length > 31 ? data.material_code.substring(0, 31) : data.material_code;
+
     const sheet = workbook.addWorksheet(sheetName);
 
     // Apply the same formatting as exportGrnReport
@@ -730,11 +729,26 @@ export async function exportGrnReportMultiSheet(reportsData: GrnReportPageData[]
 
     // === Column widths A to T
     const colWidths = [
-      5.25, 9.75, 9.1, 7, 7, 7, 7, 7, // A-H
-      8, 6.15, 6.15, 8, // I-L
-      5, 7, 5, // M-O
-      5.5, 5.5, // P-Q
-      8.25, 9.5, 9.5, // R-T
+      5.25,
+      9.75,
+      9.1,
+      7,
+      7,
+      7,
+      7,
+      7, // A-H
+      8,
+      6.15,
+      6.15,
+      8, // I-L
+      5,
+      7,
+      5, // M-O
+      5.5,
+      5.5, // P-Q
+      8.25,
+      9.5,
+      9.5, // R-T
     ];
     colWidths.forEach((w, i) => {
       sheet.getColumn(i + 1).width = w;
@@ -797,7 +811,7 @@ export async function exportGrnReportMultiSheet(reportsData: GrnReportPageData[]
       cell.alignment = center;
       cell.font = { size: 18, bold: true };
     });
-    
+
     // S2 border
     sheet.getCell('S2').border = thickBorder;
     sheet.getCell('S2').value = 'PASS';
@@ -867,12 +881,28 @@ export async function exportGrnReportMultiSheet(reportsData: GrnReportPageData[]
 
     // Pallet sub-labels
     const arrPalletLabels = [
-      'White Dry', 'White Wet', 'Chep Dry', 'Chep Wet', 'Euro Pallet',
-      'Stillage', 'Bag', 'Tote Bag', 'Octobin', 'Sunk',
+      'White Dry',
+      'White Wet',
+      'Chep Dry',
+      'Chep Wet',
+      'Euro Pallet',
+      'Stillage',
+      'Bag',
+      'Tote Bag',
+      'Octobin',
+      'Sunk',
     ];
     const arrPalletWeights = [
-      '14kg', '18kg', '26kg', '30kg', '22kg',
-      '50kg', '0kg', '6kg', '14kg', '%',
+      '14kg',
+      '18kg',
+      '26kg',
+      '30kg',
+      '22kg',
+      '50kg',
+      '0kg',
+      '6kg',
+      '14kg',
+      '%',
     ];
     for (let i = 0; i < arrPalletLabels.length; i++) {
       const cellLabel = sheet.getCell(9, 4 + i);
@@ -924,7 +954,11 @@ export async function exportGrnReportMultiSheet(reportsData: GrnReportPageData[]
     });
 
     const group3Headers: Record<string, string> = {
-      N10: 'Pass', O10: 'Fail', P10: 'Pass', Q10: 'Fail', R10: 'On Hold',
+      N10: 'Pass',
+      O10: 'Fail',
+      P10: 'Pass',
+      Q10: 'Fail',
+      R10: 'On Hold',
     };
     Object.entries(group3Headers).forEach(([range, title]) => {
       const cell = sheet.getCell(range.split(':')[0]);
@@ -1081,8 +1115,14 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
   });
 
   // 🆕 修改為顯示 Report Period
-  if (reportData && reportData.date_range && reportData.date_range.start_date && reportData.date_range.end_date) {
-    worksheet.getCell('AF3').value = `Report Period: ${reportData.date_range.start_date} to ${reportData.date_range.end_date}`;
+  if (
+    reportData &&
+    reportData.date_range &&
+    reportData.date_range.start_date &&
+    reportData.date_range.end_date
+  ) {
+    worksheet.getCell('AF3').value =
+      `Report Period: ${reportData.date_range.start_date} to ${reportData.date_range.end_date}`;
   } else {
     worksheet.getCell('AF3').value = 'Report Period: ';
   }
@@ -1165,12 +1205,15 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
 
       const transferKey = `${transfer.product_code}|${transfer.operator_name}|${actualFromLocation}|${transfer.to_location}`;
       const employeeProductKey = `${transfer.operator_name}|${transfer.product_code}`; // 🆕 員工+產品代碼組合
-      
+
       // 計算板數（按轉移路線分組）
       groupedTransfers.set(transferKey, (groupedTransfers.get(transferKey) || 0) + 1);
-      
+
       // 🆕 計算總數量（按員工+產品代碼分組）- 這才是 TTL Qty 應該顯示的數值
-      groupedQuantitiesByEmployee.set(employeeProductKey, (groupedQuantitiesByEmployee.get(employeeProductKey) || 0) + Number(transfer.quantity));
+      groupedQuantitiesByEmployee.set(
+        employeeProductKey,
+        (groupedQuantitiesByEmployee.get(employeeProductKey) || 0) + Number(transfer.quantity)
+      );
     });
 
     // 🆕 去重並填充數據
@@ -1189,13 +1232,14 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
 
       const transferKey = `${transfer.product_code}|${transfer.operator_name}|${actualFromLocation}|${transfer.to_location}`;
       const employeeProductKey = `${transfer.operator_name}|${transfer.product_code}`;
-      
+
       if (!uniqueTransfers.has(transferKey)) {
         uniqueTransfers.set(transferKey, {
           ...transfer,
           actualFromLocation, // 🆕 保存處理後的位置
           totalPallets: groupedTransfers.get(transferKey) || 1,
-          totalQuantity: groupedQuantitiesByEmployee.get(employeeProductKey) || Number(transfer.quantity), // 🆕 該員工該產品代碼的總數量
+          totalQuantity:
+            groupedQuantitiesByEmployee.get(employeeProductKey) || Number(transfer.quantity), // 🆕 該員工該產品代碼的總數量
         });
       }
     });
@@ -1229,11 +1273,11 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
 
       // 填充產品資訊
       row.getCell('Z').value = String(transfer.product_code); // Product Code
-      
+
       // TTL Qty - 顯示該員工該產品代碼的 Transfer 總數量
       row.getCell('AB').value = Number(transfer.totalQuantity); // 🆕 該員工該產品代碼的總數量
       row.getCell('AB').font = { size: 14 };
-      
+
       row.getCell('AD').value = Number(transfer.totalPallets); // 🆕 相同條件的總板數
       row.getCell('AD').font = { size: 14 };
       // AF 欄位留空（Pallet Reference No）

@@ -10,24 +10,24 @@ import { createClient } from '@/app/utils/supabase/server';
 // Backup configuration interface
 interface BackupConfiguration {
   // Backup strategy settings
-  fullBackupSchedule: string;      // Cron expression for full backups
+  fullBackupSchedule: string; // Cron expression for full backups
   incrementalBackupSchedule: string; // Cron expression for incremental backups
   retentionPolicy: {
-    daily: number;     // Days to keep daily backups
-    weekly: number;    // Weeks to keep weekly backups  
-    monthly: number;   // Months to keep monthly backups
-    yearly: number;    // Years to keep yearly backups
+    daily: number; // Days to keep daily backups
+    weekly: number; // Weeks to keep weekly backups
+    monthly: number; // Months to keep monthly backups
+    yearly: number; // Years to keep yearly backups
   };
-  
+
   // Recovery objectives
-  recoveryPointObjective: number;  // Maximum acceptable data loss in minutes
-  recoveryTimeObjective: number;   // Maximum acceptable downtime in minutes
-  
+  recoveryPointObjective: number; // Maximum acceptable data loss in minutes
+  recoveryTimeObjective: number; // Maximum acceptable downtime in minutes
+
   // Storage configuration
   backupLocation: string;
   compressionEnabled: boolean;
   encryptionEnabled: boolean;
-  
+
   // Monitoring
   enableNotifications: boolean;
   notificationEndpoints: string[];
@@ -35,24 +35,24 @@ interface BackupConfiguration {
 
 // Default production backup configuration
 export const PRODUCTION_BACKUP_CONFIG: BackupConfiguration = {
-  fullBackupSchedule: '0 2 * * 0',      // Weekly full backup at 2 AM Sunday
+  fullBackupSchedule: '0 2 * * 0', // Weekly full backup at 2 AM Sunday
   incrementalBackupSchedule: '0 2 * * 1-6', // Daily incremental at 2 AM Mon-Sat
   retentionPolicy: {
-    daily: 7,      // Keep 7 daily backups
-    weekly: 4,     // Keep 4 weekly backups
-    monthly: 12,   // Keep 12 monthly backups
-    yearly: 3      // Keep 3 yearly backups
+    daily: 7, // Keep 7 daily backups
+    weekly: 4, // Keep 4 weekly backups
+    monthly: 12, // Keep 12 monthly backups
+    yearly: 3, // Keep 3 yearly backups
   },
-  recoveryPointObjective: 15,    // 15 minutes max data loss
-  recoveryTimeObjective: 60,     // 1 hour max downtime
+  recoveryPointObjective: 15, // 15 minutes max data loss
+  recoveryTimeObjective: 60, // 1 hour max downtime
   backupLocation: process.env.BACKUP_STORAGE_PATH || '/backup',
   compressionEnabled: true,
   encryptionEnabled: true,
   enableNotifications: true,
   notificationEndpoints: [
     process.env.BACKUP_WEBHOOK_URL || '',
-    process.env.SLACK_BACKUP_WEBHOOK || ''
-  ].filter(Boolean)
+    process.env.SLACK_BACKUP_WEBHOOK || '',
+  ].filter(Boolean),
 };
 
 // Backup status interface
@@ -72,8 +72,8 @@ interface BackupStatus {
 // Recovery plan interface
 interface RecoveryPlan {
   scenario: 'corruption' | 'hardware_failure' | 'human_error' | 'disaster';
-  estimatedRTO: number;  // minutes
-  estimatedRPO: number;  // minutes
+  estimatedRTO: number; // minutes
+  estimatedRPO: number; // minutes
   steps: RecoveryStep[];
   rollbackPlan: RecoveryStep[];
   verification: VerificationStep[];
@@ -102,7 +102,7 @@ export class DatabaseBackupManager {
   private config: BackupConfiguration;
   private supabase!: Awaited<ReturnType<typeof createClient>>;
   private isInitialized: boolean = false;
-  
+
   constructor(config: BackupConfiguration = PRODUCTION_BACKUP_CONFIG) {
     this.config = config;
   }
@@ -133,7 +133,7 @@ export class DatabaseBackupManager {
       type: 'full',
       status: 'running',
       startTime,
-      recoveryPoint: startTime
+      recoveryPoint: startTime,
     };
 
     try {
@@ -156,10 +156,11 @@ export class DatabaseBackupManager {
       // Send notification
       await this.sendBackupNotification(backupStatus);
 
-      console.log(`[BackupManager] Full backup completed: ${backupId} (${(backupStatus.sizeBytes || 0) / 1024 / 1024} MB)`);
+      console.log(
+        `[BackupManager] Full backup completed: ${backupId} (${(backupStatus.sizeBytes || 0) / 1024 / 1024} MB)`
+      );
 
       return backupStatus;
-
     } catch (error) {
       backupStatus.status = 'failed';
       backupStatus.endTime = new Date();
@@ -182,14 +183,16 @@ export class DatabaseBackupManager {
 
     // Get last backup point
     const lastBackup = await this.getLastSuccessfulBackup();
-    const sinceTime = lastBackup ? new Date(lastBackup.recoveryPoint) : new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const sinceTime = lastBackup
+      ? new Date(lastBackup.recoveryPoint)
+      : new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const backupStatus: BackupStatus = {
       id: backupId,
       type: 'incremental',
       status: 'running',
       startTime,
-      recoveryPoint: startTime
+      recoveryPoint: startTime,
     };
 
     try {
@@ -208,7 +211,6 @@ export class DatabaseBackupManager {
 
       console.log(`[BackupManager] Incremental backup completed: ${backupId}`);
       return backupStatus;
-
     } catch (error) {
       backupStatus.status = 'failed';
       backupStatus.error = error instanceof Error ? error.message : 'Unknown error';
@@ -223,23 +225,24 @@ export class DatabaseBackupManager {
   /**
    * Execute full backup (implementation depends on Supabase capabilities)
    */
-  private async executeFullBackup(backupId: string): Promise<{ sizeBytes: number; location: string }> {
+  private async executeFullBackup(
+    backupId: string
+  ): Promise<{ sizeBytes: number; location: string }> {
     // In production, this would use Supabase's backup API or pg_dump
     // For demonstration, we'll simulate the backup process
-    
+
     const tables = ['record_palletinfo', 'data_code', 'stock_level', 'record_inventory'];
     let totalSize = 0;
     const backupLocation = `${this.config.backupLocation}/${backupId}`;
 
     for (const table of tables) {
       // Get table data size
-      const { data, error } = await this.supabase
-        .rpc('get_table_size', { table_name: table });
+      const { data, error } = await this.supabase.rpc('get_table_size', { table_name: table });
 
       if (error) {
         console.warn(`[BackupManager] Could not get size for table ${table}:`, error);
       } else {
-        totalSize += (typeof data === 'number' ? data : 0);
+        totalSize += typeof data === 'number' ? data : 0;
       }
 
       // In real implementation, would export table data
@@ -251,14 +254,17 @@ export class DatabaseBackupManager {
 
     return {
       sizeBytes: totalSize * 1024, // Convert KB to bytes (simulated)
-      location: backupLocation
+      location: backupLocation,
     };
   }
 
   /**
    * Execute incremental backup
    */
-  private async executeIncrementalBackup(backupId: string, sinceTime: Date): Promise<{ sizeBytes: number; location: string }> {
+  private async executeIncrementalBackup(
+    backupId: string,
+    sinceTime: Date
+  ): Promise<{ sizeBytes: number; location: string }> {
     // Backup only changes since last backup
     const { data, error } = await this.supabase
       .from('record_palletinfo')
@@ -274,7 +280,7 @@ export class DatabaseBackupManager {
 
     return {
       sizeBytes: estimatedSize,
-      location: `${this.config.backupLocation}/${backupId}`
+      location: `${this.config.backupLocation}/${backupId}`,
     };
   }
 
@@ -284,13 +290,13 @@ export class DatabaseBackupManager {
   async testBackupIntegrity(backupId: string): Promise<boolean> {
     try {
       console.log(`[BackupManager] Testing backup integrity: ${backupId}`);
-      
+
       // In production, this would:
       // 1. Verify backup file exists and is readable
       // 2. Check backup checksums
       // 3. Perform sample restore test
       // 4. Validate data consistency
-      
+
       const { data, error } = await this.supabase
         .from('backup_history')
         .select('backup_location, backup_size_mb')
@@ -306,7 +312,6 @@ export class DatabaseBackupManager {
 
       console.log(`[BackupManager] Backup integrity test passed: ${backupId}`);
       return true;
-
     } catch (error) {
       console.error(`[BackupManager] Backup integrity test failed: ${backupId}`, error);
       return false;
@@ -345,7 +350,7 @@ export class DatabaseBackupManager {
           description: 'Identify scope of corruption',
           expectedDuration: 5,
           criticalPath: true,
-          dependencies: []
+          dependencies: [],
         },
         {
           stepNumber: 2,
@@ -353,36 +358,36 @@ export class DatabaseBackupManager {
           command: 'SET default_transaction_read_only = on;',
           expectedDuration: 1,
           criticalPath: true,
-          dependencies: [1]
+          dependencies: [1],
         },
         {
           stepNumber: 3,
           description: 'Create snapshot of current state for analysis',
           expectedDuration: 3,
           criticalPath: false,
-          dependencies: [2]
+          dependencies: [2],
         },
         {
           stepNumber: 4,
           description: 'Restore from latest clean backup',
           expectedDuration: 15,
           criticalPath: true,
-          dependencies: [2]
+          dependencies: [2],
         },
         {
           stepNumber: 5,
           description: 'Apply transaction logs since backup',
           expectedDuration: 5,
           criticalPath: true,
-          dependencies: [4]
+          dependencies: [4],
         },
         {
           stepNumber: 6,
           description: 'Verify data integrity',
           expectedDuration: 3,
           criticalPath: true,
-          dependencies: [5]
-        }
+          dependencies: [5],
+        },
       ],
       rollbackPlan: [
         {
@@ -390,21 +395,22 @@ export class DatabaseBackupManager {
           description: 'Restore from previous known good state',
           expectedDuration: 20,
           criticalPath: true,
-          dependencies: []
-        }
+          dependencies: [],
+        },
       ],
       verification: [
         {
           description: 'Verify record counts match expected values',
           query: 'SELECT COUNT(*) FROM record_palletinfo WHERE generate_time >= ?',
-          expectedResult: { min: 1000, max: 10000 }
+          expectedResult: { min: 1000, max: 10000 },
         },
         {
           description: 'Check data consistency between related tables',
-          query: 'SELECT COUNT(*) FROM record_palletinfo p LEFT JOIN data_code d ON p.product_code = d.code WHERE d.code IS NULL',
-          expectedResult: 0
-        }
-      ]
+          query:
+            'SELECT COUNT(*) FROM record_palletinfo p LEFT JOIN data_code d ON p.product_code = d.code WHERE d.code IS NULL',
+          expectedResult: 0,
+        },
+      ],
     };
   }
 
@@ -415,36 +421,36 @@ export class DatabaseBackupManager {
     return {
       scenario: 'hardware_failure',
       estimatedRTO: 60, // 1 hour
-      estimatedRPO: 5,  // 5 minutes max data loss
+      estimatedRPO: 5, // 5 minutes max data loss
       steps: [
         {
           stepNumber: 1,
           description: 'Activate failover to standby server',
           expectedDuration: 10,
           criticalPath: true,
-          dependencies: []
+          dependencies: [],
         },
         {
           stepNumber: 2,
           description: 'Update DNS records to point to new server',
           expectedDuration: 15,
           criticalPath: true,
-          dependencies: [1]
+          dependencies: [1],
         },
         {
           stepNumber: 3,
           description: 'Verify all services are operational',
           expectedDuration: 10,
           criticalPath: true,
-          dependencies: [2]
+          dependencies: [2],
         },
         {
           stepNumber: 4,
           description: 'Monitor performance and adjust resources',
           expectedDuration: 15,
           criticalPath: false,
-          dependencies: [3]
-        }
+          dependencies: [3],
+        },
       ],
       rollbackPlan: [
         {
@@ -452,16 +458,17 @@ export class DatabaseBackupManager {
           description: 'Revert DNS changes',
           expectedDuration: 15,
           criticalPath: true,
-          dependencies: []
-        }
+          dependencies: [],
+        },
       ],
       verification: [
         {
           description: 'Verify all critical queries are working',
-          query: 'SELECT COUNT(*) FROM record_palletinfo WHERE generate_time >= NOW() - INTERVAL \'1 hour\'',
-          expectedResult: { min: 0 }
-        }
-      ]
+          query:
+            "SELECT COUNT(*) FROM record_palletinfo WHERE generate_time >= NOW() - INTERVAL '1 hour'",
+          expectedResult: { min: 0 },
+        },
+      ],
     };
   }
 
@@ -472,29 +479,29 @@ export class DatabaseBackupManager {
     return {
       scenario: 'human_error',
       estimatedRTO: 20, // 20 minutes
-      estimatedRPO: 0,  // No acceptable data loss
+      estimatedRPO: 0, // No acceptable data loss
       steps: [
         {
           stepNumber: 1,
           description: 'Identify the scope and time of erroneous operations',
           expectedDuration: 5,
           criticalPath: true,
-          dependencies: []
+          dependencies: [],
         },
         {
           stepNumber: 2,
           description: 'Use point-in-time recovery to restore to before error',
           expectedDuration: 10,
           criticalPath: true,
-          dependencies: [1]
+          dependencies: [1],
         },
         {
           stepNumber: 3,
           description: 'Replay valid transactions after the restore point',
           expectedDuration: 5,
           criticalPath: true,
-          dependencies: [2]
-        }
+          dependencies: [2],
+        },
       ],
       rollbackPlan: [
         {
@@ -502,16 +509,16 @@ export class DatabaseBackupManager {
           description: 'Restore from full backup if point-in-time recovery fails',
           expectedDuration: 30,
           criticalPath: true,
-          dependencies: []
-        }
+          dependencies: [],
+        },
       ],
       verification: [
         {
           description: 'Verify erroneous data is removed',
           query: 'SELECT COUNT(*) FROM record_palletinfo WHERE /* error condition */',
-          expectedResult: 0
-        }
-      ]
+          expectedResult: 0,
+        },
+      ],
     };
   }
 
@@ -522,43 +529,43 @@ export class DatabaseBackupManager {
     return {
       scenario: 'disaster',
       estimatedRTO: 240, // 4 hours
-      estimatedRPO: 60,  // 1 hour max data loss
+      estimatedRPO: 60, // 1 hour max data loss
       steps: [
         {
           stepNumber: 1,
           description: 'Assess extent of disaster and activate DR site',
           expectedDuration: 30,
           criticalPath: true,
-          dependencies: []
+          dependencies: [],
         },
         {
           stepNumber: 2,
           description: 'Set up new database server infrastructure',
           expectedDuration: 60,
           criticalPath: true,
-          dependencies: [1]
+          dependencies: [1],
         },
         {
           stepNumber: 3,
           description: 'Restore from latest backup',
           expectedDuration: 90,
           criticalPath: true,
-          dependencies: [2]
+          dependencies: [2],
         },
         {
           stepNumber: 4,
           description: 'Update application configuration for new database',
           expectedDuration: 30,
           criticalPath: true,
-          dependencies: [3]
+          dependencies: [3],
         },
         {
           stepNumber: 5,
           description: 'Full system testing and verification',
           expectedDuration: 30,
           criticalPath: true,
-          dependencies: [4]
-        }
+          dependencies: [4],
+        },
       ],
       rollbackPlan: [
         {
@@ -566,16 +573,16 @@ export class DatabaseBackupManager {
           description: 'Implement emergency read-only mode',
           expectedDuration: 15,
           criticalPath: true,
-          dependencies: []
-        }
+          dependencies: [],
+        },
       ],
       verification: [
         {
           description: 'Verify all critical business functions are operational',
           query: 'SELECT 1',
-          expectedResult: 1
-        }
-      ]
+          expectedResult: 1,
+        },
+      ],
     };
   }
 
@@ -583,14 +590,12 @@ export class DatabaseBackupManager {
    * Log backup start
    */
   private async logBackupStart(backup: BackupStatus) {
-    const { error } = await this.supabase
-      .from('backup_history')
-      .insert({
-        backup_type: backup.type,
-        start_time: backup.startTime.toISOString(),
-        status: backup.status,
-        retention_until: this.calculateRetentionDate(backup.type, backup.startTime)
-      });
+    const { error } = await this.supabase.from('backup_history').insert({
+      backup_type: backup.type,
+      start_time: backup.startTime.toISOString(),
+      status: backup.status,
+      retention_until: this.calculateRetentionDate(backup.type, backup.startTime),
+    });
 
     if (error) {
       console.error('[BackupManager] Error logging backup start:', error);
@@ -609,8 +614,9 @@ export class DatabaseBackupManager {
         backup_size_mb: backup.sizeBytes ? Math.round(backup.sizeBytes / 1024 / 1024) : null,
         backup_location: backup.location,
         error_message: backup.error,
-        recovery_point_objective_met: !backup.error && (backup.duration || 0) <= this.config.recoveryTimeObjective * 60 * 1000,
-        recovery_time_objective_met: !backup.error
+        recovery_point_objective_met:
+          !backup.error && (backup.duration || 0) <= this.config.recoveryTimeObjective * 60 * 1000,
+        recovery_time_objective_met: !backup.error,
       })
       .eq('backup_type', backup.type)
       .eq('start_time', backup.startTime.toISOString());
@@ -663,9 +669,11 @@ export class DatabaseBackupManager {
       status: backupRecord.status as 'completed',
       startTime: new Date(backupRecord.start_time),
       endTime: backupRecord.end_time ? new Date(backupRecord.end_time) : undefined,
-      sizeBytes: backupRecord.backup_size_mb ? backupRecord.backup_size_mb * 1024 * 1024 : undefined,
+      sizeBytes: backupRecord.backup_size_mb
+        ? backupRecord.backup_size_mb * 1024 * 1024
+        : undefined,
       location: backupRecord.backup_location || undefined,
-      recoveryPoint: new Date(backupRecord.start_time)
+      recoveryPoint: new Date(backupRecord.start_time),
     };
   }
 
@@ -677,12 +685,13 @@ export class DatabaseBackupManager {
       return;
     }
 
-    const message = backup.status === 'completed' 
-      ? `✅ Backup completed successfully: ${backup.id} (${backup.duration}ms)`
-      : `❌ Backup failed: ${backup.id} - ${backup.error}`;
+    const message =
+      backup.status === 'completed'
+        ? `✅ Backup completed successfully: ${backup.id} (${backup.duration}ms)`
+        : `❌ Backup failed: ${backup.id} - ${backup.error}`;
 
     console.log(`[BackupManager] Notification: ${message}`);
-    
+
     // In production, send to configured endpoints
     for (const endpoint of this.config.notificationEndpoints) {
       try {
@@ -702,7 +711,7 @@ export class DatabaseBackupManager {
     console.log('[BackupManager] Backup schedules configured:');
     console.log(`  Full backup: ${this.config.fullBackupSchedule}`);
     console.log(`  Incremental backup: ${this.config.incrementalBackupSchedule}`);
-    
+
     // For demonstration, we'll set up simple intervals
     if (process.env.NODE_ENV === 'production') {
       // Set up actual backup schedules here
@@ -738,19 +747,16 @@ export class DatabaseBackupManager {
       id: number;
       backup_location?: string | null;
     }>;
-    
+
     console.log(`[BackupManager] Cleaning up ${oldBackups.length} old backups`);
 
     for (const backup of oldBackups) {
       try {
         // In production, delete the backup files
         console.log(`[BackupManager] Would delete backup: ${backup.backup_location}`);
-        
+
         // Mark as deleted in database
-        await this.supabase
-          .from('backup_history')
-          .delete()
-          .eq('id', backup.id);
+        await this.supabase.from('backup_history').delete().eq('id', backup.id);
       } catch (error) {
         console.error(`[BackupManager] Error cleaning up backup ${backup.id}:`, error);
       }

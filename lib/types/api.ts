@@ -1,7 +1,7 @@
 /**
  * Unified API Response Types - Version 3.0
  * 結合 Version A (簡潔實用) 和 Version B (完整專業) 的優點
- * 
+ *
  * Features:
  * - Discriminated union for type safety (from Version A)
  * - Rich metadata and structured errors (from Version B)
@@ -63,19 +63,19 @@ export interface ApiError {
 /**
  * 統一 API 響應結果 - 結合兩個版本的優點
  * @template T 響應數據類型
- * 
+ *
  * Version A 的 discriminated union + Version B 的 metadata
  */
 export type ApiResult<T = unknown> =
-  | { 
-      success: true; 
-      data: T; 
+  | {
+      success: true;
+      data: T;
       message?: string;
       metadata?: ApiMetadata;
     }
-  | { 
-      success: false; 
-      error: string | ApiError;  // 支援簡單 string (backward compat) 或結構化錯誤
+  | {
+      success: false;
+      error: string | ApiError; // 支援簡單 string (backward compat) 或結構化錯誤
       details?: unknown;
       metadata?: ApiMetadata;
     };
@@ -289,7 +289,12 @@ export function isSuccessResult<T>(
  */
 export function isErrorResult(
   result: ApiResult<unknown>
-): result is { success: false; error: string | ApiError; details?: unknown; metadata?: ApiMetadata } {
+): result is {
+  success: false;
+  error: string | ApiError;
+  details?: unknown;
+  metadata?: ApiMetadata;
+} {
   return result.success === false;
 }
 
@@ -315,10 +320,12 @@ export function isErrorResponse<T>(
  * 類型守衛：檢查是否為驗證錯誤
  */
 export function isValidationError(response: ApiResult<unknown>): response is ValidationErrorResult {
-  return isErrorResponse(response) && 
-    typeof response.error === 'object' && 
+  return (
+    isErrorResponse(response) &&
+    typeof response.error === 'object' &&
     'code' in response.error &&
-    response.error.code === 'VALIDATION_ERROR';
+    response.error.code === 'VALIDATION_ERROR'
+  );
 }
 
 // ============= Helper Functions (All from Version A + Enhanced) =============
@@ -327,17 +334,23 @@ export function isValidationError(response: ApiResult<unknown>): response is Val
  * 建立成功響應
  * Backward compatible with Version A, enhanced with metadata
  */
-export function successResult<T>(data: T, message?: string, metadata?: Partial<ApiMetadata>): ApiResult<T> {
-  return { 
-    success: true, 
-    data, 
+export function successResult<T>(
+  data: T,
+  message?: string,
+  metadata?: Partial<ApiMetadata>
+): ApiResult<T> {
+  return {
+    success: true,
+    data,
     message,
-    metadata: metadata ? {
-      requestId: crypto.randomUUID(),
-      timestamp: new Date().toISOString(),
-      version: 'v1',
-      ...metadata
-    } : undefined
+    metadata: metadata
+      ? {
+          requestId: crypto.randomUUID(),
+          timestamp: new Date().toISOString(),
+          version: 'v1',
+          ...metadata,
+        }
+      : undefined,
   };
 }
 
@@ -345,17 +358,23 @@ export function successResult<T>(data: T, message?: string, metadata?: Partial<A
  * 建立錯誤響應
  * Backward compatible with Version A, supports both string and ApiError
  */
-export function errorResult(error: string | ApiError, details?: unknown, metadata?: Partial<ApiMetadata>): ApiResult<never> {
-  return { 
-    success: false, 
-    error, 
+export function errorResult(
+  error: string | ApiError,
+  details?: unknown,
+  metadata?: Partial<ApiMetadata>
+): ApiResult<never> {
+  return {
+    success: false,
+    error,
     details,
-    metadata: metadata ? {
-      requestId: crypto.randomUUID(),
-      timestamp: new Date().toISOString(),
-      version: 'v1',
-      ...metadata
-    } : undefined
+    metadata: metadata
+      ? {
+          requestId: crypto.randomUUID(),
+          timestamp: new Date().toISOString(),
+          version: 'v1',
+          ...metadata,
+        }
+      : undefined,
   };
 }
 
@@ -395,12 +414,14 @@ export function createValidationErrorResponse(
         message: err.message,
       })),
     },
-    metadata: metadata ? {
-      requestId: crypto.randomUUID(),
-      timestamp: new Date().toISOString(),
-      version: 'v1',
-      ...metadata
-    } : undefined,
+    metadata: metadata
+      ? {
+          requestId: crypto.randomUUID(),
+          timestamp: new Date().toISOString(),
+          version: 'v1',
+          ...metadata,
+        }
+      : undefined,
   };
 }
 
@@ -414,13 +435,17 @@ export function paginatedResult<T>(
   limit: number,
   metadata?: Partial<ApiMetadata>
 ): ApiResult<PaginatedResult<T>> {
-  return successResult({
-    data,
-    total,
-    page,
-    limit,
-    hasMore: page * limit < total,
-  }, undefined, metadata);
+  return successResult(
+    {
+      data,
+      total,
+      page,
+      limit,
+      hasMore: page * limit < total,
+    },
+    undefined,
+    metadata
+  );
 }
 
 /**
@@ -431,13 +456,17 @@ export function batchResult<T>(
   failed: Array<{ item: unknown; error: string }>,
   metadata?: Partial<ApiMetadata>
 ): ApiResult<BatchResult<T>> {
-  return successResult({
-    successful,
-    failed,
-    total: successful.length + failed.length,
-    successCount: successful.length,
-    failCount: failed.length,
-  }, undefined, metadata);
+  return successResult(
+    {
+      successful,
+      failed,
+      total: successful.length + failed.length,
+      successCount: successful.length,
+      failCount: failed.length,
+    },
+    undefined,
+    metadata
+  );
 }
 
 /**
@@ -461,7 +490,8 @@ export async function handleAsync<T>(
       code: 'OPERATION_ERROR',
       message: error instanceof Error ? error.message : errorMessage,
       details: error instanceof Error ? error : undefined,
-      stack: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined,
+      stack:
+        process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined,
     };
     return errorResult(apiError, undefined, {
       ...metadata,
@@ -816,7 +846,7 @@ export function createDetailedErrorResponse(
     statusCode: getHttpStatusFromErrorCode(code),
     details,
   };
-  
+
   return createErrorResponse(error, metadata);
 }
 

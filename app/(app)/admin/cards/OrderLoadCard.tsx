@@ -4,14 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { DataCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { cardTextStyles } from '@/lib/card-system/theme';
 import { useOrderLoad } from '../hooks/useOrderLoad';
-import { 
+import {
   UserIcon,
   ClipboardDocumentListIcon,
   TruckIcon,
   ChartBarIcon,
   SpeakerWaveIcon,
   DevicePhoneMobileIcon,
-  ComputerDesktopIcon
+  ComputerDesktopIcon,
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,28 +33,28 @@ export interface OrderLoadCardProps {
 // Mobile device detection hook
 const useMobileDetection = () => {
   const [isMobile, setIsMobile] = useState(false);
-  
+
   useEffect(() => {
     const checkIsMobile = () => {
       const userAgent = navigator.userAgent;
       const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
       const screenWidth = window.innerWidth;
-      
+
       setIsMobile(mobileRegex.test(userAgent) || screenWidth < 768);
     };
 
     checkIsMobile();
     window.addEventListener('resize', checkIsMobile);
-    
+
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
-  
+
   return isMobile;
 };
 
 export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
   const isMobile = useMobileDetection();
-  
+
   const {
     // State
     idNumber,
@@ -71,7 +71,7 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
     orderSearchQuery,
     showUndoDialog,
     undoItem,
-    
+
     // Functions
     setIdNumber,
     setSearchValue,
@@ -84,11 +84,11 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
     handleUndoClick,
     handleConfirmedUndo,
     refreshAllData,
-    
+
     // Refs
     idInputRef,
     searchInputRef,
-    
+
     // Sound
     soundSettings,
   } = useOrderLoad();
@@ -107,30 +107,30 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
     return (
       <div className={`h-full ${className || ''}`}>
         <DataCard
-          className="h-full overflow-hidden"
-          borderGlow="hover"
-          glassmorphicVariant="default"
-          padding="none"
+          className='h-full overflow-hidden'
+          borderGlow='hover'
+          glassmorphicVariant='default'
+          padding='none'
         >
-          <div className="flex h-full flex-col">
+          <div className='flex h-full flex-col'>
             {/* Header */}
-            <div className="border-b border-slate-700/50 p-4">
-              <div className="flex items-center justify-between">
+            <div className='border-b border-slate-700/50 p-4'>
+              <div className='flex items-center justify-between'>
                 <div>
                   <h2 className={`${cardTextStyles.title} flex items-center`}>
-                    <DevicePhoneMobileIcon className="mr-2 h-5 w-5 text-blue-400" />
+                    <DevicePhoneMobileIcon className='mr-2 h-5 w-5 text-blue-400' />
                     Order Loading
                   </h2>
                   <p className={cardTextStyles.labelSmall}>Mobile optimized interface</p>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className='flex items-center space-x-2'>
                   <SoundSettingsToggle />
                 </div>
               </div>
             </div>
 
             {/* Mobile Content */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className='flex-1 overflow-y-auto p-4'>
               <MobileOrderLoading
                 idNumber={idNumber}
                 isIdValid={isIdValid}
@@ -158,7 +158,6 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
             </div>
           </div>
         </DataCard>
-
       </div>
     );
   }
@@ -167,65 +166,65 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
   return (
     <div className={`h-full ${className || ''}`}>
       <DataCard
-        className="h-full overflow-hidden"
-        borderGlow="hover"
-        glassmorphicVariant="default"
-        padding="none"
+        className='h-full overflow-hidden'
+        borderGlow='hover'
+        glassmorphicVariant='default'
+        padding='none'
       >
-        <div className="flex h-full flex-col">
+        <div className='flex h-full flex-col'>
           {/* Header */}
-          <div className="border-b border-slate-700/50 p-4">
-            <div className="flex items-center justify-between">
+          <div className='border-b border-slate-700/50 p-4'>
+            <div className='flex items-center justify-between'>
               <div>
-                <h2 className="text-lg font-semibold text-white flex items-center">
-                  <ComputerDesktopIcon className="mr-2 h-5 w-5 text-purple-400" />
+                <h2 className='flex items-center text-lg font-semibold text-white'>
+                  <ComputerDesktopIcon className='mr-2 h-5 w-5 text-purple-400' />
                   Order Loading System
                 </h2>
-                <p className="text-sm text-slate-400">Manage order loading operations</p>
+                <p className='text-sm text-slate-400'>Manage order loading operations</p>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className='flex items-center space-x-2'>
                 <SoundSettingsToggle />
               </div>
             </div>
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 overflow-hidden">
+          <div className='flex-1 overflow-hidden'>
             {!isIdValid ? (
               // Step 1: ID Input
-              <div className="flex h-full items-center justify-center p-8">
-                <Card className="w-full max-w-md border-slate-700/50 bg-slate-800/50">
+              <div className='flex h-full items-center justify-center p-8'>
+                <Card className='w-full max-w-md border-slate-700/50 bg-slate-800/50'>
                   <CardHeader>
-                    <CardTitle className="flex items-center text-slate-200">
-                      <UserIcon className="mr-2 h-6 w-6 text-blue-400" />
+                    <CardTitle className='flex items-center text-slate-200'>
+                      <UserIcon className='mr-2 h-6 w-6 text-blue-400' />
                       Employee Login
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className='space-y-4'>
                     <div>
                       <Input
                         ref={idInputRef}
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
+                        type='text'
+                        inputMode='numeric'
+                        pattern='[0-9]*'
                         value={idNumber}
                         onChange={handleIdChange}
                         onBlur={handleIdBlur}
-                        placeholder="Enter 4-digit ID..."
+                        placeholder='Enter 4-digit ID...'
                         maxLength={4}
                         disabled={isCheckingId}
-                        className="text-center text-lg font-mono"
+                        className='text-center font-mono text-lg'
                       />
                     </div>
-                    
+
                     {isCheckingId && (
-                      <div className="flex items-center justify-center py-2">
-                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/50 border-t-transparent"></div>
-                        <span className="ml-2 text-slate-400">Verifying ID...</span>
+                      <div className='flex items-center justify-center py-2'>
+                        <div className='h-5 w-5 animate-spin rounded-full border-2 border-white/50 border-t-transparent'></div>
+                        <span className='ml-2 text-slate-400'>Verifying ID...</span>
                       </div>
                     )}
-                    
-                    <p className="text-sm text-slate-400 text-center">
+
+                    <p className='text-center text-sm text-slate-400'>
                       Please enter your 4-digit employee ID
                     </p>
                   </CardContent>
@@ -233,39 +232,43 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
               </div>
             ) : availableOrders.length === 0 ? (
               // No orders available
-              <div className="flex h-full items-center justify-center p-8">
-                <div className="text-center">
-                  <TruckIcon className="mx-auto mb-4 h-16 w-16 text-slate-600" />
-                  <h3 className="mb-2 text-xl font-semibold text-white">No Orders Available</h3>
-                  <p className="text-slate-400">No pending orders for loading at this time.</p>
+              <div className='flex h-full items-center justify-center p-8'>
+                <div className='text-center'>
+                  <TruckIcon className='mx-auto mb-4 h-16 w-16 text-slate-600' />
+                  <h3 className='mb-2 text-xl font-semibold text-white'>No Orders Available</h3>
+                  <p className='text-slate-400'>No pending orders for loading at this time.</p>
                 </div>
               </div>
             ) : !selectedOrderRef ? (
               // Step 2: Order Selection
-              <div className="flex h-full flex-col p-6">
-                <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-white flex items-center">
-                    <ClipboardDocumentListIcon className="mr-2 h-6 w-6 text-green-400" />
+              <div className='flex h-full flex-col p-6'>
+                <div className='mb-6'>
+                  <h3 className='flex items-center text-xl font-semibold text-white'>
+                    <ClipboardDocumentListIcon className='mr-2 h-6 w-6 text-green-400' />
                     Select Order to Load
                   </h3>
-                  <p className="text-sm text-slate-400 mt-1">Choose an order to begin loading operations</p>
+                  <p className='mt-1 text-sm text-slate-400'>
+                    Choose an order to begin loading operations
+                  </p>
                 </div>
 
                 {/* Order Search */}
-                <div className="mb-4">
+                <div className='mb-4'>
                   <Input
-                    type="text"
-                    placeholder="Search orders..."
+                    type='text'
+                    placeholder='Search orders...'
                     value={orderSearchQuery}
-                    onChange={(e) => setOrderSearchQuery(e.target.value)}
-                    className="max-w-md"
+                    onChange={e => setOrderSearchQuery(e.target.value)}
+                    className='max-w-md'
                   />
                 </div>
 
                 {/* Orders Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 overflow-y-auto">
+                <div className='grid flex-1 grid-cols-1 gap-4 overflow-y-auto md:grid-cols-2 lg:grid-cols-3'>
                   {availableOrders
-                    .filter(orderRef => orderRef.toLowerCase().includes(orderSearchQuery.toLowerCase()))
+                    .filter(orderRef =>
+                      orderRef.toLowerCase().includes(orderSearchQuery.toLowerCase())
+                    )
                     .map(orderRef => {
                       const summary = orderSummaries.get(orderRef);
                       const isComplete = summary && summary.percentage >= 100;
@@ -274,39 +277,39 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
                         <Card
                           key={orderRef}
                           className={cn(
-                            "cursor-pointer transition-all hover:scale-105 border-slate-700/50 bg-slate-800/50",
-                            isComplete && "border-white/50 bg-white/10"
+                            'cursor-pointer border-slate-700/50 bg-slate-800/50 transition-all hover:scale-105',
+                            isComplete && 'border-white/50 bg-white/10'
                           )}
                           onClick={() => handleOrderSelect(orderRef)}
                         >
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <h4 className="font-semibold text-cyan-300">Order #{orderRef}</h4>
+                          <CardContent className='p-4'>
+                            <div className='mb-3 flex items-center justify-between'>
+                              <h4 className='font-semibold text-cyan-300'>Order #{orderRef}</h4>
                               {isComplete && (
-                                <span className="px-2 py-1 text-xs bg-green-500/20 text-green-400 rounded-full">
+                                <span className='rounded-full bg-green-500/20 px-2 py-1 text-xs text-green-400'>
                                   ✓ Complete
                                 </span>
                               )}
                             </div>
-                            
+
                             {summary && (
-                              <div className="space-y-2">
-                                <div className="text-sm text-slate-400">
-                                  {summary.completedItems}/{summary.itemCount} items • 
+                              <div className='space-y-2'>
+                                <div className='text-sm text-slate-400'>
+                                  {summary.completedItems}/{summary.itemCount} items •
                                   {summary.loadedQty}/{summary.totalQty} units
                                 </div>
-                                <div className="w-full bg-slate-600/30 rounded-full h-2">
+                                <div className='h-2 w-full rounded-full bg-slate-600/30'>
                                   <div
                                     className={cn(
-                                      "h-full rounded-full transition-all duration-500",
-                                      isComplete 
-                                        ? "bg-gradient-to-r from-green-500 to-green-400" 
-                                        : "bg-gradient-to-r from-blue-500 to-blue-400"
+                                      'h-full rounded-full transition-all duration-500',
+                                      isComplete
+                                        ? 'bg-gradient-to-r from-green-500 to-green-400'
+                                        : 'bg-gradient-to-r from-blue-500 to-blue-400'
                                     )}
                                     style={{ width: `${summary.percentage}%` }}
                                   />
                                 </div>
-                                <div className="text-right text-sm font-medium">
+                                <div className='text-right text-sm font-medium'>
                                   {summary.percentage.toFixed(1)}%
                                 </div>
                               </div>
@@ -319,21 +322,19 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
               </div>
             ) : (
               // Step 3: Loading Interface
-              <div className="flex h-full">
+              <div className='flex h-full'>
                 {/* Left Panel - Scanning & Progress */}
-                <div className="flex-1 flex flex-col p-6 space-y-6">
+                <div className='flex flex-1 flex-col space-y-6 p-6'>
                   {/* Order Info */}
-                  <Card className="border-slate-700/50 bg-slate-800/50">
+                  <Card className='border-slate-700/50 bg-slate-800/50'>
                     <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-cyan-300">
-                          Order #{selectedOrderRef}
-                        </CardTitle>
+                      <div className='flex items-center justify-between'>
+                        <CardTitle className='text-cyan-300'>Order #{selectedOrderRef}</CardTitle>
                         <Button
-                          variant="outline"
-                          size="sm"
+                          variant='outline'
+                          size='sm'
                           onClick={handleChangeUser}
-                          className="border-slate-600 text-slate-300"
+                          className='border-slate-600 text-slate-300'
                         >
                           Change User
                         </Button>
@@ -341,25 +342,25 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
                     </CardHeader>
                     <CardContent>
                       {orderSummaries.has(selectedOrderRef) && (
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-cyan-300">
+                        <div className='grid grid-cols-3 gap-4'>
+                          <div className='text-center'>
+                            <div className='text-2xl font-bold text-cyan-300'>
                               {orderSummaries.get(selectedOrderRef)!.percentage.toFixed(0)}%
                             </div>
-                            <div className="text-sm text-slate-400">Progress</div>
+                            <div className='text-sm text-slate-400'>Progress</div>
                           </div>
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-yellow-300">
+                          <div className='text-center'>
+                            <div className='text-2xl font-bold text-yellow-300'>
                               {orderSummaries.get(selectedOrderRef)!.loadedQty}
                             </div>
-                            <div className="text-sm text-slate-400">Units Loaded</div>
+                            <div className='text-sm text-slate-400'>Units Loaded</div>
                           </div>
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-green-300">
+                          <div className='text-center'>
+                            <div className='text-2xl font-bold text-green-300'>
                               {orderSummaries.get(selectedOrderRef)!.completedItems}/
                               {orderSummaries.get(selectedOrderRef)!.itemCount}
                             </div>
-                            <div className="text-sm text-slate-400">Items Complete</div>
+                            <div className='text-sm text-slate-400'>Items Complete</div>
                           </div>
                         </div>
                       )}
@@ -367,21 +368,21 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
                   </Card>
 
                   {/* Scanning Interface */}
-                  <Card className="border-slate-700/50 bg-slate-800/50">
+                  <Card className='border-slate-700/50 bg-slate-800/50'>
                     <CardHeader>
-                      <CardTitle className="flex items-center text-slate-200">
-                        <TruckIcon className="mr-2 h-6 w-6 text-purple-400" />
+                      <CardTitle className='flex items-center text-slate-200'>
+                        <TruckIcon className='mr-2 h-6 w-6 text-purple-400' />
                         Scan to Load
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <UnifiedSearch
-                        searchType="pallet"
+                        searchType='pallet'
                         value={searchValue}
                         onChange={setSearchValue}
                         onSelect={handleSearchSelect}
                         isLoading={isSearching}
-                        placeholder="Scan or enter pallet number..."
+                        placeholder='Scan or enter pallet number...'
                         ref={searchInputRef}
                         products={[]}
                       />
@@ -390,39 +391,33 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
 
                   {/* Progress Chart */}
                   {orderData.length > 0 && (
-                    <Card className="border-slate-700/50 bg-slate-800/50">
+                    <Card className='border-slate-700/50 bg-slate-800/50'>
                       <CardHeader>
-                        <CardTitle className="flex items-center text-slate-200">
-                          <ChartBarIcon className="mr-2 h-6 w-6 text-green-400" />
+                        <CardTitle className='flex items-center text-slate-200'>
+                          <ChartBarIcon className='mr-2 h-6 w-6 text-green-400' />
                           Loading Progress
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <LoadingProgressChart 
-                          orderData={orderData} 
-                          recentLoads={recentLoads}
-                        />
+                        <LoadingProgressChart orderData={orderData} recentLoads={recentLoads} />
                       </CardContent>
                     </Card>
                   )}
 
                   {/* Batch Loading Panel */}
                   {selectedOrderRef && (
-                    <BatchLoadPanel
-                      orderRef={selectedOrderRef}
-                      onBatchComplete={refreshAllData}
-                    />
+                    <BatchLoadPanel orderRef={selectedOrderRef} onBatchComplete={refreshAllData} />
                   )}
                 </div>
 
                 {/* Right Panel - Order Details & History */}
-                <div className="w-80 border-l border-slate-700/50 p-6 space-y-4 overflow-y-auto">
+                <div className='w-80 space-y-4 overflow-y-auto border-l border-slate-700/50 p-6'>
                   {/* Order Items */}
-                  <Card className="border-slate-700/50 bg-slate-800/50">
+                  <Card className='border-slate-700/50 bg-slate-800/50'>
                     <CardHeader>
-                      <CardTitle className="text-sm text-slate-200">Order Items</CardTitle>
+                      <CardTitle className='text-sm text-slate-200'>Order Items</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3">
+                    <CardContent className='space-y-3'>
                       {orderData.map((order, index) => {
                         const totalQty = parseInt(order.product_qty || '0');
                         const loadedQty = parseInt(order.loaded_qty || '0');
@@ -433,36 +428,34 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
                           <div
                             key={index}
                             className={cn(
-                              "rounded-lg border p-3 space-y-2",
-                              isComplete 
-                                ? "border-white/30 bg-white/10" 
-                                : "border-slate-600/30 bg-slate-700/30"
+                              'space-y-2 rounded-lg border p-3',
+                              isComplete
+                                ? 'border-white/30 bg-white/10'
+                                : 'border-slate-600/30 bg-slate-700/30'
                             )}
                           >
-                            <div className="flex items-center justify-between">
-                              <span className="font-mono text-sm text-cyan-300">
+                            <div className='flex items-center justify-between'>
+                              <span className='font-mono text-sm text-cyan-300'>
                                 {order.product_code}
                               </span>
-                              <span className={cn(
-                                "text-xs font-medium",
-                                isComplete ? "text-green-400" : "text-yellow-400"
-                              )}>
+                              <span
+                                className={cn(
+                                  'text-xs font-medium',
+                                  isComplete ? 'text-green-400' : 'text-yellow-400'
+                                )}
+                              >
                                 {isComplete ? '✓' : `${percentage.toFixed(0)}%`}
                               </span>
                             </div>
-                            <p className="text-xs text-slate-300 truncate">
-                              {order.product_desc}
-                            </p>
-                            <div className="text-xs text-slate-400">
+                            <p className='truncate text-xs text-slate-300'>{order.product_desc}</p>
+                            <div className='text-xs text-slate-400'>
                               {loadedQty} / {totalQty} loaded
                             </div>
-                            <div className="w-full bg-slate-600/30 rounded-full h-1">
+                            <div className='h-1 w-full rounded-full bg-slate-600/30'>
                               <div
                                 className={cn(
-                                  "h-full rounded-full transition-all duration-500",
-                                  isComplete 
-                                    ? "bg-green-500" 
-                                    : "bg-blue-500"
+                                  'h-full rounded-full transition-all duration-500',
+                                  isComplete ? 'bg-green-500' : 'bg-blue-500'
                                 )}
                                 style={{ width: `${percentage}%` }}
                               />
@@ -475,36 +468,40 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
 
                   {/* Recent Loads */}
                   {recentLoads.length > 0 && (
-                    <Card className="border-slate-700/50 bg-slate-800/50">
+                    <Card className='border-slate-700/50 bg-slate-800/50'>
                       <CardHeader>
-                        <CardTitle className="text-sm text-slate-200">Recent Loads</CardTitle>
+                        <CardTitle className='text-sm text-slate-200'>Recent Loads</CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-2">
+                      <CardContent className='space-y-2'>
                         {recentLoads.slice(0, 8).map((load, index) => {
                           const uuid = typeof load.uuid === 'string' ? load.uuid : `load-${index}`;
-                          const palletNum = typeof load.pallet_num === 'string' ? load.pallet_num : 'Unknown';
-                          const quantity = typeof load.quantity === 'number' ? load.quantity : 'N/A';
+                          const palletNum =
+                            typeof load.pallet_num === 'string' ? load.pallet_num : 'Unknown';
+                          const quantity =
+                            typeof load.quantity === 'number' ? load.quantity : 'N/A';
 
                           return (
                             <div
                               key={uuid}
-                              className="flex items-center justify-between rounded bg-slate-700/30 p-2 text-xs"
+                              className='flex items-center justify-between rounded bg-slate-700/30 p-2 text-xs'
                             >
                               <div>
-                                <span className="font-mono text-cyan-300">{palletNum}</span>
-                                <span className="mx-1 text-slate-400">•</span>
-                                <span className="text-green-300">Qty: {quantity}</span>
+                                <span className='font-mono text-cyan-300'>{palletNum}</span>
+                                <span className='mx-1 text-slate-400'>•</span>
+                                <span className='text-green-300'>Qty: {quantity}</span>
                               </div>
                               <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleUndoClick({
-                                  ...load,
-                                  pallet_num: palletNum,
-                                  product_code: String(load.product_code || ''),
-                                  quantity: Number(load.quantity || 0),
-                                })}
-                                className="h-6 w-6 p-0 text-red-400 hover:text-red-300"
+                                variant='ghost'
+                                size='sm'
+                                onClick={() =>
+                                  handleUndoClick({
+                                    ...load,
+                                    pallet_num: palletNum,
+                                    product_code: String(load.product_code || ''),
+                                    quantity: Number(load.quantity || 0),
+                                  })
+                                }
+                                className='h-6 w-6 p-0 text-red-400 hover:text-red-300'
                               >
                                 ×
                               </Button>
@@ -523,28 +520,25 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
 
       {/* Undo Confirmation Dialog */}
       {showUndoDialog && undoItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="w-full max-w-md border-none bg-white/5 backdrop-blur-sm">
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'>
+          <Card className='w-full max-w-md border-none bg-white/5 backdrop-blur-sm'>
             <CardHeader>
-              <CardTitle className="text-slate-200">Confirm Undo</CardTitle>
+              <CardTitle className='text-slate-200'>Confirm Undo</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-slate-400 mb-4">
+              <p className='mb-4 text-slate-400'>
                 Are you sure you want to undo the loading of pallet{' '}
-                <span className="font-mono text-cyan-300">{undoItem.pallet_num}</span>?
+                <span className='font-mono text-cyan-300'>{undoItem.pallet_num}</span>?
               </p>
-              <div className="flex justify-end space-x-2">
+              <div className='flex justify-end space-x-2'>
                 <Button
-                  variant="outline"
+                  variant='outline'
                   onClick={() => setShowUndoDialog(false)}
-                  className="border-slate-600"
+                  className='border-slate-600'
                 >
                   Cancel
                 </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleConfirmedUndo}
-                >
+                <Button variant='destructive' onClick={handleConfirmedUndo}>
                   Undo Load
                 </Button>
               </div>

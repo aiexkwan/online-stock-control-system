@@ -34,10 +34,10 @@ export async function createClient() {
       },
       // 優化身份驗證配置，改善服務器操作中的會話持久性
       auth: {
-        persistSession: true,    // 改為 true 以保持服務器操作中的會話
+        persistSession: true, // 改為 true 以保持服務器操作中的會話
         autoRefreshToken: false,
-        detectSessionInUrl: false
-      }
+        detectSessionInUrl: false,
+      },
     }
   );
 }

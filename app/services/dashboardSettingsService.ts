@@ -226,5 +226,5 @@ export const dashboardSettingsService = {
       serviceInstance = new DashboardSettingsService();
     }
     return serviceInstance;
-  }
+  },
 };

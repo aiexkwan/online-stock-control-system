@@ -173,7 +173,7 @@ type Product {
   description: String!   # data_code.description (text, NOT NULL)
   colour: String!        # data_code.colour (text, NOT NULL, default: 'Black')
   type: String!          # data_code.type (text, NOT NULL, default: '-')
-  standardQty: Int!      # data_code.standard_qty (integer, NOT NULL, default: 1)
+  standardQty: Int       # data_code.standard_qty (integer, nullable to handle null values safely)
   remark: String         # data_code.remark (text, nullable, default: '-')
   
   # 關聯數據 (非數據庫欄位，透過 resolver 獲取)
@@ -2924,7 +2924,7 @@ type HistoryProduct {
   description: String!
   type: String!
   colour: String!
-  standardQty: Int!
+  standardQty: Int
 }
 
 type HistoryTreeFilters {
@@ -2980,7 +2980,7 @@ type TopProduct {
   productName: String!
   productType: String!
   colour: String!
-  standardQty: Int!
+  standardQty: Int
   totalQuantity: Int!
   locationQuantities: TopProductLocationQuantities!
   lastUpdated: DateTime!
@@ -4476,7 +4476,6 @@ type NotificationChannel {
   successRate: Float!
 }
 `;
-
 
 // Config Schema - ConfigCard with unified configuration management (OLD - replaced by imported version)
 export const configSchemaOld = `

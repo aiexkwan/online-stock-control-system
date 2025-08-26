@@ -117,44 +117,41 @@ export function useLogin() {
         // Perform login
         await unifiedAuth.signIn(email, password);
 
-        // 🔧 修復異步競爭條件：等待 Supabase session 完全建立
-        // 最多等待 3 秒，檢查 session 是否可用
-        const maxRetries = 6; // 6 * 500ms = 3 秒
-        let retryCount = 0;
-        let sessionReady = false;
-
-        while (retryCount < maxRetries && !sessionReady) {
-          try {
-            // 檢查 session 是否已經建立
+        // 🚀 優化後的異步會話驗證：減少等待時間並提升準確性
+        const sessionResult = await Promise.race([
+          // 主要邏輯：快速檢查 session
+          (async () => {
             const currentUser = await unifiedAuth.getCurrentUser();
-
             if (currentUser) {
-              // 進一步確認 session 可用性
-              const { createClient } = await import('@/app/utils/supabase/client');
-              const supabase = createClient();
-              const {
-                data: { session },
-                error,
-              } = await supabase.auth.getSession();
-
-              if (!error && session) {
-                sessionReady = true;
-                console.log('[useLogin] Session confirmed, proceeding with redirect');
-                break;
-              }
+              return { success: true, user: currentUser };
             }
-          } catch (sessionError) {
-            console.warn('[useLogin] Session check failed:', sessionError);
+
+            // 如果 getCurrentUser 沒有立即返回，進行一次 session 檢查
+            const { createClient } = await import('@/app/utils/supabase/client');
+            const supabase = createClient();
+            const {
+              data: { session },
+              error,
+            } = await supabase.auth.getSession();
+
+            if (!error && session) {
+              return { success: true, user: session.user };
+            }
+
+            return { success: false };
+          })(),
+          // 超時邏輯：最多等待 1 秒
+          new Promise<{ success: false; timeout: true }>(resolve =>
+            setTimeout(() => resolve({ success: false, timeout: true }), 1000)
+          ),
+        ]);
+
+        if (!sessionResult.success) {
+          if ('timeout' in sessionResult) {
+            console.warn('[useLogin] Session validation timed out after 1s, proceeding anyway');
+          } else {
+            console.warn('[useLogin] Session validation failed, but proceeding with login');
           }
-
-          // 等待 500ms 後重試
-          await new Promise(resolve => setTimeout(resolve, 500));
-          retryCount++;
-          console.log(`[useLogin] Waiting for session (${retryCount}/${maxRetries})...`);
-        }
-
-        if (!sessionReady) {
-          console.warn('[useLogin] Session not ready after 3 seconds, proceeding anyway');
         }
 
         // Get redirect path based on user role

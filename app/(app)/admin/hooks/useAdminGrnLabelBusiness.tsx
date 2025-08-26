@@ -30,7 +30,10 @@ import {
 } from '@/app/constants/grnConstants';
 
 // Import reducer types
-import type { GrnFormState, GrnFormAction } from '@/app/(app)/print-grnlabel/hooks/useGrnFormReducer';
+import type {
+  GrnFormState,
+  GrnFormAction,
+} from '@/app/(app)/print-grnlabel/hooks/useGrnFormReducer';
 
 // Import custom hooks
 import { useWeightCalculation } from '@/app/(app)/print-grnlabel/hooks/useWeightCalculation';
@@ -78,7 +81,7 @@ export const useAdminGrnLabelBusiness = ({
     packageType: state.packageType,
   });
   const palletGeneration = usePalletGenerationGrn();
-  
+
   // Use generic PDF generation hook
   const { printPdfs } = usePdfGeneration();
 
@@ -149,7 +152,10 @@ export const useAdminGrnLabelBusiness = ({
         // No need to pre-generate here to avoid duplication
 
         (process.env.NODE_ENV as string) !== 'production' &&
-          console.log('[useGrnLabelBusinessV3ForCard] Processing pallets:', numberOfPalletsToProcess);
+          console.log(
+            '[useGrnLabelBusinessV3ForCard] Processing pallets:',
+            numberOfPalletsToProcess
+          );
 
         // ===== 使用統一 RPC 批量處理 =====
         (process.env.NODE_ENV as string) !== 'production' &&
@@ -167,9 +173,9 @@ export const useAdminGrnLabelBusiness = ({
             supplierCode: state.supplierInfo.code,
             grossWeights,
             netWeights,
-            labelMode: state.labelMode
+            labelMode: state.labelMode,
           });
-          
+
           // 調用統一批量處理 RPC
           const batchResult = await createGrnDatabaseEntriesBatch(
             state.formData.grnNumber,
@@ -253,14 +259,14 @@ export const useAdminGrnLabelBusiness = ({
                       size: pdfBlob.size,
                       type: pdfBlob.type,
                       palletNum,
-                      seriesNum
+                      seriesNum,
                     });
-                    
+
                     // Validate PDF blob
                     if (!pdfBlob || pdfBlob.size === 0) {
                       throw new Error('Generated PDF blob is empty');
                     }
-                    
+
                     collectedPdfBlobs.push(pdfBlob);
                     actions.updateProgressStatus(i, 'Success');
                   } catch (error) {
@@ -271,15 +277,17 @@ export const useAdminGrnLabelBusiness = ({
                       grnInputData,
                       pdfProps,
                       errorMessage: error instanceof Error ? error.message : 'Unknown error',
-                      errorStack: error instanceof Error ? error.stack : undefined
+                      errorStack: error instanceof Error ? error.stack : undefined,
                     });
                     actions.updateProgressStatus(i, 'Failed');
                     anyFailure = true;
-                    
+
                     // Show error toast for individual pallet failure
-                    toast.error(`Pallet ${i + 1} (${palletNum}) PDF generation failed: ${
-                      error instanceof Error ? error.message : 'Unknown error'
-                    }`);
+                    toast.error(
+                      `Pallet ${i + 1} (${palletNum}) PDF generation failed: ${
+                        error instanceof Error ? error.message : 'Unknown error'
+                      }`
+                    );
                   }
                 } else {
                   actions.updateProgressStatus(i, 'Failed');
@@ -304,7 +312,7 @@ export const useAdminGrnLabelBusiness = ({
             if (anyFailure) {
               const successCount = collectedPdfBlobs.length;
               const failedCount = numberOfPalletsToProcess - successCount;
-              
+
               grnErrorHandler.handleWarning(
                 `Processed ${successCount} of ${numberOfPalletsToProcess} labels successfully. ${failedCount} failed.`,
                 {
@@ -313,8 +321,10 @@ export const useAdminGrnLabelBusiness = ({
                   clockNumber,
                 }
               );
-              
-              toast.warning(`${successCount} labels generated successfully, ${failedCount} failed.`);
+
+              toast.warning(
+                `${successCount} labels generated successfully, ${failedCount} failed.`
+              );
             } else {
               console.log(
                 `[useGrnLabelBusinessV3ForCard] 統一 RPC: All ${collectedPdfBlobs.length} labels generated successfully!`
@@ -331,9 +341,9 @@ export const useAdminGrnLabelBusiness = ({
                 supplierCode: state.supplierInfo.code,
                 productCode: state.productInfo.code,
                 palletNumbers,
-              }
+              },
             });
-            
+
             // Call printPdfs with correct parameters for GRN
             await printPdfs(
               collectedPdfBlobs,
@@ -363,8 +373,9 @@ export const useAdminGrnLabelBusiness = ({
           }
         } catch (batchError) {
           console.error('[useGrnLabelBusinessV3ForCard] 統一 RPC 失敗:', batchError);
-          
-          const errorMessage = batchError instanceof Error ? batchError.message : 'RPC processing failed';
+
+          const errorMessage =
+            batchError instanceof Error ? batchError.message : 'RPC processing failed';
           toast.error(`Database operation failed: ${errorMessage}`);
 
           // 直接拋出錯誤

@@ -29,18 +29,16 @@ export default class StockCountErrorBoundary extends React.Component<Props, Stat
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex h-full items-center justify-center p-6">
-          <div className="text-center">
-            <ExclamationTriangleIcon className="mx-auto mb-4 h-12 w-12 text-red-400" />
-            <h3 className="mb-2 text-lg font-semibold text-white">
-              Something went wrong
-            </h3>
-            <p className="mb-4 text-sm text-slate-400">
+        <div className='flex h-full items-center justify-center p-6'>
+          <div className='text-center'>
+            <ExclamationTriangleIcon className='mx-auto mb-4 h-12 w-12 text-red-400' />
+            <h3 className='mb-2 text-lg font-semibold text-white'>Something went wrong</h3>
+            <p className='mb-4 text-sm text-slate-400'>
               {this.state.error?.message || 'An unexpected error occurred'}
             </p>
             <button
               onClick={() => this.setState({ hasError: false })}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className='rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700'
             >
               Try Again
             </button>

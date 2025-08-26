@@ -5,24 +5,28 @@ NewPennine 倉庫管理系統的統一智能載入解決方案，提供性能感
 ## 🚀 核心特性
 
 ### 🧠 智能性能感知
+
 - **網絡狀況檢測**: 自動檢測 2G/3G/4G 網絡類型和速度
-- **設備性能評估**: 檢測設備記憶體、CPU 核心數等硬體規格  
+- **設備性能評估**: 檢測設備記憶體、CPU 核心數等硬體規格
 - **自適應載入策略**: 根據性能指標自動調整載入行為
 - **動畫性能優化**: 低端設備自動簡化或禁用動畫
 
 ### ⚡ 載入優化策略
+
 - **智能防抖**: 避免頻繁載入狀態切換，支援自適應防抖時間
 - **超時管理**: 自動載入超時檢測和重試機制
 - **最小顯示時間**: 避免載入狀態閃爍
 - **指數退避重試**: 智能重試策略，逐步增加重試間隔
 
 ### 🎨 豐富的載入組件
+
 - **AdaptiveSkeletonLoader**: 適應性骨架載入器，支援多種類型和複雜度
 - **SmartLoadingSpinner**: 智能載入旋轉器，多種動畫變體
 - **ProgressIndicator**: 進度指示器，支援線性、圓形、步驟式
 - **LoadingOverlay**: 載入遮罩，全螢幕或容器級
 
 ### 🔧 開發者友好
+
 - **統一 API**: 一致的 Hook 和組件接口
 - **TypeScript 完整支援**: 完整的類型定義和智能提示
 - **性能監控整合**: 與現有性能監控系統無縫整合
@@ -38,12 +42,9 @@ import { LoadingProvider } from '@/lib/loading';
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang='en'>
       <body>
-        <LoadingProvider
-          enablePerformanceAware={true}
-          enableAutoCleanup={true}
-        >
+        <LoadingProvider enablePerformanceAware={true} enableAutoCleanup={true}>
           {children}
         </LoadingProvider>
       </body>
@@ -59,14 +60,9 @@ export default function RootLayout({ children }) {
 import { useLoading } from '@/lib/loading';
 
 function MyComponent() {
-  const {
-    isLoading,
-    startLoading,
-    stopLoading,
-    updateProgress
-  } = useLoading({
+  const { isLoading, startLoading, stopLoading, updateProgress } = useLoading({
     id: 'my-component-loading',
-    type: 'component'
+    type: 'component',
   });
 
   const handleAction = async () => {
@@ -97,20 +93,20 @@ function MyComponent() {
 import { useLoading } from '@/lib/loading';
 
 const {
-  isLoading,        // 載入狀態
-  progress,         // 載入進度 (0-100)
-  text,             // 載入文字
-  error,            // 錯誤訊息
-  startLoading,     // 開始載入
-  stopLoading,      // 結束載入
-  updateProgress,   // 更新進度
-  updateText,       // 更新文字
-  setError         // 設置錯誤
+  isLoading, // 載入狀態
+  progress, // 載入進度 (0-100)
+  text, // 載入文字
+  error, // 錯誤訊息
+  startLoading, // 開始載入
+  stopLoading, // 結束載入
+  updateProgress, // 更新進度
+  updateText, // 更新文字
+  setError, // 設置錯誤
 } = useLoading({
   id: 'unique-id',
   type: 'component', // 'page' | 'component' | 'data' | 'api' | 'widget' | 'image' | 'background'
   priority: 'medium', // 'low' | 'medium' | 'high' | 'critical'
-  autoStart: false
+  autoStart: false,
 });
 ```
 
@@ -124,17 +120,17 @@ const {
   startLoading,
   stopLoading,
   // 智能載入特有功能
-  performanceMetrics,      // 性能指標
-  adaptiveConfig,          // 適應性配置
-  estimatedLoadTime,       // 預估載入時間
-  networkStatus,           // 網絡狀態: 'fast' | 'slow' | 'unknown'
-  deviceStatus,            // 設備狀態: 'high-end' | 'low-end' | 'unknown'
-  refreshPerformanceMetrics // 刷新性能指標
+  performanceMetrics, // 性能指標
+  adaptiveConfig, // 適應性配置
+  estimatedLoadTime, // 預估載入時間
+  networkStatus, // 網絡狀態: 'fast' | 'slow' | 'unknown'
+  deviceStatus, // 設備狀態: 'high-end' | 'low-end' | 'unknown'
+  refreshPerformanceMetrics, // 刷新性能指標
 } = useSmartLoading({
   id: 'smart-loading',
   type: 'widget',
   enablePerformanceAware: true,
-  enableNetworkMonitoring: true
+  enableNetworkMonitoring: true,
 });
 ```
 
@@ -145,21 +141,21 @@ import { useLoadingTimeout } from '@/lib/loading';
 
 const {
   isLoading,
-  startLoading,     // 返回 Promise
+  startLoading, // 返回 Promise
   stopLoading,
   // 超時管理特有功能
-  isTimedOut,       // 是否已超時
-  currentAttempt,   // 當前嘗試次數
-  maxAttempts,      // 最大嘗試次數
-  timeRemaining,    // 剩餘時間
-  retry,            // 手動重試
-  cancel           // 取消載入
+  isTimedOut, // 是否已超時
+  currentAttempt, // 當前嘗試次數
+  maxAttempts, // 最大嘗試次數
+  timeRemaining, // 剩餘時間
+  retry, // 手動重試
+  cancel, // 取消載入
 } = useLoadingTimeout({
   id: 'timeout-loading',
-  timeout: 10000,   // 10 秒超時
-  retryCount: 3,    // 重試 3 次
+  timeout: 10000, // 10 秒超時
+  retryCount: 3, // 重試 3 次
   retryDelay: 1000, // 重試間隔 1 秒
-  exponentialBackoff: true
+  exponentialBackoff: true,
 });
 ```
 
@@ -265,13 +261,13 @@ import { LoadingOverlay } from '@/lib/loading';
 import { useBatchLoading } from '@/lib/loading';
 
 const {
-  hooks,           // 個別載入 Hook 陣列
-  isAnyLoading,    // 任何一個正在載入
-  isAllLoading,    // 全部都在載入
-  totalProgress,   // 總進度
-  startAll,        // 開始全部載入
-  stopAll,         // 停止全部載入
-  errors          // 錯誤列表
+  hooks, // 個別載入 Hook 陣列
+  isAnyLoading, // 任何一個正在載入
+  isAllLoading, // 全部都在載入
+  totalProgress, // 總進度
+  startAll, // 開始全部載入
+  stopAll, // 停止全部載入
+  errors, // 錯誤列表
 } = useBatchLoading(['widget-1', 'widget-2', 'widget-3'], 'widget');
 ```
 
@@ -284,14 +280,14 @@ const loading = useLoading({
   id: 'custom-loading',
   type: 'api',
   strategy: {
-    debounceTime: 500,    // 防抖時間
-    timeout: 20000,       // 超時時間
-    minShowTime: 300,     // 最小顯示時間
-    useSkeleton: true,    // 使用骨架屏
-    showProgress: true,   // 顯示進度
-    retryCount: 5,        // 重試次數
-    performanceAware: true // 性能感知
-  }
+    debounceTime: 500, // 防抖時間
+    timeout: 20000, // 超時時間
+    minShowTime: 300, // 最小顯示時間
+    useSkeleton: true, // 使用骨架屏
+    showProgress: true, // 顯示進度
+    retryCount: 5, // 重試次數
+    performanceAware: true, // 性能感知
+  },
 });
 ```
 
@@ -302,7 +298,7 @@ import { useSmartLoading } from '@/lib/loading';
 
 const { performanceMetrics, adaptiveConfig } = useSmartLoading({
   id: 'monitored-loading',
-  type: 'component'
+  type: 'component',
 });
 
 // 性能指標包含：
@@ -357,7 +353,7 @@ if (deviceStatus === 'low-end') {
   return <SimpleSpinner />;
 } else {
   // 使用完整功能的載入組件
-  return <AdaptiveSkeletonLoader type="detailed" />;
+  return <AdaptiveSkeletonLoader type='detailed' />;
 }
 ```
 
@@ -368,18 +364,18 @@ const { isLoading, error, setError, retry } = useLoadingTimeout({
   id: 'error-handling-example',
   timeout: 10000,
   retryCount: 3,
-  onTimeout: (attempt) => {
+  onTimeout: attempt => {
     console.log(`載入超時，第 ${attempt} 次嘗試`);
   },
-  onFinalFailure: (error) => {
+  onFinalFailure: error => {
     // 記錄最終失敗
     logger.error('載入最終失敗', { error });
-  }
+  },
 });
 
 if (error) {
   return (
-    <div className="error-state">
+    <div className='error-state'>
       <p>載入失敗: {error}</p>
       <button onClick={retry}>重試</button>
     </div>
@@ -398,13 +394,13 @@ import { useLoading } from '@/lib/loading';
 function DataComponent() {
   const { startLoading, stopLoading, updateProgress } = useLoading({
     id: 'unified-api-loading',
-    type: 'api'
+    type: 'api',
   });
 
   const { data, loading, error } = useUnifiedAPI({
     restEndpoint: '/api/data',
     onCompleted: () => stopLoading(),
-    onError: () => stopLoading()
+    onError: () => stopLoading(),
   });
 
   useEffect(() => {
@@ -413,13 +409,7 @@ function DataComponent() {
     }
   }, [loading, startLoading]);
 
-  return (
-    <AdaptiveSkeletonLoader
-      type="card"
-      isLoading={loading}
-      enablePerformanceAware={true}
-    />
-  );
+  return <AdaptiveSkeletonLoader type='card' isLoading={loading} enablePerformanceAware={true} />;
 }
 ```
 
@@ -430,21 +420,13 @@ function DataComponent() {
 import { useWidgetLoading } from '@/lib/loading';
 
 function InventoryWidget({ widgetId }) {
-  const {
-    isLoading,
-    startLoading,
-    stopLoading
-  } = useWidgetLoading(widgetId, 'medium');
+  const { isLoading, startLoading, stopLoading } = useWidgetLoading(widgetId, 'medium');
 
   // Widget 載入邏輯...
 
   return (
-    <div className="widget-container">
-      <AdaptiveSkeletonLoader
-        type="chart"
-        isLoading={isLoading}
-        enablePerformanceAware={true}
-      />
+    <div className='widget-container'>
+      <AdaptiveSkeletonLoader type='chart' isLoading={isLoading} enablePerformanceAware={true} />
     </div>
   );
 }
@@ -458,14 +440,10 @@ function InventoryWidget({ widgetId }) {
 import { useSmartLoading } from '@/lib/loading';
 
 function MonitoredComponent() {
-  const {
-    performanceMetrics,
-    estimatedLoadTime,
-    adaptiveConfig
-  } = useSmartLoading({
+  const { performanceMetrics, estimatedLoadTime, adaptiveConfig } = useSmartLoading({
     id: 'monitored-component',
     enablePerformanceAware: true,
-    enableNetworkMonitoring: true
+    enableNetworkMonitoring: true,
   });
 
   // 性能數據可用於分析和優化
@@ -475,7 +453,7 @@ function MonitoredComponent() {
       analytics.track('loading_performance', {
         networkType: performanceMetrics.networkType,
         deviceMemory: performanceMetrics.deviceMemory,
-        estimatedTime: estimatedLoadTime
+        estimatedTime: estimatedLoadTime,
       });
     }
   }, [performanceMetrics, estimatedLoadTime]);

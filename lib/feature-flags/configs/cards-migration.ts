@@ -1,8 +1,8 @@
 /**
  * Cards 系統架構 Feature Flags 配置
- * 
+ *
  * 控制 REST→GraphQL API 遷移的漸進式發布
- * 
+ *
  * @created 2025-07-25
  * @updated 2025-08-12
  */
@@ -85,7 +85,6 @@ export const cardsMigrationFlags: FeatureFlag[] = [
     defaultValue: true,
     tags: ['cards', 'tables'],
   },
-
 
   {
     key: 'enable_upload_card',
@@ -203,7 +202,10 @@ export const cardsMigrationFlags: FeatureFlag[] = [
 /**
  * 檢查是否應該使用 GraphQL API
  */
-export function shouldUseGraphQL(operation: 'query' | 'mutation' | 'subscription', userId?: string): boolean {
+export function shouldUseGraphQL(
+  operation: 'query' | 'mutation' | 'subscription',
+  userId?: string
+): boolean {
   const apiFlag = cardsMigrationFlags.find(f => f.key === 'use_graphql_api');
   if (!apiFlag || apiFlag.status === FeatureFlagStatus.DISABLED) {
     return false;

@@ -3,11 +3,11 @@ import { AssistantCreateParams } from 'openai/resources/beta/assistants';
 export const MODEL_CONFIG = {
   // 使用 gpt-4o
   selectedModel: 'gpt-4o' as const,
-  
+
   // Model-specific configurations
   models: {
     'gpt-4o': {
-      useFileSearch: false,  // 改用 code_interpreter 避免 vector store 無限等待
+      useFileSearch: false, // 改用 code_interpreter 避免 vector store 無限等待
       fallbackToSimple: false,
     },
   },
@@ -29,8 +29,8 @@ function getToolsConfig() {
 export const ORDER_ANALYZER_CONFIG: AssistantCreateParams = {
   name: 'Pennine Order PDF Analyzer Enhanced',
   description: 'Expert at analyzing order PDFs with complete data extraction',
-  model: 'gpt-4o',  // 使用 gpt-4o (GPT-5 暫不支援 Assistants API)
-  tools: [{ type: 'code_interpreter' }],  // 使用 code_interpreter 避免 vector store 問題
+  model: 'gpt-4o', // 使用 gpt-4o (GPT-5 暫不支援 Assistants API)
+  tools: [{ type: 'code_interpreter' }], // 使用 code_interpreter 避免 vector store 問題
 
   instructions: `你是一個專業的 PDF 訂單資料抽取專家。
 
@@ -190,13 +190,13 @@ export const ASSISTANT_RETRY_CONFIG = {
   pollInterval: 2000, // 增加到 2 秒基礎間隔，減少 API 調用頻率
   timeout: 300000, // 保持 5 分鐘逾時，處理複雜的 2 頁 PDF
   maxCompletionTokens: 8192, // Max tokens for responses (保持不變)
-  
+
   // 動態輪詢配置 - 採用更保守的退避策略
   dynamicPolling: {
-    minInterval: 2000,   // 最小間隔 2 秒（更保守）
-    maxInterval: 30000,   // 最大間隔 30 秒（避免長時間等待）
+    minInterval: 2000, // 最小間隔 2 秒（更保守）
+    maxInterval: 30000, // 最大間隔 30 秒（避免長時間等待）
     backoffMultiplier: 1.5, // 退避乘數，逐步增加間隔
-  }
+  },
 };
 
 /**

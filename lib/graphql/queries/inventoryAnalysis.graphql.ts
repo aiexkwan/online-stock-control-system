@@ -74,7 +74,7 @@ export const INVENTORY_ANALYSIS_SUMMARY_FRAGMENT = gql`
 export const INVENTORY_ANALYSIS_WITH_FRAGMENTS = gql`
   ${PRODUCT_ANALYSIS_FRAGMENT}
   ${INVENTORY_ANALYSIS_SUMMARY_FRAGMENT}
-  
+
   query InventoryOrderAnalysisWithFragments(
     $productCodes: [String!]
     $stockTypes: [String!]

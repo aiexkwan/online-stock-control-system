@@ -47,7 +47,7 @@ export interface AdminFormData {
   acoOrderRef: string;
   acoRemain: number | null;
   availableAcoOrders: string[];
-  
+
   // Slate specific
   slateDetail: SlateDetail;
 
@@ -59,7 +59,7 @@ export interface AdminFormData {
   acoSearchLoading: boolean;
   productError: string | null;
   acoOrdersLoading: boolean;
-  
+
   // Index signature for dynamic property access
   [key: string]: unknown;
 }

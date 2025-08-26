@@ -1,9 +1,9 @@
 /**
  * useVoidPallet Hook
- * 
+ *
  * Extracted from VoidPalletCard component for better reusability and testability
  * Handles pallet voiding business logic, batch processing, and step management
- * 
+ *
  * Features:
  * - Single and batch void processing
  * - Pallet search with QR support
@@ -109,19 +109,19 @@ export const useVoidPallet = ({
   // Helper function to get inventory column mapping
   const getInventoryColumn = useCallback((location: string | null | undefined): string => {
     if (!location) return 'injection';
-    
+
     const locationMap: Record<string, string> = {
-      'Injection': 'injection',
-      'Pipeline': 'pipeline',
-      'Await': 'await',
+      Injection: 'injection',
+      Pipeline: 'pipeline',
+      Await: 'await',
       'Await Location': 'await',
-      'Folding': 'fold',
-      'Bulk': 'bulk',
+      Folding: 'fold',
+      Bulk: 'bulk',
       'Back Car Park': 'backcarpark',
-      'Damage': 'damage',
-      'Voided': 'injection' // Default for voided items
+      Damage: 'damage',
+      Voided: 'injection', // Default for voided items
     };
-    
+
     return locationMap[location] || 'injection';
   }, []);
 
@@ -137,7 +137,7 @@ export const useVoidPallet = ({
     try {
       const supabase = createClient();
       let plt_num = value;
-      
+
       // Check if input is QR Code (series format)
       if (value.includes('-') && value.length > 10) {
         const { data: seriesData, error: seriesError } = await supabase
@@ -145,13 +145,13 @@ export const useVoidPallet = ({
           .select('plt_num')
           .eq('series', value)
           .maybeSingle();
-          
+
         if (seriesError || !seriesData) {
           return null;
         }
         plt_num = seriesData.plt_num;
       }
-      
+
       // Search in record_palletinfo table
       const { data: palletData, error } = await supabase
         .from('record_palletinfo')
@@ -171,7 +171,7 @@ export const useVoidPallet = ({
         .order('time', { ascending: false })
         .limit(1)
         .single();
-        
+
       // Check if already voided
       if (locationData?.loc && ['Voided', 'Void', 'Damaged'].includes(locationData.loc)) {
         throw new Error(`Pallet ${plt_num} Already Been Voided\nPlease Check Again`);
@@ -192,11 +192,11 @@ export const useVoidPallet = ({
         description: productData?.description || 'N/A',
         type: productData?.type || 'N/A',
         plt_remark: palletData.plt_remark || '',
-        generate_time: palletData.generate_time
+        generate_time: palletData.generate_time,
       };
-      
+
       setProductDescription(pallet.description || 'N/A');
-      
+
       return pallet;
     } catch (error) {
       if (error instanceof Error && error.message.includes('Already Been Voided')) {
@@ -224,7 +224,7 @@ export const useVoidPallet = ({
       if (voidMode === 'single') {
         setFoundPallet(pallet);
         setCurrentStep('confirm');
-        
+
         // Fetch product description
         try {
           const result = await getProductByCode(pallet.product_code);
@@ -234,7 +234,7 @@ export const useVoidPallet = ({
         } catch (error) {
           console.error('Failed to fetch product description:', error);
         }
-      } 
+      }
       // Batch mode: add to list
       else {
         const newItem: BatchItem = {
@@ -248,14 +248,14 @@ export const useVoidPallet = ({
         setBatchItems(prev => [...prev, newItem]);
         setSearchValue('');
         focusSearchInput();
-        
+
         toast.success(`Pallet ${pallet.plt_num} added to batch list`);
       }
-      
+
       return {
         success: true,
         message: voidMode === 'single' ? 'Pallet found' : 'Pallet added to batch',
-        data: { pallet }
+        data: { pallet },
       };
     } catch (error) {
       if (error instanceof Error && error.message.includes('Already Been Voided')) {
@@ -271,98 +271,97 @@ export const useVoidPallet = ({
   }, [searchValue, voidMode, searchPallet, focusSearchInput]);
 
   // Internal void pallet function
-  const executeVoidPallet = useCallback(async (params: VoidParams): Promise<VoidResult> => {
-    const supabase = createClient();
-    
-    try {
-      const { palletInfo, voidReason } = params;
+  const executeVoidPallet = useCallback(
+    async (params: VoidParams): Promise<VoidResult> => {
+      const supabase = createClient();
 
-      if (!palletInfo) {
-        return {
-          success: false,
-          message: 'Pallet information is required'
-        };
-      }
+      try {
+        const { palletInfo, voidReason } = params;
 
-      // Update pallet remark to mark as voided
-      const { error: updateError } = await supabase
-        .from('record_palletinfo')
-        .update({
-          plt_remark: `${palletInfo.plt_remark || ''} | Voided: ${voidReason} at ${new Date().toISOString()}`,
-          product_qty: 0
-        })
-        .eq('plt_num', palletInfo.plt_num);
+        if (!palletInfo) {
+          return {
+            success: false,
+            message: 'Pallet information is required',
+          };
+        }
 
-      if (updateError) {
-        return {
-          success: false,
-          message: `Failed to update pallet: ${updateError.message}`
-        };
-      }
+        // Update pallet remark to mark as voided
+        const { error: updateError } = await supabase
+          .from('record_palletinfo')
+          .update({
+            plt_remark: `${palletInfo.plt_remark || ''} | Voided: ${voidReason} at ${new Date().toISOString()}`,
+            product_qty: 0,
+          })
+          .eq('plt_num', palletInfo.plt_num);
 
-      // Record history
-      const { error: historyError } = await supabase
-        .from('record_history')
-        .insert({
+        if (updateError) {
+          return {
+            success: false,
+            message: `Failed to update pallet: ${updateError.message}`,
+          };
+        }
+
+        // Record history
+        const { error: historyError } = await supabase.from('record_history').insert({
           time: new Date().toISOString(),
           id: 999, // Default user ID for batch operations
           action: 'Void Pallet',
           plt_num: palletInfo.plt_num,
           loc: 'Voided',
-          remark: `Reason: ${voidReason}`
+          remark: `Reason: ${voidReason}`,
         });
 
-      if (historyError) {
-        console.error('Failed to record history:', historyError);
+        if (historyError) {
+          console.error('Failed to record history:', historyError);
+        }
+
+        // Record void report
+        await supabase.from('report_void').insert({
+          plt_num: palletInfo.plt_num,
+          reason: voidReason,
+          damage_qty: 0,
+          time: new Date().toISOString(),
+        });
+
+        // Update inventory
+        const inventoryColumn = getInventoryColumn(palletInfo.plt_loc);
+        const inventoryUpdate = {
+          product_code: palletInfo.product_code,
+          latest_update: new Date().toISOString(),
+          plt_num: palletInfo.plt_num,
+          await: 0,
+          await_grn: 0,
+          backcarpark: 0,
+          bulk: 0,
+          fold: 0,
+          injection: 0,
+          pipeline: 0,
+          prebook: 0,
+          damage: 0,
+          uuid: crypto.randomUUID(),
+        } as InventoryInsert;
+        // Set inventory column value based on location
+        const inventoryRecord: InventoryInsert & Record<string, number | string | Date | null> = {
+          ...inventoryUpdate,
+          [inventoryColumn]: -palletInfo.product_qty,
+        };
+
+        await supabase.from('record_inventory').insert(inventoryRecord);
+
+        return {
+          success: true,
+          message: `Pallet ${palletInfo.plt_num} voided successfully`,
+        };
+      } catch (error) {
+        console.error('Error in executeVoidPallet:', error);
+        return {
+          success: false,
+          message: error instanceof Error ? error.message : 'Unknown error occurred',
+        };
       }
-
-      // Record void report
-      await supabase.from('report_void').insert({
-        plt_num: palletInfo.plt_num,
-        reason: voidReason,
-        damage_qty: 0,
-        time: new Date().toISOString()
-      });
-
-      // Update inventory
-      const inventoryColumn = getInventoryColumn(palletInfo.plt_loc);
-      const inventoryUpdate = {
-        product_code: palletInfo.product_code,
-        latest_update: new Date().toISOString(),
-        plt_num: palletInfo.plt_num,
-        await: 0,
-        await_grn: 0,
-        backcarpark: 0,
-        bulk: 0,
-        fold: 0,
-        injection: 0,
-        pipeline: 0,
-        prebook: 0,
-        damage: 0,
-        uuid: crypto.randomUUID()
-      } as InventoryInsert;
-      // Set inventory column value based on location
-      const inventoryRecord: InventoryInsert & Record<string, number | string | Date | null> = {
-        ...inventoryUpdate,
-        [inventoryColumn]: -palletInfo.product_qty
-      };
-
-      await supabase
-        .from('record_inventory')
-        .insert(inventoryRecord);
-
-      return {
-        success: true,
-        message: `Pallet ${palletInfo.plt_num} voided successfully`
-      };
-    } catch (error) {
-      console.error('Error in executeVoidPallet:', error);
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : 'Unknown error occurred'
-      };
-    }
-  }, [getInventoryColumn]);
+    },
+    [getInventoryColumn]
+  );
 
   // Handle void execution with complex database operations
   const handleVoid = useCallback(async () => {
@@ -379,39 +378,35 @@ export const useVoidPallet = ({
     }
 
     let result: VoidResult;
-    
+
     try {
       if (voidMode === 'single' && foundPallet) {
         // Single pallet void with complex database operations
         const supabase = createClient();
-        
+
         // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user?.email) {
           throw new Error('User not authenticated');
         }
-        
+
         // Get user ID from email
         const { data: userData } = await supabase
           .from('data_id')
           .select('id')
           .eq('email', user.email)
           .single();
-          
+
         const userId = userData?.id || 0;
-        
+
         // 1. Delete record_grn records
-        await supabase
-          .from('record_grn')
-          .delete()
-          .eq('plt_num', foundPallet.plt_num);
-        
+        await supabase.from('record_grn').delete().eq('plt_num', foundPallet.plt_num);
+
         // 2. Delete record_transfer records
-        await supabase
-          .from('record_transfer')
-          .delete()
-          .eq('plt_num', foundPallet.plt_num);
-        
+        await supabase.from('record_transfer').delete().eq('plt_num', foundPallet.plt_num);
+
         // 3. Insert record_inventory record (stream accounting)
         const inventoryRecord: InventoryInsert & Record<string, number | string | Date | null> = {
           product_code: foundPallet.product_code,
@@ -426,9 +421,9 @@ export const useVoidPallet = ({
           await_grn: 0,
           latest_update: new Date().toISOString(),
           uuid: crypto.randomUUID(),
-          damage: 0
+          damage: 0,
         };
-        
+
         // Set negative quantity based on current location
         if (foundPallet.plt_loc === 'Await') {
           inventoryRecord.await = -foundPallet.product_qty;
@@ -442,25 +437,23 @@ export const useVoidPallet = ({
           // Default to injection if location not recognized
           inventoryRecord.injection = -foundPallet.product_qty;
         }
-        
+
         const { error: inventoryError } = await supabase
           .from('record_inventory')
           .insert(inventoryRecord);
-          
+
         if (inventoryError) {
           console.error('Failed to insert record_inventory:', inventoryError);
         }
-        
+
         // 4. Insert report_void record
-        await supabase
-          .from('report_void')
-          .insert({
-            plt_num: foundPallet.plt_num,
-            reason: voidReason,
-            damage_qty: voidReason === 'Damaged' ? foundPallet.product_qty : 0,
-            time: new Date().toISOString()
-          });
-        
+        await supabase.from('report_void').insert({
+          plt_num: foundPallet.plt_num,
+          reason: voidReason,
+          damage_qty: voidReason === 'Damaged' ? foundPallet.product_qty : 0,
+          time: new Date().toISOString(),
+        });
+
         // 5. Update record_aco if ACO order exists
         if (foundPallet.plt_remark && foundPallet.plt_remark.includes('ACO')) {
           const acoMatch = foundPallet.plt_remark.match(/ACO-?\d+/i);
@@ -472,11 +465,11 @@ export const useVoidPallet = ({
               .eq('order_ref', parseInt(acoRef))
               .eq('code', foundPallet.product_code)
               .single();
-              
+
             if (acoData) {
               const currentFinished = acoData.finished_qty || 0;
               const newFinished = Math.max(0, currentFinished - foundPallet.product_qty);
-              
+
               await supabase
                 .from('record_aco')
                 .update({ finished_qty: newFinished })
@@ -485,7 +478,7 @@ export const useVoidPallet = ({
             }
           }
         }
-        
+
         // 6. Update stock_level
         const { data: stockData } = await supabase
           .from('stock_level')
@@ -494,31 +487,27 @@ export const useVoidPallet = ({
           .order('update_time', { ascending: false })
           .limit(1)
           .maybeSingle();
-          
+
         if (stockData) {
           const currentStock = Number(stockData.stock_level) || 0;
           const newStock = Math.max(0, currentStock - foundPallet.product_qty);
-          
-          await supabase
-            .from('stock_level')
-            .insert({
-              stock: foundPallet.product_code,
-              stock_level: newStock,
-              update_time: new Date().toISOString()
-            });
-        }
-        
-        // 7. Insert record_history record
-        await supabase
-          .from('record_history')
-          .insert({
-            id: userId || null,
-            action: 'Void Pallet',
-            plt_num: foundPallet.plt_num,
-            loc: voidReason === 'Damaged' ? 'Damaged' : 'Voided',
-            remark: voidReason || ''
+
+          await supabase.from('stock_level').insert({
+            stock: foundPallet.product_code,
+            stock_level: newStock,
+            update_time: new Date().toISOString(),
           });
-        
+        }
+
+        // 7. Insert record_history record
+        await supabase.from('record_history').insert({
+          id: userId || null,
+          action: 'Void Pallet',
+          plt_num: foundPallet.plt_num,
+          loc: voidReason === 'Damaged' ? 'Damaged' : 'Voided',
+          remark: voidReason || '',
+        });
+
         result = {
           success: true,
           message: `Pallet ${foundPallet.plt_num} voided successfully`,
@@ -530,9 +519,9 @@ export const useVoidPallet = ({
         const selectedItems = batchItems.filter(item => item.selected);
         let successCount = 0;
         let failedCount = 0;
-        
+
         const supabase = createClient();
-        
+
         for (const item of selectedItems) {
           try {
             // Get location for each pallet from record_history
@@ -543,17 +532,17 @@ export const useVoidPallet = ({
               .order('time', { ascending: false })
               .limit(1)
               .single();
-            
+
             const response = await executeVoidPallet({
               palletInfo: {
                 plt_num: item.palletId,
                 product_code: item.product_code || '',
                 product_qty: item.product_qty || 0,
                 plt_remark: '',
-                plt_loc: locationData?.loc || undefined
+                plt_loc: locationData?.loc || undefined,
               },
               voidReason: voidReason || 'Print Extra',
-              password: 'batch-void'
+              password: 'batch-void',
             });
             if (response.success) {
               successCount++;
@@ -564,7 +553,7 @@ export const useVoidPallet = ({
             failedCount++;
           }
         }
-        
+
         result = {
           success: failedCount === 0,
           message: `${successCount} pallets voided successfully${failedCount > 0 ? `, ${failedCount} failed` : ''}`,
@@ -580,37 +569,49 @@ export const useVoidPallet = ({
         remainingQty: 0,
         requiresReprint: false,
       };
-      
+
       if (onVoidError) {
         onVoidError(error instanceof Error ? error : new Error('Unknown void error'));
       }
     }
 
     setVoidResult(result);
-    
+
     if (result.success) {
       setCurrentStep('result');
       if (onVoidComplete) {
         onVoidComplete(searchValue, result);
       }
     }
-    
+
     return {
       success: result.success,
       message: result.message,
-      data: result
+      data: result,
     };
-  }, [voidMode, foundPallet, batchItems, voidReason, onVoidComplete, onVoidError, executeVoidPallet, searchValue]);
+  }, [
+    voidMode,
+    foundPallet,
+    batchItems,
+    voidReason,
+    onVoidComplete,
+    onVoidError,
+    executeVoidPallet,
+    searchValue,
+  ]);
 
   // QR scan handler
-  const handleQrScan = useCallback((qrValue: string) => {
-    setShowQrScanner(false);
-    setSearchValue(qrValue);
-    // Auto search after QR scan
-    setTimeout(() => {
-      handleSearch();
-    }, 100);
-  }, [handleSearch]);
+  const handleQrScan = useCallback(
+    (qrValue: string) => {
+      setShowQrScanner(false);
+      setSearchValue(qrValue);
+      // Auto search after QR scan
+      setTimeout(() => {
+        handleSearch();
+      }, 100);
+    },
+    [handleSearch]
+  );
 
   // Reset to search state
   const resetToSearch = useCallback(() => {
@@ -627,9 +628,7 @@ export const useVoidPallet = ({
   // Batch item management
   const toggleBatchItemSelection = useCallback((id: string) => {
     setBatchItems(items =>
-      items.map(item =>
-        item.id === id ? { ...item, selected: !item.selected } : item
-      )
+      items.map(item => (item.id === id ? { ...item, selected: !item.selected } : item))
     );
   }, []);
 
@@ -638,9 +637,7 @@ export const useVoidPallet = ({
   }, []);
 
   const selectAllBatchItems = useCallback((selected: boolean) => {
-    setBatchItems(items =>
-      items.map(item => ({ ...item, selected }))
-    );
+    setBatchItems(items => items.map(item => ({ ...item, selected })));
   }, []);
 
   // State object

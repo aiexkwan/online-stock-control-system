@@ -2,7 +2,7 @@
  * ProgressIndicator Component
  * Generic progress indicator with multiple display modes
  * Extracted from UploadCenterCard progress logic
- * 
+ *
  * Features:
  * - Linear progress bar with percentage
  * - Circular progress indicator
@@ -86,7 +86,7 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
 }) => {
   const clampedValue = Math.min(Math.max(value, 0), 100);
   const StatusIcon = statusIcons[status];
-  
+
   const getSizeClasses = () => {
     switch (size) {
       case 'sm':
@@ -126,40 +126,37 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
     return (
       <div className={cn('flex flex-col items-center gap-2', className)}>
         <div className={cn('relative', sizeClasses.circular)}>
-          <svg
-            className="transform -rotate-90 w-full h-full"
-            viewBox="0 0 36 36"
-          >
+          <svg className='h-full w-full -rotate-90 transform' viewBox='0 0 36 36'>
             {/* Background circle */}
             <circle
-              cx="18"
-              cy="18"
-              r="16"
-              fill="transparent"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="text-gray-300 dark:text-gray-600"
+              cx='18'
+              cy='18'
+              r='16'
+              fill='transparent'
+              stroke='currentColor'
+              strokeWidth='2'
+              className='text-gray-300 dark:text-gray-600'
             />
             {/* Progress circle */}
             <circle
-              cx="18"
-              cy="18"
-              r="16"
-              fill="transparent"
-              stroke="currentColor"
-              strokeWidth="2"
+              cx='18'
+              cy='18'
+              r='16'
+              fill='transparent'
+              stroke='currentColor'
+              strokeWidth='2'
               strokeDasharray={strokeDasharray}
               strokeDashoffset={strokeDashoffset}
               className={cn(
                 progressColors[color],
                 animated && 'transition-all duration-300 ease-out'
               )}
-              strokeLinecap="round"
+              strokeLinecap='round'
             />
           </svg>
-          
+
           {/* Center content */}
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className='absolute inset-0 flex items-center justify-center'>
             {showIcon && status !== 'idle' ? (
               <StatusIcon
                 className={cn(
@@ -175,9 +172,9 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
             ) : null}
           </div>
         </div>
-        
+
         {label && (
-          <div className="text-center">
+          <div className='text-center'>
             <div className={cn('font-medium', sizeClasses.text)}>{label}</div>
             {description && (
               <div className={cn('text-gray-500 dark:text-gray-400', sizeClasses.text)}>
@@ -203,14 +200,10 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
           />
         )}
         {showPercent && (
-          <span className={cn('font-medium', sizeClasses.text)}>
-            {Math.round(clampedValue)}%
-          </span>
+          <span className={cn('font-medium', sizeClasses.text)}>{Math.round(clampedValue)}%</span>
         )}
         {label && (
-          <span className={cn('text-gray-600 dark:text-gray-300', sizeClasses.text)}>
-            {label}
-          </span>
+          <span className={cn('text-gray-600 dark:text-gray-300', sizeClasses.text)}>{label}</span>
         )}
       </div>
     );
@@ -221,8 +214,8 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
     <div className={cn('w-full space-y-2', sizeClasses.container, className)}>
       {/* Header */}
       {(label || description || showPercent) && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className='flex items-center justify-between'>
+          <div className='flex items-center gap-2'>
             {showIcon && (
               <StatusIcon
                 className={cn(
@@ -232,9 +225,7 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
                 )}
               />
             )}
-            {label && (
-              <span className={cn('font-medium', sizeClasses.text)}>{label}</span>
-            )}
+            {label && <span className={cn('font-medium', sizeClasses.text)}>{label}</span>}
           </div>
           {showPercent && (
             <span className={cn('font-medium tabular-nums', sizeClasses.text)}>
@@ -243,12 +234,14 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
           )}
         </div>
       )}
-      
+
       {/* Progress bar */}
-      <div className={cn(
-        'w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden',
-        sizeClasses.height
-      )}>
+      <div
+        className={cn(
+          'w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700',
+          sizeClasses.height
+        )}
+      >
         <div
           className={cn(
             'h-full rounded-full transition-all duration-300 ease-out',
@@ -258,12 +251,10 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
           style={{ width: `${clampedValue}%` }}
         />
       </div>
-      
+
       {/* Description */}
       {description && (
-        <p className={cn('text-gray-500 dark:text-gray-400', sizeClasses.text)}>
-          {description}
-        </p>
+        <p className={cn('text-gray-500 dark:text-gray-400', sizeClasses.text)}>{description}</p>
       )}
     </div>
   );

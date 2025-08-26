@@ -3,9 +3,11 @@
 ## 執行摘要
 
 ### 業務價值
+
 StockTransferCard 組件是倉庫管理系統的核心功能模組，負責處理庫存在不同位置間的實時轉移。該組件每日處理數千筆交易，確保庫存數據的準確性和可追溯性。
 
 ### 關鍵能力
+
 - **實時庫存轉移**：支援即時更新庫存位置
 - **多目的地管理**：預設 9 個轉移目的地
 - **操作員驗證**：4 位工號實時驗證
@@ -14,6 +16,7 @@ StockTransferCard 組件是倉庫管理系統的核心功能模組，負責處�
 - **錯誤處理**：多層次錯誤驗證和恢復機制
 
 ### 技術亮點
+
 - React 18.3.1 與 Next.js 15.4.4
 - TypeScript 5.8.3 類型安全
 - Supabase 實時數據庫
@@ -23,6 +26,7 @@ StockTransferCard 組件是倉庫管理系統的核心功能模組，負責處�
 ## 組件架構概覽
 
 ### 系統上下文
+
 ```
 ┌─────────────────────────────────────────────┐
 │              前端應用層                       │
@@ -58,6 +62,7 @@ StockTransferCard 組件是倉庫管理系統的核心功能模組，負責處�
 ```
 
 ### 文件結構
+
 ```
 app/
 ├── (app)/
@@ -76,17 +81,19 @@ app/
 ```
 
 ### 核心技術棧
-| 層級 | 技術 | 版本 | 用途 |
-|------|------|------|------|
-| 前端框架 | React | 18.3.1 | UI 渲染 |
-| 元框架 | Next.js | 15.4.4 | 全棧應用 |
-| 類型系統 | TypeScript | 5.8.3 | 類型安全 |
-| 數據庫 | Supabase | 2.29.0 | 後端服務 |
-| 狀態管理 | React Hooks | - | 本地狀態 |
-| UI 組件 | shadcn/ui | - | 界面組件 |
-| 樣式 | Tailwind CSS | 3.4.1 | 樣式系統 |
+
+| 層級     | 技術         | 版本   | 用途     |
+| -------- | ------------ | ------ | -------- |
+| 前端框架 | React        | 18.3.1 | UI 渲染  |
+| 元框架   | Next.js      | 15.4.4 | 全棧應用 |
+| 類型系統 | TypeScript   | 5.8.3  | 類型安全 |
+| 數據庫   | Supabase     | 2.29.0 | 後端服務 |
+| 狀態管理 | React Hooks  | -      | 本地狀態 |
+| UI 組件  | shadcn/ui    | -      | 界面組件 |
+| 樣式     | Tailwind CSS | 3.4.1  | 樣式系統 |
 
 ### 設計模式
+
 1. **關注點分離**：UI、業務邏輯、數據訪問層分離
 2. **自定義 Hooks**：封裝複雜的業務邏輯
 3. **Server Actions**：類型安全的服務器端操作
@@ -96,6 +103,7 @@ app/
 ## 詳細工作流分析
 
 ### 完整轉移流程
+
 ```
 開始
   │
@@ -149,6 +157,7 @@ app/
 ```
 
 ### 用戶交互序列
+
 ```
 用戶                組件              Server Actions         數據庫
  │                  │                      │                  │
@@ -176,6 +185,7 @@ app/
 ```
 
 ### 狀態管理架構
+
 ```typescript
 // 組件狀態結構
 interface StockTransferState {
@@ -187,7 +197,7 @@ interface StockTransferState {
     selectedDestination: string;
     currentLocation: string;
   };
-  
+
   // 操作員狀態
   operator: {
     clockNumber: string;
@@ -196,7 +206,7 @@ interface StockTransferState {
     isVerifying: boolean;
     error: string | null;
   };
-  
+
   // UI 狀態
   ui: {
     statusMessage: string;
@@ -205,7 +215,7 @@ interface StockTransferState {
     showErrorOverlay: boolean;
     errorDetails: ErrorInfo | null;
   };
-  
+
   // 樂觀更新
   optimistic: {
     transfers: OptimisticTransfer[];
@@ -217,6 +227,7 @@ interface StockTransferState {
 ## 數據流圖表
 
 ### 主要數據流
+
 ```
 ┌─────────────────────────────────────────────────┐
 │                 用戶輸入                         │
@@ -256,6 +267,7 @@ interface StockTransferState {
 ```
 
 ### 樂觀更新流程
+
 ```
 用戶操作
     │
@@ -280,36 +292,35 @@ interface StockTransferState {
 ### Server Actions 實現
 
 #### 1. searchPalletAuto
+
 ```typescript
-export async function searchPalletAuto(
-  searchValue: string
-): Promise<ActionResult<PalletInfo>> {
+export async function searchPalletAuto(searchValue: string): Promise<ActionResult<PalletInfo>> {
   try {
     // 1. 輸入驗證
     const trimmedValue = searchValue.trim();
     if (!trimmedValue) {
-      return { 
-        success: false, 
-        error: '請輸入托盤號或序列號' 
+      return {
+        success: false,
+        error: '請輸入托盤號或序列號',
       };
     }
 
     // 2. 自動檢測搜索類型
     const searchType = detectSearchType(trimmedValue);
-    
+
     // 3. 優化搜索策略 (V2 → V1 → 直接查詢)
     const supabase = createClient();
-    
+
     // 嘗試 V2 優化查詢
     let result = await supabase.rpc('search_pallet_optimized_v2', {
       p_search_value: trimmedValue,
-      p_search_type: searchType
+      p_search_type: searchType,
     });
 
     // Fallback 到 V1
     if (!result.data || result.data.length === 0) {
       result = await supabase.rpc('search_pallet_optimized', {
-        p_search_value: trimmedValue
+        p_search_value: trimmedValue,
       });
     }
 
@@ -323,29 +334,28 @@ export async function searchPalletAuto(
 
     return {
       success: true,
-      data: result.data[0]
+      data: result.data[0],
     };
   } catch (error) {
     systemLogger.error({ error, searchValue }, '托盤搜索失敗');
     return {
       success: false,
-      error: '搜索失敗，請稍後再試'
+      error: '搜索失敗，請稍後再試',
     };
   }
 }
 ```
 
 #### 2. validateClockNumber
+
 ```typescript
-export async function validateClockNumber(
-  clockNumber: string
-): Promise<ActionResult<UserInfo>> {
+export async function validateClockNumber(clockNumber: string): Promise<ActionResult<UserInfo>> {
   try {
     // 1. 格式驗證
     if (!/^\d{4}$/.test(clockNumber)) {
       return {
         success: false,
-        error: '工號必須是4位數字'
+        error: '工號必須是4位數字',
       };
     }
 
@@ -360,7 +370,7 @@ export async function validateClockNumber(
     if (error || !data) {
       return {
         success: false,
-        error: '無效的工號'
+        error: '無效的工號',
       };
     }
 
@@ -368,7 +378,7 @@ export async function validateClockNumber(
     if (!hasTransferPermission(data.role)) {
       return {
         success: false,
-        error: '您沒有執行轉移的權限'
+        error: '您沒有執行轉移的權限',
       };
     }
 
@@ -377,20 +387,21 @@ export async function validateClockNumber(
       data: {
         id: data.id,
         name: data.name,
-        department: data.department
-      }
+        department: data.department,
+      },
     };
   } catch (error) {
     systemLogger.error({ error, clockNumber }, '工號驗證失敗');
     return {
       success: false,
-      error: '驗證失敗，請稍後再試'
+      error: '驗證失敗，請稍後再試',
     };
   }
 }
 ```
 
 #### 3. transferPallet
+
 ```typescript
 export async function transferPallet(
   pltNum: string,
@@ -402,7 +413,7 @@ export async function transferPallet(
     if (!pltNum || !toLocation || !operatorId) {
       return {
         success: false,
-        error: '缺少必要參數'
+        error: '缺少必要參數',
       };
     }
 
@@ -412,7 +423,7 @@ export async function transferPallet(
       p_pallet_num: pltNum,
       p_to_location: toLocation,
       p_user_id: operatorId,
-      p_timestamp: new Date().toISOString()
+      p_timestamp: new Date().toISOString(),
     });
 
     if (error) {
@@ -421,13 +432,13 @@ export async function transferPallet(
         return {
           success: false,
           error: '此托盤已作廢，無法轉移',
-          errorType: 'VOIDED_PALLET'
+          errorType: 'VOIDED_PALLET',
         };
       }
-      
+
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
 
@@ -438,7 +449,7 @@ export async function transferPallet(
       fromLocation: data.from_location,
       toLocation,
       operatorId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     // 4. 重新驗證路徑
@@ -450,20 +461,21 @@ export async function transferPallet(
         transferId: data.transfer_id,
         fromLocation: data.from_location,
         toLocation: data.to_location,
-        timestamp: data.timestamp
-      }
+        timestamp: data.timestamp,
+      },
     };
   } catch (error) {
     systemLogger.error({ error, pltNum, toLocation }, '轉移執行失敗');
     return {
       success: false,
-      error: '轉移失敗，請稍後再試'
+      error: '轉移失敗，請稍後再試',
     };
   }
 }
 ```
 
 ### GraphQL Schema (計劃中)
+
 ```graphql
 # 庫存轉移類型定義
 type StockTransfer {
@@ -499,45 +511,34 @@ type Query {
     pagination: PaginationInput
     sort: SortInput
   ): StockTransferConnection!
-  
+
   # 搜索托盤
-  searchPallet(
-    searchValue: String!
-    searchType: SearchType
-  ): Pallet
-  
+  searchPallet(searchValue: String!, searchType: SearchType): Pallet
+
   # 驗證操作員
-  validateOperator(
-    clockNumber: String!
-  ): User
+  validateOperator(clockNumber: String!): User
 }
 
 # 變更
 type Mutation {
   # 創建庫存轉移
-  createStockTransfer(
-    input: CreateStockTransferInput!
-  ): StockTransferPayload!
-  
+  createStockTransfer(input: CreateStockTransferInput!): StockTransferPayload!
+
   # 批量轉移
-  batchStockTransfer(
-    input: BatchStockTransferInput!
-  ): BatchStockTransferPayload!
+  batchStockTransfer(input: BatchStockTransferInput!): BatchStockTransferPayload!
 }
 
 # 訂閱
 type Subscription {
   # 監聽轉移更新
-  stockTransferCreated(
-    operatorId: Int
-    location: String
-  ): StockTransfer!
+  stockTransferCreated(operatorId: Int, location: String): StockTransfer!
 }
 ```
 
 ### RPC 函數實現
 
 #### rpc_transfer_pallet
+
 ```sql
 CREATE OR REPLACE FUNCTION rpc_transfer_pallet(
   p_pallet_num TEXT,
@@ -559,11 +560,11 @@ BEGIN
   -- 開始事務
   BEGIN
     -- 1. 檢查托盤狀態
-    SELECT 
+    SELECT
       current_location,
       product_code,
       is_voided
-    INTO 
+    INTO
       v_from_location,
       v_product_code,
       v_is_voided
@@ -607,7 +608,7 @@ BEGIN
 
     -- 6. 更新托盤位置
     UPDATE record_palletinfo
-    SET 
+    SET
       current_location = p_to_location,
       last_transfer_date = p_timestamp,
       updated_at = p_timestamp
@@ -663,6 +664,7 @@ $$;
 ### 核心表結構
 
 #### 1. record_transfer (轉移記錄表)
+
 ```sql
 CREATE TABLE record_transfer (
   uuid UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -676,31 +678,32 @@ CREATE TABLE record_transfer (
   notes TEXT,                    -- 備註
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
-  
+
   -- 外鍵約束
-  CONSTRAINT fk_pallet 
-    FOREIGN KEY (plt_num) 
+  CONSTRAINT fk_pallet
+    FOREIGN KEY (plt_num)
     REFERENCES record_palletinfo(plt_num),
-  CONSTRAINT fk_operator 
-    FOREIGN KEY (operator_id) 
+  CONSTRAINT fk_operator
+    FOREIGN KEY (operator_id)
     REFERENCES data_id(id),
-  CONSTRAINT fk_product 
-    FOREIGN KEY (product_code) 
+  CONSTRAINT fk_product
+    FOREIGN KEY (product_code)
     REFERENCES data_code(code)
 );
 
 -- 索引優化
-CREATE INDEX idx_transfer_tran_date 
+CREATE INDEX idx_transfer_tran_date
   ON record_transfer(tran_date DESC);
-CREATE INDEX idx_transfer_plt_num 
+CREATE INDEX idx_transfer_plt_num
   ON record_transfer(plt_num);
-CREATE INDEX idx_transfer_operator 
+CREATE INDEX idx_transfer_operator
   ON record_transfer(operator_id);
-CREATE INDEX idx_transfer_composite 
+CREATE INDEX idx_transfer_composite
   ON record_transfer(tran_date DESC, plt_num, operator_id);
 ```
 
 #### 2. record_palletinfo (托盤信息表)
+
 ```sql
 CREATE TABLE record_palletinfo (
   plt_num VARCHAR(50) PRIMARY KEY,
@@ -714,26 +717,27 @@ CREATE TABLE record_palletinfo (
   last_transfer_date TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
-  
+
   -- 外鍵約束
-  CONSTRAINT fk_product_code 
-    FOREIGN KEY (product_code) 
+  CONSTRAINT fk_product_code
+    FOREIGN KEY (product_code)
     REFERENCES data_code(code)
 );
 
 -- 索引優化
-CREATE UNIQUE INDEX idx_palletinfo_serial 
-  ON record_palletinfo(serial_num) 
+CREATE UNIQUE INDEX idx_palletinfo_serial
+  ON record_palletinfo(serial_num)
   WHERE serial_num IS NOT NULL;
-CREATE INDEX idx_palletinfo_product 
+CREATE INDEX idx_palletinfo_product
   ON record_palletinfo(product_code);
-CREATE INDEX idx_palletinfo_location 
+CREATE INDEX idx_palletinfo_location
   ON record_palletinfo(current_location);
-CREATE INDEX idx_palletinfo_void_status 
+CREATE INDEX idx_palletinfo_void_status
   ON record_palletinfo(is_voided);
 ```
 
 #### 3. record_inventory (庫存記錄表)
+
 ```sql
 CREATE TABLE record_inventory (
   uuid UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -750,28 +754,29 @@ CREATE TABLE record_inventory (
     injection + pipeline + prebook + await + fold + bulk + backcarpark
   ) STORED,
   last_update TIMESTAMP DEFAULT NOW(),
-  
+
   -- 外鍵約束
-  CONSTRAINT fk_inv_product 
-    FOREIGN KEY (product_code) 
+  CONSTRAINT fk_inv_product
+    FOREIGN KEY (product_code)
     REFERENCES data_code(code),
-  CONSTRAINT fk_inv_pallet 
-    FOREIGN KEY (plt_num) 
+  CONSTRAINT fk_inv_pallet
+    FOREIGN KEY (plt_num)
     REFERENCES record_palletinfo(plt_num)
 );
 
 -- 索引優化
-CREATE INDEX idx_inventory_product 
+CREATE INDEX idx_inventory_product
   ON record_inventory(product_code);
-CREATE INDEX idx_inventory_update 
+CREATE INDEX idx_inventory_update
   ON record_inventory(last_update DESC);
-CREATE INDEX idx_inventory_aggregate 
+CREATE INDEX idx_inventory_aggregate
   ON record_inventory(product_code, total_quantity);
 ```
 
 ### 數據庫觸發器
 
 #### 自動更新時間戳
+
 ```sql
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
@@ -794,13 +799,14 @@ CREATE TRIGGER update_palletinfo_timestamp
 ```
 
 #### 庫存自動同步
+
 ```sql
 CREATE OR REPLACE FUNCTION sync_inventory_on_transfer()
 RETURNS TRIGGER AS $$
 BEGIN
   -- 減少源位置庫存
   UPDATE record_inventory
-  SET 
+  SET
     CASE NEW.f_loc
       WHEN 'injection' THEN injection = injection - 1
       WHEN 'pipeline' THEN pipeline = pipeline - 1
@@ -815,7 +821,7 @@ BEGIN
 
   -- 增加目標位置庫存
   UPDATE record_inventory
-  SET 
+  SET
     CASE NEW.t_loc
       WHEN 'injection' THEN injection = injection + 1
       WHEN 'pipeline' THEN pipeline = pipeline + 1
@@ -841,36 +847,38 @@ CREATE TRIGGER trigger_sync_inventory
 ### 索引策略
 
 #### 性能關鍵索引
+
 ```sql
 -- 複合索引優化查詢
-CREATE INDEX idx_transfer_search_optimized 
+CREATE INDEX idx_transfer_search_optimized
   ON record_transfer(tran_date DESC, plt_num, operator_id)
   INCLUDE (f_loc, t_loc, product_code);
 
 -- 部分索引優化
-CREATE INDEX idx_palletinfo_active 
-  ON record_palletinfo(plt_num, current_location) 
+CREATE INDEX idx_palletinfo_active
+  ON record_palletinfo(plt_num, current_location)
   WHERE is_voided = FALSE;
 
 -- BRIN 索引用於時間序列
-CREATE INDEX idx_transfer_date_brin 
-  ON record_transfer 
+CREATE INDEX idx_transfer_date_brin
+  ON record_transfer
   USING BRIN(tran_date);
 
 -- GIN 索引用於全文搜索
-CREATE INDEX idx_palletinfo_search 
-  ON record_palletinfo 
-  USING GIN(to_tsvector('english', 
+CREATE INDEX idx_palletinfo_search
+  ON record_palletinfo
+  USING GIN(to_tsvector('english',
     plt_num || ' ' || COALESCE(serial_num, '')));
 ```
 
 ### 查詢優化
 
 #### 物化視圖
+
 ```sql
 -- 每日轉移統計
 CREATE MATERIALIZED VIEW mv_daily_transfer_stats AS
-SELECT 
+SELECT
   DATE(tran_date) as transfer_date,
   COUNT(*) as total_transfers,
   COUNT(DISTINCT operator_id) as unique_operators,
@@ -880,7 +888,7 @@ FROM record_transfer
 GROUP BY DATE(tran_date);
 
 -- 自動刷新
-CREATE INDEX idx_mv_daily_stats_date 
+CREATE INDEX idx_mv_daily_stats_date
   ON mv_daily_transfer_stats(transfer_date DESC);
 
 REFRESH MATERIALIZED VIEW CONCURRENTLY mv_daily_transfer_stats;
@@ -889,40 +897,39 @@ REFRESH MATERIALIZED VIEW CONCURRENTLY mv_daily_transfer_stats;
 ## 測試策略和覆蓋率
 
 ### 測試架構
+
 ```
 測試金字塔
      ╱╲
     ╱E2E╲     5%  - Playwright 端到端測試
    ╱──────╲
-  ╱Integration╲  15% - API 和數據庫集成測試  
+  ╱Integration╲  15% - API 和數據庫集成測試
  ╱──────────────╲
 ╱   Unit Tests   ╲ 80% - 組件和函數單元測試
 ──────────────────
 ```
 
 ### 單元測試覆蓋率
-| 模組 | 覆蓋率 | 測試數量 |
-|------|--------|----------|
-| StockTransferCard.tsx | 92% | 45 |
-| useStockTransfer.ts | 88% | 32 |
-| stock-transfer-actions.ts | 95% | 28 |
-| locationStandardizer.ts | 100% | 15 |
-| 總體覆蓋率 | 91% | 120 |
+
+| 模組                      | 覆蓋率 | 測試數量 |
+| ------------------------- | ------ | -------- |
+| StockTransferCard.tsx     | 92%    | 45       |
+| useStockTransfer.ts       | 88%    | 32       |
+| stock-transfer-actions.ts | 95%    | 28       |
+| locationStandardizer.ts   | 100%   | 15       |
+| 總體覆蓋率                | 91%    | 120      |
 
 ### 集成測試案例
+
 ```typescript
 describe('StockTransfer Integration Tests', () => {
   describe('Database Operations', () => {
     test('應該成功創建轉移記錄', async () => {
-      const result = await transferPallet(
-        'PLT-001',
-        'fold',
-        123
-      );
-      
+      const result = await transferPallet('PLT-001', 'fold', 123);
+
       expect(result.success).toBe(true);
       expect(result.data.toLocation).toBe('fold');
-      
+
       // 驗證數據庫狀態
       const transfer = await getTransferById(result.data.transferId);
       expect(transfer).toBeDefined();
@@ -931,9 +938,9 @@ describe('StockTransfer Integration Tests', () => {
 
     test('應該正確更新庫存數量', async () => {
       const beforeInventory = await getInventory('PROD-001');
-      
+
       await transferPallet('PLT-001', 'bulk', 123);
-      
+
       const afterInventory = await getInventory('PROD-001');
       expect(afterInventory.bulk).toBe(beforeInventory.bulk + 1);
       expect(afterInventory.injection).toBe(beforeInventory.injection - 1);
@@ -943,21 +950,17 @@ describe('StockTransfer Integration Tests', () => {
       const transfers = await Promise.all([
         transferPallet('PLT-001', 'fold', 123),
         transferPallet('PLT-002', 'bulk', 124),
-        transferPallet('PLT-003', 'await', 125)
+        transferPallet('PLT-003', 'await', 125),
       ]);
-      
+
       expect(transfers.every(t => t.success)).toBe(true);
     });
   });
 
   describe('Error Handling', () => {
     test('應該拒絕作廢托盤轉移', async () => {
-      const result = await transferPallet(
-        'VOIDED-PLT',
-        'fold',
-        123
-      );
-      
+      const result = await transferPallet('VOIDED-PLT', 'fold', 123);
+
       expect(result.success).toBe(false);
       expect(result.errorType).toBe('VOIDED_PALLET');
     });
@@ -965,14 +968,9 @@ describe('StockTransfer Integration Tests', () => {
     test('應該處理網絡超時', async () => {
       // 模擬網絡延遲
       jest.setTimeout(1000);
-      
-      const result = await transferPalletWithTimeout(
-        'PLT-001',
-        'fold',
-        123,
-        { timeout: 500 }
-      );
-      
+
+      const result = await transferPalletWithTimeout('PLT-001', 'fold', 123, { timeout: 500 });
+
       expect(result.success).toBe(false);
       expect(result.error).toContain('timeout');
     });
@@ -981,6 +979,7 @@ describe('StockTransfer Integration Tests', () => {
 ```
 
 ### E2E 測試場景
+
 ```typescript
 test.describe('StockTransferCard E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -992,22 +991,22 @@ test.describe('StockTransferCard E2E Tests', () => {
   test('完整轉移工作流', async ({ page }) => {
     // 1. 選擇目的地
     await page.click('[data-destination="fold"]');
-    
+
     // 2. 輸入工號
     await page.fill('#clock-number', '1234');
     await page.waitForSelector('[data-verified="true"]');
-    
+
     // 3. 掃描托盤
     await page.fill('#pallet-search', 'PLT-001');
     await page.waitForSelector('[data-pallet-found="true"]');
-    
+
     // 4. 等待自動轉移
     await page.waitForSelector('[data-transfer-success="true"]');
-    
+
     // 5. 驗證成功消息
     const toast = page.locator('.toast-success');
     await expect(toast).toContainText('轉移成功');
-    
+
     // 6. 驗證歷史記錄更新
     const history = page.locator('[data-transfer-history]');
     await expect(history.first()).toContainText('PLT-001');
@@ -1016,21 +1015,17 @@ test.describe('StockTransferCard E2E Tests', () => {
   test('錯誤處理', async ({ page }) => {
     // 測試無效工號
     await page.fill('#clock-number', '9999');
-    await expect(page.locator('.error-message'))
-      .toContainText('無效的工號');
-    
+    await expect(page.locator('.error-message')).toContainText('無效的工號');
+
     // 測試不存在的托盤
     await page.fill('#clock-number', '1234');
     await page.fill('#pallet-search', 'INVALID-PLT');
-    await expect(page.locator('.error-message'))
-      .toContainText('找不到托盤');
+    await expect(page.locator('.error-message')).toContainText('找不到托盤');
   });
 
   test('性能測試', async ({ page }) => {
-    const metrics = await page.evaluate(() => 
-      performance.getEntriesByType('navigation')[0]
-    );
-    
+    const metrics = await page.evaluate(() => performance.getEntriesByType('navigation')[0]);
+
     expect(metrics.loadEventEnd - metrics.fetchStart).toBeLessThan(3000);
     expect(metrics.domContentLoadedEventEnd).toBeLessThan(2000);
   });
@@ -1038,6 +1033,7 @@ test.describe('StockTransferCard E2E Tests', () => {
 ```
 
 ### 測試執行命令
+
 ```bash
 # 單元測試
 npm run test:unit
@@ -1061,26 +1057,33 @@ npm run test:watch
 ## 性能考慮
 
 ### 當前性能基準
-| 指標 | 目標 | 實際 | 狀態 |
-|------|------|------|------|
-| 首次內容繪製 (FCP) | <1.8s | 1.2s | ✅ |
-| 最大內容繪製 (LCP) | <2.5s | 1.8s | ✅ |
-| 首次輸入延遲 (FID) | <100ms | 45ms | ✅ |
-| 累積佈局偏移 (CLS) | <0.1 | 0.02 | ✅ |
-| 搜索響應時間 | <200ms | 95ms | ✅ |
-| 轉移執行時間 | <500ms | 320ms | ✅ |
+
+| 指標               | 目標   | 實際  | 狀態 |
+| ------------------ | ------ | ----- | ---- |
+| 首次內容繪製 (FCP) | <1.8s  | 1.2s  | ✅   |
+| 最大內容繪製 (LCP) | <2.5s  | 1.8s  | ✅   |
+| 首次輸入延遲 (FID) | <100ms | 45ms  | ✅   |
+| 累積佈局偏移 (CLS) | <0.1   | 0.02  | ✅   |
+| 搜索響應時間       | <200ms | 95ms  | ✅   |
+| 轉移執行時間       | <500ms | 320ms | ✅   |
 
 ### 優化技術
 
 #### 1. 數據庫查詢優化
+
 ```typescript
 // 使用 RPC 函數減少往返
 const result = await supabase.rpc('batch_operation', {
   operations: [
     { type: 'search', params: { plt_num: 'PLT-001' } },
     { type: 'validate', params: { clock_number: '1234' } },
-    { type: 'transfer', params: { /* ... */ } }
-  ]
+    {
+      type: 'transfer',
+      params: {
+        /* ... */
+      },
+    },
+  ],
 });
 
 // 使用連接池
@@ -1092,20 +1095,21 @@ const pool = new Pool({
 ```
 
 #### 2. 前端優化
+
 ```typescript
 // 延遲加載非關鍵組件
-const TransferHistory = lazy(() => 
+const TransferHistory = lazy(() =>
   import('./TransferHistory')
 );
 
 // 使用 memo 優化重渲染
-const DestinationSelector = memo(({ 
-  destinations, 
-  selected, 
-  onChange 
+const DestinationSelector = memo(({
+  destinations,
+  selected,
+  onChange
 }) => {
   // 組件邏輯
-}, (prevProps, nextProps) => 
+}, (prevProps, nextProps) =>
   prevProps.selected === nextProps.selected
 );
 
@@ -1131,54 +1135,55 @@ const VirtualizedHistory = ({ items }) => {
 ```
 
 #### 3. 緩存策略
+
 ```typescript
 // 使用 SWR 進行數據緩存
-const { data, error, mutate } = useSWR(
-  `/api/transfer-history`,
-  fetcher,
-  {
-    refreshInterval: 30000,
-    revalidateOnFocus: false,
-    dedupingInterval: 2000
-  }
-);
+const { data, error, mutate } = useSWR(`/api/transfer-history`, fetcher, {
+  refreshInterval: 30000,
+  revalidateOnFocus: false,
+  dedupingInterval: 2000,
+});
 
 // 本地存儲緩存
 const cacheManager = {
   set: (key, value, ttl = 3600) => {
-    localStorage.setItem(key, JSON.stringify({
-      value,
-      expires: Date.now() + ttl * 1000
-    }));
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        value,
+        expires: Date.now() + ttl * 1000,
+      })
+    );
   },
-  
-  get: (key) => {
+
+  get: key => {
     const item = localStorage.getItem(key);
     if (!item) return null;
-    
+
     const { value, expires } = JSON.parse(item);
     if (Date.now() > expires) {
       localStorage.removeItem(key);
       return null;
     }
-    
+
     return value;
-  }
+  },
 };
 ```
 
 ### 監控和分析
 
 #### 性能監控設置
+
 ```typescript
 // 使用 Performance Observer API
-const observer = new PerformanceObserver((list) => {
+const observer = new PerformanceObserver(list => {
   for (const entry of list.getEntries()) {
     if (entry.entryType === 'measure') {
       analytics.track('Performance', {
         name: entry.name,
         duration: entry.duration,
-        timestamp: entry.startTime
+        timestamp: entry.startTime,
       });
     }
   }
@@ -1190,16 +1195,13 @@ observer.observe({ entryTypes: ['measure'] });
 performance.mark('transfer-start');
 await transferPallet(/* ... */);
 performance.mark('transfer-end');
-performance.measure(
-  'stock-transfer-duration',
-  'transfer-start',
-  'transfer-end'
-);
+performance.measure('stock-transfer-duration', 'transfer-start', 'transfer-end');
 ```
 
 ## 安全分析
 
 ### 安全層級架構
+
 ```
 ┌─────────────────────────────────┐
 │      前端驗證層                  │
@@ -1232,19 +1234,18 @@ performance.measure(
 ### 安全實施
 
 #### 1. 輸入驗證
+
 ```typescript
 // 使用 Zod 進行嚴格驗證
 const TransferSchema = z.object({
-  pltNum: z.string()
+  pltNum: z
+    .string()
     .min(1)
     .max(50)
     .regex(/^[A-Z0-9-]+$/),
   toLocation: z.enum(VALID_LOCATIONS),
-  operatorId: z.number()
-    .int()
-    .positive(),
-  timestamp: z.string()
-    .datetime()
+  operatorId: z.number().int().positive(),
+  timestamp: z.string().datetime(),
 });
 
 // 驗證函數
@@ -1258,6 +1259,7 @@ export function validateTransferInput(input: unknown) {
 ```
 
 #### 2. SQL 注入防護
+
 ```typescript
 // 使用參數化查詢
 const safeQuery = async (pltNum: string) => {
@@ -1266,7 +1268,7 @@ const safeQuery = async (pltNum: string) => {
     .from('record_palletinfo')
     .select('*')
     .eq('plt_num', pltNum);
-  
+
   // ❌ 危險：字符串拼接
   // const query = `SELECT * FROM record_palletinfo WHERE plt_num = '${pltNum}'`;
 };
@@ -1290,33 +1292,29 @@ $$;
 ```
 
 #### 3. 認證和授權
+
 ```typescript
 // 中間件認證檢查
-export async function requireAuth(
-  request: Request,
-  context: Context
-) {
+export async function requireAuth(request: Request, context: Context) {
   const session = await getSession(request);
-  
+
   if (!session?.user) {
     throw new UnauthorizedError('Authentication required');
   }
-  
+
   // 檢查權限
-  const hasPermission = await checkPermission(
-    session.user.id,
-    'stock.transfer'
-  );
-  
+  const hasPermission = await checkPermission(session.user.id, 'stock.transfer');
+
   if (!hasPermission) {
     throw new ForbiddenError('Insufficient permissions');
   }
-  
+
   return session.user;
 }
 ```
 
 #### 4. 審計日誌
+
 ```typescript
 // 完整的審計追蹤
 interface AuditLog {
@@ -1334,22 +1332,19 @@ interface AuditLog {
   errorMessage?: string;
 }
 
-export async function logAuditEvent(
-  event: Partial<AuditLog>
-): Promise<void> {
-  await supabase
-    .from('audit_logs')
-    .insert({
-      ...event,
-      id: uuidv4(),
-      timestamp: new Date(),
-      ipAddress: getClientIp(),
-      userAgent: getUserAgent()
-    });
+export async function logAuditEvent(event: Partial<AuditLog>): Promise<void> {
+  await supabase.from('audit_logs').insert({
+    ...event,
+    id: uuidv4(),
+    timestamp: new Date(),
+    ipAddress: getClientIp(),
+    userAgent: getUserAgent(),
+  });
 }
 ```
 
 ### 安全檢查清單
+
 - [x] 輸入驗證和消毒
 - [x] SQL 注入防護
 - [x] XSS 防護
@@ -1367,11 +1362,11 @@ export async function logAuditEvent(
 
 ### 優先級矩陣
 
-| 改進項目 | 優先級 | 影響範圍 | 風險等級 | 預估工時 | 建議時程 |
-|---------|--------|----------|----------|----------|----------|
-| 數據庫函數 search_path 安全修復 | **P0 - 緊急** | 系統安全 | 高 | 40小時 | 立即執行 |
-| 冗餘索引清理 | **P1 - 高** | 寫入性能 | 中 | 24小時 | 本週內 |
-| GraphQL/Server Actions 架構統一 | **P2 - 中** | 架構一致性 | 中 | 80小時 | 本月內 |
+| 改進項目                        | 優先級        | 影響範圍   | 風險等級 | 預估工時 | 建議時程 |
+| ------------------------------- | ------------- | ---------- | -------- | -------- | -------- |
+| 數據庫函數 search_path 安全修復 | **P0 - 緊急** | 系統安全   | 高       | 40小時   | 立即執行 |
+| 冗餘索引清理                    | **P1 - 高**   | 寫入性能   | 中       | 24小時   | 本週內   |
+| GraphQL/Server Actions 架構統一 | **P2 - 中**   | 架構一致性 | 中       | 80小時   | 本月內   |
 
 ### 成功指標
 
@@ -1392,6 +1387,7 @@ export async function logAuditEvent(
 ### 1.1 當前架構衝突分析
 
 #### 問題概述
+
 系統目前同時維護兩套 API 系統，造成以下問題：
 
 ```typescript
@@ -1401,7 +1397,7 @@ export async function searchPalletAuto(searchValue: string) {
   'use server';
   const supabase = createClient();
   return await supabase.rpc('search_pallet_optimized_v2', {
-    p_search_value: searchValue
+    p_search_value: searchValue,
   });
 }
 
@@ -1442,19 +1438,15 @@ const SEARCH_PALLET = gql`
 // 決策函數：選擇 API 方式
 function selectAPIStrategy(feature: FeatureRequirements): APIStrategy {
   // Server Actions 優先場景
-  if (feature.isFormSubmission || 
-      feature.requiresServerSideValidation ||
-      feature.isSimpleCRUD) {
+  if (feature.isFormSubmission || feature.requiresServerSideValidation || feature.isSimpleCRUD) {
     return 'SERVER_ACTIONS';
   }
-  
+
   // GraphQL 適用場景
-  if (feature.requiresComplexRelations ||
-      feature.needsSubscriptions ||
-      feature.hasComplexCaching) {
+  if (feature.requiresComplexRelations || feature.needsSubscriptions || feature.hasComplexCaching) {
     return 'GRAPHQL';
   }
-  
+
   // 默認使用 Server Actions（Next.js 原生支援）
   return 'SERVER_ACTIONS';
 }
@@ -1487,33 +1479,33 @@ import { z } from 'zod';
 export const stockTransferAPI = {
   searchPallet: createServerAction({
     input: z.object({
-      searchValue: z.string().min(1)
+      searchValue: z.string().min(1),
     }),
     async handler({ input }) {
       const { searchValue } = input;
-      
+
       // 業務邏輯集中管理
       const result = await searchPalletLogic(searchValue);
-      
+
       // 統一錯誤處理
       if (!result.success) {
         throw new APIError(result.error);
       }
-      
+
       return result.data;
-    }
+    },
   }),
-  
+
   transferPallet: createServerAction({
     input: z.object({
       pltNum: z.string(),
       toLocation: z.string(),
-      operatorId: z.number()
+      operatorId: z.number(),
     }),
     async handler({ input }) {
       return await transferPalletLogic(input);
-    }
-  })
+    },
+  }),
 };
 ```
 
@@ -1531,11 +1523,11 @@ export function createMigrationWrapper<T>(
 ) {
   return async (): Promise<T> => {
     const useNew = Math.random() * 100 < options.migrationPercentage;
-    
+
     if (options.enableLogging) {
       console.log(`Using ${useNew ? 'new' : 'old'} implementation`);
     }
-    
+
     try {
       if (useNew) {
         return await newImplementation();
@@ -1545,12 +1537,12 @@ export function createMigrationWrapper<T>(
     } catch (error) {
       // 記錄錯誤並回退
       console.error(`Error in ${useNew ? 'new' : 'old'} implementation`, error);
-      
+
       // 如果新實現失敗，回退到舊實現
       if (useNew) {
         return await oldImplementation();
       }
-      
+
       throw error;
     }
   };
@@ -1575,12 +1567,12 @@ npm run docs:generate
 
 ### 1.3 風險評估和緩解策略
 
-| 風險 | 影響 | 可能性 | 緩解策略 |
-|------|------|--------|----------|
-| 遷移過程中服務中斷 | 高 | 低 | 使用藍綠部署，保持回滾能力 |
-| 功能退化 | 中 | 中 | 完整的 E2E 測試覆蓋 |
-| 性能下降 | 中 | 低 | 性能基準測試和監控 |
-| 團隊學習曲線 | 低 | 高 | 提供培訓和文檔 |
+| 風險               | 影響 | 可能性 | 緩解策略                   |
+| ------------------ | ---- | ------ | -------------------------- |
+| 遷移過程中服務中斷 | 高   | 低     | 使用藍綠部署，保持回滾能力 |
+| 功能退化           | 中   | 中     | 完整的 E2E 測試覆蓋        |
+| 性能下降           | 中   | 低     | 性能基準測試和監控         |
+| 團隊學習曲線       | 低   | 高     | 提供培訓和文檔             |
 
 ### 1.4 實施路線圖
 
@@ -1607,6 +1599,7 @@ gantt
 ### 2.1 漏洞詳細說明
 
 #### SQL 注入攻擊向量
+
 當前 57 個數據庫函數未設置 `search_path`，存在以下安全風險：
 
 ```sql
@@ -1646,7 +1639,7 @@ SELECT vulnerable_function('sensitive_data'); -- 數據被竊取
 ```sql
 -- 查詢所有需要修復的函數
 WITH vulnerable_functions AS (
-  SELECT 
+  SELECT
     n.nspname AS schema_name,
     p.proname AS function_name,
     pg_get_functiondef(p.oid) AS function_definition
@@ -1656,10 +1649,10 @@ WITH vulnerable_functions AS (
     AND p.prolang != 12  -- 排除內部函數
     AND pg_get_functiondef(p.oid) NOT LIKE '%search_path%'
 )
-SELECT 
+SELECT
   schema_name,
   function_name,
-  CASE 
+  CASE
     WHEN function_name LIKE 'rpc_%' THEN 'HIGH'
     WHEN function_name LIKE '%transfer%' THEN 'HIGH'
     WHEN function_name LIKE '%inventory%' THEN 'MEDIUM'
@@ -1703,8 +1696,8 @@ DECLARE
   fix_script TEXT := '';
   function_def TEXT;
 BEGIN
-  FOR func_record IN 
-    SELECT 
+  FOR func_record IN
+    SELECT
       p.proname AS function_name,
       pg_get_functiondef(p.oid) AS function_definition
     FROM pg_proc p
@@ -1715,7 +1708,7 @@ BEGIN
   LOOP
     -- 獲取函數定義
     function_def := func_record.function_definition;
-    
+
     -- 在 AS $$ 之前插入 SET search_path
     function_def := regexp_replace(
       function_def,
@@ -1723,14 +1716,14 @@ BEGIN
       E'\\1\\2SECURITY DEFINER\\2SET search_path = public\\2\\3',
       'i'
     );
-    
+
     -- 添加到修復腳本
-    fix_script := fix_script || 
+    fix_script := fix_script ||
       E'-- Fixing function: ' || func_record.function_name || E'\n' ||
       'DROP FUNCTION IF EXISTS ' || func_record.function_name || ' CASCADE;' || E'\n' ||
       function_def || E';\n\n';
   END LOOP;
-  
+
   -- 輸出修復腳本
   RAISE NOTICE '%', fix_script;
 END $$;
@@ -1752,10 +1745,10 @@ def fix_database_functions(connection_params):
     """
     conn = psycopg2.connect(**connection_params)
     cur = conn.cursor()
-    
+
     # 獲取需要修復的函數
     cur.execute("""
-        SELECT 
+        SELECT
             p.proname AS function_name,
             pg_get_functiondef(p.oid) AS function_definition
         FROM pg_proc p
@@ -1764,41 +1757,41 @@ def fix_database_functions(connection_params):
             AND pg_get_functiondef(p.oid) NOT LIKE '%search_path%'
             AND p.prolang != 12
     """)
-    
+
     functions = cur.fetchall()
     fixed_count = 0
     error_count = 0
-    
+
     print(f"找到 {len(functions)} 個需要修復的函數")
-    
+
     for func_name, func_def in functions:
         try:
             print(f"修復函數: {func_name}")
-            
+
             # 修改函數定義
             fixed_def = fix_function_definition(func_def)
-            
+
             # 執行修復
             cur.execute(f"DROP FUNCTION IF EXISTS {func_name} CASCADE")
             cur.execute(fixed_def)
-            
+
             fixed_count += 1
             print(f"  ✓ 成功修復 {func_name}")
-            
+
         except Exception as e:
             error_count += 1
             print(f"  ✗ 修復 {func_name} 失敗: {e}")
             conn.rollback()
             continue
-    
+
     conn.commit()
     cur.close()
     conn.close()
-    
+
     print(f"\n修復完成:")
     print(f"  成功: {fixed_count}")
     print(f"  失敗: {error_count}")
-    
+
     return fixed_count, error_count
 
 def fix_function_definition(func_def):
@@ -1813,7 +1806,7 @@ def fix_function_definition(func_def):
             func_def,
             flags=re.IGNORECASE
         )
-    
+
     # 添加 SET search_path
     func_def = re.sub(
         r'(SECURITY DEFINER)(\s+)(AS \$)',
@@ -1821,7 +1814,7 @@ def fix_function_definition(func_def):
         func_def,
         flags=re.IGNORECASE
     )
-    
+
     return func_def
 
 if __name__ == "__main__":
@@ -1832,7 +1825,7 @@ if __name__ == "__main__":
         'user': 'postgres',
         'password': 'your_password'
     }
-    
+
     # 執行修復
     fix_database_functions(connection_params)
 ```
@@ -1844,15 +1837,15 @@ if __name__ == "__main__":
 -- 驗證所有函數已修復
 
 WITH function_check AS (
-  SELECT 
+  SELECT
     p.proname AS function_name,
-    CASE 
-      WHEN pg_get_functiondef(p.oid) LIKE '%search_path%' 
+    CASE
+      WHEN pg_get_functiondef(p.oid) LIKE '%search_path%'
       THEN '✓ 已修復'
       ELSE '✗ 未修復'
     END AS status,
-    CASE 
-      WHEN pg_get_functiondef(p.oid) LIKE '%SECURITY DEFINER%' 
+    CASE
+      WHEN pg_get_functiondef(p.oid) LIKE '%SECURITY DEFINER%'
       THEN '✓'
       ELSE '✗'
     END AS has_security_definer
@@ -1861,7 +1854,7 @@ WITH function_check AS (
   WHERE n.nspname = 'public'
     AND p.prolang != 12
 )
-SELECT 
+SELECT
   status,
   COUNT(*) as count,
   array_agg(function_name) AS functions
@@ -1870,12 +1863,12 @@ GROUP BY status
 ORDER BY status;
 
 -- 詳細檢查高風險函數
-SELECT 
+SELECT
   function_name,
   status,
   has_security_definer
 FROM function_check
-WHERE function_name LIKE 'rpc_%' 
+WHERE function_name LIKE 'rpc_%'
    OR function_name LIKE '%transfer%'
 ORDER BY status DESC, function_name;
 ```
@@ -1904,13 +1897,13 @@ BEGIN
   IF p_param1 IS NULL OR p_param2 IS NULL THEN
     RAISE EXCEPTION 'Invalid input parameters';
   END IF;
-  
+
   -- 業務邏輯
   SELECT json_build_object(
     'success', true,
     'data', 'processed'
   ) INTO v_result;
-  
+
   RETURN v_result;
 EXCEPTION
   WHEN OTHERS THEN
@@ -1942,7 +1935,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      
+
       - name: Check for search_path in functions
         run: |
           # 檢查所有 SQL 文件中的函數定義
@@ -1954,7 +1947,7 @@ jobs:
               fi
             fi
           done
-          
+
       - name: Run security audit
         run: |
           npm run db:security-audit
@@ -1971,7 +1964,7 @@ jobs:
 -- 全面分析索引使用情況
 
 WITH index_stats AS (
-  SELECT 
+  SELECT
     schemaname,
     tablename,
     indexname,
@@ -1984,7 +1977,7 @@ WITH index_stats AS (
   WHERE schemaname = 'public'
 ),
 table_stats AS (
-  SELECT 
+  SELECT
     schemaname,
     tablename,
     n_tup_ins + n_tup_upd + n_tup_del AS write_ops,
@@ -1993,11 +1986,11 @@ table_stats AS (
   WHERE schemaname = 'public'
 ),
 index_analysis AS (
-  SELECT 
+  SELECT
     i.*,
     t.write_ops,
     t.read_ops,
-    CASE 
+    CASE
       WHEN i.idx_scan = 0 THEN '未使用'
       WHEN i.idx_scan < 100 THEN '極少使用'
       WHEN i.idx_scan < 1000 THEN '偶爾使用'
@@ -2007,21 +2000,21 @@ index_analysis AS (
   FROM index_stats i
   JOIN table_stats t ON i.tablename = t.tablename
 )
-SELECT 
+SELECT
   tablename,
   indexname,
   usage_category,
   idx_scan AS scan_count,
   index_size,
   write_read_ratio,
-  CASE 
+  CASE
     WHEN usage_category = '未使用' THEN '建議刪除'
     WHEN usage_category = '極少使用' AND write_read_ratio > 50 THEN '考慮刪除'
     ELSE '保留'
   END AS recommendation
 FROM index_analysis
-ORDER BY 
-  CASE usage_category 
+ORDER BY
+  CASE usage_category
     WHEN '未使用' THEN 1
     WHEN '極少使用' THEN 2
     WHEN '偶爾使用' THEN 3
@@ -2037,7 +2030,7 @@ ORDER BY
 -- 查找重複和冗餘索引
 
 WITH index_columns AS (
-  SELECT 
+  SELECT
     t.relname AS table_name,
     i.relname AS index_name,
     array_agg(a.attname ORDER BY x.n) AS columns,
@@ -2055,7 +2048,7 @@ WITH index_columns AS (
   GROUP BY t.relname, i.relname, i.oid
 ),
 duplicate_indexes AS (
-  SELECT 
+  SELECT
     a.table_name,
     a.index_name AS index_1,
     b.index_name AS index_2,
@@ -2063,14 +2056,14 @@ duplicate_indexes AS (
     b.columns AS columns_2,
     a.index_size AS size_1,
     b.index_size AS size_2,
-    CASE 
+    CASE
       WHEN a.columns = b.columns THEN '完全重複'
       WHEN a.columns @> b.columns THEN 'index_1 包含 index_2'
       WHEN b.columns @> a.columns THEN 'index_2 包含 index_1'
       ELSE '部分重疊'
     END AS relationship
   FROM index_columns a
-  JOIN index_columns b ON a.table_name = b.table_name 
+  JOIN index_columns b ON a.table_name = b.table_name
     AND a.index_name < b.index_name
     AND (a.columns && b.columns)
 )
@@ -2095,11 +2088,11 @@ class IndexCleanupManager:
         self.conn = psycopg2.connect(**connection_params)
         self.cur = self.conn.cursor()
         self.cleanup_log = []
-    
+
     def analyze_index_usage(self, days_back=30):
         """分析過去 N 天的索引使用情況"""
         query = """
-        SELECT 
+        SELECT
             indexname,
             tablename,
             idx_scan,
@@ -2111,10 +2104,10 @@ class IndexCleanupManager:
             AND pg_relation_size(indexrelid) > 1000000  -- > 1MB
         ORDER BY pg_relation_size(indexrelid) DESC
         """
-        
+
         self.cur.execute(query)
         return self.cur.fetchall()
-    
+
     def create_backup_script(self, indexes_to_remove):
         """生成索引重建腳本"""
         backup_script = f"""
@@ -2129,34 +2122,34 @@ class IndexCleanupManager:
                 FROM pg_stat_user_indexes
                 WHERE indexname = %s
             """, (index,))
-            
+
             index_def = self.cur.fetchone()
             if index_def:
                 backup_script += f"{index_def[0]};\n\n"
-        
+
         # 保存備份腳本
         with open(f"index_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.sql", 'w') as f:
             f.write(backup_script)
-        
+
         return backup_script
-    
+
     def safe_drop_index(self, index_name, table_name):
         """安全地刪除索引並監控性能"""
         try:
             # 記錄刪除前的性能基準
             pre_metrics = self.get_performance_metrics(table_name)
-            
+
             # 使用 CONCURRENTLY 避免鎖表
             print(f"刪除索引: {index_name}")
             self.cur.execute(f"DROP INDEX CONCURRENTLY IF EXISTS {index_name}")
             self.conn.commit()
-            
+
             # 等待一段時間
             time.sleep(10)
-            
+
             # 檢查性能影響
             post_metrics = self.get_performance_metrics(table_name)
-            
+
             # 如果性能顯著下降，記錄警告
             if self.performance_degraded(pre_metrics, post_metrics):
                 self.cleanup_log.append({
@@ -2165,14 +2158,14 @@ class IndexCleanupManager:
                     'message': '性能下降，考慮恢復'
                 })
                 return False
-            
+
             self.cleanup_log.append({
                 'index': index_name,
                 'status': 'success',
                 'message': '成功刪除'
             })
             return True
-            
+
         except Exception as e:
             self.conn.rollback()
             self.cleanup_log.append({
@@ -2181,11 +2174,11 @@ class IndexCleanupManager:
                 'message': str(e)
             })
             return False
-    
+
     def get_performance_metrics(self, table_name):
         """獲取表的性能指標"""
         self.cur.execute("""
-            SELECT 
+            SELECT
                 seq_scan,
                 seq_tup_read,
                 idx_scan,
@@ -2193,49 +2186,49 @@ class IndexCleanupManager:
             FROM pg_stat_user_tables
             WHERE tablename = %s
         """, (table_name,))
-        
+
         return self.cur.fetchone()
-    
+
     def performance_degraded(self, pre_metrics, post_metrics, threshold=0.2):
         """檢查性能是否下降"""
         if not pre_metrics or not post_metrics:
             return False
-        
+
         # 檢查順序掃描是否顯著增加
         seq_scan_increase = (post_metrics[0] - pre_metrics[0]) / max(pre_metrics[0], 1)
-        
+
         return seq_scan_increase > threshold
-    
+
     def execute_cleanup(self, dry_run=True):
         """執行清理流程"""
         print("開始索引清理分析...")
-        
+
         # 1. 識別未使用的索引
         unused_indexes = self.analyze_index_usage()
         print(f"找到 {len(unused_indexes)} 個未使用的索引")
-        
+
         if not unused_indexes:
             print("沒有需要清理的索引")
             return
-        
+
         # 2. 創建備份腳本
         indexes_to_remove = [idx[0] for idx in unused_indexes[:10]]  # 每次最多刪除10個
         self.create_backup_script(indexes_to_remove)
-        
+
         if dry_run:
             print("Dry run 模式，以下索引將被刪除：")
             for idx in indexes_to_remove:
                 print(f"  - {idx}")
             return
-        
+
         # 3. 執行刪除
         for index_name, table_name, *_ in unused_indexes[:10]:
             self.safe_drop_index(index_name, table_name)
             time.sleep(5)  # 避免過度影響系統
-        
+
         # 4. 生成報告
         self.generate_report()
-    
+
     def generate_report(self):
         """生成清理報告"""
         report = f"""
@@ -2247,7 +2240,7 @@ class IndexCleanupManager:
         success_count = sum(1 for log in self.cleanup_log if log['status'] == 'success')
         warning_count = sum(1 for log in self.cleanup_log if log['status'] == 'warning')
         error_count = sum(1 for log in self.cleanup_log if log['status'] == 'error')
-        
+
         report += f"""
 成功: {success_count}
 警告: {warning_count}
@@ -2257,10 +2250,10 @@ class IndexCleanupManager:
 """
         for log in self.cleanup_log:
             report += f"  [{log['status']}] {log['index']}: {log['message']}\n"
-        
+
         with open(f"cleanup_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt", 'w') as f:
             f.write(report)
-        
+
         print(report)
 
 if __name__ == "__main__":
@@ -2270,7 +2263,7 @@ if __name__ == "__main__":
         'user': 'postgres',
         'password': 'your_password'
     }
-    
+
     manager = IndexCleanupManager(connection_params)
     manager.execute_cleanup(dry_run=False)
 ```
@@ -2297,35 +2290,35 @@ DECLARE
 BEGIN
   -- 創建臨時表存儲初始狀態
   CREATE TEMP TABLE IF NOT EXISTS write_stats_start AS
-  SELECT 
+  SELECT
     tablename,
     n_tup_ins,
     n_tup_upd,
     n_tup_del,
     now() AS snapshot_time
   FROM pg_stat_user_tables;
-  
+
   -- 等待指定間隔
   PERFORM pg_sleep(v_interval);
-  
+
   -- 計算性能指標
   RETURN QUERY
-  SELECT 
+  SELECT
     t.tablename::TEXT,
     ROUND((t.n_tup_ins - s.n_tup_ins)::NUMERIC / v_interval, 2) AS inserts_per_sec,
     ROUND((t.n_tup_upd - s.n_tup_upd)::NUMERIC / v_interval, 2) AS updates_per_sec,
     ROUND((t.n_tup_del - s.n_tup_del)::NUMERIC / v_interval, 2) AS deletes_per_sec,
-    ROUND(((t.n_tup_ins - s.n_tup_ins) + 
-           (t.n_tup_upd - s.n_tup_upd) + 
+    ROUND(((t.n_tup_ins - s.n_tup_ins) +
+           (t.n_tup_upd - s.n_tup_upd) +
            (t.n_tup_del - s.n_tup_del))::NUMERIC / v_interval, 2) AS total_writes_per_sec,
     0::NUMERIC AS avg_insert_time_ms -- 需要從應用層獲取
   FROM pg_stat_user_tables t
   JOIN write_stats_start s ON t.tablename = s.tablename
-  WHERE ((t.n_tup_ins - s.n_tup_ins) + 
-         (t.n_tup_upd - s.n_tup_upd) + 
+  WHERE ((t.n_tup_ins - s.n_tup_ins) +
+         (t.n_tup_upd - s.n_tup_upd) +
          (t.n_tup_del - s.n_tup_del)) > 0
   ORDER BY total_writes_per_sec DESC;
-  
+
   -- 清理臨時表
   DROP TABLE IF EXISTS write_stats_start;
 END;
@@ -2353,54 +2346,52 @@ interface BenchmarkResult {
 class PerformanceBenchmark {
   private supabase: any;
   private results: BenchmarkResult[] = [];
-  
+
   constructor(supabaseUrl: string, supabaseKey: string) {
     this.supabase = createClient(supabaseUrl, supabaseKey);
   }
-  
+
   async runBenchmark(testName: string, testFunction: () => Promise<void>) {
     const iterations = 100;
     const timings: number[] = [];
-    
+
     for (let i = 0; i < iterations; i++) {
       const start = performance.now();
       await testFunction();
       const end = performance.now();
       timings.push(end - start);
     }
-    
+
     // 計算統計數據
     const avg = timings.reduce((a, b) => a + b, 0) / timings.length;
     const sorted = timings.sort((a, b) => a - b);
     const p50 = sorted[Math.floor(iterations * 0.5)];
     const p95 = sorted[Math.floor(iterations * 0.95)];
     const p99 = sorted[Math.floor(iterations * 0.99)];
-    
+
     return {
       avg,
       p50,
       p95,
       p99,
       min: sorted[0],
-      max: sorted[sorted.length - 1]
+      max: sorted[sorted.length - 1],
     };
   }
-  
+
   async benchmarkInsertOperation() {
     return this.runBenchmark('Insert Operation', async () => {
-      await this.supabase
-        .from('record_transfer')
-        .insert({
-          tran_date: new Date(),
-          f_loc: 'injection',
-          t_loc: 'fold',
-          plt_num: `PLT-TEST-${Math.random()}`,
-          operator_id: 123,
-          product_code: 'TEST-001'
-        });
+      await this.supabase.from('record_transfer').insert({
+        tran_date: new Date(),
+        f_loc: 'injection',
+        t_loc: 'fold',
+        plt_num: `PLT-TEST-${Math.random()}`,
+        operator_id: 123,
+        product_code: 'TEST-001',
+      });
     });
   }
-  
+
   async benchmarkUpdateOperation() {
     return this.runBenchmark('Update Operation', async () => {
       await this.supabase
@@ -2409,30 +2400,32 @@ class PerformanceBenchmark {
         .eq('plt_num', 'PLT-TEST-001');
     });
   }
-  
+
   async benchmarkComplexQuery() {
     return this.runBenchmark('Complex Query', async () => {
       await this.supabase
         .from('record_transfer')
-        .select(`
+        .select(
+          `
           *,
           operator:data_id(name),
           pallet:record_palletinfo(product_code)
-        `)
+        `
+        )
         .gte('tran_date', new Date(Date.now() - 86400000))
         .limit(100);
     });
   }
-  
+
   async runFullBenchmark() {
     console.log('開始性能基準測試...');
-    
+
     const tests = [
       { name: 'Insert', func: () => this.benchmarkInsertOperation() },
       { name: 'Update', func: () => this.benchmarkUpdateOperation() },
-      { name: 'Complex Query', func: () => this.benchmarkComplexQuery() }
+      { name: 'Complex Query', func: () => this.benchmarkComplexQuery() },
     ];
-    
+
     for (const test of tests) {
       console.log(`測試: ${test.name}`);
       const result = await test.func();
@@ -2445,10 +2438,7 @@ class PerformanceBenchmark {
 }
 
 // 執行基準測試
-const benchmark = new PerformanceBenchmark(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_KEY!
-);
+const benchmark = new PerformanceBenchmark(process.env.SUPABASE_URL!, process.env.SUPABASE_KEY!);
 
 benchmark.runFullBenchmark();
 ```
@@ -2460,18 +2450,18 @@ benchmark.runFullBenchmark();
 -- 索引回滾腳本
 
 -- 從備份恢復索引
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_transfer_composite 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_transfer_composite
   ON record_transfer(tran_date DESC, plt_num, operator_id);
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_palletinfo_search 
-  ON record_palletinfo USING GIN(to_tsvector('english', 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_palletinfo_search
+  ON record_palletinfo USING GIN(to_tsvector('english',
     plt_num || ' ' || COALESCE(serial_num, '')));
 
 -- 驗證索引創建成功
-SELECT 
+SELECT
   indexname,
   indexdef,
-  CASE 
+  CASE
     WHEN indisvalid THEN '✓ 有效'
     ELSE '✗ 無效'
   END AS status
@@ -2539,6 +2529,7 @@ echo "實施後驗證完成"
 ### 日常維護任務
 
 #### 每日檢查
+
 ```bash
 # 檢查系統健康狀態
 npm run health:check
@@ -2554,6 +2545,7 @@ npm run test:smoke
 ```
 
 #### 每週維護
+
 ```bash
 # 清理舊日誌
 npm run logs:cleanup --older-than=7d
@@ -2570,6 +2562,7 @@ npm run db:backup
 ```
 
 #### 每月維護
+
 ```bash
 # 安全審計
 npm run security:audit
@@ -2587,6 +2580,7 @@ npm run db:reindex
 ### 故障排除指南
 
 #### 常見問題解決
+
 ```typescript
 // 問題：托盤搜索失敗
 解決方案：
@@ -2625,6 +2619,7 @@ npm run db:reindex
 ### 部署程序
 
 #### 生產部署流程
+
 ```bash
 # 1. 預部署檢查
 npm run deploy:pre-check
@@ -2649,6 +2644,7 @@ npm run monitor:production
 ```
 
 #### 回滾程序
+
 ```bash
 # 1. 確認回滾版本
 npm run deploy:list-versions
@@ -2666,6 +2662,7 @@ npm run notify:rollback
 ## 已知問題和限制
 
 ### 當前限制
+
 1. **批量轉移**：不支援一次轉移多個托盤
 2. **離線模式**：需要網絡連接才能運作
 3. **並發限制**：同一托盤不能同時被多人操作
@@ -2673,24 +2670,27 @@ npm run notify:rollback
 5. **搜索功能**：不支援模糊搜索
 
 ### 活躍 Bugs
-| ID | 嚴重性 | 描述 | 狀態 | 預計修復 |
-|----|--------|------|------|----------|
-| #001 | 中 | 快速切換目的地可能導致狀態不同步 | 進行中 | v2.1.0 |
-| #002 | 低 | 歷史記錄分頁在邊界情況下顯示錯誤 | 待處理 | v2.2.0 |
-| #003 | 低 | 深色模式下某些文字對比度不足 | 待處理 | v2.1.0 |
+
+| ID   | 嚴重性 | 描述                             | 狀態   | 預計修復 |
+| ---- | ------ | -------------------------------- | ------ | -------- |
+| #001 | 中     | 快速切換目的地可能導致狀態不同步 | 進行中 | v2.1.0   |
+| #002 | 低     | 歷史記錄分頁在邊界情況下顯示錯誤 | 待處理 | v2.2.0   |
+| #003 | 低     | 深色模式下某些文字對比度不足     | 待處理 | v2.1.0   |
 
 ### 瀏覽器兼容性
-| 瀏覽器 | 最低版本 | 狀態 | 備註 |
-|--------|----------|------|------|
-| Chrome | 90+ | ✅ 完全支援 | 推薦使用 |
-| Firefox | 88+ | ✅ 完全支援 | - |
-| Safari | 14+ | ⚠️ 部分支援 | 某些動畫可能不流暢 |
-| Edge | 90+ | ✅ 完全支援 | - |
-| IE | - | ❌ 不支援 | - |
+
+| 瀏覽器  | 最低版本 | 狀態        | 備註               |
+| ------- | -------- | ----------- | ------------------ |
+| Chrome  | 90+      | ✅ 完全支援 | 推薦使用           |
+| Firefox | 88+      | ✅ 完全支援 | -                  |
+| Safari  | 14+      | ⚠️ 部分支援 | 某些動畫可能不流暢 |
+| Edge    | 90+      | ✅ 完全支援 | -                  |
+| IE      | -        | ❌ 不支援   | -                  |
 
 ## 未來增強建議
 
 ### 短期改進 (Q1 2025)
+
 1. **批量轉移功能**
    - 支援多選托盤
    - 批量驗證和執行
@@ -2707,6 +2707,7 @@ npm run notify:rollback
    - 優化打包大小
 
 ### 中期改進 (Q2-Q3 2025)
+
 1. **離線支援**
    - 本地數據緩存
    - 離線隊列
@@ -2723,6 +2724,7 @@ npm run notify:rollback
    - 推送通知
 
 ### 長期願景 (2026+)
+
 1. **AI 集成**
    - 智能路徑優化
    - 異常檢測
@@ -2741,9 +2743,11 @@ npm run notify:rollback
 ## 附錄
 
 ### API 參考
+
 完整的 API 文檔請參考：`/docs/api/stock-transfer.md`
 
 ### 配置選項
+
 ```typescript
 interface StockTransferConfig {
   // 功能開關
@@ -2752,14 +2756,14 @@ interface StockTransferConfig {
     enableOfflineMode: boolean;
     enableRealTimeSync: boolean;
   };
-  
+
   // 性能設置
   performance: {
     searchDebounceMs: number;
     maxHistoryItems: number;
     cacheTimeout: number;
   };
-  
+
   // 安全設置
   security: {
     sessionTimeout: number;
@@ -2770,19 +2774,20 @@ interface StockTransferConfig {
 ```
 
 ### 錯誤代碼參考
-| 代碼 | 描述 | 解決方案 |
-|------|------|----------|
+
+| 代碼 | 描述           | 解決方案             |
+| ---- | -------------- | -------------------- |
 | E001 | 數據庫連接失敗 | 檢查網絡和數據庫狀態 |
-| E002 | 認證失敗 | 重新登錄 |
-| E003 | 權限不足 | 聯繫管理員 |
-| E004 | 托盤不存在 | 檢查托盤號 |
-| E005 | 托盤已作廢 | 無法操作作廢托盤 |
-| E006 | 重複轉移 | 托盤已在目標位置 |
-| E007 | 並發衝突 | 稍後重試 |
-| E008 | 驗證失敗 | 檢查輸入格式 |
+| E002 | 認證失敗       | 重新登錄             |
+| E003 | 權限不足       | 聯繫管理員           |
+| E004 | 托盤不存在     | 檢查托盤號           |
+| E005 | 托盤已作廢     | 無法操作作廢托盤     |
+| E006 | 重複轉移       | 托盤已在目標位置     |
+| E007 | 並發衝突       | 稍後重試             |
+| E008 | 驗證失敗       | 檢查輸入格式         |
 
 ---
 
-*文檔版本：1.0.0*  
-*最後更新：2025-01-18*  
-*作者：技術團隊*
+_文檔版本：1.0.0_  
+_最後更新：2025-01-18_  
+_作者：技術團隊_

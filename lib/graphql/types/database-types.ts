@@ -196,7 +196,7 @@ export class TypeTransformers {
       palletNumber: db.plt_num,
       operatorId: db.operator_id,
       action: 'TRANSFERRED', // Computed default
-      actionType: 'MOVEMENT'
+      actionType: 'MOVEMENT',
     };
   }
 
@@ -213,7 +213,7 @@ export class TypeTransformers {
       remark: db.plt_remark,
       quantity: db.product_qty,
       pdfUrl: db.pdf_url,
-      action: 'CREATED' // Computed default
+      action: 'CREATED', // Computed default
     };
   }
 
@@ -221,7 +221,7 @@ export class TypeTransformers {
    * Transform database history record to GraphQL stock history format
    */
   static transformStockHistoryRecord(
-    db: RecordHistoryDB, 
+    db: RecordHistoryDB,
     staffInfo?: StaffInfo,
     palletInfo?: PalletInfoRecord
   ): StockHistoryRecord {
@@ -237,18 +237,20 @@ export class TypeTransformers {
       quantity: palletInfo?.quantity,
       remark: db.remark,
       actionType: this.computeActionType(db.action),
-      actionCategory: this.computeActionCategory(db.action, db.loc)
+      actionCategory: this.computeActionCategory(db.action, db.loc),
     };
   }
 
   /**
    * Compute action type based on action string
    */
-  private static computeActionType(action: string): 'MOVEMENT' | 'STATUS_CHANGE' | 'QUANTITY_CHANGE' | 'SYSTEM_ACTION' {
+  private static computeActionType(
+    action: string
+  ): 'MOVEMENT' | 'STATUS_CHANGE' | 'QUANTITY_CHANGE' | 'SYSTEM_ACTION' {
     const movementActions = ['TRANSFERRED', 'MOVED', 'Stock Transfer', 'Loading'];
     const statusActions = ['VOIDED', 'ALLOCATED', 'QUALITY_CHECK'];
     const quantityActions = ['ADJUSTED', 'LOADED', 'UNLOADED'];
-    
+
     if (movementActions.some(a => action.includes(a))) return 'MOVEMENT';
     if (statusActions.some(a => action.includes(a))) return 'STATUS_CHANGE';
     if (quantityActions.some(a => action.includes(a))) return 'QUANTITY_CHANGE';
@@ -259,7 +261,7 @@ export class TypeTransformers {
    * Compute action category based on action and location
    */
   private static computeActionCategory(
-    action: string, 
+    action: string,
     location?: string
   ): 'INBOUND' | 'OUTBOUND' | 'INTERNAL' | 'ADMINISTRATIVE' {
     if (action.includes('Loading') || location?.includes('LOADING')) return 'OUTBOUND';
@@ -328,30 +330,36 @@ export interface QueryResult<T> {
 export class TypeGuards {
   static isRecordTransferDB(obj: unknown): obj is RecordTransferDB {
     const record = obj as Record<string, unknown>;
-    return record && 
-           typeof record.tran_date !== 'undefined' &&
-           typeof record.f_loc === 'string' &&
-           typeof record.t_loc === 'string' &&
-           typeof record.plt_num === 'string' &&
-           typeof record.operator_id === 'number';
+    return (
+      record &&
+      typeof record.tran_date !== 'undefined' &&
+      typeof record.f_loc === 'string' &&
+      typeof record.t_loc === 'string' &&
+      typeof record.plt_num === 'string' &&
+      typeof record.operator_id === 'number'
+    );
   }
 
   static isRecordPalletInfoDB(obj: unknown): obj is RecordPalletInfoDB {
     const record = obj as Record<string, unknown>;
-    return record &&
-           typeof record.generate_time !== 'undefined' &&
-           typeof record.plt_num === 'string' &&
-           typeof record.product_code === 'string' &&
-           typeof record.product_qty === 'number';
+    return (
+      record &&
+      typeof record.generate_time !== 'undefined' &&
+      typeof record.plt_num === 'string' &&
+      typeof record.product_code === 'string' &&
+      typeof record.product_qty === 'number'
+    );
   }
 
   static isRecordHistoryDB(obj: unknown): obj is RecordHistoryDB {
     const record = obj as Record<string, unknown>;
-    return record &&
-           typeof record.time !== 'undefined' &&
-           typeof record.id === 'number' &&
-           typeof record.action === 'string' &&
-           typeof record.plt_num === 'string';
+    return (
+      record &&
+      typeof record.time !== 'undefined' &&
+      typeof record.id === 'number' &&
+      typeof record.action === 'string' &&
+      typeof record.plt_num === 'string'
+    );
   }
 }
 

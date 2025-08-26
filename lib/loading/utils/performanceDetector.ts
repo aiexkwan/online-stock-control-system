@@ -56,9 +56,12 @@ export class PerformanceDetector {
 
       logger.debug(this.metrics, 'Performance metrics detected');
     } catch (error) {
-      logger.warn({
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }, 'Failed to detect performance metrics');
+      logger.warn(
+        {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+        'Failed to detect performance metrics'
+      );
 
       // 提供預設值
       this.metrics = this.getDefaultMetrics();

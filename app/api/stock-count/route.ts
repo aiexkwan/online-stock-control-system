@@ -100,7 +100,9 @@ export async function POST(request: NextRequest) {
       }
 
       // 檢查是否已經盤點過該 plt_num
-      const alreadyCountedPallet = existingRecords?.find(record => record.plt_num === palletData.plt_num);
+      const alreadyCountedPallet = existingRecords?.find(
+        record => record.plt_num === palletData.plt_num
+      );
       if (alreadyCountedPallet) {
         return NextResponse.json({
           success: false,
@@ -130,7 +132,8 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        currentRemainQty = typeof stockData[0].stock_level === 'number' ? stockData[0].stock_level : 0;
+        currentRemainQty =
+          typeof stockData[0].stock_level === 'number' ? stockData[0].stock_level : 0;
         is_first_count = true;
 
         // 創建初始記錄
@@ -152,7 +155,8 @@ export async function POST(request: NextRequest) {
         }
       } else {
         // 獲取最新的 remain_qty
-        currentRemainQty = typeof existingRecords[0].remain_qty === 'number' ? existingRecords[0].remain_qty : 0;
+        currentRemainQty =
+          typeof existingRecords[0].remain_qty === 'number' ? existingRecords[0].remain_qty : 0;
       }
 
       return NextResponse.json({
@@ -172,7 +176,10 @@ export async function POST(request: NextRequest) {
     if (plt_num && product_code && counted_qty !== undefined) {
       // 基本驗證
       if (counted_qty < 0) {
-        return NextResponse.json({ success: false, error: 'Quantity cannot be negative' }, { status: 400 });
+        return NextResponse.json(
+          { success: false, error: 'Quantity cannot be negative' },
+          { status: 400 }
+        );
       }
 
       // 獲取產品描述
@@ -220,7 +227,8 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       } else {
-        currentRemainQty = typeof existingRecords[0].remain_qty === 'number' ? existingRecords[0].remain_qty : 0;
+        currentRemainQty =
+          typeof existingRecords[0].remain_qty === 'number' ? existingRecords[0].remain_qty : 0;
       }
 
       const newRemainQty = currentRemainQty - counted_qty;
@@ -256,7 +264,11 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { success: false, error: 'Invalid request. Either qrCode or (plt_num, product_code, counted_qty) is required.' },
+      {
+        success: false,
+        error:
+          'Invalid request. Either qrCode or (plt_num, product_code, counted_qty) is required.',
+      },
       { status: 400 }
     );
   } catch (error) {

@@ -44,9 +44,7 @@ export default function AdminLayout({ children }: { children?: React.ReactNode }
       <div className='relative z-10 min-h-screen'>
         <DynamicApolloProvider>
           <QueryClientProvider client={queryClient}>
-            <BusinessDialogProvider>
-              {safeChildren}
-            </BusinessDialogProvider>
+            <BusinessDialogProvider>{safeChildren}</BusinessDialogProvider>
           </QueryClientProvider>
         </DynamicApolloProvider>
       </div>

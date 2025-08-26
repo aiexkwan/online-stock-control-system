@@ -43,7 +43,7 @@ export const GET_RECORD_HISTORY = gql`
       hasPreviousPage
       nextCursor
       previousCursor
-      
+
       summary {
         totalOperations
         totalMergedRecords
@@ -51,13 +51,13 @@ export const GET_RECORD_HISTORY = gql`
         uniqueActions
         uniqueLocations
         uniquePallets
-        
+
         timeSpan {
           start
           end
           durationHours
         }
-        
+
         topOperators {
           operatorId
           operatorName
@@ -65,14 +65,14 @@ export const GET_RECORD_HISTORY = gql`
           percentage
           avgEfficiency
         }
-        
+
         topActions {
           action
           count
           percentage
           avgDuration
         }
-        
+
         efficiencyMetrics {
           averageOperationsPerMinute
           fastestOperator {
@@ -90,7 +90,7 @@ export const GET_RECORD_HISTORY = gql`
           peakHour
           quietHour
         }
-        
+
         mergingStats {
           totalOriginalRecords
           totalMergedGroups
@@ -100,10 +100,10 @@ export const GET_RECORD_HISTORY = gql`
           sequentialGroups
         }
       }
-      
+
       queryTime
       cacheHit
-      
+
       appliedFilters {
         operatorId
         operatorName
@@ -122,18 +122,18 @@ export const GET_RECORD_HISTORY = gql`
         locations
         hasMultipleOperations
       }
-      
+
       pagination {
         limit
         offset
         cursor
       }
-      
+
       sorting {
         field
         direction
       }
-      
+
       mergingConfig {
         timeWindowMinutes
         sameOperatorOnly
@@ -154,11 +154,7 @@ export const GET_RAW_RECORD_HISTORY = gql`
     $pagination: RecordHistoryPagination
     $sorting: RecordHistorySort
   ) {
-    rawRecordHistory(
-      filters: $filters
-      pagination: $pagination
-      sorting: $sorting
-    ) {
+    rawRecordHistory(filters: $filters, pagination: $pagination, sorting: $sorting) {
       id
       time
       operatorId
@@ -177,29 +173,15 @@ export const GET_RAW_RECORD_HISTORY = gql`
 
 // Query for search suggestions (autocomplete)
 export const GET_RECORD_HISTORY_SUGGESTIONS = gql`
-  query GetRecordHistorySearchSuggestions(
-    $field: String!
-    $query: String!
-    $limit: Int = 10
-  ) {
-    recordHistorySearchSuggestions(
-      field: $field
-      query: $query
-      limit: $limit
-    )
+  query GetRecordHistorySearchSuggestions($field: String!, $query: String!, $limit: Int = 10) {
+    recordHistorySearchSuggestions(field: $field, query: $query, limit: $limit)
   }
 `;
 
 // Query for operator activity summary
 export const GET_OPERATOR_ACTIVITY = gql`
-  query GetOperatorActivity(
-    $operatorIds: [Int!]
-    $dateRange: DateRangeInput!
-  ) {
-    operatorActivity(
-      operatorIds: $operatorIds
-      dateRange: $dateRange
-    ) {
+  query GetOperatorActivity($operatorIds: [Int!], $dateRange: DateRangeInput!) {
+    operatorActivity(operatorIds: $operatorIds, dateRange: $dateRange) {
       operatorId
       operatorName
       operationCount
@@ -215,17 +197,14 @@ export const GET_RECORD_HISTORY_TRENDS = gql`
     $filters: RecordHistoryFilters
     $timeGranularity: TimeGranularity = HOUR
   ) {
-    recordHistoryTrends(
-      filters: $filters
-      timeGranularity: $timeGranularity
-    ) {
+    recordHistoryTrends(filters: $filters, timeGranularity: $timeGranularity) {
       hourlyDistribution {
         hour
         operationCount
         uniqueOperators
         avgEfficiency
       }
-      
+
       dailyDistribution {
         date
         operationCount
@@ -233,7 +212,7 @@ export const GET_RECORD_HISTORY_TRENDS = gql`
         avgEfficiency
         peakHour
       }
-      
+
       operatorTrends {
         operatorId
         operatorName
@@ -244,7 +223,7 @@ export const GET_RECORD_HISTORY_TRENDS = gql`
         }
         totalGrowth
       }
-      
+
       actionTrends {
         action
         trend {
@@ -254,7 +233,7 @@ export const GET_RECORD_HISTORY_TRENDS = gql`
         }
         totalGrowth
       }
-      
+
       efficiencyTrends {
         timestamp
         avgOperationsPerMinute
@@ -354,11 +333,7 @@ export const RECORD_HISTORY_UPDATED = gql`
     $actions: [String!]
     $locations: [String!]
   ) {
-    recordHistoryUpdated(
-      operatorIds: $operatorIds
-      actions: $actions
-      locations: $locations
-    ) {
+    recordHistoryUpdated(operatorIds: $operatorIds, actions: $actions, locations: $locations) {
       type
       record {
         id
@@ -412,10 +387,7 @@ export const OPERATOR_ACTIVITY_ALERT = gql`
 
 // Subscription for high-frequency operation alerts
 export const HIGH_FREQUENCY_ALERT = gql`
-  subscription HighFrequencyAlert(
-    $timeWindowMinutes: Int = 1
-    $minOperationsPerWindow: Int = 20
-  ) {
+  subscription HighFrequencyAlert($timeWindowMinutes: Int = 1, $minOperationsPerWindow: Int = 20) {
     highFrequencyAlert(
       timeWindowMinutes: $timeWindowMinutes
       minOperationsPerWindow: $minOperationsPerWindow
@@ -486,13 +458,13 @@ export const SUMMARY_FRAGMENT = gql`
     uniqueActions
     uniqueLocations
     uniquePallets
-    
+
     timeSpan {
       start
       end
       durationHours
     }
-    
+
     topOperators {
       operatorId
       operatorName
@@ -500,14 +472,14 @@ export const SUMMARY_FRAGMENT = gql`
       percentage
       avgEfficiency
     }
-    
+
     topActions {
       action
       count
       percentage
       avgDuration
     }
-    
+
     efficiencyMetrics {
       averageOperationsPerMinute
       fastestOperator {
@@ -525,7 +497,7 @@ export const SUMMARY_FRAGMENT = gql`
       peakHour
       quietHour
     }
-    
+
     mergingStats {
       totalOriginalRecords
       totalMergedGroups
@@ -567,7 +539,15 @@ export interface RecordHistoryPagination {
 }
 
 export interface RecordHistorySort {
-  field?: 'TIME_START' | 'TIME_END' | 'OPERATOR_NAME' | 'ACTION' | 'COUNT' | 'DURATION' | 'EFFICIENCY' | 'PALLET_COUNT';
+  field?:
+    | 'TIME_START'
+    | 'TIME_END'
+    | 'OPERATOR_NAME'
+    | 'ACTION'
+    | 'COUNT'
+    | 'DURATION'
+    | 'EFFICIENCY'
+    | 'PALLET_COUNT';
   direction?: 'ASC' | 'DESC';
 }
 

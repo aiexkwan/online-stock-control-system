@@ -294,13 +294,13 @@ export class GrnErrorHandler {
         const supabase = this.getSupabase();
         if (supabase) {
           await supabase.from('record_history').insert({
-          time: errorReport.timestamp,
-          id: parseInt(context.clockNumber, 10) || 0,
-          plt_num: null,
-          loc: null,
-          action: `GRN Error: ${context.component} - ${context.action}`,
-          remark: `${severity.toUpperCase()}: ${error.message}`,
-        });
+            time: errorReport.timestamp,
+            id: parseInt(context.clockNumber, 10) || 0,
+            plt_num: null,
+            loc: null,
+            action: `GRN Error: ${context.component} - ${context.action}`,
+            remark: `${severity.toUpperCase()}: ${error.message}`,
+          });
         }
       }
     } catch (dbError) {
@@ -321,13 +321,13 @@ export class GrnErrorHandler {
         const supabase = this.getSupabase();
         if (supabase) {
           await supabase.from('record_history').insert({
-          time: new Date().toISOString(),
-          id: parseInt(context.clockNumber, 10) || 0,
-          plt_num: null,
-          loc: null,
-          action: `GRN Success: ${context.component} - ${context.action}`,
-          remark: details || message,
-        });
+            time: new Date().toISOString(),
+            id: parseInt(context.clockNumber, 10) || 0,
+            plt_num: null,
+            loc: null,
+            action: `GRN Success: ${context.component} - ${context.action}`,
+            remark: details || message,
+          });
         }
       }
     } catch (dbError) {
@@ -523,23 +523,24 @@ export class GrnErrorHandler {
 
 // 導出單例實例 - lazy initialization to avoid SSR issues
 export const grnErrorHandler = {
-  handleValidationError: (...args: Parameters<GrnErrorHandler['handleValidationError']>) => 
+  handleValidationError: (...args: Parameters<GrnErrorHandler['handleValidationError']>) =>
     GrnErrorHandler.getInstance().handleValidationError(...args),
-  handleSupplierError: (...args: Parameters<GrnErrorHandler['handleSupplierError']>) => 
+  handleSupplierError: (...args: Parameters<GrnErrorHandler['handleSupplierError']>) =>
     GrnErrorHandler.getInstance().handleSupplierError(...args),
-  handlePalletGenerationError: (...args: Parameters<GrnErrorHandler['handlePalletGenerationError']>) => 
-    GrnErrorHandler.getInstance().handlePalletGenerationError(...args),
-  handleDatabaseError: (...args: Parameters<GrnErrorHandler['handleDatabaseError']>) => 
+  handlePalletGenerationError: (
+    ...args: Parameters<GrnErrorHandler['handlePalletGenerationError']>
+  ) => GrnErrorHandler.getInstance().handlePalletGenerationError(...args),
+  handleDatabaseError: (...args: Parameters<GrnErrorHandler['handleDatabaseError']>) =>
     GrnErrorHandler.getInstance().handleDatabaseError(...args),
-  handlePdfError: (...args: Parameters<GrnErrorHandler['handlePdfError']>) => 
+  handlePdfError: (...args: Parameters<GrnErrorHandler['handlePdfError']>) =>
     GrnErrorHandler.getInstance().handlePdfError(...args),
-  handleWeightError: (...args: Parameters<GrnErrorHandler['handleWeightError']>) => 
+  handleWeightError: (...args: Parameters<GrnErrorHandler['handleWeightError']>) =>
     GrnErrorHandler.getInstance().handleWeightError(...args),
-  handleSuccess: (...args: Parameters<GrnErrorHandler['handleSuccess']>) => 
+  handleSuccess: (...args: Parameters<GrnErrorHandler['handleSuccess']>) =>
     GrnErrorHandler.getInstance().handleSuccess(...args),
-  handleWarning: (...args: Parameters<GrnErrorHandler['handleWarning']>) => 
+  handleWarning: (...args: Parameters<GrnErrorHandler['handleWarning']>) =>
     GrnErrorHandler.getInstance().handleWarning(...args),
-  handleInfo: (...args: Parameters<GrnErrorHandler['handleInfo']>) => 
+  handleInfo: (...args: Parameters<GrnErrorHandler['handleInfo']>) =>
     GrnErrorHandler.getInstance().handleInfo(...args),
   getErrorReports: () => GrnErrorHandler.getInstance().getErrorReports(),
   clearErrorReports: () => GrnErrorHandler.getInstance().clearErrorReports(),

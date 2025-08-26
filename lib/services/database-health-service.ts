@@ -1,7 +1,7 @@
 /**
  * Database Health Service
  * 資料庫健康狀態監控服務
- * 
+ *
  * 提供分層的資料庫驗證和監控機制
  */
 
@@ -42,22 +42,21 @@ export class DatabaseHealthService {
    */
   async performFullHealthCheck(): Promise<SystemHealthStatus> {
     const checks: DatabaseHealthCheck[] = [];
-    
+
     try {
       const supabase = await createClient();
-      
+
       // 檢查核心表格
-      checks.push(...await this.checkCoreTables(supabase));
-      
+      checks.push(...(await this.checkCoreTables(supabase)));
+
       // 檢查核心 RPC 函數
-      checks.push(...await this.checkCoreRpcFunctions(supabase));
-      
+      checks.push(...(await this.checkCoreRpcFunctions(supabase)));
+
       // 檢查資料庫連線效能
       checks.push(await this.checkDatabasePerformance(supabase));
-      
+
       // 檢查關鍵資料完整性
-      checks.push(...await this.checkDataIntegrity(supabase));
-      
+      checks.push(...(await this.checkDataIntegrity(supabase)));
     } catch (error) {
       systemLogger.error({ error }, 'Health check failed');
       checks.push({
@@ -65,14 +64,14 @@ export class DatabaseHealthService {
         status: 'failed',
         critical: true,
         lastChecked: new Date(),
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
 
     const healthStatus: SystemHealthStatus = {
       overall: this.determineOverallStatus(checks),
       checks,
-      lastFullCheck: new Date()
+      lastFullCheck: new Date(),
     };
 
     this.healthCache = healthStatus;
@@ -83,54 +82,57 @@ export class DatabaseHealthService {
    * 獲取快取的健康狀態（用於高頻查詢）
    */
   async getCachedHealthStatus(): Promise<SystemHealthStatus> {
-    if (this.healthCache && 
-        (Date.now() - this.healthCache.lastFullCheck.getTime()) < this.CACHE_TTL) {
+    if (
+      this.healthCache &&
+      Date.now() - this.healthCache.lastFullCheck.getTime() < this.CACHE_TTL
+    ) {
       return this.healthCache;
     }
-    
+
     return await this.performFullHealthCheck();
   }
 
   /**
    * 檢查系統是否可以執行轉移操作
    */
-  async canPerformTransfer(): Promise<{ 
-    allowed: boolean; 
-    reason?: string; 
-    degradedMode?: boolean 
+  async canPerformTransfer(): Promise<{
+    allowed: boolean;
+    reason?: string;
+    degradedMode?: boolean;
   }> {
     try {
       const health = await this.getCachedHealthStatus();
-      
+
       // 檢查關鍵組件
       const criticalFailures = health.checks.filter(
         check => check.critical && check.status === 'failed'
       );
-      
+
       if (criticalFailures.length > 0) {
         return {
           allowed: false,
-          reason: `Critical system components unavailable: ${criticalFailures.map(f => f.component).join(', ')}`
+          reason: `Critical system components unavailable: ${criticalFailures.map(f => f.component).join(', ')}`,
         };
       }
-      
+
       // 檢查是否需要降級模式
       const degradedComponents = health.checks.filter(
         check => !check.critical && check.status !== 'healthy'
       );
-      
+
       return {
         allowed: true,
         degradedMode: degradedComponents.length > 0,
-        reason: degradedComponents.length > 0 ? 
-          `Some non-critical features may be unavailable: ${degradedComponents.map(d => d.component).join(', ')}` : 
-          undefined
+        reason:
+          degradedComponents.length > 0
+            ? `Some non-critical features may be unavailable: ${degradedComponents.map(d => d.component).join(', ')}`
+            : undefined,
       };
     } catch (error) {
       systemLogger.error({ error }, 'Transfer readiness check failed');
       return {
         allowed: false,
-        reason: 'Unable to verify system status'
+        reason: 'Unable to verify system status',
       };
     }
   }
@@ -145,20 +147,20 @@ export class DatabaseHealthService {
       { name: 'record_history', critical: true },
       { name: 'record_transfer', critical: false }, // 非關鍵，可降級
       { name: 'data_code', critical: false },
-      { name: 'data_id', critical: false }
+      { name: 'data_id', critical: false },
     ];
 
     const checks: DatabaseHealthCheck[] = [];
-    
+
     for (const table of coreTables) {
       try {
         const startTime = Date.now();
         const { count, error } = await supabase
           .from(table.name)
           .select('*', { count: 'exact', head: true });
-          
+
         const queryTime = Date.now() - startTime;
-        
+
         if (error) {
           checks.push({
             component: `table_${table.name}`,
@@ -166,7 +168,7 @@ export class DatabaseHealthService {
             critical: table.critical,
             lastChecked: new Date(),
             error: error.message,
-            details: `Table access failed: ${error.code}`
+            details: `Table access failed: ${error.code}`,
           });
         } else {
           checks.push({
@@ -174,11 +176,11 @@ export class DatabaseHealthService {
             status: queryTime > 1000 ? 'degraded' : 'healthy',
             critical: table.critical,
             lastChecked: new Date(),
-            metrics: { 
+            metrics: {
               query_time_ms: queryTime,
-              record_count: count || 0
+              record_count: count || 0,
             },
-            details: queryTime > 1000 ? `Slow response time: ${queryTime}ms` : undefined
+            details: queryTime > 1000 ? `Slow response time: ${queryTime}ms` : undefined,
           });
         }
       } catch (error) {
@@ -187,11 +189,11 @@ export class DatabaseHealthService {
           status: 'failed',
           critical: table.critical,
           lastChecked: new Date(),
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }
-    
+
     return checks;
   }
 
@@ -202,21 +204,23 @@ export class DatabaseHealthService {
     const coreFunctions = [
       { name: 'rpc_transfer_pallet', critical: true },
       { name: 'search_pallet_optimized_v2', critical: false },
-      { name: 'search_pallet_optimized', critical: false }
+      { name: 'search_pallet_optimized', critical: false },
     ];
 
     const checks: DatabaseHealthCheck[] = [];
-    
+
     for (const func of coreFunctions) {
       try {
         // 使用輕量級的測試方式
         const startTime = Date.now();
         const { error } = await supabase
-          .rpc(func.name, { /* empty params to test function existence */ })
+          .rpc(func.name, {
+            /* empty params to test function existence */
+          })
           .limit(0);
-        
+
         const queryTime = Date.now() - startTime;
-        
+
         // 42883 = function does not exist
         if (error && error.code === '42883') {
           checks.push({
@@ -225,7 +229,7 @@ export class DatabaseHealthService {
             critical: func.critical,
             lastChecked: new Date(),
             error: 'Function not found',
-            details: `RPC function ${func.name} does not exist`
+            details: `RPC function ${func.name} does not exist`,
           });
         } else {
           // 其他錯誤可能是參數問題，但函數存在
@@ -234,7 +238,7 @@ export class DatabaseHealthService {
             status: 'healthy',
             critical: func.critical,
             lastChecked: new Date(),
-            metrics: { query_time_ms: queryTime }
+            metrics: { query_time_ms: queryTime },
           });
         }
       } catch (error) {
@@ -243,11 +247,11 @@ export class DatabaseHealthService {
           status: 'failed',
           critical: func.critical,
           lastChecked: new Date(),
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }
-    
+
     return checks;
   }
 
@@ -259,10 +263,10 @@ export class DatabaseHealthService {
       const startTime = Date.now();
       await supabase.from('record_palletinfo').select('plt_num').limit(1);
       const queryTime = Date.now() - startTime;
-      
+
       let status: 'healthy' | 'degraded' | 'failed';
       let details: string | undefined;
-      
+
       if (queryTime < 100) {
         status = 'healthy';
       } else if (queryTime < 1000) {
@@ -272,14 +276,14 @@ export class DatabaseHealthService {
         status = 'failed';
         details = `Very slow database response: ${queryTime}ms`;
       }
-      
+
       return {
         component: 'database_performance',
         status,
         critical: false,
         lastChecked: new Date(),
         metrics: { query_time_ms: queryTime },
-        details
+        details,
       };
     } catch (error) {
       return {
@@ -287,7 +291,7 @@ export class DatabaseHealthService {
         status: 'failed',
         critical: true,
         lastChecked: new Date(),
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -297,11 +301,11 @@ export class DatabaseHealthService {
    */
   private async checkDataIntegrity(supabase: SupabaseClient): Promise<DatabaseHealthCheck[]> {
     const checks: DatabaseHealthCheck[] = [];
-    
+
     try {
       // 檢查託盤資料完整性
       const { data, error } = await supabase.rpc('validate_system_schema', {}).limit(1);
-      
+
       if (error && error.code !== '42883') {
         // 如果不是函數不存在的錯誤
         checks.push({
@@ -309,7 +313,7 @@ export class DatabaseHealthService {
           status: 'failed',
           critical: false,
           lastChecked: new Date(),
-          error: error.message
+          error: error.message,
         });
       } else {
         checks.push({
@@ -317,7 +321,7 @@ export class DatabaseHealthService {
           status: 'healthy',
           critical: false,
           lastChecked: new Date(),
-          details: 'Basic data integrity checks passed'
+          details: 'Basic data integrity checks passed',
         });
       }
     } catch (error) {
@@ -326,10 +330,10 @@ export class DatabaseHealthService {
         status: 'degraded',
         critical: false,
         lastChecked: new Date(),
-        details: 'Data integrity validation unavailable'
+        details: 'Data integrity validation unavailable',
       });
     }
-    
+
     return checks;
   }
 
@@ -340,15 +344,15 @@ export class DatabaseHealthService {
     const criticalFailures = checks.filter(c => c.critical && c.status === 'failed');
     const anyFailures = checks.filter(c => c.status === 'failed');
     const anyDegraded = checks.filter(c => c.status === 'degraded');
-    
+
     if (criticalFailures.length > 0) {
       return 'failed';
     }
-    
+
     if (anyFailures.length > 0 || anyDegraded.length > 0) {
       return 'degraded';
     }
-    
+
     return 'healthy';
   }
 }

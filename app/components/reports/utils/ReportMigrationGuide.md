@@ -1,6 +1,7 @@
 # 報表遷移指南
 
 ## 概述
+
 本指南幫助開發者將現有報表遷移到統一報表框架，同時確保輸出格式保持不變。
 
 ## 遷移步驟
@@ -34,9 +35,9 @@ export const yourReportConfig: ReportConfig = {
   // 重要：保持現有格式
   styleOverrides: {
     pdf: {
-      useLegacyStyles: true // 確保格式不變
-    }
-  }
+      useLegacyStyles: true, // 確保格式不變
+    },
+  },
 };
 ```
 
@@ -95,10 +96,7 @@ export class LegacyYourReportPdfGenerator {
 ```typescript
 // LegacyYourReportAdapter.ts
 export class LegacyYourReportAdapter {
-  static async generatePdf(
-    data: ProcessedReportData,
-    config: ReportConfig
-  ): Promise<Blob> {
+  static async generatePdf(data: ProcessedReportData, config: ReportConfig): Promise<Blob> {
     // 數據轉換邏輯
     const generator = new LegacyYourReportPdfGenerator();
     return generator.generate(transformedData);
@@ -159,12 +157,15 @@ export function UnifiedYourReportDialog({ isOpen, onClose }) {
 ## 常見問題
 
 ### Q: 如何處理特殊的報表格式？
+
 A: 創建專用的舊版生成器，完全複製現有邏輯。
 
 ### Q: 數據源如何處理複雜查詢？
+
 A: 可以直接複製現有的查詢邏輯，或創建 RPC 函數優化性能。
 
 ### Q: 如何確保格式完全一致？
+
 A: 使用 `useLegacyStyles: true` 並創建專用的舊版生成器。
 
 ## 已遷移報表範例

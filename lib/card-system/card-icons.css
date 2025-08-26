@@ -51,13 +51,7 @@
   fill: currentColor;
   stroke: currentColor;
   stroke-width: 1;
-  mask: repeating-linear-gradient(
-    45deg,
-    transparent,
-    transparent 2px,
-    black 2px,
-    black 4px
-  );
+  mask: repeating-linear-gradient(45deg, transparent, transparent 2px, black 2px, black 4px);
 }
 
 /* 圖表類圖標 - 分段樣式 */
@@ -112,7 +106,18 @@
 
 /* 星形角標 */
 .corner-indicator--star {
-  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  clip-path: polygon(
+    50% 0%,
+    61% 35%,
+    98% 35%,
+    68% 57%,
+    79% 91%,
+    50% 70%,
+    21% 91%,
+    32% 57%,
+    2% 35%,
+    39% 35%
+  );
 }
 
 /* 角標位置 */
@@ -151,21 +156,21 @@
   :root {
     --card-icon-size: 1.25rem;
   }
-  
+
   .corner-indicator {
     width: 10px;
     height: 10px;
   }
-  
+
   .corner-indicator--top-left,
   .corner-indicator--top-right {
     top: 8px;
   }
-  
+
   .corner-indicator--top-left {
     left: 8px;
   }
-  
+
   .corner-indicator--top-right {
     right: 8px;
   }
@@ -177,11 +182,11 @@
   .corner-indicator {
     transition: none;
   }
-  
+
   .enhanced-glassmorphic-card:hover .corner-indicator {
     transform: none;
   }
-  
+
   .enhanced-glassmorphic-card:hover .corner-indicator--diamond {
     transform: rotate(45deg);
   }
@@ -193,7 +198,7 @@
     background: rgba(255, 255, 255, 0.8);
     border-color: rgba(255, 255, 255, 0.9);
   }
-  
+
   .card-icon {
     opacity: 1;
   }

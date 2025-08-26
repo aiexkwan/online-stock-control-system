@@ -11,11 +11,7 @@ export const DASHBOARD_REPORT_QUERY = gql`
     $params: DashboardReportParams!
     $format: ReportFormat = JSON
   ) {
-    dashboardReport(
-      reportType: $reportType
-      params: $params
-      format: $format
-    ) {
+    dashboardReport(reportType: $reportType, params: $params, format: $format) {
       reportType
       data
       metadata {
@@ -35,10 +31,7 @@ export const DASHBOARD_REPORT_SELECTOR_OPTIONS_QUERY = gql`
     $selectorType: DashboardSelectorType!
     $filters: ReportSelectorFilters
   ) {
-    dashboardReportSelectorOptions(
-      selectorType: $selectorType
-      filters: $filters
-    ) {
+    dashboardReportSelectorOptions(selectorType: $selectorType, filters: $filters) {
       value
       label
       status
@@ -61,17 +54,13 @@ export const REPORT_METADATA_FRAGMENT = gql`
 // Query with fragments for better performance
 export const DASHBOARD_REPORT_WITH_FRAGMENTS = gql`
   ${REPORT_METADATA_FRAGMENT}
-  
+
   query DashboardReportWithFragments(
     $reportType: DashboardReportType!
     $params: DashboardReportParams!
     $format: ReportFormat = JSON
   ) {
-    dashboardReport(
-      reportType: $reportType
-      params: $params
-      format: $format
-    ) {
+    dashboardReport(reportType: $reportType, params: $params, format: $format) {
       reportType
       data
       metadata {
@@ -126,17 +115,20 @@ export interface DashboardReportSelectorVariables {
 
 // Type for report data - varies by report type
 export type ReportDataType =
-  | Record<string, unknown>   // Generic object data
-  | unknown[]                 // Array data for lists
+  | Record<string, unknown> // Generic object data
+  | unknown[] // Array data for lists
   | {
       records: unknown[];
       totals?: Record<string, number>;
       summary?: Record<string, unknown>;
-    }                         // Structured report data
+    } // Structured report data
   | null;
 
 // Type for report filters
-export type ReportFilters = Record<string, string | number | boolean | string[] | { start: string; end: string }>;
+export type ReportFilters = Record<
+  string,
+  string | number | boolean | string[] | { start: string; end: string }
+>;
 
 // Type for selector metadata
 export interface SelectorMetadata {
@@ -144,7 +136,7 @@ export interface SelectorMetadata {
   lastUpdated?: string;
   category?: string;
   tags?: string[];
-  [key: string]: unknown;  // Allow additional properties
+  [key: string]: unknown; // Allow additional properties
 }
 
 export interface DashboardReportData {
@@ -178,20 +170,20 @@ export function buildReportParams(
   selectedValue?: string
 ): DashboardReportVariables['params'] {
   const params: DashboardReportVariables['params'] = {};
-  
+
   if (dateRange) {
     params.dateRange = {
       start: dateRange.from.toISOString(),
       end: dateRange.to.toISOString(),
     };
   }
-  
+
   if (filters || selectedValue) {
     params.filters = {
       ...filters,
       ...(selectedValue && { selectedValue }),
     };
   }
-  
+
   return params;
 }

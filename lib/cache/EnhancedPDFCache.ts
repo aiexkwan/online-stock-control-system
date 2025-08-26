@@ -29,23 +29,19 @@ export class EnhancedPDFCache<T> {
     hits: 0,
     misses: 0,
     totalAccessTime: 0,
-    accessCount: 0
+    accessCount: 0,
   };
-  
+
   // Configuration
   private readonly maxSize: number; // Max cache size in bytes
   private readonly maxEntries: number; // Max number of entries
   private readonly defaultTTL: number; // Default TTL in milliseconds
-  
-  constructor(options?: {
-    maxSize?: number;
-    maxEntries?: number;
-    defaultTTL?: number;
-  }) {
+
+  constructor(options?: { maxSize?: number; maxEntries?: number; defaultTTL?: number }) {
     this.maxSize = options?.maxSize || 100 * 1024 * 1024; // 100MB default
     this.maxEntries = options?.maxEntries || 200; // 200 entries default
     this.defaultTTL = options?.defaultTTL || 60 * 60 * 1000; // 1 hour default
-    
+
     // Start cleanup interval
     this.startCleanupInterval();
   }
@@ -54,9 +50,7 @@ export class EnhancedPDFCache<T> {
    * Generate hash for content
    */
   private generateHash(content: string | ArrayBuffer): string {
-    const buffer = typeof content === 'string' 
-      ? Buffer.from(content) 
-      : Buffer.from(content);
+    const buffer = typeof content === 'string' ? Buffer.from(content) : Buffer.from(content);
     return crypto.createHash('sha256').update(buffer).digest('hex');
   }
 
@@ -74,7 +68,7 @@ export class EnhancedPDFCache<T> {
   get(key: string): T | null {
     const startTime = Date.now();
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
       this.stats.misses++;
       this.recordAccessTime(Date.now() - startTime);
@@ -95,7 +89,7 @@ export class EnhancedPDFCache<T> {
     entry.lastAccessed = Date.now();
     this.stats.hits++;
     this.recordAccessTime(Date.now() - startTime);
-    
+
     return entry.data;
   }
 
@@ -104,14 +98,14 @@ export class EnhancedPDFCache<T> {
    */
   getByContent(content: string | ArrayBuffer): T | null {
     const hash = this.generateHash(content);
-    
+
     // Search for entry with matching hash
     for (const [key, entry] of this.cache.entries()) {
       if (entry.hash === hash) {
         return this.get(key);
       }
     }
-    
+
     return null;
   }
 
@@ -120,7 +114,7 @@ export class EnhancedPDFCache<T> {
    */
   set(key: string, data: T, content?: string | ArrayBuffer): void {
     const size = this.calculateSize(data);
-    
+
     // Check size limits
     if (size > this.maxSize) {
       console.warn(`Cache entry too large: ${size} bytes`);
@@ -136,7 +130,7 @@ export class EnhancedPDFCache<T> {
       hits: 0,
       lastAccessed: Date.now(),
       hash: content ? this.generateHash(content) : '',
-      size
+      size,
     };
 
     this.cache.set(key, entry);
@@ -203,9 +197,8 @@ export class EnhancedPDFCache<T> {
   getStats(): CacheStats {
     const totalRequests = this.stats.hits + this.stats.misses;
     const hitRate = totalRequests > 0 ? this.stats.hits / totalRequests : 0;
-    const avgAccessTime = this.stats.accessCount > 0 
-      ? this.stats.totalAccessTime / this.stats.accessCount 
-      : 0;
+    const avgAccessTime =
+      this.stats.accessCount > 0 ? this.stats.totalAccessTime / this.stats.accessCount : 0;
 
     return {
       totalHits: this.stats.hits,
@@ -213,7 +206,7 @@ export class EnhancedPDFCache<T> {
       hitRate: Math.round(hitRate * 100),
       entries: this.cache.size,
       totalSize: this.getTotalSize(),
-      avgAccessTime: Math.round(avgAccessTime)
+      avgAccessTime: Math.round(avgAccessTime),
     };
   }
 
@@ -239,7 +232,7 @@ export class EnhancedPDFCache<T> {
         key,
         hits: entry.hits,
         age: Math.round((now - entry.timestamp) / 1000), // Age in seconds
-        size: entry.size
+        size: entry.size,
       });
     }
 
@@ -270,15 +263,20 @@ export class EnhancedPDFCache<T> {
    */
   private startCleanupInterval(): void {
     // Run cleanup every 5 minutes
-    setInterval(() => {
-      this.cleanup();
-    }, 5 * 60 * 1000);
+    setInterval(
+      () => {
+        this.cleanup();
+      },
+      5 * 60 * 1000
+    );
   }
 
   /**
    * Warm cache with frequently used patterns
    */
-  async warmCache(patterns: Array<{ key: string; data: T; content?: string | ArrayBuffer }>): Promise<void> {
+  async warmCache(
+    patterns: Array<{ key: string; data: T; content?: string | ArrayBuffer }>
+  ): Promise<void> {
     for (const pattern of patterns) {
       this.set(pattern.key, pattern.data, pattern.content);
     }
@@ -291,7 +289,7 @@ export class EnhancedPDFCache<T> {
     const exportData = {
       entries: Array.from(this.cache.entries()),
       stats: this.stats,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
     return JSON.stringify(exportData);
   }
@@ -302,15 +300,15 @@ export class EnhancedPDFCache<T> {
   import(data: string): void {
     try {
       const importData = JSON.parse(data);
-      
+
       // Clear existing cache
       this.cache.clear();
-      
+
       // Import entries
       for (const [key, entry] of importData.entries) {
         this.cache.set(key, entry);
       }
-      
+
       // Import stats
       if (importData.stats) {
         this.stats = importData.stats;
@@ -329,7 +327,7 @@ export class EnhancedPDFCache<T> {
       hits: 0,
       misses: 0,
       totalAccessTime: 0,
-      accessCount: 0
+      accessCount: 0,
     };
   }
 
@@ -339,14 +337,14 @@ export class EnhancedPDFCache<T> {
   has(key: string): boolean {
     const entry = this.cache.get(key);
     if (!entry) return false;
-    
+
     // Check if expired
     const age = Date.now() - entry.timestamp;
     if (age > this.defaultTTL) {
       this.cache.delete(key);
       return false;
     }
-    
+
     return true;
   }
 
@@ -362,7 +360,7 @@ export class EnhancedPDFCache<T> {
 export const pdfAnalysisCache = new EnhancedPDFCache({
   maxSize: 50 * 1024 * 1024, // 50MB for PDF analysis
   maxEntries: 100, // Store up to 100 analyses
-  defaultTTL: 2 * 60 * 60 * 1000 // 2 hours TTL
+  defaultTTL: 2 * 60 * 60 * 1000, // 2 hours TTL
 });
 
 // Export type

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
 export async function GET() {
   return NextResponse.json({
@@ -8,8 +8,8 @@ export async function GET() {
         hits: 0,
         misses: 0,
         hitRate: 0,
-        size: 0
-      }
-    }
+        size: 0,
+      },
+    },
   });
 }

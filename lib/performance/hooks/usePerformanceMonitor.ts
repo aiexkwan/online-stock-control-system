@@ -227,7 +227,7 @@ export function usePerformanceMonitor(
       // getRealtimeMetrics not available, use available methods
       const currentMetrics = performanceMonitor.getMetrics();
       const activeAlerts = performanceMonitor.getAlerts();
-      
+
       // 使用更高效的比較方式，避免 JSON.stringify
       setMetrics(prev => {
         // 如果長度不同，肯定有變化
@@ -237,14 +237,17 @@ export function usePerformanceMonitor(
         // 只比較最後一個指標是否相同（假設新指標會添加到末尾）
         const lastPrev = prev[prev.length - 1];
         const lastCurrent = currentMetrics[currentMetrics.length - 1];
-        if (!lastPrev || !lastCurrent || 
-            lastPrev.timestamp !== lastCurrent.timestamp ||
-            lastPrev.value !== lastCurrent.value) {
+        if (
+          !lastPrev ||
+          !lastCurrent ||
+          lastPrev.timestamp !== lastCurrent.timestamp ||
+          lastPrev.value !== lastCurrent.value
+        ) {
           return currentMetrics;
         }
         return prev;
       });
-      
+
       setAlerts(prev => {
         // 如果長度不同，肯定有變化
         if (prev.length !== activeAlerts.length) {

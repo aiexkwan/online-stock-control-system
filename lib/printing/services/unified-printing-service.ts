@@ -19,7 +19,10 @@ import { EventEmitter } from 'events';
 import type { PrintJob } from '@/lib/hardware/types';
 import type { DatabaseRecord } from '@/types/database/tables';
 import { uploadPdfToStorage, updatePalletPdfUrl } from '@/app/actions/grnActions';
-import { uploadPdfToStorage as uploadPdfToStorageQc, updatePalletPdfUrl as updatePalletPdfUrlQc } from '@/app/actions/qcActions';
+import {
+  uploadPdfToStorage as uploadPdfToStorageQc,
+  updatePalletPdfUrl as updatePalletPdfUrlQc,
+} from '@/app/actions/qcActions';
 
 export interface UnifiedPrintingServiceConfig {
   templateService?: PrintTemplateService;
@@ -85,7 +88,7 @@ export class UnifiedPrintingService extends EventEmitter {
       // 2. Handle PDF upload if enabled
       let uploadedUrls: string[] = [];
       let uploadErrors: string[] = [];
-      
+
       if (request.pdfBlobs && request.metadata?.uploadEnabled && request.metadata?.palletNumbers) {
         console.log('[UnifiedPrintingService] Processing PDF uploads...');
         const uploadResults = await this.uploadPdfsToStorage(
@@ -98,11 +101,20 @@ export class UnifiedPrintingService extends EventEmitter {
       }
 
       // 3. Prepare print data
-      let printData: { pdfBlob: Blob } | { formattedData: unknown; template: string; metadata: Record<string, string | number> } | PrintData | null = null;
+      let printData:
+        | { pdfBlob: Blob }
+        | { formattedData: unknown; template: string; metadata: Record<string, string | number> }
+        | PrintData
+        | null = null;
       if (request.pdfBlobs && request.pdfBlobs.length > 0) {
         // Handle PDF blobs - merge if multiple
         printData = await this.preparePdfPrintData(request.pdfBlobs);
-      } else if (request.data && typeof request.data === 'object' && 'pdfBlob' in request.data && request.data.pdfBlob instanceof Blob) {
+      } else if (
+        request.data &&
+        typeof request.data === 'object' &&
+        'pdfBlob' in request.data &&
+        request.data.pdfBlob instanceof Blob
+      ) {
         // Direct PDF printing - skip template processing
         console.log('[UnifiedPrintingService] PDF blob detected, skipping template processing');
         printData = { pdfBlob: request.data.pdfBlob };
@@ -371,7 +383,7 @@ export class UnifiedPrintingService extends EventEmitter {
       try {
         const pdfBlob = pdfBlobs[i];
         const palletNum = palletNumbers[i];
-        
+
         if (!palletNum) {
           uploadErrors.push(`Missing pallet number for PDF ${i + 1}`);
           continue;
@@ -381,10 +393,10 @@ export class UnifiedPrintingService extends EventEmitter {
         const arrayBuffer = await pdfBlob.arrayBuffer();
         const uint8Array = new Uint8Array(arrayBuffer);
         const numberArray = Array.from(uint8Array);
-        
+
         // Generate filename
         const fileName = `${palletNum.replace('/', '_')}.pdf`;
-        
+
         // Upload based on print type
         let uploadResult: { publicUrl?: string; error?: string };
         if (printType === PrintType.QC_LABEL) {
@@ -392,18 +404,22 @@ export class UnifiedPrintingService extends EventEmitter {
         } else {
           uploadResult = await uploadPdfToStorage(numberArray, fileName);
         }
-        
+
         if (uploadResult.publicUrl) {
           uploadedUrls.push(uploadResult.publicUrl);
           console.log(`[UnifiedPrintingService] PDF uploaded for pallet ${palletNum}`);
-          
+
           // Update database with PDF URL
-          const updateResult = printType === PrintType.QC_LABEL
-            ? await updatePalletPdfUrlQc(palletNum, uploadResult.publicUrl)
-            : await updatePalletPdfUrl(palletNum, uploadResult.publicUrl);
-            
+          const updateResult =
+            printType === PrintType.QC_LABEL
+              ? await updatePalletPdfUrlQc(palletNum, uploadResult.publicUrl)
+              : await updatePalletPdfUrl(palletNum, uploadResult.publicUrl);
+
           if (!updateResult.success) {
-            console.error(`[UnifiedPrintingService] Failed to update PDF URL for pallet ${palletNum}:`, updateResult.error);
+            console.error(
+              `[UnifiedPrintingService] Failed to update PDF URL for pallet ${palletNum}:`,
+              updateResult.error
+            );
           }
         } else {
           uploadErrors.push(`Failed to upload PDF for pallet ${palletNum}: ${uploadResult.error}`);
@@ -415,7 +431,9 @@ export class UnifiedPrintingService extends EventEmitter {
       }
     }
 
-    console.log(`[UnifiedPrintingService] Upload complete: ${uploadedUrls.length} successful, ${uploadErrors.length} failed`);
+    console.log(
+      `[UnifiedPrintingService] Upload complete: ${uploadedUrls.length} successful, ${uploadErrors.length} failed`
+    );
     return { uploadedUrls, uploadErrors };
   }
 
@@ -427,29 +445,33 @@ export class UnifiedPrintingService extends EventEmitter {
       // Single PDF - return as is
       return { pdfBlob: pdfBlobs[0] };
     }
-    
+
     // Multiple PDFs - merge them
     console.log(`[UnifiedPrintingService] Merging ${pdfBlobs.length} PDFs...`);
-    
+
     try {
       const { PDFDocument } = await import('pdf-lib');
       const mergedPdf = await PDFDocument.create();
-      
+
       for (let i = 0; i < pdfBlobs.length; i++) {
         const pdfBuffer = await pdfBlobs[i].arrayBuffer();
         const pdfToMerge = await PDFDocument.load(pdfBuffer, { ignoreEncryption: true });
         const pages = await mergedPdf.copyPages(pdfToMerge, pdfToMerge.getPageIndices());
         pages.forEach(page => mergedPdf.addPage(page));
       }
-      
+
       const mergedPdfBytes = await mergedPdf.save();
-      const mergedPdfBlob = new Blob([mergedPdfBytes as unknown as ArrayBuffer], { type: 'application/pdf' });
-      
+      const mergedPdfBlob = new Blob([mergedPdfBytes as unknown as ArrayBuffer], {
+        type: 'application/pdf',
+      });
+
       console.log(`[UnifiedPrintingService] Successfully merged ${pdfBlobs.length} PDFs`);
       return { pdfBlob: mergedPdfBlob };
     } catch (error) {
       console.error('[UnifiedPrintingService] PDF merge failed:', error);
-      throw new Error(`Failed to merge PDFs: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to merge PDFs: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 

@@ -10,5 +10,5 @@ export const VOID_REASONS = [
   { value: 'Wrong Item', label: 'Wrong Item' },
   { value: 'Lost', label: 'Lost' },
   { value: 'System Error', label: 'System Error' },
-  { value: 'Other', label: 'Other' }
+  { value: 'Other', label: 'Other' },
 ] as const;

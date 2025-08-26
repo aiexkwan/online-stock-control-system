@@ -26,7 +26,11 @@ type DataLoaderStockHistoryRecord = {
 };
 
 // Extended StockHistoryRecord with all required fields
-interface StockHistoryRecord extends Omit<BaseStockHistoryRecord, 'operatorId' | 'productCode' | 'operatorName' | 'timestamp'> {
+interface StockHistoryRecord
+  extends Omit<
+    BaseStockHistoryRecord,
+    'operatorId' | 'productCode' | 'operatorName' | 'timestamp'
+  > {
   transferId?: string;
   operatorId?: number | string;
   operatorName?: string;
@@ -130,14 +134,17 @@ export const stockHistoryResolvers: IResolvers<unknown, GraphQLContext> = {
         return null;
       }
     },
-    
+
     product: async (parent: StockHistoryRecord, _args: unknown, context: GraphQLContext) => {
       try {
         if (!parent.productCode) return null;
         const product = await context.loaders.product?.load(parent.productCode);
         // Handle DataLoader errors gracefully
         if (product instanceof Error) {
-          console.warn(`DataLoader error loading product '${parent.productCode}':`, product.message);
+          console.warn(
+            `DataLoader error loading product '${parent.productCode}':`,
+            product.message
+          );
           return null;
         }
         return product || null;
@@ -146,17 +153,20 @@ export const stockHistoryResolvers: IResolvers<unknown, GraphQLContext> = {
         return null;
       }
     },
-    
+
     operator: async (parent: StockHistoryRecord, _args: unknown, context: GraphQLContext) => {
       if (!parent.operatorId && !parent.operatorName) return null;
-      
+
       // Try ID first, fallback to name lookup
       if (parent.operatorId) {
         try {
           const user = await context.loaders.user?.load(String(parent.operatorId));
           // Handle DataLoader errors gracefully
           if (user instanceof Error) {
-            console.warn(`DataLoader error loading user by ID '${parent.operatorId}':`, user.message);
+            console.warn(
+              `DataLoader error loading user by ID '${parent.operatorId}':`,
+              user.message
+            );
             return null;
           }
           return user || null;
@@ -165,14 +175,20 @@ export const stockHistoryResolvers: IResolvers<unknown, GraphQLContext> = {
           return null;
         }
       }
-      
+
       // Name-based lookup through batch loader - but skip placeholder values
-      if (parent.operatorName && !['Unknown', 'N/A', 'NULL', 'null', ''].includes(parent.operatorName)) {
+      if (
+        parent.operatorName &&
+        !['Unknown', 'N/A', 'NULL', 'null', ''].includes(parent.operatorName)
+      ) {
         try {
           const user = await context.loaders.userByName?.load(parent.operatorName);
           // Handle DataLoader errors gracefully
           if (user instanceof Error) {
-            console.warn(`DataLoader error loading user by name '${parent.operatorName}':`, user.message);
+            console.warn(
+              `DataLoader error loading user by name '${parent.operatorName}':`,
+              user.message
+            );
             return null;
           }
           return user || null;
@@ -183,14 +199,17 @@ export const stockHistoryResolvers: IResolvers<unknown, GraphQLContext> = {
       }
       return null;
     },
-    
+
     transfer: async (parent: StockHistoryRecord, _args: unknown, context: GraphQLContext) => {
       try {
         if (!parent.transferId) return null;
         const transfer = await context.loaders.transfer?.load(parent.transferId);
         // Handle DataLoader errors gracefully
         if (transfer instanceof Error) {
-          console.warn(`DataLoader error loading transfer '${parent.transferId}':`, transfer.message);
+          console.warn(
+            `DataLoader error loading transfer '${parent.transferId}':`,
+            transfer.message
+          );
           return null;
         }
         return transfer || null;
@@ -199,21 +218,21 @@ export const stockHistoryResolvers: IResolvers<unknown, GraphQLContext> = {
         return null;
       }
     },
-    
+
     actionType: (parent: StockHistoryRecord) => {
       // Compute action type based on action
       const movementActions = ['TRANSFERRED', 'MOVED'];
       const statusActions = ['VOIDED', 'ALLOCATED', 'QUALITY_CHECK'];
       const quantityActions = ['ADJUSTED', 'LOADED', 'UNLOADED'];
       const systemActions = ['CREATED'];
-      
+
       if (movementActions.includes(parent.action)) return 'MOVEMENT';
       if (statusActions.includes(parent.action)) return 'STATUS_CHANGE';
       if (quantityActions.includes(parent.action)) return 'QUANTITY_CHANGE';
       if (systemActions.includes(parent.action)) return 'SYSTEM_ACTION';
       return 'SYSTEM_ACTION';
     },
-    
+
     actionCategory: (parent: StockHistoryRecord) => {
       // Categorize based on location flow
       if (parent.toLocation && !parent.fromLocation) return 'INBOUND';
@@ -238,10 +257,10 @@ export const stockHistoryResolvers: IResolvers<unknown, GraphQLContext> = {
             colour: 'UNKNOWN',
             standardQty: null,
             createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
           };
         }
-        
+
         // Simplified: no pallet counts needed
         return product;
       } catch (error) {
@@ -251,87 +270,108 @@ export const stockHistoryResolvers: IResolvers<unknown, GraphQLContext> = {
           code: parent.productCode,
           description: 'Product information not available',
           chineseDescription: null,
-          type: 'UNKNOWN', 
+          type: 'UNKNOWN',
           colour: 'UNKNOWN',
           standardQty: null,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         };
       }
     },
-    
-    timelineGroups: async (parent: PalletHistoryResult, _args: unknown, context: GraphQLContext) => {
+
+    timelineGroups: async (
+      parent: PalletHistoryResult,
+      _args: unknown,
+      context: GraphQLContext
+    ) => {
       // Map records to match dataloader's expected type
       const mappedRecords: DataLoaderStockHistoryRecord[] = parent.records.map(r => ({
         ...r,
         timestamp: typeof r.timestamp === 'string' ? r.timestamp : r.timestamp.toISOString(),
         operatorId: r.operatorId || 0,
         productCode: r.productCode || '',
-        operatorName: r.operatorName || ''
+        operatorName: r.operatorName || '',
       }));
       return StockHistoryDataLoader.groupRecordsByDate(mappedRecords);
     },
-    
-    locationDistribution: async (parent: PalletHistoryResult, _args: unknown, context: GraphQLContext) => {
+
+    locationDistribution: async (
+      parent: PalletHistoryResult,
+      _args: unknown,
+      context: GraphQLContext
+    ) => {
       // Map records to match dataloader's expected type
       const mappedRecords: DataLoaderStockHistoryRecord[] = parent.records.map(r => ({
         ...r,
         timestamp: typeof r.timestamp === 'string' ? r.timestamp : r.timestamp.toISOString(),
         operatorId: r.operatorId || 0,
         productCode: r.productCode || '',
-        operatorName: r.operatorName || ''
+        operatorName: r.operatorName || '',
       }));
       return StockHistoryDataLoader.aggregateByLocation(mappedRecords);
     },
-    
-    operatorDistribution: async (parent: PalletHistoryResult, _args: unknown, context: GraphQLContext) => {
+
+    operatorDistribution: async (
+      parent: PalletHistoryResult,
+      _args: unknown,
+      context: GraphQLContext
+    ) => {
       // Map records to match dataloader's expected type
       const mappedRecords: DataLoaderStockHistoryRecord[] = parent.records.map(r => ({
         ...r,
         timestamp: typeof r.timestamp === 'string' ? r.timestamp : r.timestamp.toISOString(),
         operatorId: r.operatorId || 0,
         productCode: r.productCode || '',
-        operatorName: r.operatorName || ''
+        operatorName: r.operatorName || '',
       }));
       return StockHistoryDataLoader.aggregateByOperator(mappedRecords);
     },
   },
 
   SinglePalletHistoryResult: {
-    palletInfo: async (parent: SinglePalletHistoryResult, _args: unknown, context: GraphQLContext) => {
+    palletInfo: async (
+      parent: SinglePalletHistoryResult,
+      _args: unknown,
+      context: GraphQLContext
+    ) => {
       // Use the palletInfo already provided by DataLoader to avoid redundant queries
       if (parent.palletInfo) {
         return parent.palletInfo;
       }
-      
+
       // Fallback: reconstruct from available data if palletInfo is missing
       if (!parent.palletNumber || parent.palletNumber.trim() === '') {
         throw new GraphQLError('Pallet number is required for pallet info lookup');
       }
 
-      console.warn(`[SinglePalletHistoryResult] palletInfo missing from parent, falling back to loader for ${parent.palletNumber}`);
-      
+      console.warn(
+        `[SinglePalletHistoryResult] palletInfo missing from parent, falling back to loader for ${parent.palletNumber}`
+      );
+
       const pallet = await context.loaders.pallet.load(parent.palletNumber);
       if (!pallet) {
         throw new GraphQLError(`Pallet not found: ${parent.palletNumber}`);
       }
-      
+
       // Check if product code exists before loading
       let product = null;
       if (pallet.productCode && pallet.productCode.trim() !== '') {
         try {
           product = await context.loaders.product.load(pallet.productCode);
         } catch (error) {
-          console.warn(`Could not load product ${pallet.productCode} for pallet ${parent.palletNumber}:`, error);
+          console.warn(
+            `Could not load product ${pallet.productCode} for pallet ${parent.palletNumber}:`,
+            error
+          );
         }
       }
-      
+
       return {
         ...pallet,
         product: product || null,
       };
     },
-    
+
     // Removed: timeline, currentStatus, journey (not needed for simplified version)
   },
 
@@ -341,13 +381,13 @@ export const stockHistoryResolvers: IResolvers<unknown, GraphQLContext> = {
   Query: {
     palletHistoryByProduct: async (_parent, args, context: GraphQLContext) => {
       const { productCode, filter, pagination = {}, sort } = args;
-      
+
       try {
         // Input validation
         if (!productCode || productCode.trim() === '') {
           throw new GraphQLError('Product code is required');
         }
-        
+
         // Build query with DataLoader optimization
         const result = await StockHistoryDataLoader.getPalletHistoryByProduct(
           productCode,
@@ -363,7 +403,7 @@ export const stockHistoryResolvers: IResolvers<unknown, GraphQLContext> = {
           },
           context
         );
-        
+
         return result;
       } catch (error) {
         console.error('Error in palletHistoryByProduct:', error);
@@ -373,37 +413,43 @@ export const stockHistoryResolvers: IResolvers<unknown, GraphQLContext> = {
           pagination,
           sort,
           errorMessage: error instanceof Error ? error.message : 'Unknown error',
-          errorStack: error instanceof Error ? error.stack : undefined
+          errorStack: error instanceof Error ? error.stack : undefined,
         });
-        throw error instanceof GraphQLError ? error : 
-          new GraphQLError(`Failed to fetch pallet history: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw error instanceof GraphQLError
+          ? error
+          : new GraphQLError(
+              `Failed to fetch pallet history: ${error instanceof Error ? error.message : 'Unknown error'}`
+            );
       }
     },
 
     palletHistoryByNumber: async (_parent, args, context: GraphQLContext) => {
       const { palletNumber, includeJourney = true, includeSeries = true } = args;
-      
+
       try {
         if (!palletNumber || palletNumber.trim() === '') {
           throw new GraphQLError('Pallet number is required');
         }
-        
+
         // Handle series lookup if needed (QR code scan scenario)
         let actualPalletNumber = palletNumber.trim();
-        
+
         if (!actualPalletNumber.startsWith('PLT') && includeSeries) {
           try {
             // Try DataLoader first (if available), then fallback to direct query
             let palletInfo = null;
-            
+
             if (context.loaders.palletByPlateSeries) {
               try {
                 palletInfo = await context.loaders.palletByPlateSeries.load(actualPalletNumber);
               } catch (dataLoaderError) {
-                console.warn(`[palletHistoryByNumber] DataLoader lookup failed for series ${actualPalletNumber}:`, dataLoaderError);
+                console.warn(
+                  `[palletHistoryByNumber] DataLoader lookup failed for series ${actualPalletNumber}:`,
+                  dataLoaderError
+                );
               }
             }
-            
+
             // Fallback to direct database query if DataLoader failed or unavailable
             if (!palletInfo) {
               const { data: seriesData, error: seriesError } = await context.supabase
@@ -411,35 +457,39 @@ export const stockHistoryResolvers: IResolvers<unknown, GraphQLContext> = {
                 .select('plt_num')
                 .eq('series', actualPalletNumber)
                 .single();
-              
+
               if (!seriesError && seriesData?.plt_num) {
                 actualPalletNumber = seriesData.plt_num;
-                console.log(`[palletHistoryByNumber] Converted series ${palletNumber} to pallet number ${actualPalletNumber}`);
+                console.log(
+                  `[palletHistoryByNumber] Converted series ${palletNumber} to pallet number ${actualPalletNumber}`
+                );
               } else {
                 console.warn(`[palletHistoryByNumber] No pallet found for series: ${palletNumber}`);
                 // If series lookup fails, assume it might be a pallet number anyway
               }
             } else if (palletInfo.pltNum) {
               actualPalletNumber = palletInfo.pltNum;
-              console.log(`[palletHistoryByNumber] DataLoader converted series ${palletNumber} to pallet number ${actualPalletNumber}`);
+              console.log(
+                `[palletHistoryByNumber] DataLoader converted series ${palletNumber} to pallet number ${actualPalletNumber}`
+              );
             }
           } catch (seriesLookupError) {
             console.error('Error during series lookup:', seriesLookupError);
             // Continue with original value
           }
         }
-        
+
         // Final validation - ensure we have a valid pallet number
         if (!actualPalletNumber || actualPalletNumber.trim() === '') {
           throw new GraphQLError('Unable to determine valid pallet number from input');
         }
-        
+
         const result = await StockHistoryDataLoader.getPalletHistoryByNumber(
           actualPalletNumber,
           { includeJourney },
           context
         );
-        
+
         return result;
       } catch (error) {
         console.error('Error in palletHistoryByNumber:', error);
@@ -447,16 +497,19 @@ export const stockHistoryResolvers: IResolvers<unknown, GraphQLContext> = {
           originalInput: palletNumber,
           includeJourney,
           includeSeries,
-          errorMessage: error instanceof Error ? error.message : 'Unknown error'
+          errorMessage: error instanceof Error ? error.message : 'Unknown error',
         });
-        throw error instanceof GraphQLError ? error : 
-          new GraphQLError(`Failed to fetch pallet history: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw error instanceof GraphQLError
+          ? error
+          : new GraphQLError(
+              `Failed to fetch pallet history: ${error instanceof Error ? error.message : 'Unknown error'}`
+            );
       }
     },
 
     stockHistoryStats: async (_parent, args, context: GraphQLContext) => {
       const { filter, includeTrends = false, trendsInterval = '1d' } = args;
-      
+
       try {
         const result = await StockHistoryDataLoader.getStockHistoryStats(
           {
@@ -467,12 +520,13 @@ export const stockHistoryResolvers: IResolvers<unknown, GraphQLContext> = {
           trendsInterval || 'LAST_24_HOURS',
           context
         );
-        
+
         return result;
       } catch (error) {
         console.error('Error in stockHistoryStats:', error);
-        throw error instanceof GraphQLError ? error : 
-          new Error('Failed to fetch stock history statistics');
+        throw error instanceof GraphQLError
+          ? error
+          : new Error('Failed to fetch stock history statistics');
       }
     },
   },

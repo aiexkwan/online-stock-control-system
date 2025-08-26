@@ -16,18 +16,18 @@ const filesToProcess = [
   {
     path: 'app/services/assistantService.ts',
     action: 'rename',
-    newPath: 'app/services/assistantService.ts.disabled'
+    newPath: 'app/services/assistantService.ts.disabled',
   },
   {
     path: 'app/api/analyze-order-pdf-assistant',
     action: 'rename',
-    newPath: 'app/api/analyze-order-pdf-assistant.disabled'
+    newPath: 'app/api/analyze-order-pdf-assistant.disabled',
   },
   {
     path: 'lib/openai-assistant-config.ts',
     action: 'rename',
-    newPath: 'lib/openai-assistant-config.ts.disabled'
-  }
+    newPath: 'lib/openai-assistant-config.ts.disabled',
+  },
 ];
 
 /**
@@ -36,7 +36,7 @@ const filesToProcess = [
 function renameFileOrDir(oldPath, newPath) {
   const fullOldPath = path.join(projectRoot, oldPath);
   const fullNewPath = path.join(projectRoot, newPath);
-  
+
   if (fs.existsSync(fullOldPath)) {
     console.log(`📁 重命名: ${oldPath} → ${newPath}`);
     fs.renameSync(fullOldPath, fullNewPath);
@@ -69,9 +69,9 @@ export {};
  */
 function main() {
   console.log('🧹 最終 Assistant API 清理\n');
-  
+
   let totalProcessed = 0;
-  
+
   // 處理每個文件
   for (const file of filesToProcess) {
     if (file.action === 'rename') {
@@ -82,31 +82,31 @@ function main() {
       }
     }
   }
-  
+
   // 檢查是否有其他 Assistant 引用
   console.log('\n🔍 檢查剩餘的 Assistant API 引用...');
-  
+
   const checkFiles = [
     'app/actions/orderUploadActions.ts',
     'app/services/enhancedOrderExtractionService.ts',
-    'app/api/pdf-extract/route.ts'
+    'app/api/pdf-extract/route.ts',
   ];
-  
+
   for (const file of checkFiles) {
     const filePath = path.join(projectRoot, file);
     if (fs.existsSync(filePath)) {
       const content = fs.readFileSync(filePath, 'utf8');
-      
+
       // 檢查是否仍有 Assistant 相關引用
       const assistantRefs = [
         'AssistantService',
         'assistantService',
         'openai.beta',
-        '/api/analyze-order-pdf-assistant'
+        '/api/analyze-order-pdf-assistant',
       ];
-      
+
       const foundRefs = assistantRefs.filter(ref => content.includes(ref));
-      
+
       if (foundRefs.length > 0) {
         console.log(`⚠️  ${file} 仍包含引用: ${foundRefs.join(', ')}`);
       } else {
@@ -114,7 +114,7 @@ function main() {
       }
     }
   }
-  
+
   // 創建部署驗證文件
   const deploymentGuide = `# Vercel 部署驗證清單
 
@@ -150,7 +150,7 @@ function main() {
 
   fs.writeFileSync(path.join(projectRoot, 'VERCEL_DEPLOYMENT_GUIDE.md'), deploymentGuide);
   console.log('\n📝 創建部署驗證指南: VERCEL_DEPLOYMENT_GUIDE.md');
-  
+
   console.log(`\n✅ 清理完成！處理了 ${totalProcessed} 個文件`);
   console.log('🚀 現在可以重新部署到 Vercel');
   console.log('💡 系統將完全使用 Chat Completions API，不會觸發地區限制');

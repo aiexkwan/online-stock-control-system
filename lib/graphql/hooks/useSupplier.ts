@@ -85,11 +85,7 @@ export const GET_SUPPLIER_WITH_STATISTICS = gql`
 
 // Query: Get supplier with products
 export const GET_SUPPLIER_WITH_PRODUCTS = gql`
-  query GetSupplierWithProducts(
-    $code: String!
-    $pagination: PaginationInput
-    $sort: SortInput
-  ) {
+  query GetSupplierWithProducts($code: String!, $pagination: PaginationInput, $sort: SortInput) {
     supplier(code: $code) {
       code
       name
@@ -177,11 +173,7 @@ export const SEARCH_SUPPLIER_BY_CODE = gql`
 
 // Query: Get suppliers with pagination
 export const GET_SUPPLIERS = gql`
-  query GetSuppliers(
-    $filter: SupplierFilter
-    $pagination: PaginationInput
-    $sort: SortInput
-  ) {
+  query GetSuppliers($filter: SupplierFilter, $pagination: PaginationInput, $sort: SortInput) {
     suppliers(filter: $filter, pagination: $pagination, sort: $sort) {
       edges {
         cursor
@@ -335,7 +327,12 @@ export function useSearchSupplierByCode(options?: QueryOptions) {
 }
 
 // Hook: Use suppliers list
-export function useSuppliers(filter?: FilterOptions, pagination?: PaginationOptions, sort?: SortOptions, options?: QueryOptions) {
+export function useSuppliers(
+  filter?: FilterOptions,
+  pagination?: PaginationOptions,
+  sort?: SortOptions,
+  options?: QueryOptions
+) {
   return useQuery(GET_SUPPLIERS, {
     variables: { filter, pagination, sort },
     ...options,
@@ -343,7 +340,11 @@ export function useSuppliers(filter?: FilterOptions, pagination?: PaginationOpti
 }
 
 // Hook: Use supplier performance
-export function useSupplierPerformance(supplierCode: string, dateRange?: { start: Date; end: Date }, options?: QueryOptions) {
+export function useSupplierPerformance(
+  supplierCode: string,
+  dateRange?: { start: Date; end: Date },
+  options?: QueryOptions
+) {
   return useQuery(GET_SUPPLIER_PERFORMANCE, {
     variables: { supplierCode, dateRange },
     skip: !supplierCode,

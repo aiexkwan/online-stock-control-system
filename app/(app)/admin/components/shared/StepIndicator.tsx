@@ -2,7 +2,7 @@
  * StepIndicator Component
  * Generic step indicator with configurable steps and states
  * Extracted from VoidPalletCard
- * 
+ *
  * Features:
  * - Configurable steps with labels and numbers
  * - Completed/active/pending states
@@ -52,7 +52,7 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
     const stepOrder = steps.map(step => step.id);
     const currentIndex = stepOrder.indexOf(currentStepId);
     const stepIndex = stepOrder.indexOf(stepId);
-    
+
     if (stepIndex < currentIndex) return 'completed';
     if (stepIndex === currentIndex) return 'active';
     return 'pending';
@@ -110,9 +110,7 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
   };
 
   const getConnectorClasses = (status: StepStatus) => {
-    return status === 'completed' 
-      ? `bg-${completedColor}` 
-      : `bg-${pendingColor}/20`;
+    return status === 'completed' ? `bg-${completedColor}` : `bg-${pendingColor}/20`;
   };
 
   if (variant === 'vertical') {
@@ -121,16 +119,18 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
         {steps.map((step, index) => {
           const status = getStepStatus(step.id);
           const stepClasses = getStepClasses(status);
-          
+
           return (
-            <div key={step.id} className="relative">
+            <div key={step.id} className='relative'>
               <div className={cn('flex items-center gap-3', stepClasses.container)}>
-                <div className={cn(
-                  'flex items-center justify-center rounded-full border-2 font-medium transition-colors',
-                  sizeClasses.circle,
-                  sizeClasses.text,
-                  stepClasses.circle
-                )}>
+                <div
+                  className={cn(
+                    'flex items-center justify-center rounded-full border-2 font-medium transition-colors',
+                    sizeClasses.circle,
+                    sizeClasses.text,
+                    stepClasses.circle
+                  )}
+                >
                   {status === 'completed' ? (
                     <CheckCircle className={cn('h-4 w-4', size === 'lg' && 'h-5 w-5')} />
                   ) : (
@@ -141,12 +141,14 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
                   {step.label}
                 </span>
               </div>
-              
+
               {showConnectors && index < steps.length - 1 && (
-                <div className={cn(
-                  'ml-4 mt-2 w-px h-8 transition-colors',
-                  getConnectorClasses(status)
-                )} />
+                <div
+                  className={cn(
+                    'ml-4 mt-2 h-8 w-px transition-colors',
+                    getConnectorClasses(status)
+                  )}
+                />
               )}
             </div>
           );
@@ -161,16 +163,18 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
       {steps.map((step, index) => {
         const status = getStepStatus(step.id);
         const stepClasses = getStepClasses(status);
-        
+
         return (
           <React.Fragment key={step.id}>
             <div className={cn('flex items-center gap-2', stepClasses.container)}>
-              <div className={cn(
-                'flex items-center justify-center rounded-full border-2 font-medium transition-colors',
-                sizeClasses.circle,
-                sizeClasses.text,
-                stepClasses.circle
-              )}>
+              <div
+                className={cn(
+                  'flex items-center justify-center rounded-full border-2 font-medium transition-colors',
+                  sizeClasses.circle,
+                  sizeClasses.text,
+                  stepClasses.circle
+                )}
+              >
                 {status === 'completed' ? (
                   <CheckCircle className={cn('h-4 w-4', size === 'lg' && 'h-5 w-5')} />
                 ) : (
@@ -181,13 +185,15 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({
                 {step.label}
               </span>
             </div>
-            
+
             {showConnectors && index < steps.length - 1 && (
-              <div className={cn(
-                'mx-2 transition-colors',
-                sizeClasses.connector,
-                getConnectorClasses(status)
-              )} />
+              <div
+                className={cn(
+                  'mx-2 transition-colors',
+                  sizeClasses.connector,
+                  getConnectorClasses(status)
+                )}
+              />
             )}
           </React.Fragment>
         );

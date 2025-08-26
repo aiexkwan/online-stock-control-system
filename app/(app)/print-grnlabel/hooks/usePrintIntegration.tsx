@@ -76,8 +76,12 @@ export const usePrintIntegration = (): UsePrintIntegrationReturn => {
                 pdfBlob: pdfBlobs[0],
                 // Required fields for template service
                 grn_ref: typeof metadata?.grnNumber === 'string' ? metadata.grnNumber : '',
-                plt_num: Array.isArray(metadata?.palletNumbers) && metadata.palletNumbers[0] ? metadata.palletNumbers[0] : '000000/1',
-                material_code: typeof metadata?.productCode === 'string' ? metadata.productCode : '',
+                plt_num:
+                  Array.isArray(metadata?.palletNumbers) && metadata.palletNumbers[0]
+                    ? metadata.palletNumbers[0]
+                    : '000000/1',
+                material_code:
+                  typeof metadata?.productCode === 'string' ? metadata.productCode : '',
                 gross_weight: 0, // Not available in metadata
                 net_weight: 0, // Not available in metadata
                 package: '', // Not available in metadata
@@ -131,8 +135,20 @@ export const usePrintIntegration = (): UsePrintIntegrationReturn => {
 
             const mergedPdfBytes = await mergedPdf.save();
             // Convert to proper ArrayBuffer for Blob constructor
-            const buffer = mergedPdfBytes instanceof Uint8Array ? mergedPdfBytes.buffer as ArrayBuffer : mergedPdfBytes as ArrayBuffer;
-            const mergedPdfBlob = new Blob([buffer.slice(mergedPdfBytes.byteOffset || 0, (mergedPdfBytes.byteOffset || 0) + (mergedPdfBytes.byteLength || buffer.byteLength))], { type: 'application/pdf' });
+            const buffer =
+              mergedPdfBytes instanceof Uint8Array
+                ? (mergedPdfBytes.buffer as ArrayBuffer)
+                : (mergedPdfBytes as ArrayBuffer);
+            const mergedPdfBlob = new Blob(
+              [
+                buffer.slice(
+                  mergedPdfBytes.byteOffset || 0,
+                  (mergedPdfBytes.byteOffset || 0) +
+                    (mergedPdfBytes.byteLength || buffer.byteLength)
+                ),
+              ],
+              { type: 'application/pdf' }
+            );
 
             const printRequest: PrintRequest = {
               type: PrintType.GRN_LABEL,
@@ -141,8 +157,12 @@ export const usePrintIntegration = (): UsePrintIntegrationReturn => {
                 merged: true,
                 // Required fields for template service (use first item's data as representative)
                 grn_ref: typeof metadata?.grnNumber === 'string' ? metadata.grnNumber : '',
-                plt_num: Array.isArray(metadata?.palletNumbers) && metadata.palletNumbers[0] ? metadata.palletNumbers[0] : '000000/1',
-                material_code: typeof metadata?.productCode === 'string' ? metadata.productCode : '',
+                plt_num:
+                  Array.isArray(metadata?.palletNumbers) && metadata.palletNumbers[0]
+                    ? metadata.palletNumbers[0]
+                    : '000000/1',
+                material_code:
+                  typeof metadata?.productCode === 'string' ? metadata.productCode : '',
                 gross_weight: 0,
                 net_weight: 0,
                 package: '',
@@ -211,8 +231,20 @@ export const usePrintIntegration = (): UsePrintIntegrationReturn => {
 
             const mergedPdfBytes = await mergedPdf.save();
             // Convert to proper ArrayBuffer for Blob constructor
-            const buffer = mergedPdfBytes instanceof Uint8Array ? mergedPdfBytes.buffer as ArrayBuffer : mergedPdfBytes as ArrayBuffer;
-            const mergedPdfBlob = new Blob([buffer.slice(mergedPdfBytes.byteOffset || 0, (mergedPdfBytes.byteOffset || 0) + (mergedPdfBytes.byteLength || buffer.byteLength))], { type: 'application/pdf' });
+            const buffer =
+              mergedPdfBytes instanceof Uint8Array
+                ? (mergedPdfBytes.buffer as ArrayBuffer)
+                : (mergedPdfBytes as ArrayBuffer);
+            const mergedPdfBlob = new Blob(
+              [
+                buffer.slice(
+                  mergedPdfBytes.byteOffset || 0,
+                  (mergedPdfBytes.byteOffset || 0) +
+                    (mergedPdfBytes.byteLength || buffer.byteLength)
+                ),
+              ],
+              { type: 'application/pdf' }
+            );
 
             const printJob = {
               type: 'grn-label' as const,

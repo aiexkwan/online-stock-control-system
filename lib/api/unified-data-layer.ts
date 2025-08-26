@@ -3,7 +3,13 @@
  * Abstraction layer supporting both REST and GraphQL with automatic fallback
  */
 
-import { ApolloClient, DocumentNode, gql, NormalizedCacheObject, OperationVariables } from '@apollo/client';
+import {
+  ApolloClient,
+  DocumentNode,
+  gql,
+  NormalizedCacheObject,
+  OperationVariables,
+} from '@apollo/client';
 import { apolloClient } from '@/lib/graphql/apollo-client';
 import { restRequest } from '@/lib/api/unified-api-client';
 import { dataSourceConfig } from '@/lib/data/data-source-config';
@@ -236,7 +242,7 @@ export class UnifiedDataLayer {
         } catch (serverActionError) {
           this.recordMetrics('serverAction', false, performance.now() - startTime);
           console.error('[UnifiedDataLayer] Server Action failed:', serverActionError);
-          
+
           // Fallback to GraphQL or REST if enabled
           if (fallbackEnabled) {
             if (options.query) {
@@ -253,7 +259,7 @@ export class UnifiedDataLayer {
               return restResult;
             }
           }
-          
+
           throw serverActionError;
         }
       } else if (source === DataSourceType.GRAPHQL) {
@@ -320,7 +326,7 @@ export class UnifiedDataLayer {
         } catch (serverActionError) {
           this.recordMetrics('serverAction', false, performance.now() - startTime);
           console.error('[UnifiedDataLayer] Server Action mutation failed:', serverActionError);
-          
+
           // Fallback if enabled
           if (fallbackEnabled) {
             if (options.mutation) {
@@ -331,7 +337,7 @@ export class UnifiedDataLayer {
               return this.executeRESTMutation<T>(options as MutationOptions<GraphQLVariables>);
             }
           }
-          
+
           throw serverActionError;
         }
       } else if (source === DataSourceType.GRAPHQL || source === DataSourceType.AUTO) {
@@ -537,10 +543,10 @@ export class UnifiedDataLayer {
     }
 
     const startTime = performance.now();
-    
+
     try {
       const result = await options.serverAction(options.variables);
-      
+
       return {
         data: result as T,
         source: DataSourceType.SERVER_ACTION,
@@ -571,7 +577,11 @@ export class UnifiedDataLayer {
   /**
    * 記錄性能指標
    */
-  private recordMetrics(apiType: 'rest' | 'graphql' | 'serverAction', success: boolean, responseTime: number) {
+  private recordMetrics(
+    apiType: 'rest' | 'graphql' | 'serverAction',
+    success: boolean,
+    responseTime: number
+  ) {
     if (!this.metricsEnabled) return;
 
     if (apiType === 'rest') {
@@ -611,7 +621,8 @@ export class UnifiedDataLayer {
       serverActionSuccessRate: serverActionTotal > 0 ? serverActionSuccess / serverActionTotal : 1,
       restAvgResponseTime: restTotal > 0 ? restTotalTime / restTotal : 0,
       graphqlAvgResponseTime: graphqlTotal > 0 ? graphqlTotalTime / graphqlTotal : 0,
-      serverActionAvgResponseTime: serverActionTotal > 0 ? serverActionTotalTime / serverActionTotal : 0,
+      serverActionAvgResponseTime:
+        serverActionTotal > 0 ? serverActionTotalTime / serverActionTotal : 0,
       lastUpdated: new Date(),
     };
   }

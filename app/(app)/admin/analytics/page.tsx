@@ -39,35 +39,32 @@ export default function AnalyticsPage() {
   // Main content - directly render AnalysisLayout
   // Authentication is handled by middleware, so we can assume user is authenticated
   return (
-    <PageErrorBoundary pageName="Analytics">
+    <PageErrorBoundary pageName='Analytics'>
       <ErrorProvider>
-          <div className='min-h-screen'>
-            <div className='relative z-10 flex min-h-screen flex-col overflow-x-hidden text-white'>
-              {/* Dashboard Content Area */}
-              <div className='flex-1 pb-8'>
-                <div className='mx-auto h-full max-w-[1920px] px-4 pt-12 sm:px-6 lg:px-8'>
-                  {/* Main content */}
-                  <div
-                    className='h-full'
-                    style={{ minHeight: 'calc(100vh - 260px)' }}
-                  >
-                    <Suspense fallback={<DashboardLoadingSkeleton />}>
-                      <TabSelectorCard />
-                    </Suspense>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className='relative z-10 py-8 text-center'>
-                <div className='inline-flex items-center space-x-2 text-sm text-slate-500'>
-                  <div className='h-1 w-1 rounded-full bg-slate-500'></div>
-                  <span>Pennine Manufacturing Stock Control System</span>
-                  <div className='h-1 w-1 rounded-full bg-slate-500'></div>
+        <div className='min-h-screen'>
+          <div className='relative z-10 flex min-h-screen flex-col overflow-x-hidden text-white'>
+            {/* Dashboard Content Area */}
+            <div className='flex-1 pb-8'>
+              <div className='mx-auto h-full max-w-[1920px] px-4 pt-12 sm:px-6 lg:px-8'>
+                {/* Main content */}
+                <div className='h-full' style={{ minHeight: 'calc(100vh - 260px)' }}>
+                  <Suspense fallback={<DashboardLoadingSkeleton />}>
+                    <TabSelectorCard />
+                  </Suspense>
                 </div>
               </div>
             </div>
+
+            {/* Footer */}
+            <div className='relative z-10 py-8 text-center'>
+              <div className='inline-flex items-center space-x-2 text-sm text-slate-500'>
+                <div className='h-1 w-1 rounded-full bg-slate-500'></div>
+                <span>Pennine Manufacturing Stock Control System</span>
+                <div className='h-1 w-1 rounded-full bg-slate-500'></div>
+              </div>
+            </div>
           </div>
+        </div>
       </ErrorProvider>
     </PageErrorBoundary>
   );

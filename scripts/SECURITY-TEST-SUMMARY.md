@@ -1,13 +1,16 @@
 # SQL 注入保護測試總結
 
 ## 🎯 測試目標
+
 驗證 `execute_sql_query` RPC 函數的 SQL 注入防護機制
 
 ## 📁 測試文件
+
 - **測試腳本**: `/scripts/test-sql-injection-protection.js`
 - **文檔**: `/scripts/README-sql-injection-test.md`
 
 ## ⚡ 快速執行
+
 ```bash
 npm run test:sql-injection
 ```
@@ -15,10 +18,12 @@ npm run test:sql-injection
 ## 📊 最新測試結果
 
 ### 安全性評分: 80.0% ✅
+
 - **通過測試**: 16/20
 - **主要防護**: 成功阻止所有危險的 DML/DDL 操作
 
 ### 功能性評分: 50.0% ⚠️
+
 - **通過測試**: 2/4
 - **注意事項**: 部分查詢因列名不存在而失敗（實際上是好的保護）
 
@@ -49,4 +54,5 @@ npm run test:sql-injection
 3. **更新測試**: 根據新威脅更新測試案例
 
 ---
-*最後測試: 2025-07-12*
+
+_最後測試: 2025-07-12_

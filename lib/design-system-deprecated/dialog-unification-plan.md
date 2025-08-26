@@ -3,6 +3,7 @@
 ## 現狀分析
 
 根據代碼審計，現有 Dialog 實現包括：
+
 1. **基礎 shadcn/ui dialog** - 基於 Radix UI
 2. **unified-dialog** - 統一風格嘅 Dialog
 3. **animated-border-dialog** - 帶動畫邊框效果
@@ -13,6 +14,7 @@
 ## 統一方案架構
 
 ### 1. 核心 Dialog 組件
+
 ```typescript
 // components/ui/core/Dialog.tsx
 export interface DialogProps {
@@ -39,6 +41,7 @@ export interface DialogProps {
 ```
 
 ### 2. 預設配置系統
+
 ```typescript
 // lib/design-system/dialog-presets.ts
 export const dialogPresets = {
@@ -71,11 +74,12 @@ export const dialogPresets = {
     size: 'xl',
     animation: 'fade',
     mobileFullscreen: true,
-  }
+  },
 };
 ```
 
 ### 3. 統一使用方式
+
 ```tsx
 // 基礎使用
 <Dialog open={open} onOpenChange={setOpen}>
@@ -111,12 +115,14 @@ export const dialogPresets = {
 ## 遷移計劃
 
 ### 第一階段：建立新組件（1週）
+
 1. ✅ 在 `components/ui/core/` 建立新 Dialog 系統
 2. ✅ 整合現有功能（動畫、主題、響應式）
 3. ✅ 建立預設配置系統
 4. ✅ 創建快捷組件（NotificationDialog、ConfirmDialog 等）
 
 ### 第二階段：逐步遷移（2週）
+
 1. **高優先級遷移**（影響用戶體驗）
    - notification-dialogs-animated → NotificationDialog
    - 各種 ConfirmDialog → ConfirmDialog
@@ -129,6 +135,7 @@ export const dialogPresets = {
    - 其他業務 Dialog
 
 ### 第三階段：清理優化（1週）
+
 1. 移除舊組件
 2. 更新文檔
 3. 性能優化
@@ -137,37 +144,39 @@ export const dialogPresets = {
 ## 技術細節
 
 ### 動畫系統
+
 ```typescript
 // 統一動畫配置
 const dialogAnimations = {
   fade: {
-    enter: "ease-out duration-300",
-    enterFrom: "opacity-0",
-    enterTo: "opacity-100",
-    leave: "ease-in duration-200",
-    leaveFrom: "opacity-100",
-    leaveTo: "opacity-0",
+    enter: 'ease-out duration-300',
+    enterFrom: 'opacity-0',
+    enterTo: 'opacity-100',
+    leave: 'ease-in duration-200',
+    leaveFrom: 'opacity-100',
+    leaveTo: 'opacity-0',
   },
   slide: {
-    enter: "ease-out duration-300",
-    enterFrom: "opacity-0 translate-y-4",
-    enterTo: "opacity-100 translate-y-0",
-    leave: "ease-in duration-200",
-    leaveFrom: "opacity-100 translate-y-0",
-    leaveTo: "opacity-0 translate-y-4",
+    enter: 'ease-out duration-300',
+    enterFrom: 'opacity-0 translate-y-4',
+    enterTo: 'opacity-100 translate-y-0',
+    leave: 'ease-in duration-200',
+    leaveFrom: 'opacity-100 translate-y-0',
+    leaveTo: 'opacity-0 translate-y-4',
   },
   scale: {
-    enter: "ease-out duration-300",
-    enterFrom: "opacity-0 scale-95",
-    enterTo: "opacity-100 scale-100",
-    leave: "ease-in duration-200",
-    leaveFrom: "opacity-100 scale-100",
-    leaveTo: "opacity-0 scale-95",
-  }
+    enter: 'ease-out duration-300',
+    enterFrom: 'opacity-0 scale-95',
+    enterTo: 'opacity-100 scale-100',
+    leave: 'ease-in duration-200',
+    leaveFrom: 'opacity-100 scale-100',
+    leaveTo: 'opacity-0 scale-95',
+  },
 };
 ```
 
 ### 響應式處理
+
 ```typescript
 // 移動端自適應
 const useResponsiveDialog = () => {
@@ -182,6 +191,7 @@ const useResponsiveDialog = () => {
 ```
 
 ### 無障礙支持
+
 - 所有 Dialog 包含正確嘅 ARIA 屬性
 - 支持鍵盤導航（ESC 關閉、Tab 循環）
 - Focus trap 確保焦點唔會離開 Dialog

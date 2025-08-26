@@ -25,14 +25,6 @@ export type {
   PerformanceThresholds,
 } from './pdf-performance-monitor';
 
-export type {
-  PDFCacheEntry,
-  CacheStatistics,
-  CacheConfig,
-} from './pdf-cache-optimizer';
+export type { PDFCacheEntry, CacheStatistics, CacheConfig } from './pdf-cache-optimizer';
 
-export type {
-  BatchRequest,
-  BatchConfig,
-  BatchStatistics,
-} from './pdf-request-batcher';
+export type { BatchRequest, BatchConfig, BatchStatistics } from './pdf-request-batcher';

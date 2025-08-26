@@ -19,7 +19,7 @@ const CONFIG = {
   outputPath: process.env.TECH_DEBT_OUTPUT_PATH || './tech-debt-report.json',
   skipTests: process.env.SKIP_TESTS === 'true',
   skipBuild: process.env.SKIP_BUILD === 'true',
-  verbose: process.env.VERBOSE === 'true'
+  verbose: process.env.VERBOSE === 'true',
 };
 
 /**
@@ -40,7 +40,7 @@ async function safeExec(command, description, options = {}) {
     log(`執行: ${description}`);
     const { stdout, stderr } = await execAsync(command, {
       maxBuffer: 1024 * 1024 * 10, // 10MB buffer
-      ...options
+      ...options,
     });
     return { stdout, stderr, success: true };
   } catch (error) {
@@ -78,7 +78,7 @@ async function collectTypeScriptMetrics() {
       message: message.trim(),
       severity: severity,
       code: `TS${code}`,
-      category: 'type-checking'
+      category: 'type-checking',
     };
 
     if (severity === 'error') {
@@ -93,7 +93,7 @@ async function collectTypeScriptMetrics() {
   return {
     errorCount: errors.length,
     warningCount: warnings.length,
-    details: [...errors, ...warnings]
+    details: [...errors, ...warnings],
   };
 }
 
@@ -123,7 +123,7 @@ async function collectESLintMetrics() {
       warningCount: 0,
       fixableCount: 0,
       details: [],
-      skipped: true
+      skipped: true,
     };
   }
 
@@ -131,10 +131,10 @@ async function collectESLintMetrics() {
   const warnings = [];
   let fixableCount = 0;
 
-  eslintResults.forEach((fileResult) => {
+  eslintResults.forEach(fileResult => {
     if (!fileResult.messages) return;
 
-    fileResult.messages.forEach((message) => {
+    fileResult.messages.forEach(message => {
       const item = {
         file: fileResult.filePath.replace(process.cwd(), ''),
         line: message.line,
@@ -142,7 +142,7 @@ async function collectESLintMetrics() {
         rule: message.ruleId || 'unknown',
         message: message.message,
         severity: message.severity === 2 ? 'error' : 'warning',
-        fixable: !!message.fix
+        fixable: !!message.fix,
       };
 
       if (message.fix) fixableCount++;
@@ -161,7 +161,7 @@ async function collectESLintMetrics() {
     errorCount: errors.length,
     warningCount: warnings.length,
     fixableCount,
-    details: [...errors, ...warnings]
+    details: [...errors, ...warnings],
   };
 }
 
@@ -175,7 +175,7 @@ async function collectTestingMetrics() {
       totalTests: 0,
       passedTests: 0,
       failedTests: 0,
-      skipped: true
+      skipped: true,
     };
   }
 
@@ -191,7 +191,9 @@ async function collectTestingMetrics() {
   let failedTests = 0;
 
   // Jest 格式解析
-  const testSummaryMatch = output.match(/Tests:\s+(\d+)\s+failed,\s+(\d+)\s+passed,\s+(\d+)\s+total/);
+  const testSummaryMatch = output.match(
+    /Tests:\s+(\d+)\s+failed,\s+(\d+)\s+passed,\s+(\d+)\s+total/
+  );
   if (testSummaryMatch) {
     failedTests = parseInt(testSummaryMatch[1]);
     passedTests = parseInt(testSummaryMatch[2]);
@@ -211,7 +213,7 @@ async function collectTestingMetrics() {
     totalTests,
     passedTests,
     failedTests,
-    coverage: null // 後續可以添加覆蓋率解析
+    coverage: null, // 後續可以添加覆蓋率解析
   };
 }
 
@@ -223,7 +225,7 @@ async function collectBuildMetrics() {
     log('跳過構建檢查');
     return {
       status: 'skipped',
-      skipped: true
+      skipped: true,
     };
   }
 
@@ -233,13 +235,14 @@ async function collectBuildMetrics() {
   const result = await safeExec('npm run build 2>&1', '構建檢查');
   const duration = Date.now() - startTime;
 
-  const warnings = (result.stdout + result.stderr).split('\n')
+  const warnings = (result.stdout + result.stderr)
+    .split('\n')
     .filter(line => line.includes('warning') || line.includes('Warning')).length;
 
   return {
     status: result.success ? 'success' : 'failure',
     duration,
-    warnings
+    warnings,
   };
 }
 
@@ -256,9 +259,9 @@ async function main() {
       node: process.version,
       platform: process.platform,
       ci: !!process.env.CI,
-      project: path.basename(process.cwd())
+      project: path.basename(process.cwd()),
     },
-    metrics: {}
+    metrics: {},
   };
 
   try {
@@ -267,14 +270,14 @@ async function main() {
       collectTypeScriptMetrics(),
       collectESLintMetrics(),
       collectTestingMetrics(),
-      collectBuildMetrics()
+      collectBuildMetrics(),
     ]);
 
     metrics.metrics = {
       typescript,
       eslint,
       testing,
-      build
+      build,
     };
 
     // 計算總分數
@@ -286,7 +289,7 @@ async function main() {
       totalWarnings,
       testPassRate: testing.totalTests > 0 ? (testing.passedTests / testing.totalTests) * 100 : 100,
       buildStatus: build.status,
-      healthScore: Math.max(0, 100 - (totalIssues * 2) - (totalWarnings * 0.5))
+      healthScore: Math.max(0, 100 - totalIssues * 2 - totalWarnings * 0.5),
     };
 
     // 輸出結果
@@ -305,7 +308,6 @@ async function main() {
       log('TypeScript 錯誤過多，退出碼: 1', 'error');
       process.exit(1);
     }
-
   } catch (error) {
     log(`收集過程發生錯誤: ${error.message}`, 'error');
     process.exit(1);
@@ -324,5 +326,5 @@ module.exports = {
   collectTypeScriptMetrics,
   collectESLintMetrics,
   collectTestingMetrics,
-  collectBuildMetrics
+  collectBuildMetrics,
 };

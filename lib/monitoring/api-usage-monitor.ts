@@ -29,27 +29,25 @@ export interface APIUsageStats {
 
 export class APIUsageMonitor {
   private supabase = createClient();
-  
+
   /**
    * 記錄 API 使用情況
    */
   async recordUsage(record: APIUsageRecord): Promise<void> {
     try {
       const supabase = await this.supabase;
-      
-      const { error } = await supabase
-        .from('api_usage_logs')
-        .insert({
-          endpoint: record.endpoint,
-          method: record.method,
-          timestamp: record.timestamp,
-          user_agent: record.userAgent,
-          user_id: record.userId,
-          response_time: record.responseTime,
-          status_code: record.statusCode,
-          source: record.source,
-          created_at: new Date().toISOString(),
-        });
+
+      const { error } = await supabase.from('api_usage_logs').insert({
+        endpoint: record.endpoint,
+        method: record.method,
+        timestamp: record.timestamp,
+        user_agent: record.userAgent,
+        user_id: record.userId,
+        response_time: record.responseTime,
+        status_code: record.statusCode,
+        source: record.source,
+        created_at: new Date().toISOString(),
+      });
 
       if (error) {
         console.error('[APIUsageMonitor] Failed to record usage:', error);
@@ -63,15 +61,15 @@ export class APIUsageMonitor {
    * 獲取 API 使用統計
    */
   async getUsageStats(
-    endpoint?: string, 
+    endpoint?: string,
     timeRange: { from: string; to: string } = {
       from: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      to: new Date().toISOString()
+      to: new Date().toISOString(),
     }
   ): Promise<APIUsageStats[]> {
     try {
       const supabase = await this.supabase;
-      
+
       let query = supabase
         .from('api_usage_logs')
         .select('*')
@@ -89,13 +87,16 @@ export class APIUsageMonitor {
       }
 
       // 聚合數據
-      const statsMap = new Map<string, {
-        calls: APIUsageRecord[];
-        users: Set<string>;
-        responseTimes: number[];
-        errors: number;
-        hourlyUsage: Map<string, number>;
-      }>();
+      const statsMap = new Map<
+        string,
+        {
+          calls: APIUsageRecord[];
+          users: Set<string>;
+          responseTimes: number[];
+          errors: number;
+          hourlyUsage: Map<string, number>;
+        }
+      >();
 
       // Define database record type
       interface APIUsageLogRecord {
@@ -107,11 +108,11 @@ export class APIUsageMonitor {
         status_code?: number;
         [key: string]: unknown;
       }
-      
+
       const records = (data || []) as APIUsageLogRecord[];
-      records.forEach((record) => {
+      records.forEach(record => {
         const key = `${record.method} ${record.endpoint}`;
-        
+
         if (!statsMap.has(key)) {
           statsMap.set(key, {
             calls: [],
@@ -129,17 +130,17 @@ export class APIUsageMonitor {
           userId: record.user_id,
           responseTime: record.response_time,
           statusCode: record.status_code,
-          userAgent: undefined
+          userAgent: undefined,
         } as APIUsageRecord);
-        
+
         if (record.user_id) {
           stats.users.add(record.user_id);
         }
-        
+
         if (record.response_time) {
           stats.responseTimes.push(record.response_time);
         }
-        
+
         if (record.status_code && record.status_code >= 400) {
           stats.errors++;
         }
@@ -154,18 +155,22 @@ export class APIUsageMonitor {
         endpoint,
         totalCalls: stats.calls.length,
         uniqueUsers: stats.users.size,
-        avgResponseTime: stats.responseTimes.length > 0 
-          ? stats.responseTimes.reduce((a, b) => a + b, 0) / stats.responseTimes.length 
-          : 0,
-        lastUsed: stats.calls.length > 0 
-          ? new Date(Math.max(...stats.calls.map(c => new Date(c.timestamp).getTime()))).toISOString()
-          : '',
+        avgResponseTime:
+          stats.responseTimes.length > 0
+            ? stats.responseTimes.reduce((a, b) => a + b, 0) / stats.responseTimes.length
+            : 0,
+        lastUsed:
+          stats.calls.length > 0
+            ? new Date(
+                Math.max(...stats.calls.map(c => new Date(c.timestamp).getTime()))
+              ).toISOString()
+            : '',
         errorRate: stats.calls.length > 0 ? stats.errors / stats.calls.length : 0,
         usageByHour: Object.fromEntries(stats.hourlyUsage),
         usageByUser: Object.fromEntries(
           Array.from(stats.users).map(userId => [
-            userId, 
-            stats.calls.filter(c => c.userId === userId).length
+            userId,
+            stats.calls.filter(c => c.userId === userId).length,
           ])
         ),
       }));
@@ -185,7 +190,7 @@ export class APIUsageMonitor {
     const thresholdDate = new Date(Date.now() - unusedThresholdDays * 24 * 60 * 60 * 1000);
     const stats = await this.getUsageStats(undefined, {
       from: thresholdDate.toISOString(),
-      to: new Date().toISOString()
+      to: new Date().toISOString(),
     });
 
     const usedEndpoints = new Set(stats.map(s => s.endpoint.split(' ')[1]));
@@ -201,12 +206,12 @@ export class APIUsageMonitor {
     stats: APIUsageStats | null;
   }> {
     const stats = await this.getUsageStats(endpoint);
-    
+
     if (stats.length === 0) {
       return {
         safe: true,
         reason: 'No usage recorded in the last 7 days',
-        stats: null
+        stats: null,
       };
     }
 
@@ -218,7 +223,7 @@ export class APIUsageMonitor {
       return {
         safe: true,
         reason: `Last used ${Math.floor(daysSinceLastUse)} days ago`,
-        stats: endpointStats
+        stats: endpointStats,
       };
     }
 
@@ -226,14 +231,14 @@ export class APIUsageMonitor {
       return {
         safe: true,
         reason: `Low usage (${endpointStats.totalCalls} calls) and ${Math.floor(daysSinceLastUse)} days since last use`,
-        stats: endpointStats
+        stats: endpointStats,
       };
     }
 
     return {
       safe: false,
       reason: `Still in active use: ${endpointStats.totalCalls} calls, last used ${Math.floor(daysSinceLastUse)} days ago`,
-      stats: endpointStats
+      stats: endpointStats,
     };
   }
 
@@ -271,14 +276,14 @@ export class APIUsageMonitor {
 
     const stats = await this.getUsageStats();
     const unusedEndpoints = await this.getUnusedEndpoints(allKnownEndpoints);
-    
+
     const safeToRemove: string[] = [];
     const needsAttention: string[] = [];
     const highPriority: string[] = [];
 
     for (const endpoint of allKnownEndpoints) {
       const safetyCheck = await this.isSafeToRemove(endpoint);
-      
+
       if (safetyCheck.safe) {
         safeToRemove.push(endpoint);
       } else if (safetyCheck.stats && safetyCheck.stats.totalCalls > 100) {
@@ -300,7 +305,7 @@ export class APIUsageMonitor {
         safeToRemove,
         needsAttention,
         highPriority,
-      }
+      },
     };
   }
 }
@@ -329,12 +334,12 @@ export function createAPIUsageMiddleware() {
 
   return (req: APIRequest, res: APIResponse, next: NextFunction) => {
     const startTime = Date.now();
-    
+
     // 記錄請求開始
     const originalSend = res.send;
-    res.send = function(data: unknown) {
+    res.send = function (data: unknown) {
       const responseTime = Date.now() - startTime;
-      
+
       // 記錄使用情況
       monitor.recordUsage({
         endpoint: req.path,
@@ -356,19 +361,27 @@ export function createAPIUsageMiddleware() {
 
 function detectSource(req: APIRequest): 'browser' | 'mobile' | 'api' | 'internal' {
   const userAgent = req.get('User-Agent')?.toLowerCase() || '';
-  
-  if (userAgent.includes('mobile') || userAgent.includes('android') || userAgent.includes('iphone')) {
+
+  if (
+    userAgent.includes('mobile') ||
+    userAgent.includes('android') ||
+    userAgent.includes('iphone')
+  ) {
     return 'mobile';
   }
-  
-  if (userAgent.includes('curl') || userAgent.includes('postman') || userAgent.includes('insomnia')) {
+
+  if (
+    userAgent.includes('curl') ||
+    userAgent.includes('postman') ||
+    userAgent.includes('insomnia')
+  ) {
     return 'api';
   }
-  
+
   if (req.headers['x-internal-request']) {
     return 'internal';
   }
-  
+
   return 'browser';
 }
 

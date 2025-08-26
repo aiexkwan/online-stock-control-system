@@ -6,7 +6,10 @@ import { MIN_ACO_ORDER_REF_LENGTH } from '../components/qc-label-constants';
 // 導入新的模組化 hooks
 import { useUserId } from '@/app/hooks/useUserId';
 import { useAdminFormValidation } from './useAdminFormValidation';
-import { useClockConfirmation, type PrintEvent } from '@/app/components/qc-label-form/hooks/modules/useClockConfirmation';
+import {
+  useClockConfirmation,
+  type PrintEvent,
+} from '@/app/components/qc-label-form/hooks/modules/useClockConfirmation';
 import { usePdfGeneration } from './usePdfGeneration';
 import { useStreamingPdfGeneration } from '@/app/components/qc-label-form/hooks/modules/useStreamingPdfGeneration';
 import type { ProductInfo, AdminFormData, SlateDetail } from '../types/adminQcTypes';
@@ -77,48 +80,54 @@ export const useAdminQcLabelBusiness = ({
   } = useClockConfirmation();
 
   // Simple ACO management for admin - no complex hooks
-  const handleAutoAcoConfirm = useCallback(async (selectedOrderRef: string) => {
-    if (!selectedOrderRef || !productInfo?.code) return;
-    
-    setFormData(prev => ({ ...prev, acoSearchLoading: true }));
-    
-    try {
-      const { data, error } = await supabase
-        .from('record_aco')
-        .select('required_qty, finished_qty')
-        .eq('code', productInfo.code)
-        .eq('order_ref', parseInt(selectedOrderRef));
-        
-      if (error) {
-        console.error('Error fetching ACO order:', error);
+  const handleAutoAcoConfirm = useCallback(
+    async (selectedOrderRef: string) => {
+      if (!selectedOrderRef || !productInfo?.code) return;
+
+      setFormData(prev => ({ ...prev, acoSearchLoading: true }));
+
+      try {
+        const { data, error } = await supabase
+          .from('record_aco')
+          .select('required_qty, finished_qty')
+          .eq('code', productInfo.code)
+          .eq('order_ref', parseInt(selectedOrderRef));
+
+        if (error) {
+          console.error('Error fetching ACO order:', error);
+          setFormData(prev => ({ ...prev, acoSearchLoading: false }));
+          return;
+        }
+
+        if (data && data.length > 0) {
+          // Sum up quantities if multiple records exist
+          const totalRequired = data.reduce((sum, item) => sum + (item.required_qty || 0), 0);
+          const totalFinished = data.reduce((sum, item) => sum + (item.finished_qty || 0), 0);
+          const remainQty = totalRequired - totalFinished;
+
+          setFormData(prev => ({
+            ...prev,
+            acoRemain: remainQty,
+            acoSearchLoading: false,
+          }));
+        } else {
+          setFormData(prev => ({ ...prev, acoSearchLoading: false }));
+        }
+      } catch (error) {
+        console.error('Error in handleAutoAcoConfirm:', error);
         setFormData(prev => ({ ...prev, acoSearchLoading: false }));
-        return;
       }
-      
-      if (data && data.length > 0) {
-        // Sum up quantities if multiple records exist
-        const totalRequired = data.reduce((sum, item) => sum + (item.required_qty || 0), 0);
-        const totalFinished = data.reduce((sum, item) => sum + (item.finished_qty || 0), 0);
-        const remainQty = totalRequired - totalFinished;
-        
-        setFormData(prev => ({ 
-          ...prev, 
-          acoRemain: remainQty,
-          acoSearchLoading: false 
-        }));
-      } else {
-        setFormData(prev => ({ ...prev, acoSearchLoading: false }));
-      }
-    } catch (error) {
-      console.error('Error in handleAutoAcoConfirm:', error);
-      setFormData(prev => ({ ...prev, acoSearchLoading: false }));
-    }
-  }, [productInfo?.code, supabase, setFormData]);
+    },
+    [productInfo?.code, supabase, setFormData]
+  );
 
   // Simple slate management for admin
-  const handleSlateDetailChange = useCallback((detail: SlateDetail) => {
-    setFormData(prev => ({ ...prev, slateDetail: detail }));
-  }, [setFormData]);
+  const handleSlateDetailChange = useCallback(
+    (detail: SlateDetail) => {
+      setFormData(prev => ({ ...prev, slateDetail: detail }));
+    },
+    [setFormData]
+  );
 
   const { generatePdfs, printPdfs } = usePdfGeneration();
   const { generatePdfsStream, streamingStatus, cancelStreaming } = useStreamingPdfGeneration();
@@ -174,9 +183,10 @@ export const useAdminQcLabelBusiness = ({
       // 驗證基本表單數據
       const { isValid, errors } = validateForm();
       if (!isValid) {
-        const errorMessage = errors && typeof errors === 'object' 
-          ? Object.values(errors).join(', ')
-          : 'Validation failed';
+        const errorMessage =
+          errors && typeof errors === 'object'
+            ? Object.values(errors).join(', ')
+            : 'Validation failed';
         onShowError?.(errorMessage);
         setIsProcessing(false);
         setPrintEventToProceed(null);
@@ -216,7 +226,7 @@ export const useAdminQcLabelBusiness = ({
         console.log('[Admin QC Label] Product info:', {
           code: productInfo.code,
           type: productInfo.type,
-          description: productInfo.description
+          description: productInfo.description,
         });
 
         // Prepare RPC parameters matching the fixed function signature
@@ -224,21 +234,25 @@ export const useAdminQcLabelBusiness = ({
           p_count: count,
           p_product_code: productInfo.code,
           p_product_qty: quantity,
-          p_clock_number: clockNumber,  // 使用字符串格式的 clock number
-          p_plt_remark: formData.operator?.trim() || null,  // Operator as remark
+          p_clock_number: clockNumber, // 使用字符串格式的 clock number
+          p_plt_remark: formData.operator?.trim() || null, // Operator as remark
           p_session_id: null,
-          p_aco_order_ref: productInfo.type === 'ACO' && formData.acoOrderRef?.trim() 
-            ? formData.acoOrderRef.trim() 
-            : null,
-          p_aco_quantity_used: productInfo.type === 'ACO' && formData.acoOrderRef?.trim()
-            ? quantity * count  // Total quantity for ACO
-            : null,
-          p_slate_batch_number: productInfo.type?.toLowerCase().includes('slate') && formData.slateDetail?.batchNumber?.trim()
-            ? formData.slateDetail.batchNumber.trim()
-            : null,
-          p_pdf_urls: null  // PDFs will be handled separately
+          p_aco_order_ref:
+            productInfo.type === 'ACO' && formData.acoOrderRef?.trim()
+              ? formData.acoOrderRef.trim()
+              : null,
+          p_aco_quantity_used:
+            productInfo.type === 'ACO' && formData.acoOrderRef?.trim()
+              ? quantity * count // Total quantity for ACO
+              : null,
+          p_slate_batch_number:
+            productInfo.type?.toLowerCase().includes('slate') &&
+            formData.slateDetail?.batchNumber?.trim()
+              ? formData.slateDetail.batchNumber.trim()
+              : null,
+          p_pdf_urls: null, // PDFs will be handled separately
         };
-        
+
         console.log('[Admin QC Label] RPC parameters:', rpcParams);
 
         // Step 1: Call RPC to handle all database operations
@@ -270,7 +284,7 @@ export const useAdminQcLabelBusiness = ({
 
         const rpcData = rpcResult.data as RpcResponse;
         console.log('[Admin QC Label] RPC data after cast:', rpcData);
-        
+
         // Check if rpcData has the expected structure
         if (typeof rpcData !== 'object' || !('success' in rpcData)) {
           console.error('[Admin QC Label] RPC data has unexpected structure:', rpcData);
@@ -279,12 +293,14 @@ export const useAdminQcLabelBusiness = ({
           setPrintEventToProceed(null);
           return;
         }
-        
+
         if (!rpcData.success) {
           console.error('[Admin QC Label] RPC failed:', rpcData.message);
           // 特別處理產品找不到的錯誤
           if (rpcData.message.includes('Product code not found')) {
-            onShowError?.(`Product code "${productInfo.code}" not found in database. Please verify the product exists.`);
+            onShowError?.(
+              `Product code "${productInfo.code}" not found in database. Please verify the product exists.`
+            );
           } else {
             onShowError?.(`Processing failed: ${rpcData.message}`);
           }
@@ -295,35 +311,39 @@ export const useAdminQcLabelBusiness = ({
 
         console.log('[Admin QC Label] RPC completed successfully:', {
           pallet_data: rpcData.pallet_data?.length || 0,
-          message: rpcData.message
+          message: rpcData.message,
         });
 
         // Extract pallet numbers and series from RPC result
         if (!rpcData.pallet_data || rpcData.pallet_data.length === 0) {
           console.error('[Admin QC Label] No pallet data in RPC response:', rpcData);
-          
+
           // Check if there are failed pallets to provide more specific error message
           if (rpcData.failed_pallets && rpcData.failed_pallets.length > 0) {
             const firstError = rpcData.failed_pallets[0];
             console.error('[Admin QC Label] Failed pallet details:', firstError);
-            
+
             if (firstError.error.includes('duplicate key value violates unique constraint')) {
-              onShowError?.('Database constraint error: A pallet record already exists with this combination. This may indicate data synchronization issues. Please contact system administrator.');
+              onShowError?.(
+                'Database constraint error: A pallet record already exists with this combination. This may indicate data synchronization issues. Please contact system administrator.'
+              );
             } else {
               onShowError?.(`Processing failed: ${firstError.error}`);
             }
           } else {
-            onShowError?.('No data returned from server. Please check product code exists in database.');
+            onShowError?.(
+              'No data returned from server. Please check product code exists in database.'
+            );
           }
-          
+
           setIsProcessing(false);
           setPrintEventToProceed(null);
           return;
         }
 
         // Handle array of pallet data objects
-        sortedPalletNumbers = rpcData.pallet_data.map((p) => p.pallet_number);
-        sortedSeries = rpcData.pallet_data.map((p) => p.series);
+        sortedPalletNumbers = rpcData.pallet_data.map(p => p.pallet_number);
+        sortedSeries = rpcData.pallet_data.map(p => p.series);
 
         // Log any failed pallets
         if (rpcData.failed_pallets && rpcData.failed_pallets.length > 0) {

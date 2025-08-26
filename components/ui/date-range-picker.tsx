@@ -1,6 +1,6 @@
-"use client"
+'use client';
 
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon } from 'lucide-react';
 import {
   DatePicker as AriaDatePicker,
   DatePickerProps as AriaDatePickerProps,
@@ -13,11 +13,11 @@ import {
   composeRenderProps,
   Text,
   PopoverRenderProps,
-} from "react-aria-components"
+} from 'react-aria-components';
 
-import { cn } from "@/lib/utils"
+import { cn } from '@/lib/utils';
 
-import { Button } from "@/components/ui/button"
+import { Button } from '@/components/ui/button';
 import {
   Calendar,
   CalendarCell,
@@ -27,41 +27,41 @@ import {
   CalendarHeaderCell,
   CalendarHeading,
   RangeCalendar,
-} from "@/components/ui/calendar"
-import { DateInput } from "@/components/ui/datefield"
-import { FieldError, FieldGroup, Label } from "@/components/ui/field"
-import { Popover as AriaPopover } from "react-aria-components"
+} from '@/components/ui/calendar';
+import { DateInput } from '@/components/ui/datefield';
+import { FieldError, FieldGroup, Label } from '@/components/ui/field';
+import { Popover as AriaPopover } from 'react-aria-components';
 
-const DatePicker = AriaDatePicker
+const DatePicker = AriaDatePicker;
 
-const DateRangePicker = AriaDateRangePicker
+const DateRangePicker = AriaDateRangePicker;
 
 const DatePickerContent = ({
   className,
   popoverClassName,
   ...props
-}: AriaDialogProps & { popoverClassName?: string | ((renderProps: PopoverRenderProps) => string) }) => (
+}: AriaDialogProps & {
+  popoverClassName?: string | ((renderProps: PopoverRenderProps) => string);
+}) => (
   <AriaPopover
-    className={typeof popoverClassName === 'function' 
-      ? popoverClassName 
-      : cn("w-auto p-3", popoverClassName)
+    className={
+      typeof popoverClassName === 'function' ? popoverClassName : cn('w-auto p-3', popoverClassName)
     }
   >
     <AriaDialog
       className={cn(
-        "flex w-full flex-col space-y-4 outline-none sm:flex-row sm:space-x-4 sm:space-y-0",
+        'flex w-full flex-col space-y-4 outline-none sm:flex-row sm:space-x-4 sm:space-y-0',
         className
       )}
       {...props}
     />
   </AriaPopover>
-)
+);
 
-interface JollyDatePickerProps<T extends AriaDateValue>
-  extends AriaDatePickerProps<T> {
-  label?: string
-  description?: string
-  errorMessage?: string | ((validation: AriaValidationResult) => string)
+interface JollyDatePickerProps<T extends AriaDateValue> extends AriaDatePickerProps<T> {
+  label?: string;
+  description?: string;
+  errorMessage?: string | ((validation: AriaValidationResult) => string);
 }
 
 function JollyDatePicker<T extends AriaDateValue>({
@@ -73,24 +73,24 @@ function JollyDatePicker<T extends AriaDateValue>({
 }: JollyDatePickerProps<T>) {
   return (
     <DatePicker
-      className={composeRenderProps(className, (className) =>
-        cn("group flex flex-col gap-2", className)
+      className={composeRenderProps(className, className =>
+        cn('group flex flex-col gap-2', className)
       )}
       {...props}
     >
       <Label>{label}</Label>
       <FieldGroup>
-        <DateInput className="flex-1" variant="ghost" />
+        <DateInput className='flex-1' variant='ghost' />
         <Button
-          variant="ghost"
-          size="icon"
-          className="mr-1 size-6 data-[focus-visible]:ring-offset-0"
+          variant='ghost'
+          size='icon'
+          className='mr-1 size-6 data-[focus-visible]:ring-offset-0'
         >
-          <CalendarIcon aria-hidden className="size-4" />
+          <CalendarIcon aria-hidden className='size-4' />
         </Button>
       </FieldGroup>
       {description && (
-        <Text className="text-sm text-muted-foreground" slot="description">
+        <Text className='text-sm text-muted-foreground' slot='description'>
           {description}
         </Text>
       )}
@@ -99,14 +99,13 @@ function JollyDatePicker<T extends AriaDateValue>({
         <Calendar />
       </DatePickerContent>
     </DatePicker>
-  )
+  );
 }
 
-interface JollyDateRangePickerProps<T extends AriaDateValue>
-  extends AriaDateRangePickerProps<T> {
-  label?: string
-  description?: string
-  errorMessage?: string | ((validation: AriaValidationResult) => string)
+interface JollyDateRangePickerProps<T extends AriaDateValue> extends AriaDateRangePickerProps<T> {
+  label?: string;
+  description?: string;
+  errorMessage?: string | ((validation: AriaValidationResult) => string);
 }
 
 function JollyDateRangePicker<T extends AriaDateValue>({
@@ -118,29 +117,29 @@ function JollyDateRangePicker<T extends AriaDateValue>({
 }: JollyDateRangePickerProps<T>) {
   return (
     <DateRangePicker
-      className={composeRenderProps(className, (className) =>
-        cn("group flex flex-col gap-2", className)
+      className={composeRenderProps(className, className =>
+        cn('group flex flex-col gap-2', className)
       )}
       {...props}
     >
       <Label>{label}</Label>
       <FieldGroup>
-        <DateInput variant="ghost" slot={"start"} />
-        <span aria-hidden className="px-2 text-sm text-muted-foreground">
+        <DateInput variant='ghost' slot={'start'} />
+        <span aria-hidden className='px-2 text-sm text-muted-foreground'>
           -
         </span>
-        <DateInput className="flex-1" variant="ghost" slot={"end"} />
+        <DateInput className='flex-1' variant='ghost' slot={'end'} />
 
         <Button
-          variant="ghost"
-          size="icon"
-          className="mr-1 size-6 data-[focus-visible]:ring-offset-0"
+          variant='ghost'
+          size='icon'
+          className='mr-1 size-6 data-[focus-visible]:ring-offset-0'
         >
-          <CalendarIcon aria-hidden className="size-4" />
+          <CalendarIcon aria-hidden className='size-4' />
         </Button>
       </FieldGroup>
       {description && (
-        <Text className="text-sm text-muted-foreground" slot="description">
+        <Text className='text-sm text-muted-foreground' slot='description'>
           {description}
         </Text>
       )}
@@ -149,14 +148,8 @@ function JollyDateRangePicker<T extends AriaDateValue>({
         <RangeCalendar />
       </DatePickerContent>
     </DateRangePicker>
-  )
+  );
 }
 
-export {
-  DatePicker,
-  DatePickerContent,
-  DateRangePicker,
-  JollyDatePicker,
-  JollyDateRangePicker,
-}
-export type { JollyDatePickerProps, JollyDateRangePickerProps }
+export { DatePicker, DatePickerContent, DateRangePicker, JollyDatePicker, JollyDateRangePicker };
+export type { JollyDatePickerProps, JollyDateRangePickerProps };

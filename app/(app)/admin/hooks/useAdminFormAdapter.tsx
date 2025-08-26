@@ -30,9 +30,12 @@ export function adminToFormData(adminData: AdminFormData): FormData {
 }
 
 // Convert FormData updates back to AdminFormData
-export function formDataToAdmin(formData: Partial<FormData>, currentAdminData: AdminFormData): AdminFormData {
+export function formDataToAdmin(
+  formData: Partial<FormData>,
+  currentAdminData: AdminFormData
+): AdminFormData {
   const updates: Partial<AdminFormData> = {};
-  
+
   // Only copy fields that exist in AdminFormData
   if ('productCode' in formData) updates.productCode = formData.productCode!;
   if ('productInfo' in formData) updates.productInfo = formData.productInfo!;
@@ -41,17 +44,19 @@ export function formDataToAdmin(formData: Partial<FormData>, currentAdminData: A
   if ('operator' in formData) updates.operator = formData.operator!;
   if ('userId' in formData) updates.userId = formData.userId!;
   if ('acoOrderRef' in formData) updates.acoOrderRef = formData.acoOrderRef!;
-  if ('acoRemain' in formData) updates.acoRemain = formData.acoRemain ? Number(formData.acoRemain) : null;
+  if ('acoRemain' in formData)
+    updates.acoRemain = formData.acoRemain ? Number(formData.acoRemain) : null;
   if ('slateDetail' in formData) updates.slateDetail = formData.slateDetail!;
   if ('pdfProgress' in formData) updates.pdfProgress = formData.pdfProgress!;
   if ('isLoading' in formData) updates.isLoading = formData.isLoading!;
   if ('acoSearchLoading' in formData) updates.acoSearchLoading = formData.acoSearchLoading!;
   if ('productError' in formData) updates.productError = formData.productError!;
-  if ('availableAcoOrders' in formData) updates.availableAcoOrders = formData.availableAcoOrders as string[];
+  if ('availableAcoOrders' in formData)
+    updates.availableAcoOrders = formData.availableAcoOrders as string[];
   if ('acoOrdersLoading' in formData && typeof formData.acoOrdersLoading === 'boolean') {
     updates.acoOrdersLoading = formData.acoOrdersLoading;
   }
-  
+
   return {
     ...currentAdminData,
     ...updates,

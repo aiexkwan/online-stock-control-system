@@ -190,7 +190,7 @@ export class PrintStatusMonitor extends EventEmitter {
     // Get real queue status from HAL
     const hal = this.getHal();
     if (!hal) return { total: 0, queued: 0, processing: 0, completed: 0, failed: 0, cancelled: 0 };
-    
+
     const queueStatus = await hal.queue.getQueueStatus();
 
     // Count completed/failed from our status map
@@ -246,7 +246,7 @@ export class PrintStatusMonitor extends EventEmitter {
       // Check if HAL is already initialized
       const hal = this.getHal();
       if (!hal) return;
-      
+
       if (!hal.isInitialized) {
         await hal.initialize();
       }
@@ -262,7 +262,7 @@ export class PrintStatusMonitor extends EventEmitter {
     // Subscribe to HAL queue events
     const hal = this.getHal();
     if (!hal) return;
-    
+
     hal.queue.on('job.added', job => {
       this.updateStatus(job.id, {
         jobId: job.id,

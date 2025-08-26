@@ -1,4 +1,5 @@
 # FormCard GraphQL Schema 使用範例
+
 # NewPennine Warehouse Management System
 
 ## 概述
@@ -8,21 +9,25 @@ FormCard 統一表單系統為 NewPennine WMS 提供了動態、可配置的表�
 ## 支援的表單類型
 
 ### 1. 產品相關表單
+
 - `PRODUCT_EDIT` - 產品編輯表單 (基於現有 ProductEditForm)
 - `PRODUCT_CREATE` - 產品創建表單
 - `PRODUCT_BULK_EDIT` - 產品批量編輯
 
 ### 2. 文件相關表單
+
 - `FILE_UPLOAD` - 文件上傳表單
 - `FILE_METADATA_EDIT` - 文件元數據編輯
 - `DOCUMENT_UPLOAD` - 文檔上傳表單
 
 ### 3. 操作確認表單
+
 - `VOID_CONFIRMATION` - 作廢確認表單
 - `DELETE_CONFIRMATION` - 刪除確認表單
 - `TRANSFER_CONFIRMATION` - 轉移確認表單
 
 ### 4. 庫存相關表單
+
 - `INVENTORY_ADJUST` - 庫存調整表單
 - `INVENTORY_TRANSFER` - 庫存轉移表單
 - `STOCK_COUNT` - 盤點表單
@@ -59,7 +64,7 @@ query GetProductEditForm {
     submitButtonText
     validateOnChange
   }
-  
+
   productFormOptions {
     colours {
       value
@@ -74,6 +79,7 @@ query GetProductEditForm {
 ```
 
 **回應範例**:
+
 ```json
 {
   "data": {
@@ -178,6 +184,7 @@ mutation SubmitProductEdit($input: FormSubmissionInput!) {
 ```
 
 **變數範例**:
+
 ```json
 {
   "input": {
@@ -277,7 +284,7 @@ query GetInventoryAdjustForm {
     layout
     gridColumns
   }
-  
+
   inventoryFormOptions {
     locations {
       value
@@ -341,6 +348,7 @@ mutation CreateFormConfig($input: CreateFormConfigInput!) {
 ```
 
 **變數範例**:
+
 ```json
 {
   "input": {
@@ -427,26 +435,31 @@ subscription FormSubmissionStatus($submissionId: ID!) {
 ## 最佳實踐
 
 ### 1. 表單緩存策略
+
 - 表單配置使用長期緩存 (3600s)
 - 選項數據使用中期緩存 (1800s)
 - 動態數據不緩存或短期緩存
 
 ### 2. 批量操作
+
 - 使用 `batchFormFieldOptions` 批量獲取選項
 - 使用 `batchSubmitForms` 批量提交表單
 - 合理控制批量大小避免性能問題
 
 ### 3. 錯誤處理
+
 - 客戶端應該處理 `FormValidationResult` 中的錯誤
 - 使用 `validateFormData` 進行提交前驗證
 - 合理顯示錯誤和警告信息
 
 ### 4. 權限控制
+
 - 所有查詢都需要適當的認證
 - 管理員功能需要 `ADMIN` 權限
 - 操作功能需要 `OPERATOR` 權限
 
 ### 5. 性能優化
+
 - 使用字段選擇避免過度獲取
 - 適當使用分頁避免大量數據查詢
 - 合理使用緩存減少重複查詢

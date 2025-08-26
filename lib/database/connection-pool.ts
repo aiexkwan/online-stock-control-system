@@ -15,16 +15,16 @@ interface ConnectionPoolConfig {
   minConnections: number;
   idleTimeoutMs: number;
   connectionTimeoutMs: number;
-  
+
   // Performance tuning
   maxRetries: number;
   retryDelayMs: number;
   statementTimeoutMs: number;
-  
+
   // Health checking
   healthCheckIntervalMs: number;
   maxHealthCheckFailures: number;
-  
+
   // Monitoring
   enableLogging: boolean;
   logSlowQueries: boolean;
@@ -34,24 +34,24 @@ interface ConnectionPoolConfig {
 // Optimized configuration for DepartPipeCard and similar workloads
 export const PRODUCTION_POOL_CONFIG: ConnectionPoolConfig = {
   // Connection management
-  maxConnections: 20,      // Increased for high concurrency
-  minConnections: 5,       // Keep minimum connections warm
-  idleTimeoutMs: 30000,    // 30 seconds idle timeout
+  maxConnections: 20, // Increased for high concurrency
+  minConnections: 5, // Keep minimum connections warm
+  idleTimeoutMs: 30000, // 30 seconds idle timeout
   connectionTimeoutMs: 10000, // 10 seconds connection timeout
-  
+
   // Retry and recovery
   maxRetries: 3,
-  retryDelayMs: 1000,      // 1 second retry delay with exponential backoff
+  retryDelayMs: 1000, // 1 second retry delay with exponential backoff
   statementTimeoutMs: 30000, // 30 seconds for query timeout
-  
+
   // Health monitoring
-  healthCheckIntervalMs: 60000,  // Check health every minute
-  maxHealthCheckFailures: 3,     // Allow 3 consecutive failures
-  
+  healthCheckIntervalMs: 60000, // Check health every minute
+  maxHealthCheckFailures: 3, // Allow 3 consecutive failures
+
   // Performance monitoring
   enableLogging: process.env.NODE_ENV === 'development',
   logSlowQueries: true,
-  slowQueryThresholdMs: 1000,    // Log queries slower than 1 second
+  slowQueryThresholdMs: 1000, // Log queries slower than 1 second
 };
 
 // Development configuration with more aggressive monitoring
@@ -59,7 +59,7 @@ export const DEVELOPMENT_POOL_CONFIG: ConnectionPoolConfig = {
   ...PRODUCTION_POOL_CONFIG,
   maxConnections: 10,
   enableLogging: true,
-  slowQueryThresholdMs: 500,     // Lower threshold for development
+  slowQueryThresholdMs: 500, // Lower threshold for development
 };
 
 /**
@@ -73,7 +73,7 @@ class DatabaseConnectionManager {
   private slowQueries: number = 0;
   private healthCheckFailures: number = 0;
   private lastHealthCheck: Date = new Date();
-  
+
   constructor(config: ConnectionPoolConfig = PRODUCTION_POOL_CONFIG) {
     this.config = config;
     this.startHealthChecking();
@@ -96,52 +96,57 @@ class DatabaseConnectionManager {
   ): Promise<T> {
     const startTime = Date.now();
     let retries = 0;
-    
+
     while (retries <= this.config.maxRetries) {
       try {
         this.activeConnections++;
         const client = await this.getOptimizedClient();
-        
+
         // Execute query with timeout
         const result = await Promise.race([
           queryFn(client),
           new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error('Query timeout')), this.config.statementTimeoutMs)
-          )
+          ),
         ]);
-        
+
         // Log performance metrics
         const executionTime = Date.now() - startTime;
         this.totalQueries++;
-        
+
         if (executionTime > this.config.slowQueryThresholdMs) {
           this.slowQueries++;
           if (this.config.logSlowQueries) {
-            console.warn(`[DB] Slow query detected: ${queryName || 'Unknown'} took ${executionTime}ms`);
+            console.warn(
+              `[DB] Slow query detected: ${queryName || 'Unknown'} took ${executionTime}ms`
+            );
           }
         }
-        
+
         if (this.config.enableLogging) {
           console.log(`[DB] Query ${queryName || 'Unknown'} completed in ${executionTime}ms`);
         }
-        
+
         return result;
       } catch (error) {
         retries++;
         if (retries > this.config.maxRetries) {
-          console.error(`[DB] Query ${queryName || 'Unknown'} failed after ${retries} retries:`, error);
+          console.error(
+            `[DB] Query ${queryName || 'Unknown'} failed after ${retries} retries:`,
+            error
+          );
           throw error;
         }
-        
+
         // Exponential backoff
-        await new Promise(resolve => 
+        await new Promise(resolve =>
           setTimeout(resolve, this.config.retryDelayMs * Math.pow(2, retries - 1))
         );
       } finally {
         this.activeConnections--;
       }
     }
-    
+
     throw new Error('Maximum retries exceeded');
   }
 
@@ -155,10 +160,8 @@ class DatabaseConnectionManager {
     }>
   ): Promise<T[]> {
     // Execute all queries in parallel, each with their own connection
-    const promises = queries.map(query => 
-      this.executeQuery(query.fn, query.name)
-    );
-    
+    const promises = queries.map(query => this.executeQuery(query.fn, query.name));
+
     return Promise.all(promises);
   }
 
@@ -168,27 +171,27 @@ class DatabaseConnectionManager {
   private async performHealthCheck(): Promise<boolean> {
     try {
       const client = await this.getOptimizedClient();
-      const { data, error } = await client
-        .from('data_code')
-        .select('count')
-        .limit(1);
-      
+      const { data, error } = await client.from('data_code').select('count').limit(1);
+
       if (error) {
         throw error;
       }
-      
+
       this.healthCheckFailures = 0;
       this.lastHealthCheck = new Date();
       return true;
     } catch (error) {
       this.healthCheckFailures++;
-      console.error(`[DB] Health check failed (${this.healthCheckFailures}/${this.config.maxHealthCheckFailures}):`, error);
-      
+      console.error(
+        `[DB] Health check failed (${this.healthCheckFailures}/${this.config.maxHealthCheckFailures}):`,
+        error
+      );
+
       if (this.healthCheckFailures >= this.config.maxHealthCheckFailures) {
         console.error('[DB] Maximum health check failures exceeded. Database may be unavailable.');
         // Here you could trigger alerts or fallback mechanisms
       }
-      
+
       return false;
     }
   }
@@ -213,7 +216,7 @@ class DatabaseConnectionManager {
       slowQueryPercentage: this.totalQueries > 0 ? (this.slowQueries / this.totalQueries) * 100 : 0,
       healthCheckFailures: this.healthCheckFailures,
       lastHealthCheck: this.lastHealthCheck,
-      isHealthy: this.healthCheckFailures < this.config.maxHealthCheckFailures
+      isHealthy: this.healthCheckFailures < this.config.maxHealthCheckFailures,
     };
   }
 }
@@ -237,15 +240,15 @@ export class DepartPipeCardQueryOptimizer {
    * Optimized pipe production stats query with proper indexing hints
    */
   async getPipeProductionStats(timeRange: '1d' | '7d' | '14d' = '14d') {
-    return this.connectionManager.executeQuery(async (client) => {
+    return this.connectionManager.executeQuery(async client => {
       const timeFilter = {
-        '1d': "generate_time >= CURRENT_DATE",
+        '1d': 'generate_time >= CURRENT_DATE',
         '7d': "generate_time >= (CURRENT_DATE - INTERVAL '7 days')",
-        '14d': "generate_time >= (CURRENT_DATE - INTERVAL '14 days')"
+        '14d': "generate_time >= (CURRENT_DATE - INTERVAL '14 days')",
       }[timeRange];
 
       const { data, error } = await client.rpc('get_pipe_production_stats_optimized', {
-        time_filter: timeFilter
+        time_filter: timeFilter,
       });
 
       if (error) throw error;
@@ -257,10 +260,10 @@ export class DepartPipeCardQueryOptimizer {
    * Optimized top pipe stocks query with materialized view support
    */
   async getTopPipeStocks(limit: number = 10) {
-    return this.connectionManager.executeQuery(async (client) => {
+    return this.connectionManager.executeQuery(async client => {
       // Use RPC function for aggregated query as client doesn't support .group()
       const { data, error } = await client.rpc('get_top_pipe_stocks', {
-        row_limit: limit
+        row_limit: limit,
       });
 
       if (error) throw error;
@@ -272,16 +275,18 @@ export class DepartPipeCardQueryOptimizer {
    * Optimized material stocks query
    */
   async getMaterialStocks(limit: number = 10) {
-    return this.connectionManager.executeQuery(async (client) => {
+    return this.connectionManager.executeQuery(async client => {
       const { data, error } = await client
         .from('stock_level')
-        .select(`
+        .select(
+          `
           stock,
           description,
           stock_level,
           update_time,
           data_code!inner(type)
-        `)
+        `
+        )
         .eq('data_code.type', 'Material')
         .gt('stock_level', 0)
         .order('stock_level', { ascending: false })
@@ -299,25 +304,26 @@ export class DepartPipeCardQueryOptimizer {
     const queries = [
       {
         fn: () => this.getPipeProductionStats('14d'),
-        name: 'PipeProductionStats'
+        name: 'PipeProductionStats',
       },
       {
         fn: () => this.getTopPipeStocks(10),
-        name: 'TopPipeStocks'
+        name: 'TopPipeStocks',
       },
       {
         fn: () => this.getMaterialStocks(7),
-        name: 'MaterialStocks'
-      }
+        name: 'MaterialStocks',
+      },
     ];
 
-    const [productionStats, topStocks, materialStocks] = await this.connectionManager.executeBatch(queries);
+    const [productionStats, topStocks, materialStocks] =
+      await this.connectionManager.executeBatch(queries);
 
     return {
       productionStats,
       topStocks,
       materialStocks,
-      stats: this.connectionManager.getStats()
+      stats: this.connectionManager.getStats(),
     };
   }
 }
@@ -332,20 +338,25 @@ export const departPipeCardOptimizer = new DepartPipeCardQueryOptimizer(dbConnec
 export function withConnectionPoolMonitoring() {
   return (req: NextRequest | unknown, res: NextResponse | unknown, next: () => void) => {
     const stats = dbConnectionManager.getStats();
-    
+
     // Add connection pool stats to response headers for monitoring (if res has setHeader method)
-    if (res && typeof res === 'object' && 'setHeader' in res && typeof res.setHeader === 'function') {
+    if (
+      res &&
+      typeof res === 'object' &&
+      'setHeader' in res &&
+      typeof res.setHeader === 'function'
+    ) {
       res.setHeader('X-DB-Active-Connections', stats.activeConnections);
       res.setHeader('X-DB-Total-Queries', stats.totalQueries);
       res.setHeader('X-DB-Slow-Query-Percentage', stats.slowQueryPercentage.toFixed(2));
       res.setHeader('X-DB-Health-Status', stats.isHealthy ? 'healthy' : 'unhealthy');
     }
-    
+
     // Log unhealthy state
     if (!stats.isHealthy) {
       console.warn('[DB] Connection pool is unhealthy:', stats);
     }
-    
+
     next();
   };
 }

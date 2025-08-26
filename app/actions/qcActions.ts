@@ -22,10 +22,10 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
 // 創建 Supabase Admin 客戶端的函數（使用 Service Role 權限）
 async function createSupabaseAdmin() {
   const { createClient: createSupabaseServer } = await import('@supabase/supabase-js');
-  
+
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
+
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables');
   }
@@ -76,7 +76,6 @@ export interface QcInventoryPayload {
   plt_num: string;
   await: number;
 }
-
 
 export interface QcDatabaseEntryPayload {
   palletInfo: QcPalletInfoPayload;
@@ -141,7 +140,6 @@ export async function createQcDatabaseEntries(
         return { error: `Failed to insert ACO records: ${getErrorMessage(acoError)}` };
       }
     }
-
 
     return { data: 'QC database entries created successfully' };
   } catch (error: unknown) {
@@ -420,7 +418,6 @@ export async function createQcDatabaseEntriesWithTransaction(
         throw new Error(`Failed to insert ACO records: ${getErrorMessage(acoError)}`);
       }
     }
-
 
     // 6. If ACO update is needed, do it after successful inserts
     if (acoUpdateInfo) {

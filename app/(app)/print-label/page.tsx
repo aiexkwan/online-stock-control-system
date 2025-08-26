@@ -264,7 +264,7 @@ function PrintLabelContent() {
       <PrintLabelGrid>
         {/* Main Form Card */}
         <GridWidget area='main' borderStyle='default' glow>
-          <PageErrorBoundary pageName="PrintLabel">
+          <PageErrorBoundary pageName='PrintLabel'>
             <GridBasicProductForm
               productCode={formData.productCode}
               onProductCodeChange={value => handleInputChange('productCode', value)}
@@ -376,7 +376,7 @@ function PrintLabelLoading() {
   return (
     <div className='flex h-screen items-center justify-center'>
       <div className='text-center'>
-        <div className='mb-4 h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-primary mx-auto'></div>
+        <div className='mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-primary'></div>
         <p className='text-muted-foreground'>Loading print label page...</p>
       </div>
     </div>

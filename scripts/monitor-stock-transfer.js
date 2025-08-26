@@ -26,7 +26,7 @@ const colors = {
   red: '\x1b[31m',
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
-  cyan: '\x1b[36m'
+  cyan: '\x1b[36m',
 };
 
 function formatLog(log) {
@@ -39,7 +39,7 @@ function formatLog(log) {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit'
+    second: '2-digit',
   });
 
   console.log(`${color}${icon} [${time}] User ${log.id}: ${log.action}${colors.reset}`);
@@ -78,7 +78,7 @@ async function getTransferStats() {
   const stats = {
     total: data.length,
     byLocation: {},
-    byOperator: {}
+    byOperator: {},
   };
 
   data.forEach(transfer => {
@@ -95,9 +95,15 @@ async function getTransferStats() {
 
 async function displayDashboard() {
   console.clear();
-  console.log(`${colors.bright}${colors.blue}═══════════════════════════════════════════════════${colors.reset}`);
-  console.log(`${colors.bright}${colors.blue}      Stock Transfer Monitoring Dashboard          ${colors.reset}`);
-  console.log(`${colors.bright}${colors.blue}═══════════════════════════════════════════════════${colors.reset}`);
+  console.log(
+    `${colors.bright}${colors.blue}═══════════════════════════════════════════════════${colors.reset}`
+  );
+  console.log(
+    `${colors.bright}${colors.blue}      Stock Transfer Monitoring Dashboard          ${colors.reset}`
+  );
+  console.log(
+    `${colors.bright}${colors.blue}═══════════════════════════════════════════════════${colors.reset}`
+  );
   console.log('');
 
   // Get stats
@@ -133,7 +139,9 @@ async function displayDashboard() {
   const logs = await getRecentLogs();
   logs.forEach(formatLog);
 
-  console.log(`${colors.bright}${colors.blue}═══════════════════════════════════════════════════${colors.reset}`);
+  console.log(
+    `${colors.bright}${colors.blue}═══════════════════════════════════════════════════${colors.reset}`
+  );
   console.log(`Press Ctrl+C to exit | Refreshing every 5 seconds...`);
 }
 

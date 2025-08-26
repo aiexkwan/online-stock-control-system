@@ -1,7 +1,9 @@
 import { GraphQLError } from 'graphql';
 import { createClient } from '@/app/utils/supabase/server';
 import { safeGet, safeNumber, safeString } from '@/types/database/helpers';
-import InventoryAnalysisService, { type InventoryAnalysisInput } from '@/lib/services/inventory-analysis.service';
+import InventoryAnalysisService, {
+  type InventoryAnalysisInput,
+} from '@/lib/services/inventory-analysis.service';
 import { GraphQLContext } from './index';
 
 // Type definitions for inventory items
@@ -75,7 +77,7 @@ export const inventoryMigrationResolvers = {
         // 權限檢查
         if (!context.user) {
           throw new GraphQLError('Unauthorized', {
-            extensions: { code: 'UNAUTHENTICATED' }
+            extensions: { code: 'UNAUTHENTICATED' },
           });
         }
 
@@ -121,7 +123,7 @@ export const inventoryMigrationResolvers = {
 
         if (error) {
           throw new GraphQLError(`Database query failed: ${error.message}`, {
-            extensions: { code: 'DATABASE_ERROR' }
+            extensions: { code: 'DATABASE_ERROR' },
           });
         }
 
@@ -129,24 +131,30 @@ export const inventoryMigrationResolvers = {
         // 注意：庫存位置信息應該從 record_inventory 或 record_palletinfo 表獲取
         const items = (products || []).map((product: Record<string, unknown>) => {
           const qty = safeNumber(safeGet(product, 'standard_qty'), 0);
-          
+
           return {
             productCode: safeString(safeGet(product, 'code'), ''),
             productDesc: safeString(safeGet(product, 'description'), ''),
             warehouse: 'N/A', // 需要從 record_inventory 表獲取實際倉庫信息
-            location: 'N/A',  // 需要從 record_palletinfo 表獲取實際位置信息
-            quantity: qty,   // 使用 standard_qty 作為基準數量
-            value: 0,        // 需要從價格表獲取單價來計算總價值
+            location: 'N/A', // 需要從 record_palletinfo 表獲取實際位置信息
+            quantity: qty, // 使用 standard_qty 作為基準數量
+            value: 0, // 需要從價格表獲取單價來計算總價值
             lastUpdated: new Date().toISOString(), // data_code 表無時間戳，使用當前時間作為預設
-            palletCount: 1,  // 預設值，實際需要計算
+            palletCount: 1, // 預設值，實際需要計算
           };
         });
 
         // 計算聚合數據
         const uniqueProducts = new Set(items.map((i: StockLevelItem) => i.productCode));
         const aggregates = {
-          totalQuantity: items.reduce((sum: number, item: StockLevelItem) => sum + (item.quantity || 0), 0),
-          totalValue: items.reduce((sum: number, item: StockLevelItem) => sum + (item.value || 0), 0),
+          totalQuantity: items.reduce(
+            (sum: number, item: StockLevelItem) => sum + (item.quantity || 0),
+            0
+          ),
+          totalValue: items.reduce(
+            (sum: number, item: StockLevelItem) => sum + (item.value || 0),
+            0
+          ),
           totalPallets: items.length,
           uniqueProducts: uniqueProducts.size,
         };
@@ -160,12 +168,13 @@ export const inventoryMigrationResolvers = {
         };
       } catch (error) {
         console.error(`[GraphQL-${requestId}] Error:`, error);
-        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch stock levels';
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to fetch stock levels';
         throw new GraphQLError(errorMessage, {
-          extensions: { 
+          extensions: {
             code: 'INTERNAL_SERVER_ERROR',
-            requestId 
-          }
+            requestId,
+          },
         });
       }
     },
@@ -177,7 +186,7 @@ export const inventoryMigrationResolvers = {
         // 權限檢查
         if (!context.user) {
           throw new GraphQLError('Unauthorized', {
-            extensions: { code: 'UNAUTHENTICATED' }
+            extensions: { code: 'UNAUTHENTICATED' },
           });
         }
 
@@ -230,7 +239,7 @@ export const inventoryMigrationResolvers = {
 
         if (transferError) {
           throw new GraphQLError(`Failed to create transfer: ${transferError.message}`, {
-            extensions: { code: 'DATABASE_ERROR' }
+            extensions: { code: 'DATABASE_ERROR' },
           });
         }
 
@@ -252,22 +261,26 @@ export const inventoryMigrationResolvers = {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to create transfer';
         throw new GraphQLError(errorMessage, {
-          extensions: { code: 'INTERNAL_SERVER_ERROR' }
+          extensions: { code: 'INTERNAL_SERVER_ERROR' },
         });
       }
-},
+    },
 
-    updateTransferStatus: async (_: unknown, args: { id: string; status: string }, context: GraphQLContext) => {
+    updateTransferStatus: async (
+      _: unknown,
+      args: { id: string; status: string },
+      context: GraphQLContext
+    ) => {
       try {
         // 權限檢查
         if (!context.user) {
           throw new GraphQLError('Unauthorized', {
-            extensions: { code: 'UNAUTHENTICATED' }
+            extensions: { code: 'UNAUTHENTICATED' },
           });
         }
 
         const supabase = await createClient();
-        
+
         const updateData: Record<string, unknown> = {
           status: args.status,
         };
@@ -285,7 +298,7 @@ export const inventoryMigrationResolvers = {
 
         if (error) {
           throw new GraphQLError(`Failed to update transfer: ${error.message}`, {
-            extensions: { code: 'DATABASE_ERROR' }
+            extensions: { code: 'DATABASE_ERROR' },
           });
         }
 
@@ -303,24 +316,29 @@ export const inventoryMigrationResolvers = {
           message: 'Transfer status updated successfully',
         };
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to update transfer status';
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to update transfer status';
         throw new GraphQLError(errorMessage, {
-          extensions: { code: 'INTERNAL_SERVER_ERROR' }
+          extensions: { code: 'INTERNAL_SERVER_ERROR' },
         });
       }
     },
 
-    cancelTransfer: async (_: unknown, args: { id: string; reason?: string }, context: GraphQLContext) => {
+    cancelTransfer: async (
+      _: unknown,
+      args: { id: string; reason?: string },
+      context: GraphQLContext
+    ) => {
       try {
         // 權限檢查
         if (!context.user) {
           throw new GraphQLError('Unauthorized', {
-            extensions: { code: 'UNAUTHENTICATED' }
+            extensions: { code: 'UNAUTHENTICATED' },
           });
         }
 
         const supabase = await createClient();
-        
+
         const updateData = {
           status: 'CANCELLED',
           notes: args.reason || 'Cancelled by user',
@@ -336,7 +354,7 @@ export const inventoryMigrationResolvers = {
 
         if (error) {
           throw new GraphQLError(`Failed to cancel transfer: ${error.message}`, {
-            extensions: { code: 'DATABASE_ERROR' }
+            extensions: { code: 'DATABASE_ERROR' },
           });
         }
 
@@ -364,7 +382,7 @@ export const inventoryMigrationResolvers = {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to cancel transfer';
         throw new GraphQLError(errorMessage, {
-          extensions: { code: 'INTERNAL_SERVER_ERROR' }
+          extensions: { code: 'INTERNAL_SERVER_ERROR' },
         });
       }
     },
@@ -372,7 +390,11 @@ export const inventoryMigrationResolvers = {
 
   // Field resolvers
   StockTransfer: {
-    pallet: async (parent: Record<string, unknown>, _args: Record<string, unknown>, context: GraphQLContext) => {
+    pallet: async (
+      parent: Record<string, unknown>,
+      _args: Record<string, unknown>,
+      context: GraphQLContext
+    ) => {
       // If pallet is already loaded, return it
       if (parent.pallet !== undefined) {
         return parent.pallet;
@@ -385,7 +407,7 @@ export const inventoryMigrationResolvers = {
 
       try {
         const supabase = await createClient();
-        
+
         // Fetch pallet info using the pallet_number
         const palletNumber = String(parent.pallet_number);
         const { data, error } = await supabase
@@ -395,7 +417,9 @@ export const inventoryMigrationResolvers = {
           .single();
 
         if (error || !data) {
-          console.warn(`[StockTransfer.pallet] No pallet found for plt_num: ${parent.pallet_number}`);
+          console.warn(
+            `[StockTransfer.pallet] No pallet found for plt_num: ${parent.pallet_number}`
+          );
           return null;
         }
 
@@ -405,8 +429,8 @@ export const inventoryMigrationResolvers = {
           product_qty: data.product_qty,
           generate_time: data.generate_time,
           series: data.series,
-          f_loc: (data as Record<string, unknown>).f_loc as string || '',
-          qc_status: (data as Record<string, unknown>).qc_status as string || '',
+          f_loc: ((data as Record<string, unknown>).f_loc as string) || '',
+          qc_status: ((data as Record<string, unknown>).qc_status as string) || '',
         };
       } catch (error) {
         console.error('[StockTransfer.pallet] Error loading pallet:', error);

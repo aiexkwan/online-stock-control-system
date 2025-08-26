@@ -37,7 +37,6 @@ interface UseStockUpdatesReturn {
 }
 
 export const useStockUpdates = (): UseStockUpdatesReturn => {
-
   // 更新庫存和工作記錄
   const updateStockAndWorkLevels = useCallback(async (options: StockUpdateOptions) => {
     const { productInfo, totalQuantity, palletCount, clockNumber } = options;

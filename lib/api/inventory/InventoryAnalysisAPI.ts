@@ -50,11 +50,8 @@ export class InventoryAnalysisAPI {
       if (!supabase) {
         throw new Error('Supabase client not initialized');
       }
-      
-      const { data, error } = await supabase.rpc(
-        'rpc_get_inventory_ordered_analysis',
-        rpcParams
-      );
+
+      const { data, error } = await supabase.rpc('rpc_get_inventory_ordered_analysis', rpcParams);
 
       if (error) {
         console.error('Error fetching inventory analysis:', error);

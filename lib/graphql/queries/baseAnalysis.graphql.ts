@@ -11,11 +11,7 @@ export const BASE_ANALYSIS_DATA_QUERY = gql`
     $filters: AnalysisFiltersInput
     $pagination: PaginationInput
   ) {
-    baseAnalysisData(
-      analysisType: $analysisType
-      filters: $filters
-      pagination: $pagination
-    ) {
+    baseAnalysisData(analysisType: $analysisType, filters: $filters, pagination: $pagination) {
       analysisType
       data
       metadata {
@@ -75,17 +71,13 @@ export const BASE_ANALYSIS_WITH_FRAGMENTS = gql`
   ${ANALYSIS_METADATA_FRAGMENT}
   ${PAGINATION_DATA_FRAGMENT}
   ${ANALYSIS_FILTERS_FRAGMENT}
-  
+
   query BaseAnalysisWithFragments(
     $analysisType: BaseAnalysisType!
     $filters: AnalysisFiltersInput
     $pagination: PaginationInput
   ) {
-    baseAnalysisData(
-      analysisType: $analysisType
-      filters: $filters
-      pagination: $pagination
-    ) {
+    baseAnalysisData(analysisType: $analysisType, filters: $filters, pagination: $pagination) {
       analysisType
       data
       metadata {
@@ -103,15 +95,8 @@ export const BASE_ANALYSIS_WITH_FRAGMENTS = gql`
 
 // Query for expandable analysis
 export const EXPANDABLE_ANALYSIS_QUERY = gql`
-  query ExpandableAnalysis(
-    $filters: AnalysisFiltersInput
-    $pagination: PaginationInput
-  ) {
-    baseAnalysisData(
-      analysisType: EXPANDABLE
-      filters: $filters
-      pagination: $pagination
-    ) {
+  query ExpandableAnalysis($filters: AnalysisFiltersInput, $pagination: PaginationInput) {
+    baseAnalysisData(analysisType: EXPANDABLE, filters: $filters, pagination: $pagination) {
       analysisType
       data
       metadata {
@@ -138,15 +123,8 @@ export const EXPANDABLE_ANALYSIS_QUERY = gql`
 
 // Query for paged analysis
 export const PAGED_ANALYSIS_QUERY = gql`
-  query PagedAnalysis(
-    $filters: AnalysisFiltersInput
-    $pagination: PaginationInput
-  ) {
-    baseAnalysisData(
-      analysisType: PAGED
-      filters: $filters
-      pagination: $pagination
-    ) {
+  query PagedAnalysis($filters: AnalysisFiltersInput, $pagination: PaginationInput) {
+    baseAnalysisData(analysisType: PAGED, filters: $filters, pagination: $pagination) {
       analysisType
       data
       metadata {
@@ -173,15 +151,8 @@ export const PAGED_ANALYSIS_QUERY = gql`
 
 // Query for progress analysis
 export const PROGRESS_ANALYSIS_QUERY = gql`
-  query ProgressAnalysis(
-    $filters: AnalysisFiltersInput
-    $pagination: PaginationInput
-  ) {
-    baseAnalysisData(
-      analysisType: PROGRESS
-      filters: $filters
-      pagination: $pagination
-    ) {
+  query ProgressAnalysis($filters: AnalysisFiltersInput, $pagination: PaginationInput) {
+    baseAnalysisData(analysisType: PROGRESS, filters: $filters, pagination: $pagination) {
       analysisType
       data
       metadata {
@@ -208,15 +179,8 @@ export const PROGRESS_ANALYSIS_QUERY = gql`
 
 // Query for trend analysis
 export const TREND_ANALYSIS_QUERY = gql`
-  query TrendAnalysis(
-    $filters: AnalysisFiltersInput
-    $pagination: PaginationInput
-  ) {
-    baseAnalysisData(
-      analysisType: TREND
-      filters: $filters
-      pagination: $pagination
-    ) {
+  query TrendAnalysis($filters: AnalysisFiltersInput, $pagination: PaginationInput) {
+    baseAnalysisData(analysisType: TREND, filters: $filters, pagination: $pagination) {
       analysisType
       data
       metadata {
@@ -243,15 +207,8 @@ export const TREND_ANALYSIS_QUERY = gql`
 
 // Query for distribution analysis
 export const DISTRIBUTION_ANALYSIS_QUERY = gql`
-  query DistributionAnalysis(
-    $filters: AnalysisFiltersInput
-    $pagination: PaginationInput
-  ) {
-    baseAnalysisData(
-      analysisType: DISTRIBUTION
-      filters: $filters
-      pagination: $pagination
-    ) {
+  query DistributionAnalysis($filters: AnalysisFiltersInput, $pagination: PaginationInput) {
+    baseAnalysisData(analysisType: DISTRIBUTION, filters: $filters, pagination: $pagination) {
       analysisType
       data
       metadata {
@@ -339,13 +296,13 @@ export interface PagedAnalysisVariables {
 }
 
 // Type for analysis data - varies by analysis type
-export type AnalysisDataType = 
-  | Record<string, unknown>  // Generic object data
-  | unknown[]                // Array data
+export type AnalysisDataType =
+  | Record<string, unknown> // Generic object data
+  | unknown[] // Array data
   | {
       items: unknown[];
       summary?: Record<string, unknown>;
-    }                        // Structured data with items and summary
+    } // Structured data with items and summary
   | null;
 
 // Type for filter configurations

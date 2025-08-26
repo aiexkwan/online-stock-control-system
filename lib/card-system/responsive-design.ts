@@ -1,7 +1,7 @@
 /**
  * Responsive Design System for Cards
  * 卡片響應式設計系統
- * 
+ *
  * Created: 2025-08-12
  * Purpose: Comprehensive responsive design patterns for all card types
  */
@@ -23,7 +23,7 @@ export const responsiveLayouts = {
     },
     tablet: {
       columns: 2,
-      gap: '20px', 
+      gap: '20px',
       padding: '24px',
       maxWidth: '100%',
     },
@@ -227,51 +227,51 @@ export const responsiveCharts = {
   // 特定圖表類型的響應式規則
   chartTypes: {
     line: {
-      mobile: { 
+      mobile: {
         simplifyPath: true,
         reduceDataPoints: true,
         hideMinorGridLines: true,
       },
-      tablet: { 
+      tablet: {
         simplifyPath: false,
         reduceDataPoints: false,
         hideMinorGridLines: false,
       },
-      desktop: { 
+      desktop: {
         simplifyPath: false,
         reduceDataPoints: false,
         hideMinorGridLines: false,
       },
     },
     bar: {
-      mobile: { 
+      mobile: {
         barThickness: 'auto',
         maxBars: 8,
         stackedLayout: true,
       },
-      tablet: { 
+      tablet: {
         barThickness: 'auto',
         maxBars: 12,
         stackedLayout: false,
       },
-      desktop: { 
+      desktop: {
         barThickness: 'auto',
         maxBars: 20,
         stackedLayout: false,
       },
     },
     pie: {
-      mobile: { 
+      mobile: {
         showLabels: false,
         innerRadius: 0.3,
         outerRadius: 0.8,
       },
-      tablet: { 
+      tablet: {
         showLabels: true,
         innerRadius: 0.4,
         outerRadius: 0.9,
       },
-      desktop: { 
+      desktop: {
         showLabels: true,
         innerRadius: 0.5,
         outerRadius: 1.0,
@@ -312,7 +312,7 @@ export const responsiveInteractions = {
     },
     tablet: {
       swipeToRefresh: true,
-      pinchToZoom: true,  // 平板支援圖表縮放
+      pinchToZoom: true, // 平板支援圖表縮放
       longPressMenu: true,
       twoFingerScroll: true,
     },
@@ -408,7 +408,7 @@ export const responsiveUtils = {
   // 獲取當前螢幕尺寸類別
   getCurrentBreakpoint(): 'mobile' | 'tablet' | 'desktop' | 'wide' {
     if (typeof window === 'undefined') return 'desktop';
-    
+
     const width = window.innerWidth;
     if (width < 768) return 'mobile';
     if (width < 1024) return 'tablet';
@@ -418,35 +418,41 @@ export const responsiveUtils = {
 
   // 檢測是否為觸控設備
   isTouchDevice(): boolean {
-    return typeof window !== 'undefined' && 
-           ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    return (
+      typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0)
+    );
   },
 
   // 獲取設備效能等級
   getPerformanceLevel(): 'low' | 'medium' | 'high' {
     if (typeof navigator === 'undefined') return 'medium';
-    
+
     interface NavigatorExtended extends Navigator {
       deviceMemory?: number;
       connection?: {
         effectiveType?: string;
       };
     }
-    
+
     const nav = navigator as NavigatorExtended;
     const { hardwareConcurrency, deviceMemory } = nav;
     const connection = nav.connection;
-    
+
     // 簡化的效能檢測邏輯
-    if (hardwareConcurrency < 4 || (deviceMemory !== undefined && deviceMemory < 4) || 
-        (connection && connection.effectiveType && ['slow-2g', '2g'].includes(connection.effectiveType))) {
+    if (
+      hardwareConcurrency < 4 ||
+      (deviceMemory !== undefined && deviceMemory < 4) ||
+      (connection &&
+        connection.effectiveType &&
+        ['slow-2g', '2g'].includes(connection.effectiveType))
+    ) {
       return 'low';
     }
-    
+
     if (hardwareConcurrency >= 8 && deviceMemory !== undefined && deviceMemory >= 8) {
       return 'high';
     }
-    
+
     return 'medium';
   },
 

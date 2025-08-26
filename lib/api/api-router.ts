@@ -54,10 +54,13 @@ export class APIRouter {
       );
 
       if (!restApiEnabled.enabled) {
-        logger.debug({
-          userId: context.userId,
-          reason: restApiEnabled.reason,
-        }, 'REST API disabled, using GraphQL');
+        logger.debug(
+          {
+            userId: context.userId,
+            reason: restApiEnabled.reason,
+          },
+          'REST API disabled, using GraphQL'
+        );
 
         return {
           useRestAPI: false,
@@ -84,12 +87,15 @@ export class APIRouter {
       // 根據百分比決定使用 REST API
       const useRestAPI = this.shouldUseRestAPI(percentage, context.userId);
 
-      logger.info({
-        userId: context.userId,
-        useRestAPI,
-        percentage,
-        fallbackEnabled,
-      }, 'API routing decision');
+      logger.info(
+        {
+          userId: context.userId,
+          useRestAPI,
+          percentage,
+          fallbackEnabled,
+        },
+        'API routing decision'
+      );
 
       return {
         useRestAPI,
@@ -100,10 +106,13 @@ export class APIRouter {
           : `User in ${100 - percentage}% GraphQL group`,
       };
     } catch (error) {
-      logger.error({
-        error: error instanceof Error ? error.message : 'Unknown error',
-        userId: context.userId,
-      }, 'API routing error, defaulting to GraphQL');
+      logger.error(
+        {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          userId: context.userId,
+        },
+        'API routing error, defaulting to GraphQL'
+      );
 
       return {
         useRestAPI: false,

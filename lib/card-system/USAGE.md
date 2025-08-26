@@ -36,36 +36,42 @@ import { RightSideCardWrapper } from '@/lib/card-system';
 ## 卡片類型與視覺區分
 
 ### 1. 操作類 (Operation)
+
 - **角標**: 圓形，左上角
 - **圖標**: 實心填充樣式
 - **陰影**: 標準深度
 - **用途**: 用戶操作、表單、控制面板
 
-### 2. 分析類 (Analysis) 
+### 2. 分析類 (Analysis)
+
 - **角標**: 六邊形，右上角
 - **圖標**: 線框樣式
 - **陰影**: 強烈深度
 - **用途**: 數據分析、統計圖表、儀表板
 
 ### 3. 數據類 (Data)
+
 - **角標**: 方形，左上角
 - **圖標**: 點線樣式
 - **陰影**: 細微深度
 - **用途**: 數據展示、列表、表格
 
 ### 4. 報表類 (Report)
+
 - **角標**: 菱形，右上角
 - **圖標**: 條紋樣式
 - **陰影**: 強烈深度
 - **用途**: 報告、導出功能、打印
 
 ### 5. 圖表類 (Chart)
+
 - **角標**: 三角形，左上角
 - **圖標**: 分段樣式
 - **陰影**: 強烈深度
 - **用途**: 圖表、可視化、趨勢分析
 
 ### 6. 特殊類 (Special)
+
 - **角標**: 星形，右上角
 - **圖標**: 漸變樣式
 - **陰影**: 最強深度
@@ -74,11 +80,13 @@ import { RightSideCardWrapper } from '@/lib/card-system';
 ## 解決雙重標題問題
 
 ### 問題描述
+
 右側佈局的卡片容易出現容器標題與內容組件標題重複顯示的問題。
 
 ### 解決方案
 
 #### 方案1: 使用RightSideCardWrapper
+
 ```typescript
 import { RightSideCardWrapper } from '@/lib/card-system';
 
@@ -88,6 +96,7 @@ import { RightSideCardWrapper } from '@/lib/card-system';
 ```
 
 #### 方案2: 手動控制標題
+
 ```typescript
 <EnhancedGlassmorphicCard
   theme="analysis"
@@ -99,21 +108,24 @@ import { RightSideCardWrapper } from '@/lib/card-system';
 ```
 
 #### 方案3: 智能檢測（自動）
+
 組件會自動檢測子元素是否包含標題，如果發現重複會自動隱藏容器標題。
 
 ## 樣式自定義
 
 ### CSS變量
+
 ```css
 :root {
   --card-glow-rgb: 255, 255, 255;
   --card-bg: rgba(255, 255, 255, 0.05);
-  --card-border: rgba(255, 255, 255, 0.10);
+  --card-border: rgba(255, 255, 255, 0.1);
   --card-blur: 16px;
 }
 ```
 
 ### 圖標樣式類
+
 ```css
 .card-icon--filled    /* 實心圖標 */
 .card-icon--outline   /* 線框圖標 */
@@ -126,6 +138,7 @@ import { RightSideCardWrapper } from '@/lib/card-system';
 ## 性能優化
 
 ### 自適應性能配置
+
 ```typescript
 <EnhancedGlassmorphicCard
   theme="operation"
@@ -134,6 +147,7 @@ import { RightSideCardWrapper } from '@/lib/card-system';
 ```
 
 ### 響應式隱藏
+
 ```typescript
 <EnhancedGlassmorphicCard
   responsiveHide={['mobile']} // 在移動設備隱藏
@@ -143,6 +157,7 @@ import { RightSideCardWrapper } from '@/lib/card-system';
 ## 無障礙設計
 
 ### 鍵盤支持
+
 ```typescript
 <EnhancedGlassmorphicCard
   isHoverable={true}
@@ -155,6 +170,7 @@ import { RightSideCardWrapper } from '@/lib/card-system';
 ```
 
 ### 高對比模式
+
 系統自動支持高對比模式，在用戶系統設置為高對比時會增強視覺對比度。
 
 ## 遷移指南
@@ -162,6 +178,7 @@ import { RightSideCardWrapper } from '@/lib/card-system';
 ### 從舊卡片系統遷移
 
 1. **更新導入**
+
 ```typescript
 // 舊的
 import { Widget } from '@/components/widgets';
@@ -171,18 +188,20 @@ import { EnhancedGlassmorphicCard } from '@/lib/card-system';
 ```
 
 2. **更新屬性**
+
 ```typescript
 // 舊的
 <Widget type="operation" colorScheme="blue">
 
-// 新的  
+// 新的
 <EnhancedGlassmorphicCard theme="operation">
 ```
 
 3. **處理標題衝突**
+
 ```typescript
 // 如果出現雙重標題，添加suppressTitle
-<EnhancedGlassmorphicCard 
+<EnhancedGlassmorphicCard
   theme="analysis"
   suppressTitle={true}
 >
@@ -191,15 +210,19 @@ import { EnhancedGlassmorphicCard } from '@/lib/card-system';
 ## 常見問題
 
 ### Q: 如何區分不同類型的卡片？
+
 A: 新系統通過角標形狀、圖標樣式和陰影深度來區分，無需依賴顏色。
 
 ### Q: 右側卡片出現雙重標題怎麼辦？
+
 A: 使用`RightSideCardWrapper`或設置`suppressTitle={true}`。
 
 ### Q: 如何自定義圖標樣式？
+
 A: 使用CSS類`.card-icon--[style]`或通過CSS變量調整。
 
 ### Q: 性能考慮？
+
 A: 系統會根據設備性能自動調整毛玻璃效果強度，低性能設備會使用簡化版本。
 
 ## 最佳實踐

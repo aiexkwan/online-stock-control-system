@@ -81,7 +81,7 @@ async function batchStockLevelsByCode(
       stock_level: number;
       update_time: string;
     }
-    
+
     // Create a map for O(1) lookup
     const stockMap = new Map<string, StockLevelRecord>();
     data?.forEach((record: DatabaseStockLevelRecord) => {
@@ -117,36 +117,34 @@ async function batchStockLevelsWithFilter(
   // For now, handle each query individually due to complex filtering
   // In a real production system, you might want to optimize similar queries
   const results = await Promise.all(
-    queries.map(async (query) => {
+    queries.map(async query => {
       try {
-        let supabaseQuery = supabase
-          .from('stock_level')
-          .select('*', { count: 'exact' });
+        let supabaseQuery = supabase.from('stock_level').select('*', { count: 'exact' });
 
         // Apply filters
         if (query.filter) {
           const { filter } = query;
-          
+
           if (filter.stockCodePattern) {
             supabaseQuery = supabaseQuery.ilike('stock', `%${filter.stockCodePattern}%`);
           }
-          
+
           if (filter.descriptionPattern) {
             supabaseQuery = supabaseQuery.ilike('description', `%${filter.descriptionPattern}%`);
           }
-          
+
           if (filter.minLevel !== undefined) {
             supabaseQuery = supabaseQuery.gte('stock_level', filter.minLevel);
           }
-          
+
           if (filter.maxLevel !== undefined) {
             supabaseQuery = supabaseQuery.lte('stock_level', filter.maxLevel);
           }
-          
+
           if (filter.updatedAfter) {
             supabaseQuery = supabaseQuery.gte('update_time', filter.updatedAfter);
           }
-          
+
           if (filter.updatedBefore) {
             supabaseQuery = supabaseQuery.lte('update_time', filter.updatedBefore);
           }
@@ -154,10 +152,9 @@ async function batchStockLevelsWithFilter(
 
         // Apply sorting
         if (query.sort) {
-          supabaseQuery = supabaseQuery.order(
-            query.sort.field, 
-            { ascending: query.sort.direction === 'asc' }
-          );
+          supabaseQuery = supabaseQuery.order(query.sort.field, {
+            ascending: query.sort.direction === 'asc',
+          });
         } else {
           // Default sort by stock_level descending
           supabaseQuery = supabaseQuery.order('stock_level', { ascending: false });
@@ -167,9 +164,9 @@ async function batchStockLevelsWithFilter(
         if (query.limit) {
           supabaseQuery = supabaseQuery.limit(query.limit);
         }
-        
+
         if (query.offset) {
-          supabaseQuery = supabaseQuery.range(query.offset, (query.offset + (query.limit || 10)) - 1);
+          supabaseQuery = supabaseQuery.range(query.offset, query.offset + (query.limit || 10) - 1);
         }
 
         const { data, error, count } = await supabaseQuery;
@@ -193,12 +190,11 @@ async function batchStockLevelsWithFilter(
         return {
           nodes,
           totalCount,
-          hasNextPage: (offset + limit) < totalCount,
+          hasNextPage: offset + limit < totalCount,
           hasPreviousPage: offset > 0,
           startCursor: nodes.length > 0 ? btoa(`${nodes[0].uuid}`) : undefined,
           endCursor: nodes.length > 0 ? btoa(`${nodes[nodes.length - 1].uuid}`) : undefined,
         };
-
       } catch (error) {
         console.error('[StockLevelDataLoader] Unexpected error in batch query:', error);
         return new Error('Unexpected error loading stock levels');
@@ -222,15 +218,19 @@ async function batchStockLevelsByProductType(
     // Join with data_code to filter by product type
     const { data, error } = await supabase
       .from('stock_level')
-      .select(`
+      .select(
+        `
         *,
         data_code!inner(type)
-      `)
+      `
+      )
       .in('data_code.type', [...productTypes]);
 
     if (error) {
       console.error('[StockLevelDataLoader] Error loading by product type:', error);
-      return productTypes.map(() => new Error(`Failed to load stock levels by type: ${error.message}`));
+      return productTypes.map(
+        () => new Error(`Failed to load stock levels by type: ${error.message}`)
+      );
     }
 
     // Group by product type
@@ -262,7 +262,9 @@ async function batchStockLevelsByProductType(
 /**
  * Create DataLoader for stock levels by stock code
  */
-export function createStockLevelByCodeLoader(supabase: SupabaseClient): DataLoader<string, StockLevelRecord> {
+export function createStockLevelByCodeLoader(
+  supabase: SupabaseClient
+): DataLoader<string, StockLevelRecord> {
   return new DataLoader<string, StockLevelRecord>(
     (stockCodes: readonly string[]) => batchStockLevelsByCode(supabase, stockCodes),
     {
@@ -276,7 +278,9 @@ export function createStockLevelByCodeLoader(supabase: SupabaseClient): DataLoad
 /**
  * Create DataLoader for stock levels with filtering and pagination
  */
-export function createStockLevelQueryLoader(supabase: SupabaseClient): DataLoader<StockLevelQuery, StockLevelConnection> {
+export function createStockLevelQueryLoader(
+  supabase: SupabaseClient
+): DataLoader<StockLevelQuery, StockLevelConnection> {
   return new DataLoader<StockLevelQuery, StockLevelConnection>(
     (queries: readonly StockLevelQuery[]) => batchStockLevelsWithFilter(supabase, queries),
     {
@@ -290,7 +294,9 @@ export function createStockLevelQueryLoader(supabase: SupabaseClient): DataLoade
 /**
  * Create DataLoader for stock levels by product type
  */
-export function createStockLevelByTypeLoader(supabase: SupabaseClient): DataLoader<string, StockLevelRecord[]> {
+export function createStockLevelByTypeLoader(
+  supabase: SupabaseClient
+): DataLoader<string, StockLevelRecord[]> {
   return new DataLoader<string, StockLevelRecord[]>(
     (productTypes: readonly string[]) => batchStockLevelsByProductType(supabase, productTypes),
     {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useLogin } from '@/app/hooks/useLogin';
 
@@ -9,7 +9,7 @@ interface LoginFormProps {
   onError?: (error: string) => void;
 }
 
-export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
+const LoginForm = memo(function LoginForm({ onSuccess, onError }: LoginFormProps) {
   const { loading, error, fieldErrors, login, clearFieldError, clearErrors, passwordRules } =
     useLogin();
 
@@ -155,4 +155,6 @@ export default function LoginForm({ onSuccess, onError }: LoginFormProps) {
       </div>
     </form>
   );
-}
+});
+
+export default LoginForm;

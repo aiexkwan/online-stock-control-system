@@ -36,10 +36,10 @@ export type PrintData = {
   palletNumber?: string;
   productCode?: string;
   palletNum?: string;
-  plt_num?: string;  // Added for print-template-service compatibility
-  product_code?: string;  // Added for print-template-service compatibility
-  product_qty?: number;  // Added for print-template-service compatibility
-  generate_time?: string;  // Added for print-template-service compatibility
+  plt_num?: string; // Added for print-template-service compatibility
+  product_code?: string; // Added for print-template-service compatibility
+  product_qty?: number; // Added for print-template-service compatibility
+  generate_time?: string; // Added for print-template-service compatibility
   palletNumbers?: string[]; // 批量列印支援
   series?: string | string[]; // 支援單個或多個系列
   operator?: string;
@@ -121,7 +121,6 @@ export interface PrintResult {
   uploadedUrls?: string[];
   uploadErrors?: string[];
 }
-
 
 export interface PrintStatistics {
   totalJobs: number;

@@ -71,18 +71,18 @@ function OperatorVerification() {
 ```typescript
 interface UseUserIdReturn {
   // 核心數據
-  userId: string | null;           // Clock number (例如: "1234")
-  userNumericId: number | null;    // data_id 表的數字 ID
-  userDetails: UserDetails | null;  // 完整用戶詳情
+  userId: string | null; // Clock number (例如: "1234")
+  userNumericId: number | null; // data_id 表的數字 ID
+  userDetails: UserDetails | null; // 完整用戶詳情
 
   // 狀態
-  isLoading: boolean;              // 加載中
-  error: Error | null;             // 錯誤信息
-  isAuthenticated: boolean;        // 是否已認證
+  isLoading: boolean; // 加載中
+  error: Error | null; // 錯誤信息
+  isAuthenticated: boolean; // 是否已認證
 
   // 操作
-  refreshUser: () => Promise<void>;                    // 刷新用戶數據
-  verifyUserId: (userId: number) => Promise<boolean>;  // 驗證用戶 ID
+  refreshUser: () => Promise<void>; // 刷新用戶數據
+  verifyUserId: (userId: number) => Promise<boolean>; // 驗證用戶 ID
 }
 ```
 
@@ -121,11 +121,13 @@ function NumericIdComponent() {
 ### 從舊的 useAuth 遷移
 
 Before:
+
 ```tsx
 const { getUserId } = useAuth({ setUserId });
 ```
 
 After:
+
 ```tsx
 const { userId, refreshUser } = useUserId();
 ```
@@ -133,12 +135,14 @@ const { userId, refreshUser } = useUserId();
 ### 從 getCurrentUserId 函數遷移
 
 Before:
+
 ```tsx
 const supabase = createClient();
 const userId = await getCurrentUserId(supabase);
 ```
 
 After:
+
 ```tsx
 const { userId } = useUserId();
 ```
@@ -146,11 +150,13 @@ const { userId } = useUserId();
 ### 從手動提取 clock number 遷移
 
 Before:
+
 ```tsx
 const clockNumber = user.email.split('@')[0];
 ```
 
 After:
+
 ```tsx
 const { userId } = useUserId();
 ```
@@ -164,6 +170,7 @@ const { userId } = useUserId();
 ## 錯誤處理
 
 Hook 內建錯誤處理，會自動：
+
 - 記錄錯誤到 console
 - 設置 error 狀態
 - 顯示 toast 通知（非認證錯誤）
@@ -191,11 +198,7 @@ const UserContext = createContext<UseUserIdReturn | null>(null);
 function AppProvider({ children }) {
   const userIdData = useUserId();
 
-  return (
-    <UserContext.Provider value={userIdData}>
-      {children}
-    </UserContext.Provider>
-  );
+  return <UserContext.Provider value={userIdData}>{children}</UserContext.Provider>;
 }
 ```
 

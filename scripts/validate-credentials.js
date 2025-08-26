@@ -28,78 +28,75 @@ const REQUIRED_CREDENTIALS = {
     'SUPABASE_ANON_KEY',
     'SUPABASE_SERVICE_ROLE_KEY',
     'SYS_LOGIN',
-    'SYS_PASSWORD'
+    'SYS_PASSWORD',
   ],
-  development: [
-    'SUPABASE_URL',
-    'SUPABASE_ANON_KEY'
-  ],
+  development: ['SUPABASE_URL', 'SUPABASE_ANON_KEY'],
   test: [
     'TEST_SUPABASE_URL',
     'TEST_SUPABASE_SERVICE_KEY',
     'TEST_LOGIN_EMAIL',
-    'TEST_LOGIN_PASSWORD'
-  ]
+    'TEST_LOGIN_PASSWORD',
+  ],
 };
 
 // Credential validators
 const VALIDATORS = {
   // Supabase URLs
-  'SUPABASE_URL': (value) => {
+  SUPABASE_URL: value => {
     return value.startsWith('https://') && value.includes('.supabase.co');
   },
-  'TEST_SUPABASE_URL': (value) => {
+  TEST_SUPABASE_URL: value => {
     return value.startsWith('https://') && value.includes('.supabase.co');
   },
-  
+
   // Supabase Keys
-  'SUPABASE_ANON_KEY': (value) => {
+  SUPABASE_ANON_KEY: value => {
     return value.startsWith('eyJ') && value.length > 100;
   },
-  'SUPABASE_SERVICE_ROLE_KEY': (value) => {
+  SUPABASE_SERVICE_ROLE_KEY: value => {
     return value.startsWith('eyJ') && value.length > 100;
   },
-  'TEST_SUPABASE_SERVICE_KEY': (value) => {
+  TEST_SUPABASE_SERVICE_KEY: value => {
     return value.startsWith('eyJ') && value.length > 100;
   },
-  
+
   // Email validators
-  'SYS_LOGIN': (value) => {
+  SYS_LOGIN: value => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   },
-  'TEST_LOGIN_EMAIL': (value) => {
+  TEST_LOGIN_EMAIL: value => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   },
-  
+
   // Password validators
-  'SYS_PASSWORD': (value) => {
+  SYS_PASSWORD: value => {
     return value.length >= 6;
   },
-  'TEST_LOGIN_PASSWORD': (value) => {
+  TEST_LOGIN_PASSWORD: value => {
     return value.length >= 6;
   },
-  
+
   // API Keys
-  'OPENAI_API_KEY': (value) => {
+  OPENAI_API_KEY: value => {
     return value.startsWith('sk-') && value.length > 40;
   },
-  'RESEND_API_KEY': (value) => {
+  RESEND_API_KEY: value => {
     return value.startsWith('re_') && value.length > 20;
-  }
+  },
 };
 
 function validateCredentials(environment = 'development') {
   console.log(`\n🔍 Validating credentials for ${environment} environment...\n`);
-  
+
   const required = REQUIRED_CREDENTIALS[environment] || [];
   const missing = [];
   const invalid = [];
   const valid = [];
-  
+
   // Check required credentials
   for (const key of required) {
     const value = process.env[key];
-    
+
     if (!value) {
       missing.push(key);
     } else {
@@ -107,18 +104,18 @@ function validateCredentials(environment = 'development') {
       if (validator && !validator(value)) {
         invalid.push({
           key,
-          reason: 'Invalid format'
+          reason: 'Invalid format',
         });
       } else {
         valid.push(key);
       }
     }
   }
-  
+
   // Check optional but important credentials
   const optional = ['OPENAI_API_KEY', 'RESEND_API_KEY'];
   const optionalStatus = [];
-  
+
   for (const key of optional) {
     const value = process.env[key];
     if (value) {
@@ -132,10 +129,10 @@ function validateCredentials(environment = 'development') {
       optionalStatus.push(`ℹ️  ${key}: Not configured (optional)`);
     }
   }
-  
+
   // Print results
   console.log('=== Required Credentials ===\n');
-  
+
   if (valid.length > 0) {
     console.log('✅ Valid credentials:');
     valid.forEach(key => {
@@ -145,7 +142,7 @@ function validateCredentials(environment = 'development') {
     });
     console.log('');
   }
-  
+
   if (missing.length > 0) {
     console.error('❌ Missing credentials:');
     missing.forEach(key => {
@@ -153,7 +150,7 @@ function validateCredentials(environment = 'development') {
     });
     console.log('');
   }
-  
+
   if (invalid.length > 0) {
     console.error('⚠️  Invalid credentials:');
     invalid.forEach(({ key, reason }) => {
@@ -161,25 +158,27 @@ function validateCredentials(environment = 'development') {
     });
     console.log('');
   }
-  
+
   console.log('=== Optional Credentials ===\n');
   optionalStatus.forEach(status => console.log(status));
-  
+
   // Check for hardcoded credentials in code
   console.log('\n=== Security Check ===\n');
   checkForHardcodedCredentials();
-  
+
   // Summary
   console.log('\n=== Summary ===\n');
   const totalRequired = required.length;
   const totalValid = valid.length;
   const percentage = totalRequired > 0 ? Math.round((totalValid / totalRequired) * 100) : 100;
-  
+
   if (missing.length === 0 && invalid.length === 0) {
     console.log(`✅ All ${totalRequired} required credentials are valid (${percentage}%)`);
     return 0;
   } else {
-    console.error(`❌ ${totalValid}/${totalRequired} required credentials are valid (${percentage}%)`);
+    console.error(
+      `❌ ${totalValid}/${totalRequired} required credentials are valid (${percentage}%)`
+    );
     console.error('\nPlease configure missing/invalid credentials in .env.local');
     return 1;
   }
@@ -187,22 +186,22 @@ function validateCredentials(environment = 'development') {
 
 function maskCredential(key, value) {
   if (!value) return 'NOT_SET';
-  
+
   // Don't mask URLs
   if (key.includes('URL')) {
     return value;
   }
-  
+
   // Don't mask emails
   if (key.includes('LOGIN') || key.includes('EMAIL')) {
     return value;
   }
-  
+
   // Mask sensitive values
   if (value.length <= 12) {
     return '*'.repeat(value.length);
   }
-  
+
   return `${value.slice(0, 4)}...${value.slice(-4)}`;
 }
 
@@ -210,20 +209,20 @@ function checkForHardcodedCredentials() {
   const patterns = [
     /eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9/g,
     /sk-proj-[a-zA-Z0-9]{40,}/g,
-    /re_[a-zA-Z0-9]{20,}/g
+    /re_[a-zA-Z0-9]{20,}/g,
   ];
-  
+
   const filesToCheck = [
     'app/**/*.{ts,tsx,js,jsx}',
     'lib/**/*.{ts,tsx,js,jsx}',
-    'e2e/**/*.{ts,tsx,js,jsx}'
+    'e2e/**/*.{ts,tsx,js,jsx}',
   ];
-  
+
   let foundHardcoded = false;
-  
+
   // Note: In a real implementation, you would scan files here
   // For now, just remind about best practices
-  
+
   if (!foundHardcoded) {
     console.log('✅ No obvious hardcoded credentials detected');
     console.log('ℹ️  Remember to:');

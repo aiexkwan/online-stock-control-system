@@ -4,7 +4,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 import { createClient } from '@/app/utils/supabase/client';
 import { loadPalletToOrder, undoLoadPallet } from '@/app/actions/orderLoadingActions';
-import { useOrderDataCache, useOrderSummariesCache } from '@/app/(app)/order-loading/hooks/useOrderCache';
+import {
+  useOrderDataCache,
+  useOrderSummariesCache,
+} from '@/app/(app)/order-loading/hooks/useOrderCache';
 import { useSoundFeedback, useSoundSettings } from '@/app/hooks/useSoundFeedback';
 import { safeString } from '@/types/database/helpers';
 
@@ -85,7 +88,7 @@ export interface UseOrderLoadReturn {
   orderSearchQuery: string;
   showUndoDialog: boolean;
   undoItem: UndoItem | null;
-  
+
   // Functions
   setIdNumber: (id: string) => void;
   setSearchValue: (value: string) => void;
@@ -98,11 +101,11 @@ export interface UseOrderLoadReturn {
   handleUndoClick: (load: UndoItem) => void;
   handleConfirmedUndo: () => Promise<void>;
   refreshAllData: () => Promise<void>;
-  
+
   // Refs
   idInputRef: React.RefObject<HTMLInputElement>;
   searchInputRef: React.RefObject<HTMLInputElement>;
-  
+
   // Sound
   sound: ReturnType<typeof useSoundFeedback>;
   soundSettings: ReturnType<typeof useSoundSettings>;
@@ -184,51 +187,54 @@ export function useOrderLoad(): UseOrderLoadReturn {
   }, []);
 
   // Check if ID exists in data_id table
-  const checkIdExists = useCallback(async (id: string) => {
-    // Ensure ID is 4 digits
-    if (!id || id.length !== 4 || !/^\d{4}$/.test(id)) {
-      setIsIdValid(false);
-      setAvailableOrders([]);
-      setSelectedOrderRef(null);
-      setOrderData([]);
-      return;
-    }
-
-    if (!supabase) {
-      console.error('Supabase client not initialized');
-      return;
-    }
-
-    setIsCheckingId(true);
-
-    try {
-      const { data, error } = await supabase
-        .from('data_id')
-        .select('id')
-        .eq('id', parseInt(id))
-        .single();
-
-      if (error || !data) {
+  const checkIdExists = useCallback(
+    async (id: string) => {
+      // Ensure ID is 4 digits
+      if (!id || id.length !== 4 || !/^\d{4}$/.test(id)) {
         setIsIdValid(false);
         setAvailableOrders([]);
         setSelectedOrderRef(null);
         setOrderData([]);
-        sound.playError();
-        toast.error(`❌ ID ${id} not found. Please check your ID number.`);
-      } else {
-        setIsIdValid(true);
-        sound.playSuccess();
-        await fetchAvailableOrders();
+        return;
       }
-    } catch (error) {
-      console.error('Error checking ID:', error);
-      setIsIdValid(false);
-      toast.error('❌ System error. Please try again.');
-    } finally {
-      setIsCheckingId(false);
-    }
+
+      if (!supabase) {
+        console.error('Supabase client not initialized');
+        return;
+      }
+
+      setIsCheckingId(true);
+
+      try {
+        const { data, error } = await supabase
+          .from('data_id')
+          .select('id')
+          .eq('id', parseInt(id))
+          .single();
+
+        if (error || !data) {
+          setIsIdValid(false);
+          setAvailableOrders([]);
+          setSelectedOrderRef(null);
+          setOrderData([]);
+          sound.playError();
+          toast.error(`❌ ID ${id} not found. Please check your ID number.`);
+        } else {
+          setIsIdValid(true);
+          sound.playSuccess();
+          await fetchAvailableOrders();
+        }
+      } catch (error) {
+        console.error('Error checking ID:', error);
+        setIsIdValid(false);
+        toast.error('❌ System error. Please try again.');
+      } finally {
+        setIsCheckingId(false);
+      }
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabase, sound]);
+    [supabase, sound] // fetchAvailableOrders 不能加入依賴，因為會造成循環依賴
+  );
 
   // Fetch available order references from data_order table with enhanced data
   const fetchAvailableOrders = useCallback(async () => {
@@ -320,128 +326,139 @@ export function useOrderLoad(): UseOrderLoadReturn {
   }, [supabase, orderSummariesCache]);
 
   // Fetch order data from data_order table
-  const fetchOrderData = useCallback(async (orderRef: string) => {
-    setIsLoadingOrders(true);
+  const fetchOrderData = useCallback(
+    async (orderRef: string) => {
+      setIsLoadingOrders(true);
 
-    try {
-      // Check cache first
-      const cacheKey = `order-data-${orderRef}`;
-      const cachedData = orderDataCache.get(cacheKey) as OrderData[] | undefined;
+      try {
+        // Check cache first
+        const cacheKey = `order-data-${orderRef}`;
+        const cachedData = orderDataCache.get(cacheKey) as OrderData[] | undefined;
 
-      if (cachedData) {
-        if (process.env.NODE_ENV !== 'production') {
-          console.log(`[OrderCache] Using cached data for order: ${orderRef}`);
+        if (cachedData) {
+          if (process.env.NODE_ENV !== 'production') {
+            console.log(`[OrderCache] Using cached data for order: ${orderRef}`);
+          }
+          setOrderData(cachedData);
+          setIsLoadingOrders(false);
+          return;
         }
-        setOrderData(cachedData);
-        setIsLoadingOrders(false);
-        return;
-      }
 
-      if (process.env.NODE_ENV !== 'production') {
-        console.log(`[OrderCache] Fetching fresh data for order: ${orderRef}`);
-      }
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`[OrderCache] Fetching fresh data for order: ${orderRef}`);
+        }
 
-      // 獲取訂單詳情
-      if (!supabase) {
-        console.error('Supabase client not initialized');
-        return;
-      }
+        // 獲取訂單詳情
+        if (!supabase) {
+          console.error('Supabase client not initialized');
+          return;
+        }
 
-      const { data, error } = await supabase
-        .from('data_order')
-        .select('order_ref, product_code, product_desc, product_qty, loaded_qty')
-        .eq('order_ref', orderRef)
-        .order('product_code', { ascending: true });
+        const { data, error } = await supabase
+          .from('data_order')
+          .select('order_ref, product_code, product_desc, product_qty, loaded_qty')
+          .eq('order_ref', orderRef)
+          .order('product_code', { ascending: true });
 
-      if (error) {
+        if (error) {
+          console.error('Error fetching order data:', error);
+          toast.error('Error occurred while fetching order data');
+          return;
+        }
+
+        if (!data) {
+          toast.error('Order not found');
+          return;
+        }
+
+        const orderDataArray = data || [];
+        setOrderData(orderDataArray as OrderData[]);
+
+        // Cache the order data
+        orderDataCache.set(cacheKey, orderDataArray);
+      } catch (error) {
         console.error('Error fetching order data:', error);
         toast.error('Error occurred while fetching order data');
-        return;
+      } finally {
+        setIsLoadingOrders(false);
       }
-
-      if (!data) {
-        toast.error('Order not found');
-        return;
-      }
-
-      const orderDataArray = data || [];
-      setOrderData(orderDataArray as OrderData[]);
-
-      // Cache the order data
-      orderDataCache.set(cacheKey, orderDataArray);
-    } catch (error) {
-      console.error('Error fetching order data:', error);
-      toast.error('Error occurred while fetching order data');
-    } finally {
-      setIsLoadingOrders(false);
-    }
-  }, [supabase, orderDataCache]);
+    },
+    [supabase, orderDataCache]
+  );
 
   // Fetch recent loading history from record_history
-  const fetchRecentLoads = useCallback(async (orderRef: string) => {
-    try {
-      if (!supabase) {
-        console.error('Supabase client not initialized');
-        return;
+  const fetchRecentLoads = useCallback(
+    async (orderRef: string) => {
+      try {
+        if (!supabase) {
+          console.error('Supabase client not initialized');
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('record_history')
+          .select('*')
+          .eq('action', 'Order Load')
+          .like('remark', `%Order: ${orderRef}%`)
+          .order('time', { ascending: false })
+          .limit(10);
+
+        if (!error && data) {
+          // Transform data to match expected format
+          const transformedData = (data as unknown as RecordHistoryItem[]).map(
+            (item: RecordHistoryItem) => {
+              // Extract details from remark
+              const orderMatch = item.remark.match(/Order: ([^,]+)/);
+              const productMatch = item.remark.match(/Product: ([^,]+)/);
+              const qtyMatch = item.remark.match(/Qty: (\d+)/);
+              const byMatch = item.remark.match(/by (.+)$/);
+
+              return {
+                uuid: item.uuid,
+                order_ref: orderMatch ? orderMatch[1] : orderRef,
+                pallet_num: item.plt_num || undefined,
+                product_code: productMatch ? productMatch[1] : '',
+                quantity: qtyMatch ? parseInt(qtyMatch[1]) : 0,
+                action_type: 'load',
+                action_by: byMatch ? byMatch[1] : 'Unknown',
+                action_time: item.time,
+              };
+            }
+          );
+          setRecentLoads(transformedData);
+        }
+      } catch (error) {
+        console.error('Error fetching recent loads:', error);
       }
-
-      const { data, error } = await supabase
-        .from('record_history')
-        .select('*')
-        .eq('action', 'Order Load')
-        .like('remark', `%Order: ${orderRef}%`)
-        .order('time', { ascending: false })
-        .limit(10);
-
-      if (!error && data) {
-        // Transform data to match expected format
-        const transformedData = (data as unknown as RecordHistoryItem[]).map((item: RecordHistoryItem) => {
-          // Extract details from remark
-          const orderMatch = item.remark.match(/Order: ([^,]+)/);
-          const productMatch = item.remark.match(/Product: ([^,]+)/);
-          const qtyMatch = item.remark.match(/Qty: (\d+)/);
-          const byMatch = item.remark.match(/by (.+)$/);
-
-          return {
-            uuid: item.uuid,
-            order_ref: orderMatch ? orderMatch[1] : orderRef,
-            pallet_num: item.plt_num || undefined,
-            product_code: productMatch ? productMatch[1] : '',
-            quantity: qtyMatch ? parseInt(qtyMatch[1]) : 0,
-            action_type: 'load',
-            action_by: byMatch ? byMatch[1] : 'Unknown',
-            action_time: item.time,
-          };
-        });
-        setRecentLoads(transformedData);
-      }
-    } catch (error) {
-      console.error('Error fetching recent loads:', error);
-    }
-  }, [supabase]);
+    },
+    [supabase]
+  );
 
   // Handle ID input change
-  const handleIdChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    // Only allow digits
-    const value = e.target.value.replace(/\D/g, '');
+  const handleIdChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      // Only allow digits
+      const value = e.target.value.replace(/\D/g, '');
 
-    // Limit to 4 digits maximum
-    const truncatedValue = value.slice(0, 4);
-    setIdNumber(truncatedValue);
+      // Limit to 4 digits maximum
+      const truncatedValue = value.slice(0, 4);
+      setIdNumber(truncatedValue);
 
-    // Reset states if necessary
-    if (isIdValid) {
-      setIsIdValid(false);
-      setAvailableOrders([]);
-      setSelectedOrderRef(null);
-      setOrderData([]);
-    }
+      // Reset states if necessary
+      if (isIdValid) {
+        setIsIdValid(false);
+        setAvailableOrders([]);
+        setSelectedOrderRef(null);
+        setOrderData([]);
+      }
 
-    // Automatically check ID if 4 digits are entered
-    if (truncatedValue.length === 4) {
-      checkIdExists(truncatedValue);
-    }
-  }, [isIdValid, checkIdExists]);
+      // Automatically check ID if 4 digits are entered
+      if (truncatedValue.length === 4) {
+        checkIdExists(truncatedValue);
+      }
+    },
+    [isIdValid, checkIdExists]
+  );
 
   // Handle ID input blur (when user finishes typing)
   const handleIdBlur = useCallback(() => {
@@ -455,22 +472,25 @@ export function useOrderLoad(): UseOrderLoadReturn {
   }, [idNumber, checkIdExists]);
 
   // Handle order selection
-  const handleOrderSelect = useCallback((orderRef: string) => {
-    sound.playScan();
-    setSelectedOrderRef(orderRef);
-    fetchOrderData(orderRef);
-    fetchRecentLoads(orderRef);
+  const handleOrderSelect = useCallback(
+    (orderRef: string) => {
+      sound.playScan();
+      setSelectedOrderRef(orderRef);
+      fetchOrderData(orderRef);
+      fetchRecentLoads(orderRef);
 
-    // Reset search value when switching orders
-    setSearchValue('');
+      // Reset search value when switching orders
+      setSearchValue('');
 
-    // Auto focus on search input after order selection
-    setTimeout(() => {
-      if (searchInputRef.current) {
-        searchInputRef.current.focus();
-      }
-    }, 100);
-  }, [sound, fetchOrderData, fetchRecentLoads]);
+      // Auto focus on search input after order selection
+      setTimeout(() => {
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+        }
+      }, 100);
+    },
+    [sound, fetchOrderData, fetchRecentLoads]
+  );
 
   // Open undo confirmation dialog
   const handleUndoClick = useCallback((load: UndoItem) => {
@@ -524,90 +544,100 @@ export function useOrderLoad(): UseOrderLoadReturn {
         fetchAvailableOrders(),
       ]);
     }
-  }, [selectedOrderRef, orderDataCache, orderSummariesCache, fetchOrderData, fetchRecentLoads, fetchAvailableOrders]);
+  }, [
+    selectedOrderRef,
+    orderDataCache,
+    orderSummariesCache,
+    fetchOrderData,
+    fetchRecentLoads,
+    fetchAvailableOrders,
+  ]);
 
   // Handle search selection (same as stock-transfer)
-  const handleSearchSelect = useCallback(async (result: SearchResult) => {
-    if (!selectedOrderRef) {
-      toast.error('Please select an order first');
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      // 使用 server action 裝載棧板
-      // 策略4: unknown + type narrowing - 安全獲取 input 值
-      const inputValue =
-        Array.isArray(result.data) && result.data.length > 0
-          ? typeof result.data[0]?.value === 'string'
-            ? result.data[0].value
-            : result.title
-          : (result.title ?? '');
-      const response = await loadPalletToOrder(selectedOrderRef, inputValue);
-
-      if (response.success) {
-        // Play success sound
-        sound.playSuccess();
-
-        // Show success with better formatting
-        if (response.data) {
-          toast.success(
-            `✓ Successfully Loaded! Pallet: ${response.data.palletNumber} | Product: ${response.data.productCode} | Qty: ${response.data.productQty} | Total: ${response.data.updatedLoadedQty}`
-          );
-        } else {
-          toast.success(response.message);
-        }
-
-        // Show warning if anomaly detected
-        if (response.warning) {
-          sound.playWarning();
-          setTimeout(() => {
-            toast.warning(response.warning);
-          }, 500);
-        }
-
-        // Refresh order data and history
-        await refreshAllData();
-
-        // Clear search value after successful scan
-        setSearchValue('');
-
-        // Refocus on search input
-        if (searchInputRef.current) {
-          searchInputRef.current.focus();
-        }
-      } else {
-        // Show more user-friendly error messages
-        let errorMessage = response.message;
-
-        if (response.message.includes('Exceeds order quantity')) {
-          errorMessage = response.message; // Already formatted well
-        } else if (response.error === 'EXCEED_ORDER_QTY') {
-          errorMessage = 'Cannot load more than ordered quantity';
-        } else if (response.error === 'NOT_FOUND') {
-          errorMessage = 'Pallet or series not found in system';
-        } else if (response.error === 'INVALID_FORMAT') {
-          errorMessage = 'Invalid scan format. Please scan a valid pallet or series barcode';
-        } else if (response.message.includes('is not in order')) {
-          errorMessage = response.message; // Already clear
-        } else if (response.error === 'DUPLICATE_SCAN') {
-          // Special handling for duplicate scan - use warning instead of error
-          sound.playWarning();
-          toast.warning(response.message);
-          return;
-        }
-
-        sound.playError();
-        toast.error(`❌ Loading Failed: ${errorMessage}`);
+  const handleSearchSelect = useCallback(
+    async (result: SearchResult) => {
+      if (!selectedOrderRef) {
+        toast.error('Please select an order first');
+        return;
       }
-    } catch (error) {
-      console.error('Error loading pallet:', error);
-      sound.playError();
-      toast.error('Failed to load pallet');
-    } finally {
-      setIsSearching(false);
-    }
-  }, [selectedOrderRef, sound, refreshAllData]);
+
+      setIsSearching(true);
+      try {
+        // 使用 server action 裝載棧板
+        // 策略4: unknown + type narrowing - 安全獲取 input 值
+        const inputValue =
+          Array.isArray(result.data) && result.data.length > 0
+            ? typeof result.data[0]?.value === 'string'
+              ? result.data[0].value
+              : result.title
+            : (result.title ?? '');
+        const response = await loadPalletToOrder(selectedOrderRef, inputValue);
+
+        if (response.success) {
+          // Play success sound
+          sound.playSuccess();
+
+          // Show success with better formatting
+          if (response.data) {
+            toast.success(
+              `✓ Successfully Loaded! Pallet: ${response.data.palletNumber} | Product: ${response.data.productCode} | Qty: ${response.data.productQty} | Total: ${response.data.updatedLoadedQty}`
+            );
+          } else {
+            toast.success(response.message);
+          }
+
+          // Show warning if anomaly detected
+          if (response.warning) {
+            sound.playWarning();
+            setTimeout(() => {
+              toast.warning(response.warning);
+            }, 500);
+          }
+
+          // Refresh order data and history
+          await refreshAllData();
+
+          // Clear search value after successful scan
+          setSearchValue('');
+
+          // Refocus on search input
+          if (searchInputRef.current) {
+            searchInputRef.current.focus();
+          }
+        } else {
+          // Show more user-friendly error messages
+          let errorMessage = response.message;
+
+          if (response.message.includes('Exceeds order quantity')) {
+            errorMessage = response.message; // Already formatted well
+          } else if (response.error === 'EXCEED_ORDER_QTY') {
+            errorMessage = 'Cannot load more than ordered quantity';
+          } else if (response.error === 'NOT_FOUND') {
+            errorMessage = 'Pallet or series not found in system';
+          } else if (response.error === 'INVALID_FORMAT') {
+            errorMessage = 'Invalid scan format. Please scan a valid pallet or series barcode';
+          } else if (response.message.includes('is not in order')) {
+            errorMessage = response.message; // Already clear
+          } else if (response.error === 'DUPLICATE_SCAN') {
+            // Special handling for duplicate scan - use warning instead of error
+            sound.playWarning();
+            toast.warning(response.message);
+            return;
+          }
+
+          sound.playError();
+          toast.error(`❌ Loading Failed: ${errorMessage}`);
+        }
+      } catch (error) {
+        console.error('Error loading pallet:', error);
+        sound.playError();
+        toast.error('Failed to load pallet');
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    [selectedOrderRef, sound, refreshAllData]
+  );
 
   return {
     // State
@@ -625,7 +655,7 @@ export function useOrderLoad(): UseOrderLoadReturn {
     orderSearchQuery,
     showUndoDialog,
     undoItem,
-    
+
     // Functions
     setIdNumber,
     setSearchValue,
@@ -638,11 +668,11 @@ export function useOrderLoad(): UseOrderLoadReturn {
     handleUndoClick,
     handleConfirmedUndo,
     refreshAllData,
-    
+
     // Refs
     idInputRef,
     searchInputRef,
-    
+
     // Sound
     sound,
     soundSettings,

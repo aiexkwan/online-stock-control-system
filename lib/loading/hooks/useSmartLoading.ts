@@ -109,12 +109,15 @@ export function useSmartLoading(options: UseSmartLoadingOptions): UseSmartLoadin
       setPerformanceMetrics(metrics);
       updateAdaptiveConfig(metrics);
 
-      logger.debug({
-        networkType: metrics.networkType,
-        effectiveType: metrics.effectiveType,
-        downlink: metrics.downlink,
-        rtt: metrics.rtt,
-      }, 'Network performance updated');
+      logger.debug(
+        {
+          networkType: metrics.networkType,
+          effectiveType: metrics.effectiveType,
+          downlink: metrics.downlink,
+          rtt: metrics.rtt,
+        },
+        'Network performance updated'
+      );
     });
 
     return stopMonitoring;

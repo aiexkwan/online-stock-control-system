@@ -53,14 +53,14 @@ const server = http.createServer((req, res) => {
     headers: req.headers,
   };
 
-  const proxy = http.request(options, (proxyRes) => {
+  const proxy = http.request(options, proxyRes => {
     res.writeHead(proxyRes.statusCode, proxyRes.headers);
     proxyRes.pipe(res, { end: true });
   });
 
   req.pipe(proxy, { end: true });
 
-  proxy.on('error', (err) => {
+  proxy.on('error', err => {
     console.error('Proxy error:', err);
     res.writeHead(500);
     res.end('Proxy error');

@@ -4,7 +4,6 @@
  * 提供更穩定和快速的響應
  */
 
-
 import OpenAI from 'openai';
 import { systemLogger } from '@/lib/logger';
 import { ExtractedPDFData } from './pdfExtractionService';
@@ -82,46 +81,52 @@ export class ChatCompletionService {
     if (!apiKey) {
       throw new Error('OPENAI_API_KEY is not configured');
     }
-    
+
     // 初始化 ProductCodeValidator
     this.validator = productCodeValidator;
-    
+
     // 診斷 API key 格式
-    systemLogger.info({
-      apiKeyLength: apiKey.length,
-      apiKeyPrefix: apiKey.substring(0, 10),
-      apiKeySuffix: apiKey.substring(apiKey.length - 4),
-      hasCorrectPrefix: apiKey.startsWith('sk-'),
-      nodeEnv: process.env.NODE_ENV,
-    }, '[ChatCompletionService] Initializing with API key');
-    
+    systemLogger.info(
+      {
+        apiKeyLength: apiKey.length,
+        apiKeyPrefix: apiKey.substring(0, 10),
+        apiKeySuffix: apiKey.substring(apiKey.length - 4),
+        hasCorrectPrefix: apiKey.startsWith('sk-'),
+        nodeEnv: process.env.NODE_ENV,
+      },
+      '[ChatCompletionService] Initializing with API key'
+    );
+
     // 配置 OpenAI 客戶端 - 根據 Vercel 區域自動選擇最佳端點
     const getOptimalBaseURL = () => {
       const vercelRegion = process.env.VERCEL_REGION;
-      
+
       // 如果明確設定了 EU endpoint，使用它
       if (process.env.OPENAI_EU_ENDPOINT) {
         return process.env.OPENAI_EU_ENDPOINT;
       }
-      
+
       // 根據 Vercel 區域選擇最佳端點
       if (vercelRegion?.startsWith('eu-') || vercelRegion === 'lhr1' || vercelRegion === 'fra1') {
         return 'https://api.openai.com/v1'; // 歐洲區域用標準端點
       }
-      
+
       // 默認使用標準美國端點
       return 'https://api.openai.com/v1';
     };
-    
+
     const baseURL = getOptimalBaseURL();
-    
-    systemLogger.info({
-      baseURL,
-      vercelRegion: process.env.VERCEL_REGION,
-      hasEuEndpoint: !!process.env.OPENAI_EU_ENDPOINT,
-    }, '[ChatCompletionService] OpenAI endpoint selected');
-    
-    this.openai = new OpenAI({ 
+
+    systemLogger.info(
+      {
+        baseURL,
+        vercelRegion: process.env.VERCEL_REGION,
+        hasEuEndpoint: !!process.env.OPENAI_EU_ENDPOINT,
+      },
+      '[ChatCompletionService] OpenAI endpoint selected'
+    );
+
+    this.openai = new OpenAI({
       apiKey,
       baseURL,
       // 增加 timeout 同 retry 設定
@@ -147,118 +152,132 @@ export class ChatCompletionService {
   ): Promise<OrderExtractionResult> {
     let lastError: Error | null = null;
     const overallStartTime = Date.now();
-    
+
     // 重試機制
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         const startTime = Date.now();
-        
-        systemLogger.info({
-          textLength: pdfText.length,
-          numPages: extractedData.numPages,
-          attempt: attempt + 1,
-          maxRetries: maxRetries + 1,
-        }, '[ChatCompletionService] Starting order extraction');
+
+        systemLogger.info(
+          {
+            textLength: pdfText.length,
+            numPages: extractedData.numPages,
+            attempt: attempt + 1,
+            maxRetries: maxRetries + 1,
+          },
+          '[ChatCompletionService] Starting order extraction'
+        );
 
         // 檢測 PDF 複雜度
         const complexity = this.detectPDFComplexity(pdfText, extractedData);
-        
+
         // 獲取 A/B 測試變體
         const variant = this.monitor.getPromptVariant();
-        
+
         // 準備系統提示詞
         const systemPrompt = this.buildSystemPrompt(complexity, variant?.id);
-      
-      // 準備用戶消息（包含 PDF 文本）
-      const userMessage = this.buildUserMessage(pdfText, extractedData);
 
-      // 調用 Chat Completions API
-      // 使用 gpt-4o (如果有權限) 或 gpt-4-turbo
-      const modelToUse = process.env.OPENAI_MODEL || 'gpt-4o-mini'; // 改用更穩定嘅 mini model
-      
-      systemLogger.info({
-        model: modelToUse,
-        apiKeyPresent: !!process.env.OPENAI_API_KEY,
-        apiKeyPrefix: process.env.OPENAI_API_KEY?.substring(0, 10),
-        baseURL: this.openai.baseURL,
-        region: process.env.VERCEL_REGION || 'unknown',
-      }, '[ChatCompletionService] Using model');
-      
-      const completion = await this.openai.chat.completions.create({
-        model: modelToUse,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userMessage }
-        ],
-        temperature: 0.1, // 低溫度以提高一致性
-        max_tokens: 4096,
-        response_format: { type: 'json_object' }, // 強制 JSON 響應
-      });
+        // 準備用戶消息（包含 PDF 文本）
+        const userMessage = this.buildUserMessage(pdfText, extractedData);
 
-      const responseText = completion.choices[0]?.message?.content || '{}';
-      const tokensUsed = completion.usage?.total_tokens || 0;
+        // 調用 Chat Completions API
+        // 使用 gpt-4o (如果有權限) 或 gpt-4-turbo
+        const modelToUse = process.env.OPENAI_MODEL || 'gpt-4o-mini'; // 改用更穩定嘅 mini model
 
-      // 添加原始響應日誌以調試數量問題
-      if (pdfText.includes('MHEASYB') && pdfText.includes('840')) {
-        systemLogger.info({
-          rawResponse: responseText,
+        systemLogger.info(
+          {
+            model: modelToUse,
+            apiKeyPresent: !!process.env.OPENAI_API_KEY,
+            apiKeyPrefix: process.env.OPENAI_API_KEY?.substring(0, 10),
+            baseURL: this.openai.baseURL,
+            region: process.env.VERCEL_REGION || 'unknown',
+          },
+          '[ChatCompletionService] Using model'
+        );
+
+        const completion = await this.openai.chat.completions.create({
+          model: modelToUse,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userMessage },
+          ],
+          temperature: 0.1, // 低溫度以提高一致性
+          max_tokens: 4096,
+          response_format: { type: 'json_object' }, // 強制 JSON 響應
+        });
+
+        const responseText = completion.choices[0]?.message?.content || '{}';
+        const tokensUsed = completion.usage?.total_tokens || 0;
+
+        // 添加原始響應日誌以調試數量問題
+        if (pdfText.includes('MHEASYB') && pdfText.includes('840')) {
+          systemLogger.info(
+            {
+              rawResponse: responseText,
+              fileName: extractedData.fileName,
+            },
+            '[ChatCompletionService] Debug: Raw AI response for MHEASYB 840 case'
+          );
+        }
+
+        systemLogger.info(
+          {
+            responseLength: responseText.length,
+            tokensUsed,
+            processingTime: Date.now() - startTime,
+            complexity,
+            promptVariant: variant?.id,
+          },
+          '[ChatCompletionService] Received response from OpenAI'
+        );
+
+        // 解析響應（集成 ProductCodeValidator）
+        const result = await this.parseResponse(responseText, tokensUsed);
+
+        // 添加元數據
+        result.metadata = {
+          totalPages: extractedData.numPages,
+          extractionMethod: 'chat-completion',
+          tokensUsed,
+          promptVariant: variant?.id,
+          complexity,
+          validationSummary: result.metadata?.validationSummary,
+        };
+
+        // 驗證結果
+        this.validateResult(result, extractedData);
+
+        // 記錄監控指標
+        this.trackExtractionMetrics({
+          success: true,
+          extractionTime: Date.now() - startTime,
+          tokensUsed,
+          orderCount: result.orders.length,
+          correctedCount: result.orders.filter(o => o.was_corrected).length,
+          invalidCount: result.orders.filter(o => !o.is_validated).length,
+          cacheHitCount: 0, // 將由 ProductCodeValidator 提供
+          method: 'chat-completion',
+          model: modelToUse,
+          promptVariant: variant?.id,
+          complexity,
           fileName: extractedData.fileName,
-        }, '[ChatCompletionService] Debug: Raw AI response for MHEASYB 840 case');
-      }
-
-      systemLogger.info({
-        responseLength: responseText.length,
-        tokensUsed,
-        processingTime: Date.now() - startTime,
-        complexity,
-        promptVariant: variant?.id,
-      }, '[ChatCompletionService] Received response from OpenAI');
-
-      // 解析響應（集成 ProductCodeValidator）
-      const result = await this.parseResponse(responseText, tokensUsed);
-      
-      // 添加元數據
-      result.metadata = {
-        totalPages: extractedData.numPages,
-        extractionMethod: 'chat-completion',
-        tokensUsed,
-        promptVariant: variant?.id,
-        complexity,
-        validationSummary: result.metadata?.validationSummary,
-      };
-
-      // 驗證結果
-      this.validateResult(result, extractedData);
-      
-      // 記錄監控指標
-      this.trackExtractionMetrics({
-        success: true,
-        extractionTime: Date.now() - startTime,
-        tokensUsed,
-        orderCount: result.orders.length,
-        correctedCount: result.orders.filter(o => o.was_corrected).length,
-        invalidCount: result.orders.filter(o => !o.is_validated).length,
-        cacheHitCount: 0, // 將由 ProductCodeValidator 提供
-        method: 'chat-completion',
-        model: modelToUse,
-        promptVariant: variant?.id,
-        complexity,
-        fileName: extractedData.fileName,
-      });
+        });
 
         return result;
-        
       } catch (error: unknown) {
         lastError = error as Error;
         const apiError = error as OpenAIApiError;
         const errorMessage = apiError instanceof Error ? apiError.message : 'Unknown error';
-        
-        systemLogger.warn({
-          attempt: attempt + 1,
-          maxRetries: maxRetries + 1,
-          error: errorMessage,
-        }, '[ChatCompletionService] Extraction attempt failed');
-        
+
+        systemLogger.warn(
+          {
+            attempt: attempt + 1,
+            maxRetries: maxRetries + 1,
+            error: errorMessage,
+          },
+          '[ChatCompletionService] Extraction attempt failed'
+        );
+
         // 如果還有重試次數，繼續重試
         if (attempt < maxRetries) {
           // 等待一段時間再重試
@@ -267,24 +286,24 @@ export class ChatCompletionService {
         }
       }
     }
-    
+
     // 所有重試都失敗，處理最終錯誤
     if (lastError) {
       const apiError = lastError as OpenAIApiError;
       const errorMessage = apiError instanceof Error ? apiError.message : 'Unknown error';
-      
+
       // 提供更詳細的錯誤診斷
       let errorDetails: ErrorDetails = {
         error: errorMessage,
         type: apiError?.constructor?.name,
       };
-      
+
       // 檢查 OpenAI 特定錯誤
       if (apiError?.response) {
         errorDetails.status = apiError.response.status;
         errorDetails.statusText = apiError.response.statusText;
         errorDetails.data = apiError.response.data;
-        
+
         // 更詳細嘅錯誤診斷
         if (apiError.response.status === 401) {
           errorDetails.hint = 'Invalid API key. Please check OPENAI_API_KEY in Vercel dashboard';
@@ -294,19 +313,31 @@ export class ChatCompletionService {
           errorDetails.hint = `Model not found. You may not have access to this model`;
         }
       }
-      
+
       // 檢查是否是 API Key 問題
-      if (errorMessage.includes('apikey') || errorMessage.includes('API key') || errorMessage.includes('Incorrect API key')) {
+      if (
+        errorMessage.includes('apikey') ||
+        errorMessage.includes('API key') ||
+        errorMessage.includes('Incorrect API key')
+      ) {
         errorDetails.hint = 'Check if OPENAI_API_KEY is valid in Vercel Environment Variables';
       }
-      
+
       // 檢查是否是額度問題
-      if (errorMessage.includes('quota') || errorMessage.includes('limit') || errorMessage.includes('insufficient')) {
+      if (
+        errorMessage.includes('quota') ||
+        errorMessage.includes('limit') ||
+        errorMessage.includes('insufficient')
+      ) {
         errorDetails.hint = 'OpenAI API quota may be exceeded';
       }
-      
+
       // 檢查網絡問題
-      if (errorMessage.includes('ECONNREFUSED') || errorMessage.includes('ETIMEDOUT') || errorMessage.includes('Connection')) {
+      if (
+        errorMessage.includes('ECONNREFUSED') ||
+        errorMessage.includes('ETIMEDOUT') ||
+        errorMessage.includes('Connection')
+      ) {
         errorDetails.hint = 'Network connection issue or OpenAI API is unreachable';
         errorDetails.apiKeyPresent = !!process.env.OPENAI_API_KEY;
         errorDetails.apiKeyPrefix = process.env.OPENAI_API_KEY?.substring(0, 10);
@@ -318,9 +349,9 @@ export class ChatCompletionService {
           '4. Check OpenAI API status at status.openai.com',
         ];
       }
-      
+
       systemLogger.error(errorDetails, '[ChatCompletionService] Failed to extract orders');
-      
+
       // 記錄監控指標（失敗情況）
       this.trackExtractionMetrics({
         success: false,
@@ -335,7 +366,7 @@ export class ChatCompletionService {
         error: errorDetails.hint || errorMessage,
         fileName: extractedData.fileName,
       });
-      
+
       // 返回空結果而不是拋出錯誤
       return {
         orders: [],
@@ -346,7 +377,7 @@ export class ChatCompletionService {
         },
       };
     }
-    
+
     // 如果沒有錯誤但也沒有結果，返回空結果
     return {
       orders: [],
@@ -361,10 +392,13 @@ export class ChatCompletionService {
   /**
    * 構建動態系統提示詞（根據複雜度和 A/B 測試變體）
    */
-  private buildSystemPrompt(complexity?: 'simple' | 'medium' | 'complex', promptVariant?: string): string {
+  private buildSystemPrompt(
+    complexity?: 'simple' | 'medium' | 'complex',
+    promptVariant?: string
+  ): string {
     // 獲取 A/B 測試變體
     const variant = this.monitor.getPromptVariant();
-    
+
     // 基礎簡化版本（移除 product_desc 要求，節省 token）
     const basePrompt = `Extract product orders from PDF, return JSON only.
 
@@ -410,22 +444,22 @@ Rules:
 - Do NOT include "Tel:", "Email:", phone numbers, or email addresses in address fields
 - Only include company name, street address, city, region, and postcode
 - Ignore empty form fields and labels like "Driver", "Tel No:", "Booked In"`;
-    
+
     // 根據複雜度添加 few-shot examples
     if (complexity === 'complex' || (variant && variant.id === 'detailed')) {
       return basePrompt + this.getFewShotExamples();
     }
-    
+
     // 簡化版本（用於 A/B 測試）
     if (variant && variant.id === 'simplified') {
       return `Extract orders as JSON:
 {"orders":[{"order_ref":"str","account_num":"str","delivery_add":"str","invoice_to":"str","customer_ref":"str","product_code":"str","product_qty":num,"unit_price":"str"}]}
 Skip Trans* items. Extract COMPLETE product codes (never truncate) and quantities.`;
     }
-    
+
     return basePrompt;
   }
-  
+
   /**
    * 獲取 Few-shot 示例（僅在複雜情況下使用）
    */
@@ -483,107 +517,121 @@ CRITICAL: Skip Tel:, Email:, phone numbers, email addresses, and form field labe
    */
   private buildUserMessage(pdfText: string, extractedData: ExtractedPDFData): string {
     let message = `請從以下 PDF 文本中提取所有訂單產品。這個 PDF 有 ${extractedData.numPages} 頁。\n\n`;
-    
+
     // 如果文本太長，可能需要截斷或總結
     const maxTextLength = 30000; // 約 7500 tokens
-    
+
     if (pdfText.length > maxTextLength) {
-      systemLogger.warn({
-        originalLength: pdfText.length,
-        truncatedTo: maxTextLength,
-      }, '[ChatCompletionService] Text truncated due to length');
-      
+      systemLogger.warn(
+        {
+          originalLength: pdfText.length,
+          truncatedTo: maxTextLength,
+        },
+        '[ChatCompletionService] Text truncated due to length'
+      );
+
       // 優先保留開頭（訂單信息）和產品表格部分
       const headerLength = 5000;
       const header = pdfText.substring(0, headerLength);
       const products = pdfText.substring(headerLength, maxTextLength);
-      
-      message += "=== PDF HEADER ===\n";
+
+      message += '=== PDF HEADER ===\n';
       message += header;
-      message += "\n=== PRODUCTS SECTION ===\n";
+      message += '\n=== PRODUCTS SECTION ===\n';
       message += products;
-      
+
       if (pdfText.length > maxTextLength) {
-        message += "\n[注意：文本已被截斷，可能有產品未顯示]";
+        message += '\n[注意：文本已被截斷，可能有產品未顯示]';
       }
     } else {
       message += pdfText;
     }
-    
-    message += "\n\n請提取所有產品，返回 JSON 格式。";
-    
+
+    message += '\n\n請提取所有產品，返回 JSON 格式。';
+
     return message;
   }
 
   /**
    * 解析 API 響應（集成 ProductCodeValidator）
    */
-  private async parseResponse(responseText: string, tokensUsed: number): Promise<OrderExtractionResult> {
+  private async parseResponse(
+    responseText: string,
+    tokensUsed: number
+  ): Promise<OrderExtractionResult> {
     try {
       const parsed = JSON.parse(responseText);
-      
+
       if (!parsed.orders || !Array.isArray(parsed.orders)) {
-        systemLogger.error({
-          response: responseText.substring(0, 500),
-        }, '[ChatCompletionService] Invalid response format');
-        
+        systemLogger.error(
+          {
+            response: responseText.substring(0, 500),
+          },
+          '[ChatCompletionService] Invalid response format'
+        );
+
         return { orders: [] };
       }
-      
+
       // 提取產品代碼並清理（先清理再驗證）
       const rawCodes = parsed.orders.map((order: OrderExtractionResult['orders'][0]) => {
         const rawCode = String(order.product_code || '');
         // 使用 ProductCodeCleaner 清理代碼
         return ProductCodeCleaner.cleanProductCode(rawCode);
       });
-      
+
       // 使用 ProductCodeValidator 驗證和豐富化
       let validation: ValidationResult;
       let enrichedOrders: OrderExtractionResult['orders'] = [];
-      
+
       try {
         validation = await this.validator.validateAndEnrichCodes(rawCodes);
-        
+
         // 構建最終結果（包含從資料庫獲取的 product_desc）
-        enrichedOrders = parsed.orders.map((order: OrderExtractionResult['orders'][0], index: number) => {
-          const enrichedData = validation.enrichedOrders[index];
-          const originalRawCode = String(order.product_code || '');
-          const cleanedCode = rawCodes[index]; // 已清理的代碼
-          
-          // 檢查是否經過 ProductCodeCleaner 修正
-          const wasCleanerCorrected = originalRawCode !== cleanedCode;
-          
-          return {
-            order_ref: String(order.order_ref || '').replace(/^0+/, ''), // 去除前導零
-            account_num: String(order.account_num || '-'),
-            delivery_add: String(order.delivery_add || '-'),
-            invoice_to: String(order.invoice_to || '-'),
-            customer_ref: String(order.customer_ref || '-'),
-            product_code: enrichedData.product_code,
-            product_desc: enrichedData.product_desc, // 從資料庫獲取
-            product_qty: Math.floor(Number(order.product_qty)) || 1,
-            weight: undefined,
-            unit_price: order.unit_price ? String(order.unit_price) : undefined,
-            is_validated: enrichedData.is_valid,
-            was_corrected: enrichedData.was_corrected || wasCleanerCorrected,
-            original_code: wasCleanerCorrected ? originalRawCode : enrichedData.original_code,
-            confidence_score: enrichedData.confidence_score,
-          };
-        });
-        
+        enrichedOrders = parsed.orders.map(
+          (order: OrderExtractionResult['orders'][0], index: number) => {
+            const enrichedData = validation.enrichedOrders[index];
+            const originalRawCode = String(order.product_code || '');
+            const cleanedCode = rawCodes[index]; // 已清理的代碼
+
+            // 檢查是否經過 ProductCodeCleaner 修正
+            const wasCleanerCorrected = originalRawCode !== cleanedCode;
+
+            return {
+              order_ref: String(order.order_ref || '').replace(/^0+/, ''), // 去除前導零
+              account_num: String(order.account_num || '-'),
+              delivery_add: String(order.delivery_add || '-'),
+              invoice_to: String(order.invoice_to || '-'),
+              customer_ref: String(order.customer_ref || '-'),
+              product_code: enrichedData.product_code,
+              product_desc: enrichedData.product_desc, // 從資料庫獲取
+              product_qty: Math.floor(Number(order.product_qty)) || 1,
+              weight: undefined,
+              unit_price: order.unit_price ? String(order.unit_price) : undefined,
+              is_validated: enrichedData.is_valid,
+              was_corrected: enrichedData.was_corrected || wasCleanerCorrected,
+              original_code: wasCleanerCorrected ? originalRawCode : enrichedData.original_code,
+              confidence_score: enrichedData.confidence_score,
+            };
+          }
+        );
+
         // 記錄清理和驗證的統計
         const cleanerCorrectedCount = enrichedOrders.filter(o => {
           const idx = enrichedOrders.indexOf(o);
           return parsed.orders[idx]?.product_code !== rawCodes[idx];
         }).length;
-        
-        systemLogger.info({
-          orderCount: enrichedOrders.length,
-          validationSummary: validation.summary,
-          cleanerCorrectedCount,
-          orderRef: enrichedOrders[0]?.order_ref,
-        }, '[ChatCompletionService] Successfully parsed, cleaned and validated response');
-        
+
+        systemLogger.info(
+          {
+            orderCount: enrichedOrders.length,
+            validationSummary: validation.summary,
+            cleanerCorrectedCount,
+            orderRef: enrichedOrders[0]?.order_ref,
+          },
+          '[ChatCompletionService] Successfully parsed, cleaned and validated response'
+        );
+
         return {
           orders: enrichedOrders,
           metadata: {
@@ -592,14 +640,19 @@ CRITICAL: Skip Tel:, Email:, phone numbers, email addresses, and form field labe
             validationSummary: validation.summary,
           },
         };
-        
       } catch (validationError) {
         // 降級策略：資料庫驗證失敗時使用原始數據
-        systemLogger.warn({
-          error: validationError instanceof Error ? validationError.message : 'Unknown validation error',
-          fallbackToOriginal: true,
-        }, '[ChatCompletionService] Validation failed, using original data');
-        
+        systemLogger.warn(
+          {
+            error:
+              validationError instanceof Error
+                ? validationError.message
+                : 'Unknown validation error',
+            fallbackToOriginal: true,
+          },
+          '[ChatCompletionService] Validation failed, using original data'
+        );
+
         enrichedOrders = parsed.orders.map((order: OrderExtractionResult['orders'][0]) => ({
           order_ref: String(order.order_ref || '').replace(/^0+/, ''),
           account_num: String(order.account_num || '-'),
@@ -614,7 +667,7 @@ CRITICAL: Skip Tel:, Email:, phone numbers, email addresses, and form field labe
           is_validated: false,
           was_corrected: false,
         }));
-        
+
         return {
           orders: enrichedOrders,
           metadata: {
@@ -629,14 +682,16 @@ CRITICAL: Skip Tel:, Email:, phone numbers, email addresses, and form field labe
           },
         };
       }
-      
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      systemLogger.error({
-        error: errorMessage,
-        responseStart: responseText.substring(0, 200),
-      }, '[ChatCompletionService] Failed to parse response');
-      
+      systemLogger.error(
+        {
+          error: errorMessage,
+          responseStart: responseText.substring(0, 200),
+        },
+        '[ChatCompletionService] Failed to parse response'
+      );
+
       return { orders: [] };
     }
   }
@@ -646,35 +701,40 @@ CRITICAL: Skip Tel:, Email:, phone numbers, email addresses, and form field labe
    */
   private validateResult(result: OrderExtractionResult, extractedData: ExtractedPDFData): void {
     const warnings: string[] = [];
-    
+
     // 檢查是否提取到產品
     if (result.orders.length === 0) {
       warnings.push('No products extracted');
     }
-    
+
     // 檢查是否所有產品有相同的訂單號
     const orderRefs = new Set(result.orders.map(o => o.order_ref));
     if (orderRefs.size > 1) {
       warnings.push(`Multiple order refs found: ${Array.from(orderRefs).join(', ')}`);
     }
-    
+
     // 對於多頁 PDF，檢查產品數量是否合理
     if (extractedData.numPages > 1 && result.orders.length < 5) {
-      warnings.push(`Only ${result.orders.length} products found in ${extractedData.numPages}-page PDF`);
+      warnings.push(
+        `Only ${result.orders.length} products found in ${extractedData.numPages}-page PDF`
+      );
     }
-    
+
     // 檢查必要字段
     const missingCodes = result.orders.filter(o => !o.product_code).length;
     if (missingCodes > 0) {
       warnings.push(`${missingCodes} products missing product code`);
     }
-    
+
     if (warnings.length > 0) {
-      systemLogger.warn({
-        warnings,
-        orderCount: result.orders.length,
-        numPages: extractedData.numPages,
-      }, '[ChatCompletionService] Validation warnings');
+      systemLogger.warn(
+        {
+          warnings,
+          orderCount: result.orders.length,
+          numPages: extractedData.numPages,
+        },
+        '[ChatCompletionService] Validation warnings'
+      );
     }
   }
 
@@ -686,14 +746,17 @@ CRITICAL: Skip Tel:, Email:, phone numbers, email addresses, and form field labe
   ): Promise<OrderExtractionResult> {
     const allOrders: OrderExtractionResult['orders'] = [];
     let totalTokensUsed = 0;
-    
+
     // 按頁面處理
     for (const page of extractedData.pages) {
-      systemLogger.info({
-        pageNumber: page.pageNumber,
-        textLength: page.text.length,
-      }, '[ChatCompletionService] Processing page');
-      
+      systemLogger.info(
+        {
+          pageNumber: page.pageNumber,
+          textLength: page.text.length,
+        },
+        '[ChatCompletionService] Processing page'
+      );
+
       // 創建單頁的 ExtractedPDFData
       const singlePageData: ExtractedPDFData = {
         ...extractedData,
@@ -701,23 +764,23 @@ CRITICAL: Skip Tel:, Email:, phone numbers, email addresses, and form field labe
         pages: [page],
         numPages: 1,
       };
-      
+
       const result = await this.extractOrdersFromText(page.text, singlePageData);
-      
+
       if (result.orders.length > 0) {
         allOrders.push(...result.orders);
         totalTokensUsed += result.metadata?.tokensUsed || 0;
       }
-      
+
       // 添加延遲以避免速率限制
       if (page.pageNumber < extractedData.numPages) {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
-    
+
     // 去重（基於產品代碼和數量）
     const uniqueOrders = this.deduplicateOrders(allOrders);
-    
+
     return {
       orders: uniqueOrders,
       metadata: {
@@ -731,10 +794,12 @@ CRITICAL: Skip Tel:, Email:, phone numbers, email addresses, and form field labe
   /**
    * 去除重複的訂單項目
    */
-  private deduplicateOrders(orders: OrderExtractionResult['orders']): OrderExtractionResult['orders'] {
+  private deduplicateOrders(
+    orders: OrderExtractionResult['orders']
+  ): OrderExtractionResult['orders'] {
     const seen = new Set<string>();
     const unique: OrderExtractionResult['orders'] = [];
-    
+
     for (const order of orders) {
       const key = `${order.product_code}-${order.product_qty}`;
       if (!seen.has(key)) {
@@ -742,15 +807,18 @@ CRITICAL: Skip Tel:, Email:, phone numbers, email addresses, and form field labe
         unique.push(order);
       }
     }
-    
+
     if (unique.length < orders.length) {
-      systemLogger.info({
-        original: orders.length,
-        deduplicated: unique.length,
-        removed: orders.length - unique.length,
-      }, '[ChatCompletionService] Removed duplicate orders');
+      systemLogger.info(
+        {
+          original: orders.length,
+          deduplicated: unique.length,
+          removed: orders.length - unique.length,
+        },
+        '[ChatCompletionService] Removed duplicate orders'
+      );
     }
-    
+
     return unique;
   }
 
@@ -763,18 +831,21 @@ CRITICAL: Skip Tel:, Email:, phone numbers, email addresses, and form field labe
   ): Promise<OrderExtractionResult> {
     // 使用 fallback model - 預設 gpt-3.5-turbo 更穩定
     const fallbackModel = process.env.OPENAI_FALLBACK_MODEL || 'gpt-3.5-turbo';
-    
-    systemLogger.info({
-      model: fallbackModel,
-      reason: 'Primary model failed, trying fallback',
-    }, '[ChatCompletionService] Using fallback model');
-    
+
+    systemLogger.info(
+      {
+        model: fallbackModel,
+        reason: 'Primary model failed, trying fallback',
+      },
+      '[ChatCompletionService] Using fallback model'
+    );
+
     try {
       const completion = await this.openai.chat.completions.create({
         model: fallbackModel,
         messages: [
           { role: 'system', content: this.buildSystemPrompt() },
-          { role: 'user', content: this.buildUserMessage(pdfText, extractedData) }
+          { role: 'user', content: this.buildUserMessage(pdfText, extractedData) },
         ],
         temperature: 0.1,
         max_tokens: 4096,
@@ -784,16 +855,16 @@ CRITICAL: Skip Tel:, Email:, phone numbers, email addresses, and form field labe
       const responseText = completion.choices[0]?.message?.content || '{}';
       const tokensUsed = completion.usage?.total_tokens || 0;
       const fallbackStartTime = Date.now();
-      
+
       const result = await this.parseResponse(responseText, tokensUsed);
-      
+
       result.metadata = {
         ...result.metadata,
         totalPages: extractedData.numPages,
         extractionMethod: 'chat-completion-fallback',
         tokensUsed,
       };
-      
+
       // 記錄監控指標（fallback 成功）
       this.trackExtractionMetrics({
         success: true,
@@ -807,31 +878,31 @@ CRITICAL: Skip Tel:, Email:, phone numbers, email addresses, and form field labe
         model: fallbackModel,
         fileName: extractedData.fileName,
       });
-      
+
       return result;
     } catch (error: unknown) {
       const apiError = error as OpenAIApiError;
       const errorMessage = apiError instanceof Error ? apiError.message : 'Unknown error';
-      
+
       // 詳細錯誤診斷
       let errorDetails: ErrorDetails = {
         error: errorMessage,
         type: apiError?.constructor?.name,
         model: fallbackModel,
       };
-      
+
       if (apiError?.response) {
         errorDetails.status = apiError.response.status;
         errorDetails.data = apiError.response.data;
       }
-      
+
       if (errorMessage.includes('Connection')) {
         errorDetails.hint = 'Both primary and fallback models failed - check OpenAI API status';
         errorDetails.apiKeyPresent = !!process.env.OPENAI_API_KEY;
       }
-      
+
       systemLogger.error(errorDetails, '[ChatCompletionService] Fallback model also failed');
-      
+
       // 記錄監控指標（fallback 失敗）
       this.trackExtractionMetrics({
         success: false,
@@ -846,7 +917,7 @@ CRITICAL: Skip Tel:, Email:, phone numbers, email addresses, and form field labe
         error: errorDetails.hint || errorMessage,
         fileName: extractedData.fileName,
       });
-      
+
       return {
         orders: [],
         metadata: {
@@ -856,31 +927,34 @@ CRITICAL: Skip Tel:, Email:, phone numbers, email addresses, and form field labe
       };
     }
   }
-  
+
   /**
    * 檢測 PDF 複雜度
    */
-  private detectPDFComplexity(pdfText: string, extractedData: ExtractedPDFData): 'simple' | 'medium' | 'complex' {
+  private detectPDFComplexity(
+    pdfText: string,
+    extractedData: ExtractedPDFData
+  ): 'simple' | 'medium' | 'complex' {
     const textLength = pdfText.length;
     const pageCount = extractedData.numPages;
-    
+
     // 如果包含MHL產品和Pallet Qty，需要複雜模式
     if (pdfText.includes('MHL') && pdfText.includes('Pallet Qty')) {
       return 'complex'; // 強制使用複雜模式以包含例子
     }
-    
+
     // 簡單判斷標準
     if (pageCount === 1 && textLength < 5000) {
       return 'simple';
     }
-    
+
     if (pageCount <= 3 && textLength < 15000) {
       return 'medium';
     }
-    
+
     return 'complex';
   }
-  
+
   /**
    * 記錄提取指標到監控系統
    */
@@ -888,9 +962,12 @@ CRITICAL: Skip Tel:, Email:, phone numbers, email addresses, and form field labe
     try {
       this.monitor.trackExtraction(result);
     } catch (error) {
-      systemLogger.warn({
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }, '[ChatCompletionService] Failed to track extraction metrics');
+      systemLogger.warn(
+        {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+        '[ChatCompletionService] Failed to track extraction metrics'
+      );
     }
   }
 }

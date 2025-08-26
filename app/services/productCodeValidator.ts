@@ -1,6 +1,6 @@
 /**
  * ProductCodeValidator - 產品代碼驗證和豐富化服務
- * 
+ *
  * 功能特點：
  * - 單例模式設計，確保全應用唯一實例
  * - LRU快取機制，5分鐘過期時間
@@ -8,19 +8,19 @@
  * - 高性能字符串相似度匹配（≥0.85閾值）
  * - 完整錯誤處理和日誌記錄
  * - 數據庫連接池管理和安全查詢
- * 
+ *
  * 安全特性：
  * - 防SQL注入攻擊
  * - 內存洩漏保護（LRU限制10000條記錄）
  * - 批量查詢分頁處理
  * - 降級策略支援
- * 
+ *
  * 性能要求：
  * - 快取命中 < 1ms
  * - 批量驗證 < 100ms
  * - 內存使用 < 10MB
  * - 支援併發處理
- * 
+ *
  * @version 1.0.0
  * @author ProductCodeValidator System
  */
@@ -118,7 +118,7 @@ class ProductCodeValidator {
   private readonly cache = new LRUCache<string, CacheEntry>();
   private allProductCodes: ProductCode[] = [];
   private lastFullCacheRefresh = 0;
-  
+
   // 配置參數
   private readonly config: BatchProcessingConfig = {
     maxBatchSize: 100,
@@ -129,12 +129,15 @@ class ProductCodeValidator {
   };
 
   private constructor() {
-    this.logger.info({
-      maxBatchSize: this.config.maxBatchSize,
-      similarityThreshold: this.config.similarityThreshold,
-      cacheExpireTime: this.config.cacheExpireTime,
-      maxCacheSize: this.config.maxCacheSize,
-    }, 'ProductCodeValidator initialized with config');
+    this.logger.info(
+      {
+        maxBatchSize: this.config.maxBatchSize,
+        similarityThreshold: this.config.similarityThreshold,
+        cacheExpireTime: this.config.cacheExpireTime,
+        maxCacheSize: this.config.maxCacheSize,
+      },
+      'ProductCodeValidator initialized with config'
+    );
   }
 
   /**
@@ -154,7 +157,7 @@ class ProductCodeValidator {
    */
   public async validateAndEnrichCodes(codes: string[]): Promise<ValidationResult> {
     const startTime = Date.now();
-    
+
     try {
       // 輸入驗證
       if (!Array.isArray(codes) || codes.length === 0) {
@@ -165,10 +168,13 @@ class ProductCodeValidator {
         throw new Error(`Batch size exceeds limit: ${codes.length} > ${this.config.maxBatchSize}`);
       }
 
-      this.logger.info({
-        batchSize: codes.length,
-        sampleCodes: codes.slice(0, 3), // 只記錄前3個作為樣本
-      }, 'Starting batch validation');
+      this.logger.info(
+        {
+          batchSize: codes.length,
+          sampleCodes: codes.slice(0, 3), // 只記錄前3個作為樣本
+        },
+        'Starting batch validation'
+      );
 
       // 確保產品代碼庫已載入
       await this.ensureProductCodesLoaded();
@@ -178,11 +184,11 @@ class ProductCodeValidator {
 
       // 處理每個批次
       const batches = this.chunkArray(codes, this.config.maxBatchSize);
-      
+
       for (const batch of batches) {
         const batchResults = await this.processBatch(batch);
         enrichedOrders.push(...batchResults);
-        
+
         // 更新統計
         batchResults.forEach(result => {
           if (result.is_valid && !result.was_corrected) stats.valid++;
@@ -192,23 +198,29 @@ class ProductCodeValidator {
       }
 
       const processingTime = Date.now() - startTime;
-      
-      this.logger.info({
-        total: codes.length,
-        valid: stats.valid,
-        corrected: stats.corrected,
-        invalid: stats.invalid,
-        processingTimeMs: processingTime,
-        averageTimePerCode: processingTime / codes.length,
-      }, 'Batch validation completed');
+
+      this.logger.info(
+        {
+          total: codes.length,
+          valid: stats.valid,
+          corrected: stats.corrected,
+          invalid: stats.invalid,
+          processingTimeMs: processingTime,
+          averageTimePerCode: processingTime / codes.length,
+        },
+        'Batch validation completed'
+      );
 
       // 性能監控
       if (processingTime > 100) {
-        this.logger.warn({
-          targetMs: 100,
-          actualMs: processingTime,
-          batchSize: codes.length,
-        }, 'Batch processing exceeded target time');
+        this.logger.warn(
+          {
+            targetMs: 100,
+            actualMs: processingTime,
+            batchSize: codes.length,
+          },
+          'Batch processing exceeded target time'
+        );
       }
 
       return {
@@ -218,16 +230,18 @@ class ProductCodeValidator {
           ...stats,
         },
       };
-
     } catch (error) {
       const processingTime = Date.now() - startTime;
-      this.logger.error({
-        error: error instanceof Error ? error.message : 'Unknown error',
-        batchSize: codes?.length || 0,
-        processingTimeMs: processingTime,
-        stack: error instanceof Error ? error.stack : undefined,
-      }, 'Batch validation failed');
-      
+      this.logger.error(
+        {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          batchSize: codes?.length || 0,
+          processingTimeMs: processingTime,
+          stack: error instanceof Error ? error.stack : undefined,
+        },
+        'Batch validation failed'
+      );
+
       // 降級策略：返回原始代碼作為無效項目
       return this.getFallbackResult(codes);
     }
@@ -238,7 +252,7 @@ class ProductCodeValidator {
    */
   private async processBatch(codes: string[]): Promise<ValidationResult['enrichedOrders']> {
     const results: ValidationResult['enrichedOrders'] = [];
-    
+
     for (const code of codes) {
       if (!code || typeof code !== 'string') {
         results.push({
@@ -252,7 +266,7 @@ class ProductCodeValidator {
 
       const normalizedCode = this.normalizeProductCode(code);
       const cachedResult = this.getCachedResult(normalizedCode);
-      
+
       if (cachedResult) {
         results.push({
           product_code: normalizedCode,
@@ -283,7 +297,7 @@ class ProductCodeValidator {
       if (similarMatches.length > 0) {
         const bestMatch = similarMatches[0];
         const confidence = this.calculateSimilarity(normalizedCode, bestMatch.code);
-        
+
         this.setCacheEntry(normalizedCode, bestMatch);
         results.push({
           product_code: bestMatch.code,
@@ -313,8 +327,8 @@ class ProductCodeValidator {
    */
   private async ensureProductCodesLoaded(): Promise<void> {
     const now = Date.now();
-    const shouldRefresh = (now - this.lastFullCacheRefresh) > this.config.cacheExpireTime;
-    
+    const shouldRefresh = now - this.lastFullCacheRefresh > this.config.cacheExpireTime;
+
     if (this.allProductCodes.length === 0 || shouldRefresh) {
       await this.refreshCache();
     }
@@ -325,18 +339,18 @@ class ProductCodeValidator {
    */
   public async refreshCache(): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       this.logger.info('Starting cache refresh');
-      
+
       const supabase = await createServerClient();
-      
+
       // 使用分頁查詢避免一次性載入過多數據
       let allData: ProductCode[] = [];
       let page = 0;
       const pageSize = 1000;
       let hasMore = true;
-      
+
       while (hasMore) {
         const { data, error } = await supabase
           .from('data_code')
@@ -362,7 +376,7 @@ class ProductCodeValidator {
           }));
 
         allData = allData.concat(cleanedData);
-        
+
         if (data.length < pageSize) {
           hasMore = false;
         } else {
@@ -372,43 +386,51 @@ class ProductCodeValidator {
 
       // 去重處理
       const uniqueData = this.deduplicateProducts(allData);
-      
+
       this.allProductCodes = uniqueData;
       this.lastFullCacheRefresh = Date.now();
       this.cache.clear(); // 清空舊快取
-      
+
       const loadTime = Date.now() - startTime;
-      
-      this.logger.info({
-        totalCodes: this.allProductCodes.length,
-        loadTimeMs: loadTime,
-        memoryUsageMB: (JSON.stringify(this.allProductCodes).length / 1024 / 1024).toFixed(2),
-        pages: page + 1,
-      }, 'Cache refresh completed');
+
+      this.logger.info(
+        {
+          totalCodes: this.allProductCodes.length,
+          loadTimeMs: loadTime,
+          memoryUsageMB: (JSON.stringify(this.allProductCodes).length / 1024 / 1024).toFixed(2),
+          pages: page + 1,
+        },
+        'Cache refresh completed'
+      );
 
       // 性能警告
       if (loadTime > 5000) {
-        this.logger.warn({
-          targetMs: 5000,
-          actualMs: loadTime,
-        }, 'Cache refresh took longer than expected');
+        this.logger.warn(
+          {
+            targetMs: 5000,
+            actualMs: loadTime,
+          },
+          'Cache refresh took longer than expected'
+        );
       }
-
     } catch (error) {
       const loadTime = Date.now() - startTime;
-      
-      this.logger.error({
-        error: error instanceof Error ? error.message : 'Unknown error',
-        loadTimeMs: loadTime,
-        currentCacheSize: this.allProductCodes.length,
-        stack: error instanceof Error ? error.stack : undefined,
-      }, 'Cache refresh failed');
-      
+
+      this.logger.error(
+        {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          loadTimeMs: loadTime,
+          currentCacheSize: this.allProductCodes.length,
+          stack: error instanceof Error ? error.stack : undefined,
+        },
+        'Cache refresh failed'
+      );
+
       // 如果是首次載入失敗，拋出錯誤
       if (this.allProductCodes.length === 0) {
         throw new Error('Failed to load product codes from database');
       }
-      
+
       // 否則繼續使用舊快取
       this.logger.warn('Continuing with existing cache data');
     }
@@ -426,18 +448,18 @@ class ProductCodeValidator {
    */
   public findSimilarCodes(invalidCode: string): ProductCode[] {
     const similarities: Array<{ product: ProductCode; similarity: number }> = [];
-    
+
     for (const product of this.allProductCodes) {
       const similarity = this.calculateSimilarity(invalidCode, product.code);
-      
+
       if (similarity >= this.config.similarityThreshold) {
         similarities.push({ product, similarity });
       }
     }
-    
+
     // 按相似度降序排列
     similarities.sort((a, b) => b.similarity - a.similarity);
-    
+
     // 返回前5個最相似的
     return similarities.slice(0, 5).map(item => item.product);
   }
@@ -447,13 +469,13 @@ class ProductCodeValidator {
    */
   public calculateSimilarity(a: string, b: string): number {
     if (!a || !b) return 0;
-    
+
     // 標準化處理
     const normalizedA = a.toUpperCase().trim();
     const normalizedB = b.toUpperCase().trim();
-    
+
     if (normalizedA === normalizedB) return 1.0;
-    
+
     return calculateStringSimilarity(normalizedA, normalizedB);
   }
 
@@ -464,7 +486,7 @@ class ProductCodeValidator {
     if (size <= 0) {
       throw new Error('Chunk size must be greater than 0');
     }
-    
+
     const chunks: T[][] = [];
     for (let i = 0; i < array.length; i += size) {
       chunks.push(array.slice(i, i + size));
@@ -477,7 +499,7 @@ class ProductCodeValidator {
    */
   private normalizeProductCode(code: string): string {
     if (!code || typeof code !== 'string') return '';
-    
+
     return code
       .toUpperCase()
       .trim()
@@ -489,16 +511,16 @@ class ProductCodeValidator {
    */
   private getCachedResult(code: string): ProductCode | null {
     const cached = this.cache.get(code);
-    
-    if (cached && (Date.now() - cached.timestamp) < this.config.cacheExpireTime) {
+
+    if (cached && Date.now() - cached.timestamp < this.config.cacheExpireTime) {
       return cached.data;
     }
-    
+
     // 清理過期快取
     if (cached) {
       this.cache.set(code, cached); // 這會觸發LRU刪除
     }
-    
+
     return null;
   }
 
@@ -518,14 +540,14 @@ class ProductCodeValidator {
   private deduplicateProducts(products: ProductCode[]): ProductCode[] {
     const seen = new Set<string>();
     const unique: ProductCode[] = [];
-    
+
     for (const product of products) {
       if (!seen.has(product.code)) {
         seen.add(product.code);
         unique.push(product);
       }
     }
-    
+
     return unique;
   }
 
@@ -534,7 +556,7 @@ class ProductCodeValidator {
    */
   private getFallbackResult(codes: string[]): ValidationResult {
     this.logger.warn('Using fallback result due to system failure');
-    
+
     return {
       enrichedOrders: codes.map(code => ({
         product_code: code || '',
@@ -587,40 +609,36 @@ class ProductCodeValidator {
     details: Record<string, unknown>;
   }> {
     const details: Record<string, unknown> = {};
-    
+
     try {
       // 檢查快取狀態
       const cacheStats = this.getCacheStats();
       details.cache = cacheStats;
-      
+
       // 檢查數據庫連接
       const supabase = await createServerClient();
-      const { data, error } = await supabase
-        .from('data_code')
-        .select('code')
-        .limit(1);
-      
+      const { data, error } = await supabase.from('data_code').select('code').limit(1);
+
       if (error) {
         details.database = { status: 'error', error: error.message };
         return { status: 'unhealthy', details };
       }
-      
+
       details.database = { status: 'connected' };
-      
+
       // 檢查產品代碼載入狀態
       if (this.allProductCodes.length === 0) {
         details.productCodes = { status: 'not_loaded', count: 0 };
         return { status: 'degraded', details };
       }
-      
-      details.productCodes = { 
-        status: 'loaded', 
+
+      details.productCodes = {
+        status: 'loaded',
         count: this.allProductCodes.length,
         lastRefresh: new Date(this.lastFullCacheRefresh).toISOString(),
       };
-      
+
       return { status: 'healthy', details };
-      
     } catch (error) {
       details.error = error instanceof Error ? error.message : 'Unknown error';
       return { status: 'unhealthy', details };

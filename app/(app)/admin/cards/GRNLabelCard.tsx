@@ -91,18 +91,21 @@ export const GRNLabelCard: React.FC<GRNLabelCardProps> = ({ className }) => {
   const [currentUserId, setCurrentUserId] = React.useState<string>('');
 
   // Adapter function to convert QC Label ProductInfo to GRN ProductInfo
-  const adaptProductInfo = useCallback((qcProductInfo: unknown): { code: string; description: string } | null => {
-    if (!qcProductInfo || typeof qcProductInfo !== 'object') {
-      return null;
-    }
+  const adaptProductInfo = useCallback(
+    (qcProductInfo: unknown): { code: string; description: string } | null => {
+      if (!qcProductInfo || typeof qcProductInfo !== 'object') {
+        return null;
+      }
 
-    const productObj = qcProductInfo as Record<string, unknown>;
+      const productObj = qcProductInfo as Record<string, unknown>;
 
-    return {
-      code: typeof productObj.code === 'string' ? productObj.code : '',
-      description: typeof productObj.description === 'string' ? productObj.description : '',
-    };
-  }, []);
+      return {
+        code: typeof productObj.code === 'string' ? productObj.code : '',
+        description: typeof productObj.description === 'string' ? productObj.description : '',
+      };
+    },
+    []
+  );
 
   // Use the business logic hook
   const { weightCalculation, processPrintRequest } = useAdminGrnLabelBusiness({
@@ -119,7 +122,7 @@ export const GRNLabelCard: React.FC<GRNLabelCardProps> = ({ className }) => {
           console.error('Supabase client not initialized');
           return;
         }
-        
+
         const {
           data: { user },
         } = await supabase.auth.getUser();
@@ -312,32 +315,41 @@ export const GRNLabelCard: React.FC<GRNLabelCardProps> = ({ className }) => {
 
       <div className={`h-full ${className || ''}`}>
         <SpecialCard
-          variant="glass"
+          variant='glass'
           isHoverable={false}
           borderGlow={false}
           className={`h-full overflow-hidden transition-all duration-300 ${theme.borderColor} ${theme.glowColor}`}
-          padding="none"
+          padding='none'
         >
-          <div className="flex h-full flex-col">
+          <div className='flex h-full flex-col'>
             {/* Header */}
-            <div className={`border-b border-slate-700/50 p-4 transition-all duration-300 ${theme.headerBg}`}>
-              <div className="flex items-center gap-2">
+            <div
+              className={`border-b border-slate-700/50 p-4 transition-all duration-300 ${theme.headerBg}`}
+            >
+              <div className='flex items-center gap-2'>
                 <Package className={`h-6 w-6 ${theme.accentColor}`} />
-                <h2 className={cn(cardTextStyles.title, "text-white")}>GRN Label Generation</h2>
+                <h2 className={cn(cardTextStyles.title, 'text-white')}>GRN Label Generation</h2>
                 {state.grossWeights.filter(w => w.trim() !== '').length > 0 && (
-                  <span className={cn(cardTextStyles.body, `ml-auto rounded-full bg-orange-600/80 px-2 py-1 font-medium text-white`)}>
+                  <span
+                    className={cn(
+                      cardTextStyles.body,
+                      `ml-auto rounded-full bg-orange-600/80 px-2 py-1 font-medium text-white`
+                    )}
+                  >
                     {state.grossWeights.filter(w => w.trim() !== '').length} labels
                   </span>
                 )}
               </div>
-              <p className={cn(cardTextStyles.body, "text-slate-300")}>Generate and print GRN labels for received goods</p>
+              <p className={cn(cardTextStyles.body, 'text-slate-300')}>
+                Generate and print GRN labels for received goods
+              </p>
             </div>
 
             {/* Main Content */}
-            <div className="min-h-0 flex-1 overflow-auto p-4">
-              <div className="space-y-6">
+            <div className='min-h-0 flex-1 overflow-auto p-4'>
+              <div className='space-y-6'>
                 {/* GRN Details Section */}
-                <div className="space-y-4">
+                <div className='space-y-4'>
                   <GrnDetailCard
                     formData={state.formData}
                     labelMode={state.labelMode}
@@ -361,60 +373,64 @@ export const GRNLabelCard: React.FC<GRNLabelCardProps> = ({ className }) => {
                 </div>
 
                 {/* Weight Input Section */}
-                <div className="space-y-4 border-t border-slate-700/30 pt-6">
-                  <h3 className={cn(cardTextStyles.subtitle, "text-white")}>Weight/Quantity Input</h3>
-                    <WeightInputList
-                      grossWeights={state.grossWeights}
-                      onChange={handleGrossWeightChange}
-                      onRemove={useCallback(
-                        (idx: number) => {
-                          actions.removeGrossWeight(idx);
-                          // 確保至少有一個輸入框
-                          if (
-                            state.grossWeights.length === 1 ||
-                            (state.grossWeights.length === 2 &&
-                              state.grossWeights[state.grossWeights.length - 1].trim() !== '')
-                          ) {
-                            actions.addGrossWeight();
-                          }
-                        },
-                        [actions, state.grossWeights]
-                      )}
-                      labelMode={state.labelMode}
-                      selectedPalletType={
-                        (Object.entries(state.palletType).find(
-                          ([, value]) => (parseInt(value) || 0) > 0
-                        )?.[0] || 'notIncluded') as PalletTypeKey
-                      }
-                      selectedPackageType={
-                        (Object.entries(state.packageType).find(
-                          ([, value]) => (parseInt(value) || 0) > 0
-                        )?.[0] || 'notIncluded') as PackageTypeKey
-                      }
-                      maxItems={22}
-                      disabled={state.ui.isProcessing}
-                    />
+                <div className='space-y-4 border-t border-slate-700/30 pt-6'>
+                  <h3 className={cn(cardTextStyles.subtitle, 'text-white')}>
+                    Weight/Quantity Input
+                  </h3>
+                  <WeightInputList
+                    grossWeights={state.grossWeights}
+                    onChange={handleGrossWeightChange}
+                    onRemove={useCallback(
+                      (idx: number) => {
+                        actions.removeGrossWeight(idx);
+                        // 確保至少有一個輸入框
+                        if (
+                          state.grossWeights.length === 1 ||
+                          (state.grossWeights.length === 2 &&
+                            state.grossWeights[state.grossWeights.length - 1].trim() !== '')
+                        ) {
+                          actions.addGrossWeight();
+                        }
+                      },
+                      [actions, state.grossWeights]
+                    )}
+                    labelMode={state.labelMode}
+                    selectedPalletType={
+                      (Object.entries(state.palletType).find(
+                        ([, value]) => (parseInt(value) || 0) > 0
+                      )?.[0] || 'notIncluded') as PalletTypeKey
+                    }
+                    selectedPackageType={
+                      (Object.entries(state.packageType).find(
+                        ([, value]) => (parseInt(value) || 0) > 0
+                      )?.[0] || 'notIncluded') as PackageTypeKey
+                    }
+                    maxItems={22}
+                    disabled={state.ui.isProcessing}
+                  />
                 </div>
 
                 {/* Progress Bar */}
                 {state.progress.total > 0 && (
-                  <div className="space-y-4 border-t border-slate-700/30 pt-6">
-                    <h3 className={cn(cardTextStyles.subtitle, "text-white")}>Generation Progress</h3>
+                  <div className='space-y-4 border-t border-slate-700/30 pt-6'>
+                    <h3 className={cn(cardTextStyles.subtitle, 'text-white')}>
+                      Generation Progress
+                    </h3>
                     <EnhancedProgressBar
                       current={state.progress.current}
                       total={state.progress.total}
                       status={state.progress.status}
-                      title="GRN Label Generation"
-                      variant="compact"
+                      title='GRN Label Generation'
+                      variant='compact'
                       showPercentage={true}
                       showItemDetails={true}
-                      className="w-full"
+                      className='w-full'
                     />
                   </div>
                 )}
 
                 {/* Action Button */}
-                <div className="space-y-4 border-t border-slate-700/30 pt-6">
+                <div className='space-y-4 border-t border-slate-700/30 pt-6'>
                   <button
                     onClick={handlePrintClick}
                     disabled={!isFormValid || state.ui.isProcessing}
@@ -426,15 +442,20 @@ export const GRNLabelCard: React.FC<GRNLabelCardProps> = ({ className }) => {
                   >
                     {state.ui.isProcessing ? (
                       <>
-                        <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
+                        <div className='h-4 w-4 animate-spin rounded-full border-b-2 border-white'></div>
                         <span>Processing Labels...</span>
                       </>
                     ) : (
                       <>
-                        <Package className="h-4 w-4" />
+                        <Package className='h-4 w-4' />
                         <span>Print GRN Label(s)</span>
                         {state.grossWeights.filter(w => w.trim() !== '').length > 0 && (
-                          <span className={cn(cardTextStyles.labelSmall, "rounded-full bg-orange-800 px-2 py-0.5 font-bold")}>
+                          <span
+                            className={cn(
+                              cardTextStyles.labelSmall,
+                              'rounded-full bg-orange-800 px-2 py-0.5 font-bold'
+                            )}
+                          >
                             {state.grossWeights.filter(w => w.trim() !== '').length}
                           </span>
                         )}

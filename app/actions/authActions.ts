@@ -41,7 +41,6 @@ declare global {
     | undefined;
 }
 
-
 interface FirstLoginStatusResponse {
   isFirstLogin: boolean | null; // null if user not found or error
   error?: string;
@@ -86,12 +85,7 @@ export async function checkFirstLoginStatus(
 
     if (data === null) {
       // This case should ideally not happen if data is found and schema is correct
-      console.error(
-        '[authActions] Invalid data for clock_number:',
-        clockNumber,
-        'Data:',
-        data
-      );
+      console.error('[authActions] Invalid data for clock_number:', clockNumber, 'Data:', data);
       return { isFirstLogin: null, error: 'User data is inconsistent.' };
     }
 
@@ -111,7 +105,6 @@ interface LoginResult {
   error?: string;
   isFirstLogin?: boolean;
 }
-
 
 // -------- ChangePasswordActionResult interface --------
 interface ChangePasswordActionResult {

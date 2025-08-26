@@ -60,39 +60,47 @@ export class EnhancedOrderExtractionService {
     fileName: string
   ): Promise<EnhancedExtractionResult> {
     const startTime = Date.now();
-    
+
     try {
-      systemLogger.info({
-        fileName,
-        bufferSize: fileBuffer.byteLength,
-      }, '[EnhancedOrderExtraction] Starting extraction');
+      systemLogger.info(
+        {
+          fileName,
+          bufferSize: fileBuffer.byteLength,
+        },
+        '[EnhancedOrderExtraction] Starting extraction'
+      );
 
       // 步驟 1: 提取 PDF 文本
       const extractedData = await this.pdfService.extractText(fileBuffer);
-      
+
       // 驗證提取的文本
       const validation = this.pdfService.validateExtractedText(extractedData.text);
       if (!validation.isValid) {
-        systemLogger.warn({
-          missingElements: validation.missingElements,
-        }, '[EnhancedOrderExtraction] PDF validation failed, but continuing');
+        systemLogger.warn(
+          {
+            missingElements: validation.missingElements,
+          },
+          '[EnhancedOrderExtraction] PDF validation failed, but continuing'
+        );
       }
 
       // 獲取元數據
       const metadata = this.pdfService.extractMetadata(extractedData.text);
-      systemLogger.info({
-        metadata,
-      }, '[EnhancedOrderExtraction] Metadata extracted');
+      systemLogger.info(
+        {
+          metadata,
+        },
+        '[EnhancedOrderExtraction] Metadata extracted'
+      );
 
       // 步驟 2: 預處理文本
       const processedText = this.pdfService.preprocessTextForLLM(extractedData);
 
       // 步驟 3: 使用 Chat Completions API 提取訂單
       let result = await this.chatService.extractOrdersFromText(processedText, extractedData);
-      
+
       // 步驟 4: 如果結果不理想，嘗試分塊處理
-      if (result.orders.length === 0 || 
-          (extractedData.numPages > 1 && result.orders.length < 5)) {
+      if (result.orders.length === 0 || (extractedData.numPages > 1 && result.orders.length < 5)) {
         systemLogger.info('[EnhancedOrderExtraction] Trying chunked extraction');
         result = await this.chatService.extractOrdersInChunks(extractedData);
       }
@@ -121,22 +129,27 @@ export class EnhancedOrderExtractionService {
 
       // 轉換結果格式
       const enhancedResult = this.convertToEnhancedResult(result, extractedData, startTime);
-      
-      systemLogger.info({
-        success: enhancedResult.success,
-        productsExtracted: enhancedResult.metadata.productsExtracted,
-        method: enhancedResult.extractionMethod,
-        processingTime: enhancedResult.metadata.processingTime,
-      }, '[EnhancedOrderExtraction] Extraction completed');
+
+      systemLogger.info(
+        {
+          success: enhancedResult.success,
+          productsExtracted: enhancedResult.metadata.productsExtracted,
+          method: enhancedResult.extractionMethod,
+          processingTime: enhancedResult.metadata.processingTime,
+        },
+        '[EnhancedOrderExtraction] Extraction completed'
+      );
 
       return enhancedResult;
-
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      systemLogger.error({
-        error: errorMessage,
-        fileName,
-      }, '[EnhancedOrderExtraction] Extraction failed');
+      systemLogger.error(
+        {
+          error: errorMessage,
+          fileName,
+        },
+        '[EnhancedOrderExtraction] Extraction failed'
+      );
 
       // 不再使用 Assistant API fallback（地區限制問題）
       return {
@@ -177,7 +190,7 @@ export class EnhancedOrderExtractionService {
 
     // 獲取第一個訂單的共同信息
     const firstOrder = result.orders[0];
-    
+
     // 構建產品列表
     const products = result.orders.map(order => ({
       product_code: order.product_code,
@@ -222,10 +235,13 @@ export class EnhancedOrderExtractionService {
     fileName: string
   ): Promise<EnhancedExtractionResult> {
     // Assistant API 在 Vercel 某些部署地區被限制，直接返回失敗
-    systemLogger.warn({
-      fileName,
-      reason: 'regional_restrictions'
-    }, '[EnhancedOrderExtraction] Assistant API fallback skipped due to 403 regional restrictions');
+    systemLogger.warn(
+      {
+        fileName,
+        reason: 'regional_restrictions',
+      },
+      '[EnhancedOrderExtraction] Assistant API fallback skipped due to 403 regional restrictions'
+    );
 
     return {
       success: false,
@@ -236,7 +252,8 @@ export class EnhancedOrderExtractionService {
         processingTime: 0,
         fallbackUsed: true,
       },
-      error: 'Assistant API unavailable due to Vercel regional restrictions (403 error). System relies on Chat Completions API only.',
+      error:
+        'Assistant API unavailable due to Vercel regional restrictions (403 error). System relies on Chat Completions API only.',
     };
   }
 
@@ -247,36 +264,43 @@ export class EnhancedOrderExtractionService {
     files: Array<{ buffer: ArrayBuffer; name: string }>
   ): Promise<EnhancedExtractionResult[]> {
     const results: EnhancedExtractionResult[] = [];
-    
+
     for (const file of files) {
-      systemLogger.info({
-        fileName: file.name,
-        fileIndex: files.indexOf(file) + 1,
-        totalFiles: files.length,
-      }, '[EnhancedOrderExtraction] Processing file in batch');
-      
+      systemLogger.info(
+        {
+          fileName: file.name,
+          fileIndex: files.indexOf(file) + 1,
+          totalFiles: files.length,
+        },
+        '[EnhancedOrderExtraction] Processing file in batch'
+      );
+
       const result = await this.extractOrderFromPDF(file.buffer, file.name);
       results.push(result);
-      
+
       // 添加延遲以避免速率限制
       if (files.indexOf(file) < files.length - 1) {
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
-    
+
     // 總結批量處理結果
     const summary = {
       totalFiles: files.length,
       successful: results.filter(r => r.success).length,
       failed: results.filter(r => !r.success).length,
       totalProductsExtracted: results.reduce((sum, r) => sum + r.metadata.productsExtracted, 0),
-      averageProcessingTime: results.reduce((sum, r) => sum + r.metadata.processingTime, 0) / results.length,
+      averageProcessingTime:
+        results.reduce((sum, r) => sum + r.metadata.processingTime, 0) / results.length,
     };
-    
-    systemLogger.info({
-      summary,
-    }, '[EnhancedOrderExtraction] Batch processing completed');
-    
+
+    systemLogger.info(
+      {
+        summary,
+      },
+      '[EnhancedOrderExtraction] Batch processing completed'
+    );
+
     return results;
   }
 
@@ -290,32 +314,32 @@ export class EnhancedOrderExtractionService {
   } {
     const issues: string[] = [];
     const suggestions: string[] = [];
-    
+
     if (!result.success) {
       issues.push('Extraction failed');
       suggestions.push('Check PDF format and content');
     }
-    
+
     if (result.data) {
       // 檢查訂單號
       if (!result.data.order_ref || result.data.order_ref === '-') {
         issues.push('Missing order reference');
         suggestions.push('Verify PDF contains order reference');
       }
-      
+
       // 檢查產品
       if (result.data.products.length === 0) {
         issues.push('No products found');
         suggestions.push('Check product table format in PDF');
       }
-      
+
       // 檢查產品代碼
       const missingCodes = result.data.products.filter(p => !p.product_code).length;
       if (missingCodes > 0) {
         issues.push(`${missingCodes} products missing product codes`);
         suggestions.push('Review product identification logic');
       }
-      
+
       // 檢查數量
       const invalidQty = result.data.products.filter(p => p.product_qty <= 0).length;
       if (invalidQty > 0) {
@@ -323,32 +347,35 @@ export class EnhancedOrderExtractionService {
         suggestions.push('Check quantity extraction logic');
       }
     }
-    
+
     // 性能檢查
     if (result.metadata.processingTime > 30000) {
       issues.push(`Slow processing: ${Math.round(result.metadata.processingTime / 1000)}s`);
       suggestions.push('Consider optimizing extraction logic');
     }
-    
+
     // Token 使用檢查
     if (result.metadata.tokensUsed && result.metadata.tokensUsed > 10000) {
       issues.push(`High token usage: ${result.metadata.tokensUsed}`);
       suggestions.push('Consider text preprocessing to reduce tokens');
     }
-    
+
     const isValid = issues.length === 0;
-    
+
     if (!isValid) {
-      systemLogger.warn({
-        issues,
-        suggestions,
-        result: {
-          method: result.extractionMethod,
-          products: result.metadata.productsExtracted,
+      systemLogger.warn(
+        {
+          issues,
+          suggestions,
+          result: {
+            method: result.extractionMethod,
+            products: result.metadata.productsExtracted,
+          },
         },
-      }, '[EnhancedOrderExtraction] Validation issues found');
+        '[EnhancedOrderExtraction] Validation issues found'
+      );
     }
-    
+
     return { isValid, issues, suggestions };
   }
 }

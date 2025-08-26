@@ -43,7 +43,10 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
   };
   private responseTimes: number[] = [];
 
-  constructor(namespace: string = 'default', options: { defaultTTL?: number; persist?: boolean } = {}) {
+  constructor(
+    namespace: string = 'default',
+    options: { defaultTTL?: number; persist?: boolean } = {}
+  ) {
     this.namespace = namespace;
     this.defaultTTL = options.defaultTTL || 3600; // 1 hour default
     this.persistToStorage = options.persist || false;
@@ -99,7 +102,7 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
       } else {
         ttl = ttlSeconds?.ttl || this.defaultTTL;
       }
-      
+
       const expiry = ttl > 0 ? Date.now() + ttl * 1000 : null;
 
       const cache = cacheVar();
@@ -134,9 +137,9 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
 
       const cache = cacheVar();
       const exists = key in cache;
-      
+
       if (!exists) return false;
-      
+
       const { [key]: _, ...rest } = cache;
       const newCache: StorageData = rest;
 
@@ -147,7 +150,7 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
       if (this.persistToStorage) {
         this.saveToStorage(newCache);
       }
-      
+
       return true;
     } catch (error) {
       console.error(`[ApolloCacheAdapter] Error deleting key ${key}:`, error);
@@ -212,9 +215,7 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
   }
 
   async mset(items: Array<{ key: string; value: unknown; ttl?: number }>): Promise<void> {
-    await Promise.all(
-      items.map(item => this.set(item.key, item.value, { ttl: item.ttl }))
-    );
+    await Promise.all(items.map(item => this.set(item.key, item.value, { ttl: item.ttl })));
   }
 
   async keys(pattern: string): Promise<string[]> {
@@ -242,7 +243,7 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
     // Create a subscription to the reactive variable
     let previousValue: T | null = null;
 
-    const unsubscribe = cacheVar.onNextChange((cache) => {
+    const unsubscribe = cacheVar.onNextChange(cache => {
       const item = cache[key];
       const currentValue = (item?.value as T) || null;
 
@@ -275,11 +276,11 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
       if (!stored) return {};
 
       const data = JSON.parse(stored) as StorageData;
-      
+
       // Clean up expired items
       const now = Date.now();
       const cleaned: StorageData = {};
-      
+
       for (const [key, item] of Object.entries(data)) {
         const { expiry } = item as CachedItem<unknown>;
         if (!expiry || now <= expiry) {
@@ -337,9 +338,10 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
 
   async getStats(): Promise<CacheStats> {
     const size = await this.getSize();
-    const hitRate = this.metrics.hits + this.metrics.misses > 0
-      ? this.metrics.hits / (this.metrics.hits + this.metrics.misses)
-      : 0;
+    const hitRate =
+      this.metrics.hits + this.metrics.misses > 0
+        ? this.metrics.hits / (this.metrics.hits + this.metrics.misses)
+        : 0;
 
     return {
       memory: `${size} items`,
@@ -379,7 +381,7 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
   async acquireLock(lockKey: string, ttlSeconds: number = 30): Promise<string | null> {
     const lockValue = Math.random().toString(36).substring(7);
     const fullKey = `lock:${lockKey}`;
-    
+
     const existing = await this.get(fullKey);
     if (existing) return null;
 
@@ -390,12 +392,12 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
   async releaseLock(lockKey: string, lockValue: string): Promise<boolean> {
     const fullKey = `lock:${lockKey}`;
     const current = await this.get<string>(fullKey);
-    
+
     if (current === lockValue) {
       await this.delete(fullKey);
       return true;
     }
-    
+
     return false;
   }
 
@@ -405,8 +407,8 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
     if (this.responseTimes.length > 100) {
       this.responseTimes.shift();
     }
-    
-    this.metrics.avgResponseTime = 
+
+    this.metrics.avgResponseTime =
       this.responseTimes.reduce((a, b) => a + b, 0) / this.responseTimes.length;
   }
 

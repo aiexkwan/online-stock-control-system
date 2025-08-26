@@ -5,9 +5,9 @@ type IconComponent = React.ComponentType<{ className?: string }>;
 
 // Card configuration
 export interface CardConfig {
-  component: string;  // Component name (e.g., 'StockLevelListAndChartCard')
+  component: string; // Component name (e.g., 'StockLevelListAndChartCard')
   displayName: string; // Display name (e.g., 'Stock Level')
-  category: string;    // Category it belongs to
+  category: string; // Category it belongs to
 }
 
 // Category configuration

@@ -12,10 +12,7 @@ import { z } from 'zod';
 // Error Pattern Schema
 const ErrorPatternSchema = z.object({
   pattern: z.instanceof(RegExp),
-  handler: z.function(
-    z.tuple([z.string()]),
-    ErrorResponseSchema
-  ),
+  handler: z.function(z.tuple([z.string()]), ErrorResponseSchema),
 });
 
 type ErrorPattern = z.infer<typeof ErrorPatternSchema>;
@@ -141,7 +138,7 @@ export class QueryErrorHandler {
     if (!validatedContext.success) {
       console.warn('Invalid query context provided to error handler');
     }
-    
+
     // 安全取得錯誤信息 - 使用 Zod 驗證
     const errorMessage = this.extractErrorMessage(error);
 

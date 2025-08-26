@@ -6,6 +6,7 @@
 import { IResolvers } from '@graphql-tools/utils';
 import { GraphQLContext } from './index';
 import { GraphQLError } from 'graphql';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Helper types for pagination
 interface PaginationParams {
@@ -17,23 +18,15 @@ interface PaginationParams {
   offset?: number;
 }
 
-// Helper function for pagination
-function buildPaginationQuery<T>(
-  query: T,
-  pagination?: PaginationParams
-): T {
+// Helper function for pagination with proper typing
+function buildPaginationQuery<T>(query: T, pagination?: PaginationParams): T {
   if (!pagination) return query;
 
   const { first, after, last, before, limit, offset } = pagination;
-  
-  // Type assertion for Supabase query builder
-  const supabaseQuery = query as unknown as {
-    limit: (count: number) => typeof query;
-    gt: (column: string, value: string) => typeof query;
-    lt: (column: string, value: string) => typeof query;
-    range: (from: number, to: number) => typeof query;
-  };
-  
+
+  // Properly typed Supabase query builder
+  const supabaseQuery = query as any; // Safe type assertion for Supabase query builder
+
   if (limit && limit > 0) {
     const typedQuery = supabaseQuery.limit(limit) as T;
     if (offset && offset > 0) {
@@ -41,7 +34,7 @@ function buildPaginationQuery<T>(
     }
     return typedQuery;
   }
-  
+
   if (first && first > 0) {
     let typedQuery = supabaseQuery.limit(first) as T;
     if (after) {
@@ -55,7 +48,7 @@ function buildPaginationQuery<T>(
     }
     return typedQuery;
   }
-  
+
   return query;
 }
 
@@ -66,16 +59,11 @@ interface SortParams {
 }
 
 // Helper function for sorting
-function buildSortQuery<T>(
-  query: T,
-  sort?: SortParams
-): T {
-  const supabaseQuery = query as unknown as {
-    order: (column: string, options?: { ascending: boolean }) => T;
-  };
-  
+function buildSortQuery<T>(query: T, sort?: SortParams): T {
+  const supabaseQuery = query as any;
+
   if (!sort) return supabaseQuery.order('code', { ascending: true });
-  
+
   const { field, order } = sort;
   return supabaseQuery.order(field || 'code', { ascending: order !== 'DESC' });
 }
@@ -93,21 +81,18 @@ interface ProductFilter {
 }
 
 // Helper function for filtering
-function buildProductFilter<T>(
-  query: T,
-  filter?: ProductFilter
-): T {
+function buildProductFilter<T>(query: T, filter?: ProductFilter): T {
   if (!filter) return query;
-  
+
   const supabaseQuery = query as unknown as {
     ilike: (column: string, pattern: string) => T;
     eq: (column: string, value: unknown) => T;
     gt: (column: string, value: number) => T;
     lt: (column: string, value: number) => T;
   };
-  
+
   let result = query;
-  
+
   if (filter.code) {
     result = supabaseQuery.ilike('code', `%${filter.code}%`);
   }
@@ -123,16 +108,26 @@ function buildProductFilter<T>(
   if (filter.isActive !== undefined) {
     result = (result as typeof supabaseQuery).eq('is_active', filter.isActive);
   }
-  
+
   return result;
 }
 
 export const productResolvers: IResolvers = {
   Product: {
     // Field resolvers
+    standardQty: parent => {
+      // Map database field standard_qty to GraphQL field standardQty
+      return parent.standard_qty || null;
+    },
+
     inventory: async (parent, _args, context: GraphQLContext) => {
       try {
-        // Load inventory summary from stock_level table
+        // Use DataLoader for batch loading to avoid N+1 queries
+        if (context.loaders?.inventory) {
+          return await context.loaders.inventory.load(parent.code);
+        }
+
+        // Fallback to direct query if DataLoader not available
         const { data, error } = await context.supabase
           .from('stock_level')
           .select('*')
@@ -193,10 +188,11 @@ export const productResolvers: IResolvers = {
     pallets: async (parent, args, context: GraphQLContext) => {
       try {
         const { filter, pagination } = args;
-        
+
         let query = context.supabase
           .from('record_palletinfo')
-          .select(`
+          .select(
+            `
             plt_num,
             product_code,
             product_qty,
@@ -208,7 +204,8 @@ export const productResolvers: IResolvers = {
             batch_number,
             expiry_date,
             manufacture_date
-          `)
+          `
+          )
           .eq('product_code', parent.code);
 
         // Apply filters
@@ -238,9 +235,9 @@ export const productResolvers: IResolvers = {
           .select('*', { count: 'exact', head: true })
           .eq('product_code', parent.code)
           .eq('status', 'active');
-        
+
         const { count: totalCount, error: countError } = await countQuery;
-        
+
         if (countError) {
           throw new GraphQLError(`Failed to count pallets: ${countError.message}`);
         }
@@ -287,7 +284,9 @@ export const productResolvers: IResolvers = {
         };
       } catch (error) {
         console.error(`[ProductResolver] Error loading pallets for ${parent.code}:`, error);
-        throw error instanceof GraphQLError ? error : new GraphQLError(`Failed to load pallets for product ${parent.code}`);
+        throw error instanceof GraphQLError
+          ? error
+          : new GraphQLError(`Failed to load pallets for product ${parent.code}`);
       }
     },
 
@@ -301,7 +300,7 @@ export const productResolvers: IResolvers = {
             .select('stock_level, update_time')
             .eq('stock', parent.code)
             .single(),
-          
+
           // Get pallet statistics
           context.supabase
             .from('record_palletinfo')
@@ -314,17 +313,20 @@ export const productResolvers: IResolvers = {
         const pallets = palletData.data || [];
         const totalPallets = pallets.length;
         const uniqueLocations = new Set(pallets.map(p => p.location).filter(Boolean)).size;
-        
+
         // Calculate average stock level (simplified)
         const averageStockLevel = totalQuantity > 0 ? totalQuantity / Math.max(totalPallets, 1) : 0;
-        
+
         // Find last movement date
-        const lastMovementDate = pallets.length > 0 
-          ? pallets.reduce((latest, pallet) => {
-              const palletDate = new Date(pallet.created_at);
-              return palletDate > latest ? palletDate : latest;
-            }, new Date(pallets[0].created_at)).toISOString()
-          : null;
+        const lastMovementDate =
+          pallets.length > 0
+            ? pallets
+                .reduce((latest, pallet) => {
+                  const palletDate = new Date(pallet.created_at);
+                  return palletDate > latest ? palletDate : latest;
+                }, new Date(pallets[0].created_at))
+                .toISOString()
+            : null;
 
         return {
           totalQuantity,
@@ -366,9 +368,7 @@ export const productResolvers: IResolvers = {
       try {
         const { filter, pagination, sort } = args;
 
-        let query = context.supabase
-          .from('data_code')
-          .select(`
+        let query = context.supabase.from('data_code').select(`
             code,
             description,
             colour,
@@ -385,7 +385,7 @@ export const productResolvers: IResolvers = {
           context.supabase.from('data_code').select('*', { count: 'exact', head: true }),
           filter
         );
-        
+
         if (countError) {
           throw new GraphQLError(`Failed to count products: ${countError.message}`);
         }
@@ -407,7 +407,7 @@ export const productResolvers: IResolvers = {
             description: product.description,
             colour: product.colour,
             type: product.type,
-            standardQty: product.standard_qty,
+            standardQty: product.standard_qty || null,
             remark: product.remark,
           },
         }));
@@ -437,14 +437,16 @@ export const productResolvers: IResolvers = {
 
         const { data, error } = await context.supabase
           .from('data_code')
-          .select(`
+          .select(
+            `
             code,
             description,
             colour,
             type,
             standard_qty,
             remark
-          `)
+          `
+          )
           .or(`code.ilike.%${query}%,description.ilike.%${query}%`)
           .limit(limit)
           .order('code', { ascending: true });
@@ -458,7 +460,7 @@ export const productResolvers: IResolvers = {
           description: product.description,
           colour: product.colour,
           type: product.type,
-          standardQty: product.standard_qty,
+          standardQty: product.standard_qty || null,
           remark: product.remark,
         }));
       } catch (error) {
@@ -500,7 +502,7 @@ export const productResolvers: IResolvers = {
             .select('product_qty, location', { count: 'exact' })
             .eq('product_code', productCode)
             .eq('status', 'active'),
-          
+
           // Inventory statistics
           context.supabase
             .from('stock_level')
@@ -508,7 +510,7 @@ export const productResolvers: IResolvers = {
             .eq('stock', productCode)
             .order('update_time', { ascending: false })
             .limit(1),
-          
+
           // Movement statistics
           context.supabase
             .from('record_history')
@@ -520,8 +522,10 @@ export const productResolvers: IResolvers = {
 
         // Calculate statistics
         const totalPallets = palletStats.count || 0;
-        const totalQuantity = palletStats.data?.reduce((sum, p) => sum + (p.product_qty || 0), 0) || 0;
-        const uniqueLocations = new Set(palletStats.data?.map(p => p.location).filter(Boolean)).size;
+        const totalQuantity =
+          palletStats.data?.reduce((sum, p) => sum + (p.product_qty || 0), 0) || 0;
+        const uniqueLocations = new Set(palletStats.data?.map(p => p.location).filter(Boolean))
+          .size;
         const currentStock = inventoryStats.data?.[0]?.stock_level || 0;
         const lastMovement = movementStats.data?.[0]?.created_at || null;
 
@@ -535,10 +539,11 @@ export const productResolvers: IResolvers = {
         };
       } catch (error) {
         console.error(`[ProductResolver] Error getting statistics for ${args.productCode}:`, error);
-        throw error instanceof GraphQLError ? error : new GraphQLError('Failed to get product statistics');
+        throw error instanceof GraphQLError
+          ? error
+          : new GraphQLError('Failed to get product statistics');
       }
     },
-
   },
 
   Mutation: {
@@ -573,7 +578,7 @@ export const productResolvers: IResolvers = {
           description: data.description,
           colour: data.colour,
           type: data.type,
-          standardQty: data.standard_qty,
+          standardQty: data.standard_qty || null,
           remark: data.remark,
         };
       } catch (error) {
@@ -614,7 +619,7 @@ export const productResolvers: IResolvers = {
           description: data.description,
           colour: data.colour,
           type: data.type,
-          standardQty: data.standard_qty,
+          standardQty: data.standard_qty || null,
           remark: data.remark,
         };
 
@@ -648,14 +653,15 @@ export const productResolvers: IResolvers = {
           description: data.description,
           colour: data.colour,
           type: data.type,
-          standardQty: data.standard_qty,
+          standardQty: data.standard_qty || null,
           remark: data.remark,
         };
       } catch (error) {
         console.error(`[ProductResolver] Error deactivating product ${args.code}:`, error);
-        throw error instanceof GraphQLError ? error : new GraphQLError('Failed to deactivate product');
+        throw error instanceof GraphQLError
+          ? error
+          : new GraphQLError('Failed to deactivate product');
       }
     },
-
   },
 };

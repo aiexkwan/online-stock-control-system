@@ -128,7 +128,12 @@ class CacheFactory {
         {
           reason: 'auto_apollo',
           type: 'apollo',
-          benefits: ['serverless_compatible', 'persistent_storage', 'reactive_updates', 'graphql_integration'],
+          benefits: [
+            'serverless_compatible',
+            'persistent_storage',
+            'reactive_updates',
+            'graphql_integration',
+          ],
           phase: '3_apollo_migration',
         },
         'Auto-selected Apollo cache - optimal for serverless deployment'

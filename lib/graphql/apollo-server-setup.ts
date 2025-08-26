@@ -33,7 +33,7 @@ export function createApolloServer() {
           return {
             async willSendResponse() {
               // Clean up WebSocket connections on server shutdown
-            }
+            },
           };
         },
       },

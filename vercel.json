@@ -10,7 +10,20 @@
   "devCommand": "npm run dev",
   "functions": {
     "app/api/**/*.ts": {
-      "maxDuration": 10
+      "maxDuration": 15,
+      "memory": 1024
+    },
+    "app/api/stock-count/*.ts": {
+      "maxDuration": 20,
+      "memory": 1024
+    },
+    "app/api/graphql/*.ts": {
+      "maxDuration": 30,
+      "memory": 1024
+    },
+    "app/api/pdf-extract/*.ts": {
+      "maxDuration": 25,
+      "memory": 1024
     }
   },
   "crons": [],
@@ -39,8 +52,20 @@
         {
           "key": "Referrer-Policy",
           "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https:; connect-src 'self' https://bbmkuiplnzvpudszrend.supabase.co https://*.openai.com;"
         }
       ]
     }
-  ]
+  ],
+  "rewrites": [
+    {
+      "source": "/health",
+      "destination": "/api/health"
+    }
+  ],
+  "trailingSlash": false,
+  "cleanUrls": true
 }

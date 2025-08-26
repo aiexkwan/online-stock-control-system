@@ -1,10 +1,10 @@
 // scripts/kill-localhost.js
-const { exec } = require("child_process");
-const os = require("os");
+const { exec } = require('child_process');
+const os = require('os');
 
 const PORTS = [3000, 3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008]; // 加你常用的 port
 
-const isWin = os.platform() === "win32";
+const isWin = os.platform() === 'win32';
 
 function killPort(port) {
   return new Promise((resolve, reject) => {

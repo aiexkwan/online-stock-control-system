@@ -32,7 +32,6 @@ export const DataExtractionOverlay: React.FC<DataExtractionOverlayProps> = ({
   orderRef,
   onClose,
 }) => {
-
   // Reset state when opening
   useEffect(() => {
     if (isOpen) {
@@ -60,31 +59,23 @@ export const DataExtractionOverlay: React.FC<DataExtractionOverlayProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-
-
-
   const renderOrderItem = (item: ExtractedOrderItem, index: number) => (
     <div
       key={`${item.product_code}-${index}`}
-      className={cn(
-        'p-4 rounded-lg border',
-        'bg-white/5 backdrop-blur-sm border-gray-700/50'
-      )}
+      className={cn('rounded-lg border p-4', 'border-gray-700/50 bg-white/5 backdrop-blur-sm')}
     >
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <code className="text-green-400 font-mono text-sm bg-green-500/10 px-2 py-1 rounded">
+      <div className='space-y-2'>
+        <div className='flex items-center justify-between'>
+          <code className='rounded bg-green-500/10 px-2 py-1 font-mono text-sm text-green-400'>
             {item.product_code}
           </code>
-          <div className="text-right">
-            <span className="text-gray-500 text-xs">Qty:</span> 
-            <span className="ml-1 font-medium text-white">{item.product_qty}</span>
+          <div className='text-right'>
+            <span className='text-xs text-gray-500'>Qty:</span>
+            <span className='ml-1 font-medium text-white'>{item.product_qty}</span>
           </div>
         </div>
-        
-        <p className={cn(cardTextStyles.bodySmall, "text-gray-300")}>
-          {item.product_desc}
-        </p>
+
+        <p className={cn(cardTextStyles.bodySmall, 'text-gray-300')}>{item.product_desc}</p>
       </div>
     </div>
   );
@@ -98,70 +89,74 @@ export const DataExtractionOverlay: React.FC<DataExtractionOverlayProps> = ({
         'bg-black/90 backdrop-blur-xl',
         'animate-in fade-in-0 duration-200'
       )}
-      role="dialog"
-      aria-labelledby="extraction-title"
-      aria-modal="true"
+      role='dialog'
+      aria-labelledby='extraction-title'
+      aria-modal='true'
     >
       {/* Top header */}
-      <div className={cn(
-        'flex items-center justify-between px-6 py-4',
-        'bg-gray-900/80 backdrop-blur-md',
-        'border-b border-green-500/20'
-      )}>
-        <div className="flex items-center gap-4">
-          <DocumentTextIcon className="h-6 w-6 text-green-400" />
-          <div className="flex-1">
-            <h1 id="extraction-title" className={cardTextStyles.title}>
+      <div
+        className={cn(
+          'flex items-center justify-between px-6 py-4',
+          'bg-gray-900/80 backdrop-blur-md',
+          'border-b border-green-500/20'
+        )}
+      >
+        <div className='flex items-center gap-4'>
+          <DocumentTextIcon className='h-6 w-6 text-green-400' />
+          <div className='flex-1'>
+            <h1 id='extraction-title' className={cardTextStyles.title}>
               Extraction Results
             </h1>
             <p className={cardTextStyles.labelSmall}>
               {fileName} • Order: {orderRef}
             </p>
-            
+
             {/* Order-level information displayed once */}
             {data.length > 0 && (
-              <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                <div className="bg-blue-500/10 px-3 py-2 rounded border border-blue-500/20">
-                  <span className="text-blue-400 font-medium">Account:</span>
-                  <div className="text-white font-mono">{data[0]?.account_num || '-'}</div>
+              <div className='mt-3 grid grid-cols-1 gap-3 text-xs md:grid-cols-3'>
+                <div className='rounded border border-blue-500/20 bg-blue-500/10 px-3 py-2'>
+                  <span className='font-medium text-blue-400'>Account:</span>
+                  <div className='font-mono text-white'>{data[0]?.account_num || '-'}</div>
                 </div>
-                <div className="bg-purple-500/10 px-3 py-2 rounded border border-purple-500/20">
-                  <span className="text-purple-400 font-medium">Invoice To:</span>
-                  <div className="text-white text-xs leading-tight">{data[0]?.invoice_to || '-'}</div>
+                <div className='rounded border border-purple-500/20 bg-purple-500/10 px-3 py-2'>
+                  <span className='font-medium text-purple-400'>Invoice To:</span>
+                  <div className='text-xs leading-tight text-white'>
+                    {data[0]?.invoice_to || '-'}
+                  </div>
                 </div>
-                <div className="bg-orange-500/10 px-3 py-2 rounded border border-orange-500/20">
-                  <span className="text-orange-400 font-medium">Delivery:</span>
-                  <div className="text-white text-xs leading-tight">{data[0]?.delivery_add || '-'}</div>
+                <div className='rounded border border-orange-500/20 bg-orange-500/10 px-3 py-2'>
+                  <span className='font-medium text-orange-400'>Delivery:</span>
+                  <div className='text-xs leading-tight text-white'>
+                    {data[0]?.delivery_add || '-'}
+                  </div>
                 </div>
               </div>
             )}
           </div>
         </div>
-        
-        <div className="flex items-center gap-2">
+
+        <div className='flex items-center gap-2'>
           <Button
-            variant="ghost"
-            size="icon"
+            variant='ghost'
+            size='icon'
             onClick={onClose}
-            className="text-gray-300 hover:text-white"
+            className='text-gray-300 hover:text-white'
           >
-            <XMarkIcon className="h-5 w-5" />
+            <XMarkIcon className='h-5 w-5' />
           </Button>
         </div>
       </div>
 
       {/* Simple items list */}
-      <ScrollArea className="flex-1 p-6">
+      <ScrollArea className='flex-1 p-6'>
         {data.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-center">
-            <ClipboardDocumentListIcon className="h-16 w-16 text-gray-500 mb-4" />
+          <div className='flex h-64 flex-col items-center justify-center text-center'>
+            <ClipboardDocumentListIcon className='mb-4 h-16 w-16 text-gray-500' />
             <h3 className={cardTextStyles.subtitle}>No items found</h3>
-            <p className="text-gray-400 mt-2">No data available</p>
+            <p className='mt-2 text-gray-400'>No data available</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {data.map(renderOrderItem)}
-          </div>
+          <div className='space-y-3'>{data.map(renderOrderItem)}</div>
         )}
       </ScrollArea>
     </div>

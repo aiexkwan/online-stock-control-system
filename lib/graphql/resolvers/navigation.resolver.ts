@@ -10,7 +10,7 @@ enum NavigationType {
   MENU = 'menu',
   BREADCRUMB = 'breadcrumb',
   SIDEBAR = 'sidebar',
-  QUICK_ACCESS = 'quick_access'
+  QUICK_ACCESS = 'quick_access',
 }
 
 interface NavigationMenuInput {

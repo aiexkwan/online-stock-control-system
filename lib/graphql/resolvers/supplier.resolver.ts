@@ -18,21 +18,18 @@ interface PaginationParams {
 }
 
 // Helper function for pagination
-function buildPaginationQuery<T>(
-  query: T,
-  pagination?: PaginationParams
-): T {
+function buildPaginationQuery<T>(query: T, pagination?: PaginationParams): T {
   if (!pagination) return query;
 
   const { first, after, last, before, limit, offset } = pagination;
-  
+
   const supabaseQuery = query as unknown as {
     limit: (count: number) => typeof query;
     gt: (column: string, value: string) => typeof query;
     lt: (column: string, value: string) => typeof query;
     range: (from: number, to: number) => typeof query;
   };
-  
+
   if (limit && limit > 0) {
     const typedQuery = supabaseQuery.limit(limit) as T;
     if (offset && offset > 0) {
@@ -40,7 +37,7 @@ function buildPaginationQuery<T>(
     }
     return typedQuery;
   }
-  
+
   if (first && first > 0) {
     let typedQuery = supabaseQuery.limit(first) as T;
     if (after) {
@@ -54,7 +51,7 @@ function buildPaginationQuery<T>(
     }
     return typedQuery;
   }
-  
+
   return query;
 }
 
@@ -65,16 +62,13 @@ interface SortParams {
 }
 
 // Helper function for sorting
-function buildSortQuery<T>(
-  query: T,
-  sort?: SortParams
-): T {
+function buildSortQuery<T>(query: T, sort?: SortParams): T {
   const supabaseQuery = query as unknown as {
     order: (column: string, options?: { ascending: boolean }) => T;
   };
-  
+
   if (!sort) return supabaseQuery.order('supplier_code', { ascending: true });
-  
+
   const { field, order } = sort;
   return supabaseQuery.order(field || 'supplier_code', { ascending: order !== 'DESC' });
 }
@@ -87,19 +81,16 @@ interface SupplierFilter {
 }
 
 // Helper function for filtering
-function buildSupplierFilter<T>(
-  query: T,
-  filter?: SupplierFilter
-): T {
+function buildSupplierFilter<T>(query: T, filter?: SupplierFilter): T {
   if (!filter) return query;
-  
+
   const supabaseQuery = query as unknown as {
     ilike: (column: string, pattern: string) => T;
     eq: (column: string, value: unknown) => T;
   };
-  
+
   let result = query;
-  
+
   if (filter.code) {
     result = supabaseQuery.ilike('supplier_code', `%${filter.code}%`);
   }
@@ -109,19 +100,19 @@ function buildSupplierFilter<T>(
   if (filter.status) {
     result = (result as typeof supabaseQuery).eq('status', filter.status);
   }
-  
+
   return result;
 }
 
 export const supplierResolvers: IResolvers = {
   Supplier: {
     // Map database fields to GraphQL schema
-    supplier_code: (parent) => parent.supplier_code,
-    supplier_name: (parent) => parent.supplier_name,
-    
+    supplier_code: parent => parent.supplier_code,
+    supplier_name: parent => parent.supplier_name,
+
     // Removed statistics, products, grns field resolvers since they don't exist in the simplified schema
     // The data_supplier table only has supplier_code and supplier_name fields
-    
+
     /* Commented out - these fields don't exist in the simplified Supplier schema
     statistics: async (parent, _args, context: GraphQLContext) => {
       try {
@@ -319,9 +310,7 @@ export const supplierResolvers: IResolvers = {
       try {
         const { filter, pagination, sort } = args;
 
-        let query = context.supabase
-          .from('data_supplier')
-          .select('*');
+        let query = context.supabase.from('data_supplier').select('*');
 
         // Apply filters
         query = buildSupplierFilter(query, filter);
@@ -331,7 +320,7 @@ export const supplierResolvers: IResolvers = {
           context.supabase.from('data_supplier').select('*', { count: 'exact', head: true }),
           filter
         );
-        
+
         if (countError) {
           throw new GraphQLError(`Failed to count suppliers: ${countError.message}`);
         }
@@ -483,7 +472,9 @@ export const supplierResolvers: IResolvers = {
         };
       } catch (error) {
         console.error(`[SupplierResolver] Error deactivating supplier ${args.code}:`, error);
-        throw error instanceof GraphQLError ? error : new GraphQLError('Failed to deactivate supplier');
+        throw error instanceof GraphQLError
+          ? error
+          : new GraphQLError('Failed to deactivate supplier');
       }
     },
   },

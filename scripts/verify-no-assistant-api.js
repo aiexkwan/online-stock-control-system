@@ -52,21 +52,21 @@ function shouldExclude(filePath) {
  */
 function searchFiles(dir, results = []) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
-  
+
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
-    
+
     if (shouldExclude(fullPath)) {
       continue;
     }
-    
+
     if (entry.isDirectory()) {
       searchFiles(fullPath, results);
     } else if (FILE_EXTENSIONS.includes(path.extname(entry.name))) {
       results.push(fullPath);
     }
   }
-  
+
   return results;
 }
 
@@ -77,10 +77,10 @@ function checkFileForAssistantAPI(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
   const lines = content.split('\n');
   const findings = [];
-  
+
   for (let lineNum = 0; lineNum < lines.length; lineNum++) {
     const line = lines[lineNum];
-    
+
     for (const pattern of ASSISTANT_API_PATTERNS) {
       if (line.includes(pattern)) {
         findings.push({
@@ -91,7 +91,7 @@ function checkFileForAssistantAPI(filePath) {
       }
     }
   }
-  
+
   return findings;
 }
 
@@ -100,23 +100,23 @@ function checkFileForAssistantAPI(filePath) {
  */
 function main() {
   console.log('🔍 開始驗證項目中是否有 Assistant API 調用...\n');
-  
+
   const projectRoot = path.join(__dirname, '..');
   const allFiles = searchFiles(projectRoot);
-  
+
   console.log(`📁 檢查 ${allFiles.length} 個文件...\n`);
-  
+
   let totalFindings = 0;
   const problemFiles = [];
-  
+
   for (const filePath of allFiles) {
     const findings = checkFileForAssistantAPI(filePath);
-    
+
     if (findings.length > 0) {
       const relativePath = path.relative(projectRoot, filePath);
       problemFiles.push({ path: relativePath, findings });
       totalFindings += findings.length;
-      
+
       console.log(`❌ ${relativePath}:`);
       for (const finding of findings) {
         console.log(`   第 ${finding.line} 行: ${finding.pattern}`);
@@ -125,19 +125,21 @@ function main() {
       }
     }
   }
-  
+
   console.log('\n' + '='.repeat(60));
-  
+
   if (totalFindings === 0) {
     console.log('✅ 驗證完成！沒有發現 Assistant API 調用。');
     console.log('🎉 系統現在完全使用 Chat Completions API，不會觸發地區限制錯誤。');
   } else {
-    console.log(`❌ 發現 ${totalFindings} 個 Assistant API 調用，分佈在 ${problemFiles.length} 個文件中：`);
-    
+    console.log(
+      `❌ 發現 ${totalFindings} 個 Assistant API 調用，分佈在 ${problemFiles.length} 個文件中：`
+    );
+
     for (const file of problemFiles) {
       console.log(`   📄 ${file.path} (${file.findings.length} 個調用)`);
     }
-    
+
     console.log('\n⚠️  需要修改這些文件以移除 Assistant API 調用。');
     process.exit(1);
   }

@@ -27,7 +27,20 @@ module.exports = {
           foreground: '#ffffff',
         },
       },
+      animation: {
+        shimmer: 'shimmer 2s linear infinite',
+      },
+      keyframes: {
+        shimmer: {
+          '0%': {
+            backgroundPosition: '-468px 0',
+          },
+          '100%': {
+            backgroundPosition: '468px 0',
+          },
+        },
+      },
     },
   },
   plugins: [],
-}
+};

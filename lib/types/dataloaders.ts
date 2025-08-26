@@ -873,7 +873,7 @@ export interface DashboardStatsData {
 
   // Performance metrics
   executionTimeMs: number;
-  
+
   // Metadata
   lastUpdated: string;
 }

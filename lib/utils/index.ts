@@ -31,7 +31,7 @@ export { getUserIdFromEmail as getUserIdFromEmailClient } from './getUserIdClien
 
 // Default export for backward compatibility
 const utils = {
-  cn
+  cn,
 };
 
 export default utils;

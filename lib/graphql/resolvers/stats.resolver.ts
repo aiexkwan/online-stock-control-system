@@ -287,8 +287,7 @@ async function fetchStatData(
       type RecordPalletInfo = { product_qty?: number };
       const totalQty =
         (data as RecordPalletInfo[])?.reduce(
-          (sum: number, record: RecordPalletInfo) =>
-            sum + (record.product_qty || 0),
+          (sum: number, record: RecordPalletInfo) => sum + (record.product_qty || 0),
           0
         ) || 0;
 

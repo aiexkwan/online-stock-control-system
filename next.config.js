@@ -1,4 +1,36 @@
 /** @type {import('next').NextConfig} */
+// Simple security headers for CommonJS compatibility
+const getSecurityHeaders = (isDevelopment = false) => {
+  const baseHeaders = [
+    {
+      key: 'X-Frame-Options',
+      value: 'DENY',
+    },
+    {
+      key: 'X-Content-Type-Options',
+      value: 'nosniff',
+    },
+    {
+      key: 'Strict-Transport-Security',
+      value: 'max-age=31536000; includeSubDomains; preload',
+    },
+    {
+      key: 'Referrer-Policy',
+      value: 'strict-origin-when-cross-origin',
+    },
+    {
+      key: 'X-XSS-Protection',
+      value: '1; mode=block',
+    },
+    {
+      key: 'X-DNS-Prefetch-Control',
+      value: 'on',
+    },
+  ];
+
+  return baseHeaders;
+};
+
 const nextConfig = {
   // 基本配置
   reactStrictMode: false,
@@ -16,6 +48,28 @@ const nextConfig = {
   eslint: {
     // 在生產環境中強制 ESLint 檢查
     ignoreDuringBuilds: false,
+  },
+  // Security headers configuration
+  async headers() {
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const securityHeaders = getSecurityHeaders(isDevelopment);
+
+    return [
+      {
+        // Apply to all routes
+        source: '/:path*',
+        headers: securityHeaders,
+      },
+      {
+        // Additional headers for API routes
+        source: '/api/:path*',
+        headers: [
+          ...securityHeaders,
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-API-Version', value: '1.0.0' },
+        ],
+      },
+    ];
   },
   // Vercel 部署優化
   output: 'standalone',
@@ -58,7 +112,7 @@ const nextConfig = {
 
     // 優化模塊解析
     config.resolve.symlinks = false;
-    
+
     return config;
   },
   images: {

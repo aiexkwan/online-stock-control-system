@@ -135,9 +135,15 @@ class PipeDepartmentDataLoaders {
   private supabase: ReturnType<typeof createClient>;
   private stockLevelLoaders?: StockLevelDataLoaders;
 
-  public productLoader: DataLoader<string, { description: string; type: string; colour: string; standardQty: number }>;
+  public productLoader: DataLoader<
+    string,
+    { description: string; type: string; colour: string; standardQty: number }
+  >;
   public palletInfoLoader: DataLoader<string, { productQty: number; generateTime: string }>;
-  public productionStatsLoader: DataLoader<string, { todayCount: number; weekCount: number; twoWeekCount: number }>;
+  public productionStatsLoader: DataLoader<
+    string,
+    { todayCount: number; weekCount: number; twoWeekCount: number }
+  >;
   public machineStatusLoader: DataLoader<string, MachineState>;
 
   constructor(supabase: ReturnType<typeof createClient>) {
@@ -146,132 +152,169 @@ class PipeDepartmentDataLoaders {
     this.initStockLevelLoaders();
 
     // Enhanced product loader with more details
-    this.productLoader = new DataLoader(async (productCodes: readonly string[]) => {
-      const supabase = await this.supabase;
-      const { data, error } = await supabase
-        .from('data_code')
-        .select('code, description, type, colour, standard_qty, remark')
-        .in('code', [...productCodes]);
+    this.productLoader = new DataLoader(
+      async (productCodes: readonly string[]) => {
+        const supabase = await this.supabase;
+        const { data, error } = await supabase
+          .from('data_code')
+          .select('code, description, type, colour, standard_qty, remark')
+          .in('code', [...productCodes]);
 
-      if (error) {
-        console.error('[PipeDepartment] Error loading product data:', error);
-        return productCodes.map(() => ({ description: 'Unknown', type: 'Unknown', colour: 'Unknown', standardQty: 0 }));
-      }
+        if (error) {
+          console.error('[PipeDepartment] Error loading product data:', error);
+          return productCodes.map(() => ({
+            description: 'Unknown',
+            type: 'Unknown',
+            colour: 'Unknown',
+            standardQty: 0,
+          }));
+        }
 
-      const productMap = new Map(
-        data?.map((p: DataCodeRow) => [
-          p.code, 
-          { 
-            description: p.description || 'Unknown', 
-            type: p.type || 'Unknown',
-            colour: p.colour || 'Unknown',
-            standardQty: p.standard_qty || 0
-          }
-        ]) || []
-      );
+        const productMap = new Map(
+          data?.map((p: DataCodeRow) => [
+            p.code,
+            {
+              description: p.description || 'Unknown',
+              type: p.type || 'Unknown',
+              colour: p.colour || 'Unknown',
+              standardQty: p.standard_qty || 0,
+            },
+          ]) || []
+        );
 
-      return productCodes.map(code => 
-        productMap.get(code) || { description: 'Unknown', type: 'Unknown', colour: 'Unknown', standardQty: 0 }
-      );
-    }, { maxBatchSize: 50, cache: true });
+        return productCodes.map(
+          code =>
+            productMap.get(code) || {
+              description: 'Unknown',
+              type: 'Unknown',
+              colour: 'Unknown',
+              standardQty: 0,
+            }
+        );
+      },
+      { maxBatchSize: 50, cache: true }
+    );
 
     // Pallet info loader with timestamps
-    this.palletInfoLoader = new DataLoader(async (productCodes: readonly string[]) => {
-      const supabase = await this.supabase;
-      const { data, error } = await supabase
-        .from('record_palletinfo')
-        .select('product_code, product_qty, generate_time')
-        .in('product_code', [...productCodes]);
+    this.palletInfoLoader = new DataLoader(
+      async (productCodes: readonly string[]) => {
+        const supabase = await this.supabase;
+        const { data, error } = await supabase
+          .from('record_palletinfo')
+          .select('product_code, product_qty, generate_time')
+          .in('product_code', [...productCodes]);
 
-      if (error) {
-        console.error('[PipeDepartment] Error loading pallet info:', error);
-        return productCodes.map(() => ({ productQty: 0, generateTime: new Date().toISOString() }));
-      }
+        if (error) {
+          console.error('[PipeDepartment] Error loading pallet info:', error);
+          return productCodes.map(() => ({
+            productQty: 0,
+            generateTime: new Date().toISOString(),
+          }));
+        }
 
-      // Aggregate by product code
-      const productMap = new Map<string, { productQty: number; generateTime: string }>();
-      
-      data?.forEach((item: RecordPalletInfoRow) => {
-        const current = productMap.get(item.product_code) || { productQty: 0, generateTime: item.generate_time };
-        productMap.set(item.product_code, {
-          productQty: current.productQty + (item.product_qty || 0),
-          generateTime: item.generate_time > current.generateTime ? item.generate_time : current.generateTime
+        // Aggregate by product code
+        const productMap = new Map<string, { productQty: number; generateTime: string }>();
+
+        data?.forEach((item: RecordPalletInfoRow) => {
+          const current = productMap.get(item.product_code) || {
+            productQty: 0,
+            generateTime: item.generate_time,
+          };
+          productMap.set(item.product_code, {
+            productQty: current.productQty + (item.product_qty || 0),
+            generateTime:
+              item.generate_time > current.generateTime ? item.generate_time : current.generateTime,
+          });
         });
-      });
 
-      return productCodes.map(code => 
-        productMap.get(code) || { productQty: 0, generateTime: new Date().toISOString() }
-      );
-    }, { maxBatchSize: 50, cache: true });
+        return productCodes.map(
+          code => productMap.get(code) || { productQty: 0, generateTime: new Date().toISOString() }
+        );
+      },
+      { maxBatchSize: 50, cache: true }
+    );
 
     // Production stats loader for time-based analytics
-    this.productionStatsLoader = new DataLoader(async (productCodes: readonly string[]) => {
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const past7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const past14Days = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    this.productionStatsLoader = new DataLoader(
+      async (productCodes: readonly string[]) => {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const past7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const past14Days = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
-      const supabase = await this.supabase;
-      const { data, error } = await supabase
-        .from('record_palletinfo')
-        .select('product_code, generate_time')
-        .in('product_code', [...productCodes])
-        .gte('generate_time', past14Days.toISOString());
+        const supabase = await this.supabase;
+        const { data, error } = await supabase
+          .from('record_palletinfo')
+          .select('product_code, generate_time')
+          .in('product_code', [...productCodes])
+          .gte('generate_time', past14Days.toISOString());
 
-      if (error) {
-        console.error('[PipeDepartment] Error loading production stats:', error);
-        return productCodes.map(() => ({ todayCount: 0, weekCount: 0, twoWeekCount: 0 }));
-      }
+        if (error) {
+          console.error('[PipeDepartment] Error loading production stats:', error);
+          return productCodes.map(() => ({ todayCount: 0, weekCount: 0, twoWeekCount: 0 }));
+        }
 
-      // Count by time periods for each product
-      const statsMap = new Map<string, { todayCount: number; weekCount: number; twoWeekCount: number }>();
-      
-      productCodes.forEach(code => {
-        statsMap.set(code, { todayCount: 0, weekCount: 0, twoWeekCount: 0 });
-      });
+        // Count by time periods for each product
+        const statsMap = new Map<
+          string,
+          { todayCount: number; weekCount: number; twoWeekCount: number }
+        >();
 
-      data?.forEach((item: RecordPalletInfoRow) => {
-        const generateTime = new Date(item.generate_time);
-        const stats = statsMap.get(item.product_code) || { todayCount: 0, weekCount: 0, twoWeekCount: 0 };
-        
-        if (generateTime >= today) stats.todayCount++;
-        if (generateTime >= past7Days) stats.weekCount++;
-        stats.twoWeekCount++;
-        
-        statsMap.set(item.product_code, stats);
-      });
+        productCodes.forEach(code => {
+          statsMap.set(code, { todayCount: 0, weekCount: 0, twoWeekCount: 0 });
+        });
 
-      return productCodes.map(code => statsMap.get(code) || { todayCount: 0, weekCount: 0, twoWeekCount: 0 });
-    }, { maxBatchSize: 30, cache: true });
+        data?.forEach((item: RecordPalletInfoRow) => {
+          const generateTime = new Date(item.generate_time);
+          const stats = statsMap.get(item.product_code) || {
+            todayCount: 0,
+            weekCount: 0,
+            twoWeekCount: 0,
+          };
+
+          if (generateTime >= today) stats.todayCount++;
+          if (generateTime >= past7Days) stats.weekCount++;
+          stats.twoWeekCount++;
+
+          statsMap.set(item.product_code, stats);
+        });
+
+        return productCodes.map(
+          code => statsMap.get(code) || { todayCount: 0, weekCount: 0, twoWeekCount: 0 }
+        );
+      },
+      { maxBatchSize: 30, cache: true }
+    );
 
     // Machine status loader (placeholder for future IoT integration)
-    this.machineStatusLoader = new DataLoader(async (machineNumbers: readonly string[]) => {
-      // For now, return static data. In production, this would query machine monitoring system
-      const pipeMachines = [
-        'Machine No.01', 'Machine No.02', 'Machine No.03', 'Machine No.04'
-      ];
+    this.machineStatusLoader = new DataLoader(
+      async (machineNumbers: readonly string[]) => {
+        // For now, return static data. In production, this would query machine monitoring system
+        const pipeMachines = ['Machine No.01', 'Machine No.02', 'Machine No.03', 'Machine No.04'];
 
-      return machineNumbers.map(machineNumber => {
-        if (pipeMachines.includes(machineNumber)) {
+        return machineNumbers.map(machineNumber => {
+          if (pipeMachines.includes(machineNumber)) {
+            return {
+              machineNumber,
+              lastActiveTime: undefined, // Would come from IoT system
+              state: 'UNKNOWN' as const,
+              efficiency: undefined,
+              currentTask: 'N/A',
+              nextMaintenance: 'N/A',
+            };
+          }
           return {
             machineNumber,
-            lastActiveTime: undefined, // Would come from IoT system
-            state: 'UNKNOWN' as const,
-            efficiency: undefined,
+            lastActiveTime: undefined,
+            state: 'OFFLINE' as const,
+            efficiency: 0,
             currentTask: 'N/A',
-            nextMaintenance: 'N/A'
+            nextMaintenance: 'N/A',
           };
-        }
-        return {
-          machineNumber,
-          lastActiveTime: undefined,
-          state: 'OFFLINE' as const,
-          efficiency: 0,
-          currentTask: 'N/A',
-          nextMaintenance: 'N/A'
-        };
-      });
-    }, { maxBatchSize: 10, cache: true });
+        });
+      },
+      { maxBatchSize: 10, cache: true }
+    );
   }
 
   // Initialize stock level loaders asynchronously
@@ -322,33 +365,33 @@ async function fetchPipeStats(
     // Use optimized RPC function instead of complex client-side filtering
     const client = await supabase;
     const { data, error } = await client.rpc('get_pipe_production_stats_optimized');
-    
+
     if (error) {
       console.error('[PipeDepartment] Error fetching pipe stats:', error);
       return {
         todayFinished: 0,
         past7Days: 0,
         past14Days: 0,
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
       };
     }
 
     // Type guard for RPC result
     const rpcData = data as PipeStatsRPCResult[] | PipeStatsRPCResult | null;
     let statsData: PipeStatsRPCResult | null = null;
-    
+
     if (Array.isArray(rpcData) && rpcData.length > 0) {
       statsData = rpcData[0];
     } else if (rpcData && !Array.isArray(rpcData)) {
       statsData = rpcData;
     }
-    
+
     if (!statsData) {
       return {
         todayFinished: 0,
         past7Days: 0,
         past14Days: 0,
-        lastUpdated: new Date().toISOString()
+        lastUpdated: new Date().toISOString(),
       };
     }
 
@@ -356,7 +399,7 @@ async function fetchPipeStats(
       todayFinished: statsData.today_count || 0,
       past7Days: statsData.week_count || 0,
       past14Days: statsData.two_week_count || 0,
-      lastUpdated: statsData.last_update || new Date().toISOString()
+      lastUpdated: statsData.last_update || new Date().toISOString(),
     };
   } catch (error) {
     console.error('[PipeDepartment] Error in fetchPipeStats:', error);
@@ -364,7 +407,7 @@ async function fetchPipeStats(
       todayFinished: 0,
       past7Days: 0,
       past14Days: 0,
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
     };
   }
 }
@@ -381,7 +424,7 @@ async function fetchEnhancedTopStocks(
     // Use optimized RPC function for better performance
     const client = await supabase;
     const { data, error } = await client.rpc('get_top_pipe_stocks_optimized', {
-      stock_limit: limit
+      stock_limit: limit,
     });
 
     if (error) {
@@ -391,7 +434,7 @@ async function fetchEnhancedTopStocks(
 
     // Type guard for RPC result
     const stockData = data as PipeStockRPCResult[] | null;
-    
+
     if (!stockData || !Array.isArray(stockData) || stockData.length === 0) {
       return { nodes: [], totalCount: 0 };
     }
@@ -409,7 +452,7 @@ async function fetchEnhancedTopStocks(
 
     return {
       nodes: enhancedStocks,
-      totalCount: enhancedStocks.length
+      totalCount: enhancedStocks.length,
     };
   } catch (error) {
     console.error('[PipeDepartment] Error in fetchEnhancedTopStocks:', error);
@@ -429,7 +472,7 @@ async function fetchEnhancedMaterialStocks(
     // Use optimized RPC function for material stocks
     const client = await supabase;
     const { data, error } = await client.rpc('get_material_stocks_optimized', {
-      stock_limit: limit
+      stock_limit: limit,
     });
 
     if (error) {
@@ -437,9 +480,9 @@ async function fetchEnhancedMaterialStocks(
       return { nodes: [], totalCount: 0 };
     }
 
-    // Type guard for RPC result  
+    // Type guard for RPC result
     const materialData = data as PipeStockRPCResult[] | null;
-    
+
     if (!materialData || !Array.isArray(materialData) || materialData.length === 0) {
       return { nodes: [], totalCount: 0 };
     }
@@ -457,7 +500,7 @@ async function fetchEnhancedMaterialStocks(
 
     return {
       nodes: enhancedMaterials,
-      totalCount: enhancedMaterials.length
+      totalCount: enhancedMaterials.length,
     };
   } catch (error) {
     console.error('[PipeDepartment] Error in fetchEnhancedMaterialStocks:', error);
@@ -476,7 +519,7 @@ async function calculatePipeProductionMetrics(
   return {
     pipeProductionRate: 0.85, // 85% efficiency rate
     materialConsumptionRate: 0.92, // 92% material utilization
-    efficiency: 0.88 // Overall efficiency
+    efficiency: 0.88, // Overall efficiency
   };
 }
 
@@ -496,7 +539,7 @@ export const enhancedPipeDepartmentResolver = {
           fetchPipeStats(supabasePromise, loaders),
           fetchEnhancedTopStocks(supabasePromise, loaders, 10),
           fetchEnhancedMaterialStocks(supabasePromise, loaders, 7),
-          calculatePipeProductionMetrics(loaders)
+          calculatePipeProductionMetrics(loaders),
         ]);
 
         // Load machine states
@@ -514,9 +557,13 @@ export const enhancedPipeDepartmentResolver = {
             pageInfo: {
               hasNextPage: topStocks.nodes.length === 10,
               hasPreviousPage: false,
-              startCursor: topStocks.nodes.length > 0 ? btoa(`stock:${topStocks.nodes[0].stock}`) : undefined,
-              endCursor: topStocks.nodes.length > 0 ? btoa(`stock:${topStocks.nodes[topStocks.nodes.length - 1].stock}`) : undefined,
-            }
+              startCursor:
+                topStocks.nodes.length > 0 ? btoa(`stock:${topStocks.nodes[0].stock}`) : undefined,
+              endCursor:
+                topStocks.nodes.length > 0
+                  ? btoa(`stock:${topStocks.nodes[topStocks.nodes.length - 1].stock}`)
+                  : undefined,
+            },
           },
           materialStocks: {
             nodes: materialStocks.nodes,
@@ -524,15 +571,23 @@ export const enhancedPipeDepartmentResolver = {
             pageInfo: {
               hasNextPage: materialStocks.nodes.length === 7,
               hasPreviousPage: false,
-              startCursor: materialStocks.nodes.length > 0 ? btoa(`stock:${materialStocks.nodes[0].stock}`) : undefined,
-              endCursor: materialStocks.nodes.length > 0 ? btoa(`stock:${materialStocks.nodes[materialStocks.nodes.length - 1].stock}`) : undefined,
-            }
+              startCursor:
+                materialStocks.nodes.length > 0
+                  ? btoa(`stock:${materialStocks.nodes[0].stock}`)
+                  : undefined,
+              endCursor:
+                materialStocks.nodes.length > 0
+                  ? btoa(`stock:${materialStocks.nodes[materialStocks.nodes.length - 1].stock}`)
+                  : undefined,
+            },
           },
-          machineStates: machineStates.filter((state: MachineState | Error): state is MachineState => !(state instanceof Error)),
+          machineStates: machineStates.filter(
+            (state: MachineState | Error): state is MachineState => !(state instanceof Error)
+          ),
           pipeProductionRate: metrics.pipeProductionRate,
           materialConsumptionRate: metrics.materialConsumptionRate,
           loading: false,
-          error: undefined
+          error: undefined,
         };
 
         return response;
@@ -543,15 +598,23 @@ export const enhancedPipeDepartmentResolver = {
             todayFinished: 0,
             past7Days: 0,
             past14Days: 0,
-            lastUpdated: new Date().toISOString()
+            lastUpdated: new Date().toISOString(),
           },
-          topStocks: { nodes: [], totalCount: 0, pageInfo: { hasNextPage: false, hasPreviousPage: false } },
-          materialStocks: { nodes: [], totalCount: 0, pageInfo: { hasNextPage: false, hasPreviousPage: false } },
+          topStocks: {
+            nodes: [],
+            totalCount: 0,
+            pageInfo: { hasNextPage: false, hasPreviousPage: false },
+          },
+          materialStocks: {
+            nodes: [],
+            totalCount: 0,
+            pageInfo: { hasNextPage: false, hasPreviousPage: false },
+          },
           machineStates: [],
           pipeProductionRate: 0,
           materialConsumptionRate: 0,
           loading: false,
-          error: error instanceof Error ? error.message : 'Unknown error occurred'
+          error: error instanceof Error ? error.message : 'Unknown error occurred',
         };
       }
     }) as GraphQLResolver<Record<string, unknown>>,
@@ -577,10 +640,16 @@ export const enhancedPipeDepartmentResolver = {
 
         const query: StockLevelQuery = {
           filter: argsTyped.filter,
-          sort: argsTyped.sort ? {
-            field: argsTyped.sort.field as 'stock' | 'description' | 'stock_level' | 'update_time',
-            direction: argsTyped.sort.direction.toLowerCase() as 'asc' | 'desc'
-          } : undefined,
+          sort: argsTyped.sort
+            ? {
+                field: argsTyped.sort.field as
+                  | 'stock'
+                  | 'description'
+                  | 'stock_level'
+                  | 'update_time',
+                direction: argsTyped.sort.direction.toLowerCase() as 'asc' | 'desc',
+              }
+            : undefined,
           limit: argsTyped.pagination?.first || 20,
           offset: argsTyped.pagination?.after ? parseInt(atob(argsTyped.pagination.after)) : 0,
         };
@@ -589,7 +658,7 @@ export const enhancedPipeDepartmentResolver = {
         if (!loaders.stockLevel) {
           await loaders.initStockLevelLoaders();
         }
-        
+
         const result = await loaders.stockLevel!.byQuery.load(query);
         loaders.clearAll();
 
@@ -623,13 +692,15 @@ export const enhancedPipeDepartmentResolver = {
 
         loaders.clearAll();
 
-        return machineStates.filter((state: MachineState | Error): state is MachineState => !(state instanceof Error));
+        return machineStates.filter(
+          (state: MachineState | Error): state is MachineState => !(state instanceof Error)
+        );
       } catch (error) {
         console.error('[EnhancedPipeDepartment] Machine status error:', error);
         return [];
       }
-    }) as GraphQLResolver<{ departmentType: string }>
-  }
+    }) as GraphQLResolver<{ departmentType: string }>,
+  },
 };
 
 export default enhancedPipeDepartmentResolver;

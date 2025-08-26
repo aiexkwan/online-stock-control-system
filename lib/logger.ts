@@ -71,7 +71,7 @@ export const middlewareLogger = new Proxy(middlewareLoggerBase, {
       return () => {}; // 返回空函數，唔做任何嘢
     }
     return target[prop as keyof typeof target];
-  }
+  },
 });
 export const cacheLogger = createLogger('cache');
 export const featureFlagLogger = createLogger('feature-flags');

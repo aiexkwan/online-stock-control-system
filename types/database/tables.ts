@@ -293,8 +293,8 @@ export interface SearchHistoryItem extends DatabaseRecord {
 
 // 通用安全屬性訪問 - 支援嵌套值
 export function safeGetProperty<T extends DatabaseValue>(
-  obj: DatabaseRecord, 
-  key: string, 
+  obj: DatabaseRecord,
+  key: string,
   defaultValue: T
 ): T {
   const value = obj[key];
@@ -307,10 +307,7 @@ export function safeGetProperty<T extends DatabaseValue>(
 }
 
 // 安全獲取關聯物件
-export function safeGetRelation(
-  obj: DatabaseRecord,
-  key: string
-): RelationResult | null {
+export function safeGetRelation(obj: DatabaseRecord, key: string): RelationResult | null {
   const value = obj[key];
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return value as RelationResult;
@@ -319,7 +316,11 @@ export function safeGetRelation(
 }
 
 // Legacy 版本（向後相容）
-export function safeGetPropertyLegacy<T>(obj: LegacyDatabaseRecord, key: string, defaultValue: T): T {
+export function safeGetPropertyLegacy<T>(
+  obj: LegacyDatabaseRecord,
+  key: string,
+  defaultValue: T
+): T {
   const value = obj[key];
   return value !== undefined && value !== null ? (value as T) : defaultValue;
 }
@@ -357,7 +358,11 @@ export function safeGetBoolean(obj: DatabaseRecord, key: string, defaultValue = 
 }
 
 // 安全獲取陣列
-export function safeGetArray<T = DatabaseValue>(obj: DatabaseRecord, key: string, defaultValue: T[] = []): T[] {
+export function safeGetArray<T = DatabaseValue>(
+  obj: DatabaseRecord,
+  key: string,
+  defaultValue: T[] = []
+): T[] {
   const value = obj[key];
   if (Array.isArray(value)) {
     return value as T[];
@@ -370,17 +375,20 @@ export function safeGetArray<T = DatabaseValue>(obj: DatabaseRecord, key: string
 export function convertToStockDistributionItem(item: DatabaseRecord): StockDistributionItem {
   // 處理關聯數據 (如 data_code)
   const dataCode = safeGetRelation(item, 'data_code');
-  
+
   return {
     ...item,
-    name: safeGetString(item, 'name') || (dataCode?.description) || safeGetString(item, 'product_code', ''),
+    name:
+      safeGetString(item, 'name') ||
+      dataCode?.description ||
+      safeGetString(item, 'product_code', ''),
     size: safeGetNumber(item, 'size'),
     value: safeGetNumber(item, 'value'),
     percentage: safeGetNumber(item, 'percentage'),
-    color: safeGetString(item, 'color') || (dataCode?.colour) || '#000000',
-    fill: safeGetString(item, 'fill') || (dataCode?.colour) || '#000000',
-    description: safeGetString(item, 'description') || (dataCode?.description) || '',
-    type: safeGetString(item, 'type') || (dataCode?.type) || '',
+    color: safeGetString(item, 'color') || dataCode?.colour || '#000000',
+    fill: safeGetString(item, 'fill') || dataCode?.colour || '#000000',
+    description: safeGetString(item, 'description') || dataCode?.description || '',
+    type: safeGetString(item, 'type') || dataCode?.type || '',
     stock: safeGetString(item, 'stock'),
     stock_level: safeGetNumber(item, 'stock_level'),
     injection: safeGetNumber(item, 'injection'),
@@ -394,14 +402,14 @@ export function convertToStockDistributionItem(item: DatabaseRecord): StockDistr
 
 export function convertToProductItem(item: DatabaseRecord): ProductItem {
   const dataCode = safeGetRelation(item, 'data_code');
-  
+
   return {
     ...item,
     product_code: safeGetString(item, 'product_code') || safeGetString(item, 'code', ''),
-    product_desc: safeGetString(item, 'product_desc') || (dataCode?.description) || '',
+    product_desc: safeGetString(item, 'product_desc') || dataCode?.description || '',
     product_qty: safeGetNumber(item, 'product_qty') || safeGetNumber(item, 'quantity'),
-    description: safeGetString(item, 'description') || (dataCode?.description) || '',
-    name: safeGetString(item, 'name') || (dataCode?.name) || '',
+    description: safeGetString(item, 'description') || dataCode?.description || '',
+    name: safeGetString(item, 'name') || dataCode?.name || '',
     weight: safeGetNumber(item, 'weight'),
     unit_price: safeGetNumber(item, 'unit_price'),
   };
@@ -409,7 +417,7 @@ export function convertToProductItem(item: DatabaseRecord): ProductItem {
 
 export function convertToOrderItem(item: DatabaseRecord): OrderItem {
   const dataCode = safeGetRelation(item, 'data_code');
-  
+
   return {
     ...item,
     order_ref: safeGetString(item, 'order_ref'),
@@ -418,14 +426,14 @@ export function convertToOrderItem(item: DatabaseRecord): OrderItem {
     invoice_to: safeGetString(item, 'invoice_to'),
     customer_ref: safeGetString(item, 'customer_ref'),
     product_code: safeGetString(item, 'product_code') || safeGetString(item, 'code', ''),
-    product_desc: safeGetString(item, 'product_desc') || (dataCode?.description) || '',
+    product_desc: safeGetString(item, 'product_desc') || dataCode?.description || '',
     product_qty: safeGetNumber(item, 'product_qty') || safeGetNumber(item, 'quantity'),
   };
 }
 
 export function convertToReportItem(item: DatabaseRecord): ReportItem {
   const users = safeGetRelation(item, 'users');
-  
+
   return {
     ...item,
     plt_num: safeGetString(item, 'plt_num'),
@@ -434,14 +442,14 @@ export function convertToReportItem(item: DatabaseRecord): ReportItem {
     generate_time: safeGetString(item, 'generate_time'),
     void_date: safeGetString(item, 'void_date') || safeGetString(item, 'void_time', ''),
     quantity: safeGetNumber(item, 'quantity') || safeGetNumber(item, 'product_qty'),
-    operator_name: safeGetString(item, 'operator_name') || (users?.name) || '',
+    operator_name: safeGetString(item, 'operator_name') || users?.name || '',
     remark: safeGetString(item, 'remark'),
   };
 }
 
 export function convertToVoidItem(item: DatabaseRecord): VoidItem {
   const users = safeGetRelation(item, 'users');
-  
+
   return {
     ...item,
     uuid: safeGetString(item, 'uuid'),
@@ -452,8 +460,8 @@ export function convertToVoidItem(item: DatabaseRecord): VoidItem {
     product_code: safeGetString(item, 'product_code'),
     product_qty: safeGetNumber(item, 'product_qty'),
     plt_loc: safeGetString(item, 'plt_loc') || safeGetString(item, 'location', ''),
-    user_name: safeGetString(item, 'user_name') || (users?.name) || '',
-    user_id: safeGetString(item, 'user_id') || (users?.id?.toString()) || '',
+    user_name: safeGetString(item, 'user_name') || users?.name || '',
+    user_id: safeGetString(item, 'user_id') || users?.id?.toString() || '',
     void_qty: safeGetNumber(item, 'void_qty') || safeGetNumber(item, 'damage_qty'),
   };
 }
@@ -461,7 +469,7 @@ export function convertToVoidItem(item: DatabaseRecord): VoidItem {
 export function convertToSearchHistoryItem(item: DatabaseRecord): SearchHistoryItem {
   const timestampValue = item.timestamp;
   let timestamp: Date;
-  
+
   if (timestampValue instanceof Date) {
     timestamp = timestampValue;
   } else if (typeof timestampValue === 'string') {
@@ -469,7 +477,7 @@ export function convertToSearchHistoryItem(item: DatabaseRecord): SearchHistoryI
   } else {
     timestamp = new Date();
   }
-  
+
   return {
     ...item,
     id: safeGetString(item, 'id'),
@@ -495,7 +503,7 @@ export function isDatabaseRecord(value: unknown): value is DatabaseRecord {
  */
 export function isEnhancedDatabaseRecord(value: unknown): value is EnhancedDatabaseRecord {
   if (!isDatabaseRecord(value)) return false;
-  
+
   // 檢查是否有常見的關聯欄位
   const record = value as Record<string, unknown>;
   return 'data_code' in record || 'data_supplier' in record || 'data_id' in record;
@@ -534,14 +542,14 @@ export function validateAndConvertDatabaseRecord(
   if (!data || typeof data !== 'object') {
     return { success: false, error: 'Invalid data: not an object' };
   }
-  
+
   try {
     const converted = toDatabaseRecord(data);
     return { success: true, data: converted };
   } catch (error) {
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown conversion error' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown conversion error',
     };
   }
 }
@@ -550,16 +558,14 @@ export function validateAndConvertDatabaseRecord(
  * 批次轉換資料庫記錄陣列
  */
 export function convertDatabaseRecordArray(data: unknown[]): DatabaseRecord[] {
-  return data.map(item => toDatabaseRecord(item)).filter(record => 
-    Object.keys(record).length > 0
-  );
+  return data.map(item => toDatabaseRecord(item)).filter(record => Object.keys(record).length > 0);
 }
 
 /**
  * 批次轉換增強資料庫記錄陣列
  */
 export function convertEnhancedDatabaseRecordArray(data: unknown[]): EnhancedDatabaseRecord[] {
-  return data.map(item => toEnhancedDatabaseRecord(item)).filter(record => 
-    Object.keys(record).length > 0
-  );
+  return data
+    .map(item => toEnhancedDatabaseRecord(item))
+    .filter(record => Object.keys(record).length > 0);
 }

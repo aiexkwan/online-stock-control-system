@@ -6,7 +6,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getUnifiedPrintService } from '../unified-print-service';
 import type { PrintRequest, PrintResult } from '../unified-print-service';
-import { adaptPrintRequest, isOldPrintRequest, isNewPrintRequest } from '../adapters/print-request-adapter';
+import {
+  adaptPrintRequest,
+  isOldPrintRequest,
+  isNewPrintRequest,
+} from '../adapters/print-request-adapter';
 import type { PrintRequest as OldPrintRequest } from '../types';
 
 // Keep compatibility types
@@ -124,18 +128,16 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
     };
 
     const handleJobProcessing = ({ jobId }: { jobId: string }) => {
-      setActiveJobs(prev => 
-        prev.map(job => 
-          job.jobId === jobId ? { ...job, status: 'processing' as const } : job
-        )
+      setActiveJobs(prev =>
+        prev.map(job => (job.jobId === jobId ? { ...job, status: 'processing' as const } : job))
       );
     };
 
     const handleJobCompleted = ({ jobId }: { jobId: string }) => {
-      setActiveJobs(prev => 
-        prev.map(job => 
-          job.jobId === jobId 
-            ? { ...job, status: 'completed' as const, completedAt: new Date().toISOString() } 
+      setActiveJobs(prev =>
+        prev.map(job =>
+          job.jobId === jobId
+            ? { ...job, status: 'completed' as const, completedAt: new Date().toISOString() }
             : job
         )
       );
@@ -146,11 +148,9 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
     };
 
     const handleJobFailed = ({ jobId, error }: { jobId: string; error?: Error }) => {
-      setActiveJobs(prev => 
-        prev.map(job => 
-          job.jobId === jobId 
-            ? { ...job, status: 'failed' as const, message: error?.message } 
-            : job
+      setActiveJobs(prev =>
+        prev.map(job =>
+          job.jobId === jobId ? { ...job, status: 'failed' as const, message: error?.message } : job
         )
       );
     };
@@ -177,7 +177,7 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
       try {
         const service = getService();
         if (!service) return;
-        
+
         // Check if service is initialized
         if (!service.isInitialized()) {
           console.log('[usePrinting] Service not initialized yet, skipping queue status update');
@@ -269,15 +269,15 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
         // Process each request
         for (let i = 0; i < batch.requests.length; i++) {
           const request = batch.requests[i];
-          
+
           try {
             const result = await print(request);
             results.push(result);
             if (result.success) successful++;
             else failed++;
-            
+
             setProgress(((i + 1) / batch.requests.length) * 100);
-            
+
             if (!result.success && batch.options?.stopOnError) {
               break;
             }
@@ -286,9 +286,9 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
             results.push({
               success: false,
               jobId: `batch-${Date.now()}-${i}`,
-              error: error instanceof Error ? error.message : 'Unknown error'
+              error: error instanceof Error ? error.message : 'Unknown error',
             });
-            
+
             if (batch.options?.stopOnError) break;
           }
         }
@@ -298,7 +298,7 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
           successful,
           failed,
           results,
-          duration: Date.now() - startTime
+          duration: Date.now() - startTime,
         };
 
         if (failed > 0) {
@@ -320,7 +320,6 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
     },
     [print, onError]
   );
-
 
   // Cancel job function
   const cancelJob = useCallback(

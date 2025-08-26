@@ -117,11 +117,14 @@ export function useLoadingTimeout(options: UseLoadingTimeoutOptions): UseLoading
     setIsTimedOut(true);
     setTimeRemaining(0);
 
-    logger.warn({
-      id: loadingOptions.id,
-      attempt: currentAttempt + 1,
-      timeout,
-    }, 'Loading timeout occurred');
+    logger.warn(
+      {
+        id: loadingOptions.id,
+        attempt: currentAttempt + 1,
+        timeout,
+      },
+      'Loading timeout occurred'
+    );
 
     onTimeout?.(currentAttempt + 1);
 
@@ -133,11 +136,14 @@ export function useLoadingTimeout(options: UseLoadingTimeoutOptions): UseLoading
       // 計算重試延遲（指數退避）
       const delay = exponentialBackoff ? retryDelay * Math.pow(2, currentAttempt) : retryDelay;
 
-      logger.info({
-        id: loadingOptions.id,
-        attempt: nextAttempt + 1,
-        delay,
-      }, 'Scheduling retry');
+      logger.info(
+        {
+          id: loadingOptions.id,
+          attempt: nextAttempt + 1,
+          delay,
+        },
+        'Scheduling retry'
+      );
 
       retryTimeoutRef.current = setTimeout(async () => {
         onRetry?.(nextAttempt + 1);
@@ -149,11 +155,14 @@ export function useLoadingTimeout(options: UseLoadingTimeoutOptions): UseLoading
       loadingHook.setError(errorMessage);
       onFinalFailure?.(errorMessage);
 
-      logger.error({
-        id: loadingOptions.id,
-        maxAttempts,
-        timeout,
-      }, 'Loading finally failed');
+      logger.error(
+        {
+          id: loadingOptions.id,
+          maxAttempts,
+          timeout,
+        },
+        'Loading finally failed'
+      );
     }
   }, [
     currentAttempt,
@@ -221,21 +230,27 @@ export function useLoadingTimeout(options: UseLoadingTimeoutOptions): UseLoading
   // 手動重試
   const retry = useCallback(async (): Promise<void> => {
     if (currentAttempt >= retryCount) {
-      logger.warn({
-        id: loadingOptions.id,
-        currentAttempt,
-        retryCount,
-      }, 'Retry called but max attempts reached');
+      logger.warn(
+        {
+          id: loadingOptions.id,
+          currentAttempt,
+          retryCount,
+        },
+        'Retry called but max attempts reached'
+      );
       return;
     }
 
     const nextAttempt = currentAttempt + 1;
     setCurrentAttempt(nextAttempt);
 
-    logger.info({
-      id: loadingOptions.id,
-      attempt: nextAttempt + 1,
-    }, 'Manual retry triggered');
+    logger.info(
+      {
+        id: loadingOptions.id,
+        attempt: nextAttempt + 1,
+      },
+      'Manual retry triggered'
+    );
 
     onRetry?.(nextAttempt + 1);
     await executeLoading();
@@ -250,9 +265,12 @@ export function useLoadingTimeout(options: UseLoadingTimeoutOptions): UseLoading
     startTimeRef.current = undefined;
     loadingHook.stopLoading();
 
-    logger.debug({
-      id: loadingOptions.id,
-    }, 'Loading cancelled');
+    logger.debug(
+      {
+        id: loadingOptions.id,
+      },
+      'Loading cancelled'
+    );
   }, [cleanupTimers, loadingOptions.id, loadingHook]);
 
   // 清理效果
@@ -269,11 +287,14 @@ export function useLoadingTimeout(options: UseLoadingTimeoutOptions): UseLoading
       setTimeRemaining(undefined);
       setIsTimedOut(false);
 
-      logger.debug({
-        id: loadingOptions.id,
-        duration: Date.now() - startTimeRef.current,
-        attempt: currentAttempt + 1,
-      }, 'Loading completed successfully');
+      logger.debug(
+        {
+          id: loadingOptions.id,
+          duration: Date.now() - startTimeRef.current,
+          attempt: currentAttempt + 1,
+        },
+        'Loading completed successfully'
+      );
     }
   }, [loadingHook.isLoading, loadingHook.error, cleanupTimers, loadingOptions.id, currentAttempt]);
 

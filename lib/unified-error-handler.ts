@@ -392,8 +392,8 @@ function findSimilarTable(tableName: string): string | null {
 
 // 增強錯誤消息（用於開發環境）
 export function enhanceErrorMessage(
-  errorType: ErrorType, 
-  originalMessage: string, 
+  errorType: ErrorType,
+  originalMessage: string,
   sql?: string
 ): {
   userMessage: string;
@@ -401,19 +401,19 @@ export function enhanceErrorMessage(
   suggestions: string[];
 } {
   const userMessage = generateUserMessage(errorType);
-  
+
   if (process.env.NODE_ENV === 'production') {
     return {
       userMessage,
       technicalDetails: 'Error details hidden in production',
-      suggestions: [userMessage]
+      suggestions: [userMessage],
     };
   }
 
   // 開發環境提供更詳細的錯誤信息
   const debugInfo = `[${errorType}] ${originalMessage}`;
   const suggestions = [];
-  
+
   // 根據錯誤類型提供具體建議
   switch (errorType) {
     case ErrorType.COLUMN_NOT_EXISTS:
@@ -432,7 +432,7 @@ export function enhanceErrorMessage(
   return {
     userMessage,
     technicalDetails: debugInfo + (sql ? `\nSQL: ${sql}` : ''),
-    suggestions
+    suggestions,
   };
 }
 

@@ -71,7 +71,7 @@ class PDFExtractionBenchmark {
   private config: BenchmarkConfig;
   private results: BenchmarkResult[] = [];
   private baselineResults: Map<string, MethodStats> = new Map();
-  
+
   constructor(config: Partial<BenchmarkConfig> = {}) {
     this.config = {
       testFiles: config.testFiles || this.getDefaultTestFiles(),
@@ -82,13 +82,13 @@ class PDFExtractionBenchmark {
       compareBaseline: config.compareBaseline || false,
       methods: config.methods || ['optimized', 'enhanced', 'chat', 'assistant'],
     };
-    
+
     // Ensure output directory exists
     if (!existsSync(this.config.outputDir)) {
       mkdirSync(this.config.outputDir, { recursive: true });
     }
   }
-  
+
   /**
    * Get default test files
    */
@@ -98,14 +98,15 @@ class PDFExtractionBenchmark {
       console.log(chalk.yellow('Warning: test-pdfs directory not found'));
       return [];
     }
-    
+
     // Look for PDF files in test directory
     const fs = require('fs');
-    return fs.readdirSync(testDir)
+    return fs
+      .readdirSync(testDir)
       .filter((file: string) => file.endsWith('.pdf'))
       .map((file: string) => join(testDir, file));
   }
-  
+
   /**
    * Run complete benchmark suite
    */
@@ -116,93 +117,93 @@ class PDFExtractionBenchmark {
     console.log(chalk.gray(`  - Iterations: ${this.config.iterations}`));
     console.log(chalk.gray(`  - Methods: ${this.config.methods.join(', ')}`));
     console.log(chalk.gray(`  - Output: ${this.config.outputDir}\n`));
-    
+
     // Load baseline if comparing
     if (this.config.compareBaseline) {
       this.loadBaseline();
     }
-    
+
     // Warmup runs
     if (this.config.warmupRuns > 0) {
       console.log(chalk.yellow('🔥 Warming up...'));
       await this.runWarmup();
     }
-    
+
     // Main benchmark
     console.log(chalk.green('\n🚀 Starting benchmark...\n'));
-    
+
     for (const method of this.config.methods) {
       await this.benchmarkMethod(method);
     }
-    
+
     // Generate reports
     console.log(chalk.blue('\n📈 Generating reports...\n'));
     this.generateReports();
-    
+
     // Compare with baseline
     if (this.config.compareBaseline && this.baselineResults.size > 0) {
       this.compareWithBaseline();
     }
-    
+
     console.log(chalk.green('\n✅ Benchmark complete!\n'));
   }
-  
+
   /**
    * Run warmup iterations
    */
   private async runWarmup(): Promise<void> {
     if (this.config.testFiles.length === 0) return;
-    
+
     const testFile = this.config.testFiles[0];
     const spinner = ora('Warming up services...').start();
-    
+
     try {
       // Warm up optimized service
       const optimizedService = OptimizedPDFExtractionService.getInstance();
       await optimizedService.warmCache();
-      
+
       // Run a few test extractions
       const buffer = this.loadPDFBuffer(testFile);
       for (let i = 0; i < this.config.warmupRuns; i++) {
         await optimizedService.extractFromPDF(buffer, 'warmup.pdf');
       }
-      
+
       spinner.succeed('Warmup complete');
     } catch (error) {
       spinner.fail('Warmup failed');
     }
   }
-  
+
   /**
    * Benchmark a specific method
    */
   private async benchmarkMethod(method: string): Promise<void> {
     console.log(chalk.bold(`\n📋 Benchmarking: ${method}`));
-    
+
     const progressBar = this.createProgressBar(
       this.config.testFiles.length * this.config.iterations
     );
-    
+
     for (const testFile of this.config.testFiles) {
       const fileName = testFile.split('/').pop() || 'unknown.pdf';
-      
+
       for (let i = 0; i < this.config.iterations; i++) {
         const result = await this.runSingleBenchmark(method, testFile, fileName, i);
         this.results.push(result);
         progressBar.tick();
-        
+
         if (this.config.verbose) {
           this.printResult(result);
         }
-        
+
         // Small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
-    
+
     progressBar.terminate();
   }
-  
+
   /**
    * Run single benchmark iteration
    */
@@ -214,7 +215,7 @@ class PDFExtractionBenchmark {
   ): Promise<BenchmarkResult> {
     const startTime = Date.now();
     const startMemory = process.memoryUsage().heapUsed;
-    
+
     const result: BenchmarkResult = {
       method,
       fileName,
@@ -227,10 +228,10 @@ class PDFExtractionBenchmark {
       cacheHit: false,
       memoryUsed: 0,
     };
-    
+
     try {
       const buffer = this.loadPDFBuffer(filePath);
-      
+
       switch (method) {
         case 'optimized':
           const optimizedResult = await this.benchmarkOptimized(buffer, fileName);
@@ -240,7 +241,7 @@ class PDFExtractionBenchmark {
           result.cacheHit = optimizedResult.cacheHit;
           result.extractionTime = optimizedResult.extractionTime;
           break;
-          
+
         case 'enhanced':
           const enhancedResult = await this.benchmarkEnhanced(buffer, fileName);
           result.success = enhancedResult.success;
@@ -248,7 +249,7 @@ class PDFExtractionBenchmark {
           result.tokensUsed = enhancedResult.tokens;
           result.extractionTime = enhancedResult.extractionTime;
           break;
-          
+
         case 'chat':
           const chatResult = await this.benchmarkChat(buffer, fileName);
           result.success = chatResult.success;
@@ -256,7 +257,7 @@ class PDFExtractionBenchmark {
           result.tokensUsed = chatResult.tokens;
           result.extractionTime = chatResult.extractionTime;
           break;
-          
+
         case 'assistant':
           const assistantResult = await this.benchmarkAssistant(buffer, fileName);
           result.success = assistantResult.success;
@@ -264,18 +265,17 @@ class PDFExtractionBenchmark {
           result.tokensUsed = assistantResult.tokens;
           result.extractionTime = assistantResult.extractionTime;
           break;
-          
+
         default:
           throw new Error(`Unknown method: ${method}`);
       }
-      
     } catch (error) {
       result.error = error instanceof Error ? error.message : 'Unknown error';
     }
-    
+
     result.totalTime = Date.now() - startTime;
     result.memoryUsed = (process.memoryUsage().heapUsed - startMemory) / 1024 / 1024;
-    
+
     // Record in monitor
     pdfMonitor.recordMetric({
       extractionTime: result.extractionTime,
@@ -286,17 +286,17 @@ class PDFExtractionBenchmark {
       fileName: result.fileName,
       error: result.error,
     });
-    
+
     return result;
   }
-  
+
   /**
    * Benchmark optimized service
    */
   private async benchmarkOptimized(buffer: ArrayBuffer, fileName: string) {
     const service = OptimizedPDFExtractionService.getInstance();
     const result = await service.extractFromPDF(buffer, fileName);
-    
+
     return {
       success: result.success,
       products: result.data?.products.length || 0,
@@ -305,7 +305,7 @@ class PDFExtractionBenchmark {
       extractionTime: result.metrics.llmTime,
     };
   }
-  
+
   /**
    * Benchmark enhanced service
    */
@@ -313,7 +313,7 @@ class PDFExtractionBenchmark {
     const startTime = Date.now();
     const service = EnhancedOrderExtractionService.getInstance();
     const result = await service.extractOrderFromPDF(buffer, fileName);
-    
+
     return {
       success: result.success,
       products: result.data?.products.length || 0,
@@ -322,7 +322,7 @@ class PDFExtractionBenchmark {
       extractionTime: Date.now() - startTime,
     };
   }
-  
+
   /**
    * Benchmark chat completion service
    */
@@ -330,11 +330,11 @@ class PDFExtractionBenchmark {
     const startTime = Date.now();
     const pdfService = PDFExtractionService.getInstance();
     const chatService = ChatCompletionService.getInstance();
-    
+
     const extractedData = await pdfService.extractText(buffer);
     const processedText = pdfService.preprocessTextForLLM(extractedData);
     const result = await chatService.extractOrdersFromText(processedText, extractedData);
-    
+
     return {
       success: result.orders.length > 0,
       products: result.orders.length,
@@ -343,42 +343,38 @@ class PDFExtractionBenchmark {
       extractionTime: Date.now() - startTime,
     };
   }
-  
+
   /**
    * Benchmark assistant API
    */
   private async benchmarkAssistant(buffer: ArrayBuffer, fileName: string) {
     const startTime = Date.now();
     const service = AssistantService.getInstance();
-    
+
     let threadId: string | undefined;
     let fileId: string | undefined;
-    
+
     try {
       // Get or create assistant
       const assistantId = await service.getAssistant();
-      
+
       // Create thread
       threadId = await service.createThread();
-      
+
       // Upload file
       fileId = await service.uploadFileToVectorStore(
         Buffer.from(buffer),
         fileName,
         true // Skip vector store processing for speed
       );
-      
+
       // Send message
-      await service.sendMessage(
-        threadId,
-        'Extract all products from this order PDF',
-        fileId
-      );
-      
+      await service.sendMessage(threadId, 'Extract all products from this order PDF', fileId);
+
       // Run and wait
       const response = await service.runAndWait(threadId, assistantId);
       const parsed = service.parseAssistantResponse(response);
-      
+
       return {
         success: true,
         products: parsed.products?.length || 0,
@@ -386,7 +382,6 @@ class PDFExtractionBenchmark {
         cacheHit: false,
         extractionTime: Date.now() - startTime,
       };
-      
     } catch (error) {
       return {
         success: false,
@@ -402,46 +397,46 @@ class PDFExtractionBenchmark {
       }
     }
   }
-  
+
   /**
    * Generate reports
    */
   private generateReports(): void {
     // Calculate statistics for each method
     const methodStats = this.calculateMethodStats();
-    
+
     // Print summary table
     this.printSummaryTable(methodStats);
-    
+
     // Save detailed results
     this.saveDetailedResults();
-    
+
     // Save statistics
     this.saveStatistics(methodStats);
-    
+
     // Generate charts data
     this.generateChartsData();
-    
+
     // Save monitor report
     this.saveMonitorReport();
   }
-  
+
   /**
    * Calculate statistics for each method
    */
   private calculateMethodStats(): MethodStats[] {
     const methodGroups = new Map<string, BenchmarkResult[]>();
-    
+
     // Group results by method
     this.results.forEach(result => {
       const group = methodGroups.get(result.method) || [];
       group.push(result);
       methodGroups.set(result.method, group);
     });
-    
+
     // Calculate stats for each method
     const stats: MethodStats[] = [];
-    
+
     methodGroups.forEach((results, method) => {
       const successfulRuns = results.filter(r => r.success);
       const times = successfulRuns.map(r => r.totalTime).sort((a, b) => a - b);
@@ -449,7 +444,7 @@ class PDFExtractionBenchmark {
       const products = successfulRuns.map(r => r.productsFound);
       const cacheHits = results.filter(r => r.cacheHit).length;
       const memoryPeaks = results.map(r => r.memoryUsed);
-      
+
       stats.push({
         method,
         runs: results.length,
@@ -468,10 +463,10 @@ class PDFExtractionBenchmark {
         memoryPeak: Math.max(...memoryPeaks),
       });
     });
-    
+
     return stats.sort((a, b) => a.avgTime - b.avgTime);
   }
-  
+
   /**
    * Print summary table
    */
@@ -488,7 +483,7 @@ class PDFExtractionBenchmark {
       ],
       colWidths: [15, 12, 12, 12, 12, 12, 12],
     });
-    
+
     stats.forEach(stat => {
       table.push([
         stat.method,
@@ -500,20 +495,22 @@ class PDFExtractionBenchmark {
         `$${stat.estimatedCost.toFixed(3)}`,
       ]);
     });
-    
+
     console.log(chalk.bold('\n📊 Performance Summary:'));
     console.log(table.toString());
-    
+
     // Highlight winner
     const fastest = stats[0];
-    console.log(chalk.green(`\n🏆 Fastest Method: ${fastest.method} (${fastest.avgTime.toFixed(0)}ms avg)`));
-    
+    console.log(
+      chalk.green(`\n🏆 Fastest Method: ${fastest.method} (${fastest.avgTime.toFixed(0)}ms avg)`)
+    );
+
     // Calculate improvements
     if (stats.length > 1) {
       const baseline = stats.find(s => s.method === 'assistant') || stats[stats.length - 1];
       const improvement = ((baseline.avgTime - fastest.avgTime) / baseline.avgTime) * 100;
       const tokenSavings = baseline.avgTokens - fastest.avgTokens;
-      
+
       if (improvement > 0) {
         console.log(chalk.green(`   ${improvement.toFixed(1)}% faster than ${baseline.method}`));
       }
@@ -522,23 +519,23 @@ class PDFExtractionBenchmark {
       }
     }
   }
-  
+
   /**
    * Compare with baseline
    */
   private compareWithBaseline(): void {
     console.log(chalk.bold('\n📊 Baseline Comparison:'));
-    
+
     const currentStats = this.calculateMethodStats();
     const table = new Table({
       head: ['Method', 'Metric', 'Baseline', 'Current', 'Change'],
       colWidths: [15, 15, 15, 15, 15],
     });
-    
+
     currentStats.forEach(current => {
       const baseline = this.baselineResults.get(current.method);
       if (!baseline) return;
-      
+
       // Time comparison
       const timeChange = ((current.avgTime - baseline.avgTime) / baseline.avgTime) * 100;
       table.push([
@@ -548,7 +545,7 @@ class PDFExtractionBenchmark {
         `${current.avgTime.toFixed(0)}ms`,
         this.formatChange(timeChange, true),
       ]);
-      
+
       // Token comparison
       const tokenChange = ((current.avgTokens - baseline.avgTokens) / baseline.avgTokens) * 100;
       table.push([
@@ -558,7 +555,7 @@ class PDFExtractionBenchmark {
         current.avgTokens.toFixed(0),
         this.formatChange(tokenChange, true),
       ]);
-      
+
       // Success rate comparison
       const successChange = current.successRate - baseline.successRate;
       table.push([
@@ -569,10 +566,10 @@ class PDFExtractionBenchmark {
         this.formatChange(successChange, false),
       ]);
     });
-    
+
     console.log(table.toString());
   }
-  
+
   /**
    * Format change percentage
    */
@@ -582,7 +579,7 @@ class PDFExtractionBenchmark {
     const color = improved ? chalk.green : change === 0 ? chalk.gray : chalk.red;
     return color(`${symbol}${change.toFixed(1)}%`);
   }
-  
+
   /**
    * Save detailed results
    */
@@ -591,20 +588,20 @@ class PDFExtractionBenchmark {
     writeFileSync(filePath, JSON.stringify(this.results, null, 2));
     console.log(chalk.gray(`\n💾 Detailed results saved to: ${filePath}`));
   }
-  
+
   /**
    * Save statistics
    */
   private saveStatistics(stats: MethodStats[]): void {
     const filePath = join(this.config.outputDir, `stats-${Date.now()}.json`);
     writeFileSync(filePath, JSON.stringify(stats, null, 2));
-    
+
     // Also save as baseline for future comparisons
     const baselinePath = join(this.config.outputDir, 'baseline.json');
     const baseline = Object.fromEntries(stats.map(s => [s.method, s]));
     writeFileSync(baselinePath, JSON.stringify(baseline, null, 2));
   }
-  
+
   /**
    * Generate charts data
    */
@@ -613,7 +610,7 @@ class PDFExtractionBenchmark {
       methods: this.config.methods,
       metrics: {} as any,
     };
-    
+
     // Group by method
     const methodGroups = new Map<string, BenchmarkResult[]>();
     this.results.forEach(result => {
@@ -621,21 +618,21 @@ class PDFExtractionBenchmark {
       group.push(result);
       methodGroups.set(result.method, group);
     });
-    
+
     // Extract metrics for each method
     methodGroups.forEach((results, method) => {
       chartsData.metrics[method] = {
         times: results.map(r => r.totalTime),
         tokens: results.map(r => r.tokensUsed),
         products: results.map(r => r.productsFound),
-        success: results.map(r => r.success ? 1 : 0),
+        success: results.map(r => (r.success ? 1 : 0)),
       };
     });
-    
+
     const filePath = join(this.config.outputDir, `charts-${Date.now()}.json`);
     writeFileSync(filePath, JSON.stringify(chartsData, null, 2));
   }
-  
+
   /**
    * Save monitor report
    */
@@ -645,7 +642,7 @@ class PDFExtractionBenchmark {
     writeFileSync(filePath, report);
     console.log(chalk.gray(`📊 Monitor report saved to: ${filePath}`));
   }
-  
+
   /**
    * Load baseline results
    */
@@ -663,18 +660,15 @@ class PDFExtractionBenchmark {
       }
     }
   }
-  
+
   /**
    * Load PDF buffer
    */
   private loadPDFBuffer(filePath: string): ArrayBuffer {
     const buffer = readFileSync(filePath);
-    return buffer.buffer.slice(
-      buffer.byteOffset,
-      buffer.byteOffset + buffer.byteLength
-    );
+    return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
   }
-  
+
   /**
    * Create progress bar
    */
@@ -687,7 +681,7 @@ class PDFExtractionBenchmark {
       total,
     });
   }
-  
+
   /**
    * Print single result
    */
@@ -698,7 +692,7 @@ class PDFExtractionBenchmark {
       `  ${status} ${result.fileName} - ${result.totalTime}ms, ${result.tokensUsed} tokens, ${result.productsFound} products ${cache}`
     );
   }
-  
+
   /**
    * Calculate average
    */
@@ -706,7 +700,7 @@ class PDFExtractionBenchmark {
     if (numbers.length === 0) return 0;
     return numbers.reduce((sum, n) => sum + n, 0) / numbers.length;
   }
-  
+
   /**
    * Calculate percentile
    */
@@ -715,7 +709,7 @@ class PDFExtractionBenchmark {
     const index = Math.ceil((p / 100) * sorted.length) - 1;
     return sorted[Math.max(0, Math.min(index, sorted.length - 1))];
   }
-  
+
   /**
    * Estimate cost
    */
@@ -729,30 +723,30 @@ class PDFExtractionBenchmark {
 // CLI interface
 async function main() {
   const args = process.argv.slice(2);
-  
+
   const config: Partial<BenchmarkConfig> = {
     verbose: args.includes('--verbose'),
     compareBaseline: args.includes('--compare'),
   };
-  
+
   // Parse iterations
   const iterIndex = args.indexOf('--iterations');
   if (iterIndex !== -1 && args[iterIndex + 1]) {
     config.iterations = parseInt(args[iterIndex + 1]);
   }
-  
+
   // Parse methods
   const methodsIndex = args.indexOf('--methods');
   if (methodsIndex !== -1 && args[methodsIndex + 1]) {
     config.methods = args[methodsIndex + 1].split(',');
   }
-  
+
   // Parse test files
   const filesIndex = args.indexOf('--files');
   if (filesIndex !== -1 && args[filesIndex + 1]) {
     config.testFiles = args[filesIndex + 1].split(',');
   }
-  
+
   // Show help
   if (args.includes('--help')) {
     console.log(`
@@ -777,7 +771,7 @@ Examples:
 `);
     process.exit(0);
   }
-  
+
   // Run benchmark
   const benchmark = new PDFExtractionBenchmark(config);
   await benchmark.run();

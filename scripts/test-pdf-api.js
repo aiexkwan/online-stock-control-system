@@ -20,14 +20,14 @@ const TEST_CONFIG = {
  */
 async function testPDFAPI(apiUrl) {
   console.log(`🧪 Testing API: ${apiUrl}`);
-  
+
   try {
     // 檢查是否有測試 PDF 文件
     const testPDFPath = path.join(__dirname, '../docs/Others/281513-Picking List.pdf');
     if (!fs.existsSync(testPDFPath)) {
       console.log(`⚠️  Test PDF not found at: ${testPDFPath}`);
       console.log('📋 Creating mock test data...');
-      
+
       // 創建模擬 FormData (無實際文件)
       const testResult = await testWithoutFile(apiUrl);
       return testResult;
@@ -42,14 +42,14 @@ async function testPDFAPI(apiUrl) {
     const formData = new FormData();
     formData.append('file', pdfBuffer, {
       filename: '281513-Picking List.pdf',
-      contentType: 'application/pdf'
+      contentType: 'application/pdf',
     });
     formData.append('fileName', '281513-Picking List.pdf');
 
     // 發送請求
     const startTime = Date.now();
     const fetch = require('node-fetch');
-    
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       body: formData,
@@ -58,7 +58,7 @@ async function testPDFAPI(apiUrl) {
     });
 
     const responseTime = Date.now() - startTime;
-    
+
     console.log(`📡 Response Status: ${response.status} ${response.statusText}`);
     console.log(`⏱️  Response Time: ${responseTime}ms`);
 
@@ -69,7 +69,7 @@ async function testPDFAPI(apiUrl) {
     }
 
     const result = await response.json();
-    
+
     // 分析結果
     if (result.success && result.data) {
       console.log('✅ API Test Successful!');
@@ -77,23 +77,24 @@ async function testPDFAPI(apiUrl) {
       console.log(`📦 Products Found: ${result.data.products.length}`);
       console.log(`🔧 Extraction Method: ${result.metadata?.method || 'unknown'}`);
       console.log(`🎯 Tokens Used: ${result.metadata?.tokensUsed || 'unknown'}`);
-      
+
       if (result.data.products.length > 0) {
         console.log('📦 Sample Products:');
         result.data.products.slice(0, 3).forEach((product, i) => {
-          console.log(`   ${i + 1}. ${product.product_code} - ${product.product_desc} (qty: ${product.product_qty})`);
+          console.log(
+            `   ${i + 1}. ${product.product_code} - ${product.product_desc} (qty: ${product.product_qty})`
+          );
         });
       }
-      
+
       return { success: true, data: result };
     } else {
       console.error('❌ API returned failure:', result.error || 'Unknown error');
       return { success: false, error: result.error || 'API returned failure' };
     }
-
   } catch (error) {
     console.error('❌ Test Error:', error.message);
-    
+
     // 詳細錯誤分析
     if (error.code === 'ECONNREFUSED') {
       console.log('🔍 Diagnosis: Server not running or wrong URL');
@@ -102,7 +103,7 @@ async function testPDFAPI(apiUrl) {
     } else if (error.message.includes('fetch')) {
       console.log('🔍 Diagnosis: Network connectivity issue');
     }
-    
+
     return { success: false, error: error.message };
   }
 }
@@ -118,10 +119,10 @@ async function testWithoutFile(apiUrl) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
     });
-    
+
     const status = response.status;
     console.log(`📡 Endpoint Status: ${status}`);
-    
+
     if (status === 400) {
       console.log('✅ API endpoint is reachable (returns expected 400 for missing file)');
       return { success: true, reachable: true };
@@ -152,8 +153,8 @@ function diagnoseEnvironment() {
  */
 async function runTests() {
   console.log('🚀 PDF API Diagnostic Tool');
-  console.log('=' .repeat(50));
-  
+  console.log('='.repeat(50));
+
   // 環境診斷
   diagnoseEnvironment();
   console.log('');
@@ -175,11 +176,17 @@ async function runTests() {
   }
 
   // 使用說明
-  if (!process.argv.includes('--local') && !process.argv.includes('--prod') && !process.env.VERCEL_URL) {
+  if (
+    !process.argv.includes('--local') &&
+    !process.argv.includes('--prod') &&
+    !process.env.VERCEL_URL
+  ) {
     console.log('💡 Usage:');
     console.log('   node scripts/test-pdf-api.js --local   # Test local development');
     console.log('   node scripts/test-pdf-api.js --prod    # Test production');
-    console.log('   VERCEL_URL=your-app.vercel.app node scripts/test-pdf-api.js  # Test specific URL');
+    console.log(
+      '   VERCEL_URL=your-app.vercel.app node scripts/test-pdf-api.js  # Test specific URL'
+    );
   }
 
   console.log('✨ Diagnostic complete!');

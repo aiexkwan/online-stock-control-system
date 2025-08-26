@@ -307,9 +307,7 @@ export class MigrationTracker {
    */
   private async loadFromDatabase(): Promise<void> {
     try {
-      const { data, error } = await this.supabase
-        .from('migration_tracking')
-        .select('*');
+      const { data, error } = await this.supabase.from('migration_tracking').select('*');
 
       if (error) throw error;
 
@@ -321,19 +319,23 @@ export class MigrationTracker {
           newPath: record.new_path as string,
           phase: record.phase as MigrationPhase,
           status: record.status as MigrationStatus,
-          dependencies: record.dependencies as string[] || [],
+          dependencies: (record.dependencies as string[]) || [],
           dataSource: record.data_source as DataSourceType,
-          migrationStartDate: record.migration_start_date ? new Date(record.migration_start_date as string) : undefined,
-          migrationEndDate: record.migration_end_date ? new Date(record.migration_end_date as string) : undefined,
-          performanceBaseline: record.performance_baseline as PerformanceMetrics || { 
+          migrationStartDate: record.migration_start_date
+            ? new Date(record.migration_start_date as string)
+            : undefined,
+          migrationEndDate: record.migration_end_date
+            ? new Date(record.migration_end_date as string)
+            : undefined,
+          performanceBaseline: (record.performance_baseline as PerformanceMetrics) || {
             renderTime: 0,
             bundleSize: 0,
             memoryUsage: 0,
-            loadTime: 0
+            loadTime: 0,
           },
           performanceCurrent: record.performance_current as PerformanceMetrics | undefined,
-          issues: record.issues as MigrationIssue[] || [],
-          rollbackCount: record.rollback_count as number || 0,
+          issues: (record.issues as MigrationIssue[]) || [],
+          rollbackCount: (record.rollback_count as number) || 0,
           lastUpdated: new Date(record.last_updated as string),
         };
         this.cache.set(record.component_id as string, migrationRecord);
@@ -357,10 +359,10 @@ export class MigrationTracker {
 
     const byPhase: Record<MigrationPhase, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     const byStatus: Record<MigrationStatus, number> = {
-      'pending': 0,
+      pending: 0,
       'in-progress': 0,
-      'testing': 0,
-      'completed': 0,
+      testing: 0,
+      completed: 0,
       'rolled-back': 0,
     };
 
@@ -387,12 +389,14 @@ export class MigrationTracker {
     status: MigrationStatus,
     additionalData?: Partial<CardMigrationRecord>
   ): Promise<void> {
-    const existingRecord = this.cache.get(componentId) || {
-      ...CARD_MIGRATION_REGISTRY[componentId],
-      componentId,
-      issues: [],
-      rollbackCount: 0,
-    } as CardMigrationRecord;
+    const existingRecord =
+      this.cache.get(componentId) ||
+      ({
+        ...CARD_MIGRATION_REGISTRY[componentId],
+        componentId,
+        issues: [],
+        rollbackCount: 0,
+      } as CardMigrationRecord);
 
     const updatedRecord: CardMigrationRecord = {
       ...existingRecord,
@@ -418,25 +422,23 @@ export class MigrationTracker {
    */
   private async persistToDatabase(record: CardMigrationRecord): Promise<void> {
     try {
-      const { error } = await this.supabase
-        .from('migration_tracking')
-        .upsert({
-          component_id: record.componentId,
-          component_name: record.componentName,
-          old_path: record.oldPath,
-          new_path: record.newPath,
-          phase: record.phase,
-          status: record.status,
-          dependencies: record.dependencies,
-          data_source: record.dataSource,
-          migration_start_date: record.migrationStartDate?.toISOString(),
-          migration_end_date: record.migrationEndDate?.toISOString(),
-          performance_baseline: record.performanceBaseline,
-          performance_current: record.performanceCurrent,
-          issues: record.issues,
-          rollback_count: record.rollbackCount,
-          last_updated: record.lastUpdated.toISOString(),
-        });
+      const { error } = await this.supabase.from('migration_tracking').upsert({
+        component_id: record.componentId,
+        component_name: record.componentName,
+        old_path: record.oldPath,
+        new_path: record.newPath,
+        phase: record.phase,
+        status: record.status,
+        dependencies: record.dependencies,
+        data_source: record.dataSource,
+        migration_start_date: record.migrationStartDate?.toISOString(),
+        migration_end_date: record.migrationEndDate?.toISOString(),
+        performance_baseline: record.performanceBaseline,
+        performance_current: record.performanceCurrent,
+        issues: record.issues,
+        rollback_count: record.rollbackCount,
+        last_updated: record.lastUpdated.toISOString(),
+      });
 
       if (error) throw error;
     } catch (error) {
@@ -556,8 +558,9 @@ export class MigrationTracker {
    * Generate phase report
    */
   public async generatePhaseReport(phase: MigrationPhase): Promise<PhaseContext> {
-    const phaseCards = Object.entries(CARD_MIGRATION_REGISTRY)
-      .filter(([_, card]) => card.phase === phase);
+    const phaseCards = Object.entries(CARD_MIGRATION_REGISTRY).filter(
+      ([_, card]) => card.phase === phase
+    );
 
     const completedComponents = phaseCards
       .filter(([_, card]) => card.status === 'completed')
@@ -630,12 +633,12 @@ export class MigrationTracker {
     // Check phase prerequisites
     if (card.phase && card.phase > 1) {
       const previousPhase = (card.phase - 1) as MigrationPhase;
-      const previousPhaseCards = Object.entries(CARD_MIGRATION_REGISTRY)
-        .filter(([_, c]) => c.phase === previousPhase);
-      
-      const incompletePrevious = previousPhaseCards
-        .filter(([_, c]) => c.status !== 'completed');
-      
+      const previousPhaseCards = Object.entries(CARD_MIGRATION_REGISTRY).filter(
+        ([_, c]) => c.phase === previousPhase
+      );
+
+      const incompletePrevious = previousPhaseCards.filter(([_, c]) => c.status !== 'completed');
+
       if (incompletePrevious.length > 0) {
         blockers.push(`Previous phase ${previousPhase} not complete`);
       }
@@ -665,7 +668,7 @@ export function getMigrationTracker(): MigrationTracker {
 export async function exportMigrationMetrics() {
   const tracker = getMigrationTracker();
   const status = tracker.getMigrationStatus();
-  
+
   return {
     timestamp: new Date().toISOString(),
     overall_completion: status.overall,

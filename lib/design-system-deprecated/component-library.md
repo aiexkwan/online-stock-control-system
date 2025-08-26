@@ -16,7 +16,7 @@ import { brandColors, getWidgetCategoryColor } from '@/lib/design-system';
   Primary Brand Color
 </div>
 
-// 次要色調 - 藍色  
+// 次要色調 - 藍色
 <div className="bg-blue-500 text-white">
   Secondary Brand Color
 </div>
@@ -135,24 +135,22 @@ import { widgetColors, widgetSpacing, textClasses } from '@/lib/design-system';
 const WidgetContainer: React.FC<{ title: string; category: string }> = ({
   title,
   category,
-  children
+  children,
 }) => {
   const gradient = getWidgetCategoryColor(category, 'gradient');
 
   return (
-    <div className="rounded-lg bg-slate-800/50 p-4">
+    <div className='rounded-lg bg-slate-800/50 p-4'>
       {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className={`p-2 rounded-lg bg-gradient-to-br ${gradient}`}>
-          <Icon className="w-5 h-5 text-white" />
+      <div className='mb-4 flex items-center gap-3'>
+        <div className={`rounded-lg bg-gradient-to-br p-2 ${gradient}`}>
+          <Icon className='h-5 w-5 text-white' />
         </div>
         <h3 className={textClasses['widget-title']}>{title}</h3>
       </div>
 
       {/* Content */}
-      <div className="space-y-4">
-        {children}
-      </div>
+      <div className='space-y-4'>{children}</div>
     </div>
   );
 };
@@ -161,18 +159,11 @@ const WidgetContainer: React.FC<{ title: string; category: string }> = ({
 ### 統計卡片
 
 ```tsx
-const StatCard: React.FC<{ label: string; value: number }> = ({
-  label,
-  value
-}) => {
+const StatCard: React.FC<{ label: string; value: number }> = ({ label, value }) => {
   return (
-    <div className="bg-slate-900/50 rounded-lg p-4">
-      <p className={textClasses['label-base'] + ' text-gray-400'}>
-        {label}
-      </p>
-      <p className={textClasses['widget-metric'] + ' text-white mt-1'}>
-        {value.toLocaleString()}
-      </p>
+    <div className='rounded-lg bg-slate-900/50 p-4'>
+      <p className={textClasses['label-base'] + ' text-gray-400'}>{label}</p>
+      <p className={textClasses['widget-metric'] + ' mt-1 text-white'}>{value.toLocaleString()}</p>
     </div>
   );
 };
@@ -183,17 +174,11 @@ const StatCard: React.FC<{ label: string; value: number }> = ({
 ```tsx
 const ListItem: React.FC<{ item: any }> = ({ item }) => {
   return (
-    <div className={`
-      flex items-center justify-between
-      ${spacingUtilities.list.item}
-      hover:bg-gray-700/50 rounded transition-colors
-    `}>
-      <span className={textClasses['body-base']}>
-        {item.name}
-      </span>
-      <span className={textClasses['label-small'] + ' text-gray-400'}>
-        {item.status}
-      </span>
+    <div
+      className={`flex items-center justify-between ${spacingUtilities.list.item} rounded transition-colors hover:bg-gray-700/50`}
+    >
+      <span className={textClasses['body-base']}>{item.name}</span>
+      <span className={textClasses['label-small'] + ' text-gray-400'}>{item.status}</span>
     </div>
   );
 };
@@ -222,11 +207,9 @@ const color = getChartColor(index); // 自動循環使用顏色
 import { backgrounds, textColors } from '@/lib/design-system';
 
 // 自適應背景和文字
-<div className="bg-white dark:bg-slate-900">
-  <p className="text-gray-900 dark:text-white">
-    Adaptive content
-  </p>
-</div>
+<div className='bg-white dark:bg-slate-900'>
+  <p className='text-gray-900 dark:text-white'>Adaptive content</p>
+</div>;
 ```
 
 ## 7. 最佳實踐
@@ -250,6 +233,7 @@ import { backgrounds, textColors } from '@/lib/design-system';
 ### 現有組件遷移步驟
 
 1. **替換顏色**
+
    ```tsx
    // 舊代碼
    <div className="bg-blue-600">
@@ -259,6 +243,7 @@ import { backgrounds, textColors } from '@/lib/design-system';
    ```
 
 2. **統一文字樣式**
+
    ```tsx
    // 舊代碼
    <h3 className="text-lg font-semibold">
@@ -268,6 +253,7 @@ import { backgrounds, textColors } from '@/lib/design-system';
    ```
 
 3. **規範間距**
+
    ```tsx
    // 舊代碼
    <div className="p-3 mb-5">
@@ -299,7 +285,7 @@ import {
   getSpacing,
   calculateGridSpacing,
   combineTextClasses,
-  getResponsiveSpacing
+  getResponsiveSpacing,
 } from '@/lib/design-system';
 
 // 計算間距

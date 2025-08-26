@@ -438,24 +438,26 @@ export default function OrderLoadingPage() {
 
       if (!error && data) {
         // Transform data to match expected format
-        const transformedData = (data as unknown as RecordHistoryItem[]).map((item: RecordHistoryItem) => {
-          // Extract details from remark
-          const orderMatch = item.remark.match(/Order: ([^,]+)/);
-          const productMatch = item.remark.match(/Product: ([^,]+)/);
-          const qtyMatch = item.remark.match(/Qty: (\d+)/);
-          const byMatch = item.remark.match(/by (.+)$/);
+        const transformedData = (data as unknown as RecordHistoryItem[]).map(
+          (item: RecordHistoryItem) => {
+            // Extract details from remark
+            const orderMatch = item.remark.match(/Order: ([^,]+)/);
+            const productMatch = item.remark.match(/Product: ([^,]+)/);
+            const qtyMatch = item.remark.match(/Qty: (\d+)/);
+            const byMatch = item.remark.match(/by (.+)$/);
 
-          return {
-            uuid: item.uuid,
-            order_ref: orderMatch ? orderMatch[1] : orderRef,
-            pallet_num: item.plt_num || undefined,
-            product_code: productMatch ? productMatch[1] : '',
-            quantity: qtyMatch ? parseInt(qtyMatch[1]) : 0,
-            action_type: 'load',
-            action_by: byMatch ? byMatch[1] : 'Unknown',
-            action_time: item.time,
-          };
-        });
+            return {
+              uuid: item.uuid,
+              order_ref: orderMatch ? orderMatch[1] : orderRef,
+              pallet_num: item.plt_num || undefined,
+              product_code: productMatch ? productMatch[1] : '',
+              quantity: qtyMatch ? parseInt(qtyMatch[1]) : 0,
+              action_type: 'load',
+              action_by: byMatch ? byMatch[1] : 'Unknown',
+              action_time: item.time,
+            };
+          }
+        );
         // @types-migration:todo(phase3) [P2] 調整 transformedData 結構匹配 RecentLoad 接口 - Target: 2025-08 - Owner: @frontend-team
         setRecentLoads(transformedData);
       }

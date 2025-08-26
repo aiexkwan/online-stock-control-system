@@ -1,7 +1,5 @@
 {
-  "extends": [
-    "next/core-web-vitals"
-  ],
+  "extends": ["next/core-web-vitals"],
   "parser": "@typescript-eslint/parser",
   "plugins": ["@typescript-eslint"],
   "rules": {
@@ -40,6 +38,8 @@
         "**/**/handlers.ts",
         "lib/types/unknown-handlers.ts",
         "types/database/helpers.ts",
+        "lib/graphql/resolvers/**/*.ts",
+        "lib/graphql/utils/**/*.ts",
         "scripts/**/*.ts",
         "supabase/functions/**/*.ts"
       ],

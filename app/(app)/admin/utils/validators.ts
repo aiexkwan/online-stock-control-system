@@ -28,10 +28,10 @@ export const validateTransferDestination = (
 ): boolean => {
   if (!currentLocation || !destination) return false;
   if (currentLocation === destination) return false;
-  
+
   const allowed = allowedDestinations[currentLocation];
   if (!allowed) return false;
-  
+
   return allowed.includes(destination);
 };
 
@@ -42,7 +42,7 @@ export const validateTransferDestination = (
  */
 export const validatePalletId = (palletId: string): boolean => {
   if (!palletId || palletId.trim() === '') return false;
-  
+
   // Check for different pallet ID formats
   // Format 1: Simple numeric ID (e.g., "12345")
   const numericFormat = /^\d+$/;
@@ -50,8 +50,8 @@ export const validatePalletId = (palletId: string): boolean => {
   const qrFormat = /^[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+$/i;
   // Format 3: Alphanumeric format (e.g., "PLT123456")
   const alphanumericFormat = /^[A-Z0-9]+$/i;
-  
-  return numericFormat.test(palletId) || 
-         qrFormat.test(palletId) || 
-         alphanumericFormat.test(palletId);
+
+  return (
+    numericFormat.test(palletId) || qrFormat.test(palletId) || alphanumericFormat.test(palletId)
+  );
 };

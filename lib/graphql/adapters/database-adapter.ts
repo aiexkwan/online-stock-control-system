@@ -85,11 +85,9 @@ export abstract class BaseDatabaseAdapter {
     try {
       // Map GraphQL fields to database columns
       const dbColumns = FieldMapper.mapSelectFields(tableName, graphqlFields);
-      
+
       // Build query
-      let query = this.supabase
-        .from(tableName)
-        .select(dbColumns.join(', '), { count: 'exact' });
+      let query = this.supabase.from(tableName).select(dbColumns.join(', '), { count: 'exact' });
 
       // Apply filters
       if (options.filters) {
@@ -121,28 +119,28 @@ export abstract class BaseDatabaseAdapter {
 
       if (error) {
         throw new GraphQLError(`Database query failed: ${error.message}`, {
-          extensions: { code: 'DATABASE_ERROR', table: tableName }
+          extensions: { code: 'DATABASE_ERROR', table: tableName },
         });
       }
 
       // Transform results using field mappings
-      const transformedData = (data || []).map((row: unknown) => 
+      const transformedData = (data || []).map((row: unknown) =>
         FieldMapper.transformResult(tableName, row as Record<string, unknown>)
       ) as T[];
 
       return {
         data: transformedData,
         total: count || 0,
-        hasMore: options.limit ? (count || 0) > (options.offset || 0) + options.limit : false
+        hasMore: options.limit ? (count || 0) > (options.offset || 0) + options.limit : false,
       };
     } catch (error) {
       if (error instanceof GraphQLError) throw error;
-      
+
       throw new GraphQLError(`Failed to execute query on ${tableName}`, {
-        extensions: { 
-          code: 'ADAPTER_ERROR', 
-          originalError: error instanceof Error ? error.message : String(error)
-        }
+        extensions: {
+          code: 'ADAPTER_ERROR',
+          originalError: error instanceof Error ? error.message : String(error),
+        },
       });
     }
   }
@@ -165,7 +163,7 @@ export abstract class BaseDatabaseAdapter {
   ): Promise<T | null> {
     const result = await this.executeMappedQuery<T>(tableName, graphqlFields, {
       filters,
-      limit: 1
+      limit: 1,
     });
 
     return result.data[0] || null;
@@ -192,22 +190,22 @@ export class DepartmentDataAdapter extends BaseDatabaseAdapter {
 
   private async fetchWarehouseStats(timeRange: { start: Date; end: Date }) {
     const graphqlFields = ['transferDate', 'operatorId', 'palletNumber'];
-    
+
     const todayResult = await this.executeMappedQuery('record_transfer', graphqlFields, {
       filters: { transferDate: timeRange.start },
-      limit: 1000
+      limit: 1000,
     });
 
     const past7DaysResult = await this.executeMappedQuery('record_transfer', graphqlFields, {
       filters: { transferDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
-      limit: 1000
+      limit: 1000,
     });
 
     return {
       todayTransferred: todayResult.total,
       past7Days: past7DaysResult.total,
       past14Days: past7DaysResult.total, // Simplified for example
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     };
   }
 
@@ -216,33 +214,30 @@ export class DepartmentDataAdapter extends BaseDatabaseAdapter {
     timeRange: { start: Date; end: Date }
   ) {
     const graphqlFields = ['generateTime', 'productCode', 'quantity'];
-    
+
     // This would include product type filtering based on department
     const result = await this.executeMappedQuery('record_palletinfo', graphqlFields, {
       filters: { generateTime: timeRange.start },
-      limit: 1000
+      limit: 1000,
     });
 
     return {
       todayFinished: result.total,
       past7Days: result.total,
       past14Days: result.total,
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     };
   }
 
   /**
    * Fetch top stocks with field mapping
    */
-  async fetchTopStocks(
-    departmentType: 'INJECTION' | 'PIPE' | 'WAREHOUSE',
-    limit: number = 10
-  ) {
+  async fetchTopStocks(departmentType: 'INJECTION' | 'PIPE' | 'WAREHOUSE', limit: number = 10) {
     const graphqlFields = ['productCode', 'quantity', 'generateTime'];
-    
+
     const result = await this.executeMappedQuery('record_palletinfo', graphqlFields, {
       orderBy: { field: 'quantity', ascending: false },
-      limit
+      limit,
     });
 
     return result.data.map((item: unknown): ProductStockItem => {
@@ -251,7 +246,7 @@ export class DepartmentDataAdapter extends BaseDatabaseAdapter {
         stock: typedItem.productCode,
         stockLevel: typedItem.quantity,
         updateTime: typedItem.generateTime,
-        type: 'PRODUCT' // This would be enriched with actual product type
+        type: 'PRODUCT', // This would be enriched with actual product type
       };
     });
   }
@@ -262,10 +257,10 @@ export class DepartmentDataAdapter extends BaseDatabaseAdapter {
   async fetchRecentActivities(limit: number = 10) {
     try {
       const graphqlFields = ['timestamp', 'operatorId', 'action', 'palletNumber', 'remark'];
-      
+
       const result = await this.executeMappedQuery('record_history', graphqlFields, {
         orderBy: { field: 'timestamp', ascending: false },
-        limit
+        limit,
       });
 
       return result.data.map((activity: unknown) => {
@@ -274,7 +269,7 @@ export class DepartmentDataAdapter extends BaseDatabaseAdapter {
           time: new Date(typedActivity.timestamp).toLocaleTimeString(),
           staff: 'Unknown', // Would be resolved through DataLoader
           action: typedActivity.action,
-          detail: `${typedActivity.remark || ''} - ${typedActivity.palletNumber || ''}`
+          detail: `${typedActivity.remark || ''} - ${typedActivity.palletNumber || ''}`,
         };
       });
     } catch (error) {
@@ -300,10 +295,10 @@ export class StockHistoryAdapter extends BaseDatabaseAdapter {
     }
   ) {
     const graphqlFields = ['timestamp', 'palletNumber', 'action', 'operatorId', 'remark'];
-    
+
     // First, get pallet numbers for this product
     const palletResult = await this.executeMappedQuery('record_palletinfo', ['palletNumber'], {
-      filters: { productCode }
+      filters: { productCode },
     });
 
     if (palletResult.data.length === 0) {
@@ -313,21 +308,23 @@ export class StockHistoryAdapter extends BaseDatabaseAdapter {
         totalRecords: 0,
         pageInfo: {
           hasNextPage: false,
-          totalCount: 0
-        }
+          totalCount: 0,
+        },
       };
     }
 
-    const palletNumbers = palletResult.data.map((p: unknown) => (p as Record<string, unknown>).palletNumber as string);
-    
+    const palletNumbers = palletResult.data.map(
+      (p: unknown) => (p as Record<string, unknown>).palletNumber as string
+    );
+
     // Get history for these pallets
     const historyResult = await this.executeMappedQuery('record_history', graphqlFields, {
       filters: { palletNumber: palletNumbers },
-      orderBy: options.sort ? 
-        { field: options.sort.field.toLowerCase(), ascending: options.sort.direction === 'ASC' } :
-        { field: 'timestamp', ascending: false },
+      orderBy: options.sort
+        ? { field: options.sort.field.toLowerCase(), ascending: options.sort.direction === 'ASC' }
+        : { field: 'timestamp', ascending: false },
       limit: options.pagination?.first || 20,
-      offset: options.pagination?.offset || 0
+      offset: options.pagination?.offset || 0,
     });
 
     return {
@@ -337,8 +334,8 @@ export class StockHistoryAdapter extends BaseDatabaseAdapter {
       pageInfo: {
         hasNextPage: historyResult.hasMore,
         totalCount: historyResult.total,
-        totalPages: Math.ceil(historyResult.total / (options.pagination?.first || 20))
-      }
+        totalPages: Math.ceil(historyResult.total / (options.pagination?.first || 20)),
+      },
     };
   }
 }

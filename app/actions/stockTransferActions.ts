@@ -2,7 +2,7 @@
 
 import { createClient } from '@/app/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
-// 移除 TransactionLogService - 簡化實現
+// Simplified implementation without TransactionLogService
 import { detectSearchType } from '@/app/utils/palletSearchUtils';
 import { getUserIdFromEmail } from '@/lib/utils/getUserId';
 import { systemLogger } from '@/lib/logger';
@@ -86,7 +86,7 @@ interface SearchPalletRPCResult {
   product_code: string;
   product_desc: string;
   product_qty: number;
-  current_location: string;  // Note: This comes from record_history, not record_inventory
+  current_location: string; // Note: This comes from record_history, not record_inventory
   is_from_mv?: boolean;
   last_update?: string;
 }
@@ -103,18 +103,19 @@ interface TransferPalletRPCResult {
 
 /**
  * Validate database schema before operations
- * 在操作前驗證database schema
  */
 async function validateDatabaseSchema(supabase: SupabaseClient): Promise<SchemaValidationResult> {
   try {
     // Check required tables exist
-    const requiredTables = ['record_inventory', 'record_palletinfo', 'record_history', 'record_transfer'];
+    const requiredTables = [
+      'record_inventory',
+      'record_palletinfo',
+      'record_history',
+      'record_transfer',
+    ];
     const tableChecks = await Promise.all(
-      requiredTables.map(async (table) => {
-        const { error } = await supabase
-          .from(table)
-          .select('*')
-          .limit(1);
+      requiredTables.map(async table => {
+        const { error } = await supabase.from(table).select('*').limit(1);
         return { table, exists: !error };
       })
     );
@@ -141,14 +142,18 @@ async function validateDatabaseSchema(supabase: SupabaseClient): Promise<SchemaV
         return {
           valid: false,
           error: 'Cannot access record_inventory table structure',
-          details: { record_inventory: false }
+          details: { record_inventory: false },
         };
       }
     }
 
     // Skip RPC function checks for now to avoid schema validation errors
     // All required functions have been verified to exist in the database
-    const requiredFunctions = ['rpc_transfer_pallet', 'execute_stock_transfer', 'get_table_columns'];
+    const requiredFunctions = [
+      'rpc_transfer_pallet',
+      'execute_stock_transfer',
+      'get_table_columns',
+    ];
     const functionChecks = requiredFunctions.map(func => ({ func, exists: true }));
 
     const failedTables = tableChecks.filter(t => !t.exists);
@@ -159,12 +164,12 @@ async function validateDatabaseSchema(supabase: SupabaseClient): Promise<SchemaV
         valid: false,
         error: `Missing database objects: ${[
           ...failedTables.map(t => `table:${t.table}`),
-          ...failedFunctions.map(f => `function:${f.func}`)
+          ...failedFunctions.map(f => `function:${f.func}`),
         ].join(', ')}`,
         details: {
           ...Object.fromEntries(tableChecks.map(t => [t.table, t.exists])),
-          ...Object.fromEntries(functionChecks.map(f => [f.func, f.exists]))
-        }
+          ...Object.fromEntries(functionChecks.map(f => [f.func, f.exists])),
+        },
       };
     }
 
@@ -261,13 +266,16 @@ export async function searchPallet(searchValue: string): Promise<SearchPalletRes
     const currentLocation = historyData?.loc || 'Await';
 
     // Log for debugging
-    systemLogger.info({
-      searchValue,
-      searchType,
-      plt_num: palletInfo.plt_num,
-      product_code: palletInfo.product_code,
-      currentLocation,
-    }, 'Pallet search successful');
+    systemLogger.info(
+      {
+        searchValue,
+        searchType,
+        plt_num: palletInfo.plt_num,
+        product_code: palletInfo.product_code,
+        currentLocation,
+      },
+      'Pallet search successful'
+    );
 
     return {
       success: true,
@@ -292,7 +300,6 @@ export async function searchPallet(searchValue: string): Promise<SearchPalletRes
 
 /**
  * Optimized pallet search using RPC functions with fallback mechanism
- * 優化版托盤搜索，使用 RPC 函數和回退機制
  */
 export async function searchPalletOptimized(
   searchType: 'series' | 'pallet_num',
@@ -302,7 +309,7 @@ export async function searchPalletOptimized(
   const startTime = performance.now();
 
   try {
-    // 優先使用 V2 函數（包含回退機制）
+    // Priority to V2 function (includes fallback mechanism)
     const { data: v2Data, error: v2Error } = await supabase.rpc('search_pallet_optimized_v2', {
       p_search_type: searchType,
       p_search_value: searchValue.trim(),
@@ -338,9 +345,9 @@ export async function searchPalletOptimized(
       };
     }
 
-    // 如果 V2 函數不存在，回退到 V1
+    // If V2 function doesn't exist, fallback to V1
     if (v2Error && v2Error.code === '42883') {
-      systemLogger.info({ searchType, searchValue }, 'V2 函數不存在，回退到 V1');
+      systemLogger.info({ searchType, searchValue }, 'V2 function not found, falling back to V1');
 
       const { data, error } = await supabase.rpc('search_pallet_optimized', {
         p_search_type: searchType,
@@ -388,7 +395,7 @@ export async function searchPalletOptimized(
       };
     }
 
-    // 如果 V2 有其他錯誤，拋出
+    // If V2 has other errors, throw
     if (v2Error) {
       throw v2Error;
     }
@@ -410,7 +417,6 @@ export async function searchPalletOptimized(
 
 /**
  * Auto-detect search type and perform optimized search
- * 自動檢測搜索類型並執行優化搜索
  */
 export async function searchPalletAuto(
   searchValue: string
@@ -463,7 +469,7 @@ export async function transferPallet(
       }
     }
 
-    // 使用新的健康檢查服務
+    // Use new health check service
     const transferReadiness = await databaseHealthService.canPerformTransfer();
     if (!transferReadiness.allowed) {
       const enhancedError = enhancedErrorService.handleTransferError(
@@ -471,29 +477,35 @@ export async function transferPallet(
         {
           palletNumber,
           toLocation,
-          userId: userId.toString()
+          userId: userId.toString(),
         }
       );
-      
-      systemLogger.error({
-        errorId: enhancedError.id,
-        palletNumber,
-        reason: transferReadiness.reason
-      }, 'Transfer blocked by health check');
-      
+
+      systemLogger.error(
+        {
+          errorId: enhancedError.id,
+          palletNumber,
+          reason: transferReadiness.reason,
+        },
+        'Transfer blocked by health check'
+      );
+
       return {
         success: false,
         message: enhancedError.userMessage,
-        error: enhancedError.id
+        error: enhancedError.id,
       };
     }
-    
-    // 記錄降級模式警告
+
+    // Log degraded mode warning
     if (transferReadiness.degradedMode) {
-      systemLogger.warn({
-        palletNumber,
-        reason: transferReadiness.reason
-      }, 'Transfer proceeding in degraded mode');
+      systemLogger.warn(
+        {
+          palletNumber,
+          reason: transferReadiness.reason,
+        },
+        'Transfer proceeding in degraded mode'
+      );
     }
 
     // Use RPC function for atomic transfer with error handling
@@ -506,20 +518,23 @@ export async function transferPallet(
 
     if (error) {
       // Enhanced error handling for schema-related errors
-      const isSchemaError = error.message?.includes('column') && 
-                          error.message?.includes('does not exist');
-      
-      systemLogger.error({
-        error: error.message,
-        code: error.code,
-        palletNumber,
-        toLocation,
-        isSchemaError
-      }, '[transferPallet] RPC error');
-      
+      const isSchemaError =
+        error.message?.includes('column') && error.message?.includes('does not exist');
+
+      systemLogger.error(
+        {
+          error: error.message,
+          code: error.code,
+          palletNumber,
+          toLocation,
+          isSchemaError,
+        },
+        '[transferPallet] RPC error'
+      );
+
       return {
         success: false,
-        message: isSchemaError 
+        message: isSchemaError
           ? 'Database configuration error - please contact system administrator'
           : 'Transfer failed',
         error: isSchemaError ? 'SCHEMA_ERROR' : error.message,
@@ -552,7 +567,7 @@ export async function transferPallet(
       },
     };
   } catch (error) {
-    console.error('[transferPallet] Unexpected error:', error);
+    systemLogger.error({ error }, '[transferPallet] Unexpected error');
     return {
       success: false,
       message: 'System error during transfer',
@@ -617,7 +632,7 @@ export async function batchTransferPallets(
       results,
     };
   } catch (error) {
-    console.error('[batchTransferPallets] Error:', error);
+    systemLogger.error({ error }, '[batchTransferPallets] Error');
     return {
       success: false,
       successCount: 0,
@@ -629,19 +644,28 @@ export async function batchTransferPallets(
 }
 
 /**
- * Get transfer history
+ * Get transfer history with enhanced error handling
  */
 export async function getTransferHistory(
   limit: number = 50,
-  userId?: number
+  userId?: number,
+  options?: {
+    signal?: AbortSignal;
+    includeMetadata?: boolean;
+  }
 ): Promise<TransferHistoryItem[]> {
   const supabase = await createClient();
 
   try {
+    // Check if request was aborted
+    if (options?.signal?.aborted) {
+      throw new Error('Request aborted');
+    }
+
     let query = supabase
       .from('record_history')
       .select('*')
-      .eq('action', 'Stock Transfer')  // Fixed: Use correct action value
+      .eq('action', 'Stock Transfer') // Fixed: Use correct action value
       .order('time', { ascending: false })
       .limit(limit);
 
@@ -651,11 +675,56 @@ export async function getTransferHistory(
 
     const { data, error } = await query;
 
-    if (error) throw error;
+    // Check abort signal after database query
+    if (options?.signal?.aborted) {
+      throw new Error('Request aborted');
+    }
 
-    return (data as TransferHistoryItem[]) || [];
+    if (error) {
+      systemLogger.error(
+        {
+          error: error.message,
+          code: error.code,
+          limit,
+          userId,
+        },
+        '[getTransferHistory] Database error'
+      );
+      throw error;
+    }
+
+    // Ensure we always return an array
+    const history = (data as TransferHistoryItem[]) || [];
+
+    // Log metadata if requested
+    if (options?.includeMetadata) {
+      systemLogger.info(
+        {
+          recordCount: history.length,
+          limit,
+          userId,
+        },
+        '[getTransferHistory] History loaded successfully'
+      );
+    }
+
+    return history;
   } catch (error) {
-    console.error('[getTransferHistory] Error:', error);
+    // Re-throw abort errors
+    if (error instanceof Error && error.message === 'Request aborted') {
+      throw error;
+    }
+
+    systemLogger.error(
+      {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        limit,
+        userId,
+      },
+      '[getTransferHistory] Error loading history'
+    );
+
+    // Return empty array as fallback for other errors
     return [];
   }
 }
@@ -671,8 +740,19 @@ export async function validateTransferDestination(
 
   try {
     // Check if destination is valid named location
-    const validLocations = ['Fold Mill', 'Production', 'PipeLine', 'Await', 'Await_grn', 'Void', 'Lost', 'Ship', 'Damage', 'Voided'];
-    
+    const validLocations = [
+      'Fold Mill',
+      'Production',
+      'PipeLine',
+      'Await',
+      'Await_grn',
+      'Void',
+      'Lost',
+      'Ship',
+      'Damage',
+      'Voided',
+    ];
+
     if (!validLocations.includes(destination)) {
       return {
         valid: false,
@@ -726,7 +806,7 @@ export async function validateTransferDestination(
 
     return { valid: true };
   } catch (error) {
-    console.error('[validateTransferDestination] Error:', error);
+    systemLogger.error({ error }, '[validateTransferDestination] Error');
     return {
       valid: false,
       message: 'Validation failed',
@@ -741,7 +821,7 @@ export async function getAvailableLocations(): Promise<string[]> {
   // Return actual warehouse locations used in the system
   return [
     'Await',
-    'Await_grn', 
+    'Await_grn',
     'Fold Mill',
     'Production',
     'PipeLine',
@@ -749,7 +829,7 @@ export async function getAvailableLocations(): Promise<string[]> {
     'Lost',
     'Ship',
     'Damage',
-    'Voided'
+    'Voided',
   ];
 }
 

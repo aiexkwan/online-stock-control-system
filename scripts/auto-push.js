@@ -18,14 +18,7 @@ function getFormattedDateTime() {
 }
 
 // 定義要忽略的目錄和檔案
-const ignoreDirs = [
-  '.git',
-  'node_modules',
-  '.next',
-  'out',
-  'build',
-  'dist'
-];
+const ignoreDirs = ['.git', 'node_modules', '.next', 'out', 'build', 'dist'];
 
 // 監控設定
 const watchOptions = {
@@ -34,8 +27,8 @@ const watchOptions = {
   ignored: new RegExp(`(${ignoreDirs.join('|')})`),
   awaitWriteFinish: {
     stabilityThreshold: 2000,
-    pollInterval: 100
-  }
+    pollInterval: 100,
+  },
 };
 
 console.log('🔍 開始監控檔案變更...');
@@ -123,4 +116,4 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-console.log(`⏱️ 設定每 ${AUTO_COMMIT_INTERVAL/1000/60} 分鐘自動提交已變更檔案`);
+console.log(`⏱️ 設定每 ${AUTO_COMMIT_INTERVAL / 1000 / 60} 分鐘自動提交已變更檔案`);

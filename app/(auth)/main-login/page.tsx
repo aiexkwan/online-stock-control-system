@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { forceCleanupAllAuth } from './utils/cleanup-legacy-auth';
 import LoginForm from './components/LoginForm';
@@ -10,16 +10,22 @@ export default function MainLoginPage() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  useEffect(() => {
-    try {
-      const urlParams = new URLSearchParams(window.location.search);
+  // 🚀 性能優化：URL參數解析優化
+  const urlSearchParams = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    return new URLSearchParams(window.location.search);
+  }, []);
 
-      if (urlParams.get('confirmed') === 'true') {
+  useEffect(() => {
+    if (!urlSearchParams) return;
+
+    try {
+      if (urlSearchParams.get('confirmed') === 'true') {
         setShowConfirmation(true);
         window.history.replaceState({}, document.title, window.location.pathname);
       }
 
-      if (urlParams.get('cleanup') === 'force') {
+      if (urlSearchParams.get('cleanup') === 'force') {
         console.log('[MainLoginPage] Force cleanup requested');
         forceCleanupAllAuth();
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -28,7 +34,7 @@ export default function MainLoginPage() {
       console.error('[MainLoginPage] Initialization error:', error);
       setHasError(true);
     }
-  }, []);
+  }, [urlSearchParams]);
 
   // 如果有錯誤，提供備用登入
   if (hasError) {

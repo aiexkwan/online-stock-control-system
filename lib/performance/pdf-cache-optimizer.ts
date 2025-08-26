@@ -49,19 +49,19 @@ export interface CacheConfig {
  */
 export class PDFCacheOptimizer {
   private static instance: PDFCacheOptimizer;
-  
+
   private cache: Map<string, PDFCacheEntry> = new Map();
   private accessOrder: string[] = [];
   private config: CacheConfig;
   private statistics: CacheStatistics;
-  
+
   // Performance tracking
   private hits = 0;
   private misses = 0;
   private evictions = 0;
   private totalAccessTime = 0;
   private accessCount = 0;
-  
+
   private constructor(config?: Partial<CacheConfig>) {
     this.config = {
       maxSizeBytes: 100 * 1024 * 1024, // 100MB default
@@ -72,24 +72,27 @@ export class PDFCacheOptimizer {
       enableCompression: true,
       ...config,
     };
-    
+
     this.statistics = this.initializeStatistics();
-    
+
     // Start cleanup timer
     this.startCleanupTimer();
-    
-    systemLogger.info({
-      config: this.config,
-    }, '[PDFCacheOptimizer] Cache optimizer initialized');
+
+    systemLogger.info(
+      {
+        config: this.config,
+      },
+      '[PDFCacheOptimizer] Cache optimizer initialized'
+    );
   }
-  
+
   public static getInstance(config?: Partial<CacheConfig>): PDFCacheOptimizer {
     if (!PDFCacheOptimizer.instance) {
       PDFCacheOptimizer.instance = new PDFCacheOptimizer(config);
     }
     return PDFCacheOptimizer.instance;
   }
-  
+
   /**
    * Initialize statistics
    */
@@ -106,66 +109,72 @@ export class PDFCacheOptimizer {
       newestEntry: 0,
     };
   }
-  
+
   /**
    * Generate file hash
    */
   public generateHash(buffer: Buffer): string {
     return crypto.createHash('sha256').update(buffer).digest('hex');
   }
-  
+
   /**
    * Get cached PDF data
    */
   public get(fileHash: string): PDFCacheEntry | null {
     const startTime = Date.now();
     const entry = this.cache.get(fileHash);
-    
+
     if (!entry) {
       this.misses++;
       this.updateStatistics();
       return null;
     }
-    
+
     // Check TTL
     if (this.isExpired(entry)) {
       this.cache.delete(fileHash);
       this.removeFromAccessOrder(fileHash);
       this.misses++;
       this.updateStatistics();
-      
-      systemLogger.debug({
-        fileHash,
-        age: Date.now() - entry.createdAt,
-      }, '[PDFCacheOptimizer] Cache entry expired');
-      
+
+      systemLogger.debug(
+        {
+          fileHash,
+          age: Date.now() - entry.createdAt,
+        },
+        '[PDFCacheOptimizer] Cache entry expired'
+      );
+
       return null;
     }
-    
+
     // Update access tracking
     entry.lastAccessed = Date.now();
     entry.accessCount++;
     this.updateAccessOrder(fileHash);
-    
+
     // Track performance
     this.hits++;
     const accessTime = Date.now() - startTime;
     this.totalAccessTime += accessTime;
     this.accessCount++;
-    
+
     this.updateStatistics();
-    
-    systemLogger.debug({
-      fileHash,
-      fileName: entry.fileName,
-      accessCount: entry.accessCount,
-      accessTime,
-      compressed: entry.compressed,
-    }, '[PDFCacheOptimizer] Cache hit');
-    
+
+    systemLogger.debug(
+      {
+        fileHash,
+        fileName: entry.fileName,
+        accessCount: entry.accessCount,
+        accessTime,
+        compressed: entry.compressed,
+      },
+      '[PDFCacheOptimizer] Cache hit'
+    );
+
     return this.decompressEntry(entry);
   }
-  
+
   /**
    * Set cached PDF data
    */
@@ -180,7 +189,7 @@ export class PDFCacheOptimizer {
   ): void {
     // Check if we need to evict entries
     this.enforceConstraints();
-    
+
     // Create cache entry
     let entry: PDFCacheEntry = {
       fileHash,
@@ -195,30 +204,33 @@ export class PDFCacheOptimizer {
       accessCount: 1,
       compressed: false,
     };
-    
+
     // Compress if needed
     if (this.config.enableCompression && this.shouldCompress(entry)) {
       entry = this.compressEntry(entry);
     }
-    
+
     // Add to cache
     this.cache.set(fileHash, entry);
     this.updateAccessOrder(fileHash);
-    
+
     this.updateStatistics();
-    
-    systemLogger.info({
-      fileHash,
-      fileName,
-      fileSize,
-      tokensUsed,
-      extractionTime,
-      compressed: entry.compressed,
-      compressionRatio: entry.compressionRatio,
-      cacheSize: this.cache.size,
-    }, '[PDFCacheOptimizer] Cache entry added');
+
+    systemLogger.info(
+      {
+        fileHash,
+        fileName,
+        fileSize,
+        tokensUsed,
+        extractionTime,
+        compressed: entry.compressed,
+        compressionRatio: entry.compressionRatio,
+        cacheSize: this.cache.size,
+      },
+      '[PDFCacheOptimizer] Cache entry added'
+    );
   }
-  
+
   /**
    * Check if entry is expired
    */
@@ -226,7 +238,7 @@ export class PDFCacheOptimizer {
     const age = (Date.now() - entry.createdAt) / 1000;
     return age > this.config.ttlSeconds;
   }
-  
+
   /**
    * Update access order for LRU
    */
@@ -237,7 +249,7 @@ export class PDFCacheOptimizer {
     }
     this.accessOrder.push(fileHash);
   }
-  
+
   /**
    * Remove from access order
    */
@@ -247,7 +259,7 @@ export class PDFCacheOptimizer {
       this.accessOrder.splice(index, 1);
     }
   }
-  
+
   /**
    * Enforce cache constraints
    */
@@ -256,117 +268,120 @@ export class PDFCacheOptimizer {
     while (this.cache.size >= this.config.maxEntries) {
       this.evictEntry();
     }
-    
+
     // Check size constraint
     while (this.getCurrentSizeBytes() >= this.config.maxSizeBytes) {
       this.evictEntry();
     }
   }
-  
+
   /**
    * Evict an entry based on strategy
    */
   private evictEntry(): void {
     let keyToEvict: string | undefined;
-    
+
     switch (this.config.evictionStrategy) {
       case 'lru':
         keyToEvict = this.accessOrder[0];
         break;
-        
+
       case 'lfu':
         keyToEvict = this.getLeastFrequentlyUsed();
         break;
-        
+
       case 'fifo':
         keyToEvict = this.getOldestEntry();
         break;
     }
-    
+
     if (keyToEvict) {
       const entry = this.cache.get(keyToEvict);
       this.cache.delete(keyToEvict);
       this.removeFromAccessOrder(keyToEvict);
       this.evictions++;
-      
-      systemLogger.debug({
-        fileHash: keyToEvict,
-        fileName: entry?.fileName,
-        strategy: this.config.evictionStrategy,
-        accessCount: entry?.accessCount,
-        age: entry ? Date.now() - entry.createdAt : 0,
-      }, '[PDFCacheOptimizer] Entry evicted');
+
+      systemLogger.debug(
+        {
+          fileHash: keyToEvict,
+          fileName: entry?.fileName,
+          strategy: this.config.evictionStrategy,
+          accessCount: entry?.accessCount,
+          age: entry ? Date.now() - entry.createdAt : 0,
+        },
+        '[PDFCacheOptimizer] Entry evicted'
+      );
     }
   }
-  
+
   /**
    * Get least frequently used entry
    */
   private getLeastFrequentlyUsed(): string | undefined {
     let minAccessCount = Infinity;
     let keyToEvict: string | undefined;
-    
+
     for (const [key, entry] of this.cache) {
       if (entry.accessCount < minAccessCount) {
         minAccessCount = entry.accessCount;
         keyToEvict = key;
       }
     }
-    
+
     return keyToEvict;
   }
-  
+
   /**
    * Get oldest entry
    */
   private getOldestEntry(): string | undefined {
     let oldestTime = Infinity;
     let keyToEvict: string | undefined;
-    
+
     for (const [key, entry] of this.cache) {
       if (entry.createdAt < oldestTime) {
         oldestTime = entry.createdAt;
         keyToEvict = key;
       }
     }
-    
+
     return keyToEvict;
   }
-  
+
   /**
    * Get current cache size in bytes
    */
   private getCurrentSizeBytes(): number {
     let totalSize = 0;
-    
+
     for (const entry of this.cache.values()) {
       totalSize += this.estimateEntrySize(entry);
     }
-    
+
     return totalSize;
   }
-  
+
   /**
    * Estimate entry size in bytes
    */
   private estimateEntrySize(entry: PDFCacheEntry): number {
     // Base size estimation
     let size = entry.fileSize;
-    
+
     // Add extracted data size
     size += JSON.stringify(entry.extractedData).length * 2; // UTF-16
-    
+
     // Add order data size
     if (entry.orderData) {
       size += JSON.stringify(entry.orderData).length * 2;
     }
-    
+
     // Add metadata overhead
     size += 1024; // Approximate overhead
-    
+
     return size;
   }
-  
+
   /**
    * Check if entry should be compressed
    */
@@ -374,16 +389,16 @@ export class PDFCacheOptimizer {
     const size = this.estimateEntrySize(entry);
     return size > this.config.compressionThreshold;
   }
-  
+
   /**
    * Compress cache entry (simulated)
    */
   private compressEntry(entry: PDFCacheEntry): PDFCacheEntry {
     // In a real implementation, you would use zlib or similar
     // For now, we'll simulate compression by reducing text content
-    
+
     const originalSize = this.estimateEntrySize(entry);
-    
+
     // Compress text content (simplified)
     if (entry.extractedData.text.length > 1000) {
       // Store only essential parts for compressed version
@@ -395,19 +410,19 @@ export class PDFCacheOptimizer {
           text: p.text.substring(0, 100) + '...[compressed]',
         })),
       };
-      
+
       entry.extractedData = compressedData as ExtractedPDFData;
       entry.compressed = true;
-      
+
       const compressedSize = this.estimateEntrySize(entry);
-      entry.compressionRatio = 1 - (compressedSize / originalSize);
-      
+      entry.compressionRatio = 1 - compressedSize / originalSize;
+
       this.statistics.compressionSavingsBytes += originalSize - compressedSize;
     }
-    
+
     return entry;
   }
-  
+
   /**
    * Decompress cache entry (simulated)
    */
@@ -416,7 +431,7 @@ export class PDFCacheOptimizer {
     // For now, we return as-is since we're using simplified compression
     return entry;
   }
-  
+
   /**
    * Update statistics
    */
@@ -426,24 +441,24 @@ export class PDFCacheOptimizer {
     this.statistics.hitRate = this.hits / (this.hits + this.misses) || 0;
     this.statistics.missRate = this.misses / (this.hits + this.misses) || 0;
     this.statistics.evictionCount = this.evictions;
-    
+
     if (this.accessCount > 0) {
       this.statistics.averageAccessTime = this.totalAccessTime / this.accessCount;
     }
-    
+
     // Find oldest and newest entries
     let oldest = Infinity;
     let newest = 0;
-    
+
     for (const entry of this.cache.values()) {
       if (entry.createdAt < oldest) oldest = entry.createdAt;
       if (entry.createdAt > newest) newest = entry.createdAt;
     }
-    
+
     this.statistics.oldestEntry = oldest === Infinity ? 0 : oldest;
     this.statistics.newestEntry = newest;
   }
-  
+
   /**
    * Get cache statistics
    */
@@ -451,7 +466,7 @@ export class PDFCacheOptimizer {
     this.updateStatistics();
     return { ...this.statistics };
   }
-  
+
   /**
    * Clear cache
    */
@@ -465,12 +480,15 @@ export class PDFCacheOptimizer {
     this.totalAccessTime = 0;
     this.accessCount = 0;
     this.statistics = this.initializeStatistics();
-    
-    systemLogger.info({
-      entriesCleared: size,
-    }, '[PDFCacheOptimizer] Cache cleared');
+
+    systemLogger.info(
+      {
+        entriesCleared: size,
+      },
+      '[PDFCacheOptimizer] Cache cleared'
+    );
   }
-  
+
   /**
    * Invalidate specific entry
    */
@@ -482,7 +500,7 @@ export class PDFCacheOptimizer {
     }
     return deleted;
   }
-  
+
   /**
    * Start cleanup timer
    */
@@ -491,13 +509,13 @@ export class PDFCacheOptimizer {
       this.cleanupExpired();
     }, 60000); // Every minute
   }
-  
+
   /**
    * Cleanup expired entries
    */
   private cleanupExpired(): void {
     let cleanedCount = 0;
-    
+
     for (const [key, entry] of this.cache) {
       if (this.isExpired(entry)) {
         this.cache.delete(key);
@@ -505,17 +523,20 @@ export class PDFCacheOptimizer {
         cleanedCount++;
       }
     }
-    
+
     if (cleanedCount > 0) {
       this.updateStatistics();
-      
-      systemLogger.info({
-        cleanedCount,
-        remainingEntries: this.cache.size,
-      }, '[PDFCacheOptimizer] Expired entries cleaned');
+
+      systemLogger.info(
+        {
+          cleanedCount,
+          remainingEntries: this.cache.size,
+        },
+        '[PDFCacheOptimizer] Expired entries cleaned'
+      );
     }
   }
-  
+
   /**
    * Get cache summary
    */
@@ -533,7 +554,7 @@ export class PDFCacheOptimizer {
     };
   } {
     const stats = this.getStatistics();
-    
+
     return {
       entries: stats.totalEntries,
       sizeBytes: stats.totalSizeBytes,
@@ -548,22 +569,27 @@ export class PDFCacheOptimizer {
       },
     };
   }
-  
+
   /**
    * Preload cache with frequently accessed files
    */
-  public async preload(entries: Array<{
-    fileHash: string;
-    fileName: string;
-    fileSize: number;
-    extractedData: ExtractedPDFData;
-    orderData: Record<string, unknown> | null;
-    tokensUsed: number;
-  }>): Promise<void> {
-    systemLogger.info({
-      count: entries.length,
-    }, '[PDFCacheOptimizer] Preloading cache entries');
-    
+  public async preload(
+    entries: Array<{
+      fileHash: string;
+      fileName: string;
+      fileSize: number;
+      extractedData: ExtractedPDFData;
+      orderData: Record<string, unknown> | null;
+      tokensUsed: number;
+    }>
+  ): Promise<void> {
+    systemLogger.info(
+      {
+        count: entries.length,
+      },
+      '[PDFCacheOptimizer] Preloading cache entries'
+    );
+
     for (const entry of entries) {
       this.set(
         entry.fileHash,
@@ -575,11 +601,14 @@ export class PDFCacheOptimizer {
         0 // No extraction time for preloaded
       );
     }
-    
-    systemLogger.info({
-      loaded: entries.length,
-      totalEntries: this.cache.size,
-    }, '[PDFCacheOptimizer] Cache preload complete');
+
+    systemLogger.info(
+      {
+        loaded: entries.length,
+        totalEntries: this.cache.size,
+      },
+      '[PDFCacheOptimizer] Cache preload complete'
+    );
   }
 }
 

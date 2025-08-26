@@ -4,16 +4,16 @@ info:
   version: 2.1.0
   description: |
     Consolidated API specification for the Online Stock Control System
-    
+
     ## API Consolidation Changes
     - Merged v1 and v2 endpoints into a unified structure
     - Improved authentication and authorization
     - Added comprehensive monitoring and metrics endpoints
-  
+
   contact:
     name: Pennine WMS Development Team
     email: dev-support@pennine-wms.com
-  
+
   x-api-migration:
     deprecated-versions:
       - v1
@@ -30,7 +30,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-    
+
   schemas:
     HealthStatus:
       type: object
@@ -46,7 +46,7 @@ components:
           additionalProperties:
             type: string
             enum: ['operational', 'minor_issues', 'major_outage']
-    
+
     MetricsResponse:
       type: object
       properties:
@@ -61,7 +61,7 @@ components:
           format: float
         database_connections:
           type: integer
-    
+
     AlertConfig:
       type: object
       properties:
@@ -93,7 +93,7 @@ paths:
                 $ref: '#/components/schemas/HealthStatus'
         '503':
           description: Service Unavailable
-  
+
   /monitoring/performance:
     get:
       summary: System Performance Metrics
@@ -106,7 +106,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MetricsResponse'
-  
+
   /alerts/config:
     get:
       summary: List Alert Configurations
@@ -125,7 +125,7 @@ paths:
                   $ref: '#/components/schemas/AlertConfig'
         '401':
           description: Unauthorized - Authentication required
-  
+
   /cache/metrics:
     get:
       summary: Cache Performance Metrics
@@ -158,18 +158,18 @@ x-deprecated-endpoints:
 
 x-migration-notes: |
   ## Migration Guide
-  
+
   ### Authentication
   - All protected endpoints now require JWT authentication
   - Use the `bearerAuth` security scheme with a valid JWT token
-  
+
   ### Endpoint Changes
   - `/api/v1/health` -> `/api/health`
   - `/api/v1/monitoring/*` -> `/api/monitoring/*`
   - `/api/v1/alerts/*` -> `/api/alerts/*`
   - `/api/v1/metrics/*` -> `/api/metrics/*`
   - `/api/v1/cache/*` -> `/api/cache/*`
-  
+
   ### Authentication Requirements
   - Public Endpoints: 
     - `/health`
@@ -178,12 +178,12 @@ x-migration-notes: |
   - Protected Endpoints (require JWT):
     - `/alerts/*`
     - `/cache/*`
-  
+
   ### Example Migration
   ```typescript
   // Old (v1)
   fetch('/api/v1/alerts/config')
-  
+
   // New (v2.1)
   fetch('/api/alerts/config', {
     headers: {

@@ -16,18 +16,20 @@
 ## 核心 Hooks
 
 ### `useOrderData` - 主要 Hook
+
 ```typescript
 import { useOrderData } from '@/lib/hooks';
 
 const orderData = useOrderData({
-  polling: 30000,           // 輪詢間隔 (ms)
-  subscriptions: true,      // 啟用實時更新
-  optimisticUpdates: true,  // 啟用樂觀更新
-  fetchPolicy: 'cache-first'
+  polling: 30000, // 輪詢間隔 (ms)
+  subscriptions: true, // 啟用實時更新
+  optimisticUpdates: true, // 啟用樂觀更新
+  fetchPolicy: 'cache-first',
 });
 ```
 
 ### `useWarehouseOrders` - 倉庫訂單列表
+
 ```typescript
 import { useWarehouseOrders } from '@/lib/hooks';
 
@@ -38,6 +40,7 @@ const { orders, total, loading, setFilter } = useWarehouseOrders(
 ```
 
 ### `useWarehouseOrder` - 單個倉庫訂單
+
 ```typescript
 import { useWarehouseOrder } from '@/lib/hooks';
 
@@ -45,6 +48,7 @@ const { order, loading, refetch } = useWarehouseOrder('order-123');
 ```
 
 ### `useAcoOrderReport` - ACO 訂單報表
+
 ```typescript
 import { useAcoOrderReport } from '@/lib/hooks';
 
@@ -52,12 +56,13 @@ const { report, loading, refetch } = useAcoOrderReport('REF-001');
 ```
 
 ### `useOrderLoadingRecords` - 訂單裝載記錄
+
 ```typescript
 import { useOrderLoadingRecords } from '@/lib/hooks';
 
 const filter = {
   startDate: '2024-01-01',
-  endDate: '2024-01-31'
+  endDate: '2024-01-31',
 };
 const { records, summary, loading } = useOrderLoadingRecords(filter);
 ```
@@ -65,6 +70,7 @@ const { records, summary, loading } = useOrderLoadingRecords(filter);
 ## 使用範例
 
 ### 基本訂單管理卡片
+
 ```typescript
 import React from 'react';
 import { useWarehouseOrders } from '@/lib/hooks';
@@ -91,6 +97,7 @@ export function OrdersListCard() {
 ```
 
 ### 訂單詳情卡片
+
 ```typescript
 import React from 'react';
 import { useWarehouseOrder } from '@/lib/hooks';
@@ -107,7 +114,7 @@ export function OrderDetailCard({ orderId }: { orderId: string }) {
       <h2>訂單 {order.orderRef}</h2>
       <p>客戶: {order.customerName}</p>
       <p>狀態: {order.status}</p>
-      
+
       <h3>訂單項目</h3>
       {order.items.map(item => (
         <div key={item.id} className="order-item">
@@ -122,6 +129,7 @@ export function OrderDetailCard({ orderId }: { orderId: string }) {
 ```
 
 ### 完整功能卡片（包含變更操作）
+
 ```typescript
 import React from 'react';
 import { useOrderData } from '@/lib/hooks';
@@ -141,9 +149,9 @@ export function OrderManagementCard() {
   };
 
   const handleCancelOrder = async (orderId: string) => {
-    const success = await orderData.cancelOrder({ 
-      orderId, 
-      reason: '客戶要求取消' 
+    const success = await orderData.cancelOrder({
+      orderId,
+      reason: '客戶要求取消'
     });
     if (success) {
       // 訂單取消成功
@@ -153,24 +161,24 @@ export function OrderManagementCard() {
   return (
     <div className="order-management-card">
       <h2>訂單管理</h2>
-      
+
       {orderData.loading && <div>處理中...</div>}
-      
+
       {orderData.warehouseOrders.map(order => (
         <div key={order.id} className="order-item">
           <h3>{order.orderRef}</h3>
           <p>狀態: {order.status}</p>
-          
+
           <button onClick={() => handleStatusUpdate(order.id, 'COMPLETED')}>
             標記完成
           </button>
-          
+
           <button onClick={() => handleCancelOrder(order.id)}>
             取消訂單
           </button>
         </div>
       ))}
-      
+
       {orderData.warehouseOrdersAggregates && (
         <div className="summary">
           <p>總訂單: {orderData.warehouseOrdersAggregates.totalOrders}</p>
@@ -186,23 +194,24 @@ export function OrderManagementCard() {
 ## 配置選項
 
 ### `OrderDataConfig`
+
 ```typescript
 interface OrderDataConfig {
   // 快取策略
   fetchPolicy?: 'cache-first' | 'cache-and-network' | 'network-only' | 'no-cache';
-  
+
   // 錯誤處理策略
   errorPolicy?: 'none' | 'ignore' | 'all';
-  
+
   // 輪詢間隔 (毫秒)
   polling?: number;
-  
+
   // 啟用實時訂閱
   subscriptions?: boolean;
-  
+
   // 啟用樂觀更新
   optimisticUpdates?: boolean;
-  
+
   // 分頁配置
   pagination?: {
     limit?: number;
@@ -210,7 +219,7 @@ interface OrderDataConfig {
     hasNextPage?: boolean;
     hasPreviousPage?: boolean;
   };
-  
+
   // 網路狀態通知
   notifyOnNetworkStatusChange?: boolean;
 }
@@ -243,16 +252,20 @@ if (orderError) {
 ## 性能最佳化
 
 ### 1. 快取策略
+
 - 使用 `cache-first` 策略減少不必要的網路請求
 - 合理設定輪詢間隔，避免過度請求
 
 ### 2. 分頁
+
 - 對大量數據使用分頁，避免一次載入過多資料
 
 ### 3. 樂觀更新
+
 - 啟用樂觀更新提升使用者體驗
 
 ### 4. 條件載入
+
 - 使用 lazy queries 進行按需載入
 
 ## 檔案結構
@@ -270,6 +283,7 @@ lib/hooks/
 ## GraphQL 查詢
 
 所有的 GraphQL 查詢和變更操作都定義在：
+
 - `lib/graphql/queries/orderData.graphql.ts`
 - `lib/graphql/resolvers/order.resolver.ts`
 - `lib/graphql/schema/order.ts`
@@ -303,7 +317,7 @@ lib/hooks/
 ```typescript
 // 啟用網路狀態監控
 const orderData = useOrderData({
-  notifyOnNetworkStatusChange: true
+  notifyOnNetworkStatusChange: true,
 });
 
 // 監控網路狀態

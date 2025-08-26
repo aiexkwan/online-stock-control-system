@@ -3,7 +3,11 @@
  * Handles context preservation, rollback mechanisms, and inter-phase communication
  */
 
-import { getMigrationTracker, type MigrationPhase, type CardMigrationRecord } from './migration-tracker';
+import {
+  getMigrationTracker,
+  type MigrationPhase,
+  type CardMigrationRecord,
+} from './migration-tracker';
 import { createClient } from '@/app/utils/supabase/server';
 
 // ============================================================================
@@ -251,10 +255,7 @@ export class ContextManager {
           'Added error boundary',
           'Implemented optimistic updates',
         ],
-        breakingChanges: [
-          'Props interface changed',
-          'State management refactored',
-        ],
+        breakingChanges: ['Props interface changed', 'State management refactored'],
         testCoverage: 85,
         performanceImpact: 'Improved by 20%',
       },
@@ -271,30 +272,16 @@ export class ContextManager {
         type: 'architectural',
         description: 'Standardized card component structure with base classes',
         usage: ['All card components'],
-        benefits: [
-          'Consistent API',
-          'Shared functionality',
-          'Easier maintenance',
-        ],
-        considerations: [
-          'Learning curve for new developers',
-          'Potential over-abstraction',
-        ],
+        benefits: ['Consistent API', 'Shared functionality', 'Easier maintenance'],
+        considerations: ['Learning curve for new developers', 'Potential over-abstraction'],
       },
       {
         name: 'GraphQL Migration Pattern',
         type: 'implementation',
         description: 'Incremental migration from REST to GraphQL',
         usage: ['Data fetching layer'],
-        benefits: [
-          'Better performance',
-          'Type safety',
-          'Reduced over-fetching',
-        ],
-        considerations: [
-          'Caching complexity',
-          'Initial setup overhead',
-        ],
+        benefits: ['Better performance', 'Type safety', 'Reduced over-fetching'],
+        considerations: ['Caching complexity', 'Initial setup overhead'],
       },
     ];
   }
@@ -359,9 +346,7 @@ export class ContextManager {
 
     return {
       graph: convertedGraph,
-      criticalPaths: [
-        ['stock-data-service', 'stock-count-card', 'stock-history-card'],
-      ],
+      criticalPaths: [['stock-data-service', 'stock-count-card', 'stock-history-card']],
       circularDependencies: [],
       externalDependencies: [
         {
@@ -385,12 +370,9 @@ export class ContextManager {
   /**
    * Save context snapshot
    */
-  public async saveSnapshot(
-    phase: MigrationPhase,
-    notes?: string
-  ): Promise<string> {
+  public async saveSnapshot(phase: MigrationPhase, notes?: string): Promise<string> {
     const snapshot = this.createNewContext(phase);
-    
+
     try {
       const { data, error } = await this.supabase
         .from('migration_context')
@@ -548,12 +530,9 @@ export class ContextManager {
   /**
    * Execute rollback
    */
-  public async executeRollback(
-    componentId: string,
-    reason: string
-  ): Promise<boolean> {
+  public async executeRollback(componentId: string, reason: string): Promise<boolean> {
     const plan = this.rollbackPlans.get(componentId) || this.createRollbackPlan(componentId);
-    
+
     console.log(`🔄 Starting rollback for ${componentId}: ${reason}`);
 
     try {
@@ -563,7 +542,7 @@ export class ContextManager {
       // Execute rollback steps
       for (const step of plan.steps) {
         console.log(`  Step ${step.order}: ${step.action}`);
-        
+
         if (step.command) {
           // Would execute actual command here
           console.log(`  Executing: ${step.command}`);
@@ -571,7 +550,7 @@ export class ContextManager {
 
         // Verify step completion
         console.log(`  Verifying: ${step.verification}`);
-        
+
         // Simulate step execution
         await new Promise(resolve => setTimeout(resolve, step.estimatedDuration * 100));
       }
@@ -607,7 +586,7 @@ export class ContextManager {
     timing: 'before' | 'during' | 'after'
   ): Promise<void> {
     const relevantSteps = steps.filter(s => s.timing === timing);
-    
+
     for (const step of relevantSteps) {
       console.log(`  📢 ${step.channel}: ${step.message} → ${step.audience.join(', ')}`);
       // Would send actual notifications here
@@ -623,7 +602,7 @@ export class ContextManager {
     }
 
     const { snapshot, phase } = this.currentContext;
-    
+
     return `
 # Migration Context Summary - Phase ${phase}
 
@@ -737,10 +716,10 @@ export async function checkMigrationReadiness(componentId: string): Promise<{
 }> {
   const tracker = getMigrationTracker();
   const contextManager = getContextManager();
-  
+
   const { canProceed, blockers } = tracker.canProceedWithMigration(componentId);
   const contextSummary = contextManager.generateHandoffSummary();
-  
+
   return {
     ready: canProceed,
     context: contextSummary,

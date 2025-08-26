@@ -53,7 +53,7 @@ export async function getApolloServer() {
   // 如果 server 未創建，創建一個新嘅
   if (!globalThis.apolloServer) {
     globalThis.apolloServer = createApolloServer();
-    
+
     if (process.env.NODE_ENV === 'development') {
       console.log('[Apollo Server] Created new server instance');
     }
@@ -61,23 +61,26 @@ export async function getApolloServer() {
 
   // 如果 start promise 未創建，創建並緩存
   if (!globalThis.apolloStartPromise) {
-    globalThis.apolloStartPromise = globalThis.apolloServer.start().then(() => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[Apollo Server] ✅ Server started successfully');
-      }
-    }).catch(error => {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('[Apollo Server] ❌ Start failed:', error);
-      }
-      // 清除 promise 以便重試
-      globalThis.apolloStartPromise = undefined;
-      throw error;
-    });
+    globalThis.apolloStartPromise = globalThis.apolloServer
+      .start()
+      .then(() => {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[Apollo Server] ✅ Server started successfully');
+        }
+      })
+      .catch(error => {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[Apollo Server] ❌ Start failed:', error);
+        }
+        // 清除 promise 以便重試
+        globalThis.apolloStartPromise = undefined;
+        throw error;
+      });
   }
 
   // 等待 start promise 完成
   await globalThis.apolloStartPromise;
-  
+
   return globalThis.apolloServer;
 }
 

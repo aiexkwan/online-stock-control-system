@@ -45,11 +45,11 @@ class WebGLManager {
 
     const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
-    
+
     // 設置 canvas 內部解析度與顯示尺寸保持正確比例
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
-    
+
     // 更新 WebGL viewport
     this.gl.viewport(0, 0, canvas.width, canvas.height);
   }
@@ -330,7 +330,7 @@ export function UnifiedBackground() {
     });
 
     resizeObserver.observe(canvasRef.current);
-    
+
     return () => {
       resizeObserver.disconnect();
     };

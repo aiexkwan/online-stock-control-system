@@ -1,12 +1,12 @@
 /**
  * DataUpdateCard Component
  * Product and Supplier Data Management Card
- * 
+ *
  * Features:
  * - Left side: Product search/add/update with list display
  * - Right side: Supplier search/add/update with list display
  * - Transparent background with glassmorphic data areas
- * 
+ *
  * Refactored to use useDataUpdate hook for better organization and reusability
  */
 
@@ -17,20 +17,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { DataCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { cardTextStyles } from '@/lib/card-system/theme';
 import { cn } from '@/lib/utils';
-import { 
-  MagnifyingGlassIcon,
-  PlusIcon,
-} from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
 import type { DataUpdateCardProps } from '../types/common';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useGraphQLDataUpdate, type FormConfig } from '../hooks/useGraphQLDataUpdate';
 
-export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
-  className,
-  height = 600,
-}) => {
+export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({ className, height = 600 }) => {
   // Product form configuration
   const productConfig: FormConfig = {
     fields: [
@@ -38,7 +32,12 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
       { name: 'description', label: 'Product Description', type: 'text', required: true },
       { name: 'type', label: 'Product Type', type: 'text', required: true },
       { name: 'colour', label: 'Colour', type: 'text', required: true },
-      { name: 'standard_qty', label: 'Standard Quantity Per Pallet', type: 'number', required: true },
+      {
+        name: 'standard_qty',
+        label: 'Standard Quantity Per Pallet',
+        type: 'number',
+        required: true,
+      },
       { name: 'remark', label: 'Special notes', type: 'text', required: false },
     ],
     entityType: 'product',
@@ -46,7 +45,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
     primaryKey: 'code',
   };
 
-  // Supplier form configuration  
+  // Supplier form configuration
   const supplierConfig: FormConfig = {
     fields: [
       { name: 'supplier_code', label: 'Supplier Code', type: 'text', required: true },
@@ -66,7 +65,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
       type: '',
       colour: '',
       standard_qty: 0,
-      remark: ''
+      remark: '',
     },
     onSuccess: (action, data) => {
       console.log(`Product ${action} successful:`, data);
@@ -77,10 +76,10 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
   });
 
   const supplierForm = useGraphQLDataUpdate({
-    config: supplierConfig, 
+    config: supplierConfig,
     initialData: {
       supplier_code: '',
-      supplier_name: ''
+      supplier_name: '',
     },
     onSuccess: (action, data) => {
       console.log(`Supplier ${action} successful:`, data);
@@ -110,7 +109,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
   const handleProductConfirm = () => {
     const action = productForm.state.mode === 'add' ? 'create' : 'update';
     const message = `Confirm all changes to ${productForm.state.data.code || 'this product'}?`;
-    
+
     productForm.actions.showConfirmation(message, () => {
       if (action === 'create') {
         productForm.actions.create();
@@ -123,7 +122,7 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
   const handleSupplierConfirm = () => {
     const action = supplierForm.state.mode === 'add' ? 'create' : 'update';
     const message = `Confirm all changes to ${supplierForm.state.data.supplier_code || 'this supplier'}?`;
-    
+
     supplierForm.actions.showConfirmation(message, () => {
       if (action === 'create') {
         supplierForm.actions.create();
@@ -134,96 +133,116 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
   };
 
   return (
-    <div 
-      className={cn('w-full bg-transparent', className)}
-      style={{ height }}
-    >
-      <div className="flex gap-4 h-full">
+    <div className={cn('w-full bg-transparent', className)} style={{ height }}>
+      <div className='flex h-full gap-4'>
         {/* Left: Product Update */}
-        <DataCard className="flex-1" padding="large" borderGlow="hover" glassmorphicVariant="default">
-          <div className="h-full flex flex-col">
+        <DataCard
+          className='flex-1'
+          padding='large'
+          borderGlow='hover'
+          glassmorphicVariant='default'
+        >
+          <div className='flex h-full flex-col'>
             <h3 className={`${cardTextStyles.title} mb-4`}>Search Product</h3>
-            
+
             {/* Search Bar */}
-            <div className="flex gap-2 mb-4">
+            <div className='mb-4 flex gap-2'>
               <Input
                 value={productForm.state.searchTerm}
-                onChange={(e) => {
+                onChange={e => {
                   productForm.actions.setSearchTerm(e.target.value);
                   if (productForm.state.mode !== 'initial') {
                     productForm.actions.switchToInitial();
                   }
                 }}
-                placeholder="Enter product code"
-                className="flex-1 bg-white/10 backdrop-blur-sm border-none text-white"
-                onKeyPress={(e) => e.key === 'Enter' && handleProductSearch()}
+                placeholder='Enter product code'
+                className='flex-1 border-none bg-white/10 text-white backdrop-blur-sm'
+                onKeyPress={e => e.key === 'Enter' && handleProductSearch()}
               />
               <Button
-                onClick={productForm.state.searchTerm ? handleProductSearch : () => productForm.actions.switchToAdd()}
+                onClick={
+                  productForm.state.searchTerm
+                    ? handleProductSearch
+                    : () => productForm.actions.switchToAdd()
+                }
                 disabled={productForm.state.isSearching}
                 className={cn(
-                  "min-w-[100px]",
-                  productForm.state.searchTerm ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"
+                  'min-w-[100px]',
+                  productForm.state.searchTerm
+                    ? 'bg-blue-600 hover:bg-blue-700'
+                    : 'bg-green-600 hover:bg-green-700'
                 )}
               >
                 {productForm.state.isSearching ? (
-                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                  <div className='h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent' />
                 ) : productForm.state.searchTerm ? (
                   <>
-                    <MagnifyingGlassIcon className="h-4 w-4 mr-1" />
+                    <MagnifyingGlassIcon className='mr-1 h-4 w-4' />
                     Search
                   </>
                 ) : (
                   <>
-                    <PlusIcon className="h-4 w-4 mr-1" />
+                    <PlusIcon className='mr-1 h-4 w-4' />
                     Add
                   </>
                 )}
               </Button>
             </div>
 
-            <div className="border-t border-slate-600/50 my-2" />
+            <div className='my-2 border-t border-slate-600/50' />
 
             {/* Data Display Area */}
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode='wait'>
               {/* Display Mode - List Format */}
               {productForm.state.mode === 'display' && productForm.state.originalData && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="flex-1 space-y-3"
+                  className='flex-1 space-y-3'
                 >
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center p-2 bg-white/5 backdrop-blur-sm rounded">
-                      <span className="text-slate-400">Code</span>
-                      <span className="text-white font-medium">{String(productForm.state.originalData.code || '')}</span>
+                  <div className='space-y-2'>
+                    <div className='flex items-center justify-between rounded bg-white/5 p-2 backdrop-blur-sm'>
+                      <span className='text-slate-400'>Code</span>
+                      <span className='font-medium text-white'>
+                        {String(productForm.state.originalData.code || '')}
+                      </span>
                     </div>
-                    <div className="flex justify-between items-center p-2 bg-white/5 backdrop-blur-sm rounded">
-                      <span className="text-slate-400">Description</span>
-                      <span className="text-white font-medium">{String(productForm.state.originalData.description || '')}</span>
+                    <div className='flex items-center justify-between rounded bg-white/5 p-2 backdrop-blur-sm'>
+                      <span className='text-slate-400'>Description</span>
+                      <span className='font-medium text-white'>
+                        {String(productForm.state.originalData.description || '')}
+                      </span>
                     </div>
-                    <div className="flex justify-between items-center p-2 bg-white/5 backdrop-blur-sm rounded">
-                      <span className="text-slate-400">Type</span>
-                      <span className="text-white font-medium">{String(productForm.state.originalData.type || '')}</span>
+                    <div className='flex items-center justify-between rounded bg-white/5 p-2 backdrop-blur-sm'>
+                      <span className='text-slate-400'>Type</span>
+                      <span className='font-medium text-white'>
+                        {String(productForm.state.originalData.type || '')}
+                      </span>
                     </div>
-                    <div className="flex justify-between items-center p-2 bg-white/5 backdrop-blur-sm rounded">
-                      <span className="text-slate-400">Colour</span>
-                      <span className="text-white font-medium">{String(productForm.state.originalData.colour || '')}</span>
+                    <div className='flex items-center justify-between rounded bg-white/5 p-2 backdrop-blur-sm'>
+                      <span className='text-slate-400'>Colour</span>
+                      <span className='font-medium text-white'>
+                        {String(productForm.state.originalData.colour || '')}
+                      </span>
                     </div>
-                    <div className="flex justify-between items-center p-2 bg-white/5 backdrop-blur-sm rounded">
-                      <span className="text-slate-400">Standard Qty Per Pallet</span>
-                      <span className="text-white font-medium">{String(productForm.state.originalData.standard_qty || 0)}</span>
+                    <div className='flex items-center justify-between rounded bg-white/5 p-2 backdrop-blur-sm'>
+                      <span className='text-slate-400'>Standard Qty Per Pallet</span>
+                      <span className='font-medium text-white'>
+                        {String(productForm.state.originalData.standard_qty || 0)}
+                      </span>
                     </div>
-                    <div className="flex justify-between items-center p-2 bg-white/5 backdrop-blur-sm rounded">
-                      <span className="text-slate-400">Special notes</span>
-                      <span className="text-white font-medium">{String(productForm.state.originalData.remark || '-')}</span>
+                    <div className='flex items-center justify-between rounded bg-white/5 p-2 backdrop-blur-sm'>
+                      <span className='text-slate-400'>Special notes</span>
+                      <span className='font-medium text-white'>
+                        {String(productForm.state.originalData.remark || '-')}
+                      </span>
                     </div>
                   </div>
 
                   <Button
                     onClick={() => productForm.actions.switchToEdit()}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    className='w-full bg-blue-600 text-white hover:bg-blue-700'
                   >
                     Update
                   </Button>
@@ -236,82 +255,93 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="flex-1 space-y-3"
+                  className='flex-1 space-y-3'
                 >
                   <div>
-                    <Label className="text-white">Product Code</Label>
+                    <Label className='text-white'>Product Code</Label>
                     <Input
                       value={String(productForm.state.data.code || '')}
                       disabled
-                      className="bg-white/10 backdrop-blur-sm border-none text-white opacity-50"
+                      className='border-none bg-white/10 text-white opacity-50 backdrop-blur-sm'
                     />
                   </div>
 
                   <div>
-                    <Label className="text-white">Product Description</Label>
+                    <Label className='text-white'>Product Description</Label>
                     <Input
                       value={String(productForm.state.data.description || '')}
-                      onChange={(e) => productForm.actions.setFieldValue('description', e.target.value)}
-                      className="bg-white/10 backdrop-blur-sm border-none text-white"
+                      onChange={e =>
+                        productForm.actions.setFieldValue('description', e.target.value)
+                      }
+                      className='border-none bg-white/10 text-white backdrop-blur-sm'
                     />
                     {productForm.state.errors.description && (
-                      <p className="text-sm text-red-400 mt-1">{productForm.state.errors.description}</p>
+                      <p className='mt-1 text-sm text-red-400'>
+                        {productForm.state.errors.description}
+                      </p>
                     )}
                   </div>
 
                   <div>
-                    <Label className="text-white">Product Type</Label>
+                    <Label className='text-white'>Product Type</Label>
                     <Input
                       value={String(productForm.state.data.type || '')}
-                      onChange={(e) => productForm.actions.setFieldValue('type', e.target.value)}
-                      className="bg-white/10 backdrop-blur-sm border-none text-white"
+                      onChange={e => productForm.actions.setFieldValue('type', e.target.value)}
+                      className='border-none bg-white/10 text-white backdrop-blur-sm'
                     />
                     {productForm.state.errors.type && (
-                      <p className="text-sm text-red-400 mt-1">{productForm.state.errors.type}</p>
+                      <p className='mt-1 text-sm text-red-400'>{productForm.state.errors.type}</p>
                     )}
                   </div>
 
                   <div>
-                    <Label className="text-white">Colour</Label>
+                    <Label className='text-white'>Colour</Label>
                     <Input
                       value={String(productForm.state.data.colour || '')}
-                      onChange={(e) => productForm.actions.setFieldValue('colour', e.target.value)}
-                      className="bg-white/10 backdrop-blur-sm border-none text-white"
+                      onChange={e => productForm.actions.setFieldValue('colour', e.target.value)}
+                      className='border-none bg-white/10 text-white backdrop-blur-sm'
                     />
                     {productForm.state.errors.colour && (
-                      <p className="text-sm text-red-400 mt-1">{productForm.state.errors.colour}</p>
+                      <p className='mt-1 text-sm text-red-400'>{productForm.state.errors.colour}</p>
                     )}
                   </div>
 
                   <div>
-                    <Label className="text-white">Standard Quantity Per Pallet</Label>
+                    <Label className='text-white'>Standard Quantity Per Pallet</Label>
                     <Input
-                      type="number"
+                      type='number'
                       value={String(productForm.state.data.standard_qty || 0)}
-                      onChange={(e) => productForm.actions.setFieldValue('standard_qty', parseInt(e.target.value) || 0)}
-                      className="bg-white/10 backdrop-blur-sm border-none text-white"
+                      onChange={e =>
+                        productForm.actions.setFieldValue(
+                          'standard_qty',
+                          parseInt(e.target.value) || 0
+                        )
+                      }
+                      className='border-none bg-white/10 text-white backdrop-blur-sm'
                     />
                     {productForm.state.errors.standard_qty && (
-                      <p className="text-sm text-red-400 mt-1">{productForm.state.errors.standard_qty}</p>
+                      <p className='mt-1 text-sm text-red-400'>
+                        {productForm.state.errors.standard_qty}
+                      </p>
                     )}
                   </div>
 
                   <div>
-                    <Label className="text-white">Special notes</Label>
+                    <Label className='text-white'>Special notes</Label>
                     <Input
                       value={String(productForm.state.data.remark || '')}
-                      onChange={(e) => productForm.actions.setFieldValue('remark', e.target.value)}
-                      className="bg-white/10 backdrop-blur-sm border-none text-white"
+                      onChange={e => productForm.actions.setFieldValue('remark', e.target.value)}
+                      className='border-none bg-white/10 text-white backdrop-blur-sm'
                     />
                   </div>
 
                   <Button
                     onClick={handleProductConfirm}
                     disabled={productForm.state.isUpdating}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    className='w-full bg-green-600 text-white hover:bg-green-700'
                   >
                     {productForm.state.isUpdating ? (
-                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                      <div className='h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent' />
                     ) : (
                       'Confirm'
                     )}
@@ -325,85 +355,96 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="flex-1 space-y-3"
+                  className='flex-1 space-y-3'
                 >
                   <div>
-                    <Label className="text-white">Product Code</Label>
+                    <Label className='text-white'>Product Code</Label>
                     <Input
                       value={String(productForm.state.data.code || '')}
-                      onChange={(e) => productForm.actions.setFieldValue('code', e.target.value)}
-                      className="bg-white/10 backdrop-blur-sm border-none text-white"
+                      onChange={e => productForm.actions.setFieldValue('code', e.target.value)}
+                      className='border-none bg-white/10 text-white backdrop-blur-sm'
                     />
                     {productForm.state.errors.code && (
-                      <p className="text-sm text-red-400 mt-1">{productForm.state.errors.code}</p>
+                      <p className='mt-1 text-sm text-red-400'>{productForm.state.errors.code}</p>
                     )}
                   </div>
 
                   <div>
-                    <Label className="text-white">Product Description</Label>
+                    <Label className='text-white'>Product Description</Label>
                     <Input
                       value={String(productForm.state.data.description || '')}
-                      onChange={(e) => productForm.actions.setFieldValue('description', e.target.value)}
-                      className="bg-white/10 backdrop-blur-sm border-none text-white"
+                      onChange={e =>
+                        productForm.actions.setFieldValue('description', e.target.value)
+                      }
+                      className='border-none bg-white/10 text-white backdrop-blur-sm'
                     />
                     {productForm.state.errors.description && (
-                      <p className="text-sm text-red-400 mt-1">{productForm.state.errors.description}</p>
+                      <p className='mt-1 text-sm text-red-400'>
+                        {productForm.state.errors.description}
+                      </p>
                     )}
                   </div>
 
                   <div>
-                    <Label className="text-white">Product Type</Label>
+                    <Label className='text-white'>Product Type</Label>
                     <Input
                       value={String(productForm.state.data.type || '')}
-                      onChange={(e) => productForm.actions.setFieldValue('type', e.target.value)}
-                      className="bg-white/10 backdrop-blur-sm border-none text-white"
+                      onChange={e => productForm.actions.setFieldValue('type', e.target.value)}
+                      className='border-none bg-white/10 text-white backdrop-blur-sm'
                     />
                     {productForm.state.errors.type && (
-                      <p className="text-sm text-red-400 mt-1">{productForm.state.errors.type}</p>
+                      <p className='mt-1 text-sm text-red-400'>{productForm.state.errors.type}</p>
                     )}
                   </div>
 
                   <div>
-                    <Label className="text-white">Colour</Label>
+                    <Label className='text-white'>Colour</Label>
                     <Input
                       value={String(productForm.state.data.colour || '')}
-                      onChange={(e) => productForm.actions.setFieldValue('colour', e.target.value)}
-                      className="bg-white/10 backdrop-blur-sm border-none text-white"
+                      onChange={e => productForm.actions.setFieldValue('colour', e.target.value)}
+                      className='border-none bg-white/10 text-white backdrop-blur-sm'
                     />
                     {productForm.state.errors.colour && (
-                      <p className="text-sm text-red-400 mt-1">{productForm.state.errors.colour}</p>
+                      <p className='mt-1 text-sm text-red-400'>{productForm.state.errors.colour}</p>
                     )}
                   </div>
 
                   <div>
-                    <Label className="text-white">Standard Quantity Per Pallet</Label>
+                    <Label className='text-white'>Standard Quantity Per Pallet</Label>
                     <Input
-                      type="number"
+                      type='number'
                       value={String(productForm.state.data.standard_qty || 0)}
-                      onChange={(e) => productForm.actions.setFieldValue('standard_qty', parseInt(e.target.value) || 0)}
-                      className="bg-white/10 backdrop-blur-sm border-none text-white"
+                      onChange={e =>
+                        productForm.actions.setFieldValue(
+                          'standard_qty',
+                          parseInt(e.target.value) || 0
+                        )
+                      }
+                      className='border-none bg-white/10 text-white backdrop-blur-sm'
                     />
                     {productForm.state.errors.standard_qty && (
-                      <p className="text-sm text-red-400 mt-1">{productForm.state.errors.standard_qty}</p>
+                      <p className='mt-1 text-sm text-red-400'>
+                        {productForm.state.errors.standard_qty}
+                      </p>
                     )}
                   </div>
 
                   <div>
-                    <Label className="text-white">Special notes</Label>
+                    <Label className='text-white'>Special notes</Label>
                     <Input
                       value={String(productForm.state.data.remark || '')}
-                      onChange={(e) => productForm.actions.setFieldValue('remark', e.target.value)}
-                      className="bg-white/10 backdrop-blur-sm border-none text-white"
+                      onChange={e => productForm.actions.setFieldValue('remark', e.target.value)}
+                      className='border-none bg-white/10 text-white backdrop-blur-sm'
                     />
                   </div>
 
                   <Button
                     onClick={handleProductConfirm}
                     disabled={productForm.state.isUpdating}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    className='w-full bg-blue-600 text-white hover:bg-blue-700'
                   >
                     {productForm.state.isUpdating ? (
-                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                      <div className='h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent' />
                     ) : (
                       'Add Product'
                     )}
@@ -415,74 +456,89 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
         </DataCard>
 
         {/* Right: Supplier Update */}
-        <DataCard className="flex-1" padding="large" borderGlow="hover" glassmorphicVariant="default">
-          <div className="h-full flex flex-col">
+        <DataCard
+          className='flex-1'
+          padding='large'
+          borderGlow='hover'
+          glassmorphicVariant='default'
+        >
+          <div className='flex h-full flex-col'>
             <h3 className={`${cardTextStyles.title} mb-4`}>Search Supplier</h3>
-            
+
             {/* Search Bar */}
-            <div className="flex gap-2 mb-4">
+            <div className='mb-4 flex gap-2'>
               <Input
                 value={supplierForm.state.searchTerm}
-                onChange={(e) => {
+                onChange={e => {
                   supplierForm.actions.setSearchTerm(e.target.value);
                   if (supplierForm.state.mode !== 'initial') {
                     supplierForm.actions.switchToInitial();
                   }
                 }}
-                placeholder="Enter supplier code"
-                className="flex-1 bg-white/10 backdrop-blur-sm border-none text-white"
-                onKeyPress={(e) => e.key === 'Enter' && handleSupplierSearch()}
+                placeholder='Enter supplier code'
+                className='flex-1 border-none bg-white/10 text-white backdrop-blur-sm'
+                onKeyPress={e => e.key === 'Enter' && handleSupplierSearch()}
               />
               <Button
-                onClick={supplierForm.state.searchTerm ? handleSupplierSearch : () => supplierForm.actions.switchToAdd()}
+                onClick={
+                  supplierForm.state.searchTerm
+                    ? handleSupplierSearch
+                    : () => supplierForm.actions.switchToAdd()
+                }
                 disabled={supplierForm.state.isSearching}
                 className={cn(
-                  "min-w-[100px]",
-                  supplierForm.state.searchTerm ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"
+                  'min-w-[100px]',
+                  supplierForm.state.searchTerm
+                    ? 'bg-blue-600 hover:bg-blue-700'
+                    : 'bg-green-600 hover:bg-green-700'
                 )}
               >
                 {supplierForm.state.isSearching ? (
-                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                  <div className='h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent' />
                 ) : supplierForm.state.searchTerm ? (
                   <>
-                    <MagnifyingGlassIcon className="h-4 w-4 mr-1" />
+                    <MagnifyingGlassIcon className='mr-1 h-4 w-4' />
                     Search
                   </>
                 ) : (
                   <>
-                    <PlusIcon className="h-4 w-4 mr-1" />
+                    <PlusIcon className='mr-1 h-4 w-4' />
                     Add
                   </>
                 )}
               </Button>
             </div>
 
-            <div className="border-t border-slate-600/50 my-2" />
+            <div className='my-2 border-t border-slate-600/50' />
 
             {/* Data Display Area */}
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode='wait'>
               {/* Display Mode - List Format */}
               {supplierForm.state.mode === 'display' && supplierForm.state.originalData && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="flex-1 space-y-3"
+                  className='flex-1 space-y-3'
                 >
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center p-2 bg-white/5 backdrop-blur-sm rounded">
-                      <span className="text-slate-400">Supplier Code</span>
-                      <span className="text-white font-medium">{String(supplierForm.state.originalData.supplier_code || '')}</span>
+                  <div className='space-y-2'>
+                    <div className='flex items-center justify-between rounded bg-white/5 p-2 backdrop-blur-sm'>
+                      <span className='text-slate-400'>Supplier Code</span>
+                      <span className='font-medium text-white'>
+                        {String(supplierForm.state.originalData.supplier_code || '')}
+                      </span>
                     </div>
-                    <div className="flex justify-between items-center p-2 bg-white/5 backdrop-blur-sm rounded">
-                      <span className="text-slate-400">Supplier Name</span>
-                      <span className="text-white font-medium">{String(supplierForm.state.originalData.supplier_name || '-')}</span>
+                    <div className='flex items-center justify-between rounded bg-white/5 p-2 backdrop-blur-sm'>
+                      <span className='text-slate-400'>Supplier Name</span>
+                      <span className='font-medium text-white'>
+                        {String(supplierForm.state.originalData.supplier_name || '-')}
+                      </span>
                     </div>
                   </div>
 
                   <Button
                     onClick={() => supplierForm.actions.switchToEdit()}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                    className='w-full bg-blue-600 text-white hover:bg-blue-700'
                   >
                     Update
                   </Button>
@@ -495,36 +551,40 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="flex-1 space-y-3"
+                  className='flex-1 space-y-3'
                 >
                   <div>
-                    <Label className="text-white">Supplier Code</Label>
+                    <Label className='text-white'>Supplier Code</Label>
                     <Input
                       value={String(supplierForm.state.data.supplier_code || '')}
                       disabled
-                      className="bg-white/10 backdrop-blur-sm border-none text-white opacity-50"
+                      className='border-none bg-white/10 text-white opacity-50 backdrop-blur-sm'
                     />
                   </div>
 
                   <div>
-                    <Label className="text-white">Supplier Name</Label>
+                    <Label className='text-white'>Supplier Name</Label>
                     <Input
                       value={String(supplierForm.state.data.supplier_name || '')}
-                      onChange={(e) => supplierForm.actions.setFieldValue('supplier_name', e.target.value)}
-                      className="bg-white/10 backdrop-blur-sm border-none text-white"
+                      onChange={e =>
+                        supplierForm.actions.setFieldValue('supplier_name', e.target.value)
+                      }
+                      className='border-none bg-white/10 text-white backdrop-blur-sm'
                     />
                     {supplierForm.state.errors.supplier_name && (
-                      <p className="text-sm text-red-400 mt-1">{supplierForm.state.errors.supplier_name}</p>
+                      <p className='mt-1 text-sm text-red-400'>
+                        {supplierForm.state.errors.supplier_name}
+                      </p>
                     )}
                   </div>
 
                   <Button
                     onClick={handleSupplierConfirm}
                     disabled={supplierForm.state.isUpdating}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white mt-4"
+                    className='mt-4 w-full bg-green-600 text-white hover:bg-green-700'
                   >
                     {supplierForm.state.isUpdating ? (
-                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                      <div className='h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent' />
                     ) : (
                       'Confirm'
                     )}
@@ -538,39 +598,47 @@ export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="flex-1 space-y-3"
+                  className='flex-1 space-y-3'
                 >
                   <div>
-                    <Label className="text-white">Supplier Code</Label>
+                    <Label className='text-white'>Supplier Code</Label>
                     <Input
                       value={String(supplierForm.state.data.supplier_code || '')}
-                      onChange={(e) => supplierForm.actions.setFieldValue('supplier_code', e.target.value)}
-                      className="bg-white/10 backdrop-blur-sm border-none text-white"
+                      onChange={e =>
+                        supplierForm.actions.setFieldValue('supplier_code', e.target.value)
+                      }
+                      className='border-none bg-white/10 text-white backdrop-blur-sm'
                     />
                     {supplierForm.state.errors.supplier_code && (
-                      <p className="text-sm text-red-400 mt-1">{supplierForm.state.errors.supplier_code}</p>
+                      <p className='mt-1 text-sm text-red-400'>
+                        {supplierForm.state.errors.supplier_code}
+                      </p>
                     )}
                   </div>
 
                   <div>
-                    <Label className="text-white">Supplier Name</Label>
+                    <Label className='text-white'>Supplier Name</Label>
                     <Input
                       value={String(supplierForm.state.data.supplier_name || '')}
-                      onChange={(e) => supplierForm.actions.setFieldValue('supplier_name', e.target.value)}
-                      className="bg-white/10 backdrop-blur-sm border-none text-white"
+                      onChange={e =>
+                        supplierForm.actions.setFieldValue('supplier_name', e.target.value)
+                      }
+                      className='border-none bg-white/10 text-white backdrop-blur-sm'
                     />
                     {supplierForm.state.errors.supplier_name && (
-                      <p className="text-sm text-red-400 mt-1">{supplierForm.state.errors.supplier_name}</p>
+                      <p className='mt-1 text-sm text-red-400'>
+                        {supplierForm.state.errors.supplier_name}
+                      </p>
                     )}
                   </div>
 
                   <Button
                     onClick={handleSupplierConfirm}
                     disabled={supplierForm.state.isUpdating}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-4"
+                    className='mt-4 w-full bg-blue-600 text-white hover:bg-blue-700'
                   >
                     {supplierForm.state.isUpdating ? (
-                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                      <div className='h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent' />
                     ) : (
                       'Add Supplier'
                     )}

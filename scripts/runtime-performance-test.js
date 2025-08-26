@@ -74,7 +74,9 @@ class RuntimePerformanceTest {
         median: times.sort((a, b) => a - b)[Math.floor(times.length / 2)],
       };
 
-      console.log(`   📊 ${test.name}: avg ${avg.toFixed(4)}ms, min ${min.toFixed(4)}ms, max ${max.toFixed(4)}ms`);
+      console.log(
+        `   📊 ${test.name}: avg ${avg.toFixed(4)}ms, min ${min.toFixed(4)}ms, max ${max.toFixed(4)}ms`
+      );
     }
 
     console.log('');
@@ -103,11 +105,13 @@ class RuntimePerformanceTest {
         location: z.string().optional(),
         timestamp: z.string().datetime(),
         metadata: z.record(z.unknown()).optional(),
-        history: z.array(z.object({
-          action: z.string(),
-          timestamp: z.string().datetime(),
-          user_id: z.string(),
-        })),
+        history: z.array(
+          z.object({
+            action: z.string(),
+            timestamp: z.string().datetime(),
+            user_id: z.string(),
+          })
+        ),
       }),
     };
 
@@ -171,7 +175,9 @@ class RuntimePerformanceTest {
         opsPerSecond: 1000 / avg,
       };
 
-      console.log(`   ⚡ ${schemaName}: ${avg.toFixed(4)}ms avg, ${(1000/avg).toFixed(0)} ops/sec`);
+      console.log(
+        `   ⚡ ${schemaName}: ${avg.toFixed(4)}ms avg, ${(1000 / avg).toFixed(0)} ops/sec`
+      );
     }
 
     // Array validation test
@@ -195,7 +201,9 @@ class RuntimePerformanceTest {
       itemsPerMs: 100 / arrayAvg,
     };
 
-    console.log(`   🔄 Array (100 items): ${arrayAvg.toFixed(2)}ms avg, ${(100/arrayAvg).toFixed(1)} items/ms`);
+    console.log(
+      `   🔄 Array (100 items): ${arrayAvg.toFixed(2)}ms avg, ${(100 / arrayAvg).toFixed(1)} items/ms`
+    );
     console.log('');
 
     return results;
@@ -217,15 +225,17 @@ class RuntimePerformanceTest {
     const beforeSchemas = process.memoryUsage();
     const schemas = [];
     for (let i = 0; i < 100; i++) {
-      schemas.push(z.object({
-        id: z.string(),
-        name: z.string(),
-        data: z.record(z.unknown()),
-        nested: z.object({
-          value: z.number(),
-          metadata: z.array(z.string()),
-        }),
-      }));
+      schemas.push(
+        z.object({
+          id: z.string(),
+          name: z.string(),
+          data: z.record(z.unknown()),
+          nested: z.object({
+            value: z.number(),
+            metadata: z.array(z.string()),
+          }),
+        })
+      );
     }
     const afterSchemas = process.memoryUsage();
 
@@ -258,9 +268,15 @@ class RuntimePerformanceTest {
     results.schemaCreation = calculateDiff(beforeSchemas, afterSchemas);
     results.validations = calculateDiff(beforeValidations, afterValidations);
 
-    console.log(`   💾 Zod import: +${(results.zodImport.heapUsed / 1024 / 1024).toFixed(2)}MB heap`);
-    console.log(`   💾 100 schemas: +${(results.schemaCreation.heapUsed / 1024 / 1024).toFixed(2)}MB heap`);
-    console.log(`   💾 10k validations: +${(results.validations.heapUsed / 1024 / 1024).toFixed(2)}MB heap`);
+    console.log(
+      `   💾 Zod import: +${(results.zodImport.heapUsed / 1024 / 1024).toFixed(2)}MB heap`
+    );
+    console.log(
+      `   💾 100 schemas: +${(results.schemaCreation.heapUsed / 1024 / 1024).toFixed(2)}MB heap`
+    );
+    console.log(
+      `   💾 10k validations: +${(results.validations.heapUsed / 1024 / 1024).toFixed(2)}MB heap`
+    );
     console.log('');
 
     return results;
@@ -297,7 +313,9 @@ class RuntimePerformanceTest {
 
     console.log(`   ❄️  Cold start: ${coldAvg.toFixed(4)}ms`);
     console.log(`   🔥 Warm start: ${warmAvg.toFixed(4)}ms`);
-    console.log(`   📈 Cache benefit: ${((coldAvg - warmAvg) / coldAvg * 100).toFixed(1)}% faster`);
+    console.log(
+      `   📈 Cache benefit: ${(((coldAvg - warmAvg) / coldAvg) * 100).toFixed(1)}% faster`
+    );
     console.log('');
 
     return {
@@ -313,7 +331,6 @@ class RuntimePerformanceTest {
     };
   }
 
-
   generateReport(results) {
     const report = `
 # Runtime Performance Test Results
@@ -322,14 +339,20 @@ Generated on: ${new Date().toISOString()}
 ## 📊 Test Summary
 
 ### Import Performance
-${Object.entries(results.importPerformance).map(([name, data]) => 
-  `- **${name}**: ${data.average.toFixed(4)}ms avg (${data.min.toFixed(4)}ms - ${data.max.toFixed(4)}ms)`
-).join('\n')}
+${Object.entries(results.importPerformance)
+  .map(
+    ([name, data]) =>
+      `- **${name}**: ${data.average.toFixed(4)}ms avg (${data.min.toFixed(4)}ms - ${data.max.toFixed(4)}ms)`
+  )
+  .join('\n')}
 
 ### Validation Performance
-${Object.entries(results.validationPerformance).map(([name, data]) => 
-  `- **${name}**: ${data.average.toFixed(4)}ms avg, ${data.opsPerSecond ? Math.round(data.opsPerSecond) + ' ops/sec' : data.itemsPerMs ? data.itemsPerMs.toFixed(1) + ' items/ms' : ''}`
-).join('\n')}
+${Object.entries(results.validationPerformance)
+  .map(
+    ([name, data]) =>
+      `- **${name}**: ${data.average.toFixed(4)}ms avg, ${data.opsPerSecond ? Math.round(data.opsPerSecond) + ' ops/sec' : data.itemsPerMs ? data.itemsPerMs.toFixed(1) + ' items/ms' : ''}`
+  )
+  .join('\n')}
 
 ### Memory Usage Impact
 - **Zod import**: +${(results.memoryUsage.zodImport.heapUsed / 1024 / 1024).toFixed(2)}MB heap
@@ -351,8 +374,8 @@ ${Object.entries(results.validationPerformance).map(([name, data]) =>
 - **Array (100 items)**: ${results.validationPerformance.array100Items.itemsPerMs.toFixed(1)} items/ms
 
 ### Memory Efficiency
-- **Per schema**: ~${((results.memoryUsage.schemaCreation.heapUsed / 100) / 1024).toFixed(2)}KB
-- **Per validation**: ~${((results.memoryUsage.validations.heapUsed / 10000) / 1024).toFixed(4)}KB
+- **Per schema**: ~${(results.memoryUsage.schemaCreation.heapUsed / 100 / 1024).toFixed(2)}KB
+- **Per validation**: ~${(results.memoryUsage.validations.heapUsed / 10000 / 1024).toFixed(4)}KB
 
 ### Startup Impact
 - **Cold start penalty**: ${results.startupPerformance.coldStart.average.toFixed(2)}ms
@@ -426,17 +449,22 @@ ${results.startupPerformance.improvement > 0.3 ? '✅' : '⚠️'} Cache effecti
 // Main execution
 async function main() {
   const tester = new RuntimePerformanceTest();
-  
+
   try {
     const results = await tester.runTests();
     await tester.saveResults(results);
-    
+
     console.log('\n🎯 PERFORMANCE SUMMARY:');
-    console.log(`Simple validation: ${Math.round(results.validationPerformance.simple.opsPerSecond)} ops/sec`);
-    console.log(`Complex validation: ${Math.round(results.validationPerformance.complex.opsPerSecond)} ops/sec`);
-    console.log(`Memory overhead: +${(results.memoryUsage.zodImport.heapUsed / 1024 / 1024).toFixed(2)}MB`);
+    console.log(
+      `Simple validation: ${Math.round(results.validationPerformance.simple.opsPerSecond)} ops/sec`
+    );
+    console.log(
+      `Complex validation: ${Math.round(results.validationPerformance.complex.opsPerSecond)} ops/sec`
+    );
+    console.log(
+      `Memory overhead: +${(results.memoryUsage.zodImport.heapUsed / 1024 / 1024).toFixed(2)}MB`
+    );
     console.log(`Startup penalty: ${results.startupPerformance.coldStart.average.toFixed(2)}ms`);
-    
   } catch (error) {
     console.error('❌ Runtime test failed:', error);
     process.exit(1);

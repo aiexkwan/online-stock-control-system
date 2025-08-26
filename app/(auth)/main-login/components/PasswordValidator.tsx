@@ -8,16 +8,20 @@ export interface PasswordRequirements {
   requireUppercase: boolean;
   requireLowercase: boolean;
   requireNumbers: boolean;
-  requireSpecialChars?: boolean;
+  requireSpecialChars: boolean;
 }
 
 const DEFAULT_REQUIREMENTS: PasswordRequirements = {
-  minLength: 6,
-  requireUppercase: false,
+  minLength: 12, // Increased from 6 to 12
+  requireUppercase: true, // Changed from false to true
   requireLowercase: true,
   requireNumbers: true,
-  requireSpecialChars: false,
+  requireSpecialChars: true, // Changed from false to true
 };
+
+// Define allowed special characters
+const SPECIAL_CHARS = '!@#$%^&*(),.?":{}|<>';
+const SPECIAL_CHARS_REGEX = /[!@#$%^&*(),.?":{}|<>]/;
 
 const PasswordValidator = {
   /**
@@ -58,13 +62,27 @@ const PasswordValidator = {
     }
 
     // Check for special characters (if required)
-    if (requirements.requireSpecialChars && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-      errors.push('Password must contain at least one special character');
+    if (requirements.requireSpecialChars && !SPECIAL_CHARS_REGEX.test(password)) {
+      errors.push(`Password must contain at least one special character (${SPECIAL_CHARS})`);
     }
 
-    // Check for forbidden special characters (always check)
-    if (/[!@#$%^&*(),.?":{}|<>\-_=+\[\]\\\/~`';]/.test(password)) {
-      errors.push('Password must not contain special characters');
+    // Check for common patterns (security enhancement)
+    const commonPatterns = [
+      /(.)\1{2,}/, // Repeated characters (3 or more)
+      /12345/, // Sequential numbers
+      /qwerty/i, // Keyboard patterns
+      /password/i, // Common words
+      /admin/i, // Common words
+      /pennine/i, // Company name
+    ];
+
+    for (const pattern of commonPatterns) {
+      if (pattern.test(password)) {
+        errors.push(
+          'Password contains common patterns or words. Please choose a more unique password'
+        );
+        break;
+      }
     }
 
     return errors;
@@ -93,22 +111,27 @@ const PasswordValidator = {
 
     let score = 0;
 
-    // Length bonus
-    score += Math.min(password.length * 4, 25);
+    // Length bonus (more points for longer passwords)
+    score += Math.min(password.length * 2, 30);
 
     // Character variety bonus
-    if (/[a-z]/.test(password)) score += 5;
-    if (/[A-Z]/.test(password)) score += 5;
-    if (/\d/.test(password)) score += 5;
-    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) score += 10;
+    if (/[a-z]/.test(password)) score += 10;
+    if (/[A-Z]/.test(password)) score += 10;
+    if (/\d/.test(password)) score += 10;
+    if (SPECIAL_CHARS_REGEX.test(password)) score += 15;
 
-    // Length bonus for longer passwords
-    if (password.length >= 12) score += 10;
+    // Extra length bonus for very long passwords
     if (password.length >= 16) score += 10;
+    if (password.length >= 20) score += 15;
 
     // Penalty for common patterns
     if (/(.)\1{2,}/.test(password)) score -= 10; // Repeated characters
     if (/123|abc|qwe/i.test(password)) score -= 10; // Sequential patterns
+    if (/password|admin|pennine/i.test(password)) score -= 20; // Common words
+
+    // Entropy bonus (unique characters)
+    const uniqueChars = new Set(password).size;
+    score += Math.min(uniqueChars * 2, 20);
 
     return Math.max(0, Math.min(100, score));
   },
@@ -119,9 +142,10 @@ const PasswordValidator = {
    * @returns string - Strength label
    */
   getStrengthLabel: (score: number): string => {
-    if (score < 30) return 'Weak';
-    if (score < 60) return 'Fair';
-    if (score < 80) return 'Good';
+    if (score < 30) return 'Very Weak';
+    if (score < 50) return 'Weak';
+    if (score < 70) return 'Fair';
+    if (score < 85) return 'Good';
     return 'Strong';
   },
 
@@ -131,9 +155,10 @@ const PasswordValidator = {
    * @returns string - CSS color class
    */
   getStrengthColor: (score: number): string => {
-    if (score < 30) return 'text-red-500';
-    if (score < 60) return 'text-yellow-500';
-    if (score < 80) return 'text-blue-500';
+    if (score < 30) return 'text-red-600';
+    if (score < 50) return 'text-red-500';
+    if (score < 70) return 'text-yellow-500';
+    if (score < 85) return 'text-blue-500';
     return 'text-green-500';
   },
 
@@ -143,6 +168,38 @@ const PasswordValidator = {
    */
   getDefaultRequirements: (): PasswordRequirements => {
     return { ...DEFAULT_REQUIREMENTS };
+  },
+
+  /**
+   * Generates a secure random password
+   * @param length - Password length (default: 16)
+   * @returns string - Generated password
+   */
+  generateSecurePassword: (length: number = 16): string => {
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+    const numbers = '0123456789';
+    const specials = SPECIAL_CHARS;
+    const allChars = uppercase + lowercase + numbers + specials;
+
+    let password = '';
+
+    // Ensure at least one of each required character type
+    password += uppercase[Math.floor(Math.random() * uppercase.length)];
+    password += lowercase[Math.floor(Math.random() * lowercase.length)];
+    password += numbers[Math.floor(Math.random() * numbers.length)];
+    password += specials[Math.floor(Math.random() * specials.length)];
+
+    // Fill the rest randomly
+    for (let i = password.length; i < length; i++) {
+      password += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+
+    // Shuffle the password
+    return password
+      .split('')
+      .sort(() => Math.random() - 0.5)
+      .join('');
   },
 };
 

@@ -49,30 +49,30 @@ const DESTINATION_CONFIG = {
 // Normalize location names for consistent lookup
 const normalizeLocation = (loc: string): string => {
   if (!loc || typeof loc !== 'string') return 'Await';
-  
+
   const normalized = loc.trim().toLowerCase();
-  
+
   // Handle special cases with exact mapping
   const locationMap: Record<string, string> = {
-    'await_grn': 'Await_grn',
-    'await': 'Await',
-    'fold mill': 'Fold Mill', 
-    'foldmill': 'Fold Mill',
-    'pipeline': 'PipeLine',
+    await_grn: 'Await_grn',
+    await: 'Await',
+    'fold mill': 'Fold Mill',
+    foldmill: 'Fold Mill',
+    pipeline: 'PipeLine',
     'pipe line': 'PipeLine',
-    'production': 'Production',
-    'damage': 'Damage',
-    'voided': 'Voided',
-    'void': 'Void',
-    'lost': 'Lost',
-    'ship': 'Ship',
-    'bulk': 'Bulk',
-    'injection': 'Injection',
-    'prebook': 'Prebook',
-    'backcarpark': 'BackCarPark',
-    'back car park': 'BackCarPark'
+    production: 'Production',
+    damage: 'Damage',
+    voided: 'Voided',
+    void: 'Void',
+    lost: 'Lost',
+    ship: 'Ship',
+    bulk: 'Bulk',
+    injection: 'Injection',
+    prebook: 'Prebook',
+    backcarpark: 'BackCarPark',
+    'back car park': 'BackCarPark',
   };
-  
+
   return locationMap[normalized] || loc;
 };
 
@@ -84,7 +84,6 @@ export function validateTransfer(
   isValid: boolean;
   errorMessage?: string;
 } {
-
   const normalizedFrom = normalizeLocation(fromLocation);
   const normalizedTo = normalizeLocation(toLocation);
 
@@ -145,7 +144,8 @@ export function TransferDestinationSelector({
       <div className='rounded-lg border border-red-500 bg-red-900/20 p-3 text-sm text-red-400'>
         <div className='font-medium'>⚠️ Cannot transfer from &quot;{currentLocation}&quot;</div>
         <div className='mt-1 text-xs text-red-300'>
-          Normalized to: &quot;{normalizedCurrentLocation}&quot; | Available destinations: {JSON.stringify(availableDestinations)}
+          Normalized to: &quot;{normalizedCurrentLocation}&quot; | Available destinations:{' '}
+          {JSON.stringify(availableDestinations)}
         </div>
       </div>
     );
@@ -156,7 +156,8 @@ export function TransferDestinationSelector({
       <div className='rounded-lg border border-yellow-500 bg-yellow-900/20 p-3 text-sm text-yellow-400'>
         <div className='font-medium'>⚠️ No valid destinations available</div>
         <div className='mt-1 text-xs text-yellow-300'>
-          Current location: &quot;{currentLocation}&quot; | Available: {availableDestinations.join(', ')}
+          Current location: &quot;{currentLocation}&quot; | Available:{' '}
+          {availableDestinations.join(', ')}
         </div>
       </div>
     );

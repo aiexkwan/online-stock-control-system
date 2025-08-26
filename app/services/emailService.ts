@@ -42,10 +42,12 @@ export async function sendOrderCreatedEmail(emailRequest: EmailRequest) {
 
   // 設置郵件地址 - 使用已驗證的域名
   const fromEmail = from || 'orders@pennine.cc';
-  
+
   // 在開發環境下添加警告
   if (process.env.NODE_ENV !== 'production') {
-    console.warn('⚠️  [emailService] Make sure the domain "pennine.cc" is verified in Resend dashboard');
+    console.warn(
+      '⚠️  [emailService] Make sure the domain "pennine.cc" is verified in Resend dashboard'
+    );
     console.warn('⚠️  [emailService] If emails are not being received, check:');
     console.warn('    1. Domain verification status in Resend');
     console.warn('    2. SPF/DKIM records are properly configured');

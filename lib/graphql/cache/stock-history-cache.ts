@@ -3,7 +3,14 @@
  * Optimized caching strategies with field policies and type policies
  */
 
-import { InMemoryCache, TypePolicies, FieldPolicy, gql, ApolloClient, Reference } from '@apollo/client';
+import {
+  InMemoryCache,
+  TypePolicies,
+  FieldPolicy,
+  gql,
+  ApolloClient,
+  Reference,
+} from '@apollo/client';
 import { relayStylePagination } from '@apollo/client/utilities';
 
 // Type definitions for cache data structures
@@ -40,7 +47,6 @@ interface StockHistoryRecord {
   __typename?: string;
 }
 
-
 // Custom field policies for optimized caching
 const stockHistoryCacheConfig = {
   typePolicies: {
@@ -52,10 +58,10 @@ const stockHistoryCacheConfig = {
           merge(existing, incoming, { args, toReference, readField }) {
             // Handle pagination merge
             if (!existing) return incoming;
-            
+
             const existingRecords = existing.records || [];
             const incomingRecords = incoming.records || [];
-            
+
             // For cursor-based pagination, append new records
             if (args?.pagination?.after) {
               return {
@@ -63,19 +69,19 @@ const stockHistoryCacheConfig = {
                 records: [...existingRecords, ...incomingRecords],
               };
             }
-            
+
             // For fresh queries, replace existing
             return incoming;
           },
           read(existing, { args, toReference, readField }) {
             if (!existing) return existing;
-            
+
             // Apply client-side filtering if needed
             const filter = args?.filter;
             if (!filter) return existing;
-            
+
             let records = existing.records || [];
-            
+
             // Client-side date filtering for performance
             if (filter.dateRange?.start) {
               const startDate = new Date(filter.dateRange.start);
@@ -93,7 +99,7 @@ const stockHistoryCacheConfig = {
                 return true;
               });
             }
-            
+
             if (filter.dateRange?.end) {
               const endDate = new Date(filter.dateRange.end);
               records = records.filter((record: unknown) => {
@@ -110,7 +116,7 @@ const stockHistoryCacheConfig = {
                 return true;
               });
             }
-            
+
             return {
               ...existing,
               records,
@@ -118,13 +124,13 @@ const stockHistoryCacheConfig = {
             };
           },
         },
-        
+
         // Single pallet history with stable caching
         palletHistoryByNumber: {
           keyArgs: ['palletNumber'],
           merge: false, // Always replace - pallet history is more stable
         },
-        
+
         // Transfer time flow with time-based caching
         transferTimeFlow: {
           keyArgs: ['filter.dateRange'],
@@ -133,13 +139,13 @@ const stockHistoryCacheConfig = {
             return incoming;
           },
         },
-        
+
         // Search results - no caching (always fresh)
         searchStockHistory: {
           keyArgs: false, // No caching for search results
           merge: false,
         },
-        
+
         // Stats with time-window caching
         stockHistoryStats: {
           keyArgs: ['filter', 'timeframe'],
@@ -147,7 +153,7 @@ const stockHistoryCacheConfig = {
         },
       },
     },
-    
+
     StockHistoryRecord: {
       keyFields: ['id'],
       fields: {
@@ -155,15 +161,15 @@ const stockHistoryCacheConfig = {
         actionType: {
           read(existing, { readField }) {
             if (existing) return existing;
-            
+
             const action = readField('action') as string;
             if (!action) return null;
-            
+
             const movementActions = ['TRANSFERRED', 'MOVED'];
             const statusActions = ['VOIDED', 'ALLOCATED', 'QUALITY_CHECK'];
             const quantityActions = ['ADJUSTED', 'LOADED', 'UNLOADED'];
             const systemActions = ['CREATED'];
-            
+
             if (movementActions.includes(action)) return 'MOVEMENT';
             if (statusActions.includes(action)) return 'STATUS_CHANGE';
             if (quantityActions.includes(action)) return 'QUANTITY_CHANGE';
@@ -171,14 +177,14 @@ const stockHistoryCacheConfig = {
             return 'SYSTEM_ACTION';
           },
         },
-        
+
         actionCategory: {
           read(existing, { readField }) {
             if (existing) return existing;
-            
+
             const fromLocation = readField('fromLocation') as string | undefined;
             const toLocation = readField('toLocation') as string | undefined;
-            
+
             if (toLocation && !fromLocation) return 'INBOUND';
             if (fromLocation && !toLocation) return 'OUTBOUND';
             if (fromLocation && toLocation) return 'INTERNAL';
@@ -187,54 +193,62 @@ const stockHistoryCacheConfig = {
         },
       },
     },
-    
+
     PalletHistoryResult: {
       keyFields: ['productCode'],
       fields: {
         records: relayStylePagination(['filter', 'sort']),
-        
+
         // Aggregations can be computed client-side from records
         aggregations: {
           read(existing, { readField }) {
             if (existing) return existing;
-            
+
             const records = (readField('records') as unknown[]) || [];
-            
+
             return {
               totalActions: records.length,
-              uniquePallets: new Set(records.map(r => {
-                const ref = r as Reference | CacheObject;
-                if ('__ref' in ref && typeof ref.__ref === 'string') {
-                  return readField('palletNumber', ref as Reference) as string;
-                }
-                // Handle non-reference objects
-                if (ref && typeof ref === 'object') {
-                  return readField('palletNumber', ref as Reference) as string;
-                }
-                return '';
-              }).filter(Boolean)).size,
-              uniqueOperators: new Set(records.map(r => {
-                const ref = r as Reference | CacheObject;
-                if ('__ref' in ref && typeof ref.__ref === 'string') {
-                  return readField('operatorName', ref as Reference) as string;
-                }
-                // Handle non-reference objects
-                if (ref && typeof ref === 'object') {
-                  return readField('operatorName', ref as Reference) as string;
-                }
-                return '';
-              }).filter(Boolean)).size,
+              uniquePallets: new Set(
+                records
+                  .map(r => {
+                    const ref = r as Reference | CacheObject;
+                    if ('__ref' in ref && typeof ref.__ref === 'string') {
+                      return readField('palletNumber', ref as Reference) as string;
+                    }
+                    // Handle non-reference objects
+                    if (ref && typeof ref === 'object') {
+                      return readField('palletNumber', ref as Reference) as string;
+                    }
+                    return '';
+                  })
+                  .filter(Boolean)
+              ).size,
+              uniqueOperators: new Set(
+                records
+                  .map(r => {
+                    const ref = r as Reference | CacheObject;
+                    if ('__ref' in ref && typeof ref.__ref === 'string') {
+                      return readField('operatorName', ref as Reference) as string;
+                    }
+                    // Handle non-reference objects
+                    if (ref && typeof ref === 'object') {
+                      return readField('operatorName', ref as Reference) as string;
+                    }
+                    return '';
+                  })
+                  .filter(Boolean)
+              ).size,
               // Other aggregations would be computed here
             };
           },
         },
       },
     },
-    
+
     SinglePalletHistoryResult: {
       keyFields: ['palletNumber'],
     },
-    
+
     TransferTimeFlowResult: {
       keyFields: ['filter', 'dateRange'],
       fields: {
@@ -243,12 +257,12 @@ const stockHistoryCacheConfig = {
         },
       },
     },
-    
+
     // Product info caching
     ProductBasicInfo: {
       keyFields: ['code'],
     },
-    
+
     // User info caching
     User: {
       keyFields: ['id'],
@@ -260,10 +274,10 @@ const stockHistoryCacheConfig = {
 export const createStockHistoryCache = () => {
   return new InMemoryCache({
     ...stockHistoryCacheConfig,
-    
+
     // Global cache settings
     resultCaching: true,
-    
+
     // Custom data ID generation
     dataIdFromObject(object: Readonly<import('@apollo/client').StoreObject>) {
       // Handle different object types
@@ -271,23 +285,23 @@ export const createStockHistoryCache = () => {
       if (typedObject.__typename === 'StockHistoryRecord' && typedObject.id) {
         return `StockHistoryRecord:${typedObject.id}`;
       }
-      
+
       if (typedObject.__typename === 'PalletHistoryResult' && typedObject.productCode) {
         return `PalletHistoryResult:${typedObject.productCode}`;
       }
-      
+
       if (typedObject.__typename === 'SinglePalletHistoryResult' && typedObject.palletNumber) {
         return `SinglePalletHistoryResult:${typedObject.palletNumber}`;
       }
-      
+
       if (typedObject.__typename === 'ProductBasicInfo' && typedObject.code) {
         return `ProductBasicInfo:${typedObject.code}`;
       }
-      
+
       // Default behavior
       return defaultDataIdFromObject(typedObject);
     },
-    
+
     // Memory management
     possibleTypes: {
       // Add possible types if using unions/interfaces
@@ -308,9 +322,9 @@ export const updateStockHistoryCache = (cache: InMemoryCache, newRecord: StockHi
         query: PALLET_HISTORY_BY_PRODUCT,
         variables: { productCode: newRecord.productCode },
       },
-      (data) => {
+      data => {
         if (!data?.palletHistoryByProduct) return data;
-        
+
         return {
           palletHistoryByProduct: {
             ...data.palletHistoryByProduct,
@@ -321,7 +335,7 @@ export const updateStockHistoryCache = (cache: InMemoryCache, newRecord: StockHi
       }
     );
   }
-  
+
   // Update pallet-specific history cache
   if (newRecord.palletNumber) {
     cache.updateQuery(
@@ -329,9 +343,9 @@ export const updateStockHistoryCache = (cache: InMemoryCache, newRecord: StockHi
         query: PALLET_HISTORY_BY_NUMBER,
         variables: { palletNumber: newRecord.palletNumber },
       },
-      (data) => {
+      data => {
         if (!data?.palletHistoryByNumber) return data;
-        
+
         return {
           palletHistoryByNumber: {
             ...data.palletHistoryByNumber,
@@ -347,10 +361,13 @@ export const updateStockHistoryCache = (cache: InMemoryCache, newRecord: StockHi
 /**
  * Invalidate cache for specific product or pallet
  */
-export const invalidateStockHistoryCache = (cache: InMemoryCache, identifiers: {
-  productCode?: string;
-  palletNumber?: string;
-}) => {
+export const invalidateStockHistoryCache = (
+  cache: InMemoryCache,
+  identifiers: {
+    productCode?: string;
+    palletNumber?: string;
+  }
+) => {
   if (identifiers.productCode) {
     cache.evict({
       id: cache.identify({
@@ -359,7 +376,7 @@ export const invalidateStockHistoryCache = (cache: InMemoryCache, identifiers: {
       }),
     });
   }
-  
+
   if (identifiers.palletNumber) {
     cache.evict({
       id: cache.identify({
@@ -368,17 +385,20 @@ export const invalidateStockHistoryCache = (cache: InMemoryCache, identifiers: {
       }),
     });
   }
-  
+
   cache.gc(); // Garbage collect orphaned objects
 };
 
 /**
  * Preload cache with initial data
  */
-export const preloadStockHistoryCache = (cache: InMemoryCache, initialData: {
-  recentProducts?: string[];
-  recentPallets?: string[];
-}) => {
+export const preloadStockHistoryCache = (
+  cache: InMemoryCache,
+  initialData: {
+    recentProducts?: string[];
+    recentPallets?: string[];
+  }
+) => {
   // This would be called during app initialization to preload frequently accessed data
   // Implementation depends on your specific needs
 };
@@ -400,10 +420,10 @@ export const cacheWarmingStrategies = {
         fetchPolicy: 'cache-first',
       })
     );
-    
+
     await Promise.allSettled(promises);
   },
-  
+
   // Prefetch related data
   async prefetchRelatedData(client: ApolloClient<unknown>, productCode: string) {
     // Prefetch product info
@@ -412,7 +432,7 @@ export const cacheWarmingStrategies = {
       variables: { productCode },
       fetchPolicy: 'cache-first',
     });
-    
+
     // Prefetch recent stats
     await client.query({
       query: STOCK_HISTORY_STATS,
@@ -436,7 +456,7 @@ export class CacheMonitor {
     evictions: number;
     size: number;
   };
-  
+
   constructor(cache: InMemoryCache) {
     this.cache = cache;
     this.metrics = {
@@ -446,19 +466,19 @@ export class CacheMonitor {
       size: 0,
     };
   }
-  
+
   recordHit() {
     this.metrics.hits++;
   }
-  
+
   recordMiss() {
     this.metrics.misses++;
   }
-  
+
   recordEviction() {
     this.metrics.evictions++;
   }
-  
+
   getMetrics() {
     return {
       ...this.metrics,
@@ -466,24 +486,27 @@ export class CacheMonitor {
       size: this.getCacheSize(),
     };
   }
-  
+
   private getCacheSize() {
     // Estimate cache size
     const data = this.cache.extract();
     return Object.keys(data).length;
   }
-  
+
   logMetrics() {
     const metrics = this.getMetrics();
     console.log('Stock History Cache Metrics:', metrics);
   }
-  
+
   // Auto-cleanup strategy
   scheduleCleanup() {
-    setInterval(() => {
-      this.cache.gc();
-      this.recordEviction();
-    }, 5 * 60 * 1000); // Every 5 minutes
+    setInterval(
+      () => {
+        this.cache.gc();
+        this.recordEviction();
+      },
+      5 * 60 * 1000
+    ); // Every 5 minutes
   }
 }
 
@@ -495,19 +518,15 @@ const defaultDataIdFromObject = (object: CacheObject): string | undefined => {
   return undefined;
 };
 
-
 // Import necessary queries from the queries file
-import { 
-  PALLET_HISTORY_BY_PRODUCT, 
-  PALLET_HISTORY_BY_NUMBER
+import {
+  PALLET_HISTORY_BY_PRODUCT,
+  PALLET_HISTORY_BY_NUMBER,
 } from '../queries/stock-history.graphql';
 
 // Define missing STOCK_HISTORY_STATS query
 const STOCK_HISTORY_STATS = gql`
-  query StockHistoryStats(
-    $filter: StockHistoryFilter
-    $timeframe: String!
-  ) {
+  query StockHistoryStats($filter: StockHistoryFilter, $timeframe: String!) {
     stockHistoryStats(filter: $filter, timeframe: $timeframe) {
       totalRecords
       uniquePallets

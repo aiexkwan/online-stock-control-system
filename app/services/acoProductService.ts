@@ -14,19 +14,20 @@ export class ACOProductService {
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5分鐘快取
 
   private constructor() {}
-  
+
   /**
    * 延遲初始化 Supabase 客戶端
    */
   private getSupabase(): SupabaseClient<Database> {
     if (!this.supabase) {
       const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      
+      const key =
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
       if (!url || !key) {
         throw new Error('Supabase URL and key are required');
       }
-      
+
       this.supabase = createClient<Database>(url, key);
     }
     return this.supabase;
@@ -45,21 +46,21 @@ export class ACOProductService {
   private async loadACOProducts(): Promise<Set<string>> {
     try {
       console.log('[ACOProductService] Loading ACO products from database...');
-      
+
       const { data, error } = await this.getSupabase()
         .from('data_code')
         .select('code')
         .eq('type', 'ACO');
-      
+
       if (error) {
         console.error('[ACOProductService] Database query error:', error);
         // 返回空集合，讓系統繼續運作
         return new Set();
       }
-      
+
       const codes = new Set(data?.map(item => item.code.toUpperCase()) || []);
       console.log(`[ACOProductService] Loaded ${codes.size} ACO products from database`);
-      
+
       return codes;
     } catch (error) {
       console.error('[ACOProductService] Unexpected error:', error);
@@ -72,13 +73,13 @@ export class ACOProductService {
    */
   public async isACOProduct(productCode: string): Promise<boolean> {
     if (!productCode) return false;
-    
+
     // 檢查快取是否過期
     if (!this.acoProductsCache || Date.now() > this.cacheExpiry) {
       this.acoProductsCache = await this.loadACOProducts();
       this.cacheExpiry = Date.now() + this.CACHE_DURATION;
     }
-    
+
     return this.acoProductsCache.has(productCode.toUpperCase());
   }
 
@@ -87,16 +88,14 @@ export class ACOProductService {
    */
   public async filterACOProducts(productCodes: string[]): Promise<string[]> {
     if (!productCodes || productCodes.length === 0) return [];
-    
+
     // 確保快取已載入
     if (!this.acoProductsCache || Date.now() > this.cacheExpiry) {
       this.acoProductsCache = await this.loadACOProducts();
       this.cacheExpiry = Date.now() + this.CACHE_DURATION;
     }
-    
-    return productCodes.filter(code => 
-      this.acoProductsCache!.has(code.toUpperCase())
-    );
+
+    return productCodes.filter(code => this.acoProductsCache!.has(code.toUpperCase()));
   }
 
   /**
@@ -115,7 +114,7 @@ export class ACOProductService {
       this.acoProductsCache = await this.loadACOProducts();
       this.cacheExpiry = Date.now() + this.CACHE_DURATION;
     }
-    
+
     return Array.from(this.acoProductsCache);
   }
 }

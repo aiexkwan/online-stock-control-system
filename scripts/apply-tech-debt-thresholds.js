@@ -95,7 +95,7 @@ function checkThreshold(name, currentValue, threshold) {
     message: `${status} ${name}: ${currentValue}/${threshold.value} (${threshold.description})`,
     action: threshold.actionRequired,
     currentValue,
-    thresholdValue: threshold.value
+    thresholdValue: threshold.value,
   };
 }
 
@@ -119,7 +119,7 @@ function checkThresholds() {
     critical: [],
     high: [],
     medium: [],
-    info: []
+    info: [],
   };
 
   // TypeScript 檢查
@@ -181,9 +181,14 @@ function checkThresholds() {
   const healthCheck = checkThreshold(
     '健康分數',
     100 - report.summary.healthScore, // 反轉，因為我們檢查的是最小值
-    { value: 100 - thresholds.codeQuality.minHealthScore.value, ...thresholds.codeQuality.minHealthScore }
+    {
+      value: 100 - thresholds.codeQuality.minHealthScore.value,
+      ...thresholds.codeQuality.minHealthScore,
+    }
   );
-  console.log(`   ${healthCheck.passed ? '✅' : '❌'} 健康分數: ${report.summary.healthScore}/100 (最低要求: ${thresholds.codeQuality.minHealthScore.value})`);
+  console.log(
+    `   ${healthCheck.passed ? '✅' : '❌'} 健康分數: ${report.summary.healthScore}/100 (最低要求: ${thresholds.codeQuality.minHealthScore.value})`
+  );
 
   // 收集所有檢查結果
   const allChecks = [
@@ -193,7 +198,7 @@ function checkThresholds() {
     eslintWarningCheck,
     eslintFixableCheck,
     testFailCheck,
-    healthCheck
+    healthCheck,
   ];
 
   // 分類結果
@@ -261,7 +266,7 @@ function checkEscalationRules(config, report) {
   const results = {
     critical: [],
     high: [],
-    medium: []
+    medium: [],
   };
 
   const escalationRules = config.escalationRules;
@@ -349,19 +354,30 @@ function generateThresholdReport() {
       passed: 0,
       failed: 0,
       critical: 0,
-      warnings: 0
-    }
+      warnings: 0,
+    },
   };
 
   // 執行所有檢查並收集結果
   const checks = [
     ['typescript.errors', report.metrics.typescript.errorCount, thresholds.typescript.maxErrors],
-    ['typescript.warnings', report.metrics.typescript.warningCount, thresholds.typescript.maxWarnings],
+    [
+      'typescript.warnings',
+      report.metrics.typescript.warningCount,
+      thresholds.typescript.maxWarnings,
+    ],
     ['eslint.errors', report.metrics.eslint.errorCount, thresholds.eslint.maxErrors],
     ['eslint.warnings', report.metrics.eslint.warningCount, thresholds.eslint.maxWarnings],
     ['eslint.fixable', report.metrics.eslint.fixableCount, thresholds.eslint.maxFixableIssues],
     ['testing.failed', report.metrics.testing.failedTests, thresholds.testing.maxFailedTests],
-    ['health.score', 100 - report.summary.healthScore, { value: 100 - thresholds.codeQuality.minHealthScore.value, ...thresholds.codeQuality.minHealthScore }]
+    [
+      'health.score',
+      100 - report.summary.healthScore,
+      {
+        value: 100 - thresholds.codeQuality.minHealthScore.value,
+        ...thresholds.codeQuality.minHealthScore,
+      },
+    ],
   ];
 
   checks.forEach(([name, currentValue, threshold]) => {
@@ -372,7 +388,7 @@ function generateThresholdReport() {
       thresholdValue: result.thresholdValue,
       level: result.level,
       message: result.message,
-      action: result.action
+      action: result.action,
     };
 
     thresholdReport.summary.total++;
@@ -426,5 +442,5 @@ module.exports = {
   getThresholdsForEnvironment,
   checkThreshold,
   checkThresholds,
-  generateThresholdReport
+  generateThresholdReport,
 };

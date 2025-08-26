@@ -42,15 +42,15 @@ export const DATABASE_FIELD_MAPPINGS: Record<string, TableMapping> = {
     computedFields: [
       {
         graphqlField: 'action',
-        computation: (row) => 'TRANSFERRED', // Default action for transfers
-        dependencies: ['f_loc', 't_loc']
+        computation: row => 'TRANSFERRED', // Default action for transfers
+        dependencies: ['f_loc', 't_loc'],
       },
       {
         graphqlField: 'actionType',
-        computation: (row) => 'MOVEMENT',
-        dependencies: []
-      }
-    ]
+        computation: row => 'MOVEMENT',
+        dependencies: [],
+      },
+    ],
   },
 
   record_palletinfo: {
@@ -67,10 +67,10 @@ export const DATABASE_FIELD_MAPPINGS: Record<string, TableMapping> = {
     computedFields: [
       {
         graphqlField: 'action',
-        computation: (row) => 'CREATED',
-        dependencies: []
-      }
-    ]
+        computation: row => 'CREATED',
+        dependencies: [],
+      },
+    ],
   },
 
   record_history: {
@@ -81,8 +81,8 @@ export const DATABASE_FIELD_MAPPINGS: Record<string, TableMapping> = {
       { graphqlField: 'action', dbColumn: 'action', required: true },
       { graphqlField: 'palletNumber', dbColumn: 'plt_num', required: true },
       { graphqlField: 'remark', dbColumn: 'remark' },
-    ]
-  }
+    ],
+  },
 };
 
 /**
@@ -128,7 +128,10 @@ export class FieldMapper {
   /**
    * Transforms database result to GraphQL format
    */
-  static transformResult(tableName: string, dbResult: Record<string, unknown>): Record<string, unknown> {
+  static transformResult(
+    tableName: string,
+    dbResult: Record<string, unknown>
+  ): Record<string, unknown> {
     const mapping = DATABASE_FIELD_MAPPINGS[tableName];
     if (!mapping) {
       return dbResult;
@@ -140,7 +143,7 @@ export class FieldMapper {
     mapping.fields.forEach(fieldMapping => {
       const dbValue = dbResult[fieldMapping.dbColumn];
       if (dbValue !== undefined) {
-        transformed[fieldMapping.graphqlField] = fieldMapping.transformer 
+        transformed[fieldMapping.graphqlField] = fieldMapping.transformer
           ? fieldMapping.transformer(dbValue)
           : dbValue;
       } else if (fieldMapping.defaultValue !== undefined) {
@@ -160,7 +163,7 @@ export class FieldMapper {
    * Validates that required database columns exist
    */
   static async validateTableSchema(
-    supabase: SupabaseClient, 
+    supabase: SupabaseClient,
     tableName: string
   ): Promise<{ valid: boolean; missing: string[]; warnings: string[] }> {
     const mapping = DATABASE_FIELD_MAPPINGS[tableName];
@@ -176,7 +179,9 @@ export class FieldMapper {
 
       if (error) throw error;
 
-      const existingColumns = new Set(columns?.map((c: { column_name: string }) => c.column_name) || []);
+      const existingColumns = new Set(
+        columns?.map((c: { column_name: string }) => c.column_name) || []
+      );
       const missing: string[] = [];
       const warnings: string[] = [];
 
@@ -201,13 +206,13 @@ export class FieldMapper {
       return {
         valid: missing.length === 0,
         missing,
-        warnings
+        warnings,
       };
     } catch (error) {
       return {
         valid: false,
         missing: [],
-        warnings: [`Failed to validate schema for ${tableName}: ${error}`]
+        warnings: [`Failed to validate schema for ${tableName}: ${error}`],
       };
     }
   }

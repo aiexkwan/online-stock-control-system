@@ -152,12 +152,15 @@ export class DataSourceConfigManager {
 
     for (const rule of sortedRules) {
       if (await this.evaluateRule(rule, context)) {
-        logger.debug({
-          ruleId: rule.id,
-          ruleName: rule.name,
-          target: rule.target,
-          context,
-        }, 'Data source rule matched');
+        logger.debug(
+          {
+            ruleId: rule.id,
+            ruleName: rule.name,
+            target: rule.target,
+            context,
+          },
+          'Data source rule matched'
+        );
 
         return {
           dataSource: rule.target,
@@ -265,11 +268,14 @@ export class DataSourceConfigManager {
           }
         }
 
-        logger.info({
-          experimentId: test.experimentId,
-          userId: context.userId,
-          targetDataSource: test.targetDataSource,
-        }, 'A/B test activated');
+        logger.info(
+          {
+            experimentId: test.experimentId,
+            userId: context.userId,
+            targetDataSource: test.targetDataSource,
+          },
+          'A/B test activated'
+        );
 
         return {
           dataSource: test.targetDataSource,
