@@ -1,11 +1,13 @@
 /**
  * useStockUpdates Hook
  * 處理庫存和工作記錄更新
+ * 已遷移到直接使用Supabase RPC調用
  */
 
 import { useCallback } from 'react';
 import { getErrorMessage } from '@/lib/types/error-handling';
 import { toast } from 'sonner';
+import { createClient } from '@/app/utils/supabase/client';
 import type { ProductInfo } from '../../types';
 import { isProduction, isNotProduction } from '@/lib/utils/env';
 
@@ -53,28 +55,44 @@ export const useStockUpdates = (): UseStockUpdatesReturn => {
         };
       }
 
-      // 調用 API 更新庫存和工作記錄
-      const response = await fetch('/api/print-label-updates', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          productCode: productInfo.code,
-          quantity: totalQuantity,
-          userId: userIdNum,
-          palletCount: palletCount,
-          description: productInfo.description,
-        }),
+      // 直接調用RPC函數更新庫存和工作記錄
+      const supabase = createClient();
+
+      const { data, error } = await supabase.rpc('handle_print_label_updates', {
+        p_product_code: productInfo.code,
+        p_quantity: totalQuantity,
+        p_user_id: userIdNum,
+        p_pallet_count: palletCount,
+        p_description: productInfo.description || null,
       });
 
-      const result = await response.json();
-
-      if (!result.success) {
-        console.error('Failed to update stock/work levels:', result.error);
+      if (error) {
+        console.error('Failed to update stock/work levels:', error);
         return {
           success: false,
-          error: result.error || 'Failed to update stock/work levels',
+          error: error.message || 'Failed to update stock/work levels',
+        };
+      }
+
+      // 檢查RPC函數返回的結果
+      if (!data || typeof data !== 'object') {
+        return {
+          success: false,
+          error: 'Invalid response from database function',
+        };
+      }
+
+      const result = data as {
+        success: boolean;
+        message?: string;
+        stock_updated?: number;
+        work_updated?: number;
+      };
+
+      if (!result.success) {
+        return {
+          success: false,
+          error: result.message || 'Database function returned error',
         };
       }
 

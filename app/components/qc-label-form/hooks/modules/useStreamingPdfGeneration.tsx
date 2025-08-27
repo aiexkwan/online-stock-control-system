@@ -12,6 +12,7 @@ import { prepareQcLabelData, type QcInputData } from '@/lib/pdfUtils';
 import { uploadPdfToStorage, updatePalletPdfUrl } from '@/app/actions/qcActions';
 import { getOrdinalSuffix, getAcoPalletCount } from '@/app/utils/qcLabelHelpers';
 import { createClient } from '@/app/utils/supabase/client';
+import { enhancedPdfParallelProcessor, type ParallelPdfTask, type ProgressUpdate } from '@/lib/performance/enhanced-pdf-parallel-processor';
 import type { ProductInfo } from '../../types';
 
 interface StreamingPdfGenerationOptions {
@@ -164,7 +165,7 @@ export const useStreamingPdfGeneration = (): UseStreamingPdfGenerationReturn => 
     []
   );
 
-  // 批量串流生成 PDFs
+  // 批量串流生成 PDFs - 優化使用新的並行處理器
   const generatePdfsStream = useCallback(
     async (options: StreamingPdfGenerationOptions) => {
       const {
@@ -177,7 +178,7 @@ export const useStreamingPdfGeneration = (): UseStreamingPdfGenerationReturn => 
         clockNumber,
         onProgress,
         onStreamComplete,
-        batchSize = 3, // 預設每批處理 3 個
+        batchSize = 3, // 預設每批處理 3 個 (已被並行處理器取代)
       } = options;
 
       // 檢查必要參數
@@ -208,86 +209,102 @@ export const useStreamingPdfGeneration = (): UseStreamingPdfGenerationReturn => 
           initialAcoPalletCount = await getAcoPalletCount(supabase, formData.acoOrderRef.trim());
         }
 
-        // 分批處理以提高性能
-        for (let batch = 0; batch < count; batch += batchSize) {
+        // 準備並行任務
+        const tasks: ParallelPdfTask[] = [];
+        for (let i = 0; i < count; i++) {
           if (signal.aborted) break;
 
-          const batchEnd = Math.min(batch + batchSize, count);
-          const batchPromises = [];
+          const palletNum = palletNumbers[i];
+          const seriesNum = series[i];
 
-          // 並行處理當前批次
-          for (let i = batch; i < batchEnd; i++) {
-            const palletNum = palletNumbers[i];
-            const seriesNum = series[i];
-
-            // 計算 ACO 托盤計數
-            let acoDisplayText = '';
-            if (productInfo.type === 'ACO' && formData.acoOrderRef?.trim()) {
-              const acoPalletCount = initialAcoPalletCount + i;
-              acoDisplayText = `${formData.acoOrderRef.trim()} - ${getOrdinalSuffix(acoPalletCount)} Pallet`;
-            }
-
-            const promise = generateSinglePdf(
-              productInfo,
-              quantity,
-              palletNum,
-              seriesNum,
-              formData.operator || '-',
-              clockNumber,
-              acoDisplayText,
-              signal
-            ).then(result => ({ result, index: i }));
-
-            batchPromises.push(promise);
+          // 計算 ACO 托盤計數
+          let acoDisplayText = '';
+          if (productInfo.type === 'ACO' && formData.acoOrderRef?.trim()) {
+            const acoPalletCount = initialAcoPalletCount + i;
+            acoDisplayText = `${formData.acoOrderRef.trim()} - ${getOrdinalSuffix(acoPalletCount)} Pallet`;
           }
 
-          // 等待當前批次完成
-          const batchResults = await Promise.all(batchPromises);
-
-          // 處理批次結果
-          for (const { result, index } of batchResults) {
-            if (signal.aborted) break;
-
-            if (result.error) {
-              if (result.error !== 'Cancelled') {
-                const errorMsg = `Pallet ${index + 1} (${palletNumbers[index]}): ${result.error}`;
-                errors.push(errorMsg);
-                setStreamingStatus(prev => ({
-                  ...prev,
-                  completed: prev.completed + 1,
-                  errors: [...prev.errors, errorMsg],
-                }));
-                if (onProgress) {
-                  onProgress(index + 1, 'Failed');
-                }
-              }
-            } else if (result.blob && result.url) {
-              pdfBlobs.push(result.blob);
-              uploadedUrls.push(result.url);
-              setStreamingStatus(prev => ({
-                ...prev,
-                completed: prev.completed + 1,
-              }));
-              if (onProgress) {
-                onProgress(index + 1, 'Success');
-              }
-              // 通知單個 PDF 完成
-              if (onStreamComplete) {
-                onStreamComplete(result.blob, result.url, index);
-              }
-            }
-          }
+          tasks.push({
+            id: `pdf-task-${i}`,
+            productInfo,
+            quantity,
+            palletNum,
+            series: seriesNum,
+            operatorClockNum: formData.operator || '-',
+            qcClockNum: clockNumber,
+            acoDisplayText,
+            priority: 'normal',
+            timestamp: Date.now(),
+          });
         }
 
-        // 完成串流
-        setStreamingStatus(prev => ({ ...prev, isStreaming: false }));
+        // 設置進度監聽器
+        const progressHandler = (progressUpdate: ProgressUpdate) => {
+          setStreamingStatus(prev => ({
+            ...prev,
+            completed: progressUpdate.completed,
+            errors: progressUpdate.errors,
+          }));
 
-        return {
-          success: pdfBlobs.length > 0,
-          pdfBlobs,
-          uploadedUrls,
-          errors,
+          // 調用外部進度回調
+          if (onProgress) {
+            const status = progressUpdate.phase === 'completed' ? 'Success' : 
+                          progressUpdate.errors.length > 0 ? 'Failed' : 'Processing';
+            onProgress(progressUpdate.completed, status);
+          }
         };
+
+        // 註冊進度監聽器
+        enhancedPdfParallelProcessor.on('progress', progressHandler);
+
+        try {
+          // 使用增強的並行處理器處理所有任務
+          const result = await enhancedPdfParallelProcessor.processParallel(tasks);
+
+          // 處理結果
+          result.results.forEach((taskResult, index) => {
+            if (taskResult.success && taskResult.blob && taskResult.uploadUrl) {
+              pdfBlobs.push(taskResult.blob);
+              uploadedUrls.push(taskResult.uploadUrl);
+              
+              // 通知單個 PDF 完成
+              if (onStreamComplete) {
+                onStreamComplete(taskResult.blob, taskResult.uploadUrl, index);
+              }
+            }
+          });
+
+          // 收集錯誤
+          errors.push(...result.errors);
+
+          // 完成串流
+          setStreamingStatus(prev => ({ 
+            ...prev, 
+            isStreaming: false,
+            completed: result.results.filter(r => r.success).length,
+            errors: result.errors,
+          }));
+
+          console.log('[useStreamingPdfGeneration] Processing completed:', {
+            totalTasks: result.metrics.totalTasks,
+            completedTasks: result.metrics.completedTasks,
+            failedTasks: result.metrics.failedTasks,
+            successRate: result.metrics.successRate,
+            averageProcessingTime: result.metrics.averageProcessingTime,
+            throughputPerSecond: result.metrics.throughputPerSecond,
+          });
+
+          return {
+            success: result.success,
+            pdfBlobs,
+            uploadedUrls,
+            errors: result.errors,
+            metrics: result.metrics, // 新增性能指標
+          };
+        } finally {
+          // 移除進度監聽器
+          enhancedPdfParallelProcessor.off('progress', progressHandler);
+        }
       } catch (error: unknown) {
         console.error('Streaming PDF generation error:', error);
         setStreamingStatus(prev => ({
@@ -305,7 +322,7 @@ export const useStreamingPdfGeneration = (): UseStreamingPdfGenerationReturn => 
         abortControllerRef.current = null;
       }
     },
-    [generateSinglePdf, supabase]
+    [supabase]
   );
 
   return {
