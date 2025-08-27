@@ -32,11 +32,11 @@ import {
   type LabelMode,
 } from '@/app/constants/grnConstants';
 
-// Import reducer types
+// Import reducer types from unified library
 import type {
   GrnFormState,
   GrnFormAction,
-} from '@/app/(app)/print-grnlabel/hooks/useGrnFormReducer';
+} from '@/lib/grn/hooks/useGrnFormReducer';
 
 // Import GRN modules from unified library
 import { grnErrorHandler, useWeightCalculation, usePalletGenerationGrn } from '@/lib/grn';
