@@ -26,6 +26,18 @@ const getSecurityHeaders = (isDevelopment = false) => {
       key: 'X-DNS-Prefetch-Control',
       value: 'on',
     },
+    // Content Security Policy - 防止 XSS 和注入攻擊
+    {
+      key: 'Content-Security-Policy',
+      value: isDevelopment
+        ? "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com;"
+        : "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com; frame-ancestors 'none';",
+    },
+    // Permissions Policy - 限制瀏覽器功能
+    {
+      key: 'Permissions-Policy',
+      value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+    },
   ];
 
   return baseHeaders;

@@ -58,6 +58,7 @@
     "test-results/**",
     "playwright-report/**",
     "reports/**",
-    "docs/performance-optimization/StockTransferCard-optimized-implementation.tsx"
+    "docs/performance-optimization/StockTransferCard-optimized-implementation.tsx",
+    "backup_*/**"
   ]
 }
