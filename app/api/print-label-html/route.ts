@@ -169,7 +169,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   <div class="label">
     <!-- Logo -->
     <img
-      src="https://bbmkuiplnzvpudszrend.supabase.co/storage/v1/object/public/web-ui/P_Logo_DB.PNG"
+      src="${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/web-ui/P_Logo_DB.PNG"
       class="logo"
       alt="Company Logo"
     />
@@ -224,7 +224,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   <div class="label">
     <!-- Logo -->
     <img
-      src="https://bbmkuiplnzvpudszrend.supabase.co/storage/v1/object/public/web-ui/P_Logo_DB.PNG"
+      src="${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/web-ui/P_Logo_DB.PNG"
       class="logo"
       alt="Company Logo"
     />

@@ -100,3 +100,167 @@
 **項目負責人**：Frontend Developer
 **審核人**：Test Automator
 **報告日期**：2025-08-26
+
+## GRNLabelCard API 文檔
+
+### 1. 組件 Props 接口定義
+
+#### `EnhancedGRNLabelCardProps`
+
+```typescript
+interface EnhancedGRNLabelCardProps {
+  className?: string;
+  id?: string;
+  disabled?: boolean;
+  readOnly?: boolean;
+  debug?: boolean;
+  initialData?: {
+    grnNumber?: string;
+    materialSupplier?: string;
+    productCode?: string;
+  };
+  initialWeights?: string[];
+  theme?: {
+    accentColor?: string;
+    enableAnimations?: boolean;
+    customClasses?: {
+      container?: string;
+    };
+  };
+  layout?: {
+    compactMode?: boolean;
+    maxWeightInputs?: number;
+  };
+  validation?: {
+    customValidators?: {
+      grnNumber?: (value: string) => boolean | string;
+      materialSupplier?: (value: string) => boolean | string;
+      productCode?: (value: string) => boolean | string;
+      clockNumber?: (value: string) => boolean | string;
+    };
+  };
+  features?: {
+    enablePrinting?: boolean;
+    enableClockNumberDialog?: boolean;
+  };
+  callbacks?: {
+    onStateChange?: (state: GrnState) => void;
+    onFormChange?: (formData: GrnFormData, changedField: string) => void;
+    onBeforePrint?: (formData: GrnFormData, weights: string[]) => Promise<boolean>;
+    onPrintSuccess?: (labelCount: number) => void;
+    onPrintError?: (errorMessage: string) => void;
+    onValidationError?: (field: string, errorMessage: string) => void;
+    onValidationChange?: (isValid: boolean, errors: string[]) => void;
+    onMaxItemsReached?: () => void;
+  };
+}
+```
+
+### 2. 核心方法與事件
+
+#### 方法
+- `handleFormChange(field: string, value: string)`: 處理表單欄位變更
+- `handlePrintClick()`: 觸發列印標籤流程
+- `handleClockNumberConfirm(clockNumber: string)`: 確認時鐘編號並開始列印
+- `handleGrossWeightChange(index: number, value: string)`: 處理重量輸入變更
+
+#### 事件回調
+- `onStateChange`: 狀態變更追蹤
+- `onFormChange`: 表單域變更
+- `onBeforePrint`: 列印前驗證
+- `onPrintSuccess`: 列印成功
+- `onPrintError`: 列印錯誤處理
+
+### 3. 狀態管理
+
+#### `GrnState` 類型定義
+
+```typescript
+interface GrnState {
+  formData: {
+    grnNumber: string;
+    materialSupplier: string;
+    productCode: string;
+  };
+  productInfo: SafeGrnProductInfo | null;
+  supplierInfo: SafeGrnSupplierInfo | null;
+  grossWeights: string[];
+  labelMode: 'qty' | 'weight';
+  palletType: Record<PalletTypeKey, string>;
+  packageType: Record<PackageTypeKey, string>;
+  progress: {
+    current: number;
+    total: number;
+    status: string;
+  };
+  ui: {
+    isProcessing: boolean;
+    isClockNumberDialogOpen: boolean;
+    supplierError: string | null;
+  };
+}
+```
+
+### 4. 驗證策略
+
+- 使用 Zod 進行運行時類型檢查
+- 支持自定義驗證器
+- 表單、重量、時鐘編號均有嚴格驗證
+- 支持異步驗證回調
+
+### 5. 錯誤處理
+
+- 客製化錯誤處理 `grnErrorHandler`
+- 支持細粒度錯誤追蹤
+- 提供上下文化錯誤訊息
+- 預設 UI 錯誤顯示
+
+### 6. 性能優化
+
+- 記憶化組件渲染
+- 去抖動進度更新
+- 資源清理機制
+- 最佳實踐：限制最大輸入數量、延遲加載
+- 可配置的性能特性
+
+### 7. 安全性考慮
+
+- 僅授權用戶可列印
+- 時鐘編號強制驗證
+- 狀態突變受嚴格控制
+- 支持禁用和唯讀模式
+
+### 最佳實踐建議
+
+1. 始終提供完整的初始配置
+2. 實現所有可選回調
+3. 遵循類型安全最佳實踐
+4. 注意效能和資源管理
+
+### 版本相容性
+
+- Next.js: 15.4.4
+- React: 18.3.1
+- TypeScript: 5.8.3
+
+### 使用範例
+
+```typescript
+<GRNLabelCard 
+  initialData={{
+    grnNumber: 'GRN-2025-001',
+    materialSupplier: 'Supplier Corp'
+  }}
+  initialWeights={['10.5', '15.2']}
+  theme={{
+    accentColor: 'text-orange-400',
+    enableAnimations: true
+  }}
+  callbacks={{
+    onBeforePrint: async (formData) => {
+      // 自定義列印前驗證邏輯
+      return true;
+    }
+  }}
+/>
+```

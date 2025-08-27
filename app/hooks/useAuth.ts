@@ -246,7 +246,8 @@ export function useAuth(): AuthState {
       PUBLIC_ROUTES.includes(window.location.pathname as (typeof PUBLIC_ROUTES)[number])
     ) {
       console.log('[useAuth] Skipping auth check for public route:', window.location.pathname);
-      setLoading(false);
+      // Clear auth state for public routes to prevent stale data
+      clearAuthState();
       return;
     }
 
@@ -260,28 +261,21 @@ export function useAuth(): AuthState {
       try {
         console.log('[useAuth] Initial auth check with parallel verification');
 
-        // 並行會話檢查：同時使用多種方法驗證用戶身份，提升響應速度
-        const authChecks = await Promise.allSettled([
-          // 方法1：統一認證系統檢查
-          unifiedAuth.getCurrentUser(),
-          // 方法2：直接從 Supabase 客戶端獲取會話
-          supabase
-            ? supabase.auth
-                .getSession()
-                .then(({ data, error }) => (error ? null : data.session?.user))
-            : Promise.resolve(null),
-          // 方法3：獲取當前用戶狀態
-          supabase
-            ? supabase.auth.getUser().then(({ data, error }) => (error ? null : data.user))
-            : Promise.resolve(null),
-        ]);
-
-        // 找到第一個成功的認證結果
+        // Simplified single auth check to reduce API calls
         let authenticatedUser = null;
-        for (const result of authChecks) {
-          if (result.status === 'fulfilled' && result.value) {
-            authenticatedUser = result.value;
-            break;
+        
+        try {
+          // Try unifiedAuth first as it's most reliable
+          authenticatedUser = await unifiedAuth.getCurrentUser();
+        } catch (error) {
+          console.warn('[useAuth] UnifiedAuth failed, trying Supabase session:', error);
+          
+          // Fallback to Supabase session check only if needed
+          if (supabase) {
+            const { data, error: sessionError } = await supabase.auth.getSession();
+            if (!sessionError && data.session?.user) {
+              authenticatedUser = data.session.user;
+            }
           }
         }
 

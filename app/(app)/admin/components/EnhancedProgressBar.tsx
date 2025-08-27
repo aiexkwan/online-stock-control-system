@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo, useCallback, useRef, useEffect } from 'react';
 import {
   CheckCircleIcon,
   XCircleIcon,
@@ -8,6 +8,7 @@ import {
   ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import { useMediaQuery } from '@/app/components/qc-label-form/hooks/useMediaQuery';
+import { useProgressDebounce } from '@/lib/hooks/useProgressDebounce';
 
 export type ProgressStatus = 'Pending' | 'Processing' | 'Success' | 'Failed';
 
@@ -29,6 +30,14 @@ interface EnhancedProgressBarProps {
   showItemDetails?: boolean;
   variant?: 'default' | 'compact' | 'detailed';
   className?: string;
+  /** Enable debounced updates for better performance (default: true) */
+  enableDebounce?: boolean;
+  /** Debounce delay for progress updates (default: 100ms) */
+  debounceDelay?: number;
+  /** Enable performance monitoring */
+  enablePerformanceMonitoring?: boolean;
+  /** Callback for performance metrics */
+  onPerformanceMetrics?: (metrics: any) => void;
 }
 
 interface ProgressStepProps {
@@ -138,14 +147,94 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = React.mem
     showItemDetails = true,
     variant = 'default',
     className = '',
+    enableDebounce = true,
+    debounceDelay = 100,
+    enablePerformanceMonitoring = false,
+    onPerformanceMetrics,
   }) => {
     const isMobile = useMediaQuery('(max-width: 768px)');
-    const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
+    
+    // Performance tracking
+    const renderCountRef = useRef(0);
+    const lastRenderTimeRef = useRef(Date.now());
+    
+    // Internal state for debounced values
+    const [debouncedState, setDebouncedState] = React.useState({
+      current,
+      total,
+      status,
+    });
+    
+    // Setup debounced progress updates
+    const handleProgressUpdate = useCallback((update: any) => {
+      setDebouncedState(prev => ({
+        ...prev,
+        ...update,
+      }));
+    }, []);
+    
+    const { updateProgress, flushUpdates, getMetrics } = useProgressDebounce(
+      handleProgressUpdate,
+      {
+        progressDelay: debounceDelay,
+        statusDelay: debounceDelay * 0.5, // Status updates are more frequent
+        enableSmartBatching: true,
+        maxBatchSize: 5,
+      }
+    );
+    
+    // Update debounced state when props change
+    useEffect(() => {
+      if (enableDebounce) {
+        updateProgress({ current, total, status });
+      } else {
+        setDebouncedState({ current, total, status });
+      }
+    }, [current, total, status, enableDebounce, updateProgress]);
+    
+    // Use debounced values for calculations
+    const activeState = enableDebounce ? debouncedState : { current, total, status };
+    
+    const percentage = useMemo(() => {
+      return activeState.total > 0 ? Math.round((activeState.current / activeState.total) * 100) : 0;
+    }, [activeState.current, activeState.total]);
 
-    const successCount = status.filter(s => s === 'Success').length;
-    const failedCount = status.filter(s => s === 'Failed').length;
-    const processingCount = status.filter(s => s === 'Processing').length;
-    const pendingCount = status.filter(s => s === 'Pending').length;
+    const statusCounts = useMemo(() => {
+      const successCount = activeState.status.filter(s => s === 'Success').length;
+      const failedCount = activeState.status.filter(s => s === 'Failed').length;
+      const processingCount = activeState.status.filter(s => s === 'Processing').length;
+      const pendingCount = activeState.status.filter(s => s === 'Pending').length;
+      
+      return { successCount, failedCount, processingCount, pendingCount };
+    }, [activeState.status]);
+    
+    const { successCount, failedCount, processingCount, pendingCount } = statusCounts;
+    
+    // Performance monitoring
+    useEffect(() => {
+      if (enablePerformanceMonitoring) {
+        renderCountRef.current++;
+        const now = Date.now();
+        const renderTime = now - lastRenderTimeRef.current;
+        lastRenderTimeRef.current = now;
+        
+        if (onPerformanceMetrics && renderCountRef.current % 10 === 0) {
+          const metrics = getMetrics();
+          onPerformanceMetrics({
+            ...metrics,
+            renderCount: renderCountRef.current,
+            averageRenderTime: renderTime,
+          });
+        }
+      }
+    });
+    
+    // Cleanup effect
+    useEffect(() => {
+      return () => {
+        flushUpdates();
+      };
+    }, [flushUpdates]);
 
     const getProgressColor = () => {
       if (failedCount > 0) return 'bg-red-500';
@@ -154,7 +243,7 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = React.mem
       return 'bg-blue-500';
     };
 
-    if (total === 0) {
+    if (activeState.total === 0) {
       return null;
     }
 
@@ -168,7 +257,7 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = React.mem
           {showPercentage && (
             <div className='flex items-center space-x-3'>
               <span className='rounded-full bg-slate-700/50 px-3 py-1 text-sm text-slate-400'>
-                {current} / {total}
+                {activeState.current} / {activeState.total}
               </span>
               <span className='bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-xl font-bold text-transparent'>
                 {percentage}%
@@ -234,9 +323,9 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = React.mem
             {variant === 'compact' || isMobile ? (
               // Compact view for mobile or when specified
               <div className='flex flex-wrap gap-3'>
-                {status.map((itemStatus, index) => (
+                {activeState.status.map((itemStatus, index) => (
                   <ProgressStep
-                    key={index}
+                    key={`progress-step-${index}`}
                     status={itemStatus}
                     label={items?.[index]?.label || `Item ${index + 1}`}
                     details={items?.[index]?.details}
@@ -248,9 +337,9 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = React.mem
             ) : (
               // Detailed view
               <div className='scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800 max-h-64 space-y-3 overflow-y-auto'>
-                {status.map((itemStatus, index) => (
+                {activeState.status.map((itemStatus, index) => (
                   <ProgressStep
-                    key={index}
+                    key={`progress-step-detail-${index}`}
                     status={itemStatus}
                     label={items?.[index]?.label || `Pallet ${index + 1}`}
                     details={items?.[index]?.details}
@@ -263,7 +352,7 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = React.mem
         )}
 
         {/* Overall Status */}
-        {current === total && total > 0 && (
+        {activeState.current === activeState.total && activeState.total > 0 && (
           <div
             className={`flex items-center justify-center rounded-2xl border p-4 backdrop-blur-sm ${
               failedCount > 0

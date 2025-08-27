@@ -97,7 +97,8 @@ export const MaterialSupplierInput: React.FC<MaterialSupplierInputProps> = ({
           supplier_name: supplierData.supplier_name || '',
         });
         onSupplierInfoChange(unifiedSupplierData);
-        onChange(unifiedSupplierData.code); // 使用資料庫中的標準化代碼
+        // 不要覆蓋用戶輸入的值，讓輸入框保持用戶輸入的原值
+        // onChange(unifiedSupplierData.code); // 移除：避免覆蓋用戶輸入
         setSupplierError(null);
         (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[MaterialSupplierInput] Supplier found:', unifiedSupplierData);

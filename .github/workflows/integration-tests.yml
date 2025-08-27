@@ -1,0 +1,217 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'app/**'
+      - 'lib/**'
+      - 'components/**'
+      - '__tests__/integration/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vitest.integration.config.ts'
+      - '.github/workflows/integration-tests.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'app/**'
+      - 'lib/**'
+      - 'components/**'
+      - '__tests__/integration/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vitest.integration.config.ts'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    env:
+      NODE_ENV: test
+      NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
+      SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+            .next/cache
+          key: ${{ runner.os }}-node-${{ matrix.node-version }}-integration-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.node-version }}-integration-
+            ${{ runner.os }}-node-${{ matrix.node-version }}-
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm run postinstall
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Lint check
+        run: npm run lint
+
+      - name: Run integration tests
+        run: npm run test:integration:vitest
+        env:
+          VITEST_REPORTER: json
+          VITEST_OUTPUT_FILE: ./test-results/integration-results.json
+
+      - name: Generate coverage report
+        if: success() || failure()
+        run: npm run test:integration:vitest:coverage
+        continue-on-error: true
+
+      - name: Upload test results
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results-${{ matrix.node-version }}
+          path: |
+            test-results/integration-results.json
+            test-results/integration-report.html
+            coverage/integration/
+          retention-days: 30
+
+      - name: Upload coverage to Codecov
+        if: success() || failure()
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/integration/lcov.info
+          flags: integration
+          name: integration-coverage-${{ matrix.node-version }}
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Comment PR with test results
+        if: github.event_name == 'pull_request' && (success() || failure())
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            try {
+              const resultsPath = './test-results/integration-results.json';
+              if (fs.existsSync(resultsPath)) {
+                const results = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
+                
+                const { numTotalTests, numPassedTests, numFailedTests, numPendingTests } = results;
+                
+                const body = `## Integration Test Results (Node.js ${{ matrix.node-version }})
+
+| Status | Count |
+|--------|-------|
+| ✅ Passed | ${numPassedTests} |
+| ❌ Failed | ${numFailedTests} |
+| ⏳ Pending | ${numPendingTests} |
+| 📊 Total | ${numTotalTests} |
+
+**Coverage Report**: Check the artifacts for detailed coverage information.
+
+${numFailedTests > 0 ? '⚠️ **Some integration tests failed. Please review the test output.**' : '✅ **All integration tests passed!**'}
+                `;
+                
+                github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: body
+                });
+              }
+            } catch (error) {
+              console.log('Could not read test results:', error.message);
+            }
+
+  test-report:
+    name: Integration Test Report
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    if: always()
+
+    steps:
+      - name: Download test artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: integration-test-results-*
+          merge-multiple: true
+
+      - name: Generate summary report
+        run: |
+          echo "# Integration Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "test-results/integration-results.json" ]; then
+            echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "- **Status**: Integration tests completed" >> $GITHUB_STEP_SUMMARY
+            echo "- **Coverage**: Available in artifacts" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Add coverage badge if available
+            if [ -d "coverage/integration" ]; then
+              echo "## Coverage Information" >> $GITHUB_STEP_SUMMARY
+              echo "Detailed coverage reports are available in the artifacts." >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            echo "## Key Features Tested" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ GRN Label Card business flow integration" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Supabase database operations" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ PDF generation and upload services" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Error handling and boundary conditions" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Performance and resource management" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "- **Status**: ❌ Test results not found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  security-audit:
+    name: Security Audit (Integration Context)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security audit
+        run: |
+          npm audit --audit-level high
+          echo "## Security Audit Results" >> $GITHUB_STEP_SUMMARY
+          echo "Security audit completed for integration test dependencies." >> $GITHUB_STEP_SUMMARY

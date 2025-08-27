@@ -109,3 +109,30 @@ docs/Others/Anytype.md
 claude_desktop_config_macos.json
 .claude/settings.local.json
 .claude/settings.json
+
+# Security: Backup and sensitive files
+/backups/
+*.backup
+*.tar.gz
+*.zip
+*.sql
+*.dump
+.env
+.env.*
+!.env.example
+*-backup-*
+*_backup_*
+
+# Security: Keys and credentials
+*.key
+*.pem
+*.p12
+*.pfx
+private_key*
+secret*
+credentials*
+
+# Security: Logs with potential sensitive data
+/logs/
+*.log
+!.gitkeep

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { toast } from 'sonner';
-import { useAuth } from '@/app/hooks/useAuth';
+import { useAuthState } from '@/app/(auth)/main-login/context/AuthContext';
 
 interface AuthCheckerProps {
   children: React.ReactNode;
@@ -29,7 +29,7 @@ const protectedPaths = [
 export default function AuthChecker({ children }: AuthCheckerProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, loading, isAuthenticated } = useAuth(); // 使用統一的認證狀態
+  const { user, loading, isAuthenticated } = useAuthState(); // 使用依賴注入的認證狀態
   const [authCheckComplete, setAuthCheckComplete] = useState(false);
   const [shouldRedirect, setShouldRedirect] = useState(false);
 

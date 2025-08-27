@@ -13,6 +13,11 @@ import {
 import { PalletTypeSelector } from './PalletTypeSelector';
 import { PackageTypeSelector } from './PackageTypeSelector';
 import { SupplierInfo } from '@/lib/types/supplier-types';
+import {
+  EnhancedGrnDetailCardProps,
+  DEFAULT_GRN_THEME,
+  mergeGrnConfig
+} from '@/lib/types/grn-props';
 
 interface FormData {
   grnNumber: string;
@@ -44,6 +49,7 @@ interface PackageTypeData {
   notIncluded: string;
 }
 
+// Legacy interface for backward compatibility
 interface GrnDetailCardProps {
   formData: FormData;
   labelMode: LabelMode;
@@ -62,25 +68,100 @@ interface GrnDetailCardProps {
   disabled?: boolean;
 }
 
-export const GrnDetailCard: React.FC<GrnDetailCardProps> = ({
-  formData,
-  labelMode,
-  productInfo,
-  supplierInfo,
-  supplierError,
-  currentUserId,
-  palletType,
-  packageType,
-  onFormChange,
-  onSupplierInfoChange,
-  onProductInfoChange,
-  onLabelModeChange,
-  onPalletTypeChange,
-  onPackageTypeChange,
-  disabled = false,
-}) => {
+// Union type for backward compatibility
+type GrnDetailCardPropsUnion = GrnDetailCardProps | EnhancedGrnDetailCardProps;
+
+export const GrnDetailCard: React.FC<GrnDetailCardPropsUnion> = (props) => {
+  // Handle both legacy and enhanced props
+  const {
+    formData,
+    labelMode,
+    productInfo,
+    supplierInfo,
+    supplierError,
+    currentUserId,
+    palletType,
+    packageType,
+    onFormChange,
+    onSupplierInfoChange,
+    onProductInfoChange,
+    onLabelModeChange,
+    onPalletTypeChange,
+    onPackageTypeChange,
+    disabled = false,
+    className = '',
+    theme,
+    validation,
+    features,
+    onValidationError,
+    onFieldFocus,
+    onFieldBlur,
+  } = props as EnhancedGrnDetailCardProps;
+  
+  // Merge configurations with defaults
+  const config = React.useMemo(() => ({
+    theme: {
+      accentColor: (theme?.accentColor || 'orange') as 'orange' | 'blue' | 'green' | 'purple' | 'red',
+      customClasses: {
+        container: theme?.customClasses?.container || '',
+        header: theme?.customClasses?.header || '',
+        content: theme?.customClasses?.content || '',
+        button: theme?.customClasses?.button || '',
+        input: theme?.customClasses?.input || '',
+      }
+    },
+    validation: {
+      enableRealTimeValidation: validation?.enableRealTimeValidation ?? true,
+      customValidators: validation?.customValidators || {},
+    },
+    features: {
+      enableSupplierLookup: features?.enableSupplierLookup ?? true,
+      enableProductLookup: features?.enableProductLookup ?? true,
+    },
+  }), [theme, validation, features]);
+  
+  // Enhanced form change handler with validation
+  const handleEnhancedFormChange = React.useCallback((field: keyof typeof formData, value: string) => {
+    // Apply custom validation if available
+    const validatorKey = field as 'productCode' | 'supplierCode' | 'grnNumber' | 'clockNumber';
+    if (config.validation.customValidators?.[validatorKey]) {
+      const validator = config.validation.customValidators[validatorKey];
+      const validationResult = validator!(value);
+      if (validationResult !== true) {
+        const errorMessage = typeof validationResult === 'string' ? validationResult : 'Invalid value';
+        if (onValidationError) {
+          onValidationError(field, errorMessage);
+        }
+        return;
+      }
+    }
+    
+    onFormChange(field, value);
+  }, [onFormChange, config.validation, onValidationError]);
+  
+  // Enhanced field handlers
+  const handleFieldFocus = React.useCallback((field: keyof typeof formData) => {
+    if (onFieldFocus) {
+      onFieldFocus(field);
+    }
+  }, [onFieldFocus]);
+  
+  const handleFieldBlur = React.useCallback((field: keyof typeof formData, value: string) => {
+    if (onFieldBlur) {
+      onFieldBlur(field, value);
+    }
+  }, [onFieldBlur]);
+  // Apply theme-based styling
+  const containerClasses = React.useMemo(() => {
+    const base = 'flex flex-col space-y-3';
+    const themeColor = config.theme.accentColor;
+    const customContainer = config.theme.customClasses?.container || '';
+    
+    return `${base} ${className} ${customContainer}`;
+  }, [className, config.theme]);
+  
   return (
-    <div className='flex flex-col space-y-3'>
+    <div className={containerClasses}>
       <UniversalGrid columns={{ sm: 1, md: 2 }} gap='sm'>
         {/* GRN Number */}
         <div className='group'>
@@ -91,8 +172,17 @@ export const GrnDetailCard: React.FC<GrnDetailCardProps> = ({
             <input
               type='text'
               value={formData.grnNumber}
-              onChange={e => onFormChange('grnNumber', e.target.value)}
-              className='w-full rounded-xl border border-slate-600/50 bg-slate-800/50 px-3 py-2 text-white placeholder-slate-400 backdrop-blur-sm transition-all duration-300 ease-out hover:border-orange-500/50 hover:bg-slate-800/60 focus:border-orange-400/70 focus:bg-slate-800/70 focus:outline-none focus:ring-2 focus:ring-orange-400/30'
+              onChange={e => handleEnhancedFormChange('grnNumber', e.target.value)}
+              onFocus={() => handleFieldFocus('grnNumber')}
+              onBlur={e => handleFieldBlur('grnNumber', e.target.value)}
+              className={`w-full rounded-xl border border-slate-600/50 bg-slate-800/50 px-3 py-2 text-white placeholder-slate-400 backdrop-blur-sm transition-all duration-300 ease-out ${
+                config.theme.accentColor === 'orange' ? 'hover:border-orange-500/50 focus:border-orange-400/70 focus:ring-orange-400/30' :
+                config.theme.accentColor === 'blue' ? 'hover:border-blue-500/50 focus:border-blue-400/70 focus:ring-blue-400/30' :
+                config.theme.accentColor === 'green' ? 'hover:border-green-500/50 focus:border-green-400/70 focus:ring-green-400/30' :
+                config.theme.accentColor === 'purple' ? 'hover:border-purple-500/50 focus:border-purple-400/70 focus:ring-purple-400/30' :
+                config.theme.accentColor === 'red' ? 'hover:border-red-500/50 focus:border-red-400/70 focus:ring-red-400/30' :
+                'hover:border-orange-500/50 focus:border-orange-400/70 focus:ring-orange-400/30'
+              } hover:bg-slate-800/60 focus:bg-slate-800/70 focus:outline-none focus:ring-2 ${config.theme.customClasses?.input || ''}`}
               placeholder='Please Enter...'
               required
               disabled={disabled}
@@ -105,9 +195,9 @@ export const GrnDetailCard: React.FC<GrnDetailCardProps> = ({
         <div className='group'>
           <MaterialSupplierInput
             value={formData.materialSupplier}
-            onChange={value => onFormChange('materialSupplier', value)}
+            onChange={value => handleEnhancedFormChange('materialSupplier', value)}
             onSupplierInfoChange={onSupplierInfoChange}
-            disabled={disabled}
+            disabled={disabled || !config.features.enableSupplierLookup}
             className='mb-0'
           />
           {supplierError && (
@@ -144,11 +234,11 @@ export const GrnDetailCard: React.FC<GrnDetailCardProps> = ({
         <div className='md:col-span-2'>
           <ProductCodeInput
             value={formData.productCode}
-            onChange={value => onFormChange('productCode', value)}
+            onChange={value => handleEnhancedFormChange('productCode', value)}
             onProductInfoChange={onProductInfoChange}
             required
             userId={currentUserId}
-            disabled={disabled}
+            disabled={disabled || !config.features.enableProductLookup}
           />
           {productInfo && (
             <div className='mt-2 rounded-lg border border-green-500/20 bg-green-500/10 p-3'>
@@ -188,8 +278,18 @@ export const GrnDetailCard: React.FC<GrnDetailCardProps> = ({
                 <div
                   className={`h-5 w-5 rounded-full border-2 transition-all duration-300 ${
                     labelMode === LABEL_MODES.QUANTITY
-                      ? 'border-orange-500 bg-orange-500'
-                      : 'border-slate-500 bg-transparent group-hover:border-orange-400'
+                      ? config.theme.accentColor === 'orange' ? 'border-orange-500 bg-orange-500' :
+                        config.theme.accentColor === 'blue' ? 'border-blue-500 bg-blue-500' :
+                        config.theme.accentColor === 'green' ? 'border-green-500 bg-green-500' :
+                        config.theme.accentColor === 'purple' ? 'border-purple-500 bg-purple-500' :
+                        config.theme.accentColor === 'red' ? 'border-red-500 bg-red-500' : 'border-orange-500 bg-orange-500'
+                      : `border-slate-500 bg-transparent group-hover:${
+                          config.theme.accentColor === 'orange' ? 'border-orange-400' :
+                          config.theme.accentColor === 'blue' ? 'border-blue-400' :
+                          config.theme.accentColor === 'green' ? 'border-green-400' :
+                          config.theme.accentColor === 'purple' ? 'border-purple-400' :
+                          config.theme.accentColor === 'red' ? 'border-red-400' : 'border-orange-400'
+                        }`
                   }`}
                 >
                   {labelMode === LABEL_MODES.QUANTITY && (
@@ -200,8 +300,18 @@ export const GrnDetailCard: React.FC<GrnDetailCardProps> = ({
               <span
                 className={`text-sm font-medium transition-colors duration-300 ${
                   labelMode === LABEL_MODES.QUANTITY
-                    ? 'text-orange-400'
-                    : 'text-slate-300 group-hover:text-orange-300'
+                    ? config.theme.accentColor === 'orange' ? 'text-orange-400' :
+                      config.theme.accentColor === 'blue' ? 'text-blue-400' :
+                      config.theme.accentColor === 'green' ? 'text-green-400' :
+                      config.theme.accentColor === 'purple' ? 'text-purple-400' :
+                      config.theme.accentColor === 'red' ? 'text-red-400' : 'text-orange-400'
+                    : `text-slate-300 group-hover:${
+                        config.theme.accentColor === 'orange' ? 'text-orange-300' :
+                        config.theme.accentColor === 'blue' ? 'text-blue-300' :
+                        config.theme.accentColor === 'green' ? 'text-green-300' :
+                        config.theme.accentColor === 'purple' ? 'text-purple-300' :
+                        config.theme.accentColor === 'red' ? 'text-red-300' : 'text-orange-300'
+                      }`
                 }`}
               >
                 Quantity
@@ -222,8 +332,18 @@ export const GrnDetailCard: React.FC<GrnDetailCardProps> = ({
                 <div
                   className={`h-5 w-5 rounded-full border-2 transition-all duration-300 ${
                     labelMode === LABEL_MODES.WEIGHT
-                      ? 'border-orange-500 bg-orange-500'
-                      : 'border-slate-500 bg-transparent group-hover:border-orange-400'
+                      ? config.theme.accentColor === 'orange' ? 'border-orange-500 bg-orange-500' :
+                        config.theme.accentColor === 'blue' ? 'border-blue-500 bg-blue-500' :
+                        config.theme.accentColor === 'green' ? 'border-green-500 bg-green-500' :
+                        config.theme.accentColor === 'purple' ? 'border-purple-500 bg-purple-500' :
+                        config.theme.accentColor === 'red' ? 'border-red-500 bg-red-500' : 'border-orange-500 bg-orange-500'
+                      : `border-slate-500 bg-transparent group-hover:${
+                          config.theme.accentColor === 'orange' ? 'border-orange-400' :
+                          config.theme.accentColor === 'blue' ? 'border-blue-400' :
+                          config.theme.accentColor === 'green' ? 'border-green-400' :
+                          config.theme.accentColor === 'purple' ? 'border-purple-400' :
+                          config.theme.accentColor === 'red' ? 'border-red-400' : 'border-orange-400'
+                        }`
                   }`}
                 >
                   {labelMode === LABEL_MODES.WEIGHT && (
@@ -234,8 +354,18 @@ export const GrnDetailCard: React.FC<GrnDetailCardProps> = ({
               <span
                 className={`text-sm font-medium transition-colors duration-300 ${
                   labelMode === LABEL_MODES.WEIGHT
-                    ? 'text-orange-400'
-                    : 'text-slate-300 group-hover:text-orange-300'
+                    ? config.theme.accentColor === 'orange' ? 'text-orange-400' :
+                      config.theme.accentColor === 'blue' ? 'text-blue-400' :
+                      config.theme.accentColor === 'green' ? 'text-green-400' :
+                      config.theme.accentColor === 'purple' ? 'text-purple-400' :
+                      config.theme.accentColor === 'red' ? 'text-red-400' : 'text-orange-400'
+                    : `text-slate-300 group-hover:${
+                        config.theme.accentColor === 'orange' ? 'text-orange-300' :
+                        config.theme.accentColor === 'blue' ? 'text-blue-300' :
+                        config.theme.accentColor === 'green' ? 'text-green-300' :
+                        config.theme.accentColor === 'purple' ? 'text-purple-300' :
+                        config.theme.accentColor === 'red' ? 'text-red-300' : 'text-orange-300'
+                      }`
                 }`}
               >
                 Weight
@@ -249,12 +379,12 @@ export const GrnDetailCard: React.FC<GrnDetailCardProps> = ({
       {labelMode === 'weight' && (
         <div className='grid grid-cols-2 gap-3'>
           <PalletTypeSelector
-            palletType={palletType}
+            palletType={palletType as any}
             onChange={onPalletTypeChange}
             disabled={disabled}
           />
           <PackageTypeSelector
-            packageType={packageType}
+            packageType={packageType as any}
             onChange={onPackageTypeChange}
             disabled={disabled}
           />

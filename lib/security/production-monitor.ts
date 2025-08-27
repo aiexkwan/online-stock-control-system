@@ -98,10 +98,13 @@ export interface AlertThresholds {
 // Security patterns for detection
 const SECURITY_PATTERNS = {
   SQL_INJECTION: [
-    /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE|UNION|FROM|WHERE)\b)/gi,
+    // More specific SQL injection patterns that avoid false positives
+    /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE|UNION)\b.*\b(FROM|WHERE|TABLE)\b)/gi,
     /(\b(OR|AND)\b\s*\d+\s*=\s*\d+)/gi,
     /(\'\s*(OR|AND)\s*\')/gi,
-    /(\-\-|\#|\/\*)/g,
+    /(\-\-|\#|\/\*.*\*\/)/g,
+    // Allow legitimate use of FROM in URL parameters like ?from=/admin
+    /(\bunion\b.*\bselect\b)/gi,
   ],
   XSS: [
     /<script[^>]*>.*?<\/script>/gi,

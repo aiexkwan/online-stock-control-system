@@ -11,7 +11,14 @@ import {
   type PackageTypeKey,
   type LabelMode,
 } from '@/app/constants/grnConstants';
+import {
+  EnhancedWeightInputListProps,
+  DEFAULT_GRN_THEME,
+  DEFAULT_GRN_LAYOUT,
+  mergeGrnConfig
+} from '@/lib/types/grn-props';
 
+// Legacy interface for backward compatibility
 interface WeightInputListProps {
   grossWeights: string[];
   onChange: (index: number, value: string) => void;
@@ -23,34 +30,121 @@ interface WeightInputListProps {
   disabled?: boolean;
 }
 
-export const WeightInputList: React.FC<WeightInputListProps> = ({
-  grossWeights,
-  onChange,
-  onRemove,
-  labelMode,
-  selectedPalletType = 'notIncluded',
-  selectedPackageType = 'notIncluded',
-  maxItems = 22,
-  disabled = false,
-}) => {
+// Union type for backward compatibility
+type WeightInputListPropsUnion = WeightInputListProps | EnhancedWeightInputListProps;
+
+export const WeightInputList: React.FC<WeightInputListPropsUnion> = (props) => {
+  // Handle both legacy and enhanced props
+  const {
+    grossWeights,
+    onChange,
+    onRemove,
+    labelMode,
+    selectedPalletType = 'notIncluded',
+    selectedPackageType = 'notIncluded',
+    maxItems = 22,
+    disabled = false,
+    // Enhanced props with defaults
+    className = '',
+    theme,
+    layout,
+    validation,
+    performance,
+    onWeightCalculated,
+    onListExpanded,
+    onMaxItemsReached,
+    showIndex = false,
+    showNetWeight = true,
+    showTotalWeight = true,
+    placeholder = 'Enter weight/qty...',
+  } = props as EnhancedWeightInputListProps;
+  
+  // Merge configurations with defaults
+  const config = React.useMemo(() => ({
+    theme: {
+      accentColor: (theme?.accentColor || 'orange') as 'orange' | 'blue' | 'green' | 'purple' | 'red',
+      customClasses: {
+        container: theme?.customClasses?.container || '',
+        content: theme?.customClasses?.content || '',
+      }
+    },
+    layout: {
+      compactMode: layout?.compactMode ?? false,
+      autoExpandThreshold: layout?.autoExpandThreshold ?? 5,
+      showWeightSummary: layout?.showWeightSummary ?? true,
+    },
+    validation: {
+      enableRealTimeValidation: validation?.enableRealTimeValidation ?? true,
+    },
+    performance: {
+      validationDebounce: performance?.validationDebounce ?? 300,
+      enableVirtualScrolling: performance?.enableVirtualScrolling ?? false,
+    },
+  }), [theme, layout, validation, performance]);
+  
+  const effectiveMaxItems = Math.min(maxItems, 50); // Hard limit for performance
   const filledWeightsCount = grossWeights.filter(w => w.trim() !== '').length;
   const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Enhanced state for tracking expanded state changes
+  const [previousExpandedState, setPreviousExpandedState] = useState(isExpanded);
 
-  // 當輸入超過 5 個時自動展開
+  // 當輸入超過配置閾值時自動展開
   useEffect(() => {
-    if (filledWeightsCount > 5 && !isExpanded) {
+    const threshold = config.layout.autoExpandThreshold;
+    if (filledWeightsCount > threshold && !isExpanded) {
       setIsExpanded(true);
     }
-  }, [filledWeightsCount, isExpanded]);
+  }, [filledWeightsCount, isExpanded, config.layout.autoExpandThreshold]);
+  
+  // Notify parent about expansion changes
+  useEffect(() => {
+    if (isExpanded !== previousExpandedState) {
+      setPreviousExpandedState(isExpanded);
+      if (onListExpanded) {
+        onListExpanded(isExpanded);
+      }
+    }
+  }, [isExpanded, previousExpandedState, onListExpanded]);
 
   const handleWeightChange = (index: number, value: string) => {
-    onChange(index, value);
+    if (disabled) return;
+    
+    // Apply validation debouncing if configured
+    const debounceMs = config.performance.validationDebounce;
+    
+    if (debounceMs > 0) {
+      // Simple debouncing implementation
+      clearTimeout((handleWeightChange as any).timeoutId);
+      (handleWeightChange as any).timeoutId = setTimeout(() => {
+        onChange(index, value);
+        handleWeightCalculation(index, value);
+      }, debounceMs);
+    } else {
+      onChange(index, value);
+      handleWeightCalculation(index, value);
+    }
+  };
+  
+  const handleWeightCalculation = (index: number, value: string) => {
+    if (labelMode === LABEL_MODES.WEIGHT && onWeightCalculated) {
+      const grossWeight = parseFloat(value);
+      if (!isNaN(grossWeight) && grossWeight > 0) {
+        const netWeight = calculateNetWeight(grossWeight, selectedPalletType, selectedPackageType);
+        onWeightCalculated(index, netWeight);
+      }
+    }
   };
 
   const handleRemove = (index: number) => {
-    if (onRemove) {
-      onRemove(index);
+    if (disabled || !onRemove) return;
+    
+    // Check if we're at max items and notify
+    if (filledWeightsCount >= effectiveMaxItems && onMaxItemsReached) {
+      onMaxItemsReached();
     }
+    
+    onRemove(index);
   };
 
   // Calculate total net weight
@@ -75,15 +169,21 @@ export const WeightInputList: React.FC<WeightInputListProps> = ({
             {labelMode === LABEL_MODES.QUANTITY ? 'Quantity' : 'Gross Weight / Qty'}
           </h3>
           <span className='rounded-full bg-slate-700/50 px-3 py-1 text-xs text-slate-400'>
-            {filledWeightsCount} / {maxItems} pallets
+            {filledWeightsCount} / {effectiveMaxItems} pallets
           </span>
         </div>
 
-        {/* Total Net Weight Display */}
-        {labelMode === LABEL_MODES.WEIGHT && totalNetWeight > 0 && (
-          <div className='flex items-center justify-between rounded-lg bg-slate-800/50 px-3 py-2'>
+        {/* Total Net Weight Display - Enhanced with configuration */}
+        {labelMode === LABEL_MODES.WEIGHT && totalNetWeight > 0 && showTotalWeight && config.layout.showWeightSummary && (
+          <div className={`flex items-center justify-between rounded-lg bg-slate-800/50 px-3 py-2 ${config.theme.customClasses?.content || ''}`}>
             <span className='text-sm text-slate-300'>Total Net Weight:</span>
-            <span className='text-lg font-bold text-orange-400'>
+            <span className={`text-lg font-bold ${
+              config.theme.accentColor === 'orange' ? 'text-orange-400' :
+              config.theme.accentColor === 'blue' ? 'text-blue-400' :
+              config.theme.accentColor === 'green' ? 'text-green-400' :
+              config.theme.accentColor === 'purple' ? 'text-purple-400' :
+              config.theme.accentColor === 'red' ? 'text-red-400' : 'text-orange-400'
+            }`}>
               {totalNetWeight.toFixed(1)} kg
             </span>
           </div>
@@ -91,10 +191,12 @@ export const WeightInputList: React.FC<WeightInputListProps> = ({
       </div>
 
       {/* 重量/數量輸入列表容器 */}
-      <div className='relative'>
-        {/* 輸入列表 - 2x11 格式 */}
+      <div className={`relative ${className}`}>
+        {/* 輸入列表 - Enhanced with configuration */}
         <div
-          className={`weight-input-scroll-container custom-scrollbar grid grid-cols-2 gap-x-2 gap-y-2 overflow-y-auto overflow-x-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'max-h-[500px]' : 'max-h-[280px]'} `}
+          className={`weight-input-scroll-container custom-scrollbar grid grid-cols-2 gap-x-2 gap-y-2 overflow-y-auto overflow-x-hidden transition-all duration-300 ease-in-out ${
+            config.layout.compactMode ? 'gap-y-1' : 'gap-y-2'
+          } ${isExpanded ? 'max-h-[500px]' : 'max-h-[280px]'} ${config.theme.customClasses?.container || ''}`}
           style={{ height: isExpanded ? 'calc(100% - 120px)' : 'auto' }}
         >
           {grossWeights.map((weight, idx) => {

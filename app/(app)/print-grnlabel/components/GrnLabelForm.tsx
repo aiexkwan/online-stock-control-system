@@ -342,11 +342,11 @@ export const GrnLabelFormV2: React.FC = () => {
                 packageType={state.packageType}
                 onFormChange={handleFormChange}
                 onSupplierInfoChange={handleSupplierInfoChange}
-                onProductInfoChange={qcProductInfo => {
+                onProductInfoChange={(qcProductInfo: unknown) => {
                   const adaptedInfo = adaptProductInfo(qcProductInfo);
                   actions.setProductInfo(adaptedInfo);
                 }}
-                onLabelModeChange={mode => handleLabelModeChange(mode)}
+                onLabelModeChange={(mode: LabelMode) => handleLabelModeChange(mode)}
                 onPalletTypeChange={handlePalletTypeChange}
                 onPackageTypeChange={handlePackageTypeChange}
                 disabled={state.ui.isProcessing}

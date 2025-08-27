@@ -4,7 +4,6 @@ import React, { createContext, useContext, useCallback, useMemo, ReactNode } fro
 import { useAuthValidation, UseAuthValidationReturn } from '@/app/hooks/useAuthValidation';
 import { useAuthSubmission, UseAuthSubmissionReturn } from '@/app/hooks/useAuthSubmission';
 import { useAuthRedirect, UseAuthRedirectReturn } from '@/app/hooks/useAuthRedirect';
-import { useAuth } from '@/app/hooks/useAuth';
 import { AuthState } from '@/lib/types/auth';
 import { useLoginPersistence, LoginPersistenceState } from './useLoginPersistence';
 
@@ -109,11 +108,20 @@ export function LoginProvider({
   initialView = 'login',
   enablePersistence = true,
 }: LoginProviderProps) {
-  // Initialize all specialized hooks
+  // Initialize specialized hooks
   const validation = useAuthValidation();
   const submission = useAuthSubmission();
   const redirect = useAuthRedirect();
-  const auth = useAuth();
+  
+  // For login/auth pages, we provide a mock auth state to avoid any API calls
+  // Real auth state will be established after successful login
+  const auth: AuthState = useMemo(() => ({
+    user: null,
+    loading: false,
+    isAuthenticated: false,
+    userRole: null
+  }), []);
+  
   const persistence = useLoginPersistence({ enabled: enablePersistence });
 
   // Get form data from persistence

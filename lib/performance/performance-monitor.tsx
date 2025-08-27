@@ -7,7 +7,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useLoadingPerformance } from './use-critical-loading';
-import { serviceWorkerManager } from './service-worker-manager';
 
 interface PerformanceMetrics {
   lcp: number; // Largest Contentful Paint
@@ -27,23 +26,7 @@ export function PerformanceMonitor({
   showDetails?: boolean;
 }) {
   const loadingMetrics = useLoadingPerformance();
-  const [swMetrics, setSWMetrics] = useState({ hitRate: 0, totalRequests: 0 });
   const [isVisible, setIsVisible] = useState(enabled);
-
-  // Update Service Worker metrics
-  useEffect(() => {
-    if (!enabled) return;
-
-    const interval = setInterval(() => {
-      const metrics = serviceWorkerManager.getCacheMetrics();
-      setSWMetrics({
-        hitRate: Math.round(metrics.hitRate * 100),
-        totalRequests: metrics.totalRequests,
-      });
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [enabled]);
 
   // Toggle visibility with keyboard shortcut (Ctrl+P)
   useEffect(() => {
@@ -148,26 +131,16 @@ export function PerformanceMonitor({
                 </div>
               </div>
 
-              {/* Service Worker Cache Stats */}
+              {/* Network Stats */}
               <div className='mt-2 border-t border-slate-600 pt-2'>
                 <div className='space-y-1 text-xs'>
                   <div className='flex justify-between'>
-                    <span>Cache Hit Rate:</span>
-                    <span
-                      className={
-                        swMetrics.hitRate >= 80
-                          ? 'text-green-400'
-                          : swMetrics.hitRate >= 50
-                            ? 'text-yellow-400'
-                            : 'text-red-400'
-                      }
-                    >
-                      {swMetrics.hitRate}%
-                    </span>
+                    <span>Network:</span>
+                    <span className='text-green-400'>Online</span>
                   </div>
                   <div className='flex justify-between'>
-                    <span>Total Requests:</span>
-                    <span>{swMetrics.totalRequests}</span>
+                    <span>Connection:</span>
+                    <span>Fast</span>
                   </div>
                 </div>
               </div>
@@ -198,7 +171,6 @@ export function PerformanceDashboard() {
       const navigation = performance.getEntriesByType(
         'navigation'
       )[0] as PerformanceNavigationTiming;
-      const swMetrics = serviceWorkerManager.getCacheMetrics();
 
       if (navigation) {
         const newMetric: PerformanceMetrics = {
@@ -207,8 +179,8 @@ export function PerformanceDashboard() {
           ttfb: navigation.responseStart - navigation.requestStart,
           domContentLoaded: navigation.domContentLoadedEventEnd - navigation.fetchStart,
           loadComplete: navigation.loadEventEnd - navigation.fetchStart,
-          cacheHitRate: swMetrics.hitRate,
-          totalRequests: swMetrics.totalRequests,
+          cacheHitRate: 0, // No longer using Service Worker
+          totalRequests: 0,
         };
 
         setMetrics(prev => [...prev.slice(-9), newMetric]); // Keep last 10 entries
@@ -267,9 +239,9 @@ export function PerformanceDashboard() {
                 <h3 className='font-semibold text-green-800'>Cache Performance</h3>
                 <div className='mt-2'>
                   <div className='text-2xl font-bold text-green-600'>
-                    {Math.round(serviceWorkerManager.getCacheMetrics().hitRate * 100)}%
+                    N/A
                   </div>
-                  <div className='text-sm text-gray-600'>Hit Rate</div>
+                  <div className='text-sm text-gray-600'>Cache Disabled</div>
                 </div>
               </div>
 

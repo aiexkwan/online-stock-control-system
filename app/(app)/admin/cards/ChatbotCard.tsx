@@ -33,7 +33,7 @@ import type {
   ChatMessage,
   ChatbotCardProps,
 } from '../types/ai-response';
-import { useAuth } from '@/app/hooks/useAuth';
+import { useAuthState } from '@/app/(auth)/main-login/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
@@ -362,7 +362,7 @@ const ChatMessageComponent: React.FC<{ message: ChatMessage; onRetry?: () => voi
 
 // Main ChatbotCard Component
 export default function ChatbotCard({ className }: ChatbotCardProps) {
-  const { user } = useAuth();
+  const { user } = useAuthState();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',

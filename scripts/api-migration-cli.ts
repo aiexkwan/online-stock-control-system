@@ -12,7 +12,7 @@ import inquirer from 'inquirer';
 import fs from 'fs-extra';
 import path from 'path';
 import { Glob } from 'glob';
-import APIUsageMonitor from '../lib/monitoring/api-usage-monitor';
+import APIUsageMonitor from '../lib/performance/api-usage-monitor';
 
 const program = new Command();
 const monitor = new APIUsageMonitor();

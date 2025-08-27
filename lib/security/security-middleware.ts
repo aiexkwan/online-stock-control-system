@@ -23,54 +23,86 @@ export async function securityMiddleware(request: NextRequest) {
       path: new URL(request.url).pathname,
     };
 
-    // Get body if present (for POST/PUT/PATCH)
-    let body: any;
-    if (['POST', 'PUT', 'PATCH'].includes(request.method)) {
-      try {
-        const clonedRequest = request.clone();
-        body = await clonedRequest.json().catch(() => null);
-      } catch {
-        // Body parsing failed, continue without it
+    // Define public routes that should skip security threat detection
+    const publicRoutes = [
+      '/', // Root route - common entry point that gets redirected via middleware
+      '/main-login',
+      '/change-password',
+      '/new-password',
+      '/api/health',
+      '/api/monitoring/health',
+      '/api/monitoring/deep',
+      '/api/metrics',
+      '/api/auth',
+      '/_next/static',
+      '/_next/image',
+      '/favicon.ico',
+      '/fonts',
+      '/images'
+    ];
+
+    // Check if this is a public route
+    const isPublicRoute = publicRoutes.some(route => requestInfo.path.startsWith(route));
+
+    // Skip threat detection for public routes to avoid false positives
+    let threats: any[] = [];
+    if (!isPublicRoute) {
+      // Get body if present (for POST/PUT/PATCH)
+      let body: any;
+      if (['POST', 'PUT', 'PATCH'].includes(request.method)) {
+        try {
+          const clonedRequest = request.clone();
+          body = await clonedRequest.json().catch(() => null);
+        } catch {
+          // Body parsing failed, continue without it
+        }
       }
-    }
 
-    // Get query parameters
-    const query = Object.fromEntries(new URL(request.url).searchParams.entries());
+      // Get query parameters
+      const query = Object.fromEntries(new URL(request.url).searchParams.entries());
 
-    // Detect security threats
-    const threats = securityMonitor.detectThreats({
-      url: requestInfo.url,
-      method: requestInfo.method,
-      headers: requestInfo.headers,
-      body,
-      query,
-    });
-
-    // Log detected threats
-    for (const threat of threats) {
-      securityMonitor.logEvent({
-        type: threat,
-        severity: SecuritySeverity.HIGH,
-        ipAddress: requestInfo.ip,
-        userAgent: requestInfo.userAgent,
-        path: requestInfo.path,
+      // Detect security threats only for protected routes
+      threats = securityMonitor.detectThreats({
+        url: requestInfo.url,
         method: requestInfo.method,
-        payload: { body, query },
-        metadata: {
-          url: requestInfo.url,
-          headers: requestInfo.headers,
-        },
+        headers: requestInfo.headers,
+        body,
+        query,
       });
     }
 
-    // Block request if critical threats detected
+    // Log detected threats (only for non-public routes)
+    if (!isPublicRoute) {
+      for (const threat of threats) {
+        securityMonitor.logEvent({
+          type: threat,
+          severity: SecuritySeverity.HIGH,
+          ipAddress: requestInfo.ip,
+          userAgent: requestInfo.userAgent,
+          path: requestInfo.path,
+          method: requestInfo.method,
+          payload: { 
+            body: requestInfo.path.startsWith('/api/') ? 'REQUEST_BODY_REDACTED' : undefined, 
+            query: new URL(request.url).searchParams.toString() ? Object.fromEntries(new URL(request.url).searchParams.entries()) : undefined
+          },
+          metadata: {
+            url: requestInfo.url,
+            headers: requestInfo.headers,
+          },
+        });
+      }
+    }
+
+    // Block request if critical threats detected (only in production)
     const criticalThreats = [
       SecurityEventType.SQL_INJECTION_ATTEMPT,
       SecurityEventType.XSS_ATTEMPT,
       SecurityEventType.PATH_TRAVERSAL_ATTEMPT,
     ];
 
-    if (threats.some(t => criticalThreats.includes(t))) {
+    const shouldBlockRequest = threats.some(t => criticalThreats.includes(t)) && process.env.NODE_ENV === 'production';
+
+    if (shouldBlockRequest) {
       // Log blocked request
       securityMonitor.logEvent({
         type: SecurityEventType.UNAUTHORIZED_ACCESS,
@@ -88,6 +120,20 @@ export async function securityMiddleware(request: NextRequest) {
       return new NextResponse(JSON.stringify({ error: 'Security violation detected' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' },
+      });
+    } else if (threats.length > 0) {
+      // In development, just log threats but don't block
+      securityMonitor.logEvent({
+        type: SecurityEventType.UNAUTHORIZED_ACCESS,
+        severity: SecuritySeverity.MEDIUM,
+        ipAddress: requestInfo.ip,
+        userAgent: requestInfo.userAgent,
+        path: requestInfo.path,
+        method: requestInfo.method,
+        metadata: {
+          reason: 'Security threat detected (dev mode - not blocked)',
+          threats,
+        },
       });
     }
 

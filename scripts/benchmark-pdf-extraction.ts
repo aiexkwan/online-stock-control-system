@@ -17,7 +17,7 @@ import { ChatCompletionService } from '../app/services/chatCompletionService';
 import { AssistantService } from '../app/services/assistantService';
 import { EnhancedOrderExtractionService } from '../app/services/enhancedOrderExtractionService';
 import { OptimizedPDFExtractionService } from '../app/services/OptimizedPDFExtractionService';
-import { pdfMonitor } from '../lib/monitoring/PDFExtractionMonitor';
+import { pdfPerformanceMonitor as pdfMonitor } from '../lib/performance/pdf-performance-monitor';
 
 // Load environment variables
 config({ path: '.env.local' });
@@ -277,15 +277,21 @@ class PDFExtractionBenchmark {
     result.memoryUsed = (process.memoryUsage().heapUsed - startMemory) / 1024 / 1024;
 
     // Record in monitor
-    pdfMonitor.recordMetric({
-      extractionTime: result.extractionTime,
-      tokensUsed: result.tokensUsed,
-      cacheHit: result.cacheHit,
-      success: result.success,
-      method: result.method,
-      fileName: result.fileName,
-      error: result.error,
-    });
+    try {
+      pdfMonitor.recordRequest({
+        requestId: `${result.method}-${Date.now()}`,
+        fileHash: result.fileName ? Buffer.from(result.fileName).toString('base64').slice(0, 16) : 'unknown',
+        fileSize: 0, // Size not available in benchmark context
+        pagesExtracted: 1, // Default for benchmark
+        tokensUsed: result.tokensUsed,
+        responseTime: result.extractionTime,
+        cacheHit: result.cacheHit,
+        cost: 0, // Will be calculated by monitor
+        error: result.error,
+      });
+    } catch (error) {
+      console.warn('[Benchmark] Failed to record metrics:', error);
+    }
 
     return result;
   }
@@ -637,10 +643,41 @@ class PDFExtractionBenchmark {
    * Save monitor report
    */
   private saveMonitorReport(): void {
-    const report = pdfMonitor.generateReport();
-    const filePath = join(this.config.outputDir, `monitor-report-${Date.now()}.md`);
-    writeFileSync(filePath, report);
-    console.log(chalk.gray(`📊 Monitor report saved to: ${filePath}`));
+    try {
+      const reportData = pdfMonitor.getPerformanceReport();
+      const reportMarkdown = this.formatPerformanceReport(reportData);
+      const filePath = join(this.config.outputDir, `monitor-report-${Date.now()}.md`);
+      writeFileSync(filePath, reportMarkdown);
+      console.log(chalk.gray(`📊 Monitor report saved to: ${filePath}`));
+    } catch (error) {
+      console.warn(chalk.yellow(`⚠️ Failed to save monitor report: ${error}`));
+    }
+  }
+
+  /**
+   * Format performance report data to markdown
+   */
+  private formatPerformanceReport(reportData: any): string {
+    const { summary, metrics } = reportData;
+    return `# PDF Performance Report
+Generated: ${new Date().toISOString()}
+
+## Summary
+- Total Requests: ${summary.totalRequests}
+- Success Rate: ${summary.successRate}%
+- Average Response Time: ${summary.averageResponseTime}
+- Cache Hit Rate: ${summary.cacheHitRate}%
+- Total Cost: ${summary.totalCost}
+- Cost Savings: ${summary.costSavings}
+- Tokens Saved: ${summary.tokensSaved}
+
+## Detailed Metrics
+- P95 Response Time: ${metrics.p95ResponseTime}ms
+- P99 Response Time: ${metrics.p99ResponseTime}ms
+- Memory Usage: ${metrics.memoryUsageMB}MB
+- Active Connections: ${metrics.activeConnections}
+- Queue Size: ${metrics.queueSize}
+`;
   }
 
   /**

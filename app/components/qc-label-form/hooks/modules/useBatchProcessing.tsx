@@ -247,7 +247,7 @@ export const useBatchProcessing = ({
     ]
   );
 
-  // 處理批量項目
+  // 處理批量項目 - 優化為並行處理
   const processBatch = useCallback(
     async (options: BatchProcessingOptions) => {
       const { items, clockNumber, onItemComplete, onProgress } = options;
@@ -257,43 +257,91 @@ export const useBatchProcessing = ({
 
       let completed = 0;
       const total = items.length;
-      const results = [];
+      const results: Array<{ itemId: string; success: boolean; error?: string }> = [];
 
       try {
-        for (const item of items) {
-          // 更新狀態為處理中
+        // 將項目標記為處理中
+        items.forEach(item => {
           const processingItem = { ...item, status: 'processing' as const };
           setProcessedItems(prev => new Map(prev).set(item.id, processingItem));
+        });
 
-          // 處理項目
-          const result = await processSingleItem(item, clockNumber);
-
-          // 更新狀態
-          const processedItem = {
-            ...item,
-            status: result.success ? ('completed' as const) : ('failed' as const),
-            error: result.error,
-          };
-          setProcessedItems(prev => new Map(prev).set(item.id, processedItem));
-
-          completed++;
-          results.push({ itemId: item.id, ...result });
-
-          // 回調
-          if (onItemComplete) {
-            onItemComplete(item.id, result.success, result.error);
+        // 使用 Promise.allSettled 並行處理所有項目
+        const processingPromises = items.map(async (item, index) => {
+          try {
+            const result = await processSingleItem(item, clockNumber);
+            return { item, result, index };
+          } catch (error) {
+            return { 
+              item, 
+              result: { 
+                success: false, 
+                error: error instanceof Error ? error.message : 'Unknown error' 
+              }, 
+              index 
+            };
           }
-          if (onProgress) {
-            onProgress(completed, total);
-          }
+        });
 
-          // 顯示進度
-          if (result.success) {
-            toast.success(`Processed ${item.productCode} (${completed}/${total})`);
+        // 等待所有處理完成
+        const settledResults = await Promise.allSettled(processingPromises);
+
+        // 處理結果
+        settledResults.forEach((settledResult, index) => {
+          const item = items[index];
+          
+          if (settledResult.status === 'fulfilled') {
+            const { result } = settledResult.value;
+            
+            // 更新狀態
+            const processedItem = {
+              ...item,
+              status: result.success ? ('completed' as const) : ('failed' as const),
+              error: result.error,
+            };
+            setProcessedItems(prev => new Map(prev).set(item.id, processedItem));
+
+            completed++;
+            results.push({ itemId: item.id, ...result });
+
+            // 回調
+            if (onItemComplete) {
+              onItemComplete(item.id, result.success, result.error);
+            }
+            if (onProgress) {
+              onProgress(completed, total);
+            }
+
+            // 顯示進度
+            if (result.success) {
+              toast.success(`Processed ${item.productCode} (${completed}/${total})`);
+            } else {
+              toast.error(`Failed: ${item.productCode} - ${result.error}`);
+            }
           } else {
-            toast.error(`Failed: ${item.productCode} - ${result.error}`);
+            // 處理 Promise 失敗的情況
+            const error = settledResult.reason instanceof Error ? settledResult.reason.message : 'Processing failed';
+            
+            const processedItem = {
+              ...item,
+              status: 'failed' as const,
+              error,
+            };
+            setProcessedItems(prev => new Map(prev).set(item.id, processedItem));
+
+            completed++;
+            results.push({ itemId: item.id, success: false, error });
+
+            if (onItemComplete) {
+              onItemComplete(item.id, false, error);
+            }
+            if (onProgress) {
+              onProgress(completed, total);
+            }
+
+            toast.error(`Failed: ${item.productCode} - ${error}`);
           }
-        }
+        });
 
         // 顯示總結
         const successCount = results.filter(r => r.success).length;

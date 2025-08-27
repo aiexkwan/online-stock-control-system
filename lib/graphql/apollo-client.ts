@@ -7,7 +7,7 @@ import { ApolloClient, InMemoryCache, createHttpLink, ApolloLink, from } from '@
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import { createClient } from '@/lib/supabase';
-import { PerformanceLink } from '@/lib/monitoring/graphql-performance-monitor';
+import { PerformanceLink } from '@/lib/performance/graphql-performance-monitor';
 
 // GraphQL endpoint - use custom server or Supabase pg_graphql
 const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_URL || '/api/graphql';

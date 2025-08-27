@@ -28,7 +28,7 @@ description: 對指定的檔案或組件進行全面的循序深度分析，以�
 
 總指揮代理將按以下順序，調度各專家對 `$TARGET_PATH` 進行分析，並將每一步的結果記錄下來，供最終報告使用。
 
-0. 建立報告文檔：`/Users/chun/Documents/PennineWMS/online-stock-control-system/docs/PlanningDocument/clearance_plan/[$ARGUMENTS].md`
+0. 建立報告文檔：`/Users/chun/Documents/PennineWMS/online-stock-control-system/docs/PlanningDocument/clearance_plan/[$ARGUMENTS]/[$ARGUMENTS].md`
 
 1. **第1步：靜態分析 (由 [code-reviewer](../agents/code-reviewer.md) 執行)**
    - **目標**: 檢查檔案本身的屬性，判斷其是否符合已知的「技術債務」特徵。
