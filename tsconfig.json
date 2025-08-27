@@ -51,6 +51,8 @@
     "playwright.performance.config.ts",
     "vitest.config.ts",
     "vitest.integration.config.ts",
+    "vitest.integration.setup.ts",
+    "vitest*.ts",
     ".next/**",
     "dist/**",
     "build/**",
