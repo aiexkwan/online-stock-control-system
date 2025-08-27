@@ -3,7 +3,7 @@
 ## 必須遵守
 
 - **代碼原則**：`KISS`，`DRY`，`YAGNI`同`SOLID`四大原則
-- **唯一真相**：所有生成文檔（Markdown）必須及只能放於[知識庫](/Users/chun/Documents/PennineWMS/online-stock-control-system/docs)內，嚴禁隨意及任處亂放
+- **唯一真相**：所有生成文檔（Markdown）必須及只能放於[知識庫](/Users/chun/Documents/PennineWMS/online-stock-control-system/docs)內，嚴禁隨意及任處亂放，及保持「Single Turth Source」原則，如非必要，集中一個紀錄文檔
 - **驗證先行**：不容許任何未驗證修改情況，代碼內容必須經過工具驗證
 - **事實為王**：代碼內容必須反映事實
 - **測試後刪除**：所有[一次性]／[測試用]檔案在使用後**必須**刪除

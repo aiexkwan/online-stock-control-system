@@ -59,7 +59,6 @@ export async function middleware(request: NextRequest) {
     '/api/v2/health', // v2 健康檢查 API (deprecated, redirects)
     '/api/v1/metrics', // v1 監控統計 API (deprecated, redirects)
     '/api/auth', // 認證相關 API
-    '/api/print-label-html', // HTML 標籤預覽 API（用於測試和預覽）
     '/api/send-order-email', // 訂單郵件發送 API（用於內部調用）
     '/api/pdf-extract', // PDF 提取 API（用於內部 Server Action 調用）
     '/api/graphql', // GraphQL endpoint (allow app to handle auth)

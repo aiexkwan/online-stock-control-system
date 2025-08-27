@@ -12,6 +12,13 @@ import {
 } from './performance-baseline-framework';
 import { GRNLabelCardBenchmarks } from './grn-label-card-benchmarks';
 
+/**
+ * Type guard to safely check if PerformanceEntry is PerformanceNavigationTiming
+ */
+function isPerformanceNavigationTiming(entry: PerformanceEntry): entry is PerformanceNavigationTiming {
+  return entry.entryType === 'navigation' && 'responseStart' in entry;
+}
+
 // 監控配置介面
 export interface MonitoringConfig {
   components: string[];
@@ -235,7 +242,10 @@ export class AutomatedMonitoringSystem {
 
     try {
       // 使用 Navigation Timing API 收集基本指標
-      const navigation = window.performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      const entries = window.performance.getEntriesByType('navigation');
+      const navigation = entries.length > 0 && isPerformanceNavigationTiming(entries[0])
+        ? entries[0]
+        : null;
       const memory = (window.performance as any).memory;
       
       const metrics: PerformanceMeasurement = {

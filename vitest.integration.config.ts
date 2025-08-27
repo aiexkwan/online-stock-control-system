@@ -28,7 +28,7 @@ export default defineConfig({
       },
     },
     // Reporter configuration
-    reporter: ['default', 'json', 'html'],
+    reporters: ['default', 'json', 'html'],
     outputFile: {
       json: './test-results/integration-results.json',
       html: './test-results/integration-report.html',

@@ -3,6 +3,8 @@
  * 監控進度更新的性能指標，用於驗證防抖機制的效果
  */
 
+import { useMemo, useCallback } from 'react';
+
 export interface ProgressPerformanceMetrics {
   /** Total number of progress updates requested */
   totalUpdates: number;

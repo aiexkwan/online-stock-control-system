@@ -195,7 +195,7 @@ export class PerformanceBaselineFramework {
       });
 
       this.performanceObserver.observe({
-        entryTypes: ['measure', 'navigation', 'paint', 'largest-contentful-paint']
+        entryTypes: ['measure', 'navigation', 'paint', 'largest-contentful-paint'] as any
       });
     } catch (error) {
       console.error('[PerformanceBaseline] Failed to initialize PerformanceObserver:', error);
@@ -218,8 +218,12 @@ export class PerformanceBaselineFramework {
       case 'measure':
         if (entry.name.includes('render')) {
           measurement.metrics = {
-            ...measurement.metrics,
             renderTime: entry.duration,
+            memoryUsage: 0, // 預設值，後續可以由其他來源更新
+            apiResponseTime: 0,
+            interactiveTime: 0,
+            bundleSize: 0,
+            ...measurement.metrics, // 保留已存在的值
           };
         }
         break;
@@ -429,8 +433,8 @@ export class PerformanceBaselineFramework {
       ) * 100;
 
       const severity = currentMeasurement.metrics.renderTime > baseline.metrics.renderTime.threshold.critical
-        ? 'critical'
-        : 'warning';
+        ? 'critical' as const
+        : 'warning' as const;
 
       regressionDetails.push({
         metric: 'renderTime',
@@ -456,8 +460,8 @@ export class PerformanceBaselineFramework {
       ) * 100;
 
       const severity = currentMeasurement.metrics.memoryUsage > baseline.metrics.memoryUsage.threshold.critical
-        ? 'critical'
-        : 'warning';
+        ? 'critical' as const
+        : 'warning' as const;
 
       regressionDetails.push({
         metric: 'memoryUsage',
@@ -483,8 +487,8 @@ export class PerformanceBaselineFramework {
       ) * 100;
 
       const severity = currentMeasurement.metrics.apiResponseTime > baseline.metrics.apiResponseTime.threshold.critical
-        ? 'critical'
-        : 'warning';
+        ? 'critical' as const
+        : 'warning' as const;
 
       regressionDetails.push({
         metric: 'apiResponseTime',

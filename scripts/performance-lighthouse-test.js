@@ -14,7 +14,6 @@ const TEST_PAGES = [
   { name: 'Admin Dashboard - Injection', path: '/admin/injection' },
   { name: 'Admin Dashboard - Pipeline', path: '/admin/pipeline' },
   { name: 'Admin Dashboard - Warehouse', path: '/admin/warehouse' },
-  { name: 'Print Label', path: '/print-label' },
   { name: 'Stock Transfer', path: '/stock-transfer' },
 ];
 

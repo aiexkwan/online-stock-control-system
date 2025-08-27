@@ -75,7 +75,7 @@ function getSkipLinksForPath(pathname: string): SkipLinkConfig[] {
   }
 
   // Label Printing 頁面
-  if (pathname.startsWith('/print-label') || pathname.startsWith('/print-grnlabel')) {
+  if (pathname.startsWith('/print-grnlabel')) {
     return [
       { href: '#main-content', label: 'Skip to main content' },
       { href: '#label-form', label: 'Skip to label form' },

@@ -124,10 +124,45 @@ export const productResolvers: IResolvers = {
       try {
         // Use DataLoader for batch loading to avoid N+1 queries
         if (context.loaders?.inventory) {
-          return await context.loaders.inventory.load(parent.code);
+          const inventoryData = await context.loaders.inventory.load(parent.code);
+          
+          // 檢查 DataLoader 是否成功返回資料
+          if (inventoryData && typeof inventoryData === 'object') {
+            // 將 Inventory 類型轉換為 InventorySummary 類型
+            const injection = inventoryData.injection || 0;
+            const pipeline = inventoryData.pipeline || 0;
+            const prebook = inventoryData.prebook || 0;
+            const awaitQty = inventoryData.await || 0;
+            const fold = inventoryData.fold || 0;
+            const bulk = inventoryData.bulk || 0;
+            const backcarpark = inventoryData.backcarpark || 0;
+            const damage = inventoryData.damage || 0;
+            const awaitGrn = inventoryData.await_grn || 0;
+            
+            // 計算總庫存
+            const totalQuantity = injection + pipeline + prebook + awaitQty + fold + bulk + backcarpark + damage + awaitGrn;
+            
+            return {
+              totalQuantity,
+              availableQuantity: totalQuantity - damage, // 排除損壞的庫存
+              reservedQuantity: 0, // record_inventory 表沒有 reserved 概念
+              locationBreakdown: {
+                injection,
+                pipeline,
+                prebook,
+                await: awaitQty,
+                fold,
+                bulk,
+                backcarpark,
+                damage,
+                await_grn: awaitGrn,
+              },
+              lastUpdate: inventoryData.latestUpdate || new Date().toISOString(),
+            };
+          }
         }
 
-        // Fallback to direct query if DataLoader not available
+        // Fallback to direct query from stock_level table if DataLoader not available or failed
         const { data, error } = await context.supabase
           .from('stock_level')
           .select('*')
@@ -157,6 +192,7 @@ export const productResolvers: IResolvers = {
               bulk: 0,
               backcarpark: 0,
               damage: 0,
+              await_grn: 0,
             },
             lastUpdate: new Date().toISOString(),
           };
@@ -176,6 +212,7 @@ export const productResolvers: IResolvers = {
             bulk: data.stock_level || 0, // 假設全部庫存在 bulk 位置
             backcarpark: 0,
             damage: 0,
+            await_grn: 0,
           },
           lastUpdate: data.update_time || new Date().toISOString(),
         };

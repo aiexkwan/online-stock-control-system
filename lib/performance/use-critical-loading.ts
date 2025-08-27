@@ -5,6 +5,13 @@
 
 import { useEffect, useState, useCallback } from 'react';
 
+/**
+ * Type guard to safely check if PerformanceEntry is PerformanceNavigationTiming
+ */
+function isPerformanceNavigationTiming(entry: PerformanceEntry): entry is PerformanceNavigationTiming {
+  return entry.entryType === 'navigation' && 'responseStart' in entry;
+}
+
 interface CriticalLoadingOptions {
   /** Critical resources that must load first */
   criticalResources?: string[];
@@ -231,9 +238,10 @@ export function useLoadingPerformance() {
   useEffect(() => {
     // Measure performance metrics
     const measurePerformance = () => {
-      const navigation = performance.getEntriesByType(
-        'navigation'
-      )[0] as PerformanceNavigationTiming;
+      const entries = performance.getEntriesByType('navigation');
+      const navigation = entries.length > 0 && isPerformanceNavigationTiming(entries[0])
+        ? entries[0]
+        : null;
 
       if (navigation) {
         setMetrics({

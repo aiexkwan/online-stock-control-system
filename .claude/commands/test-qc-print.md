@@ -84,15 +84,15 @@ graph TD
 
 ## 執行指令
 
-0.  讀取[通用規則](../../CLAUDE.local.md)
-1.  **前置作戰準備 (Pre-flight Check)**
-    - [ ] **確認環境變數**: 檢查 `.env.local` 檔案是否存在，並包含 `TEST_SYS_LOGIN` 和 `TEST_SYS_PASSWORD`。
-    - [ ] **確認依賴安裝**: 確保 `node_modules` 已存在，所有 Playwright 相關依賴已安裝。
-    - [ ] **確認數據庫連線**: 執行 `npx supabase status`，確保與 Supabase 後端的連接正常。
-    - [ ] **測試數據先決條件**:`pallet_number_buffer` 表中必須有足夠的可用托盤號碼 (`used` = `False`)。
-2.  執行 `date +"%Y-%m-%d_%H-%M-%S"` 取得時間戳，並將其設為環境變數 `TIMESTAMP`。
-3.  建立測試報告目錄：`docs/test/qc-label/$TIMESTAMP/`
-4.  **檢查 Playwright 環境與 Supabase 連接**
+0. 完整閱讀 @CLAUDE.md [系統規範](../../CLAUDE.local.md)及文檔中的連結文案，以獲取全局設定及系統資訊
+1. **前置作戰準備 (Pre-flight Check)**
+   - [ ] **確認環境變數**: 檢查 `.env.local` 檔案是否存在，並包含 `TEST_SYS_LOGIN` 和 `TEST_SYS_PASSWORD`。
+   - [ ] **確認依賴安裝**: 確保 `node_modules` 已存在，所有 Playwright 相關依賴已安裝。
+   - [ ] **確認數據庫連線**: 執行 `npx supabase status`，確保與 Supabase 後端的連接正常。
+   - [ ] **測試數據先決條件**:`pallet_number_buffer` 表中必須有足夠的可用托盤號碼 (`used` = `False`)。
+2. 執行 `date +"%Y-%m-%d_%H-%M-%S"` 取得時間戳，並將其設為環境變數 `TIMESTAMP`。
+3. 建立測試報告目錄：`docs/test/qc-label/$TIMESTAMP/`
+4. **檢查 Playwright 環境與 Supabase 連接**
 
 ### 階段一：規劃與腳本開發
 

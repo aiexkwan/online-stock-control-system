@@ -326,7 +326,7 @@ export class GRNLabelCardBenchmarks {
               currentValue: 0,
               baselineValue: 0,
               percentageChange: 100,
-              severity: 'critical'
+              severity: 'critical' as const
             }],
             recommendations: ['Fix test execution issues'],
             timestamp: Date.now()

@@ -8,6 +8,13 @@
 import React, { useEffect, useState } from 'react';
 import { useLoadingPerformance } from './use-critical-loading';
 
+/**
+ * Type guard to safely check if PerformanceEntry is PerformanceNavigationTiming
+ */
+function isPerformanceNavigationTiming(entry: PerformanceEntry): entry is PerformanceNavigationTiming {
+  return entry.entryType === 'navigation' && 'responseStart' in entry;
+}
+
 interface PerformanceMetrics {
   lcp: number; // Largest Contentful Paint
   fcp: number; // First Contentful Paint
@@ -168,9 +175,10 @@ export function PerformanceDashboard() {
 
     // Collect metrics every second
     const interval = setInterval(() => {
-      const navigation = performance.getEntriesByType(
-        'navigation'
-      )[0] as PerformanceNavigationTiming;
+      const entries = performance.getEntriesByType('navigation');
+      const navigation = entries.length > 0 && isPerformanceNavigationTiming(entries[0])
+        ? entries[0]
+        : null;
 
       if (navigation) {
         const newMetric: PerformanceMetrics = {

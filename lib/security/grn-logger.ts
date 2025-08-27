@@ -304,8 +304,10 @@ export function createGrnLogger(component: string): GrnLogger {
 /**
  * Default export for convenience
  */
-export default {
+const GrnLoggerService = {
   createLogger: createGrnLogger,
   sanitizeData: sanitizeGrnData,
   GrnLogger,
 };
+
+export default GrnLoggerService;

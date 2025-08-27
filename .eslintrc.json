@@ -1,10 +1,21 @@
 {
   "extends": ["next/core-web-vitals"],
   "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint"],
+  "plugins": ["@typescript-eslint", "import"],
   "rules": {
+    // TypeScript specific rules
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/prefer-as-const": "error",
+    
+    // Import rules for better organization (disabled for existing codebase)
+    "import/order": "off",
+    "import/no-anonymous-default-export": "error",
+    
+    // Stricter TypeScript rules for production code
+    "@typescript-eslint/no-unsafe-any": "off", // Too strict for existing codebase
+    "@typescript-eslint/no-unsafe-member-access": "off",
+    "@typescript-eslint/no-unsafe-assignment": "off",
+    
     "no-restricted-imports": [
       "error",
       {

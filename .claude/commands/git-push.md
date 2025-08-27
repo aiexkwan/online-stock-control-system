@@ -21,27 +21,29 @@ description: 由專業代理自動修復阻礙 Git 推送的錯誤和安全問�
 
 流程是一個包含自動修復機制的驗證循環。當驗證失敗時，系統會自動調用`代理目錄`內相應的代理進行修復，並重試該步驟。如果連續 5 次修復失敗，流程才會中止。
 
-1.  **檢查敏感資訊 (由 [security-auditor](../agents/security-auditor.md) 執行)**
-    - **驗證**: 掃描暫存區檔案中是否有寫死的秘密。
-    - **修復與重試**: 若檢測到問題，代理會嘗試自動修復。修復後重新驗證。此循環最多重複 5 次。若問題持續存在，則中止。
+0. 完整閱讀 @CLAUDE.md [系統規範](../../CLAUDE.local.md)及文檔中的連結文案，以獲取全局設定及系統資訊
 
-2.  **執行 Linter 和 Formatter (由 [eslint-fixer](../agents/eslint-fixer.md) 執行)**
-    - **驗證**: 檢查是否存在 Linter 或格式問題。
-    - **修復與重試**: 若存在問題，代理會執行 `eslint --fix` 等修復工具。修復後重新驗證。此循環最多重複 5 次。
+1. **檢查敏感資訊 (由 [security-auditor](../agents/security-auditor.md) 執行)**
+   - **驗證**: 掃描暫存區檔案中是否有寫死的秘密。
+   - **修復與重試**: 若檢測到問題，代理會嘗試自動修復。修復後重新驗證。此循環最多重複 5 次。若問題持續存在，則中止。
 
-3.  **執行構建驗證 (由 [build-error-resolver](../agents/build-error-resolver.md) 執行)**
-    - **驗證**: 執行專案的構建指令（例如 `npm run build`）。
-    - **修復與重試**: 若構建失敗，代理將分析錯誤並嘗試應用修復方案。修復後重新構建。此循環最多重複 5 次。
+2. **執行 Linter 和 Formatter (由 [eslint-fixer](../agents/eslint-fixer.md) 執行)**
+   - **驗證**: 檢查是否存在 Linter 或格式問題。
+   - **修復與重試**: 若存在問題，代理會執行 `eslint --fix` 等修復工具。修復後重新驗證。此循環最多重複 5 次。
 
-4.  **執行測試 (由 [test-automator](../agents/test-automator.md) 執行)**
-    - **驗證**: 執行測試套件（例如 `npm test`）。
-    - **修復與重試**: 若測試失敗，代理會嘗試自動修復（如更新快照、修復簡單斷言）。修復後重新執行測試。此循環最多重複 5 次。
+3. **執行構建驗證 (由 [build-error-resolver](../agents/build-error-resolver.md) 執行)**
+   - **驗證**: 執行專案的構建指令（例如 `npm run build`）。
+   - **修復與重試**: 若構建失敗，代理將分析錯誤並嘗試應用修復方案。修復後重新構建。此循環最多重複 5 次。
 
-5.  **執行 Git 推送 (由 [legacy-modernizer](../agents/legacy-modernizer.md) 執行)**
-    - 如果前面所有步驟最終都成功通過，執行 Git 推送操作：
-      - `git add .`
-      - `git commit -m "$COMMIT_MESSAGE"`
-      - `git push origin $BRANCH_TARGET $PUSH_OPTIONS`
+4. **執行測試 (由 [test-automator](../agents/test-automator.md) 執行)**
+   - **驗證**: 執行測試套件（例如 `npm test`）。
+   - **修復與重試**: 若測試失敗，代理會嘗試自動修復（如更新快照、修復簡單斷言）。修復後重新執行測試。此循環最多重複 5 次。
+
+5. **執行 Git 推送 (由 [legacy-modernizer](../agents/legacy-modernizer.md) 執行)**
+   - 如果前面所有步驟最終都成功通過，執行 Git 推送操作：
+     - `git add .`
+     - `git commit -m "$COMMIT_MESSAGE"`
+     - `git push origin $BRANCH_TARGET $PUSH_OPTIONS`
 
 ## 輸出
 

@@ -28,34 +28,36 @@ description: 對指定的檔案或組件進行全面的循序深度分析，以�
 
 總指揮代理將按以下順序，調度各專家對 `$TARGET_PATH` 進行分析，並將每一步的結果記錄下來，供最終報告使用。
 
-0. 建立報告文檔：`/Users/chun/Documents/PennineWMS/online-stock-control-system/docs/PlanningDocument/clearance_plan/[$ARGUMENTS]/[$ARGUMENTS].md`
+0. 完整閱讀 @CLAUDE.md [系統規範](../../CLAUDE.local.md)及文檔中的連結文案，以獲取全局設定及系統資訊
 
-1. **第1步：靜態分析 (由 [code-reviewer](../agents/code-reviewer.md) 執行)**
+1. 建立報告文檔：`/Users/chun/Documents/PennineWMS/online-stock-control-system/docs/PlanningDocument/clearance_plan/[$ARGUMENTS]/[$ARGUMENTS].md`
+
+2. **第1步：靜態分析 (由 [code-reviewer](../agents/code-reviewer.md) 執行)**
    - **目標**: 檢查檔案本身的屬性，判斷其是否符合已知的「技術債務」特徵。
    - **檢查點**:
      - 是否符合「清理對象識別標準」（如命名包含 `_legacy`, `_bak`）。
      - 是否使用了已被棄用的技術或庫。
 
-2. **第2步：依賴分析 (由 [frontend-developer](../agents/frontend-developer.md) 和 [backend-architect](../agents/backend-architect.md) 協同執行)**
+3. **第2步：依賴分析 (由 [frontend-developer](../agents/frontend-developer.md) 和 [backend-architect](../agents/backend-architect.md) 協同執行)**
    - **目標**: 追蹤目標檔案在整個代碼庫中的所有引用關係。
    - **檢查點**:
      - 是否有任何直接的 `import` 或 `require` 語句指向該檔案？
      - 是否在任何路由、中間件或配置文件中被引用？
      - GraphQL schema 或 Supabase 遷移中是否存在對此檔案的依賴？
 
-3. **第3步：運行時分析 (由 [test-automator](../agents/test-automator.md) 和 [error-detective](../agents/error-detective.md) 協同執行)**
+4. **第3步：運行時分析 (由 [test-automator](../agents/test-automator.md) 和 [error-detective](../agents/error-detective.md) 協同執行)**
    - **目標**: 評估檔案在系統實際運行時的潛在影響。
    - **檢查點**:
      - （模擬刪除後）運行相關的單元測試和 E2E 測試，是否會導致失敗？
      - 在生產環境的錯誤日誌中，是否能搜索到對此檔案的引用記錄？
 
-4. **第4步：影響評估 (由 [security-auditor](../agents/security-auditor.md) 和 [performance-engineer](../agents/performance-engineer.md) 協同執行)**
+5. **第4步：影響評估 (由 [security-auditor](../agents/security-auditor.md) 和 [performance-engineer](../agents/performance-engineer.md) 協同執行)**
    - **目標**: 綜合所有信息，評估刪除檔案後對非功能性需求的影響。
    - **檢查點**:
      - 該檔案是否包含任何與安全、認證、授權相關的邏輯？
      - 刪除後是否會對應用的 Bundle 大小、加載性能產生正面或負面影響？
 
-5. **第5步：生成分析報告 (由 [docs-architect](../agents/docs-architect.md) 執行)**
+6. **第5步：生成分析報告 (由 [docs-architect](../agents/docs-architect.md) 執行)**
    - **目標**: 匯總以上所有分析步驟的結果，根據預設模版，生成一份統一的、詳盡的分析報告。
 
 ## 清理對象識別標準

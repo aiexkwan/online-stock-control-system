@@ -10,7 +10,6 @@ const TEST_URL = process.env.TEST_URL || 'http://localhost:3000';
 const TEST_PAGES = [
   { name: 'Home', path: '/' },
   { name: 'Admin Dashboard', path: '/admin/injection' },
-  { name: 'Print Label', path: '/print-label' },
 ];
 
 async function measurePerformance(page, url) {

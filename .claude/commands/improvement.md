@@ -26,7 +26,7 @@
 ### 必須遵循
 
 1. 建立文檔資料夾 `docs\PlanningDocument\$Arguments_component`
-2. 所有建立的報告，均勿須，及只能儲存在`docs\PlanningDocument\$Arguments_component`內
+2. 所有建立的報告，均必須，及只能儲存在`docs\PlanningDocument\$Arguments_component`內
 3. 只需建立計劃書，無需執行任何代碼修改4.
 4. **嚴格遵守**：`KISS`，`DRY`，`YAGNI`同`SOLID`四大原則
 
@@ -36,7 +36,7 @@
 
 **0. 基礎準備**
 
-- 閱讀[Claude規則](../../CLAUDE.local.md)
+- 完整閱讀 @CLAUDE.md [系統規範](../../CLAUDE.local.md)及文檔中的連結文案，以獲取全局設定及系統資訊
 - 解析用戶`$Arguments`，理解其核心意圖
 
 **1. 智能代理動態選擇**

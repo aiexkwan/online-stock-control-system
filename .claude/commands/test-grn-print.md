@@ -53,10 +53,10 @@ description: Execute comprehensive Playwright tests for the GRNLabelCard compone
 
 ## 執行指令
 
-0.  讀取[通用規則](../../CLAUDE.local.md)
-1.  執行 `date +"%Y-%m-%d_%H-%M-%S"` 取得時間戳
-2.  建立測試報告目錄：`docs/test/grn-label/<timestamp>/`
-3.  **檢查 Playwright 環境與 Supabase 連接**
+0. 完整閱讀 @CLAUDE.md s[系統規範](../../CLAUDE.local.md)及文檔中的連結文案，以獲取全局設定及系統資訊
+1. 執行 `date +"%Y-%m-%d_%H-%M-%S"` 取得時間戳
+2. 建立測試報告目錄：`docs/test/grn-label/<timestamp>/`
+3. **檢查 Playwright 環境與 Supabase 連接**
 
 ### 階段一：規劃與腳本開發
 

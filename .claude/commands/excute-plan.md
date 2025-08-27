@@ -27,16 +27,18 @@ description: 讀取 Markdown 格式的開發計劃文檔，並由總指揮代理
 
 ## 執行流程
 
-0. 建立計劃執行紀錄文檔
+0. 完整閱讀 @CLAUDE.md [系統規範](../../CLAUDE.local.md)及文檔中的連結文案，以獲取全局設定及系統資訊
+
+1. 建立計劃執行紀錄文檔
 
 - `/Users/chun/Documents/PennineWMS/online-stock-control-system/docs/PlanningDocument/[planning_doc]/[phase]`
 
-1.  **解析計劃文檔 (由 [context-fetcher](../agents/context-fetcher.md) 執行)**
+2.  **解析計劃文檔 (由 [context-fetcher](../agents/context-fetcher.md) 執行)**
     - 讀取指定的 `$PLANNING_DOC_PATH`。
     - 定位到用戶指定的 `$PHASE` 標題。
     - 從該階段下的「階段任務分解」章節中，提取所有編號的任務項，生成一個內部執行的任務清單。
 
-2.  **循序執行任務 (由 [architect-review](../agents/architect-review.md) 作為總指揮)**
+3.  **循序執行任務 (由 [architect-review](../agents/architect-review.md) 作為總指揮)**
     - 總指揮從解析出的任務清單頂部開始，逐一處理。
     - **對於清單中的每一項任務**:
       1.  **分析與調度**: 總指揮分析任務的文本內容（例如：「移除前端密碼驗證複雜性」），並從代理目錄中選擇最合適的專家代理（例如 `[frontend-developer](../agents/frontend-developer.md)`）。
@@ -47,7 +49,7 @@ description: 讀取 Markdown 格式的開發計劃文檔，並由總指揮代理
           - 此修復-重試循環最多進行 **5** 次。如果問題仍然存在，整個流程將中止並報告錯誤。
       5.  **標記完成並繼續**: 當前任務成功通過驗證後，總指揮將其標記為完成，並開始執行清單中的下一個任務。
 
-3.  **生成最終報告 (由 [docs-architect](../agents/docs-architect.md) 執行)**
+4.  **生成最終報告 (由 [docs-architect](../agents/docs-architect.md) 執行)**
     - 當指定階段的所有任務成功完成後，遵從`最終報告模版`，生成一份完整詳盡的執行摘要報告。
 
 ## 輸入格式：Markdown 計劃文檔 (示例)

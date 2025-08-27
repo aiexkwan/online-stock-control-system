@@ -38,7 +38,7 @@ description: 自動化地在每次對話結束後，生成精煉摘要並歸檔�
 
 ## 執行指令
 
-0. 讀取[通用規則](../../CLAUDE.local.md)
+0. 完整閱讀 @CLAUDE.md [系統規範](../../CLAUDE.local.md)及文檔中的連結文案，以獲取全局設定及系統資訊
 1. 執行 `date +"%Y-%m-%d_%H-%M-%S"` 取得 `timestamp`
 2. 建立目錄：`docs/Context_History/<timestamp>/`
 3. **[context-fetcher](../agents/context-fetcher.md)自動分析對話上下文**：

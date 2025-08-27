@@ -2,7 +2,7 @@
 
 - **分析目標**: `/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/print-grnlabel`
 - **分析時間**: `2025-08-27 16:45:23`
-- **用戶背景資訊**: 
+- **用戶背景資訊**:
   1. /print-grnlabel 已再無frontend入口
   2. GRNLabelCard 已投入使用
 
@@ -53,7 +53,8 @@
 
 ## 建議後續步驟
 
-**如果要清理此目錄**: 
+**如果要清理此目錄**:
+
 ```
 階段性重構方案：
 1. 將6個共用檔案遷移至 /lib/grn/ 或 /components/shared/
@@ -65,6 +66,7 @@
 ```
 
 **立即可執行的安全清理**:
+
 ```bash
 # 可安全刪除的備份檔案
 git rm app/(app)/print-grnlabel/hooks/useGrnLabelBusinessV3.tsx.backup
@@ -79,12 +81,15 @@ git rm app/(app)/print-grnlabel/hooks/useGrnLabelBusinessV3.tsx.backup
 ## 📋 執行概覽
 
 ### 執行原則
+
 - **安全第一**: 每一步都必須通過測試驗證
 - **漸進式清理**: 分階段執行，確保可回滾
 - **零停機**: 保證生產環境功能不中斷
 - **文檔化**: 每個步驟都要記錄執行結果
+- **嚴格遵守**: 清理過程不可添加新功能，不可修改現有UI。
 
 ### 風險等級分類
+
 - 🟢 **低風險**: 可直接執行
 - 🟡 **中風險**: 需要測試驗證
 - 🔴 **高風險**: 需要完整備份和回滾準備
@@ -94,6 +99,7 @@ git rm app/(app)/print-grnlabel/hooks/useGrnLabelBusinessV3.tsx.backup
 ## 🗂️ 階段一：準備和備份 (估計時間：2-3小時)
 
 ### Step 1.1: 建立工作分支 🟢
+
 ```bash
 # 建立專用清理分支
 git checkout -b feature/cleanup-print-grnlabel-directory
@@ -103,6 +109,7 @@ git status
 ```
 
 ### Step 1.2: 完整備份 🟢
+
 ```bash
 # 備份目標目錄
 cp -r app/(app)/print-grnlabel/ backup_print-grnlabel_$(date +%Y%m%d_%H%M%S)/
@@ -113,6 +120,7 @@ cp app/components/GlobalSkipLinks.tsx backup_GlobalSkipLinks_$(date +%Y%m%d_%H%M
 ```
 
 ### Step 1.3: 依賴關係檔案清單確認 🟡
+
 ```bash
 # 確認所有被引用的核心檔案
 echo "=== 核心依賴檔案清單 ==="
@@ -134,6 +142,7 @@ done
 ```
 
 ### Step 1.4: 測試基準建立 🟡
+
 ```bash
 # 執行完整測試套件，建立基準
 npm run test 2>&1 | tee test_baseline_$(date +%Y%m%d_%H%M%S).log
@@ -148,6 +157,7 @@ kill $DEV_PID
 ```
 
 **驗收標準**：
+
 - ✅ 所有現有測試通過
 - ✅ GRNLabelCard 功能正常運作
 - ✅ 備份檔案建立完成
@@ -157,6 +167,7 @@ kill $DEV_PID
 ## 🏗️ 階段二：建立共用模組結構 (估計時間：3-4小時)
 
 ### Step 2.1: 建立新的模組目錄結構 🟢
+
 ```bash
 # 建立 GRN 共用模組目錄
 mkdir -p lib/grn/{components,hooks,services,types}
@@ -169,6 +180,7 @@ touch lib/grn/services/index.ts
 ```
 
 ### Step 2.2: 遷移服務層 🟡
+
 ```bash
 # 遷移 ErrorHandler
 cp app/(app)/print-grnlabel/services/ErrorHandler.ts lib/grn/services/ErrorHandler.ts
@@ -180,6 +192,7 @@ export { default as grnErrorHandler } from './ErrorHandler';
 ```
 
 ### Step 2.3: 遷移 Hook 層 🟡
+
 ```bash
 # 遷移核心 Hooks
 cp app/(app)/print-grnlabel/hooks/useGrnFormReducer.tsx lib/grn/hooks/useGrnFormReducer.tsx
@@ -195,6 +208,7 @@ export { default as usePalletGenerationGrn } from './usePalletGenerationGrn';
 ```
 
 ### Step 2.4: 遷移組件層 🟡
+
 ```bash
 # 遷移核心組件
 cp app/(app)/print-grnlabel/components/GrnDetailCard.tsx lib/grn/components/GrnDetailCard.tsx
@@ -208,6 +222,7 @@ export { default as WeightInputList } from './WeightInputList';
 ```
 
 ### Step 2.5: 建立主要導出檔案 🟡
+
 ```typescript
 // lib/grn/index.ts
 export * from './components';
@@ -219,6 +234,7 @@ export { grnErrorHandler as ErrorHandler } from './services';
 ```
 
 ### Step 2.6: 修復遷移檔案的內部依賴 🔴
+
 ```bash
 # 檢查並修復新模組內的相互依賴
 # 這需要手動檢查每個檔案的 import 路徑
@@ -229,6 +245,7 @@ export { grnErrorHandler as ErrorHandler } from './services';
 ```
 
 **驗收標準**：
+
 - ✅ 新模組結構建立完成
 - ✅ 所有核心檔案成功遷移
 - ✅ 內部依賴路徑修復完成
@@ -239,6 +256,7 @@ export { grnErrorHandler as ErrorHandler } from './services';
 ## 🔄 階段三：更新依賴引用 (估計時間：2-3小時)
 
 ### Step 3.1: 更新 GRNLabelCard.tsx 🔴
+
 ```typescript
 // app/(app)/admin/cards/GRNLabelCard.tsx
 // 原始 imports
@@ -250,15 +268,11 @@ import useGrnFormReducer from '@/app/(app)/print-grnlabel/hooks/useGrnFormReduce
 */
 
 // 新的 imports
-import { 
-  grnErrorHandler, 
-  GrnDetailCard, 
-  WeightInputList, 
-  useGrnFormReducer 
-} from '@/lib/grn';
+import { grnErrorHandler, GrnDetailCard, WeightInputList, useGrnFormReducer } from '@/lib/grn';
 ```
 
 ### Step 3.2: 更新 useAdminGrnLabelBusiness.tsx 🔴
+
 ```typescript
 // app/(app)/admin/hooks/useAdminGrnLabelBusiness.tsx
 // 原始 imports
@@ -270,15 +284,16 @@ import usePalletGenerationGrn from '@/app/(app)/print-grnlabel/hooks/usePalletGe
 */
 
 // 新的 imports
-import { 
-  grnErrorHandler, 
-  useGrnFormReducer, 
-  useWeightCalculation, 
-  usePalletGenerationGrn 
+import {
+  grnErrorHandler,
+  useGrnFormReducer,
+  useWeightCalculation,
+  usePalletGenerationGrn,
 } from '@/lib/grn';
 ```
 
 ### Step 3.3: 測試引用更新 🔴
+
 ```bash
 # TypeScript 編譯檢查
 npx tsc --noEmit
@@ -295,6 +310,7 @@ kill $DEV_PID
 ```
 
 **驗收標準**：
+
 - ✅ TypeScript 編譯無錯誤
 - ✅ 相關單元測試通過
 - ✅ GRNLabelCard 功能正常運作
@@ -304,6 +320,7 @@ kill $DEV_PID
 ## 🧹 階段四：清理系統配置 (估計時間：1-2小時)
 
 ### Step 4.1: 清理 AuthChecker.tsx 🟡
+
 ```typescript
 // app/components/AuthChecker.tsx
 // 移除 '/print-grnlabel' 路由保護配置
@@ -315,6 +332,7 @@ const protectedRoutes = [
 ```
 
 ### Step 4.2: 清理 GlobalSkipLinks.tsx 🟡
+
 ```typescript
 // app/components/GlobalSkipLinks.tsx
 // 移除 print-grnlabel 相關的條件判斷
@@ -322,6 +340,7 @@ const protectedRoutes = [
 ```
 
 ### Step 4.3: 清理測試配置 🟡
+
 ```bash
 # 更新 .lighthouserc.js
 # 移除 print-grnlabel 相關的 URL 配置
@@ -331,6 +350,7 @@ const protectedRoutes = [
 ```
 
 ### Step 4.4: 驗證配置清理 🟡
+
 ```bash
 # 執行完整測試
 npm run test
@@ -344,6 +364,7 @@ npm run lighthouse
 ```
 
 **驗收標準**：
+
 - ✅ 系統配置清理完成
 - ✅ 所有測試通過
 - ✅ 無編譯錯誤
@@ -353,6 +374,7 @@ npm run lighthouse
 ## 🗑️ 階段五：安全刪除備份檔案 (估計時間：30分鐘)
 
 ### Step 5.1: 刪除確認的備份檔案 🟢
+
 ```bash
 # 安全刪除 backup 檔案（已確認無依賴）
 git rm app/(app)/print-grnlabel/hooks/useGrnLabelBusinessV3.tsx.backup
@@ -366,6 +388,7 @@ git commit -m "chore: remove safe backup files from print-grnlabel
 ```
 
 ### Step 5.2: 測試驗證 🟡
+
 ```bash
 # 完整測試驗證
 npm run test
@@ -373,6 +396,7 @@ npm run build
 ```
 
 **驗收標準**：
+
 - ✅ 備份檔案成功刪除
 - ✅ 系統功能正常
 
@@ -381,6 +405,7 @@ npm run build
 ## 🏁 階段六：最終清理和驗證 (估計時間：2-3小時)
 
 ### Step 6.1: 最終功能驗證 🔴
+
 ```bash
 # 完整測試套件
 npm run test 2>&1 | tee final_test_$(date +%Y%m%d_%H%M%S).log
@@ -398,6 +423,7 @@ kill $PROD_PID
 ```
 
 ### Step 6.2: 剩餘無依賴檔案清理 🔴
+
 ```bash
 # 檢查剩餘檔案是否有外部依賴
 echo "=== 檢查剩餘檔案 ==="
@@ -414,6 +440,7 @@ ls -la app/(app)/print-grnlabel/
 ```
 
 ### Step 6.3: 最終目錄刪除 🔴
+
 ```bash
 # 如果目錄為空，刪除整個目錄
 if [ -z "$(ls -A app/(app)/print-grnlabel/)" ]; then
@@ -426,6 +453,7 @@ fi
 ```
 
 ### Step 6.4: 最終提交 🟡
+
 ```bash
 # 最終提交
 git add .
@@ -447,13 +475,14 @@ git commit -m "feat: complete print-grnlabel directory cleanup
 - ✅ All tests passing
 
 **Migration Summary:**
-- From: app/(app)/print-grnlabel/* 
+- From: app/(app)/print-grnlabel/*
 - To: lib/grn/* (shared module structure)
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
 ```
 
 **驗收標準**：
+
 - ✅ 所有測試通過（單元測試 + E2E測試）
 - ✅ 建置成功
 - ✅ GRN 功能在 Admin 模組中正常運作
@@ -486,12 +515,14 @@ cp backup_GlobalSkipLinks_[timestamp].tsx app/components/GlobalSkipLinks.tsx
 ## 📊 執行檢查清單
 
 ### 執行前檢查 ✅
+
 - [ ] 建立工作分支
 - [ ] 完成完整備份
 - [ ] 確認測試基準
 - [ ] 文檔所有依賴關係
 
 ### 階段性檢查點 ✅
+
 - [ ] 階段一：準備完成，所有測試通過
 - [ ] 階段二：共用模組建立，TypeScript 編譯成功
 - [ ] 階段三：依賴更新，GRN 功能正常
@@ -500,6 +531,7 @@ cp backup_GlobalSkipLinks_[timestamp].tsx app/components/GlobalSkipLinks.tsx
 - [ ] 階段六：完全清理，功能驗證通過
 
 ### 最終驗收 ✅
+
 - [ ] 所有單元測試通過
 - [ ] 所有 E2E 測試通過
 - [ ] 生產建置成功
@@ -513,11 +545,13 @@ cp backup_GlobalSkipLinks_[timestamp].tsx app/components/GlobalSkipLinks.tsx
 ## ⏱️ 總預估時間：12-15 小時
 
 **建議分配：**
+
 - 第一天：階段一 + 階段二 (6-7小時)
-- 第二天：階段三 + 階段四 (4-5小時)  
+- 第二天：階段三 + 階段四 (4-5小時)
 - 第三天：階段五 + 階段六 + 最終驗證 (2-3小時)
 
 **執行建議：**
+
 - 每完成一個階段都要提交代碼
 - 遇到問題立即停止，不要強行繼續
 - 保持測試驅動，每一步都要驗證

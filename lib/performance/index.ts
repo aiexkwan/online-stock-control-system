@@ -4,6 +4,11 @@
  * 提供系統性能監控功能，包含完整的基準測試和自動化監控系統
  */
 
+import { PerformanceBaselineFramework } from './performance-baseline-framework';
+import { startPerformanceMonitoring, getPerformanceStatus } from './automated-monitoring-system';
+import { runGRNLabelCardBenchmarks } from './grn-label-card-benchmarks';
+import type { MonitoringConfig } from './automated-monitoring-system';
+
 // ==== Core Performance Monitoring ====
 export * from './PerformanceMonitor';
 export * from './hooks/usePerformanceMonitor';
@@ -191,12 +196,18 @@ export function getPerformanceSystemHealth(): {
   cicd: boolean;
   overall: 'healthy' | 'degraded' | 'critical';
 } {
-  const health = {
+  const health: {
+    framework: boolean;
+    monitoring: boolean;
+    diagnostics: boolean;
+    cicd: boolean;
+    overall: 'healthy' | 'degraded' | 'critical';
+  } = {
     framework: true, // 基準框架總是可用
     monitoring: getPerformanceStatus().isActive,
     diagnostics: true, // 診斷系統總是可用
     cicd: !!(process.env.CI || process.env.GITHUB_ACTIONS || process.env.GITLAB_CI),
-    overall: 'healthy' as const
+    overall: 'healthy'
   };
   
   const healthyCount = Object.values(health).filter(v => v === true).length - 1; // 排除 overall
