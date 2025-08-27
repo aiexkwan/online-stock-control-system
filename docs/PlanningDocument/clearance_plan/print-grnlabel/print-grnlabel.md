@@ -98,17 +98,7 @@ git rm app/(app)/print-grnlabel/hooks/useGrnLabelBusinessV3.tsx.backup
 
 ## 🗂️ 階段一：準備和備份 (估計時間：2-3小時)
 
-### Step 1.1: 建立工作分支 🟢
-
-```bash
-# 建立專用清理分支
-git checkout -b feature/cleanup-print-grnlabel-directory
-
-# 確認當前狀態
-git status
-```
-
-### Step 1.2: 完整備份 🟢
+### Step 1.1: 完整備份 🟢
 
 ```bash
 # 備份目標目錄
@@ -119,7 +109,7 @@ cp app/components/AuthChecker.tsx backup_AuthChecker_$(date +%Y%m%d_%H%M%S).tsx
 cp app/components/GlobalSkipLinks.tsx backup_GlobalSkipLinks_$(date +%Y%m%d_%H%M%S).tsx
 ```
 
-### Step 1.3: 依賴關係檔案清單確認 🟡
+### Step 1.2: 依賴關係檔案清單確認 🟡
 
 ```bash
 # 確認所有被引用的核心檔案
@@ -141,7 +131,7 @@ for file in "services/ErrorHandler.ts" "components/GrnDetailCard.tsx" "component
 done
 ```
 
-### Step 1.4: 測試基準建立 🟡
+### Step 1.3: 測試基準建立 🟡
 
 ```bash
 # 執行完整測試套件，建立基準

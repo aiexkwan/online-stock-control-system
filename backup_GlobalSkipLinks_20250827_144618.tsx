@@ -74,6 +74,15 @@ function getSkipLinksForPath(pathname: string): SkipLinkConfig[] {
     ];
   }
 
+  // Label Printing 頁面
+  if (pathname.startsWith('/print-grnlabel')) {
+    return [
+      { href: '#main-content', label: 'Skip to main content' },
+      { href: '#label-form', label: 'Skip to label form' },
+      { href: '#preview-section', label: 'Skip to preview' },
+      { href: '#navigation-bar', label: 'Skip to navigation' },
+    ];
+  }
 
   // Void Pallet 頁面
   if (pathname.startsWith('/void-pallet')) {

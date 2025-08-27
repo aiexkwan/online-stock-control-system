@@ -6,7 +6,7 @@ import { useResourceCleanup } from '@/lib/hooks/useResourceCleanup';
 import { getOptimizedClient } from '@/app/utils/supabase/optimized-client';
 import { getGrnDatabaseService } from '@/lib/database/grn-database-service';
 import { toast } from 'sonner';
-import { grnErrorHandler } from '@/app/(app)/print-grnlabel/services/ErrorHandler';
+// Imports moved to unified @/lib/grn below
 import { EnhancedProgressBar } from '../components/EnhancedProgressBar';
 import ClockNumberConfirmDialog from '../components/ClockNumberConfirmDialog';
 import { SpecialCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
@@ -25,9 +25,7 @@ import {
   type GrnFormData,
 } from '@/lib/types/grn-validation';
 
-// Import new modular components from print-grnlabel
-import { GrnDetailCard } from '@/app/(app)/print-grnlabel/components/GrnDetailCard';
-import { WeightInputList } from '@/app/(app)/print-grnlabel/components/WeightInputList';
+// Import new modular components from unified grn library
 
 // Import constants
 import {
@@ -37,8 +35,8 @@ import {
   type LabelMode,
 } from '@/app/constants/grnConstants';
 
-// Import custom hooks
-import { useGrnFormReducer } from '@/app/(app)/print-grnlabel/hooks/useGrnFormReducer';
+// Import GRN modules from unified library
+import { grnErrorHandler, GrnDetailCard, WeightInputList, useGrnFormReducer } from '@/lib/grn';
 import { useAdminGrnLabelBusiness } from '../hooks/useAdminGrnLabelBusiness';
 
 // Import enhanced Props types

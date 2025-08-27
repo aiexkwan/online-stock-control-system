@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { getOptimizedClient } from '@/app/utils/supabase/optimized-client';
 import { getGrnDatabaseService } from '@/lib/database/grn-database-service';
-import { grnErrorHandler } from '@/app/(app)/print-grnlabel/services/ErrorHandler';
+// Moved to unified grn library import below
 import { createGrnLogger } from '@/lib/security/grn-logger';
 import {
   createGrnDatabaseEntries,
@@ -38,9 +38,8 @@ import type {
   GrnFormAction,
 } from '@/app/(app)/print-grnlabel/hooks/useGrnFormReducer';
 
-// Import custom hooks
-import { useWeightCalculation } from '@/app/(app)/print-grnlabel/hooks/useWeightCalculation';
-import { usePalletGenerationGrn } from '@/app/(app)/print-grnlabel/hooks/usePalletGenerationGrn';
+// Import GRN modules from unified library
+import { grnErrorHandler, useWeightCalculation, usePalletGenerationGrn } from '@/lib/grn';
 import { confirmPalletUsage } from '@/app/utils/palletGeneration';
 // Import generic PDF generation hook
 import { usePdfGeneration } from './usePdfGeneration';

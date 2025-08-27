@@ -65,9 +65,8 @@ export default defineConfig({
         'app/utils/supabase/optimized-client.ts',
         'app/actions/grnActions.ts',
         'lib/pdfUtils.tsx',
-        // Core business logic
-        'app/(app)/print-grnlabel/hooks/**',
-        'app/(app)/print-grnlabel/services/**',
+        // Core business logic (now using shared modules)
+        'lib/grn/**',
         'lib/printing/services/**',
       ],
       thresholds: {

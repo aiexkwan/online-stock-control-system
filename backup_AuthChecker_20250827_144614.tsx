@@ -21,6 +21,7 @@ const protectedPaths = [
   '/dashboard',
   '/productUpdate',
   '/stock-transfer',
+  '/print-grnlabel',
   '/change-password', // 密碼修改頁面需要認證，用戶必須已登入
 ];
 
