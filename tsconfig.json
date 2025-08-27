@@ -50,6 +50,7 @@
     "playwright.a11y.config.ts",
     "playwright.performance.config.ts",
     "vitest.config.ts",
+    "vitest.integration.config.ts",
     ".next/**",
     "dist/**",
     "build/**",
