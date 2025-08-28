@@ -272,13 +272,13 @@ export const useBatchProcessing = ({
             const result = await processSingleItem(item, clockNumber);
             return { item, result, index };
           } catch (error) {
-            return { 
-              item, 
-              result: { 
-                success: false, 
-                error: error instanceof Error ? error.message : 'Unknown error' 
-              }, 
-              index 
+            return {
+              item,
+              result: {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error',
+              },
+              index,
             };
           }
         });
@@ -289,10 +289,10 @@ export const useBatchProcessing = ({
         // 處理結果
         settledResults.forEach((settledResult, index) => {
           const item = items[index];
-          
+
           if (settledResult.status === 'fulfilled') {
             const { result } = settledResult.value;
-            
+
             // 更新狀態
             const processedItem = {
               ...item,
@@ -320,8 +320,11 @@ export const useBatchProcessing = ({
             }
           } else {
             // 處理 Promise 失敗的情況
-            const error = settledResult.reason instanceof Error ? settledResult.reason.message : 'Processing failed';
-            
+            const error =
+              settledResult.reason instanceof Error
+                ? settledResult.reason.message
+                : 'Processing failed';
+
             const processedItem = {
               ...item,
               status: 'failed' as const,

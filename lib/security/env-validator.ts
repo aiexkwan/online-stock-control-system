@@ -17,46 +17,46 @@ const ENV_CONFIG: RequiredEnvVars = {
   NEXT_PUBLIC_SUPABASE_URL: {
     required: true,
     sensitive: false,
-    validator: (value) => value.startsWith('https://') && value.includes('.supabase.co'),
+    validator: value => value.startsWith('https://') && value.includes('.supabase.co'),
   },
   NEXT_PUBLIC_SUPABASE_ANON_KEY: {
     required: true,
     sensitive: true,
     mask: true,
-    validator: (value) => value.startsWith('eyJ'),
+    validator: value => value.startsWith('eyJ'),
   },
   SUPABASE_SERVICE_ROLE_KEY: {
     required: true,
     sensitive: true,
     mask: true,
-    validator: (value) => value.startsWith('eyJ'),
+    validator: value => value.startsWith('eyJ'),
   },
   SUPABASE_ACCESS_TOKEN: {
     required: false,
     sensitive: true,
     mask: true,
-    validator: (value) => value.startsWith('sbp_'),
+    validator: value => value.startsWith('sbp_'),
   },
   // OpenAI Configuration
   OPENAI_API_KEY: {
     required: false,
     sensitive: true,
     mask: true,
-    validator: (value) => value.startsWith('sk-'),
+    validator: value => value.startsWith('sk-'),
   },
   // Email Service
   RESEND_API_KEY: {
     required: false,
     sensitive: true,
     mask: true,
-    validator: (value) => value.startsWith('re_'),
+    validator: value => value.startsWith('re_'),
   },
   // Authentication
   NEXTAUTH_SECRET: {
     required: true,
     sensitive: true,
     mask: true,
-    validator: (value) => value.length >= 32,
+    validator: value => value.length >= 32,
   },
 };
 
@@ -119,7 +119,9 @@ export class EnvValidator {
 
     // 警告使用 SYS_LOGIN 和 SYS_PASSWORD（應該遷移到更安全的認證方式）
     if (process.env.SYS_LOGIN || process.env.SYS_PASSWORD) {
-      this.warnings.push('SYS_LOGIN and SYS_PASSWORD are deprecated. Consider migrating to OAuth or JWT-based authentication');
+      this.warnings.push(
+        'SYS_LOGIN and SYS_PASSWORD are deprecated. Consider migrating to OAuth or JWT-based authentication'
+      );
     }
   }
 
@@ -132,7 +134,7 @@ export class EnvValidator {
 
     if (!value) return '<not set>';
     if (!config?.mask) return value;
-    
+
     // 對敏感值進行遮罩處理
     if (value.length <= 8) {
       return '***';

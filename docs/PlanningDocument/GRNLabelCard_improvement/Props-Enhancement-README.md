@@ -7,22 +7,26 @@
 ## 主要特性 Key Features
 
 ### 1. 強化的 TypeScript 類型定義
+
 - **全面的 Props 接口**: 創建了 `EnhancedGRNLabelCardProps` 等增強接口
 - **嚴格的類型驗證**: 使用 Zod 進行運行時類型驗證
 - **詳細的 JSDoc 註釋**: 提供完整的 TypeScript 文檔
 
 ### 2. 豐富的自定義選項
+
 - **主題配置**: 支援 5 種顏色主題 (orange, blue, green, purple, red)
 - **佈局選項**: 緊湊模式、自動展開閾值、權重摘要顯示
 - **功能開關**: 可選啟用/禁用列印、供應商查詢、產品查詢等功能
 - **可訪問性配置**: ARIA 標籤、鍵盤導航支援
 
 ### 3. 預設值機制
+
 - **智能預設值**: 為所有可選配置提供合理的預設值
 - **配置合併**: 自動合併用戶配置與預設值
 - **工廠函數**: 提供常用配置的便捷創建函數
 
 ### 4. 向下兼容性
+
 - **聯合類型設計**: 支援舊版和新版 Props 接口
 - **自動轉換**: 舊版 Props 自動轉換為新版格式
 - **無縫升級**: 現有代碼無需修改即可正常運行
@@ -30,51 +34,52 @@
 ## 新增檔案 New Files
 
 ### `/lib/types/grn-props.ts`
+
 主要的 Props 接口定義檔案，包含：
 
 ```typescript
 // 主要接口
-- EnhancedGRNLabelCardProps
-- EnhancedGrnDetailCardProps  
-- EnhancedWeightInputListProps
-
-// 配置接口
-- GrnThemeConfig
-- GrnLayoutConfig
-- GrnValidationConfig
-- GrnFeatureConfig
-- GrnCallbacks
-- GrnPerformanceConfig
-- GrnAccessibilityConfig
-
-// 預設值
-- DEFAULT_GRN_THEME
-- DEFAULT_GRN_LAYOUT
-- DEFAULT_GRN_VALIDATION
-- DEFAULT_GRN_FEATURES
-
-// 工具函數
-- mergeGrnConfig()
-- validateGrnThemeConfig()
-- convertLegacyProps()
-- createCompactGrnProps()
+-EnhancedGRNLabelCardProps -
+  EnhancedGrnDetailCardProps -
+  EnhancedWeightInputListProps -
+  // 配置接口
+  GrnThemeConfig -
+  GrnLayoutConfig -
+  GrnValidationConfig -
+  GrnFeatureConfig -
+  GrnCallbacks -
+  GrnPerformanceConfig -
+  GrnAccessibilityConfig -
+  // 預設值
+  DEFAULT_GRN_THEME -
+  DEFAULT_GRN_LAYOUT -
+  DEFAULT_GRN_VALIDATION -
+  DEFAULT_GRN_FEATURES -
+  // 工具函數
+  mergeGrnConfig() -
+  validateGrnThemeConfig() -
+  convertLegacyProps() -
+  createCompactGrnProps();
 ```
 
 ## 更新的組件 Updated Components
 
 ### 1. `GRNLabelCard.tsx`
+
 - 支援增強 Props 接口
 - 自動處理舊版/新版 Props
 - 整合主題和配置系統
 - 增強的驗證和錯誤處理
 
-### 2. `WeightInputList.tsx`  
+### 2. `WeightInputList.tsx`
+
 - 可配置最大項目數
 - 自動展開閾值設定
 - 權重計算回調
 - 性能優化選項
 
 ### 3. `GrnDetailCard.tsx`
+
 - 主題色彩系統
 - 增強的驗證回調
 - 欄位聚焦/失焦事件
@@ -83,12 +88,14 @@
 ## 使用方式 Usage Examples
 
 ### 基本用法 (舊版相容)
+
 ```typescript
 // 現有代碼無需修改
 <GRNLabelCard className="my-custom-class" />
 ```
 
 ### 增強用法 (新功能)
+
 ```typescript
 // 自定義主題和佈局
 <GRNLabelCard
@@ -126,29 +133,31 @@
 ```
 
 ### 預設配置工廠
+
 ```typescript
 // 緊湊模式配置
 const compactProps = createCompactGrnProps({
   className: 'compact-card',
-  theme: { accentColor: 'green' }
+  theme: { accentColor: 'green' },
 });
 
-// 除錯模式配置  
+// 除錯模式配置
 const debugProps = createDebugGrnProps({
   callbacks: {
-    onStateChange: (state) => console.log('State:', state)
-  }
+    onStateChange: state => console.log('State:', state),
+  },
 });
 
 // 只讀模式配置
 const readOnlyProps = createReadOnlyGrnProps({
-  initialData: existingFormData
+  initialData: existingFormData,
 });
 ```
 
 ## 配置選項詳細說明
 
 ### 主題配置 (GrnThemeConfig)
+
 ```typescript
 interface GrnThemeConfig {
   accentColor?: 'orange' | 'blue' | 'green' | 'purple' | 'red';
@@ -166,33 +175,36 @@ interface GrnThemeConfig {
 ```
 
 ### 佈局配置 (GrnLayoutConfig)
+
 ```typescript
 interface GrnLayoutConfig {
-  maxWeightInputs?: number;        // 預設: 22
-  autoExpandThreshold?: number;    // 預設: 5  
-  compactMode?: boolean;           // 預設: false
-  showProgressBar?: boolean;       // 預設: true
-  showWeightSummary?: boolean;     // 預設: true
+  maxWeightInputs?: number; // 預設: 22
+  autoExpandThreshold?: number; // 預設: 5
+  compactMode?: boolean; // 預設: false
+  showProgressBar?: boolean; // 預設: true
+  showWeightSummary?: boolean; // 預設: true
   enableKeyboardShortcuts?: boolean; // 預設: true
 }
 ```
 
 ### 功能配置 (GrnFeatureConfig)
+
 ```typescript
 interface GrnFeatureConfig {
-  enablePrinting?: boolean;         // 預設: true
-  enableClockNumberDialog?: boolean; // 預設: true  
-  enableSupplierLookup?: boolean;   // 預設: true
-  enableProductLookup?: boolean;    // 預設: true
+  enablePrinting?: boolean; // 預設: true
+  enableClockNumberDialog?: boolean; // 預設: true
+  enableSupplierLookup?: boolean; // 預設: true
+  enableProductLookup?: boolean; // 預設: true
   enableWeightCalculation?: boolean; // 預設: true
-  enableUndoRedo?: boolean;         // 預設: false
-  enableDataExport?: boolean;       // 預設: false
+  enableUndoRedo?: boolean; // 預設: false
+  enableDataExport?: boolean; // 預設: false
 }
 ```
 
 ## 驗證和錯誤處理
 
 ### 自定義驗證器
+
 ```typescript
 const customValidation = {
   validation: {
@@ -205,13 +217,14 @@ const customValidation = {
       clockNumber: (number: string) => {
         if (!/^[0-9]{4,6}$/.test(number)) return 'Clock number must be 4-6 digits';
         return true;
-      }
-    }
-  }
+      },
+    },
+  },
 };
 ```
 
 ### 錯誤回調
+
 ```typescript
 const errorHandling = {
   callbacks: {
@@ -222,29 +235,31 @@ const errorHandling = {
     onPrintError: (error: string) => {
       console.error('Print failed:', error);
       // 處理列印錯誤
-    }
-  }
+    },
+  },
 };
 ```
 
 ## 性能優化
 
 ### 配置選項
+
 ```typescript
 const performanceConfig = {
   performance: {
-    enableMemoization: true,      // 組件記憶化
-    validationDebounce: 300,      // 驗證防抖 (毫秒)
-    autoSaveDebounce: 1000,       // 自動保存防抖
+    enableMemoization: true, // 組件記憶化
+    validationDebounce: 300, // 驗證防抖 (毫秒)
+    autoSaveDebounce: 1000, // 自動保存防抖
     enableVirtualScrolling: false, // 虛擬滾動
-    enableLazyLoading: true       // 延遲加載
-  }
+    enableLazyLoading: true, // 延遲加載
+  },
 };
 ```
 
 ## 可訪問性支援
 
 ### ARIA 配置
+
 ```typescript
 const accessibilityConfig = {
   accessibility: {
@@ -252,16 +267,16 @@ const accessibilityConfig = {
       mainForm: 'GRN Label Generation Form',
       weightInputs: 'Weight Input List',
       printButton: 'Print GRN Labels',
-      progressBar: 'Generation Progress'
+      progressBar: 'Generation Progress',
     },
     keyboardNavigation: {
       enabled: true,
       skipLinks: true,
-      focusTrap: true
+      focusTrap: true,
     },
     highContrastMode: false,
-    respectReducedMotion: true
-  }
+    respectReducedMotion: true,
+  },
 };
 ```
 
@@ -284,7 +299,7 @@ it('should render with enhanced props', () => {
     features: { enablePrinting: true },
     id: 'test-grn-card'
   };
-  
+
   renderGrnComponent(<GRNLabelCard {...enhancedProps} />);
   expect(document.getElementById('test-grn-card')).toBeInTheDocument();
 });
@@ -303,7 +318,7 @@ it('should render with enhanced props', () => {
 <GRNLabelCard className="existing-class" />
 
 // 階段 2: 添加一些新功能
-<GRNLabelCard 
+<GRNLabelCard
   className="existing-class"
   theme={{ accentColor: 'blue' }}
   layout={{ compactMode: true }}

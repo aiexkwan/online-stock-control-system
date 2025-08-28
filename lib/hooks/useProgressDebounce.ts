@@ -66,11 +66,14 @@ export function useProgressDebounce(
   });
 
   // Immediate update function for critical updates
-  const immediateUpdate = useCallback((update: ProgressUpdate) => {
-    onProgressChange(update);
-    lastUpdateRef.current = update;
-    metricsRef.current.totalUpdates++;
-  }, [onProgressChange]);
+  const immediateUpdate = useCallback(
+    (update: ProgressUpdate) => {
+      onProgressChange(update);
+      lastUpdateRef.current = update;
+      metricsRef.current.totalUpdates++;
+    },
+    [onProgressChange]
+  );
 
   // Batch processing function
   const processBatch = useCallback(() => {
@@ -79,18 +82,18 @@ export function useProgressDebounce(
 
     // Merge all updates in the batch intelligently
     let mergedUpdate: ProgressUpdate = {};
-    
+
     for (const update of batch.updates) {
       if (update.current !== undefined) mergedUpdate.current = update.current;
       if (update.total !== undefined) mergedUpdate.total = update.total;
       if (update.status) mergedUpdate.status = update.status;
-      
+
       // Handle individual status updates - apply the latest one for each index
       if (update.statusUpdate) {
         if (!mergedUpdate.status) {
           mergedUpdate.status = lastUpdateRef.current?.status || [];
         }
-        
+
         // Ensure status array is large enough
         const { index, status } = update.statusUpdate;
         if (index >= 0 && index < (mergedUpdate.status?.length || 0)) {
@@ -112,21 +115,15 @@ export function useProgressDebounce(
   }, [onProgressChange]);
 
   // Debounced update functions with proper cleanup
-  const debouncedProgressUpdate = useMemo(
-    () => {
-      const { debounced, cancel } = debounceWithCancel(processBatch, progressDelay);
-      return { debounced, cancel };
-    },
-    [processBatch, progressDelay]
-  );
+  const debouncedProgressUpdate = useMemo(() => {
+    const { debounced, cancel } = debounceWithCancel(processBatch, progressDelay);
+    return { debounced, cancel };
+  }, [processBatch, progressDelay]);
 
-  const debouncedStatusUpdate = useMemo(
-    () => {
-      const { debounced, cancel } = debounceWithCancel(processBatch, statusDelay);
-      return { debounced, cancel };
-    },
-    [processBatch, statusDelay]
-  );
+  const debouncedStatusUpdate = useMemo(() => {
+    const { debounced, cancel } = debounceWithCancel(processBatch, statusDelay);
+    return { debounced, cancel };
+  }, [processBatch, statusDelay]);
 
   // Cleanup debounced functions and pending batches
   useEffect(() => {
@@ -134,87 +131,95 @@ export function useProgressDebounce(
       // Cancel any pending debounced calls
       debouncedProgressUpdate.cancel();
       debouncedStatusUpdate.cancel();
-      
+
       // Clear any pending batch
       batchRef.current = { updates: [], timestamp: Date.now() };
     };
   }, [debouncedProgressUpdate, debouncedStatusUpdate]);
 
   // Smart update function that chooses the appropriate strategy
-  const updateProgress = useCallback((update: ProgressUpdate, isCritical = false) => {
-    const now = Date.now();
-    
-    // Determine if this is a critical update that should skip debouncing
-    const shouldSkipDebounce = (
-      (skipDebounceForCritical && isCritical) ||
-      !enableSmartBatching ||
-      // Skip debouncing for completion states
-      (update.status?.every(s => s === 'Success' || s === 'Failed'))
-    );
+  const updateProgress = useCallback(
+    (update: ProgressUpdate, isCritical = false) => {
+      const now = Date.now();
 
-    if (shouldSkipDebounce) {
-      // Process any pending batch first
-      if (batchRef.current.updates.length > 0) {
-        processBatch();
+      // Determine if this is a critical update that should skip debouncing
+      const shouldSkipDebounce =
+        (skipDebounceForCritical && isCritical) ||
+        !enableSmartBatching ||
+        // Skip debouncing for completion states
+        update.status?.every(s => s === 'Success' || s === 'Failed');
+
+      if (shouldSkipDebounce) {
+        // Process any pending batch first
+        if (batchRef.current.updates.length > 0) {
+          processBatch();
+        }
+
+        immediateUpdate(update);
+        criticalUpdateRef.current = true;
+        return;
       }
-      
-      immediateUpdate(update);
-      criticalUpdateRef.current = true;
-      return;
-    }
 
-    // Add to batch
-    batchRef.current.updates.push(update);
-    batchRef.current.timestamp = now;
+      // Add to batch
+      batchRef.current.updates.push(update);
+      batchRef.current.timestamp = now;
 
-    // Process batch immediately if it reaches max size
-    if (batchRef.current.updates.length >= maxBatchSize) {
-      processBatch();
-      return;
-    }
+      // Process batch immediately if it reaches max size
+      if (batchRef.current.updates.length >= maxBatchSize) {
+        processBatch();
+        return;
+      }
 
-    // Choose appropriate debouncing strategy based on update type
-    if (update.statusUpdate || update.status) {
-      // Status updates are more frequent, use shorter delay
-      debouncedStatusUpdate.debounced();
-    } else {
-      // Progress count updates use longer delay
-      debouncedProgressUpdate.debounced();
-    }
+      // Choose appropriate debouncing strategy based on update type
+      if (update.statusUpdate || update.status) {
+        // Status updates are more frequent, use shorter delay
+        debouncedStatusUpdate.debounced();
+      } else {
+        // Progress count updates use longer delay
+        debouncedProgressUpdate.debounced();
+      }
 
-    // Update metrics
-    metricsRef.current.averageDelay = 
-      (metricsRef.current.averageDelay + (now - metricsRef.current.lastMeasurement)) / 2;
-    metricsRef.current.lastMeasurement = now;
-  }, [
-    skipDebounceForCritical,
-    enableSmartBatching,
-    maxBatchSize,
-    processBatch,
-    immediateUpdate,
-    debouncedStatusUpdate,
-    debouncedProgressUpdate,
-  ]);
+      // Update metrics
+      metricsRef.current.averageDelay =
+        (metricsRef.current.averageDelay + (now - metricsRef.current.lastMeasurement)) / 2;
+      metricsRef.current.lastMeasurement = now;
+    },
+    [
+      skipDebounceForCritical,
+      enableSmartBatching,
+      maxBatchSize,
+      processBatch,
+      immediateUpdate,
+      debouncedStatusUpdate,
+      debouncedProgressUpdate,
+    ]
+  );
 
   // Convenience methods for specific update types
-  const updateProgressCount = useCallback((current: number, total?: number) => {
-    updateProgress({ current, total });
-  }, [updateProgress]);
+  const updateProgressCount = useCallback(
+    (current: number, total?: number) => {
+      updateProgress({ current, total });
+    },
+    [updateProgress]
+  );
 
-  const updateProgressStatus = useCallback((
-    index: number, 
-    status: 'Pending' | 'Processing' | 'Success' | 'Failed',
-    isCritical = false
-  ) => {
-    updateProgress({ statusUpdate: { index, status } }, isCritical);
-  }, [updateProgress]);
+  const updateProgressStatus = useCallback(
+    (
+      index: number,
+      status: 'Pending' | 'Processing' | 'Success' | 'Failed',
+      isCritical = false
+    ) => {
+      updateProgress({ statusUpdate: { index, status } }, isCritical);
+    },
+    [updateProgress]
+  );
 
-  const setProgressStatus = useCallback((
-    status: Array<'Pending' | 'Processing' | 'Success' | 'Failed'>,
-    isCritical = false
-  ) => {
-    updateProgress({ status }, isCritical);
-  }, [updateProgress]);
+  const setProgressStatus = useCallback(
+    (status: Array<'Pending' | 'Processing' | 'Success' | 'Failed'>, isCritical = false) => {
+      updateProgress({ status }, isCritical);
+    },
+    [updateProgress]
+  );
 
   // Force flush pending updates with safety check
   const flushUpdates = useCallback(() => {
@@ -223,7 +228,7 @@ export function useProgressDebounce(
       batchRef.current = { updates: [], timestamp: Date.now() };
       return;
     }
-    
+
     if (batchRef.current.updates.length > 0) {
       processBatch();
     }
@@ -234,9 +239,10 @@ export function useProgressDebounce(
     const metrics = metricsRef.current;
     return {
       ...metrics,
-      batchEfficiency: metrics.batchedUpdates > 0 
-        ? (metrics.batchedUpdates - metrics.totalUpdates) / metrics.batchedUpdates
-        : 0,
+      batchEfficiency:
+        metrics.batchedUpdates > 0
+          ? (metrics.batchedUpdates - metrics.totalUpdates) / metrics.batchedUpdates
+          : 0,
       updatesPerSecond: metrics.totalUpdates / ((Date.now() - metrics.lastMeasurement) / 1000),
     };
   }, []);
@@ -257,10 +263,10 @@ export function useProgressDebounce(
     // Cancel debounced functions
     debouncedProgressUpdate.cancel();
     debouncedStatusUpdate.cancel();
-    
+
     // Clear pending batch
     batchRef.current = { updates: [], timestamp: Date.now() };
-    
+
     // Reset metrics
     metricsRef.current = {
       totalUpdates: 0,

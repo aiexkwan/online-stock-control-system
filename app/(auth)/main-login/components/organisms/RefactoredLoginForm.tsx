@@ -16,9 +16,9 @@ interface RefactoredLoginFormProps {
  * Refactored Login Form using Atomic Design Pattern
  * Organism component that combines molecules and atoms
  */
-const RefactoredLoginForm = memo(function RefactoredLoginForm({ 
-  onSuccess, 
-  onError 
+const RefactoredLoginForm = memo(function RefactoredLoginForm({
+  onSuccess,
+  onError,
 }: RefactoredLoginFormProps) {
   // Use the centralized login context
   const {
@@ -35,12 +35,9 @@ const RefactoredLoginForm = memo(function RefactoredLoginForm({
   } = useLoginContext();
 
   // Event-driven communication
-  const { 
-    emitLoginAttempt, 
-    emitLoginSuccess, 
-    emitLoginError, 
-    emitFormFieldChange 
-  } = useAuthEvents({ namespace: 'RefactoredLoginForm' });
+  const { emitLoginAttempt, emitLoginSuccess, emitLoginError, emitFormFieldChange } = useAuthEvents(
+    { namespace: 'RefactoredLoginForm' }
+  );
 
   // Listen to external events
   useAuthEventListener('ERROR_CLEAR', () => {
@@ -80,13 +77,13 @@ const RefactoredLoginForm = memo(function RefactoredLoginForm({
       }
     },
     [
-      clearAllErrors, 
-      login, 
-      loginFormData, 
-      onSuccess, 
-      emitLoginAttempt, 
-      emitLoginSuccess, 
-      emitLoginError
+      clearAllErrors,
+      login,
+      loginFormData,
+      onSuccess,
+      emitLoginAttempt,
+      emitLoginSuccess,
+      emitLoginError,
     ]
   );
 
@@ -99,75 +96,67 @@ const RefactoredLoginForm = memo(function RefactoredLoginForm({
   );
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <div className='mx-auto w-full max-w-md'>
+      <form onSubmit={handleSubmit} className='space-y-6'>
         {/* Form Header */}
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900">Sign In</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Access your account
-          </p>
+        <div className='text-center'>
+          <h2 className='text-2xl font-bold text-gray-900'>Sign In</h2>
+          <p className='mt-2 text-sm text-gray-600'>Access your account</p>
         </div>
 
         {/* Global Error Display */}
         {error && (
-          <div className="p-3 rounded-md bg-red-50 border border-red-200">
-            <p className="text-sm text-red-600">{error}</p>
+          <div className='rounded-md border border-red-200 bg-red-50 p-3'>
+            <p className='text-sm text-red-600'>{error}</p>
           </div>
         )}
 
         {/* Form Fields */}
-        <div className="space-y-4">
+        <div className='space-y-4'>
           {/* Email Field */}
           <EmailField
-            label="Email Address"
+            label='Email Address'
             value={loginFormData.email}
-            onChange={(e) => handleFieldChange('email', e.target.value)}
+            onChange={e => handleFieldChange('email', e.target.value)}
             error={fieldErrors.email}
-            placeholder="user@company.com"
-            autoComplete="email"
+            placeholder='user@company.com'
+            autoComplete='email'
             required
-            data-testid="email-input"
+            data-testid='email-input'
           />
 
           {/* Password Field */}
           <PasswordField
-            label="Password"
+            label='Password'
             value={loginFormData.password}
-            onChange={(e) => handleFieldChange('password', e.target.value)}
+            onChange={e => handleFieldChange('password', e.target.value)}
             error={fieldErrors.password}
             placeholder={passwordRules.description}
-            autoComplete="current-password"
+            autoComplete='current-password'
             required
-            data-testid="password-input"
+            data-testid='password-input'
           />
         </div>
 
         {/* Submit Button */}
         <Button
-          type="submit"
-          variant="primary"
-          size="lg"
+          type='submit'
+          variant='primary'
+          size='lg'
           fullWidth
           loading={loading}
           disabled={loading}
-          data-testid="login-submit"
+          data-testid='login-submit'
         >
           Sign In
         </Button>
 
         {/* Footer Links */}
-        <div className="flex justify-between text-sm">
-          <Link 
-            href="/main-login/reset" 
-            className="text-blue-600 hover:text-blue-700"
-          >
+        <div className='flex justify-between text-sm'>
+          <Link href='/main-login/reset' className='text-blue-600 hover:text-blue-700'>
             Forgot password?
           </Link>
-          <Link 
-            href="/main-login/register" 
-            className="text-blue-600 hover:text-blue-700"
-          >
+          <Link href='/main-login/register' className='text-blue-600 hover:text-blue-700'>
             Create account
           </Link>
         </div>

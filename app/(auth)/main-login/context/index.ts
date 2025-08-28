@@ -1,6 +1,6 @@
 /**
  * Centralized export file for all authentication contexts and hooks
- * 
+ *
  * This file provides a single entry point for importing authentication-related
  * functionality, implementing the dependency injection pattern throughout the
  * application.
@@ -40,11 +40,11 @@ export type { User } from '@supabase/supabase-js';
 
 /**
  * Unified authentication hook that replaces direct useAuth imports
- * 
+ *
  * This hook provides a clean interface that abstracts away the underlying
  * implementation details, making it easier to swap out auth providers
  * or modify authentication logic without changing component code.
- * 
+ *
  * @deprecated Use useAuthState() instead for new code
  */
 export function useAuth() {
@@ -54,7 +54,7 @@ export function useAuth() {
 
 /**
  * Hook for accessing authentication service methods
- * 
+ *
  * Use this when you need to perform auth operations like signOut,
  * check permissions, or access user details.
  */
@@ -65,7 +65,7 @@ export function useAuthActions() {
 
 /**
  * Hook for permission-based access control
- * 
+ *
  * Use this when you need to check user permissions or roles
  * for conditional rendering or access control.
  */

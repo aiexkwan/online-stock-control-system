@@ -18,13 +18,16 @@ export interface ResourceLeakReport {
 }
 
 export interface GlobalResourceMetrics {
-  components: Record<string, {
-    timeouts: number;
-    intervals: number;
-    eventListeners: number;
-    abortControllers: number;
-    lastActivity: number;
-  }>;
+  components: Record<
+    string,
+    {
+      timeouts: number;
+      intervals: number;
+      eventListeners: number;
+      abortControllers: number;
+      lastActivity: number;
+    }
+  >;
   totalResources: {
     timeouts: number;
     intervals: number;
@@ -41,22 +44,25 @@ class ResourceLeakDetector {
   private static instance: ResourceLeakDetector | null = null;
   private isMonitoring = false;
   private monitoringInterval: NodeJS.Timeout | null = null;
-  private componentRegistry = new Map<string, {
-    timeouts: Set<any>;
-    intervals: Set<any>;
-    eventListeners: Set<any>;
-    abortControllers: Set<any>;
-    lastActivity: number;
-    metrics: {
-      timeoutsCreated: number;
-      intervalsCreated: number;
-      eventListenersCreated: number;
-      abortControllersCreated: number;
-    };
-  }>();
+  private componentRegistry = new Map<
+    string,
+    {
+      timeouts: Set<any>;
+      intervals: Set<any>;
+      eventListeners: Set<any>;
+      abortControllers: Set<any>;
+      lastActivity: number;
+      metrics: {
+        timeoutsCreated: number;
+        intervalsCreated: number;
+        eventListenersCreated: number;
+        abortControllersCreated: number;
+      };
+    }
+  >();
   private leakReports: ResourceLeakReport[] = [];
   private onLeakDetected?: (report: ResourceLeakReport) => void;
-  
+
   // Thresholds for leak detection
   private readonly THRESHOLDS = {
     timeouts: { medium: 20, high: 50, critical: 100 },
@@ -64,7 +70,7 @@ class ResourceLeakDetector {
     eventListeners: { medium: 30, high: 75, critical: 150 },
     abortControllers: { medium: 15, high: 40, critical: 80 },
   };
-  
+
   private readonly MONITORING_INTERVAL = 15000; // 15 seconds
   private readonly MAX_REPORTS_HISTORY = 100;
 
@@ -80,16 +86,16 @@ class ResourceLeakDetector {
    */
   startMonitoring(onLeakDetected?: (report: ResourceLeakReport) => void) {
     if (this.isMonitoring) return;
-    
+
     this.onLeakDetected = onLeakDetected;
     this.isMonitoring = true;
-    
+
     // Only run in browser environment
     if (typeof window !== 'undefined') {
       this.monitoringInterval = setInterval(() => {
         this.performLeakDetection();
       }, this.MONITORING_INTERVAL);
-      
+
       console.log('[ResourceLeakDetector] Started monitoring for resource leaks');
     }
   }
@@ -99,14 +105,14 @@ class ResourceLeakDetector {
    */
   stopMonitoring() {
     if (!this.isMonitoring) return;
-    
+
     this.isMonitoring = false;
-    
+
     if (this.monitoringInterval) {
       clearInterval(this.monitoringInterval);
       this.monitoringInterval = null;
     }
-    
+
     console.log('[ResourceLeakDetector] Stopped monitoring');
   }
 
@@ -126,7 +132,7 @@ class ResourceLeakDetector {
           intervalsCreated: 0,
           eventListenersCreated: 0,
           abortControllersCreated: 0,
-        }
+        },
       });
     }
   }
@@ -254,8 +260,11 @@ class ResourceLeakDetector {
 
     // Calculate overall leak risk
     let leakRisk: 'low' | 'medium' | 'high' | 'critical' = 'low';
-    const totalActiveResources = Object.values(totalResources).reduce((sum, count) => sum + count, 0);
-    
+    const totalActiveResources = Object.values(totalResources).reduce(
+      (sum, count) => sum + count,
+      0
+    );
+
     if (totalActiveResources > 200) {
       leakRisk = 'critical';
     } else if (totalActiveResources > 100) {
@@ -290,26 +299,46 @@ class ResourceLeakDetector {
    */
   private performLeakDetection() {
     const now = Date.now();
-    
+
     this.componentRegistry.forEach((data, componentName) => {
       // Check timeouts
       if (data.timeouts.size > this.THRESHOLDS.timeouts.medium) {
-        this.generateLeakReport(componentName, 'timeout', data.timeouts, data.metrics.timeoutsCreated);
+        this.generateLeakReport(
+          componentName,
+          'timeout',
+          data.timeouts,
+          data.metrics.timeoutsCreated
+        );
       }
 
       // Check intervals
       if (data.intervals.size > this.THRESHOLDS.intervals.medium) {
-        this.generateLeakReport(componentName, 'interval', data.intervals, data.metrics.intervalsCreated);
+        this.generateLeakReport(
+          componentName,
+          'interval',
+          data.intervals,
+          data.metrics.intervalsCreated
+        );
       }
 
       // Check event listeners
       if (data.eventListeners.size > this.THRESHOLDS.eventListeners.medium) {
-        this.generateLeakReport(componentName, 'eventListener', data.eventListeners, data.metrics.eventListenersCreated);
+        this.generateLeakReport(
+          componentName,
+          'eventListener',
+          data.eventListeners,
+          data.metrics.eventListenersCreated
+        );
       }
 
       // Check abort controllers
       if (data.abortControllers.size > this.THRESHOLDS.abortControllers.medium) {
-        this.generateLeakReport(componentName, 'abortController', data.abortControllers, data.metrics.abortControllersCreated);
+        this.generateLeakReport(
+          componentName,
+          'abortController',
+          data.abortControllers,
+          data.metrics.abortControllersCreated
+        );
       }
     });
   }
@@ -322,11 +351,11 @@ class ResourceLeakDetector {
   ) {
     const activeCount = resources.size;
     const cleanedCount = totalCreated - activeCount;
-    
+
     // Find oldest resource
     let oldestResource;
     let oldestAge = 0;
-    
+
     resources.forEach(item => {
       const age = Date.now() - item.created;
       if (age > oldestAge) {
@@ -337,12 +366,15 @@ class ResourceLeakDetector {
 
     // Determine severity
     let severity: 'low' | 'medium' | 'high' | 'critical' = 'low';
-    const thresholds = this.THRESHOLDS[
-      resourceType === 'eventListener' ? 'eventListeners' : 
-      resourceType === 'abortController' ? 'abortControllers' :
-      `${resourceType}s` as keyof typeof this.THRESHOLDS
-    ];
-    
+    const thresholds =
+      this.THRESHOLDS[
+        resourceType === 'eventListener'
+          ? 'eventListeners'
+          : resourceType === 'abortController'
+            ? 'abortControllers'
+            : (`${resourceType}s` as keyof typeof this.THRESHOLDS)
+      ];
+
     if (activeCount >= thresholds.critical) {
       severity = 'critical';
     } else if (activeCount >= thresholds.high) {
@@ -356,9 +388,12 @@ class ResourceLeakDetector {
 
     const report: ResourceLeakReport = {
       componentName,
-      leakType: resourceType === 'eventListener' ? 'event_listener' :
-                resourceType === 'abortController' ? 'abort_controller' :
-                resourceType as any,
+      leakType:
+        resourceType === 'eventListener'
+          ? 'event_listener'
+          : resourceType === 'abortController'
+            ? 'abort_controller'
+            : (resourceType as any),
       severity,
       details: {
         activeCount,
@@ -452,7 +487,7 @@ export function useResourceLeakDetector(componentName?: string) {
   }, [componentName, detector]);
 
   return {
-    startMonitoring: (callback?: (report: ResourceLeakReport) => void) => 
+    startMonitoring: (callback?: (report: ResourceLeakReport) => void) =>
       detector.startMonitoring(callback),
     stopMonitoring: () => detector.stopMonitoring(),
     getMetrics: () => detector.getGlobalMetrics(),

@@ -203,7 +203,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /Users/chun/Documents/PennineWMS/online-stock-control-system/scripts/hooks/user_prompt_hook.py"
+            "command": "python3 /Users/chun/Documents/PennineWMS/online-stock-control-system/scripts/hooks/save_context_hook.py"
           }
         ]
       }

@@ -280,7 +280,9 @@ class PDFExtractionBenchmark {
     try {
       pdfMonitor.recordRequest({
         requestId: `${result.method}-${Date.now()}`,
-        fileHash: result.fileName ? Buffer.from(result.fileName).toString('base64').slice(0, 16) : 'unknown',
+        fileHash: result.fileName
+          ? Buffer.from(result.fileName).toString('base64').slice(0, 16)
+          : 'unknown',
         fileSize: 0, // Size not available in benchmark context
         pagesExtracted: 1, // Default for benchmark
         tokensUsed: result.tokensUsed,

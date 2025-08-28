@@ -2,11 +2,12 @@
 
 **報告生成時間**: 2025-08-27 08:52:22  
 **系統版本**: v2.9.0  
-**檢查範圍**: 部署和維運配置的實際狀態  
+**檢查範圍**: 部署和維運配置的實際狀態
 
 ## 1. Vercel 部署配置
 
 ### vercel.json 配置內容
+
 ```json
 {
   "git": {
@@ -81,9 +82,10 @@
 ```
 
 ### 部署配置特點
+
 - **Git 分支部署**: 僅 main 分支啟用自動部署
 - **構建指令優化**: 清理 .next 目錄後重新構建
-- **Serverless 函數配置**: 
+- **Serverless 函數配置**:
   - 一般 API: 15秒執行時間，1024MB 記憶體
   - GraphQL: 30秒執行時間（最高配置）
   - PDF 提取: 25秒執行時間
@@ -95,6 +97,7 @@
 ## 2. Next.js 部署相關設置
 
 ### next.config.js 關鍵配置
+
 ```javascript
 const nextConfig = {
   // 生產環境配置
@@ -102,7 +105,7 @@ const nextConfig = {
   output: 'standalone',
   poweredByHeader: false,
   compress: true,
-  
+
   // TypeScript 和 ESLint - 生產環境強制檢查
   typescript: {
     ignoreBuildErrors: false,
@@ -110,40 +113,42 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: false,
   },
-  
+
   // 實驗性優化
   experimental: {
     optimizePackageImports: [
       '@apollo/client',
-      '@heroicons/react', 
+      '@heroicons/react',
       '@supabase/supabase-js',
       'react-hook-form',
       '@tanstack/react-query',
       'date-fns',
-      'lucide-react'
+      'lucide-react',
     ],
     webVitalsAttribution: ['CLS', 'LCP', 'FCP'],
     fetchCacheKeyPrefix: 'pennine-wms',
     isrFlushToDisk: true,
   },
-  
+
   // Bundle Analyzer 配置（可選依賴）
   withBundleAnalyzer: {
     enabled: process.env.ANALYZE === 'true',
     openAnalyzer: false,
-  }
+  },
 };
 ```
 
 ### 安全標頭配置
+
 - **X-Frame-Options**: DENY
-- **X-Content-Type-Options**: nosniff  
+- **X-Content-Type-Options**: nosniff
 - **Strict-Transport-Security**: 31536000秒 + includeSubDomains
 - **Referrer-Policy**: strict-origin-when-cross-origin
 - **X-XSS-Protection**: 1; mode=block
 - **X-DNS-Prefetch-Control**: on
 
 ### 圖像優化配置
+
 ```javascript
 images: {
   remotePatterns: [{
@@ -162,11 +167,12 @@ images: {
 ## 3. 構建和 CI/CD 流程
 
 ### package.json 構建相關指令
+
 ```json
 {
   "scripts": {
     "build": "next build",
-    "start": "next start", 
+    "start": "next start",
     "postinstall": "node scripts/patch-pdf-parse.js",
     "analyze": "cross-env ANALYZE=true npm run build",
     "typecheck": "tsc --noEmit",
@@ -181,16 +187,18 @@ images: {
 ### GitHub Actions CI 流程
 
 #### Lighthouse CI 工作流
+
 - **觸發條件**: push/PR 到 main/develop 分支，每日 2AM UTC 定時執行
 - **Node.js 版本**: 20
 - **構建環境變數**: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
-- **性能預算檢查**: 
+- **性能預算檢查**:
   - Performance ≥ 70%
-  - Accessibility ≥ 85%  
+  - Accessibility ≥ 85%
   - Best Practices ≥ 80%
   - SEO ≥ 80%
 
 #### 整合測試工作流
+
 - **Node.js 版本矩陣**: [18.x, 20.x]
 - **快取策略**: npm + node_modules + .next/cache
 - **測試環境**: 模擬 Supabase 本地環境
@@ -198,6 +206,7 @@ images: {
 - **安全審計**: npm audit --audit-level high
 
 ### Lighthouse CI 配置 (.lighthouserc.js)
+
 ```javascript
 {
   collect: {
@@ -230,6 +239,7 @@ images: {
 ## 4. 環境配置
 
 ### 環境變數結構 (26個變數)
+
 ```
 CACHE_TYPE=apollo
 ENABLE_DETAILED_PERMISSION_CHECK=true
@@ -260,6 +270,7 @@ USE_RERANKING=true
 ```
 
 ### 環境配置特點
+
 - **AI 功能配置**: 完整的 RAG 策略配置
 - **安全模式**: 嚴格模式啟用
 - **詳細權限檢查**: 啟用
@@ -269,15 +280,17 @@ USE_RERANKING=true
 ## 5. 性能和監控配置
 
 ### 性能監控框架 (lib/performance/)
+
 - **22個性能模組**: 包含完整的基準測試和監控系統
 - **核心監控**: PerformanceMonitor, WebVitalsCollector
 - **基準框架**: performance-baseline-framework.ts
 - **回歸檢測**: regression-detection-system.ts
-- **自動化監控**: automated-monitoring-system.ts  
+- **自動化監控**: automated-monitoring-system.ts
 - **CI/CD 整合**: ci-cd-integration.ts
 - **診斷系統**: performance-diagnostics.ts
 
 ### Bundle 分析配置
+
 ```javascript
 // next.config.js 中的可選依賴處理
 let withBundleAnalyzer;
@@ -287,12 +300,13 @@ try {
     openAnalyzer: false,
   });
 } catch (error) {
-  withBundleAnalyzer = (config) => config;
+  withBundleAnalyzer = config => config;
 }
 ```
 
 ### 中間件性能優化 (middleware.ts)
-- **關聯ID追蹤**: 所有請求添加 correlation ID  
+
+- **關聯ID追蹤**: 所有請求添加 correlation ID
 - **API 版本管理**: v1.8 新增的版本控制系統
 - **安全中間件**: 優先執行安全檢查
 - **認證優化**: Supabase SSR 客戶端配置
@@ -301,20 +315,23 @@ try {
 ## 6. 邊緣網路和優化
 
 ### Vercel 邊緣優化
+
 - **地區配置**: 美國東部 (iad1) 單一地區部署
-- **CDN 快取**: 
+- **CDN 快取**:
   - API 路由: 60秒快取 + 300秒過期重驗證
   - 靜態資源: Next.js 預設快取策略
 - **Clean URLs**: 啟用無 .html 後綴
 - **壓縮**: 啟用 Gzip 壓縮
 
 ### Next.js 優化配置
+
 - **ISR 優化**: isrFlushToDisk 啟用
 - **包導入優化**: 7個關鍵套件的預編譯優化
 - **Web Vitals**: CLS, LCP, FCP 監控配置
 - **靜態資源前綴**: 支援 CDN 前綴配置
 
 ### 圖像優化策略
+
 - **現代格式**: WebP, AVIF 優先
 - **響應式尺寸**: 8個設備尺寸，8個圖像尺寸
 - **快取TTL**: 60秒最小快取時間
@@ -323,6 +340,7 @@ try {
 ## 7. 實際部署狀態總結
 
 ### 部署架構成熟度
+
 - ✅ **Vercel 配置完整**: 函數配置、安全標頭、快取策略齊全
 - ✅ **CI/CD 流程完善**: Lighthouse CI + 整合測試雙重保障
 - ✅ **性能監控系統**: 22個監控模組的企業級監控
@@ -330,12 +348,14 @@ try {
 - ⚠️ **單一地區部署**: 僅美國東部，可考慮全球分發
 
 ### 監控覆蓋率
+
 - **性能監控**: 完整的基準測試和回歸檢測系統
-- **CI/CD 監控**: Lighthouse 自動化性能測試  
+- **CI/CD 監控**: Lighthouse 自動化性能測試
 - **錯誤追蹤**: Correlation ID 全鏈路追蹤
 - **安全監控**: npm audit 自動安全掃描
 
 ### 優化成就
+
 - **構建優化**: 包導入優化和 ISR 配置
 - **圖像優化**: 現代格式和響應式配置
 - **快取策略**: API 和靜態資源分層快取

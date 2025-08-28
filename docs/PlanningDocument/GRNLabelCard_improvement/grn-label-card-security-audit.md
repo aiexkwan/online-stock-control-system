@@ -33,6 +33,7 @@ console.error('[GRNLabelCard] Error getting user info:', error);
 ```
 
 **Potential Impact**:
+
 - Exposure of user clock numbers (employee IDs)
 - Authentication session information leakage
 - Potential for user impersonation attacks
@@ -54,6 +55,7 @@ console.log('[useGrnLabelBusinessV3ForCard] Calling RPC with data:', {
 ```
 
 **Potential Impact**:
+
 - Business relationship exposure
 - Supply chain information disclosure
 - Competitive intelligence vulnerability
@@ -72,6 +74,7 @@ console.log('[useGrnLabelBusinessV3ForCard] PDF props:', pdfProps);
 ```
 
 **Potential Impact**:
+
 - Inventory information exposure
 - Product catalog disclosure
 - Business intelligence leakage
@@ -90,6 +93,7 @@ console.log('[useGrnLabelBusinessV3ForCard] 統一 RPC 批量處理成功:', bat
 ```
 
 **Potential Impact**:
+
 - Database schema exposure
 - Business logic revelation
 - Potential SQL injection vector information
@@ -111,6 +115,7 @@ console.log('[useGrnLabelBusinessV3ForCard] PDF blob generated:', {
 ```
 
 **Potential Impact**:
+
 - Tracking number exposure
 - Inventory tracking vulnerability
 - Supply chain metadata leakage
@@ -155,6 +160,7 @@ console.log('[useGrnLabelBusinessV3ForCard] PDF blob generated:', {
 ## Implemented Security Measures
 
 ### 1. Field-Level Sanitization
+
 ```typescript
 // Sensitive fields are automatically redacted
 {
@@ -165,19 +171,22 @@ console.log('[useGrnLabelBusinessV3ForCard] PDF blob generated:', {
 ```
 
 ### 2. Pattern-Based Redaction
+
 ```typescript
 // Patterns in strings are automatically replaced
-"User C12345 processed GRN-2024-001" 
+"User C12345 processed GRN-2024-001"
 → "User [CLOCK_NUMBER] processed [GRN_NUMBER]"
 ```
 
 ### 3. Environment-Aware Logging
+
 ```typescript
 // Debug logs only in development
 logger.debug('Detailed info', data); // Only logs in NODE_ENV !== 'production'
 ```
 
 ### 4. Structured Logging
+
 ```typescript
 // Consistent log format with metadata
 {
@@ -215,17 +224,20 @@ logger.debug('Detailed info', data); // Only logs in NODE_ENV !== 'production'
 ## Recommendations for Future Development
 
 ### 1. Immediate Actions
+
 - ✅ Deploy sanitized logger to production
 - ✅ Monitor logs for any remaining leaks
 - ✅ Update developer documentation
 
 ### 2. Short-term Improvements
+
 - [ ] Implement centralized log aggregation
 - [ ] Add log rotation policies
 - [ ] Create alerting for suspicious patterns
 - [ ] Implement log retention policies
 
 ### 3. Long-term Strategy
+
 - [ ] Implement structured logging across all components
 - [ ] Add automated security scanning for new code
 - [ ] Create logging standards documentation
@@ -234,6 +246,7 @@ logger.debug('Detailed info', data); // Only logs in NODE_ENV !== 'production'
 ## Compliance & Standards
 
 The implemented solution aligns with:
+
 - **OWASP Logging Security Guidelines**
 - **GDPR Data Protection Requirements** (Article 32)
 - **ISO 27001 Information Security Standards**
@@ -242,12 +255,14 @@ The implemented solution aligns with:
 ## Risk Assessment
 
 ### Before Remediation
+
 - **Overall Risk**: MEDIUM
 - **Data Exposure Risk**: HIGH
 - **Compliance Risk**: MEDIUM
 - **Reputation Risk**: MEDIUM
 
 ### After Remediation
+
 - **Overall Risk**: LOW ✅
 - **Data Exposure Risk**: MINIMAL ✅
 - **Compliance Risk**: LOW ✅
@@ -258,6 +273,7 @@ The implemented solution aligns with:
 The security audit identified and successfully remediated 17 instances of sensitive data exposure through console logging in the GRN Label Card system. The implemented enhanced logger with automatic sanitization provides robust protection against information leakage while maintaining debugging capabilities for developers.
 
 The system now:
+
 1. **Protects sensitive business data** through automatic redaction
 2. **Maintains debugging capabilities** with structured, sanitized logging
 3. **Complies with security standards** for data protection
@@ -266,6 +282,7 @@ The system now:
 ## Appendix: Sanitized Fields Reference
 
 ### Always Redacted
+
 - `clockNumber`, `clock_number`
 - `supplierCode`, `supplier_code`
 - `productCode`, `product_code`
@@ -275,10 +292,12 @@ The system now:
 - `email`, `userId`, `user_id`
 
 ### Partially Redacted
+
 - Descriptions (first 10 chars + '[REDACTED]')
 - Weight strings (numbers preserved, units redacted)
 
 ### Pattern Replacements
+
 - Clock numbers: `/\b[Cc]\d{4,6}\b/g` → `[CLOCK_NUMBER]`
 - Supplier codes: `/\b(SUP|S)[-]?\d{4,8}\b/g` → `[SUPPLIER_CODE]`
 - Product codes: `/\b[A-Z]{2,4}[-]\d{4,8}\b/g` → `[PRODUCT_CODE]`

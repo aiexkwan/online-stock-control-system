@@ -27,7 +27,7 @@ export { EnhancedProgressBar } from './EnhancedProgressBar';
 
 // Performance Optimized Components
 export { PerformanceOptimizedForm } from './PerformanceOptimizedForm';
-export { PerformanceDashboard } from './PerformanceDashboard';
+// export { PerformanceDashboard } from './PerformanceDashboard';
 
 // Lazy Loading Components
 export {

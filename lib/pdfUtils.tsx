@@ -348,43 +348,53 @@ export async function mergeAndPrintPdfs(
     });
 
     const url = URL.createObjectURL(pdfBlob);
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = url;
-    document.body.appendChild(iframe);
 
-    iframe.onload = () => {
-      try {
-        iframe.contentWindow?.focus(); // Focus on the iframe's content
-        console.log('[mergeAndPrintPdfs] Attempting to call print() on iframe contentWindow.');
-        iframe.contentWindow?.print(); // Trigger print dialog
+    try {
+      console.log('[mergeAndPrintPdfs] Using new window approach to avoid cross-origin issues.');
 
-        // Clean up after a delay. Adjust delay if print dialog closes too soon.
-        // Some browsers might need more time, or print might be cancelled.
+      // Open PDF in a new window for printing - more secure approach
+      const printWindow = window.open(url, '_blank', 'width=800,height=600');
+
+      if (printWindow) {
+        // Wait for the PDF to load in the new window, then trigger print
+        printWindow.onload = () => {
+          setTimeout(() => {
+            try {
+              printWindow.focus();
+              printWindow.print();
+              console.log('[mergeAndPrintPdfs] Print dialog triggered in new window.');
+            } catch (printError) {
+              console.error(
+                '[mergeAndPrintPdfs] Error triggering print in new window:',
+                printError
+              );
+              // Fallback: let user manually print
+              console.log('[mergeAndPrintPdfs] PDF opened in new tab - user can print manually.');
+            }
+          }, 1000); // Give PDF time to render
+        };
+
+        // Clean up URL after some time
         setTimeout(() => {
           URL.revokeObjectURL(url);
-          if (iframe.parentNode) {
-            iframe.parentNode.removeChild(iframe);
-          }
-          console.log('[mergeAndPrintPdfs] Iframe and blob URL cleaned up after timeout.');
-        }, 10000); // Increased delay to 10 seconds
-      } catch (printError) {
-        console.error('[mergeAndPrintPdfs] Error triggering print dialog:', printError);
-        // Cleanup in case of print error too
+          console.log('[mergeAndPrintPdfs] Blob URL cleaned up.');
+        }, 30000); // 30 seconds should be enough for print dialog
+      } else {
+        console.warn('[mergeAndPrintPdfs] Could not open new window - popup might be blocked.');
+        // Fallback: trigger download
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = mergedPdfName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        if (iframe.parentNode) {
-          iframe.parentNode.removeChild(iframe);
-        }
+        console.log('[mergeAndPrintPdfs] PDF downloaded as fallback.');
       }
-    };
-
-    iframe.onerror = () => {
-      console.error('[mergeAndPrintPdfs] Error loading PDF into iframe.');
+    } catch (error) {
+      console.error('[mergeAndPrintPdfs] Error in print process:', error);
       URL.revokeObjectURL(url);
-      if (iframe.parentNode) {
-        iframe.parentNode.removeChild(iframe);
-      }
-    };
+    }
   } catch (error) {
     console.error('[mergeAndPrintPdfs] Failed to merge and print PDFs:', error);
   }

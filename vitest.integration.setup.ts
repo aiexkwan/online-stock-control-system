@@ -13,14 +13,14 @@ Object.defineProperty(process.env, 'NODE_ENV', {
   value: 'test',
   writable: true,
   enumerable: true,
-  configurable: true
+  configurable: true,
 });
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://localhost:54321';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key';
 
 // Global mocks for browser APIs
-const mockMatchMedia = vi.fn().mockImplementation((query) => ({
+const mockMatchMedia = vi.fn().mockImplementation(query => ({
   matches: false,
   media: query,
   onchange: null,
@@ -92,7 +92,7 @@ const mockCanvas = {
     fillText: vi.fn(),
   }),
   toDataURL: vi.fn().mockReturnValue('data:image/png;base64,mock'),
-  toBlob: vi.fn((callback) => callback(new Blob(['mock'], { type: 'image/png' }))),
+  toBlob: vi.fn(callback => callback(new Blob(['mock'], { type: 'image/png' }))),
 };
 
 Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
@@ -142,22 +142,23 @@ const originalConsoleWarn = console.warn;
 
 beforeAll(() => {
   // Start MSW server
-  server.listen({ 
+  server.listen({
     onUnhandledRequest: 'error',
   });
-  
+
   // Mock console methods to reduce test noise
   console.error = vi.fn((message, ...args) => {
     // Allow certain errors to pass through for debugging
-    if (typeof message === 'string' && (
-      message.includes('Error:') ||
-      message.includes('Network Error') ||
-      message.includes('Test Error')
-    )) {
+    if (
+      typeof message === 'string' &&
+      (message.includes('Error:') ||
+        message.includes('Network Error') ||
+        message.includes('Test Error'))
+    ) {
       originalConsoleError(message, ...args);
     }
   });
-  
+
   console.warn = vi.fn((message, ...args) => {
     // Allow certain warnings to pass through for debugging
     if (typeof message === 'string' && message.includes('Test Warning')) {
@@ -169,10 +170,10 @@ beforeAll(() => {
 afterEach(() => {
   // Reset MSW handlers after each test
   server.resetHandlers();
-  
+
   // Clear all mocks
   vi.clearAllMocks();
-  
+
   // Clean up localStorage and sessionStorage
   mockStorage.clear();
 });
@@ -180,7 +181,7 @@ afterEach(() => {
 afterAll(() => {
   // Clean up MSW
   server.close();
-  
+
   // Restore console methods
   console.error = originalConsoleError;
   console.warn = originalConsoleWarn;
@@ -210,14 +211,12 @@ const originalError = console.error;
 console.error = (...args) => {
   if (
     typeof args[0] === 'string' &&
-    (
-      args[0].includes('Warning: ReactDOM.render is deprecated') ||
+    (args[0].includes('Warning: ReactDOM.render is deprecated') ||
       args[0].includes('Warning: render is deprecated') ||
       args[0].includes('act(...) is not supported') ||
       args[0].includes('Jest worker encountered') ||
       args[0].includes('PDF.js') ||
-      args[0].includes('Canvas is not defined')
-    )
+      args[0].includes('Canvas is not defined'))
   ) {
     return;
   }

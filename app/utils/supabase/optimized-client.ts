@@ -43,7 +43,7 @@ export function getOptimizedClient(): SupabaseClient<Database> {
  */
 export function createClient(): SupabaseClient<Database> {
   console.warn('[createClient] Deprecated: Use getOptimizedClient() for better performance');
-  
+
   // Return singleton instance for backward compatibility
   if (singletonClient) {
     return singletonClient;
@@ -124,7 +124,7 @@ export async function executeOptimizedQuery<T = any>(
   if (!clientManager) {
     clientManager = getSupabaseClient();
   }
-  
+
   return clientManager.executeQuery(queryFn, cacheKey, options);
 }
 
@@ -141,7 +141,7 @@ export async function executeBatchQueries<T = any>(
   if (!clientManager) {
     clientManager = getSupabaseClient();
   }
-  
+
   return clientManager.executeBatch<T>(queries);
 }
 

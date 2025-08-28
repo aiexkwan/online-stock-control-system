@@ -53,18 +53,18 @@ Enhances the basic auth state with computed properties:
 
 ```tsx
 const {
-  user,              // Supabase user object
-  loading,           // Loading state
-  isAuthenticated,   // Authentication status
-  userRole,          // User role object
-  isAdmin,           // Computed: is user admin
-  isUser,            // Computed: is user regular user
-  department,        // User's department
-  position,          // User's position
-  email,             // User's email
-  defaultPath,       // Default redirect path
-  allowedPaths,      // Allowed navigation paths
-  navigationRestricted  // Whether navigation is restricted
+  user, // Supabase user object
+  loading, // Loading state
+  isAuthenticated, // Authentication status
+  userRole, // User role object
+  isAdmin, // Computed: is user admin
+  isUser, // Computed: is user regular user
+  department, // User's department
+  position, // User's position
+  email, // User's email
+  defaultPath, // Default redirect path
+  allowedPaths, // Allowed navigation paths
+  navigationRestricted, // Whether navigation is restricted
 } = useAuthState();
 ```
 
@@ -103,9 +103,7 @@ export default function RootLayout({ children }) {
   return (
     <html>
       <body>
-        <AuthProviderSetup>
-          {children}
-        </AuthProviderSetup>
+        <AuthProviderSetup>{children}</AuthProviderSetup>
       </body>
     </html>
   );
@@ -121,11 +119,7 @@ For login-specific routes, use the combined provider:
 import { CombinedAuthProviderSetup } from './context/AuthProviderSetup';
 
 export default function AuthLayout({ children }) {
-  return (
-    <CombinedAuthProviderSetup>
-      {children}
-    </CombinedAuthProviderSetup>
-  );
+  return <CombinedAuthProviderSetup>{children}</CombinedAuthProviderSetup>;
 }
 ```
 
@@ -162,28 +156,31 @@ function MyComponent() {
 ### Updating Existing Components
 
 1. **Replace direct useAuth imports:**
+
    ```tsx
    // Before
    import { useAuth } from '@/app/hooks/useAuth';
-   
+
    // After
    import { useAuthState } from '@/app/(auth)/main-login/context';
    ```
 
 2. **Update hook usage:**
+
    ```tsx
    // Before
    const { user, loading, isAuthenticated } = useAuth();
-   
-   // After  
+
+   // After
    const { user, loading, isAuthenticated } = useAuthState();
    ```
 
 3. **Use specialized hooks for specific needs:**
+
    ```tsx
    // For authentication operations
    const authService = useAuthService();
-   
+
    // For permission checks
    const { hasRole, hasPermission } = useAuthPermissions();
    ```
@@ -199,26 +196,31 @@ The system maintains backward compatibility through:
 ## Benefits
 
 ### 1. Centralized State Management
+
 - Single source of truth for authentication state
 - Consistent state across the entire application
 - Easier debugging and state inspection
 
 ### 2. Service Abstraction
+
 - Abstract authentication operations through services
 - Easier to mock for testing
 - Simpler to swap authentication providers
 
 ### 3. Permission System
+
 - Built-in role-based access control
 - Path-based navigation restrictions
 - Fine-grained permission checking
 
 ### 4. Performance Optimization
+
 - Memoized context values
 - Reduced re-renders through proper dependency arrays
 - Optional refresh intervals for long-running sessions
 
 ### 5. Developer Experience
+
 - TypeScript support with proper type inference
 - Clear separation of concerns
 - Consistent API across components
@@ -230,11 +232,7 @@ The system maintains backward compatibility through:
 ```tsx
 // Create mock auth provider for tests
 const MockAuthProvider = ({ children, mockState }) => {
-  return (
-    <AuthContext.Provider value={mockState}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={mockState}>{children}</AuthContext.Provider>;
 };
 
 // Use in tests
@@ -260,8 +258,8 @@ test('component with auth', () => {
 
 ```tsx
 <AuthProvider
-  enableLogging={true}          // Enable debug logging
-  refreshInterval={300000}      // Auto-refresh every 5 minutes
+  enableLogging={true} // Enable debug logging
+  refreshInterval={300000} // Auto-refresh every 5 minutes
 >
   {children}
 </AuthProvider>
@@ -271,8 +269,8 @@ test('component with auth', () => {
 
 ```tsx
 <LoginProvider
-  initialView="login"           // Default view
-  enablePersistence={true}      // Persist form state
+  initialView='login' // Default view
+  enablePersistence={true} // Persist form state
 >
   {children}
 </LoginProvider>
@@ -299,9 +297,7 @@ test('component with auth', () => {
 Enable logging to debug authentication issues:
 
 ```tsx
-<AuthProvider enableLogging={process.env.NODE_ENV === 'development'}>
-  {children}
-</AuthProvider>
+<AuthProvider enableLogging={process.env.NODE_ENV === 'development'}>{children}</AuthProvider>
 ```
 
 ## Future Enhancements

@@ -172,7 +172,7 @@ class SupabaseClientManager {
 
     // Setup connection monitoring
     this.setupConnectionMonitoring();
-    
+
     // Start health checking if enabled
     if (this.config.enableAutoReconnect) {
       this.startHealthChecking();
@@ -229,7 +229,7 @@ class SupabaseClientManager {
     while (retries >= 0) {
       try {
         const result = await queryFn(client);
-        
+
         // Update metrics
         const queryTime = performance.now() - startTime;
         this.updateMetrics(queryTime, !result.error);
@@ -238,7 +238,9 @@ class SupabaseClientManager {
           lastError = result.error;
           retries--;
           if (retries >= 0) {
-            await this.delay(this.config.retryDelayMs * Math.pow(2, this.config.maxRetries - retries));
+            await this.delay(
+              this.config.retryDelayMs * Math.pow(2, this.config.maxRetries - retries)
+            );
             continue;
           }
         } else {
@@ -252,7 +254,9 @@ class SupabaseClientManager {
         lastError = error;
         retries--;
         if (retries >= 0) {
-          await this.delay(this.config.retryDelayMs * Math.pow(2, this.config.maxRetries - retries));
+          await this.delay(
+            this.config.retryDelayMs * Math.pow(2, this.config.maxRetries - retries)
+          );
         }
       }
     }
@@ -271,9 +275,7 @@ class SupabaseClientManager {
       options?: any;
     }>
   ): Promise<Array<{ data: T | null; error: any }>> {
-    return Promise.all(
-      queries.map(q => this.executeQuery<T>(q.queryFn, q.cacheKey, q.options))
-    );
+    return Promise.all(queries.map(q => this.executeQuery<T>(q.queryFn, q.cacheKey, q.options)));
   }
 
   /**
@@ -408,11 +410,7 @@ class SupabaseClientManager {
     if (!this.client) return false;
 
     try {
-      const { error } = await this.client
-        .from('data_code')
-        .select('count')
-        .limit(1)
-        .single();
+      const { error } = await this.client.from('data_code').select('count').limit(1).single();
 
       if (error) {
         this.metrics.connectionStatus = 'disconnected';
@@ -510,11 +508,7 @@ export const getSupabaseClient = (
 };
 
 // Export types
-export type {
-  PerformanceMetrics,
-  QueryCacheConfig,
-  ConnectionConfig,
-};
+export type { PerformanceMetrics, QueryCacheConfig, ConnectionConfig };
 
 // Export default instance for backward compatibility
 export default SupabaseClientManager.getInstance();

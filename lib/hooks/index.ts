@@ -66,7 +66,7 @@ export { useHardware } from '@/lib/hardware/hooks/useHardware';
 export { useLoading, useLoadingTimeout, useSmartLoading } from '@/lib/loading/hooks';
 
 // Re-export performance hooks
-export { usePerformanceMonitor } from '@/lib/performance/hooks/usePerformanceMonitor';
+// export { usePerformanceMonitor } from '@/lib/performance/hooks/usePerformanceMonitor';
 
 // Re-export printing hooks
 export { usePrinting } from '@/lib/printing/hooks/usePrinting';

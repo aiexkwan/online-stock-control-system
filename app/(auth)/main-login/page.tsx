@@ -41,7 +41,7 @@ export default function MainLoginPage() {
         forceCleanupAllAuth();
         window.history.replaceState({}, document.title, window.location.pathname);
       }
-      
+
       // Simple ready state management - no resource preloading for public auth page
       setIsReady(true);
     } catch (error) {

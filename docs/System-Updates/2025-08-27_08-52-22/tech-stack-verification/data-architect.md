@@ -9,11 +9,11 @@
 ### 1.1 表格數量統計（實際查詢結果）
 
 | Schema   | 表格數量 |
-|----------|---------|
-| auth     | 16      |
-| public   | 23      |
-| storage  | 7       |
-| **總計** | **46**  |
+| -------- | -------- |
+| auth     | 16       |
+| public   | 23       |
+| storage  | 7        |
+| **總計** | **46**   |
 
 > ⚠️ **重要發現**: 實際 public schema 中只有 23 個表，而非文檔中記載的 30 個表
 
@@ -49,11 +49,11 @@
 ### 1.3 外鍵關係統計（實際查詢結果）
 
 | Schema   | 外鍵數量 |
-|----------|---------|
-| auth     | 11      |
-| public   | 16      |
-| storage  | 5       |
-| **總計** | **32**  |
+| -------- | -------- |
+| auth     | 11       |
+| public   | 16       |
+| storage  | 5        |
+| **總計** | **32**   |
 
 > ⚠️ **重要發現**: public schema 中有 16 個外鍵，而非文檔中記載的 17 個
 
@@ -62,40 +62,40 @@
 ### 2.1 RLS 策略分布
 
 | Schema   | 總策略數 |
-|----------|---------|
-| public   | 109     |
-| storage  | 10      |
-| **總計** | **119** |
+| -------- | -------- |
+| public   | 109      |
+| storage  | 10       |
+| **總計** | **119**  |
 
 > ⚠️ **重要發現**: 實際 RLS 策略數為 119 個，而非文檔中記載的 88 個
 
 ### 2.2 各表格 RLS 策略詳細（Public Schema）
 
-| 表格名稱             | 策略數 |
-|---------------------|--------|
-| API                 | 4      |
-| audit_logs          | 4      |
-| context_summaries   | 4      |
-| data_code           | 5      |
-| data_id             | 6      |
-| data_order          | 7      |
-| data_slateinfo      | 4      |
-| data_supplier       | 4      |
-| doc_upload          | 4      |
-| grn_level           | 5      |
-| order_loading_history| 4      |
-| pallet_number_buffer| 2      |
-| query_record        | 5      |
-| record_aco          | 4      |
-| record_grn          | 6      |
-| record_history      | 6      |
-| record_inventory    | 6      |
-| record_palletinfo   | 5      |
-| record_stocktake    | 4      |
-| record_transfer     | 6      |
-| report_void         | 4      |
-| stock_level         | 5      |
-| work_level          | 5      |
+| 表格名稱              | 策略數 |
+| --------------------- | ------ |
+| API                   | 4      |
+| audit_logs            | 4      |
+| context_summaries     | 4      |
+| data_code             | 5      |
+| data_id               | 6      |
+| data_order            | 7      |
+| data_slateinfo        | 4      |
+| data_supplier         | 4      |
+| doc_upload            | 4      |
+| grn_level             | 5      |
+| order_loading_history | 4      |
+| pallet_number_buffer  | 2      |
+| query_record          | 5      |
+| record_aco            | 4      |
+| record_grn            | 6      |
+| record_history        | 6      |
+| record_inventory      | 6      |
+| record_palletinfo     | 5      |
+| record_stocktake      | 4      |
+| record_transfer       | 6      |
+| report_void           | 4      |
+| stock_level           | 5      |
+| work_level            | 5      |
 
 ## 三、資料庫安全審計結果
 
@@ -125,18 +125,18 @@
 
 ### 4.1 已安裝擴展（8個）
 
-| 擴展名稱            | Schema      | 版本   | 用途                        |
-|-------------------|-------------|--------|----------------------------|
-| plpgsql           | pg_catalog  | 1.0    | PL/pgSQL 程序語言           |
-| pg_stat_statements| extensions  | 1.10   | SQL 語句性能監控            |
-| pgjwt             | extensions  | 0.2.0  | JWT Token 處理              |
-| pgcrypto          | extensions  | 1.3    | 加密功能                    |
-| uuid-ossp         | extensions  | 1.1    | UUID 生成                   |
-| supabase_vault    | vault       | 0.3.1  | Supabase Vault 擴展         |
-| pg_graphql        | graphql     | 1.5.11 | GraphQL 支持                |
-| pg_cron           | pg_catalog  | 1.6    | 定時任務調度                |
-| pg_trgm           | public      | 1.6    | 文本相似度搜索              |
-| vector            | public      | 0.8.0  | 向量數據類型與搜索          |
+| 擴展名稱           | Schema     | 版本   | 用途                |
+| ------------------ | ---------- | ------ | ------------------- |
+| plpgsql            | pg_catalog | 1.0    | PL/pgSQL 程序語言   |
+| pg_stat_statements | extensions | 1.10   | SQL 語句性能監控    |
+| pgjwt              | extensions | 0.2.0  | JWT Token 處理      |
+| pgcrypto           | extensions | 1.3    | 加密功能            |
+| uuid-ossp          | extensions | 1.1    | UUID 生成           |
+| supabase_vault     | vault      | 0.3.1  | Supabase Vault 擴展 |
+| pg_graphql         | graphql    | 1.5.11 | GraphQL 支持        |
+| pg_cron            | pg_catalog | 1.6    | 定時任務調度        |
+| pg_trgm            | public     | 1.6    | 文本相似度搜索      |
+| vector             | public     | 0.8.0  | 向量數據類型與搜索  |
 
 ### 4.2 可用但未安裝擴展（重要）
 
@@ -151,6 +151,7 @@
 ### 5.1 GraphQL 配置驗證
 
 **codegen.yml 配置**：
+
 - ✅ Schema 生成路徑: `./lib/graphql/export-schema.js`
 - ✅ 文檔源: `app/**/*.tsx`, `lib/graphql/queries/**/*.graphql`
 - ✅ 生成目標: `types/generated/graphql.ts`
@@ -159,6 +160,7 @@
 ### 5.2 Apollo Client 配置
 
 **關鍵配置**：
+
 - ✅ Supabase GraphQL 端點支持
 - ✅ JWT 認證整合
 - ✅ 性能監控 Link (`PerformanceLink`)
@@ -168,6 +170,7 @@
 ### 5.3 GraphQL 文件統計
 
 **總計**: 65 個 TypeScript 文件
+
 - Resolvers: 22 個
 - Schema 定義: 8 個
 - Queries: 11 個
@@ -197,6 +200,7 @@
 ### 7.1 Supabase 客戶端配置
 
 **客戶端路徑**: `/app/utils/supabase/client.ts`
+
 - ✅ 使用 `@supabase/ssr` 實現 SSR 支持
 - ✅ PKCE 流程認證
 - ✅ Cookie 管理整合
@@ -260,12 +264,12 @@
 
 ### 10.1 關鍵發現
 
-| 項目 | 文檔記載 | 實際狀態 | 差異 |
-|------|---------|---------|------|
-| Public 表格數 | 30 | 23 | -7 |
-| 外鍵關係數 | 17 | 16 (public) / 32 (總計) | 需更新文檔 |
-| RLS 策略數 | 88 | 119 | +31 |
-| GraphQL 文件 | 65 | 65 | ✅ 一致 |
+| 項目          | 文檔記載 | 實際狀態                | 差異       |
+| ------------- | -------- | ----------------------- | ---------- |
+| Public 表格數 | 30       | 23                      | -7         |
+| 外鍵關係數    | 17       | 16 (public) / 32 (總計) | 需更新文檔 |
+| RLS 策略數    | 88       | 119                     | +31        |
+| GraphQL 文件  | 65       | 65                      | ✅ 一致    |
 
 ### 10.2 優先行動項目
 

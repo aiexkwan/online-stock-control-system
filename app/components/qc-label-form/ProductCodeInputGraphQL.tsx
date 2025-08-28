@@ -2,22 +2,19 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { getErrorMessage } from '@/lib/types/error-handling';
-import { useSearchProductByCode } from '@/lib/graphql/hooks/useProduct';
+import { useGetProductBasicInfo } from '@/lib/graphql/hooks/useProduct';
 import type { Product } from '@/types/generated/graphql';
 import type { ApolloError } from '@apollo/client';
 
 // GraphQL query result type - matching the hook response type
-interface SearchProductQueryResult {
+interface ProductBasicInfoQueryResult {
   product?: {
     code: string;
     description: string;
     type: string;
     standardQty?: number;
-    inventory?: {
-      totalQuantity: number;
-      availableQuantity: number;
-      reservedQuantity: number;
-    };
+    colour?: string;
+    remark?: string;
   };
 }
 
@@ -59,9 +56,9 @@ export const ProductCodeInputGraphQL: React.FC<ProductCodeInputGraphQLProps> = (
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // GraphQL hook for searching product
-  const [searchProductByCode, { loading: graphqlLoading, error: graphqlError }] =
-    useSearchProductByCode({
-      onCompleted: data => {
+  const [getProductBasicInfo, { loading: graphqlLoading, error: graphqlError }] =
+    useGetProductBasicInfo({
+      onCompleted: (data: any) => {
         if (data?.product) {
           const product = data.product;
           const productData: ProductInfo = {
@@ -69,7 +66,7 @@ export const ProductCodeInputGraphQL: React.FC<ProductCodeInputGraphQLProps> = (
             description: product.description,
             standard_qty: product.standardQty?.toString() || '1',
             type: product.type || 'Unknown',
-            remark: '-', // GraphQL schema doesn't have remark field, set default
+            remark: product.remark || '-', // Use remark from GraphQL or default
           };
 
           onProductInfoChange(productData);
@@ -146,7 +143,7 @@ export const ProductCodeInputGraphQL: React.FC<ProductCodeInputGraphQLProps> = (
 
       try {
         // Execute GraphQL query
-        await searchProductByCode({
+        await getProductBasicInfo({
           variables: { code: trimmedValue },
         });
       } catch (error: unknown) {
@@ -156,7 +153,7 @@ export const ProductCodeInputGraphQL: React.FC<ProductCodeInputGraphQLProps> = (
         setIsLoading(false);
       }
     },
-    [searchProductByCode, onProductInfoChange]
+    [getProductBasicInfo, onProductInfoChange]
   );
 
   // Handle blur event

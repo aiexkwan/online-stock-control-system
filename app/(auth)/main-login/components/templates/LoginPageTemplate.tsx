@@ -16,29 +16,23 @@ interface LoginPageTemplateProps {
  */
 export const LoginPageTemplate: React.FC<LoginPageTemplateProps> = ({
   onLoginSuccess,
-  onLoginError
+  onLoginError,
 }) => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
+    <div className='flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8'>
+      <div className='w-full max-w-md space-y-8'>
         {/* Logo Section with Error Boundary */}
         <AuthErrorBoundary
           isolate
           fallback={
-            <div className="text-center">
-              <h1 className="text-3xl font-bold text-gray-900">Login</h1>
+            <div className='text-center'>
+              <h1 className='text-3xl font-bold text-gray-900'>Login</h1>
             </div>
           }
         >
-          <div className="text-center">
-            <img
-              className="mx-auto h-12 w-auto"
-              src="/logo.svg"
-              alt="Company Logo"
-            />
-            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-              Sign in to your account
-            </h2>
+          <div className='text-center'>
+            <img className='mx-auto h-12 w-auto' src='/logo.svg' alt='Company Logo' />
+            <h2 className='mt-6 text-3xl font-extrabold text-gray-900'>Sign in to your account</h2>
           </div>
         </AuthErrorBoundary>
 
@@ -52,10 +46,7 @@ export const LoginPageTemplate: React.FC<LoginPageTemplateProps> = ({
           resetOnPropsChange
         >
           <LoginProvider>
-            <RefactoredLoginForm
-              onSuccess={onLoginSuccess}
-              onError={onLoginError}
-            />
+            <RefactoredLoginForm onSuccess={onLoginSuccess} onError={onLoginError} />
           </LoginProvider>
         </AuthErrorBoundary>
       </div>

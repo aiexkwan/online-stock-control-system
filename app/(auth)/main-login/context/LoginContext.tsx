@@ -112,16 +112,19 @@ export function LoginProvider({
   const validation = useAuthValidation();
   const submission = useAuthSubmission();
   const redirect = useAuthRedirect();
-  
+
   // For login/auth pages, we provide a mock auth state to avoid any API calls
   // Real auth state will be established after successful login
-  const auth: AuthState = useMemo(() => ({
-    user: null,
-    loading: false,
-    isAuthenticated: false,
-    userRole: null
-  }), []);
-  
+  const auth: AuthState = useMemo(
+    () => ({
+      user: null,
+      loading: false,
+      isAuthenticated: false,
+      userRole: null,
+    }),
+    []
+  );
+
   const persistence = useLoginPersistence({ enabled: enablePersistence });
 
   // Get form data from persistence

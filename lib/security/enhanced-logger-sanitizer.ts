@@ -7,11 +7,28 @@ import { sanitizeLogData, logger } from '@/lib/logger';
 
 // 敏感欄位列表 - 擴展版
 const SENSITIVE_FIELDS = [
-  'password', 'token', 'apiKey', 'secret', 'authorization',
-  'accessToken', 'refreshToken', 'sessionId', 'cookie',
-  'creditCard', 'bankAccount', 'ssn', 'socialSecurity',
-  'email', 'phone', 'address', 'personalInfo', 'userId',
-  'clientSecret', 'privateKey', 'signature', 'hash'
+  'password',
+  'token',
+  'apiKey',
+  'secret',
+  'authorization',
+  'accessToken',
+  'refreshToken',
+  'sessionId',
+  'cookie',
+  'creditCard',
+  'bankAccount',
+  'ssn',
+  'socialSecurity',
+  'email',
+  'phone',
+  'address',
+  'personalInfo',
+  'userId',
+  'clientSecret',
+  'privateKey',
+  'signature',
+  'hash',
 ];
 
 // PII (個人識別資訊) 模式
@@ -41,7 +58,7 @@ export const enhancedSanitizeLogData = (data: unknown): unknown => {
 
   if (typeof sanitized === 'object' && sanitized !== null) {
     const cleaned = { ...sanitized } as Record<string, unknown>;
-    
+
     for (const [key, value] of Object.entries(cleaned)) {
       // 檢查欄位名稱
       if (isSensitiveField(key)) {
@@ -56,7 +73,7 @@ export const enhancedSanitizeLogData = (data: unknown): unknown => {
         cleaned[key] = enhancedSanitizeLogData(value);
       }
     }
-    
+
     return cleaned;
   }
 
@@ -68,9 +85,7 @@ export const enhancedSanitizeLogData = (data: unknown): unknown => {
  */
 function isSensitiveField(fieldName: string): boolean {
   const lowerFieldName = fieldName.toLowerCase();
-  return SENSITIVE_FIELDS.some(sensitive => 
-    lowerFieldName.includes(sensitive.toLowerCase())
-  );
+  return SENSITIVE_FIELDS.some(sensitive => lowerFieldName.includes(sensitive.toLowerCase()));
 }
 
 /**
@@ -78,14 +93,14 @@ function isSensitiveField(fieldName: string): boolean {
  */
 function sanitizeStringForPII(str: string): string {
   if (typeof str !== 'string') return str;
-  
+
   let sanitized = str;
-  
+
   // 應用 PII 模式替換
   PII_PATTERNS.forEach(pattern => {
     sanitized = sanitized.replace(pattern, '[PII_REDACTED]');
   });
-  
+
   return sanitized;
 }
 
@@ -105,7 +120,7 @@ export const secureLog = {
   },
   debug: (data: unknown, message?: string) => {
     logger.debug(enhancedSanitizeLogData(data), message || 'Secure debug');
-  }
+  },
 };
 
 /**
@@ -113,7 +128,7 @@ export const secureLog = {
  */
 export const createSecureLogger = (module: string) => {
   const childLogger = logger.child({ module });
-  
+
   return {
     info: (data: unknown, message?: string) => {
       childLogger.info(enhancedSanitizeLogData(data), message);
@@ -126,7 +141,7 @@ export const createSecureLogger = (module: string) => {
     },
     debug: (data: unknown, message?: string) => {
       childLogger.debug(enhancedSanitizeLogData(data), message);
-    }
+    },
   };
 };
 
@@ -134,7 +149,9 @@ export const createSecureLogger = (module: string) => {
  * 檢查日誌內容是否安全
  * 返回清理結果和安全等級
  */
-export const analyzeLogSecurity = (data: unknown): {
+export const analyzeLogSecurity = (
+  data: unknown
+): {
   sanitized: unknown;
   securityLevel: 'safe' | 'warning' | 'danger';
   sensitiveFieldsFound: string[];
@@ -146,16 +163,16 @@ export const analyzeLogSecurity = (data: unknown): {
   // 檢查是否有敏感資料被清理
   const dataStr = JSON.stringify(data);
   const sanitizedStr = JSON.stringify(sanitized);
-  
+
   if (dataStr !== sanitizedStr) {
     securityLevel = 'warning';
-    
+
     // 檢查具體被清理的欄位
     if (dataStr.includes('[REDACTED]') || sanitizedStr.includes('[REDACTED]')) {
       securityLevel = 'danger';
       sensitiveFieldsFound.push('sensitive_fields');
     }
-    
+
     if (dataStr.includes('[PII_REDACTED]') || sanitizedStr.includes('[PII_REDACTED]')) {
       securityLevel = 'danger';
       sensitiveFieldsFound.push('pii_data');
@@ -165,7 +182,7 @@ export const analyzeLogSecurity = (data: unknown): {
   return {
     sanitized,
     securityLevel,
-    sensitiveFieldsFound
+    sensitiveFieldsFound,
   };
 };
 

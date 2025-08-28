@@ -15,7 +15,7 @@ import {
   EnhancedWeightInputListProps,
   DEFAULT_GRN_THEME,
   DEFAULT_GRN_LAYOUT,
-  mergeGrnConfig
+  mergeGrnConfig,
 } from '@/lib/types/grn-props';
 
 // Legacy interface for backward compatibility
@@ -33,7 +33,7 @@ interface WeightInputListProps {
 // Union type for backward compatibility
 type WeightInputListPropsUnion = WeightInputListProps | EnhancedWeightInputListProps;
 
-export const WeightInputList: React.FC<WeightInputListPropsUnion> = (props) => {
+export const WeightInputList: React.FC<WeightInputListPropsUnion> = props => {
   // Handle both legacy and enhanced props
   const {
     grossWeights,
@@ -58,34 +58,42 @@ export const WeightInputList: React.FC<WeightInputListPropsUnion> = (props) => {
     showTotalWeight = true,
     placeholder = 'Enter weight/qty...',
   } = props as EnhancedWeightInputListProps;
-  
+
   // Merge configurations with defaults
-  const config = React.useMemo(() => ({
-    theme: {
-      accentColor: (theme?.accentColor || 'orange') as 'orange' | 'blue' | 'green' | 'purple' | 'red',
-      customClasses: {
-        container: theme?.customClasses?.container || '',
-        content: theme?.customClasses?.content || '',
-      }
-    },
-    layout: {
-      compactMode: layout?.compactMode ?? false,
-      autoExpandThreshold: layout?.autoExpandThreshold ?? 5,
-      showWeightSummary: layout?.showWeightSummary ?? true,
-    },
-    validation: {
-      enableRealTimeValidation: validation?.enableRealTimeValidation ?? true,
-    },
-    performance: {
-      validationDebounce: performance?.validationDebounce ?? 300,
-      enableVirtualScrolling: performance?.enableVirtualScrolling ?? false,
-    },
-  }), [theme, layout, validation, performance]);
-  
+  const config = React.useMemo(
+    () => ({
+      theme: {
+        accentColor: (theme?.accentColor || 'orange') as
+          | 'orange'
+          | 'blue'
+          | 'green'
+          | 'purple'
+          | 'red',
+        customClasses: {
+          container: theme?.customClasses?.container || '',
+          content: theme?.customClasses?.content || '',
+        },
+      },
+      layout: {
+        compactMode: layout?.compactMode ?? false,
+        autoExpandThreshold: layout?.autoExpandThreshold ?? 5,
+        showWeightSummary: layout?.showWeightSummary ?? true,
+      },
+      validation: {
+        enableRealTimeValidation: validation?.enableRealTimeValidation ?? true,
+      },
+      performance: {
+        validationDebounce: performance?.validationDebounce ?? 300,
+        enableVirtualScrolling: performance?.enableVirtualScrolling ?? false,
+      },
+    }),
+    [theme, layout, validation, performance]
+  );
+
   const effectiveMaxItems = Math.min(maxItems, 50); // Hard limit for performance
   const filledWeightsCount = grossWeights.filter(w => w.trim() !== '').length;
   const [isExpanded, setIsExpanded] = useState(false);
-  
+
   // Enhanced state for tracking expanded state changes
   const [previousExpandedState, setPreviousExpandedState] = useState(isExpanded);
 
@@ -96,7 +104,7 @@ export const WeightInputList: React.FC<WeightInputListPropsUnion> = (props) => {
       setIsExpanded(true);
     }
   }, [filledWeightsCount, isExpanded, config.layout.autoExpandThreshold]);
-  
+
   // Notify parent about expansion changes
   useEffect(() => {
     if (isExpanded !== previousExpandedState) {
@@ -109,10 +117,10 @@ export const WeightInputList: React.FC<WeightInputListPropsUnion> = (props) => {
 
   const handleWeightChange = (index: number, value: string) => {
     if (disabled) return;
-    
+
     // Apply validation debouncing if configured
     const debounceMs = config.performance.validationDebounce;
-    
+
     if (debounceMs > 0) {
       // Simple debouncing implementation
       clearTimeout((handleWeightChange as any).timeoutId);
@@ -125,7 +133,7 @@ export const WeightInputList: React.FC<WeightInputListPropsUnion> = (props) => {
       handleWeightCalculation(index, value);
     }
   };
-  
+
   const handleWeightCalculation = (index: number, value: string) => {
     if (labelMode === LABEL_MODES.WEIGHT && onWeightCalculated) {
       const grossWeight = parseFloat(value);
@@ -138,12 +146,12 @@ export const WeightInputList: React.FC<WeightInputListPropsUnion> = (props) => {
 
   const handleRemove = (index: number) => {
     if (disabled || !onRemove) return;
-    
+
     // Check if we're at max items and notify
     if (filledWeightsCount >= effectiveMaxItems && onMaxItemsReached) {
       onMaxItemsReached();
     }
-    
+
     onRemove(index);
   };
 
@@ -174,20 +182,33 @@ export const WeightInputList: React.FC<WeightInputListPropsUnion> = (props) => {
         </div>
 
         {/* Total Net Weight Display - Enhanced with configuration */}
-        {labelMode === LABEL_MODES.WEIGHT && totalNetWeight > 0 && showTotalWeight && config.layout.showWeightSummary && (
-          <div className={`flex items-center justify-between rounded-lg bg-slate-800/50 px-3 py-2 ${config.theme.customClasses?.content || ''}`}>
-            <span className='text-sm text-slate-300'>Total Net Weight:</span>
-            <span className={`text-lg font-bold ${
-              config.theme.accentColor === 'orange' ? 'text-orange-400' :
-              config.theme.accentColor === 'blue' ? 'text-blue-400' :
-              config.theme.accentColor === 'green' ? 'text-green-400' :
-              config.theme.accentColor === 'purple' ? 'text-purple-400' :
-              config.theme.accentColor === 'red' ? 'text-red-400' : 'text-orange-400'
-            }`}>
-              {totalNetWeight.toFixed(1)} kg
-            </span>
-          </div>
-        )}
+        {labelMode === LABEL_MODES.WEIGHT &&
+          totalNetWeight > 0 &&
+          showTotalWeight &&
+          config.layout.showWeightSummary && (
+            <div
+              className={`flex items-center justify-between rounded-lg bg-slate-800/50 px-3 py-2 ${config.theme.customClasses?.content || ''}`}
+            >
+              <span className='text-sm text-slate-300'>Total Net Weight:</span>
+              <span
+                className={`text-lg font-bold ${
+                  config.theme.accentColor === 'orange'
+                    ? 'text-orange-400'
+                    : config.theme.accentColor === 'blue'
+                      ? 'text-blue-400'
+                      : config.theme.accentColor === 'green'
+                        ? 'text-green-400'
+                        : config.theme.accentColor === 'purple'
+                          ? 'text-purple-400'
+                          : config.theme.accentColor === 'red'
+                            ? 'text-red-400'
+                            : 'text-orange-400'
+                }`}
+              >
+                {totalNetWeight.toFixed(1)} kg
+              </span>
+            </div>
+          )}
       </div>
 
       {/* 重量/數量輸入列表容器 */}

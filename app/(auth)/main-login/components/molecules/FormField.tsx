@@ -16,17 +16,9 @@ export interface FormFieldProps extends Omit<InputProps, 'error'> {
  * Combines Label, Input, and ErrorMessage atoms
  */
 export const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
-  ({ 
-    label, 
-    error, 
-    required = false, 
-    helpText,
-    containerClassName,
-    id,
-    ...inputProps 
-  }, ref) => {
+  ({ label, error, required = false, helpText, containerClassName, id, ...inputProps }, ref) => {
     const fieldId = id || `field-${label.toLowerCase().replace(/\s+/g, '-')}`;
-    
+
     return (
       <div className={cn('space-y-2', containerClassName)}>
         <Label htmlFor={fieldId} required={required} error={!!error}>
@@ -40,12 +32,8 @@ export const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
           aria-describedby={error ? `${fieldId}-error` : undefined}
           {...inputProps}
         />
-        {helpText && !error && (
-          <p className="text-sm text-gray-500">{helpText}</p>
-        )}
-        {error && (
-          <ErrorMessage message={error} />
-        )}
+        {helpText && !error && <p className='text-sm text-gray-500'>{helpText}</p>}
+        {error && <ErrorMessage message={error} />}
       </div>
     );
   }

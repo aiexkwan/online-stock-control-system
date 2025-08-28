@@ -74,7 +74,6 @@ function getSkipLinksForPath(pathname: string): SkipLinkConfig[] {
     ];
   }
 
-
   // Void Pallet 頁面
   if (pathname.startsWith('/void-pallet')) {
     return [

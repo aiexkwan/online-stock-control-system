@@ -159,12 +159,14 @@ interface EnhancedGRNLabelCardProps {
 ### 2. 核心方法與事件
 
 #### 方法
+
 - `handleFormChange(field: string, value: string)`: 處理表單欄位變更
 - `handlePrintClick()`: 觸發列印標籤流程
 - `handleClockNumberConfirm(clockNumber: string)`: 確認時鐘編號並開始列印
 - `handleGrossWeightChange(index: number, value: string)`: 處理重量輸入變更
 
 #### 事件回調
+
 - `onStateChange`: 狀態變更追蹤
 - `onFormChange`: 表單域變更
 - `onBeforePrint`: 列印前驗證
@@ -246,7 +248,7 @@ interface GrnState {
 ### 使用範例
 
 ```typescript
-<GRNLabelCard 
+<GRNLabelCard
   initialData={{
     grnNumber: 'GRN-2025-001',
     materialSupplier: 'Supplier Corp'

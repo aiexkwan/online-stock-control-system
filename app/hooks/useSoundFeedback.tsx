@@ -1,233 +1,262 @@
 'use client';
 
-import { useCallback, useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect, useMemo } from 'react';
 
 interface SoundOptions {
   volume?: number;
   enabled?: boolean;
 }
 
+/**
+ * useSoundFeedback 性能優化版本
+ * 主要改進：
+ * 1. 更強制的記憶體清理邏輯
+ * 2. 防止記憶體洩漏的安全措施
+ * 3. 優化音頻資源管理
+ * 4. 減少不必要的重新創建
+ * 5. 支援 AbortController 模式的清理
+ */
 export function useSoundFeedback(options: SoundOptions = {}) {
   const { volume = 0.5, enabled = true } = options;
 
-  // Audio contexts
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const oscillatorRef = useRef<OscillatorNode | null>(null);
-  const gainNodeRef = useRef<GainNode | null>(null);
+  // 穩定化選項以避免不必要的重新創建
+  const stableOptions = useMemo(() => ({ volume, enabled }), [volume, enabled]);
 
-  // Initialize audio context
+  // 強化版資源管理
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const cleanupFunctionsRef = useRef<(() => void)[]>([]);
+  const mountedRef = useRef(true);
+
+  // 初始化 AudioContext 和清理機制
   useEffect(() => {
-    if (typeof window !== 'undefined' && !audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    mountedRef.current = true;
+
+    if (typeof window === 'undefined' || audioContextRef.current) return;
+
+    try {
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+
+      if (AudioCtx) {
+        audioContextRef.current = new AudioCtx();
+      }
+    } catch (error) {
+      console.warn('Failed to create AudioContext:', error);
     }
 
-    return () => {
-      // Capture the current ref values to avoid stale closure issues
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      const oscillator = oscillatorRef.current;
-      const audioContext = audioContextRef.current;
+    // 強化版清理函式
+    const cleanup = () => {
+      mountedRef.current = false;
 
-      if (oscillator) {
-        oscillator.stop();
-        oscillator.disconnect();
-      }
-      if (audioContext) {
-        audioContext.close();
+      // 清理所有已註冊的音效資源
+      cleanupFunctionsRef.current.forEach(cleanupFn => {
+        try {
+          cleanupFn();
+        } catch (error) {
+          console.warn('Sound cleanup error:', error);
+        }
+      });
+      cleanupFunctionsRef.current = [];
+
+      // 強制關閉 AudioContext
+      if (audioContextRef.current) {
+        try {
+          if (audioContextRef.current.state !== 'closed') {
+            audioContextRef.current.close();
+          }
+        } catch (error) {
+          console.warn('Failed to close AudioContext:', error);
+        } finally {
+          audioContextRef.current = null;
+        }
       }
     };
+
+    return cleanup;
   }, []);
+
+  // 通用音效播放器，實施強化版資源管理
+  const playSound = useCallback(
+    (soundConfig: {
+      frequencies: number[];
+      durations: number[];
+      volumeEnvelope: Array<{ time: number; volume: number }>;
+      totalDuration: number;
+    }) => {
+      if (!stableOptions.enabled || !audioContextRef.current || !mountedRef.current) return;
+
+      const context = audioContextRef.current;
+
+      // 嘗試恢復 AudioContext（處理瀏覽器自動暫停）
+      if (context.state === 'suspended') {
+        context.resume().catch(error => {
+          console.warn('Failed to resume AudioContext:', error);
+          return;
+        });
+      }
+
+      try {
+        const oscillators: OscillatorNode[] = [];
+        const gainNodes: GainNode[] = [];
+
+        // 創建音頻節點
+        soundConfig.frequencies.forEach(freq => {
+          const oscillator = context.createOscillator();
+          const gainNode = context.createGain();
+
+          oscillator.connect(gainNode);
+          gainNode.connect(context.destination);
+
+          oscillators.push(oscillator);
+          gainNodes.push(gainNode);
+        });
+
+        const now = context.currentTime;
+
+        // 設定頻率
+        oscillators.forEach((osc, index) => {
+          const freq = soundConfig.frequencies[index] || soundConfig.frequencies[0];
+          osc.frequency.setValueAtTime(freq, now);
+        });
+
+        // 設定音量包絡
+        const primaryGainNode = gainNodes[0];
+        soundConfig.volumeEnvelope.forEach(point => {
+          const volume = point.volume * stableOptions.volume;
+          primaryGainNode.gain.linearRampToValueAtTime(volume, now + point.time);
+        });
+
+        // 開始播放
+        oscillators.forEach(osc => {
+          osc.start(now);
+          osc.stop(now + soundConfig.totalDuration);
+        });
+
+        // 強化版清理函式
+        const cleanup = () => {
+          oscillators.forEach(osc => {
+            try {
+              osc.disconnect();
+            } catch (e) {
+              // 忽略已經斷開連接的節點
+            }
+          });
+          gainNodes.forEach(gain => {
+            try {
+              gain.disconnect();
+            } catch (e) {
+              // 忽略已經斷開連接的節點
+            }
+          });
+        };
+
+        // 註冊清理函式
+        oscillators[0].onended = cleanup;
+        cleanupFunctionsRef.current.push(cleanup);
+
+        // 安全清理機制：即使 onended 事件失敗，也要確保清理
+        setTimeout(
+          () => {
+            if (!mountedRef.current) return;
+
+            const index = cleanupFunctionsRef.current.indexOf(cleanup);
+            if (index > -1) {
+              cleanupFunctionsRef.current.splice(index, 1);
+              cleanup();
+            }
+          },
+          (soundConfig.totalDuration + 0.1) * 1000
+        );
+      } catch (error) {
+        console.error('Error playing sound:', error);
+      }
+    },
+    [stableOptions]
+  );
 
   // Play success sound (rising tone)
   const playSuccess = useCallback(() => {
-    if (!enabled || !audioContextRef.current) return;
+    playSound({
+      frequencies: [800, 1000],
+      durations: [0.1, 0.1],
+      volumeEnvelope: [
+        { time: 0, volume: 0 },
+        { time: 0.01, volume: 1 },
+        { time: 0.1, volume: 1 },
+        { time: 0.12, volume: 0 },
+        { time: 0.15, volume: 1 },
+        { time: 0.25, volume: 1 },
+        { time: 0.3, volume: 0 },
+      ],
+      totalDuration: 0.3,
+    });
+  }, [playSound]);
 
-    try {
-      const context = audioContextRef.current;
-      const oscillator = context.createOscillator();
-      const gainNode = context.createGain();
-
-      // Connect nodes
-      oscillator.connect(gainNode);
-      gainNode.connect(context.destination);
-
-      // Configure success sound (two quick rising tones)
-      const now = context.currentTime;
-
-      // First beep
-      oscillator.frequency.setValueAtTime(800, now);
-      oscillator.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
-
-      // Second beep (higher)
-      oscillator.frequency.setValueAtTime(1000, now + 0.15);
-      oscillator.frequency.exponentialRampToValueAtTime(1400, now + 0.25);
-
-      // Volume envelope
-      gainNode.gain.setValueAtTime(0, now);
-      gainNode.gain.linearRampToValueAtTime(volume, now + 0.01);
-      gainNode.gain.linearRampToValueAtTime(volume, now + 0.1);
-      gainNode.gain.linearRampToValueAtTime(0, now + 0.12);
-      gainNode.gain.linearRampToValueAtTime(volume, now + 0.15);
-      gainNode.gain.linearRampToValueAtTime(volume, now + 0.25);
-      gainNode.gain.linearRampToValueAtTime(0, now + 0.3);
-
-      // Play
-      oscillator.start(now);
-      oscillator.stop(now + 0.3);
-
-      // Cleanup
-      oscillator.onended = () => {
-        oscillator.disconnect();
-        gainNode.disconnect();
-      };
-    } catch (error) {
-      console.error('Error playing success sound:', error);
-    }
-  }, [enabled, volume]);
-
-  // Play error sound (falling tone)
+  // Play error sound (falling tone with dissonance)
   const playError = useCallback(() => {
-    if (!enabled || !audioContextRef.current) return;
+    playSound({
+      frequencies: [300, 305], // 添加不協和音效
+      durations: [0.3, 0.3],
+      volumeEnvelope: [
+        { time: 0, volume: 0 },
+        { time: 0.02, volume: 0.8 },
+        { time: 0.28, volume: 0.8 },
+        { time: 0.3, volume: 0 },
+      ],
+      totalDuration: 0.3,
+    });
+  }, [playSound]);
 
-    try {
-      const context = audioContextRef.current;
-      const oscillator = context.createOscillator();
-      const gainNode = context.createGain();
-
-      // Connect nodes
-      oscillator.connect(gainNode);
-      gainNode.connect(context.destination);
-
-      // Configure error sound (descending buzzer)
-      const now = context.currentTime;
-
-      // Buzzing error sound
-      oscillator.frequency.setValueAtTime(300, now);
-      oscillator.frequency.linearRampToValueAtTime(150, now + 0.3);
-
-      // Add some dissonance for error effect
-      const oscillator2 = context.createOscillator();
-      oscillator2.connect(gainNode);
-      oscillator2.frequency.setValueAtTime(305, now);
-      oscillator2.frequency.linearRampToValueAtTime(155, now + 0.3);
-
-      // Volume envelope
-      gainNode.gain.setValueAtTime(0, now);
-      gainNode.gain.linearRampToValueAtTime(volume * 0.8, now + 0.02);
-      gainNode.gain.linearRampToValueAtTime(volume * 0.8, now + 0.28);
-      gainNode.gain.linearRampToValueAtTime(0, now + 0.3);
-
-      // Play
-      oscillator.start(now);
-      oscillator2.start(now);
-      oscillator.stop(now + 0.3);
-      oscillator2.stop(now + 0.3);
-
-      // Cleanup
-      oscillator.onended = () => {
-        oscillator.disconnect();
-        oscillator2.disconnect();
-        gainNode.disconnect();
-      };
-    } catch (error) {
-      console.error('Error playing error sound:', error);
-    }
-  }, [enabled, volume]);
-
-  // Play warning sound (medium tone beeps)
+  // Play warning sound (three short beeps)
   const playWarning = useCallback(() => {
-    if (!enabled || !audioContextRef.current) return;
+    playSound({
+      frequencies: [600],
+      durations: [0.4],
+      volumeEnvelope: [
+        { time: 0, volume: 0 },
+        // Beep 1
+        { time: 0.01, volume: 0.7 },
+        { time: 0.08, volume: 0.7 },
+        { time: 0.09, volume: 0 },
+        // Beep 2
+        { time: 0.15, volume: 0.7 },
+        { time: 0.22, volume: 0.7 },
+        { time: 0.23, volume: 0 },
+        // Beep 3
+        { time: 0.29, volume: 0.7 },
+        { time: 0.36, volume: 0.7 },
+        { time: 0.37, volume: 0 },
+      ],
+      totalDuration: 0.4,
+    });
+  }, [playSound]);
 
-    try {
-      const context = audioContextRef.current;
-      const oscillator = context.createOscillator();
-      const gainNode = context.createGain();
-
-      // Connect nodes
-      oscillator.connect(gainNode);
-      gainNode.connect(context.destination);
-
-      // Configure warning sound (three short beeps)
-      const now = context.currentTime;
-
-      oscillator.frequency.setValueAtTime(600, now);
-
-      // Three beeps
-      gainNode.gain.setValueAtTime(0, now);
-
-      // Beep 1
-      gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + 0.01);
-      gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + 0.08);
-      gainNode.gain.linearRampToValueAtTime(0, now + 0.09);
-
-      // Beep 2
-      gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + 0.15);
-      gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + 0.22);
-      gainNode.gain.linearRampToValueAtTime(0, now + 0.23);
-
-      // Beep 3
-      gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + 0.29);
-      gainNode.gain.linearRampToValueAtTime(volume * 0.7, now + 0.36);
-      gainNode.gain.linearRampToValueAtTime(0, now + 0.37);
-
-      // Play
-      oscillator.start(now);
-      oscillator.stop(now + 0.4);
-
-      // Cleanup
-      oscillator.onended = () => {
-        oscillator.disconnect();
-        gainNode.disconnect();
-      };
-    } catch (error) {
-      console.error('Error playing warning sound:', error);
-    }
-  }, [enabled, volume]);
-
-  // Play scan sound (quick beep)
+  // Play scan sound (quick high beep)
   const playScan = useCallback(() => {
-    if (!enabled || !audioContextRef.current) return;
+    playSound({
+      frequencies: [1500],
+      durations: [0.1],
+      volumeEnvelope: [
+        { time: 0, volume: 0 },
+        { time: 0.01, volume: 0.6 },
+        { time: 0.05, volume: 0.6 },
+        { time: 0.06, volume: 0 },
+      ],
+      totalDuration: 0.1,
+    });
+  }, [playSound]);
 
-    try {
-      const context = audioContextRef.current;
-      const oscillator = context.createOscillator();
-      const gainNode = context.createGain();
-
-      // Connect nodes
-      oscillator.connect(gainNode);
-      gainNode.connect(context.destination);
-
-      // Configure scan sound (quick high beep)
-      const now = context.currentTime;
-
-      oscillator.frequency.setValueAtTime(1500, now);
-
-      // Quick beep
-      gainNode.gain.setValueAtTime(0, now);
-      gainNode.gain.linearRampToValueAtTime(volume * 0.6, now + 0.01);
-      gainNode.gain.linearRampToValueAtTime(volume * 0.6, now + 0.05);
-      gainNode.gain.linearRampToValueAtTime(0, now + 0.06);
-
-      // Play
-      oscillator.start(now);
-      oscillator.stop(now + 0.1);
-
-      // Cleanup
-      oscillator.onended = () => {
-        oscillator.disconnect();
-        gainNode.disconnect();
-      };
-    } catch (error) {
-      console.error('Error playing scan sound:', error);
-    }
-  }, [enabled, volume]);
-
-  return {
-    playSuccess,
-    playError,
-    playWarning,
-    playScan,
-  };
+  // 使用 useMemo 穩定化返回對象，防止不必要的重新渲染
+  return useMemo(
+    () => ({
+      playSuccess,
+      playError,
+      playWarning,
+      playScan,
+    }),
+    [playSuccess, playError, playWarning, playScan]
+  );
 }
 
 // Hook with persistent settings

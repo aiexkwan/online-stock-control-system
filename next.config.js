@@ -53,7 +53,7 @@ try {
 } catch (error) {
   // Fallback if @next/bundle-analyzer is not installed
   console.warn('Bundle analyzer not available, skipping...');
-  withBundleAnalyzer = (config) => config;
+  withBundleAnalyzer = config => config;
 }
 
 const nextConfig = {

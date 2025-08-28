@@ -11,6 +11,7 @@
 **檔案位置**: `/lib/hooks/useResourceCleanup.ts`
 
 **功能特性**:
+
 - 統一管理 timeouts, intervals, event listeners, AbortControllers
 - 自動清理機制，確保組件卸載時釋放所有資源
 - 記憶體洩漏風險檢測
@@ -19,6 +20,7 @@
 - 防止在組件卸載後創建新資源
 
 **核心方法**:
+
 ```typescript
 const resourceCleanup = useResourceCleanup('ComponentName', debug);
 
@@ -38,12 +40,14 @@ const leakCheck = resourceCleanup.checkForLeaks();
 **檔案位置**: `/lib/hooks/useProgressDebounce.ts`
 
 **改進內容**:
+
 - 整合了 `useResourceCleanup` 進行資源管理
 - 使用 `debounceWithCancel` 確保 debounced 函數可以被正確取消
 - 組件卸載時自動清理所有 pending 的更新
 - 增加安全檢查，防止在組件卸載後執行回調
 
 **新增功能**:
+
 ```typescript
 const { cleanup, resourceCleanup } = useProgressDebounce(onProgressChange, options);
 ```
@@ -53,12 +57,14 @@ const { cleanup, resourceCleanup } = useProgressDebounce(onProgressChange, optio
 **檔案位置**: `/app/(app)/admin/hooks/useAdminGrnLabelBusiness.tsx`
 
 **增強功能**:
+
 - 整合 AbortController 支援，可取消正在執行的異步操作
 - 在整個處理流程中添加取消檢查點
 - 使用資源清理系統管理 timeouts
 - 提供 `cancelCurrentOperation` 方法
 
 **新增介面**:
+
 ```typescript
 interface UseGrnLabelBusinessV3Return {
   weightCalculation: ReturnType<typeof useWeightCalculation>;
@@ -72,6 +78,7 @@ interface UseGrnLabelBusinessV3Return {
 **檔案位置**: `/app/(app)/admin/cards/GRNLabelCard.tsx`
 
 **資源管理改進**:
+
 - 整合 `useResourceCleanup` 進行全面資源管理
 - 使用 AbortController 管理用戶初始化等異步操作
 - 添加取消按鈕，允許用戶中止正在進行的打印操作
@@ -83,6 +90,7 @@ interface UseGrnLabelBusinessV3Return {
 **檔案位置**: `/lib/monitoring/resource-leak-detector.ts`
 
 **核心功能**:
+
 - 全域監控所有組件的資源使用情況
 - 自動檢測潛在的記憶體洩漏
 - 提供詳細的洩漏報告和修復建議
@@ -90,12 +98,13 @@ interface UseGrnLabelBusinessV3Return {
 - 定期執行洩漏檢測
 
 **使用方式**:
+
 ```typescript
 import { useResourceLeakDetector } from '@/lib/monitoring/resource-leak-detector';
 
 const leakDetector = useResourceLeakDetector('ComponentName');
 
-leakDetector.startMonitoring((report) => {
+leakDetector.startMonitoring(report => {
   console.warn('Memory leak detected:', report);
 });
 ```
@@ -105,6 +114,7 @@ leakDetector.startMonitoring((report) => {
 **檔案位置**: `/tests/resource-cleanup.test.tsx`
 
 **測試覆蓋範圍**:
+
 - useResourceCleanup Hook 的所有功能
 - 資源自動清理機制
 - 記憶體洩漏檢測準確性
@@ -116,6 +126,7 @@ leakDetector.startMonitoring((report) => {
 **檔案位置**: `/lib/examples/resource-cleanup-example.tsx`
 
 **示範內容**:
+
 - 完整的互動式範例組件
 - 展示所有資源管理功能
 - 即時資源使用監控
@@ -177,17 +188,17 @@ import { useResourceCleanup } from '@/lib/hooks/useResourceCleanup';
 
 function MyComponent() {
   const resourceCleanup = useResourceCleanup('MyComponent');
-  
+
   useEffect(() => {
     // 使用管理的 timeout
     const timeoutId = resourceCleanup.createTimeout(() => {
       console.log('This will be automatically cleaned up');
     }, 1000);
-    
+
     // 使用管理的事件監聽器
     const handleClick = () => console.log('Clicked');
     resourceCleanup.addEventListener(window, 'click', handleClick);
-    
+
     // 使用 AbortController
     const controller = resourceCleanup.createAbortController('fetchData');
     fetch('/api/data', { signal: controller.signal })
@@ -197,7 +208,7 @@ function MyComponent() {
           console.error('Fetch error:', err);
         }
       });
-      
+
     // 清理會自動進行
   }, [resourceCleanup]);
 }
@@ -210,11 +221,11 @@ import { useResourceLeakDetector } from '@/lib/monitoring/resource-leak-detector
 
 function App() {
   const leakDetector = useResourceLeakDetector();
-  
+
   useEffect(() => {
     // 在開發環境開啟監控
     if (process.env.NODE_ENV === 'development') {
-      leakDetector.startMonitoring((report) => {
+      leakDetector.startMonitoring(report => {
         console.warn('Memory leak detected:', report);
         // 可以整合到錯誤報告系統
       });
@@ -242,6 +253,7 @@ function App() {
 ### 1. 整合到現有組件
 
 建議將資源清理機制逐步整合到其他高風險組件中：
+
 - WebSocket 連接管理組件
 - 大量數據處理組件
 - 即時更新組件
@@ -249,6 +261,7 @@ function App() {
 ### 2. 監控整合
 
 可以將洩漏檢測整合到：
+
 - 錯誤報告系統 (如 Sentry)
 - 性能監控平台
 - CI/CD 管道中的自動化測試
@@ -256,6 +269,7 @@ function App() {
 ### 3. 最佳實踐文檔
 
 建議創建團隊最佳實踐指南：
+
 - 何時使用資源清理 Hook
 - 如何處理複雜的異步操作
 - 調試洩漏問題的步驟
@@ -267,12 +281,14 @@ function App() {
 ## 檔案清單
 
 ### 新增檔案
+
 - `/lib/hooks/useResourceCleanup.ts` - 統一資源清理 Hook
 - `/lib/monitoring/resource-leak-detector.ts` - 全域洩漏檢測器
 - `/tests/resource-cleanup.test.tsx` - 完整測試套件
 - `/lib/examples/resource-cleanup-example.tsx` - 使用範例組件
 
 ### 修改檔案
+
 - `/lib/hooks/useProgressDebounce.ts` - 增強清理機制
 - `/app/(app)/admin/hooks/useAdminGrnLabelBusiness.tsx` - 添加取消支援
 - `/app/(app)/admin/cards/GRNLabelCard.tsx` - 整合資源管理

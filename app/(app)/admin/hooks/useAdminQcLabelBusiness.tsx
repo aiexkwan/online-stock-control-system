@@ -5,6 +5,7 @@ import { getErrorMessage } from '@/lib/types/error-handling';
 import { MIN_ACO_ORDER_REF_LENGTH } from '../components/qc-label-constants';
 // 導入新的模組化 hooks
 import { useUserId } from '@/app/hooks/useUserId';
+import { useCurrentUserId } from '@/app/hooks/useAuth';
 import { useAdminFormValidation } from './useAdminFormValidation';
 import {
   useClockConfirmation,
@@ -52,6 +53,9 @@ export const useAdminQcLabelBusiness = ({
 
   // 使用統一的 useUserId hook
   const { userId, refreshUser } = useUserId();
+
+  // 使用新的 useCurrentUserId hook 以支持從 metadata 提取用戶 ID
+  const currentUserId = useCurrentUserId();
 
   // 當 userId 改變時更新 formData
   useEffect(() => {
@@ -151,16 +155,22 @@ export const useAdminQcLabelBusiness = ({
         stopPropagation: () => e.stopPropagation(),
       };
 
-      // Store the event and open clock number confirmation
+      // Store the event
       setPrintEventToProceed(printEvent);
+
+      // 顯示時鐘號確認對話框
+      // 如果有 currentUserId，對話框會自動填充並可以自動確認
+      // 如果沒有 currentUserId，對話框會要求用戶手動輸入
+      console.log('[useAdminQcLabelBusiness] Opening dialog with currentUserId:', currentUserId);
       setIsClockConfirmOpen(true);
     },
-    [setIsClockConfirmOpen, setPrintEventToProceed]
+    [setIsClockConfirmOpen, setPrintEventToProceed, currentUserId]
   );
 
   // Handle clock number confirmation
   const handleClockNumberConfirm = useCallback(
     async (clockNumber: string) => {
+      console.log('[useAdminQcLabelBusiness] handleClockNumberConfirm called with:', clockNumber);
       setIsClockConfirmOpen(false);
 
       // Prevent duplicate submissions
@@ -367,7 +377,7 @@ export const useAdminQcLabelBusiness = ({
             palletNumbers: sortedPalletNumbers,
             series: sortedSeries,
             formData,
-            clockNumber,
+            clockNumber: clockNumber,
             onProgress: (current, status) => {
               setFormData(prev => ({
                 ...prev,
@@ -396,7 +406,7 @@ export const useAdminQcLabelBusiness = ({
             palletNumbers: sortedPalletNumbers,
             series: sortedSeries,
             formData,
-            clockNumber,
+            clockNumber: clockNumber,
             onProgress: (current, status) => {
               setFormData(prev => ({
                 ...prev,
@@ -494,6 +504,7 @@ export const useAdminQcLabelBusiness = ({
       generatePdfsStream,
       printPdfs,
       supabase,
+      currentUserId,
     ]
   );
 

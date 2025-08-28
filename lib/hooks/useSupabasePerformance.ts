@@ -4,7 +4,11 @@
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { getPerformanceMonitor, type PerformanceReport, type PerformanceAlert } from '@/lib/monitoring/supabase-performance-monitor';
+import {
+  getPerformanceMonitor,
+  type PerformanceReport,
+  type PerformanceAlert,
+} from '@/lib/monitoring/supabase-performance-monitor';
 import { toast } from 'sonner';
 
 // Hook configuration
@@ -60,7 +64,7 @@ export function useSupabasePerformance(
   const [alerts, setAlerts] = useState<PerformanceAlert[]>([]);
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [isMonitoring, setIsMonitoring] = useState(false);
-  
+
   const monitorRef = useRef<ReturnType<typeof getPerformanceMonitor> | null>(null);
   const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -71,18 +75,19 @@ export function useSupabasePerformance(
     monitorRef.current = getPerformanceMonitor({
       enabled: true,
       interval: updateInterval,
-      alertCallback: (alert) => {
+      alertCallback: alert => {
         // Update alerts state
         setAlerts(prev => [...prev.slice(-9), alert]); // Keep last 10 alerts
 
         // Show toast if enabled
         if (alertToast) {
-          const toastType = alert.severity === 'critical' || alert.severity === 'error' 
-            ? 'error' 
-            : alert.severity === 'warning' 
-            ? 'warning' 
-            : 'info';
-          
+          const toastType =
+            alert.severity === 'critical' || alert.severity === 'error'
+              ? 'error'
+              : alert.severity === 'warning'
+                ? 'warning'
+                : 'info';
+
           toast[toastType](alert.message, {
             description: `${alert.metric}: ${alert.value.toFixed(2)} (threshold: ${alert.threshold})`,
           });
@@ -93,20 +98,21 @@ export function useSupabasePerformance(
           onAlert(alert);
         }
       },
-      metricsCallback: (report) => {
+      metricsCallback: report => {
         // Update metrics from report
         if (report.clientMetrics) {
-          const totalCacheAccess = report.clientMetrics.cacheHits + report.clientMetrics.cacheMisses;
+          const totalCacheAccess =
+            report.clientMetrics.cacheHits + report.clientMetrics.cacheMisses;
           setMetrics({
             totalQueries: report.clientMetrics.totalQueries,
             averageQueryTime: report.clientMetrics.averageQueryTime,
-            slowQueryPercentage: report.clientMetrics.totalQueries > 0
-              ? (report.clientMetrics.slowQueries / report.clientMetrics.totalQueries) * 100
-              : 0,
+            slowQueryPercentage:
+              report.clientMetrics.totalQueries > 0
+                ? (report.clientMetrics.slowQueries / report.clientMetrics.totalQueries) * 100
+                : 0,
             failedQueries: report.clientMetrics.failedQueries,
-            cacheHitRate: totalCacheAccess > 0
-              ? (report.clientMetrics.cacheHits / totalCacheAccess) * 100
-              : 0,
+            cacheHitRate:
+              totalCacheAccess > 0 ? (report.clientMetrics.cacheHits / totalCacheAccess) * 100 : 0,
             connectionStatus: report.clientMetrics.connectionStatus,
           });
         }
@@ -169,7 +175,7 @@ export function useSupabasePerformance(
 
     try {
       const summary = await monitorRef.current.getCurrentSummary();
-      
+
       setMetrics({
         totalQueries: summary.metrics.totalQueries,
         averageQueryTime: summary.metrics.averageQueryTime,
@@ -196,7 +202,7 @@ export function useSupabasePerformance(
   // Clear history
   const clearHistory = useCallback(() => {
     if (!monitorRef.current) return;
-    
+
     monitorRef.current.clearHistory();
     setAlerts([]);
     setRecommendations([]);
@@ -233,7 +239,7 @@ export function useGrnPerformance() {
     showAlerts: true,
     alertToast: true,
     updateInterval: 15000, // More frequent updates for GRN operations
-    onAlert: (alert) => {
+    onAlert: alert => {
       // Log GRN-specific alerts
       if (alert.severity === 'error' || alert.severity === 'critical') {
         console.error('[GRN Performance Alert]', alert);

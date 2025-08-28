@@ -131,7 +131,7 @@ export class SupabasePerformanceMonitor {
   private async performMonitoring(): Promise<void> {
     try {
       const report = await this.generateReport();
-      
+
       // Store in history (keep last 100 reports)
       this.performanceHistory.push(report);
       if (this.performanceHistory.length > 100) {
@@ -184,9 +184,10 @@ export class SupabasePerformanceMonitor {
       }
 
       // Check slow query percentage
-      const slowQueryPercentage = clientMetrics.totalQueries > 0
-        ? (clientMetrics.slowQueries / clientMetrics.totalQueries) * 100
-        : 0;
+      const slowQueryPercentage =
+        clientMetrics.totalQueries > 0
+          ? (clientMetrics.slowQueries / clientMetrics.totalQueries) * 100
+          : 0;
 
       if (slowQueryPercentage > this.config.thresholds.maxSlowQueryPercentage) {
         alerts.push({
@@ -386,13 +387,15 @@ export class SupabasePerformanceMonitor {
       metrics: {
         totalQueries: clientMetrics?.totalQueries || 0,
         averageQueryTime: clientMetrics?.averageQueryTime || 0,
-        slowQueryPercentage: clientMetrics && clientMetrics.totalQueries > 0
-          ? (clientMetrics.slowQueries / clientMetrics.totalQueries) * 100
-          : 0,
+        slowQueryPercentage:
+          clientMetrics && clientMetrics.totalQueries > 0
+            ? (clientMetrics.slowQueries / clientMetrics.totalQueries) * 100
+            : 0,
         failedQueries: clientMetrics?.failedQueries || 0,
-        cacheHitRate: totalCacheAccess > 0 && clientMetrics
-          ? (clientMetrics.cacheHits / totalCacheAccess) * 100
-          : 0,
+        cacheHitRate:
+          totalCacheAccess > 0 && clientMetrics
+            ? (clientMetrics.cacheHits / totalCacheAccess) * 100
+            : 0,
       },
       recentAlerts: this.alertHistory.slice(-10),
     };
@@ -435,20 +438,22 @@ export class SupabasePerformanceMonitor {
     // Add specific recommendations based on patterns
     if (this.performanceHistory.length >= 5) {
       const recentReports = this.performanceHistory.slice(-5);
-      
+
       // Check for consistent issues
-      const consistentSlowQueries = recentReports.every(r => 
-        r.clientMetrics && r.clientMetrics.averageQueryTime > 500
+      const consistentSlowQueries = recentReports.every(
+        r => r.clientMetrics && r.clientMetrics.averageQueryTime > 500
       );
-      
+
       if (consistentSlowQueries) {
-        recommendations.push('Persistent slow query performance detected - consider database optimization');
+        recommendations.push(
+          'Persistent slow query performance detected - consider database optimization'
+        );
       }
 
       const consistentCacheMisses = recentReports.every(r => {
         if (!r.clientMetrics) return false;
         const totalAccess = r.clientMetrics.cacheHits + r.clientMetrics.cacheMisses;
-        return totalAccess > 0 && (r.clientMetrics.cacheMisses / totalAccess) > 0.7;
+        return totalAccess > 0 && r.clientMetrics.cacheMisses / totalAccess > 0.7;
       });
 
       if (consistentCacheMisses) {
@@ -471,7 +476,9 @@ export class SupabasePerformanceMonitor {
 // Export singleton instance
 let monitor: SupabasePerformanceMonitor | null = null;
 
-export const getPerformanceMonitor = (config?: Partial<MonitoringConfig>): SupabasePerformanceMonitor => {
+export const getPerformanceMonitor = (
+  config?: Partial<MonitoringConfig>
+): SupabasePerformanceMonitor => {
   if (!monitor) {
     monitor = new SupabasePerformanceMonitor(config);
   }

@@ -263,13 +263,13 @@ export function useAuth(): AuthState {
 
         // Simplified single auth check to reduce API calls
         let authenticatedUser = null;
-        
+
         try {
           // Try unifiedAuth first as it's most reliable
           authenticatedUser = await unifiedAuth.getCurrentUser();
         } catch (error) {
           console.warn('[useAuth] UnifiedAuth failed, trying Supabase session:', error);
-          
+
           // Fallback to Supabase session check only if needed
           if (supabase) {
             const { data, error: sessionError } = await supabase.auth.getSession();
@@ -323,16 +323,48 @@ export function useAuth(): AuthState {
 export function useCurrentUserId(): string | null {
   const { user } = useAuth();
 
-  // Try to get clock_number from user metadata first
-  if (user?.user_metadata?.clock_number) {
-    return user.user_metadata.clock_number.toString();
+  // 診斷調試信息
+  console.log('[useCurrentUserId] Hook called:');
+  console.log('  user exists:', !!user);
+  console.log('  user.email:', user?.email);
+  console.log('  user.user_metadata:', user?.user_metadata);
+  console.log('  user.raw_user_meta_data:', (user as any)?.raw_user_meta_data);
+
+  // 優先從 user metadata 中提取 user_id (檢查兩個可能的位置)
+  if (user?.user_metadata?.user_id) {
+    const result = user.user_metadata.user_id.toString();
+    console.log('  ✅ Found user_id in user_metadata:', result);
+    return result;
   }
 
-  // Fallback to user ID
+  // 也檢查 raw_user_meta_data (Supabase 的實際存儲位置)
+  if ((user as any)?.raw_user_meta_data?.user_id) {
+    const result = (user as any).raw_user_meta_data.user_id.toString();
+    console.log('  ✅ Found user_id in raw_user_meta_data:', result);
+    return result;
+  }
+
+  // 次選從 user metadata 中提取 clock_number
+  if (user?.user_metadata?.clock_number) {
+    const result = user.user_metadata.clock_number.toString();
+    console.log('  ✅ Found clock_number in user_metadata:', result);
+    return result;
+  }
+
+  // 也檢查 raw_user_meta_data 中的 clock_number
+  if ((user as any)?.raw_user_meta_data?.clock_number) {
+    const result = (user as any).raw_user_meta_data.clock_number.toString();
+    console.log('  ✅ Found clock_number in raw_user_meta_data:', result);
+    return result;
+  }
+
+  // 最後使用 user ID 作為後備方案
   if (user?.id) {
+    console.log('  ⚠️ Using fallback user.id:', user.id);
     return user.id;
   }
 
+  console.log('  ❌ No user ID found, returning null');
   return null;
 }
 

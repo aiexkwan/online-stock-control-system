@@ -18,18 +18,19 @@
 
 ## 任務執行詳情
 
-| #   | 任務描述                             | 指派代理       | 狀態    | 重試次數    | 產出檔案          |
-| --- | ------------------------------------ | -------------- | ------- | ----------- | ----------------- |
-| 1   | Step 4.1: 清理 AuthChecker.tsx | `直接執行` | ✅ 成功 | 0 | `app/components/AuthChecker.tsx` |
-| 2   | Step 4.2: 清理 GlobalSkipLinks.tsx | `直接執行` | ✅ 成功 | 0 | `app/components/GlobalSkipLinks.tsx` |
-| 3   | Step 4.3: 清理測試配置 | `直接執行` | ✅ 成功 | 0 | `.lighthouserc.js`, `vitest.integration.config.ts` |
-| 4   | Step 4.4: 驗證配置清理 | `直接執行` | ✅ 成功 | 0 | 通過 TypeScript 編譯、測試套件和建置驗證 |
+| #   | 任務描述                           | 指派代理   | 狀態    | 重試次數 | 產出檔案                                           |
+| --- | ---------------------------------- | ---------- | ------- | -------- | -------------------------------------------------- |
+| 1   | Step 4.1: 清理 AuthChecker.tsx     | `直接執行` | ✅ 成功 | 0        | `app/components/AuthChecker.tsx`                   |
+| 2   | Step 4.2: 清理 GlobalSkipLinks.tsx | `直接執行` | ✅ 成功 | 0        | `app/components/GlobalSkipLinks.tsx`               |
+| 3   | Step 4.3: 清理測試配置             | `直接執行` | ✅ 成功 | 0        | `.lighthouserc.js`, `vitest.integration.config.ts` |
+| 4   | Step 4.4: 驗證配置清理             | `直接執行` | ✅ 成功 | 0        | 通過 TypeScript 編譯、測試套件和建置驗證           |
 
 ---
 
 ## 最終交付物清單
 
 ### 更新的配置檔案
+
 - `app/components/AuthChecker.tsx` - 移除了 `/print-grnlabel` 路由保護配置
 - `app/components/GlobalSkipLinks.tsx` - 移除了 print-grnlabel 相關的跳轉邏輯
 - `.lighthouserc.js` - 從性能監控 URL 列表中移除 print-grnlabel 路徑
@@ -65,16 +66,18 @@
 階段四成功完成，所有系統配置中對 print-grnlabel 的引用已清理完成。建議按照原計劃進入：
 
 **階段五：安全刪除備份檔案**
+
 - 安全刪除 useGrnLabelBusinessV3.tsx.backup 檔案
 - 執行完整功能驗證
 - 提交備份檔案清理
 
 **執行前提確認**:
+
 - ✅ 共用模組結構已建立
-- ✅ 所有核心檔案已成功遷移  
+- ✅ 所有核心檔案已成功遷移
 - ✅ 內部依賴關係已修復
 - ✅ 所有依賴引用已更新完成
-- ✅ **所有系統配置已清理完成**  ← 新完成
+- ✅ **所有系統配置已清理完成** ← 新完成
 - ✅ TypeScript 編譯驗證通過
 - ✅ 建置流程驗證成功
 - ✅ 測試套件執行正常
@@ -86,6 +89,7 @@
 ### 配置變更記錄
 
 **AuthChecker.tsx 變更**:
+
 ```typescript
 // 移除的配置 (已清理)
 const protectedPaths = [
@@ -98,6 +102,7 @@ const protectedPaths = [
 ```
 
 **GlobalSkipLinks.tsx 變更**:
+
 ```typescript
 // 移除的跳轉邏輯 (已清理)
 // Label Printing 頁面 <- 整個區塊已移除
@@ -107,6 +112,7 @@ const protectedPaths = [
 ```
 
 **.lighthouserc.js 變更**:
+
 ```javascript
 // 移除的 URL 配置 (已清理)
 url: [
@@ -120,13 +126,14 @@ url: [
 ```
 
 **vitest.integration.config.ts 變更**:
+
 ```typescript
 // 更新的覆蓋範圍配置
 include: [
   // 舊配置 (已移除):
   // 'app/(app)/print-grnlabel/hooks/**',
   // 'app/(app)/print-grnlabel/services/**',
-  
+
   // 新的共用模組配置:
   'lib/grn/**',
   'lib/printing/services/**',
@@ -134,6 +141,7 @@ include: [
 ```
 
 ### 驗證結果總結
+
 - TypeScript 編譯通過（0 錯誤）
 - 單元測試通過（14/14 測試成功）
 - Next.js 建置成功（42/42 靜態頁面生成）

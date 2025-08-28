@@ -14,7 +14,7 @@ description: 讀取 Markdown 格式的開發計劃文檔，並由總指揮代理
 ## 變數
 
 - **PLANNING_DOC_PATH**: $ARGUMENTS[0] - 要執行的 Markdown 計劃文檔路徑。
-- **PHASE**: $ARGUMENTS[1] - 計劃文檔中要執行的具體階段標題，例如 "階段一：架構簡化"。
+- **PHASE**: $ARGUMENTS[1] - 計劃文檔中要執行的具體階段標題，例如 "階段一：架構簡化"（如沒有指定，則假設第一階段）
 
 ## 核心原則
 

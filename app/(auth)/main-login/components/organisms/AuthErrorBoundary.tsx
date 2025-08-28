@@ -34,9 +34,9 @@ export class AuthErrorBoundary extends Component<AuthErrorBoundaryProps, AuthErr
       hasError: false,
       error: null,
       errorInfo: null,
-      errorCount: 0
+      errorCount: 0,
     };
-    
+
     if (props.resetKeys) {
       this.previousResetKeys = [...props.resetKeys];
     }
@@ -51,7 +51,7 @@ export class AuthErrorBoundary extends Component<AuthErrorBoundaryProps, AuthErr
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const { onError } = this.props;
-    
+
     // Log error to console in development
     if (process.env.NODE_ENV === 'development') {
       console.error('Auth Error Boundary caught an error:', error);
@@ -66,7 +66,7 @@ export class AuthErrorBoundary extends Component<AuthErrorBoundaryProps, AuthErr
     // Update state with error info
     this.setState(prevState => ({
       errorInfo,
-      errorCount: prevState.errorCount + 1
+      errorCount: prevState.errorCount + 1,
     }));
 
     // Auto-reset after 10 seconds for transient errors
@@ -78,18 +78,18 @@ export class AuthErrorBoundary extends Component<AuthErrorBoundaryProps, AuthErr
   componentDidUpdate(prevProps: AuthErrorBoundaryProps) {
     const { resetKeys, resetOnPropsChange } = this.props;
     const { hasError } = this.state;
-    
+
     // Reset on prop changes if enabled
     if (resetOnPropsChange && hasError && prevProps !== this.props) {
       this.resetErrorBoundary();
     }
-    
+
     // Reset if resetKeys changed
     if (resetKeys && hasError) {
       const hasResetKeyChanged = resetKeys.some(
         (key, index) => key !== this.previousResetKeys[index]
       );
-      
+
       if (hasResetKeyChanged) {
         this.resetErrorBoundary();
         this.previousResetKeys = [...resetKeys];
@@ -107,7 +107,7 @@ export class AuthErrorBoundary extends Component<AuthErrorBoundaryProps, AuthErr
     if (this.resetTimeoutId !== null) {
       window.clearTimeout(this.resetTimeoutId);
     }
-    
+
     this.resetTimeoutId = window.setTimeout(() => {
       this.resetErrorBoundary();
     }, delay);
@@ -118,7 +118,7 @@ export class AuthErrorBoundary extends Component<AuthErrorBoundaryProps, AuthErr
       window.clearTimeout(this.resetTimeoutId);
       this.resetTimeoutId = null;
     }
-    
+
     this.setState({
       hasError: false,
       error: null,
@@ -138,24 +138,22 @@ export class AuthErrorBoundary extends Component<AuthErrorBoundaryProps, AuthErr
 
       // Default error UI
       return (
-        <div className={`${isolate ? 'isolated-error' : ''} p-6 bg-white rounded-lg shadow-lg`}>
-          <div className="flex items-center mb-4">
-            <AlertCircle className="h-6 w-6 text-red-500 mr-2" />
-            <h2 className="text-xl font-semibold text-gray-900">
-              Authentication Error
-            </h2>
+        <div className={`${isolate ? 'isolated-error' : ''} rounded-lg bg-white p-6 shadow-lg`}>
+          <div className='mb-4 flex items-center'>
+            <AlertCircle className='mr-2 h-6 w-6 text-red-500' />
+            <h2 className='text-xl font-semibold text-gray-900'>Authentication Error</h2>
           </div>
-          
-          <div className="mb-4">
-            <p className="text-gray-600">
+
+          <div className='mb-4'>
+            <p className='text-gray-600'>
               We encountered an error with the authentication component.
             </p>
             {process.env.NODE_ENV === 'development' && (
-              <details className="mt-2">
-                <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
+              <details className='mt-2'>
+                <summary className='cursor-pointer text-sm text-gray-500 hover:text-gray-700'>
                   Error Details
                 </summary>
-                <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto">
+                <pre className='mt-2 overflow-auto rounded bg-gray-100 p-2 text-xs'>
                   {error.message}
                   {error.stack}
                 </pre>
@@ -163,25 +161,18 @@ export class AuthErrorBoundary extends Component<AuthErrorBoundaryProps, AuthErr
             )}
           </div>
 
-          <div className="flex gap-2">
-            <Button
-              variant="primary"
-              onClick={this.resetErrorBoundary}
-              disabled={errorCount >= 3}
-            >
+          <div className='flex gap-2'>
+            <Button variant='primary' onClick={this.resetErrorBoundary} disabled={errorCount >= 3}>
               {errorCount >= 3 ? 'Maximum retries reached' : 'Try Again'}
             </Button>
-            
-            <Button
-              variant="ghost"
-              onClick={() => window.location.href = '/main-login'}
-            >
+
+            <Button variant='ghost' onClick={() => (window.location.href = '/main-login')}>
               Return to Login
             </Button>
           </div>
 
           {errorCount >= 3 && (
-            <p className="mt-3 text-sm text-red-600">
+            <p className='mt-3 text-sm text-red-600'>
               Please refresh the page or contact support if the issue persists.
             </p>
           )}
@@ -205,8 +196,8 @@ export function withAuthErrorBoundary<P extends object>(
       <Component {...props} />
     </AuthErrorBoundary>
   );
-  
+
   WrappedComponent.displayName = `withAuthErrorBoundary(${Component.displayName || Component.name})`;
-  
+
   return WrappedComponent;
 }

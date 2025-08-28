@@ -33,10 +33,7 @@ import {
 } from '@/app/constants/grnConstants';
 
 // Import reducer types from unified library
-import type {
-  GrnFormState,
-  GrnFormAction,
-} from '@/lib/grn/hooks/useGrnFormReducer';
+import type { GrnFormState, GrnFormAction } from '@/lib/grn/hooks/useGrnFormReducer';
 
 // Import GRN modules from unified library
 import { grnErrorHandler, useWeightCalculation, usePalletGenerationGrn } from '@/lib/grn';
@@ -79,10 +76,10 @@ export const useAdminGrnLabelBusiness = ({
 }: UseGrnLabelBusinessV3Props): UseGrnLabelBusinessV3Return => {
   // Initialize GRN logger for this hook
   const logger = useMemo(() => createGrnLogger('useAdminGrnLabelBusiness'), []);
-  
+
   // Resource cleanup hook for managing async operations
   const resourceCleanup = useResourceCleanup('useAdminGrnLabelBusiness', false);
-  
+
   // AbortController for cancelling async operations
   const currentOperationRef = useRef<AbortController | null>(null);
 
@@ -105,7 +102,7 @@ export const useAdminGrnLabelBusiness = ({
         currentOperationRef.current.abort('Component unmounting');
         currentOperationRef.current = null;
       }
-      
+
       // Force cleanup all resources
       resourceCleanup.forceCleanup();
     };
@@ -118,17 +115,17 @@ export const useAdminGrnLabelBusiness = ({
       if (currentOperationRef.current && !currentOperationRef.current.signal.aborted) {
         currentOperationRef.current.abort('New operation starting');
       }
-      
+
       // Create new AbortController for this operation
       currentOperationRef.current = resourceCleanup.createAbortController('processPrintRequest');
       const abortSignal = currentOperationRef.current.signal;
-      
+
       // Check if already aborted before starting
       if (abortSignal.aborted) {
         logger.warn('Operation aborted before starting');
         return;
       }
-      
+
       actions.setProcessing(true);
 
       // Declare variables at outer scope for access in catch block
@@ -197,7 +194,7 @@ export const useAdminGrnLabelBusiness = ({
         logger.debug('Processing pallets', {
           numberOfPalletsToProcess,
           palletCount: palletCountForGrnRecord,
-          packageCount: packageCountForGrnRecord
+          packageCount: packageCountForGrnRecord,
         });
 
         // ===== 使用統一 RPC 批量處理 =====
@@ -214,7 +211,7 @@ export const useAdminGrnLabelBusiness = ({
             logger.warn('Operation aborted during RPC preparation');
             return;
           }
-          
+
           logger.debug('Calling RPC with data', {
             grnNumber: state.formData.grnNumber,
             productCode: state.productInfo.code,
@@ -239,7 +236,7 @@ export const useAdminGrnLabelBusiness = ({
             selectedPackageTypeString,
             [] // pdfUrls - 將在後續處理中填入
           );
-          
+
           // Check for abort signal after RPC call
           if (abortSignal.aborted) {
             logger.warn('Operation aborted after RPC call');
@@ -248,8 +245,12 @@ export const useAdminGrnLabelBusiness = ({
 
           if (batchResult.success) {
             logger.debug('Unified RPC batch processing successful', {
-              palletNumbersCount: Array.isArray(batchResult.data?.pallet_numbers) ? batchResult.data.pallet_numbers.length : 0,
-              seriesCount: Array.isArray(batchResult.data?.series) ? batchResult.data.series.length : 0
+              palletNumbersCount: Array.isArray(batchResult.data?.pallet_numbers)
+                ? batchResult.data.pallet_numbers.length
+                : 0,
+              seriesCount: Array.isArray(batchResult.data?.series)
+                ? batchResult.data.series.length
+                : 0,
             });
 
             // Database records created successfully via RPC
@@ -278,11 +279,11 @@ export const useAdminGrnLabelBusiness = ({
                   logger.warn(`PDF generation aborted at index ${i}`);
                   return;
                 }
-                
+
                 // Use batch progress update to reduce re-renders
                 const newStatus = [...state.progress.status];
                 newStatus[i] = 'Processing';
-                
+
                 actions.setProgress({
                   current: i + 1,
                   total: numberOfPalletsToProcess,
@@ -309,10 +310,10 @@ export const useAdminGrnLabelBusiness = ({
                 };
 
                 const pdfProps = await prepareGrnLabelData(grnInputData);
-                logger.debug('PDF props prepared', { 
+                logger.debug('PDF props prepared', {
                   palletNum,
                   seriesNum,
-                  hasProps: !!pdfProps 
+                  hasProps: !!pdfProps,
                 });
 
                 if (pdfProps) {
@@ -323,12 +324,12 @@ export const useAdminGrnLabelBusiness = ({
                       logger.warn(`PDF generation aborted before rendering PDF ${i}`);
                       return;
                     }
-                    
+
                     const { renderReactPDFToBlob } = await import(
                       '@/lib/services/unified-pdf-service'
                     );
                     pdfBlob = await renderReactPDFToBlob(<PrintLabelPdf {...pdfProps} />);
-                    
+
                     // Check for abort signal after PDF generation
                     if (abortSignal.aborted) {
                       logger.warn(`PDF generation aborted after rendering PDF ${i}`);
@@ -354,7 +355,7 @@ export const useAdminGrnLabelBusiness = ({
                       palletNum,
                       seriesNum,
                       grnInputData,
-                      pdfProps
+                      pdfProps,
                     });
                     // Mark as failed with critical flag for immediate update
                     actions.updateProgressStatus(i, 'Failed');
@@ -377,12 +378,15 @@ export const useAdminGrnLabelBusiness = ({
               logger.error('Unified RPC pallet count mismatch', null, {
                 expected: numberOfPalletsToProcess,
                 receivedPallets: palletNumbers.length,
-                receivedSeries: series.length
+                receivedSeries: series.length,
               });
               throw new Error('統一 RPC 返回的棧板數量不匹配');
             }
           } else {
-            logger.error('Unified RPC processing failed', new Error(batchResult.error || 'Unknown error'));
+            logger.error(
+              'Unified RPC processing failed',
+              new Error(batchResult.error || 'Unknown error')
+            );
             throw new Error(batchResult.error || '統一 RPC 處理失敗');
           }
 
@@ -409,8 +413,8 @@ export const useAdminGrnLabelBusiness = ({
                 `${successCount} labels generated successfully, ${failedCount} failed.`
               );
             } else {
-              logger.info('All labels generated successfully', { 
-                count: collectedPdfBlobs.length 
+              logger.info('All labels generated successfully', {
+                count: collectedPdfBlobs.length,
               });
               toast.success(`All ${collectedPdfBlobs.length} GRN labels generated successfully!`);
             }
@@ -420,7 +424,7 @@ export const useAdminGrnLabelBusiness = ({
               logger.warn('Operation aborted before printing');
               return;
             }
-            
+
             // Use generic printing service with GRN type
             logger.debug('Calling printPdfs with GRN type', {
               pdfCount: collectedPdfBlobs.length,
@@ -442,7 +446,7 @@ export const useAdminGrnLabelBusiness = ({
               undefined, // quantity not applicable for GRN
               clockNumber // operator
             );
-            
+
             // Check for abort signal after printing
             if (abortSignal.aborted) {
               logger.warn('Operation aborted after printing');
@@ -453,13 +457,17 @@ export const useAdminGrnLabelBusiness = ({
             toast.success('GRN labels sent to print queue');
 
             // Reset form after successful print with managed timeout
-            resourceCleanup.createTimeout(() => {
-              // Only reset if still mounted and not aborted
-              if (resourceCleanup.isMounted() && !abortSignal.aborted) {
-                actions.resetProductAndWeights();
-                actions.setProgress({ current: 0, total: 0, status: [] });
-              }
-            }, 2000, 'resetForm');
+            resourceCleanup.createTimeout(
+              () => {
+                // Only reset if still mounted and not aborted
+                if (resourceCleanup.isMounted() && !abortSignal.aborted) {
+                  actions.resetProductAndWeights();
+                  actions.setProgress({ current: 0, total: 0, status: [] });
+                }
+              },
+              2000,
+              'resetForm'
+            );
 
             return;
           } else {
@@ -485,10 +493,10 @@ export const useAdminGrnLabelBusiness = ({
           logger.info('Operation was cancelled');
           return;
         }
-        
+
         logger.error('Processing error', error, {
           grnNumber: state.formData.grnNumber,
-          palletCount: palletNumbers.length
+          palletCount: palletNumbers.length,
         });
 
         grnErrorHandler.handleDatabaseError(
@@ -509,7 +517,7 @@ export const useAdminGrnLabelBusiness = ({
         if (!abortSignal.aborted) {
           actions.setProcessing(false);
         }
-        
+
         // Clean up the current operation reference
         if (currentOperationRef.current && currentOperationRef.current.signal === abortSignal) {
           currentOperationRef.current = null;

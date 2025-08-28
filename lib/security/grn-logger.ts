@@ -18,42 +18,42 @@ const GRN_SENSITIVE_FIELDS = [
   'email',
   'operator',
   'receivedBy',
-  
+
   // Supplier Information
   'supplierCode',
   'supplier_code',
   'materialSupplier',
   'supplierInfo',
-  
-  // Product Information  
+
+  // Product Information
   'productCode',
   'product_code',
   'productInfo',
-  
+
   // GRN Specific Data
   'grnNumber',
   'grn_number',
-  'grnnumber',  // Handle different casing variations
+  'grnnumber', // Handle different casing variations
   'palletNumber',
   'pallet_number',
   'palletNum',
   'series',
   'seriesNum',
-  
+
   // Weight & Quantity Data (may contain business-sensitive information)
   'grossWeight',
   'gross_weight',
   'netWeight',
   'net_weight',
   'quantity',
-  
+
   // API & Database Responses
   'apiResponse',
   'api_response',
   'databaseResponse',
   'db_response',
   'supabaseResponse',
-  
+
   // PDF and File Data
   'pdfUrl',
   'pdf_url',
@@ -67,28 +67,31 @@ const GRN_SENSITIVE_FIELDS = [
 const GRN_REDACTION_PATTERNS = [
   // GRN numbers (e.g., GRN-2024-001) - MUST come before general product code pattern
   { pattern: /\bGRN[-]\d{4}[-]\d{3,6}\b/gi, replacement: '[GRN_NUMBER]' },
-  
+
   // Clock numbers (e.g., C12345, 12345)
   { pattern: /\b[Cc]\d{4,6}\b/g, replacement: '[CLOCK_NUMBER]' },
-  
+
   // Pallet numbers (e.g., PAL-12345, P followed by 6-10 digits specifically)
   { pattern: /\b(PAL|pal)[-]?\d{5,10}\b/g, replacement: '[PALLET_NUMBER]' },
   { pattern: /\bP\d{6,10}\b/g, replacement: '[PALLET_NUMBER]' },
-  
-  // Supplier codes (e.g., SUP-12345, S12345 - but not just 'S')  
+
+  // Supplier codes (e.g., SUP-12345, S12345 - but not just 'S')
   { pattern: /\b(SUP|sup)[-]?\d{4,8}\b/g, replacement: '[SUPPLIER_CODE]' },
   { pattern: /\bS\d{4,8}\b/g, replacement: '[SUPPLIER_CODE]' },
-  
+
   // Product codes (various formats - but more specific to avoid false positives)
   { pattern: /\b(PROD|prod)[-]?\d{4,8}\b/g, replacement: '[PRODUCT_CODE]' },
   { pattern: /\bP[-]\d{4,8}\b/g, replacement: '[PRODUCT_CODE]' },
   { pattern: /\b[A-Z]{3,4}[-]\d{4,8}\b/g, replacement: '[PRODUCT_CODE]' },
-  
+
   // Email addresses
   { pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, replacement: '[EMAIL]' },
-  
+
   // UUIDs
-  { pattern: /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, replacement: '[UUID]' },
+  {
+    pattern: /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi,
+    replacement: '[UUID]',
+  },
 ];
 
 /**
@@ -112,12 +115,12 @@ function isGrnSensitiveField(fieldName: string): boolean {
  */
 function applyGrnRedactionPatterns(value: any): any {
   if (typeof value !== 'string') return value;
-  
+
   let redactedValue = value;
   for (const { pattern, replacement } of GRN_REDACTION_PATTERNS) {
     redactedValue = redactedValue.replace(pattern, replacement);
   }
-  
+
   return redactedValue;
 }
 
@@ -128,24 +131,24 @@ export function sanitizeGrnData(data: any, maxDepth: number = 10): any {
   // Handle null and undefined
   if (data === null) return null;
   if (data === undefined) return undefined;
-  
+
   // Handle strings with pattern redaction
   if (typeof data === 'string') {
     return applyGrnRedactionPatterns(data);
   }
-  
+
   // Handle primitives
   if (typeof data !== 'object') {
     return data;
   }
-  
+
   // Prevent infinite recursion with circular references
   if (maxDepth <= 0) {
     return '[MAX_DEPTH_REACHED]';
   }
-  
+
   const seen = new WeakSet();
-  
+
   function sanitizeRecursive(obj: any, depth: number): any {
     // Check for circular reference
     if (obj && typeof obj === 'object') {
@@ -154,16 +157,16 @@ export function sanitizeGrnData(data: any, maxDepth: number = 10): any {
       }
       seen.add(obj);
     }
-    
+
     // Handle arrays
     if (Array.isArray(obj)) {
       return obj.map(item => sanitizeRecursive(item, depth - 1));
     }
-    
+
     // Handle objects
     if (obj && typeof obj === 'object') {
       const sanitized: any = {};
-      
+
       for (const [key, value] of Object.entries(obj)) {
         // Check if the key is GRN-sensitive
         if (isGrnSensitiveField(key)) {
@@ -188,13 +191,13 @@ export function sanitizeGrnData(data: any, maxDepth: number = 10): any {
           sanitized[key] = value;
         }
       }
-      
+
       return sanitized;
     }
-    
+
     return obj;
   }
-  
+
   try {
     return sanitizeRecursive(data, maxDepth);
   } catch (error) {
@@ -209,12 +212,12 @@ export function sanitizeGrnData(data: any, maxDepth: number = 10): any {
 export class GrnLogger {
   private isDevelopment: boolean;
   private component: string;
-  
+
   constructor(component: string) {
     this.component = component;
     this.isDevelopment = process.env.NODE_ENV !== 'production';
   }
-  
+
   /**
    * Log info level message with sanitized data
    */
@@ -222,16 +225,16 @@ export class GrnLogger {
     if (!this.isDevelopment && !this.shouldLogInProduction('info')) {
       return;
     }
-    
+
     const sanitizedData = data ? sanitizeGrnData(data) : undefined;
     const logEntry = createSanitizedLogEntry('info', message, {
       component: this.component,
-      ...sanitizedData
+      ...sanitizedData,
     });
-    
+
     console.log(`[${this.component}]`, message, sanitizedData || '');
   }
-  
+
   /**
    * Log warning level message with sanitized data
    */
@@ -239,28 +242,28 @@ export class GrnLogger {
     const sanitizedData = data ? sanitizeGrnData(data) : undefined;
     const logEntry = createSanitizedLogEntry('warn', message, {
       component: this.component,
-      ...sanitizedData
+      ...sanitizedData,
     });
-    
+
     console.warn(`[${this.component}]`, message, sanitizedData || '');
   }
-  
+
   /**
    * Log error level message with sanitized data
    */
   error(message: string, error?: any, additionalData?: any): void {
     const sanitizedError = error ? sanitizeError(error) : undefined;
     const sanitizedData = additionalData ? sanitizeGrnData(additionalData) : undefined;
-    
+
     const logEntry = createSanitizedLogEntry('error', message, {
       component: this.component,
       error: sanitizedError,
-      ...sanitizedData
+      ...sanitizedData,
     });
-    
+
     console.error(`[${this.component}]`, message, sanitizedError || '', sanitizedData || '');
   }
-  
+
   /**
    * Log debug level message with sanitized data (dev only)
    */
@@ -268,16 +271,16 @@ export class GrnLogger {
     if (!this.isDevelopment) {
       return;
     }
-    
+
     const sanitizedData = data ? sanitizeGrnData(data) : undefined;
     const logEntry = createSanitizedLogEntry('debug', message, {
       component: this.component,
-      ...sanitizedData
+      ...sanitizedData,
     });
-    
+
     console.log(`[${this.component}] [DEBUG]`, message, sanitizedData || '');
   }
-  
+
   /**
    * Determine if we should log in production based on level
    */
@@ -285,7 +288,7 @@ export class GrnLogger {
     // In production, only log warnings and errors
     return level === 'warn' || level === 'error';
   }
-  
+
   /**
    * Create a child logger with additional context
    */

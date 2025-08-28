@@ -17,15 +17,17 @@
 ## 認證系統狀態
 
 ### 認證機制配置
+
 - **認證提供者**: Supabase Auth (JWT)
 - **認證模式**: PKCE流程
 - **會話管理**: 自動刷新令牌，持久會話
-- **Cookie配置**: 
+- **Cookie配置**:
   - HttpOnly: false (允許客戶端訪問)
   - Secure: 生產環境啟用
   - SameSite: lax
 
 ### 認證中間件保護
+
 - **公開路由**: 已明確定義 (登入、密碼重置、健康檢查)
 - **路由保護**: Admin路由強制認證重定向
 - **用戶驗證**: 使用 `getUser()` 驗證會話
@@ -34,12 +36,14 @@
 ## 安全中間件配置
 
 ### 安全監控中間件
+
 - **威脅檢測**: SQL注入、XSS、路徑遍歷
 - **速率限制**: 100請求/分鐘
 - **請求日誌**: 10%採樣記錄成功請求
 - **阻擋策略**: 生產環境阻擋關鍵威脅
 
 ### 安全頭部配置
+
 ```
 X-Frame-Options: DENY
 X-Content-Type-Options: nosniff
@@ -49,14 +53,16 @@ Permissions-Policy: camera=(), microphone=(), geolocation=()
 ```
 
 ### 內容安全策略 (CSP)
+
 - **default-src**: 'self'
 - **script-src**: 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net
-- **connect-src**: 'self' https://api.openai.com https://*.supabase.co
+- **connect-src**: 'self' https://api.openai.com https://\*.supabase.co
 - **frame-ancestors**: 'none'
 
 ## RLS策略配置
 
 ### 策略覆蓋統計
+
 - **總策略數**: 109個
 - **主要表格保護**:
   - `data_id`: 用戶檔案保護 (4個策略)
@@ -66,6 +72,7 @@ Permissions-Policy: camera=(), microphone=(), geolocation=()
   - `stock_level`: 庫存管理保護 (1個策略)
 
 ### RLS策略模式
+
 - 基於角色的訪問控制 (RBAC)
 - 部門隔離策略
 - 用戶自身數據訪問
@@ -74,10 +81,12 @@ Permissions-Policy: camera=(), microphone=(), geolocation=()
 ## 安全相關依賴
 
 ### 認證與加密依賴
+
 - **@supabase/ssr**: ^0.6.1 (服務端渲染認證)
 - **jsonwebtoken**: ^9.0.2 (JWT處理)
 
 ### 安全模組
+
 - **credentials-manager.ts**: 242行 (憑證管理)
 - **logger-sanitizer.ts**: 日誌消毒器
 - **production-monitor.ts**: 16627行 (生產環境監控)
@@ -87,14 +96,16 @@ Permissions-Policy: camera=(), microphone=(), geolocation=()
 ## 環境變數處理
 
 ### 環境變數安全機制
+
 - **環境檢測**: `lib/utils/env.ts` 提供環境判斷
 - **憑證驗證**: CredentialsManager 驗證器
-- **敏感信息保護**: 
+- **敏感信息保護**:
   - Supabase服務密鑰標記為敏感
   - JWT密鑰驗證長度和格式
   - 日誌自動消毒敏感字段
 
 ### 憑證管理配置
+
 ```typescript
 // 主要憑證配置
 - SUPABASE_URL (必需，非敏感)
@@ -108,16 +119,19 @@ Permissions-Policy: camera=(), microphone=(), geolocation=()
 ### 高風險 - SECURITY DEFINER 視圖 (3個)
 
 #### 1. security_metrics 視圖
+
 - **風險**: 視圖以定義者權限執行，可能繞過RLS
 - **位置**: public.security_metrics
 - **建議**: 審查視圖權限，考慮改為 SECURITY INVOKER
 
 #### 2. data_id_decrypted 視圖
+
 - **風險**: 解密視圖使用高權限訪問敏感數據
 - **位置**: public.data_id_decrypted
 - **建議**: 確保嚴格的訪問控制和審計
 
 #### 3. rls_policy_overview 視圖
+
 - **風險**: 策略概覽視圖可能洩露安全配置
 - **位置**: public.rls_policy_overview
 - **建議**: 限制只有管理員可訪問
@@ -125,6 +139,7 @@ Permissions-Policy: camera=(), microphone=(), geolocation=()
 ### 中風險 - 函數搜尋路徑可變 (14個)
 
 主要受影響函數：
+
 - encrypt_sensitive_data
 - decrypt_sensitive_data
 - create_hash
@@ -144,6 +159,7 @@ Permissions-Policy: camera=(), microphone=(), geolocation=()
 ### 立即行動項目
 
 1. **修復 SECURITY DEFINER 視圖**
+
 ```sql
 -- 將視圖改為 SECURITY INVOKER
 ALTER VIEW public.security_metrics SET (security_invoker = true);
@@ -152,13 +168,15 @@ ALTER VIEW public.rls_policy_overview SET (security_invoker = true);
 ```
 
 2. **設置函數搜尋路徑**
+
 ```sql
 -- 為所有函數設置安全搜尋路徑
-ALTER FUNCTION public.encrypt_sensitive_data() 
+ALTER FUNCTION public.encrypt_sensitive_data()
 SET search_path = public, pg_catalog;
 ```
 
 3. **移動擴展到專用 schema**
+
 ```sql
 -- 創建擴展 schema
 CREATE SCHEMA IF NOT EXISTS extensions;
@@ -186,12 +204,14 @@ ALTER EXTENSION vector SET SCHEMA extensions;
 ## 合規性評估
 
 ### 符合的安全標準
+
 - ✅ OWASP Top 10 防護措施已實施
 - ✅ JWT認證機制符合標準
 - ✅ RLS策略廣泛覆蓋
 - ✅ 安全頭部配置完整
 
 ### 需要改進的領域
+
 - ⚠️ CSP策略過於寬鬆
 - ⚠️ 部分數據庫函數缺少安全配置
 - ⚠️ SECURITY DEFINER使用需審查
@@ -202,5 +222,5 @@ ALTER EXTENSION vector SET SCHEMA extensions;
 
 ---
 
-*報告生成時間: 2025-08-27 10:42:20*  
-*下次審計建議: 2025-09-27*
+_報告生成時間: 2025-08-27 10:42:20_  
+_下次審計建議: 2025-09-27_

@@ -125,7 +125,7 @@ export const productResolvers: IResolvers = {
         // Use DataLoader for batch loading to avoid N+1 queries
         if (context.loaders?.inventory) {
           const inventoryData = await context.loaders.inventory.load(parent.code);
-          
+
           // 檢查 DataLoader 是否成功返回資料
           if (inventoryData && typeof inventoryData === 'object') {
             // 將 Inventory 類型轉換為 InventorySummary 類型
@@ -138,10 +138,19 @@ export const productResolvers: IResolvers = {
             const backcarpark = inventoryData.backcarpark || 0;
             const damage = inventoryData.damage || 0;
             const awaitGrn = inventoryData.await_grn || 0;
-            
+
             // 計算總庫存
-            const totalQuantity = injection + pipeline + prebook + awaitQty + fold + bulk + backcarpark + damage + awaitGrn;
-            
+            const totalQuantity =
+              injection +
+              pipeline +
+              prebook +
+              awaitQty +
+              fold +
+              bulk +
+              backcarpark +
+              damage +
+              awaitGrn;
+
             return {
               totalQuantity,
               availableQuantity: totalQuantity - damage, // 排除損壞的庫存

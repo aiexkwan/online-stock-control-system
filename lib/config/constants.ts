@@ -11,16 +11,18 @@ export const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 export function validateEnvironment(): void {
   const requiredVars = [
     { name: 'NEXT_PUBLIC_SUPABASE_URL', value: SUPABASE_URL },
-    { name: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', value: SUPABASE_ANON_KEY }
+    { name: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', value: SUPABASE_ANON_KEY },
   ];
 
   const missing = requiredVars.filter(v => !v.value);
-  
+
   if (missing.length > 0) {
     console.error('Missing required environment variables:', missing.map(v => v.name).join(', '));
     // 在開發環境中警告，在生產環境中可能需要拋出錯誤
     if (process.env.NODE_ENV === 'production') {
-      throw new Error(`Missing critical environment variables: ${missing.map(v => v.name).join(', ')}`);
+      throw new Error(
+        `Missing critical environment variables: ${missing.map(v => v.name).join(', ')}`
+      );
     }
   }
 }

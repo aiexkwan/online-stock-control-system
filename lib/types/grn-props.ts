@@ -1,32 +1,24 @@
 /**
  * GRN Label Card Enhanced Props Interface
- * 
+ *
  * This file provides enhanced TypeScript Props interfaces for all GRN-related components,
  * offering better flexibility, customization options, and maintainability while ensuring
  * backward compatibility with existing implementations.
- * 
+ *
  * Features:
  * - Strong type definitions with comprehensive documentation
  * - Default values and optional configuration
  * - Backward compatibility with existing props
  * - Configuration validation and error handling
  * - Theme and styling customization options
- * 
+ *
  * @see /app/(app)/admin/cards/GRNLabelCard.tsx
  * @see /app/(app)/print-grnlabel/components/
  */
 
 import { z } from 'zod';
-import type { 
-  GrnProductInfo, 
-  GrnSupplierInfo, 
-  GrnFormData 
-} from './grn-validation';
-import type { 
-  PalletTypeKey, 
-  PackageTypeKey, 
-  LabelMode 
-} from './grn';
+import type { GrnProductInfo, GrnSupplierInfo, GrnFormData } from './grn-validation';
+import type { PalletTypeKey, PackageTypeKey, LabelMode } from './grn';
 
 /**
  * Theme and visual configuration options
@@ -34,16 +26,16 @@ import type {
 export interface GrnThemeConfig {
   /** Primary accent color (default: 'orange') */
   accentColor?: 'orange' | 'blue' | 'green' | 'purple' | 'red';
-  
+
   /** Card border style (default: 'glass') */
   borderStyle?: 'glass' | 'solid' | 'gradient' | 'none';
-  
+
   /** Enable glow effects (default: true) */
   enableGlow?: boolean;
-  
+
   /** Enable animations (default: true) */
   enableAnimations?: boolean;
-  
+
   /** Custom CSS classes for different parts */
   customClasses?: {
     container?: string;
@@ -60,19 +52,19 @@ export interface GrnThemeConfig {
 export interface GrnLayoutConfig {
   /** Maximum number of weight inputs (default: 22) */
   maxWeightInputs?: number;
-  
+
   /** Auto-expand weight list threshold (default: 5) */
   autoExpandThreshold?: number;
-  
+
   /** Enable compact mode (default: false) */
   compactMode?: boolean;
-  
+
   /** Show progress bar (default: true) */
   showProgressBar?: boolean;
-  
+
   /** Show weight calculation summary (default: true) */
   showWeightSummary?: boolean;
-  
+
   /** Enable keyboard shortcuts (default: true) */
   enableKeyboardShortcuts?: boolean;
 }
@@ -83,10 +75,10 @@ export interface GrnLayoutConfig {
 export interface GrnValidationConfig {
   /** Enable real-time validation (default: true) */
   enableRealTimeValidation?: boolean;
-  
+
   /** Strict mode for data validation (default: true) */
   strictMode?: boolean;
-  
+
   /** Custom validation rules */
   customValidators?: {
     productCode?: (code: string) => boolean | string;
@@ -94,7 +86,7 @@ export interface GrnValidationConfig {
     grnNumber?: (number: string) => boolean | string;
     clockNumber?: (number: string) => boolean | string;
   };
-  
+
   /** Enable sanitization logging (default: true) */
   enableSanitization?: boolean;
 }
@@ -105,22 +97,22 @@ export interface GrnValidationConfig {
 export interface GrnFeatureConfig {
   /** Enable print functionality (default: true) */
   enablePrinting?: boolean;
-  
+
   /** Enable clock number confirmation dialog (default: true) */
   enableClockNumberDialog?: boolean;
-  
+
   /** Enable automatic supplier lookup (default: true) */
   enableSupplierLookup?: boolean;
-  
+
   /** Enable automatic product lookup (default: true) */
   enableProductLookup?: boolean;
-  
+
   /** Enable weight calculation helpers (default: true) */
   enableWeightCalculation?: boolean;
-  
+
   /** Enable undo/redo functionality (default: false) */
   enableUndoRedo?: boolean;
-  
+
   /** Enable data export functionality (default: false) */
   enableDataExport?: boolean;
 }
@@ -131,28 +123,28 @@ export interface GrnFeatureConfig {
 export interface GrnCallbacks {
   /** Triggered when form data changes */
   onFormChange?: (formData: GrnFormData, field: keyof GrnFormData) => void;
-  
+
   /** Triggered when validation state changes */
   onValidationChange?: (isValid: boolean, errors: string[]) => void;
-  
+
   /** Triggered before print operation */
   onBeforePrint?: (data: GrnFormData, weights: string[]) => boolean | Promise<boolean>;
-  
+
   /** Triggered after successful print */
   onPrintSuccess?: (labelCount: number) => void;
-  
+
   /** Triggered on print error */
   onPrintError?: (error: string) => void;
-  
+
   /** Triggered when user data is loaded */
   onUserLoad?: (userId: string) => void;
-  
+
   /** Triggered on state changes for external monitoring */
   onStateChange?: (state: any) => void;
-  
+
   /** Triggered on validation errors */
   onValidationError?: (field: string, error: string) => void;
-  
+
   /** Triggered when max items reached */
   onMaxItemsReached?: () => void;
 }
@@ -163,16 +155,16 @@ export interface GrnCallbacks {
 export interface GrnPerformanceConfig {
   /** Enable component memoization (default: true) */
   enableMemoization?: boolean;
-  
+
   /** Debounce delay for input validation (default: 300ms) */
   validationDebounce?: number;
-  
+
   /** Debounce delay for auto-save (default: 1000ms) */
   autoSaveDebounce?: number;
-  
+
   /** Enable virtual scrolling for large lists (default: false) */
   enableVirtualScrolling?: boolean;
-  
+
   /** Lazy load non-critical components (default: true) */
   enableLazyLoading?: boolean;
 }
@@ -188,17 +180,17 @@ export interface GrnAccessibilityConfig {
     printButton?: string;
     progressBar?: string;
   };
-  
+
   /** Keyboard navigation configuration */
   keyboardNavigation?: {
     enabled?: boolean;
     skipLinks?: boolean;
     focusTrap?: boolean;
   };
-  
+
   /** High contrast mode support (default: false) */
   highContrastMode?: boolean;
-  
+
   /** Reduced motion support (default: true) */
   respectReducedMotion?: boolean;
 }
@@ -210,43 +202,43 @@ export interface GrnAccessibilityConfig {
 export interface EnhancedGRNLabelCardProps {
   /** Basic styling (backward compatibility) */
   className?: string;
-  
+
   /** Component ID for testing and accessibility */
   id?: string;
-  
+
   /** Theme configuration */
   theme?: GrnThemeConfig;
-  
+
   /** Layout and behavior configuration */
   layout?: GrnLayoutConfig;
-  
+
   /** Validation configuration */
   validation?: GrnValidationConfig;
-  
+
   /** Feature toggles */
   features?: GrnFeatureConfig;
-  
+
   /** Event callbacks */
   callbacks?: GrnCallbacks;
-  
+
   /** Performance optimizations */
   performance?: GrnPerformanceConfig;
-  
+
   /** Accessibility options */
   accessibility?: GrnAccessibilityConfig;
-  
+
   /** Initial form data (optional) */
   initialData?: Partial<GrnFormData>;
-  
+
   /** Initial weights (optional) */
   initialWeights?: string[];
-  
+
   /** Disable the entire component */
   disabled?: boolean;
-  
+
   /** Read-only mode */
   readOnly?: boolean;
-  
+
   /** Debug mode for development */
   debug?: boolean;
 }
@@ -264,7 +256,7 @@ export interface EnhancedGrnDetailCardProps {
   currentUserId: string;
   palletType: Record<PalletTypeKey, string>;
   packageType: Record<PackageTypeKey, string>;
-  
+
   /** Core callback props (required for backward compatibility) */
   onFormChange: (field: keyof GrnFormData, value: string) => void;
   onSupplierInfoChange: (supplierInfo: GrnSupplierInfo | null) => void;
@@ -272,14 +264,14 @@ export interface EnhancedGrnDetailCardProps {
   onLabelModeChange: (mode: LabelMode) => void;
   onPalletTypeChange: (key: PalletTypeKey, value: string) => void;
   onPackageTypeChange: (key: PackageTypeKey, value: string) => void;
-  
+
   /** Enhanced configuration options */
   disabled?: boolean;
   className?: string;
   theme?: Pick<GrnThemeConfig, 'accentColor' | 'customClasses'>;
   validation?: Pick<GrnValidationConfig, 'enableRealTimeValidation' | 'customValidators'>;
   features?: Pick<GrnFeatureConfig, 'enableSupplierLookup' | 'enableProductLookup'>;
-  
+
   /** Enhanced callbacks */
   onValidationError?: (field: string, error: string) => void;
   onFieldFocus?: (field: keyof GrnFormData) => void;
@@ -294,26 +286,26 @@ export interface EnhancedWeightInputListProps {
   grossWeights: string[];
   onChange: (index: number, value: string) => void;
   labelMode: LabelMode;
-  
+
   /** Enhanced core props */
   onRemove?: (index: number) => void;
   selectedPalletType?: PalletTypeKey;
   selectedPackageType?: PackageTypeKey;
   maxItems?: number;
   disabled?: boolean;
-  
+
   /** Configuration options */
   className?: string;
   theme?: Pick<GrnThemeConfig, 'accentColor' | 'customClasses'>;
   layout?: Pick<GrnLayoutConfig, 'compactMode' | 'autoExpandThreshold' | 'showWeightSummary'>;
   validation?: Pick<GrnValidationConfig, 'enableRealTimeValidation'>;
   performance?: Pick<GrnPerformanceConfig, 'validationDebounce' | 'enableVirtualScrolling'>;
-  
+
   /** Enhanced callbacks */
   onWeightCalculated?: (index: number, netWeight: number) => void;
   onListExpanded?: (expanded: boolean) => void;
   onMaxItemsReached?: () => void;
-  
+
   /** Display options */
   showIndex?: boolean;
   showNetWeight?: boolean;
@@ -367,7 +359,9 @@ export const DEFAULT_GRN_PERFORMANCE: Required<GrnPerformanceConfig> = {
   enableLazyLoading: true,
 };
 
-export const DEFAULT_GRN_ACCESSIBILITY: Required<Omit<GrnAccessibilityConfig, 'ariaLabels' | 'keyboardNavigation'>> = {
+export const DEFAULT_GRN_ACCESSIBILITY: Required<
+  Omit<GrnAccessibilityConfig, 'ariaLabels' | 'keyboardNavigation'>
+> = {
   highContrastMode: false,
   respectReducedMotion: true,
 };
@@ -381,13 +375,15 @@ export const GrnThemeConfigSchema = z.object({
   borderStyle: z.enum(['glass', 'solid', 'gradient', 'none']).optional(),
   enableGlow: z.boolean().optional(),
   enableAnimations: z.boolean().optional(),
-  customClasses: z.object({
-    container: z.string().optional(),
-    header: z.string().optional(),
-    content: z.string().optional(),
-    button: z.string().optional(),
-    input: z.string().optional(),
-  }).optional(),
+  customClasses: z
+    .object({
+      container: z.string().optional(),
+      header: z.string().optional(),
+      content: z.string().optional(),
+      button: z.string().optional(),
+      input: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const GrnLayoutConfigSchema = z.object({
@@ -413,17 +409,19 @@ export function mergeGrnConfig<T extends Record<string, any>>(
   if (!userConfig) {
     return defaultConfig;
   }
-  
+
   return {
     ...defaultConfig,
     ...userConfig,
     // Deep merge for nested objects
-    ...(userConfig.customClasses && defaultConfig.customClasses ? {
-      customClasses: {
-        ...defaultConfig.customClasses,
-        ...userConfig.customClasses,
-      }
-    } : {}),
+    ...(userConfig.customClasses && defaultConfig.customClasses
+      ? {
+          customClasses: {
+            ...defaultConfig.customClasses,
+            ...userConfig.customClasses,
+          },
+        }
+      : {}),
   };
 }
 
@@ -466,7 +464,9 @@ export function convertLegacyProps(legacyProps: { className?: string }): Enhance
 /**
  * Props factory functions for common configurations
  */
-export function createCompactGrnProps(baseProps?: Partial<EnhancedGRNLabelCardProps>): EnhancedGRNLabelCardProps {
+export function createCompactGrnProps(
+  baseProps?: Partial<EnhancedGRNLabelCardProps>
+): EnhancedGRNLabelCardProps {
   return {
     ...baseProps,
     layout: {
@@ -484,7 +484,9 @@ export function createCompactGrnProps(baseProps?: Partial<EnhancedGRNLabelCardPr
   };
 }
 
-export function createDebugGrnProps(baseProps?: Partial<EnhancedGRNLabelCardProps>): EnhancedGRNLabelCardProps {
+export function createDebugGrnProps(
+  baseProps?: Partial<EnhancedGRNLabelCardProps>
+): EnhancedGRNLabelCardProps {
   return {
     ...baseProps,
     debug: true,
@@ -502,7 +504,9 @@ export function createDebugGrnProps(baseProps?: Partial<EnhancedGRNLabelCardProp
   };
 }
 
-export function createReadOnlyGrnProps(baseProps?: Partial<EnhancedGRNLabelCardProps>): EnhancedGRNLabelCardProps {
+export function createReadOnlyGrnProps(
+  baseProps?: Partial<EnhancedGRNLabelCardProps>
+): EnhancedGRNLabelCardProps {
   return {
     ...baseProps,
     readOnly: true,

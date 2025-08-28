@@ -42,7 +42,7 @@
 
 ### 4. 影響評估結果
 
-- **安全影響**: `正面影響` 
+- **安全影響**: `正面影響`
   - 移除可消除 5 個安全漏洞（1個高風險、3個中風險、1個低風險）
   - 減少攻擊面，降低潛在的 XSS 和注入攻擊風險
   - 消除硬編碼資源路徑的安全隱患
@@ -62,16 +62,17 @@
 ### 詳細執行步驟：
 
 1. **立即措施**：
+
    ```bash
    # 移除組件目錄
    git rm -r components/label
-   
+
    # 檢查是否可移除 qrcode.react 依賴
    npm uninstall qrcode.react  # 如確認無其他使用
-   
+
    # 執行驗證測試
    npm run typecheck
-   npm run build  
+   npm run build
    npm run test
    ```
 

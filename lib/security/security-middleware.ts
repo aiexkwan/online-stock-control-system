@@ -38,7 +38,7 @@ export async function securityMiddleware(request: NextRequest) {
       '/_next/image',
       '/favicon.ico',
       '/fonts',
-      '/images'
+      '/images',
     ];
 
     // Check if this is a public route
@@ -81,9 +81,11 @@ export async function securityMiddleware(request: NextRequest) {
           userAgent: requestInfo.userAgent,
           path: requestInfo.path,
           method: requestInfo.method,
-          payload: { 
-            body: requestInfo.path.startsWith('/api/') ? 'REQUEST_BODY_REDACTED' : undefined, 
-            query: new URL(request.url).searchParams.toString() ? Object.fromEntries(new URL(request.url).searchParams.entries()) : undefined
+          payload: {
+            body: requestInfo.path.startsWith('/api/') ? 'REQUEST_BODY_REDACTED' : undefined,
+            query: new URL(request.url).searchParams.toString()
+              ? Object.fromEntries(new URL(request.url).searchParams.entries())
+              : undefined,
           },
           metadata: {
             url: requestInfo.url,
@@ -100,7 +102,8 @@ export async function securityMiddleware(request: NextRequest) {
       SecurityEventType.PATH_TRAVERSAL_ATTEMPT,
     ];
 
-    const shouldBlockRequest = threats.some(t => criticalThreats.includes(t)) && process.env.NODE_ENV === 'production';
+    const shouldBlockRequest =
+      threats.some(t => criticalThreats.includes(t)) && process.env.NODE_ENV === 'production';
 
     if (shouldBlockRequest) {
       // Log blocked request

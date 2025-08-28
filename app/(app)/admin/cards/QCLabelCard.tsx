@@ -11,10 +11,12 @@ import { useAdminQcLabelBusiness } from '../hooks/useAdminQcLabelBusiness';
 import { MAX_PALLET_COUNT } from '../components/qc-label-constants';
 import { createClient } from '@/app/utils/supabase/client';
 import { useAcoOrderReport, useOrderData } from '@/lib/hooks/useOrderData';
+import { useCurrentUserId, useAuth } from '@/app/hooks/useAuth';
 import type { ProductInfo, AdminFormData as FormData } from '../types/adminQcTypes';
 
 // Lazy loading for heavy components
 const ClockNumberConfirmDialog = React.lazy(() => import('../components/ClockNumberConfirmDialog'));
+const UserIdVerificationDialog = React.lazy(() => import('../components/UserIdVerificationDialog'));
 const EnhancedProgressBar = React.lazy(() => import('../components/EnhancedProgressBar'));
 
 export interface QCLabelCardProps {
@@ -22,6 +24,19 @@ export interface QCLabelCardProps {
 }
 
 export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
+  // 使用現有的 useCurrentUserId hook，它會自動從 metadata 中提取 user_id
+  const currentUserId = useCurrentUserId();
+  const { loading, isAuthenticated } = useAuth();
+
+  // 診斷調試信息
+  console.log('[QCLabelCard] Render state check:');
+  console.log('  currentUserId:', currentUserId);
+  console.log('  loading:', loading);
+  console.log('  isAuthenticated:', isAuthenticated);
+
+  // User ID verification dialog state
+  const [showUserIdDialog, setShowUserIdDialog] = useState(false);
+
   // Initial form data state
   const getInitialFormData = useCallback(
     () => ({
@@ -30,7 +45,7 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
       quantity: '',
       count: '',
       operator: '',
-      userId: '',
+      userId: currentUserId || '', // 從 useCurrentUserId 獲取 user ID
       acoOrderRef: '',
       acoRemain: null,
       availableAcoOrders: [],
@@ -47,7 +62,7 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
       acoSearchLoading: false,
       productError: null,
     }),
-    []
+    [currentUserId]
   );
 
   // Form state
@@ -322,7 +337,26 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
   // Handle print button
   const handlePrintLabel = useCallback(
     (e?: React.FormEvent) => {
+      // 絕對會執行的調試信息 - 放在最開頭
+      console.log('🔥🔥🔥 [QCLabelCard] handlePrintLabel DEFINITELY CALLED! 🔥🔥🔥');
+      console.log('  Event object:', e);
+
       if (e) e.preventDefault();
+
+      // 檢查是否需要用戶 ID 驗證（更嚴格的檢查以處理異步加載）
+      if (
+        !currentUserId ||
+        currentUserId === '' ||
+        currentUserId === 'null' ||
+        currentUserId === 'undefined'
+      ) {
+        console.log('❌ [QCLabelCard] Showing user ID dialog because currentUserId check failed');
+        console.log('  currentUserId:', currentUserId, 'type:', typeof currentUserId);
+        setShowUserIdDialog(true);
+        return;
+      }
+
+      console.log('✅ [QCLabelCard] User ID verification passed, proceeding with print');
 
       // Mark all fields as touched when trying to submit
       setTouched({
@@ -376,7 +410,7 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
       // Call business logic directly (will show Clock Number dialog)
       businessLogic.handlePrintLabel(formEvent);
     },
-    [productInfo, formData, isFormValid, businessLogic]
+    [productInfo, formData, isFormValid, businessLogic, currentUserId]
   );
 
   // Print button states
@@ -388,6 +422,17 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
     businessLogic.isAcoOrderFulfilled ||
     businessLogic.isAcoOrderIncomplete ||
     isCountExceeded;
+
+  // 調試 print 按鈕狀態
+  console.log('[QCLabelCard] Print button state:');
+  console.log('  isPrintDisabled:', isPrintDisabled);
+  console.log('  isFormValid():', isFormValid());
+  console.log('  formData.isLoading:', formData.isLoading);
+  console.log('  businessLogic.isProcessing:', businessLogic.isProcessing);
+  console.log('  businessLogic.isAcoOrderExcess:', businessLogic.isAcoOrderExcess);
+  console.log('  businessLogic.isAcoOrderFulfilled:', businessLogic.isAcoOrderFulfilled);
+  console.log('  businessLogic.isAcoOrderIncomplete:', businessLogic.isAcoOrderIncomplete);
+  console.log('  isCountExceeded:', isCountExceeded);
 
   const printButtonText =
     formData.isLoading || businessLogic.isProcessing
@@ -401,6 +446,30 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
             : isCountExceeded
               ? 'Limit Exceeded'
               : 'Print Label';
+
+  // 當 currentUserId 發生變化時，更新 formData
+  useEffect(() => {
+    if (currentUserId && currentUserId !== formData.userId) {
+      setFormData(prev => ({ ...prev, userId: currentUserId }));
+    }
+  }, [currentUserId, formData.userId]);
+
+  // User ID verification handlers
+  const handleUserIdVerified = useCallback(
+    (userId: string) => {
+      setFormData(prev => ({ ...prev, userId }));
+      setShowUserIdDialog(false);
+      // 驗證完成後繼續打印
+      setTimeout(() => {
+        handlePrintLabel();
+      }, 100);
+    },
+    [handlePrintLabel]
+  );
+
+  const handleUserIdVerificationCancel = useCallback(() => {
+    setShowUserIdDialog(false);
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -603,6 +672,27 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
         </div>
       )}
 
+      {/* User ID Verification Dialog */}
+      {showUserIdDialog && (
+        <React.Suspense
+          fallback={
+            <div className='fixed inset-0 flex items-center justify-center bg-black/50'>
+              <div className='h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent' />
+            </div>
+          }
+        >
+          <UserIdVerificationDialog
+            isOpen={showUserIdDialog}
+            onOpenChange={setShowUserIdDialog}
+            onVerified={handleUserIdVerified}
+            onCancel={handleUserIdVerificationCancel}
+            title='User ID Required'
+            description='Your account metadata does not contain a User ID. Please enter your User ID to continue.'
+            isLoading={formData.isLoading}
+          />
+        </React.Suspense>
+      )}
+
       {/* Clock Number Confirmation Dialog */}
       {businessLogic.isClockConfirmOpen && (
         <React.Suspense
@@ -620,6 +710,7 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
             title='User Authentication Required'
             description='Please enter your User ID to proceed with printing the labels.'
             isLoading={formData.isLoading}
+            defaultClockNumber={currentUserId || ''}
           />
         </React.Suspense>
       )}

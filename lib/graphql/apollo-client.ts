@@ -7,7 +7,7 @@ import { ApolloClient, InMemoryCache, createHttpLink, ApolloLink, from } from '@
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import { createClient } from '@/lib/supabase';
-import { PerformanceLink } from '@/lib/performance/graphql-performance-monitor';
+// import { PerformanceLink } from '@/lib/performance/graphql-performance-monitor';
 
 // GraphQL endpoint - use custom server or Supabase pg_graphql
 const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_URL || '/api/graphql';
@@ -186,11 +186,11 @@ const cache = new InMemoryCache({
 });
 
 // Phase 3: Add performance monitoring
-const performanceLink = new PerformanceLink();
+// const performanceLink = new PerformanceLink();
 
 // Apollo Client instance
 export const apolloClient = new ApolloClient({
-  link: from([performanceLink, errorLink, authLink, httpLink]),
+  link: from([errorLink, authLink, httpLink]),
   cache,
   defaultOptions: {
     watchQuery: {

@@ -14,23 +14,17 @@ export interface EmailFieldProps extends Omit<React.InputHTMLAttributes<HTMLInpu
  * Specialized email input field with validation
  */
 export const EmailField = React.forwardRef<HTMLInputElement, EmailFieldProps>(
-  ({ 
-    label = 'Email', 
-    error, 
-    required = true,
-    containerClassName,
-    ...inputProps 
-  }, ref) => {
+  ({ label = 'Email', error, required = true, containerClassName, ...inputProps }, ref) => {
     return (
       <FormField
         ref={ref}
         label={label}
-        type="email"
+        type='email'
         error={error}
         required={required}
         containerClassName={containerClassName}
         icon={<Mail size={18} />}
-        autoComplete="email"
+        autoComplete='email'
         {...inputProps}
       />
     );

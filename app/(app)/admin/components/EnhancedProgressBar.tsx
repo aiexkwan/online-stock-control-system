@@ -153,18 +153,18 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = React.mem
     onPerformanceMetrics,
   }) => {
     const isMobile = useMediaQuery('(max-width: 768px)');
-    
+
     // Performance tracking
     const renderCountRef = useRef(0);
     const lastRenderTimeRef = useRef(Date.now());
-    
+
     // Internal state for debounced values
     const [debouncedState, setDebouncedState] = React.useState({
       current,
       total,
       status,
     });
-    
+
     // Setup debounced progress updates
     const handleProgressUpdate = useCallback((update: any) => {
       setDebouncedState(prev => ({
@@ -172,17 +172,14 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = React.mem
         ...update,
       }));
     }, []);
-    
-    const { updateProgress, flushUpdates, getMetrics } = useProgressDebounce(
-      handleProgressUpdate,
-      {
-        progressDelay: debounceDelay,
-        statusDelay: debounceDelay * 0.5, // Status updates are more frequent
-        enableSmartBatching: true,
-        maxBatchSize: 5,
-      }
-    );
-    
+
+    const { updateProgress, flushUpdates, getMetrics } = useProgressDebounce(handleProgressUpdate, {
+      progressDelay: debounceDelay,
+      statusDelay: debounceDelay * 0.5, // Status updates are more frequent
+      enableSmartBatching: true,
+      maxBatchSize: 5,
+    });
+
     // Update debounced state when props change
     useEffect(() => {
       if (enableDebounce) {
@@ -191,12 +188,14 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = React.mem
         setDebouncedState({ current, total, status });
       }
     }, [current, total, status, enableDebounce, updateProgress]);
-    
+
     // Use debounced values for calculations
     const activeState = enableDebounce ? debouncedState : { current, total, status };
-    
+
     const percentage = useMemo(() => {
-      return activeState.total > 0 ? Math.round((activeState.current / activeState.total) * 100) : 0;
+      return activeState.total > 0
+        ? Math.round((activeState.current / activeState.total) * 100)
+        : 0;
     }, [activeState.current, activeState.total]);
 
     const statusCounts = useMemo(() => {
@@ -204,12 +203,12 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = React.mem
       const failedCount = activeState.status.filter(s => s === 'Failed').length;
       const processingCount = activeState.status.filter(s => s === 'Processing').length;
       const pendingCount = activeState.status.filter(s => s === 'Pending').length;
-      
+
       return { successCount, failedCount, processingCount, pendingCount };
     }, [activeState.status]);
-    
+
     const { successCount, failedCount, processingCount, pendingCount } = statusCounts;
-    
+
     // Performance monitoring
     useEffect(() => {
       if (enablePerformanceMonitoring) {
@@ -217,7 +216,7 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = React.mem
         const now = Date.now();
         const renderTime = now - lastRenderTimeRef.current;
         lastRenderTimeRef.current = now;
-        
+
         if (onPerformanceMetrics && renderCountRef.current % 10 === 0) {
           const metrics = getMetrics();
           onPerformanceMetrics({
@@ -228,7 +227,7 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = React.mem
         }
       }
     });
-    
+
     // Cleanup effect
     useEffect(() => {
       return () => {

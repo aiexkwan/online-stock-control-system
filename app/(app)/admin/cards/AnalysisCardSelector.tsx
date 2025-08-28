@@ -152,23 +152,14 @@ const DynamicCardLoader: React.FC<{
             };
             break;
           case 'PerformanceDashboard':
-            const perfModule = await import(
-              '@/lib/performance/components/PerformanceDashboardSimple'
-            );
+            // 暫時註釋掉，因為 performance 組件已被移除
             cardModule = {
-              default:
-                (
-                  perfModule as {
-                    default?: React.ComponentType<unknown>;
-                    PerformanceDashboard?: React.ComponentType<unknown>;
-                  }
-                ).default ||
-                (
-                  perfModule as {
-                    default?: React.ComponentType<unknown>;
-                    PerformanceDashboard?: React.ComponentType<unknown>;
-                  }
-                ).PerformanceDashboard,
+              default: () =>
+                React.createElement(
+                  'div',
+                  { className: 'p-4' },
+                  'Performance Dashboard temporally disabled'
+                ),
             };
             break;
           case 'DataUpdateCard':

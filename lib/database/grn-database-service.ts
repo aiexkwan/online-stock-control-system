@@ -91,7 +91,7 @@ export class GrnDatabaseService {
     try {
       // Execute query with caching
       const result = await this.clientManager.executeQuery(
-        async (client) => {
+        async client => {
           // First get product info
           const productQuery = await client
             .from('data_code')
@@ -129,9 +129,12 @@ export class GrnDatabaseService {
       );
 
       this.completeOperation(operation, !result.error, result.data ? 1 : 0);
-      
+
       if (result.error) {
-        this.logger.error('Failed to get product with supplier', { productCode, error: result.error });
+        this.logger.error('Failed to get product with supplier', {
+          productCode,
+          error: result.error,
+        });
         return { product: null, supplier: null, error: result.error };
       }
 
@@ -166,11 +169,8 @@ export class GrnDatabaseService {
 
       for (const batch of batches) {
         const batchResult = await this.clientManager.executeQuery(
-          async (client) => {
-            return await client
-              .from('grn_record')
-              .insert(batch)
-              .select();
+          async client => {
+            return await client.from('grn_record').insert(batch).select();
           },
           undefined,
           {
@@ -219,11 +219,8 @@ export class GrnDatabaseService {
       if (options.parallel) {
         const batchPromises = batches.map(batch =>
           this.clientManager.executeQuery(
-            async (client) => {
-              return await client
-                .from('grn_pallet_info')
-                .insert(batch)
-                .select();
+            async client => {
+              return await client.from('grn_pallet_info').insert(batch).select();
             },
             undefined,
             {
@@ -234,7 +231,7 @@ export class GrnDatabaseService {
         );
 
         const batchResults = await Promise.all(batchPromises);
-        
+
         for (const batchResult of batchResults) {
           if (batchResult.error) {
             this.completeOperation(operation, false, results.length, String(batchResult.error));
@@ -248,11 +245,8 @@ export class GrnDatabaseService {
         // Process batches sequentially
         for (const batch of batches) {
           const batchResult = await this.clientManager.executeQuery(
-            async (client) => {
-              return await client
-                .from('grn_pallet_info')
-                .insert(batch)
-                .select();
+            async client => {
+              return await client.from('grn_pallet_info').insert(batch).select();
             },
             undefined,
             {
@@ -276,7 +270,10 @@ export class GrnDatabaseService {
       return { data: results, error: null };
     } catch (error) {
       this.completeOperation(operation, false, 0, String(error));
-      this.logger.error('Error creating GRN pallet info batch', { error, recordCount: palletInfos.length });
+      this.logger.error('Error creating GRN pallet info batch', {
+        error,
+        recordCount: palletInfos.length,
+      });
       return { data: null, error };
     }
   }
@@ -298,7 +295,7 @@ export class GrnDatabaseService {
 
     try {
       const result = await this.clientManager.executeQuery(
-        async (client) => {
+        async client => {
           const query = client
             .from('grn_record')
             .select('*', { count: 'exact' })
@@ -351,7 +348,7 @@ export class GrnDatabaseService {
 
     try {
       const result = await this.clientManager.executeQuery(
-        async (client) => {
+        async client => {
           let query = client.from('grn_record').select('*');
 
           if (criteria.grnNumber) {
@@ -406,7 +403,7 @@ export class GrnDatabaseService {
 
     try {
       const result = await this.clientManager.executeQuery(
-        async (client) => {
+        async client => {
           return await client
             .from('grn_record')
             .select('grn_no')
@@ -468,11 +465,14 @@ export class GrnDatabaseService {
     failedOperations: number;
     averageDuration: number;
     totalRecordsProcessed: number;
-    operationBreakdown: Map<string, {
-      count: number;
-      avgDuration: number;
-      successRate: number;
-    }>;
+    operationBreakdown: Map<
+      string,
+      {
+        count: number;
+        avgDuration: number;
+        successRate: number;
+      }
+    >;
   } {
     const stats = {
       totalOperations: 0,
@@ -517,7 +517,7 @@ export class GrnDatabaseService {
 
       opStats.avgDuration = metrics.length > 0 ? opDuration / metrics.length : 0;
       opStats.successRate = metrics.length > 0 ? (successCount / metrics.length) * 100 : 0;
-      
+
       stats.operationBreakdown.set(operationName, opStats);
       stats.totalRecordsProcessed += recordCount;
     }
@@ -567,7 +567,7 @@ export class GrnDatabaseService {
     const metrics = this.operationMetrics.get(operation.operation);
     if (metrics) {
       metrics.push(operation);
-      
+
       // Keep only last 100 metrics per operation to prevent memory bloat
       if (metrics.length > 100) {
         metrics.shift();

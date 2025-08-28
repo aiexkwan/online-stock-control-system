@@ -61,20 +61,38 @@ const ErrorOverlay: React.FC<{
   );
 };
 
-// Transfer log item component - Simplified to show database records
+// Optimized time formatter with caching
+const formatTimeCache = new Map<string, string>();
+
+const formatTime = (time: string): string => {
+  if (!time) return '';
+
+  if (formatTimeCache.has(time)) {
+    return formatTimeCache.get(time)!;
+  }
+
+  const date = new Date(time);
+  const formatted = date.toLocaleString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  // Cache with size limit to prevent memory leaks
+  if (formatTimeCache.size > 100) {
+    const firstKey = formatTimeCache.keys().next().value;
+    if (firstKey) formatTimeCache.delete(firstKey);
+  }
+  formatTimeCache.set(time, formatted);
+
+  return formatted;
+};
+
+// Transfer log item component - Optimized with cached time formatting
 const TransferLogItem: React.FC<{
   record: TransferHistoryItem;
 }> = React.memo(({ record }) => {
-  const formatTime = (time: string) => {
-    const date = new Date(time);
-    return date.toLocaleString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   return (
     <div
       className={cn(
@@ -102,14 +120,22 @@ const TransferLogItem: React.FC<{
 
 TransferLogItem.displayName = 'TransferLogItem';
 
-// Helper function to convert destination config to form options
+// Optimized destination options cache with LocationStandardizer support
+const destinationOptionsStdCache = new Map<string, FormOption[]>();
+
 const getDestinationOptions = (currentLocation: string): FormOption[] => {
+  if (!currentLocation) return [];
+
+  if (destinationOptionsStdCache.has(currentLocation)) {
+    return destinationOptionsStdCache.get(currentLocation)!;
+  }
+
   // Use standardized location for consistent mapping
   const standardizedLocation = LocationStandardizer.standardizeForUI(currentLocation);
   const availableDestinations = LocationStandardizer.getValidDestinations(currentLocation);
   const filteredDestinations = availableDestinations.filter(dest => dest !== standardizedLocation);
 
-  return filteredDestinations.map(destination => {
+  const options = filteredDestinations.map(destination => {
     const config = DESTINATION_CONFIG[destination as keyof typeof DESTINATION_CONFIG];
     return {
       value: destination,
@@ -120,6 +146,15 @@ const getDestinationOptions = (currentLocation: string): FormOption[] => {
       borderColor: config?.borderColor,
     };
   });
+
+  // Cache with size limit to prevent memory leaks
+  if (destinationOptionsStdCache.size > 50) {
+    const firstKey = destinationOptionsStdCache.keys().next().value;
+    if (firstKey) destinationOptionsStdCache.delete(firstKey);
+  }
+  destinationOptionsStdCache.set(currentLocation, options);
+
+  return options;
 };
 
 // Destination selector component - Changed to horizontal layout
@@ -178,9 +213,10 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
     volume: soundVolume,
   });
 
-  // Component lifecycle tracking
+  // Component lifecycle tracking - 強化版記憶體洩漏防護
   const cleanupRef = useRef<(() => void)[]>([]);
   const mountedRef = useRef(true);
+  const timeoutsRef = useRef<Set<NodeJS.Timeout>>(new Set());
 
   const [operatorState, setOperatorState] = useState({
     clockNumber: '',
@@ -231,10 +267,10 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
     },
   });
 
-  // Extract state and actions with safety checks using useMemo
-  const state = useMemo(
-    () =>
-      stockTransferHook?.state ?? {
+  // 穩定化狀態引用 - 使用 useMemo 優化狀態提取，防止不必要的重新渲染
+  const state = useMemo(() => {
+    if (!stockTransferHook?.state) {
+      return {
         isLoading: false,
         isSearching: false,
         isTransferring: false,
@@ -248,49 +284,134 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
         clockError: '',
         isVerifying: false,
         currentLocation: 'Await',
-      },
-    [stockTransferHook?.state]
+      };
+    }
+
+    // 僅在實際需要的狀態屬性發生變化時才返回新對象
+    const {
+      isLoading,
+      isSearching,
+      isTransferring,
+      searchValue,
+      statusMessage,
+      selectedPallet,
+      selectedDestination,
+      verifiedClockNumber,
+      verifiedName,
+      clockNumber,
+      clockError,
+      isVerifying,
+      currentLocation,
+    } = stockTransferHook.state;
+
+    return {
+      isLoading,
+      isSearching,
+      isTransferring,
+      searchValue,
+      statusMessage,
+      selectedPallet,
+      selectedDestination,
+      verifiedClockNumber,
+      verifiedName,
+      clockNumber,
+      clockError,
+      isVerifying,
+      currentLocation,
+    };
+  }, [stockTransferHook?.state]);
+
+  // 穩定化 actions 引用 - 使用 useMemo 包裹 actions，防止作為 props 傳遞時觸發子組件渲染
+  const actions = useMemo(() => {
+    if (!stockTransferHook?.actions) {
+      return {
+        setIsLoading: () => {},
+        setSearchValue: () => {},
+        setSelectedDestination: () => {},
+        setClockNumber: () => {},
+        setStatusMessage: () => {},
+        executeStockTransfer: async () => false,
+        validateClockNumberLocal: async () => false,
+        handleSearchSelect: () => {},
+        handleClockNumberChange: () => {},
+        handleVerifyClockNumber: async () => {},
+        focusSearchInput: () => {},
+        resetToSearch: () => {},
+        onDestinationChange: () => {},
+      };
+    }
+
+    return stockTransferHook.actions;
+  }, [stockTransferHook?.actions]);
+
+  // 事件處理函數優化 - 使用 useCallback 穩定化事件處理函數引用
+  const handleDestinationChange = useCallback(
+    (value: string | string[]) => {
+      if (!mountedRef.current) return;
+
+      const stringValue = Array.isArray(value) ? value[0] : value;
+      if (!stringValue) return;
+
+      // 防止重複值更新以避免潛在的循環
+      if (stringValue === state?.selectedDestination) return;
+
+      try {
+        actions?.onDestinationChange?.(stringValue);
+      } catch (error) {
+        console.error('Error in destination change:', error);
+      }
+    },
+    [state?.selectedDestination, actions]
   );
 
-  const actions = stockTransferHook?.actions ?? {
-    setIsLoading: () => {},
-    setSearchValue: () => {},
-    setSelectedDestination: () => {},
-    setClockNumber: () => {},
-    setStatusMessage: () => {},
-    executeStockTransfer: async () => false,
-    validateClockNumberLocal: async () => false,
-    handleSearchSelect: () => {},
-    handleClockNumberChange: () => {},
-    handleVerifyClockNumber: async () => {},
-    focusSearchInput: () => {},
-    resetToSearch: () => {},
-    onDestinationChange: () => {},
-  };
+  // 搜索值變更處理函數 - 穩定化引用，依賴於穩定的 state 和 actions
+  const handleSearchValueChange = useCallback(
+    (value: string) => {
+      actions?.setSearchValue?.(value);
+    },
+    [actions]
+  );
 
-  // Create stable destination change handler using useRef to avoid dependency cycles
-  const actionsRef = useRef(actions);
-  const selectedDestinationRef = useRef(state?.selectedDestination);
+  // 搜索選擇處理函數 - 穩定化引用
+  const handleSearchSelect = useCallback(
+    (result: SearchResult) => {
+      try {
+        actions?.handleSearchSelect?.(result);
+      } catch (error) {
+        console.error('Error in search select:', error);
+      }
+    },
+    [actions]
+  );
 
-  // Update refs on each render
-  actionsRef.current = actions;
-  selectedDestinationRef.current = state?.selectedDestination;
+  // 狀態訊息清除處理函數 - 穩定化引用
+  const handleStatusMessageDismiss = useCallback(() => {
+    actions?.setStatusMessage?.(null);
+  }, [actions]);
 
-  const handleDestinationChange = useCallback((value: string | string[]) => {
-    if (!mountedRef.current || !actionsRef.current?.onDestinationChange) return;
+  // 錯誤覆蓋確認處理函數 - 穩定化引用
+  const handleErrorOverlayConfirm = useCallback(() => {
+    setUiState(prev => ({ ...prev, showErrorOverlay: false }));
+  }, []);
 
-    const stringValue = Array.isArray(value) ? value[0] : value;
-    if (!stringValue) return;
-
-    // Prevent same value updates to avoid potential loops
-    if (stringValue === selectedDestinationRef.current) return;
-
-    try {
-      actionsRef.current.onDestinationChange(stringValue);
-    } catch (error) {
-      console.error('Error in destination change:', error);
-    }
-  }, []); // No dependencies for completely stable reference
+  // 搜索區域失焦處理函數 - 穩定化引用
+  const handleSearchBlur = useCallback(
+    (e: React.FocusEvent<HTMLDivElement>) => {
+      // 檢查失焦事件是否離開搜索輸入區域
+      if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+        // 如果值存在，觸發搜索
+        if (uiState.searchValue?.trim()) {
+          handleSearchSelect({
+            id: uiState.searchValue,
+            title: uiState.searchValue,
+            subtitle: '',
+            data: [{ value: uiState.searchValue }],
+          });
+        }
+      }
+    },
+    [uiState.searchValue, handleSearchSelect]
+  );
 
   // Load transfer history with enhanced error handling and AbortController support
   const loadTransferHistory = useCallback(async (signal?: AbortSignal) => {
@@ -338,7 +459,7 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
     }
   }, []);
 
-  // Safe transfer history with fallback
+  // Safe transfer history with fallback and optimized key generation
   const safeTransferHistory = useMemo(() => {
     return Array.isArray(uiState.transferHistory) ? uiState.transferHistory : [];
   }, [uiState.transferHistory]);
@@ -350,12 +471,19 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
     // Load history with abort signal
     loadTransferHistory(abortController.signal);
 
-    // Component cleanup
+    // Component cleanup - 強化版記憶體洩漏防護
     return () => {
       // Abort any pending history load request
       abortController.abort();
 
       mountedRef.current = false;
+
+      // 清理所有追蹤的定時器
+      timeoutsRef.current.forEach(timeoutId => {
+        clearTimeout(timeoutId);
+      });
+      timeoutsRef.current.clear();
+
       // Execute all registered cleanup functions
       cleanupRef.current.forEach(cleanup => {
         try {
@@ -368,8 +496,11 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
     };
   }, [loadTransferHistory]);
 
-  // Calculate loading state with safe fallbacks
-  const isLoading = Boolean(state?.isLoading || state?.isSearching || state?.isTransferring);
+  // Optimized loading state calculation with memoization
+  const isLoading = useMemo(
+    () => Boolean(state?.isLoading || state?.isSearching || state?.isTransferring),
+    [state?.isLoading, state?.isSearching, state?.isTransferring]
+  );
 
   // Play sound when pallet is found - using ref to avoid sound loop with safety checks
   const lastSelectedPalletRef = useRef<string | null>(null);
@@ -461,77 +592,113 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
     });
   }, [state?.statusMessage, state?.searchValue]);
 
-  // Memoized destination-based theme colors to prevent recalculation on every render
+  // Map-based theme cache for O(1) theme lookup performance
+  const THEME_CACHE = useMemo(
+    () =>
+      new Map([
+        [
+          '',
+          {
+            borderColor: 'border-slate-700/50',
+            headerBg: 'bg-gradient-to-r from-slate-800 to-slate-700',
+            accentColor: 'text-blue-400',
+            glowColor: '',
+          },
+        ],
+        [
+          'Fold Mill',
+          {
+            borderColor: 'border-blue-500/50',
+            headerBg: 'bg-gradient-to-r from-blue-900 to-blue-800',
+            accentColor: 'text-blue-400',
+            glowColor: 'shadow-lg shadow-blue-500/20',
+          },
+        ],
+        [
+          'Production',
+          {
+            borderColor: 'border-green-500/50',
+            headerBg: 'bg-gradient-to-r from-green-900 to-green-800',
+            accentColor: 'text-green-400',
+            glowColor: 'shadow-lg shadow-green-500/20',
+          },
+        ],
+        [
+          'PipeLine',
+          {
+            borderColor: 'border-purple-500/50',
+            headerBg: 'bg-gradient-to-r from-purple-900 to-purple-800',
+            accentColor: 'text-purple-400',
+            glowColor: 'shadow-lg shadow-purple-500/20',
+          },
+        ],
+        [
+          'default',
+          {
+            borderColor: 'border-amber-500/50',
+            headerBg: 'bg-gradient-to-r from-amber-900 to-amber-800',
+            accentColor: 'text-amber-400',
+            glowColor: 'shadow-lg shadow-amber-500/20',
+          },
+        ],
+      ]),
+    []
+  );
+
+  // O(1) theme lookup using Map cache
   const theme = useMemo(() => {
-    if (!state?.selectedDestination)
-      return {
-        borderColor: 'border-slate-700/50',
-        headerBg: 'bg-gradient-to-r from-slate-800 to-slate-700',
-        accentColor: 'text-blue-400',
-        glowColor: '',
-      };
+    const destination = state?.selectedDestination || '';
+    return THEME_CACHE.get(destination) || THEME_CACHE.get('default')!;
+  }, [state?.selectedDestination, THEME_CACHE]);
 
-    const config = DESTINATION_CONFIG[state.selectedDestination as keyof typeof DESTINATION_CONFIG];
-    if (!config)
-      return {
-        borderColor: 'border-slate-700/50',
-        headerBg: 'bg-gradient-to-r from-slate-800 to-slate-700',
-        accentColor: 'text-blue-400',
-        glowColor: '',
-      };
+  // Optimized class names for frequent UI elements with memoization
+  const uiClassNames = useMemo(
+    () => ({
+      stepNumberActive: `flex h-6 w-6 items-center justify-center rounded-full ${theme.headerBg} text-xs font-bold text-white`,
+      stepNumberDefault:
+        'flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-xs font-bold text-white',
+      stepNumberCompleted:
+        'flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-xs font-bold text-white',
+      palletInfoContainer: `rounded-lg border ${theme.borderColor} bg-slate-900/30 p-3`,
+      transferLogContainer: `h-40 space-y-2 overflow-y-auto rounded-lg border ${theme.borderColor} bg-slate-900/50 p-3`,
+      cardContainer: `h-full overflow-hidden transition-all duration-300 ${theme.borderColor} ${theme.glowColor}`,
+      headerContainer: `border-b border-slate-700/50 p-4 transition-all duration-300 ${theme.headerBg}`,
+      clockInput: `w-full border-gray-600 bg-gray-700 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500 ${
+        operatorState.error ? 'border-red-500 focus:ring-red-500' : ''
+      } ${operatorState.isVerifying ? 'opacity-50' : ''}`,
+    }),
+    [theme, operatorState.error, operatorState.isVerifying]
+  );
 
-    // Define theme based on destination
-    switch (state.selectedDestination) {
-      case 'Fold Mill':
-        return {
-          borderColor: 'border-blue-500/50',
-          headerBg: 'bg-gradient-to-r from-blue-900 to-blue-800',
-          accentColor: 'text-blue-400',
-          glowColor: 'shadow-lg shadow-blue-500/20',
-        };
-      case 'Production':
-        return {
-          borderColor: 'border-green-500/50',
-          headerBg: 'bg-gradient-to-r from-green-900 to-green-800',
-          accentColor: 'text-green-400',
-          glowColor: 'shadow-lg shadow-green-500/20',
-        };
-      case 'PipeLine':
-        return {
-          borderColor: 'border-purple-500/50',
-          headerBg: 'bg-gradient-to-r from-purple-900 to-purple-800',
-          accentColor: 'text-purple-400',
-          glowColor: 'shadow-lg shadow-purple-500/20',
-        };
-      default:
-        return {
-          borderColor: 'border-amber-500/50',
-          headerBg: 'bg-gradient-to-r from-amber-900 to-amber-800',
-          accentColor: 'text-amber-400',
-          glowColor: 'shadow-lg shadow-amber-500/20',
-        };
-    }
-  }, [state?.selectedDestination]);
+  // Map-based destination options cache for efficient O(1) lookup
+  const destinationOptionsCache = useMemo(() => {
+    const cache = new Map<string, FormOption[]>();
 
-  // Memoized destination options based on current location - with stable references
+    Object.keys(LOCATION_DESTINATIONS).forEach(location => {
+      const destinations = LOCATION_DESTINATIONS[location] || [];
+      const options = destinations.map(destination => {
+        const config = DESTINATION_CONFIG[destination as keyof typeof DESTINATION_CONFIG];
+        return {
+          value: destination,
+          label: destination,
+          description: config?.description || `Transfer to ${destination}`,
+          // Don't include icon to avoid reference issues
+          color: config?.color,
+          bgColor: config?.bgColor,
+          borderColor: config?.borderColor,
+        };
+      });
+      cache.set(location, options);
+    });
+
+    return cache;
+  }, []);
+
+  // O(1) destination options lookup using Map cache
   const destinationOptions = useMemo((): FormOption[] => {
     const currentLoc = state?.currentLocation || 'Await';
-    const availableDestinations = LOCATION_DESTINATIONS[currentLoc] || [];
-
-    // Create stable options to prevent unnecessary re-renders
-    return availableDestinations.map(destination => {
-      const config = DESTINATION_CONFIG[destination as keyof typeof DESTINATION_CONFIG];
-      return {
-        value: destination,
-        label: destination,
-        description: config?.description || `Transfer to ${destination}`,
-        // Don't include icon to avoid reference issues
-        color: config?.color,
-        bgColor: config?.bgColor,
-        borderColor: config?.borderColor,
-      };
-    });
-  }, [state?.currentLocation]);
+    return destinationOptionsCache.get(currentLoc) || [];
+  }, [state?.currentLocation, destinationOptionsCache]);
 
   // Memoized description to avoid string template recreation
   const destinationDescription = useMemo(
@@ -578,14 +745,12 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
         variant='glass'
         isHoverable={false}
         borderGlow={false}
-        className={`h-full overflow-hidden transition-all duration-300 ${theme.borderColor} ${theme.glowColor}`}
+        className={uiClassNames.cardContainer}
         padding='small'
       >
         <div className='flex h-full flex-col'>
           {/* Header */}
-          <div
-            className={`border-b border-slate-700/50 p-4 transition-all duration-300 ${theme.headerBg}`}
-          >
+          <div className={uiClassNames.headerContainer}>
             <div className='flex items-center justify-between'>
               <div className='flex items-center gap-2'>
                 <ArrowLeftRight className={`h-6 w-6 ${theme.accentColor}`} />
@@ -607,7 +772,7 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
               <StatusMessage
                 type={uiState.statusMessage.type}
                 message={uiState.statusMessage.message}
-                onDismiss={() => actions.setStatusMessage(null)}
+                onDismiss={handleStatusMessageDismiss}
               />
             </div>
           )}
@@ -617,7 +782,7 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
             show={uiState.showErrorOverlay}
             message={uiState.errorMessage}
             details={uiState.errorDetails}
-            onConfirm={() => setUiState(prev => ({ ...prev, showErrorOverlay: false }))}
+            onConfirm={handleErrorOverlayConfirm}
           />
 
           {/* Main Content */}
@@ -628,7 +793,11 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
               <div className='space-y-3'>
                 <div className='flex items-center gap-2'>
                   <span
-                    className={`flex h-6 w-6 items-center justify-center rounded-full ${state?.selectedDestination ? theme.headerBg : 'bg-blue-500'} text-xs font-bold text-white`}
+                    className={
+                      state?.selectedDestination
+                        ? uiClassNames.stepNumberActive
+                        : uiClassNames.stepNumberDefault
+                    }
                   >
                     1
                   </span>
@@ -654,7 +823,11 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
               <div className='space-y-3'>
                 <div className='flex items-center gap-2'>
                   <span
-                    className={`flex h-6 w-6 items-center justify-center rounded-full ${operatorState.verifiedClockNumber ? 'bg-green-500' : theme.headerBg} text-xs font-bold text-white`}
+                    className={
+                      operatorState.verifiedClockNumber
+                        ? uiClassNames.stepNumberCompleted
+                        : uiClassNames.stepNumberActive
+                    }
                   >
                     2
                   </span>
@@ -669,9 +842,7 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
                     value={operatorState.clockNumber}
                     onChange={actions.handleClockNumberChange}
                     placeholder='Enter 4-digit clock number'
-                    className={`w-full border-gray-600 bg-gray-700 text-sm text-white placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500 ${
-                      operatorState.error ? 'border-red-500 focus:ring-red-500' : ''
-                    } ${operatorState.isVerifying ? 'opacity-50' : ''}`}
+                    className={uiClassNames.clockInput}
                     disabled={!state?.selectedDestination || isLoading}
                     autoComplete='off'
                     maxLength={4}
@@ -699,32 +870,21 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
               <div className='space-y-3'>
                 <div className='flex items-center gap-2'>
                   <span
-                    className={`flex h-6 w-6 items-center justify-center rounded-full ${state?.selectedPallet ? 'bg-green-500' : theme.headerBg} text-xs font-bold text-white`}
+                    className={
+                      state?.selectedPallet
+                        ? uiClassNames.stepNumberCompleted
+                        : uiClassNames.stepNumberActive
+                    }
                   >
                     3
                   </span>
                   <h3 className={cardTextStyles.subtitle}>Scan/Search Pallet</h3>
                 </div>
-                <div
-                  onBlur={e => {
-                    // Check if blur event is leaving the search input area
-                    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                      // Trigger search on blur if value exists
-                      if (uiState.searchValue.trim()) {
-                        actions.handleSearchSelect({
-                          id: uiState.searchValue,
-                          title: uiState.searchValue,
-                          subtitle: '',
-                          data: [{ value: uiState.searchValue }],
-                        });
-                      }
-                    }
-                  }}
-                >
+                <div onBlur={handleSearchBlur}>
                   <SearchInput
                     ref={searchInputRef}
                     value={uiState.searchValue}
-                    onChange={value => actions.setSearchValue(value)}
+                    onChange={handleSearchValueChange}
                     placeholder='Enter or scan pallet number'
                     searchType='pallet'
                     autoDetect={true}
@@ -737,7 +897,7 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
 
                 {/* Selected Pallet Info */}
                 {state?.selectedPallet && (
-                  <div className={`rounded-lg border ${theme.borderColor} bg-slate-900/30 p-3`}>
+                  <div className={uiClassNames.palletInfoContainer}>
                     <div className='mb-2 flex items-center gap-2'>
                       <Package className={`h-4 w-4 ${theme.accentColor}`} />
                       <h4 className={`text-sm font-medium ${theme.accentColor}`}>
@@ -790,9 +950,7 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
             {/* Transfer Log - Always visible with real database records */}
             <div className='flex-1'>
               <h3 className={cn('mb-2', cardTextStyles.subtitle)}>Transfer Log</h3>
-              <div
-                className={`h-40 space-y-2 overflow-y-auto rounded-lg border ${theme.borderColor} bg-slate-900/50 p-3`}
-              >
+              <div className={uiClassNames.transferLogContainer}>
                 {safeTransferHistory.length === 0 ? (
                   <div className='flex h-full items-center justify-center text-slate-400'>
                     <p className='text-sm'>No transfer records</p>

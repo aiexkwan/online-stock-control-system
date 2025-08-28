@@ -7,9 +7,9 @@
 ## 審計摘要
 
 - **發現漏洞總數**: 3個
-- **風險等級分佈**: 
+- **風險等級分佈**:
   - 高風險: 1個
-  - 中風險: 1個  
+  - 中風險: 1個
   - 低風險: 1個
 - **整體安全評分**: 6/10（需要謹慎處理）
 
@@ -18,16 +18,19 @@
 ### 1. 認證檢查不足 [高風險]
 
 **漏洞類型**: 權限繞過  
-**受影響位置**: 
+**受影響位置**:
+
 - `/app/(app)/print-grnlabel/page.tsx` (Line 1-63)
 - `/app/(app)/print-grnlabel/layout.tsx` (Line 1-13)
 
 **潛在影響**:
+
 - 頁面級別缺乏明確的權限檢查中間件
 - 僅依賴 `supabase.auth.getUser()` 進行用戶識別，未驗證用戶是否有權限訪問 GRN 功能
 - 可能允許未授權用戶訪問敏感的 GRN 標籤生成功能
 
 **復現步驟**:
+
 1. 以普通用戶身份登錄
 2. 直接訪問 `/print-grnlabel` 路徑
 3. 檢查是否可以訪問頁面和執行操作
@@ -36,15 +39,18 @@
 
 **漏洞類型**: 審計跟踪中斷  
 **受影響位置**:
+
 - `/app/(app)/print-grnlabel/services/ErrorHandler.ts` (Lines 273-336)
 - 記錄到 `record_history` 表
 
 **潛在影響**:
+
 - ErrorHandler 服務負責記錄所有 GRN 操作的審計日誌
 - 移除後將失去 GRN 操作的錯誤追蹤和成功事件記錄
 - Admin 功能（`/app/(app)/admin/hooks/useAdminGrnLabelBusiness.tsx`）依賴此服務
 
 **已確認的依賴**:
+
 ```typescript
 // Line 9 in useAdminGrnLabelBusiness.tsx
 import { grnErrorHandler } from '@/app/(app)/print-grnlabel/services/ErrorHandler';
@@ -54,13 +60,15 @@ import { grnErrorHandler } from '@/app/(app)/print-grnlabel/services/ErrorHandle
 
 **漏洞類型**: 功能中斷  
 **受影響位置**:
+
 - `/app/(app)/admin/hooks/useAdminGrnLabelBusiness.tsx` (Lines 42-44)
 - 引用多個 print-grnlabel 的 Hook
 
 **潛在影響**:
+
 - Admin 功能直接使用以下組件：
   - `useWeightCalculation` Hook
-  - `usePalletGenerationGrn` Hook  
+  - `usePalletGenerationGrn` Hook
   - `ErrorHandler` 服務
 - 移除將導致 Admin 的 GRN 功能完全失效
 
@@ -69,9 +77,9 @@ import { grnErrorHandler } from '@/app/(app)/print-grnlabel/services/ErrorHandle
 ### record_history 表 RLS 策略
 
 **現有安全措施**:
+
 1. **部門隔離策略** (`dept_isolation_history_safe`):
    - 僅允許 Admin 或 Warehouse 部門訪問
-   
 2. **管理員權限** (`Admins can manage history`):
    - 管理員擁有完全控制權
 
@@ -85,6 +93,7 @@ import { grnErrorHandler } from '@/app/(app)/print-grnlabel/services/ErrorHandle
 #### 1. 提取共享組件到獨立模組
 
 **修復代碼**:
+
 ```typescript
 // 創建 /lib/grn/services/error-handler.ts
 // 將 ErrorHandler 移至此處，避免與特定頁面耦合
@@ -96,35 +105,36 @@ import { grnErrorHandler } from '@/app/(app)/print-grnlabel/services/ErrorHandle
 #### 2. 實施路由級權限控制
 
 **修復代碼**:
+
 ```typescript
 // /app/(app)/print-grnlabel/layout.tsx
 import { redirect } from 'next/navigation';
 import { createClient } from '@/app/utils/supabase/server';
 
-export default async function PrintGrnLabelLayout({ 
-  children 
-}: { 
-  children?: React.ReactNode 
+export default async function PrintGrnLabelLayout({
+  children
+}: {
+  children?: React.ReactNode
 }) {
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
-  
+
   if (!user || error) {
     redirect('/main-login');
   }
-  
+
   // 檢查用戶部門權限
   const { data: profile } = await supabase
     .from('profiles')
     .select('department')
     .eq('id', user.id)
     .single();
-    
+
   const allowedDepartments = ['Warehouse', 'Admin', 'QC'];
   if (!profile || !allowedDepartments.includes(profile.department)) {
     redirect('/unauthorized');
   }
-  
+
   return (
     <div className='h-full'>
       {children}
@@ -136,15 +146,16 @@ export default async function PrintGrnLabelLayout({
 #### 3. 加強資料庫 RLS 策略
 
 **修復 SQL**:
+
 ```sql
 -- 限制 record_history 插入權限
 DROP POLICY IF EXISTS "System can create history" ON record_history;
 
 CREATE POLICY "Restricted history creation" ON record_history
-FOR INSERT 
+FOR INSERT
 TO authenticated
 USING (
-  auth.uid() IS NOT NULL 
+  auth.uid() IS NOT NULL
   AND (
     auth.get_user_department() IN ('Warehouse', 'QC', 'Admin')
     OR auth.is_admin()
@@ -155,25 +166,27 @@ USING (
 ### 移除前必須完成的步驟
 
 1. **依賴解耦**:
+
    ```bash
    # 1. 創建新的共享模組目錄
    mkdir -p lib/grn/services
    mkdir -p lib/grn/hooks
-   
+
    # 2. 移動共享組件
    mv app/(app)/print-grnlabel/services/ErrorHandler.ts lib/grn/services/
    mv app/(app)/print-grnlabel/hooks/useWeightCalculation.tsx lib/grn/hooks/
    mv app/(app)/print-grnlabel/hooks/usePalletGenerationGrn.tsx lib/grn/hooks/
-   
+
    # 3. 更新所有引用路徑
    ```
 
 2. **更新 Admin 功能引用**:
+
    ```typescript
    // useAdminGrnLabelBusiness.tsx
    - import { grnErrorHandler } from '@/app/(app)/print-grnlabel/services/ErrorHandler';
    + import { grnErrorHandler } from '@/lib/grn/services/ErrorHandler';
-   
+
    - import { useWeightCalculation } from '@/app/(app)/print-grnlabel/hooks/useWeightCalculation';
    + import { useWeightCalculation } from '@/lib/grn/hooks/useWeightCalculation';
    ```

@@ -49,7 +49,7 @@ model: sonnet
 - 批量重構項目中所有遺留的React Class Components為現代的Function Components with Hooks
 - 將舊的狀態管理方案（如Redux）遷移到更現代的庫（如Zustand）
 
-## 輸出格式規範
+## 輸出格式規範(只適用於有要求輸出)
 
 所有回應必須以結構化Markdown格式提供，形成一份完整的現代化方案，包含以下核心部分：
 

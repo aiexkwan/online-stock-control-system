@@ -12,10 +12,6 @@ export interface ErrorMessageProps {
  */
 export const ErrorMessage: React.FC<ErrorMessageProps> = ({ message, className }) => {
   if (!message) return null;
-  
-  return (
-    <p className={cn('text-sm text-red-600 mt-1', className)}>
-      {message}
-    </p>
-  );
+
+  return <p className={cn('mt-1 text-sm text-red-600', className)}>{message}</p>;
 };

@@ -18,21 +18,23 @@
 
 ## 任務執行詳情
 
-| #   | 任務描述                             | 指派代理       | 狀態    | 重試次數    | 產出檔案          |
-| --- | ------------------------------------ | -------------- | ------- | ----------- | ----------------- |
-| 1   | Step 3.1: 更新 GRNLabelCard.tsx | `直接執行` | ✅ 成功 | 0 | `app/(app)/admin/cards/GRNLabelCard.tsx` |
-| 2   | Step 3.2: 更新 useAdminGrnLabelBusiness.tsx | `直接執行` | ✅ 成功 | 0 | `app/(app)/admin/hooks/useAdminGrnLabelBusiness.tsx` |
-| 3   | Step 3.3: 測試引用更新 | `直接執行` | ✅ 成功 | 1 | 修復 `lib/grn/index.ts` UTF-8 編碼問題 |
+| #   | 任務描述                                    | 指派代理   | 狀態    | 重試次數 | 產出檔案                                             |
+| --- | ------------------------------------------- | ---------- | ------- | -------- | ---------------------------------------------------- |
+| 1   | Step 3.1: 更新 GRNLabelCard.tsx             | `直接執行` | ✅ 成功 | 0        | `app/(app)/admin/cards/GRNLabelCard.tsx`             |
+| 2   | Step 3.2: 更新 useAdminGrnLabelBusiness.tsx | `直接執行` | ✅ 成功 | 0        | `app/(app)/admin/hooks/useAdminGrnLabelBusiness.tsx` |
+| 3   | Step 3.3: 測試引用更新                      | `直接執行` | ✅ 成功 | 1        | 修復 `lib/grn/index.ts` UTF-8 編碼問題               |
 
 ---
 
 ## 最終交付物清單
 
 ### 更新的檔案
+
 - `app/(app)/admin/cards/GRNLabelCard.tsx` - 導入路徑從原始 print-grnlabel 改為統一的 @/lib/grn
 - `app/(app)/admin/hooks/useAdminGrnLabelBusiness.tsx` - 導入路徑從原始 print-grnlabel 改為統一的 @/lib/grn
 
 ### 修復的檔案
+
 - `lib/grn/index.ts` - 修復 UTF-8 編碼問題，確保導出檔案正確
 
 ---
@@ -63,16 +65,18 @@
 階段三成功完成，所有依賴引用已更新為使用新的共用模組結構。建議按照原計劃進入：
 
 **階段四：清理系統配置**
+
 - 清理 AuthChecker.tsx 中的 /print-grnlabel 路由保護配置
 - 清理 GlobalSkipLinks.tsx 中的 print-grnlabel 相關條件判斷
 - 更新測試配置檔案
 - 執行完整驗證
 
 **執行前提確認**:
+
 - ✅ 共用模組結構已建立
-- ✅ 所有核心檔案已成功遷移  
+- ✅ 所有核心檔案已成功遷移
 - ✅ 內部依賴關係已修復
-- ✅ **所有依賴引用已更新完成**  ← 新完成
+- ✅ **所有依賴引用已更新完成** ← 新完成
 - ✅ TypeScript 編譯驗證通過
 - ✅ 建置流程驗證成功
 
@@ -83,6 +87,7 @@
 ### 導入路徑變更記錄
 
 **GRNLabelCard.tsx 變更**:
+
 ```typescript
 // 原始導入 (已移除)
 import { grnErrorHandler } from '@/app/(app)/print-grnlabel/services/ErrorHandler';
@@ -95,6 +100,7 @@ import { grnErrorHandler, GrnDetailCard, WeightInputList, useGrnFormReducer } fr
 ```
 
 **useAdminGrnLabelBusiness.tsx 變更**:
+
 ```typescript
 // 原始導入 (已移除)
 import { grnErrorHandler } from '@/app/(app)/print-grnlabel/services/ErrorHandler';
@@ -106,6 +112,7 @@ import { grnErrorHandler, useWeightCalculation, usePalletGenerationGrn } from '@
 ```
 
 ### 建置成功確認
+
 - TypeScript 編譯通過（0 錯誤）
 - Next.js 建置成功
 - 42/42 靜態頁面生成成功

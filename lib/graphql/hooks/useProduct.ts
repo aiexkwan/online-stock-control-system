@@ -342,6 +342,20 @@ export const SEARCH_PRODUCT_BY_CODE = gql`
   }
 `;
 
+// Query: Get basic product info without inventory (for QC Label Card only)
+export const GET_PRODUCT_BASIC_INFO = gql`
+  query GetProductBasicInfo($code: ID!) {
+    product(code: $code) {
+      code
+      description
+      type
+      standardQty
+      colour
+      remark
+    }
+  }
+`;
+
 // Hook: Use search products
 export function useSearchProducts(options?: QueryOptions) {
   return useLazyQuery(SEARCH_PRODUCTS, options);
@@ -350,6 +364,15 @@ export function useSearchProducts(options?: QueryOptions) {
 // Hook: Use search single product by code (for QC Label migration)
 export function useSearchProductByCode(options?: QueryOptions<SearchProductByCodeResponse>) {
   return useLazyQuery(SEARCH_PRODUCT_BY_CODE, {
+    errorPolicy: 'all',
+    fetchPolicy: 'network-only', // Always fetch fresh data
+    ...options,
+  });
+}
+
+// Hook: Get basic product info without inventory (for QC Label Card only)
+export function useGetProductBasicInfo(options?: QueryOptions) {
+  return useLazyQuery(GET_PRODUCT_BASIC_INFO, {
     errorPolicy: 'all',
     fetchPolicy: 'network-only', // Always fetch fresh data
     ...options,
@@ -472,6 +495,7 @@ const ProductGraphQLExports = {
   GET_PRODUCT_WITH_PALLETS,
   SEARCH_PRODUCTS,
   SEARCH_PRODUCT_BY_CODE,
+  GET_PRODUCT_BASIC_INFO,
   GET_PRODUCTS,
   GET_PRODUCT_STATISTICS,
   GET_PRODUCTS_WITH_INVENTORY_BY_TYPE,
@@ -486,6 +510,7 @@ const ProductGraphQLExports = {
   useProductWithPallets,
   useSearchProducts,
   useSearchProductByCode,
+  useGetProductBasicInfo,
   useProducts,
   useProductStatistics,
   useProductsWithInventoryByType,

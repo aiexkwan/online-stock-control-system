@@ -15,7 +15,7 @@ export default defineConfig({
       '**/*.e2e.spec.ts',
       '__tests__/unit/**',
       '__tests__/security/**',
-      '__tests__/performance/**'
+      '__tests__/performance/**',
     ],
     testTimeout: 30000, // Extended timeout for integration tests
     hookTimeout: 30000,
@@ -88,7 +88,7 @@ export default defineConfig({
           functions: 85,
           lines: 85,
           statements: 85,
-        }
+        },
       },
     },
   },

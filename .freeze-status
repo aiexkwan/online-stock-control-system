@@ -1,0 +1,25 @@
+{
+  "status": "FROZEN",
+  "mode": "STABILIZATION",
+  "startDate": "2025-08-27",
+  "reason": "System stability concerns identified through technical audit",
+  "restrictions": {
+    "newFeatures": false,
+    "enhancements": false,
+    "newDependencies": false,
+    "majorRefactoring": false
+  },
+  "allowed": {
+    "bugFixes": true,
+    "performanceOptimization": true,
+    "testingEnhancements": true,
+    "documentationUpdates": true,
+    "deploymentFixes": true
+  },
+  "focusAreas": [
+    "StockTransferCard stability",
+    "Vercel deployment issues",
+    "Test coverage improvement",
+    "Security vulnerabilities"
+  ]
+}
