@@ -7,6 +7,7 @@ import { unifiedAuth } from '@/app/(auth)/main-login/utils/unified-auth';
 import type { User, PostgrestError } from '@supabase/supabase-js';
 
 import { AuthState, UserRole } from '@/lib/types/auth';
+import { AuthUser } from '@/lib/types/auth-system';
 
 // 基於 department 和 position 的用戶角色映射
 // 所有用戶統一導向 /admin/analytics，並且可以訪問所有頁面
@@ -328,7 +329,10 @@ export function useCurrentUserId(): string | null {
   console.log('  user exists:', !!user);
   console.log('  user.email:', user?.email);
   console.log('  user.user_metadata:', user?.user_metadata);
-  console.log('  user.raw_user_meta_data:', (user as any)?.raw_user_meta_data);
+  console.log(
+    '  user.raw_user_meta_data:',
+    (user as User & { raw_user_meta_data?: Record<string, unknown> })?.raw_user_meta_data
+  );
 
   // 優先從 user metadata 中提取 user_id (檢查兩個可能的位置)
   if (user?.user_metadata?.user_id) {
@@ -338,8 +342,9 @@ export function useCurrentUserId(): string | null {
   }
 
   // 也檢查 raw_user_meta_data (Supabase 的實際存儲位置)
-  if ((user as any)?.raw_user_meta_data?.user_id) {
-    const result = (user as any).raw_user_meta_data.user_id.toString();
+  const userWithRawMeta = user as User & { raw_user_meta_data?: Record<string, unknown> };
+  if (userWithRawMeta?.raw_user_meta_data?.user_id) {
+    const result = String(userWithRawMeta.raw_user_meta_data.user_id);
     console.log('  ✅ Found user_id in raw_user_meta_data:', result);
     return result;
   }
@@ -352,8 +357,8 @@ export function useCurrentUserId(): string | null {
   }
 
   // 也檢查 raw_user_meta_data 中的 clock_number
-  if ((user as any)?.raw_user_meta_data?.clock_number) {
-    const result = (user as any).raw_user_meta_data.clock_number.toString();
+  if (userWithRawMeta?.raw_user_meta_data?.clock_number) {
+    const result = String(userWithRawMeta.raw_user_meta_data.clock_number);
     console.log('  ✅ Found clock_number in raw_user_meta_data:', result);
     return result;
   }

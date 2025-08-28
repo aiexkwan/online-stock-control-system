@@ -7,6 +7,12 @@
 import { getSupabaseClient } from './supabase-client-manager';
 import type { Database } from '@/types/database/supabase';
 import { createGrnLogger } from '@/lib/security/grn-logger';
+import {
+  DatabaseError,
+  DatabaseQueryResult,
+  GrnDatabaseRecord,
+  GrnQueryFilters,
+} from '@/lib/types/database-operations';
 
 // Type definitions for GRN operations
 type Tables = Database['public']['Tables'];
@@ -83,7 +89,7 @@ export class GrnDatabaseService {
   ): Promise<{
     product: DataCode | null;
     supplier: ProductSupplier | null;
-    error: any;
+    error: DatabaseError | null;
   }> {
     const operation = this.startOperation('getProductWithSupplier');
     const cacheKey = `grn_product_${productCode}`;
@@ -91,7 +97,7 @@ export class GrnDatabaseService {
     try {
       // Execute query with caching
       const result = await this.clientManager.executeQuery(
-        async client => {
+        (async (client: any) => {
           // First get product info
           const productQuery = await client
             .from('data_code')
@@ -119,7 +125,7 @@ export class GrnDatabaseService {
             },
             error: null,
           };
-        },
+        }) as any,
         options.useCache !== false ? cacheKey : undefined,
         {
           skipCache: options.useCache === false,
@@ -139,14 +145,14 @@ export class GrnDatabaseService {
       }
 
       return {
-        product: result.data?.product || null,
-        supplier: result.data?.supplier || null,
+        product: (result.data as any)?.product || null,
+        supplier: (result.data as any)?.supplier || null,
         error: null,
       };
     } catch (error) {
       this.completeOperation(operation, false, 0, String(error));
       this.logger.error('Error getting product with supplier', { productCode, error });
-      return { product: null, supplier: null, error };
+      return { product: null, supplier: null, error: error as any };
     }
   }
 
@@ -158,7 +164,7 @@ export class GrnDatabaseService {
     options: GrnBatchOptions = {}
   ): Promise<{
     data: GrnRecord[] | null;
-    error: any;
+    error: DatabaseError | null;
   }> {
     const operation = this.startOperation('createGrnRecordsBatch');
     const batchSize = options.batchSize || this.MAX_BATCH_SIZE;
@@ -169,9 +175,9 @@ export class GrnDatabaseService {
 
       for (const batch of batches) {
         const batchResult = await this.clientManager.executeQuery(
-          async client => {
+          (async (client: any) => {
             return await client.from('grn_record').insert(batch).select();
-          },
+          }) as any,
           undefined,
           {
             skipCache: true,
@@ -184,7 +190,7 @@ export class GrnDatabaseService {
           return { data: null, error: batchResult.error };
         }
 
-        if (batchResult.data) {
+        if (batchResult.data && Array.isArray(batchResult.data)) {
           results.push(...batchResult.data);
         }
       }
@@ -194,7 +200,7 @@ export class GrnDatabaseService {
     } catch (error) {
       this.completeOperation(operation, false, 0, String(error));
       this.logger.error('Error creating GRN records batch', { error, recordCount: records.length });
-      return { data: null, error };
+      return { data: null, error: error as any };
     }
   }
 
@@ -206,7 +212,7 @@ export class GrnDatabaseService {
     options: GrnBatchOptions = {}
   ): Promise<{
     data: GrnPalletInfo[] | null;
-    error: any;
+    error: DatabaseError | null;
   }> {
     const operation = this.startOperation('createGrnPalletInfoBatch');
     const batchSize = options.batchSize || this.MAX_BATCH_SIZE;
@@ -219,9 +225,9 @@ export class GrnDatabaseService {
       if (options.parallel) {
         const batchPromises = batches.map(batch =>
           this.clientManager.executeQuery(
-            async client => {
+            (async (client: any) => {
               return await client.from('grn_pallet_info').insert(batch).select();
-            },
+            }) as any,
             undefined,
             {
               skipCache: true,
@@ -237,7 +243,7 @@ export class GrnDatabaseService {
             this.completeOperation(operation, false, results.length, String(batchResult.error));
             return { data: null, error: batchResult.error };
           }
-          if (batchResult.data) {
+          if (batchResult.data && Array.isArray(batchResult.data)) {
             results.push(...batchResult.data);
           }
         }
@@ -245,9 +251,9 @@ export class GrnDatabaseService {
         // Process batches sequentially
         for (const batch of batches) {
           const batchResult = await this.clientManager.executeQuery(
-            async client => {
+            (async (client: any) => {
               return await client.from('grn_pallet_info').insert(batch).select();
-            },
+            }) as any,
             undefined,
             {
               skipCache: true,
@@ -260,7 +266,7 @@ export class GrnDatabaseService {
             return { data: null, error: batchResult.error };
           }
 
-          if (batchResult.data) {
+          if (batchResult.data && Array.isArray(batchResult.data)) {
             results.push(...batchResult.data);
           }
         }
@@ -274,7 +280,7 @@ export class GrnDatabaseService {
         error,
         recordCount: palletInfos.length,
       });
-      return { data: null, error };
+      return { data: null, error: error as any };
     }
   }
 
@@ -288,14 +294,14 @@ export class GrnDatabaseService {
   ): Promise<{
     data: GrnRecord[] | null;
     count: number | null;
-    error: any;
+    error: DatabaseError | null;
   }> {
     const operation = this.startOperation('getRecentGrnRecords');
     const cacheKey = `grn_recent_${limit}_${offset}`;
 
     try {
       const result = await this.clientManager.executeQuery(
-        async client => {
+        (async (client: any) => {
           const query = client
             .from('grn_record')
             .select('*', { count: 'exact' })
@@ -303,7 +309,7 @@ export class GrnDatabaseService {
             .range(offset, offset + limit - 1);
 
           return await query;
-        },
+        }) as any,
         options.useCache !== false ? cacheKey : undefined,
         {
           skipCache: options.useCache === false,
@@ -312,18 +318,18 @@ export class GrnDatabaseService {
         }
       );
 
-      const recordCount = result.data ? result.data.length : 0;
+      const recordCount = result.data && Array.isArray(result.data) ? result.data.length : 0;
       this.completeOperation(operation, !result.error, recordCount);
 
       return {
-        data: result.data,
-        count: (result as any).count || null,
+        data: result.data as any,
+        count: (result as DatabaseQueryResult<unknown> & { count?: number }).count || null,
         error: result.error,
       };
     } catch (error) {
       this.completeOperation(operation, false, 0, String(error));
       this.logger.error('Error getting recent GRN records', { error });
-      return { data: null, count: null, error };
+      return { data: null, count: null, error: error as any };
     }
   }
 
@@ -341,14 +347,14 @@ export class GrnDatabaseService {
     options: GrnQueryOptions = {}
   ): Promise<{
     data: GrnRecord[] | null;
-    error: any;
+    error: DatabaseError | null;
   }> {
     const operation = this.startOperation('searchGrnRecords');
     const cacheKey = `grn_search_${JSON.stringify(criteria)}`;
 
     try {
       const result = await this.clientManager.executeQuery(
-        async client => {
+        (async (client: any) => {
           let query = client.from('grn_record').select('*');
 
           if (criteria.grnNumber) {
@@ -368,7 +374,7 @@ export class GrnDatabaseService {
           }
 
           return await query.order('created_at', { ascending: false });
-        },
+        }) as any,
         options.useCache !== false ? cacheKey : undefined,
         {
           skipCache: options.useCache === false,
@@ -377,14 +383,14 @@ export class GrnDatabaseService {
         }
       );
 
-      const recordCount = result.data ? result.data.length : 0;
+      const recordCount = result.data && Array.isArray(result.data) ? result.data.length : 0;
       this.completeOperation(operation, !result.error, recordCount);
 
-      return { data: result.data, error: result.error };
+      return { data: result.data as any, error: result.error };
     } catch (error) {
       this.completeOperation(operation, false, 0, String(error));
       this.logger.error('Error searching GRN records', { error, criteria });
-      return { data: null, error };
+      return { data: null, error: error as any };
     }
   }
 
@@ -397,20 +403,20 @@ export class GrnDatabaseService {
   ): Promise<{
     isValid: boolean;
     exists: boolean;
-    error: any;
+    error: DatabaseError | null;
   }> {
     const operation = this.startOperation('validateGrnNumber');
 
     try {
       const result = await this.clientManager.executeQuery(
-        async client => {
+        (async (client: any) => {
           return await client
             .from('grn_record')
             .select('grn_no')
             .eq('grn_no', grnNumber)
             .limit(1)
             .single();
-        },
+        }) as any,
         undefined,
         {
           skipCache: true,
@@ -429,7 +435,7 @@ export class GrnDatabaseService {
     } catch (error) {
       this.completeOperation(operation, false, 0, String(error));
       this.logger.error('Error validating GRN number', { error, grnNumber });
-      return { isValid: false, exists: false, error };
+      return { isValid: false, exists: false, error: error as any };
     }
   }
 

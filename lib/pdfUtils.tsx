@@ -350,46 +350,103 @@ export async function mergeAndPrintPdfs(
     const url = URL.createObjectURL(pdfBlob);
 
     try {
-      console.log('[mergeAndPrintPdfs] Using new window approach to avoid cross-origin issues.');
+      console.log('[mergeAndPrintPdfs] Using Web Print API for direct PDF printing.');
 
-      // Open PDF in a new window for printing - more secure approach
-      const printWindow = window.open(url, '_blank', 'width=800,height=600');
+      // Use iframe method for better PDF rendering compatibility
+      try {
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(`
+            <html>
+              <head>
+                <title>Print Document</title>
+                <style>
+                  * { margin: 0; padding: 0; box-sizing: border-box; }
+                  html, body { width: 100%; height: 100%; overflow: hidden; }
+                  iframe { 
+                    width: 100%; 
+                    height: 100vh; 
+                    border: none; 
+                    display: block;
+                  }
+                </style>
+              </head>
+              <body>
+                <iframe id="pdfFrame" src="${url}" type="application/pdf"></iframe>
+                <script>
+                  let printAttempted = false;
+                  
+                  function attemptPrint() {
+                    if (printAttempted) return;
+                    printAttempted = true;
+                    
+                    try {
+                      // Try to access iframe content and print
+                      const iframe = document.getElementById('pdfFrame');
+                      if (iframe && iframe.contentWindow) {
+                        iframe.contentWindow.focus();
+                        iframe.contentWindow.print();
+                      } else {
+                        // Fallback to window print
+                        window.focus();
+                        window.print();
+                      }
+                      
+                      // Close window after print dialog
+                      setTimeout(function() {
+                        window.close();
+                      }, 2000);
+                    } catch (e) {
+                      console.log('Print access restricted, using window.print()');
+                      window.focus();
+                      window.print();
+                      setTimeout(function() {
+                        window.close();
+                      }, 2000);
+                    }
+                  }
+                  
+                  // Multiple methods to ensure printing triggers
+                  document.getElementById('pdfFrame').onload = function() {
+                    setTimeout(attemptPrint, 1000);
+                  };
+                  
+                  // Backup timer
+                  setTimeout(attemptPrint, 3000);
+                  
+                  // Manual print trigger for user
+                  document.addEventListener('keydown', function(e) {
+                    if (e.ctrlKey && e.key === 'p') {
+                      e.preventDefault();
+                      attemptPrint();
+                    }
+                  });
+                </script>
+              </body>
+            </html>
+          `);
+          printWindow.document.close();
 
-      if (printWindow) {
-        // Wait for the PDF to load in the new window, then trigger print
-        printWindow.onload = () => {
+          // Clean up after some time
           setTimeout(() => {
-            try {
-              printWindow.focus();
-              printWindow.print();
-              console.log('[mergeAndPrintPdfs] Print dialog triggered in new window.');
-            } catch (printError) {
-              console.error(
-                '[mergeAndPrintPdfs] Error triggering print in new window:',
-                printError
-              );
-              // Fallback: let user manually print
-              console.log('[mergeAndPrintPdfs] PDF opened in new tab - user can print manually.');
-            }
-          }, 1000); // Give PDF time to render
-        };
-
-        // Clean up URL after some time
-        setTimeout(() => {
-          URL.revokeObjectURL(url);
-          console.log('[mergeAndPrintPdfs] Blob URL cleaned up.');
-        }, 30000); // 30 seconds should be enough for print dialog
-      } else {
-        console.warn('[mergeAndPrintPdfs] Could not open new window - popup might be blocked.');
-        // Fallback: trigger download
+            URL.revokeObjectURL(url);
+            console.log('[mergeAndPrintPdfs] Print window method completed, blob URL cleaned up.');
+          }, 10000);
+        } else {
+          throw new Error('Could not open print window');
+        }
+      } catch (windowError) {
+        console.error('[mergeAndPrintPdfs] Print window method failed:', windowError);
+        // Fallback: Direct download
         const link = document.createElement('a');
         link.href = url;
         link.download = mergedPdfName;
+        link.style.display = 'none';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        console.log('[mergeAndPrintPdfs] PDF downloaded as fallback.');
+        console.log('[mergeAndPrintPdfs] Fallback to download completed.');
       }
     } catch (error) {
       console.error('[mergeAndPrintPdfs] Error in print process:', error);

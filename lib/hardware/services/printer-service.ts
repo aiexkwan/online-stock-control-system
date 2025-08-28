@@ -286,34 +286,131 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
   }
 
   private async triggerPrint(pdfUrl: string, copies: number): Promise<void> {
-    // Create iframe for printing
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = pdfUrl;
-
-    document.body.appendChild(iframe);
+    console.log('[PrinterService] Using Web Print API for direct PDF printing.');
 
     return new Promise(resolve => {
-      iframe.onload = () => {
-        // Focus on iframe for better print dialog handling
-        iframe.contentWindow?.focus();
+      try {
+        // Use iframe method for better PDF rendering compatibility
+        try {
+          const printWindow = window.open('', '_blank');
+          if (printWindow) {
+            printWindow.document.write(`
+              <html>
+                <head>
+                  <title>Print Document</title>
+                  <style>
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    html, body { width: 100%; height: 100%; overflow: hidden; }
+                    iframe { 
+                      width: 100%; 
+                      height: 100vh; 
+                      border: none; 
+                      display: block;
+                    }
+                  </style>
+                </head>
+                <body>
+                  <iframe id="pdfFrame" src="${pdfUrl}" type="application/pdf"></iframe>
+                  <script>
+                    let printCount = 0;
+                    const totalCopies = ${copies};
+                    let printAttempted = false;
+                    
+                    function attemptPrint() {
+                      if (printAttempted || printCount >= totalCopies) return;
+                      printAttempted = true;
+                      
+                      try {
+                        // Try to access iframe content and print
+                        const iframe = document.getElementById('pdfFrame');
+                        if (iframe && iframe.contentWindow) {
+                          iframe.contentWindow.focus();
+                          iframe.contentWindow.print();
+                        } else {
+                          // Fallback to window print
+                          window.focus();
+                          window.print();
+                        }
+                        
+                        printCount++;
+                        
+                        // Handle multiple copies
+                        if (printCount < totalCopies) {
+                          printAttempted = false;
+                          setTimeout(attemptPrint, 2000);
+                        } else {
+                          setTimeout(function() {
+                            window.close();
+                          }, 2000);
+                        }
+                      } catch (e) {
+                        console.log('Print access restricted, using window.print()');
+                        window.focus();
+                        window.print();
+                        printCount++;
+                        
+                        if (printCount < totalCopies) {
+                          printAttempted = false;
+                          setTimeout(attemptPrint, 2000);
+                        } else {
+                          setTimeout(function() {
+                            window.close();
+                          }, 2000);
+                        }
+                      }
+                    }
+                    
+                    // Multiple methods to ensure printing triggers
+                    document.getElementById('pdfFrame').onload = function() {
+                      setTimeout(attemptPrint, 1000);
+                    };
+                    
+                    // Backup timer
+                    setTimeout(attemptPrint, 3000);
+                  </script>
+                </body>
+              </html>
+            `);
+            printWindow.document.close();
 
-        // Print based on copies
-        for (let i = 0; i < copies; i++) {
-          iframe.contentWindow?.print();
-        }
-
-        // IMPORTANT: Increased delay to allow user to interact with print dialog
-        // Most browsers need time for print dialog to fully close
-        setTimeout(() => {
-          // Check if iframe still exists before removing
-          if (iframe.parentNode) {
-            document.body.removeChild(iframe);
+            // Clean up after all prints
+            setTimeout(
+              () => {
+                URL.revokeObjectURL(pdfUrl);
+                console.log(
+                  `[PrinterService] Print window method completed for ${copies} copies, blob URL cleaned up.`
+                );
+                resolve();
+              },
+              Math.max(10000, copies * 2500)
+            );
+          } else {
+            throw new Error('Could not open print window');
           }
-          URL.revokeObjectURL(pdfUrl);
-          resolve();
-        }, 10000); // 10 seconds - same as legacy system
-      };
+        } catch (windowError) {
+          console.error('[PrinterService] Print window method failed:', windowError);
+          // Fallback: Download multiple copies
+          for (let i = 0; i < copies; i++) {
+            const link = document.createElement('a');
+            link.href = pdfUrl;
+            link.download = `print_document_${Date.now()}_copy${i + 1}.pdf`;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }
+
+          setTimeout(() => {
+            URL.revokeObjectURL(pdfUrl);
+            console.log(`[PrinterService] Fallback download completed for ${copies} copies.`);
+            resolve();
+          }, 1000);
+        }
+      } catch (error) {
+        console.error('[PrinterService] Error in print process:', error);
+        URL.revokeObjectURL(pdfUrl);
+        resolve();
+      }
     });
   }
 }

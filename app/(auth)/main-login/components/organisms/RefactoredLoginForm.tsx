@@ -70,7 +70,18 @@ const RefactoredLoginForm = memo(function RefactoredLoginForm({
       const result = await login(loginFormData.email, loginFormData.password);
 
       if (result.success) {
-        emitLoginSuccess(loginFormData.email, result.user, result.redirectPath);
+        // Convert Supabase User to AuthUser if available, provide default if not
+        const authUser = result.user ? {
+          id: result.user.id,
+          email: result.user.email || loginFormData.email,
+          role: result.user.user_metadata?.role || 'user',
+        } : {
+          id: 'unknown',
+          email: loginFormData.email,
+          role: 'user',
+        };
+        
+        emitLoginSuccess(loginFormData.email, authUser, result.redirectPath);
         onSuccess?.();
       } else {
         emitLoginError(result.error || 'Login failed');

@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useMediaQuery } from '@/app/components/qc-label-form/hooks/useMediaQuery';
 import { useProgressDebounce } from '@/lib/hooks/useProgressDebounce';
+import { ComponentPerformanceMetrics } from '@/lib/types/component-props';
 
 export type ProgressStatus = 'Pending' | 'Processing' | 'Success' | 'Failed';
 
@@ -37,7 +38,7 @@ interface EnhancedProgressBarProps {
   /** Enable performance monitoring */
   enablePerformanceMonitoring?: boolean;
   /** Callback for performance metrics */
-  onPerformanceMetrics?: (metrics: any) => void;
+  onPerformanceMetrics?: (metrics: ComponentPerformanceMetrics) => void;
 }
 
 interface ProgressStepProps {
@@ -223,6 +224,9 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = React.mem
             ...metrics,
             renderCount: renderCountRef.current,
             averageRenderTime: renderTime,
+            renderTime: renderTime,
+            updateCount: renderCountRef.current,
+            errorCount: 0,
           });
         }
       }

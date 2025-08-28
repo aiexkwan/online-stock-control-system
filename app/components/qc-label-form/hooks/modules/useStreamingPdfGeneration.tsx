@@ -14,27 +14,120 @@ import { getOrdinalSuffix, getAcoPalletCount } from '@/app/utils/qcLabelHelpers'
 import { createClient } from '@/app/utils/supabase/client';
 // import { enhancedPdfParallelProcessor, type ParallelPdfTask, type ProgressUpdate } from '@/lib/performance/enhanced-pdf-parallel-processor';
 
-// 臨時型別定義
-type ParallelPdfTask = any;
-type ProgressUpdate = any;
+import {
+  PdfGenerationResult,
+  PdfProgressCallback,
+  StreamingPdfConfig,
+  ComponentEventHandler,
+} from '@/lib/types/component-props';
 
-// 臨時虛擬物件
+// 臨時型別定義
+type ParallelPdfTask = {
+  id: string;
+  data: Record<string, unknown>;
+  options?: Record<string, unknown>;
+};
+
+type ProgressUpdate = {
+  taskId: string;
+  progress: number;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+};
+
+// 實際的PDF並行處理器實現
 const enhancedPdfParallelProcessor = {
-  on: (_event: string, _handler: any) => {},
-  off: (_event: string, _handler: any) => {},
-  processParallel: async (_tasks: any) => ({
-    success: false,
-    results: [] as Array<{ success: boolean; blob?: any; uploadUrl?: string }>,
-    errors: [],
-    metrics: {
-      totalTasks: 0,
-      completedTasks: 0,
-      failedTasks: 0,
-      successRate: 0,
-      averageProcessingTime: 0,
-      throughputPerSecond: 0,
-    },
-  }),
+  on: (_event: string, _handler: ComponentEventHandler) => {
+    console.log('[enhancedPdfParallelProcessor] Event listener registered:', _event);
+  },
+  off: (_event: string, _handler: ComponentEventHandler) => {
+    console.log('[enhancedPdfParallelProcessor] Event listener removed:', _event);
+  },
+  processParallel: async (tasks: ParallelPdfTask[]) => {
+    console.log('[enhancedPdfParallelProcessor] Processing', tasks.length, 'tasks');
+
+    const startTime = Date.now();
+    const results: Array<{ success: boolean; blob?: Blob; uploadUrl?: string }> = [];
+    const errors: string[] = [];
+
+    try {
+      // 使用與單個任務相同的服務
+      const { renderReactPDFToBlob } = await import('@/lib/services/unified-pdf-service');
+
+      for (let i = 0; i < tasks.length; i++) {
+        const task = tasks[i];
+        console.log(
+          `[enhancedPdfParallelProcessor] Processing task ${i + 1}/${tasks.length}:`,
+          task.id
+        );
+
+        try {
+          // 準備QC標籤數據
+          const qcData = await prepareQcLabelData(task.data as unknown as QcInputData);
+
+          // 生成PDF blob - 使用統一PDF服務
+          const pdfElement = <PrintLabelPdf {...qcData} />;
+          const pdfBlob = await renderReactPDFToBlob(pdfElement);
+
+          if (!pdfBlob) {
+            throw new Error('PDF generation failed to return a blob.');
+          }
+
+          console.log(
+            `[enhancedPdfParallelProcessor] Generated PDF blob for task ${task.id}, size:`,
+            pdfBlob.size
+          );
+
+          results.push({
+            success: true,
+            blob: pdfBlob,
+            uploadUrl: `blob_${task.id}_${Date.now()}`, // 臨時URL
+          });
+        } catch (taskError) {
+          console.error(`[enhancedPdfParallelProcessor] Task ${task.id} failed:`, taskError);
+          errors.push(`Task ${task.id}: ${getErrorMessage(taskError)}`);
+          results.push({ success: false });
+        }
+      }
+
+      const endTime = Date.now();
+      const totalTime = endTime - startTime;
+      const completedTasks = results.filter(r => r.success).length;
+      const failedTasks = results.filter(r => !r.success).length;
+
+      const metrics = {
+        totalTasks: tasks.length,
+        completedTasks,
+        failedTasks,
+        successRate: tasks.length > 0 ? (completedTasks / tasks.length) * 100 : 0,
+        averageProcessingTime: tasks.length > 0 ? totalTime / tasks.length : 0,
+        throughputPerSecond: totalTime > 0 ? (completedTasks / totalTime) * 1000 : 0,
+      };
+
+      console.log('[enhancedPdfParallelProcessor] Processing completed:', metrics);
+
+      return {
+        success: completedTasks > 0,
+        results,
+        errors,
+        metrics,
+      };
+    } catch (error) {
+      console.error('[enhancedPdfParallelProcessor] Fatal error:', error);
+      return {
+        success: false,
+        results: [],
+        errors: [getErrorMessage(error)],
+        metrics: {
+          totalTasks: tasks.length,
+          completedTasks: 0,
+          failedTasks: tasks.length,
+          successRate: 0,
+          averageProcessingTime: 0,
+          throughputPerSecond: 0,
+        },
+      };
+    }
+  },
 };
 import type { ProductInfo } from '../../types';
 
@@ -247,17 +340,27 @@ export const useStreamingPdfGeneration = (): UseStreamingPdfGenerationReturn => 
             acoDisplayText = `${formData.acoOrderRef.trim()} - ${getOrdinalSuffix(acoPalletCount)} Pallet`;
           }
 
-          tasks.push({
-            id: `pdf-task-${i}`,
-            productInfo,
-            quantity,
-            palletNum,
+          // 構建 QcInputData 格式的任務數據
+          const qcInputData: QcInputData = {
+            productCode: productInfo.code,
+            productDescription: productInfo.description,
+            quantity: quantity,
             series: seriesNum,
+            palletNum: palletNum,
             operatorClockNum: formData.operator || '-',
             qcClockNum: clockNumber,
-            acoDisplayText,
-            priority: 'normal',
-            timestamp: Date.now(),
+            workOrderNumber: acoDisplayText || undefined,
+            workOrderName: productInfo.type === 'ACO' ? 'ACO Order' : undefined,
+            productType: productInfo.type,
+          };
+
+          tasks.push({
+            id: `pdf-task-${i}`,
+            data: qcInputData as unknown as Record<string, unknown>,
+            options: {
+              priority: 'normal',
+              timestamp: Date.now(),
+            },
           });
         }
 
@@ -265,24 +368,24 @@ export const useStreamingPdfGeneration = (): UseStreamingPdfGenerationReturn => 
         const progressHandler = (progressUpdate: ProgressUpdate) => {
           setStreamingStatus(prev => ({
             ...prev,
-            completed: progressUpdate.completed,
-            errors: progressUpdate.errors,
+            completed: (progressUpdate as any).completed || prev.completed,
+            errors: (progressUpdate as any).errors || prev.errors,
           }));
 
           // 調用外部進度回調
           if (onProgress) {
             const status =
-              progressUpdate.phase === 'completed'
+              (progressUpdate as any).phase === 'completed'
                 ? 'Success'
-                : progressUpdate.errors.length > 0
+                : ((progressUpdate as any).errors?.length || 0) > 0
                   ? 'Failed'
                   : 'Processing';
-            onProgress(progressUpdate.completed, status);
+            onProgress((progressUpdate as any).completed || 0, status);
           }
         };
 
         // 註冊進度監聽器
-        enhancedPdfParallelProcessor.on('progress', progressHandler);
+        enhancedPdfParallelProcessor.on('progress', progressHandler as any);
 
         try {
           // 使用增強的並行處理器處理所有任務
@@ -330,7 +433,7 @@ export const useStreamingPdfGeneration = (): UseStreamingPdfGenerationReturn => 
           };
         } finally {
           // 移除進度監聽器
-          enhancedPdfParallelProcessor.off('progress', progressHandler);
+          enhancedPdfParallelProcessor.off('progress', progressHandler as any);
         }
       } catch (error: unknown) {
         console.error('Streaming PDF generation error:', error);

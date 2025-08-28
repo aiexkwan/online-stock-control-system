@@ -805,7 +805,10 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
                     enablePerformanceMonitoring={debug}
                     onPerformanceMetrics={metrics => {
                       if (debug) {
-                        logger.debug('Progress bar performance metrics:', metrics);
+                        logger.debug(
+                          'Progress bar performance metrics:',
+                          metrics as unknown as Record<string, unknown>
+                        );
                       }
                     }}
                   />

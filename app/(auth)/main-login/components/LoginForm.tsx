@@ -60,7 +60,18 @@ const LoginForm = memo(function LoginForm({ onSuccess, onError }: LoginFormProps
       const result = await login(formData.email, formData.password);
 
       if (result.success) {
-        emitLoginSuccess(formData.email, result.user, result.redirectPath);
+        // Convert Supabase User to AuthUser if available, provide default if not
+        const authUser = result.user ? {
+          id: result.user.id,
+          email: result.user.email || formData.email,
+          role: result.user.user_metadata?.role || 'user',
+        } : {
+          id: 'unknown',
+          email: formData.email,
+          role: 'user',
+        };
+        
+        emitLoginSuccess(formData.email, authUser, result.redirectPath);
         onSuccess?.();
       } else {
         emitLoginError(result.error || 'Login failed');

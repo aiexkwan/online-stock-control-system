@@ -8,9 +8,23 @@
 
 import { AuthEvent, EventMap } from '../events/types';
 import { LoginFormData, RegisterFormData, LoginUIState } from '../context/LoginContext';
+import {
+  AppUser,
+  ComponentPropsBase,
+  EventPayload,
+  FormDataBase,
+  ModalProps,
+  Priority,
+  Timestamp,
+  TypeGuard,
+} from '@/lib/types/common';
 
 // Component Communication Contract
-export interface ComponentContract<TProps = any, TState = any, TEvents = any> {
+export interface ComponentContract<
+  TProps = Record<string, unknown>,
+  TState = Record<string, unknown>,
+  TEvents = Record<string, unknown>,
+> {
   name: string;
   version: string;
   props: TProps;
@@ -30,7 +44,7 @@ export type CommunicationChannel =
   | 'global-state'; // Global state management
 
 // Communication Message Structure
-export interface CommunicationMessage<T = any> {
+export interface CommunicationMessage<T = EventPayload> {
   id: string;
   type: string;
   channel: CommunicationChannel;
@@ -49,7 +63,7 @@ export interface CommunicationMessage<T = any> {
 export interface LoginFormComponentInterface extends ComponentContract {
   name: 'LoginForm';
   props: {
-    onSuccess?: (user: any) => void;
+    onSuccess?: (user: AppUser) => void;
     onError?: (error: string) => void;
     initialData?: Partial<LoginFormData>;
     disabled?: boolean;
@@ -180,7 +194,7 @@ export interface FormCommunicationProtocol {
   // Form lifecycle events
   onFormMount: (formId: string) => void;
   onFormUnmount: (formId: string) => void;
-  onFormSubmit: (formId: string, data: any) => Promise<void>;
+  onFormSubmit: (formId: string, data: FormDataBase) => Promise<void>;
   onFormChange: (formId: string, field: string, value: string) => void;
   onFormValidate: (formId: string, field?: string) => Promise<boolean>;
   onFormReset: (formId: string) => void;
@@ -199,7 +213,7 @@ export interface FormCommunicationProtocol {
 export interface AuthCommunicationProtocol {
   // Authentication events
   onLoginAttempt: (credentials: LoginFormData) => Promise<void>;
-  onLoginSuccess: (user: any, redirectPath?: string) => void;
+  onLoginSuccess: (user: AppUser, redirectPath?: string) => void;
   onLoginError: (error: string, field?: string) => void;
 
   onRegisterAttempt: (data: RegisterFormData) => Promise<void>;
@@ -212,14 +226,14 @@ export interface AuthCommunicationProtocol {
 
   onLogout: () => Promise<void>;
   onSessionExpired: () => void;
-  onAuthStateChange: (isAuthenticated: boolean, user?: any) => void;
+  onAuthStateChange: (isAuthenticated: boolean, user?: AppUser) => void;
 }
 
 // UI Communication Protocol
 export interface UICommunicationProtocol {
   // View management
   onViewChange: (from: string, to: string) => void;
-  onModalOpen: (modalId: string, props?: any) => void;
+  onModalOpen: (modalId: string, props?: Partial<ModalProps>) => void;
   onModalClose: (modalId: string) => void;
 
   // Notifications
@@ -286,7 +300,7 @@ export interface MessageBus {
 }
 
 // Communication Middleware
-export interface CommunicationMiddleware<T = any> {
+export interface CommunicationMiddleware<T = EventPayload> {
   name: string;
   priority: number;
   process(
@@ -350,20 +364,32 @@ export const NAMING_CONVENTIONS = {
 } as const;
 
 // Type Guards
-export function isComponentContract(obj: any): obj is ComponentContract {
-  return obj && typeof obj.name === 'string' && typeof obj.version === 'string';
-}
-
-export function isCommunicationMessage(obj: any): obj is CommunicationMessage {
+export function isComponentContract(obj: unknown): obj is ComponentContract {
   return (
-    obj &&
-    typeof obj.id === 'string' &&
-    typeof obj.type === 'string' &&
-    typeof obj.source === 'string' &&
-    typeof obj.timestamp === 'number'
+    obj !== null &&
+    typeof obj === 'object' &&
+    'name' in obj &&
+    'version' in obj &&
+    typeof (obj as { name: unknown }).name === 'string' &&
+    typeof (obj as { version: unknown }).version === 'string'
   );
 }
 
-export function isCommunicationError(obj: any): obj is CommunicationError {
+export function isCommunicationMessage(obj: unknown): obj is CommunicationMessage {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'id' in obj &&
+    'type' in obj &&
+    'source' in obj &&
+    'timestamp' in obj &&
+    typeof (obj as { id: unknown }).id === 'string' &&
+    typeof (obj as { type: unknown }).type === 'string' &&
+    typeof (obj as { source: unknown }).source === 'string' &&
+    typeof (obj as { timestamp: unknown }).timestamp === 'number'
+  );
+}
+
+export function isCommunicationError(obj: unknown): obj is CommunicationError {
   return obj instanceof Error && 'code' in obj && 'timestamp' in obj;
 }

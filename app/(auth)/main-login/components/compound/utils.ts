@@ -7,6 +7,7 @@
 
 import React, { isValidElement } from 'react';
 import { ComponentRegistry, ThemeContext, ComponentState } from './types';
+import { ComponentPropsBase } from '@/lib/types/common';
 
 /**
  * Component Registry for dynamic component management
@@ -14,32 +15,50 @@ import { ComponentRegistry, ThemeContext, ComponentState } from './types';
 class CompoundComponentRegistry implements ComponentRegistry {
   private components = new Map<string, React.ComponentType<any>>();
 
-  register(name: string, component: React.ComponentType<any>): void {
-    this.components.set(name, component);
+  register<P = Record<string, unknown>>(
+    name: string, 
+    component: React.ComponentType<P>, 
+    metadata?: import('@/lib/types/auth-system').ComponentMetadata
+  ): void {
+    this.components.set(name, component as React.ComponentType<any>);
   }
 
   unregister(name: string): void {
     this.components.delete(name);
   }
 
-  get(name: string): React.ComponentType<any> | undefined {
-    return this.components.get(name);
+  get<P = Record<string, unknown>>(name: string): import('@/lib/types/auth-system').RegisteredComponent<P> | undefined {
+    const component = this.components.get(name);
+    if (component) {
+      return {
+        component: component as React.ComponentType<P>,
+        registrationTime: new Date(), // For simplicity, using current date
+      };
+    }
+    return undefined;
   }
 
-  getAll(): Record<string, React.ComponentType<any>> {
-    return Object.fromEntries(this.components.entries());
+  getAll(): Record<string, import('@/lib/types/auth-system').RegisteredComponent> {
+    const result: Record<string, import('@/lib/types/auth-system').RegisteredComponent> = {};
+    this.components.forEach((component, name) => {
+      result[name] = {
+        component,
+        registrationTime: new Date(),
+      };
+    });
+    return result;
   }
 
   has(name: string): boolean {
     return this.components.has(name);
   }
 
-  size(): number {
-    return this.components.size;
-  }
-
   clear(): void {
     this.components.clear();
+  }
+
+  list(): string[] {
+    return Array.from(this.components.keys());
   }
 }
 
@@ -51,9 +70,10 @@ export const componentRegistry = new CompoundComponentRegistry();
  */
 export function withCompoundComponents<T>(
   BaseComponent: React.ComponentType<T>,
-  subComponents: Record<string, React.ComponentType<any>>
+  subComponents: Record<string, React.ComponentType<ComponentPropsBase>>
 ) {
-  const CompoundComponent = BaseComponent as any;
+  const CompoundComponent = BaseComponent as React.ComponentType<T> &
+    Record<string, React.ComponentType<ComponentPropsBase>>;
 
   Object.keys(subComponents).forEach(key => {
     CompoundComponent[key] = subComponents[key];
@@ -113,7 +133,7 @@ export const defaultTheme: ThemeContext = {
  */
 export function findChildrenByType(
   children: React.ReactNode,
-  types: React.ComponentType<any> | React.ComponentType<any>[]
+  types: React.ComponentType<ComponentPropsBase> | React.ComponentType<ComponentPropsBase>[]
 ): React.ReactElement[] {
   const typesArray = Array.isArray(types) ? types : [types];
   const result: React.ReactElement[] = [];
@@ -143,7 +163,7 @@ export function findChildrenByDisplayName(
       child.type &&
       typeof child.type !== 'string' &&
       'displayName' in child.type &&
-      names.includes((child.type as any).displayName)
+      names.includes((child.type as React.ComponentType & { displayName: string }).displayName)
     ) {
       result.push(child);
     }
@@ -157,7 +177,7 @@ export function findChildrenByDisplayName(
  */
 export function cloneChildrenWithProps(
   children: React.ReactNode,
-  additionalProps: Record<string, any>
+  additionalProps: Record<string, unknown>
 ): React.ReactNode {
   return React.Children.map(children, child => {
     if (isValidElement(child)) {
@@ -324,7 +344,7 @@ export const a11yUtils = {
  * Performance optimization utilities
  */
 export const performanceUtils = {
-  debounce: <T extends (...args: any[]) => any>(
+  debounce: <T extends (...args: unknown[]) => unknown>(
     func: T,
     wait: number
   ): ((...args: Parameters<T>) => void) => {
@@ -335,7 +355,7 @@ export const performanceUtils = {
     };
   },
 
-  throttle: <T extends (...args: any[]) => any>(
+  throttle: <T extends (...args: unknown[]) => unknown>(
     func: T,
     limit: number
   ): ((...args: Parameters<T>) => void) => {
@@ -349,9 +369,9 @@ export const performanceUtils = {
     };
   },
 
-  memoize: <T extends (...args: any[]) => any>(func: T): T => {
+  memoize: <T extends (...args: unknown[]) => unknown>(func: T): T => {
     const cache = new Map();
-    return ((...args: any[]) => {
+    return ((...args: unknown[]) => {
       const key = JSON.stringify(args);
       if (cache.has(key)) {
         return cache.get(key);

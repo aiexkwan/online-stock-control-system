@@ -7,9 +7,10 @@
  */
 
 import { LoginFormData, RegisterFormData, LoginUIState } from '../context/LoginContext';
+import { AuthUser, FormSubmissionData } from '@/lib/types/auth-system';
 
 // Base event interface
-export interface BaseEvent<T = any> {
+export interface BaseEvent<T = Record<string, unknown>> {
   type: string;
   payload: T;
   timestamp: number;
@@ -22,7 +23,7 @@ export interface LoginAttemptEvent extends BaseEvent<{ email: string; password: 
 }
 
 export interface LoginSuccessEvent
-  extends BaseEvent<{ email: string; user: any; redirectPath?: string }> {
+  extends BaseEvent<{ email: string; user: AuthUser; redirectPath?: string }> {
   type: 'LOGIN_SUCCESS';
 }
 
@@ -70,7 +71,10 @@ export interface FormValidationEvent
 }
 
 export interface FormSubmitEvent
-  extends BaseEvent<{ formType: 'login' | 'register' | 'reset' | 'change'; data: any }> {
+  extends BaseEvent<{
+    formType: 'login' | 'register' | 'reset' | 'change';
+    data: FormSubmissionData;
+  }> {
   type: 'FORM_SUBMIT';
 }
 

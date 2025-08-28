@@ -2,15 +2,14 @@
  * User ID Validation API
  *
  * 提供用戶 ID 驗證服務的 REST API 端點
- * 使用服務端權限繞過 RLS 限制
+ * 使用 RLS 策略進行安全驗證，要求用戶必須已認證
  *
  * 端點: POST /api/validate-user-id
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@/types/database/supabase';
+import { createClient } from '@/app/utils/supabase/server';
 
 // 請求驗證 Schema
 const ValidationRequestSchema = z.object({
@@ -67,19 +66,29 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const { userId } = validationResult.data;
 
-    // 使用服務端 Supabase client (使用 service role key 繞過 RLS)
-    const supabase = createClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
+    // 使用 Route Handler Client (遵循 RLS 策略)
+    const supabase = await createClient();
 
-    // 查詢用戶
+    // 檢查用戶認證狀態
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json<ApiResponse>(
+        {
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Authentication required to validate user ID',
+          },
+        },
+        { status: 401 }
+      );
+    }
+
+    // 查詢用戶（遵循 RLS 策略）
     const { data, error } = await supabase
       .from('data_id')
       .select('id, name, email, department')
@@ -97,8 +106,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         });
       }
 
-      // 其他錯誤
-      console.error('[ValidateUserAPI] Database error:', error);
+      // 其他錯誤（使用安全日誌記錄）
+      console.error('[ValidateUserAPI] Database query failed');
       return NextResponse.json<ApiResponse>(
         {
           success: false,
@@ -125,7 +134,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       },
     });
   } catch (error) {
-    console.error('[ValidateUserAPI] Error:', error);
+    // 安全日誌記錄，不洩露詳細錯誤資訊
+    console.error('[ValidateUserAPI] Internal error occurred');
 
     return NextResponse.json<ApiResponse>(
       {

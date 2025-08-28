@@ -5,4 +5,4 @@
  */
 
 export * from './interfaces';
-export * from './MessageBus';
+// export * from './MessageBus'; // Temporarily disabled

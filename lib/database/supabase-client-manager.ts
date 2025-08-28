@@ -7,6 +7,21 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database/supabase';
+import {
+  DatabaseQueryResult,
+  DatabaseError,
+  QueryOptions,
+  BatchQueryItem,
+  BatchQueryResult,
+  DatabaseQueryFunction,
+  CacheEntry,
+  QueryInterceptor,
+  PerformanceMetrics as DbPerformanceMetrics,
+  ConnectionConfig as DbConnectionConfig,
+  CacheConfig as DbCacheConfig,
+  AnyCacheEntry,
+  AnyDatabaseResult,
+} from '@/lib/types/database-operations';
 
 // Performance monitoring configuration
 interface PerformanceMetrics {
@@ -59,12 +74,8 @@ const DEFAULT_CACHE_CONFIG: QueryCacheConfig = {
   strategy: 'lru',
 };
 
-// Cache entry structure
-interface CacheEntry<T = any> {
-  data: T;
-  timestamp: number;
-  accessCount: number;
-}
+// Cache entry structure - using imported type
+// interface CacheEntry is now imported from database-operations
 
 /**
  * Enhanced Supabase Client Manager with Singleton Pattern
@@ -80,7 +91,7 @@ class SupabaseClientManager {
   private healthCheckInterval: NodeJS.Timeout | null = null;
   private isInitialized: boolean = false;
   private reconnectAttempts: number = 0;
-  private queryInterceptors: Set<(query: any) => void> = new Set();
+  private queryInterceptors: Set<QueryInterceptor> = new Set();
 
   private constructor(
     config: Partial<ConnectionConfig> = {},
@@ -200,15 +211,11 @@ class SupabaseClientManager {
   /**
    * Execute query with caching and metrics
    */
-  public async executeQuery<T = any>(
-    queryFn: (client: SupabaseClient<Database>) => Promise<{ data: T; error: any }>,
+  public async executeQuery<T = unknown>(
+    queryFn: DatabaseQueryFunction<T>,
     cacheKey?: string,
-    options?: {
-      skipCache?: boolean;
-      ttl?: number;
-      retries?: number;
-    }
-  ): Promise<{ data: T | null; error: any }> {
+    options?: QueryOptions
+  ): Promise<DatabaseQueryResult<T>> {
     const startTime = performance.now();
     const client = this.getClient();
 
@@ -224,7 +231,7 @@ class SupabaseClientManager {
 
     // Execute query with retry logic
     let retries = options?.retries ?? this.config.maxRetries;
-    let lastError: any = null;
+    let lastError: DatabaseError | null = null;
 
     while (retries >= 0) {
       try {
@@ -251,7 +258,7 @@ class SupabaseClientManager {
           return result;
         }
       } catch (error) {
-        lastError = error;
+        lastError = error as any;
         retries--;
         if (retries >= 0) {
           await this.delay(
@@ -268,14 +275,19 @@ class SupabaseClientManager {
   /**
    * Execute batch queries efficiently
    */
-  public async executeBatch<T = any>(
-    queries: Array<{
-      queryFn: (client: SupabaseClient<Database>) => Promise<{ data: any; error: any }>;
-      cacheKey?: string;
-      options?: any;
-    }>
-  ): Promise<Array<{ data: T | null; error: any }>> {
-    return Promise.all(queries.map(q => this.executeQuery<T>(q.queryFn, q.cacheKey, q.options)));
+  public async executeBatch<T = unknown>(
+    queries: BatchQueryItem<T>[]
+  ): Promise<BatchQueryResult<T>[]> {
+    const results = await Promise.all(queries.map(q => this.executeQuery<T>(q.queryFn, q.cacheKey, q.options)));
+    return results.map((result, index) => ({
+      data: result.data,
+      error: result.error || undefined,
+      success: !result.error,
+      index,
+      ...(result.count !== undefined && { count: result.count }),
+      ...(result.status !== undefined && { status: result.status }),
+      ...(result.statusText !== undefined && { statusText: result.statusText }),
+    }));
   }
 
   /**
@@ -468,14 +480,14 @@ class SupabaseClientManager {
   /**
    * Add query interceptor for monitoring
    */
-  public addQueryInterceptor(interceptor: (query: any) => void): void {
+  public addQueryInterceptor(interceptor: QueryInterceptor): void {
     this.queryInterceptors.add(interceptor);
   }
 
   /**
    * Remove query interceptor
    */
-  public removeQueryInterceptor(interceptor: (query: any) => void): void {
+  public removeQueryInterceptor(interceptor: QueryInterceptor): void {
     this.queryInterceptors.delete(interceptor);
   }
 

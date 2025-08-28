@@ -49,7 +49,11 @@ const RegisterForm = memo(function RegisterForm({ onRegistrationSuccess }: Regis
       clearAllErrors();
 
       // Emit register attempt event
-      emitRegisterAttempt(formData);
+      const registerFormSubmissionData = {
+        ...formData,
+        acceptTerms: true, // Assume terms are accepted for register attempt
+      };
+      emitRegisterAttempt(registerFormSubmissionData);
 
       const result = await register(formData);
 

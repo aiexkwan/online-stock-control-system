@@ -362,10 +362,10 @@ export const useAdminQcLabelBusiness = ({
           onShowWarning?.(`${successCount} of ${count} pallets processed successfully`);
         }
 
-        // 生成 PDFs - 自動選擇模式：count > 1 使用串流模式
+        // 生成 PDFs - 暫時總是使用傳統模式以避免列印問題
         console.log('[Admin QC Label] Starting PDF generation...');
         let pdfResult;
-        const shouldUseStreaming = count > 1;
+        const shouldUseStreaming = false; // 暫時禁用串流模式
 
         if (shouldUseStreaming) {
           // 多個標籤時自動使用串流模式

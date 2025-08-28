@@ -3,6 +3,8 @@
  * 防止敏感信息通過錯誤信息洩露
  */
 
+import { AppError } from '@/lib/types/common';
+
 interface SanitizedError {
   message: string;
   code?: string;
@@ -10,7 +12,7 @@ interface SanitizedError {
   requestId?: string;
   // 生產環境不包含 stack 和 details
   stack?: string;
-  details?: any;
+  details?: unknown;
 }
 
 export class ErrorSanitizer {
@@ -42,7 +44,7 @@ export class ErrorSanitizer {
   /**
    * 消毒錯誤對象
    */
-  static sanitize(error: any): SanitizedError {
+  static sanitize(error: Error | AppError | unknown): SanitizedError {
     const timestamp = new Date().toISOString();
     const requestId = `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -72,7 +74,8 @@ export class ErrorSanitizer {
       };
 
       // 檢查是否有匹配的安全錯誤信息
-      const errorMessage = error?.message || 'Unknown error';
+      const errorLike = error as { message?: string; code?: string };
+      const errorMessage = errorLike?.message || 'Unknown error';
       let safeMessage = 'An error occurred. Please try again.';
 
       for (const [pattern, replacement] of Object.entries(safeErrorMessages)) {
@@ -84,19 +87,20 @@ export class ErrorSanitizer {
 
       return {
         message: safeMessage,
-        code: error?.code || 'UNKNOWN_ERROR',
+        code: errorLike?.code || 'UNKNOWN_ERROR',
         timestamp,
         requestId,
       };
     }
 
     // 開發環境：清理敏感信息但保留調試信息
+    const errorLike = error as { message?: string; code?: string; stack?: string };
     return {
-      message: this.cleanSensitiveData(error?.message || 'Unknown error'),
-      code: error?.code,
+      message: this.cleanSensitiveData(errorLike?.message || 'Unknown error'),
+      code: errorLike?.code,
       timestamp,
       requestId,
-      stack: error?.stack ? this.cleanSensitiveData(error.stack) : undefined,
+      stack: errorLike?.stack ? this.cleanSensitiveData(errorLike.stack) : undefined,
       details: error ? this.sanitizeObject(error) : undefined,
     };
   }
@@ -104,7 +108,7 @@ export class ErrorSanitizer {
   /**
    * 遞歸清理對象中的敏感信息
    */
-  private static sanitizeObject(obj: any): any {
+  private static sanitizeObject(obj: unknown): unknown {
     if (obj === null || obj === undefined) {
       return obj;
     }
@@ -121,7 +125,7 @@ export class ErrorSanitizer {
       return obj.map(item => this.sanitizeObject(item));
     }
 
-    const sanitized: any = {};
+    const sanitized: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
       // 跳過可能包含敏感信息的字段
       const sensitiveKeys = ['password', 'secret', 'token', 'key', 'apikey', 'authorization'];
@@ -138,7 +142,7 @@ export class ErrorSanitizer {
   /**
    * 安全記錄錯誤
    */
-  static logSecurely(error: any, context?: any): void {
+  static logSecurely(error: Error | AppError | unknown, context?: Record<string, unknown>): void {
     const sanitized = this.sanitize(error);
 
     if (process.env.NODE_ENV === 'production') {
@@ -160,7 +164,10 @@ export class ErrorSanitizer {
   /**
    * 發送錯誤到監控服務（需要實現）
    */
-  private static sendToMonitoringService(error: SanitizedError, context?: any): void {
+  private static sendToMonitoringService(
+    error: SanitizedError,
+    context?: Record<string, unknown>
+  ): void {
     // TODO: 整合監控服務（Sentry、Datadog、New Relic 等）
     // 範例：
     // if (typeof window !== 'undefined' && window.Sentry) {
@@ -177,7 +184,10 @@ export class ErrorSanitizer {
   /**
    * 創建用戶友好的錯誤響應
    */
-  static createErrorResponse(error: any, statusCode: number = 500): Response {
+  static createErrorResponse(
+    error: Error | AppError | unknown,
+    statusCode: number = 500
+  ): Response {
     const sanitized = this.sanitize(error);
 
     return new Response(
@@ -201,7 +211,12 @@ export class ErrorSanitizer {
    * Express/Next.js 中間件
    */
   static middleware() {
-    return (err: any, req: any, res: any, next: any) => {
+    return (
+      err: Error | AppError | unknown,
+      req: { method?: string; url?: string; ip?: string; get?: (header: string) => string },
+      res: { status: (code: number) => { json: (data: unknown) => void } },
+      next: (error?: unknown) => void
+    ) => {
       const sanitized = this.sanitize(err);
 
       // 記錄錯誤
@@ -209,11 +224,12 @@ export class ErrorSanitizer {
         method: req.method,
         url: req.url,
         ip: req.ip,
-        userAgent: req.get('user-agent'),
+        userAgent: req.get?.('user-agent'),
       });
 
       // 返回消毒後的錯誤
-      res.status(err.statusCode || 500).json(sanitized);
+      const errorLike = err as { statusCode?: number };
+      res.status(errorLike.statusCode || 500).json(sanitized);
     };
   }
 }

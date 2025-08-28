@@ -7,6 +7,14 @@
 
 import React from 'react';
 import { LoginFormData, RegisterFormData } from '../../context/LoginContext';
+import {
+  FormSubmissionData,
+  FormEventHandler,
+  UIEventHandler,
+  ComponentRegistryOperations,
+  AnyComponentProps,
+  RenderPropsBase,
+} from '@/lib/types/auth-system';
 
 // Base compound component props
 export interface BaseCompoundProps {
@@ -85,7 +93,7 @@ export type CompoundComponentType<T, U = {}> = React.FC<T> & U;
 
 export interface WithCompoundComponents<T> {
   displayName?: string;
-  [key: string]: React.ComponentType<any> | string | undefined;
+  [key: string]: React.ComponentType<AnyComponentProps> | string | undefined;
 }
 
 // Form field validation result
@@ -158,27 +166,24 @@ export interface ComponentState {
 }
 
 // Event handler types for compound components
-export type FormEventHandler<T = any> = (data: T) => void | Promise<void>;
+// Re-export from auth-system types
+export type { FormEventHandler } from '@/lib/types/auth-system';
 export type FieldEventHandler = (name: string, value: string) => void;
 export type ValidationEventHandler = (name: string, result: FieldValidationResult) => void;
-export type UIEventHandler = (action: string, payload?: any) => void;
+// Re-export from auth-system types
+export type { UIEventHandler } from '@/lib/types/auth-system';
 
 // Compound component registry for dynamic composition
-export interface ComponentRegistry {
-  register: (name: string, component: React.ComponentType<any>) => void;
-  unregister: (name: string) => void;
-  get: (name: string) => React.ComponentType<any> | undefined;
-  getAll: () => Record<string, React.ComponentType<any>>;
-}
+// Re-export from auth-system types
+export type { ComponentRegistryOperations as ComponentRegistry } from '@/lib/types/auth-system';
 
 // Render props patterns
-export interface RenderProps<T = any> {
-  children: (props: T) => React.ReactNode;
-}
+// Re-export from auth-system types
+export type { RenderPropsBase } from '@/lib/types/auth-system';
 
-export interface FormRenderProps extends RenderProps<FormCompoundContext> {}
+export interface FormRenderProps extends RenderPropsBase<FormCompoundContext> {}
 export interface FieldRenderProps
-  extends RenderProps<{
+  extends RenderPropsBase<{
     value: string;
     onChange: (value: string) => void;
     error?: string;

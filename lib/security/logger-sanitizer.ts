@@ -6,6 +6,17 @@
  * are properly redacted before being logged.
  */
 
+import {
+  LogLevel,
+  LogEntry,
+  LogContext,
+  LogError,
+  SanitizedLogEntry,
+  SanitizationConfig,
+  LogSanitizer,
+  AnyLogData,
+} from '@/lib/types/security-monitoring';
+
 // List of sensitive field names that should be redacted
 const SENSITIVE_FIELDS = [
   'password',
@@ -43,7 +54,7 @@ function isSensitiveField(fieldName: string): boolean {
  * @param maxDepth - Maximum depth for nested object traversal (default: 10)
  * @returns Sanitized copy of the data
  */
-export function sanitizeData(data: any, maxDepth: number = 10): any {
+export function sanitizeData(data: unknown, maxDepth: number = 10): unknown {
   // Handle null and undefined
   if (data === null) return null;
   if (data === undefined) return undefined;
@@ -61,7 +72,7 @@ export function sanitizeData(data: any, maxDepth: number = 10): any {
   // Handle circular references using WeakSet
   const seen = new WeakSet();
 
-  function sanitizeRecursive(obj: any, depth: number): any {
+  function sanitizeRecursive(obj: unknown, depth: number): unknown {
     // Check for circular reference
     if (obj && typeof obj === 'object') {
       if (seen.has(obj)) {
@@ -153,11 +164,15 @@ export function sanitizeError(error: Error | any): any {
  * @param data - Additional data to log
  * @returns Sanitized log entry
  */
-export function createSanitizedLogEntry(level: string, message: string, data?: any): any {
+export function createSanitizedLogEntry(
+  level: LogLevel,
+  message: string,
+  data?: AnyLogData
+): SanitizedLogEntry {
   return {
-    level,
     message,
     timestamp: new Date().toISOString(),
     data: data ? sanitizeData(data) : undefined,
-  };
+    level: level as any,
+  } as any;
 }

@@ -142,7 +142,7 @@ export async function executeBatchQueries<T = any>(
     clientManager = getSupabaseClient();
   }
 
-  return clientManager.executeBatch<T>(queries);
+  return clientManager.executeBatch<T>(queries) as any;
 }
 
 /**

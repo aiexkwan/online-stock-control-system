@@ -7,6 +7,13 @@
  */
 
 import { sanitizeData, sanitizeError, createSanitizedLogEntry } from './logger-sanitizer';
+import {
+  LogLevel,
+  LogEntry,
+  LogContext,
+  AnyLogData,
+  SanitizedLogEntry,
+} from '@/lib/types/security-monitoring';
 
 // Extended list of sensitive fields for GRN operations
 const GRN_SENSITIVE_FIELDS = [
@@ -113,7 +120,7 @@ function isGrnSensitiveField(fieldName: string): boolean {
 /**
  * Apply GRN-specific redaction patterns to strings
  */
-function applyGrnRedactionPatterns(value: any): any {
+function applyGrnRedactionPatterns(value: unknown): unknown {
   if (typeof value !== 'string') return value;
 
   let redactedValue = value;
@@ -127,7 +134,7 @@ function applyGrnRedactionPatterns(value: any): any {
 /**
  * Enhanced sanitization for GRN data
  */
-export function sanitizeGrnData(data: any, maxDepth: number = 10): any {
+export function sanitizeGrnData(data: unknown, maxDepth: number = 10): unknown {
   // Handle null and undefined
   if (data === null) return null;
   if (data === undefined) return undefined;
@@ -149,7 +156,7 @@ export function sanitizeGrnData(data: any, maxDepth: number = 10): any {
 
   const seen = new WeakSet();
 
-  function sanitizeRecursive(obj: any, depth: number): any {
+  function sanitizeRecursive(obj: unknown, depth: number): unknown {
     // Check for circular reference
     if (obj && typeof obj === 'object') {
       if (seen.has(obj)) {
@@ -165,7 +172,7 @@ export function sanitizeGrnData(data: any, maxDepth: number = 10): any {
 
     // Handle objects
     if (obj && typeof obj === 'object') {
-      const sanitized: any = {};
+      const sanitized: Record<string, unknown> = {};
 
       for (const [key, value] of Object.entries(obj)) {
         // Check if the key is GRN-sensitive
@@ -221,15 +228,15 @@ export class GrnLogger {
   /**
    * Log info level message with sanitized data
    */
-  info(message: string, data?: any): void {
+  info(message: string, data?: AnyLogData): void {
     if (!this.isDevelopment && !this.shouldLogInProduction('info')) {
       return;
     }
 
     const sanitizedData = data ? sanitizeGrnData(data) : undefined;
-    const logEntry = createSanitizedLogEntry('info', message, {
+    const logEntry = createSanitizedLogEntry('info' as any, message, {
       component: this.component,
-      ...sanitizedData,
+      ...(sanitizedData || {}),
     });
 
     console.log(`[${this.component}]`, message, sanitizedData || '');
@@ -238,11 +245,11 @@ export class GrnLogger {
   /**
    * Log warning level message with sanitized data
    */
-  warn(message: string, data?: any): void {
+  warn(message: string, data?: AnyLogData): void {
     const sanitizedData = data ? sanitizeGrnData(data) : undefined;
-    const logEntry = createSanitizedLogEntry('warn', message, {
+    const logEntry = createSanitizedLogEntry('warn' as any, message, {
       component: this.component,
-      ...sanitizedData,
+      ...(sanitizedData || {}),
     });
 
     console.warn(`[${this.component}]`, message, sanitizedData || '');
@@ -251,14 +258,14 @@ export class GrnLogger {
   /**
    * Log error level message with sanitized data
    */
-  error(message: string, error?: any, additionalData?: any): void {
+  error(message: string, error?: unknown, additionalData?: AnyLogData): void {
     const sanitizedError = error ? sanitizeError(error) : undefined;
     const sanitizedData = additionalData ? sanitizeGrnData(additionalData) : undefined;
 
-    const logEntry = createSanitizedLogEntry('error', message, {
+    const logEntry = createSanitizedLogEntry('error' as any, message, {
       component: this.component,
       error: sanitizedError,
-      ...sanitizedData,
+      ...(sanitizedData || {}),
     });
 
     console.error(`[${this.component}]`, message, sanitizedError || '', sanitizedData || '');
@@ -267,15 +274,15 @@ export class GrnLogger {
   /**
    * Log debug level message with sanitized data (dev only)
    */
-  debug(message: string, data?: any): void {
+  debug(message: string, data?: AnyLogData): void {
     if (!this.isDevelopment) {
       return;
     }
 
     const sanitizedData = data ? sanitizeGrnData(data) : undefined;
-    const logEntry = createSanitizedLogEntry('debug', message, {
+    const logEntry = createSanitizedLogEntry('debug' as any, message, {
       component: this.component,
-      ...sanitizedData,
+      ...(sanitizedData || {}),
     });
 
     console.log(`[${this.component}] [DEBUG]`, message, sanitizedData || '');

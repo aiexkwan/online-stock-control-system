@@ -10,6 +10,8 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { getEventManager } from './EventManager';
 import { EventMap, EventListener, EVENT_TYPES } from './types';
+import { AuthUser, RegisterFormSubmissionData, FormSubmissionData } from '@/lib/types/auth-system';
+import { LoginUIState } from '../context/LoginContext';
 
 interface UseAuthEventsOptions {
   namespace?: string;
@@ -92,7 +94,7 @@ export function useAuthEvents(options: UseAuthEventsOptions = {}) {
     ),
 
     emitLoginSuccess: useCallback(
-      (email: string, user: any, redirectPath?: string) =>
+      (email: string, user: AuthUser, redirectPath?: string) =>
         emit('LOGIN_SUCCESS', { email, user, redirectPath }),
       [emit]
     ),
@@ -103,7 +105,10 @@ export function useAuthEvents(options: UseAuthEventsOptions = {}) {
     ),
 
     // Register events
-    emitRegisterAttempt: useCallback((data: any) => emit('REGISTER_ATTEMPT', data), [emit]),
+    emitRegisterAttempt: useCallback(
+      (data: RegisterFormSubmissionData) => emit('REGISTER_ATTEMPT', data),
+      [emit]
+    ),
 
     emitRegisterSuccess: useCallback(
       (email: string) => emit('REGISTER_SUCCESS', { email }),
@@ -123,13 +128,17 @@ export function useAuthEvents(options: UseAuthEventsOptions = {}) {
     ),
 
     emitFormSubmit: useCallback(
-      (formType: 'login' | 'register' | 'reset' | 'change', data: any) =>
+      (formType: 'login' | 'register' | 'reset' | 'change', data: FormSubmissionData) =>
         emit('FORM_SUBMIT', { formType, data }),
       [emit]
     ),
 
     // UI events
-    emitViewChange: useCallback((from: any, to: any) => emit('VIEW_CHANGE', { from, to }), [emit]),
+    emitViewChange: useCallback(
+      (from: LoginUIState['currentView'], to: LoginUIState['currentView']) =>
+        emit('VIEW_CHANGE', { from, to }),
+      [emit]
+    ),
 
     emitPasswordVisibilityToggle: useCallback(
       (field: 'password' | 'confirmPassword', visible: boolean) =>
