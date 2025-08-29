@@ -47,7 +47,17 @@ void main() {
 }
 `;
 
-export const StarfieldBackground: React.FC = () => {
+interface StarfieldBackgroundProps {
+  children?: React.ReactNode;
+  className?: string;
+  backgroundOnly?: boolean;
+}
+
+export const StarfieldBackground: React.FC<StarfieldBackgroundProps> = ({ 
+  children, 
+  className = '',
+  backgroundOnly = false 
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
 
@@ -184,7 +194,7 @@ export const StarfieldBackground: React.FC = () => {
     }
   }, []);
 
-  return (
+  const canvas = (
     <canvas
       ref={canvasRef}
       style={{
@@ -197,5 +207,32 @@ export const StarfieldBackground: React.FC = () => {
         pointerEvents: 'none',
       }}
     />
+  );
+
+  // If backgroundOnly is true, just return the canvas
+  if (backgroundOnly) {
+    return canvas;
+  }
+
+  // If no children provided, just return the canvas with gradient background
+  if (!children) {
+    return (
+      <div className='fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'>
+        {canvas}
+      </div>
+    );
+  }
+
+  // Full UniversalBackground functionality with children
+  return (
+    <div className={`relative min-h-screen ${className}`}>
+      {/* Background layer with starfield */}
+      <div className='fixed inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'>
+        {canvas}
+      </div>
+
+      {/* Content layer - must be above background */}
+      <div className='relative z-10'>{children}</div>
+    </div>
   );
 };

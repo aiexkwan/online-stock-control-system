@@ -7,7 +7,7 @@
 
 import React, { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
-import { UniversalBackground } from '@/app/components/UniversalBackground';
+import { StarfieldBackground } from '@/app/components/StarfieldBackground';
 import {
   LayoutVariant,
   MaxWidthSize,
@@ -121,7 +121,7 @@ export const UniversalContainer = forwardRef<HTMLDivElement, UniversalContainerP
     const renderWithBackground = (content: React.ReactNode) => {
       switch (background) {
         case 'starfield':
-          return <UniversalBackground>{content}</UniversalBackground>;
+          return <StarfieldBackground>{content}</StarfieldBackground>;
 
         case 'gradient':
           return (

@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import StockCountForm from './components/StockCountForm';
 import ScanResult from './components/ScanResult';
 import { PageErrorBoundary } from '@/lib/error-handling';
-import { UniversalBackground } from '@/app/components/UniversalBackground';
+import { StarfieldBackground } from '@/app/components/StarfieldBackground';
 
 // 簡化狀態類型
 type CountState = 'form' | 'result' | 'input';
@@ -154,7 +154,7 @@ export default function AdminStockCountPage() {
   };
 
   return (
-    <UniversalBackground>
+    <StarfieldBackground>
       <PageErrorBoundary pageName='StockCount'>
         <div className='text-white'>
           <div className='mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8'>
@@ -179,6 +179,6 @@ export default function AdminStockCountPage() {
           </div>
         </div>
       </PageErrorBoundary>
-    </UniversalBackground>
+    </StarfieldBackground>
   );
 }

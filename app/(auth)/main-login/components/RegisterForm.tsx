@@ -4,7 +4,6 @@ import React, { useCallback, memo } from 'react';
 import EmailValidator from './EmailValidator';
 import PasswordValidator from './PasswordValidator';
 import { useLoginContext } from '../context/LoginContext';
-import { useAuthEvents, useAuthEventListener } from '../events/useAuthEvents';
 import { CompoundForm } from './compound/CompoundForm';
 
 interface RegisterFormProps {
@@ -26,61 +25,27 @@ const RegisterForm = memo(function RegisterForm({ onRegistrationSuccess }: Regis
     clearAllErrors,
   } = useLoginContext();
 
-  // Event-driven communication
-  const { emitRegisterAttempt, emitRegisterSuccess, emitRegisterError, emitFormFieldChange } =
-    useAuthEvents({ namespace: 'RegisterForm' });
-
-  // Listen to external events
-  useAuthEventListener('ERROR_CLEAR', () => {
-    clearAllErrors();
-  });
-
-  useAuthEventListener('FORM_CLEAR', event => {
-    if (event.payload.formType === 'register' || event.payload.formType === 'all') {
-      updateRegisterForm('email', '');
-      updateRegisterForm('password', '');
-      updateRegisterForm('confirmPassword', '');
-    }
-  });
 
   // Memoized handlers to prevent re-renders
   const handleSubmit = useCallback(
     async (formData: { email: string; password: string; confirmPassword: string }) => {
       clearAllErrors();
 
-      // Emit register attempt event
-      const registerFormSubmissionData = {
-        ...formData,
-        acceptTerms: true, // Assume terms are accepted for register attempt
-      };
-      emitRegisterAttempt(registerFormSubmissionData);
-
       const result = await register(formData);
 
       if (result.success) {
-        // Registration successful, notify parent and emit event
-        emitRegisterSuccess(formData.email);
+        // Registration successful, notify parent
         onRegistrationSuccess(formData.email);
-      } else {
-        emitRegisterError(result.error || 'Registration failed');
       }
     },
-    [
-      clearAllErrors,
-      register,
-      onRegistrationSuccess,
-      emitRegisterAttempt,
-      emitRegisterSuccess,
-      emitRegisterError,
-    ]
+    [clearAllErrors, register, onRegistrationSuccess]
   );
 
   const handleFieldChange = useCallback(
     (field: string, value: string) => {
       updateRegisterForm(field as keyof typeof registerFormData, value);
-      emitFormFieldChange(field, value, 'register');
     },
-    [updateRegisterForm, emitFormFieldChange]
+    [updateRegisterForm]
   );
 
   const handlePasswordToggle = useCallback(() => {

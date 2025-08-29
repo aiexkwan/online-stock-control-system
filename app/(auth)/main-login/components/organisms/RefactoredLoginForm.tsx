@@ -2,7 +2,6 @@
 
 import React, { useEffect, useCallback, memo } from 'react';
 import { useLoginContext } from '../../context/LoginContext';
-import { useAuthEvents, useAuthEventListener } from '../../events/useAuthEvents';
 import { EmailField, PasswordField } from '../molecules';
 import { Button } from '../atoms';
 import Link from 'next/link';
@@ -34,78 +33,32 @@ const RefactoredLoginForm = memo(function RefactoredLoginForm({
     clearAllErrors,
   } = useLoginContext();
 
-  // Event-driven communication
-  const { emitLoginAttempt, emitLoginSuccess, emitLoginError, emitFormFieldChange } = useAuthEvents(
-    { namespace: 'RefactoredLoginForm' }
-  );
-
-  // Listen to external events
-  useAuthEventListener('ERROR_CLEAR', () => {
-    clearAllErrors();
-  });
-
-  useAuthEventListener('FORM_CLEAR', event => {
-    if (event.payload.formType === 'login' || event.payload.formType === 'all') {
-      updateLoginForm('email', '');
-      updateLoginForm('password', '');
-    }
-  });
-
-  // Notify parent component of errors through events and callbacks
+  // Notify parent component of errors through callbacks
   useEffect(() => {
     if (error) {
-      emitLoginError(error);
       onError?.(error);
     }
-  }, [error, onError, emitLoginError]);
+  }, [error, onError]);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
       clearAllErrors();
 
-      // Emit login attempt event
-      emitLoginAttempt(loginFormData.email, loginFormData.password);
-
       const result = await login(loginFormData.email, loginFormData.password);
 
       if (result.success) {
-        // Convert Supabase User to AuthUser if available, provide default if not
-        const authUser = result.user
-          ? {
-              id: result.user.id,
-              email: result.user.email || loginFormData.email,
-              role: result.user.user_metadata?.role || 'user',
-            }
-          : {
-              id: 'unknown',
-              email: loginFormData.email,
-              role: 'user',
-            };
-
-        emitLoginSuccess(loginFormData.email, authUser, result.redirectPath);
         onSuccess?.();
-      } else {
-        emitLoginError(result.error || 'Login failed');
       }
     },
-    [
-      clearAllErrors,
-      login,
-      loginFormData,
-      onSuccess,
-      emitLoginAttempt,
-      emitLoginSuccess,
-      emitLoginError,
-    ]
+    [clearAllErrors, login, loginFormData, onSuccess]
   );
 
   const handleFieldChange = useCallback(
     (field: string, value: string) => {
       updateLoginForm(field as keyof typeof loginFormData, value);
-      emitFormFieldChange(field, value, 'login');
     },
-    [updateLoginForm, emitFormFieldChange]
+    [updateLoginForm]
   );
 
   return (

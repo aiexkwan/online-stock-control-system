@@ -168,7 +168,18 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isPublicRoute) {
-    // 改為 debug level 減少噪音
+    // 對於登入頁面，完全跳過認證檢查以避免不必要的日誌噪音
+    if (request.nextUrl.pathname === '/main-login') {
+      const response = NextResponse.next({
+        request: {
+          headers: processedRequest.headers,
+        },
+      });
+      response.headers.set('x-correlation-id', correlationId);
+      return response; // 最簡處理，無額外日誌
+    }
+
+    // 其他公開路由的正常處理
     middlewareLogger.debug(
       {
         correlationId,
@@ -197,19 +208,6 @@ export async function middleware(request: NextRequest) {
         versionInfo as unknown as ApiVersion | undefined
       );
     }
-
-    // 記錄請求完成時間
-    const duration = Date.now() - startTime;
-    // 改為 debug level 減少噪音
-    middlewareLogger.debug(
-      {
-        correlationId,
-        duration,
-        status: 'allowed',
-        apiVersion: processedRequest.nextUrl.pathname.startsWith('/api/') ? apiVersion : undefined,
-      },
-      'Middleware request completed'
-    );
 
     return response; // 直接放行公開路由
   }

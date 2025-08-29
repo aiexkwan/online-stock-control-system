@@ -9,7 +9,6 @@
 
 import React, { createContext, useContext, useCallback, useMemo } from 'react';
 import { EyeIcon, EyeSlashIcon } from '../icons';
-import { useAuthEvents } from '../../events/useAuthEvents';
 import {
   BaseCompoundProps,
   FormCompoundContext,
@@ -22,13 +21,6 @@ import {
   CompoundComponentType,
   WithCompoundComponents,
 } from './types';
-import {
-  FormSubmissionData,
-  LoginFormSubmissionData,
-  RegisterFormSubmissionData,
-  ResetPasswordFormData,
-  ChangePasswordFormData,
-} from '@/lib/types/auth-system';
 
 // Form Context
 const FormContext = createContext<FormCompoundContext | null>(null);
@@ -60,14 +52,11 @@ function CompoundFormBase({
   hasErrors = false,
   ...props
 }: CompoundFormProps) {
-  const { emitFormSubmit, emitFormFieldChange } = useAuthEvents({ namespace: 'CompoundForm' });
-
   const handleFieldChange = useCallback(
     (field: string, value: string) => {
       onFieldChange?.(field, value);
-      emitFormFieldChange(field, value, formType);
     },
-    [onFieldChange, emitFormFieldChange, formType]
+    [onFieldChange]
   );
 
   const handleSubmit = useCallback(
@@ -75,38 +64,9 @@ function CompoundFormBase({
       e.preventDefault();
       const formData = new FormData(e.target as HTMLFormElement);
       const data = Object.fromEntries(formData.entries()) as Record<string, string>;
-
-      // Type assertion based on form type for emitFormSubmit
-      let typedData: FormSubmissionData;
-      if (formType === 'login') {
-        typedData = {
-          email: data.email || '',
-          password: data.password || '',
-          rememberMe: data.rememberMe === 'on',
-        } as LoginFormSubmissionData;
-      } else if (formType === 'register') {
-        typedData = {
-          email: data.email || '',
-          password: data.password || '',
-          confirmPassword: data.confirmPassword || '',
-          acceptTerms: data.acceptTerms === 'on',
-        } as RegisterFormSubmissionData;
-      } else if (formType === 'reset') {
-        typedData = {
-          email: data.email || '',
-        } as ResetPasswordFormData;
-      } else {
-        typedData = {
-          currentPassword: data.currentPassword || '',
-          newPassword: data.newPassword || '',
-          confirmPassword: data.confirmPassword || '',
-        } as ChangePasswordFormData;
-      }
-
-      emitFormSubmit(formType, typedData);
       await onSubmit(data);
     },
-    [onSubmit, emitFormSubmit, formType]
+    [onSubmit]
   );
 
   const handleClear = useCallback(() => {
@@ -217,12 +177,10 @@ function Input({
   ...props
 }: InputCompoundProps) {
   const { isSubmitting } = useFormContext();
-  const { emitPasswordVisibilityToggle } = useAuthEvents({ namespace: 'CompoundForm' });
 
   const handlePasswordToggle = useCallback(() => {
     onPasswordToggle?.();
-    emitPasswordVisibilityToggle(name as 'password' | 'confirmPassword', !passwordVisible);
-  }, [onPasswordToggle, emitPasswordVisibilityToggle, name, passwordVisible]);
+  }, [onPasswordToggle]);
 
   const inputType = showPasswordToggle && passwordVisible ? 'text' : type;
 
