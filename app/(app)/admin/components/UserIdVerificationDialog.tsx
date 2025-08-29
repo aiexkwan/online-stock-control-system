@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -11,8 +10,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { createClient } from '@/app/utils/supabase/client';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { getUserId } from '@/app/hooks/getUserId';
+import { createSecureLogger } from '@/lib/security/enhanced-logger-sanitizer';
 
 interface UserIdVerificationDialogProps {
   isOpen: boolean;
@@ -24,75 +25,24 @@ interface UserIdVerificationDialogProps {
   isLoading?: boolean;
 }
 
+// 建立安全日誌記錄器
+const secureLogger = createSecureLogger('UserIdVerificationDialog');
+
 export const UserIdVerificationDialog: React.FC<UserIdVerificationDialogProps> = ({
   isOpen,
   onOpenChange,
   onVerified,
   onCancel,
   title = 'User ID Verification Required',
-  description = 'Your account does not have a User ID in metadata. Please enter your User ID to continue.',
+  description = 'Please enter your User ID to continue.',
   isLoading = false,
 }) => {
   const [userId, setUserId] = useState('');
-  const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
   const userIdInputRef = useRef<HTMLInputElement>(null);
 
-  const validateAndSaveUserId = useCallback(async (userIdValue: string): Promise<boolean> => {
-    try {
-      console.log('[UserIdVerificationDialog] Validating and saving user ID:', userIdValue);
-
-      // 使用 API 端點來驗證用戶 ID
-      const response = await fetch('/api/validate-user-id', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId: userIdValue }),
-      });
-
-      if (!response.ok) {
-        console.error('[UserIdVerificationDialog] API request failed:', response.status);
-        toast.error('Validation service unavailable. Please try again.');
-        return false;
-      }
-
-      const result = await response.json();
-
-      if (!result.success) {
-        console.error('[UserIdVerificationDialog] API error:', result.error);
-        toast.error('Validation failed. Please try again.');
-        return false;
-      }
-
-      if (!result.data?.valid || !result.data?.user) {
-        console.log('[UserIdVerificationDialog] User ID not found');
-        return false;
-      }
-
-      // 驗證成功後，更新 user metadata
-      const supabase = createClient();
-      const { error: updateError } = await supabase.auth.updateUser({
-        data: {
-          user_id: userIdValue,
-        },
-      });
-
-      if (updateError) {
-        console.error('[UserIdVerificationDialog] Failed to update user metadata:', updateError);
-        toast.error('Failed to save User ID. Please try again.');
-        return false;
-      }
-
-      console.log('[UserIdVerificationDialog] User ID validated and saved successfully');
-      toast.success('User ID verified and saved successfully');
-      return true;
-    } catch (error: unknown) {
-      console.error('[UserIdVerificationDialog] Exception during validation:', error);
-      toast.error('Validation failed. Please try again.');
-      return false;
-    }
-  }, []);
+  const { userId: currentUserId, verifyUserId, isLoading: userIdLoading } = getUserId();
 
   const handleCancel = useCallback(() => {
     onCancel();
@@ -101,23 +51,29 @@ export const UserIdVerificationDialog: React.FC<UserIdVerificationDialogProps> =
   }, [onCancel]);
 
   const handleVerify = useCallback(async () => {
+    // 如果metadata中已有user_id，直接信任並使用（metadata權限最高）
+    if (currentUserId) {
+      onVerified(currentUserId);
+      return;
+    }
+
+    // 否則驗證手動輸入的user_id
     if (!userId.trim()) {
       setError('User ID is required');
       return;
     }
 
-    // 驗證 User ID 格式（應該是數字）
     const userIdValue = userId.trim();
     if (!/^\d+$/.test(userIdValue)) {
       setError('User ID must be numeric');
       return;
     }
 
-    setIsVerifying(true);
     setError(null);
+    setIsValidating(true);
 
     try {
-      const isValid = await validateAndSaveUserId(userIdValue);
+      const isValid = await verifyUserId(userIdValue);
 
       if (isValid) {
         onVerified(userIdValue);
@@ -128,13 +84,13 @@ export const UserIdVerificationDialog: React.FC<UserIdVerificationDialogProps> =
         toast.error('Invalid User ID');
       }
     } catch (error) {
-      console.error('[UserIdVerificationDialog] Error during verification:', error);
+      secureLogger.error(error, '[UserIdVerificationDialog] Error during verification');
       setError('An error occurred while validating User ID');
       toast.error('Validation error occurred');
     } finally {
-      setIsVerifying(false);
+      setIsValidating(false);
     }
-  }, [userId, onVerified, validateAndSaveUserId]);
+  }, [currentUserId, userId, onVerified, verifyUserId]);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -150,16 +106,17 @@ export const UserIdVerificationDialog: React.FC<UserIdVerificationDialogProps> =
     [error]
   );
 
-  // 對話框開啟時聚焦輸入框
+  // 對話框開啟時聚焦輸入框並顯示當前user_id（如果有的話）
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => {
         userIdInputRef.current?.focus();
       }, 100);
-      setUserId('');
+      // 如果有currentUserId，預填入輸入框但仍需驗證
+      setUserId(currentUserId || '');
       setError(null);
     }
-  }, [isOpen]);
+  }, [isOpen, currentUserId]);
 
   return (
     <Dialog
@@ -194,7 +151,7 @@ export const UserIdVerificationDialog: React.FC<UserIdVerificationDialogProps> =
               className={`border-gray-600 bg-gray-700 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500 ${
                 error ? 'border-red-500 focus:ring-red-500' : ''
               }`}
-              disabled={isVerifying || isLoading}
+              disabled={isValidating || isLoading || userIdLoading}
             />
             {error && <p className='text-sm text-red-400'>{error}</p>}
           </div>
@@ -204,17 +161,17 @@ export const UserIdVerificationDialog: React.FC<UserIdVerificationDialogProps> =
           <Button
             variant='outline'
             onClick={handleCancel}
-            disabled={isVerifying || isLoading}
+            disabled={isValidating || isLoading || userIdLoading}
             className='border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white'
           >
             Cancel
           </Button>
           <Button
             onClick={handleVerify}
-            disabled={isVerifying || isLoading || !userId.trim()}
+            disabled={isValidating || isLoading || userIdLoading || !userId.trim()}
             className='bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-500'
           >
-            {isVerifying ? (
+            {isValidating ? (
               <>
                 <svg
                   className='-ml-1 mr-3 h-5 w-5 animate-spin text-white'
@@ -239,7 +196,7 @@ export const UserIdVerificationDialog: React.FC<UserIdVerificationDialogProps> =
                 Verifying...
               </>
             ) : (
-              'Verify & Save'
+              'Verify'
             )}
           </Button>
         </DialogFooter>

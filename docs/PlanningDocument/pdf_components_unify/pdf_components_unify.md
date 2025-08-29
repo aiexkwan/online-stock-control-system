@@ -185,6 +185,7 @@ const pdfTypeConfigs: Record<PdfType, PdfConfig> = {
    ```
 
 3. **統一 Hook 實現**
+
    ```typescript
    // hooks/useUnifiedPdfGeneration.ts
    export function useUnifiedPdfGeneration<T>(type: PdfType) {
@@ -248,6 +249,7 @@ const pdfTypeConfigs: Record<PdfType, PdfConfig> = {
    ```
 
 2. **GRN 業務層重構**
+
    ```typescript
    // hooks/useAdminGrnLabelBusiness.tsx (完全重構)
    export function useAdminGrnLabelBusiness() {
@@ -280,6 +282,7 @@ const pdfTypeConfigs: Record<PdfType, PdfConfig> = {
 **目標**: 整合現有打印架構
 
 1. **統一打印服務整合**
+
    ```typescript
    // 在統一 PDF 服務中整合打印功能
    async generateAndPrint<T>(

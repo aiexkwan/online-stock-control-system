@@ -7,6 +7,10 @@ import {
   confirmPalletUsage,
   releasePalletReservation,
 } from '@/app/actions/palletActions';
+import { createSecureLogger } from '@/lib/security/enhanced-logger-sanitizer';
+
+// 建立安全日誌記錄器
+const secureLogger = createSecureLogger('usePalletGeneration');
 
 interface UsePalletGenerationReturn {
   isGenerating: boolean;
@@ -36,8 +40,7 @@ interface UsePalletGenerationReturn {
  * // Generate pallet numbers
  * const result = await palletGeneration.generatePalletNumbersAndSeries(5, 'my-session');
  * if (result.success) {
- *   process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(result.palletNumbers);
- *   process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "production" && console.log(result.series);
+ *   // Pallet numbers and series will be logged securely in development
  * }
  *
  * // Confirm usage after successful printing
@@ -77,8 +80,7 @@ export const usePalletGeneration = (): UsePalletGenerationReturn => {
       setGenerationError(null);
 
       try {
-        (process.env.NODE_ENV as string) !== 'production' &&
-          console.log('[usePalletGeneration] Generating pallet numbers:', count);
+        secureLogger.info({ count }, '[usePalletGeneration] Generating pallet numbers');
 
         // 使用 Server Action
         const result = await generatePalletNumbers(count, sessionId);
@@ -87,7 +89,7 @@ export const usePalletGeneration = (): UsePalletGenerationReturn => {
           const error = result.error;
           setGenerationError(error);
           toast.error(error);
-          console.error('[usePalletGeneration] Generation failed:', result);
+          secureLogger.error(result, '[usePalletGeneration] Generation failed');
           return {
             palletNumbers: [],
             series: [],
@@ -96,10 +98,10 @@ export const usePalletGeneration = (): UsePalletGenerationReturn => {
           };
         }
 
-        (process.env.NODE_ENV as string) !== 'production' &&
-          console.log('[usePalletGeneration] Generated successfully:', {
-            count: result.palletNumbers.length,
-          });
+        secureLogger.info(
+          { count: result.palletNumbers.length },
+          '[usePalletGeneration] Generated successfully'
+        );
 
         return {
           palletNumbers: result.palletNumbers,
@@ -110,7 +112,7 @@ export const usePalletGeneration = (): UsePalletGenerationReturn => {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
         setGenerationError(errorMessage);
         toast.error(`Error generating pallet numbers: ${errorMessage}`);
-        console.error('[usePalletGeneration] Exception:', error);
+        secureLogger.error(error, '[usePalletGeneration] Exception');
 
         return {
           palletNumbers: [],
@@ -134,7 +136,7 @@ export const usePalletGeneration = (): UsePalletGenerationReturn => {
       }
       return true;
     } catch (error) {
-      console.error('[usePalletGeneration] Error confirming usage:', error);
+      secureLogger.error(error, '[usePalletGeneration] Error confirming usage');
       toast.error('Error confirming pallet usage');
       return false;
     }
@@ -149,7 +151,7 @@ export const usePalletGeneration = (): UsePalletGenerationReturn => {
       }
       return true;
     } catch (error) {
-      console.error('[usePalletGeneration] Error releasing reservation:', error);
+      secureLogger.error(error, '[usePalletGeneration] Error releasing reservation');
       toast.error('Error releasing pallet reservation');
       return false;
     }

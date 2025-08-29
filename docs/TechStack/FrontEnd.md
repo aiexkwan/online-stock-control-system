@@ -1,11 +1,11 @@
 # 前端技術棧 (Frontend Technology Stack)
 
-_最後更新日期: 2025-08-29 02:33:37_
+_最後更新日期: 2025-08-29_
 
 ## 核心框架與語言
 
-- **框架**: [Next.js](https://nextjs.org/) 15.4.4, [React](https://react.dev/) 18.3.1
-- **語言**: [TypeScript](https://www.typescriptlang.org/) 5.8.3
+- **框架**: [Next.js](https://nextjs.org/) 15.4.6, [React](https://react.dev/) 18.3.1
+- **語言**: [TypeScript](https://www.typescriptlang.org/) 5.9.2
 - **渲染模式**: App Router (基於 `app/` 目錄結構)
 - **React Strict Mode**: 禁用，建議在開發環境啟用
 
@@ -62,3 +62,35 @@ _最後更新日期: 2025-08-29 02:33:37_
 - **核心通用組件**: `components/ui/` (58個組件), `lib/card-system/`
 - **部署優化**: Vercel 獨立輸出模式 (`standalone`), ISR 啟用
 - **圖像優化**: WebP, AVIF 格式支援
+
+## 統一化 Hooks
+
+### 用戶ID驗證 Hook
+
+- **`getUserId` (統一解決方案)**
+  - **位置**: `app/hooks/getUserId.ts`
+  - **職責**: 提供統一的用戶ID獲取介面，整合 Supabase 認證系統
+  - **特性**:
+    - 自動處理認證狀態檢查
+    - 提供載入狀態和錯誤處理
+    - 支援客戶端和服務端渲染
+    - 完整的 TypeScript 類型支援
+  - **使用範例**:
+
+    ```typescript
+    import { getUserId } from '@/app/hooks/getUserId';
+
+    function MyComponent() {
+      const { userId, loading, error } = getUserId();
+
+      if (loading) return <div>Loading...</div>;
+      if (error) return <div>Error: {error.message}</div>;
+      if (!userId) return <div>Please login</div>;
+
+      return <div>User ID: {userId}</div>;
+    }
+    ```
+
+  - **遷移指南**:
+    - 所有舊的 `getUserId()` 或 `getCurrentUserId()` 呼叫應遷移至 `getUserId`
+    - 避免直接使用 `supabase.auth.getUser()`，應透過 `getUserId` 統一管理

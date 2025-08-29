@@ -1,5 +1,5 @@
 /**
- * Unified useUserId Hook
+ * Unified getUserId Hook
  * 統一的用戶 ID 獲取 Hook，整合不同模組的用戶身份邏輯
  *
  * Features:
@@ -19,6 +19,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/app/utils/supabase/client';
 import { toast } from 'sonner';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { createSecureLogger } from '@/lib/security/enhanced-logger-sanitizer';
+
+// 建立安全日誌記錄器
+const secureLogger = createSecureLogger('getUserId');
 
 interface UserDetails {
   id: string;
@@ -28,7 +32,7 @@ interface UserDetails {
   username: string;
 }
 
-interface UseUserIdReturn {
+interface GetUserIdReturn {
   // Core data
   userId: string | null; // Clock number ID (e.g., "1234")
   userNumericId: string | null; // Same as userId, kept for backward compatibility
@@ -63,7 +67,7 @@ function extractUsernameFromEmail(email: string): string | null {
  * @example
  * ```tsx
  * function MyComponent() {
- *   const { userId, userDetails, isLoading } = useUserId();
+ *   const { userId, userDetails, isLoading } = useGetUserId();
  *
  *   if (isLoading) return <div>Loading user...</div>;
  *
@@ -71,7 +75,7 @@ function extractUsernameFromEmail(email: string): string | null {
  * }
  * ```
  */
-export function useUserId(): UseUserIdReturn {
+export function useGetUserId(): GetUserIdReturn {
   const [userId, setUserId] = useState<string | null>(null);
   const [userNumericId, setUserNumericId] = useState<string | null>(null);
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
@@ -125,7 +129,7 @@ export function useUserId(): UseUserIdReturn {
 
         return details;
       } catch (err) {
-        console.error('[useUserId] Error fetching user details:', err);
+        secureLogger.error(err, '[getUserId] Error fetching user details');
         return null;
       }
     },
@@ -193,7 +197,7 @@ export function useUserId(): UseUserIdReturn {
       const error = err as Error;
       setError(error);
       setIsAuthenticated(false);
-      console.error('[useUserId] Error getting user:', error);
+      secureLogger.error(error, '[getUserId] Error getting user');
 
       // Only show toast for non-authentication errors
       if (!error.message.includes('not authenticated')) {
@@ -219,7 +223,7 @@ export function useUserId(): UseUserIdReturn {
 
       return !error && !!data;
     } catch (err) {
-      console.error('[useUserId] Error verifying user ID:', err);
+      secureLogger.error(err, '[getUserId] Error verifying user ID');
       return false;
     }
   }, []);
@@ -276,7 +280,7 @@ export function useUserId(): UseUserIdReturn {
  * For backward compatibility with existing code
  */
 export function useClockNumber(): string | null {
-  const { userId } = useUserId();
+  const { userId } = useGetUserId();
   return userId;
 }
 
@@ -285,6 +289,12 @@ export function useClockNumber(): string | null {
  * For components that need the ID from data_id table
  */
 export function useUserNumericId(): string | null {
-  const { userNumericId } = useUserId();
+  const { userNumericId } = useGetUserId();
   return userNumericId;
 }
+
+/**
+ * Export the main hook with the intuitive name that components expect
+ * For backward compatibility with existing imports
+ */
+export { useGetUserId as getUserId };

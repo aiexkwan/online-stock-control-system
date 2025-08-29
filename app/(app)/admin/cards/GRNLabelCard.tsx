@@ -8,7 +8,7 @@ import { getGrnDatabaseService } from '@/lib/database/grn-database-service';
 import { toast } from 'sonner';
 // Imports moved to unified @/lib/grn below
 import { EnhancedProgressBar } from '../components/EnhancedProgressBar';
-import ClockNumberConfirmDialog from '../components/ClockNumberConfirmDialog';
+const UserIdVerificationDialog = React.lazy(() => import('../components/UserIdVerificationDialog'));
 import { SpecialCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { cardTextStyles } from '@/lib/card-system/theme';
 import { Package } from 'lucide-react';
@@ -289,7 +289,8 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
       currentUserId: currentUserId || '',
     });
 
-  // User ID is now automatically handled by useCurrentUserId hook
+  // User ID 驗證對話框狀態
+  const [showUserIdDialog, setShowUserIdDialog] = React.useState(false);
 
   // 確保初始狀態有至少一個輸入框
   useEffect(() => {
@@ -609,10 +610,15 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
       return;
     }
 
-    // 檢查是否需要用戶 ID 驗證（如果沒有 currentUserId）
-    if (!currentUserId) {
-      logger.info('No user ID found, showing clock number dialog');
-      actions.toggleClockNumberDialog();
+    // 檢查是否需要用戶 ID 驗證
+    if (
+      !currentUserId ||
+      currentUserId === '' ||
+      currentUserId === 'null' ||
+      currentUserId === 'undefined'
+    ) {
+      logger.info('No user ID found, showing user ID verification dialog');
+      setShowUserIdDialog(true);
       return;
     }
 
@@ -657,15 +663,20 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
       mode: state.labelMode,
     });
 
-    if (config.features.enableClockNumberDialog) {
-      actions.toggleClockNumberDialog();
-    } else {
-      // Direct print without dialog
+    // 直接使用 currentUserId 進行打印
+    try {
       await processPrintRequest(currentUserId || '');
+      if (callbacks?.onPrintSuccess) {
+        callbacks.onPrintSuccess(state.grossWeights.filter(w => w.trim() !== '').length);
+      }
+    } catch (error) {
+      logger.error('Print process failed:', error);
+      if (callbacks?.onPrintError) {
+        callbacks.onPrintError(error instanceof Error ? error.message : 'Unknown print error');
+      }
     }
   }, [
     isFormValid,
-    actions,
     currentUserId,
     config.features,
     disabled,
@@ -676,71 +687,31 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
     processPrintRequest,
   ]);
 
-  // Clock number confirmation with validation
-  const handleClockNumberConfirm = useCallback(
-    async (clockNumber: string) => {
-      // Validate clock number format
-      let validatedClockNumber = validateClockNumber(clockNumber);
-
-      // Apply custom clock number validation if provided
-      if (config.validation.customValidators?.clockNumber && validatedClockNumber) {
-        const customValidation =
-          config.validation.customValidators.clockNumber(validatedClockNumber);
-        if (customValidation !== true) {
-          const errorMessage =
-            typeof customValidation === 'string' ? customValidation : 'Invalid clock number';
-          logger.warn('Custom clock number validation failed:', errorMessage);
-          if (callbacks?.onValidationError) {
-            callbacks.onValidationError('clockNumber', errorMessage);
+  // User ID 驗證處理函數
+  const handleUserIdVerified = React.useCallback(
+    (userId: string) => {
+      setShowUserIdDialog(false);
+      // 驗證完成後繼續打印流程
+      setTimeout(async () => {
+        try {
+          await processPrintRequest(userId);
+          if (callbacks?.onPrintSuccess) {
+            callbacks.onPrintSuccess(state.grossWeights.filter(w => w.trim() !== '').length);
           }
-          grnErrorHandler.handleValidationError('form', errorMessage, {
-            component: 'GRNLabelCard',
-            action: 'clock_number_validation',
-            clockNumber: currentUserId || '',
-          });
-          return;
+        } catch (error) {
+          logger.error('Print process failed:', error);
+          if (callbacks?.onPrintError) {
+            callbacks.onPrintError(error instanceof Error ? error.message : 'Unknown print error');
+          }
         }
-      }
-
-      if (!validatedClockNumber) {
-        const errorMessage =
-          'Invalid clock number format. Please use alphanumeric characters only.';
-        if (callbacks?.onValidationError) {
-          callbacks.onValidationError('clockNumber', errorMessage);
-        }
-        grnErrorHandler.handleValidationError('form', errorMessage, {
-          component: 'GRNLabelCard',
-          action: 'clock_number_validation',
-          clockNumber: currentUserId || '',
-        });
-        return;
-      }
-
-      actions.toggleClockNumberDialog();
-      logger.info('Clock number confirmed, starting print process:', validatedClockNumber);
-
-      try {
-        await processPrintRequest(validatedClockNumber);
-        if (callbacks?.onPrintSuccess) {
-          callbacks.onPrintSuccess(state.grossWeights.filter(w => w.trim() !== '').length);
-        }
-      } catch (error) {
-        logger.error('Print process failed:', error);
-        if (callbacks?.onPrintError) {
-          callbacks.onPrintError(error instanceof Error ? error.message : 'Unknown print error');
-        }
-      }
+      }, 100);
     },
-    [
-      processPrintRequest,
-      actions,
-      currentUserId,
-      config.validation,
-      callbacks,
-      logger,
-      state.grossWeights,
-    ]
+    [processPrintRequest, callbacks, logger, state.grossWeights]
   );
+
+  const handleUserIdVerificationCancel = React.useCallback(() => {
+    setShowUserIdDialog(false);
+  }, []);
 
   // Theme configuration is now externalized above for performance
 
@@ -913,15 +884,26 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
         </div>
       </SpecialCard>
 
-      <ClockNumberConfirmDialog
-        isOpen={state.ui.isClockNumberDialogOpen}
-        onOpenChange={() => actions.toggleClockNumberDialog()}
-        onConfirm={handleClockNumberConfirm}
-        onCancel={() => actions.toggleClockNumberDialog()}
-        title='Confirm Printing'
-        description='Please enter your clock number to proceed with printing GRN labels.'
-        isLoading={state.ui.isProcessing}
-      />
+      {/* User ID Verification Dialog */}
+      {showUserIdDialog && (
+        <React.Suspense
+          fallback={
+            <div className='fixed inset-0 flex items-center justify-center bg-black/50'>
+              <div className='h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent' />
+            </div>
+          }
+        >
+          <UserIdVerificationDialog
+            isOpen={showUserIdDialog}
+            onOpenChange={setShowUserIdDialog}
+            onVerified={handleUserIdVerified}
+            onCancel={handleUserIdVerificationCancel}
+            title='User ID Required'
+            description='Your account metadata does not contain a User ID. Please enter your User ID to continue.'
+            isLoading={state.ui.isProcessing}
+          />
+        </React.Suspense>
+      )}
     </div>
   );
 };

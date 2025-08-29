@@ -1,16 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { getErrorMessage } from '@/lib/types/error-handling';
 import { MIN_ACO_ORDER_REF_LENGTH } from '../components/qc-label-constants';
-// 導入新的模組化 hooks
-import { useUserId } from '@/app/hooks/useUserId';
-import { useCurrentUserId } from '@/app/hooks/useAuth';
+// 導入表單驗證 hook
 import { useAdminFormValidation } from './useAdminFormValidation';
-import {
-  useClockConfirmation,
-  type PrintEvent,
-} from '@/app/components/qc-label-form/hooks/modules/useClockConfirmation';
 // 使用統一的 PDF 生成 Hook
 import { useUnifiedPdfGeneration, type BatchPdfOptions } from '@/hooks/useUnifiedPdfGeneration';
 import { PdfType } from '@/lib/services/unified-pdf-service';
@@ -57,11 +51,7 @@ export const useAdminQcLabelBusiness = ({
   // Supabase client for v6 operations
   const supabase = createClient();
 
-  // 使用統一的 useUserId hook
-  const { userId, refreshUser } = useUserId();
-
-  // 使用新的 useCurrentUserId hook 以支持從 metadata 提取用戶 ID
-  const currentUserId = useCurrentUserId();
+  // User ID will be provided by UserIdVerificationDialog when needed
 
   // 使用統一的 PDF 生成 Hook
   const {
@@ -71,12 +61,7 @@ export const useAdminQcLabelBusiness = ({
     cancel: cancelPdfGeneration,
   } = useUnifiedPdfGeneration();
 
-  // 當 userId 改變時更新 formData
-  useEffect(() => {
-    if (userId && formData.userId !== userId) {
-      setFormData(prev => ({ ...prev, userId }));
-    }
-  }, [userId, formData.userId, setFormData]);
+  // User ID will be set when UserIdVerificationDialog completes verification
 
   const {
     validateForm,
@@ -87,15 +72,32 @@ export const useAdminQcLabelBusiness = ({
     validateAcoOrderDetails,
   } = useAdminFormValidation({ formData, productInfo });
 
-  const {
-    isClockConfirmOpen,
-    setIsClockConfirmOpen,
-    printEventToProceed,
-    setPrintEventToProceed,
-    handleClockNumberCancel,
-    checkCooldownPeriod,
-    setCooldownTimer,
-  } = useClockConfirmation();
+  // 冷卻期管理
+  const lastConfirmationTimeRef = useRef<number | null>(null);
+  const COOLDOWN_PERIOD = 10000; // 10 seconds
+
+  // 檢查冷卻期
+  const checkCooldownPeriod = useCallback((): boolean => {
+    if (!lastConfirmationTimeRef.current) {
+      return false;
+    }
+
+    const now = Date.now();
+    const timeSinceLastConfirmation = now - lastConfirmationTimeRef.current;
+    const isInCooldown = timeSinceLastConfirmation < COOLDOWN_PERIOD;
+
+    if (isInCooldown) {
+      const remainingTime = Math.ceil((COOLDOWN_PERIOD - timeSinceLastConfirmation) / 1000);
+      toast.warning(`Please wait ${remainingTime} seconds before generating another label`);
+    }
+
+    return isInCooldown;
+  }, []);
+
+  // 設置冷卻期
+  const setCooldownTimer = useCallback(() => {
+    lastConfirmationTimeRef.current = Date.now();
+  }, []);
 
   // Simple ACO management for admin - no complex hooks
   const handleAutoAcoConfirm = useCallback(
@@ -152,50 +154,32 @@ export const useAdminQcLabelBusiness = ({
   // State for preventing duplicate submissions
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Main print logic
-  const handlePrintLabel = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
+  // This function is no longer used as QCLabelCard handles verification directly
+  const handlePrintLabel = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log(
+      '[useAdminQcLabelBusiness] handlePrintLabel deprecated - use handleClockNumberConfirm directly'
+    );
+  }, []);
 
-      // 策略 2: DTO/自定義 type interface - 將 FormEvent 轉換為 PrintEvent
-      const printEvent: PrintEvent = {
-        type: 'form_submit',
-        data: {
-          timeStamp: e.timeStamp,
-          currentTarget: e.currentTarget,
-        },
-        preventDefault: () => e.preventDefault(),
-        stopPropagation: () => e.stopPropagation(),
-      };
-
-      // Store the event
-      setPrintEventToProceed(printEvent);
-
-      // 顯示時鐘號確認對話框
-      // 如果有 currentUserId，對話框會自動填充並可以自動確認
-      // 如果沒有 currentUserId，對話框會要求用戶手動輸入
-      console.log('[useAdminQcLabelBusiness] Opening dialog with currentUserId:', currentUserId);
-      setIsClockConfirmOpen(true);
-    },
-    [setIsClockConfirmOpen, setPrintEventToProceed, currentUserId]
-  );
-
-  // Handle clock number confirmation
+  // Handle clock number confirmation with verified user ID
   const handleClockNumberConfirm = useCallback(
-    async (clockNumber: string) => {
-      console.log('[useAdminQcLabelBusiness] handleClockNumberConfirm called with:', clockNumber);
-      setIsClockConfirmOpen(false);
+    async (verifiedUserId: string) => {
+      console.log(
+        '[useAdminQcLabelBusiness] handleClockNumberConfirm called with verified user ID'
+      );
+
+      // Update formData with verified user ID
+      setFormData(prev => ({ ...prev, userId: verifiedUserId }));
 
       // Prevent duplicate submissions
       if (isProcessing) {
         onShowWarning?.('Processing in progress. Please wait...');
-        setPrintEventToProceed(null);
         return;
       }
 
       // 檢查冷卻期
       if (checkCooldownPeriod()) {
-        setPrintEventToProceed(null);
         return;
       }
 
@@ -212,7 +196,6 @@ export const useAdminQcLabelBusiness = ({
             : 'Validation failed';
         onShowError?.(errorMessage);
         setIsProcessing(false);
-        setPrintEventToProceed(null);
         return;
       }
 
@@ -220,7 +203,6 @@ export const useAdminQcLabelBusiness = ({
       if (!productInfo) {
         onShowError?.('Please select a valid product code');
         setIsProcessing(false);
-        setPrintEventToProceed(null);
         return;
       }
 
@@ -257,7 +239,7 @@ export const useAdminQcLabelBusiness = ({
           p_count: count,
           p_product_code: productInfo.code,
           p_product_qty: quantity,
-          p_clock_number: clockNumber, // 使用字符串格式的 clock number
+          p_clock_number: verifiedUserId, // 使用已驗證的 user ID
           p_plt_remark: formData.operator?.trim() || null, // Operator as remark
           p_session_id: null,
           p_aco_order_ref:
@@ -292,7 +274,6 @@ export const useAdminQcLabelBusiness = ({
           console.error('[Admin QC Label] RPC error:', rpcResult.error);
           onShowError?.(`Failed to process QC label: ${rpcResult.error.message}`);
           setIsProcessing(false);
-          setPrintEventToProceed(null);
           return;
         }
 
@@ -301,7 +282,6 @@ export const useAdminQcLabelBusiness = ({
           console.error('[Admin QC Label] RPC returned null/undefined data');
           onShowError?.('Server returned empty response. Please try again.');
           setIsProcessing(false);
-          setPrintEventToProceed(null);
           return;
         }
 
@@ -313,7 +293,6 @@ export const useAdminQcLabelBusiness = ({
           console.error('[Admin QC Label] RPC data has unexpected structure:', rpcData);
           onShowError?.('Server returned invalid response format.');
           setIsProcessing(false);
-          setPrintEventToProceed(null);
           return;
         }
 
@@ -328,7 +307,6 @@ export const useAdminQcLabelBusiness = ({
             onShowError?.(`Processing failed: ${rpcData.message}`);
           }
           setIsProcessing(false);
-          setPrintEventToProceed(null);
           return;
         }
 
@@ -360,7 +338,6 @@ export const useAdminQcLabelBusiness = ({
           }
 
           setIsProcessing(false);
-          setPrintEventToProceed(null);
           return;
         }
 
@@ -386,8 +363,8 @@ export const useAdminQcLabelBusiness = ({
             quantity,
             series: sortedSeries[index],
             palletNum: palletNumber,
-            operatorClockNum: formData.operator || clockNumber,
-            qcClockNum: clockNumber,
+            operatorClockNum: formData.operator || verifiedUserId,
+            qcClockNum: verifiedUserId,
             workOrderNumber: formData.acoOrderRef || undefined,
             workOrderName: productInfo.type === 'ACO' ? formData.acoOrderRef : undefined,
             productType: productInfo.type || undefined,
@@ -446,7 +423,7 @@ export const useAdminQcLabelBusiness = ({
                 palletNumbers: sortedPalletNumbers.slice(0, pdfResult.successful),
                 series: sortedSeries.slice(0, pdfResult.successful),
                 quantity,
-                operator: clockNumber,
+                operator: verifiedUserId,
               });
 
               logger.info('[Admin QC Label] PDFs sent to print queue');
@@ -497,13 +474,10 @@ export const useAdminQcLabelBusiness = ({
       } finally {
         console.log('[Admin QC Label] Cleaning up...');
         setIsProcessing(false);
-        setPrintEventToProceed(null);
       }
     },
     [
       isProcessing,
-      setIsClockConfirmOpen,
-      setPrintEventToProceed,
       productInfo,
       formData,
       setFormData,
@@ -515,8 +489,6 @@ export const useAdminQcLabelBusiness = ({
       validateForm,
       generateBatch,
       supabase,
-      currentUserId,
-      logger,
     ]
   );
 
@@ -530,10 +502,6 @@ export const useAdminQcLabelBusiness = ({
     // Print handlers
     handlePrintLabel,
     handleClockNumberConfirm,
-    handleClockNumberCancel,
-
-    // Clock number confirmation state
-    isClockConfirmOpen,
 
     // Processing state
     isProcessing,

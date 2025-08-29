@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getUserRoleFromDatabase, getUserRole } from './useAuth';
+import { getUserRole } from './useAuth';
 
 export interface AuthRedirectActions {
   getUserRedirectPath: (email: string) => Promise<string>;
@@ -25,19 +25,9 @@ export function useAuthRedirect(): UseAuthRedirectReturn {
 
   // Get user redirect path based on role
   const getUserRedirectPath = useCallback(async (email: string): Promise<string> => {
-    try {
-      // Try to get role from database first
-      const dbRole = await getUserRoleFromDatabase(email);
-      if (dbRole) {
-        return dbRole.defaultPath;
-      }
-    } catch (error) {
-      console.warn('[useAuthRedirect] Failed to get role from database, using fallback', error);
-    }
-
-    // Fallback to legacy role mapping
-    const legacyRole = getUserRole(email);
-    return legacyRole.defaultPath;
+    // Use email-based role mapping directly
+    const role = getUserRole(email);
+    return role.defaultPath;
   }, []);
 
   // Redirect to user-specific page after authentication

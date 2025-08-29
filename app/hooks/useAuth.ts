@@ -1,166 +1,58 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { getErrorMessage } from '@/lib/types/error-handling';
-import { createClient } from '@/app/utils/supabase/client';
 import { unifiedAuth } from '@/app/(auth)/main-login/utils/unified-auth';
-import type { User, PostgrestError } from '@supabase/supabase-js';
+import { createClient } from '@/app/utils/supabase/client';
+import type { PostgrestError, User } from '@supabase/supabase-js';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AuthState, UserRole } from '@/lib/types/auth';
-import { AuthUser } from '@/lib/types/auth-system';
+import { createSecureLogger } from '@/lib/security/enhanced-logger-sanitizer';
 
-// 基於 department 和 position 的用戶角色映射
-// 所有用戶統一導向 /admin/analytics，並且可以訪問所有頁面
-const USER_ROUTING_MAP: Record<
-  string,
-  { defaultPath: string; allowedPaths: string[]; navigationRestricted: boolean }
-> = {
-  // Admin 用戶 (無限制)
-  Injection_Admin: {
-    defaultPath: '/admin/analytics',
-    allowedPaths: [],
-    navigationRestricted: false,
-  },
-  Office_Admin: {
-    defaultPath: '/admin/analytics',
-    allowedPaths: [],
-    navigationRestricted: false,
-  },
-  Pipeline_Admin: {
-    defaultPath: '/admin/analytics',
-    allowedPaths: [],
-    navigationRestricted: false,
-  },
-  System_Admin: {
-    defaultPath: '/admin/analytics',
-    allowedPaths: [],
-    navigationRestricted: false,
-  },
-  Warehouse_Admin: {
-    defaultPath: '/admin/analytics',
-    allowedPaths: [],
-    navigationRestricted: false,
-  },
+// 建立安全日誌記錄器
+const secureLogger = createSecureLogger('useAuth');
 
-  // User 用戶 (現在也無限制)
-  Injection_User: {
-    defaultPath: '/admin/analytics',
-    allowedPaths: [],
-    navigationRestricted: false,
-  },
-  Office_User: {
-    defaultPath: '/admin/analytics',
-    allowedPaths: [],
-    navigationRestricted: false,
-  },
-  Pipeline_User: {
-    defaultPath: '/admin/analytics',
-    allowedPaths: [],
-    navigationRestricted: false,
-  },
-  Warehouse_User: {
-    defaultPath: '/admin/analytics',
-    allowedPaths: [],
-    navigationRestricted: false,
-  },
-};
-
+// 遵循 YAGNI 原則 - 簡化角色映射，只保留實際使用的功能
 export const getUserRoleByDepartmentAndPosition = (
   department: string,
   position: string
 ): UserRole => {
-  const key = `${department}_${position}`;
-  const config = USER_ROUTING_MAP[key];
+  return {
+    type: position === 'Admin' ? 'admin' : 'user',
+    department,
+    position,
+    allowedPaths: [],
+    defaultPath: '/admin/analytics',
+    navigationRestricted: false,
+  };
+};
 
-  if (!config) {
-    // 降級處理：未知組合也統一導向 /admin/analytics 且無限制
-    console.warn(
-      `[getUserRoleByDepartmentAndPosition] Unknown combination: ${department}_${position}`
-    );
-    return {
-      type: 'user',
-      department,
-      position,
-      allowedPaths: [],
-      defaultPath: '/admin/analytics',
-      navigationRestricted: false,
-    };
-  }
+// Simplified auth - use email-based role mapping directly
+
+// 基於電郵的角色映射 - 遵循 YAGNI 原則簡化
+export const getUserRole = (email: string): UserRole => {
+  const department =
+    email === 'production@pennineindustries.com'
+      ? 'Pipeline'
+      : email === 'warehouse@pennineindustries.com'
+        ? 'Warehouse'
+        : email === 'pipeline@pennineindustries.com'
+          ? 'Pipeline'
+          : 'System';
+
+  const position =
+    email.includes('@pennineindustries.com') &&
+    (email.includes('production') || email.includes('warehouse'))
+      ? 'User'
+      : 'Admin';
 
   return {
     type: position === 'Admin' ? 'admin' : 'user',
     department,
     position,
-    allowedPaths: config.allowedPaths,
-    defaultPath: config.defaultPath,
-    navigationRestricted: config.navigationRestricted,
+    allowedPaths: [],
+    defaultPath: '/admin/analytics',
+    navigationRestricted: false,
   };
-};
-
-// Simplified auth - removed retry counters
-
-export const getUserRoleFromDatabase = async (email: string): Promise<UserRole | null> => {
-  try {
-    const supabase = createClient();
-
-    const { data, error } = await supabase
-      .from('data_id')
-      .select('department, position')
-      .eq('email', email)
-      .single();
-
-    if (error) {
-      if ((error as PostgrestError).code === 'PGRST116') {
-        // 用戶不存在，這是正常情況
-        return null;
-      }
-      console.error(`[getUserRoleFromDatabase] Database error for ${email}:`, error);
-      return null;
-    }
-
-    if (!data?.department || !data?.position) {
-      console.warn(`[getUserRoleFromDatabase] Missing department or position for ${email}:`, data);
-      return null;
-    }
-
-    return getUserRoleByDepartmentAndPosition(data.department, data.position);
-  } catch (error: unknown) {
-    console.error('[getUserRoleFromDatabase] Error:', error);
-    return null;
-  }
-};
-
-// 向後兼容的舊版本函數（降級使用）
-// 所有用戶統一導向 /admin/analytics 且無限制
-export const getUserRole = (email: string): UserRole => {
-  if (email === 'production@pennineindustries.com') {
-    return {
-      type: 'user',
-      department: 'Pipeline',
-      position: 'User',
-      allowedPaths: [],
-      defaultPath: '/admin/analytics',
-      navigationRestricted: false,
-    };
-  } else if (email === 'warehouse@pennineindustries.com') {
-    return {
-      type: 'user',
-      department: 'Warehouse',
-      position: 'User',
-      allowedPaths: [],
-      defaultPath: '/admin/analytics',
-      navigationRestricted: false,
-    };
-  } else {
-    return {
-      type: 'admin',
-      department: 'System',
-      position: 'Admin',
-      allowedPaths: [],
-      defaultPath: '/admin/analytics',
-      navigationRestricted: false,
-    };
-  }
 };
 
 // 定義公開路由（不需要認證檢查） - Memoized for performance
@@ -189,7 +81,7 @@ export function useAuth(): AuthState {
     try {
       return createClient();
     } catch (error) {
-      console.error('[useAuth] Failed to create Supabase client:', error);
+      secureLogger.error(error, '[useAuth] Failed to create Supabase client');
       setHasError(true);
       return null;
     }
@@ -197,36 +89,21 @@ export function useAuth(): AuthState {
 
   // Simplified user authentication and role setting function
   const setAuthenticatedUser = useCallback(async (user: User) => {
-    console.log('[useAuth] Setting authenticated user:', user.email);
+    secureLogger.info({ userEmail: user.email }, '[useAuth] Setting authenticated user');
 
     // Set authenticated state immediately
     setIsAuthenticated(true);
     setUser(user);
     setLoading(false);
 
-    // Load user role directly without complex timeout/retry logic
-    try {
-      const role = await getUserRoleFromDatabase(user.email || '');
-      if (role) {
-        console.log('[useAuth] Role loaded from database:', role);
-        setUserRole(role);
-      } else {
-        // Fallback to legacy role mapping
-        console.log('[useAuth] Using legacy role mapping for:', user.email);
-        const legacyRole = getUserRole(user.email || '');
-        setUserRole(legacyRole);
-      }
-    } catch (error) {
-      console.error('[useAuth] Error loading user role:', error);
-      // Fallback to legacy role mapping
-      const legacyRole = getUserRole(user.email || '');
-      setUserRole(legacyRole);
-    }
+    // Use email-based role mapping directly
+    const role = getUserRole(user.email || '');
+    setUserRole(role);
   }, []);
 
   // 統一的登出處理函數
   const clearAuthState = useCallback(() => {
-    console.log('[useAuth] Clearing auth state');
+    secureLogger.info({}, '[useAuth] Clearing auth state');
     setIsAuthenticated(false);
     setUser(null);
     setUserRole(null);
@@ -246,7 +123,10 @@ export function useAuth(): AuthState {
       typeof window !== 'undefined' &&
       PUBLIC_ROUTES.includes(window.location.pathname as (typeof PUBLIC_ROUTES)[number])
     ) {
-      console.log('[useAuth] Skipping auth check for public route:', window.location.pathname);
+      secureLogger.info(
+        { pathname: window.location.pathname },
+        '[useAuth] Skipping auth check for public route'
+      );
       // Clear auth state for public routes to prevent stale data
       clearAuthState();
       return;
@@ -260,7 +140,7 @@ export function useAuth(): AuthState {
     const checkAuth = async () => {
       isCheckingAuthRef.current = true;
       try {
-        console.log('[useAuth] Initial auth check with parallel verification');
+        secureLogger.info({}, '[useAuth] Initial auth check with parallel verification');
 
         // Simplified single auth check to reduce API calls
         let authenticatedUser = null;
@@ -269,7 +149,7 @@ export function useAuth(): AuthState {
           // Try unifiedAuth first as it's most reliable
           authenticatedUser = await unifiedAuth.getCurrentUser();
         } catch (error) {
-          console.warn('[useAuth] UnifiedAuth failed, trying Supabase session:', error);
+          secureLogger.warn(error, '[useAuth] UnifiedAuth failed, trying Supabase session');
 
           // Fallback to Supabase session check only if needed
           if (supabase) {
@@ -286,7 +166,7 @@ export function useAuth(): AuthState {
           clearAuthState();
         }
       } catch (error) {
-        console.error('[useAuth] Error checking authentication:', error);
+        secureLogger.error(error, '[useAuth] Error checking authentication');
         clearAuthState();
       } finally {
         isCheckingAuthRef.current = false;
@@ -300,7 +180,7 @@ export function useAuth(): AuthState {
       const {
         data: { subscription },
       } = supabase.auth.onAuthStateChange((event, session) => {
-        console.log('[useAuth] Auth state change:', event, !!session?.user);
+        secureLogger.info({ event, hasUser: !!session?.user }, '[useAuth] Auth state change');
 
         if (event === 'SIGNED_IN' && session?.user) {
           setAuthenticatedUser(session.user);
@@ -321,110 +201,49 @@ export function useAuth(): AuthState {
   };
 }
 
+/**
+ * @deprecated 請使用 getUserId().userId 替代
+ */
 export function useCurrentUserId(): string | null {
   const { user } = useAuth();
 
-  // 診斷調試信息
-  console.log('[useCurrentUserId] Hook called:');
-  console.log('  user exists:', !!user);
-  console.log('  user.email:', user?.email);
-  console.log('  user.user_metadata:', user?.user_metadata);
-  console.log(
-    '  user.raw_user_meta_data:',
-    (user as User & { raw_user_meta_data?: Record<string, unknown> })?.raw_user_meta_data
-  );
+  if (!user) return null;
 
-  // 優先從 user metadata 中提取 user_id (檢查兩個可能的位置)
-  if (user?.user_metadata?.user_id) {
-    const result = user.user_metadata.user_id.toString();
-    console.log('  ✅ Found user_id in user_metadata:', result);
-    return result;
-  }
-
-  // 也檢查 raw_user_meta_data (Supabase 的實際存儲位置)
+  // 直接從 raw_user_meta_data 取得 user_id（這是 Supabase 的標準存儲位置）
   const userWithRawMeta = user as User & { raw_user_meta_data?: Record<string, unknown> };
-  if (userWithRawMeta?.raw_user_meta_data?.user_id) {
-    const result = String(userWithRawMeta.raw_user_meta_data.user_id);
-    console.log('  ✅ Found user_id in raw_user_meta_data:', result);
-    return result;
-  }
+  const userId = userWithRawMeta?.raw_user_meta_data?.user_id;
 
-  // 次選從 user metadata 中提取 clock_number
-  if (user?.user_metadata?.clock_number) {
-    const result = user.user_metadata.clock_number.toString();
-    console.log('  ✅ Found clock_number in user_metadata:', result);
-    return result;
-  }
-
-  // 也檢查 raw_user_meta_data 中的 clock_number
-  if (userWithRawMeta?.raw_user_meta_data?.clock_number) {
-    const result = String(userWithRawMeta.raw_user_meta_data.clock_number);
-    console.log('  ✅ Found clock_number in raw_user_meta_data:', result);
-    return result;
-  }
-
-  // 最後使用 user ID 作為後備方案
-  if (user?.id) {
-    console.log('  ⚠️ Using fallback user.id:', user.id);
-    return user.id;
-  }
-
-  console.log('  ❌ No user ID found, returning null');
-  return null;
+  return userId ? String(userId) : null;
 }
 
-// 獲取當前用戶的 clock number（同步版本，僅用於向後兼容）
-export function getCurrentUserClockNumber(): string | null {
-  // 不再使用 localStorage，返回 null 讓調用者使用異步版本
-  return null;
-}
-
-// 異步獲取當前用戶的 clock number（通過 email 查詢 data_id 表）
-export async function getCurrentUserClockNumberAsync(): Promise<string | null> {
+/**
+ * 驗證用戶ID是否存在於data_id表中
+ * @deprecated 請使用 getUserId().verifyUserId 替代
+ */
+export async function validateUserIdInDatabase(userId: string): Promise<boolean> {
   try {
     const supabase = createClient();
 
-    // 1. 獲取當前用戶
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user?.email) {
-      process.env.NODE_ENV !== 'production' &&
-        console.warn('[getCurrentUserClockNumberAsync] No authenticated user or email found');
-      return null;
-    }
-
-    // 2. 通過 email 查詢 data_id 表獲取 clock number (id)
     const { data, error } = await supabase
       .from('data_id')
-      .select('id, name, email')
-      .eq('email', user.email)
+      .select('id')
+      .eq('id', parseInt(userId))
       .single();
 
+    if (error && (error as PostgrestError).code === 'PGRST116') {
+      // 用戶不存在
+      return false;
+    }
+
     if (error) {
-      if ((error as PostgrestError).code === 'PGRST116') {
-        process.env.NODE_ENV !== 'production' &&
-          console.warn(`[getCurrentUserClockNumberAsync] No user found for email: ${user.email}`);
-        return null;
-      }
-      throw error;
+      secureLogger.error(error, '[validateUserIdInDatabase] Database error');
+      return false;
     }
 
-    if (data?.id) {
-      const clockNumber = data.id.toString();
-      process.env.NODE_ENV !== 'production' &&
-        console.log(
-          `[getCurrentUserClockNumberAsync] Found clock number: ${clockNumber} for email: ${user.email}`
-        );
-      return clockNumber;
-    }
-
-    return null;
+    return !!data?.id;
   } catch (error: unknown) {
-    console.error('[getCurrentUserClockNumberAsync] Error getting clock number:', error);
-    return null;
+    secureLogger.error(error, '[validateUserIdInDatabase] Error');
+    return false;
   }
 }
 

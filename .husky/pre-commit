@@ -9,15 +9,15 @@ PATTERNS=(
   "sk-proj-[a-zA-Z0-9]+"  # OpenAI API keys
   "eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+"  # JWT tokens
   "sbp_[a-zA-Z0-9]+"  # Supabase access tokens
-  "re_[a-zA-Z0-9]+"  # Resend API keys
+  "\\bre_[a-zA-Z0-9]+"  # Resend API keys (word boundary)
   "SUPABASE_SERVICE_ROLE_KEY"
   "OPENAI_API_KEY"
   "RESEND_API_KEY"
 )
 
-# 檢查暫存的檔案
+# 檢查暫存的檔案 (排除 pre-commit 配置檔案本身)
 for pattern in "${PATTERNS[@]}"; do
-  if git diff --cached --name-only -z | xargs -0 grep -E "$pattern" 2>/dev/null; then
+  if git diff --cached --name-only -z | xargs -0 grep -l . | grep -v ".husky/pre-commit" | xargs grep -E "$pattern" 2>/dev/null; then
     echo "❌ 錯誤：發現敏感資訊模式: $pattern"
     echo "請移除敏感資訊後再提交"
     exit 1
