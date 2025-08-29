@@ -27,6 +27,7 @@ export const MaterialSupplierInput: React.FC<MaterialSupplierInputProps> = ({
   const [supplierError, setSupplierError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const isSystemUpdateRef = useRef(false); // 標記是否為系統自動更新
 
   // 清理函數
   useEffect(() => {
@@ -91,17 +92,25 @@ export const MaterialSupplierInput: React.FC<MaterialSupplierInputProps> = ({
       } else {
         // 找到供應商
         const supplierData = result.data;
-        // 轉換為統一格式
-        const unifiedSupplierData = convertDatabaseSupplierInfo({
-          supplier_code: supplierData.supplier_code || '',
-          supplier_name: supplierData.supplier_name || '',
-        });
-        onSupplierInfoChange(unifiedSupplierData);
-        // 不要覆蓋用戶輸入的值，讓輸入框保持用戶輸入的原值
-        // onChange(unifiedSupplierData.code); // 移除：避免覆蓋用戶輸入
+        // 直接傳遞簡化格式，只包含需要的欄位
+        const simplifiedSupplierData = {
+          code: supplierData.supplier_code || '',
+          name: supplierData.supplier_name || '',
+        };
+        onSupplierInfoChange(simplifiedSupplierData);
+
+        // 更新輸入框值為資料庫標準格式（大小寫校正）
+        // 設置標記防止觸發重複搜尋
+        isSystemUpdateRef.current = true;
+        onChange(simplifiedSupplierData.code);
+        // 在下一個 tick 重置標記
+        setTimeout(() => {
+          isSystemUpdateRef.current = false;
+        }, 0);
+
         setSupplierError(null);
         (process.env.NODE_ENV as string) !== 'production' &&
-          console.log('[MaterialSupplierInput] Supplier found:', unifiedSupplierData);
+          console.log('[MaterialSupplierInput] Supplier found:', simplifiedSupplierData);
       }
     } catch (error: unknown) {
       // 如果是取消請求，不處理
@@ -153,6 +162,13 @@ export const MaterialSupplierInput: React.FC<MaterialSupplierInputProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     onChange(newValue);
+
+    // 如果是系統自動更新，不執行以下邏輯
+    if (isSystemUpdateRef.current) {
+      (process.env.NODE_ENV as string) !== 'production' &&
+        console.log('[MaterialSupplierInput] System update detected, skipping change logic');
+      return;
+    }
 
     // 清除錯誤訊息
     if (supplierError) {

@@ -206,6 +206,16 @@ export type PrintRequestResponse = z.infer<typeof PrintRequestResponseSchema>;
  */
 export function validateProductInfo(data: unknown): GrnProductInfo | null {
   try {
+    // 如果傳入的是已經包含 code 和 description 的產品資訊（來自 ProductCodeInput），直接使用
+    if (typeof data === 'object' && data !== null && 'code' in data && 'description' in data) {
+      const typedData = data as { code: string; description: string };
+      return GrnProductInfoSchema.parse({
+        code: typedData.code,
+        description: typedData.description,
+      });
+    }
+
+    // 否則嘗試使用原始 schema 驗證
     const parsed = ProductInfoSchema.parse(data);
     return GrnProductInfoSchema.parse({
       code: parsed.code,
@@ -223,6 +233,16 @@ export function validateProductInfo(data: unknown): GrnProductInfo | null {
  */
 export function validateSupplierInfo(data: unknown): GrnSupplierInfo | null {
   try {
+    // 如果傳入的是已轉換的 SupplierInfo 格式，只取需要的欄位
+    if (typeof data === 'object' && data !== null && 'code' in data && 'name' in data) {
+      const typedData = data as { code: string; name: string };
+      return GrnSupplierInfoSchema.parse({
+        code: typedData.code,
+        name: typedData.name,
+      });
+    }
+
+    // 否則嘗試原始資料庫格式驗證
     const parsed = SupplierInfoSchema.parse(data);
     return GrnSupplierInfoSchema.parse({
       code: parsed.supplier_code,

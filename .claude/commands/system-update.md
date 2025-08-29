@@ -53,6 +53,7 @@ description: 根據最新的系統狀況，更新 docs/TechStack/ 中的技術�
 4. **驗證掃描結果**: `@progress-auditor` 驗證所有代理提交的報告的準確性。
 5. **整合更新**: `@docs-architect` 讀取所有驗證後的報告，並將更新應用到對應的 `docs/TechStack/` 文檔中，同時更新 "最後更新日期"。
 6. **任務總結**: `@context-manager` 執行任務摘要。
+7. **文檔審核**：[文檔規範員](../agents/documentation-normalizer.md)對所生成文檔作最終審核
 
 ## 更新範圍矩陣
 

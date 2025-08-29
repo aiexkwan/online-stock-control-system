@@ -52,6 +52,8 @@ description: 讀取 Markdown 格式的開發計劃文檔，並由總指揮代理
 4.  **生成最終報告 (由 [docs-architect](../agents/docs-architect.md) 執行)**
     - 當指定階段的所有任務成功完成後，遵從`最終報告模版`，生成一份完整詳盡的執行摘要報告。
 
+5.  **文檔審核**：[文檔規範員](../agents/documentation-normalizer.md)對所生成文檔作最終審核
+
 ## 輸入格式：Markdown 計劃文檔 (示例)
 
 指令的輸入是一個結構化的 Markdown 檔案，類似於 `MAIN_LOGIN_IMPROVEMENT_PLAN.md`。指令會尋找如下的結構來解析任務：

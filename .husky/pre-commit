@@ -1,0 +1,30 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# 檢查敏感資訊模式
+echo "🔍 檢查敏感資訊..."
+
+# 定義敏感資訊模式
+PATTERNS=(
+  "sk-proj-[a-zA-Z0-9]+"  # OpenAI API keys
+  "eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+"  # JWT tokens
+  "sbp_[a-zA-Z0-9]+"  # Supabase access tokens
+  "re_[a-zA-Z0-9]+"  # Resend API keys
+  "SUPABASE_SERVICE_ROLE_KEY"
+  "OPENAI_API_KEY"
+  "RESEND_API_KEY"
+)
+
+# 檢查暫存的檔案
+for pattern in "${PATTERNS[@]}"; do
+  if git diff --cached --name-only -z | xargs -0 grep -E "$pattern" 2>/dev/null; then
+    echo "❌ 錯誤：發現敏感資訊模式: $pattern"
+    echo "請移除敏感資訊後再提交"
+    exit 1
+  fi
+done
+
+echo "✅ 敏感資訊檢查通過"
+
+# 執行其他檢查
+npm run typecheck || exit 1

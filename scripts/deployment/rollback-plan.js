@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * StockTransfer Deployment Rollback Plan
- * Handles emergency rollback scenarios for StockTransfer stability fixes
+ * Deployment Rollback Plan
+ * Handles emergency rollback scenarios for production deployments
  */
 
 const { execSync } = require('child_process');
@@ -12,7 +12,7 @@ const readline = require('readline');
 const ROLLBACK_CONFIG = {
   projectName: 'pennine-stock',
   maxDeploymentHistory: 10,
-  criticalHealthChecks: ['/api/health', '/stock-transfer', '/admin'],
+  criticalHealthChecks: ['/api/health', '/admin'],
 };
 
 // Colors for console output
@@ -176,7 +176,7 @@ async function rollbackToLastWorking() {
 
     log('\\n📋 Post-Rollback Actions:', colors.yellow);
     log('  1. Investigate the cause of the deployment failure', colors.yellow);
-    log('  2. Fix the StockTransfer stability issues', colors.yellow);
+    log('  2. Fix the identified issues', colors.yellow);
     log('  3. Run pre-deployment checks before next attempt', colors.yellow);
     log('  4. Consider creating a hotfix branch for critical fixes', colors.yellow);
 
@@ -233,7 +233,7 @@ async function plannedRollback() {
 
   // Step 2: Confirm rollback
   const confirm = await askQuestion(
-    '⚠️  Confirm planned rollback? This will revert StockTransfer stability fixes (y/n): '
+    '⚠️  Confirm planned rollback? This will revert to the previous deployment (y/n): '
   );
 
   if (confirm !== 'y' && confirm !== 'yes') {
@@ -254,7 +254,7 @@ async function plannedRollback() {
 ## Rollback Report - ${timestamp}
 
 ### Reason
-StockTransfer stability fixes deployment rollback
+Production deployment rollback
 
 ### Actions Taken
 - Reverted to previous deployment
@@ -277,7 +277,7 @@ StockTransfer stability fixes deployment rollback
 
 async function main() {
   console.clear();
-  log('🔄 StockTransfer Deployment Rollback Plan', colors.bold + colors.blue);
+  log('🔄 Deployment Rollback Plan', colors.bold + colors.blue);
   log('='.repeat(50), colors.blue);
 
   log('\\nAvailable rollback options:', colors.bold);

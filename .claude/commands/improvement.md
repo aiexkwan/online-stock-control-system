@@ -120,6 +120,10 @@
 - 生成綜合改進文檔
 - 創建實施指南和檢查清單
 
+**[文檔規範員](../agents/documentation-normalizer.md)**
+
+- 對所生成文檔作最終審核
+
 ### 階段五：記錄任務摘要
 
 **[context-manager](../agents/context-manager.md)**

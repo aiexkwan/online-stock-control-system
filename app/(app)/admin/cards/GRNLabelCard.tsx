@@ -193,12 +193,33 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
   const currentUserId = useCurrentUserId();
 
   // Adapter function to convert QC Label ProductInfo to GRN ProductInfo
-  // Now uses Zod validation for runtime type safety
+  // Simplified to only extract what GRN needs: code and description
   const adaptProductInfo = useCallback(
     (qcProductInfo: unknown): SafeGrnProductInfo | null => {
-      // Use Zod validation instead of manual type checking
-      const validated = validateProductInfo(qcProductInfo);
+      // 處理 null 或 undefined 輸入
+      if (qcProductInfo === null || qcProductInfo === undefined) {
+        logger.debug('Product info is null/undefined, returning null');
+        return null;
+      }
 
+      // 如果是來自 ProductCodeInput 的完整產品資訊，只提取 GRN 需要的欄位
+      if (
+        typeof qcProductInfo === 'object' &&
+        qcProductInfo !== null &&
+        'code' in qcProductInfo &&
+        'description' in qcProductInfo
+      ) {
+        const productData = qcProductInfo as { code: string; description: string };
+        const simplifiedInfo = {
+          code: productData.code,
+          description: productData.description,
+        };
+        logger.debug('Simplified product info for GRN', simplifiedInfo);
+        return simplifiedInfo;
+      }
+
+      // 備用：使用 Zod 驗證（用於其他來源的資料）
+      const validated = validateProductInfo(qcProductInfo);
       if (!validated) {
         logger.warn('Invalid product info received', { qcProductInfo });
         return null;
@@ -359,12 +380,38 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
 
   const handleSupplierInfoChange = useCallback(
     (supplierInfo: unknown) => {
-      // Use Zod validation instead of manual type checking
-      const validated = validateSupplierInfo(supplierInfo);
+      // 檢查是否為 null
+      if (supplierInfo === null || supplierInfo === undefined) {
+        actions.setSupplierInfo(null);
+        actions.setSupplierError(null);
+        return;
+      }
 
+      // 檢查是否已經是正確的 SupplierInfo 格式（從 MaterialSupplierInput 傳入）
+      if (
+        typeof supplierInfo === 'object' &&
+        supplierInfo !== null &&
+        'code' in supplierInfo &&
+        'name' in supplierInfo
+      ) {
+        const typedSupplierInfo = supplierInfo as { code: string; name: string };
+        if (typedSupplierInfo.code && typedSupplierInfo.name) {
+          actions.setSupplierInfo({
+            code: typedSupplierInfo.code,
+            name: typedSupplierInfo.name,
+          });
+          actions.setSupplierError(null);
+          logger.debug('Supplier info set successfully', typedSupplierInfo);
+          return;
+        }
+      }
+
+      // 嘗試使用原有的 Zod 驗證（用於其他來源的資料）
+      const validated = validateSupplierInfo(supplierInfo);
       if (validated) {
         actions.setSupplierInfo(validated);
         actions.setSupplierError(null);
+        logger.debug('Supplier info validated and set', validated);
       } else {
         logger.warn('Invalid supplier info received', { supplierInfo });
         actions.setSupplierError('Invalid supplier information format');

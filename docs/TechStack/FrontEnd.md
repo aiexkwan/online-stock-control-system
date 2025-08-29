@@ -1,6 +1,6 @@
 # 前端技術棧 (Frontend Technology Stack)
 
-_最後更新日期: 2025-08-27 10:42:20_
+_最後更新日期: 2025-08-29 02:33:37_
 
 ## 核心框架與語言
 
@@ -11,7 +11,7 @@ _最後更新日期: 2025-08-27 10:42:20_
 
 ## UI 與視覺
 
-- **UI**: [Tailwind CSS](https://tailwindcss.com/) 3.4.17, [Radix UI](https://www.radix-ui.com/) - 15個 UI 組件
+- **UI**: [Tailwind CSS](https://tailwindcss.com/) 3.4.17, [Radix UI](https://www.radix-ui.com/) - 16個 UI 組件
 - **視覺特效**: [Framer Motion](https://www.framer.com/motion/) 11.18.2
 - **圖標**: [Lucide React](https://lucide.dev/) 0.467.0, [Heroicons](https://heroicons.com/) 2.2.0
 
@@ -59,6 +59,6 @@ _最後更新日期: 2025-08-27 10:42:20_
 - **目錄結構**: `app/` 目錄核心結構 - `(app)`/`(auth)` 分組路由
 - **路由機制**: Next.js App Router 配置
 - **組件設計**: 19張管理卡片 + 模組化共用組件
-- **核心通用組件**: `components/ui/` (45個組件), `lib/card-system/`
+- **核心通用組件**: `components/ui/` (58個組件), `lib/card-system/`
 - **部署優化**: Vercel 獨立輸出模式 (`standalone`), ISR 啟用
 - **圖像優化**: WebP, AVIF 格式支援

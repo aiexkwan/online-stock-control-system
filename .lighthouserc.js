@@ -11,7 +11,6 @@ module.exports = {
         'http://localhost:3000/',
         'http://localhost:3000/main-login',
         'http://localhost:3000/admin',
-        'http://localhost:3000/stock-transfer',
         'http://localhost:3000/productUpdate',
         'http://localhost:3000/order-loading',
       ],

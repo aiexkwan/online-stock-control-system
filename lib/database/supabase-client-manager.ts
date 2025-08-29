@@ -278,7 +278,9 @@ class SupabaseClientManager {
   public async executeBatch<T = unknown>(
     queries: BatchQueryItem<T>[]
   ): Promise<BatchQueryResult<T>[]> {
-    const results = await Promise.all(queries.map(q => this.executeQuery<T>(q.queryFn, q.cacheKey, q.options)));
+    const results = await Promise.all(
+      queries.map(q => this.executeQuery<T>(q.queryFn, q.cacheKey, q.options))
+    );
     return results.map((result, index) => ({
       data: result.data,
       error: result.error || undefined,

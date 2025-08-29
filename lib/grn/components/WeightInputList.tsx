@@ -91,19 +91,52 @@ export const WeightInputList: React.FC<WeightInputListPropsUnion> = props => {
   );
 
   const effectiveMaxItems = Math.min(maxItems, 50); // Hard limit for performance
-  const filledWeightsCount = grossWeights.filter(w => w.trim() !== '').length;
+
+  // Local state for immediate UI updates - ensure it has enough slots
+  const [localWeights, setLocalWeights] = React.useState<string[]>(() => {
+    // Initialize with props but ensure at least one empty slot for expansion (if not at max)
+    const initialWeights = [...grossWeights];
+    if (
+      initialWeights.length < effectiveMaxItems &&
+      (initialWeights.length === 0 || initialWeights[initialWeights.length - 1].trim() !== '')
+    ) {
+      initialWeights.push(''); // Add empty slot only if not at max capacity
+    }
+    return initialWeights;
+  });
+
+  // Sync local state with props and maintain expansion capability
+  React.useEffect(() => {
+    setLocalWeights(prev => {
+      const newWeights = [...grossWeights];
+      // Only add empty slot if we haven't reached max capacity and last item has content
+      if (
+        newWeights.length < effectiveMaxItems &&
+        (newWeights.length === 0 || newWeights[newWeights.length - 1].trim() !== '')
+      ) {
+        newWeights.push('');
+      }
+      return newWeights;
+    });
+  }, [grossWeights, effectiveMaxItems]);
+
+  // Only use confirmed weights from props, not local state
+  const confirmedWeightsCount = grossWeights.filter(w => w.trim() !== '').length;
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Show all local weights since the array auto-expands as needed
+  const visibleInputCount = Math.min(localWeights.length, effectiveMaxItems);
 
   // Enhanced state for tracking expanded state changes
   const [previousExpandedState, setPreviousExpandedState] = useState(isExpanded);
 
-  // 當輸入超過配置閾值時自動展開
+  // 當輸入超過配置閾值時自動展開 - use confirmed weights only
   useEffect(() => {
     const threshold = config.layout.autoExpandThreshold;
-    if (filledWeightsCount > threshold && !isExpanded) {
+    if (confirmedWeightsCount > threshold && !isExpanded) {
       setIsExpanded(true);
     }
-  }, [filledWeightsCount, isExpanded, config.layout.autoExpandThreshold]);
+  }, [confirmedWeightsCount, isExpanded, config.layout.autoExpandThreshold]);
 
   // Notify parent about expansion changes
   useEffect(() => {
@@ -115,58 +148,91 @@ export const WeightInputList: React.FC<WeightInputListPropsUnion> = props => {
     }
   }, [isExpanded, previousExpandedState, onListExpanded]);
 
-  const handleWeightChange = (index: number, value: string) => {
-    if (disabled) return;
+  // Sync local changes back to parent on blur/finish
+  const syncToParent = React.useCallback(() => {
+    // Filter out empty slots and sync to parent
+    const validWeights = localWeights.filter(w => w.trim() !== '');
 
-    // Apply validation debouncing if configured
-    const debounceMs = config.performance.validationDebounce;
+    // Only update parent if there's a real change
+    const currentValid = grossWeights.filter(w => w.trim() !== '');
 
-    if (debounceMs > 0) {
-      // Simple debouncing implementation
-      clearTimeout((handleWeightChange as any).timeoutId);
-      (handleWeightChange as any).timeoutId = setTimeout(() => {
-        onChange(index, value);
-        handleWeightCalculation(index, value);
-      }, debounceMs);
-    } else {
-      onChange(index, value);
-      handleWeightCalculation(index, value);
-    }
-  };
+    // Simple comparison - if different lengths or different values, sync
+    const needsSync =
+      validWeights.length !== currentValid.length ||
+      validWeights.some((weight, index) => weight !== currentValid[index]);
 
-  const handleWeightCalculation = (index: number, value: string) => {
-    if (labelMode === LABEL_MODES.WEIGHT && onWeightCalculated) {
-      const grossWeight = parseFloat(value);
-      if (!isNaN(grossWeight) && grossWeight > 0) {
-        const netWeight = calculateNetWeight(grossWeight, selectedPalletType, selectedPackageType);
-        onWeightCalculated(index, netWeight);
+    if (needsSync) {
+      // Only sync the actual filled weights, don't pad to 22
+      // This prevents all 22 boxes from showing when only a few are filled
+
+      // Sync to parent without logging for clean production
+
+      // Update only the filled positions
+      validWeights.forEach((weight, index) => {
+        onChange(index, weight);
+      });
+
+      // Clear any extra positions that were previously filled but now empty
+      if (currentValid.length > validWeights.length) {
+        for (let i = validWeights.length; i < currentValid.length; i++) {
+          onChange(i, '');
+        }
       }
     }
-  };
+  }, [localWeights, grossWeights, onChange]);
+
+  const handleWeightChange = React.useCallback(
+    (index: number, value: string) => {
+      if (disabled) return;
+
+      // Update local state and expand array if needed for new input boxes
+      setLocalWeights(prev => {
+        const newWeights = [...prev];
+        newWeights[index] = value;
+
+        // If typing in the last box and there's content, add one more empty slot
+        if (
+          index === newWeights.length - 1 &&
+          value.trim() !== '' &&
+          newWeights.length < effectiveMaxItems
+        ) {
+          newWeights.push(''); // Add one empty slot for the next input
+        }
+
+        return newWeights;
+      });
+
+      // No debouncing, no calculations during typing - but sync on input completion
+    },
+    [disabled, effectiveMaxItems]
+  );
+
+  // Sync to parent when user finishes input (onBlur)
+  const handleInputBlur = React.useCallback(() => {
+    // Force sync immediately to ensure print button updates
+    syncToParent();
+  }, [syncToParent]);
+
+  // Also sync on Enter key press for immediate confirmation
+  const handleKeyDown = React.useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        syncToParent();
+      }
+    },
+    [syncToParent]
+  );
 
   const handleRemove = (index: number) => {
     if (disabled || !onRemove) return;
 
-    // Check if we're at max items and notify
-    if (filledWeightsCount >= effectiveMaxItems && onMaxItemsReached) {
+    // Check if we're at max items and notify - use confirmed weights only
+    if (confirmedWeightsCount >= effectiveMaxItems && onMaxItemsReached) {
       onMaxItemsReached();
     }
 
     onRemove(index);
   };
-
-  // Calculate total net weight
-  const totalNetWeight = React.useMemo(() => {
-    if (labelMode !== LABEL_MODES.WEIGHT) return 0;
-
-    return grossWeights.reduce((total, weight) => {
-      const grossWeight = parseFloat(weight);
-      if (!isNaN(grossWeight) && grossWeight > 0) {
-        return total + calculateNetWeight(grossWeight, selectedPalletType, selectedPackageType);
-      }
-      return total;
-    }, 0);
-  }, [grossWeights, labelMode, selectedPalletType, selectedPackageType]);
 
   return (
     <div className='space-y-3'>
@@ -177,38 +243,9 @@ export const WeightInputList: React.FC<WeightInputListPropsUnion> = props => {
             {labelMode === LABEL_MODES.QUANTITY ? 'Quantity' : 'Gross Weight / Qty'}
           </h3>
           <span className='rounded-full bg-slate-700/50 px-3 py-1 text-xs text-slate-400'>
-            {filledWeightsCount} / {effectiveMaxItems} pallets
+            {confirmedWeightsCount} / {effectiveMaxItems} pallets
           </span>
         </div>
-
-        {/* Total Net Weight Display - Enhanced with configuration */}
-        {labelMode === LABEL_MODES.WEIGHT &&
-          totalNetWeight > 0 &&
-          showTotalWeight &&
-          config.layout.showWeightSummary && (
-            <div
-              className={`flex items-center justify-between rounded-lg bg-slate-800/50 px-3 py-2 ${config.theme.customClasses?.content || ''}`}
-            >
-              <span className='text-sm text-slate-300'>Total Net Weight:</span>
-              <span
-                className={`text-lg font-bold ${
-                  config.theme.accentColor === 'orange'
-                    ? 'text-orange-400'
-                    : config.theme.accentColor === 'blue'
-                      ? 'text-blue-400'
-                      : config.theme.accentColor === 'green'
-                        ? 'text-green-400'
-                        : config.theme.accentColor === 'purple'
-                          ? 'text-purple-400'
-                          : config.theme.accentColor === 'red'
-                            ? 'text-red-400'
-                            : 'text-orange-400'
-                }`}
-              >
-                {totalNetWeight.toFixed(1)} kg
-              </span>
-            </div>
-          )}
       </div>
 
       {/* 重量/數量輸入列表容器 */}
@@ -220,9 +257,9 @@ export const WeightInputList: React.FC<WeightInputListPropsUnion> = props => {
           } ${isExpanded ? 'max-h-[500px]' : 'max-h-[280px]'} ${config.theme.customClasses?.container || ''}`}
           style={{ height: isExpanded ? 'calc(100% - 120px)' : 'auto' }}
         >
-          {grossWeights.map((weight, idx) => {
+          {localWeights.slice(0, visibleInputCount).map((weight, idx) => {
             const hasValue = weight.trim() !== '';
-            const isLast = idx === grossWeights.length - 1;
+            const isLast = idx === visibleInputCount - 1;
 
             return (
               <div key={idx} className='flex items-center space-x-2'>
@@ -242,12 +279,14 @@ export const WeightInputList: React.FC<WeightInputListPropsUnion> = props => {
                   type='number'
                   value={weight}
                   onChange={e => handleWeightChange(idx, e.target.value)}
+                  onBlur={handleInputBlur}
+                  onKeyDown={handleKeyDown}
                   className={`w-20 rounded-lg border px-2 py-1 text-right text-sm transition-all duration-300 ${
                     hasValue
                       ? 'border-slate-600/50 bg-slate-700/50 text-white focus:border-orange-400/70 focus:ring-orange-400/30'
                       : 'border-slate-600/30 bg-slate-700/30 text-slate-300 focus:border-orange-400/70 focus:ring-orange-400/30'
                   }`}
-                  placeholder={isLast ? 'Enter' : '0'}
+                  placeholder={isLast && visibleInputCount < effectiveMaxItems ? 'Enter' : '0'}
                   min='0'
                   step={labelMode === LABEL_MODES.QUANTITY ? '1' : '0.1'}
                   maxLength={5}
@@ -274,8 +313,8 @@ export const WeightInputList: React.FC<WeightInputListPropsUnion> = props => {
           })}
         </div>
 
-        {/* 底部漸變效果 - 提示仲有內容 */}
-        {!isExpanded && filledWeightsCount > 5 && (
+        {/* 底部漸變效果 - 提示仲有內容 - use confirmed weights only */}
+        {!isExpanded && confirmedWeightsCount > 5 && (
           <div className='pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent' />
         )}
       </div>

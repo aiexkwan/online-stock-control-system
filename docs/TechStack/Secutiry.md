@@ -1,18 +1,47 @@
 # 安全性 (Security)
 
-_最後更新日期: 2025-08-27 10:42:20_
+_最後更新日期: 2025-08-29 02:33:37_
 
 ## 認證與授權
 
 - **認證機制**: Supabase Auth (JWT)
-- **授權機制**: 109個RLS策略, 中間件權限檢查
+- **授權機制**: 109個RLS策略 (已驗證), 中間件權限檢查
+- **會話管理**: cookies 0.9.1, jwt-decode 4.0.0
 
 ## 敏感資訊管理
 
-- **日誌消毒**: `enhanced-logger-sanitizer.ts` (302行)
+- **日誌消毒**: `enhanced-logger-sanitizer.ts` (190行)
 - **憑證管理**: `credentials-manager.ts` (242行)
 - **密碼加密**: bcryptjs 3.0.2
 - **令牌管理**: jsonwebtoken 9.0.2
+- **認證UI**: @supabase/auth-ui-react 0.4.7
+
+## 安全頭配置
+
+- **Next.js 安全頭**: 在 `next.config.js` 中配置
+  - X-Frame-Options: DENY
+  - Strict-Transport-Security (HSTS)
+  - Content-Security-Policy (CSP)
+  - X-Content-Type-Options: nosniff
+  - Referrer-Policy: strict-origin-when-cross-origin
+
+## 數據加密保護
+
+- **加密字段**:
+  - `query_record` 表: token_encrypted, token_hash
+  - `data_order` 表: token_encrypted, token_hash
+  - `data_id` 表: email_encrypted, email_hash
+- **加密方法**: AES-256 對稱加密 + SHA-256 哈希索引
+
+## 審計與監控
+
+- **審計日誌** (`audit_logs` 表):
+  - 設備指紋追蹤 (device_fingerprint)
+  - 地理位置記錄 (geo_location)
+  - 日誌完整性驗證 (integrity_hash, previous_hash)
+  - 風險評分系統 (risk_score: 0-100)
+  - 嚴重性級別 (LOW/MEDIUM/HIGH/CRITICAL)
+  - 防刪除保護策略
 
 ### 日誌消毒器 (`enhanced-logger-sanitizer.ts`) 工作原理
 

@@ -120,7 +120,7 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
         (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[ProductCodeInput] Product not found:', trimmedValue);
       } else {
-        // 找到產品
+        // 找到產品 - 恢復完整資料以支援 QCLabelCard 和 GRNLabelCard
         const productData: ProductInfo = {
           code: data.code,
           description: data.description,

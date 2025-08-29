@@ -14,7 +14,6 @@ const TEST_PAGES = [
   { name: 'Admin Dashboard - Injection', path: '/admin/injection' },
   { name: 'Admin Dashboard - Pipeline', path: '/admin/pipeline' },
   { name: 'Admin Dashboard - Warehouse', path: '/admin/warehouse' },
-  { name: 'Stock Transfer', path: '/stock-transfer' },
 ];
 
 // 性能指標目標 (毫秒)

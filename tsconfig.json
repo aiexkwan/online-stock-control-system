@@ -62,6 +62,8 @@
     "playwright-report/**",
     "reports/**",
     "docs/performance-optimization/StockTransferCard-optimized-implementation.tsx",
-    "backup_*/**"
+    "backup_*/**",
+    "Backup/**",
+    "backup/**"
   ]
 }

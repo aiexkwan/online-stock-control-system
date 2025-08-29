@@ -1,6 +1,6 @@
 # 後端技術棧 (Backend Technology Stack)
 
-_最後更新日期: 2025-08-27 10:42:20_
+_最後更新日期: 2025-08-29 02:33:37_
 
 ## 核心環境與框架
 
@@ -11,7 +11,9 @@ _最後更新日期: 2025-08-27 10:42:20_
 
 - **API 類型**: GraphQL (主要), REST (輔助)
 - **GraphQL 服務**: Apollo Server 5.0.0, GraphQL 16.11.0
-- **外部服務**: Resend 4.0.1
+- **外部服務**: Resend 4.0.1, Nodemailer 6.9.16
+- **資料加載優化**: DataLoader 2.2.3
+- **API 限流**: Rate-limiter-flexible 7.1.1
 
 ### API 設計理念
 
@@ -35,6 +37,20 @@ _最後更新日期: 2025-08-27 10:42:20_
 - **無伺服器函數**: `app/api/` 下29個REST端點 + 1個GraphQL端點
 - **API版本管理**: v1與v2版本共存, 支持版本標示和自動轉發
 - **中間件**: `middleware.ts` 認證與路由保護
+- **安全層**: CORS 2.8.5, JWT (jsonwebtoken 9.0.2), bcryptjs 3.0.2
+
+## AI 整合服務
+
+- **OpenAI SDK**: openai 4.104.0
+- **Anthropic SDK**: @anthropic-ai/sdk 0.40.1
+- **應用場景**: 自然語言處理、資料庫查詢生成、PDF 文件分析
+
+## 資料庫與 ORM
+
+- **Prisma ORM**: @prisma/client 6.12.0, prisma 6.12.0
+- **Supabase SDK**: @supabase/supabase-js 2.49.8
+- **Supabase SSR**: @supabase/ssr 0.6.1
+- **認證整合**: @supabase/auth-ui-react 0.4.7
 
 ### GraphQL 命名約定
 

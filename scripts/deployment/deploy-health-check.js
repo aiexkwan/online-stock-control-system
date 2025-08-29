@@ -2,7 +2,7 @@
 
 /**
  * Deployment Health Check Script
- * Verifies that StockTransferCard stability fixes are working correctly in production
+ * Verifies that the deployment is working correctly in production
  */
 
 const https = require('https');
@@ -31,13 +31,6 @@ const CONFIG = {
       headers: {
         'Content-Type': 'application/json',
       },
-      expectedStatus: 200,
-      critical: true,
-    },
-    {
-      name: 'Stock Transfer Page Load',
-      path: '/stock-transfer',
-      method: 'GET',
       expectedStatus: 200,
       critical: true,
     },
@@ -116,7 +109,7 @@ async function runHealthCheck(check) {
     path: url.pathname + url.search,
     method: check.method || 'GET',
     headers: {
-      'User-Agent': 'StockTransfer-HealthCheck/1.0',
+      'User-Agent': 'Deployment-HealthCheck/1.0',
       ...check.headers,
     },
     body: check.body,
@@ -167,52 +160,9 @@ async function runHealthCheck(check) {
   };
 }
 
-async function verifyStockTransferStability() {
-  log('\\n🔍 Verifying StockTransfer Stability Fixes...', colors.bold);
-
-  // Check if error boundary is properly loaded
-  try {
-    const url = new URL('/stock-transfer', CONFIG.baseUrl);
-    const options = {
-      hostname: url.hostname,
-      port: url.port || 443,
-      path: url.pathname,
-      method: 'GET',
-      headers: {
-        'User-Agent': 'StockTransfer-HealthCheck/1.0',
-      },
-    };
-
-    const response = await makeRequest(options);
-
-    if (response.statusCode === 200) {
-      // Check for StockTransferErrorBoundary in the response
-      const hasErrorBoundary =
-        response.data.includes('StockTransferErrorBoundary') ||
-        response.data.includes('error-boundary');
-
-      if (hasErrorBoundary) {
-        log('  ✅ StockTransferErrorBoundary detected in page', colors.green);
-      } else {
-        log(
-          '  ⚠️  StockTransferErrorBoundary not detected in HTML (may be dynamically loaded)',
-          colors.yellow
-        );
-      }
-
-      return true;
-    }
-  } catch (error) {
-    log(`  ❌ Failed to verify stability fixes: ${error.message}`, colors.red);
-    return false;
-  }
-
-  return false;
-}
-
 async function main() {
   console.clear();
-  log('🚀 StockTransfer Deployment Health Check', colors.bold + colors.blue);
+  log('🚀 Deployment Health Check', colors.bold + colors.blue);
   log(`🎯 Target: ${CONFIG.baseUrl}`, colors.blue);
   log(`⏱️  Timeout: ${CONFIG.timeout}ms`, colors.blue);
   log('='.repeat(60), colors.blue);
@@ -231,9 +181,6 @@ async function main() {
     }
   }
 
-  // Verify stability fixes
-  const stabilityOk = await verifyStockTransferStability();
-
   // Summary
   log('\\n' + '='.repeat(60), colors.blue);
   log('📊 Health Check Summary', colors.bold);
@@ -248,10 +195,6 @@ async function main() {
     `🔥 Critical Failures: ${criticalFailures}`,
     criticalFailures > 0 ? colors.red : colors.green
   );
-  log(
-    `🛡️  Stability Verification: ${stabilityOk ? 'PASSED' : 'NEEDS REVIEW'}`,
-    stabilityOk ? colors.green : colors.yellow
-  );
 
   // Performance summary
   const avgResponseTime =
@@ -263,7 +206,7 @@ async function main() {
 
   // Final verdict
   log('\\n' + '='.repeat(60), colors.blue);
-  if (criticalFailures === 0 && stabilityOk) {
+  if (criticalFailures === 0) {
     log('🎉 DEPLOYMENT HEALTHY - All critical checks passed!', colors.bold + colors.green);
     process.exit(0);
   } else if (criticalFailures === 0) {

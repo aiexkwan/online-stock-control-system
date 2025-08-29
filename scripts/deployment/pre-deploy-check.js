@@ -2,7 +2,7 @@
 
 /**
  * Pre-deployment Check Script
- * Verifies system readiness before deploying StockTransfer stability fixes
+ * Verifies system readiness before deploying to production
  */
 
 const { execSync } = require('child_process');
@@ -16,8 +16,6 @@ const REQUIRED_FILES = [
   'package.json',
   '.env.local.template',
   '.env.production.template',
-  'app/(app)/admin/cards/components/StockTransferErrorBoundary.tsx',
-  'app/(app)/admin/cards/StockTransferCard.tsx',
 ];
 
 const CRITICAL_ENV_VARS = [
@@ -64,70 +62,6 @@ function runCommand(command, description) {
   } catch (error) {
     log(`  ❌ ${description} - Failed: ${error.message}`, colors.red);
     return { success: false, error: error.message };
-  }
-}
-
-function checkStockTransferStability() {
-  log('\\n🛡️  Checking StockTransfer Stability Fixes...', colors.bold);
-
-  const errorBoundaryPath = 'app/(app)/admin/cards/components/StockTransferErrorBoundary.tsx';
-  const stockTransferCardPath = 'app/(app)/admin/cards/StockTransferCard.tsx';
-
-  let issues = [];
-
-  // Check if StockTransferErrorBoundary exists
-  if (!fs.existsSync(errorBoundaryPath)) {
-    issues.push('StockTransferErrorBoundary component is missing');
-  } else {
-    const content = fs.readFileSync(errorBoundaryPath, 'utf8');
-
-    // Check for critical error boundary features
-    const requiredFeatures = [
-      'componentDidCatch',
-      'getDerivedStateFromError',
-      'analyzeError',
-      'ErrorSeverity',
-      'ErrorCategory',
-    ];
-
-    for (const feature of requiredFeatures) {
-      if (!content.includes(feature)) {
-        issues.push(`StockTransferErrorBoundary missing feature: ${feature}`);
-      }
-    }
-  }
-
-  // Check if StockTransferCard imports the error boundary
-  if (fs.existsSync(stockTransferCardPath)) {
-    const content = fs.readFileSync(stockTransferCardPath, 'utf8');
-
-    if (!content.includes('StockTransferErrorBoundary')) {
-      issues.push('StockTransferCard does not import StockTransferErrorBoundary');
-    }
-
-    // Check for cleanup patterns (memory leak fixes)
-    const cleanupPatterns = ['useEffect', 'return () =>', 'cleanup'];
-
-    let cleanupFound = false;
-    for (const pattern of cleanupPatterns) {
-      if (content.includes(pattern)) {
-        cleanupFound = true;
-        break;
-      }
-    }
-
-    if (!cleanupFound) {
-      issues.push('StockTransferCard may be missing cleanup logic for memory leaks');
-    }
-  }
-
-  if (issues.length === 0) {
-    log('  ✅ All stability fixes verified', colors.green);
-    return true;
-  } else {
-    log('  ❌ Stability issues found:', colors.red);
-    issues.forEach(issue => log(`    - ${issue}`, colors.red));
-    return false;
   }
 }
 
@@ -191,7 +125,7 @@ function checkVercelConfiguration() {
 
 async function main() {
   console.clear();
-  log('🔍 StockTransfer Pre-Deployment Check', colors.bold + colors.blue);
+  log('🔍 Pre-Deployment Check', colors.bold + colors.blue);
   log('='.repeat(50), colors.blue);
 
   let allChecksPass = true;
@@ -231,15 +165,11 @@ async function main() {
   const buildCheck = runCommand('npm run build', 'Next.js Build');
   if (!buildCheck.success) allChecksPass = false;
 
-  // 4. Check StockTransfer stability
-  const stabilityCheck = checkStockTransferStability();
-  if (!stabilityCheck) allChecksPass = false;
-
-  // 5. Check Vercel configuration
+  // 4. Check Vercel configuration
   const vercelCheck = checkVercelConfiguration();
   if (!vercelCheck) allChecksPass = false;
 
-  // 6. Run security checks
+  // 5. Run security checks
   log('\\n🛡️  Running Security Checks...', colors.bold);
 
   // Check for exposed secrets

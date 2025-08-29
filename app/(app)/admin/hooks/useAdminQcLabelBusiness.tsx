@@ -11,10 +11,14 @@ import {
   useClockConfirmation,
   type PrintEvent,
 } from '@/app/components/qc-label-form/hooks/modules/useClockConfirmation';
-import { usePdfGeneration } from './usePdfGeneration';
-import { useStreamingPdfGeneration } from '@/app/components/qc-label-form/hooks/modules/useStreamingPdfGeneration';
+// 使用統一的 PDF 生成 Hook
+import { useUnifiedPdfGeneration, type BatchPdfOptions } from '@/hooks/useUnifiedPdfGeneration';
+import { PdfType } from '@/lib/services/unified-pdf-service';
+import type { QcLabelInputData } from '@/lib/mappers/pdf-data-mappers';
 import type { ProductInfo, AdminFormData, SlateDetail } from '../types/adminQcTypes';
 import { createClient } from '@/app/utils/supabase/client';
+import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 // RPC response type
 interface RpcResponse {
@@ -48,6 +52,8 @@ export const useAdminQcLabelBusiness = ({
   onShowError,
   onShowWarning,
 }: UseAdminQcLabelBusinessProps) => {
+  // 使用 logger（已包含 sanitizer）
+
   // Supabase client for v6 operations
   const supabase = createClient();
 
@@ -56,6 +62,14 @@ export const useAdminQcLabelBusiness = ({
 
   // 使用新的 useCurrentUserId hook 以支持從 metadata 提取用戶 ID
   const currentUserId = useCurrentUserId();
+
+  // 使用統一的 PDF 生成 Hook
+  const {
+    state: pdfState,
+    generateBatch,
+    reset: resetPdfState,
+    cancel: cancelPdfGeneration,
+  } = useUnifiedPdfGeneration();
 
   // 當 userId 改變時更新 formData
   useEffect(() => {
@@ -133,8 +147,7 @@ export const useAdminQcLabelBusiness = ({
     [setFormData]
   );
 
-  const { generatePdfs, printPdfs } = usePdfGeneration();
-  const { generatePdfsStream, streamingStatus, cancelStreaming } = useStreamingPdfGeneration();
+  // 移除舊的 PDF 生成 hooks，改用統一的 PDF 生成
 
   // State for preventing duplicate submissions
   const [isProcessing, setIsProcessing] = useState(false);
@@ -362,95 +375,95 @@ export const useAdminQcLabelBusiness = ({
           onShowWarning?.(`${successCount} of ${count} pallets processed successfully`);
         }
 
-        // 生成 PDFs - 暫時總是使用傳統模式以避免列印問題
-        console.log('[Admin QC Label] Starting PDF generation...');
-        let pdfResult;
-        const shouldUseStreaming = false; // 暫時禁用串流模式
+        // 使用統一的 PDF 生成 Hook
+        logger.info('[Admin QC Label] Starting unified PDF generation...');
 
-        if (shouldUseStreaming) {
-          // 多個標籤時自動使用串流模式
-          console.log(`[Admin QC Label] Auto-enabled streaming mode for ${count} labels`);
-          pdfResult = await generatePdfsStream({
-            productInfo,
+        // 準備 QC Label 數據陣列
+        const qcLabelDataArray: QcLabelInputData[] = sortedPalletNumbers.map(
+          (palletNumber, index) => ({
+            productCode: productInfo.code,
+            productDescription: productInfo.description,
             quantity,
-            count,
-            palletNumbers: sortedPalletNumbers,
-            series: sortedSeries,
-            formData,
-            clockNumber: clockNumber,
-            onProgress: (current, status) => {
-              setFormData(prev => ({
-                ...prev,
-                pdfProgress: {
-                  ...prev.pdfProgress,
-                  current,
-                  status: prev.pdfProgress.status.map((s, idx) =>
-                    idx === current - 1 ? status : s
+            series: sortedSeries[index],
+            palletNum: palletNumber,
+            operatorClockNum: formData.operator || clockNumber,
+            qcClockNum: clockNumber,
+            workOrderNumber: formData.acoOrderRef || undefined,
+            workOrderName: productInfo.type === 'ACO' ? formData.acoOrderRef : undefined,
+            productType: productInfo.type || undefined,
+          })
+        );
+
+        // 使用統一 PDF 生成批量功能
+        const pdfResult = await generateBatch({
+          type: PdfType.QC_LABEL,
+          dataArray: qcLabelDataArray,
+          onProgress: (current, total, status, message) => {
+            setFormData(prev => ({
+              ...prev,
+              pdfProgress: {
+                current,
+                total,
+                status: Array(total)
+                  .fill('Pending')
+                  .map((_, idx) =>
+                    idx < current ? (status === 'Success' ? 'Success' : 'Failed') : 'Pending'
                   ),
-                },
-              }));
-            },
-            onStreamComplete: (blob, url, index) => {
-              // 可以在這裡處理單個 PDF 完成的邏輯
-              console.log(`[Admin QC Label] Label ${index + 1} completed in streaming mode`);
-            },
-            batchSize: 5, // 每批處理 5 個
-          });
-        } else {
-          // 單個標籤使用傳統模式
-          console.log(`[Admin QC Label] Using normal mode for single label`);
-          pdfResult = await generatePdfs({
-            productInfo,
-            quantity,
-            count,
-            palletNumbers: sortedPalletNumbers,
-            series: sortedSeries,
-            formData,
-            clockNumber: clockNumber,
-            onProgress: (current, status) => {
-              setFormData(prev => ({
-                ...prev,
-                pdfProgress: {
-                  ...prev.pdfProgress,
-                  current,
-                  status: prev.pdfProgress.status.map((s, idx) =>
-                    idx === current - 1 ? status : s
-                  ),
-                },
-              }));
-            },
-          });
-        }
+              },
+            }));
 
-        // 打印 PDFs
-        if (pdfResult.success && pdfResult.pdfBlobs.length > 0) {
-          await printPdfs(
-            pdfResult.pdfBlobs,
-            productInfo.code,
-            sortedPalletNumbers,
-            sortedSeries,
-            quantity,
-            clockNumber
-          );
+            // 使用 LoggerSanitizer 記錄進度
+            logger.debug({
+              msg: '[PDF Progress]',
+              current,
+              total,
+              status,
+              message,
+            });
+          },
+          showSuccessToast: false, // 我們會自定義提示
+          showErrorToast: false,
+          autoMerge: false, // 不需要合併，需要單獨打印
+        });
 
-          // Note: RPC has already handled all database operations including:
-          // - Pallet number confirmation
-          // - Stock level updates
-          // - Work level updates
-          // - ACO order updates
-          // So no additional database operations are needed here
-        } else {
-          if (pdfResult.errors.length > 0) {
-            onShowWarning?.(
-              'Processing finished. Some labels failed. No PDFs generated for printing.'
-            );
-          } else {
-            onShowError?.('No valid labels to process. No PDF generated for printing.');
+        // 處理 PDF 生成結果
+        if (pdfResult.successful > 0) {
+          logger.info({
+            msg: '[Admin QC Label] PDF generation completed',
+            successful: pdfResult.successful,
+            failed: pdfResult.failed,
+            totalBlobs: pdfResult.blobs.length,
+          });
+
+          // 打印 PDFs - 使用統一的打印服務
+          if (pdfResult.blobs.length > 0) {
+            try {
+              // 動態導入打印服務
+              const { unifiedPrintService } = await import('@/lib/services/unified-print-service');
+
+              await unifiedPrintService.printBatch(pdfResult.blobs, {
+                productCode: productInfo.code,
+                palletNumbers: sortedPalletNumbers.slice(0, pdfResult.successful),
+                series: sortedSeries.slice(0, pdfResult.successful),
+                quantity,
+                operator: clockNumber,
+              });
+
+              logger.info('[Admin QC Label] PDFs sent to print queue');
+              toast.success(`Successfully printed ${pdfResult.successful} QC labels`);
+            } catch (printError) {
+              logger.error('[Admin QC Label] Print error');
+              onShowError?.('Failed to send PDFs to print queue');
+            }
           }
+
+          // Note: RPC has already handled all database operations
+        } else {
+          onShowError?.('Failed to generate any PDF labels');
         }
 
         // 重置表單
-        if (pdfResult.success && pdfResult.pdfBlobs.length > 0) {
+        if (pdfResult.successful > 0) {
           setFormData(prev => ({
             ...prev,
             productCode: '',
@@ -500,11 +513,10 @@ export const useAdminQcLabelBusiness = ({
       checkCooldownPeriod,
       setCooldownTimer,
       validateForm,
-      generatePdfs,
-      generatePdfsStream,
-      printPdfs,
+      generateBatch,
       supabase,
       currentUserId,
+      logger,
     ]
   );
 
@@ -531,8 +543,8 @@ export const useAdminQcLabelBusiness = ({
     isAcoOrderFulfilled,
     isAcoOrderIncomplete,
 
-    // Streaming PDF generation
-    streamingStatus,
-    cancelStreaming,
+    // PDF generation state from unified hook
+    pdfState,
+    cancelPdfGeneration,
   };
 };

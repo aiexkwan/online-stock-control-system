@@ -3,18 +3,12 @@
  * 基於業務需求預定義，無需動態追蹤
  */
 
-export const FREQUENT_PATHS = [
-  '/admin/operations',
-  '/stock-transfer',
-  '/qc-label',
-  '/order-loading',
-  '/admin',
-];
+export const FREQUENT_PATHS = ['/admin/operations', '/qc-label', '/order-loading', '/admin'];
 
 export const TIME_BASED_SUGGESTIONS = {
   morning: {
     hours: [8, 9, 10, 11],
-    paths: ['/admin/operations', '/stock-transfer', '/qc-label'],
+    paths: ['/admin/operations', '/qc-label'],
     message: 'Time for warehouse operations',
   },
   afternoon: {

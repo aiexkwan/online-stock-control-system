@@ -16,8 +16,8 @@ class CompoundComponentRegistry implements ComponentRegistry {
   private components = new Map<string, React.ComponentType<any>>();
 
   register<P = Record<string, unknown>>(
-    name: string, 
-    component: React.ComponentType<P>, 
+    name: string,
+    component: React.ComponentType<P>,
     metadata?: import('@/lib/types/auth-system').ComponentMetadata
   ): void {
     this.components.set(name, component as React.ComponentType<any>);
@@ -27,7 +27,9 @@ class CompoundComponentRegistry implements ComponentRegistry {
     this.components.delete(name);
   }
 
-  get<P = Record<string, unknown>>(name: string): import('@/lib/types/auth-system').RegisteredComponent<P> | undefined {
+  get<P = Record<string, unknown>>(
+    name: string
+  ): import('@/lib/types/auth-system').RegisteredComponent<P> | undefined {
     const component = this.components.get(name);
     if (component) {
       return {

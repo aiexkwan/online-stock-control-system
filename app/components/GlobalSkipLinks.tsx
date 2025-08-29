@@ -53,17 +53,6 @@ function getSkipLinksForPath(pathname: string): SkipLinkConfig[] {
     ];
   }
 
-  // Stock Transfer 頁面
-  if (pathname.startsWith('/stock-transfer')) {
-    return [
-      { href: '#main-content', label: 'Skip to main content' },
-      { href: '#search-section', label: 'Skip to search' },
-      { href: '#transfer-form', label: 'Skip to transfer form' },
-      { href: '#transfer-log', label: 'Skip to transfer log' },
-      { href: '#navigation-bar', label: 'Skip to navigation' },
-    ];
-  }
-
   // Order Loading 頁面
   if (pathname.startsWith('/order-loading')) {
     return [
