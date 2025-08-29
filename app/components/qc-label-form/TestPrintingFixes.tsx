@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { getHardwareAbstractionLayer } from '@/lib/hardware/hardware-abstraction-layer';
-import { toast } from 'sonner';
 
 export function TestPrintingFixes() {
   const [isTestingSingle, setIsTestingSingle] = useState(false);

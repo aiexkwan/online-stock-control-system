@@ -8,8 +8,9 @@ import {
   type LabelMode,
 } from '@/app/constants/grnConstants';
 
-// 定義表單狀態類型
+// 定義表單狀態類型 - 新增 index signature 以符合 Record<string, unknown> 類型
 export interface GrnFormState {
+  [key: string]: unknown;
   // 基本表單數據
   formData: {
     grnNumber: string;

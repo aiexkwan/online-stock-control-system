@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
+import { Package, Edit, Hash, FileText, Palette, Calculator, Tag } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Package, Edit, Hash, FileText, Palette, Calculator, Tag } from 'lucide-react';
 import { ProductData } from '@/app/actions/productActions';
 
 interface ProductInfoCardProps {

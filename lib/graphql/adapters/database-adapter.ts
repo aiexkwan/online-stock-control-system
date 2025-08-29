@@ -3,9 +3,9 @@
  * Provides clean abstraction between GraphQL resolvers and database queries
  */
 
+import { GraphQLError } from 'graphql';
 import { createClient } from '@/app/utils/supabase/server';
 import { FieldMapper } from '../config/field-mappings';
-import { GraphQLError } from 'graphql';
 
 export interface QueryOptions {
   select?: string[];

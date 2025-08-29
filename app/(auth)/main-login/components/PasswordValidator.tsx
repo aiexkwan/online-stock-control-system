@@ -20,8 +20,8 @@ const DEFAULT_REQUIREMENTS: PasswordRequirements = {
 };
 
 // Keep for backward compatibility but not used in validation
-const SPECIAL_CHARS = '!@#$%^&*(),.?":{}|<>';
-const SPECIAL_CHARS_REGEX = /[!@#$%^&*(),.?":{}|<>]/;
+const _SPECIAL_CHARS = '!@#$%^&*(),.?":{}|<>';
+const _SPECIAL_CHARS_REGEX = /[!@#$%^&*(),.?":{}|<>]/;
 
 // Pre-computed character sets for password generation
 const PASSWORD_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

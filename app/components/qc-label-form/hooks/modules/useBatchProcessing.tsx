@@ -7,15 +7,15 @@
  */
 
 import { useState, useCallback } from 'react';
-import { getErrorMessage } from '@/lib/types/error-handling';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { createClient } from '@/app/utils/supabase/client';
-import type { ProductInfo } from '../../types';
 import {
   BatchProcessingResult,
   BusinessSchemaValidator,
   BusinessTypeGuards,
 } from '@/lib/types/business-schemas';
+import type { ProductInfo } from '../../types';
 
 interface BatchItem {
   id: string;

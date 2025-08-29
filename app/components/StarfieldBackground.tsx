@@ -191,6 +191,8 @@ export const StarfieldBackground: React.FC<StarfieldBackgroundProps> = ({
       } else {
         console.warn('StarfieldBackground WebGL initialization failed with unknown error');
       }
+      // Return undefined for error path
+      return undefined;
     }
   }, []);
 

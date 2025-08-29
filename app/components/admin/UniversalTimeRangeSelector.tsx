@@ -7,11 +7,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { CalendarIcon } from '@heroicons/react/24/outline';
-import { cn } from '@/lib/utils';
 import { format, startOfDay, endOfDay } from 'date-fns';
 import { type DateRange } from 'react-day-picker';
-import { Calendar } from '@/components/ui/calendar';
 import { createPortal } from 'react-dom';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 
 export interface TimeFrame {
   label: string;

@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
+import { CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { FormValidation } from './types';
 import { getValidationSummary } from './hooks/useFormValidation';
-import { CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 interface ValidationSummaryProps {
   validation: FormValidation;

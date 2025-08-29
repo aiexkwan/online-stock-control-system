@@ -1,18 +1,18 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { useResourceCleanup } from '@/lib/hooks/useResourceCleanup';
+import { useCallback, useEffect, useRef } from 'react'; // Removed unused: useState, useMemo
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { getOptimizedClient } from '@/app/utils/supabase/optimized-client';
-import { getGrnDatabaseService } from '@/lib/database/grn-database-service';
+// Removed unused import: format from 'date-fns'
+import { useResourceCleanup } from '@/lib/hooks/useResourceCleanup';
+// Removed unused import: getOptimizedClient
+// Removed unused import: getGrnDatabaseService
 // Moved to unified grn library import below
-import { createGrnLogger } from '@/lib/security/grn-logger';
+// Removed unused import: createGrnLogger
 import {
-  createGrnDatabaseEntries,
+  // createGrnDatabaseEntries, // Unused import
   createGrnDatabaseEntriesBatch,
-  type GrnPalletInfoPayload,
-  type GrnRecordPayload,
+  // type GrnPalletInfoPayload, // Unused type
+  // type GrnRecordPayload, // Unused type
 } from '@/app/actions/grnActions';
 import { PALLET_TYPE_OPTIONS, PACKAGE_TYPE_OPTIONS } from '@/app/constants/grnConstants';
 // 使用統一的 PDF 生成 Hook
@@ -20,21 +20,17 @@ import { useUnifiedPdfGeneration } from '@/hooks/useUnifiedPdfGeneration';
 import { PdfType } from '@/lib/services/unified-pdf-service';
 import type { GrnLabelInputData } from '@/lib/mappers/pdf-data-mappers';
 import { logger } from '@/lib/logger';
-import {
-  PALLET_WEIGHTS,
-  PACKAGE_WEIGHTS,
-  LABEL_MODES,
-  type PalletTypeKey,
-  type PackageTypeKey,
-  type LabelMode,
-} from '@/app/constants/grnConstants';
+// Removed unused imports from grnConstants:
+// PALLET_WEIGHTS, PACKAGE_WEIGHTS, LABEL_MODES
+// type PalletTypeKey, type PackageTypeKey, type LabelMode
 
 // Import reducer types from unified library
-import type { GrnFormState, GrnFormAction } from '@/lib/grn/hooks/useGrnFormReducer';
+import type { GrnFormState } from '@/lib/grn/hooks/useGrnFormReducer';
+// Removed unused import: GrnFormAction
 
 // Import GRN modules from unified library
 import { grnErrorHandler, useWeightCalculation, usePalletGenerationGrn } from '@/lib/grn';
-import { confirmPalletUsage } from '@/app/utils/palletGeneration';
+// Removed unused import: confirmPalletUsage
 
 interface UseGrnLabelBusinessV3Props {
   state: GrnFormState;
@@ -66,7 +62,7 @@ interface UseGrnLabelBusinessV3Return {
 export const useAdminGrnLabelBusiness = ({
   state,
   actions,
-  currentUserId,
+  currentUserId: _currentUserId,
 }: UseGrnLabelBusinessV3Props): UseGrnLabelBusinessV3Return => {
   // 使用 logger（已包含 sanitizer）
 
@@ -82,14 +78,14 @@ export const useAdminGrnLabelBusiness = ({
     palletType: state.palletType,
     packageType: state.packageType,
   });
-  const palletGeneration = usePalletGenerationGrn();
+  const _palletGeneration = usePalletGenerationGrn(); // Renamed unused variable
 
   // 使用統一的 PDF 生成 Hook
   const {
-    state: pdfState,
+    // state: pdfState, // Unused destructured variable
     generateBatch,
-    reset: resetPdfState,
-    cancel: cancelPdfGeneration,
+    // reset: resetPdfState, // Unused destructured variable
+    // cancel: cancelPdfGeneration, // Unused destructured variable
   } = useUnifiedPdfGeneration();
 
   // Enhanced cleanup on unmount
@@ -528,7 +524,7 @@ export const useAdminGrnLabelBusiness = ({
         }
       }
     },
-    [state, actions, weightCalculation, generateBatch, logger, resourceCleanup]
+    [state, actions, weightCalculation, generateBatch, resourceCleanup]
   );
 
   // Cancel current operation method
@@ -538,7 +534,7 @@ export const useAdminGrnLabelBusiness = ({
       currentOperationRef.current.abort('User cancelled operation');
       actions.setProcessing(false);
     }
-  }, [logger, actions]);
+  }, [actions]);
 
   return {
     weightCalculation,

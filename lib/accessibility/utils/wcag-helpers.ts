@@ -328,7 +328,7 @@ export function validateAriaLabels(element: HTMLElement): AccessibilityIssue[] {
   // 檢查 ARIA 狀態
   if (role === 'button' || element.tagName.toLowerCase() === 'button') {
     const ariaExpanded = element.getAttribute('aria-expanded');
-    const ariaPressed = element.getAttribute('aria-pressed');
+    const _ariaPressed = element.getAttribute('aria-pressed'); // Renamed unused variable
 
     if (ariaExpanded && !['true', 'false'].includes(ariaExpanded)) {
       issues.push({

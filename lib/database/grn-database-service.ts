@@ -4,7 +4,6 @@
  * batch processing, and performance monitoring
  */
 
-import { getSupabaseClient } from './supabase-client-manager';
 import type { Database } from '@/types/database/supabase';
 import { createGrnLogger } from '@/lib/security/grn-logger';
 import {
@@ -13,6 +12,7 @@ import {
   GrnDatabaseRecord,
   GrnQueryFilters,
 } from '@/lib/types/database-operations';
+import { getSupabaseClient } from './supabase-client-manager';
 
 // Type definitions for GRN operations
 type Tables = Database['public']['Tables'];

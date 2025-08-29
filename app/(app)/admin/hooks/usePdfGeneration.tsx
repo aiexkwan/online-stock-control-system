@@ -5,15 +5,16 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
-import { getErrorMessage } from '@/lib/types/error-handling';
 import { toast } from 'sonner';
-import { renderReactPDFToBlob, loadPDF } from '@/lib/services/unified-pdf-service';
+import { format } from 'date-fns';
+import { getErrorMessage } from '@/lib/types/error-handling';
+import { renderReactPDFToBlob } from '@/lib/services/unified-pdf-service';
+// Removed unused import: loadPDF
 import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf';
 import { prepareQcLabelData, mergeAndPrintPdfs, type QcInputData } from '@/lib/pdfUtils';
 import { uploadPdfToStorage, updatePalletPdfUrl } from '@/app/actions/qcActions';
 import { getOrdinalSuffix, getAcoPalletCount } from '@/app/utils/qcLabelHelpers';
 import { createClient } from '@/app/utils/supabase/client';
-import { format } from 'date-fns';
 import { getHardwareAbstractionLayer } from '@/lib/hardware/hardware-abstraction-layer';
 import {
   getUnifiedPrintingService,
@@ -96,7 +97,7 @@ export const usePdfGeneration = (): UsePdfGenerationReturn => {
               useHardwareServices.current = true;
               console.log('[PrintPDF] ✅ Hardware services initialized as fallback');
             });
-          } catch (halErr) {
+          } catch {
             console.warn('[PrintPDF] ⚠️ Both printing services unavailable, using legacy printing');
           }
         });

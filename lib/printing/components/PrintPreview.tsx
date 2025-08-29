@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import { DatabaseRecord } from '@/types/database/tables';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
-import { PrintOptions, PrintType } from '../types';
 import { cn } from '@/lib/utils';
+import { PrintOptions, PrintType } from '../types';
 
 export interface PrintPreviewProps {
   type: string;

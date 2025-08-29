@@ -3,9 +3,9 @@
  * Demonstrates mixed real-time and batch operations
  */
 
-import { DataAccessLayer } from '../core/DataAccessStrategy';
 import { DatabaseRecord } from '@/types/database/tables';
 import { createClient } from '@/app/utils/supabase/client';
+import { DataAccessLayer } from '../core/DataAccessStrategy';
 // Note: The following imports are commented out as the functions may have been moved
 // import { qcLabelGeneration, grnLabelGeneration } from '@/app/actions/qcActions';
 // import { printGrnLabel } from '@/app/actions/grnActions';
@@ -62,10 +62,12 @@ export class PrintLabelAPI extends DataAccessLayer<PrintJobParams, PrintJobResul
       .order('created_at', { ascending: false });
 
     if (params.type) {
-      query = query.eq('label_type', params.type);
+      const typeQuery: any = query.eq('label_type', params.type);
+      query = typeQuery;
     }
     if (params.productCode) {
-      query = query.eq('product_code', params.productCode);
+      const productQuery: any = query.eq('product_code', params.productCode);
+      query = productQuery;
     }
 
     const { data, error } = await query.limit(100);

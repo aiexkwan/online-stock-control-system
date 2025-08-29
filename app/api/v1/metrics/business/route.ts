@@ -4,8 +4,8 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createClient } from '@/app/utils/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@/app/utils/supabase/server';
 import type { Database } from '@/types/database/supabase';
 import { getErrorMessage } from '@/lib/types/error-handling';
 import {

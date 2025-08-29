@@ -3,12 +3,12 @@
  * These functions return buffers instead of triggering downloads
  */
 
+import { format as formatDateFns } from 'date-fns';
 import type {
   AcoProductData,
   GrnReportPageData,
   TransactionReportData,
 } from '@/app/actions/DownloadCentre-Actions';
-import { format as formatDateFns } from 'date-fns';
 
 // Maximum number of product blocks for ACO report
 const MAX_PRODUCT_BLOCKS = 4;
@@ -188,7 +188,7 @@ export async function exportAcoReportBuffer(
  */
 export async function exportGrnReportMultiSheetBuffer(
   allReportsData: GrnReportPageData[],
-  grnRef: string
+  _grnRef: string
 ): Promise<Buffer> {
   if (!allReportsData || allReportsData.length === 0) {
     throw new Error('No data to export');

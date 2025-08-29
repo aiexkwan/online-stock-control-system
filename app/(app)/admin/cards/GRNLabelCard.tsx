@@ -1,28 +1,27 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useMemo, memo } from 'react';
-import { useProgressDebounce } from '@/lib/hooks/useProgressDebounce';
-import { useResourceCleanup } from '@/lib/hooks/useResourceCleanup';
+// import { toast } from 'sonner'; // Removed - not used
+import { Package } from 'lucide-react';
 import { getOptimizedClient } from '@/app/utils/supabase/optimized-client';
 import { getGrnDatabaseService } from '@/lib/database/grn-database-service';
-import { toast } from 'sonner';
 // Imports moved to unified @/lib/grn below
-import { EnhancedProgressBar } from '../components/EnhancedProgressBar';
 const UserIdVerificationDialog = React.lazy(() => import('../components/UserIdVerificationDialog'));
 import { SpecialCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { cardTextStyles } from '@/lib/card-system/theme';
-import { Package } from 'lucide-react';
+import { useResourceCleanup } from '@/lib/hooks/useResourceCleanup';
+import { useProgressDebounce, type ProgressUpdate } from '@/lib/hooks/useProgressDebounce';
 import { cn } from '@/lib/utils';
 import { createGrnLogger } from '@/lib/security/grn-logger';
 import { useCurrentUserId } from '@/app/hooks/useAuth';
 import {
   validateProductInfo,
   validateSupplierInfo,
-  validateClockNumber,
+  // validateClockNumber, // Removed - not used
   validateGrossWeight,
   validateGrossWeights,
   type GrnProductInfo as ValidatedGrnProductInfo,
-  type GrnSupplierInfo,
+  // type GrnSupplierInfo, // Removed - not used
   type GrnFormData,
 } from '@/lib/types/grn-validation';
 
@@ -30,7 +29,7 @@ import {
 
 // Import constants
 import {
-  LABEL_MODES,
+  // LABEL_MODES, // Removed - not used
   type PalletTypeKey,
   type PackageTypeKey,
   type LabelMode,
@@ -38,7 +37,6 @@ import {
 
 // Import GRN modules from unified library
 import { grnErrorHandler, GrnDetailCard, WeightInputList, useGrnFormReducer } from '@/lib/grn';
-import { useAdminGrnLabelBusiness } from '../hooks/useAdminGrnLabelBusiness';
 
 // Import enhanced Props types
 import {
@@ -52,18 +50,20 @@ import {
   mergeGrnConfig,
   convertLegacyProps,
 } from '@/lib/types/grn-props';
+import { EnhancedProgressBar } from '../components/EnhancedProgressBar';
+import { useAdminGrnLabelBusiness } from '../hooks/useAdminGrnLabelBusiness';
 
 // Type definitions - keeping interface for backward compatibility
-interface GrnProductInfo {
-  code: string;
-  description: string;
-  weight: string;
-  supplier: string;
-}
+// interface GrnProductInfo { // Removed - not used
+//   code: string;
+//   description: string;
+//   weight: string;
+//   supplier: string;
+// }
 
 // Use validated types for new implementations
-type SafeGrnProductInfo = ValidatedGrnProductInfo;
-type SafeGrnSupplierInfo = GrnSupplierInfo;
+// type SafeGrnProductInfo = ValidatedGrnProductInfo; // Removed - not used
+// type SafeGrnSupplierInfo = GrnSupplierInfo; // Removed - not used
 
 // Legacy Props interface for backward compatibility
 export interface GRNLabelCardProps {
@@ -152,7 +152,7 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
   }, [debug, config, disabled, readOnly]);
 
   // Use optimized Supabase client with singleton pattern
-  const [supabase] = React.useState(() => {
+  const [_supabase] = React.useState(() => {
     if (typeof window !== 'undefined') {
       return getOptimizedClient();
     }
@@ -160,7 +160,7 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
   });
 
   // Initialize GRN database service for optimized operations
-  const grnDbService = React.useMemo(() => {
+  const _grnDbService = React.useMemo(() => {
     if (typeof window !== 'undefined') {
       return getGrnDatabaseService();
     }
@@ -195,7 +195,7 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
   // Adapter function to convert QC Label ProductInfo to GRN ProductInfo
   // Simplified to only extract what GRN needs: code and description
   const adaptProductInfo = useCallback(
-    (qcProductInfo: unknown): SafeGrnProductInfo | null => {
+    (qcProductInfo: unknown): ValidatedGrnProductInfo | null => {
       // 處理 null 或 undefined 輸入
       if (qcProductInfo === null || qcProductInfo === undefined) {
         logger.debug('Product info is null/undefined, returning null');
@@ -209,13 +209,15 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
         'code' in qcProductInfo &&
         'description' in qcProductInfo
       ) {
-        const productData = qcProductInfo as { code: string; description: string };
-        const simplifiedInfo = {
-          code: productData.code,
-          description: productData.description,
-        };
-        logger.debug('Simplified product info for GRN', simplifiedInfo);
-        return simplifiedInfo;
+        const productData = qcProductInfo as { code?: string; description?: string };
+        if (productData.code && productData.description) {
+          const simplifiedInfo = {
+            code: productData.code,
+            description: productData.description,
+          };
+          logger.debug('Simplified product info for GRN', simplifiedInfo);
+          return simplifiedInfo;
+        }
       }
 
       // 備用：使用 Zod 驗證（用於其他來源的資料）
@@ -232,7 +234,7 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
 
   // Setup debounced progress updates for better performance
   const handleProgressUpdate = useCallback(
-    (update: any) => {
+    (update: ProgressUpdate) => {
       if (update.current !== undefined || update.total !== undefined) {
         actions.setProgress({
           current: update.current ?? state.progress.current,
@@ -249,10 +251,8 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
 
   const {
     updateProgress: debouncedUpdateProgress,
-    updateProgressCount,
     updateProgressStatus: debouncedUpdateProgressStatus,
     flushUpdates,
-    getMetrics,
   } = useProgressDebounce(handleProgressUpdate, {
     progressDelay: 100,
     statusDelay: 50,
@@ -261,7 +261,7 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
   });
 
   // Use the business logic hook with debounced progress updates and resource management
-  const { weightCalculation, processPrintRequest, cancelCurrentOperation } =
+  const { processPrintRequest, cancelCurrentOperation } =
     useAdminGrnLabelBusiness({
       state,
       actions: {
@@ -354,7 +354,7 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
         callbacks.onFormChange(callbackFormData, field as keyof typeof state.formData);
       }
     },
-    [actions, disabled, readOnly, config.validation, callbacks, logger, state.formData]
+    [actions, disabled, readOnly, config, callbacks, logger, state]
   );
 
   // Enhanced cleanup with resource management
@@ -395,7 +395,7 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
         'code' in supplierInfo &&
         'name' in supplierInfo
       ) {
-        const typedSupplierInfo = supplierInfo as { code: string; name: string };
+        const typedSupplierInfo = supplierInfo as { code?: string; name?: string };
         if (typedSupplierInfo.code && typedSupplierInfo.name) {
           actions.setSupplierInfo({
             code: typedSupplierInfo.code,
@@ -409,8 +409,12 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
 
       // 嘗試使用原有的 Zod 驗證（用於其他來源的資料）
       const validated = validateSupplierInfo(supplierInfo);
-      if (validated) {
-        actions.setSupplierInfo(validated);
+      if (validated && validated.code && validated.name) {
+        // 確保必需屬性存在
+        actions.setSupplierInfo({
+          code: validated.code,
+          name: validated.name
+        });
         actions.setSupplierError(null);
         logger.debug('Supplier info validated and set', validated);
       } else {
@@ -546,7 +550,7 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
         );
       }
     },
-    [actions, currentUserId, logger, disabled, readOnly, config.layout.maxWeightInputs, callbacks]
+    [actions, currentUserId, logger, disabled, readOnly, config.layout.maxWeightInputs, callbacks, resourceCleanup]
   );
 
   // Memoized weight remove callback to prevent unnecessary re-renders
@@ -718,7 +722,7 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
   // Apply theme-based styling
   const themeClasses = React.useMemo(() => {
     const base = `h-full ${className || ''}`;
-    const themeColor = config.theme.accentColor;
+    const _themeColor = config.theme.accentColor;
     const customContainer = config.theme.customClasses?.container || '';
 
     return cn(base, customContainer, {
@@ -773,7 +777,12 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
                   onSupplierInfoChange={handleSupplierInfoChange}
                   onProductInfoChange={(qcProductInfo: unknown) => {
                     const adaptedInfo = adaptProductInfo(qcProductInfo);
-                    actions.setProductInfo(adaptedInfo);
+                    if (adaptedInfo && adaptedInfo.code && adaptedInfo.description) {
+                      actions.setProductInfo({
+                        code: adaptedInfo.code,
+                        description: adaptedInfo.description,
+                      });
+                    }
                   }}
                   onLabelModeChange={(mode: LabelMode) => handleLabelModeChange(mode)}
                   onPalletTypeChange={handlePalletTypeChange}

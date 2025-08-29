@@ -227,7 +227,7 @@ export function useOrderDataCache() {
   return useOrderCache({
     defaultTTL: 10 * 60 * 1000, // 10 minutes for order data
     maxSize: 50,
-    onEvict: (key, value) => {
+    onEvict: (key, _value) => {
       (process.env.NODE_ENV as string) !== 'production' &&
         (process.env.NODE_ENV as string) !== 'production' &&
         console.log(`[OrderCache] Evicted order: ${key}`);
@@ -240,7 +240,7 @@ export function useOrderSummariesCache() {
   return useOrderCache({
     defaultTTL: 5 * 60 * 1000, // 5 minutes for summaries
     maxSize: 200,
-    onEvict: (key, value) => {
+    onEvict: (key, _value) => {
       (process.env.NODE_ENV as string) !== 'production' &&
         (process.env.NODE_ENV as string) !== 'production' &&
         console.log(`[OrderCache] Evicted summary: ${key}`);

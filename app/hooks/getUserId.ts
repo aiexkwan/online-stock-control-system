@@ -16,9 +16,9 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { createClient } from '@/app/utils/supabase/client';
 import { toast } from 'sonner';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@/app/utils/supabase/client';
 import { createSecureLogger } from '@/lib/security/enhanced-logger-sanitizer';
 
 // 建立安全日誌記錄器
@@ -93,7 +93,7 @@ export function useGetUserId(): GetUserIdReturn {
   /**
    * Get user details from data_id table by clock number ID
    */
-  const fetchUserDetails = useCallback(
+  const _fetchUserDetails = useCallback(
     async (clockNumberId: string): Promise<UserDetails | null> => {
       if (!supabaseRef.current) return null;
 
@@ -246,7 +246,7 @@ export function useGetUserId(): GetUserIdReturn {
 
     const {
       data: { subscription },
-    } = supabaseRef.current.auth.onAuthStateChange(async (event, session) => {
+    } = supabaseRef.current.auth.onAuthStateChange(async (event, _session) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         await getCurrentUser();
       } else if (event === 'SIGNED_OUT') {

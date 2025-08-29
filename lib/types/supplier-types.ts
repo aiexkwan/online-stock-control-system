@@ -4,10 +4,7 @@
  * 重構：使用 Zod schema 替換 unknown 類型守衛
  */
 
-import type { Json } from '@/types/database/supabase';
 import {
-  SupplierDataSchema,
-  SupplierInfoSchema,
   RpcSearchSupplierResponseSchema,
   RpcSupplierMutationResponseSchema,
   isValidSupplierData,
@@ -15,7 +12,6 @@ import {
   isValidRpcSearchSupplierResponse,
   isValidRpcSupplierMutationResponse,
 } from '@/lib/validation/zod-schemas';
-import { z } from 'zod';
 
 // ========== 基本供應商類型 ==========
 

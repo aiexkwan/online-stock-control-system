@@ -140,7 +140,7 @@ export interface GrnCallbacks {
   onUserLoad?: (userId: string) => void;
 
   /** Triggered on state changes for external monitoring */
-  onStateChange?: (state: any) => void;
+  onStateChange?: (state: Record<string, unknown>) => void;
 
   /** Triggered on validation errors */
   onValidationError?: (field: string, error: string) => void;
@@ -402,7 +402,7 @@ export const GrnLayoutConfigSchema = z.object({
 /**
  * Merges user-provided configuration with defaults
  */
-export function mergeGrnConfig<T extends Record<string, any>>(
+export function mergeGrnConfig<T extends Record<string, unknown>>(
   userConfig: Partial<T> | undefined,
   defaultConfig: T
 ): T {
@@ -417,9 +417,9 @@ export function mergeGrnConfig<T extends Record<string, any>>(
     ...(userConfig.customClasses && defaultConfig.customClasses
       ? {
           customClasses: {
-            ...defaultConfig.customClasses,
-            ...userConfig.customClasses,
-          },
+            ...(defaultConfig.customClasses || {}),
+            ...(userConfig.customClasses || {}),
+          } as Record<string, string>,
         }
       : {}),
   };
@@ -441,7 +441,7 @@ export function validateGrnLayoutConfig(config: unknown): GrnLayoutConfig | null
 /**
  * Type guards for enhanced props
  */
-export function isEnhancedGRNLabelCardProps(props: any): props is EnhancedGRNLabelCardProps {
+export function isEnhancedGRNLabelCardProps(props: unknown): props is EnhancedGRNLabelCardProps {
   return typeof props === 'object' && props !== null;
 }
 

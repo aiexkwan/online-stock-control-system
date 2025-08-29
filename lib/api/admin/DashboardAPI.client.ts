@@ -3,8 +3,8 @@
  * 專門用於客戶端組件的 DashboardAPI
  */
 
+// Removed unused import: createClient
 import { DataAccessLayer } from '../core/DataAccessStrategy';
-import { createClient } from '@/app/utils/supabase/client';
 
 // Re-export types from main DashboardAPI
 export type { DashboardWidgetData } from './DashboardAPI';

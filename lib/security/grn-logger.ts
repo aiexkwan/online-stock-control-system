@@ -6,7 +6,6 @@
  * and API responses.
  */
 
-import { sanitizeData, sanitizeError, createSanitizedLogEntry } from './logger-sanitizer';
 import {
   LogLevel,
   LogEntry,
@@ -14,6 +13,7 @@ import {
   AnyLogData,
   SanitizedLogEntry,
 } from '@/lib/types/security-monitoring';
+import { sanitizeData, sanitizeError, createSanitizedLogEntry } from './logger-sanitizer';
 
 // Extended list of sensitive fields for GRN operations
 const GRN_SENSITIVE_FIELDS = [
@@ -234,7 +234,7 @@ export class GrnLogger {
     }
 
     const sanitizedData = data ? sanitizeGrnData(data) : undefined;
-    const logEntry = createSanitizedLogEntry('info' as any, message, {
+    const logEntry = createSanitizedLogEntry('INFO', message, {
       component: this.component,
       ...(sanitizedData || {}),
     });
@@ -247,7 +247,7 @@ export class GrnLogger {
    */
   warn(message: string, data?: AnyLogData): void {
     const sanitizedData = data ? sanitizeGrnData(data) : undefined;
-    const logEntry = createSanitizedLogEntry('warn' as any, message, {
+    const logEntry = createSanitizedLogEntry('WARN', message, {
       component: this.component,
       ...(sanitizedData || {}),
     });
@@ -262,7 +262,7 @@ export class GrnLogger {
     const sanitizedError = error ? sanitizeError(error) : undefined;
     const sanitizedData = additionalData ? sanitizeGrnData(additionalData) : undefined;
 
-    const logEntry = createSanitizedLogEntry('error' as any, message, {
+    const logEntry = createSanitizedLogEntry('ERROR', message, {
       component: this.component,
       error: sanitizedError,
       ...(sanitizedData || {}),
@@ -280,7 +280,7 @@ export class GrnLogger {
     }
 
     const sanitizedData = data ? sanitizeGrnData(data) : undefined;
-    const logEntry = createSanitizedLogEntry('debug' as any, message, {
+    const logEntry = createSanitizedLogEntry('DEBUG', message, {
       component: this.component,
       ...(sanitizedData || {}),
     });

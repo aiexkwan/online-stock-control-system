@@ -4,9 +4,9 @@
  */
 
 import { IResolvers } from '@graphql-tools/utils';
-import { GraphQLContext } from './index';
 import { GraphQLError } from 'graphql';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { GraphQLContext } from './index';
 
 // Helper types for pagination
 interface PaginationParams {

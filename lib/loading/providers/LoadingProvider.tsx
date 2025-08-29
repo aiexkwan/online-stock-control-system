@@ -9,11 +9,11 @@
 'use client';
 
 import React, { ReactNode, useCallback, useMemo, useReducer, useRef, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { LoadingContext } from '../contexts/LoadingContext';
 import { LoadingState, LoadingContextValue, StartLoadingOptions } from '../types';
 import { createLoadingStrategy } from '../strategies/LoadingStrategy';
 import { PerformanceDetector } from '../utils/performanceDetector';
-import { logger } from '@/lib/logger';
 
 // Loading State Actions
 type LoadingAction =

@@ -4,8 +4,8 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createClient } from '@/app/utils/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@/app/utils/supabase/server';
 import type { Database } from '@/types/database/supabase';
 import { getErrorMessage } from '@/lib/types/error-handling';
 import {
@@ -196,14 +196,15 @@ async function getStockTransferMetrics(supabase: TypedSupabaseClient) {
       .from('record_transfer')
       .select('count(*)')
       .gte('created_at', today.toISOString())
-      .single();
+      .single() as { data: { count: number } | null };
 
     // 待處理轉移
-    const { data: pendingTransfers } = await supabase
+    const pendingTransferResult = await supabase
       .from('record_transfer')
       .select('count(*)')
       .eq('status', 'pending')
       .single();
+    const { data: pendingTransfers } = pendingTransferResult as { data: { count: number } | null };
 
     // 今日完成轉移
     const { data: completedTransfers } = await supabase
@@ -211,7 +212,7 @@ async function getStockTransferMetrics(supabase: TypedSupabaseClient) {
       .select('count(*)')
       .gte('created_at', today.toISOString())
       .eq('status', 'completed')
-      .single();
+      .single() as { data: { count: number } | null };
 
     // 熱門位置統計 - 使用直接查詢避免 RPC 類型問題 (Strategy 4: unknown + type narrowing)
     const { data: locationStats, error: locationError } = (await supabase
@@ -286,11 +287,12 @@ async function getOrderProcessingMetrics(supabase: TypedSupabaseClient) {
       .single();
 
     // 待處理訂單
-    const { data: pendingOrders } = await supabase
+    const pendingOrderResult = await supabase
       .from('record_aco')
       .select('count(*)')
       .in('status', ['pending', 'processing'])
       .single();
+    const { data: pendingOrders } = pendingOrderResult as { data: { count: number } | null };
 
     // 今日完成訂單
     const { data: completedOrders } = await supabase
@@ -360,11 +362,12 @@ async function getWarehouseOperationsMetrics(supabase: TypedSupabaseClient) {
       .single();
 
     // 活躍棧板數量
-    const { data: activePallets } = await supabase
+    const activePalletsResult = await supabase
       .from('record_palletinfo')
       .select('count(*)')
       .eq('status', 'active')
       .single();
+    const { data: activePallets } = activePalletsResult as { data: { count: number } | null };
 
     // 今日作廢棧板
     const { data: voidedPallets } = await supabase

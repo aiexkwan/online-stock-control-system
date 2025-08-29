@@ -3,7 +3,7 @@
  * Creates Apollo Client instances with proper authentication handling
  */
 
-import { ApolloClient, InMemoryCache, createHttpLink, ApolloLink, from } from '@apollo/client';
+import { ApolloClient, InMemoryCache, createHttpLink, from } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import { createClient } from '@/app/utils/supabase/client';
@@ -26,7 +26,7 @@ const cache = new InMemoryCache({
         },
         cards: {
           keyArgs: ['ids', 'params'],
-          merge(existing = [], incoming) {
+          merge(_existing = [], incoming) {
             return [...incoming];
           },
         },
@@ -114,7 +114,7 @@ export function createApolloClient(accessToken?: string) {
   });
 
   // Error Link
-  const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
+  const errorLink = onError(({ graphQLErrors, networkError, operation: _operation, forward: _forward }) => {
     if (graphQLErrors) {
       graphQLErrors.forEach(({ message, locations, path, extensions }) => {
         console.error(

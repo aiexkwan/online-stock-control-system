@@ -12,7 +12,7 @@ interface AnomalyCheckResult {
  */
 export async function checkOperationAnomaly(
   userId: string,
-  orderRef: string
+  _orderRef: string
 ): Promise<AnomalyCheckResult> {
   const supabase = await createClient();
 

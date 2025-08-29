@@ -1,6 +1,6 @@
 import React from 'react';
-import { FormField } from './FormField';
 import { Mail } from 'lucide-react';
+import { FormField } from './FormField';
 
 export interface EmailFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
   label?: string;

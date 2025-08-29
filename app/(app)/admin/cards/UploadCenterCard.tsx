@@ -10,10 +10,6 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   CloudArrowUpIcon,
   DocumentArrowUpIcon,
@@ -23,9 +19,12 @@ import {
   UserIcon,
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
 import { DataCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
-import { cardTextStyles, cardChartColors } from '@/lib/card-system/theme';
-import { PDFPreviewDialog } from '@/components/ui/pdf-preview-dialog';
+import { cardTextStyles } from '@/lib/card-system/theme';
 
 // Import individual upload components - deleted files
 // import { BaseUploadCard, UploadConfiguration, UploadFile } from './BaseUploadCard';
@@ -33,24 +32,29 @@ import { PDFPreviewDialog } from '@/components/ui/pdf-preview-dialog';
 // import { UploadProductSpecCard } from './UploadProductSpecCard';
 
 // Import types from centralized type definitions
+import { PDFPreviewOverlay } from '@/components/ui/pdf-preview-overlay';
+
+// Define upload configuration type
+interface UploadConfiguration {
+  accept: string;
+  maxSize: number;
+  maxFiles: number;
+  multiple: boolean;
+  autoUpload?: boolean;
+  dropzoneText: string;
+  dropzoneSubtext: string;
+  showFileList: boolean;
+}
+import { DataExtractionOverlay } from '@/components/ui/data-extraction-overlay';
 import type {
-  UploadConfiguration,
-  UploadFile,
-  UploadRecord,
   DocUploadRecord,
   UploadCenterCardProps,
-  UploadToastState,
 } from '../types/data-management';
-import type { UserInfo } from '../types/common';
 import { formatFileSize as formatFileSizeUtil } from '../utils/formatters';
 import { StatusOverlay } from '../components/shared';
 import { useUploadManager } from '../hooks/useUploadManager';
-import { PDFPreviewOverlay } from '@/components/ui/pdf-preview-overlay';
-import { DataExtractionOverlay } from '@/components/ui/data-extraction-overlay';
 
 export const UploadCenterCard: React.FC<UploadCenterCardProps> = ({
-  title = 'Upload Center',
-  description = 'Manage all file uploads',
   className,
   height = '100%',
   isEditMode = false,
@@ -90,8 +94,8 @@ export const UploadCenterCard: React.FC<UploadCenterCardProps> = ({
     handleSpecFilesUpload,
     handleOthersUpload,
     setUploadToast,
-    setIsDragging,
-    openDataExtractionOverlay,
+    setIsDragging: _setIsDragging,
+    openDataExtractionOverlay: _openDataExtractionOverlay,
     closeDataExtractionOverlay,
   } = actions;
 

@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import {
   DocumentDuplicateIcon,
@@ -11,6 +9,8 @@ import {
   ExclamationTriangleIcon,
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { UnifiedSearch } from '@/components/ui/unified-search';
 
 // 為了類型安全，複製 SearchResult 接口定義
@@ -117,7 +117,7 @@ export default function BatchLoadPanel({ orderRef, onBatchComplete }: BatchLoadP
             )
           );
         }
-      } catch (error) {
+      } catch {
         setBatchItems(prev =>
           prev.map(i =>
             i.id === item.id ? { ...i, status: 'error', message: 'System error occurred' } : i

@@ -8,9 +8,9 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useLoading } from './useLoading';
-import { UseLoadingOptions } from '../types';
 import { logger } from '@/lib/logger';
+import { UseLoadingOptions } from '../types';
+import { useLoading } from './useLoading';
 
 interface UseLoadingTimeoutOptions extends UseLoadingOptions {
   /** 超時時間 (ms) */

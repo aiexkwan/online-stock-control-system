@@ -1,9 +1,9 @@
 'use client';
 
 import React, { createContext, useContext, useCallback, useMemo, ReactNode } from 'react';
+import type { User } from '@supabase/supabase-js';
 import { useAuth } from '@/app/hooks/useAuth';
 import type { AuthState, UserRole } from '@/lib/types/auth';
-import type { User } from '@supabase/supabase-js';
 
 // Authentication service interface
 export interface AuthService {

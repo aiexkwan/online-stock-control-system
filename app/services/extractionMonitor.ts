@@ -12,8 +12,8 @@
  * @author Extraction Monitoring System
  */
 
-import { systemLogger } from '@/lib/logger';
 import { EventEmitter } from 'events';
+import { systemLogger } from '@/lib/logger';
 
 // 提取結果監控接口
 export interface ExtractionResult {

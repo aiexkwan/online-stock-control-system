@@ -1,28 +1,35 @@
 'use client';
 
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import { Loader2, Package, Package2, ArrowLeftRight, AlertTriangle } from 'lucide-react';
+
+// Action imports
+import { getTransferHistory } from '@/app/actions/stockTransferActions';
+// Type imports
+import type { TransferHistoryItem } from '@/app/actions/stockTransferActions';
+
+// UI components
 import { OperationCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { StatusMessage } from '@/components/ui/universal-stock-movement-layout';
 import { Input } from '@/components/ui/input';
-import { SearchInput, SearchInputRef, FormInputGroup, FormOption } from '../components/shared';
 import { getCardTheme, cardTextStyles, cardStatusColors } from '@/lib/card-system/theme';
 import { cn } from '@/lib/utils';
-import { Loader2, Package, Package2, ArrowLeftRight, AlertTriangle } from 'lucide-react';
+
+// App components
 import { SoundSettingsToggle } from '@/app/(app)/order-loading/components/SoundSettingsToggle';
 import { useSoundFeedback, useSoundSettings } from '@/app/hooks/useSoundFeedback';
+import type { SearchResult } from '../hooks/useStockTransfer';
+
+// Local components and constants
 import { LOCATION_DESTINATIONS, DESTINATION_CONFIG } from '../constants/stockTransfer';
 import { useStockTransfer } from '../hooks/useStockTransfer';
 import { LocationStandardizer } from '../utils/locationStandardizer';
-import { getTransferHistory } from '@/app/actions/stockTransferActions';
+import { SearchInput, SearchInputRef, FormInputGroup, FormOption } from '../components/shared';
 import StockTransferErrorBoundary from './components/StockTransferErrorBoundary';
 
 export interface StockTransferCardProps {
   className?: string;
 }
-
-// Import types
-import type { TransferHistoryItem } from '@/app/actions/stockTransferActions';
-import type { PalletInfo, SearchResult } from '../hooks/useStockTransfer';
 
 // Error overlay component for illegal transfers
 const ErrorOverlay: React.FC<{
@@ -158,7 +165,7 @@ const getDestinationOptions = (currentLocation: string): FormOption[] => {
 };
 
 // Destination selector component - Changed to horizontal layout
-const TransferDestinationSelector: React.FC<{
+const _TransferDestinationSelector: React.FC<{
   currentLocation: string;
   selectedDestination: string;
   onDestinationChange: (destination: string) => void;
@@ -245,7 +252,7 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
   // Use the stock transfer hook for core functionality with safety checks
   const stockTransferHook = useStockTransfer({
     searchInputRef,
-    onTransferComplete: (pallet, destination) => {
+    onTransferComplete: (_pallet, _destination) => {
       if (sound?.playSuccess) {
         sound.playSuccess();
       }
@@ -479,10 +486,13 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
       mountedRef.current = false;
 
       // 清理所有追蹤的定時器
-      timeoutsRef.current.forEach(timeoutId => {
-        clearTimeout(timeoutId);
-      });
-      timeoutsRef.current.clear();
+      if (timeoutsRef.current) {
+        const timeouts = timeoutsRef.current;
+        timeouts.forEach(timeoutId => {
+          clearTimeout(timeoutId);
+        });
+        timeouts.clear();
+      }
 
       // Execute all registered cleanup functions
       cleanupRef.current.forEach(cleanup => {

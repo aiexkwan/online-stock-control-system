@@ -9,10 +9,11 @@
  * - Minimal performance impact (~5-10ms)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase';
+import { NextResponse } from 'next/server';
+// Removed unused import: NextRequest
 import { z } from 'zod';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase';
 
 /**
  * Standard Analytics API response format

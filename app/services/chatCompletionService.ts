@@ -7,7 +7,7 @@
 import OpenAI from 'openai';
 import { systemLogger } from '@/lib/logger';
 import { ExtractedPDFData } from './pdfExtractionService';
-import productCodeValidator, { ValidationResult, ProductCode } from './productCodeValidator';
+import productCodeValidator, { ValidationResult } from './productCodeValidator';
 import { extractionMonitor, ExtractionResult } from './extractionMonitor';
 import { ProductCodeCleaner } from './productCodeCleaner';
 
@@ -394,7 +394,7 @@ export class ChatCompletionService {
    */
   private buildSystemPrompt(
     complexity?: 'simple' | 'medium' | 'complex',
-    promptVariant?: string
+    _promptVariant?: string
   ): string {
     // 獲取 A/B 測試變體
     const variant = this.monitor.getPromptVariant();
@@ -557,7 +557,7 @@ CRITICAL: Skip Tel:, Email:, phone numbers, email addresses, and form field labe
    */
   private async parseResponse(
     responseText: string,
-    tokensUsed: number
+    _tokensUsed: number
   ): Promise<OrderExtractionResult> {
     try {
       const parsed = JSON.parse(responseText);

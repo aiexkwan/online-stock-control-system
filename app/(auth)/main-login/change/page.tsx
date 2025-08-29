@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import type { User } from '@supabase/supabase-js';
 import ChangePasswordForm from '../components/ChangePasswordForm';
 import { unifiedAuth } from '../utils/unified-auth';
-import type { User } from '@supabase/supabase-js';
 
 // Force dynamic rendering to avoid prerendering issues with client-side auth
 export const dynamic = 'force-dynamic';
@@ -27,7 +27,7 @@ export default function ChangePasswordPage() {
           return;
         }
         setUser(currentUser);
-      } catch (error) {
+      } catch {
         router.push('/main-login');
       }
     };

@@ -1,27 +1,27 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { getErrorMessage } from '@/lib/types/error-handling';
-import { MIN_ACO_ORDER_REF_LENGTH } from '../constants';
-// 導入新的模組化 hooks
-import { getUserId } from '@/app/hooks/getUserId';
-import { useFormValidation } from './modules/useFormValidation';
-import { useClockConfirmation, type PrintEvent } from './modules/useClockConfirmation';
-import { useAcoManagement } from './modules/useAcoManagement';
-import { useSlateManagement } from './modules/useSlateManagement';
-import { usePdfGeneration } from '@/app/(app)/admin/hooks/usePdfGeneration';
-import { useStreamingPdfGeneration } from './modules/useStreamingPdfGeneration';
-// Using Server Actions for database operations
-import { createQcDatabaseEntriesWithTransaction } from '@/app/actions/qcActions';
-import { useStockUpdates } from './modules/useStockUpdates';
 import { toast } from 'sonner';
-import type { ProductInfo, FormData, SlateDetail } from '../types';
+import { getErrorMessage } from '@/lib/types/error-handling';
+import { getUserId } from '@/app/hooks/getUserId';
+import { usePdfGeneration } from '@/app/(app)/admin/hooks/usePdfGeneration';
+import { createQcDatabaseEntriesWithTransaction } from '@/app/actions/qcActions';
 import {
   generatePalletNumbers,
   confirmPalletUsage,
   releasePalletReservation,
 } from '@/app/utils/palletGeneration';
 import { createClient } from '@/app/utils/supabase/client';
+import { MIN_ACO_ORDER_REF_LENGTH } from '../constants';
+// 導入新的模組化 hooks
+import type { ProductInfo, FormData, SlateDetail } from '../types';
+import { useFormValidation } from './modules/useFormValidation';
+import { useClockConfirmation, type PrintEvent } from './modules/useClockConfirmation';
+import { useAcoManagement } from './modules/useAcoManagement';
+import { useSlateManagement } from './modules/useSlateManagement';
+import { useStreamingPdfGeneration } from './modules/useStreamingPdfGeneration';
+// Using Server Actions for database operations
+import { useStockUpdates } from './modules/useStockUpdates';
 
 interface UseQcLabelBusinessProps {
   formData: FormData;

@@ -7,11 +7,11 @@
 'use client';
 
 import React, { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { Search, Loader2, QrCode, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Search, Loader2, QrCode, X } from 'lucide-react';
 
 export type SearchType = 'pallet' | 'product' | 'supplier' | 'order' | 'auto';
 

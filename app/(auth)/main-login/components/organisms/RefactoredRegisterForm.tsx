@@ -2,10 +2,10 @@
 
 import React, { useCallback, useState, memo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { EmailField, PasswordField, FormField } from '../molecules';
 import { Button } from '../atoms';
 import { unifiedAuth } from '../../utils/unified-auth';
-import Link from 'next/link';
 
 interface RefactoredRegisterFormProps {
   onSuccess?: () => void;
@@ -47,41 +47,41 @@ const RefactoredRegisterForm = memo(function RefactoredRegisterForm({
     [fieldErrors]
   );
 
-  const validateForm = (): boolean => {
-    const errors: Record<string, string> = {};
-
-    // Email validation
-    if (!formData.email) {
-      errors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Invalid email format';
-    }
-
-    // Password validation
-    if (!formData.password) {
-      errors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      errors.password = 'Password must be at least 8 characters';
-    }
-
-    // Confirm password validation
-    if (formData.password !== formData.confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
-    }
-
-    // Full name validation
-    if (!formData.fullName.trim()) {
-      errors.fullName = 'Full name is required';
-    }
-
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
       setError(null);
+
+      const validateForm = (): boolean => {
+        const errors: Record<string, string> = {};
+
+        // Email validation
+        if (!formData.email) {
+          errors.email = 'Email is required';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+          errors.email = 'Invalid email format';
+        }
+
+        // Password validation
+        if (!formData.password) {
+          errors.password = 'Password is required';
+        } else if (formData.password.length < 8) {
+          errors.password = 'Password must be at least 8 characters';
+        }
+
+        // Confirm password validation
+        if (formData.password !== formData.confirmPassword) {
+          errors.confirmPassword = 'Passwords do not match';
+        }
+
+        // Full name validation
+        if (!formData.fullName.trim()) {
+          errors.fullName = 'Full name is required';
+        }
+
+        setFieldErrors(errors);
+        return Object.keys(errors).length === 0;
+      };
 
       if (!validateForm()) {
         return;
@@ -95,8 +95,8 @@ const RefactoredRegisterForm = memo(function RefactoredRegisterForm({
         onSuccess?.();
         // Redirect to confirmation page or login
         router.push('/main-login?registered=true');
-      } catch (err: any) {
-        const errorMsg = err?.message || 'Registration failed';
+      } catch (err: unknown) {
+        const errorMsg = (err as Error)?.message || 'Registration failed';
         setError(errorMsg);
         onError?.(errorMsg);
       } finally {

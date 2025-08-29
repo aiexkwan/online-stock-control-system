@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { calculateStringSimilarity } from '@/lib/utils/string-similarity';
 import {
   ErrorResponse,
@@ -7,7 +8,6 @@ import {
   SafeDatabaseValue,
   safeParseDatabaseValue,
 } from '@/lib/validation/zod-schemas';
-import { z } from 'zod';
 
 // Error Pattern Schema
 const ErrorPatternSchema = z.object({

@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import type { ApolloError } from '@apollo/client';
 import { getErrorMessage } from '@/lib/types/error-handling';
 import { useGetProductBasicInfo } from '@/lib/graphql/hooks/useProduct';
 import type { Product } from '@/types/generated/graphql';
-import type { ApolloError } from '@apollo/client';
 
 // GraphQL query result type - matching the hook response type
 interface ProductBasicInfoQueryResult {

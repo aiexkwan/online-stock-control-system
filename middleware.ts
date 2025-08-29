@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
 import { DatabaseRecord } from '@/types/database/tables';
 import { safeGet, safeString } from '@/types/database/helpers';
-import { NextResponse, type NextRequest } from 'next/server';
 import { isDevelopment, isProduction } from '@/lib/utils/env';
 import {
   middlewareLogger,
@@ -52,8 +52,6 @@ export async function middleware(request: NextRequest) {
     '/change-password', // 密碼更新頁面需要公開，用戶通過電郵連結訪問
     '/new-password', // 密碼重設頁面需要公開，用戶通過電郵連結訪問
     '/api/health', // Health check API
-    '/api/monitoring/health', // Consolidated monitoring health check (2025-08-11)
-    '/api/monitoring/deep', // Deep health check (2025-08-11)
     '/api/metrics', // Consolidated metrics API (2025-08-11)
     '/api/v1/health', // v1 健康檢查 API (deprecated, redirects)
     '/api/v2/health', // v2 健康檢查 API (deprecated, redirects)

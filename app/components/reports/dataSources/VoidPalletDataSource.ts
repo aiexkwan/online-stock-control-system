@@ -13,7 +13,7 @@ import {
   type VoidPalletFilters,
 } from '@/app/actions/DownloadCentre-Actions';
 import { safeString, safeOptionalString, safeOptionalNumber } from '@/lib/types/type-guards';
-import { extractErrorMessage } from '@/lib/types/api';
+import { isErrorResult, extractErrorMessage } from '@/lib/types/api';
 
 // Void Pallet Summary data source
 const voidPalletSummaryDataSource: ReportDataSource = {
@@ -28,8 +28,8 @@ const voidPalletSummaryDataSource: ReportDataSource = {
       voidReason: safeOptionalString(filters.voidReason),
     };
     const result = await getVoidPalletSummary(voidPalletFilters);
-    if (!result.success) {
-      throw new Error(extractErrorMessage(result.error || 'Failed to fetch void pallet summary'));
+    if (isErrorResult(result)) {
+      throw new Error(extractErrorMessage(result.error) || 'Failed to fetch void pallet summary');
     }
     // 策略4: unknown + type narrowing - 安全的類型轉換
     const data = result.data;
@@ -58,8 +58,8 @@ const voidPalletDetailsDataSource: ReportDataSource = {
       voidReason: safeOptionalString(filters.voidReason),
     };
     const result = await getVoidPalletDetails(voidPalletFilters);
-    if (!result.success) {
-      throw new Error(extractErrorMessage(result.error || 'Failed to fetch void pallet details'));
+    if (isErrorResult(result)) {
+      throw new Error(extractErrorMessage(result.error) || 'Failed to fetch void pallet details');
     }
     // 策略4: unknown + type narrowing - 安全的類型轉換
     const data = result.data;
@@ -84,8 +84,8 @@ const voidReasonStatsDataSource: ReportDataSource = {
       voidReason: safeOptionalString(filters.voidReason),
     };
     const result = await getVoidReasonStats(voidPalletFilters);
-    if (!result.success) {
-      throw new Error(extractErrorMessage(result.error || 'Failed to fetch void reason stats'));
+    if (isErrorResult(result)) {
+      throw new Error(extractErrorMessage(result.error) || 'Failed to fetch void reason stats');
     }
     // 策略4: unknown + type narrowing - 安全的類型轉換
     const data = result.data;
@@ -110,8 +110,8 @@ const voidProductStatsDataSource: ReportDataSource = {
       voidReason: safeOptionalString(filters.voidReason),
     };
     const result = await getVoidProductStats(voidPalletFilters);
-    if (!result.success) {
-      throw new Error(extractErrorMessage(result.error || 'Failed to fetch void product stats'));
+    if (isErrorResult(result)) {
+      throw new Error(extractErrorMessage(result.error) || 'Failed to fetch void product stats');
     }
     // 策略4: unknown + type narrowing - 安全的類型轉換
     const data = result.data;

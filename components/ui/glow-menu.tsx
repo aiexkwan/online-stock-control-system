@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 interface MenuItem {
   icon?: React.ElementType;

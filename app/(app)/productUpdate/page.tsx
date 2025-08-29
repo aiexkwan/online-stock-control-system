@@ -1,23 +1,23 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import { Package, AlertCircle, CheckCircle } from 'lucide-react';
 import {
   StockMovementLayout,
   StatusMessage,
 } from '@/components/ui/universal-stock-movement-layout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Package, AlertCircle, CheckCircle } from 'lucide-react';
-import ProductSearchForm from './components/ProductSearchForm';
-import ProductInfoCard from './components/ProductInfoCard';
-import ProductEditForm from './components/ProductEditForm';
 import {
   getProductByCode,
   createProduct,
   updateProduct,
-  updateProductOptimized, // 新增優化版本
+  // updateProductOptimized, // 新增優化版本 - TODO: Remove if not used
   ProductData,
 } from '@/app/actions/productActions';
+import ProductSearchForm from './components/ProductSearchForm';
+import ProductInfoCard from './components/ProductInfoCard';
+import ProductEditForm from './components/ProductEditForm';
 
 interface StatusMessageType {
   type: 'success' | 'error' | 'warning' | 'info';
@@ -64,7 +64,7 @@ export default function ProductUpdatePage() {
           message: `Product "${code}" not found. Would you like to create it?`,
         });
       }
-    } catch (error) {
+    } catch (_error) {
       setStatusMessage({
         type: 'error',
         message: 'An unexpected error occurred during the search.',
@@ -183,8 +183,8 @@ export default function ProductUpdatePage() {
         setIsEditing(false);
         setShowForm(false);
         setShowCreateDialog(false);
-      } catch (error) {
-        console.error('[ProductUpdate] Unexpected error:', error);
+      } catch (_error) {
+        console.error('[ProductUpdate] Unexpected error:', _error);
         setStatusMessage({
           type: 'error',
           message: 'An unexpected error occurred.',

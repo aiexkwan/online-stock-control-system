@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useCallback, memo } from 'react';
+import { useLoginContext } from '../context/LoginContext';
 import EmailValidator from './EmailValidator';
 import PasswordValidator from './PasswordValidator';
-import { useLoginContext } from '../context/LoginContext';
 import { CompoundForm } from './compound/CompoundForm';
 
 interface RegisterFormProps {
@@ -74,7 +74,7 @@ const RegisterForm = memo(function RegisterForm({ onRegistrationSuccess }: Regis
       : undefined;
 
   return (
-    <CompoundForm
+    <CompoundForm<{ email: string; password: string; confirmPassword: string }>
       formType='register'
       onSubmit={handleSubmit}
       onFieldChange={handleFieldChange}

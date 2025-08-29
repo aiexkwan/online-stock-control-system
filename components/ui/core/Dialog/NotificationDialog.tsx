@@ -7,6 +7,8 @@
 
 import * as React from 'react';
 import { AlertCircle, CheckCircle2, XCircle, AlertTriangle, Info, Bell } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -17,8 +19,6 @@ import {
   type DialogProps,
 } from './Dialog';
 import { dialogPresets } from './DialogPresets';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 export interface NotificationDialogProps extends Omit<DialogProps, 'children'> {
   title?: string;
@@ -70,6 +70,9 @@ export const NotificationDialog = React.forwardRef<HTMLDivElement, NotificationD
 
         return () => clearTimeout(timer);
       }
+      
+      // Return undefined for the else path
+      return undefined;
     }, [open, autoClose, autoCloseDelay, onOpenChange]);
 
     // 默認圖標

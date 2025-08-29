@@ -15,7 +15,7 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
-import { useLazyQuery, useMutation } from '@apollo/client';
+// Removed unused imports: useLazyQuery, useMutation
 import {
   useCreateProduct,
   useUpdateProduct,
@@ -152,7 +152,7 @@ export const useGraphQLDataUpdate = (
 
   const [createSupplier] = useCreateSupplier();
   const [updateSupplier] = useUpdateSupplier();
-  const [searchSuppliers] = useSearchSuppliers();
+  const [_searchSuppliers] = useSearchSuppliers(); // Renamed unused variable
   const [getSupplierByCode] = useSearchSupplierByCode();
 
   // Helper to show overlays (same as original)

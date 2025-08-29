@@ -6,7 +6,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { DatabaseRecord } from '@/types/database/tables';
+// Removed unused import: DatabaseRecord
 import { UseKeyboardNavigationReturn, KeyboardNavigationConfig } from '../types';
 import { useAccessibility } from '../providers/AccessibilityProvider';
 import { globalFocusManager } from '../utils/focus-helpers';
@@ -21,7 +21,7 @@ export function useKeyboardNavigation(
   config?: Partial<KeyboardNavigationConfig>,
   containerRef?: React.RefObject<HTMLElement>
 ): UseKeyboardNavigationReturn {
-  const { keyboardConfig, updateKeyboardConfig } = useAccessibility();
+  const { keyboardConfig, updateKeyboardConfig: _updateKeyboardConfig } = useAccessibility(); // Renamed unused variable
   const [isKeyboardActive, setIsKeyboardActive] = useState(false);
   const [lastKeyPressed, setLastKeyPressed] = useState<string | null>(null);
   const [modifierKeys, setModifierKeys] = useState({

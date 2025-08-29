@@ -4,12 +4,12 @@
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 import {
   getPerformanceMonitor,
   type PerformanceReport,
   type PerformanceAlert,
 } from '@/lib/monitoring/supabase-performance-monitor';
-import { toast } from 'sonner';
 
 // Hook configuration
 export interface UseSupabasePerformanceOptions {
@@ -140,35 +140,6 @@ export function useSupabasePerformance(
     };
   }, [enabled, updateInterval, alertToast, onAlert, onMetricsUpdate]);
 
-  // Start monitoring
-  const startMonitoring = useCallback(() => {
-    if (!monitorRef.current || isMonitoring) return;
-
-    monitorRef.current.start();
-    setIsMonitoring(true);
-
-    // Initial metrics fetch
-    refreshMetrics();
-
-    // Set up periodic updates
-    updateIntervalRef.current = setInterval(() => {
-      refreshMetrics();
-    }, updateInterval);
-  }, [isMonitoring, updateInterval]);
-
-  // Stop monitoring
-  const stopMonitoring = useCallback(() => {
-    if (!monitorRef.current || !isMonitoring) return;
-
-    monitorRef.current.stop();
-    setIsMonitoring(false);
-
-    if (updateIntervalRef.current) {
-      clearInterval(updateIntervalRef.current);
-      updateIntervalRef.current = null;
-    }
-  }, [isMonitoring]);
-
   // Refresh metrics manually
   const refreshMetrics = useCallback(async () => {
     if (!monitorRef.current) return;
@@ -198,6 +169,35 @@ export function useSupabasePerformance(
       console.error('[useSupabasePerformance] Error refreshing metrics:', error);
     }
   }, []);
+
+  // Start monitoring
+  const startMonitoring = useCallback(() => {
+    if (!monitorRef.current || isMonitoring) return;
+
+    monitorRef.current.start();
+    setIsMonitoring(true);
+
+    // Initial metrics fetch
+    refreshMetrics();
+
+    // Set up periodic updates
+    updateIntervalRef.current = setInterval(() => {
+      refreshMetrics();
+    }, updateInterval);
+  }, [isMonitoring, updateInterval, refreshMetrics]);
+
+  // Stop monitoring
+  const stopMonitoring = useCallback(() => {
+    if (!monitorRef.current || !isMonitoring) return;
+
+    monitorRef.current.stop();
+    setIsMonitoring(false);
+
+    if (updateIntervalRef.current) {
+      clearInterval(updateIntervalRef.current);
+      updateIntervalRef.current = null;
+    }
+  }, [isMonitoring]);
 
   // Clear history
   const clearHistory = useCallback(() => {

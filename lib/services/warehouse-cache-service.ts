@@ -4,8 +4,8 @@
  * 專家優化：高性能倉庫數據管理
  */
 
-import { getCacheAdapter } from '../cache/cache-factory';
 import { createClient } from '@/app/utils/supabase/server';
+import { getCacheAdapter } from '../cache/cache-factory';
 import { cacheLogger } from '../logger';
 import {
   isWarehouseSummaryResponse,

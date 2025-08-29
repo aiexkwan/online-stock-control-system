@@ -86,7 +86,7 @@ const grnDataSource: ReportDataSource = {
       {}
     );
 
-    return Object.values(grouped);
+    return Object.values(grouped) as GrnTransformedData[];
   },
 };
 

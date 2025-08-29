@@ -30,6 +30,7 @@ export interface AbortControllerHandle {
 }
 
 export interface ResourceCleanupMetrics {
+  [key: string]: unknown;
   timeouts: {
     active: number;
     cleaned: number;
@@ -84,7 +85,7 @@ export function useResourceCleanup(componentName?: string, debug = false) {
 
   // Debug logging helper
   const debugLog = useCallback(
-    (message: string, data?: any) => {
+    (message: string, data?: Record<string, unknown> | string | number | boolean | string[]) => {
       if (debug && componentName) {
         console.log(`[ResourceCleanup:${componentName}] ${message}`, data || '');
       }
@@ -415,7 +416,7 @@ export function useResourceCleanup(componentName?: string, debug = false) {
     return () => {
       clearInterval(checkInterval);
     };
-  }, [debug, checkForLeaks]);
+  }, [debug, checkForLeaks, clearInterval]);
 
   return {
     // Resource creation methods

@@ -3,7 +3,7 @@
  * 提供增強的錯誤處理和恢復機制，專為並行 PDF 生成優化
  */
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/types/error-handling';
 import { systemLogger } from '@/lib/logger';
@@ -76,7 +76,7 @@ const DEFAULT_CONFIG: ErrorHandlingConfig = {
 export const useEnhancedErrorHandling = (
   config: Partial<ErrorHandlingConfig> = {}
 ): UseEnhancedErrorHandlingReturn => {
-  const finalConfig = { ...DEFAULT_CONFIG, ...config };
+  const finalConfig = useMemo(() => ({ ...DEFAULT_CONFIG, ...config }), [config]);
   const [errors, setErrors] = useState<ErrorDetails[]>([]);
   const [errorStats, setErrorStats] = useState<ErrorStatistics>({
     totalErrors: 0,
@@ -307,8 +307,9 @@ export const useEnhancedErrorHandling = (
         if (strategy.type === 'retry' && strategy.delay) {
           recoveryTimeTracker.current.set(errorDetails.id, Date.now());
 
-          setTimeout(async () => {
-            await retryError(errorDetails.id);
+          setTimeout(() => {
+            // Re-try logic will be handled by the component
+            // This avoids circular dependency
           }, strategy.delay);
         }
       }

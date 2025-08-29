@@ -1,8 +1,8 @@
 'use server';
 
+import { z } from 'zod';
 import { createClient } from '@/app/utils/supabase/server';
 import { getErrorMessage } from '@/lib/types/error-handling';
-import { z } from 'zod';
 
 import {
   CACHE_CONTROL_TIMEOUT,

@@ -3,9 +3,9 @@
  * Demonstrates hybrid approach for order management
  */
 
-import { DataAccessLayer } from '../core/DataAccessStrategy';
 import { createClient } from '@/app/utils/supabase/client';
 import { loadPalletToOrder, undoLoadPallet, getOrderInfo } from '@/app/actions/orderLoadingActions';
+import { DataAccessLayer } from '../core/DataAccessStrategy';
 
 // Type definitions
 export interface OrderSearchParams {

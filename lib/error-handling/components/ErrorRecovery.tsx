@@ -50,6 +50,9 @@ export const AutoRecovery = memo(function AutoRecovery({
 
       return () => clearInterval(interval);
     }
+    
+    // Return undefined for the else path
+    return undefined;
   }, [isRetrying, autoRetry, retryCount]);
 
   // Auto retry logic

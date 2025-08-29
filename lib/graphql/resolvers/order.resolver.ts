@@ -326,8 +326,11 @@ export const orderResolvers = {
       const reportResult = await getAcoReportData(args.reference);
 
       if (!reportResult.success) {
+        const errorMessage = 'error' in reportResult 
+          ? reportResult.error || 'Failed to fetch ACO order data'
+          : 'Failed to fetch ACO order data';
         throw new GraphQLError(
-          toGraphQLErrorMessage(reportResult.error || 'Failed to fetch ACO order data'),
+          toGraphQLErrorMessage(errorMessage),
           {
             extensions: { code: 'INTERNAL_SERVER_ERROR' },
           }

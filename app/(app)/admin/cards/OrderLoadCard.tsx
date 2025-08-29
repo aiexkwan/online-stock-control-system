@@ -1,23 +1,22 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { DataCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
-import { cardTextStyles } from '@/lib/card-system/theme';
-import { useOrderLoad } from '../hooks/useOrderLoad';
 import {
   UserIcon,
   ClipboardDocumentListIcon,
   TruckIcon,
   ChartBarIcon,
-  SpeakerWaveIcon,
+  // SpeakerWaveIcon, // Removed - not used
   DevicePhoneMobileIcon,
   ComputerDesktopIcon,
 } from '@heroicons/react/24/outline';
+// import { toast } from 'sonner'; // Removed - not used
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UnifiedSearch } from '@/components/ui/unified-search';
-import { toast } from 'sonner';
+import { cardTextStyles } from '@/lib/card-system/theme';
+import { DataCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { cn } from '@/lib/utils';
 
 // Import integrated components
@@ -25,6 +24,7 @@ import BatchLoadPanel from '@/app/(app)/order-loading/components/BatchLoadPanel'
 import { LoadingProgressChart } from '@/app/(app)/order-loading/components/LoadingProgressChart';
 import MobileOrderLoading from '@/app/(app)/order-loading/components/MobileOrderLoading';
 import { SoundSettingsToggle } from '@/app/(app)/order-loading/components/SoundSettingsToggle';
+import { useOrderLoad } from '../hooks/useOrderLoad';
 
 export interface OrderLoadCardProps {
   className?: string;
@@ -89,8 +89,7 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
     idInputRef,
     searchInputRef,
 
-    // Sound
-    soundSettings,
+    // Sound settings removed
   } = useOrderLoad();
 
   // Change user (reset to ID input)

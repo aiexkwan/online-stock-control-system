@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/types/error-handling';
 import { createClient } from '@/app/utils/supabase/client';
-import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,

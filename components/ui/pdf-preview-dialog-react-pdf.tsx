@@ -1,9 +1,6 @@
 'use client';
 
 import React, { useState, useCallback, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { LoadingSpinner } from '@/components/ui/loading/LoadingSpinner';
 import {
   X,
   Download,
@@ -15,6 +12,9 @@ import {
   ChevronRight,
   FileText,
 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { LoadingSpinner } from '@/components/ui/loading/LoadingSpinner';
 import { cn } from '@/lib/utils';
 
 // 注意：這個組件需要安裝 react-pdf

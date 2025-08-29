@@ -10,10 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { safeGet, safeString } from '@/types/database/helpers';
 import { phase4FeatureFlags, getCurrentCoverageTarget } from '../configs/phase4-rollout';
 import { useFeatureFlags } from '../hooks/useFeatureFlag';
 import { FeatureFlagStatus } from '../types';
-import { safeGet, safeString } from '@/types/database/helpers';
 
 interface RolloutMetrics {
   totalUsers: number;

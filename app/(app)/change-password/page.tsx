@@ -3,6 +3,7 @@
 import React, { useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFormState, useFormStatus } from 'react-dom';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -13,7 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { toast } from 'sonner';
 import { updateUserPasswordInDbAction } from './actions';
 
 const initialState = {

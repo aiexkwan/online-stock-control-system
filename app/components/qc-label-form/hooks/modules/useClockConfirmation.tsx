@@ -5,8 +5,8 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { COOLDOWN_PERIOD_PROD, COOLDOWN_PERIOD_DEV } from '../../constants';
 import { isProduction } from '@/lib/utils/env';
+import { COOLDOWN_PERIOD_PROD, COOLDOWN_PERIOD_DEV } from '../../constants';
 
 // 列印事件類型 (策略 2: DTO/自定義 type interface)
 export interface PrintEvent {

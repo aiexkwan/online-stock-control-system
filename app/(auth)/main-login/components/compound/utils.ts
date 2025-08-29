@@ -6,21 +6,21 @@
  */
 
 import React, { isValidElement } from 'react';
-import { ComponentRegistry, ThemeContext, ComponentState } from './types';
 import { ComponentPropsBase } from '@/lib/types/common';
+import { ComponentRegistry, ThemeContext, ComponentState } from './types';
 
 /**
  * Component Registry for dynamic component management
  */
 class CompoundComponentRegistry implements ComponentRegistry {
-  private components = new Map<string, React.ComponentType<any>>();
+  private components = new Map<string, React.ComponentType<Record<string, unknown>>>();
 
   register<P = Record<string, unknown>>(
     name: string,
     component: React.ComponentType<P>,
-    metadata?: import('@/lib/types/auth-system').ComponentMetadata
+    _metadata?: import('@/lib/types/auth-system').ComponentMetadata
   ): void {
-    this.components.set(name, component as React.ComponentType<any>);
+    this.components.set(name, component as React.ComponentType<Record<string, unknown>>);
   }
 
   unregister(name: string): void {

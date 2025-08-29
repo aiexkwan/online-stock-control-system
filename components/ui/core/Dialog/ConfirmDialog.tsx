@@ -7,6 +7,8 @@
 
 import * as React from 'react';
 import { AlertCircle, AlertTriangle, Info, HelpCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -18,8 +20,6 @@ import {
   type DialogProps,
 } from './Dialog';
 import { dialogPresets } from './DialogPresets';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 export interface ConfirmDialogProps extends Omit<DialogProps, 'children'> {
   title?: string;

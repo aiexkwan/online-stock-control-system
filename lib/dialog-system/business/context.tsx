@@ -27,8 +27,8 @@ export function BusinessDialogProvider({ children }: { children: React.ReactNode
   // 開啟對話框
   const openDialog = useCallback((dialog: BusinessDialogType, data?: unknown) => {
     setDialogs(prev => ({ ...prev, [dialog]: true }));
-    if (data) {
-      setDialogData(prev => ({ ...prev, ...data }));
+    if (data && typeof data === 'object' && data !== null) {
+      setDialogData(prev => ({ ...prev, ...(data as Record<string, unknown>) }));
     }
   }, []);
 

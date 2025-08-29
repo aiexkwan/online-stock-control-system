@@ -3,21 +3,21 @@
 import React from 'react';
 import { UniversalGrid } from '@/components/layout/universal';
 import { ProductCodeInput } from '@/app/components/qc-label-form/ProductCodeInput';
-import { MaterialSupplierInput } from './MaterialSupplierInput';
 import {
   LABEL_MODES,
   type LabelMode,
   type PalletTypeKey,
   type PackageTypeKey,
 } from '@/app/constants/grnConstants';
-import { PalletTypeSelector } from './PalletTypeSelector';
-import { PackageTypeSelector } from './PackageTypeSelector';
 import { SupplierInfo } from '@/lib/types/supplier-types';
 import {
   EnhancedGrnDetailCardProps,
   DEFAULT_GRN_THEME,
   mergeGrnConfig,
 } from '@/lib/types/grn-props';
+import { MaterialSupplierInput } from './MaterialSupplierInput';
+import { PalletTypeSelector } from './PalletTypeSelector';
+import { PackageTypeSelector } from './PackageTypeSelector';
 
 interface FormData {
   grnNumber: string;

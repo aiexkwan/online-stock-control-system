@@ -6,8 +6,8 @@
 
 // import useSWR, { SWRConfiguration } from 'swr';
 import { useEffect, useRef, useCallback } from 'react';
-import { createClient } from '@/app/utils/supabase/client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { createClient } from '@/app/utils/supabase/client';
 
 interface StockMovement {
   id: string;

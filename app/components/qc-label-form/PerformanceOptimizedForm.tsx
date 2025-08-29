@@ -1,9 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { MAX_PALLET_COUNT, SLATE_DEFAULT_COUNT } from './constants';
-import type { AcoOrderDetail } from './types';
 import { useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
+import {
+  CubeIcon,
+  DocumentTextIcon,
+  Cog6ToothIcon,
+  PrinterIcon,
+  InformationCircleIcon,
+} from '@heroicons/react/24/outline';
+import { MAX_PALLET_COUNT, SLATE_DEFAULT_COUNT } from './constants';
+import type { AcoOrderDetail , ProductInfo, FormData, SlateDetail } from './types';
 import {
   ResponsiveLayout,
   ResponsiveContainer,
@@ -24,15 +32,6 @@ import { useMediaQuery } from './hooks/useMediaQuery';
 import { useOptimizedFormHandler } from './hooks/useOptimizedCallback';
 import { useQcLabelBusiness } from './hooks/useQcLabelBusiness';
 import ClockNumberConfirmDialog from './ClockNumberConfirmDialog';
-import { toast } from 'sonner';
-import {
-  CubeIcon,
-  DocumentTextIcon,
-  Cog6ToothIcon,
-  PrinterIcon,
-  InformationCircleIcon,
-} from '@heroicons/react/24/outline';
-import type { ProductInfo, FormData, SlateDetail } from './types';
 
 interface PerformanceOptimizedFormProps {
   onSubmit?: (data: FormData) => void;

@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { errorHandler } from './services/ErrorHandler';
 import {
   ChartBarIcon,
   ExclamationTriangleIcon,
   InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { isProduction } from '@/lib/utils/env';
+import { errorHandler } from './services/ErrorHandler';
 
 interface ErrorStatsProps {
   showInProduction?: boolean;

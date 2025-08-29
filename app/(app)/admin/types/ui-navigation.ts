@@ -35,6 +35,7 @@ export interface VerticalTimelineCardProps {
   height?: string | number;
   className?: string;
   isEditMode?: boolean;
+  _isEditMode?: boolean;
   timeFrame?: {
     start: Date;
     end: Date;

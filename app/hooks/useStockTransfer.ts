@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { DatabaseRecord } from '@/types/database/tables';
-import { createClient } from '@/app/utils/supabase/client';
 import { toast } from 'sonner';
+// import { DatabaseRecord } from '@/types/database/tables'; // Removed - not used
+import { createClient } from '@/app/utils/supabase/client';
 import { LocationMapper, DatabaseLocationColumn } from '@/lib/inventory/utils/locationMapper';
 import type { PalletInfo } from '@/lib/inventory/types';
 

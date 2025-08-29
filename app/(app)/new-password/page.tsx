@@ -3,9 +3,9 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 // Removed: import { supabase } from '../../lib/supabase'; // No longer needed directly for password reset logic here
+import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
 import { resetPasswordAction } from './actions'; // Import the actual Server Action
 
 // Placeholder removed, using imported Server Action now

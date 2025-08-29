@@ -3,7 +3,9 @@
  * 處理統一的統計數據查詢
  */
 
-import { createClient } from '@/app/utils/supabase/server';
+import { startOfDay, endOfDay, subDays, format } from 'date-fns';
+import DataLoader from 'dataloader';
+import { SupabaseClient } from '@supabase/supabase-js';
 import {
   StatsType,
   StatsData,
@@ -13,9 +15,7 @@ import {
   TrendDirection,
   StatsConfig,
 } from '@/types/generated/graphql';
-import { startOfDay, endOfDay, subDays, format } from 'date-fns';
-import DataLoader from 'dataloader';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@/app/utils/supabase/server';
 import { Database } from '@/types/database/supabase';
 
 // 定義 Supabase client 類型

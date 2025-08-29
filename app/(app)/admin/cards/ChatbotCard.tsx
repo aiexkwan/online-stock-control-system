@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Brain,
   Sparkles,
@@ -10,7 +10,6 @@ import {
   AlertCircle,
   Database,
   MessageCircle,
-  Table,
   Package,
   ClipboardList,
   TrendingUp,
@@ -26,6 +25,9 @@ import {
 import { SpecialCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { cardTextStyles } from '@/lib/card-system/theme';
 import { cn } from '@/lib/utils';
+import { useAuthState } from '@/app/(auth)/main-login/context/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import type {
   AIResponse,
   AIListItem,
@@ -33,9 +35,6 @@ import type {
   ChatMessage,
   ChatbotCardProps,
 } from '../types/ai-response';
-import { useAuthState } from '@/app/(auth)/main-login/context/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 
 interface SuggestionCategory {
   category: string;

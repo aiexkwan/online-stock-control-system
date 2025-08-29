@@ -2,20 +2,20 @@
 
 // For direct admin operations, use server client
 import { z } from 'zod';
-import bcrypt from 'bcryptjs';
-import {
-  signOut as signOutService,
-  updatePasswordWithSupabaseAuth,
-} from '../services/supabaseAuth';
+// import bcrypt from 'bcryptjs';
+// import { revalidatePath } from 'next/cache';
+// import { redirect } from 'next/navigation';
 import { createClient as createServerSideClient } from '@/app/utils/supabase/server';
-import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import { getErrorMessage } from '@/lib/types/error-handling';
+// import {
+//   signOut as signOutService,
+//   updatePasswordWithSupabaseAuth,
+// } from '../services/supabaseAuth';
 
-interface ActionResult {
-  success: boolean;
-  error?: string;
-}
+// interface ActionResult {
+//   success: boolean;
+//   error?: string;
+// }
 
 // COMMENT OUT or REMOVE the module-level supabaseAdmin instance AGAIN
 // const supabaseAdmin = createClient(
@@ -99,16 +99,16 @@ export async function checkFirstLoginStatus(
   }
 }
 
-interface LoginResult {
-  success: boolean;
-  userId?: number; // clockNumber
-  error?: string;
-  isFirstLogin?: boolean;
-}
+// interface LoginResult {
+//   success: boolean;
+//   userId?: number; // clockNumber
+//   error?: string;
+//   isFirstLogin?: boolean;
+// }
 
 // -------- ChangePasswordActionResult interface --------
-interface ChangePasswordActionResult {
-  success: boolean;
-  error?: string;
-  message?: string;
-}
+// interface ChangePasswordActionResult {
+//   success: boolean;
+//   error?: string;
+//   message?: string;
+// }

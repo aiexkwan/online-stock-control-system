@@ -5,11 +5,11 @@
  * Security Update: Added authentication and rate limiting
  */
 
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { getWarehouseCacheService } from '@/lib/services/warehouse-cache-service';
 import { getCacheAdapter, getCurrentCacheType } from '@/lib/cache/cache-factory';
-import { NextResponse } from 'next/server';
 import { createClient } from '@/app/utils/supabase/server';
-import { cookies } from 'next/headers';
 import { cacheOperationLimiter } from '@/lib/middleware/rate-limit';
 
 /**

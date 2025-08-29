@@ -52,9 +52,9 @@ export function scanFile(filePath: string): TodoItem[] {
         todos.push({
           file: filePath,
           line: index + 1,
-          phase: match[1],
-          priority: parseInt(match[2]),
-          description: match[3].trim(),
+          phase: match[1] || '',
+          priority: match[2] ? parseInt(match[2]) : 0,
+          description: match[3]?.trim() || '',
           metadata: match[4]?.trim(),
           content: line.trim(),
         });
@@ -148,7 +148,10 @@ export function generateMarkdownReport(todos: TodoItem[], stats: TodoStats): str
     if (!groupedByPriority[todo.priority]) {
       groupedByPriority[todo.priority] = [];
     }
-    groupedByPriority[todo.priority].push(todo);
+    const priorityArray = groupedByPriority[todo.priority];
+    if (priorityArray) {
+      priorityArray.push(todo);
+    }
   });
 
   // 按優先級從高到低排序
@@ -159,7 +162,10 @@ export function generateMarkdownReport(todos: TodoItem[], stats: TodoStats): str
   priorities.forEach(priority => {
     report.push(`### P${priority} - ${getPriorityDescription(priority)}\n`);
 
-    groupedByPriority[priority].forEach(todo => {
+    const todosForPriority = groupedByPriority[priority];
+    if (!todosForPriority) return;
+    
+    todosForPriority.forEach(todo => {
       const relativeFile = todo.file.replace(process.cwd(), '');
       report.push(`- [ ] **${relativeFile}:${todo.line}**`);
       report.push(`  - ${todo.description}`);

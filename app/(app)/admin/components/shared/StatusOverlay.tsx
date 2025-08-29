@@ -33,9 +33,9 @@
 
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircle, XCircle, AlertTriangle, Info, Loader2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, AlertTriangle, Info, Loader2, X } from 'lucide-react';
 
 export type StatusType = 'success' | 'error' | 'warning' | 'info' | 'progress';
 export type DisplayMode = 'fullscreen' | 'modal';
@@ -195,6 +195,9 @@ export const StatusOverlay: React.FC<StatusOverlayProps> = ({
         }
       };
     }
+    
+    // Return undefined for the else path
+    return undefined;
   }, [open, autoClose, onClose]);
 
   // Handle click outside for fullscreen mode

@@ -3,33 +3,34 @@
 // import { createSupabaseServerClient } from '@/lib/supabase/server'; // 舊的錯誤路徑
 // import { createServerActionClient } from '@supabase/auth-helpers-nextjs'; // OLD
 // import { cookies } from 'next/headers'; // Not needed directly, createClient handles it
-import { createClient } from '@/app/utils/supabase/server'; // NEW: Using @supabase/ssr helper
-import { getUserIdFromEmail } from '@/lib/utils/getUserId'; // 統一的用戶 ID 獲取函數
+import { writeFile as _writeFile, readFile as _readFile, unlink as _unlink } from 'fs/promises';
+import { join as _join } from 'path';
+import { tmpdir as _tmpdir } from 'os';
 import { format, isValid } from 'date-fns'; // 用於日期格式化
+import { createClient } from '@/app/utils/supabase/server'; // NEW: Using @supabase/ssr helper
+import { getUserIdFromEmail as _getUserIdFromEmail } from '@/lib/utils/getUserId'; // 統一的用戶 ID 獲取函數
 import { isDevelopment } from '@/lib/utils/env';
-import { DatabaseRecord, convertToReportItem } from '@/types/database/tables';
+import { DatabaseRecord, convertToReportItem as _convertToReportItem } from '@/types/database/tables';
 import { isRecord } from '@/types/database/helpers';
 import { getErrorMessage } from '@/lib/types/error-handling';
 import { Tables } from '@/types/database/supabase';
 import type { ActionResult } from '@/lib/types/api';
-import { writeFile, readFile, unlink } from 'fs/promises';
-import { join } from 'path';
-import { tmpdir } from 'os';
+import { isErrorResult } from '@/lib/types/api';
 // Database record types
-interface AcoOrderRecord {
+interface _AcoOrderRecord {
   order_ref: number;
   code: string;
   required_qty: number | null;
 }
 
-interface PalletRecord {
+interface _PalletRecord {
   plt_num: string;
   product_code: string;
   product_qty: number;
   generate_time: string;
 }
 
-interface GrnRecord {
+interface _GrnRecord {
   grn_ref: number;
   material_code: string;
   sup_code: string;
@@ -41,20 +42,20 @@ interface GrnRecord {
   package_count: number;
 }
 
-interface MaterialRecord {
+interface _MaterialRecord {
   description: string;
 }
 
-interface SupplierRecord {
+interface _SupplierRecord {
   supplier_name: string;
 }
 
-interface OperatorRecord {
+interface _OperatorRecord {
   id: number;
   name: string;
 }
 
-interface OrderLoadingRecord {
+interface _OrderLoadingRecord {
   order_ref: string;
   product_code: string;
   quantity: number;
@@ -64,7 +65,7 @@ interface OrderLoadingRecord {
 }
 
 // 擴展類型定義用於複雜查詢
-interface OrderItemWithJoins {
+interface _OrderItemWithJoins {
   order_number: string;
   product_qty: string;
   loaded_qty: string | number;
@@ -77,7 +78,7 @@ interface OrderItemWithJoins {
   action?: string;
 }
 
-interface OrderSummary {
+interface _OrderSummary {
   totalQty: number;
   loadedQty: number;
   status: string;
@@ -91,7 +92,7 @@ interface OrderDetails {
   products: Set<string>;
 }
 
-interface UserStats {
+interface _UserStats {
   user_name: string;
   total_loads: number;
   total_quantity: number;
@@ -730,7 +731,7 @@ export async function getTransactionReportData(
 
       // 🆕 嘗試更寬鬆的日期查詢，以防日期格式問題
       isDevelopment() && isDevelopment() && console.log(`[DEBUG] Trying broader date search...`);
-      const { data: allRecords, error: allError } = await supabase
+      const { data: allRecords, error: _allError } = await supabase
         .from('record_transfer')
         .select('tran_date')
         .order('tran_date', { ascending: false })
@@ -983,7 +984,7 @@ export interface VoidPalletFilters {
   voidReason?: string;
 }
 
-interface VoidPalletRecord {
+interface _VoidPalletRecord {
   plt_num: string;
   time: string;
   remark: string;
@@ -1867,7 +1868,7 @@ export interface OrderLoadingFilters {
   userId?: number;
 }
 
-interface OrderLoadingHistoryRecord {
+interface _OrderLoadingHistoryRecord {
   uuid: string;
   order_ref: string;
   product_code: string;
@@ -2333,7 +2334,7 @@ export async function generateAcoReportExcel(
   try {
     // Get report data
     const result = await getAcoReportData(orderRef);
-    if (!result.success) {
+    if (isErrorResult(result)) {
       return { success: false, error: result.error };
     }
     if (!result.data) {
@@ -2413,7 +2414,7 @@ export async function generateTransactionReportExcel(
   try {
     // Get report data
     const result = await getTransactionReportData(startDate, endDate);
-    if (!result.success) {
+    if (isErrorResult(result)) {
       return { success: false, error: result.error };
     }
     if (!result.data) {

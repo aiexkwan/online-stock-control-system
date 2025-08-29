@@ -4,22 +4,16 @@
  */
 
 import {
-  ChartBarIcon,
   CubeIcon,
   DocumentTextIcon,
-  ClipboardDocumentListIcon,
   WrenchScrewdriverIcon,
-  EyeIcon,
-  CheckIcon,
-  CloudArrowUpIcon,
   ChartPieIcon,
   BuildingOfficeIcon,
   ChatBubbleBottomCenterTextIcon,
-  UserCircleIcon,
-  ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
+// Removed unused icon imports: ChartBarIcon, ClipboardDocumentListIcon, EyeIcon, CheckIcon, CloudArrowUpIcon, UserCircleIcon, ArrowRightOnRectangleIcon
 
-import type { HeroIcon } from '../types/heroicons';
+// Removed unused type import: HeroIcon
 import type { CardConfig, CardCategory, OperationMenuItem } from '../types/ui-navigation';
 
 // 所有可用的 Cards 配置

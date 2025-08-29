@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useCallback, memo } from 'react';
+import { unifiedAuth } from '../utils/unified-auth';
 import { EyeIcon, EyeSlashIcon } from './icons';
 import PasswordValidator from './PasswordValidator';
-import { unifiedAuth } from '../utils/unified-auth';
 
 interface ChangePasswordFormProps {
   onSuccess: () => void;

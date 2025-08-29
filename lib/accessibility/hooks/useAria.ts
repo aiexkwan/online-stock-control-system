@@ -5,7 +5,8 @@
 
 'use client';
 
-import { useCallback, useMemo, useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
+// Removed unused import: useMemo
 import { UseAriaReturn, AriaConfig, AccessibilityIssue } from '../types';
 import { useAccessibility } from '../providers/AccessibilityProvider';
 import { validateAriaLabels } from '../utils/wcag-helpers';
@@ -399,7 +400,7 @@ export function useAriaDescriptions(
   useEffect(() => {
     const currentDescriptions = descriptionsRef.current;
 
-    descriptions.forEach(({ id, content, persistent = true }) => {
+    descriptions.forEach(({ id, content, persistent: _persistent = true }) => { // Renamed unused param
       if (currentDescriptions.has(id)) return;
 
       const element = document.createElement('div');

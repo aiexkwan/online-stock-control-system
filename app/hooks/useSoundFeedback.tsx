@@ -101,7 +101,7 @@ export function useSoundFeedback(options: SoundOptions = {}) {
         const gainNodes: GainNode[] = [];
 
         // 創建音頻節點
-        soundConfig.frequencies.forEach(freq => {
+        soundConfig.frequencies.forEach(_freq => {
           const oscillator = context.createOscillator();
           const gainNode = context.createGain();
 
@@ -138,14 +138,14 @@ export function useSoundFeedback(options: SoundOptions = {}) {
           oscillators.forEach(osc => {
             try {
               osc.disconnect();
-            } catch (e) {
+            } catch (_e) {
               // 忽略已經斷開連接的節點
             }
           });
           gainNodes.forEach(gain => {
             try {
               gain.disconnect();
-            } catch (e) {
+            } catch (_e) {
               // 忽略已經斷開連接的節點
             }
           });

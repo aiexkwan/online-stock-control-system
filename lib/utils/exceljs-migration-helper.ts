@@ -43,7 +43,11 @@ export async function jsonToWorksheet(
     });
   } else if (data.length > 0) {
     // 自動從數據生成列
-    const keys = Object.keys(data[0]);
+    const firstRow = data[0];
+    if (!firstRow) {
+      throw new Error('Data array is empty');
+    }
+    const keys = Object.keys(firstRow);
     worksheet.columns = keys.map(key => ({
       header: key,
       key: key,
@@ -74,11 +78,20 @@ export function setHeaderStyle(
 ): void {
   const headerRow = worksheet.getRow(1);
 
-  headerRow.font = {
+  const fontConfig: {
+    size: number;
+    bold: boolean;
+    color?: { argb: string };
+  } = {
     size: options.fontSize || 12,
     bold: options.bold !== false,
-    color: options.textColor ? { argb: options.textColor } : undefined,
   };
+  
+  if (options.textColor) {
+    fontConfig.color = { argb: options.textColor };
+  }
+  
+  headerRow.font = fontConfig;
 
   headerRow.alignment = {
     vertical: 'middle',
@@ -90,7 +103,7 @@ export function setHeaderStyle(
       cell.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: options.bgColor },
+        fgColor: { argb: options.bgColor! },
       };
     });
   }

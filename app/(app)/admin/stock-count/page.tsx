@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import StockCountForm from './components/StockCountForm';
-import ScanResult from './components/ScanResult';
 import { PageErrorBoundary } from '@/lib/error-handling';
 import { StarfieldBackground } from '@/app/components/StarfieldBackground';
+import StockCountForm from './components/StockCountForm';
+import ScanResult from './components/ScanResult';
 
 // 簡化狀態類型
 type CountState = 'form' | 'result' | 'input';

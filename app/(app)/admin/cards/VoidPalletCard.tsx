@@ -15,12 +15,10 @@
 
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AlertTriangle, XCircle, List, Package2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
-  getCardTheme,
   cardTextStyles,
-  cardStatusColors,
-  cardContainerStyles,
 } from '@/lib/card-system/theme';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -33,11 +31,9 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { AlertTriangle, XCircle, List, Package2 } from 'lucide-react';
 import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
 // Removed design-system import - using direct Tailwind classes
 import { OperationCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
-import { SearchInput, SearchInputRef, StepIndicator, Step } from '../components/shared';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,17 +44,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { SearchInput, SearchInputRef, StepIndicator, Step , StatusOverlay } from '../components/shared';
 import type {
-  VoidMode,
-  VoidStep,
-  PalletInfo,
-  VoidResult,
-  BatchItem,
-  OperationChildProps,
   VoidPalletCardProps,
 } from '../types/data-management';
 import { VOID_REASONS } from '../constants/voidPallet';
-import { StatusOverlay } from '../components/shared';
 import { useVoidPallet } from '../hooks/useVoidPallet';
 
 // Step configuration
@@ -93,7 +83,7 @@ export const VoidPalletCard: React.FC<VoidPalletCardProps> = ({
     searchValue,
     showQrScanner,
     foundPallet,
-    productDescription,
+    productDescription: _productDescription,
     voidReason,
     voidResult,
     showConfirmDialog,
@@ -113,7 +103,7 @@ export const VoidPalletCard: React.FC<VoidPalletCardProps> = ({
     setFoundPallet,
     setBatchItems,
     setShowAlreadyVoidedDialog,
-    setAlreadyVoidedPalletNum,
+    setAlreadyVoidedPalletNum: _setAlreadyVoidedPalletNum,
     handleSearch,
     handleVoid,
     handleQrScan,

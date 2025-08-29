@@ -8,11 +8,11 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLoading } from './useLoading';
+import { logger } from '@/lib/logger';
 import { PerformanceDetector } from '../utils/performanceDetector';
 import { getPerformanceAwareStrategySuggestion } from '../strategies/LoadingStrategy';
 import { UseLoadingOptions, AdaptiveLoadingConfig, PerformanceMetrics } from '../types';
-import { logger } from '@/lib/logger';
+import { useLoading } from './useLoading';
 
 interface UseSmartLoadingOptions extends Omit<UseLoadingOptions, 'strategy'> {
   /** 是否啟用性能感知 */

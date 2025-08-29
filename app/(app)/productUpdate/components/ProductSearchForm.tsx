@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import { Search, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, Loader2 } from 'lucide-react';
 
 interface ProductSearchFormProps {
   onSearch: (code: string) => Promise<void>;

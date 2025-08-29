@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { X, Download, ZoomIn, ZoomOut, RotateCw, Maximize2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading/LoadingSpinner';
-import { X, Download, ZoomIn, ZoomOut, RotateCw, Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface PDFPreviewDialogProps {

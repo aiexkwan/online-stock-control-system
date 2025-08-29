@@ -3,10 +3,10 @@
  * Central interface for all hardware operations
  */
 
+import { createLogger } from '../logger';
 import { DefaultPrinterService, PrinterService } from './services/printer-service';
 import { HardwareMonitoringService } from './services/monitoring-service';
 import { PrintQueueManager } from './services/print-queue-manager';
-import { createLogger } from '../logger';
 import { DeviceStatus, HealthStatus, HardwareEvent, PrintJob, PrintResult } from './types';
 
 const logger = createLogger('hardware');

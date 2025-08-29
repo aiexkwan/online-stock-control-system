@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { Search, Check, X, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/app/utils/supabase/client';
 import { cn } from '@/lib/utils';
-import { Search, Check, X, Loader2 } from 'lucide-react';
 // Debounce utility
 
 export interface SupplierInfo {

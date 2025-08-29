@@ -7,6 +7,8 @@
 
 import React from 'react';
 import { CheckCircle2, XCircle, AlertTriangle, Info, Bell, Trash2 } from 'lucide-react';
+import { dialogButtonStyles } from '@/lib/dialog-system/ui/animation';
+import { cn } from '@/lib/utils';
 import {
   AnimatedDialog,
   AnimatedDialogContent,
@@ -17,8 +19,6 @@ import {
   type DialogType,
 } from './animated-border-dialog';
 import { Button } from './button';
-import { dialogButtonStyles } from '@/lib/dialog-system/ui/animation';
-import { cn } from '@/lib/utils';
 
 // 通知 Dialog
 interface NotificationDialogProps {

@@ -15,15 +15,15 @@
 
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { createClient } from '@/app/utils/supabase/client';
+import type { ExtractedOrderItem, DataExtractionOverlayState } from '@/lib/types/order-extraction';
 import type {
-  UploadConfiguration,
+  // UploadConfiguration, // Unused type import
   DocUploadRecord,
   UploadToastState,
 } from '../types/data-management';
-import type { ExtractedOrderItem, DataExtractionOverlayState } from '@/lib/types/order-extraction';
 
 // Hook state interface
 export interface UploadManagerState {

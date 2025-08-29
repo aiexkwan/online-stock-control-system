@@ -530,7 +530,10 @@ export function toEnhancedDatabaseRecord(data: unknown): EnhancedDatabaseRecord 
     console.warn('Invalid data provided to toEnhancedDatabaseRecord:', data);
     return {};
   }
-  return safeCastToEnhancedDatabaseRecord(data);
+  const result = safeCastToEnhancedDatabaseRecord(data);
+  
+  // 使用類型斷言來滿足 exactOptionalPropertyTypes
+  return result as EnhancedDatabaseRecord;
 }
 
 /**

@@ -1,5 +1,5 @@
-import { BaseFeatureFlagProvider } from './BaseProvider';
 import { FeatureFlag, FeatureFlagStatus } from '../types';
+import { BaseFeatureFlagProvider } from './BaseProvider';
 
 /**
  * 本地 Feature Flag 提供者

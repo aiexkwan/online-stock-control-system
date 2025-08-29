@@ -3,7 +3,7 @@
  * GraphQL client setup for Supabase pg_graphql
  */
 
-import { ApolloClient, InMemoryCache, createHttpLink, ApolloLink, from } from '@apollo/client';
+import { ApolloClient, InMemoryCache, createHttpLink, from } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import { createClient } from '@/lib/supabase';
@@ -91,10 +91,12 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
           supabaseClient.auth.refreshSession().then(({ data, error }) => {
             if (error) {
               console.error('[GraphQL error]: Failed to refresh session:', error);
+              return undefined;
             } else if (data.session) {
               console.log('[GraphQL error]: Session refreshed, retrying operation');
               return forward(operation);
             }
+            return undefined;
           });
         }
       }
@@ -115,6 +117,9 @@ const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) 
       return forward(operation);
     }
   }
+  
+  // Return undefined for default case
+  return undefined;
 });
 
 // Cache configuration
@@ -125,20 +130,20 @@ const cache = new InMemoryCache({
         // Card data caching
         card: {
           keyArgs: ['id', 'params'],
-          merge(existing, incoming) {
+          merge(_existing, incoming) {
             return incoming;
           },
         },
         cards: {
           keyArgs: ['ids', 'params'],
-          merge(existing = [], incoming) {
+          merge(_existing = [], incoming) {
             return [...incoming];
           },
         },
         // Dashboard caching
         dashboard: {
           keyArgs: ['theme'],
-          merge(existing, incoming) {
+          merge(_existing, incoming) {
             return incoming;
           },
         },
@@ -157,18 +162,18 @@ const cache = new InMemoryCache({
         },
         topStocks: {
           keyArgs: false,
-          merge(existing, incoming, { args, cache }) {
+          merge(existing, incoming, { args: _args, cache: _cache }) {
             return incoming;
           },
         },
         materialStocks: {
           keyArgs: false,
-          merge(existing, incoming, { args, cache }) {
+          merge(existing, incoming, { args: _args, cache: _cache }) {
             return incoming;
           },
         },
         machineStates: {
-          merge: (existing = [], incoming) => incoming,
+          merge: (_existing = [], incoming) => incoming,
         },
       },
     },

@@ -35,7 +35,7 @@ import {
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { cn } from '@/lib/utils';
 import { AnalysisCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
-import { getCardTheme, cardTextStyles, cardChartColors } from '@/lib/card-system/theme';
+import { cardTextStyles, cardChartColors } from '@/lib/card-system/theme';
 import {
   ChartType,
   AggregationType,
@@ -48,8 +48,7 @@ import {
 import { ensureString } from '@/lib/graphql/utils/graphql-types';
 
 // Import types from centralized type definitions
-import type { WorkLevelCardProps, ChartClickEventData } from '../types/analytics';
-import type { FilterValue } from '../types/common';
+import type { WorkLevelCardProps, ChartClickEventData } from '@/app/(app)/admin/types/analytics';
 
 // GraphQL 查詢
 const CHART_CARD_QUERY = gql`
@@ -130,7 +129,7 @@ const DEFAULT_COLORS = cardChartColors.extended;
 
 export const WorkLevelCard: React.FC<WorkLevelCardProps> = ({
   chartTypes,
-  dataSources,
+  _dataSources,
   dateRange,
   timeGranularity = TimeGranularity.Day,
   aggregationType = AggregationType.Sum,
@@ -139,19 +138,19 @@ export const WorkLevelCard: React.FC<WorkLevelCardProps> = ({
   limit,
   showComparison = false,
   showPerformance = false,
-  showLegend = true,
-  showTooltip = true,
-  animationEnabled = true,
+  _showLegend = true,
+  _showTooltip = true,
+  _animationEnabled = true,
   className,
   height = 400,
-  title,
-  subtitle,
+  _title,
+  _subtitle,
   isEditMode = false,
   onChartClick,
   onRefresh,
 }) => {
   // Cleanup ref for polling interval
-  const cleanupRef = useRef<(() => void) | null>(null);
+  const _cleanupRef = useRef<(() => void) | null>(null);
   // 部門篩選狀態 - 改為單選
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
 
@@ -200,7 +199,7 @@ export const WorkLevelCard: React.FC<WorkLevelCardProps> = ({
   );
 
   // 執行 GraphQL 查詢
-  const { data, loading, error, refetch, stopPolling, startPolling } = useQuery<{
+  const { data, loading, error, refetch, stopPolling, startPolling: _startPolling } = useQuery<{
     chartCardData: ChartCardData;
   }>(CHART_CARD_QUERY, {
     variables: { input: queryInput },
@@ -225,7 +224,7 @@ export const WorkLevelCard: React.FC<WorkLevelCardProps> = ({
   };
 
   // 渲染圖表組件
-  const renderChart = (config: ChartConfig, datasets: ChartDataset[], index: number) => {
+  const renderChart = (config: ChartConfig, datasets: ChartDataset[], _index: number) => {
     // 對於多線圖表（如 Work Level），需要重組數據
     const isMultiLineChart = datasets.length > 1 && config.type === ChartType.Line;
 

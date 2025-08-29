@@ -6,6 +6,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { ChevronDownIcon , BarChart3, TrendingUp, Users, Package2, CalendarIcon } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -21,9 +22,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { ChevronDownIcon } from 'lucide-react';
 import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
-import { BarChart3, TrendingUp, Users, Package2, CalendarIcon } from 'lucide-react';
 import { useAnalyticsDashboard } from './useAnalyticsDashboard';
 import { OutputRatioChart } from './charts/OutputRatioChart';
 import { ProductTrendChart } from './charts/ProductTrendChart';

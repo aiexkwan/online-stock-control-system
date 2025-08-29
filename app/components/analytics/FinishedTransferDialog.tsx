@@ -6,6 +6,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { Package2, CalendarIcon } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
-import { Package2, CalendarIcon } from 'lucide-react';
 import { OutputRatioChart } from './charts/OutputRatioChart';
 
 interface FinishedTransferDialogProps {

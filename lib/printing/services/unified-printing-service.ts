@@ -3,6 +3,16 @@
  * Central service for all printing operations
  */
 
+// PrintHistoryService removed - redundant with existing record_history
+import { EventEmitter } from 'events';
+import { getHardwareAbstractionLayer } from '@/lib/hardware/hardware-abstraction-layer';
+import type { PrintJob } from '@/lib/hardware/types';
+import type { DatabaseRecord } from '@/types/database/tables';
+import { uploadPdfToStorage, updatePalletPdfUrl } from '@/app/actions/grnActions';
+import {
+  uploadPdfToStorage as uploadPdfToStorageQc,
+  updatePalletPdfUrl as updatePalletPdfUrlQc,
+} from '@/app/actions/qcActions';
 import {
   PrintRequest,
   PrintResult,
@@ -12,17 +22,7 @@ import {
   PrintPriority,
   PrintData,
 } from '../types';
-import { getHardwareAbstractionLayer } from '@/lib/hardware/hardware-abstraction-layer';
-// PrintHistoryService removed - redundant with existing record_history
 import { PrintTemplateService } from './print-template-service';
-import { EventEmitter } from 'events';
-import type { PrintJob } from '@/lib/hardware/types';
-import type { DatabaseRecord } from '@/types/database/tables';
-import { uploadPdfToStorage, updatePalletPdfUrl } from '@/app/actions/grnActions';
-import {
-  uploadPdfToStorage as uploadPdfToStorageQc,
-  updatePalletPdfUrl as updatePalletPdfUrlQc,
-} from '@/app/actions/qcActions';
 
 export interface UnifiedPrintingServiceConfig {
   templateService?: PrintTemplateService;

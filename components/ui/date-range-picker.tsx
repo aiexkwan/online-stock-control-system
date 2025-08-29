@@ -13,7 +13,7 @@ import {
   composeRenderProps,
   Text,
   PopoverRenderProps,
-} from 'react-aria-components';
+ Popover as AriaPopover } from 'react-aria-components';
 
 import { cn } from '@/lib/utils';
 
@@ -30,7 +30,6 @@ import {
 } from '@/components/ui/calendar';
 import { DateInput } from '@/components/ui/datefield';
 import { FieldError, FieldGroup, Label } from '@/components/ui/field';
-import { Popover as AriaPopover } from 'react-aria-components';
 
 const DatePicker = AriaDatePicker;
 

@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { cleanupLegacyAuth, shouldCleanupLegacyAuth } from './cleanup-legacy-auth';
 import { createClient } from '@/app/utils/supabase/client';
+import { cleanupLegacyAuth, shouldCleanupLegacyAuth } from './cleanup-legacy-auth';
 
 // 簡化的統一認證客戶端
 class UnifiedAuth {

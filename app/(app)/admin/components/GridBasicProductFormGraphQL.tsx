@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
+import { PrinterIcon } from '@heroicons/react/24/outline';
 import ProductCodeInputGraphQL from '@/app/components/qc-label-form/ProductCodeInputGraphQL';
 import RemarkFormatter from '@/app/components/qc-label-form/RemarkFormatter';
-import { PrinterIcon } from '@heroicons/react/24/outline';
 import { MAX_PALLET_COUNT } from './qc-label-constants';
 
 interface ProductInfo {

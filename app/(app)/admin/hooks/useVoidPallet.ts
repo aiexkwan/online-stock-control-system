@@ -15,7 +15,7 @@
 
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { createClient } from '@/app/utils/supabase/client';
 import { getProductByCode } from '@/app/actions/productActions';
@@ -104,7 +104,7 @@ export const useVoidPallet = ({
   const [showAlreadyVoidedDialog, setShowAlreadyVoidedDialog] = useState(false);
   const [alreadyVoidedPalletNum, setAlreadyVoidedPalletNum] = useState('');
   const [batchItems, setBatchItems] = useState<BatchItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [_isLoading, _setIsLoading] = useState(false);
 
   // Helper function to get inventory column mapping
   const getInventoryColumn = useCallback((location: string | null | undefined): string => {
@@ -654,7 +654,7 @@ export const useVoidPallet = ({
     showAlreadyVoidedDialog,
     alreadyVoidedPalletNum,
     batchItems,
-    isLoading,
+    isLoading: _isLoading,
   };
 
   // Actions object

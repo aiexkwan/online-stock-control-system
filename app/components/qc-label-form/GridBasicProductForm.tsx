@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
+import { PrinterIcon } from '@heroicons/react/24/outline';
 import ProductCodeInput from './ProductCodeInput';
 import RemarkFormatter from './RemarkFormatter';
-import { PrinterIcon } from '@heroicons/react/24/outline';
 import { MAX_PALLET_COUNT } from './constants';
 
 interface ProductInfo {

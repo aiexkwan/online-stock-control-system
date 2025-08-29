@@ -14,8 +14,8 @@
 'use client';
 
 import React from 'react';
-import { cn } from '@/lib/utils';
 import { CheckCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export type StepStatus = 'completed' | 'active' | 'pending';
 

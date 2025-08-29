@@ -1,6 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { DatabaseRecord } from '@/types/database/tables';
-import { BaseFeatureFlagProvider } from './BaseProvider';
 import { FeatureFlag, FeatureFlagStatus } from '../types';
 import {
   FeatureFlagDbRecord,
@@ -9,6 +8,7 @@ import {
   isValidRealtimePayload,
   isValidDbRecord,
 } from '../types/SupabaseFeatureFlagTypes';
+import { BaseFeatureFlagProvider } from './BaseProvider';
 
 /**
  * Supabase Feature Flag 提供者

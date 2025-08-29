@@ -13,7 +13,7 @@ import {
   type OrderLoadingFilters,
 } from '@/app/actions/DownloadCentre-Actions';
 import { safeString, safeOptionalString, safeOptionalNumber } from '@/lib/types/type-guards';
-import { extractErrorMessage } from '@/lib/types/api';
+import { isErrorResult, extractErrorMessage } from '@/lib/types/api';
 
 // Order Loading Summary data source
 const orderLoadingSummaryDataSource: ReportDataSource = {
@@ -27,8 +27,8 @@ const orderLoadingSummaryDataSource: ReportDataSource = {
       userId: safeOptionalNumber(filters.userId),
     };
     const result = await getOrderLoadingSummary(orderLoadingFilters);
-    if (!result.success) {
-      throw new Error(extractErrorMessage(result.error || 'Failed to fetch order loading summary'));
+    if (isErrorResult(result)) {
+      throw new Error(extractErrorMessage(result.error) || 'Failed to fetch order loading summary');
     }
     // 策略4: unknown + type narrowing - 安全的類型轉換
     const data = result.data;
@@ -58,8 +58,8 @@ const orderProgressDataSource: ReportDataSource = {
       userId: safeOptionalNumber(filters.userId),
     };
     const result = await getOrderProgress(orderLoadingFilters);
-    if (!result.success) {
-      throw new Error(extractErrorMessage(result.error || 'Failed to fetch order progress'));
+    if (isErrorResult(result)) {
+      throw new Error(extractErrorMessage(result.error) || 'Failed to fetch order progress');
     }
     // 策略4: unknown + type narrowing - 安全的類型轉換
     const data = result.data;
@@ -83,8 +83,8 @@ const loadingDetailsDataSource: ReportDataSource = {
       userId: safeOptionalNumber(filters.userId),
     };
     const result = await getLoadingDetails(orderLoadingFilters);
-    if (!result.success) {
-      throw new Error(extractErrorMessage(result.error || 'Failed to fetch loading details'));
+    if (isErrorResult(result)) {
+      throw new Error(extractErrorMessage(result.error) || 'Failed to fetch loading details');
     }
     // 策略4: unknown + type narrowing - 安全的類型轉換
     const data = result.data;
@@ -108,8 +108,8 @@ const userPerformanceDataSource: ReportDataSource = {
       userId: safeOptionalNumber(filters.userId),
     };
     const result = await getUserPerformance(orderLoadingFilters);
-    if (!result.success) {
-      throw new Error(extractErrorMessage(result.error || 'Failed to fetch user performance'));
+    if (isErrorResult(result)) {
+      throw new Error(extractErrorMessage(result.error) || 'Failed to fetch user performance');
     }
     // 策略4: unknown + type narrowing - 安全的類型轉換
     const data = result.data;

@@ -4,12 +4,12 @@
  */
 
 import React, { useState } from 'react';
-import { UnifiedPdfService, PdfType, type PdfPrintOptions } from '../unified-pdf-service';
+import { Loader2, Printer, FileText, CheckCircle, XCircle } from 'lucide-react';
 import type { QcLabelInputData, GrnLabelInputData } from '@/lib/mappers/pdf-data-mappers';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Printer, FileText, CheckCircle, XCircle } from 'lucide-react';
+import { UnifiedPdfService, PdfType, type PdfPrintOptions } from '../unified-pdf-service';
 
 // 範例 1: QC 標籤單個生成並打印
 export function QcLabelPrintExample() {

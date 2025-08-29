@@ -5,9 +5,9 @@
  * Note: 保留 GraphQL 接口以供向後兼容
  */
 
+import { logger } from '@/lib/logger';
 import { APIRouter, getAPIRouter } from './api-router';
 import { apiMonitor } from './api-monitor';
-import { logger } from '@/lib/logger';
 
 export interface APIClientConfig {
   userId?: string;

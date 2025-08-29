@@ -1,10 +1,10 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
+// import Link from 'next/link'; // TODO: Remove if not needed
 import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface TimelineItem {

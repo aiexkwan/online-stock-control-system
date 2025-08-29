@@ -11,7 +11,7 @@ interface UsePullToRefreshOptions {
 export function usePullToRefresh({
   onRefresh,
   threshold = 80,
-  refreshTimeout = 3000,
+  refreshTimeout: _refreshTimeout = 3000,
 }: UsePullToRefreshOptions) {
   const [isPulling, setIsPulling] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);

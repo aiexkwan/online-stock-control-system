@@ -18,7 +18,7 @@ export async function securityMiddleware(request: NextRequest) {
       url: request.url,
       method: request.method,
       headers: Object.fromEntries(request.headers.entries()),
-      ip: (request as any).ip || request.headers.get('x-forwarded-for') || 'unknown',
+      ip: (request as Request & { ip?: string }).ip || request.headers.get('x-forwarded-for') || 'unknown',
       userAgent: request.headers.get('user-agent') || 'unknown',
       path: new URL(request.url).pathname,
     };
@@ -30,8 +30,6 @@ export async function securityMiddleware(request: NextRequest) {
       '/change-password',
       '/new-password',
       '/api/health',
-      '/api/monitoring/health',
-      '/api/monitoring/deep',
       '/api/metrics',
       '/api/auth',
       '/_next/static',
@@ -45,10 +43,10 @@ export async function securityMiddleware(request: NextRequest) {
     const isPublicRoute = publicRoutes.some(route => requestInfo.path.startsWith(route));
 
     // Skip threat detection for public routes to avoid false positives
-    let threats: any[] = [];
+    let threats: string[] = [];
     if (!isPublicRoute) {
       // Get body if present (for POST/PUT/PATCH)
-      let body: any;
+      let body: unknown;
       if (['POST', 'PUT', 'PATCH'].includes(request.method)) {
         try {
           const clonedRequest = request.clone();
@@ -75,7 +73,7 @@ export async function securityMiddleware(request: NextRequest) {
     if (!isPublicRoute) {
       for (const threat of threats) {
         securityMonitor.logEvent({
-          type: threat,
+          type: threat as SecurityEventType,
           severity: SecuritySeverity.HIGH,
           ipAddress: requestInfo.ip,
           userAgent: requestInfo.userAgent,
@@ -103,7 +101,7 @@ export async function securityMiddleware(request: NextRequest) {
     ];
 
     const shouldBlockRequest =
-      threats.some(t => criticalThreats.includes(t)) && process.env.NODE_ENV === 'production';
+      threats.some(t => criticalThreats.includes(t as SecurityEventType)) && process.env.NODE_ENV === 'production';
 
     if (shouldBlockRequest) {
       // Log blocked request
@@ -202,7 +200,7 @@ export function monitorAuthentication(
   action: 'login' | 'logout' | 'register' | 'password-change',
   success: boolean,
   userId?: string,
-  metadata?: any
+  metadata?: Record<string, unknown>
 ) {
   const eventTypeMap = {
     login: success ? SecurityEventType.LOGIN_SUCCESS : SecurityEventType.LOGIN_FAILURE,
@@ -226,7 +224,7 @@ export function monitorDataAccess(
   operation: 'read' | 'write' | 'delete' | 'export',
   resource: string,
   userId?: string,
-  metadata?: any
+  metadata?: Record<string, unknown>
 ) {
   const eventTypeMap = {
     read: SecurityEventType.SENSITIVE_DATA_ACCESS,
@@ -256,7 +254,7 @@ export function monitorDataAccess(
 /**
  * Error monitoring hook
  */
-export function monitorError(error: Error, context?: any) {
+export function monitorError(error: Error, context?: Record<string, unknown>) {
   // Check if error rate is anomalous
   const isAnomaly = securityMonitor.detectAnomaly('error_rate', 1);
 
@@ -274,7 +272,7 @@ export function monitorError(error: Error, context?: any) {
 /**
  * Performance monitoring hook
  */
-export function monitorPerformance(metric: string, value: number, metadata?: any) {
+export function monitorPerformance(metric: string, value: number, metadata?: Record<string, unknown>) {
   // Check if performance is anomalous
   const isAnomaly = securityMonitor.detectAnomaly(metric, value);
 

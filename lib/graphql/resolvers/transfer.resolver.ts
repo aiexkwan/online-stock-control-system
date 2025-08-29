@@ -4,8 +4,8 @@
  */
 
 import { IResolvers } from '@graphql-tools/utils';
-import { GraphQLContext } from './index';
 import type { Transfer } from '../types/database-types';
+import { GraphQLContext } from './index';
 
 export const transferResolvers: IResolvers<unknown, GraphQLContext> = {
   Transfer: {

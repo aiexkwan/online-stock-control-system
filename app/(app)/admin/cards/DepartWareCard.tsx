@@ -6,15 +6,15 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Archive, History, Clock } from 'lucide-react';
+import { useQuery, useLazyQuery, gql } from '@apollo/client';
 import { SpecialCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { cardTextStyles } from '@/lib/card-system/theme';
-import { motion } from 'framer-motion';
-import { Archive, History, Clock, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useQuery, useLazyQuery, gql } from '@apollo/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { RecentActivity, OrderCompletion } from '@/lib/graphql/types/database-types';
 
@@ -149,7 +149,6 @@ interface OrderDetail {
 export const DepartWareCard: React.FC<DepartWareCardProps> = ({
   title = 'Warehouse Department',
   description = 'Real-time metrics and statistics for the Warehouse department',
-  isEditMode = false,
 }) => {
   const [selectedOrder, setSelectedOrder] = useState<SelectedOrder | null>(null);
 

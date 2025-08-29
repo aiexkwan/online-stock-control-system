@@ -6,11 +6,14 @@
 
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, FileText, Loader2, X } from 'lucide-react';
+import { useLazyQuery } from '@apollo/client';
+import { startOfDay, endOfDay , format } from 'date-fns';
+import { DateRange } from 'react-day-picker';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+// Card components removed - not used
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import { ReportCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
@@ -22,12 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useLazyQuery } from '@apollo/client';
-import type { DownloadCenterCardProps, DownloadRecord } from '../types/common';
-import { startOfDay, endOfDay } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon } from 'lucide-react';
-import { DateRange } from 'react-day-picker';
 import { extractErrorMessage } from '@/lib/types/api';
 
 // Import GraphQL queries and actions
@@ -41,7 +39,7 @@ import {
   generateGrnReportExcel,
   generateTransactionReportExcel,
 } from '@/app/actions/DownloadCentre-Actions';
-import { format } from 'date-fns';
+import type { DownloadCenterCardProps } from '../types/common';
 import { REPORT_TYPES } from '../constants/reportTypes';
 
 // Download record interface definition removed - now imported from types/common
@@ -67,13 +65,10 @@ const downloadBase64File = (base64Data: string, fileName: string) => {
 
 export const DownloadCenterCard: React.FC<DownloadCenterCardProps> = ({
   title = 'Download',
-  description,
   className,
-  onReportSelect,
-  ...props
 }) => {
   const { toast } = useToast();
-  const [loadingReports, setLoadingReports] = useState<Record<string, boolean>>({});
+  const [loadingReports, _setLoadingReports] = useState<Record<string, boolean>>({});
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [selectedValue, setSelectedValue] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);

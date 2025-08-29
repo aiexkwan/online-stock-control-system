@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useVisualSystem } from './VisualSystemProvider';
 import { PERFORMANCE_CONFIG } from '../config/performance-config';
+import { useVisualSystem } from './VisualSystemProvider';
 
 // WebGL實例管理（單例模式）
 class WebGLManager {

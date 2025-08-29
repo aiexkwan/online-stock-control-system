@@ -3,7 +3,9 @@
  * 處理統一的圖表數據查詢
  */
 
-import { createClient } from '@/app/utils/supabase/server';
+import { startOfDay, endOfDay, subDays, format } from 'date-fns';
+import DataLoader from 'dataloader';
+import { SupabaseClient } from '@supabase/supabase-js';
 import {
   ChartType,
   ChartCardData,
@@ -16,9 +18,7 @@ import {
   AggregationType,
   ChartDatasetType,
 } from '@/types/generated/graphql';
-import { startOfDay, endOfDay, subDays, format } from 'date-fns';
-import DataLoader from 'dataloader';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@/app/utils/supabase/server';
 import { Database } from '@/types/database/supabase';
 
 // 定義 Supabase client 類型

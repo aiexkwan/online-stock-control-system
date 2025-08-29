@@ -47,3 +47,20 @@ reports/
 # Ignore temporary files
 .turbo/
 .cache/
+
+# Ignore backup directories
+Backup/
+
+# Ignore test setup files
+vitest.setup.ts
+vitest.integration.setup.ts
+test-extraction-debug.js
+
+# Ignore debugging files
+*.debug.js
+
+# Ignore example files
+**/*.example.ts
+**/*.example.tsx
+**/*.example.js
+**/*.example.jsx

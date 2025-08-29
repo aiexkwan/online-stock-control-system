@@ -4,9 +4,9 @@
  * 提供多層 fallback 機制確保高可靠性
  */
 
+import { systemLogger } from '@/lib/logger';
 import { PDFExtractionService, ExtractedPDFData } from './pdfExtractionService';
 import { ChatCompletionService, OrderExtractionResult } from './chatCompletionService';
-import { systemLogger } from '@/lib/logger';
 
 export interface EnhancedExtractionResult {
   success: boolean;

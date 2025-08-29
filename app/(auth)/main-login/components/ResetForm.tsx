@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useCallback, memo } from 'react';
+import { unifiedAuth } from '../utils/unified-auth';
 import { EyeIcon, EyeSlashIcon } from './icons';
 import EmailValidator from './EmailValidator';
 import PasswordValidator from './PasswordValidator';
-import { unifiedAuth } from '../utils/unified-auth';
 
 interface ResetFormProps {
   step: 'request' | 'reset';

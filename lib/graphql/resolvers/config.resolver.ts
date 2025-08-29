@@ -1,11 +1,8 @@
 import { GraphQLResolveInfo } from 'graphql';
-import { GraphQLContext as Context } from './index';
-import { createClient } from '@/app/utils/supabase/server';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { dashboardSettingsService } from '../../../app/services/dashboardSettingsService';
-import { withRetry, withCache } from '../../utils/error-handling';
 import { v4 as uuidv4 } from 'uuid';
 import * as yaml from 'js-yaml';
+import { createClient } from '@/app/utils/supabase/server';
 import {
   ConfigItem,
   ConfigHistory,
@@ -34,6 +31,9 @@ import {
   ConfigScope,
   ConfigAccessLevel,
 } from '@/lib/types/config.types';
+import { withRetry, withCache } from '../../utils/error-handling';
+import { dashboardSettingsService } from '../../../app/services/dashboardSettingsService';
+import { GraphQLContext as Context } from './index';
 
 // Configuration service singleton
 class ConfigService {
@@ -406,7 +406,7 @@ class ConfigService {
     config: ConfigItem,
     value: ConfigValue
   ): Promise<ConfigValidationResult> {
-    return this.validateConfig({ ...config, value });
+    return this.validateConfig({ ...config, value } as ConfigCreateInput | ConfigUpdateInput);
   }
 
   // Validate data type

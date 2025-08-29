@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 import { getHardwareAbstractionLayer } from '../hardware-abstraction-layer';
 import { createLogger } from '../../logger';
 import {
@@ -14,7 +15,6 @@ import {
   HardwareAlert,
   QueueStatus,
 } from '../types';
-import { toast } from 'sonner';
 
 const logger = createLogger('hardware-hook');
 

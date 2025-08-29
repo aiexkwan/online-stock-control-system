@@ -10,13 +10,13 @@ import {
   Database,
   Package,
   RotateCcw,
-  ArrowLeftRight,
+  // ArrowLeftRight, // Removed unused import
   Loader2,
 } from 'lucide-react';
 import { OperationCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { getCardTheme, cardTextStyles, cardStatusColors } from '@/lib/card-system/theme';
+import { cardTextStyles } from '@/lib/card-system/theme'; // Removed unused imports
 import { cn } from '@/lib/utils';
 
 // Types for error severity and categories
@@ -183,43 +183,7 @@ const getCategoryIcon = (category: ErrorCategory) => {
   }
 };
 
-// Loading skeleton component
-const ErrorLoadingSkeleton: React.FC = () => {
-  return (
-    <div className='h-full'>
-      <OperationCard
-        variant='glass'
-        isHoverable={false}
-        borderGlow={false}
-        className='h-full border-slate-700/50'
-        padding='small'
-      >
-        <div className='flex h-full animate-pulse flex-col'>
-          {/* Header skeleton */}
-          <div className='border-b border-slate-700/50 bg-slate-800/50 p-4'>
-            <div className='flex items-center gap-2'>
-              <div className='h-6 w-6 rounded bg-slate-700/50'></div>
-              <div className='h-6 w-32 rounded bg-slate-700/50'></div>
-            </div>
-            <div className='mt-2 h-4 w-48 rounded bg-slate-700/50'></div>
-          </div>
-
-          {/* Content skeleton */}
-          <div className='flex-1 space-y-4 p-4'>
-            <div className='space-y-3'>
-              <div className='h-4 w-24 rounded bg-slate-700/50'></div>
-              <div className='h-20 w-full rounded bg-slate-700/50'></div>
-            </div>
-            <div className='space-y-2'>
-              <div className='h-10 w-full rounded bg-slate-700/50'></div>
-              <div className='h-10 w-32 rounded bg-slate-700/50'></div>
-            </div>
-          </div>
-        </div>
-      </OperationCard>
-    </div>
-  );
-};
+// Removed unused ErrorLoadingSkeleton component
 
 // Main error UI component
 const StockTransferErrorUI: React.FC<{
@@ -453,7 +417,7 @@ export default class StockTransferErrorBoundary extends React.Component<Props, S
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('StockTransfer Error Boundary:', error, errorInfo);
 
     // Log error to monitoring service in production
@@ -477,22 +441,24 @@ export default class StockTransferErrorBoundary extends React.Component<Props, S
 
     // Simulate recovery delay and increment retry count
     this.retryTimeoutId = setTimeout(() => {
-      this.setState(prevState => ({
-        hasError: false,
-        error: undefined,
-        isRecovering: false,
-        retryCount: prevState.retryCount + 1,
-      }));
+      this.setState((prevState: Readonly<State>) => {
+        const newState: State = {
+          hasError: false,
+          isRecovering: false,
+          retryCount: prevState.retryCount + 1,
+        };
+        return newState;
+      });
     }, 1500);
   };
 
   handleReset = () => {
-    this.setState({
+    const resetState: State = {
       hasError: false,
-      error: undefined,
       isRecovering: false,
       retryCount: 0,
-    });
+    };
+    this.setState(resetState);
 
     // Force a page refresh to reset all state
     window.location.reload();
@@ -502,13 +468,13 @@ export default class StockTransferErrorBoundary extends React.Component<Props, S
     window.location.href = '/';
   };
 
-  componentWillUnmount() {
+  override componentWillUnmount() {
     if (this.retryTimeoutId) {
       clearTimeout(this.retryTimeoutId);
     }
   }
 
-  render() {
+  override render() {
     if (this.state.hasError && this.state.error) {
       return (
         <StockTransferErrorUI

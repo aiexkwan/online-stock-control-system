@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { SupplierInput } from './SupplierInput';
+import { Building2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Building2 } from 'lucide-react';
+import { SupplierInput } from './SupplierInput';
 import type { SupplierInfo } from './SupplierInput';
 
 export interface SupplierFieldProps {

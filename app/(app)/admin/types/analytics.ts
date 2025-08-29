@@ -16,6 +16,7 @@ export interface WorkLevelCardProps {
   className?: string;
   chartTypes?: string[];
   dataSources?: string[];
+  _dataSources?: string[];
   dateRange?: { start: Date; end: Date };
   timeGranularity?: string;
   aggregationType?: string;
@@ -27,9 +28,14 @@ export interface WorkLevelCardProps {
   showLegend?: boolean;
   showTooltip?: boolean;
   animationEnabled?: boolean;
+  _showLegend?: boolean;
+  _showTooltip?: boolean;
+  _animationEnabled?: boolean;
   height?: string | number;
   title?: string;
   subtitle?: string;
+  _title?: string;
+  _subtitle?: string;
   isEditMode?: boolean;
   onChartClick?: (data: ChartClickEventData) => void;
   onRefresh?: () => void;

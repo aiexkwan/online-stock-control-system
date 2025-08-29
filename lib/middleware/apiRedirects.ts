@@ -8,12 +8,12 @@ import { middlewareLogger } from '@/lib/logger';
 
 // Redirect mapping from old paths to new paths
 const API_REDIRECT_MAP: Record<string, string> = {
-  // v1 health endpoints
-  '/api/v1/health': '/api/monitoring/health',
-  '/api/v1/health/deep': '/api/monitoring/deep',
+  // v1 health endpoints - redirect to main health endpoint
+  '/api/v1/health': '/api/health',
+  '/api/v1/health/deep': '/api/health', // Deep health check removed
 
-  // v2 health endpoint (redirect to monitoring)
-  '/api/v2/health': '/api/monitoring/health',
+  // v2 health endpoint - redirect to main health endpoint
+  '/api/v2/health': '/api/health',
 
   // v1 alerts endpoints
   '/api/v1/alerts/config': '/api/alerts/config',
@@ -87,7 +87,7 @@ export function getDeprecationHeaders(pathname: string): HeadersInit {
     headers['X-API-Deprecation-Date'] = '2025-09-01';
     headers['X-API-Replacement'] = pathname
       .replace('/api/v1/', '/api/')
-      .replace('/api/v2/', '/api/monitoring/');
+      .replace('/api/v2/', '/api/');
   }
 
   return headers;

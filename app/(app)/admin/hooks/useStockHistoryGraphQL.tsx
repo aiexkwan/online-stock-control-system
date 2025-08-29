@@ -5,7 +5,8 @@
 
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+// Removed unused import: useEffect
 import { useLazyQuery, useApolloClient } from '@apollo/client';
 import {
   PALLET_HISTORY_BY_PRODUCT,
@@ -186,12 +187,12 @@ export interface UseStockHistoryGraphQLReturn {
 export const useStockHistoryGraphQL = (
   options: UseStockHistoryGraphQLOptions = {}
 ): UseStockHistoryGraphQLReturn => {
-  const client = useApolloClient();
+  const _client = useApolloClient(); // Renamed unused variable
   const { onError } = options;
 
   // State management (simplified)
-  const [currentProductCode, setCurrentProductCode] = useState<string>('');
-  const [currentPalletNumber, setCurrentPalletNumber] = useState<string>('');
+  const [_currentProductCode, setCurrentProductCode] = useState<string>(''); // Renamed unused variable
+  const [_currentPalletNumber, setCurrentPalletNumber] = useState<string>(''); // Renamed unused variable
 
   // Lazy queries for on-demand loading (simplified)
   const [getProductHistory, productHistoryQuery] = useLazyQuery(PALLET_HISTORY_BY_PRODUCT, {

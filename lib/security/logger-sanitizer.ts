@@ -88,7 +88,7 @@ export function sanitizeData(data: unknown, maxDepth: number = 10): unknown {
 
     // Handle objects
     if (obj && typeof obj === 'object') {
-      const sanitized: any = {};
+      const sanitized: Record<string, unknown> = {};
 
       for (const [key, value] of Object.entries(obj)) {
         // Check if the key is sensitive
@@ -125,17 +125,18 @@ export function sanitizeData(data: unknown, maxDepth: number = 10): unknown {
  * @param error - The error to sanitize
  * @returns Sanitized error object
  */
-export function sanitizeError(error: Error | any): any {
+export function sanitizeError(error: Error | unknown): Record<string, unknown> | null {
   if (!error) return null;
 
-  const sanitized: any = {
-    name: error.name || 'Error',
-    message: error.message || 'Unknown error',
+  const sanitized: Record<string, unknown> = {
+    name: (error as Error)?.name || 'Error',
+    message: (error as Error)?.message || 'Unknown error',
   };
 
-  if (error.stack) {
+  if ((error as Error)?.stack) {
     // Redact any sensitive information from stack traces
-    sanitized.stack = error.stack
+    const stack = (error as Error)?.stack;
+    sanitized.stack = stack
       .split('\n')
       .map((line: string) => {
         // Redact potential sensitive paths or values
@@ -145,10 +146,10 @@ export function sanitizeError(error: Error | any): any {
   }
 
   // Sanitize any additional properties
-  const additionalProps = { ...error };
-  delete additionalProps.name;
-  delete additionalProps.message;
-  delete additionalProps.stack;
+  const additionalProps = { ...(error as Record<string, unknown>) };
+  delete (additionalProps as { name?: unknown }).name;
+  delete (additionalProps as { message?: unknown }).message;
+  delete (additionalProps as { stack?: unknown }).stack;
 
   if (Object.keys(additionalProps).length > 0) {
     sanitized.details = sanitizeData(additionalProps);
@@ -168,11 +169,11 @@ export function createSanitizedLogEntry(
   level: LogLevel,
   message: string,
   data?: AnyLogData
-): SanitizedLogEntry {
+): { level: LogLevel; message: string; timestamp: string; data?: Record<string, unknown> } {
   return {
+    level,
     message,
     timestamp: new Date().toISOString(),
-    data: data ? sanitizeData(data) : undefined,
-    level: level as any,
-  } as any;
+    data: data ? sanitizeData(data) as Record<string, unknown> : undefined,
+  };
 }

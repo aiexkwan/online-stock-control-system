@@ -4,9 +4,9 @@
  */
 
 import Redis from 'ioredis';
-import { BaseCacheAdapter, CacheStats } from './base-cache-adapter';
 import { getRedisClient } from '../redis';
 import { cacheLogger } from '../logger';
+import { BaseCacheAdapter, CacheStats } from './base-cache-adapter';
 
 export class RedisCacheAdapter extends BaseCacheAdapter {
   private redis: Redis;

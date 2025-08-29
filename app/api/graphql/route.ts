@@ -4,8 +4,8 @@
  */
 
 import { startServerAndCreateNextHandler } from '@as-integrations/next';
-import { getApolloServer, createGraphQLContext } from '@/lib/graphql/server';
 import { NextRequest, NextResponse } from 'next/server';
+import { getApolloServer, createGraphQLContext } from '@/lib/graphql/server';
 
 // Use globalThis to persist handler across hot reloads in development
 // Add cleanup tracking to prevent memory leaks

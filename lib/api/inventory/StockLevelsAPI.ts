@@ -3,9 +3,9 @@
  * Demonstrates hybrid data fetching for inventory stock levels
  */
 
-import { DataAccessLayer, DataAccessConfig } from '../core/DataAccessStrategy';
-import { createClient } from '@/app/utils/supabase/client';
 import { useState, useEffect } from 'react';
+import { createClient } from '@/app/utils/supabase/client';
+import { DataAccessLayer, DataAccessConfig } from '../core/DataAccessStrategy';
 
 // Type definitions
 export interface StockLevelParams {
@@ -66,7 +66,9 @@ export class StockLevelsAPI extends DataAccessLayer<StockLevelParams, StockLevel
         query = query.like('current_plt_loc', `${params.warehouse}%`);
       }
       if (params.productCode) {
-        query = query.eq('product_code', params.productCode);
+        // Split query to avoid deep type instantiation
+        const filteredQuery: any = query.eq('product_code', params.productCode);
+        query = filteredQuery;
       }
       if (params.minQty !== undefined) {
         query = query.gte('product_qty', params.minQty);

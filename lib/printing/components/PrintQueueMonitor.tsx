@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { Printer, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Printer, Clock, CheckCircle, XCircle, AlertCircle, RefreshCw, Trash2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { PrintJobStatus, getPrintStatusMonitor } from '../services/print-status-monitor';
 import { usePrinting } from '../hooks/usePrinting';
-import { cn } from '@/lib/utils';
 
 export interface PrintQueueMonitorProps {
   className?: string;

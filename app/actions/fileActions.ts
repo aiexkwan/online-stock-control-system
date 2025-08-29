@@ -1,8 +1,8 @@
 'use server';
 
-import { createClient } from '@/app/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { createClient } from '@/app/utils/supabase/server';
 import { safeString } from '@/types/database/helpers';
 
 // Validation schemas
@@ -266,7 +266,7 @@ export async function deleteFile(fileId: string) {
  * Get upload progress (simulated for Server Actions)
  * 獲取上傳進度（Server Actions 模擬）
  */
-export async function getUploadProgress(fileId: string) {
+export async function getUploadProgress(_fileId: string) {
   // Server Actions don't support real-time progress updates
   // This is a placeholder for future implementation with WebSockets or Server-Sent Events
   return {

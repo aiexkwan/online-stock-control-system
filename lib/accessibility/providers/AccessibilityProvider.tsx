@@ -33,7 +33,7 @@ import {
   runAccessibilityAudit as runWCAGAudit,
 } from '../utils/wcag-helpers';
 
-import { globalFocusManager } from '../utils/focus-helpers';
+// Removed unused import: globalFocusManager
 
 /**
  * 預設無障礙性偏好設定

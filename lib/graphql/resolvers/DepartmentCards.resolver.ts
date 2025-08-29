@@ -5,8 +5,8 @@
  */
 
 import DataLoader from 'dataloader';
-import { createClient } from '@/app/utils/supabase/server';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@/app/utils/supabase/server';
 import { Database } from '@/types/database/supabase';
 
 // Temporary type definitions until GraphQL codegen is fixed

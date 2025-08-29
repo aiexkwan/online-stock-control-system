@@ -5,9 +5,8 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
+import { detectSearchType } from '@/app/utils/palletSearchUtils';
 import { IInventoryService } from '../interfaces/IInventoryService';
-import { PalletService } from './PalletService';
-import { TransactionService } from './TransactionService';
 import {
   PalletSearchResult,
   StockTransferDto,
@@ -30,8 +29,9 @@ import { InventorySnapshot, InventoryStats } from '../types/index';
 import { TransactionResult } from '../types/transaction.types';
 import { getCurrentUserId } from '../utils/authHelpers';
 import { validatePalletNumber, validateStockTransfer } from '../utils/validators';
-import { detectSearchType } from '@/app/utils/palletSearchUtils';
 import { LocationMapper } from '../utils/locationMapper';
+import { TransactionService } from './TransactionService';
+import { PalletService } from './PalletService';
 
 export class UnifiedInventoryService implements IInventoryService {
   private palletService: PalletService;

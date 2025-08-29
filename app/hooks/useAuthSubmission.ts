@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { unifiedAuth } from '@/app/(auth)/main-login/utils/unified-auth';
 import type { User } from '@supabase/supabase-js';
+import { unifiedAuth } from '@/app/(auth)/main-login/utils/unified-auth';
 
 interface LoginFormData {
   email: string;

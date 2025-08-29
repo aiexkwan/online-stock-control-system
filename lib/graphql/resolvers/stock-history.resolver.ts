@@ -4,11 +4,11 @@
  */
 
 import { IResolvers } from '@graphql-tools/utils';
-import { GraphQLContext } from './index';
-import { StockHistoryDataLoader } from '../dataloaders/stock-history.dataloader';
 import { GraphQLError } from 'graphql';
 import { withFilter } from 'graphql-subscriptions';
+import { StockHistoryDataLoader } from '../dataloaders/stock-history.dataloader';
 import type { StockHistoryRecord as BaseStockHistoryRecord } from '../types/database-types';
+import { GraphQLContext } from './index';
 // Import the dataloader's expected type
 type DataLoaderStockHistoryRecord = {
   id: string;

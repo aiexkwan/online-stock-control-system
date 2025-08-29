@@ -3,8 +3,7 @@
  * Custom hooks for product-related GraphQL operations
  */
 
-import { useQuery, useMutation, useLazyQuery } from '@apollo/client';
-import { gql } from '@apollo/client';
+import { useQuery, useMutation, useLazyQuery , gql } from '@apollo/client';
 
 // Common types for hook options
 interface QueryOptions<T = unknown> {

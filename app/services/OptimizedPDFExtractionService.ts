@@ -4,11 +4,11 @@
  * Target: < 5 seconds processing time, < 2000 tokens per request
  */
 
-import { PDFExtractionService, ExtractedPDFData } from './pdfExtractionService';
+import * as crypto from 'crypto';
+import OpenAI from 'openai';
 import { EnhancedPDFCache } from '@/lib/cache/EnhancedPDFCache';
 import { systemLogger } from '@/lib/logger';
-import OpenAI from 'openai';
-import * as crypto from 'crypto';
+import { PDFExtractionService, ExtractedPDFData } from './pdfExtractionService';
 
 // Performance metrics tracking
 interface PerformanceMetrics {

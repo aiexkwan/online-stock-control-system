@@ -20,13 +20,13 @@ import { toast } from 'sonner';
 import {
   searchPalletAuto,
   transferPallet,
-  getTransferHistory,
+  // getTransferHistory, // Unused import
   validateTransferDestination,
   validateClockNumber,
-  TransferHistoryItem,
+  // TransferHistoryItem, // Unused import
   OptimisticTransfer,
 } from '@/app/actions/stockTransferActions';
-import { LOCATION_DESTINATIONS } from '../constants/stockTransfer';
+// Removed unused import: LOCATION_DESTINATIONS
 import { LocationStandardizer } from '../utils/locationStandardizer';
 import type { SearchInputRef } from '../components/shared';
 
@@ -159,10 +159,13 @@ export const useStockTransfer = ({
       }
 
       // 清理所有追蹤的定時器
-      timeoutsRef.current.forEach(timeoutId => {
-        clearTimeout(timeoutId);
-      });
-      timeoutsRef.current.clear();
+      const timeouts = timeoutsRef.current;
+      if (timeouts) {
+        timeouts.forEach(timeoutId => {
+          clearTimeout(timeoutId);
+        });
+        timeouts.clear();
+      }
     };
   }, []);
 
@@ -390,7 +393,7 @@ export const useStockTransfer = ({
         setClockError('No user data received');
       }
       return false;
-    } catch (error) {
+    } catch {
       if (mountedRef.current) {
         setClockError('Validation error occurred');
       }

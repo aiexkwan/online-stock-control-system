@@ -17,20 +17,20 @@ interface OrderSummary {
   loadedQty: number;
   totalQty: number;
 }
-import { MobileButton, MobileInput, MobileCard } from '@/components/ui/mobile';
-import { mobileConfig, cn } from '@/lib/mobile-config';
 import {
   UserIcon,
   ClipboardDocumentListIcon,
   MagnifyingGlassIcon,
-  CheckCircleIcon,
+  // CheckCircleIcon, // TODO: Remove if not used
   ExclamationTriangleIcon,
   ArrowLeftIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
+// import { toast } from 'sonner'; // TODO: Remove if not used
+import { MobileButton, MobileInput, MobileCard } from '@/components/ui/mobile';
+import { mobileConfig, cn } from '@/lib/mobile-config';
 import { UnifiedSearch } from '@/components/ui/unified-search';
-import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
-import { toast } from 'sonner';
+// import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner'; // TODO: Remove if not used
 
 // 為了類型安全，複製 SearchResult 接口定義
 interface SearchResult {
@@ -89,9 +89,9 @@ export default function MobileOrderLoading({
   orderSearchQuery,
   onOrderSearchChange,
   onOrderSelect,
-  onChangeUser,
+  onChangeUser: _onChangeUser,
   orderData,
-  isLoadingOrders,
+  isLoadingOrders: _isLoadingOrders,
   searchValue,
   isSearching,
   onSearchChange,

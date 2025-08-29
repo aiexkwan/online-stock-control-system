@@ -4,8 +4,8 @@
  */
 
 import DataLoader from 'dataloader';
-import { createClient } from '@/app/utils/supabase/server';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@/app/utils/supabase/server';
 import type {
   Product,
   Supplier,

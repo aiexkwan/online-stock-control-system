@@ -57,7 +57,7 @@ const LoginForm = memo(function LoginForm({ onSuccess, onError }: LoginFormProps
 
   // Using compound component pattern for better composition and decoupling
   return (
-    <CompoundForm
+    <CompoundForm<{ email: string; password: string }>
       formType='login'
       onSubmit={handleSubmit}
       onFieldChange={handleFieldChange}

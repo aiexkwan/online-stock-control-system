@@ -5,10 +5,10 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { useFeatureFlag, useFeatureFlags } from './useFeatureFlag';
+import { isTest } from '@/lib/utils/env';
 import { shouldRunTests, getCurrentCoverageTarget } from '../configs/phase4-rollout';
 import { KnownFeatureFlags } from '../types';
-import { isTest } from '@/lib/utils/env';
+import { useFeatureFlag, useFeatureFlags } from './useFeatureFlag';
 
 interface TestingFeatures {
   // Feature 狀態

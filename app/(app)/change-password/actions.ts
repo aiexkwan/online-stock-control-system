@@ -2,9 +2,9 @@
 
 // import { cookies } from 'next/headers'; // 由新的 createClient 內部處理
 // import { createServerActionClient } from '@supabase/auth-helpers-nextjs'; // 已棄用
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/app/utils/supabase/server'; // 使用 @supabase/ssr 的服務器客戶端
 import { updatePasswordWithSupabaseAuth } from '@/app/services/supabaseAuth';
-import { revalidatePath } from 'next/cache';
 // import { redirect } from 'next/navigation'; // redirect 由客戶端處理
 
 interface ChangePasswordActionResult {

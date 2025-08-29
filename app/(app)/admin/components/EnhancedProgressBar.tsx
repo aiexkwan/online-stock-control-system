@@ -8,7 +8,7 @@ import {
   ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import { useMediaQuery } from '@/app/components/qc-label-form/hooks/useMediaQuery';
-import { useProgressDebounce } from '@/lib/hooks/useProgressDebounce';
+import { useProgressDebounce } from '@/lib/hooks/useProgressDebounce'; // Removed unused type ProgressUpdate
 import { ComponentPerformanceMetrics } from '@/lib/types/component-props';
 
 export type ProgressStatus = 'Pending' | 'Processing' | 'Success' | 'Failed';
@@ -167,7 +167,7 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = React.mem
     });
 
     // Setup debounced progress updates
-    const handleProgressUpdate = useCallback((update: any) => {
+    const handleProgressUpdate = useCallback((update: { current?: number; total?: number; status?: ProgressStatus[] }) => {
       setDebouncedState(prev => ({
         ...prev,
         ...update,
@@ -193,11 +193,9 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = React.mem
     // Use debounced values for calculations
     const activeState = enableDebounce ? debouncedState : { current, total, status };
 
-    const percentage = useMemo(() => {
-      return activeState.total > 0
-        ? Math.round((activeState.current / activeState.total) * 100)
-        : 0;
-    }, [activeState.current, activeState.total]);
+    const percentage = activeState.total > 0
+      ? Math.round((activeState.current / activeState.total) * 100)
+      : 0;
 
     const statusCounts = useMemo(() => {
       const successCount = activeState.status.filter(s => s === 'Success').length;

@@ -56,7 +56,7 @@ export interface MonitoringConfig {
 export interface PerformanceReport {
   timestamp: Date;
   clientMetrics: PerformanceMetrics | null;
-  grnMetrics: any | null;
+  grnMetrics: Record<string, unknown> | null;
   alerts: PerformanceAlert[];
   recommendations: string[];
   health: {

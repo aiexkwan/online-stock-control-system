@@ -1,11 +1,11 @@
+import type { Server } from 'http';
 import { ApolloServer } from '@apollo/server';
-import { WebSocketServer } from 'ws';
+// import { WebSocketServer } from 'ws'; // TODO: Remove if not used
 // Import removed - WebSocket functionality will be implemented separately
 // import { useServer } from 'graphql-ws/lib/use/ws';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import { typeDefs } from './schema';
 import { resolvers } from './resolvers';
-import type { Server } from 'http';
 
 // Create executable schema
 export const schema = makeExecutableSchema({
@@ -14,7 +14,7 @@ export const schema = makeExecutableSchema({
 });
 
 // Create WebSocket server for subscriptions (disabled for now)
-export function createWebSocketServer(httpServer: Server) {
+export function createWebSocketServer(_httpServer: Server) {
   console.log('WebSocket server creation skipped - will be implemented in future version');
   return () => {}; // Return a no-op cleanup function
 }

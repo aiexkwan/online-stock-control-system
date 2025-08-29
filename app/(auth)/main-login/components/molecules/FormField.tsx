@@ -1,7 +1,7 @@
 import React from 'react';
+import { cn } from '@/lib/utils';
 import { Label, Input, ErrorMessage } from '../atoms';
 import type { InputProps } from '../atoms';
-import { cn } from '@/lib/utils';
 
 export interface FormFieldProps extends Omit<InputProps, 'error'> {
   label: string;

@@ -7,16 +7,14 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Clock, RefreshCw, User, Package, CheckCircle, AlertCircle, Upload } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useQuery } from '@apollo/client';
+import { cn } from '@/lib/utils';
 import { GET_RECORD_HISTORY } from '@/lib/graphql/queries/record-history.graphql';
-import { Timeline } from '../ui/timeline';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import type { VerticalTimelineCardProps } from '../types/ui-navigation';
 import { ReportCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { cardTextStyles } from '@/lib/card-system/theme';
+import type { VerticalTimelineCardProps } from '@/app/(app)/admin/types/ui-navigation';
+import { Timeline } from '../ui/timeline';
 
 // Merged timeline item interface from GraphQL
 interface MergedTimelineItem {
@@ -108,7 +106,7 @@ const getActionIconAndColor = (action: string) => {
 export const VerticalTimelineCard: React.FC<VerticalTimelineCardProps> = ({
   height = '600px',
   className,
-  isEditMode = false,
+  _isEditMode = false,
   limit = 10,
 }) => {
   // State management

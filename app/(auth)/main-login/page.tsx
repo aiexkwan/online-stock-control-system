@@ -1,12 +1,9 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import Link from 'next/link';
-import { forceCleanupAllAuth } from './utils/cleanup-legacy-auth';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 import { LoginProvider } from './context/LoginContext';
-import Image from 'next/image';
+import { forceCleanupAllAuth } from './utils/cleanup-legacy-auth';
 
 // Dynamic import for LoginPageContent to reduce initial bundle size
 const LoginPageContent = dynamic(() => import('./components/LoginPageContent'), {

@@ -8,10 +8,10 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Package, TrendingUp, Monitor, AlertCircle } from 'lucide-react';
+import { Activity, Package, TrendingUp, Monitor } from 'lucide-react';
+import { useQuery, gql } from '@apollo/client';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useQuery, gql } from '@apollo/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { StockItem, MachineState } from '@/lib/graphql/types/database-types';
 import { ReportCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
@@ -130,7 +130,6 @@ const LoadingSkeleton = () => (
 export const DepartPipeCard: React.FC<DepartPipeCardProps> = ({
   title = 'Pipe Line Department',
   description = 'Real-time metrics and statistics for the Pipe Line department',
-  isEditMode = false,
 }) => {
   const { data, loading, error } = useQuery(DEPARTMENT_PIPE_QUERY, {
     pollInterval: 60000, // Refresh every minute

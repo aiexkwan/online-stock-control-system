@@ -1,17 +1,17 @@
 'use client';
 
 import React, { useReducer, useCallback } from 'react';
+import { Printer, FileText, History, Settings } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Printer, FileText, History, Settings } from 'lucide-react';
-import { PrintType, PrintRequest, PrintOptions, PrintData } from '../types';
 import { DatabaseRecord } from '@/types/database/tables';
+import { cn } from '@/lib/utils';
+import { PrintType, PrintRequest, PrintOptions, PrintData } from '../types';
 import { usePrinting } from '../hooks/usePrinting';
 import { PrintDialog } from './PrintDialog';
 import { PrintQueueMonitor } from './PrintQueueMonitor';
-import { cn } from '@/lib/utils';
 
 export interface PrintInterfaceConfig {
   type: PrintType;

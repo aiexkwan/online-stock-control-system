@@ -6,8 +6,8 @@
 'use client';
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { BarChart3 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useAnalyticsDashboard } from './useAnalyticsDashboard';
 
 interface AnalyticsButtonProps {

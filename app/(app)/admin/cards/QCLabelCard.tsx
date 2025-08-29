@@ -1,17 +1,17 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { ApolloError } from '@apollo/client';
+// import { ApolloError } from '@apollo/client'; // Removed - not used
 import { SpecialCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { cardTextStyles } from '@/lib/card-system/theme';
 import { cn } from '@/lib/utils';
-import GridBasicProductFormGraphQL from '../components/GridBasicProductFormGraphQL';
 import { CardErrorBoundary } from '@/lib/error-handling';
-import { useAdminQcLabelBusiness } from '../hooks/useAdminQcLabelBusiness';
-import { MAX_PALLET_COUNT } from '../components/qc-label-constants';
 import { createClient } from '@/app/utils/supabase/client';
-import { useAcoOrderReport, useOrderData } from '@/lib/hooks/useOrderData';
+// import { useAcoOrderReport, useOrderData } from '@/lib/hooks/useOrderData'; // Removed - not used
 import { useAuth } from '@/app/hooks/useAuth';
+import { MAX_PALLET_COUNT } from '../components/qc-label-constants';
+import { useAdminQcLabelBusiness } from '../hooks/useAdminQcLabelBusiness';
+import GridBasicProductFormGraphQL from '../components/GridBasicProductFormGraphQL';
 import type { ProductInfo, AdminFormData as FormData } from '../types/adminQcTypes';
 
 // 重型組件的懶加載
@@ -23,7 +23,7 @@ export interface QCLabelCardProps {
 }
 
 export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
-  const { loading, isAuthenticated } = useAuth();
+  const { } = useAuth(); // Removed unused destructured variables
 
   // UserIdVerificationDialog 狀態
   const [showUserIdDialog, setShowUserIdDialog] = useState(false);

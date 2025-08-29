@@ -4,8 +4,8 @@
  */
 
 import { IResolvers } from '@graphql-tools/utils';
-import { GraphQLContext } from './index';
 import { GraphQLError } from 'graphql';
+import { GraphQLContext } from './index';
 
 // Helper types for pagination (same as product resolver)
 interface PaginationParams {

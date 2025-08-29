@@ -3,6 +3,10 @@
  * Combines all resolvers and provides the main resolver map
  */
 
+import { IResolvers } from '@graphql-tools/utils';
+import { GraphQLJSON } from 'graphql-type-json';
+import { DateTimeResolver } from 'graphql-scalars';
+import { DataLoaderContext } from '../dataloaders/base.dataloader';
 import { productResolvers } from './product.resolver';
 import { supplierResolvers } from './supplier.resolver';
 import { inventoryResolvers } from './inventory.resolver';
@@ -23,10 +27,6 @@ import { enhancedPipeDepartmentResolver } from './DepartmentPipe.resolver';
 import { stockHistoryResolvers } from './stock-history.resolver';
 import { stockLevelResolvers } from './stock-level.resolver';
 import { recordHistoryResolvers } from './record-history.resolver';
-import { IResolvers } from '@graphql-tools/utils';
-import { GraphQLJSON } from 'graphql-type-json';
-import { DateTimeResolver } from 'graphql-scalars';
-import { DataLoaderContext } from '../dataloaders/base.dataloader';
 
 // 批量操作結果類型
 interface BatchOperationResult {

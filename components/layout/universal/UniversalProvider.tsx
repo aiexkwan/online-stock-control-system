@@ -6,10 +6,10 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { UniversalTheme, ResponsiveBreakpoints } from './types';
-import { THEMES, BREAKPOINTS } from './constants';
 import { ErrorProvider } from '@/lib/error-handling';
 import { LoadingProvider } from '@/lib/loading/providers/LoadingProvider';
+import { UniversalTheme, ResponsiveBreakpoints } from './types';
+import { THEMES, BREAKPOINTS } from './constants';
 
 interface UniversalLayoutContextType {
   // 主題管理

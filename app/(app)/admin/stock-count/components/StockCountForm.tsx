@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { CameraIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
-import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
 import { toast } from 'sonner';
+import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
 
 interface StockCountFormProps {
   onSubmit: (data: {

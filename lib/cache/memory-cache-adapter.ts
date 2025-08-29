@@ -4,8 +4,8 @@
  * Redis 移除 Phase 2.1 - 核心實現
  */
 
-import { BaseCacheAdapter, CacheStats } from './base-cache-adapter';
 import { cacheLogger } from '../logger';
+import { BaseCacheAdapter, CacheStats } from './base-cache-adapter';
 
 interface CacheItem<T = unknown> {
   value: T;

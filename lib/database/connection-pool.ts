@@ -5,8 +5,8 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { createClient as createServerClient } from '@/app/utils/supabase/server';
 import type { NextRequest, NextResponse } from 'next/server';
+import { createClient as createServerClient } from '@/app/utils/supabase/server';
 
 // Connection Pool Configuration for Production
 interface ConnectionPoolConfig {

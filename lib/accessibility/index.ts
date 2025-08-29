@@ -345,8 +345,8 @@ export function setupAccessibility(
   } = {}
 ) {
   const {
-    enableSkipLinks = true,
-    enableFocusManagement = true,
+    enableSkipLinks: _enableSkipLinks = true, // Renamed unused variable
+    enableFocusManagement: _enableFocusManagement = true, // Renamed unused variable
     enableKeyboardNavigation = true,
     debugMode = false,
   } = options;

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Loader2, Printer, X } from 'lucide-react';
 import { DatabaseRecord } from '@/types/database/tables';
 import {
   Dialog,
@@ -22,7 +23,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Printer, X } from 'lucide-react';
 import { PrintOptions, PaperSize, PrintPriority } from '../types';
 import { usePrinting } from '../hooks/usePrinting';
 import { PrintPreview } from './PrintPreview';

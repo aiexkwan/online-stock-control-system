@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { DatabaseRecord } from '@/types/database/tables';
 import { createPortal } from 'react-dom';
-import { Button } from '../ui/button';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { DatabaseRecord } from '@/types/database/tables';
+import { Button } from '../ui/button';
 
 interface SimpleQRScannerProps {
   open: boolean;

@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { DatabaseRecord } from '@/types/database/tables';
 import { createClient } from '@/app/utils/supabase/server';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database/supabase';
 import { getErrorMessage } from '@/lib/types/error-handling';
-import { safeGet, toRecordArray, isRecord, safeNumber } from '@/types/database/helpers';
-import { toSupabaseResponse } from '@/types/database/helpers';
+import { safeGet, toRecordArray, isRecord, safeNumber , toSupabaseResponse } from '@/types/database/helpers';
 
 // Type alias for Supabase client (Strategy 3: Supabase codegen)
 type TypedSupabaseClient = SupabaseClient<Database>;

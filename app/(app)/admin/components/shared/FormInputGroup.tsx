@@ -14,7 +14,8 @@
 
 'use client';
 
-import React, { useCallback, useMemo, useId } from 'react';
+import React, { useCallback, useId } from 'react'; // Removed unused useMemo
+import { AlertCircle, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 // Removed Radix UI RadioGroup import to avoid infinite ref loop issues
@@ -29,7 +30,6 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { AlertCircle, Check } from 'lucide-react';
 
 export type FormInputType = 'radio' | 'checkbox' | 'select' | 'text' | 'textarea' | 'number';
 
@@ -57,6 +57,8 @@ export interface FormInputGroupProps {
   value?: string | string[];
   /** Default value */
   defaultValue?: string | string[];
+  /** Internal default value */
+  _defaultValue?: string | string[];
   /** Placeholder text */
   placeholder?: string;
   /** Change handler */
@@ -79,6 +81,8 @@ export interface FormInputGroupProps {
   size?: 'sm' | 'md' | 'lg';
   /** Allow multiple selection (for checkbox type) */
   multiple?: boolean;
+  /** Internal multiple selection flag */
+  _multiple?: boolean;
   /** Show validation icons */
   showValidationIcons?: boolean;
 }
@@ -91,7 +95,7 @@ export const FormInputGroup = React.forwardRef<HTMLDivElement, FormInputGroupPro
       description,
       options = [],
       value,
-      defaultValue,
+      _defaultValue,
       placeholder,
       onChange,
       error,
@@ -102,7 +106,7 @@ export const FormInputGroup = React.forwardRef<HTMLDivElement, FormInputGroupPro
       className,
       optionClassName,
       size = 'md',
-      multiple = false,
+      _multiple = false,
       showValidationIcons = false,
     },
     ref

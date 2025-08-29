@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { getErrorMessage } from '@/lib/types/error-handling';
 import { toast } from 'sonner';
+// Removed unused import: getErrorMessage
 import {
   Dialog,
   DialogContent,

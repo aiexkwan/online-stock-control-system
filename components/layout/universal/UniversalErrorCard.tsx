@@ -8,7 +8,6 @@
 'use client';
 
 import React from 'react';
-import { UniversalCard } from './UniversalCard';
 import {
   ErrorFallback,
   CompactErrorFallback,
@@ -17,8 +16,9 @@ import {
   SuccessMessage,
   ErrorBoundary,
 } from '@/lib/error-handling';
-import { useUniversalLayout } from './UniversalProvider';
 import type { ErrorFallbackProps, ErrorSeverity } from '@/lib/error-handling/types';
+import { UniversalCard } from './UniversalCard';
+import { useUniversalLayout } from './UniversalProvider';
 
 // Enhanced Universal Error Card Props
 interface UniversalErrorCardProps extends Omit<ErrorFallbackProps, 'error'> {

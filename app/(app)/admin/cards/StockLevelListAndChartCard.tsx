@@ -14,17 +14,6 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery, gql } from '@apollo/client';
 import {
   LineChart,
@@ -36,18 +25,25 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { format, subDays } from 'date-fns';
+import { format } from 'date-fns';
 import {
   Package,
-  TrendingUp,
   AlertCircle,
-  Activity,
-  TrendingDown,
   BarChart3,
   List,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 import { DataCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { cardTextStyles, cardChartColors } from '@/lib/card-system/theme';
 

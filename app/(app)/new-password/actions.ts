@@ -1,9 +1,9 @@
 'use server';
 
 // import { supabase } from '@/lib/supabase'; // REMOVED: Standard client is not for server actions
+import bcrypt from 'bcryptjs';
 import { createClient as createServerSupabaseClient } from '@/app/utils/supabase/server'; // ADDED: Server client
 // For creating admin client if needed - use server client instead
-import bcrypt from 'bcryptjs';
 
 // It's highly recommended to use the Supabase Admin client for operations that modify users table directly,
 // especially for password resets initiated without an authenticated user session.
@@ -35,7 +35,7 @@ export async function resetPasswordAction(
 
     // 1. Hash the new password
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    const _hashedPassword = await bcrypt.hash(newPassword, salt);
     (process.env.NODE_ENV as string) !== 'production' &&
       (process.env.NODE_ENV as string) !== 'production' &&
       console.log(`[Server Action] New password hashed for userId: ${userId}`);

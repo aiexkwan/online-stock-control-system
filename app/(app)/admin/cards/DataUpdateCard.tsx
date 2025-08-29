@@ -14,14 +14,14 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { DataCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { cardTextStyles } from '@/lib/card-system/theme';
 import { cn } from '@/lib/utils';
-import { MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
-import type { DataUpdateCardProps } from '../types/common';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import type { DataUpdateCardProps } from '../types/common';
 import { useGraphQLDataUpdate, type FormConfig } from '../hooks/useGraphQLDataUpdate';
 
 export const DataUpdateCard: React.FC<DataUpdateCardProps> = ({ className, height = 600 }) => {

@@ -5,11 +5,11 @@
  */
 
 import { useCallback } from 'react';
-import { getErrorMessage } from '@/lib/types/error-handling';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/types/error-handling';
 import { createClient } from '@/app/utils/supabase/client';
-import type { ProductInfo } from '../../types';
 import { isProduction, isNotProduction } from '@/lib/utils/env';
+import type { ProductInfo } from '../../types';
 
 interface StockUpdateOptions {
   productInfo: ProductInfo;

@@ -4,10 +4,10 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useStockTransfer, UseStockTransferProps } from './useStockTransfer';
 import { getTransferHistory } from '@/app/actions/stockTransferActions';
-import { RequestManager } from '../utils/requestManager';
 import type { TransferHistoryItem } from '@/app/actions/stockTransferActions';
+import { RequestManager } from '../utils/requestManager';
+import { useStockTransfer, UseStockTransferProps } from './useStockTransfer';
 
 export interface TransferHistoryState {
   data: TransferHistoryItem[];

@@ -3,6 +3,7 @@
  * Consolidates print-label and print-grnlabel functionality
  */
 
+import { EventEmitter } from 'events';
 import {
   PrintJob,
   PrintResult,
@@ -11,7 +12,6 @@ import {
   Unsubscribe,
   PrintJobType,
 } from '../types';
-import { EventEmitter } from 'events';
 
 export interface PrinterService {
   // Printer Management

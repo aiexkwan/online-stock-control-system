@@ -3,7 +3,7 @@
 import type { AdminFormData, ProductInfo } from '../types/adminQcTypes';
 
 // Type definitions
-interface UseAdminFormValidationProps {
+interface _UseAdminFormValidationProps { // Renamed unused interface
   formData: AdminFormData;
   productInfo: ProductInfo | null;
 }

@@ -5,8 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { dataSourceConfig } from '@/lib/data/data-source-config';
-import { unifiedDataLayer } from '@/lib/api/unified-data-layer';
-import { DataSourceType } from '@/lib/api/unified-data-layer';
+import { unifiedDataLayer , DataSourceType } from '@/lib/api/unified-data-layer';
 import type { DataSourceRule, ABTestConfig } from '@/lib/data/data-source-config';
 
 export async function GET(request: NextRequest) {

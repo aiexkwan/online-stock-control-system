@@ -1,9 +1,9 @@
 // Database-based Conversation Context Manager
 // Uses query_record table for persistent conversation tracking
 
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/app/utils/supabase/server';
 import { DatabaseRecord } from '@/types/database/tables';
-import type { SupabaseClient } from '@supabase/supabase-js';
 
 export interface Entity {
   type: 'product' | 'order' | 'pallet' | 'location' | 'customer' | 'date';

@@ -5,10 +5,10 @@
 
 'use client';
 
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ApolloProvider as BaseApolloProvider } from '@apollo/client';
-import { createApolloClient } from './apollo-client-factory';
 import { createClient } from '@/app/utils/supabase/client';
+import { createApolloClient } from './apollo-client-factory';
 
 interface DynamicApolloProviderProps {
   children: React.ReactNode;

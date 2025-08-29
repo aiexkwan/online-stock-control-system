@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { CameraIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
-import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
 import { toast } from 'sonner';
+import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
 
 interface StockCountFormProps {
   mode: 'scan' | 'manual';
@@ -53,11 +53,24 @@ export default function StockCountForm({
       return;
     }
 
-    onSubmit({
+    const submitData: {
+      pallet: string;
+      productCode?: string;
+      quantity?: number;
+    } = {
       pallet: formData.pallet.trim(),
-      productCode: formData.productCode.trim() || undefined,
-      quantity: quantity,
-    });
+    };
+    
+    const trimmedProductCode = formData.productCode.trim();
+    if (trimmedProductCode) {
+      submitData.productCode = trimmedProductCode;
+    }
+    
+    if (quantity !== undefined) {
+      submitData.quantity = quantity;
+    }
+    
+    onSubmit(submitData);
 
     // Reset form
     setFormData({ pallet: '', productCode: '', quantity: '' });

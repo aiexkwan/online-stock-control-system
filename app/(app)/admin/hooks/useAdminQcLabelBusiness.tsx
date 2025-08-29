@@ -1,18 +1,19 @@
 'use client';
 
 import React, { useState, useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/types/error-handling';
-import { MIN_ACO_ORDER_REF_LENGTH } from '../components/qc-label-constants';
 // 導入表單驗證 hook
-import { useAdminFormValidation } from './useAdminFormValidation';
 // 使用統一的 PDF 生成 Hook
-import { useUnifiedPdfGeneration, type BatchPdfOptions } from '@/hooks/useUnifiedPdfGeneration';
+import { useUnifiedPdfGeneration } from '@/hooks/useUnifiedPdfGeneration';
+// Removed unused type import: BatchPdfOptions
 import { PdfType } from '@/lib/services/unified-pdf-service';
 import type { QcLabelInputData } from '@/lib/mappers/pdf-data-mappers';
-import type { ProductInfo, AdminFormData, SlateDetail } from '../types/adminQcTypes';
 import { createClient } from '@/app/utils/supabase/client';
-import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import type { ProductInfo, AdminFormData, SlateDetail } from '../types/adminQcTypes';
+// Removed unused import: MIN_ACO_ORDER_REF_LENGTH
+import { useAdminFormValidation } from './useAdminFormValidation';
 
 // RPC response type
 interface RpcResponse {
@@ -57,7 +58,7 @@ export const useAdminQcLabelBusiness = ({
   const {
     state: pdfState,
     generateBatch,
-    reset: resetPdfState,
+    // reset: resetPdfState, // Unused destructured variable
     cancel: cancelPdfGeneration,
   } = useUnifiedPdfGeneration();
 
@@ -68,8 +69,8 @@ export const useAdminQcLabelBusiness = ({
     isAcoOrderFulfilled,
     isAcoOrderIncomplete,
     isAcoOrderExcess,
-    canSearchAco,
-    validateAcoOrderDetails,
+    // canSearchAco, // Unused destructured variable
+    // validateAcoOrderDetails, // Unused destructured variable
   } = useAdminFormValidation({ formData, productInfo });
 
   // 冷卻期管理
@@ -428,7 +429,7 @@ export const useAdminQcLabelBusiness = ({
 
               logger.info('[Admin QC Label] PDFs sent to print queue');
               toast.success(`Successfully printed ${pdfResult.successful} QC labels`);
-            } catch (printError) {
+            } catch {
               logger.error('[Admin QC Label] Print error');
               onShowError?.('Failed to send PDFs to print queue');
             }

@@ -6,9 +6,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   XMarkIcon,
   MagnifyingGlassPlusIcon,
@@ -19,6 +16,9 @@ import {
   ChevronRightIcon,
   DocumentTextIcon,
 } from '@heroicons/react/24/outline';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface PDFPreviewOverlayProps {
   isOpen: boolean;

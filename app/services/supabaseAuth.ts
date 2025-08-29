@@ -3,9 +3,9 @@
 // import { supabase } from '@/lib/supabase'; // 舊的全局客戶端，將被替換
 import { createClient as createAdminSupabaseClient } from '@supabase/supabase-js'; // 用於 Admin Client
 import type { SupabaseClient } from '@supabase/supabase-js'; // 只導入類型
+import bcrypt from 'bcryptjs';
 import { createClient as createServerSupabaseClient } from '@/app/utils/supabase/server'; // 新的服務器客戶端
 
-import bcrypt from 'bcryptjs';
 import { getErrorMessage } from '@/lib/types/error-handling';
 
 // Admin client 保持不變，它用於特殊權限操作，不依賴用戶會話

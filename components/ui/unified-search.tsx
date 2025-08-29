@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { DatabaseRecord } from '@/types/database/tables';
 import { Search, QrCode, X, Loader2 } from 'lucide-react';
+import { DatabaseRecord } from '@/types/database/tables';
+import { SimpleQRScanner } from '../qr-scanner/simple-qr-scanner';
 import { Button } from './button';
 import { Input } from './input';
 import { Card, CardContent } from './card';
-import { SimpleQRScanner } from '../qr-scanner/simple-qr-scanner';
 
 interface Product {
   id: number;

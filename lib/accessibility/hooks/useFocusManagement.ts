@@ -10,7 +10,7 @@ import { UseFocusManagementReturn, FocusManagementConfig } from '../types';
 import {
   globalFocusManager,
   globalFocusObserver,
-  FocusTrap,
+  // FocusTrap, // Unused import
   createSimpleFocusTrap,
 } from '../utils/focus-helpers';
 import { useAccessibility } from '../providers/AccessibilityProvider';
@@ -23,7 +23,7 @@ import { useAccessibility } from '../providers/AccessibilityProvider';
 export function useFocusManagement(
   config?: Partial<FocusManagementConfig>
 ): UseFocusManagementReturn {
-  const { focusConfig, updateFocusConfig } = useAccessibility();
+  const { focusConfig, updateFocusConfig: _updateFocusConfig } = useAccessibility(); // Renamed unused variable
   const [currentFocus, setCurrentFocus] = useState<HTMLElement | null>(null);
   const [focusHistory, setFocusHistory] = useState<HTMLElement[]>([]);
 
@@ -280,7 +280,7 @@ export function useAutoFocus(
   delay: number = 0
 ) {
   useEffect(() => {
-    if (!condition || !elementRef.current) return;
+    if (!condition || !elementRef.current) return undefined;
 
     const focusElement = () => {
       if (elementRef.current) {
@@ -293,6 +293,7 @@ export function useAutoFocus(
       return () => clearTimeout(timer);
     } else {
       focusElement();
+      return undefined;
     }
   }, [condition, elementRef, delay]);
 }

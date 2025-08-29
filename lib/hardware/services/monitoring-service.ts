@@ -3,6 +3,7 @@
  * Monitors and tracks hardware device status and usage
  */
 
+import { EventEmitter } from 'events';
 import {
   DeviceStatus,
   DeviceMetrics,
@@ -13,7 +14,6 @@ import {
   HardwareEvent,
   HardwareEventType,
 } from '../types';
-import { EventEmitter } from 'events';
 
 interface UsageStats {
   totalUsage: number;

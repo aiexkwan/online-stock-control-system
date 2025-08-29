@@ -1,6 +1,15 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import {
+  UserIcon,
+  ClipboardDocumentListIcon,
+  MagnifyingGlassIcon,
+  // CheckCircleIcon, // TODO: Remove if not used
+  ExclamationTriangleIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline';
+import { toast } from 'sonner';
 import { safeString } from '@/types/database/helpers';
 
 interface OrderSummary {
@@ -14,7 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { UnifiedSearch } from '@/components/ui/unified-search';
 import { createClient } from '@/app/utils/supabase/client';
-import { toast } from 'sonner';
+// Move toast import to correct position
 import {
   Dialog,
   DialogContent,
@@ -23,22 +32,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { MobileButton, MobileInput, MobileCard } from '@/components/ui/mobile';
+// import { MobileButton, MobileInput, MobileCard } from '@/components/ui/mobile'; // TODO: Remove if not used
 import { mobileConfig, cn } from '@/lib/mobile-config';
-import {
-  UserIcon,
-  ClipboardDocumentListIcon,
-  MagnifyingGlassIcon,
-  CheckCircleIcon,
-  ExclamationTriangleIcon,
-  XMarkIcon,
-} from '@heroicons/react/24/outline';
-import { loadPalletToOrder, undoLoadPallet, getOrderInfo } from '@/app/actions/orderLoadingActions';
-import { safeNumber } from '@/lib/utils/safe-number';
+import { loadPalletToOrder, undoLoadPallet } from '@/app/actions/orderLoadingActions';
+// import { safeNumber } from '@/lib/utils/safe-number'; // TODO: Remove if not used
+import { useSoundFeedback, useSoundSettings } from '@/app/hooks/useSoundFeedback';
 import MobileOrderLoading from './components/MobileOrderLoading';
 import { VirtualizedOrderList, virtualScrollStyles } from './components/VirtualizedOrderList';
 import { useOrderDataCache, useOrderSummariesCache } from './hooks/useOrderCache';
-import { useSoundFeedback, useSoundSettings } from '@/app/hooks/useSoundFeedback';
 import { SoundSettingsToggle } from './components/SoundSettingsToggle';
 import { LoadingProgressChart } from './components/LoadingProgressChart';
 
@@ -884,7 +885,7 @@ export default function OrderLoadingPage() {
                                 Recent Loads:
                               </div>
                               <div className='max-h-40 space-y-2 overflow-y-auto'>
-                                {recentLoads.map((load, index) => (
+                                {recentLoads.map((load, _index) => (
                                   <div
                                     key={load.uuid}
                                     className='flex items-center justify-between rounded-lg bg-slate-700/30 p-2 text-xs'

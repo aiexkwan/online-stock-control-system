@@ -12,37 +12,33 @@ import { EyeIcon, EyeSlashIcon } from '../icons';
 import {
   BaseCompoundProps,
   FormCompoundContext,
-  FieldCompoundProps,
   InputCompoundProps,
   ButtonCompoundProps,
   LayoutCompoundProps,
   ErrorDisplayProps,
-  LoadingIndicatorProps,
-  CompoundComponentType,
-  WithCompoundComponents,
 } from './types';
 
-// Form Context
-const FormContext = createContext<FormCompoundContext | null>(null);
+// Form Context with generic support using proper typing
+const FormContext = createContext<FormCompoundContext<Record<string, unknown>> | null>(null);
 
-function useFormContext(): FormCompoundContext {
+function useFormContext<TFormData = Record<string, string>>(): FormCompoundContext<TFormData> {
   const context = useContext(FormContext);
   if (!context) {
     throw new Error('Form compound components must be used within a CompoundForm');
   }
-  return context;
+  return context as FormCompoundContext<TFormData>;
 }
 
-// Main Form Component
-interface CompoundFormProps extends BaseCompoundProps {
+// Main Form Component with generic support
+interface CompoundFormProps<TFormData = Record<string, string>> extends BaseCompoundProps {
   formType: 'login' | 'register' | 'reset' | 'change';
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: TFormData) => Promise<void>;
   onFieldChange?: (field: string, value: string) => void;
   isSubmitting?: boolean;
   hasErrors?: boolean;
 }
 
-function CompoundFormBase({
+function CompoundFormBase<TFormData = Record<string, string>>({
   children,
   className = '',
   formType,
@@ -51,7 +47,7 @@ function CompoundFormBase({
   isSubmitting = false,
   hasErrors = false,
   ...props
-}: CompoundFormProps) {
+}: CompoundFormProps<TFormData>) {
   const handleFieldChange = useCallback(
     (field: string, value: string) => {
       onFieldChange?.(field, value);
@@ -63,7 +59,7 @@ function CompoundFormBase({
     async (e: React.FormEvent) => {
       e.preventDefault();
       const formData = new FormData(e.target as HTMLFormElement);
-      const data = Object.fromEntries(formData.entries()) as Record<string, string>;
+      const data = Object.fromEntries(formData.entries()) as TFormData;
       await onSubmit(data);
     },
     [onSubmit]
@@ -73,7 +69,7 @@ function CompoundFormBase({
     // Implementation for clearing form
   }, []);
 
-  const contextValue: FormCompoundContext = useMemo(
+  const contextValue: FormCompoundContext<TFormData> = useMemo(
     () => ({
       formType,
       isSubmitting,

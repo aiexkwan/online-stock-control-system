@@ -81,57 +81,51 @@ const DynamicCardLoader: React.FC<{
         switch (cardId) {
           case 'StockLevelListAndChartCard':
             const stockModule = await import('../cards/StockLevelListAndChartCard');
-            cardModule = {
-              default:
-                (
-                  stockModule as {
-                    StockLevelListAndChartCard?: React.ComponentType<unknown>;
-                    default?: React.ComponentType<unknown>;
-                  }
-                ).StockLevelListAndChartCard ||
-                (
-                  stockModule as {
-                    StockLevelListAndChartCard?: React.ComponentType<unknown>;
-                    default?: React.ComponentType<unknown>;
-                  }
-                ).default,
-            };
+            const stockComponent = (
+              stockModule as {
+                StockLevelListAndChartCard?: React.ComponentType<unknown>;
+                default?: React.ComponentType<unknown>;
+              }
+            ).StockLevelListAndChartCard ||
+            (
+              stockModule as {
+                StockLevelListAndChartCard?: React.ComponentType<unknown>;
+                default?: React.ComponentType<unknown>;
+              }
+            ).default;
+            cardModule = stockComponent ? { default: stockComponent } : {};
             break;
           case 'StockHistoryCard':
             const stockHistoryModule = await import('../cards/StockHistoryCard');
-            cardModule = {
-              default:
-                (
-                  stockHistoryModule as {
-                    default?: React.ComponentType<unknown>;
-                    StockHistoryCard?: React.ComponentType<unknown>;
-                  }
-                ).default ||
-                (
-                  stockHistoryModule as {
-                    default?: React.ComponentType<unknown>;
-                    StockHistoryCard?: React.ComponentType<unknown>;
-                  }
-                ).StockHistoryCard,
-            };
+            const stockHistoryComponent = (
+              stockHistoryModule as {
+                default?: React.ComponentType<unknown>;
+                StockHistoryCard?: React.ComponentType<unknown>;
+              }
+            ).default ||
+            (
+              stockHistoryModule as {
+                default?: React.ComponentType<unknown>;
+                StockHistoryCard?: React.ComponentType<unknown>;
+              }
+            ).StockHistoryCard;
+            cardModule = stockHistoryComponent ? { default: stockHistoryComponent } : {};
             break;
           case 'WorkLevelCard':
             const workLevelModule = await import('../cards/WorkLevelCard');
-            cardModule = {
-              default:
-                (
-                  workLevelModule as {
-                    default?: React.ComponentType<unknown>;
-                    WorkLevelCard?: React.ComponentType<unknown>;
-                  }
-                ).default ||
-                (
-                  workLevelModule as {
-                    default?: React.ComponentType<unknown>;
-                    WorkLevelCard?: React.ComponentType<unknown>;
-                  }
-                ).WorkLevelCard,
-            };
+            const workLevelComponent = (
+              workLevelModule as {
+                default?: React.ComponentType<unknown>;
+                WorkLevelCard?: React.ComponentType<unknown>;
+              }
+            ).default ||
+            (
+              workLevelModule as {
+                default?: React.ComponentType<unknown>;
+                WorkLevelCard?: React.ComponentType<unknown>;
+              }
+            ).WorkLevelCard;
+            cardModule = workLevelComponent ? { default: workLevelComponent } : {};
             break;
           case 'VerticalTimelineCard':
             cardModule = (await import('../cards/VerticalTimelineCard')) as {
@@ -562,7 +556,7 @@ export const AnalysisCardSelector: React.FC<AnalysisCardSelectorProps> = ({
 
       {/* Single Card display area - 使用響應式高度，移除多層包裝 */}
       <motion.div className='min-h-0 flex-1' variants={itemVariants}>
-        <CardErrorBoundary cardId={selectedCard} onError={onCardError}>
+        <CardErrorBoundary cardId={selectedCard} {...(onCardError && { onError: onCardError })}>
           <React.Suspense
             fallback={
               <div className='flex h-full items-center justify-center'>

@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { isDevelopment, isNotProduction } from '@/lib/utils/env';
 import {
   FeatureFlag,
   FeatureVariant,
@@ -14,7 +15,6 @@ import {
   withFeatureFlag,
   KnownFeatureFlags,
 } from '../index';
-import { isDevelopment, isNotProduction } from '@/lib/utils/env';
 
 /**
  * 示例 1: 基本使用 - 條件渲染組件

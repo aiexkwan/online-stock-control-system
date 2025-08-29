@@ -1,8 +1,8 @@
 'use client';
 
 import React, { ComponentType, useEffect, useState } from 'react';
-import { DynamicImportHandler } from './dynamic-import-handler';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { DynamicImportHandler } from './dynamic-import-handler';
 
 interface DynamicImportState<T> {
   component: ComponentType<T> | null;

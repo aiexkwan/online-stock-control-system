@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useEffect, useCallback, memo } from 'react';
+import Link from 'next/link';
 import { useLoginContext } from '../../context/LoginContext';
 import { EmailField, PasswordField } from '../molecules';
 import { Button } from '../atoms';
-import Link from 'next/link';
 
 interface RefactoredLoginFormProps {
   onSuccess?: () => void;
@@ -26,10 +26,10 @@ const RefactoredLoginForm = memo(function RefactoredLoginForm({
     fieldErrors,
     passwordRules,
     loginFormData,
-    uiState,
+    uiState: _uiState,
     login,
     updateLoginForm,
-    setShowPassword,
+    setShowPassword: _setShowPassword,
     clearAllErrors,
   } = useLoginContext();
 

@@ -6,15 +6,15 @@
  */
 
 import React from 'react';
-import { LoginFormData, RegisterFormData } from '../../context/LoginContext';
 import {
-  FormSubmissionData,
-  FormEventHandler,
-  UIEventHandler,
-  ComponentRegistryOperations,
+  // FormSubmissionData, // TODO: Remove if not used
+  // FormEventHandler, // TODO: Remove if not used
+  // UIEventHandler, // TODO: Remove if not used
+  // ComponentRegistryOperations, // TODO: Remove if not used
   AnyComponentProps,
   RenderPropsBase,
 } from '@/lib/types/auth-system';
+// import { LoginFormData, RegisterFormData } from '../../context/LoginContext'; // TODO: Remove if not used
 
 // Base compound component props
 export interface BaseCompoundProps {
@@ -23,13 +23,13 @@ export interface BaseCompoundProps {
   id?: string;
 }
 
-// Form compound component context
-export interface FormCompoundContext {
+// Form compound component context with generic support
+export interface FormCompoundContext<TFormData = Record<string, string>> {
   formType: 'login' | 'register' | 'reset' | 'change';
   isSubmitting: boolean;
   hasErrors: boolean;
   onFieldChange: (field: string, value: string) => void;
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: TFormData) => Promise<void>;
   onClear: () => void;
 }
 
@@ -89,9 +89,9 @@ export interface LoadingIndicatorProps extends BaseCompoundProps {
 }
 
 // Compound component composition utilities
-export type CompoundComponentType<T, U = {}> = React.FC<T> & U;
+export type CompoundComponentType<_T, _U = {}> = React.FC<_T> & _U;
 
-export interface WithCompoundComponents<T> {
+export interface WithCompoundComponents<_T> {
   displayName?: string;
   [key: string]: React.ComponentType<AnyComponentProps> | string | undefined;
 }

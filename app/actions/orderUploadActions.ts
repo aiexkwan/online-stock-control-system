@@ -1,14 +1,14 @@
 'use server';
 
-import { createClient } from '@/app/utils/supabase/server';
+import * as crypto from 'crypto';
 import { createClient as createAdminSupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@/app/utils/supabase/server';
 import { DatabaseRecord } from '@/types/database/tables';
 import type { Database } from '@/types/database/supabase';
 import { getErrorMessage } from '@/lib/types/error-handling';
 // Removed EnhancedOrderExtractionService import - now using API Route to avoid Server Components compatibility issues
 import { sendOrderCreatedEmail } from '../services/emailService';
 import acoProductService from '../services/acoProductService';
-import * as crypto from 'crypto';
 
 // ACO 產品現在從資料庫動態載入 (type='ACO')
 // 舊的硬編碼列表保留作為備份參考

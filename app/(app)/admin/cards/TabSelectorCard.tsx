@@ -11,40 +11,21 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { SpecialCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
-import { cardTextStyles } from '@/lib/card-system/theme';
-import { AnalysisCardSelector } from './AnalysisCardSelector';
-import { createClient } from '@/app/utils/supabase/client';
-import { cn } from '@/lib/utils';
-// Remove legacy card names - use Card components directly
 import {
-  ChartBarIcon,
-  CubeIcon,
-  DocumentTextIcon,
-  ClipboardDocumentListIcon,
   WrenchScrewdriverIcon,
-  EyeIcon,
-  CheckIcon,
-  CloudArrowUpIcon,
-  ChartPieIcon,
-  BuildingOfficeIcon,
-  ChatBubbleBottomCenterTextIcon,
   UserCircleIcon,
   ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
+import { cn } from '@/lib/utils';
+// Remove legacy card names - use Card components directly
+import { createClient } from '@/app/utils/supabase/client';
+import { cardTextStyles } from '@/lib/card-system/theme';
+import { SpecialCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 
 // Import Operation Cards
-import {
-  QCLabelCard,
-  GRNLabelCard,
-  StockTransferCard,
-  OrderLoadCard,
-  StockCountCard,
-} from './index';
 
 // Import types
-import type { HeroIcon, IconComponent } from '../types/heroicons';
-import type { CardConfig, CardCategory, TabType, OperationMenuItem } from '../types/ui-navigation';
+import type { TabType } from '../types/ui-navigation';
 
 // Type definition for allowed cards (matching AnalysisCardSelector)
 type AllowedCardType =
@@ -68,6 +49,14 @@ import {
   OPERATION_MENU,
   DEFAULT_SELECTED_CARD,
 } from '../constants/cardConfig';
+import { AnalysisCardSelector } from './AnalysisCardSelector';
+import {
+  QCLabelCard,
+  GRNLabelCard,
+  StockTransferCard,
+  OrderLoadCard,
+  StockCountCard,
+} from './index';
 
 export const TabSelectorCard: React.FC = () => {
   // Tab state
@@ -83,7 +72,7 @@ export const TabSelectorCard: React.FC = () => {
   const [isLoadingUser, setIsLoadingUser] = useState(true);
 
   // Operation selected item
-  const [selectedOperation, setSelectedOperation] = useState<string>('');
+  const [_selectedOperation, setSelectedOperation] = useState<string>('');
   const [selectedOperationCard, setSelectedOperationCard] = useState<string>('');
 
   // Fetch user info on mount

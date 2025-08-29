@@ -69,8 +69,8 @@ export interface SecurityEvent {
   userAgent?: string;
   path?: string;
   method?: string;
-  payload?: any;
-  metadata?: Record<string, any>;
+  payload?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
   stackTrace?: string;
 }
 
@@ -84,7 +84,7 @@ export interface AlertConfig {
 
 export interface AlertChannel {
   type: 'email' | 'slack' | 'webhook' | 'sms';
-  config: Record<string, any>;
+  config: Record<string, unknown>;
 }
 
 export interface AlertThresholds {
@@ -127,7 +127,7 @@ export class ProductionSecurityMonitor extends EventEmitter {
   private events: SecurityEvent[] = [];
   private alertConfig: AlertConfig;
   private rateLimitMap: Map<string, number[]> = new Map();
-  private anomalyBaseline: Map<string, any> = new Map();
+  private anomalyBaseline: Map<string, Record<string, unknown>> = new Map();
   private isMonitoring: boolean = false;
 
   private constructor() {
@@ -190,8 +190,8 @@ export class ProductionSecurityMonitor extends EventEmitter {
     url: string;
     method: string;
     headers: Record<string, string>;
-    body?: any;
-    query?: any;
+    body?: Record<string, unknown>;
+    query?: Record<string, unknown>;
   }): SecurityEventType[] {
     const threats: SecurityEventType[] = [];
 
@@ -355,7 +355,7 @@ export class ProductionSecurityMonitor extends EventEmitter {
     endDate: Date
   ): {
     period: { start: Date; end: Date };
-    summary: any;
+    summary: Record<string, unknown>;
     events: SecurityEvent[];
     recommendations: string[];
   } {
@@ -480,14 +480,14 @@ export class ProductionSecurityMonitor extends EventEmitter {
     this.events = this.events.filter(e => e.timestamp > cutoffTime);
   }
 
-  private sendAlert(alert: any): void {
+  private sendAlert(alert: SecurityEvent): void {
     // Send alerts through configured channels
     this.alertConfig.channels.forEach(channel => {
       this.sendToChannel(channel, alert);
     });
   }
 
-  private sendToChannel(channel: AlertChannel, alert: any): void {
+  private sendToChannel(channel: AlertChannel, alert: SecurityEvent): void {
     // Implementation would send to actual channels
     console.log(`[Alert - ${channel.type}]`, alert);
   }

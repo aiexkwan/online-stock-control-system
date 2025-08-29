@@ -4,9 +4,9 @@
  */
 
 import { GraphQLError } from 'graphql';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/app/utils/supabase/server';
 import { DATABASE_FIELD_MAPPINGS, FieldMapper } from '../config/field-mappings';
-import type { SupabaseClient } from '@supabase/supabase-js';
 
 export interface SchemaValidationResult {
   valid: boolean;

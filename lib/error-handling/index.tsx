@@ -104,7 +104,7 @@ export class ErrorHandlingUtils {
           component: componentName,
           action: 'render',
         },
-        fallback: options?.fallback as React.ComponentType<ErrorFallbackProps> | undefined,
+        fallback: options?.fallback ? options.fallback as React.ComponentType<ErrorFallbackProps> : undefined,
         isolationLevel: options?.isolationLevel || 'component',
         children: React.createElement(Component, props),
       };

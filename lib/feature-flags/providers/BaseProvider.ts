@@ -1,3 +1,4 @@
+import { safeGet, safeString, safeNumber } from '@/types/database/helpers';
 import {
   FeatureFlagProvider,
   FeatureFlag,
@@ -6,7 +7,6 @@ import {
   FeatureRule,
   FeatureVariant,
 } from '../types';
-import { safeGet, safeString, safeNumber } from '@/types/database/helpers';
 
 /**
  * 基礎 Feature Flag 提供者

@@ -4,10 +4,10 @@
  */
 
 import { IResolvers } from '@graphql-tools/utils';
-import { GraphQLContext } from './index';
 import { GraphQLError } from 'graphql';
 import { format, subDays, parseISO } from 'date-fns';
 import type { StockLevelRecord } from '../types/database-types';
+import { GraphQLContext } from './index';
 
 export const stockLevelResolvers: IResolvers<unknown, GraphQLContext> = {
   // Type Resolvers

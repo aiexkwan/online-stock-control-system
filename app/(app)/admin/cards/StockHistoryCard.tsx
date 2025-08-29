@@ -1,18 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   Package,
   Search,
@@ -24,17 +12,29 @@ import {
   Clock,
   Users,
 } from 'lucide-react';
-import { format } from 'date-fns';
+// import { format } from 'date-fns'; // Removed - not used
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+// import { Badge } from '@/components/ui/badge'; // Removed - not used
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AnalysisCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
-import { cardTextStyles, cardChartColors } from '@/lib/card-system/theme';
+import { cardTextStyles } from '@/lib/card-system/theme';
 import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
 import { SearchInput } from '../components/shared';
 import {
   useStockHistoryGraphQL,
   type StockHistoryRecord,
-  type ProductInfo,
-  type PalletHistoryResult,
-  type SinglePalletHistoryResult,
+  // type ProductInfo, // Removed - not used
+  // type PalletHistoryResult, // Removed - not used
+  // type SinglePalletHistoryResult, // Removed - not used
 } from '../hooks/useStockHistoryGraphQL';
 
 // Simplified interface

@@ -4,8 +4,8 @@
  */
 
 import { IResolvers } from '@graphql-tools/utils';
-import { GraphQLContext } from './index';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { GraphQLContext } from './index';
 
 // Types for internal processing
 interface RawRecordHistoryEntry {

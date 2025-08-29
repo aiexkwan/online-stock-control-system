@@ -7,6 +7,7 @@
 import type { PDFDocument as PDFDocumentType } from 'pdf-lib';
 import type { jsPDF as jsPDFType } from 'jspdf';
 import type { pdf as ReactPDFType } from '@react-pdf/renderer';
+import React from 'react';
 import { PrintLabelPdf, PrintLabelPdfProps } from '@/components/print-label-pdf/PrintLabelPdf';
 import {
   prepareQcLabelData,
@@ -23,7 +24,6 @@ import {
   uploadPdfToStorage as uploadPdfToStorageQc,
   updatePalletPdfUrl as updatePalletPdfUrlQc,
 } from '@/app/actions/qcActions';
-import React from 'react';
 import { getUnifiedPrintingService } from '@/lib/printing/services/unified-printing-service';
 import {
   PrintType,
@@ -271,19 +271,19 @@ export async function registerFont(config: {
 /**
  * 安全的 console 方法，保護敏感資訊
  */
-function safeLog(message: string, data?: any) {
+function safeLog(message: string, data?: unknown) {
   const sanitizedData = data ? sanitizeData(data) : undefined;
   if (process.env.NODE_ENV !== 'production') {
     console.log(message, sanitizedData || '');
   }
 }
 
-function safeError(message: string, error?: any) {
+function safeError(message: string, error?: unknown) {
   const sanitizedError = error ? sanitizeData(error) : undefined;
   console.error(message, sanitizedError || '');
 }
 
-function safeWarn(message: string, data?: any) {
+function safeWarn(message: string, data?: unknown) {
   const sanitizedData = data ? sanitizeData(data) : undefined;
   console.warn(message, sanitizedData || '');
 }
@@ -291,19 +291,23 @@ function safeWarn(message: string, data?: any) {
 /**
  * 簡單的數據消毒函數
  */
-function sanitizeData(data: any): any {
+function sanitizeData(data: unknown): unknown {
   if (typeof data === 'string') {
     return data.length > 100 ? data.substring(0, 100) + '...' : data;
   }
   if (typeof data === 'object' && data !== null) {
     const sensitiveKeys = ['password', 'token', 'apiKey', 'secret', 'auth'];
-    const sanitized: any = Array.isArray(data) ? [] : {};
+    const sanitized: Record<string, unknown> = {};
+
+    if (Array.isArray(data)) {
+      return data.map(item => sanitizeData(item));
+    }
 
     for (const key in data) {
       if (sensitiveKeys.some(sk => key.toLowerCase().includes(sk))) {
         sanitized[key] = '[REDACTED]';
       } else {
-        sanitized[key] = data[key];
+        sanitized[key] = (data as Record<string, unknown>)[key];
       }
     }
     return sanitized;
@@ -381,7 +385,7 @@ export class UnifiedPdfService {
    */
   public async generateSingle(
     type: PdfType,
-    data: QcInputData | GrnInputData | QcLabelInputData | GrnLabelInputData | any,
+    data: QcInputData | GrnInputData | QcLabelInputData | GrnLabelInputData | Record<string, unknown>,
     options?: Partial<PdfConfig>
   ): Promise<PdfGenerationResult> {
     try {
@@ -454,7 +458,7 @@ export class UnifiedPdfService {
    */
   public async generateBatch(
     type: PdfType,
-    dataArray: Array<QcInputData | GrnInputData | QcLabelInputData | GrnLabelInputData | any>,
+    dataArray: Array<QcInputData | GrnInputData | QcLabelInputData | GrnLabelInputData | Record<string, unknown>>,
     options?: Partial<PdfConfig>,
     onProgress?: (
       current: number,
@@ -600,28 +604,40 @@ export class UnifiedPdfService {
   /**
    * 類型守衛：檢查是否為 QC 輸入數據
    */
-  private isQcInputData(data: any): data is QcInputData | QcLabelInputData {
+  private isQcInputData(data: unknown): data is QcInputData | QcLabelInputData {
     return (
-      data &&
-      typeof data.productCode === 'string' &&
-      typeof data.productDescription === 'string' &&
-      typeof data.quantity === 'number' &&
-      typeof data.series === 'string' &&
-      typeof data.palletNum === 'string'
+      data !== null &&
+      typeof data === 'object' &&
+      'productCode' in data &&
+      'productDescription' in data &&
+      'quantity' in data &&
+      'series' in data &&
+      'palletNum' in data &&
+      typeof (data as any).productCode === 'string' &&
+      typeof (data as any).productDescription === 'string' &&
+      typeof (data as any).quantity === 'number' &&
+      typeof (data as any).series === 'string' &&
+      typeof (data as any).palletNum === 'string'
     );
   }
 
   /**
    * 類型守衛：檢查是否為 GRN 輸入數據
    */
-  private isGrnInputData(data: any): data is GrnInputData | GrnLabelInputData {
+  private isGrnInputData(data: unknown): data is GrnInputData | GrnLabelInputData {
     return (
-      data &&
-      (typeof data.grnNumber === 'string' || typeof data.receivedBy === 'string') &&
-      typeof data.productCode === 'string' &&
-      typeof data.productDescription === 'string' &&
-      typeof data.series === 'string' &&
-      typeof data.palletNum === 'string'
+      data !== null &&
+      typeof data === 'object' &&
+      'productCode' in data &&
+      'productDescription' in data &&
+      'series' in data &&
+      'palletNum' in data &&
+      ('grnNumber' in data || 'receivedBy' in data) &&
+      typeof (data as any).productCode === 'string' &&
+      typeof (data as any).productDescription === 'string' &&
+      typeof (data as any).series === 'string' &&
+      typeof (data as any).palletNum === 'string' &&
+      (typeof (data as any).grnNumber === 'string' || typeof (data as any).receivedBy === 'string')
     );
   }
 
@@ -637,7 +653,7 @@ export class UnifiedPdfService {
    * 整合 PDF 生成和打印服務，提供一站式解決方案
    */
   public async generateAndPrint<
-    T extends QcInputData | GrnInputData | QcLabelInputData | GrnLabelInputData | any,
+    T extends QcInputData | GrnInputData | QcLabelInputData | GrnLabelInputData | Record<string, unknown>,
   >(
     type: PdfType,
     data: T,
@@ -729,7 +745,7 @@ export class UnifiedPdfService {
    * 批量生成並打印 PDFs
    */
   public async generateAndPrintBatch<
-    T extends QcInputData | GrnInputData | QcLabelInputData | GrnLabelInputData | any,
+    T extends QcInputData | GrnInputData | QcLabelInputData | GrnLabelInputData | Record<string, unknown>,
   >(
     type: PdfType,
     dataArray: T[],

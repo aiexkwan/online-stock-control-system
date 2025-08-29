@@ -1,8 +1,8 @@
 'use client';
 
 import React, { Component, ReactNode, ErrorInfo } from 'react';
-import { Button } from '../atoms';
 import { AlertCircle } from 'lucide-react';
+import { Button } from '../atoms';
 
 interface AuthErrorBoundaryProps {
   children: ReactNode;

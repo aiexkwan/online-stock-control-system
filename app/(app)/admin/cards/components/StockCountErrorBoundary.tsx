@@ -22,11 +22,11 @@ export default class StockCountErrorBoundary extends React.Component<Props, Stat
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('StockCount Error:', error, errorInfo);
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
         <div className='flex h-full items-center justify-center p-6'>

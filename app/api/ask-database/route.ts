@@ -1,10 +1,13 @@
+import * as crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
+import { LRUCache } from 'lru-cache';
+import OpenAI from 'openai';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+import { z } from 'zod';
 import { DatabaseRecord } from '@/types/database/tables';
 import { getErrorMessage } from '@/lib/types/error-handling';
 import { safeGet, safeNumber, toRecordArray } from '@/types/database/helpers';
 import { createClient } from '@/app/utils/supabase/server';
-import { LRUCache } from 'lru-cache';
-import OpenAI from 'openai';
 import type {
   ClassifiedError,
   SqlExecutionResult,
@@ -17,7 +20,6 @@ import type {
   ASK_DATABASE_CONSTANTS,
 } from '@/lib/types/ask-database';
 import { isClassifiedError } from '@/lib/types/ask-database';
-import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { enhanceQueryWithTemplate } from '@/lib/query-templates';
 import { optimizeSQL, analyzeQueryWithPlan, generatePerformanceReport } from '@/lib/sql-optimizer';
 import { DatabaseConversationContextManager } from '@/lib/conversation-context-db';
@@ -31,7 +33,6 @@ import {
   generateUserMessage,
 } from '@/lib/unified-error-handler';
 import { isDevelopment, isNotProduction } from '@/lib/utils/env';
-import * as crypto from 'crypto';
 import {
   SafeDatabaseValue,
   SafeDatabaseValueSchema,
@@ -40,7 +41,6 @@ import {
   DatabaseQueryResponse,
   validateDatabaseQueryResponse,
 } from '@/lib/validation/zod-schemas';
-import { z } from 'zod';
 
 // Blocked users list
 const BLOCKED_USERS = ['warehouse@pennineindustries.com', 'production@pennineindustries.com'];

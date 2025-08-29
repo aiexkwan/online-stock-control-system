@@ -10,7 +10,6 @@
 
 import DataLoader from 'dataloader';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { createBatchLoader } from './base.dataloader';
 import {
   DatabaseEntity,
   TransferEntity,
@@ -35,6 +34,7 @@ import {
   safeString,
   safeNumber,
 } from '@/lib/types/dataloaders';
+import { createBatchLoader } from './base.dataloader';
 
 // 對於 complex.dataloader.ts 的具體類型定義
 interface InventoryWithRelations extends InventoryEntity {
@@ -907,16 +907,24 @@ function calculateGRNAnalytics(
         : 0,
     avgWeight:
       qcRecords.length > 0
-        ? qcRecords.reduce((sum: number, qc) => sum + safeNumber(qc, 'weight', 0), 0) /
-          qcRecords.length
+        ? (() => {
+            const total = qcRecords.reduce((sum: number, qc) => {
+              const weight = safeNumber(qc, 'weight', 0);
+              return sum + weight;
+            }, 0);
+            return total / qcRecords.length;
+          })()
         : 0,
     avgThickness:
       qcRecords.length > 0
-        ? qcRecords.reduce(
-            (sum: number, qc) =>
-              sum + (safeNumber(qc, 't_thick', 0) + safeNumber(qc, 'b_thick', 0)) / 2,
-            0
-          ) / qcRecords.length
+        ? (() => {
+            const total = qcRecords.reduce((sum: number, qc) => {
+              const tThick = safeNumber(qc, 't_thick', 0);
+              const bThick = safeNumber(qc, 'b_thick', 0);
+              return sum + (tThick + bThick) / 2;
+            }, 0);
+            return total / qcRecords.length;
+          })()
         : 0,
   };
 

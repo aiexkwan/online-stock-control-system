@@ -1,9 +1,9 @@
 'use client';
 
-import { unifiedAuth } from '@/app/(auth)/main-login/utils/unified-auth';
-import { createClient } from '@/app/utils/supabase/client';
 import type { PostgrestError, User } from '@supabase/supabase-js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { unifiedAuth } from '@/app/(auth)/main-login/utils/unified-auth';
+import { createClient } from '@/app/utils/supabase/client';
 
 import { AuthState, UserRole } from '@/lib/types/auth';
 import { createSecureLogger } from '@/lib/security/enhanced-logger-sanitizer';
@@ -115,7 +115,7 @@ export function useAuth(): AuthState {
     // Skip auth operations if supabase client failed to initialize
     if (hasError || !supabase) {
       setLoading(false);
-      return;
+      return undefined;
     }
 
     // 檢查是否在公開路由 - 如果是，跳過認證檢查
@@ -129,12 +129,12 @@ export function useAuth(): AuthState {
       );
       // Clear auth state for public routes to prevent stale data
       clearAuthState();
-      return;
+      return undefined;
     }
 
     // Simplified auth check - trust Supabase's built-in session management
     if (isCheckingAuthRef.current) {
-      return;
+      return undefined;
     }
 
     const checkAuth = async () => {
@@ -191,6 +191,9 @@ export function useAuth(): AuthState {
 
       return () => subscription.unsubscribe();
     }
+    
+    // Ensure useEffect always returns undefined for cleanup or a cleanup function
+    return undefined;
   }, [hasError, supabase, setAuthenticatedUser, clearAuthState]);
 
   return {

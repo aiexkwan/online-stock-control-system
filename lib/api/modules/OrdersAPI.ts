@@ -6,8 +6,8 @@
  * with optimized RPC calls and Server Actions
  */
 
-import { createClient } from '@/app/utils/supabase/client';
 import { cache } from 'react';
+import { createClient } from '@/app/utils/supabase/client';
 
 // ================================
 // Type Definitions

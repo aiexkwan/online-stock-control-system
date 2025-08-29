@@ -4,11 +4,11 @@
  * 專家設計：支持 Redis → Memory 平滑遷移
  */
 
+import { cacheLogger } from '../logger';
 import { CacheAdapter } from './base-cache-adapter';
 // import { RedisCacheAdapter } from './redis-cache-adapter'; // Removed - migrating to Apollo Cache
 import { MemoryCacheAdapter } from './memory-cache-adapter';
 import { ApolloCacheAdapter } from './apollo-cache-adapter';
-import { cacheLogger } from '../logger';
 
 export type CacheType = 'redis' | 'memory' | 'apollo' | 'auto';
 
